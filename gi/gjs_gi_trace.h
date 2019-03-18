@@ -27,8 +27,8 @@
 #ifndef __GJS_TRACE_H__
 #define __GJS_TRACE_H__
 
-#ifndef GETTEXT_PACKAGE
-#error "config.h must be included prior to gjs_trace.h"
+#ifndef GJS_VERSION
+#    error "config.h must be included prior to gjs_trace.h"
 #endif
 
 #ifdef HAVE_DTRACE
