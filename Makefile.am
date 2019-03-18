@@ -166,6 +166,7 @@ include Makefile-insttest.am
 
 EXTRA_DIST +=					\
 	autogen.sh				\
+	build/choose-tests-locale.sh		\
 	COPYING.LGPL				\
 	doc/ByteArray.md			\
 	doc/cairo.md				\
