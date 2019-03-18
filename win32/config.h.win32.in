@@ -9,9 +9,6 @@
 /* Define if you want to build with GTK+ support */
 /* #undef ENABLE_GTK */
 
-/* The name of the gettext domain */
-#define GETTEXT_PACKAGE "gjs"
-
 /* The gjs version as an integer */
 #define GJS_VERSION @GJS_VERSION@
 
