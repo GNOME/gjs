@@ -52,8 +52,6 @@ dist_lsan_DATA = installed-tests/extra/lsan.supp
 
 ########################################################################
 gjs_directory_defines = 				\
-	-DGJS_TOP_SRCDIR=\"$(top_srcdir)\"		\
-	-DGJS_TOP_BUILDDIR=\"$(top_builddir)\"		\
 	-DGJS_JS_DIR=\"$(gjsjsdir)\"			\
 	-DPKGLIBDIR=\"$(pkglibdir)\"
 
