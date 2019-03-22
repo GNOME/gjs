@@ -36,6 +36,7 @@ gjs_public_includedir = $(includedir)/gjs-1.0
 
 ########################################################################
 include gjs-srcs.mk
+include gjs-modules-srcs.mk
 ########################################################################
 nobase_gjs_public_include_HEADERS = $(gjs_public_headers)
 
@@ -71,7 +72,9 @@ libgjs_la_LDFLAGS = 			\
 	$(NO_UNDEFINED_FLAG)		\
 	$(NULL)
 libgjs_la_LIBADD = 		\
-	$(GJS_LIBS)
+	$(GJS_LIBS)		\
+	$(READLINE_LIBS)	\
+	$(NULL)
 
 if ENABLE_GTK
 libgjs_la_CPPFLAGS += $(GJS_GTK_CFLAGS)
@@ -96,6 +99,32 @@ libgjs_private_source_files += $(gjs_gtk_private_srcs)
 endif
 
 libgjs_la_SOURCES += $(libgjs_private_source_files)
+
+# The built-in modules also used to be compiled separately
+
+modules_resource_files := $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/modules/modules.gresource.xml)
+modules-resources.h: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
+modules-resources.c: $(srcdir)/modules/modules.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name modules_resources $<
+
+EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
+
+modules_source_files =		\
+	$(module_resource_srcs)	\
+	$(module_system_srcs)	\
+	$(module_console_srcs)	\
+	$(NULL)
+
+if ENABLE_CAIRO
+modules_source_files += $(module_cairo_srcs)
+libgjs_la_CPPFLAGS += $(GJS_CAIRO_CFLAGS) $(GJS_CAIRO_XLIB_CFLAGS)
+libgjs_la_LIBADD += $(GJS_CAIRO_LIBS) $(GJS_CAIRO_XLIB_LIBS)
+endif
+
+CLEANFILES += $(module_resource_srcs)
+
+libgjs_la_SOURCES += $(modules_source_files)
 
 GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la
@@ -135,7 +164,6 @@ tapsetdir   = $(datadir)/systemtap/tapset
 tapset_DATA = $(tapset_in_files:.stp.in=.stp)
 endif
 
-include Makefile-modules.am
 include Makefile-examples.am
 
 typelibdir = $(pkglibdir)/girepository-1.0
