@@ -45,13 +45,8 @@ GJS_ALWAYS_INLINE GJS_USE static inline bool check_nullable(
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to use JS::ToBoolean instead? */
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       bool           *ref)
-{
+static inline void assign(JSContext*, char c, bool nullable,
+                          JS::HandleValue value, bool* ref) {
     if (c != 'b')
         throw g_strdup_printf("Wrong type for %c, got bool*", c);
     if (!value.isBoolean())
@@ -64,13 +59,8 @@ assign(JSContext      *cx,
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to box primitive types instead of throwing? */
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext              *cx,
-       char                    c,
-       bool                    nullable,
-       JS::HandleValue         value,
-       JS::MutableHandleObject ref)
-{
+static inline void assign(JSContext*, char c, bool nullable,
+                          JS::HandleValue value, JS::MutableHandleObject ref) {
     if (c != 'o')
         throw g_strdup_printf("Wrong type for %c, got JS::MutableHandleObject", c);
     if (nullable && value.isNull()) {
@@ -207,10 +197,10 @@ assign(JSContext      *cx,
 
 /* Force JS::RootedObject * to be converted to JS::MutableHandleObject,
  * see overload in jsapi-util-args.cpp */
-template<typename T,
-         typename std::enable_if<!std::is_same<T, JS::RootedObject *>::value, int>::type = 0>
-static inline void
-free_if_necessary(T param_ref) {}
+template <typename T,
+          typename std::enable_if<!std::is_same<T, JS::RootedObject*>::value,
+                                  int>::type = 0>
+static inline void free_if_necessary(T param_ref G_GNUC_UNUSED) {}
 
 GJS_ALWAYS_INLINE
 static inline void

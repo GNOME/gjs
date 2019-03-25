@@ -128,10 +128,8 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
     g_object_unref(context);
 }
 
-static void
-gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
-                                                       gconstpointer       unused)
-{
+static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
+    GjsUnitTestFixture* fx, const void*) {
     JS::RootedValue js_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
     g_assert(js_string.isString());
@@ -141,10 +139,8 @@ gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
     g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result.get());
 }
 
-static void
-gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
-                                             gconstpointer       unused)
-{
+static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
+                                                         const void*) {
     JS::RootedValue exc(fx->cx), value(fx->cx);
 
     /* Test that we can throw */
@@ -189,10 +185,8 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
     g_assert(&exc.toObject() == &previous.toObject());
 }
 
-static void
-test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture *fx,
-                                         const void         *unused)
-{
+static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
+                                                     const void*) {
     JS::RootedValue v_out(fx->cx);
     bool ok = gjs_string_from_utf8_n(fx->cx, VALID_UTF8_STRING,
                                      strlen(VALID_UTF8_STRING), &v_out);
@@ -200,10 +194,8 @@ test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture *fx,
     g_assert_true(v_out.isString());
 }
 
-static void
-test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
-                                   gconstpointer       unused)
-{
+static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
+                                               const void*) {
     char16_t *chars;
     size_t len;
 
@@ -223,10 +215,8 @@ test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
     g_free(chars);
 }
 
-static void
-test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
-                               gconstpointer       unused)
-{
+static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
+                                           const void*) {
     gunichar *chars;
     size_t len;
 
@@ -247,10 +237,8 @@ test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
     g_free(chars);
 }
 
-static void
-test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
-                                        gconstpointer       unused)
-{
+static void test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture* fx,
+                                                    const void*) {
     JS::RootedValue v_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
 
@@ -262,10 +250,8 @@ test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
     g_free(debug_output);
 }
 
-static void
-test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
-                                          gconstpointer       unused)
-{
+static void test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture* fx,
+                                                      const void*) {
     g_test_skip("SpiderMonkey doesn't validate UTF-8 after encoding it");
 
     JS::RootedValue v_string(fx->cx);
@@ -280,10 +266,8 @@ test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
     g_free(debug_output);
 }
 
-static void
-test_jsapi_util_debug_string_object_with_complicated_to_string(GjsUnitTestFixture *fx,
-                                                               gconstpointer       unused)
-{
+static void test_jsapi_util_debug_string_object_with_complicated_to_string(
+    GjsUnitTestFixture* fx, const void*) {
     const char16_t desserts[] = {
         0xd83c, 0xdf6a,  /* cookie */
         0xd83c, 0xdf69,  /* doughnut */

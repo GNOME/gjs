@@ -597,6 +597,8 @@ gjs_gc_if_needed (JSContext *context)
             linux_rss_trigger = (rss_size * 1.25);
         }
     }
+#else  // !__linux__
+    (void)context;
 #endif
 }
 

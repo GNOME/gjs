@@ -41,10 +41,7 @@ GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Pattern", cairo_pattern,
                                      JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
 
-static void
-gjs_cairo_pattern_finalize(JSFreeOp *fop,
-                           JSObject *obj)
-{
+static void gjs_cairo_pattern_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoPattern *priv;
     priv = (GjsCairoPattern*) JS_GetPrivate(obj);
     if (priv == NULL)

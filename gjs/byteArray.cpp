@@ -32,16 +32,18 @@
 
 /* Callbacks to use with JS_NewExternalArrayBuffer() */
 
-static void gfree_arraybuffer_contents(void* contents, void* unused) {
+static void gfree_arraybuffer_contents(void* contents, void*) {
     g_free(contents);
 }
 
-static void bytes_ref_arraybuffer(void* contents, void* user_data) {
+static void bytes_ref_arraybuffer(void* contents G_GNUC_UNUSED,
+                                  void* user_data) {
     auto* gbytes = static_cast<GBytes*>(user_data);
     g_bytes_ref(gbytes);
 }
 
-static void bytes_unref_arraybuffer(void* contents, void* user_data) {
+static void bytes_unref_arraybuffer(void* contents G_GNUC_UNUSED,
+                                    void* user_data) {
     auto* gbytes = static_cast<GBytes*>(user_data);
     g_bytes_unref(gbytes);
 }

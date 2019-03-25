@@ -121,11 +121,8 @@ static JSLocaleCallbacks gjs_locale_callbacks =
     gjs_locale_to_unicode
 };
 
-static void
-gjs_finalize_callback(JSFreeOp         *fop,
-                      JSFinalizeStatus  status,
-                      void             *data)
-{
+static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
+                                  void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
 
   /* Implementation note for mozjs 24:
@@ -174,11 +171,7 @@ gjs_finalize_callback(JSFreeOp         *fop,
         gjs->set_sweeping(false);
 }
 
-static void
-on_garbage_collect(JSContext *cx,
-                   JSGCStatus status,
-                   void      *data)
-{
+static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
     /* We finalize any pending toggle refs before doing any garbage collection,
      * so that we can collect the JS wrapper objects, and in order to minimize
      * the chances of objects having a pending toggle up queued when they are
@@ -188,13 +181,10 @@ on_garbage_collect(JSContext *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-on_enqueue_promise_job(JSContext       *cx,
-                       JS::HandleObject callback,
-                       JS::HandleObject allocation_site,
-                       JS::HandleObject global,
-                       void            *data)
-{
+static bool on_enqueue_promise_job(
+    JSContext*, JS::HandleObject callback,
+    JS::HandleObject allocation_site G_GNUC_UNUSED,
+    JS::HandleObject global G_GNUC_UNUSED, void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     return gjs->enqueue_job(callback);
 }

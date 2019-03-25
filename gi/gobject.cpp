@@ -139,7 +139,8 @@ static GObject* gjs_object_constructor(
     return G_OBJECT(g_object_ref(priv->to_instance()->ptr()));
 }
 
-static void gjs_object_set_gproperty(GObject* object, unsigned property_id,
+static void gjs_object_set_gproperty(GObject* object,
+                                     unsigned property_id G_GNUC_UNUSED,
                                      const GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
     JSContext *cx = current_context();
@@ -151,7 +152,8 @@ static void gjs_object_set_gproperty(GObject* object, unsigned property_id,
         gjs_log_exception(cx);
 }
 
-static void gjs_object_get_gproperty(GObject* object, unsigned property_id,
+static void gjs_object_get_gproperty(GObject* object,
+                                     unsigned property_id G_GNUC_UNUSED,
                                      GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
     JSContext *cx = current_context();
@@ -165,7 +167,7 @@ static void gjs_object_get_gproperty(GObject* object, unsigned property_id,
         gjs_log_exception(cx);
 }
 
-static void gjs_object_class_init(void* class_pointer, void* user_data) {
+static void gjs_object_class_init(void* class_pointer, void*) {
     GObjectClass* klass = G_OBJECT_CLASS(class_pointer);
     GType gtype = G_OBJECT_CLASS_TYPE(klass);
 
@@ -185,7 +187,8 @@ static void gjs_object_class_init(void* class_pointer, void* user_data) {
     }
 }
 
-static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
+static void gjs_object_custom_init(GTypeInstance* instance,
+                                   void* g_class G_GNUC_UNUSED) {
     JSContext *cx = current_context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
@@ -210,7 +213,7 @@ static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
         gjs_log_exception(cx);
 }
 
-static void gjs_interface_init(void* g_iface, void* iface_data) {
+static void gjs_interface_init(void* g_iface, void*) {
     GType gtype = G_TYPE_FROM_INTERFACE(g_iface);
 
     AutoParamArray properties;

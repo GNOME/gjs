@@ -41,31 +41,21 @@ G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
 _Pragma("GCC diagnostic pop")
 #endif
 
-static void
-gjs_dbus_implementation_method_call(GDBusConnection       *connection,
-                                    const char            *sender,
-                                    const char            *object_path,
-                                    const char            *interface_name,
-                                    const char            *method_name,
-                                    GVariant              *parameters,
-                                    GDBusMethodInvocation *invocation,
-                                    gpointer               user_data)
-{
+static void gjs_dbus_implementation_method_call(
+    GDBusConnection* connection, const char* sender G_GNUC_UNUSED,
+    const char* object_path, const char* interface_name,
+    const char* method_name, GVariant* parameters,
+    GDBusMethodInvocation* invocation, void* user_data) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name, parameters, invocation);
     g_object_unref (invocation);
 }
 
-static GVariant *
-gjs_dbus_implementation_property_get(GDBusConnection       *connection,
-                                     const char            *sender,
-                                     const char            *object_path,
-                                     const char            *interface_name,
-                                     const char            *property_name,
-                                     GError               **error,
-                                     gpointer               user_data)
-{
+static GVariant* gjs_dbus_implementation_property_get(
+    GDBusConnection* connection, const char* sender G_GNUC_UNUSED,
+    const char* object_path, const char* interface_name,
+    const char* property_name, GError** error, void* user_data) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
     GVariant *value;
 
@@ -79,16 +69,11 @@ gjs_dbus_implementation_property_get(GDBusConnection       *connection,
     return value;
 }
 
-static gboolean
-gjs_dbus_implementation_property_set(GDBusConnection       *connection,
-                                     const char            *sender,
-                                     const char            *object_path,
-                                     const char            *interface_name,
-                                     const char            *property_name,
-                                     GVariant              *value,
-                                     GError               **error,
-                                     gpointer               user_data)
-{
+static gboolean gjs_dbus_implementation_property_set(
+    GDBusConnection* connection, const char* sender G_GNUC_UNUSED,
+    const char* object_path, const char* interface_name,
+    const char* property_name, GVariant* value, GError** error,
+    void* user_data) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_SET], 0, property_name, value);

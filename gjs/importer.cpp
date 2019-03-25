@@ -626,7 +626,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
 GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                                    JS::AutoIdVector& properties,
-                                   bool enumerable_only) {
+                                   bool enumerable_only G_GNUC_UNUSED) {
     Importer *priv;
     guint32 search_path_len;
     guint32 i;
@@ -789,7 +789,7 @@ importer_resolve(JSContext        *context,
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(importer)
 
-static void importer_finalize(JSFreeOp* fop, JSObject* obj) {
+static void importer_finalize(JSFreeOp*, JSObject* obj) {
     Importer *priv;
 
     priv = (Importer*) JS_GetPrivate(obj);

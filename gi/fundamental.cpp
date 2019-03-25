@@ -145,7 +145,7 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
 
 // See GIWrapperBase::resolve().
 bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
-                                        JS::HandleId id, const char* prop_name,
+                                        JS::HandleId, const char* prop_name,
                                         bool* resolved) {
     /* We are the prototype, so look for methods and other class properties */
     GjsAutoFunctionInfo method_info =
