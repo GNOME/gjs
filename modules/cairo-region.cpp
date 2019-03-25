@@ -371,8 +371,6 @@ static GjsForeignInfo foreign_info = {
     region_release_argument
 };
 
-void
-gjs_cairo_region_init(JSContext *context)
-{
+void gjs_cairo_region_init(void) {
     gjs_struct_foreign_register("cairo", "Region", &foreign_info);
 }

@@ -36,7 +36,7 @@ bool gjs_cairo_region_define_proto(JSContext              *cx,
                                    JS::HandleObject        module,
                                    JS::MutableHandleObject proto);
 
-void             gjs_cairo_region_init                  (JSContext       *context);
+void gjs_cairo_region_init(void);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_cairo_context_define_proto(JSContext              *cx,
@@ -49,8 +49,8 @@ cairo_t *        gjs_cairo_context_get_context          (JSContext       *contex
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *       gjs_cairo_context_from_context         (JSContext       *context,
                                                          cairo_t         *cr);
-void             gjs_cairo_context_init                 (JSContext       *context);
-void             gjs_cairo_surface_init                 (JSContext       *context);
+void gjs_cairo_context_init(void);
+void gjs_cairo_surface_init(void);
 
 /* path */
 GJS_JSAPI_RETURN_CONVENTION
