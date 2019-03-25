@@ -57,9 +57,7 @@ bool gjs_value_to_explicit_array(JSContext       *context,
                                  GIArgument      *arg,
                                  size_t          *length_p);
 
-void gjs_g_argument_init_default (JSContext      *context,
-                                  GITypeInfo     *type_info,
-                                  GArgument      *arg);
+void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_g_argument (JSContext      *context,
