@@ -100,7 +100,7 @@ struct GjsSymbolAtom : GjsAtom {
 
 class GjsAtoms {
  public:
-    explicit GjsAtoms(JSContext* cx) {}
+    GjsAtoms(void) {}
     ~GjsAtoms(void) {}  // prevents giant destructor from being inlined
     GJS_JSAPI_RETURN_CONVENTION bool init_atoms(JSContext* cx);
 
