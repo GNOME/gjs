@@ -64,15 +64,15 @@ gjs_js_define_cairo_stuff(JSContext              *context,
 
     if (!gjs_cairo_region_define_proto(context, module, &proto))
         return false;
-    gjs_cairo_region_init(context);
+    gjs_cairo_region_init();
 
     if (!gjs_cairo_context_define_proto(context, module, &proto))
         return false;
-    gjs_cairo_context_init(context);
+    gjs_cairo_context_init();
 
     if (!gjs_cairo_surface_define_proto(context, module, &proto))
         return false;
-    gjs_cairo_surface_init(context);
+    gjs_cairo_surface_init();
 
     return
         gjs_cairo_image_surface_define_proto(context, module, &proto) &&
