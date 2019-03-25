@@ -313,8 +313,6 @@ static GjsForeignInfo foreign_info = {
     surface_release_argument
 };
 
-void
-gjs_cairo_surface_init(JSContext *context)
-{
+void gjs_cairo_surface_init(void) {
     gjs_struct_foreign_register("cairo", "Surface", &foreign_info);
 }

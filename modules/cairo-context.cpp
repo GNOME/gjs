@@ -1035,8 +1035,6 @@ static GjsForeignInfo foreign_info = {
     context_release_argument
 };
 
-void
-gjs_cairo_context_init(JSContext *context)
-{
+void gjs_cairo_context_init(void) {
     gjs_struct_foreign_register("cairo", "Context", &foreign_info);
 }
