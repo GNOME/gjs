@@ -493,7 +493,7 @@ class GIWrapperBase {
      * GIWrapperBase::trace_impl:
      * Override if necessary. See trace().
      */
-    void trace_impl(JSTracer* trc) {}
+    void trace_impl(JSTracer*) {}
 
     // JSNative methods
 
@@ -748,7 +748,7 @@ class GIWrapperPrototype : public Base {
      * necessary.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    bool init(JSContext* cx) { return true; }
+    bool init(JSContext*) { return true; }
 
     // The following three methods are private because they are used only in
     // create_class().
@@ -765,7 +765,7 @@ class GIWrapperPrototype : public Base {
      * inherit in JS.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const {
+    bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const {
         proto.set(nullptr);
         return true;
     }
@@ -978,10 +978,10 @@ class GIWrapperPrototype : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp* fop, JSObject* obj) { release(); }
+    void finalize_impl(JSFreeOp*, JSObject*) { release(); }
 
     // Override if necessary
-    void trace_impl(JSTracer* trc) {}
+    void trace_impl(JSTracer*) {}
 };
 
 /*
@@ -1055,13 +1055,13 @@ class GIWrapperInstance : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp* fop, JSObject* obj) {
+    void finalize_impl(JSFreeOp*, JSObject*) {
         static_cast<Instance*>(this)->~Instance();
         g_slice_free(Instance, this);
     }
 
     // Override if necessary
-    void trace_impl(JSTracer* trc) {}
+    void trace_impl(JSTracer*) {}
 
     // Helper methods
 
@@ -1076,7 +1076,7 @@ class GIWrapperInstance : public Base {
      * the check.
      */
     GJS_USE
-    bool typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
+    bool typecheck_impl(JSContext*, GIBaseInfo* expected_info,
                         GType expected_gtype) const {
         if (expected_gtype != G_TYPE_NONE)
             return g_type_is_a(Base::gtype(), expected_gtype);

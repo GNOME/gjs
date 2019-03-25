@@ -102,12 +102,9 @@ strcatv(char **strv1,
     return retval;
 }
 
-static gboolean
-parse_profile_arg(const char *option_name,
-                  const char *value,
-                  void       *data,
-                  GError    **error_out)
-{
+static gboolean parse_profile_arg(const char* option_name G_GNUC_UNUSED,
+                                  const char* value, void*,
+                                  GError** error_out G_GNUC_UNUSED) {
     enable_profiler = true;
     g_free(profile_output_path);
     if (value)

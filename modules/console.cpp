@@ -64,8 +64,8 @@ enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 
 template <typename T>
 static void print_single_error(T* report, PrintErrorKind kind);
-static void print_error_line(const char* prefix, JSErrorNotes::Note* note) {}
 static void print_error_line(const char* prefix, JSErrorReport* report);
+static void print_error_line(const char*, JSErrorNotes::Note*) {}
 
 static void
 gjs_console_print_error(JSErrorReport *report)
@@ -178,9 +178,7 @@ static void print_error_line(const char* prefix, JSErrorReport* report) {
     }
 }
 
-static void
-gjs_console_warning_reporter(JSContext *cx, JSErrorReport *report)
-{
+static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
     gjs_console_print_error(report);
 }
 

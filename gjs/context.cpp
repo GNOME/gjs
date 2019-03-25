@@ -155,9 +155,7 @@ gjs_context_dump_heaps(void)
     fclose(fp);
 }
 
-static gboolean
-dump_heap_idle(gpointer user_data)
-{
+static gboolean dump_heap_idle(void*) {
     dump_heap_idle_id = 0;
 
     gjs_context_dump_heaps();
@@ -165,9 +163,7 @@ dump_heap_idle(gpointer user_data)
     return false;
 }
 
-static void
-dump_heap_signal_handler(int signum)
-{
+static void dump_heap_signal_handler(int signum G_GNUC_UNUSED) {
     if (dump_heap_idle_id == 0)
         dump_heap_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
                                             dump_heap_idle, nullptr, nullptr);

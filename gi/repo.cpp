@@ -203,10 +203,7 @@ repo_resolve(JSContext       *context,
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(repo)
 
-static void
-repo_finalize(JSFreeOp *fop,
-              JSObject *obj)
-{
+static void repo_finalize(JSFreeOp*, JSObject* obj) {
     Repo *priv;
 
     priv = (Repo*) JS_GetPrivate(obj);

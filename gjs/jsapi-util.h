@@ -238,9 +238,7 @@ GJS_USE
 char *gjs_value_debug_string(JSContext      *context,
                              JS::HandleValue value);
 
-
-void gjs_warning_reporter(JSContext     *cx,
-                          JSErrorReport *report);
+void gjs_warning_reporter(JSContext*, JSErrorReport* report);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_to_utf8(JSContext* cx, const JS::Value string_val,
