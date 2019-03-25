@@ -192,12 +192,7 @@ class GjsModule {
         return priv(module)->resolve_impl(cx, module, id, resolved);
     }
 
-    static void
-    finalize(JSFreeOp *op,
-             JSObject *module)
-    {
-        delete priv(module);
-    }
+    static void finalize(JSFreeOp*, JSObject* module) { delete priv(module); }
 
     static constexpr JSClassOps class_ops = {
         nullptr,  // addProperty

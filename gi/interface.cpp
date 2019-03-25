@@ -51,7 +51,7 @@ InterfacePrototype::~InterfacePrototype(void) {
 
 // See GIWrapperBase::resolve().
 bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
-                                      JS::HandleId id, const char* name,
+                                      JS::HandleId, const char* name,
                                       bool* resolved) {
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be

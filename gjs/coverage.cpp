@@ -317,10 +317,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
     g_message("Wrote coverage statistics to %s", output_file_path.get());
 }
 
-static void
-gjs_coverage_init(GjsCoverage *self)
-{
-}
+static void gjs_coverage_init(GjsCoverage*) {}
 
 static void
 coverage_tracer(JSTracer *trc, void *data)

@@ -63,7 +63,7 @@ UnionInstance::~UnionInstance(void) {
 
 // See GIWrapperBase::resolve().
 bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
-                                  JS::HandleId id, const char* prop_name,
+                                  JS::HandleId, const char* prop_name,
                                   bool* resolved) {
     // Look for methods and other class properties
     GjsAutoFunctionInfo method_info =
