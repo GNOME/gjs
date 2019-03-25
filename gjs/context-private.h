@@ -85,7 +85,7 @@ class GjsContextPrivate {
 
     /* Environment preparer needed for debugger, taken from SpiderMonkey's
      * JS shell */
-    struct EnvironmentPreparer final : public js::ScriptEnvironmentPreparer {
+    struct EnvironmentPreparer final : protected js::ScriptEnvironmentPreparer {
         JSContext* m_cx;
 
         explicit EnvironmentPreparer(JSContext* cx) : m_cx(cx) {
