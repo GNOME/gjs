@@ -429,14 +429,6 @@ test_expected_source_file_name_written_to_coverage_data(gpointer      fixture_da
 }
 
 static void
-silence_log_func(const gchar    *domain,
-                 GLogLevelFlags  log_level,
-                 const gchar    *message,
-                 gpointer        user_data)
-{
-}
-
-static void
 test_expected_entry_not_written_for_nonexistent_file(gpointer      fixture_data,
                                                         gconstpointer user_data)
 {
@@ -451,17 +443,10 @@ test_expected_entry_not_written_for_nonexistent_file(gpointer      fixture_data,
     fixture->coverage = gjs_coverage_new(coverage_paths, fixture->context,
                                          fixture->lcov_output_dir);
 
-    /* Temporarily disable fatal mask and silence warnings */
-    GLogLevelFlags old_flags = g_log_set_always_fatal((GLogLevelFlags) G_LOG_LEVEL_ERROR);
-    GLogFunc old_log_func = g_log_set_default_handler(silence_log_func, NULL);
-
     GFile *doesnotexist = g_file_new_for_path("doesnotexist");
     char *coverage_data_contents =
         eval_script_and_get_coverage_data(fixture->context, fixture->coverage,
                                           doesnotexist, fixture->lcov_output);
-
-    g_log_set_always_fatal(old_flags);
-    g_log_set_default_handler(old_log_func, NULL);
 
     const char *sf_line = line_starting_with(coverage_data_contents, "SF:");
     g_assert_null(sf_line);
