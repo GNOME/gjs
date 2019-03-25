@@ -447,7 +447,6 @@ gjs_context_constructed(GObject *object)
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     : m_public_context(public_context),
       m_cx(cx),
-      m_atoms(cx),
       m_environment_preparer(cx) {
     m_owner_thread = g_thread_self();
 
