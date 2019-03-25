@@ -53,7 +53,7 @@ G_END_DECLS
 
 namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct };
-};
+}
 
 /*
  * gjs_define_static_methods:
