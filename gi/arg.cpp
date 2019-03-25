@@ -2047,11 +2047,7 @@ _Pragma("GCC diagnostic pop")
  * branch of GArgument. (Currently it appears that the return buffer
  * has a fixed size large enough for the union of all types.)
  */
-void
-gjs_g_argument_init_default(JSContext      *context,
-                            GITypeInfo     *type_info,
-                            GArgument      *arg)
-{
+void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg) {
     GITypeTag type_tag;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);

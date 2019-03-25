@@ -453,7 +453,8 @@ out:
 
         /* Fill in the result with some hopefully neutral value */
         g_callable_info_load_return_type(trampoline->info, &ret_type);
-        gjs_g_argument_init_default (context, &ret_type, (GArgument *) result);
+        gjs_gi_argument_init_default(&ret_type,
+                                     static_cast<GIArgument*>(result));
 
         /* If the callback has a GError** argument and invoking the closure
          * returned an error, try to make a GError from it */
