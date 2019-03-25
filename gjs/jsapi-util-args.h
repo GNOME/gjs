@@ -225,9 +225,8 @@ free_if_necessary(JS::MutableHandleObject param_ref)
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
     JSContext* cx, const char* function_name, const JS::CallArgs& args,
-    bool ignore_trailing_args, const char*& fmt_required,
-    const char*& fmt_optional, unsigned param_ix, const char* param_name,
-    T param_ref) {
+    const char*& fmt_required, const char*& fmt_optional, unsigned param_ix,
+    const char* param_name, T param_ref) {
     bool nullable = false;
     const char *fchar = fmt_required;
 
@@ -266,20 +265,14 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
 template <typename T, typename... Args>
 GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
     JSContext* cx, const char* function_name, const JS::CallArgs& args,
-    bool ignore_trailing_args, const char*& fmt_required,
-    const char*& fmt_optional, unsigned param_ix, const char* param_name,
-    T param_ref, Args... params) {
-    bool retval;
-
-    if (!parse_call_args_helper(cx, function_name, args, ignore_trailing_args,
-                                fmt_required, fmt_optional, param_ix,
-                                param_name, param_ref))
+    const char*& fmt_required, const char*& fmt_optional, unsigned param_ix,
+    const char* param_name, T param_ref, Args... params) {
+    if (!parse_call_args_helper(cx, function_name, args, fmt_required,
+                                fmt_optional, param_ix, param_name, param_ref))
         return false;
 
-    retval = parse_call_args_helper(cx, function_name, args,
-                                    ignore_trailing_args,
-                                    fmt_required, fmt_optional, ++param_ix,
-                                    params...);
+    bool retval = parse_call_args_helper(cx, function_name, args, fmt_required,
+                                         fmt_optional, ++param_ix, params...);
 
     /* We still own the strings in the error case, free any we converted */
     if (!retval)
@@ -354,7 +347,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     const char* format, Args... params) {
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
-    bool optional_args = false, ignore_trailing_args = false, retval;
+    bool optional_args = false, ignore_trailing_args = false;
 
     if (*format == '!') {
         ignore_trailing_args = true;
@@ -402,9 +395,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     fmt_required = parts.get()[0];
     fmt_optional = parts.get()[1];  // may be NULL
 
-    retval = parse_call_args_helper(cx, function_name, args,
-                                    ignore_trailing_args, fmt_required,
-                                    fmt_optional, 0, params...);
-
-    return retval;
+    return parse_call_args_helper(cx, function_name, args, fmt_required,
+                                  fmt_optional, 0, params...);
 }
