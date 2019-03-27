@@ -762,3 +762,12 @@ describe('GObject properties', function () {
         expect(() => obj.some_readonly = 35).toThrow();
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
 });
+
+describe('GDestroyNotify parameters', function () {
+    it('throws when encountering a GDestroyNotify not associated with a callback', function () {
+        // the 'destroy' argument applies to the data, which is not supported in
+        // gobject-introspection
+        expect(() => Gio.MemoryInputStream.new_from_data('foobar'))
+            .toThrowError(/destroy/);
+    });
+});
