@@ -39,7 +39,8 @@ typedef enum {
     PARAM_NORMAL,
     PARAM_SKIPPED,
     PARAM_ARRAY,
-    PARAM_CALLBACK
+    PARAM_CALLBACK,
+    PARAM_UNKNOWN,
 } GjsParamType;
 
 struct GjsCallbackTrampoline {
