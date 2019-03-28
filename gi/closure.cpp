@@ -288,7 +288,8 @@ gjs_closure_trace(GClosure *closure,
 }
 
 GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
-                          const char* description, bool root_function) {
+                          const char* description GJS_USED_VERBOSE_GCLOSURE,
+                          bool root_function) {
     GjsClosure *gc;
     Closure *c;
 
