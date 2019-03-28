@@ -169,6 +169,18 @@
    fun:register_internal
 }
 
+# Workaround for https://github.com/mesonbuild/meson/issues/4427
+# When fixed, valgrind should already not trace bash
+{
+   bash-workaround
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:xmalloc
+   fun:set_default_locale
+   fun:main
+}
+
 # SpiderMonkey data races
 
 # These are in SpiderMonkey's atomics / thread barrier stuff so presumably
