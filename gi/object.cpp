@@ -1020,10 +1020,8 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
     return true;
 }
 
-static void
-wrapped_gobj_dispose_notify(gpointer      data,
-                            GObject      *where_the_object_was)
-{
+static void wrapped_gobj_dispose_notify(
+    void* data, GObject* where_the_object_was GJS_USED_VERBOSE_LIFECYCLE) {
     auto *priv = static_cast<ObjectInstance *>(data);
     priv->gobj_dispose_notify();
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed",
