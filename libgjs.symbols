@@ -1,0 +1,8 @@
+# Workaround for https://github.com/mesonbuild/meson/issues/3047
+# Linker scripts are not understood by the macOS linker, we need to use a
+# symbol export file instead.
+# With autotools, this was all done transparently by -export-symbols-regex.
+# Remove when https://gitlab.gnome.org/GNOME/gjs/issues/194 is completed
+_gjs_*
+__Z*[0-9]gjs_*
+__ZN*GjsContextPrivate*from_object*
