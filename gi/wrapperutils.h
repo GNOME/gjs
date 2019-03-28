@@ -290,20 +290,22 @@ class GIWrapperBase {
     // Debug methods
 
  protected:
-    void debug_lifecycle(const char* message) const {
+    void debug_lifecycle(const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
             Base::debug_topic, "[%p: %s pointer %p - %s.%s (%s)] %s", this,
             Base::debug_tag, ptr_addr(), ns(), name(), type_name(), message);
     }
-    void debug_lifecycle(const JSObject* obj, const char* message) const {
+    void debug_lifecycle(const JSObject* obj GJS_USED_VERBOSE_LIFECYCLE,
+                         const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
             Base::debug_topic,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s", this,
             Base::debug_tag, ptr_addr(), obj, ns(), name(), type_name(),
             message);
     }
-    void debug_jsprop(const char* message, const char* id,
-                      const JSObject* obj) const {
+    void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
+                      const char* id GJS_USED_VERBOSE_PROPS,
+                      const JSObject* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(
             Base::debug_topic,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s '%s'", this,
@@ -317,8 +319,10 @@ class GIWrapperBase {
                       const JSObject* obj) const {
         debug_jsprop(message, gjs_debug_string(id).c_str(), obj);
     }
-    static void debug_jsprop_static(const char* message, jsid id,
-                                    const JSObject* obj) {
+    static void debug_jsprop_static(const char* message GJS_USED_VERBOSE_PROPS,
+                                    jsid id GJS_USED_VERBOSE_PROPS,
+                                    const JSObject* obj
+                                        GJS_USED_VERBOSE_PROPS) {
         gjs_debug_jsprop(Base::debug_topic,
                          "[%s JS wrapper %p] %s '%s', no instance associated",
                          Base::debug_tag, obj, message,
