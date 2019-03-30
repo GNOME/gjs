@@ -185,7 +185,7 @@ class BoxedInstance
     // Helper methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool init_from_props(JSContext* cx, JSObject* obj, JS::Value props_value);
+    bool init_from_props(JSContext* cx, JS::Value props_value);
 
     GJS_JSAPI_RETURN_CONVENTION
     bool get_nested_interface_object(JSContext* cx, JSObject* parent_obj,
