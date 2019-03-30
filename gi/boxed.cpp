@@ -189,8 +189,7 @@ GIFieldInfo* BoxedPrototype::lookup_field(JSContext* cx, JSString* prop_name) {
  * properties to set as fieds of the object. We don't require that every field
  * of the object be set.
  */
-bool BoxedInstance::init_from_props(JSContext* context, JSObject* obj,
-                                    JS::Value props_value) {
+bool BoxedInstance::init_from_props(JSContext* context, JS::Value props_value) {
     size_t ix, length;
 
     if (!props_value.isObject()) {
@@ -389,7 +388,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         return false;
     }
 
-    return init_from_props(context, obj, args[0]);
+    return init_from_props(context, args[0]);
 }
 
 BoxedInstance::~BoxedInstance() {
