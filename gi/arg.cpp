@@ -146,12 +146,7 @@ _gjs_enum_from_int (GIEnumInfo *enum_info,
 
 /* Here for symmetry, but result is the same for the two cases */
 GJS_USE
-static int
-_gjs_enum_to_int (GIEnumInfo *enum_info,
-                  gint64      value)
-{
-    return (int)value;
-}
+static int _gjs_enum_to_int(int64_t value) { return static_cast<int>(value); }
 
 /* Check if an argument of the given needs to be released if we created it
  * from a JS value to pass it into a function and aren't transfering ownership.
@@ -1570,7 +1565,7 @@ static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                 !_gjs_enum_value_is_valid(cx, interface_info, value_int64))
                 return false;
 
-            arg->v_int = _gjs_enum_to_int(interface_info, value_int64);
+            arg->v_int = _gjs_enum_to_int(value_int64);
             return true;
 
         } else if (interface_type == GI_INFO_TYPE_FLAGS) {
@@ -1580,7 +1575,7 @@ static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                 !_gjs_flags_value_is_valid(cx, gtype, value_int64))
                 return false;
 
-            arg->v_int = _gjs_enum_to_int(interface_info, value_int64);
+            arg->v_int = _gjs_enum_to_int(value_int64);
             return true;
 
         } else if (gtype == G_TYPE_NONE) {
