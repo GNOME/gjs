@@ -414,8 +414,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     bool prop_setter_impl(JSContext* cx, JS::HandleString name,
                           JS::HandleValue value);
     GJS_JSAPI_RETURN_CONVENTION
-    bool field_setter_impl(JSContext* cx, JS::HandleString name,
-                           JS::HandleValue value);
+    bool field_setter_not_impl(JSContext* cx, JS::HandleString name);
 
     // JS constructor
 

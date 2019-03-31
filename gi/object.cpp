@@ -504,11 +504,11 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
      * the field */
     args.rval().setUndefined();
 
-    return priv->to_instance()->field_setter_impl(cx, name, args[0]);
+    return priv->to_instance()->field_setter_not_impl(cx, name);
 }
 
-bool ObjectInstance::field_setter_impl(JSContext* cx, JS::HandleString name,
-                                       JS::HandleValue value) {
+bool ObjectInstance::field_setter_not_impl(JSContext* cx,
+                                           JS::HandleString name) {
     if (!check_gobject_disposed("set GObject field on"))
         return true;
 
@@ -1677,9 +1677,9 @@ gjs_lookup_object_prototype(JSContext *context,
 }
 
 // Retrieves a GIFieldInfo for a field named @key. This is for use in
-// field_getter_impl() and field_setter_impl(), where the field info *must* have
-// been cached previously in resolve_impl() on this ObjectPrototype or one of
-// its parent ObjectPrototypes. This will fail an assertion if there is no
+// field_getter_impl() and field_setter_not_impl(), where the field info *must*
+// have been cached previously in resolve_impl() on this ObjectPrototype or one
+// of its parent ObjectPrototypes. This will fail an assertion if there is no
 // cached field info.
 //
 // The caller does not own the return value, and it can never be null.
