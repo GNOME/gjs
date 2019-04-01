@@ -55,6 +55,8 @@ namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct };
 }
 
+struct GjsTypecheckNoThrow {};
+
 /*
  * gjs_define_static_methods:
  *
@@ -642,8 +644,6 @@ class GIWrapperBase {
 
     // Public typecheck API
 
-    struct TypecheckNoThrow {};
-
     /*
      * GIWrapperBase::typecheck:
      * @expected_info: (nullable): GI info to check
@@ -654,7 +654,7 @@ class GIWrapperBase {
      * the protptype; and that the instance's wrapped pointer is of the correct
      * GType or GI info.
      *
-     * The overload with a TypecheckNoThrow parameter will not throw a JS
+     * The overload with a GjsTypecheckNoThrow parameter will not throw a JS
      * exception if the prototype is passed in or the typecheck fails.
      */
     GJS_JSAPI_RETURN_CONVENTION
@@ -686,7 +686,7 @@ class GIWrapperBase {
     GJS_USE
     static bool typecheck(JSContext* cx, JS::HandleObject object,
                           GIBaseInfo* expected_info, GType expected_gtype,
-                          TypecheckNoThrow) {
+                          GjsTypecheckNoThrow) {
         Base* priv = Base::for_js(cx, object);
         if (!priv || priv->is_prototype())
             return false;

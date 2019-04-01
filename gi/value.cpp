@@ -563,7 +563,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 */
                 if (!gboxed) {
                     if (UnionBase::typecheck(context, obj, nullptr, gtype,
-                                             UnionBase::TypecheckNoThrow())) {
+                                             GjsTypecheckNoThrow())) {
                         gboxed = UnionBase::to_c_ptr(context, obj);
                     } else {
                         if (!BoxedBase::typecheck(context, obj, nullptr, gtype))

@@ -122,7 +122,7 @@ class ObjectBase
     GJS_USE
     static bool typecheck(JSContext* cx, JS::HandleObject obj,
                           GIObjectInfo* expected_info, GType expected_gtype,
-                          TypecheckNoThrow no_throw) {
+                          GjsTypecheckNoThrow no_throw) {
         return GIWrapperBase::typecheck(cx, obj, expected_info, expected_gtype,
                                         no_throw);
     }

@@ -105,7 +105,7 @@ class ErrorBase
     static bool typecheck(JSContext* cx, JS::HandleObject obj);
     GJS_USE
     static bool typecheck(JSContext* cx, JS::HandleObject obj,
-                          TypecheckNoThrow);
+                          GjsTypecheckNoThrow);
 };
 
 class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,

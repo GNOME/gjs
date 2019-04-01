@@ -1539,7 +1539,7 @@ static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                 // Could be a GObject interface that's missing a prerequisite,
                 // or could be a fundamental
                 if (ObjectBase::typecheck(cx, obj, nullptr, gtype,
-                                          ObjectBase::TypecheckNoThrow())) {
+                                          GjsTypecheckNoThrow())) {
                     return ObjectBase::transfer_to_gi_argument(
                         cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
                 }
