@@ -2021,22 +2021,62 @@ gjs_object_from_g_object(JSContext    *context,
     return priv->wrapper();
 }
 
-GObject*
-gjs_g_object_from_object(JSContext       *cx,
-                         JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
+// Replaces GIWrapperBase::to_c_ptr(). The GIWrapperBase version is deleted.
+bool ObjectBase::to_c_ptr(JSContext* cx, JS::HandleObject obj, GObject** ptr) {
+    g_assert(ptr);
 
     auto* priv = ObjectBase::for_js(cx, obj);
     if (!priv || priv->is_prototype())
-        return nullptr;
+        return false;
 
     ObjectInstance* instance = priv->to_instance();
-    if (!instance->check_gobject_disposed("access"))
-        return nullptr;
+    if (!instance->check_gobject_disposed("access")) {
+        *ptr = nullptr;
+        return true;
+    }
 
-    return instance->ptr();
+    *ptr = instance->ptr();
+    return true;
+}
+
+// Overrides GIWrapperBase::transfer_to_gi_argument().
+bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
+                                         GIArgument* arg,
+                                         GIDirection transfer_direction,
+                                         GITransfer transfer_ownership,
+                                         GType expected_gtype,
+                                         GIBaseInfo* expected_info) {
+    g_assert(transfer_direction != GI_DIRECTION_INOUT &&
+             "transfer_to_gi_argument() must choose between in or out");
+
+    if (!ObjectBase::typecheck(cx, obj, expected_info, expected_gtype)) {
+        arg->v_pointer = nullptr;
+        return false;
+    }
+
+    GObject* ptr;
+    if (!ObjectBase::to_c_ptr(cx, obj, &ptr))
+        return false;
+
+    // Pointer can be null if object was already disposed by C code
+    if (!ptr) {
+        arg->v_pointer = nullptr;
+        return true;
+    }
+
+    arg->v_pointer = ptr;
+
+    if ((transfer_direction == GI_DIRECTION_IN &&
+         transfer_ownership != GI_TRANSFER_NOTHING) ||
+        (transfer_direction == GI_DIRECTION_OUT &&
+         transfer_ownership == GI_TRANSFER_EVERYTHING)) {
+        arg->v_pointer =
+            ObjectInstance::copy_ptr(cx, expected_gtype, arg->v_pointer);
+        if (!arg->v_pointer)
+            return false;
+    }
+
+    return true;
 }
 
 bool
