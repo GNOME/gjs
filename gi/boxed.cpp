@@ -1035,18 +1035,16 @@ bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed) {
     return false;
 }
 
-void*
-gjs_c_struct_from_boxed(JSContext       *context,
-                        JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
+void* BoxedInstance::copy_ptr(JSContext* cx, GType gtype, void* ptr) {
+    if (g_type_is_a(gtype, G_TYPE_BOXED))
+        return g_boxed_copy(gtype, ptr);
+    if (g_type_is_a(gtype, G_TYPE_VARIANT))
+        return g_variant_ref(static_cast<GVariant*>(ptr));
 
-    BoxedBase* priv = BoxedBase::for_js_typecheck(context, obj);
-    if (!priv || !priv->check_is_instance(context, "get a boxed pointer"))
-        return NULL;
-
-    return priv->to_instance()->ptr();
+    gjs_throw(cx,
+              "Can't transfer ownership of a structure type not registered as "
+              "boxed");
+    return nullptr;
 }
 
 bool

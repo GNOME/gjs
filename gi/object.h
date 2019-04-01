@@ -98,6 +98,9 @@ class ObjectBase
     static const struct JSClass klass;
     static JSFunctionSpec proto_methods[];
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static GObject* to_c_ptr(JSContext* cx, JS::HandleObject obj);
+
  private:
     // This is used in debug methods only.
     GJS_USE const JSObject* jsobj_addr(void) const;
@@ -325,6 +328,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
  public:
     void ensure_uses_toggle_ref(JSContext* cx);
     GJS_USE bool check_gobject_disposed(const char* for_what) const;
+    static GObject* copy_ptr(JSContext* G_GNUC_UNUSED, GType G_GNUC_UNUSED,
+                             void* ptr) {
+        return G_OBJECT(g_object_ref(G_OBJECT(ptr)));
+    }
 
     /* Methods to manipulate the linked list of instances */
 
@@ -423,10 +430,6 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_object_from_g_object      (JSContext     *context,
                                          GObject       *gobj);
-
-GJS_JSAPI_RETURN_CONVENTION
-GObject  *gjs_g_object_from_object(JSContext       *context,
-                                   JS::HandleObject obj);
 
 GJS_USE
 bool      gjs_typecheck_object(JSContext       *context,

@@ -71,10 +71,7 @@ gjs_refcount(JSContext *context,
                              "object", &target_obj))
         return false;
 
-    if (!gjs_typecheck_object(context, target_obj, G_TYPE_OBJECT, true))
-        return false;
-
-    obj = gjs_g_object_from_object(context, target_obj);
+    obj = ObjectBase::to_c_ptr(context, target_obj);
     if (obj == NULL)
         return false;
 
