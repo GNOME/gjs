@@ -132,7 +132,7 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     // An error created via `new GLib.Error` will have a Boxed* private pointer,
     // not an Error*, so we can't call regular to_string() on it.
     if (BoxedBase::typecheck(context, self, nullptr, G_TYPE_ERROR,
-                             BoxedBase::TypecheckNoThrow())) {
+                             GjsTypecheckNoThrow())) {
         auto* gerror = BoxedBase::to_c_ptr<GError>(context, self);
         if (!gerror)
             return false;
@@ -393,7 +393,7 @@ GError* ErrorBase::to_c_ptr(JSContext* cx, JS::HandleObject obj) {
        delegate marshalling.
     */
     if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR,
-                             BoxedBase::TypecheckNoThrow()))
+                             GjsTypecheckNoThrow()))
         return BoxedBase::to_c_ptr<GError>(cx, obj);
 
     return GIWrapperBase::to_c_ptr<GError>(cx, obj);
@@ -431,15 +431,14 @@ bool ErrorBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
 // Overrides GIWrapperBase::typecheck()
 bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj) {
     if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR,
-                             BoxedBase::TypecheckNoThrow()))
+                             GjsTypecheckNoThrow()))
         return true;
     return GIWrapperBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR);
 }
 
 bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj,
-                          TypecheckNoThrow no_throw) {
-    if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR,
-                             BoxedBase::TypecheckNoThrow()))
+                          GjsTypecheckNoThrow no_throw) {
+    if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR, no_throw))
         return true;
     return GIWrapperBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR, no_throw);
 }
@@ -448,7 +447,7 @@ GError *
 gjs_gerror_make_from_error(JSContext       *cx,
                            JS::HandleObject obj)
 {
-    if (ErrorBase::typecheck(cx, obj, ErrorBase::TypecheckNoThrow())) {
+    if (ErrorBase::typecheck(cx, obj, GjsTypecheckNoThrow())) {
         /* This is already a GError, just copy it */
         GError* inner = ErrorBase::to_c_ptr(cx, obj);
         if (!inner)
