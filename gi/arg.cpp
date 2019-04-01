@@ -23,7 +23,6 @@
 
 #include <config.h>
 
-#include <mozilla/Unused.h>
 #include <cmath>
 #include <cstdlib>
 
@@ -1571,14 +1570,9 @@ gjs_value_to_g_argument(JSContext      *context,
             arg->v_pointer = NULL;
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
-            if (gjs_typecheck_gerror(context, obj, true)) {
-                arg->v_pointer = gjs_gerror_from_error(context, obj);
-
-                if (transfer != GI_TRANSFER_NOTHING)
-                    arg->v_pointer = g_error_copy ((const GError *) arg->v_pointer);
-            } else {
+            if (!ErrorBase::transfer_to_gi_argument(context, obj, arg,
+                                                    GI_DIRECTION_IN, transfer))
                 wrong = true;
-            }
         } else {
             wrong = true;
             report_type_mismatch = true;
@@ -1706,66 +1700,28 @@ gjs_value_to_g_argument(JSContext      *context,
                         JS_IsUint8Array(obj)) {
                         arg->v_pointer = gjs_byte_array_get_bytes(obj);
                     } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-                        if (!gjs_typecheck_gerror(context, obj, true)) {
-                            arg->v_pointer = NULL;
+                        if (!ErrorBase::transfer_to_gi_argument(
+                                context, obj, arg, GI_DIRECTION_IN, transfer))
                             wrong = true;
-                        } else {
-                            arg->v_pointer = gjs_gerror_from_error(context, obj);
-                        }
                     } else {
-                        if (!gjs_typecheck_boxed(context, obj, interface_info,
-                                                 gtype, true)) {
-                            arg->v_pointer = NULL;
+                        if (!BoxedBase::transfer_to_gi_argument(
+                                context, obj, arg, GI_DIRECTION_IN, transfer,
+                                gtype, interface_info))
                             wrong = true;
-                        } else {
-                            arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
-                        }
-                    }
-
-                    if (!wrong && transfer != GI_TRANSFER_NOTHING) {
-                        if (g_type_is_a(gtype, G_TYPE_BOXED))
-                            arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
-                        else if (g_type_is_a(gtype, G_TYPE_VARIANT))
-                            g_variant_ref ((GVariant *) arg->v_pointer);
-                        else {
-                            gjs_throw(context,
-                                      "Can't transfer ownership of a structure type not registered as boxed");
-                            arg->v_pointer = NULL;
-                            wrong = true;
-                        }
                     }
 
                 } else if (interface_type == GI_INFO_TYPE_UNION) {
-                    if (gjs_typecheck_union(context, obj, interface_info, gtype, true)) {
-                        arg->v_pointer = gjs_c_union_from_union(context, obj);
-
-                        if (transfer != GI_TRANSFER_NOTHING) {
-                            if (g_type_is_a(gtype, G_TYPE_BOXED))
-                                arg->v_pointer = g_boxed_copy (gtype, arg->v_pointer);
-                            else {
-                                gjs_throw(context,
-                                          "Can't transfer ownership of a union type not registered as boxed");
-
-                                arg->v_pointer = NULL;
-                                wrong = true;
-                            }
-                        }
-                    } else {
-                        arg->v_pointer = NULL;
+                    if (!UnionBase::transfer_to_gi_argument(
+                            context, obj, arg, GI_DIRECTION_IN, transfer, gtype,
+                            interface_info))
                         wrong = true;
-                    }
 
                 } else if (gtype != G_TYPE_NONE) {
                     if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                        if (gjs_typecheck_object(context, obj, gtype, true)) {
-                            arg->v_pointer = gjs_g_object_from_object(context, obj);
-
-                            if (transfer != GI_TRANSFER_NOTHING)
-                                g_object_ref(G_OBJECT(arg->v_pointer));
-                        } else {
-                            arg->v_pointer = NULL;
+                        if (!ObjectBase::transfer_to_gi_argument(
+                                context, obj, arg, GI_DIRECTION_IN, transfer,
+                                gtype))
                             wrong = true;
-                        }
                     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
                         if (gjs_typecheck_param(context, obj, gtype, true)) {
                             arg->v_pointer = gjs_g_param_from_param(context, obj);
@@ -1790,34 +1746,25 @@ gjs_value_to_g_argument(JSContext      *context,
                                       interface_type);
                         }
                     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                        if (gjs_typecheck_fundamental(context, obj, gtype, true)) {
-                            arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
-
-                            if (transfer != GI_TRANSFER_NOTHING)
-                                gjs_fundamental_ref(context, arg->v_pointer);
-                        } else {
-                            arg->v_pointer = NULL;
+                        if (!FundamentalBase::transfer_to_gi_argument(
+                                context, obj, arg, GI_DIRECTION_IN, transfer,
+                                gtype))
                             wrong = true;
-                        }
                     } else if (G_TYPE_IS_INTERFACE(gtype)) {
                         /* Could be a GObject interface that's missing a prerequisite, or could
                            be a fundamental */
                         if (gjs_typecheck_object(context, obj, gtype, false)) {
-                            arg->v_pointer = gjs_g_object_from_object(context, obj);
-
-                            if (transfer != GI_TRANSFER_NOTHING)
-                                g_object_ref(arg->v_pointer);
-                        } else if (gjs_typecheck_fundamental(context, obj, gtype, false)) {
-                            arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
-
-                            if (transfer != GI_TRANSFER_NOTHING)
-                                gjs_fundamental_ref(context, arg->v_pointer);
+                            if (!ObjectBase::transfer_to_gi_argument(
+                                    context, obj, arg, GI_DIRECTION_IN,
+                                    transfer, gtype))
+                                wrong = true;
                         } else {
-                            /* Call again with throw=true to set the exception */
-                            mozilla::Unused << gjs_typecheck_object(
-                                context, obj, gtype, true);
-                            arg->v_pointer = NULL;
-                            wrong = true;
+                            // If this typecheck fails, then it's neither an
+                            // object nor a fundamental
+                            if (!FundamentalBase::transfer_to_gi_argument(
+                                    context, obj, arg, GI_DIRECTION_IN,
+                                    transfer, gtype))
+                                wrong = true;
                         }
                     } else {
                         gjs_throw(context, "Unhandled GType %s unpacking GArgument from Object",

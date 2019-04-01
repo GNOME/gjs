@@ -301,7 +301,9 @@ from_gbytes_func(JSContext *context,
     if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))
         return false;
 
-    gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);
+    gbytes = BoxedBase::to_c_ptr<GBytes>(context, bytes_obj);
+    if (!gbytes)
+        return false;
 
     size_t len;
     const void* data = g_bytes_get_data(gbytes, &len);
