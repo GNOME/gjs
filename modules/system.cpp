@@ -71,12 +71,13 @@ gjs_refcount(JSContext *context,
                              "object", &target_obj))
         return false;
 
-    if (!gjs_typecheck_object(context, target_obj, G_TYPE_OBJECT, true))
+    if (!ObjectBase::to_c_ptr(context, target_obj, &obj))
         return false;
-
-    obj = gjs_g_object_from_object(context, target_obj);
-    if (obj == NULL)
-        return false;
+    if (!obj) {
+        // Object already disposed, treat as refcount 0
+        argv.rval().setInt32(0);
+        return true;
+    }
 
     argv.rval().setInt32(obj->ref_count);
     return true;
