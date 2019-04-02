@@ -299,12 +299,13 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 void gjs_maybe_gc (JSContext *context);
 void gjs_gc_if_needed(JSContext *cx);
 
-GJS_USE
-const char * gjs_strip_unix_shebang(const char *script,
-                                    size_t     *script_len,
-                                    int        *new_start_line_number);
-
 G_END_DECLS
+
+GJS_USE
+size_t gjs_unix_shebang_len(const std::u16string& script,
+                            unsigned* start_line_number);
+GJS_USE
+std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len);
 
 GJS_JSAPI_RETURN_CONVENTION
 GjsAutoChar gjs_format_stack_trace(JSContext       *cx,

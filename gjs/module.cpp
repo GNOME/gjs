@@ -88,27 +88,17 @@ class GjsModule {
 
     /* Carries out the actual execution of the module code */
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    evaluate_import(JSContext       *cx,
-                    JS::HandleObject module,
-                    const char      *script,
-                    size_t           script_len,
-                    const char      *filename,
-                    int              line_number)
-    {
-        JS::CompileOptions options(cx);
-        options.setFileAndLine(filename, line_number);
+    bool evaluate_import(JSContext* cx, JS::HandleObject module,
+                         const char* script, ssize_t script_len,
+                         const char* filename) {
+        std::u16string utf16_string =
+            gjs_utf8_script_to_utf16(script, script_len);
 
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
-        std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script);
-        std::u16string utf16_string(
-            reinterpret_cast<const char16_t*>(wscript.c_str()));
-#else
-        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-        std::u16string utf16_string = convert.from_bytes(script);
-#endif
+        unsigned start_line_number = 1;
+        size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
 
-        JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
+        JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
+                                   utf16_string.size() - offset,
                                    JS::SourceBufferHolder::NoOwnership);
 
         JS::AutoObjectVector scope_chain(cx);
@@ -116,6 +106,9 @@ class GjsModule {
             JS_ReportOutOfMemory(cx);
             return false;
         }
+
+        JS::CompileOptions options(cx);
+        options.setFileAndLine(filename, start_line_number);
 
         JS::RootedValue ignored_retval(cx);
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
@@ -139,7 +132,6 @@ class GjsModule {
         GError *error = nullptr;
         char *unowned_script;
         size_t script_len = 0;
-        int start_line_number = 1;
 
         if (!(g_file_load_contents(file, nullptr, &unowned_script, &script_len,
                                    nullptr, &error)))
@@ -148,12 +140,8 @@ class GjsModule {
         GjsAutoChar script = unowned_script;  /* steals ownership */
         g_assert(script != nullptr);
 
-        const char *stripped_script =
-            gjs_strip_unix_shebang(script, &script_len, &start_line_number);
-
         GjsAutoChar full_path = g_file_get_parse_name(file);
-        return evaluate_import(cx, module, stripped_script, script_len,
-                               full_path, start_line_number);
+        return evaluate_import(cx, module, script, script_len, full_path);
     }
 
     /* JSClass operations */
