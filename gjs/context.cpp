@@ -931,7 +931,7 @@ gjs_context_eval_file(GjsContext    *js_context,
  * GjsContextPrivate::eval_with_scope:
  * @scope_object: an object to use as the global scope, or nullptr
  * @script: JavaScript program encoded in UTF-8
- * @script_len: length of @script
+ * @script_len: length of @script, or -1 if @script is 0-terminated
  * @filename: filename to use as the origin of @script
  * @retval: location for the return value of @script
  *
@@ -945,14 +945,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
                                         const char* script, ssize_t script_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
-    int start_line_number = 1;
     JSAutoRequest ar(m_cx);
-    size_t real_len = script_len;
-
-    if (script_len < 0)
-        real_len = strlen(script);
-
-    script = gjs_strip_unix_shebang(script, &real_len, &start_line_number);
 
     /* log and clear exception if it's set (should not be, normally...) */
     if (JS_IsExceptionPending(m_cx)) {
@@ -964,18 +957,13 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!eval_obj)
         eval_obj = JS_NewPlainObject(m_cx);
 
-    JS::CompileOptions options(m_cx);
-    options.setFileAndLine(filename, start_line_number);
+    std::u16string utf16_string = gjs_utf8_script_to_utf16(script, script_len);
 
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
-    std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script);
-    std::u16string utf16_string(reinterpret_cast<const char16_t*>(wscript.c_str()));
-#else
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    std::u16string utf16_string = convert.from_bytes(script);
-#endif
+    unsigned start_line_number = 1;
+    size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
 
-    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
+    JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
+                               utf16_string.size() - offset,
                                JS::SourceBufferHolder::NoOwnership);
 
     JS::AutoObjectVector scope_chain(m_cx);
@@ -983,6 +971,9 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
         JS_ReportOutOfMemory(m_cx);
         return false;
     }
+
+    JS::CompileOptions options(m_cx);
+    options.setFileAndLine(filename, start_line_number);
 
     if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
         return false;

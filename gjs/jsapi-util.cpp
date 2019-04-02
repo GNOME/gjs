@@ -613,57 +613,35 @@ gjs_maybe_gc (JSContext *context)
 }
 
 /**
- * gjs_strip_unix_shebang:
+ * gjs_unix_shebang_len:
  *
- * @script: (in): A pointer to a JS script
- * @script_len: (inout): A pointer to the script length. The
- * pointer will be modified if a shebang is stripped.
- * @new_start_line_number: (out) (allow-none): A pointer to
- * write the start-line number to account for the offset
- * as a result of stripping the shebang.
+ * @script: A JS script
+ * @start_line_number: (out): the new start-line number to account for the
+ * offset as a result of stripping the shebang; can be either 1 or 2.
  *
- * Returns a pointer to the beginning of a script with unix
- * shebangs removed. The outparams are useful to know the
- * new length of the script and on what line of the
+ * Returns the offset in @script where the actual script begins with Unix
+ * shebangs removed. The outparam is useful to know what line of the
  * original script we're executing from, so that any relevant
  * offsets can be applied to the results of an execution pass.
  */
-const char *
-gjs_strip_unix_shebang(const char  *script,
-                       size_t      *script_len,
-                       int         *start_line_number_out)
-{
-    g_assert(script_len);
+size_t gjs_unix_shebang_len(const std::u16string& script,
+                            unsigned* start_line_number) {
+    g_assert(start_line_number);
 
-    /* handle scripts with UNIX shebangs */
-    if (strncmp(script, "#!", 2) == 0) {
-        /* If we found a newline, advance the script by one line */
-        const char *s = (const char *) strstr (script, "\n");
-        if (s != NULL) {
-            if (*script_len > 0)
-                *script_len -= (s + 1 - script);
-            script = s + 1;
-
-            if (start_line_number_out)
-                *start_line_number_out = 2;
-
-            return script;
-        } else {
-            /* Just a shebang */
-            if (start_line_number_out)
-                *start_line_number_out = -1;
-
-            *script_len = 0;
-
-            return NULL;
-        }
+    if (script.compare(0, 2, u"#!") != 0) {
+        // No shebang, leave the script unchanged
+        *start_line_number = 1;
+        return 0;
     }
 
-    /* No shebang, return the original script */
-    if (start_line_number_out)
-        *start_line_number_out = 1;
+    *start_line_number = 2;
 
-    return script;
+    size_t newline_pos = script.find('\n', 2);
+    if (newline_pos == std::u16string::npos)
+        return script.size();  // Script consists only of a shebang line
+
+    // Point the offset after the newline
+    return newline_pos + 1;
 }
 
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
@@ -674,17 +652,30 @@ gjs_strip_unix_shebang(const char  *script,
  * obtain from MultiByteToWideChar().  See:
  * https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral
  */
-std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str) {
-    int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-    if (len == 0)
+static std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str,
+                                                  ssize_t len) {
+    int bufsize = MultiByteToWideChar(CP_UTF8, 0, str, len, nullptr, 0);
+    if (bufsize == 0)
         return nullptr;
 
-    std::wstring wstr(len, 0);
-    int result = MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], len);
+    std::wstring wstr(bufsize, 0);
+    int result = MultiByteToWideChar(CP_UTF8, 0, str, len, &wstr[0], bufsize);
     if (result == 0)
         return nullptr;
 
-    wstr.resize(strlen(str));
+    wstr.resize(len < 0 ? strlen(str) : len);
     return wstr;
 }
 #endif
+
+std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len) {
+#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
+    std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script, len);
+    return std::u16string(reinterpret_cast<const char16_t*>(wscript.c_str()));
+#else
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+    if (len < 0)
+        return convert.from_bytes(script);
+    return convert.from_bytes(script, script + len);
+#endif
+}
