@@ -65,6 +65,19 @@ gjstest_test_func_gjs_context_construct_eval(void)
     g_object_unref (context);
 }
 
+static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = NULL;
+    int status;
+
+    // This string is invalid JS if it is treated as zero-terminated
+    bool ok = gjs_context_eval(gjs, "77!", 2, "<input>", &status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    g_assert_cmpint(status, ==, 77);
+}
+
 static void
 gjstest_test_func_gjs_context_exit(void)
 {
@@ -329,52 +342,39 @@ gjstest_test_func_util_glib_strv_concat_pointers(void)
 static void
 gjstest_test_strip_shebang_no_advance_for_no_shebang(void)
 {
-    const char *script = "foo\nbar";
-    size_t script_len_original = strlen(script);
-    size_t script_len = script_len_original;
-    int        line_number = 1;
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"foo\nbar", &line_number);
 
-    const char *stripped = gjs_strip_unix_shebang(script,
-                                                  &script_len,
-                                                  &line_number);
+    g_assert_cmpuint(offset, ==, 0);
+    g_assert_cmpuint(line_number, ==, 1);
+}
 
-    g_assert_cmpstr(script, ==, stripped);
-    g_assert(script_len == script_len_original);
-    g_assert(line_number == 1);
+static void gjstest_test_strip_shebang_no_advance_for_too_short_string(void) {
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"Z", &line_number);
+
+    g_assert_cmpuint(offset, ==, 0);
+    g_assert_cmpuint(line_number, ==, 1);
 }
 
 static void
 gjstest_test_strip_shebang_advance_for_shebang(void)
 {
-    const char *script = "#!foo\nbar";
-    size_t script_len_original = strlen(script);
-    size_t script_len = script_len_original;
-    int        line_number = 1;
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"#!foo\nbar", &line_number);
 
-    const char *stripped = gjs_strip_unix_shebang(script,
-                                                  &script_len,
-                                                  &line_number);
-
-    g_assert_cmpstr(stripped, ==, "bar");
-    g_assert(script_len == 3);
-    g_assert(line_number == 2);
+    g_assert_cmpuint(offset, ==, 6);
+    g_assert_cmpuint(line_number, ==, 2);
 }
 
 static void
 gjstest_test_strip_shebang_return_null_for_just_shebang(void)
 {
-    const char *script = "#!foo";
-    size_t script_len_original = strlen(script);
-    size_t script_len = script_len_original;
-    int        line_number = 1;
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"#!foo", &line_number);
 
-    const char *stripped = gjs_strip_unix_shebang(script,
-                                                  &script_len,
-                                                  &line_number);
-
-    g_assert(stripped == NULL);
-    g_assert(script_len == 0);
-    g_assert(line_number == -1);
+    g_assert_cmpuint(offset, ==, 5);
+    g_assert_cmpuint(line_number, ==, 0);
 }
 
 static void
@@ -414,9 +414,13 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/context/eval/non-zero-terminated",
+                    gjstest_test_func_gjs_context_eval_non_zero_terminated);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
     g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
+    g_test_add_func("/gjs/jsutil/strip_shebang/short_string",
+                    gjstest_test_strip_shebang_no_advance_for_too_short_string);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
     g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
