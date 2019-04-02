@@ -965,7 +965,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
         eval_obj = JS_NewPlainObject(m_cx);
 
     JS::CompileOptions options(m_cx);
-    options.setFileAndLine(filename, start_line_number).setSourceIsLazy(true);
+    options.setFileAndLine(filename, start_line_number);
 
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
     std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script);
