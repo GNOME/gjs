@@ -45,15 +45,9 @@ GJS_DEFINE_PROTO_ABSTRACT("GIRepositoryGType", gtype,
 /* priv_from_js adds a "*", so this returns "void *" */
 GJS_DEFINE_PRIV_FROM_JS(void, gjs_gtype_class);
 
-static void
-gjs_gtype_finalize(JSFreeOp *fop,
-                   JSObject *obj)
-{
-    GType gtype = GPOINTER_TO_SIZE(JS_GetPrivate(obj));
-
-    /* proto doesn't have a private set */
-    if (G_UNLIKELY(gtype == 0))
-        return;
+static void gjs_gtype_finalize(JSFreeOp*, JSObject*) {
+    // No private data is allocated, it's stuffed directly in the private field
+    // of JSObject, so nothing to free
 }
 
 GJS_JSAPI_RETURN_CONVENTION
