@@ -36,6 +36,8 @@ Hit Ctrl+D to exit.
 There are also facilities for generating code coverage reports.
 Type `gjs --help` for more information.
 
+`-d` only available in gjs >= 1.53.90
+
 ## Contributing
 
 For instructions on how to get started contributing to GJS, please read
