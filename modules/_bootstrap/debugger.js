@@ -171,14 +171,12 @@ function saveExcursion(fn) {
 function commentCommand(comment) {
     void comment;
 }
-commentCommand.summary = "Accept debugger commands starting with '#'";
 
 // Evaluate an expression in the Debugger global - used for debugging the
 // debugger
 function evalCommand(expr) {
     eval(expr);
 }
-evalCommand.summary = "Evaluate an expression in the Debugger global";
 
 function quitCommand() {
     dbg.enabled = false;
@@ -305,12 +303,12 @@ function throwOrReturn(rest, action, defaultCompletion) {
 function throwCommand(rest) {
     return throwOrReturn(rest, 'throw', {throw: lastExc});
 }
-throwCommand.summary = "Throws an exception";
+throwCommand.summary = "Throws the given value";
 
 function returnCommand(rest) {
     return throwOrReturn(rest, 'return', {return: undefined});
 }
-returnCommand.summary = "return to the parent frame";
+returnCommand.summary = "Return the given value from the current frame";
 
 function frameCommand(rest) {
     let n, f;
@@ -366,7 +364,7 @@ function downCommand() {
         showFrame();
     }
 }
-downCommand.summary = "Get down to the younger frame";
+downCommand.summary = "Jump to the younger frame";
 
 function printPop(c) {
     if (c['return']) {
@@ -495,7 +493,7 @@ nextCommand.summary = "Jump to next line";
 function finishCommand() {
     return doStepOrNext({finish: true});
 }
-finishCommand.summary = "Finish execution";
+finishCommand.summary = "Run until the current frame is finished";
 
 function untilCommand(line) {
     return doStepOrNext({until: true, stopLine: Number(line)});
