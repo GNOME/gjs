@@ -611,7 +611,7 @@ function helpCommand() {
     print('Available commands:');
 
     var printcmd = function (group) {
-        var summary = group.filter((cmd) => !!cmd.summary)[0];
+        var summary = group.find((cmd) => !!cmd.summary)[0];
         print(`  ${group.map((c) => c.name).join(', ')} -- ${(summary || {}).summary}`);
     };
 
