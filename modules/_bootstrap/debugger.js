@@ -183,6 +183,12 @@ function quitCommand() {
     quit(0);
 }
 quitCommand.summary = "Quit the debugger";
+quitCommand.helpText = `USAGE
+    quit
+
+ALISE
+    · q
+    · quit`
 
 function backtraceCommand() {
     if (topFrame === null)
@@ -191,6 +197,13 @@ function backtraceCommand() {
         showFrame(f, i);
 }
 backtraceCommand.summary = "Print backtrace of all stack frames";
+backtraceCommand.helpText = `USAGE
+    bt
+
+ALISE
+    · bt
+    · where
+    · backtrace`
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
@@ -212,6 +225,13 @@ function setCommand(rest) {
     }
 }
 setCommand.summary = "Sets the value of the given option";
+setCommand.helpText = `USAGE
+    set <option> <value>
+
+PARAMETERS
+    · option: option name
+    · value: option value
+`
 
 function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
@@ -252,17 +272,37 @@ function printCommand(rest) {
     return doPrint(expr, style);
 }
 printCommand.summary = "Prints the given expression";
+printCommand.helpText = `USAGE
+    print <expr>
+
+PARAMETER
+    · expr: expression to be printed
+
+ALISE
+    · p
+    · print`
 
 function keysCommand(rest) {
     return doPrint(`Object.keys(${rest})`);
 }
 keysCommand.summary = "Prints keys of the given object";
+keysCommand.helpText = `USAGE
+    keys <obj>
+
+PARAMETER
+    · obj: object to get values of
+
+ALISE
+    · k
+    · keys`
 
 function detachCommand() {
     dbg.enabled = false;
     return [undefined];
 }
 detachCommand.summary = "Detach debugger from the script";
+detachCommand.helpText = `USAGE
+    detach`
 
 function continueCommand() {
     if (focusedFrame === null) {
@@ -272,6 +312,14 @@ function continueCommand() {
     return [undefined];
 }
 continueCommand.summary = "Continue program execution";
+continueCommand.helpText = `USAGE
+    cont
+
+ALISE
+    · c
+    · cont
+    · continue
+`
 
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
@@ -304,11 +352,29 @@ function throwCommand(rest) {
     return throwOrReturn(rest, 'throw', {throw: lastExc});
 }
 throwCommand.summary = "Throws the given value";
+throwCommand.helpText = `USAGE
+    throw <expr>
+
+PARAMETER
+    · expr: expression to trow
+
+ALISE
+    · t
+    · throw`
 
 function returnCommand(rest) {
     return throwOrReturn(rest, 'return', {return: undefined});
 }
 returnCommand.summary = "Return the given value from the current frame";
+returnCommand.helpText = `USAGE
+    return <expr>
+
+PARAMETER
+    · expr: expression to return
+    
+ALISE
+    · ret
+    · return`
 
 function frameCommand(rest) {
     let n, f;
@@ -339,7 +405,16 @@ function frameCommand(rest) {
         print('do what now?');
     }
 }
-frameCommand.summary = "Prints current frame"
+frameCommand.summary = "Jump to specified frame or print current frame (if not specified)"
+frameCommand.helpText = `USAGE
+    frame [frame]
+
+PARAMETER
+    · frame: frame jump to
+    
+ALISE
+    · f
+    · frame`
 
 function upCommand() {
     if (focusedFrame === null)
@@ -353,6 +428,8 @@ function upCommand() {
     }
 }
 upCommand.summary = "Jump to the parent frame";
+upCommand.helpText = `USAGE
+    up`
 
 function downCommand() {
     if (focusedFrame === null)
@@ -365,6 +442,12 @@ function downCommand() {
     }
 }
 downCommand.summary = "Jump to the younger frame";
+downCommand.helpText = `USAGE
+    down
+
+ALISE
+    · dn
+    · down`
 
 function printPop(c) {
     if (c['return']) {
@@ -484,21 +567,49 @@ function stepCommand() {
     return doStepOrNext({step: true});
 }
 stepCommand.summary = "Step to next command"
+stepCommand.helpText = `USAGE
+    step
+
+ALISE
+    · s
+    · step`
 
 function nextCommand() {
     return doStepOrNext({next: true});
 }
 nextCommand.summary = "Jump to next line";
+keysCommand.helpText = `USAGE
+    next
+
+ALISE
+    · n
+    · next`
 
 function finishCommand() {
     return doStepOrNext({finish: true});
 }
 finishCommand.summary = "Run until the current frame is finished";
+keysCommand.helpText = `USAGE
+    keys
+
+ALISE
+    · fin
+    · finish`
 
 function untilCommand(line) {
     return doStepOrNext({until: true, stopLine: Number(line)});
 }
 untilCommand.summary = "Continue until given line";
+untilCommand.helpText = `USAGE
+    until <line_num>
+
+PARAMETER
+    · line_num: line_num to continue until
+
+ALISE
+    · u
+    · upto
+    · until`
 
 function findBreakpointOffsets(line, currentScript) {
     const offsets = currentScript.getLineOffsets(line);
@@ -554,7 +665,18 @@ function breakpointCommand(where) {
         });
     });
 }
-breakpointCommand.summary = "Making program stop at certain points";
+breakpointCommand.summary = "Set breakpoint at the specified location.";
+breakpointCommand.helpText = `USAGE
+    break <line_num>
+
+PARAMETERS
+    · line_num: line number to place a breakpoint at.
+    
+ALISE
+    · b
+    · break
+    · breakpoint
+`
 
 function deleteCommand(breaknum) {
     const bp = breakpoints[breaknum];
@@ -570,6 +692,16 @@ function deleteCommand(breaknum) {
     print(`${bp} deleted`);
 }
 deleteCommand.summary = "Deletes breakpoint";
+deleteCommand.helpText = `USAGE
+    del <breakpoint_num>
+
+PARAMETERS
+    · breakpoint_num: breakpoint number to be removed.
+    
+ALISE
+    · d
+    · del
+    · delete`
 
 // Build the table of commands.
 var commands = {};
@@ -615,7 +747,16 @@ function helpCommand() {
         print(`  ${group.map((c) => c.name).join(', ')} -- ${(summary || {}).summary}`);
     };
 
-    var group = [];
+    var cmdGroupes = _groupCommands();
+
+    for (var group of cmdGroupes) {
+        printcmd(group);
+    }
+}
+
+function _groupCommands() {
+    var groupes = [];
+
     for (var cmd of commandArray) {
         // Don't print commands for debugging the debugger
         if ([commentCommand, evalCommand].includes(cmd) ||
@@ -623,23 +764,48 @@ function helpCommand() {
             continue;
 
         if (typeof cmd === 'string') {
-            group.push({
+            groupes[groupes.length - 1].push({
                 name: cmd
             });
         } else {
-            if (group.length)
-                printcmd(group);
-
-            group = [{
+            groupes.push([{
                 name: cmd.name.replace(/Command$/, ''),
                 summary: cmd.summary,
                 helpText: cmd.helpText
-            }];
+            }]);
         }
     }
-    printcmd(group);
+    return groupes;
 }
-helpCommand.summary = "List all the available commands";
+
+function helpCommand(cmd) {
+    if (!cmd) {
+        _printCommandsList();
+    } else {
+        var cmdGroupes = _groupCommands();
+        var command = cmdGroupes.find((group) => {
+            return !!group.find((command) =>{
+                return command.name == cmd
+            })
+        })
+
+        if (command && command[0].helpText) {
+            print(`${command[0].summary}\n\n${command[0].helpText}`);
+        } else {
+            print(`No help found for ${cmd} command`);
+        }
+    }
+}
+helpCommand.summary = "Show help for the specified command else list all commands";
+helpCommand.helpText = `USAGE
+    help [command]
+
+PARAMETERS
+    · command: command to show help for
+    
+ALISE
+    · h
+    · help`
 
 // Break cmd into two parts: its first word and everything else. If it begins
 // with punctuation, treat that as a separate word. The first word is
