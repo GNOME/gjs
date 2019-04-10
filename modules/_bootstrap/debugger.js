@@ -182,13 +182,13 @@ function quitCommand() {
     dbg.enabled = false;
     quit(0);
 }
-quitCommand.summary = "Quit the debugger";
+quitCommand.summary = 'Quit the debugger';
 quitCommand.helpText = `USAGE
     quit
 
 ALISE
     · q
-    · quit`
+    · quit`;
 
 function backtraceCommand() {
     if (topFrame === null)
@@ -196,14 +196,14 @@ function backtraceCommand() {
     for (var i = 0, f = topFrame; f; i++, f = f.older)
         showFrame(f, i);
 }
-backtraceCommand.summary = "Print backtrace of all stack frames";
+backtraceCommand.summary = 'Print backtrace of all stack frames';
 backtraceCommand.helpText = `USAGE
     bt
 
 ALISE
     · bt
     · where
-    · backtrace`
+    · backtrace`;
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
@@ -224,14 +224,14 @@ function setCommand(rest) {
             options[name] = value;
     }
 }
-setCommand.summary = "Sets the value of the given option";
+setCommand.summary = 'Sets the value of the given option';
 setCommand.helpText = `USAGE
     set <option> <value>
 
 PARAMETERS
     · option: option name
     · value: option value
-`
+`;
 
 function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
@@ -271,7 +271,7 @@ function printCommand(rest) {
     var [expr, style] = splitPrintOptions(rest, {pretty: options.pretty});
     return doPrint(expr, style);
 }
-printCommand.summary = "Prints the given expression";
+printCommand.summary = 'Prints the given expression';
 printCommand.helpText = `USAGE
     print <expr>
 
@@ -280,12 +280,12 @@ PARAMETER
 
 ALISE
     · p
-    · print`
+    · print`;
 
 function keysCommand(rest) {
     return doPrint(`Object.keys(${rest})`);
 }
-keysCommand.summary = "Prints keys of the given object";
+keysCommand.summary = 'Prints keys of the given object';
 keysCommand.helpText = `USAGE
     keys <obj>
 
@@ -294,15 +294,15 @@ PARAMETER
 
 ALISE
     · k
-    · keys`
+    · keys`;
 
 function detachCommand() {
     dbg.enabled = false;
     return [undefined];
 }
-detachCommand.summary = "Detach debugger from the script";
+detachCommand.summary = 'Detach debugger from the script';
 detachCommand.helpText = `USAGE
-    detach`
+    detach`;
 
 function continueCommand() {
     if (focusedFrame === null) {
@@ -311,7 +311,7 @@ function continueCommand() {
     }
     return [undefined];
 }
-continueCommand.summary = "Continue program execution";
+continueCommand.summary = 'Continue program execution';
 continueCommand.helpText = `USAGE
     cont
 
@@ -319,7 +319,7 @@ ALISE
     · c
     · cont
     · continue
-`
+`;
 
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
@@ -351,7 +351,7 @@ function throwOrReturn(rest, action, defaultCompletion) {
 function throwCommand(rest) {
     return throwOrReturn(rest, 'throw', {throw: lastExc});
 }
-throwCommand.summary = "Throws the given value";
+throwCommand.summary = 'Throws the given value';
 throwCommand.helpText = `USAGE
     throw <expr>
 
@@ -360,12 +360,12 @@ PARAMETER
 
 ALISE
     · t
-    · throw`
+    · throw`;
 
 function returnCommand(rest) {
     return throwOrReturn(rest, 'return', {return: undefined});
 }
-returnCommand.summary = "Return the given value from the current frame";
+returnCommand.summary = 'Return the given value from the current frame';
 returnCommand.helpText = `USAGE
     return <expr>
 
@@ -374,7 +374,7 @@ PARAMETER
     
 ALISE
     · ret
-    · return`
+    · return`;
 
 function frameCommand(rest) {
     let n, f;
@@ -405,7 +405,7 @@ function frameCommand(rest) {
         print('do what now?');
     }
 }
-frameCommand.summary = "Jump to specified frame or print current frame (if not specified)"
+frameCommand.summary = 'Jump to specified frame or print current frame (if not specified)';
 frameCommand.helpText = `USAGE
     frame [frame]
 
@@ -414,7 +414,7 @@ PARAMETER
     
 ALISE
     · f
-    · frame`
+    · frame`;
 
 function upCommand() {
     if (focusedFrame === null)
@@ -427,9 +427,9 @@ function upCommand() {
         showFrame();
     }
 }
-upCommand.summary = "Jump to the parent frame";
+upCommand.summary = 'Jump to the parent frame';
 upCommand.helpText = `USAGE
-    up`
+    up`;
 
 function downCommand() {
     if (focusedFrame === null)
@@ -441,13 +441,13 @@ function downCommand() {
         showFrame();
     }
 }
-downCommand.summary = "Jump to the younger frame";
+downCommand.summary = 'Jump to the younger frame';
 downCommand.helpText = `USAGE
     down
 
 ALISE
     · dn
-    · down`
+    · down`;
 
 function printPop(c) {
     if (c['return']) {
@@ -566,40 +566,40 @@ function doStepOrNext(kind) {
 function stepCommand() {
     return doStepOrNext({step: true});
 }
-stepCommand.summary = "Step to next command"
+stepCommand.summary = 'Step to next command';
 stepCommand.helpText = `USAGE
     step
 
 ALISE
     · s
-    · step`
+    · step`;
 
 function nextCommand() {
     return doStepOrNext({next: true});
 }
-nextCommand.summary = "Jump to next line";
+nextCommand.summary = 'Jump to next line';
 keysCommand.helpText = `USAGE
     next
 
 ALISE
     · n
-    · next`
+    · next`;
 
 function finishCommand() {
     return doStepOrNext({finish: true});
 }
-finishCommand.summary = "Run until the current frame is finished";
+finishCommand.summary = 'Run until the current frame is finished';
 keysCommand.helpText = `USAGE
     keys
 
 ALISE
     · fin
-    · finish`
+    · finish`;
 
 function untilCommand(line) {
     return doStepOrNext({until: true, stopLine: Number(line)});
 }
-untilCommand.summary = "Continue until given line";
+untilCommand.summary = 'Continue until given line';
 untilCommand.helpText = `USAGE
     until <line_num>
 
@@ -609,7 +609,7 @@ PARAMETER
 ALISE
     · u
     · upto
-    · until`
+    · until`;
 
 function findBreakpointOffsets(line, currentScript) {
     const offsets = currentScript.getLineOffsets(line);
@@ -665,7 +665,7 @@ function breakpointCommand(where) {
         });
     });
 }
-breakpointCommand.summary = "Set breakpoint at the specified location.";
+breakpointCommand.summary = 'Set breakpoint at the specified location.';
 breakpointCommand.helpText = `USAGE
     break <line_num>
 
@@ -676,7 +676,7 @@ ALISE
     · b
     · break
     · breakpoint
-`
+`;
 
 function deleteCommand(breaknum) {
     const bp = breakpoints[breaknum];
@@ -691,7 +691,7 @@ function deleteCommand(breaknum) {
     breakpoints[breaknum] = undefined;
     print(`${bp} deleted`);
 }
-deleteCommand.summary = "Deletes breakpoint";
+deleteCommand.summary = 'Deletes breakpoint';
 deleteCommand.helpText = `USAGE
     del <breakpoint_num>
 
@@ -701,7 +701,7 @@ PARAMETERS
 ALISE
     · d
     · del
-    · delete`
+    · delete`;
 
 // Build the table of commands.
 var commands = {};
@@ -739,7 +739,7 @@ for (var i = 0; i < commandArray.length; i++) {
         currentCmd = commands[cmd.name.replace(/Command$/, '')] = cmd;
 }
 
-function helpCommand() {
+function _printCommandsList() {
     print('Available commands:');
 
     var printcmd = function (group) {
@@ -783,11 +783,7 @@ function helpCommand(cmd) {
         _printCommandsList();
     } else {
         var cmdGroupes = _groupCommands();
-        var command = cmdGroupes.find((group) => {
-            return !!group.find((command) =>{
-                return command.name == cmd
-            })
-        })
+        var command = cmdGroupes.find((group) => !!group.find((c) => c.name == cmd));
 
         if (command && command[0].helpText) {
             print(`${command[0].summary}\n\n${command[0].helpText}`);
@@ -796,7 +792,7 @@ function helpCommand(cmd) {
         }
     }
 }
-helpCommand.summary = "Show help for the specified command else list all commands";
+helpCommand.summary = 'Show help for the specified command else list all commands';
 helpCommand.helpText = `USAGE
     help [command]
 
@@ -805,7 +801,7 @@ PARAMETERS
     
 ALISE
     · h
-    · help`
+    · help`;
 
 // Break cmd into two parts: its first word and everything else. If it begins
 // with punctuation, treat that as a separate word. The first word is
@@ -834,7 +830,7 @@ function runcmd(cmd) {
 
     var first = pieces[0], rest = pieces[1];
     if (!commands.hasOwnProperty(first)) {
-        print("unrecognized command '" + first + "'");
+        print(`unrecognized command '${first}'`);
         return undefined;
     }
 
