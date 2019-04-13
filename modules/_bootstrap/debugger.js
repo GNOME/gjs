@@ -746,6 +746,27 @@ helpCommand.helpText = `USAGE
 PARAMETERS
     · command: command to show help for`;
 
+function helpCommand(cmd) {
+    if (!cmd) {
+        _printCommandsList();
+    } else {
+        var cmdGroups = _groupCommands();
+        var command = cmdGroups.find((c) => c.aliases.includes(cmd))
+
+        if (command && command.helpText) {
+            _printCommand(command)
+        } else {
+            print(`No help found for ${cmd} command`);
+        }
+    }
+}
+helpCommand.summary = 'Show help for the specified command else list all commands';
+helpCommand.helpText = `USAGE
+    help [command]
+
+PARAMETERS
+    · command: command to show help for`;
+
 // Break cmd into two parts: its first word and everything else. If it begins
 // with punctuation, treat that as a separate word. The first word is
 // terminated with whitespace or the '/' character. So:
