@@ -105,7 +105,7 @@ Debugger.Frame.prototype.describeFrame = function() {
     else if (this.type == 'global')
         return 'toplevel';
     else
-        return this.type + ' code';
+        return `${this.type} code`;
 };
 
 Debugger.Frame.prototype.describePosition = function() {
@@ -171,18 +171,22 @@ function saveExcursion(fn) {
 function commentCommand(comment) {
     void comment;
 }
+commentCommand.summary = "Accept debugger commands starting with '#'";
 
 // Evaluate an expression in the Debugger global - used for debugging the
 // debugger
 function evalCommand(expr) {
     eval(expr);
 }
+evalCommand.summary = "Evaluate an expression in the Debugger global";
 
 function quitCommand() {
     dbg.enabled = false;
     quit(0);
 }
-quitCommand.summary = "Quit the debugger";
+quitCommand.summary = 'Quit the debugger';
+quitCommand.helpText = `USAGE
+    quit`;
 
 function backtraceCommand() {
     if (topFrame === null)
@@ -190,7 +194,9 @@ function backtraceCommand() {
     for (var i = 0, f = topFrame; f; i++, f = f.older)
         showFrame(f, i);
 }
-backtraceCommand.summary = "Print backtrace of all stack frames";
+backtraceCommand.summary = 'Print backtrace of all stack frames';
+backtraceCommand.helpText = `USAGE
+    bt`;
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
@@ -211,7 +217,14 @@ function setCommand(rest) {
             options[name] = value;
     }
 }
-setCommand.summary = "Sets the value of the given option";
+setCommand.summary = 'Sets the value of the given option';
+setCommand.helpText = `USAGE
+    set <option> <value>
+
+PARAMETERS
+    · option: option name. Allowed options are:
+        · pretty: set print mode to pretty or breif. Allowed value true or false
+    · value: option value`;
 
 function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
@@ -251,18 +264,32 @@ function printCommand(rest) {
     var [expr, style] = splitPrintOptions(rest, {pretty: options.pretty});
     return doPrint(expr, style);
 }
-printCommand.summary = "Prints the given expression";
+printCommand.summary = 'Prints the given expression';
+printCommand.helpText = `USAGE
+    print[/pretty|p|brief|b] <expr>
+
+PARAMETER
+    · expr: expression to be printed
+    · pretty|p: prettify the output
+    · pretty|p: brief output`;
 
 function keysCommand(rest) {
     return doPrint(`Object.keys(${rest})`);
 }
-keysCommand.summary = "Prints keys of the given object";
+keysCommand.summary = 'Prints keys of the given object';
+keysCommand.helpText = `USAGE
+    keys <obj>
+
+PARAMETER
+    · obj: object to get keys of`;
 
 function detachCommand() {
     dbg.enabled = false;
     return [undefined];
 }
-detachCommand.summary = "Detach debugger from the script";
+detachCommand.summary = 'Detach debugger from the script';
+detachCommand.helpText = `USAGE
+    detach`;
 
 function continueCommand() {
     if (focusedFrame === null) {
@@ -271,7 +298,9 @@ function continueCommand() {
     }
     return [undefined];
 }
-continueCommand.summary = "Continue program execution";
+continueCommand.summary = 'Continue program execution';
+continueCommand.helpText = `USAGE
+    cont`;
 
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
@@ -303,12 +332,22 @@ function throwOrReturn(rest, action, defaultCompletion) {
 function throwCommand(rest) {
     return throwOrReturn(rest, 'throw', {throw: lastExc});
 }
-throwCommand.summary = "Throws the given value";
+throwCommand.summary = 'Throws the given value';
+throwCommand.helpText = `USAGE
+    throw <expr>
+
+PARAMETER
+    · expr: expression to throw`;
 
 function returnCommand(rest) {
     return throwOrReturn(rest, 'return', {return: undefined});
 }
-returnCommand.summary = "Return the given value from the current frame";
+returnCommand.summary = 'Return the given value from the current frame';
+returnCommand.helpText = `USAGE
+    return <expr>
+
+PARAMETER
+    · expr: expression to return`;
 
 function frameCommand(rest) {
     let n, f;
@@ -339,7 +378,12 @@ function frameCommand(rest) {
         print('do what now?');
     }
 }
-frameCommand.summary = "Prints current frame"
+frameCommand.summary = 'Jump to specified frame or print current frame (if not specified)';
+frameCommand.helpText = `USAGE
+    frame [frame_num]
+
+PARAMETER
+    · frame_num: frame to jump to`;
 
 function upCommand() {
     if (focusedFrame === null)
@@ -352,7 +396,9 @@ function upCommand() {
         showFrame();
     }
 }
-upCommand.summary = "Jump to the parent frame";
+upCommand.summary = 'Jump to the parent frame';
+upCommand.helpText = `USAGE
+    up`;
 
 function downCommand() {
     if (focusedFrame === null)
@@ -364,7 +410,9 @@ function downCommand() {
         showFrame();
     }
 }
-downCommand.summary = "Jump to the younger frame";
+downCommand.summary = 'Jump to the younger frame';
+downCommand.helpText = `USAGE
+    down`;
 
 function printPop(c) {
     if (c['return']) {
@@ -424,7 +472,7 @@ function doStepOrNext(kind) {
     }
 
     function stepEntered(newFrame) {
-        print('entered frame: ' + newFrame.describeFull());
+        print(`entered frame: ${newFrame.describeFull()}`);
         if (!kind.until || newFrame.line == kind.stopLine) {
             topFrame = focusedFrame = newFrame;
             return repl();
@@ -483,22 +531,33 @@ function doStepOrNext(kind) {
 function stepCommand() {
     return doStepOrNext({step: true});
 }
-stepCommand.summary = "Step to next command"
+stepCommand.summary = 'Step to next command';
+stepCommand.helpText = `USAGE
+    step`;
 
 function nextCommand() {
     return doStepOrNext({next: true});
 }
-nextCommand.summary = "Jump to next line";
+nextCommand.summary = 'Jump to next line';
+nextCommand.helpText = `USAGE
+    next`;
 
 function finishCommand() {
     return doStepOrNext({finish: true});
 }
-finishCommand.summary = "Run until the current frame is finished";
+finishCommand.summary = 'Run until the current frame is finished also prints the returned value';
+finishCommand.helpText = `USAGE
+    finish`;
 
 function untilCommand(line) {
     return doStepOrNext({until: true, stopLine: Number(line)});
 }
-untilCommand.summary = "Continue until given line";
+untilCommand.summary = 'Continue until given line';
+untilCommand.helpText = `USAGE
+    until <line_num>
+
+PARAMETER
+    · line_num: line_num to continue until`;
 
 function findBreakpointOffsets(line, currentScript) {
     const offsets = currentScript.getLineOffsets(line);
@@ -541,7 +600,7 @@ function breakpointCommand(where) {
     const possibleOffsets = findBreakpointOffsets(line, focusedFrame.script);
 
     if (possibleOffsets.length === 0) {
-        print('Unable to break at line ' + where);
+        print(`Unable to break at line ${where}`);
         return;
     }
 
@@ -554,7 +613,12 @@ function breakpointCommand(where) {
         });
     });
 }
-breakpointCommand.summary = "Making program stop at certain points";
+breakpointCommand.summary = 'Set breakpoint at the specified location.';
+breakpointCommand.helpText = `USAGE
+    break <line_num>
+
+PARAMETERS
+    · line_num: line number to place a breakpoint at.`;
 
 function deleteCommand(breaknum) {
     const bp = breakpoints[breaknum];
@@ -569,7 +633,12 @@ function deleteCommand(breaknum) {
     breakpoints[breaknum] = undefined;
     print(`${bp} deleted`);
 }
-deleteCommand.summary = "Deletes breakpoint";
+deleteCommand.summary = 'Deletes breakpoint';
+deleteCommand.helpText = `USAGE
+    del <breakpoint_num>
+
+PARAMETERS
+    · breakpoint_num: breakpoint number to be removed.`;
 
 // Build the table of commands.
 var commands = {};
@@ -607,7 +676,7 @@ for (var i = 0; i < commandArray.length; i++) {
         currentCmd = commands[cmd.name.replace(/Command$/, '')] = cmd;
 }
 
-function helpCommand() {
+function _printCommandsList() {
     print('Available commands:');
 
     var printcmd = function (group) {
@@ -615,7 +684,16 @@ function helpCommand() {
         print(`  ${group.map((c) => c.name).join(', ')} -- ${(summary || {}).summary}`);
     };
 
-    var group = [];
+    var cmdGroups = _groupCommands();
+
+    for (var group of cmdGroups) {
+        printcmd(group);
+    }
+}
+
+function _groupCommands() {
+    var groups = [];
+
     for (var cmd of commandArray) {
         // Don't print commands for debugging the debugger
         if ([commentCommand, evalCommand].includes(cmd) ||
@@ -623,23 +701,50 @@ function helpCommand() {
             continue;
 
         if (typeof cmd === 'string') {
-            group.push({
-                name: cmd
-            });
+            groups[groups.length - 1]['aliases'].push(cmd);
         } else {
-            if (group.length)
-                printcmd(group);
-
-            group = [{
-                name: cmd.name.replace(/Command$/, ''),
+            groups.push({
                 summary: cmd.summary,
-                helpText: cmd.helpText
-            }];
+                helpText: cmd.helpText,
+                aliases: [cmd.name.replace(/Command$/, '')]
+            });
         }
     }
-    printcmd(group);
+    return groups;
+}
+
+function _printCommand(cmd) {
+    print(`${cmd.summary}\n\n${cmd.helpText}`);
+
+    if (cmd.aliases.length > 1) {
+        print('\nALIASES');
+        for (var alias of cmd.aliases) {
+            print(`    · ${alias}`);
+        }
+    }
 }
 helpCommand.summary = "List all the available commands";
+
+function helpCommand(cmd) {
+    if (!cmd) {
+        _printCommandsList();
+    } else {
+        var cmdGroups = _groupCommands();
+        var command = cmdGroups.find((c) => c.aliases.includes(cmd));
+
+        if (command && command.helpText) {
+            _printCommand(command);
+        } else {
+            print(`No help found for ${cmd} command`);
+        }
+    }
+}
+helpCommand.summary = 'Show help for the specified command else list all commands';
+helpCommand.helpText = `USAGE
+    help [command]
+
+PARAMETERS
+    · command: command to show help for`;
 
 // Break cmd into two parts: its first word and everything else. If it begins
 // with punctuation, treat that as a separate word. The first word is
@@ -668,7 +773,7 @@ function runcmd(cmd) {
 
     var first = pieces[0], rest = pieces[1];
     if (!commands.hasOwnProperty(first)) {
-        print("unrecognized command '" + first + "'");
+        print(`unrecognized command '${first}'`);
         return undefined;
     }
 
