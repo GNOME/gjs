@@ -171,12 +171,14 @@ function saveExcursion(fn) {
 function commentCommand(comment) {
     void comment;
 }
+commentCommand.summary = "Accept debugger commands starting with '#'";
 
 // Evaluate an expression in the Debugger global - used for debugging the
 // debugger
 function evalCommand(expr) {
     eval(expr);
 }
+evalCommand.summary = "Evaluate an expression in the Debugger global";
 
 function quitCommand() {
     dbg.enabled = false;
@@ -732,6 +734,27 @@ PARAMETERS
 ALISE
     · h
     · help`;
+
+function helpCommand(cmd) {
+    if (!cmd) {
+        _printCommandsList();
+    } else {
+        var cmdGroups = _groupCommands();
+        var command = cmdGroups.find((c) => c.aliases.includes(cmd));
+
+        if (command && command.helpText) {
+            _printCommand(command);
+        } else {
+            print(`No help found for ${cmd} command`);
+        }
+    }
+}
+helpCommand.summary = 'Show help for the specified command else list all commands';
+helpCommand.helpText = `USAGE
+    help [command]
+
+PARAMETERS
+    · command: command to show help for`;
 
 function helpCommand(cmd) {
     if (!cmd) {
