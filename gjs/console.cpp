@@ -42,7 +42,6 @@ static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
 
-/* Keep in sync with entries in check_script_args_for_stray_gjs_args() */
 // clang-format off
 static GOptionEntry entries[] = {
     { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
@@ -115,19 +114,6 @@ parse_profile_arg(const char *option_name,
     return true;
 }
 
-static gboolean
-check_stray_profile_arg(const char *option_name,
-                        const char *value,
-                        void       *data,
-                        GError    **error_out)
-{
-    g_warning("You used the --profile option after the script on the GJS "
-              "command line. Support for this will be removed in a future "
-              "version. Place the option before the script or use the "
-              "GJS_ENABLE_PROFILER environment variable.");
-    return parse_profile_arg(option_name, value, data, error_out);
-}
-
 static void
 check_script_args_for_stray_gjs_args(int           argc,
                                      char * const *argv)
@@ -136,13 +122,13 @@ check_script_args_for_stray_gjs_args(int           argc,
     char **new_coverage_prefixes = NULL;
     char *new_coverage_output_path = NULL;
     char **new_include_paths = NULL;
-    /* Keep in sync with entries[] at the top */
+    // Don't add new entries here. This is only for arguments that were
+    // previously accepted after the script name on the command line, for
+    // backwards compatibility.
     static GOptionEntry script_check_entries[] = {
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
-        { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
-          G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg) },
         { NULL }
     };
     char **argv_copy = g_new(char *, argc + 2);
