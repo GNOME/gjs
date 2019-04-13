@@ -171,12 +171,14 @@ function saveExcursion(fn) {
 function commentCommand(comment) {
     void comment;
 }
+commentCommand.summary = "Accept debugger commands starting with '#'";
 
 // Evaluate an expression in the Debugger global - used for debugging the
 // debugger
 function evalCommand(expr) {
     eval(expr);
 }
+evalCommand.summary = "Evaluate an expression in the Debugger global";
 
 function quitCommand() {
     dbg.enabled = false;
@@ -721,6 +723,7 @@ function _printCommand(cmd) {
         }
     }
 }
+helpCommand.summary = "List all the available commands";
 
 function helpCommand(cmd) {
     if (!cmd) {
