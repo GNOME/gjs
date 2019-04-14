@@ -26,6 +26,7 @@
 #define GI_WRAPPERUTILS_H_
 
 #include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -52,7 +53,9 @@ G_END_DECLS
 
 namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct };
-};
+}
+
+struct GjsTypecheckNoThrow {};
 
 /*
  * gjs_define_static_methods:
@@ -149,6 +152,16 @@ class GIWrapperBase {
         JSAutoRequest ar(cx);
         return static_cast<Base*>(
             JS_GetInstancePrivate(cx, wrapper, &Base::klass, nullptr));
+    }
+
+    /*
+     * GIWrapperBase::check_jsclass:
+     *
+     * Checks if the given wrapper object has the right JSClass (Base::klass).
+     */
+    GJS_USE
+    static bool check_jsclass(JSContext* cx, JS::HandleObject wrapper) {
+        return !!for_js(cx, wrapper);
     }
 
     /*
@@ -556,9 +569,80 @@ class GIWrapperBase {
         return false;
     }
 
-    // Public typecheck API
+    /*
+     * GIWrapperBase::to_c_ptr:
+     *
+     * Returns the underlying C pointer of the wrapped object, or throws a JS
+     * exception if that is not possible (for example, the passed-in JS object
+     * is the prototype.)
+     *
+     * Includes a JS typecheck (but without any extra typecheck of the GType or
+     * introspection info that you would get from GIWrapperBase::typecheck(), so
+     * if you want that you still have to do the typecheck before calling this
+     * method.)
+     */
+    template <typename T = void>
+    GJS_JSAPI_RETURN_CONVENTION static T* to_c_ptr(JSContext* cx,
+                                                   JS::HandleObject obj) {
+        Base* priv = Base::for_js_typecheck(cx, obj);
+        if (!priv || !priv->check_is_instance(cx, "get a C pointer"))
+            return nullptr;
 
-    struct TypecheckNoThrow {};
+        return static_cast<T*>(priv->to_instance()->ptr());
+    }
+
+    /*
+     * GIWrapperBase::transfer_to_gi_argument:
+     * @arg: #GIArgument to fill with the value from @obj
+     * @transfer_direction: Either %GI_DIRECTION_IN or %GI_DIRECTION_OUT
+     * @transfer_ownership: #GITransfer value specifying whether @arg should
+     *   copy or acquire a reference to the value or not
+     * @expected_gtype: #GType to perform a typecheck with
+     * @expected_info: Introspection info to perform a typecheck with
+     *
+     * Prepares @arg for passing the value from @obj into C code. It will get a
+     * C pointer from @obj and assign it to @arg->v_pointer, taking a reference
+     * with GIWrapperInstance::copy_ptr() if @transfer_direction and
+     * @transfer_ownership indicate that it should.
+     *
+     * Includes a typecheck using GIWrapperBase::typecheck(), to which
+     * @expected_gtype and @expected_info are passed.
+     *
+     * If returning false, then @arg->v_pointer is null.
+     */
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
+                                        GIArgument* arg,
+                                        GIDirection transfer_direction,
+                                        GITransfer transfer_ownership,
+                                        GType expected_gtype,
+                                        GIBaseInfo* expected_info = nullptr) {
+        g_assert(transfer_direction != GI_DIRECTION_INOUT &&
+                 "transfer_to_gi_argument() must choose between in or out");
+
+        if (!Base::typecheck(cx, obj, expected_info, expected_gtype)) {
+            arg->v_pointer = nullptr;
+            return false;
+        }
+
+        arg->v_pointer = Base::to_c_ptr(cx, obj);
+        if (!arg->v_pointer)
+            return false;
+
+        if ((transfer_direction == GI_DIRECTION_IN &&
+             transfer_ownership != GI_TRANSFER_NOTHING) ||
+            (transfer_direction == GI_DIRECTION_OUT &&
+             transfer_ownership == GI_TRANSFER_EVERYTHING)) {
+            arg->v_pointer =
+                Instance::copy_ptr(cx, expected_gtype, arg->v_pointer);
+            if (!arg->v_pointer)
+                return false;
+        }
+
+        return true;
+    }
+
+    // Public typecheck API
 
     /*
      * GIWrapperBase::typecheck:
@@ -570,7 +654,7 @@ class GIWrapperBase {
      * the protptype; and that the instance's wrapped pointer is of the correct
      * GType or GI info.
      *
-     * The overload with a TypecheckNoThrow parameter will not throw a JS
+     * The overload with a GjsTypecheckNoThrow parameter will not throw a JS
      * exception if the prototype is passed in or the typecheck fails.
      */
     GJS_JSAPI_RETURN_CONVENTION
@@ -602,7 +686,7 @@ class GIWrapperBase {
     GJS_USE
     static bool typecheck(JSContext* cx, JS::HandleObject object,
                           GIBaseInfo* expected_info, GType expected_gtype,
-                          TypecheckNoThrow) {
+                          GjsTypecheckNoThrow) {
         Base* priv = Base::for_js(cx, object);
         if (!priv || priv->is_prototype())
             return false;
@@ -663,7 +747,7 @@ class GIWrapperPrototype : public Base {
     bool init(JSContext* cx) { return true; }
 
     // The following three methods are private because they are used only in
-    // define_class().
+    // create_class().
 
  private:
     /*

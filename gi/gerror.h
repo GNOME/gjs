@@ -89,6 +89,23 @@ class ErrorBase
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    // Helper methods
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static GError* to_c_ptr(JSContext* cx, JS::HandleObject obj);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
+                                        GIArgument* arg,
+                                        GIDirection transfer_direction,
+                                        GITransfer transfer_ownership);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool typecheck(JSContext* cx, JS::HandleObject obj);
+    GJS_USE
+    static bool typecheck(JSContext* cx, JS::HandleObject obj,
+                          GjsTypecheckNoThrow);
 };
 
 class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
@@ -107,6 +124,10 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
 
  public:
     GJS_USE GQuark domain(void) const { return m_domain; }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIEnumInfo* info);
 };
 
 class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
@@ -120,6 +141,11 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
 
  public:
     void copy_gerror(GError* other) { m_ptr = g_error_copy(other); }
+    GJS_JSAPI_RETURN_CONVENTION
+    static GError* copy_ptr(JSContext* cx G_GNUC_UNUSED,
+                            GType gtype G_GNUC_UNUSED, void* ptr) {
+        return g_error_copy(static_cast<GError*>(ptr));
+    }
 
     // Accessors
 
@@ -132,31 +158,19 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool constructor_impl(JSContext* cx, JS::HandleObject obj,
                           const JS::CallArgs& args);
+
+    // Public API
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* object_for_c_ptr(JSContext* cx, GError* gerror);
 };
 
 G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_error_class(JSContext* cx, JS::HandleObject in_object,
-                            GIEnumInfo* info);
-GJS_JSAPI_RETURN_CONVENTION
-GError*   gjs_gerror_from_error        (JSContext             *context,
-                                        JS::HandleObject       obj);
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_error_from_gerror        (JSContext             *context,
-                                        GError                *gerror,
-                                        bool                   add_stack);
-GJS_USE
-bool      gjs_typecheck_gerror         (JSContext             *context,
-                                        JS::HandleObject       obj,
-                                        bool                   throw_error);
-
-GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_gerror_to_string(JSContext* cx, unsigned argc, JS::Value* vp);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);

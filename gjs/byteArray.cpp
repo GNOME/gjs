@@ -164,7 +164,6 @@ to_gbytes_func(JSContext *context,
                JS::Value *vp)
 {
     JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
-    JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
     JS::RootedObject byte_array(context);
 
@@ -183,11 +182,13 @@ to_gbytes_func(JSContext *context,
     g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
                           nullptr);
     gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
-    ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
-                                            bytes, GJS_BOXED_CREATION_NONE);
+    JSObject* ret_bytes_obj =
+        BoxedInstance::new_for_c_struct(context, gbytes_info, bytes);
     g_bytes_unref(bytes);
+    if (!ret_bytes_obj)
+        return false;
 
-    rec.rval().setObjectOrNull(ret_bytes_obj);
+    rec.rval().setObject(*ret_bytes_obj);
     return true;
 }
 
@@ -298,10 +299,12 @@ from_gbytes_func(JSContext *context,
                              "bytes", &bytes_obj))
         return false;
 
-    if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))
+    if (!BoxedBase::typecheck(context, bytes_obj, nullptr, G_TYPE_BYTES))
         return false;
 
-    gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);
+    gbytes = BoxedBase::to_c_ptr<GBytes>(context, bytes_obj);
+    if (!gbytes)
+        return false;
 
     size_t len;
     const void* data = g_bytes_get_data(gbytes, &len);

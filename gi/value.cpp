@@ -462,11 +462,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
             /* nothing to do */
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
-
-            if (!gjs_typecheck_object(context, obj, gtype, true))
+            if (!ObjectBase::typecheck(context, obj, nullptr, gtype) ||
+                !ObjectBase::to_c_ptr(context, obj, &gobj))
                 return false;
-
-            gobj = gjs_g_object_from_object(context, obj);
+            if (!gobj)
+                return true;  // treat disposed object as if value.isNull()
         } else {
             return throw_expect_type(context, value, "object", gtype);
         }
@@ -529,10 +529,9 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 /* special case GError */
-                if (!gjs_typecheck_gerror(context, obj, true))
+                gboxed = ErrorBase::to_c_ptr(context, obj);
+                if (!gboxed)
                     return false;
-
-                gboxed = gjs_gerror_from_error(context, obj);
             } else {
                 GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
 
@@ -565,14 +564,17 @@ gjs_value_to_g_value_internal(JSContext      *context,
                    loading the typelib.
                 */
                 if (!gboxed) {
-                    if (gjs_typecheck_union(context, obj, NULL, gtype, false)) {
-                        gboxed = gjs_c_union_from_union(context, obj);
+                    if (UnionBase::typecheck(context, obj, nullptr, gtype,
+                                             GjsTypecheckNoThrow())) {
+                        gboxed = UnionBase::to_c_ptr(context, obj);
                     } else {
-                        if (!gjs_typecheck_boxed(context, obj, NULL, gtype, true))
+                        if (!BoxedBase::typecheck(context, obj, nullptr, gtype))
                             return false;
 
-                        gboxed = gjs_c_struct_from_boxed(context, obj);
+                        gboxed = BoxedBase::to_c_ptr(context, obj);
                     }
+                    if (!gboxed)
+                        return false;
                 }
             }
         } else {
@@ -591,10 +593,12 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (!gjs_typecheck_boxed(context, obj, NULL, G_TYPE_VARIANT, true))
+            if (!BoxedBase::typecheck(context, obj, nullptr, G_TYPE_VARIANT))
                 return false;
 
-            variant = (GVariant*) gjs_c_struct_from_boxed(context, obj);
+            variant = BoxedBase::to_c_ptr<GVariant>(context, obj);
+            if (!variant)
+                return false;
         } else {
             return throw_expect_type(context, value, "boxed type", gtype);
         }
@@ -683,6 +687,15 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else {
             return throw_expect_type(context, value, "integer");
         }
+    } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+        // The gtype is none of the above, it should be derived from a custom
+        // fundamental type.
+        if (!value.isObject())
+            return throw_expect_type(context, value, "object", gtype);
+
+        JS::RootedObject fundamental_object(context, &value.toObject());
+        if (!FundamentalBase::to_gvalue(context, fundamental_object, gvalue))
+            return false;
     } else {
         gjs_debug(GJS_DEBUG_GCLOSURE, "JS::Value is number %d gtype fundamental %d transformable to int %d from int %d",
                   value.isNumber(),
@@ -794,12 +807,17 @@ gjs_value_from_g_value_internal(JSContext             *context,
         value_p.setBoolean(!!v);
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
         GObject *gobj;
-        JSObject *obj;
 
         gobj = (GObject*) g_value_get_object(gvalue);
 
-        obj = gjs_object_from_g_object(context, gobj);
-        value_p.setObjectOrNull(obj);
+        if (gobj) {
+            JSObject* obj = ObjectInstance::wrapper_from_gobject(context, gobj);
+            if (!obj)
+                return false;
+            value_p.setObject(*obj);
+        } else {
+            value_p.setNull();
+        }
     } else if (gtype == G_TYPE_STRV) {
         if (!gjs_array_from_strv (context,
                                   value_p,
@@ -816,7 +834,6 @@ gjs_value_from_g_value_internal(JSContext             *context,
         return false;
     } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
                g_type_is_a(gtype, G_TYPE_VARIANT)) {
-        GjsBoxedCreationFlags boxed_flags;
         void *gboxed;
         JSObject *obj;
 
@@ -824,13 +841,14 @@ gjs_value_from_g_value_internal(JSContext             *context,
             gboxed = g_value_get_boxed(gvalue);
         else
             gboxed = g_value_get_variant(gvalue);
-        boxed_flags = GJS_BOXED_CREATION_NONE;
 
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            obj = gjs_error_from_gerror(context, (GError*) gboxed, false);
-            value_p.setObjectOrNull(obj);
-
+            obj = ErrorInstance::object_for_c_ptr(context,
+                                                  static_cast<GError*>(gboxed));
+            if (!obj)
+                return false;
+            value_p.setObject(*obj);
             return true;
         }
 
@@ -861,8 +879,10 @@ gjs_value_from_g_value_internal(JSContext             *context,
         GIInfoType type = info.type();
         if (type == GI_INFO_TYPE_BOXED || type == GI_INFO_TYPE_STRUCT) {
             if (no_copy)
-                boxed_flags = (GjsBoxedCreationFlags) (boxed_flags | GJS_BOXED_CREATION_NO_COPY);
-            obj = gjs_boxed_from_c_struct(context, info, gboxed, boxed_flags);
+                obj = BoxedInstance::new_for_c_struct(context, info, gboxed,
+                                                      BoxedInstance::NoCopy());
+            else
+                obj = BoxedInstance::new_for_c_struct(context, info, gboxed);
         } else if (type == GI_INFO_TYPE_UNION) {
             obj = gjs_union_from_c_union(context, info, gboxed);
         } else {

@@ -34,17 +34,32 @@
 #include "jsapi-wrapper.h"
 
 #include "js/GCHashTable.h"
+#include "js/GCPolicyAPI.h"
 #include "js/SweepingAPI.h"
 
 using JobQueue = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
+using ObjectInitList = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
     JS::GCHashMap<void*, JS::Heap<JSObject*>, js::DefaultHasher<void*>,
                   js::SystemAllocPolicy>;
+using GTypeTable =
+    JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
+                  js::SystemAllocPolicy>;
 
-// FundamentalTable's key type is void*, the GC sweep method should ignore it
+struct Dummy {};
+using GTypeNotUint64 =
+    std::conditional_t<!std::is_same<GType, uint64_t>::value, GType, Dummy>;
+
+// The GC sweep method should ignore FundamentalTable and GTypeTable's key types
 namespace JS {
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+// We need GCPolicy<GType> for GTypeTable. SpiderMonkey already defines
+// GCPolicy<uint64_t> which is equal to GType on some systems; for others we
+// need to define it. (macOS's uint64_t is unsigned long long, which is a
+// different type from unsigned long, even if they are the same width)
+template <>
+struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
 }  // namespace JS
 
 class GjsContextPrivate {
@@ -61,7 +76,7 @@ class GjsContextPrivate {
 
     GjsAtoms m_atoms;
 
-    JS::PersistentRooted<JobQueue>* m_job_queue;
+    JobQueue m_job_queue;
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
@@ -70,7 +85,7 @@ class GjsContextPrivate {
 
     /* Environment preparer needed for debugger, taken from SpiderMonkey's
      * JS shell */
-    struct EnvironmentPreparer final : public js::ScriptEnvironmentPreparer {
+    struct EnvironmentPreparer final : protected js::ScriptEnvironmentPreparer {
         JSContext* m_cx;
 
         explicit EnvironmentPreparer(JSContext* cx) : m_cx(cx) {
@@ -83,6 +98,12 @@ class GjsContextPrivate {
 
     // Weak pointer mapping from fundamental native pointer to JSObject
     JS::WeakCache<FundamentalTable>* m_fundamental_table;
+    JS::WeakCache<GTypeTable>* m_gtype_table;
+
+    // List that holds JSObject GObject wrappers for JS-created classes, from
+    // the time of their creation until their GObject instance init function is
+    // called
+    ObjectInitList m_object_init_list;
 
     uint8_t m_exit_code;
 
@@ -139,6 +160,12 @@ class GjsContextPrivate {
     }
     GJS_USE JS::WeakCache<FundamentalTable>& fundamental_table(void) {
         return *m_fundamental_table;
+    }
+    GJS_USE JS::WeakCache<GTypeTable>& gtype_table(void) {
+        return *m_gtype_table;
+    }
+    GJS_USE ObjectInitList& object_init_list(void) {
+        return m_object_init_list;
     }
     GJS_USE
     static const GjsAtoms& atoms(JSContext* cx) { return from_cx(cx)->m_atoms; }

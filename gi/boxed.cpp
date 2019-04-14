@@ -25,6 +25,8 @@
 
 #include <string.h>
 
+#include <utility>
+
 #include "gjs/jsapi-wrapper.h"
 #include "js/GCHashTable.h"
 
@@ -948,8 +950,17 @@ bool BoxedPrototype::init(JSContext* context) {
     return true;
 }
 
-bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
-                            GIStructInfo* info) {
+/*
+ * BoxedPrototype::define_class:
+ * @in_object: Object where the constructor is stored, typically a repo object.
+ * @info: Introspection info for the boxed class.
+ *
+ * Define a boxed class constructor and prototype, including all the necessary
+ * methods and properties.
+ */
+bool BoxedPrototype::define_class(JSContext* context,
+                                  JS::HandleObject in_object,
+                                  GIStructInfo* info) {
     JS::RootedObject prototype(context), constructor(context);
     GType gtype = g_registered_type_info_get_g_type(info);
     BoxedPrototype* priv = BoxedPrototype::create_class(
@@ -960,15 +971,20 @@ bool gjs_define_boxed_class(JSContext* context, JS::HandleObject in_object,
         return false;
 
     if (gtype == G_TYPE_ERROR &&
-        !JS_DefineFunction(context, prototype, "toString", gjs_gerror_to_string,
-                           0, GJS_MODULE_PROP_FLAGS))
+        !JS_DefineFunction(context, prototype, "toString",
+                           &ErrorBase::to_string, 0, GJS_MODULE_PROP_FLAGS))
         return false;
 
     return true;
 }
 
-JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
-                                  void* gboxed, GjsBoxedCreationFlags flags) {
+/* Helper function to make the public API more readable. The overloads are
+ * specified explicitly in the public API, but the implementation uses
+ * std::forward in order to avoid duplicating code. */
+template <typename... Args>
+JSObject* BoxedInstance::new_for_c_struct_impl(JSContext* cx,
+                                               GIStructInfo* info, void* gboxed,
+                                               Args&&... args) {
     if (gboxed == NULL)
         return NULL;
 
@@ -984,18 +1000,32 @@ JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
     if (!priv)
         return nullptr;
 
-    if ((flags & GJS_BOXED_CREATION_NO_COPY) != 0) {
-        if (!priv->init_from_c_struct(cx, gboxed, BoxedInstance::NoCopy()))
-            return nullptr;
-    } else {
-        if (!priv->init_from_c_struct(cx, gboxed))
-            return nullptr;
-    }
+    if (!priv->init_from_c_struct(cx, gboxed, std::forward<Args>(args)...))
+        return nullptr;
 
     if (priv->gtype() == G_TYPE_ERROR && !gjs_define_error_properties(cx, obj))
         return nullptr;
 
     return obj;
+}
+
+/*
+ * BoxedInstance::new_for_c_struct:
+ *
+ * Creates a new BoxedInstance JS object from a C boxed struct pointer.
+ *
+ * There are two overloads of this method; the NoCopy overload will simply take
+ * the passed-in pointer but not own it, while the normal method will take a
+ * reference, or if the boxed type can be directly allocated, copy the memory.
+ */
+JSObject* BoxedInstance::new_for_c_struct(JSContext* cx, GIStructInfo* info,
+                                          void* gboxed) {
+    return new_for_c_struct_impl(cx, info, gboxed);
+}
+
+JSObject* BoxedInstance::new_for_c_struct(JSContext* cx, GIStructInfo* info,
+                                          void* gboxed, NoCopy no_copy) {
+    return new_for_c_struct_impl(cx, info, gboxed, no_copy);
 }
 
 /*
@@ -1035,30 +1065,14 @@ bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed) {
     return false;
 }
 
-void*
-gjs_c_struct_from_boxed(JSContext       *context,
-                        JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
+void* BoxedInstance::copy_ptr(JSContext* cx, GType gtype, void* ptr) {
+    if (g_type_is_a(gtype, G_TYPE_BOXED))
+        return g_boxed_copy(gtype, ptr);
+    if (g_type_is_a(gtype, G_TYPE_VARIANT))
+        return g_variant_ref(static_cast<GVariant*>(ptr));
 
-    BoxedBase* priv = BoxedBase::for_js_typecheck(context, obj);
-    if (!priv || !priv->check_is_instance(context, "get a boxed pointer"))
-        return NULL;
-
-    return priv->to_instance()->ptr();
-}
-
-bool
-gjs_typecheck_boxed(JSContext       *context,
-                    JS::HandleObject object,
-                    GIStructInfo    *expected_info,
-                    GType            expected_type,
-                    bool             throw_error)
-{
-    if (throw_error)
-        return BoxedBase::typecheck(context, object, expected_info,
-                                    expected_type);
-    return BoxedBase::typecheck(context, object, expected_info, expected_type,
-                                BoxedBase::TypecheckNoThrow());
+    gjs_throw(cx,
+              "Can't transfer ownership of a structure type not registered as "
+              "boxed");
+    return nullptr;
 }

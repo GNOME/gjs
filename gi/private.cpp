@@ -258,10 +258,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
                              "properties", &properties))
         return false;
 
-    if (!parent)
-        return false;
-
-    if (!gjs_typecheck_is_object(cx, parent, true))
+    if (!parent || !ObjectBase::for_js_typecheck(cx, parent, argv))
         return false;
 
     uint32_t n_interfaces, n_properties;
@@ -283,7 +280,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     }
 
     auto* parent_priv = ObjectPrototype::for_js(cx, parent);
-    /* We checked parent above, in gjs_typecheck_is_object() */
+    /* We checked parent above, in ObjectBase::for_js_typecheck() */
     g_assert(parent_priv);
 
     GTypeQuery query;
@@ -314,8 +311,8 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* create a custom JSClass */
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
-    if (!gjs_define_object_class(cx, module, nullptr, instance_type,
-                                 &constructor, &prototype))
+    if (!ObjectPrototype::define_class(cx, module, nullptr, instance_type,
+                                       &constructor, &prototype))
         return false;
 
     auto* priv = ObjectPrototype::for_js(cx, prototype);
