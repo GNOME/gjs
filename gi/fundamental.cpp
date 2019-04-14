@@ -493,46 +493,19 @@ gjs_fundamental_from_g_value(JSContext    *context,
     return gjs_object_from_g_fundamental(context, proto_priv->info(), fobj);
 }
 
-void*
-gjs_g_fundamental_from_object(JSContext       *context,
-                              JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
+bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
+                                GValue* gvalue) {
+    auto* priv = FundamentalBase::for_js_typecheck(cx, obj);
+    if (!priv || !priv->check_is_instance(cx, "convert to GValue"))
+        return false;
 
-    auto* priv = FundamentalBase::for_js(context, obj);
-
-    if (priv == NULL) {
-        gjs_throw(context,
-                  "No introspection information for %p", obj.get());
-        return NULL;
-    }
-
-    if (!priv->check_is_instance(context, "convert to a fundamental instance"))
-        return NULL;
-
-    return priv->to_instance()->ptr();
+    priv->to_instance()->set_value(gvalue);
+    return true;
 }
 
-bool
-gjs_typecheck_fundamental(JSContext       *context,
-                          JS::HandleObject object,
-                          GType            expected_gtype,
-                          bool             throw_error)
-{
-    if (throw_error)
-        return FundamentalBase::typecheck(context, object, nullptr,
-                                          expected_gtype);
-    return FundamentalBase::typecheck(context, object, nullptr, expected_gtype,
-                                      FundamentalBase::TypecheckNoThrow());
-}
-
-void *
-gjs_fundamental_ref(JSContext     *context,
-                    void          *gfundamental)
-{
-    auto* priv = FundamentalPrototype::for_gtype(
-        context, G_TYPE_FROM_INSTANCE(gfundamental));
+void* FundamentalInstance::copy_ptr(JSContext* cx, GType gtype,
+                                    void* gfundamental) {
+    auto* priv = FundamentalPrototype::for_gtype(cx, gtype);
     return priv->call_ref_function(gfundamental);
 }
 

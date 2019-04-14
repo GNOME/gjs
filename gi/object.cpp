@@ -69,8 +69,7 @@ static_assert(sizeof(ObjectInstance) <= 88,
               "gnome-shell run.");
 #endif  // x86-64 clang
 
-std::stack<JS::PersistentRootedObject> ObjectInstance::object_init_list{};
-static bool weak_pointer_callback = false;
+bool ObjectInstance::s_weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
 
 // clang-format off
@@ -165,10 +164,14 @@ const JSObject* ObjectBase::jsobj_addr(void) const {
     return to_instance()->wrapper();
 }
 
-static bool
-throw_priv_is_null_error(JSContext *context)
-{
-    gjs_throw(context,
+// Overrides GIWrapperBase::typecheck(). We only override the overload that
+// throws, so that we can throw our own more informative error.
+bool ObjectBase::typecheck(JSContext* cx, JS::HandleObject obj,
+                           GIObjectInfo* expected_info, GType expected_gtype) {
+    if (GIWrapperBase::typecheck(cx, obj, expected_info, expected_gtype))
+        return true;
+
+    gjs_throw(cx,
               "This JS object wrapper isn't wrapping a GObject."
               " If this is a custom subclass, are you sure you chained"
               " up to the parent _init properly?");
@@ -1061,16 +1064,24 @@ ObjectInstance::remove_wrapped_gobjects_if(ObjectInstance::Predicate predicate,
         action(priv);
 }
 
-void
-gjs_object_context_dispose_notify(void    *data,
-                                  GObject *where_the_object_was)
-{
-    ObjectInstance::iterate_wrapped_gobjects(std::mem_fn(&ObjectInstance::context_dispose_notify));
+/*
+ * ObjectInstance::context_dispose_notify:
+ *
+ * Callback called when the #GjsContext is disposed. It just calls
+ * handle_context_dispose() on every ObjectInstance.
+ */
+void ObjectInstance::context_dispose_notify(void* data,
+                                            GObject* where_the_object_was) {
+    ObjectInstance::iterate_wrapped_gobjects(
+        std::mem_fn(&ObjectInstance::handle_context_dispose));
 }
 
-void
-ObjectInstance::context_dispose_notify(void)
-{
+/*
+ * ObjectInstance::handle_context_dispose:
+ *
+ * Called on each existing ObjectInstance when the #GjsContext is disposed.
+ */
+void ObjectInstance::handle_context_dispose(void) {
     if (wrapper_is_rooted()) {
         debug_lifecycle("Was rooted, but unrooting due to GjsContext dispose");
         discard_wrapper();
@@ -1266,9 +1277,13 @@ gjs_object_shutdown_toggle_queue(void)
     toggle_queue.shutdown();
 }
 
-void
-gjs_object_prepare_shutdown(void)
-{
+/*
+ * ObjectInstance::prepare_shutdown:
+ *
+ * Called when the #GjsContext is disposed, in order to release all GC roots of
+ * JSObjects that are held by GObjects.
+ */
+void ObjectInstance::prepare_shutdown(void) {
     /* We iterate over all of the objects, breaking the JS <-> C
      * association.  We avoid the potential recursion implied in:
      *   toggle ref removal -> gobj dispose -> toggle ref notify
@@ -1298,11 +1313,14 @@ bool ObjectPrototype::init(JSContext* cx) {
     return true;
 }
 
-static void
-update_heap_wrapper_weak_pointers(JSContext     *cx,
-                                  JSCompartment *compartment,
-                                  gpointer       data)
-{
+/*
+ * ObjectInstance::update_heap_wrapper_weak_pointers:
+ *
+ * Private callback, called after the JS engine finishes garbage collection, and
+ * notifies when weak pointers need to be either moved or swept.
+ */
+void ObjectInstance::update_heap_wrapper_weak_pointers(
+    JSContext* cx, JSCompartment* compartment, void* data) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
                         ObjectInstance::num_wrapped_gobjects());
@@ -1328,14 +1346,16 @@ ObjectInstance::weak_pointer_was_finalized(void)
     return false;
 }
 
-static void
-ensure_weak_pointer_callback(JSContext *cx)
-{
-    if (!weak_pointer_callback) {
-        JS_AddWeakPointerCompartmentCallback(cx,
-                                             update_heap_wrapper_weak_pointers,
-                                             nullptr);
-        weak_pointer_callback = true;
+/*
+ * ObjectInstance::ensure_weak_pointer_callback:
+ *
+ * Private method called when adding a weak pointer for the first time.
+ */
+void ObjectInstance::ensure_weak_pointer_callback(JSContext* cx) {
+    if (!s_weak_pointer_callback) {
+        JS_AddWeakPointerCompartmentCallback(
+            cx, &ObjectInstance::update_heap_wrapper_weak_pointers, nullptr);
+        s_weak_pointer_callback = true;
     }
 }
 
@@ -1448,8 +1468,13 @@ ObjectInstance::init_impl(JSContext              *context,
        will be popped in gjs_object_custom_init() later
        down.
     */
-    if (g_type_get_qdata(gtype(), ObjectInstance::custom_type_quark()))
-        object_init_list.emplace(context, object);
+    if (g_type_get_qdata(gtype(), ObjectInstance::custom_type_quark())) {
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        if (!gjs->object_init_list().append(object)) {
+            JS_ReportOutOfMemory(context);
+            return false;
+        }
+    }
 
     g_assert(names.size() == values.size());
     GObject* gobj = g_object_new_with_properties(gtype(), values.size(),
@@ -1609,8 +1634,8 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
            we need to define it first.
         */
         JS::RootedObject ignored(context);
-        if (!gjs_define_object_class(context, in_object, nullptr, gtype,
-                                     &constructor, &ignored))
+        if (!ObjectPrototype::define_class(context, in_object, nullptr, gtype,
+                                           &constructor, &ignored))
             return nullptr;
     } else {
         if (G_UNLIKELY (!value.isObject()))
@@ -1953,14 +1978,24 @@ bool ObjectPrototype::get_parent_proto(JSContext* cx,
     return true;
 }
 
-bool
-gjs_define_object_class(JSContext              *context,
-                        JS::HandleObject        in_object,
-                        GIObjectInfo           *info,
-                        GType                   gtype,
-                        JS::MutableHandleObject constructor,
-                        JS::MutableHandleObject prototype)
-{
+/*
+ * ObjectPrototype::define_class:
+ * @in_object: Object where the constructor is stored, typically a repo object.
+ * @info: Introspection info for the GObject class.
+ * @gtype: #GType for the GObject class.
+ * @constructor: Return location for the constructor object.
+ * @prototype: Return location for the prototype object.
+ *
+ * Define a GObject class constructor and prototype, including all the
+ * necessary methods and properties that are not introspected. Provides the
+ * constructor and prototype objects as out parameters, for convenience
+ * elsewhere.
+ */
+bool ObjectPrototype::define_class(JSContext* context,
+                                   JS::HandleObject in_object,
+                                   GIObjectInfo* info, GType gtype,
+                                   JS::MutableHandleObject constructor,
+                                   JS::MutableHandleObject prototype) {
     if (!ObjectPrototype::create_class(context, in_object, info, gtype,
                                        constructor, prototype))
         return false;
@@ -1981,83 +2016,152 @@ gjs_define_object_class(JSContext              *context,
     return true;
 }
 
-JSObject*
-gjs_object_from_g_object(JSContext    *context,
-                         GObject      *gobj)
-{
-    if (gobj == NULL)
-        return NULL;
+/*
+ * ObjectInstance::init_custom_class_from_gobject:
+ *
+ * Does all the necessary initialization for an ObjectInstance and JSObject
+ * wrapper, given a newly-created GObject pointer, of a GObject class that was
+ * created in JS with GObject.registerClass(). This is called from the GObject's
+ * instance init function in gobject.cpp, and that's the only reason it's a
+ * public method.
+ */
+bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
+                                                    JS::HandleObject wrapper,
+                                                    GObject* gobj) {
+    associate_js_gobject(cx, wrapper, gobj);
 
-    ObjectInstance *priv = ObjectInstance::for_gobject(gobj);
+    // Custom JS objects will most likely have visible state, so just do this
+    // from the start.
+    ensure_uses_toggle_ref(cx);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedValue v(cx);
+    if (!JS_GetPropertyById(cx, wrapper, atoms.instance_init(), &v))
+        return false;
+
+    if (v.isUndefined())
+        return true;
+    if (!v.isObject() || !JS::IsCallable(&v.toObject())) {
+        gjs_throw(cx, "_instance_init property was not a function");
+        return false;
+    }
+
+    JS::RootedValue ignored_rval(cx);
+    return JS_CallFunctionValue(cx, wrapper, v, JS::HandleValueArray::empty(),
+                                &ignored_rval);
+}
+
+/*
+ * ObjectInstance::new_for_gobject:
+ *
+ * Creates a new JSObject wrapper for the GObject pointer @gobj, and an
+ * ObjectInstance private structure to go along with it.
+ */
+ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
+    g_assert(gobj && "Cannot create JSObject for null GObject pointer");
+
+    GType gtype = G_TYPE_FROM_INSTANCE(gobj);
+
+    gjs_debug_marshal(GJS_DEBUG_GOBJECT, "Wrapping %s with JSObject",
+                      g_type_name(gtype));
+
+    JS::RootedObject proto(cx, gjs_lookup_object_prototype(cx, gtype));
+    if (!proto)
+        return nullptr;
+
+    JS::RootedObject obj(
+        cx, JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto));
+    if (!obj)
+        return nullptr;
+
+    ObjectInstance* priv = ObjectInstance::new_for_js_object(cx, obj);
+
+    g_object_ref_sink(gobj);
+    priv->associate_js_gobject(cx, obj, gobj);
+
+    g_assert(priv->wrapper() == obj.get());
+
+    return priv;
+}
+
+/*
+ * ObjectInstance::wrapper_from_gobject:
+ *
+ * Gets a JSObject wrapper for the GObject pointer @gobj. If one already exists,
+ * then it is returned. Otherwise a new one is created with
+ * ObjectInstance::new_for_gobject().
+ */
+JSObject* ObjectInstance::wrapper_from_gobject(JSContext* cx, GObject* gobj) {
+    g_assert(gobj && "Cannot get JSObject for null GObject pointer");
+
+    ObjectInstance* priv = ObjectInstance::for_gobject(gobj);
 
     if (!priv) {
         /* We have to create a wrapper */
-        GType gtype;
-
-        gjs_debug_marshal(GJS_DEBUG_GOBJECT,
-                          "Wrapping %s with JSObject",
-                          g_type_name_from_instance((GTypeInstance*) gobj));
-
-        gtype = G_TYPE_FROM_INSTANCE(gobj);
-
-        JS::RootedObject proto(context,
-            gjs_lookup_object_prototype(context, gtype));
-        if (!proto)
+        priv = new_for_gobject(cx, gobj);
+        if (!priv)
             return nullptr;
-
-        JS::RootedObject obj(context,
-            JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto));
-        if (!obj)
-            return nullptr;
-
-        priv = ObjectInstance::new_for_js_object(context, obj);
-
-        g_object_ref_sink(gobj);
-        priv->associate_js_gobject(context, obj, gobj);
-
-        g_assert(priv->wrapper() == obj.get());
     }
 
     return priv->wrapper();
 }
 
-GObject*
-gjs_g_object_from_object(JSContext       *cx,
-                         JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
+// Replaces GIWrapperBase::to_c_ptr(). The GIWrapperBase version is deleted.
+bool ObjectBase::to_c_ptr(JSContext* cx, JS::HandleObject obj, GObject** ptr) {
+    g_assert(ptr);
 
     auto* priv = ObjectBase::for_js(cx, obj);
     if (!priv || priv->is_prototype())
-        return nullptr;
+        return false;
 
     ObjectInstance* instance = priv->to_instance();
-    if (!instance->check_gobject_disposed("access"))
-        return nullptr;
-
-    return instance->ptr();
-}
-
-bool
-gjs_typecheck_is_object(JSContext       *context,
-                        JS::HandleObject object,
-                        bool             throw_error)
-{
-    if (throw_error)
-        return !!ObjectBase::for_js_typecheck(context, object);
-    return !!ObjectBase::for_js(context, object);
-}
-
-bool gjs_typecheck_object(JSContext* cx, JS::HandleObject object,
-                          GType expected_type, bool throw_error) {
-    if (throw_error) {
-        if (!ObjectBase::typecheck(cx, object, nullptr, expected_type))
-            return throw_priv_is_null_error(cx);
+    if (!instance->check_gobject_disposed("access")) {
+        *ptr = nullptr;
         return true;
     }
-    return ObjectBase::typecheck(cx, object, nullptr, expected_type,
-                                 ObjectBase::TypecheckNoThrow());
+
+    *ptr = instance->ptr();
+    return true;
+}
+
+// Overrides GIWrapperBase::transfer_to_gi_argument().
+bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
+                                         GIArgument* arg,
+                                         GIDirection transfer_direction,
+                                         GITransfer transfer_ownership,
+                                         GType expected_gtype,
+                                         GIBaseInfo* expected_info) {
+    g_assert(transfer_direction != GI_DIRECTION_INOUT &&
+             "transfer_to_gi_argument() must choose between in or out");
+
+    if (!ObjectBase::typecheck(cx, obj, expected_info, expected_gtype)) {
+        arg->v_pointer = nullptr;
+        return false;
+    }
+
+    GObject* ptr;
+    if (!ObjectBase::to_c_ptr(cx, obj, &ptr))
+        return false;
+
+    // Pointer can be null if object was already disposed by C code
+    if (!ptr) {
+        arg->v_pointer = nullptr;
+        return true;
+    }
+
+    arg->v_pointer = ptr;
+
+    if ((transfer_direction == GI_DIRECTION_IN &&
+         transfer_ownership != GI_TRANSFER_NOTHING) ||
+        (transfer_direction == GI_DIRECTION_OUT &&
+         transfer_ownership == GI_TRANSFER_EVERYTHING)) {
+        arg->v_pointer =
+            ObjectInstance::copy_ptr(cx, expected_gtype, arg->v_pointer);
+        if (!arg->v_pointer)
+            return false;
+    }
+
+    return true;
 }
 
 // Overrides GIWrapperInstance::typecheck_impl()

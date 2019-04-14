@@ -80,7 +80,10 @@ static void gjs_object_base_finalize(void* klass) {
 static GObject* gjs_object_constructor(
     GType type, unsigned n_construct_properties,
     GObjectConstructParam* construct_properties) {
-    if (!ObjectInstance::object_init_list.empty()) {
+    JSContext* cx = current_context();
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+
+    if (!gjs->object_init_list().empty()) {
         GType parent_type = g_type_parent(type);
 
         /* The object is being constructed from JS:
@@ -98,7 +101,6 @@ static GObject* gjs_object_constructor(
      * Construct the JS object from the constructor, then use the GObject
      * that was associated in gjs_object_custom_init()
      */
-    JSContext *cx = current_context();
     JSAutoRequest ar(cx);
     JSAutoCompartment ac(cx, gjs_get_import_global(cx));
 
@@ -182,12 +184,13 @@ static void gjs_object_class_init(void* class_pointer, void* user_data) {
 }
 
 static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
-    if (ObjectInstance::object_init_list.empty())
+    JSContext *cx = current_context();
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+
+    if (gjs->object_init_list().empty())
         return;
 
-    JSContext *cx = current_context();
-
-    JS::RootedObject object(cx, ObjectInstance::object_init_list.top());
+    JS::RootedObject object(cx, gjs->object_init_list().back());
     auto* priv_base = ObjectBase::for_js_nocheck(object);
     g_assert(priv_base);  // Should have been set in init_impl()
     ObjectInstance* priv = priv_base->to_instance();
@@ -199,26 +202,9 @@ static void gjs_object_custom_init(GTypeInstance* instance, void* klass) {
         return;
     }
 
-    ObjectInstance::object_init_list.pop();
+    gjs->object_init_list().popBack();
 
-    priv->associate_js_gobject(cx, object, G_OBJECT(instance));
-
-    /* Custom JS objects will most likely have visible state, so
-     * just do this from the start */
-    priv->ensure_uses_toggle_ref(cx);
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedValue v(cx);
-    if (!JS_GetPropertyById(cx, object, atoms.instance_init(), &v)) {
-        gjs_log_exception(cx);
-        return;
-    }
-
-    if (!v.isObject())
-        return;
-
-    JS::RootedValue r(cx);
-    if (!JS_CallFunctionValue(cx, object, v, JS::HandleValueArray::empty(), &r))
+    if (!priv->init_custom_class_from_gobject(cx, object, G_OBJECT(instance)))
         gjs_log_exception(cx);
 }
 

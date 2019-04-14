@@ -136,7 +136,7 @@ union_new(JSContext       *context,
                 return NULL;
             } else {
                 JS::RootedObject rval_obj(context, &rval.toObject());
-                return gjs_c_union_from_union(context, rval_obj);
+                return UnionBase::to_c_ptr(context, rval_obj);
             }
         }
     }
@@ -244,30 +244,12 @@ gjs_union_from_c_union(JSContext    *context,
     return obj;
 }
 
-void*
-gjs_c_union_from_union(JSContext       *context,
-                       JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
+void* UnionInstance::copy_ptr(JSContext* cx, GType gtype, void* ptr) {
+    if (g_type_is_a(gtype, G_TYPE_BOXED))
+        return g_boxed_copy(gtype, ptr);
 
-    UnionInstance* priv = UnionInstance::for_js(context, obj);
-    if (!priv)
-        return nullptr;
-
-    return priv->ptr();
-}
-
-bool
-gjs_typecheck_union(JSContext       *context,
-                    JS::HandleObject object,
-                    GIStructInfo    *expected_info,
-                    GType            expected_type,
-                    bool             throw_error)
-{
-    if (throw_error)
-        return UnionBase::typecheck(context, object, expected_info,
-                                    expected_type);
-    return UnionBase::typecheck(context, object, expected_info, expected_type,
-                                UnionBase::TypecheckNoThrow());
+    gjs_throw(cx,
+              "Can't transfer ownership of a union type not registered as "
+              "boxed");
+    return nullptr;
 }

@@ -299,6 +299,8 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     JS::TraceEdge<JSObject*>(trc, &gjs->m_global, "GJS global object");
     gjs->m_atoms.trace(trc);
+    gjs->m_job_queue.trace(trc);
+    gjs->m_object_init_list.trace(trc);
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
@@ -356,6 +358,8 @@ void GjsContextPrivate::dispose(void) {
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing cached JS wrappers");
         m_fundamental_table->clear();
+        m_gtype_table->clear();
+
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
          * context
@@ -372,7 +376,7 @@ void GjsContextPrivate::dispose(void) {
          * still exist, but point to NULL.
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing all native objects");
-        gjs_object_prepare_shutdown();
+        ObjectInstance::prepare_shutdown();
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Disabling auto GC");
         if (m_auto_gc_id > 0) {
@@ -385,8 +389,8 @@ void GjsContextPrivate::dispose(void) {
         m_global = nullptr;
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
-        delete m_job_queue;
         delete m_fundamental_table;
+        delete m_gtype_table;
 
         /* Tear down JS */
         JS_DestroyContext(m_cx);
@@ -437,13 +441,12 @@ gjs_context_constructed(GObject *object)
 
     setup_dump_heap();
 
-    g_object_weak_ref(object, gjs_object_context_dispose_notify, nullptr);
+    g_object_weak_ref(object, &ObjectInstance::context_dispose_notify, nullptr);
 }
 
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     : m_public_context(public_context),
       m_cx(cx),
-      m_atoms(cx),
       m_environment_preparer(cx) {
     m_owner_thread = g_thread_self();
 
@@ -462,14 +465,14 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         }
     }
 
-    m_job_queue = new JS::PersistentRooted<JobQueue>(m_cx);
-    if (!m_job_queue)
-        g_error("Failed to initialize promise job queue");
-
     JSRuntime* rt = JS_GetRuntime(m_cx);
     m_fundamental_table = new JS::WeakCache<FundamentalTable>(rt);
     if (!m_fundamental_table->init())
         g_error("Failed to initialize fundamental objects table");
+
+    m_gtype_table = new JS::WeakCache<GTypeTable>(rt);
+    if (!m_gtype_table->init())
+        g_error("Failed to initialize GType objects table");
 
     JS_BeginRequest(m_cx);
 
@@ -636,11 +639,11 @@ gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
 /* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
 bool GjsContextPrivate::enqueue_job(JS::HandleObject job) {
     if (m_idle_drain_handler)
-        g_assert(m_job_queue->length() > 0);
+        g_assert(m_job_queue.length() > 0);
     else
-        g_assert(m_job_queue->length() == 0);
+        g_assert(m_job_queue.length() == 0);
 
-    if (!m_job_queue->append(job)) {
+    if (!m_job_queue.append(job)) {
         JS_ReportOutOfMemory(m_cx);
         return false;
     }
@@ -665,7 +668,6 @@ bool GjsContextPrivate::enqueue_job(JS::HandleObject job) {
  */
 bool GjsContextPrivate::run_jobs(void) {
     bool retval = true;
-    g_assert(m_job_queue);
 
     if (m_draining_job_queue || m_should_exit)
         return true;
@@ -681,12 +683,12 @@ bool GjsContextPrivate::run_jobs(void) {
     /* Execute jobs in a loop until we've reached the end of the queue.
      * Since executing a job can trigger enqueueing of additional jobs,
      * it's crucial to recheck the queue length during each iteration. */
-    for (size_t ix = 0; ix < m_job_queue->length(); ix++) {
+    for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         /* A previous job might have set this flag. e.g., System.exit(). */
         if (m_should_exit)
             break;
 
-        job = m_job_queue->get()[ix];
+        job = m_job_queue[ix];
 
         /* It's possible that job draining was interrupted prematurely,
          * leaving the queue partly processed. In that case, slots for
@@ -695,7 +697,7 @@ bool GjsContextPrivate::run_jobs(void) {
         if (!job)
             continue;
 
-        m_job_queue->get()[ix] = nullptr;
+        m_job_queue[ix] = nullptr;
         {
             JSAutoCompartment ac(m_cx, job);
             if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
@@ -718,7 +720,7 @@ bool GjsContextPrivate::run_jobs(void) {
     }
 
     m_draining_job_queue = false;
-    m_job_queue->clear();
+    m_job_queue.clear();
     if (m_idle_drain_handler) {
         g_source_remove(m_idle_drain_handler);
         m_idle_drain_handler = 0;

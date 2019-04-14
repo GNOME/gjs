@@ -123,10 +123,6 @@ bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-bool gjs_gerror_to_string(JSContext* context, unsigned argc, JS::Value* vp) {
-    return ErrorBase::to_string(context, argc, vp);
-}
-
 // JSNative implementation of `toString()`.
 bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, self);
@@ -134,10 +130,12 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GjsAutoChar descr;
 
     // An error created via `new GLib.Error` will have a Boxed* private pointer,
-    // not an Error*, so we can't call regular gjs_gerror_to_string() on it.
-    if (gjs_typecheck_boxed(context, self, nullptr, G_TYPE_ERROR, false)) {
-        auto* gerror =
-            static_cast<GError*>(gjs_c_struct_from_boxed(context, self));
+    // not an Error*, so we can't call regular to_string() on it.
+    if (BoxedBase::typecheck(context, self, nullptr, G_TYPE_ERROR,
+                             GjsTypecheckNoThrow())) {
+        auto* gerror = BoxedBase::to_c_ptr<GError>(context, self);
+        if (!gerror)
+            return false;
         descr =
             g_strdup_printf("GLib.Error %s: %s",
                             g_quark_to_string(gerror->domain), gerror->message);
@@ -228,8 +226,9 @@ bool ErrorPrototype::get_parent_proto(JSContext* cx,
     return !!proto;
 }
 
-bool gjs_define_error_class(JSContext* context, JS::HandleObject in_object,
-                            GIEnumInfo* info) {
+bool ErrorPrototype::define_class(JSContext* context,
+                                  JS::HandleObject in_object,
+                                  GIEnumInfo* info) {
     JS::RootedObject prototype(context), constructor(context);
     if (!ErrorPrototype::create_class(context, in_object, info, G_TYPE_ERROR,
                                       &constructor, &prototype))
@@ -350,11 +349,7 @@ gjs_error_from_js_gerror(JSContext *cx,
     return JS_New(cx, error_constructor, error_args);
 }
 
-JSObject*
-gjs_error_from_gerror(JSContext             *context,
-                      GError                *gerror,
-                      bool                   add_stack)
-{
+JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
     GIEnumInfo *info;
 
     if (gerror == NULL)
@@ -372,7 +367,7 @@ gjs_error_from_gerror(JSContext             *context,
         JSObject *retval;
 
         glib_boxed = g_irepository_find_by_name(NULL, "GLib", "Error");
-        retval = gjs_boxed_from_c_struct(context, glib_boxed, gerror, (GjsBoxedCreationFlags) 0);
+        retval = BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
 
         g_base_info_unref(glib_boxed);
         return retval;
@@ -390,56 +385,73 @@ gjs_error_from_gerror(JSContext             *context,
     ErrorInstance* priv = ErrorInstance::new_for_js_object(context, obj);
     priv->copy_gerror(gerror);
 
-    if (add_stack && !gjs_define_error_properties(context, obj))
-        return nullptr;
-
     return obj;
 }
 
-GError*
-gjs_gerror_from_error(JSContext       *context,
-                      JS::HandleObject obj)
-{
-    if (!obj)
-        return NULL;
-
+GError* ErrorBase::to_c_ptr(JSContext* cx, JS::HandleObject obj) {
     /* If this is a plain GBoxed (i.e. a GError without metadata),
        delegate marshalling.
     */
-    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
-        return (GError*) gjs_c_struct_from_boxed (context, obj);
+    if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR,
+                             GjsTypecheckNoThrow()))
+        return BoxedBase::to_c_ptr<GError>(cx, obj);
 
-    ErrorBase* priv = ErrorBase::for_js_typecheck(context, obj);
-
-    if (priv == NULL)
-        return NULL;
-
-    if (!priv->check_is_instance(context, "convert to a boxed instance"))
-        return NULL;
-
-    return priv->to_instance()->ptr();
+    return GIWrapperBase::to_c_ptr<GError>(cx, obj);
 }
 
-bool
-gjs_typecheck_gerror (JSContext       *context,
-                      JS::HandleObject obj,
-                      bool             throw_error)
-{
-    if (gjs_typecheck_boxed (context, obj, NULL, G_TYPE_ERROR, false))
-        return true;
+bool ErrorBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
+                                        GIArgument* arg,
+                                        GIDirection transfer_direction,
+                                        GITransfer transfer_ownership) {
+    g_assert(transfer_direction != GI_DIRECTION_INOUT &&
+             "transfer_to_gi_argument() must choose between in or out");
 
-    if (throw_error)
-        return !!ErrorBase::for_js_typecheck(context, obj);
-    return !!ErrorBase::for_js(context, obj);
+    if (!ErrorBase::typecheck(cx, obj)) {
+        arg->v_pointer = nullptr;
+        return false;
+    }
+
+    arg->v_pointer = ErrorBase::to_c_ptr(cx, obj);
+    if (!arg->v_pointer)
+        return false;
+
+    if ((transfer_direction == GI_DIRECTION_IN &&
+         transfer_ownership != GI_TRANSFER_NOTHING) ||
+        (transfer_direction == GI_DIRECTION_OUT &&
+         transfer_ownership == GI_TRANSFER_EVERYTHING)) {
+        arg->v_pointer =
+            ErrorInstance::copy_ptr(cx, G_TYPE_ERROR, arg->v_pointer);
+        if (!arg->v_pointer)
+            return false;
+    }
+
+    return true;
+}
+
+// Overrides GIWrapperBase::typecheck()
+bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj) {
+    if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR,
+                             GjsTypecheckNoThrow()))
+        return true;
+    return GIWrapperBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR);
+}
+
+bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj,
+                          GjsTypecheckNoThrow no_throw) {
+    if (BoxedBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR, no_throw))
+        return true;
+    return GIWrapperBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR, no_throw);
 }
 
 GError *
 gjs_gerror_make_from_error(JSContext       *cx,
                            JS::HandleObject obj)
 {
-    if (gjs_typecheck_gerror(cx, obj, false)) {
+    if (ErrorBase::typecheck(cx, obj, GjsTypecheckNoThrow())) {
         /* This is already a GError, just copy it */
-        GError *inner = gjs_gerror_from_error(cx, obj);
+        GError* inner = ErrorBase::to_c_ptr(cx, obj);
+        if (!inner)
+            return nullptr;
         return g_error_copy(inner);
     }
 
@@ -489,11 +501,14 @@ bool gjs_throw_gerror(JSContext* cx, GError* error) {
 
     JSAutoRequest ar(cx);
 
-    JS::RootedValue err(
-        cx, JS::ObjectOrNullValue(gjs_error_from_gerror(cx, error, true)));
+    JS::RootedObject err_obj(cx, ErrorInstance::object_for_c_ptr(cx, error));
+    if (!err_obj || !gjs_define_error_properties(cx, err_obj))
+        return false;
+
     g_error_free(error);
-    if (!err.isNull())
-        JS_SetPendingException(cx, err);
+
+    JS::RootedValue err(cx, JS::ObjectValue(*err_obj));
+    JS_SetPendingException(cx, err);
 
     return false;
 }

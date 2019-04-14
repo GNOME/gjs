@@ -433,8 +433,8 @@ gjs_define_info(JSContext       *context,
                     return false;
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
                 JS::RootedObject ignored1(context), ignored2(context);
-                if (!gjs_define_object_class(context, in_object, info, gtype,
-                                             &ignored1, &ignored2))
+                if (!ObjectPrototype::define_class(context, in_object, info,
+                                                   gtype, &ignored1, &ignored2))
                     return false;
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
                 JS::RootedObject ignored1(context), ignored2(context);
@@ -466,7 +466,7 @@ gjs_define_info(JSContext       *context,
         /* Fall through */
 
     case GI_INFO_TYPE_BOXED:
-        if (!gjs_define_boxed_class(context, in_object, info))
+        if (!BoxedPrototype::define_class(context, in_object, info))
             return false;
         break;
     case GI_INFO_TYPE_UNION:
@@ -476,7 +476,7 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_ENUM:
         if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
             /* define as GError subclass */
-            if (!gjs_define_error_class(context, in_object, info))
+            if (!ErrorPrototype::define_class(context, in_object, info))
                 return false;
             break;
         }
