@@ -105,7 +105,7 @@ Debugger.Frame.prototype.describeFrame = function() {
     else if (this.type == 'global')
         return 'toplevel';
     else
-        return this.type + ' code';
+        return `${this.type} code`;
 };
 
 Debugger.Frame.prototype.describePosition = function() {
@@ -470,7 +470,7 @@ function doStepOrNext(kind) {
     }
 
     function stepEntered(newFrame) {
-        print('entered frame: ' + newFrame.describeFull());
+        print(`entered frame: ${newFrame.describeFull()}`);
         if (!kind.until || newFrame.line == kind.stopLine) {
             topFrame = focusedFrame = newFrame;
             return repl();
@@ -598,7 +598,7 @@ function breakpointCommand(where) {
     const possibleOffsets = findBreakpointOffsets(line, focusedFrame.script);
 
     if (possibleOffsets.length === 0) {
-        print('Unable to break at line ' + where);
+        print(`Unable to break at line ${where}`);
         return;
     }
 
@@ -770,7 +770,7 @@ function runcmd(cmd) {
 
     var first = pieces[0], rest = pieces[1];
     if (!commands.hasOwnProperty(first)) {
-        print("unrecognized command '" + first + "'");
+        print(`unrecognized command '${first}'`);
         return undefined;
     }
 
