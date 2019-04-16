@@ -182,6 +182,7 @@ function quitCommand() {
     dbg.enabled = false;
     quit(0);
 }
+quitCommand.summary = 'Quit the debugger';
 
 function backtraceCommand() {
     if (topFrame === null)
@@ -189,6 +190,7 @@ function backtraceCommand() {
     for (var i = 0, f = topFrame; f; i++, f = f.older)
         showFrame(f, i);
 }
+backtraceCommand.summary = 'Print backtrace of all stack frames';
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
@@ -209,6 +211,7 @@ function setCommand(rest) {
             options[name] = value;
     }
 }
+setCommand.summary = 'Sets the value of the given option';
 
 function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
@@ -248,15 +251,18 @@ function printCommand(rest) {
     var [expr, style] = splitPrintOptions(rest, {pretty: options.pretty});
     return doPrint(expr, style);
 }
+printCommand.summary = 'Prints the given expression';
 
 function keysCommand(rest) {
     return doPrint(`Object.keys(${rest})`);
 }
+keysCommand.summary = 'Prints keys of the given object';
 
 function detachCommand() {
     dbg.enabled = false;
     return [undefined];
 }
+detachCommand.summary = 'Detach debugger from the script';
 
 function continueCommand() {
     if (focusedFrame === null) {
@@ -265,6 +271,7 @@ function continueCommand() {
     }
     return [undefined];
 }
+continueCommand.summary = 'Continue program execution';
 
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
@@ -296,10 +303,12 @@ function throwOrReturn(rest, action, defaultCompletion) {
 function throwCommand(rest) {
     return throwOrReturn(rest, 'throw', {throw: lastExc});
 }
+throwCommand.summary = 'Throws the given value';
 
 function returnCommand(rest) {
     return throwOrReturn(rest, 'return', {return: undefined});
 }
+returnCommand.summary = 'Return the given value from the current frame';
 
 function frameCommand(rest) {
     let n, f;
@@ -330,6 +339,7 @@ function frameCommand(rest) {
         print('do what now?');
     }
 }
+frameCommand.summary = 'Jump to specified frame or print current frame (if not specified)';
 
 function upCommand() {
     if (focusedFrame === null)
@@ -342,6 +352,7 @@ function upCommand() {
         showFrame();
     }
 }
+upCommand.summary = 'Jump to the parent frame';
 
 function downCommand() {
     if (focusedFrame === null)
@@ -353,6 +364,7 @@ function downCommand() {
         showFrame();
     }
 }
+downCommand.summary = 'Jump to the younger frame';
 
 function printPop(c) {
     if (c['return']) {
@@ -471,18 +483,22 @@ function doStepOrNext(kind) {
 function stepCommand() {
     return doStepOrNext({step: true});
 }
+stepCommand.summary = 'Step to next command';
 
 function nextCommand() {
     return doStepOrNext({next: true});
 }
+nextCommand.summary = 'Jump to next line';
 
 function finishCommand() {
     return doStepOrNext({finish: true});
 }
+finishCommand.summary = 'Run until the current frame is finished also prints the returned value';
 
 function untilCommand(line) {
     return doStepOrNext({until: true, stopLine: Number(line)});
 }
+untilCommand.summary = 'Continue until given line';
 
 function findBreakpointOffsets(line, currentScript) {
     const offsets = currentScript.getLineOffsets(line);
@@ -538,6 +554,7 @@ function breakpointCommand(where) {
         });
     });
 }
+breakpointCommand.summary = 'Set breakpoint at the specified location.';
 
 function deleteCommand(breaknum) {
     const bp = breakpoints[breaknum];
@@ -552,6 +569,7 @@ function deleteCommand(breaknum) {
     breakpoints[breaknum] = undefined;
     print(`${bp} deleted`);
 }
+deleteCommand.summary = 'Deletes breakpoint';
 
 // Build the table of commands.
 var commands = {};
@@ -591,8 +609,10 @@ for (var i = 0; i < commandArray.length; i++) {
 
 function helpCommand() {
     print('Available commands:');
-    var printcmd = function(group) {
-        print('  ' + group.join(', '));
+
+    var printcmd = function (group) {
+        var summary = group.find((cmd) => !!cmd.summary);
+        print(`  ${group.map((c) => c.name).join(', ')} -- ${(summary || {}).summary}`);
     };
 
     var group = [];
@@ -603,15 +623,23 @@ function helpCommand() {
             continue;
         
         if (typeof cmd === 'string') {
-            group.push(cmd);
+            group.push({
+                name: cmd
+            });
         } else {
             if (group.length)
                 printcmd(group);
-            group = [cmd.name.replace(/Command$/, '')];
+
+            group = [{
+                name: cmd.name.replace(/Command$/, ''),
+                summary: cmd.summary,
+                helpText: cmd.helpText
+            }];
         }
     }
     printcmd(group);
 }
+helpCommand.summary = 'List all the available commands';
 
 // Break cmd into two parts: its first word and everything else. If it begins
 // with punctuation, treat that as a separate word. The first word is
