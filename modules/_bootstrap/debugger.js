@@ -597,13 +597,14 @@ function helpCommand() {
 
     var group = [];
     for (var cmd of commandArray) {
+        // Don't print commands for debugging the debugger
+        if ([commentCommand, evalCommand].includes(cmd) ||
+            ['#', '!'].includes(cmd))
+            continue;
+        
         if (typeof cmd === 'string') {
             group.push(cmd);
         } else {
-            // Don't print commands for debugging the debugger
-            if ([commentCommand, evalCommand].includes(cmd) ||
-                ['comment', 'eval'].includes(group[0]))
-                continue;
             if (group.length)
                 printcmd(group);
             group = [cmd.name.replace(/Command$/, '')];
