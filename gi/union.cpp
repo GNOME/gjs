@@ -151,6 +151,10 @@ union_new(JSContext       *context,
 bool UnionInstance::constructor_impl(JSContext* context,
                                      JS::HandleObject object,
                                      const JS::CallArgs& args) {
+    if (args.length() > 0)
+        JS_ReportWarningASCII(context, "Arguments to constructor of %s ignored",
+                              name());
+
     /* union_new happens to be implemented by calling
      * gjs_invoke_c_function(), which returns a JS::Value.
      * The returned "gboxed" here is owned by that JS::Value,
