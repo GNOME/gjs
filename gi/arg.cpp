@@ -1221,11 +1221,8 @@ gjs_g_array_new_for_type(JSContext    *context,
     return g_array_sized_new(true, false, element_size, length);
 }
 
-GJS_USE
-static gchar *
-get_argument_display_name(const char     *arg_name,
-                          GjsArgumentType arg_type)
-{
+char* gjs_argument_display_name(const char* arg_name,
+                                GjsArgumentType arg_type) {
     switch (arg_type) {
     case GJS_ARGUMENT_ARGUMENT:
         return g_strdup_printf("Argument '%s'", arg_name);
@@ -1273,12 +1270,11 @@ throw_invalid_argument(JSContext      *context,
                        const char     *arg_name,
                        GjsArgumentType arg_type)
 {
-    gchar *display_name = get_argument_display_name(arg_name, arg_type);
+    GjsAutoChar display_name = gjs_argument_display_name(arg_name, arg_type);
 
     gjs_throw(context, "Expected type %s for %s but got type '%s'",
-              type_tag_to_human_string(arginfo),
-              display_name, JS::InformalValueTypeName(value));
-    g_free(display_name);
+              type_tag_to_human_string(arginfo), display_name.get(),
+              JS::InformalValueTypeName(value));
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -2018,21 +2014,18 @@ _Pragma("GCC diagnostic pop")
         }
         return false;
     } else if (G_UNLIKELY(out_of_range)) {
-        gchar *display_name = get_argument_display_name (arg_name, arg_type);
+        GjsAutoChar display_name =
+            gjs_argument_display_name(arg_name, arg_type);
         gjs_throw(context, "value is out of range for %s (type %s)",
-                  display_name,
-                  g_type_tag_to_string(type_tag));
-        g_free (display_name);
+                  display_name.get(), g_type_tag_to_string(type_tag));
         return false;
     } else if (nullable_type &&
                arg->v_pointer == NULL &&
                !may_be_null) {
-        gchar *display_name = get_argument_display_name (arg_name, arg_type);
-        gjs_throw(context,
-                  "%s (type %s) may not be null",
-                  display_name,
+        GjsAutoChar display_name =
+            gjs_argument_display_name(arg_name, arg_type);
+        gjs_throw(context, "%s (type %s) may not be null", display_name.get(),
                   g_type_tag_to_string(type_tag));
-        g_free (display_name);
         return false;
     } else {
         return true;
