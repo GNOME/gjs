@@ -302,7 +302,8 @@ surface_release_argument(JSContext  *context,
                          GITransfer  transfer,
                          GArgument  *arg)
 {
-    cairo_surface_destroy((cairo_surface_t*)arg->v_pointer);
+    if (transfer != GI_TRANSFER_NOTHING)
+        cairo_surface_destroy(static_cast<cairo_surface_t*>(arg->v_pointer));
     return true;
 }
 

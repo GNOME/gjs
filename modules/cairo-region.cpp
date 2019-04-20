@@ -360,7 +360,8 @@ region_release_argument(JSContext  *context,
                         GITransfer  transfer,
                         GArgument  *arg)
 {
-    cairo_region_destroy((cairo_region_t*)arg->v_pointer);
+    if (transfer != GI_TRANSFER_NOTHING)
+        cairo_region_destroy(static_cast<cairo_region_t*>(arg->v_pointer));
     return true;
 }
 
