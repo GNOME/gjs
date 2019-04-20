@@ -47,6 +47,37 @@ static void gjs_dbus_implementation_method_call(
     const char* method_name, GVariant* parameters,
     GDBusMethodInvocation* invocation, void* user_data) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
+    const char* exported_object_path;
+
+    if (!g_dbus_interface_skeleton_has_connection(
+            G_DBUS_INTERFACE_SKELETON(self), connection)) {
+        g_dbus_method_invocation_return_error_literal(invocation, G_DBUS_ERROR,
+                                                      G_DBUS_ERROR_DISCONNECTED,
+                                                      "Wrong connection");
+        return;
+    }
+    exported_object_path = g_dbus_interface_skeleton_get_object_path(
+        G_DBUS_INTERFACE_SKELETON(self));
+    if (!exported_object_path || strcmp(object_path, exported_object_path)) {
+        g_dbus_method_invocation_return_error(
+            invocation, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
+            "Wrong object path %s for %s", object_path, exported_object_path);
+        return;
+    }
+    if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
+        g_dbus_method_invocation_return_error(
+            invocation, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE,
+            "Unknown interface %s on %s", interface_name,
+            self->priv->ifaceinfo->name);
+        return;
+    }
+    if (!g_dbus_interface_info_lookup_method(self->priv->ifaceinfo,
+                                             method_name)) {
+        g_dbus_method_invocation_return_error(
+            invocation, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD,
+            "Unknown method %s on %s", method_name, interface_name);
+        return;
+    }
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name, parameters, invocation);
     g_object_unref (invocation);
@@ -57,7 +88,35 @@ static GVariant* gjs_dbus_implementation_property_get(
     const char* object_path, const char* interface_name,
     const char* property_name, GError** error, void* user_data) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
+    const char* exported_object_path;
     GVariant *value;
+
+    if (!g_dbus_interface_skeleton_has_connection(
+            G_DBUS_INTERFACE_SKELETON(self), connection)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_DISCONNECTED,
+                    "Wrong connection");
+        return NULL;
+    }
+    exported_object_path = g_dbus_interface_skeleton_get_object_path(
+        G_DBUS_INTERFACE_SKELETON(self));
+    if (!exported_object_path || strcmp(object_path, exported_object_path)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
+                    "Wrong object path %s for %s", object_path,
+                    exported_object_path);
+        return NULL;
+    }
+    if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE,
+                    "Unknown interface %s on %s", interface_name,
+                    self->priv->ifaceinfo->name);
+        return NULL;
+    }
+    if (!g_dbus_interface_info_lookup_property(self->priv->ifaceinfo,
+                                               property_name)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
+                    "Unknown property %s on %s", property_name, interface_name);
+        return NULL;
+    }
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_GET], 0, property_name, &value);
 
@@ -75,6 +134,35 @@ static gboolean gjs_dbus_implementation_property_set(
     const char* property_name, GVariant* value, GError** error,
     void* user_data) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
+    const char* exported_object_path;
+
+    if (!g_dbus_interface_skeleton_has_connection(
+            G_DBUS_INTERFACE_SKELETON(self), connection)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_DISCONNECTED,
+                    "Wrong connection");
+        return FALSE;
+    }
+
+    exported_object_path = g_dbus_interface_skeleton_get_object_path(
+        G_DBUS_INTERFACE_SKELETON(self));
+    if (!exported_object_path || strcmp(object_path, exported_object_path)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
+                    "Wrong object path %s for %s", object_path,
+                    exported_object_path);
+        return FALSE;
+    }
+    if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE,
+                    "Unknown interface %s on %s", interface_name,
+                    self->priv->ifaceinfo->name);
+        return FALSE;
+    }
+    if (!g_dbus_interface_info_lookup_property(self->priv->ifaceinfo,
+                                               property_name)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
+                    "Unknown property %s on %s", property_name, interface_name);
+        return FALSE;
+    }
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_SET], 0, property_name, value);
 
