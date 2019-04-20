@@ -1024,7 +1024,8 @@ context_release_argument(JSContext  *context,
                          GITransfer  transfer,
                          GArgument  *arg)
 {
-    cairo_destroy((cairo_t*)arg->v_pointer);
+    if (transfer != GI_TRANSFER_NOTHING)
+        cairo_destroy(static_cast<cairo_t*>(arg->v_pointer));
     return true;
 }
 
