@@ -34,7 +34,8 @@
 
 G_BEGIN_DECLS
 
-/* Different roles for a GArgument */
+// Different roles for a GIArgument; currently used only in exception and debug
+// messages.
 typedef enum {
     GJS_ARGUMENT_ARGUMENT,
     GJS_ARGUMENT_RETURN_VALUE,
@@ -43,6 +44,9 @@ typedef enum {
     GJS_ARGUMENT_HASH_ELEMENT,
     GJS_ARGUMENT_ARRAY_ELEMENT
 } GjsArgumentType;
+
+GJS_USE
+char* gjs_argument_display_name(const char* arg_name, GjsArgumentType arg_type);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_arg(JSContext      *context,
