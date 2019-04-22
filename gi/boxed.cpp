@@ -44,7 +44,8 @@
 #include <girepository.h>
 
 BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
-    : GIWrapperInstance(cx, obj) {
+    : GIWrapperInstance(cx, obj), m_owning_ptr(false) {
+    m_ptr = nullptr;
     GJS_INC_COUNTER(boxed_instance);
 }
 
@@ -113,7 +114,7 @@ BoxedBase* BoxedBase::get_copy_source(JSContext* context,
 void BoxedInstance::allocate_directly(void) {
     g_assert(get_prototype()->can_allocate_directly());
 
-    m_ptr = g_slice_alloc0(g_struct_info_get_size(info()));
+    own_ptr(g_slice_alloc0(g_struct_info_get_size(info())));
     m_allocated_directly = true;
 
     debug_lifecycle("Boxed pointer directly allocated");
@@ -254,7 +255,7 @@ static bool boxed_invoke_constructor(JSContext* context, JS::HandleObject obj,
  * pointer or another BoxedInstance.
  */
 void BoxedInstance::copy_boxed(void* boxed_ptr) {
-    m_ptr = g_boxed_copy(gtype(), boxed_ptr);
+    own_ptr(g_boxed_copy(gtype(), boxed_ptr));
     debug_lifecycle("Boxed pointer created with g_boxed_copy()");
 }
 
@@ -307,7 +308,6 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         // The return value of GLib.Variant.new_internal() gets its own
         // BoxedInstance, and the one we're setting up in this constructor is
         // discarded.
-        m_not_owning_ptr = true;
         debug_lifecycle(
             "Boxed construction delegated to GVariant constructor, "
             "boxed object discarded");
@@ -338,7 +338,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
             return false;
         }
 
-        m_ptr = rval_arg.v_pointer;
+        own_ptr(rval_arg.v_pointer);
 
         debug_lifecycle("Boxed pointer created from zero-args constructor");
 
@@ -361,9 +361,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         }
 
         // The return value of the JS constructor gets its own BoxedInstance,
-        // and this one is discarded. Mark that the boxed pointer doesn't need
-        // to be freed, since it remains null.
-        m_not_owning_ptr = true;
+        // and this one is discarded.
         debug_lifecycle(
             "Boxed construction delegated to JS constructor, "
             "boxed object discarded");
@@ -393,7 +391,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
 }
 
 BoxedInstance::~BoxedInstance() {
-    if (!m_not_owning_ptr) {
+    if (m_owning_ptr) {
         if (m_allocated_directly) {
             g_slice_free1(g_struct_info_get_size(info()), m_ptr);
         } else {
@@ -476,8 +474,7 @@ bool BoxedInstance::get_nested_interface_object(
     BoxedInstance* priv = BoxedInstance::new_for_js_object(context, obj);
 
     /* A structure nested inside a parent object; doesn't have an independent allocation */
-    priv->m_ptr = raw_ptr() + offset;
-    priv->m_not_owning_ptr = true;
+    priv->share_ptr(raw_ptr() + offset);
     priv->debug_lifecycle(
         "Boxed pointer created, pointing inside memory owned by parent");
 
@@ -1011,8 +1008,7 @@ JSObject* gjs_boxed_from_c_struct(JSContext* cx, GIStructInfo* info,
 bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed, NoCopy) {
     // We need to create a JS Boxed which references the original C struct, not
     // a copy of it. Used for G_SIGNAL_TYPE_STATIC_SCOPE.
-    m_ptr = gboxed;
-    m_not_owning_ptr = true;
+    share_ptr(gboxed);
     debug_lifecycle("Boxed pointer acquired, memory not owned");
     return true;
 }
@@ -1022,7 +1018,7 @@ bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed) {
         copy_boxed(gboxed);
         return true;
     } else if (gtype() == G_TYPE_VARIANT) {
-        m_ptr = g_variant_ref_sink(static_cast<GVariant*>(gboxed));
+        own_ptr(g_variant_ref_sink(static_cast<GVariant*>(gboxed)));
         debug_lifecycle("Boxed pointer created by sinking GVariant ref");
         return true;
     } else if (get_prototype()->can_allocate_directly()) {

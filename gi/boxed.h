@@ -161,11 +161,24 @@ class BoxedInstance
     friend class BoxedBase;  // for field_getter, etc.
 
     bool m_allocated_directly : 1;
-    bool m_not_owning_ptr : 1;  // if set, the JS wrapper does not own the C
-                                // memory referred to by m_ptr.
+    bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred
+                            // to by m_ptr.
 
     explicit BoxedInstance(JSContext* cx, JS::HandleObject obj);
     ~BoxedInstance(void);
+
+    // Don't set GIWrapperBase::m_ptr directly. Instead, use one of these
+    // setters to express your intention to own the pointer or not.
+    void own_ptr(void* boxed_ptr) {
+        g_assert(!m_ptr);
+        m_ptr = boxed_ptr;
+        m_owning_ptr = true;
+    }
+    void share_ptr(void* unowned_boxed_ptr) {
+        g_assert(!m_ptr);
+        m_ptr = unowned_boxed_ptr;
+        m_owning_ptr = false;
+    }
 
     // Methods for different ways to allocate the GBoxed pointer
 
