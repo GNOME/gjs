@@ -314,6 +314,18 @@ region_to_g_argument(JSContext      *context,
                      bool            may_be_null,
                      GArgument      *arg)
 {
+    if (value.isNull()) {
+        if (!may_be_null) {
+            GjsAutoChar display_name =
+                gjs_argument_display_name(arg_name, argument_type);
+            gjs_throw(context, "%s may not be null", display_name.get());
+            return false;
+        }
+
+        arg->v_pointer = nullptr;
+        return true;
+    }
+
     JS::RootedObject obj(context, &value.toObject());
     cairo_region_t *region;
 
@@ -348,7 +360,8 @@ region_release_argument(JSContext  *context,
                         GITransfer  transfer,
                         GArgument  *arg)
 {
-    cairo_region_destroy((cairo_region_t*)arg->v_pointer);
+    if (transfer != GI_TRANSFER_NOTHING)
+        cairo_region_destroy(static_cast<cairo_region_t*>(arg->v_pointer));
     return true;
 }
 
