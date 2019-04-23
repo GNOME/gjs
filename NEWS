@@ -1,3 +1,15 @@
+Version 1.57.1
+--------------
+
+- Closed bugs and merge requests:
+  * Various maintenance [!279, Philip Chimento]
+  * mainloop: Assign null to property instead of deleting [!280, Jason Hicks]
+  * Added -d version note README.md [!282, Nauman Umer]
+  * Extra help for debugger commands [#236, !283, Nauman Umer]
+  * Crash in BoxedInstance when struct could not be allocated directly [#240,
+    !285, Philip Chimento]
+  * Cairo conversion bugs [!286, Philip Chimento]
+
 Version 1.56.1
 --------------
 
