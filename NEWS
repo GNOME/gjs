@@ -1,3 +1,14 @@
+Version 1.56.1
+--------------
+
+- Closed bugs and merge requests:
+  * Calling dumpHeap() on non-existent directory causes crash [#134, !277,
+    Philip Chimento]
+  * Using Gio.MemoryInputStream.new_from_data ("string") causes segfault [#221,
+    !278, Philip Chimento]
+  * Fix gjs_context_eval() for non-zero-terminated strings [!281, Philip
+    Chimento]
+
 Version 1.56.0
 --------------
 
