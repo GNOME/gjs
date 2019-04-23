@@ -14,7 +14,7 @@ XIDS = 101 102 103 104 105 106 107 197 199 211 223 227 293 307 308 309 310 311 \
 XVFB_START = \
 ${XVFB_INVOCATION} -help 2>/dev/null 1>&2 \
 	&& XID=`for id in $(XIDS) ; do test -e /tmp/.X$$id-lock || { echo $$id; exit 0; }; done; exit 1` \
-	&& { ${XVFB} :$$XID -nolisten tcp -auth /dev/null >/dev/null 2>&1 & \
+	&& { ${XVFB} :$$XID -nolisten tcp -auth /dev/null & \
 		trap "kill -15 $$! " 0 HUP INT QUIT TRAP USR1 PIPE TERM ; } \
 	|| { echo "Gtk+Tests:ERROR: Failed to start Xvfb environment for X11 target tests."; exit 1; } \
 	&& export DISPLAY=:$$XID;
