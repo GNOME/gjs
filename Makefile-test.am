@@ -36,7 +36,12 @@ jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_
 jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
 
-BUILT_SOURCES += mock-js-resources.c jsunit-resources.h jsunit-resources.c
+BUILT_SOURCES += 		\
+	mock-js-resources.c	\
+	mock-js-resources.h	\
+	jsunit-resources.c	\
+	jsunit-resources.h	\
+	$(NULL)
 
 EXTRA_DIST += 							\
 	$(mock_js_resources_files)				\
@@ -46,6 +51,7 @@ EXTRA_DIST += 							\
 
 CLEANFILES +=						\
 	mock-js-resources.c				\
+	mock-js-resources.h				\
 	jsunit-resources.c				\
 	jsunit-resources.h				\
 	$(NULL)
@@ -81,14 +87,11 @@ gjs_tests_gtester_SOURCES =				\
 	test/gjs-test-call-args.cpp			\
 	test/gjs-test-coverage.cpp			\
 	test/gjs-test-rooting.cpp			\
-	mock-js-resources.c				\
 	$(NULL)
+nodist_gjs_tests_gtester_SOURCES = mock-js-resources.c mock-js-resources.h
 
-minijasmine_SOURCES =			\
-	installed-tests/minijasmine.cpp	\
-	jsunit-resources.c		\
-	jsunit-resources.h		\
-	$(NULL)
+minijasmine_SOURCES = installed-tests/minijasmine.cpp
+nodist_minijasmine_SOURCES = jsunit-resources.c jsunit-resources.h
 
 minijasmine_CPPFLAGS =				\
 	$(AM_CPPFLAGS)				\
