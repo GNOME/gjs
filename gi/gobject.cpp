@@ -143,6 +143,8 @@ static void gjs_object_set_gproperty(GObject* object, unsigned property_id,
     JSContext *cx = current_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
+    JSAutoCompartment ac(cx, js_obj);
+
     if (!jsobj_set_gproperty(cx, js_obj, value, pspec))
         gjs_log_exception(cx);
 }
