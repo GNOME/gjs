@@ -513,6 +513,7 @@ function defineGObjectLegacyObjects(GObject) {
             let name = params.Name;
 
             let gtypename = _createGTypeName(params);
+            let gflags = params.Abstract ? GObject.TypeFlags.ABSTRACT : 0;
 
             if (!params.Extends)
                 params.Extends = GObject.Object;
@@ -530,7 +531,7 @@ function defineGObjectLegacyObjects(GObject) {
             delete params.Properties;
 
             let newClass = Gi.register_type(parent.prototype, gtypename,
-                gobjectInterfaces, propertiesArray);
+                gflags, gobjectInterfaces, propertiesArray);
 
             // See Class.prototype._construct for the reasoning
             // behind this direct prototype set.
