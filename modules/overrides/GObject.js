@@ -27,6 +27,7 @@ const Legacy = imports._legacy;
 let GObject;
 
 var GTypeName = Symbol('GType name');
+var GTypeFlags = Symbol('GType flags');
 var interfaces = Symbol('GObject interfaces');
 var properties = Symbol('GObject properties');
 var requires = Symbol('GObject interface requires');
@@ -58,6 +59,8 @@ function registerClass(klass) {
         klass = arguments[1];
         if ('GTypeName' in metaInfo)
             klass[GTypeName] = metaInfo.GTypeName;
+        if ('GTypeFlags' in metaInfo)
+            klass[GTypeFlags] = metaInfo.GTypeFlags;
         if ('Implements' in metaInfo)
             klass[interfaces] = metaInfo.Implements;
         if ('Properties' in metaInfo)
@@ -334,6 +337,8 @@ function _init() {
 
     GObject.Object._classInit = function(klass) {
         let gtypename = _createGTypeName(klass);
+        let gflags = klass.hasOwnProperty(GTypeFlags) ?
+            klass[GTypeFlags] : 0;
         let gobjectInterfaces = klass.hasOwnProperty(interfaces) ?
             klass[interfaces] : [];
         let propertiesArray = _propertiesAsArray(klass);
@@ -341,7 +346,7 @@ function _init() {
         let gobjectSignals = klass.hasOwnProperty(signals) ?
             klass[signals] : [];
 
-        let newClass = Gi.register_type(parent.prototype, gtypename,
+        let newClass = Gi.register_type(parent.prototype, gtypename, gflags,
             gobjectInterfaces, propertiesArray);
         Object.setPrototypeOf(newClass, parent);
 
