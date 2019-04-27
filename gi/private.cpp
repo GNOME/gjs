@@ -252,9 +252,11 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     JSAutoRequest ar(cx);
 
     JS::UniqueChars name;
+    GTypeFlags type_flags;
     JS::RootedObject parent(cx), interfaces(cx), properties(cx);
-    if (!gjs_parse_call_args(cx, "register_type", argv, "osoo", "parent",
-                             &parent, "name", &name, "interfaces", &interfaces,
+    if (!gjs_parse_call_args(cx, "register_type", argv, "osioo", "parent",
+                             &parent, "name", &name, "flags", &type_flags,
+                             "interfaces", &interfaces,
                              "properties", &properties))
         return false;
 
@@ -296,7 +298,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     type_info.instance_size = query.instance_size;
 
     GType instance_type = g_type_register_static(
-        parent_priv->gtype(), name.get(), &type_info, GTypeFlags(0));
+        parent_priv->gtype(), name.get(), &type_info, type_flags);
 
     g_type_set_qdata(instance_type, ObjectBase::custom_type_quark(),
                      GINT_TO_POINTER(1));
