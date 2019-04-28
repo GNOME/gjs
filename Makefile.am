@@ -111,7 +111,6 @@ modules-resources.c: $(srcdir)/modules/modules.gresource.xml $(modules_resource_
 EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
 
 modules_source_files =		\
-	$(module_resource_srcs)	\
 	$(module_system_srcs)	\
 	$(module_console_srcs)	\
 	$(NULL)
@@ -125,6 +124,7 @@ endif
 CLEANFILES += $(module_resource_srcs)
 
 libgjs_la_SOURCES += $(modules_source_files)
+nodist_libgjs_la_SOURCES = $(module_resource_srcs)
 
 GjsPrivate-1.0.gir: libgjs.la
 GjsPrivate_1_0_gir_LIBS = libgjs.la

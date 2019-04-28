@@ -1464,6 +1464,12 @@ ObjectInstance::init_impl(JSContext              *context,
     if (!m_proto->props_to_g_parameters(context, args, &names, &values))
         return false;
 
+    if (G_TYPE_IS_ABSTRACT(gtype())) {
+        gjs_throw(context,
+                  "Cannot instantiate abstract type %s", g_type_name(gtype()));
+        return false;
+    }
+
     /* Mark this object in the construction stack, it
        will be popped in gjs_object_custom_init() later
        down.
