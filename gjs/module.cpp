@@ -74,7 +74,7 @@ class GjsModule {
     define_import(JSContext       *cx,
                   JS::HandleObject module,
                   JS::HandleObject importer,
-                  JS::HandleId     name)
+                  JS::HandleId     name) const
     {
         if (!JS_DefinePropertyById(cx, importer, name, module,
                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {

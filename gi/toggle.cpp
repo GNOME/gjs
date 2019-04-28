@@ -31,7 +31,7 @@
 #include "toggle.h"
 
 std::deque<ToggleQueue::Item>::iterator
-ToggleQueue::find_operation_locked(GObject               *gobj,
+ToggleQueue::find_operation_locked(const GObject               *gobj,
                                    ToggleQueue::Direction direction)
 {
     return std::find_if(q.begin(), q.end(),
@@ -40,8 +40,18 @@ ToggleQueue::find_operation_locked(GObject               *gobj,
         });
 }
 
+std::deque<ToggleQueue::Item>::const_iterator 
+ToggleQueue::find_operation_locked(const GObject *gobj,
+                                   ToggleQueue::Direction direction) const
+{
+    return std::find_if(q.begin(), q.end(),
+        [gobj, direction](const Item& item)->bool {
+            return item.gobj == gobj && item.direction == direction;
+        });
+}
+
 bool
-ToggleQueue::find_and_erase_operation_locked(GObject               *gobj,
+ToggleQueue::find_and_erase_operation_locked(const GObject               *gobj,
                                              ToggleQueue::Direction direction)
 {
     auto pos = find_operation_locked(gobj, direction);
@@ -71,7 +81,7 @@ ToggleQueue::idle_destroy_notify(void *data)
 }
 
 std::pair<bool, bool>
-ToggleQueue::is_queued(GObject *gobj)
+ToggleQueue::is_queued(GObject *gobj) const
 {
     std::lock_guard<std::mutex> hold(lock);
     bool has_toggle_down = find_operation_locked(gobj, DOWN) != q.end();

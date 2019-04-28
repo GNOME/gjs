@@ -131,7 +131,7 @@ gjs_log_error(JSContext *cx,
 GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_print_parse_args(JSContext    *cx,
-                     JS::CallArgs& argv,
+                     const JS::CallArgs& argv,
                      GjsAutoChar  *buffer)
 {
     GString *str;
