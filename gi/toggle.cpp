@@ -34,10 +34,8 @@ std::deque<ToggleQueue::Item>::iterator
 ToggleQueue::find_operation_locked(const GObject               *gobj,
                                    ToggleQueue::Direction direction)
 {
-    return std::find_if(q.begin(), q.end(),
-        [gobj, direction](const Item& item)->bool {
-            return item.gobj == gobj && item.direction == direction;
-        });
+    auto it = static_cast<const ToggleQueue*>(this)->find_operation_locked(gobj, direction);
+    return q.erase(it, it);
 }
 
 std::deque<ToggleQueue::Item>::const_iterator 
