@@ -38,7 +38,7 @@ ToggleQueue::find_operation_locked(const GObject               *gobj,
     return q.erase(it, it);
 }
 
-std::deque<ToggleQueue::Item>::const_iterator 
+std::deque<ToggleQueue::Item>::const_iterator
 ToggleQueue::find_operation_locked(const GObject *gobj,
                                    ToggleQueue::Direction direction) const
 {
@@ -120,7 +120,7 @@ ToggleQueue::handle_toggle(Handler handler)
     debug("handle", item.gobj);
     if (item.needs_unref)
         g_object_unref(item.gobj);
-    
+
     return true;
 }
 
