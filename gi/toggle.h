@@ -53,7 +53,7 @@ private:
         unsigned needs_unref : 1;
     };
 
-    std::mutex lock;
+    mutable std::mutex lock;
     std::deque<Item> q;
     std::atomic_bool m_shutdown = ATOMIC_VAR_INIT(false);
 
@@ -61,15 +61,20 @@ private:
     Handler m_toggle_handler;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
-    inline void debug(const char *did, void *what) {
+    inline void debug(const char *did, const void *what) const {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
     }
 
     GJS_USE
-    std::deque<Item>::iterator find_operation_locked(GObject  *gobj,
+    std::deque<Item>::iterator find_operation_locked(const GObject  *gobj,
                                                      Direction direction);
+
     GJS_USE
-    bool find_and_erase_operation_locked(GObject *gobj, Direction direction);
+    std::deque<Item>::const_iterator find_operation_locked(const GObject *gobj,
+                                                           Direction direction) const;
+
+    GJS_USE
+    bool find_and_erase_operation_locked(const GObject *gobj, Direction direction);
 
     static gboolean idle_handle_toggle(void *data);
     static void idle_destroy_notify(void *data);
@@ -78,7 +83,7 @@ private:
     /* These two functions return a pair DOWN, UP signifying whether toggles
      * are / were queued. is_queued() just checks and does not modify. */
     GJS_USE
-    std::pair<bool, bool> is_queued(GObject *gobj);
+    std::pair<bool, bool> is_queued(GObject *gobj) const;
     /* Cancels pending toggles and returns whether any were queued. */
     std::pair<bool, bool> cancel(GObject *gobj);
 
