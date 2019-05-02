@@ -289,7 +289,7 @@ public:
         JS_ShutDown();
     }
 
-    operator bool() {
+    operator bool() const {
         return true;
     }
 };
