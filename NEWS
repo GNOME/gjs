@@ -1,3 +1,15 @@
+Version 1.56.2
+--------------
+
+- Closed bugs and merge requests:
+  * Crash in BoxedInstance when struct could not be allocated directly [#240,
+    !285, Philip Chimento]
+  * Cairo conversion bugs [!286, Philip Chimento]
+  * Gjs crashes when binding inherited property to js added gobject-property
+    [#246, !289, Marco Trevisan]
+  * console: Don't accept --profile after the script name [!287, Philip
+    Chimento]
+
 Version 1.56.1
 --------------
 
