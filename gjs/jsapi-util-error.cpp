@@ -227,10 +227,7 @@ gjs_format_stack_trace(JSContext       *cx,
                                 nullptr);
 }
 
-void
-gjs_warning_reporter(JSContext     *context,
-                     JSErrorReport *report)
-{
+void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
     const char *warning;
     GLogLevelFlags level;
 

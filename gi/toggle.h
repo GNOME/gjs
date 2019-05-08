@@ -61,7 +61,8 @@ private:
     Handler m_toggle_handler;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
-    inline void debug(const char *did, const void *what) const {
+    inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
+                      const void* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
     }
 

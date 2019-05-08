@@ -572,6 +572,7 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
 #else  /* !ENABLE_PROFILER */
 
     g_message("Profiler is disabled. Not setting up signals.");
+    (void)self;
 
 #endif  /* ENABLE_PROFILER */
 }
@@ -606,6 +607,11 @@ gjs_profiler_chain_signal(GjsContext *context,
             return true;
         }
     }
+
+#else  // !ENABLE_PROFILER
+
+    (void)context;
+    (void)info;
 
 #endif  /* ENABLE_PROFILER */
 

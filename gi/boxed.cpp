@@ -56,7 +56,7 @@ static bool struct_is_simple(GIStructInfo *info);
 
 // See GIWrapperBase::resolve().
 bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
-                                  JS::HandleId id, const char* prop_name,
+                                  JS::HandleId, const char* prop_name,
                                   bool* resolved) {
     // Look for methods and other class properties
     GjsAutoFunctionInfo method_info =
@@ -189,8 +189,7 @@ GIFieldInfo* BoxedPrototype::lookup_field(JSContext* cx, JSString* prop_name) {
  * properties to set as fieds of the object. We don't require that every field
  * of the object be set.
  */
-bool BoxedInstance::init_from_props(JSContext* context, JSObject* obj,
-                                    JS::Value props_value) {
+bool BoxedInstance::init_from_props(JSContext* context, JS::Value props_value) {
     size_t ix, length;
 
     if (!props_value.isObject()) {
@@ -389,7 +388,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         return false;
     }
 
-    return init_from_props(context, obj, args[0]);
+    return init_from_props(context, args[0]);
 }
 
 BoxedInstance::~BoxedInstance() {
@@ -1035,7 +1034,7 @@ JSObject* BoxedInstance::new_for_c_struct(JSContext* cx, GIStructInfo* info,
  * the passed-in pointer, while the normal method will take a reference, or if
  * the boxed type can be directly allocated, copy the memory.
  */
-bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed, NoCopy) {
+bool BoxedInstance::init_from_c_struct(JSContext*, void* gboxed, NoCopy) {
     // We need to create a JS Boxed which references the original C struct, not
     // a copy of it. Used for G_SIGNAL_TYPE_STATIC_SCOPE.
     share_ptr(gboxed);

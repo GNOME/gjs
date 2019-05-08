@@ -145,7 +145,7 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
 
 // See GIWrapperBase::resolve().
 bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
-                                        JS::HandleId id, const char* prop_name,
+                                        JS::HandleId, const char* prop_name,
                                         bool* resolved) {
     /* We are the prototype, so look for methods and other class properties */
     GjsAutoFunctionInfo method_info =
@@ -331,9 +331,8 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
         /* In case we're looking for a private type, and we don't find it,
            we need to define it first.
         */
-        JS::RootedObject ignored(context);
-        if (!gjs_define_fundamental_class(context, in_object, info,
-                                          &constructor, &ignored))
+        if (!FundamentalPrototype::define_class(context, in_object, info,
+                                                &constructor))
             return nullptr;
     } else {
         if (G_UNLIKELY(!value.isObject())) {
@@ -392,19 +391,27 @@ unsigned FundamentalPrototype::constructor_nargs(void) const {
     return g_callable_info_get_n_args(m_constructor_info);
 }
 
-bool
-gjs_define_fundamental_class(JSContext              *context,
-                             JS::HandleObject        in_object,
-                             GIObjectInfo           *info,
-                             JS::MutableHandleObject constructor,
-                             JS::MutableHandleObject prototype)
-{
+/*
+ * FundamentalPrototype::define_class:
+ * @in_object: Object where the constructor is stored, typically a repo object.
+ * @info: Introspection info for the fundamental class.
+ * @constructor: Return location for the constructor object.
+ *
+ * Define a fundamental class constructor and prototype, including all the
+ * necessary methods and properties. Provides the constructor object as an out
+ * parameter, for convenience elsewhere.
+ */
+bool FundamentalPrototype::define_class(JSContext* cx,
+                                        JS::HandleObject in_object,
+                                        GIObjectInfo* info,
+                                        JS::MutableHandleObject constructor) {
     GType gtype;
 
     gtype = g_registered_type_info_get_g_type (info);
 
+    JS::RootedObject prototype(cx);
     FundamentalPrototype* priv = FundamentalPrototype::create_class(
-        context, in_object, info, gtype, constructor, prototype);
+        cx, in_object, info, gtype, constructor, &prototype);
     if (!priv)
         return false;
 
@@ -415,17 +422,22 @@ gjs_define_fundamental_class(JSContext              *context,
                   priv->ns(), priv->name());
     }
 
-    return gjs_define_static_methods<InfoType::Object>(context, constructor,
-                                                       gtype, info);
+    return gjs_define_static_methods<InfoType::Object>(cx, constructor, gtype,
+                                                       info);
 }
 
-JSObject*
-gjs_object_from_g_fundamental(JSContext    *context,
-                              GIObjectInfo *info,
-                              void         *gfundamental)
-{
-    if (gfundamental == NULL)
+/*
+ * FundamentalInstance::object_for_c_ptr:
+ *
+ * Given a pointer to a C fundamental object, returns a JS object. This JS
+ * object may have been cached, or it may be newly created.
+ */
+JSObject* FundamentalInstance::object_for_c_ptr(JSContext* context,
+                                                void* gfundamental) {
+    if (!gfundamental) {
+        gjs_throw(context, "Cannot get JSObject for null fundamental pointer");
         return NULL;
+    }
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     auto p = gjs->fundamental_table().lookup(gfundamental);
@@ -433,10 +445,7 @@ gjs_object_from_g_fundamental(JSContext    *context,
         return p->value();
 
     gjs_debug_marshal(GJS_DEBUG_GFUNDAMENTAL,
-                      "Wrapping fundamental %s.%s %p with JSObject",
-                      g_base_info_get_namespace((GIBaseInfo *) info),
-                      g_base_info_get_name((GIBaseInfo *) info),
-                      gfundamental);
+                      "Wrapping fundamental %p with JSObject", gfundamental);
 
     JS::RootedObject proto(context,
         gjs_lookup_fundamental_prototype_from_gtype(context,
@@ -474,23 +483,17 @@ FundamentalPrototype* FundamentalPrototype::for_gtype(JSContext* cx,
     return FundamentalPrototype::for_js(cx, proto);
 }
 
-JSObject *
-gjs_fundamental_from_g_value(JSContext    *context,
-                             const GValue *value,
-                             GType         gtype)
-{
-    void *fobj;
-
-    auto* proto_priv = FundamentalPrototype::for_gtype(context, gtype);
-
-    fobj = proto_priv->call_get_value_function(value);
+JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
+                                                 const GValue* value,
+                                                 GType gtype) {
+    auto* proto_priv = FundamentalPrototype::for_gtype(cx, gtype);
+    void* fobj = proto_priv->call_get_value_function(value);
     if (!fobj) {
-        gjs_throw(context,
-                  "Failed to convert GValue to a fundamental instance");
+        gjs_throw(cx, "Failed to convert GValue to a fundamental instance");
         return NULL;
     }
 
-    return gjs_object_from_g_fundamental(context, proto_priv->info(), fobj);
+    return FundamentalInstance::object_for_c_ptr(cx, fobj);
 }
 
 bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
@@ -507,13 +510,4 @@ void* FundamentalInstance::copy_ptr(JSContext* cx, GType gtype,
                                     void* gfundamental) {
     auto* priv = FundamentalPrototype::for_gtype(cx, gtype);
     return priv->call_ref_function(gfundamental);
-}
-
-void
-gjs_fundamental_unref(JSContext    *context,
-                      void         *gfundamental)
-{
-    auto* priv = FundamentalPrototype::for_gtype(
-        context, G_TYPE_FROM_INSTANCE(gfundamental));
-    priv->call_unref_function(gfundamental);
 }

@@ -294,10 +294,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
     return true;
 }
 
-static void
-gjs_cairo_context_finalize(JSFreeOp *fop,
-                           JSObject *obj)
-{
+static void gjs_cairo_context_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoContext *priv;
     priv = (GjsCairoContext*) JS_GetPrivate(obj);
     if (priv == NULL)
@@ -1019,11 +1016,8 @@ context_from_g_argument(JSContext             *context,
     return true;
 }
 
-static bool
-context_release_argument(JSContext  *context,
-                         GITransfer  transfer,
-                         GArgument  *arg)
-{
+static bool context_release_argument(JSContext*, GITransfer transfer,
+                                     GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
         cairo_destroy(static_cast<cairo_t*>(arg->v_pointer));
     return true;
@@ -1035,8 +1029,6 @@ static GjsForeignInfo foreign_info = {
     context_release_argument
 };
 
-void
-gjs_cairo_context_init(JSContext *context)
-{
+void gjs_cairo_context_init(void) {
     gjs_struct_foreign_register("cairo", "Context", &foreign_info);
 }

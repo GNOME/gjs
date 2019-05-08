@@ -275,10 +275,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
     return true;
 }
 
-static void
-gjs_cairo_region_finalize(JSFreeOp *fop,
-                          JSObject *obj)
-{
+static void gjs_cairo_region_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoRegion *priv;
     priv = (GjsCairoRegion*) JS_GetPrivate(obj);
     if (priv == NULL)
@@ -355,11 +352,8 @@ region_from_g_argument(JSContext             *context,
     return true;
 }
 
-static bool
-region_release_argument(JSContext  *context,
-                        GITransfer  transfer,
-                        GArgument  *arg)
-{
+static bool region_release_argument(JSContext*, GITransfer transfer,
+                                    GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
         cairo_region_destroy(static_cast<cairo_region_t*>(arg->v_pointer));
     return true;
@@ -371,8 +365,6 @@ static GjsForeignInfo foreign_info = {
     region_release_argument
 };
 
-void
-gjs_cairo_region_init(JSContext *context)
-{
+void gjs_cairo_region_init(void) {
     gjs_struct_foreign_register("cairo", "Region", &foreign_info);
 }

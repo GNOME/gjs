@@ -130,17 +130,13 @@ private:
     void *m_data;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
-    inline void
-    debug(const char *what)
-    {
+    inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned %p %s", this,
                             what);
     }
 
-    static void
-    on_context_destroy(void    *data,
-                       GObject *ex_context)
-    {
+    static void on_context_destroy(void* data,
+                                   GObject* ex_context G_GNUC_UNUSED) {
         auto self = static_cast<GjsMaybeOwned<T> *>(data);
         self->invalidate();
     }

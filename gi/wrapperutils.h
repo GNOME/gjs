@@ -290,20 +290,22 @@ class GIWrapperBase {
     // Debug methods
 
  protected:
-    void debug_lifecycle(const char* message) const {
+    void debug_lifecycle(const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
             Base::debug_topic, "[%p: %s pointer %p - %s.%s (%s)] %s", this,
             Base::debug_tag, ptr_addr(), ns(), name(), type_name(), message);
     }
-    void debug_lifecycle(const JSObject* obj, const char* message) const {
+    void debug_lifecycle(const JSObject* obj GJS_USED_VERBOSE_LIFECYCLE,
+                         const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
             Base::debug_topic,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s", this,
             Base::debug_tag, ptr_addr(), obj, ns(), name(), type_name(),
             message);
     }
-    void debug_jsprop(const char* message, const char* id,
-                      const JSObject* obj) const {
+    void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
+                      const char* id GJS_USED_VERBOSE_PROPS,
+                      const JSObject* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(
             Base::debug_topic,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s '%s'", this,
@@ -317,8 +319,10 @@ class GIWrapperBase {
                       const JSObject* obj) const {
         debug_jsprop(message, gjs_debug_string(id).c_str(), obj);
     }
-    static void debug_jsprop_static(const char* message, jsid id,
-                                    const JSObject* obj) {
+    static void debug_jsprop_static(const char* message GJS_USED_VERBOSE_PROPS,
+                                    jsid id GJS_USED_VERBOSE_PROPS,
+                                    const JSObject* obj
+                                        GJS_USED_VERBOSE_PROPS) {
         gjs_debug_jsprop(Base::debug_topic,
                          "[%s JS wrapper %p] %s '%s', no instance associated",
                          Base::debug_tag, obj, message,
@@ -489,7 +493,7 @@ class GIWrapperBase {
      * GIWrapperBase::trace_impl:
      * Override if necessary. See trace().
      */
-    void trace_impl(JSTracer* trc) {}
+    void trace_impl(JSTracer*) {}
 
     // JSNative methods
 
@@ -744,7 +748,7 @@ class GIWrapperPrototype : public Base {
      * necessary.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    bool init(JSContext* cx) { return true; }
+    bool init(JSContext*) { return true; }
 
     // The following three methods are private because they are used only in
     // create_class().
@@ -761,7 +765,7 @@ class GIWrapperPrototype : public Base {
      * inherit in JS.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const {
+    bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const {
         proto.set(nullptr);
         return true;
     }
@@ -974,10 +978,10 @@ class GIWrapperPrototype : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp* fop, JSObject* obj) { release(); }
+    void finalize_impl(JSFreeOp*, JSObject*) { release(); }
 
     // Override if necessary
-    void trace_impl(JSTracer* trc) {}
+    void trace_impl(JSTracer*) {}
 };
 
 /*
@@ -1051,13 +1055,13 @@ class GIWrapperInstance : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp* fop, JSObject* obj) {
+    void finalize_impl(JSFreeOp*, JSObject*) {
         static_cast<Instance*>(this)->~Instance();
         g_slice_free(Instance, this);
     }
 
     // Override if necessary
-    void trace_impl(JSTracer* trc) {}
+    void trace_impl(JSTracer*) {}
 
     // Helper methods
 
@@ -1072,7 +1076,7 @@ class GIWrapperInstance : public Base {
      * the check.
      */
     GJS_USE
-    bool typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
+    bool typecheck_impl(JSContext*, GIBaseInfo* expected_info,
                         GType expected_gtype) const {
         if (expected_gtype != G_TYPE_NONE)
             return g_type_is_a(Base::gtype(), expected_gtype);

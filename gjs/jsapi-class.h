@@ -116,11 +116,7 @@ bool gjs_define_property_dynamic(JSContext       *cx,
     type *priv = priv_from_js(cx, to)
 
 /* Helper for GJS_DEFINE_PROTO_* macros with no parent */
-static inline JSObject *
-gjs_no_parent_get_proto(JSContext *cx)
-{
-    return nullptr;
-}
+static inline JSObject* gjs_no_parent_get_proto(JSContext*) { return nullptr; }
 
 /**
  * GJS_DEFINE_PROTO:

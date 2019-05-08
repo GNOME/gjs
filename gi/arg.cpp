@@ -146,12 +146,7 @@ _gjs_enum_from_int (GIEnumInfo *enum_info,
 
 /* Here for symmetry, but result is the same for the two cases */
 GJS_USE
-static int
-_gjs_enum_to_int (GIEnumInfo *enum_info,
-                  gint64      value)
-{
-    return (int)value;
-}
+static int _gjs_enum_to_int(int64_t value) { return static_cast<int>(value); }
 
 /* Check if an argument of the given needs to be released if we created it
  * from a JS value to pass it into a function and aren't transfering ownership.
@@ -1570,7 +1565,7 @@ static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                 !_gjs_enum_value_is_valid(cx, interface_info, value_int64))
                 return false;
 
-            arg->v_int = _gjs_enum_to_int(interface_info, value_int64);
+            arg->v_int = _gjs_enum_to_int(value_int64);
             return true;
 
         } else if (interface_type == GI_INFO_TYPE_FLAGS) {
@@ -1580,7 +1575,7 @@ static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                 !_gjs_flags_value_is_valid(cx, gtype, value_int64))
                 return false;
 
-            arg->v_int = _gjs_enum_to_int(interface_info, value_int64);
+            arg->v_int = _gjs_enum_to_int(value_int64);
             return true;
 
         } else if (gtype == G_TYPE_NONE) {
@@ -2944,8 +2939,8 @@ gjs_value_from_g_argument (JSContext             *context,
             } else if (gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Unexpected unregistered type packing GArgument into JS::Value");
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
-                JSObject *obj;
-                obj = gjs_object_from_g_fundamental(context, (GIObjectInfo *)interface_info, arg->v_pointer);
+                JSObject* obj = FundamentalInstance::object_for_c_ptr(
+                    context, arg->v_pointer);
                 if (obj)
                     value = JS::ObjectValue(*obj);
             } else {
@@ -3227,8 +3222,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                     failed = true;
                 }
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                if (transfer != TRANSFER_IN_NOTHING)
-                    gjs_fundamental_unref(context, arg->v_pointer);
+                if (transfer != TRANSFER_IN_NOTHING) {
+                    auto* priv =
+                        FundamentalPrototype::for_gtype(context, gtype);
+                    priv->call_unref_function(arg->v_pointer);
+                }
             } else {
                 gjs_throw(context, "Unhandled GType %s releasing GArgument",
                           g_type_name(gtype));
