@@ -286,6 +286,7 @@ installed-tests/js/testGio.log: gschemas.compiled
 
 gschemas.compiled: installed-tests/js/org.gnome.GjsTest.gschema.xml
 	$(AM_V_GEN)$(GLIB_COMPILE_SCHEMAS) --targetdir=. $(<D)
+CLEANFILES += gschemas.compiled
 
 # GJS_PATH is empty here since we want to force the use of our own
 # resources. G_FILENAME_ENCODING ensures filenames are not UTF-8.
