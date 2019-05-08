@@ -182,12 +182,8 @@ warn_about_illegal_js_callback(const GjsCallbackTrampoline *trampoline,
  * In other words, everything we need to call the JS function and
  * getting the return value back.
  */
-static void
-gjs_callback_closure(ffi_cif *cif,
-                     void *result,
-                     void **ffi_args,
-                     void *data)
-{
+static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
+                                 void** ffi_args, void* data) {
     JSContext *context;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs, c_args_offset = 0;
@@ -1457,10 +1453,7 @@ uninit_cached_function_data (Function *function)
     g_function_invoker_destroy(&function->invoker);
 }
 
-static void
-function_finalize(JSFreeOp *fop,
-                  JSObject *obj)
-{
+static void function_finalize(JSFreeOp*, JSObject* obj) {
     Function *priv;
 
     priv = (Function *) JS_GetPrivate(obj);

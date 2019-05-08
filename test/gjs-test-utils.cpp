@@ -30,10 +30,7 @@
 #include "gjs-test-utils.h"
 #include "test/gjs-test-common.h"
 
-void
-gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
-                            gconstpointer       unused)
-{
+void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
     fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
 
@@ -56,9 +53,6 @@ gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
     g_object_unref(fx->gjs_context);
 }
 
-void
-gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
-                               gconstpointer      unused)
-{
+void gjs_unit_test_fixture_teardown(GjsUnitTestFixture* fx, const void*) {
     gjs_unit_test_destroy_context(fx);
 }

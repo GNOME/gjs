@@ -125,10 +125,7 @@ get_name (JSContext *context,
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)
 
-static void
-ns_finalize(JSFreeOp *fop,
-            JSObject *obj)
-{
+static void ns_finalize(JSFreeOp*, JSObject* obj) {
     Ns *priv;
 
     priv = (Ns *)JS_GetPrivate(obj);

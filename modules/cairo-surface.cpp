@@ -42,10 +42,7 @@ GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Surface", cairo_surface,
                                      JSCLASS_BACKGROUND_FINALIZE)
 GJS_DEFINE_PRIV_FROM_JS(GjsCairoSurface, gjs_cairo_surface_class)
 
-static void
-gjs_cairo_surface_finalize(JSFreeOp *fop,
-                           JSObject *obj)
-{
+static void gjs_cairo_surface_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoSurface *priv;
     priv = (GjsCairoSurface*) JS_GetPrivate(obj);
     if (priv == NULL)
@@ -297,11 +294,8 @@ surface_from_g_argument(JSContext             *context,
     return true;
 }
 
-static bool
-surface_release_argument(JSContext  *context,
-                         GITransfer  transfer,
-                         GArgument  *arg)
-{
+static bool surface_release_argument(JSContext*, GITransfer transfer,
+                                     GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
         cairo_surface_destroy(static_cast<cairo_surface_t*>(arg->v_pointer));
     return true;
@@ -313,8 +307,6 @@ static GjsForeignInfo foreign_info = {
     surface_release_argument
 };
 
-void
-gjs_cairo_surface_init(JSContext *context)
-{
+void gjs_cairo_surface_init(void) {
     gjs_struct_foreign_register("cairo", "Surface", &foreign_info);
 }

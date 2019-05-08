@@ -106,10 +106,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
     return true;
 }
 
-static void
-param_finalize(JSFreeOp *fop,
-               JSObject *obj)
-{
+static void param_finalize(JSFreeOp*, JSObject* obj) {
     Param *priv;
 
     priv = (Param*) JS_GetPrivate(obj);

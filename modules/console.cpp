@@ -64,8 +64,8 @@ enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 
 template <typename T>
 static void print_single_error(T* report, PrintErrorKind kind);
-static void print_error_line(const char* prefix, JSErrorNotes::Note* note) {}
 static void print_error_line(const char* prefix, JSErrorReport* report);
+static void print_error_line(const char*, JSErrorNotes::Note*) {}
 
 static void
 gjs_console_print_error(JSErrorReport *report)
@@ -178,9 +178,7 @@ static void print_error_line(const char* prefix, JSErrorReport* report) {
     }
 }
 
-static void
-gjs_console_warning_reporter(JSContext *cx, JSErrorReport *report)
-{
+static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
     gjs_console_print_error(report);
 }
 
@@ -238,9 +236,7 @@ public:
 
 #ifdef HAVE_READLINE_READLINE_H
 GJS_USE
-static bool
-gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
-{
+static bool gjs_console_readline(char** bufp, const char* prompt) {
     char *line;
     line = readline(prompt);
     if (!line)
@@ -252,13 +248,11 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
 }
 #else
 GJS_USE
-static bool
-gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
-{
+static bool gjs_console_readline(char** bufp, const char* prompt) {
     char line[256];
     fprintf(stdout, "%s", prompt);
     fflush(stdout);
-    if (!fgets(line, sizeof line, file))
+    if (!fgets(line, sizeof line, stdin))
         return false;
     *bufp = g_strdup(line);
     return true;
@@ -314,7 +308,6 @@ gjs_console_interact(JSContext *context,
     char *temp_buf = NULL;
     int lineno;
     int startline;
-    FILE *file = stdin;
 
     JS::SetWarningReporter(context, gjs_console_warning_reporter);
 
@@ -330,8 +323,8 @@ gjs_console_interact(JSContext *context,
         startline = lineno;
         buffer = g_string_new("");
         do {
-            if (!gjs_console_readline(context, &temp_buf, file,
-                                      startline == lineno ? "gjs> " : ".... ")) {
+            if (!gjs_console_readline(
+                    &temp_buf, startline == lineno ? "gjs> " : ".... ")) {
                 eof = true;
                 break;
             }
@@ -363,9 +356,6 @@ gjs_console_interact(JSContext *context,
     } while (!eof);
 
     g_fprintf(stdout, "\n");
-
-    if (file != stdin)
-        fclose(file);
 
     argv.rval().setUndefined();
     return true;

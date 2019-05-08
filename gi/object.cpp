@@ -290,12 +290,8 @@ bool ObjectBase::add_property(JSContext* cx, JS::HandleObject obj,
     return priv->to_instance()->add_property_impl(cx, obj, id, value);
 }
 
-bool
-ObjectInstance::add_property_impl(JSContext       *cx,
-                                  JS::HandleObject obj,
-                                  JS::HandleId     id,
-                                  JS::HandleValue  value)
-{
+bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
+                                       JS::HandleId id, JS::HandleValue) {
     debug_jsprop("Add property hook", id, obj);
 
     if (is_custom_js_class() || m_gobj_disposed)
@@ -508,11 +504,11 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
      * the field */
     args.rval().setUndefined();
 
-    return priv->to_instance()->field_setter_impl(cx, name, args[0]);
+    return priv->to_instance()->field_setter_not_impl(cx, name);
 }
 
-bool ObjectInstance::field_setter_impl(JSContext* cx, JS::HandleString name,
-                                       JS::HandleValue value) {
+bool ObjectInstance::field_setter_not_impl(JSContext* cx,
+                                           JS::HandleString name) {
     if (!check_gobject_disposed("set GObject field on"))
         return true;
 
@@ -860,9 +856,9 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     return true;
 }
 
-bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                          JS::AutoIdVector& properties,
-                                         bool only_enumerable) {
+                                         bool only_enumerable G_GNUC_UNUSED) {
     unsigned n_interfaces;
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
 
@@ -1020,10 +1016,8 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
     return true;
 }
 
-static void
-wrapped_gobj_dispose_notify(gpointer      data,
-                            GObject      *where_the_object_was)
-{
+static void wrapped_gobj_dispose_notify(
+    void* data, GObject* where_the_object_was GJS_USED_VERBOSE_LIFECYCLE) {
     auto *priv = static_cast<ObjectInstance *>(data);
     priv->gobj_dispose_notify();
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed",
@@ -1070,8 +1064,8 @@ ObjectInstance::remove_wrapped_gobjects_if(ObjectInstance::Predicate predicate,
  * Callback called when the #GjsContext is disposed. It just calls
  * handle_context_dispose() on every ObjectInstance.
  */
-void ObjectInstance::context_dispose_notify(void* data,
-                                            GObject* where_the_object_was) {
+void ObjectInstance::context_dispose_notify(
+    void*, GObject* where_the_object_was G_GNUC_UNUSED) {
     ObjectInstance::iterate_wrapped_gobjects(
         std::mem_fn(&ObjectInstance::handle_context_dispose));
 }
@@ -1164,11 +1158,8 @@ toggle_handler(GObject               *gobj,
     }
 }
 
-static void
-wrapped_gobj_toggle_notify(gpointer      data,
-                           GObject      *gobj,
-                           gboolean      is_last_ref)
-{
+static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
+                                       gboolean is_last_ref) {
     bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
 
@@ -1319,8 +1310,8 @@ bool ObjectPrototype::init(JSContext* cx) {
  * Private callback, called after the JS engine finishes garbage collection, and
  * notifies when weak pointers need to be either moved or swept.
  */
-void ObjectInstance::update_heap_wrapper_weak_pointers(
-    JSContext* cx, JSCompartment* compartment, void* data) {
+void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
+                                                       JSCompartment*, void*) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
                         ObjectInstance::num_wrapped_gobjects());
@@ -1686,9 +1677,9 @@ gjs_lookup_object_prototype(JSContext *context,
 }
 
 // Retrieves a GIFieldInfo for a field named @key. This is for use in
-// field_getter_impl() and field_setter_impl(), where the field info *must* have
-// been cached previously in resolve_impl() on this ObjectPrototype or one of
-// its parent ObjectPrototypes. This will fail an assertion if there is no
+// field_getter_impl() and field_setter_not_impl(), where the field info *must*
+// have been cached previously in resolve_impl() on this ObjectPrototype or one
+// of its parent ObjectPrototypes. This will fail an assertion if there is no
 // cached field info.
 //
 // The caller does not own the return value, and it can never be null.

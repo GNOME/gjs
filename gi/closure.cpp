@@ -125,10 +125,7 @@ static void global_context_finalized(JS::HandleFunction func, void* data) {
  *
  * Unlike "dispose" invalidation only happens once.
  */
-static void
-closure_invalidated(gpointer data,
-                    GClosure *closure)
-{
+static void closure_invalidated(void*, GClosure* closure) {
     Closure *c;
 
     c = &((GjsClosure*) closure)->priv;
@@ -158,10 +155,7 @@ closure_invalidated(gpointer data,
     c->context = nullptr;
 }
 
-static void
-closure_set_invalid(gpointer  data,
-                    GClosure *closure)
-{
+static void closure_set_invalid(void*, GClosure* closure) {
     Closure *self = &((GjsClosure*) closure)->priv;
 
     gjs_debug_closure("Invalidating signal closure %p which calls function %p",
@@ -174,10 +168,7 @@ closure_set_invalid(gpointer  data,
     GJS_DEC_COUNTER(closure);
 }
 
-static void
-closure_finalize(gpointer  data,
-                 GClosure *closure)
-{
+static void closure_finalize(void*, GClosure* closure) {
     Closure *self = &((GjsClosure*) closure)->priv;
 
     self->~Closure();
@@ -288,7 +279,8 @@ gjs_closure_trace(GClosure *closure,
 }
 
 GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
-                          const char* description, bool root_function) {
+                          const char* description GJS_USED_VERBOSE_GCLOSURE,
+                          bool root_function) {
     GjsClosure *gc;
     Closure *c;
 
