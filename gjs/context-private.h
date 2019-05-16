@@ -37,8 +37,9 @@
 #include "js/GCPolicyAPI.h"
 #include "js/SweepingAPI.h"
 
-using JobQueue = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
-using ObjectInitList = JS::GCVector<JSObject*, 0, js::SystemAllocPolicy>;
+using JobQueue = JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
+using ObjectInitList =
+    JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
     JS::GCHashMap<void*, JS::Heap<JSObject*>, js::DefaultHasher<void*>,
                   js::SystemAllocPolicy>;
