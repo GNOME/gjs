@@ -9,7 +9,7 @@ stages:
 - deploy
 
 .coverage: &coverage
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
   variables:
     TASK_ID: "coverage"
     coverage: '/^  lines.*(\d+\.\d+\%)/'
@@ -48,7 +48,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-443296_fedora.mozjs60-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-559848_fedora.mozjs68-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
   except:
@@ -57,7 +57,7 @@ build_recommended:
 sanitizer_gcc:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
@@ -70,7 +70,7 @@ sanitizer_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
@@ -86,7 +86,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     CONFIG_OPTS: >-
@@ -214,7 +214,7 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -226,7 +226,7 @@ sanitizer_clang:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
@@ -244,7 +244,7 @@ installed_tests:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     TEST_OPTS: --setup=valgrind
@@ -257,7 +257,7 @@ valgrind:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST_OPTS: --setup=extra_gc
@@ -268,7 +268,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST_OPTS: --setup=pre_verify
@@ -279,7 +279,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST_OPTS: --setup=post_verify
@@ -343,6 +343,7 @@ fedora.mozjs60:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "fedora.mozjs60"
+    MOZJS_BRANCH: mozjs60
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs60/
@@ -356,6 +357,7 @@ fedora.mozjs60-debug:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "fedora.mozjs60-debug"
+    MOZJS_BRANCH: mozjs60
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs60-debug/
@@ -368,7 +370,6 @@ fedora.mozjs68:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "fedora.mozjs68"
-    MOZJS_BRANCH: mozjs68
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs68/
@@ -382,7 +383,6 @@ fedora.mozjs68-debug:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "fedora.mozjs68-debug"
-    MOZJS_BRANCH: mozjs68
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs68-debug/
