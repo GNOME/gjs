@@ -7,7 +7,7 @@ earlier is not supported, nor is Visual Studio 2017 15.5.x or earlier,
 as the compiler flag /Zc:externConstexpr is needed.
 
 You will need the following items to build GJS using Visual Studio:
--SpiderMonkey 60 (mozjs-60).  Please see the below section carefully on this...
+-SpiderMonkey 68 (mozjs-68).  Please see the below section carefully on this...
 -GObject-Introspection (G-I) 1.41.4 or later
 -GLib 2.54.x or later, (which includes GIO, GObject, and the associated tools)
 -Cairo including Cairo-GObject support, unless NO_CAIRO=1 is specified.
@@ -64,14 +64,14 @@ and the required headers are found in $(buildroot)/dist/include.  Note that
 for PDB files and .lib files, you will need to search for them in $(buildroot),
 where the PDB file names match the filenames for the DLLs/EXEs in
 $(buildroot)/dist/bin, and you will need to look for the following .lib files:
--mozjs-60.lib
+-mozjs-68.lib
 -js_static.lib (optional)
 -nspr4.lib (optional, recommended for future use, if --enable-nspr-build is used)
 -plc4.lib (optional, recommended for future use, if --enable-nspr-build is used)
 -plds4.lib (optional, recommended for future use, if --enable-nspr-build is used)
 
 You may want to put the .lib's and DLLs/EXEs into $(PREFIX)\lib and $(PREFIX)\bin
-respectively, and put the headers into $(PREFIX)\include\mozjs-60 for convenience.
+respectively, and put the headers into $(PREFIX)\include\mozjs-68 for convenience.
 
 The following are instructions for performing such a build, as there is a
 number of build configurations supported for the build.  Note that the default
