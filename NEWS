@@ -1,3 +1,62 @@
+NEXT
+----
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 68, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 60.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New language features
+    + The BigInt type, currently a stage 3 proposal in the ES standard, is now
+      available.
+
+  * New syntax
+    + `globalThis` is now the ES-standard supported way to get the global
+      object, no matter what kind of JS environment. The old way, `window`, will
+      still work, but is no longer preferred.
+    + BigInt literals are expressed by a number with "n" appended to it: for
+      example, `1n`, `9007199254740992n`.
+
+  * New APIs
+    + String.prototype.trimStart() and String.prototype.trimEnd() now exist and
+      are preferred instead of trimLeft() and trimRight() which are nonstandard.
+    + String.prototype.matchAll() allows easier access to regex capture groups.
+    + Array.prototype.flat() flattens nested arrays, well-known from lodash and
+      similar libraries.
+    + Array.prototype.flatMap() acts like a reverse filter(), allowing adding
+      elements to an array while iterating functional-style.
+    + Object.fromEntries() creates an object from iterable key-value pairs.
+    + Intl.RelativeTimeFormat is useful for formatting time differences into
+      human-readable strings such as "1 day ago".
+    + BigInt64Array and BigUint64Array are two new typed array types.
+
+  * New behaviour
+    + There are a lot of minor behaviour changes as SpiderMonkey's JS
+      implementation conforms ever closer to existing ECMAScript standards and
+      adopts new ones. For complete information, read the Firefox developer
+      release notes:
+      https://developer.mozilla.org/en-US/Firefox/Releases/61#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/62#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/63#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/64#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/65#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/66#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/67#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/68#JavaScript
+
+  * Backwards-incompatible changes
+    + The nonstandard String generics were removed. These had only ever been
+      implemented by Mozilla and never made it into a standard. (An example of a
+      String generic is calling a string method on something that might not be a
+      string like this: `String.endsWith(foo, 5)`. The proper way is
+      `String.prototype.endsWith.call(foo, 5)` or converting `foo` to a string.)
+      This should not pose much of a problem for existing code, since in the
+      previous version these would already print a deprecation warning whenever
+      they were used.
+      You can use `moz68tool` from mozjs-deprecation-tools
+      (https://gitlab.gnome.org/ptomato/moz60tool) to scan your code for this
+      nonstandard usage.
+
 Version 1.63.3
 --------------
 
