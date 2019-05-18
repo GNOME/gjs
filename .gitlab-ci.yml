@@ -131,7 +131,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-414163_SM60-debug-gcc.fedora-dev  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-NNNNNN_SM68-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
@@ -145,7 +145,7 @@ build_recommended:
 sanitizer_gcc:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
@@ -159,7 +159,7 @@ sanitizer_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
@@ -176,7 +176,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     TEST: "check"
@@ -188,7 +188,7 @@ build_minimal:
 
 build_meson:
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-meson-check"
     PKG_CONFIG_PATH: /root/jhbuild/install/lib/pkgconfig  # for mozjs
@@ -220,7 +220,7 @@ coverage-automatic:
   <<: *build
   <<: *coverage
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -324,7 +324,7 @@ coverage:
   <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.ubuntu-dev
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -336,7 +336,7 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -349,7 +349,7 @@ sanitizer_clang:
 fedora_gcc:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -360,7 +360,7 @@ fedora_gcc:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
@@ -372,7 +372,7 @@ installed_tests:
 ubuntu_gcc:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -383,7 +383,7 @@ ubuntu_gcc:
 ubuntu_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.ubuntu-dev
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
     CC: clang
@@ -395,7 +395,7 @@ ubuntu_clang:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
@@ -429,7 +429,7 @@ flatpak:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST: "check"
@@ -441,7 +441,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST: "check"
@@ -453,7 +453,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM68-debug-gcc.fedora-dev
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST: "check"
@@ -469,7 +469,7 @@ armv8:
   variables:
     TASK_ID: "fedora-armv8-gcc-default-default-check"
     DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.aarch64"
+    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev.aarch64"
   when: manual
   except:
     - schedules
@@ -480,7 +480,7 @@ ppc64le:
   variables:
     TASK_ID: "fedora-ppc64le-gcc-default-default-check"
     DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.ppc64le"
+    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM68-gcc.fedora-dev.ppc64le"
   when: manual
   except:
     - schedules
@@ -554,7 +554,7 @@ fedora.static-analysis:
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
 
-SM60-gcc.fedora-dev:
+SM68-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
@@ -563,9 +563,9 @@ SM60-gcc.fedora-dev:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
-    NAME: "SM60-gcc.fedora-dev"
+    NAME: "SM68-gcc.fedora-dev"
 
-SM60-debug-gcc.fedora-dev:
+SM68-debug-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
@@ -575,9 +575,9 @@ SM60-debug-gcc.fedora-dev:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
-    NAME: "SM60-debug-gcc.fedora-dev"
+    NAME: "SM68-debug-gcc.fedora-dev"
 
-SM60-gcc.fedora-dev.aarch64:
+SM68-gcc.fedora-dev.aarch64:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
@@ -586,12 +586,12 @@ SM60-gcc.fedora-dev.aarch64:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.aarch64"
-    NAME: "SM60-gcc.fedora-dev.aarch64"
+    IMAGE: "${CI_REGISTRY_IMAGE}:SM68-gcc.fedora-dev.aarch64"
+    NAME: "SM68-gcc.fedora-dev.aarch64"
     STATIC: "qemu"
     TARGET_ARCH: "aarch64"
 
-SM60-gcc.fedora-dev.ppc64le:
+SM68-gcc.fedora-dev.ppc64le:
   <<: *create_docker_image
   variables:
     BASE: "fedora"
@@ -600,12 +600,12 @@ SM60-gcc.fedora-dev.ppc64le:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.ppc64le"
-    NAME: "SM60-gcc.fedora-dev.ppc64le"
+    IMAGE: "${CI_REGISTRY_IMAGE}:SM68-gcc.fedora-dev.ppc64le"
+    NAME: "SM68-gcc.fedora-dev.ppc64le"
     STATIC: "qemu"
     TARGET_ARCH: "ppc64le"
 
-SM60-gcc.ubuntu-dev:
+SM68-gcc.ubuntu-dev:
   <<: *create_docker_image
   variables:
     BASE: "debian"
@@ -614,4 +614,4 @@ SM60-gcc.ubuntu-dev:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "ubuntu:devel"
-    NAME: "SM60-gcc.ubuntu-dev"
+    NAME: "SM68-gcc.ubuntu-dev"
