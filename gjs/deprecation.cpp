@@ -97,8 +97,8 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
     JS::UniqueChars callsite(get_callsite(cx));
     DeprecationEntry entry(id, callsite.get());
     if (!logged_messages.count(entry)) {
-        JS::UniqueChars stack_dump = JS::FormatStackDump(cx, nullptr, false,
-            false, false);
+        JS::UniqueChars stack_dump =
+            JS::FormatStackDump(cx, false, false, false);
         g_warning("%s\n%s", messages[id], stack_dump.get());
         logged_messages.insert(std::move(entry));
     }

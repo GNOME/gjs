@@ -554,7 +554,7 @@ gjs_gc_if_needed (JSContext *context)
          */
         if (rss_size > linux_rss_trigger) {
             linux_rss_trigger = (gulong) MIN(G_MAXULONG, rss_size * 1.25);
-            JS::GCForReason(context, GC_SHRINK, JS::gcreason::Reason::API);
+            JS::NonIncrementalGC(context, GC_SHRINK, JS::GCReason::API);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */
             linux_rss_trigger = (rss_size * 1.25);

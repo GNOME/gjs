@@ -240,9 +240,8 @@ gjs_define_property_dynamic(JSContext       *cx,
 
     flags |= JSPROP_GETTER | JSPROP_SETTER;
 
-    return JS_DefineProperty(
-        cx, proto, prop_name, JS_DATA_TO_FUNC_PTR(JSNative, getter_obj.get()),
-        JS_DATA_TO_FUNC_PTR(JSNative, setter_obj.get()), flags);
+    return JS_DefineProperty(cx, proto, prop_name, getter_obj, setter_obj,
+                             flags);
 }
 
 /**
