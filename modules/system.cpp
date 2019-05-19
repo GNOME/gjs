@@ -179,20 +179,14 @@ gjs_exit(JSContext *context,
     return false;  /* without gjs_throw() == "throw uncatchable exception" */
 }
 
-static bool
-gjs_clear_date_caches(JSContext *context,
-                      unsigned   argc,
-                      JS::Value *vp)
-{
+static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {
     JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
-    JS_BeginRequest(context);
 
     // Workaround for a bug in SpiderMonkey where tzset is not called before
     // localtime_r, see https://bugzilla.mozilla.org/show_bug.cgi?id=1004706
     tzset();
 
     JS::ResetTimeZone();
-    JS_EndRequest(context);
 
     rec.rval().setUndefined();
     return true;

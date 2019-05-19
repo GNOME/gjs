@@ -157,7 +157,6 @@ class GIWrapperBase {
      * if not. */
     GJS_USE
     static Base* for_js(JSContext* cx, JS::HandleObject wrapper) {
-        JSAutoRequest ar(cx);
         return static_cast<Base*>(
             JS_GetInstancePrivate(cx, wrapper, &Base::klass, nullptr));
     }
@@ -186,7 +185,6 @@ class GIWrapperBase {
     static Base* for_js_typecheck(
         JSContext* cx, JS::HandleObject wrapper,
         JS::CallArgs& args) {  // NOLINT(runtime/references)
-        JSAutoRequest ar(cx);
         return static_cast<Base*>(
             JS_GetInstancePrivate(cx, wrapper, &Base::klass, &args));
     }

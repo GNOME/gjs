@@ -292,7 +292,6 @@ G_GNUC_UNUSED GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
               *format == '\0'));
 
     if (!ignore_trailing_args && args.length() > 0) {
-        JSAutoRequest ar(cx);
         gjs_throw(cx, "Error invoking %s: Expected 0 arguments, got %d",
                   function_name, args.length());
         return false;
@@ -369,8 +368,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
 
     g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
               sizeof...(Args) / 2 == n_total));
-
-    JSAutoRequest ar(cx);
 
     /* COMPAT: In future, use args.requireAtLeast()
      * https://bugzilla.mozilla.org/show_bug.cgi?id=1334338 */

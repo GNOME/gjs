@@ -36,8 +36,6 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
     fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
 
-    JS_BeginRequest(fx->cx);
-
     JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
     fx->compartment = JS_EnterCompartment(fx->cx, global);
 }
@@ -50,7 +48,6 @@ gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
         g_printerr("**\n%s\n", message.get());
 
     JS_LeaveCompartment(fx->cx, fx->compartment);
-    JS_EndRequest(fx->cx);
 
     g_object_unref(fx->gjs_context);
 }

@@ -228,7 +228,6 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
         return;
     }
 
-    JS_BeginRequest(context);
     JSAutoCompartment ac(context, JS_GetFunctionObject(gjs_closure_get_callable(
                                       trampoline->js_function)));
 
@@ -485,8 +484,6 @@ out:
 
     gjs_callback_trampoline_unref(trampoline);
     gjs->schedule_gc_if_needed();
-
-    JS_EndRequest(context);
 }
 
 /* The global entry point for any invocations of GDestroyNotify;
@@ -1811,8 +1808,6 @@ gjs_define_function(JSContext       *context,
     bool free_name;
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
-
-    JSAutoRequest ar(context);
 
     JS::RootedObject function(context, function_new(context, gtype, info));
     if (!function)

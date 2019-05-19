@@ -253,8 +253,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
-    JSAutoRequest ar(cx);
-
     JS::UniqueChars name;
     GTypeFlags type_flags;
     JS::RootedObject parent(cx), interfaces(cx), properties(cx);
@@ -332,8 +330,6 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-
-    JSAutoRequest ar(cx);
 
     JS::UniqueChars signal_name;
     int32_t flags, accumulator_enum;

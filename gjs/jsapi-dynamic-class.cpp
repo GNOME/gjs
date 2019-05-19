@@ -48,20 +48,12 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
                             JSFunctionSpec* static_fs,
                             JS::MutableHandleObject prototype,
                             JS::MutableHandleObject constructor) {
-    /* Force these variables on the stack, so the conservative GC will
-       find them */
-    JSFunction * volatile constructor_fun;
-    char *full_function_name = NULL;
-    bool res = false;
-
     /* Without a name, JS_NewObject fails */
     g_assert (clasp->name != NULL);
 
     /* gjs_init_class_dynamic only makes sense for instantiable classes,
        use JS_InitClass for static classes like Math */
     g_assert (constructor_native != NULL);
-
-    JS_BeginRequest(context);
 
     /* Class initalization consists of five parts:
        - building a prototype
@@ -81,7 +73,7 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
         prototype.set(JS_NewObject(context, clasp));
     }
     if (!prototype)
-        goto out;
+        return false;
 
     /* Bypass resolve hooks when defining the initial properties */
     if (clasp->cOps->resolve) {
@@ -94,26 +86,28 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
     }
 
     if (proto_ps && !JS_DefineProperties(context, prototype, proto_ps))
-        goto out;
+        return false;
     if (proto_fs && !JS_DefineFunctions(context, prototype, proto_fs))
-        goto out;
+        return false;
 
-    full_function_name = g_strdup_printf("%s_%s", ns_name, class_name);
-    constructor_fun = JS_NewFunction(context, constructor_native, nargs, JSFUN_CONSTRUCTOR,
-                                     full_function_name);
+    GjsAutoChar full_function_name =
+        g_strdup_printf("%s_%s", ns_name, class_name);
+    JS::RootedFunction constructor_fun(
+        context, JS_NewFunction(context, constructor_native, nargs,
+                                JSFUN_CONSTRUCTOR, full_function_name));
     if (!constructor_fun)
-        goto out;
+        return false;
 
     constructor.set(JS_GetFunctionObject(constructor_fun));
 
     if (static_ps && !JS_DefineProperties(context, constructor, static_ps))
-        goto out;
+        return false;
     if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
-        goto out;
+        return false;
 
     if (!clasp->cOps->resolve) {
         if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
-            goto out;
+            return false;
     } else {
         /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
          * the resolve hook */
@@ -121,27 +115,16 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
         if (!JS_DefinePropertyById(
                 context, constructor, atoms.prototype(), prototype,
                 JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
-            goto out;
+            return false;
         if (!JS_DefinePropertyById(context, prototype, atoms.constructor(),
                                    constructor, JSPROP_RESOLVING))
-            goto out;
+            return false;
     }
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
-    if (!JS_DefineProperty(context, in_object, class_name, constructor,
-                           GJS_MODULE_PROP_FLAGS))
-        goto out;
-
-    res = true;
-
-    constructor_fun = NULL;
-
- out:
-    JS_EndRequest(context);
-    g_free(full_function_name);
-
-    return res;
+    return JS_DefineProperty(context, in_object, class_name, constructor,
+                             GJS_MODULE_PROP_FLAGS);
 }
 
 GJS_USE
@@ -181,8 +164,6 @@ gjs_construct_object_dynamic(JSContext                  *context,
                              JS::HandleObject            proto,
                              const JS::HandleValueArray& args)
 {
-    JSAutoRequest ar(context);
-
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject constructor(context);
 

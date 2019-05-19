@@ -780,8 +780,6 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    JSAutoRequest ar(context);
-
     if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;

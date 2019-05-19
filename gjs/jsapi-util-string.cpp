@@ -62,8 +62,6 @@ char* gjs_hyphen_to_underscore(const char* str) {
  */
 bool gjs_string_to_utf8(JSContext* cx, const JS::Value value,
                         JS::UniqueChars* utf8_string_p) {
-    JSAutoRequest ar(cx);
-
     if (!value.isString()) {
         gjs_throw(cx, "Value is not a string, cannot convert to UTF-8");
         return false;
@@ -79,14 +77,11 @@ gjs_string_from_utf8(JSContext             *context,
                      const char            *utf8_string,
                      JS::MutableHandleValue value_p)
 {
-    JS_BeginRequest(context);
-
     JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
     JS::RootedString str(context, JS_NewStringCopyUTF8Z(context, chars));
     if (str)
         value_p.setString(str);
 
-    JS_EndRequest(context);
     return str != nullptr;
 }
 
@@ -96,8 +91,6 @@ gjs_string_from_utf8_n(JSContext             *cx,
                        size_t                 len,
                        JS::MutableHandleValue out)
 {
-    JSAutoRequest ar(cx);
-
     JS::UTF8Chars chars(utf8_chars, len);
     JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
     if (str)
@@ -197,8 +190,6 @@ gjs_string_get_char16_data(JSContext       *context,
                            char16_t       **data_p,
                            size_t          *len_p)
 {
-    JSAutoRequest ar(context);
-
     if (JS_StringHasLatin1Chars(str))
         return from_latin1(context, str, data_p, len_p);
 
@@ -235,7 +226,6 @@ gjs_string_to_ucs4(JSContext       *cx,
     if (ucs4_string_p == NULL)
         return true;
 
-    JSAutoRequest ar(cx);
     size_t len;
     GError *error = NULL;
 
@@ -305,7 +295,6 @@ gjs_string_from_ucs4(JSContext             *cx,
         return false;
     }
 
-    JSAutoRequest ar(cx);
     /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
     JS::RootedString str(cx, JS_NewUCString(cx, u16_string, u16_string_length));
 
@@ -369,7 +358,6 @@ jsid
 gjs_intern_string_to_id(JSContext  *cx,
                         const char *string)
 {
-    JSAutoRequest ar(cx);
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     if (!str)
         return JSID_VOID;

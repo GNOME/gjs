@@ -65,8 +65,6 @@ throw_property_lookup_error(JSContext       *cx,
  *
  * SpiderMonkey will emit a warning if the property is not present, so don't
  * use this if you expect the property not to be present some of the time.
- *
- * Requires request.
  */
 bool
 gjs_object_require_property(JSContext             *context,
@@ -237,8 +235,6 @@ gjs_define_string_array(JSContext       *context,
                         const char     **array_values,
                         unsigned         attrs)
 {
-    JSAutoRequest ar(context);
-
     JS::RootedObject array(context,
         gjs_build_string_array(context, array_length, (char **) array_values));
 
@@ -267,8 +263,6 @@ gjs_string_readable(JSContext       *context,
 {
     GString *buf = g_string_new("");
 
-    JS_BeginRequest(context);
-
     g_string_append_c(buf, '"');
 
     JS::UniqueChars chars(JS_EncodeStringToUTF8(context, string));
@@ -290,8 +284,6 @@ gjs_string_readable(JSContext       *context,
     }
 
     g_string_append_c(buf, '"');
-
-    JS_EndRequest(context);
 
     return g_string_free(buf, false);
 }
@@ -356,8 +348,6 @@ gjs_value_debug_string(JSContext      *context,
         return gjs_string_readable(context, str);
     }
 
-    JS_BeginRequest(context);
-
     JS::RootedString str(context, JS::ToString(context, value));
 
     if (!str) {
@@ -374,17 +364,13 @@ gjs_value_debug_string(JSContext      *context,
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
-                if (!str) {
-                    JS_EndRequest(context);
+                if (!str)
                     return g_strdup("[out of memory copying class name]");
-                }
             } else {
                 gjs_log_exception(context);
-                JS_EndRequest(context);
                 return g_strdup("[unknown object]");
             }
         } else {
-            JS_EndRequest(context);
             return g_strdup("[unknown non-object]");
         }
     }
@@ -392,7 +378,6 @@ gjs_value_debug_string(JSContext      *context,
     g_assert(str);
 
     bytes = JS_EncodeStringToUTF8(context, str);
-    JS_EndRequest(context);
 
     debugstr = _gjs_g_utf8_make_valid(bytes);
     JS_free(context, bytes);
@@ -408,7 +393,6 @@ gjs_log_exception_full(JSContext       *context,
     bool is_syntax;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
-    JS_BeginRequest(context);
     JS::RootedObject exc_obj(context);
     JS::RootedString exc_str(context, JS::ToString(context, exc));
     JS::UniqueChars utf8_exception;
@@ -487,32 +471,20 @@ gjs_log_exception_full(JSContext       *context,
         }
     }
 
-    JS_EndRequest(context);
-
     return true;
 }
 
 bool
 gjs_log_exception(JSContext  *context)
 {
-    bool retval = false;
-
-    JS_BeginRequest(context);
-
     JS::RootedValue exc(context);
     if (!JS_GetPendingException(context, &exc))
-        goto out;
+        return false;
 
     JS_ClearPendingException(context);
 
     gjs_log_exception_full(context, exc, nullptr);
-
-    retval = true;
-
- out:
-    JS_EndRequest(context);
-
-    return retval;
+    return true;
 }
 
 #ifdef __linux__

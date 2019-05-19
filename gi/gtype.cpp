@@ -111,8 +111,6 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
     g_assert(((void) "Attempted to create wrapper object for invalid GType",
               gtype != 0));
 
-    JSAutoRequest ar(context);
-
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     auto p = gjs->gtype_table().lookupForAdd(gtype);
     if (p)
@@ -171,7 +169,6 @@ static bool _gjs_gtype_get_actual_gtype(JSContext* context,
 bool gjs_gtype_get_actual_gtype(JSContext* context, JS::HandleObject object,
                                 GType* gtype_out) {
     g_assert(gtype_out && "Missing return location");
-    JSAutoRequest ar(context);
 
     /* 2 means: recurse at most three times (including this
        call).
