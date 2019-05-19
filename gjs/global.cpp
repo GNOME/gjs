@@ -44,7 +44,7 @@ run_bootstrap(JSContext       *cx,
     GjsAutoChar uri = g_strdup_printf(
         "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
-    JSAutoCompartment ac(cx, global);
+    JSAutoRealm ar(cx, global);
 
     JS::CompileOptions options(cx);
     options.setUTF8(true)
@@ -237,14 +237,14 @@ class GjsGlobal {
     static JSObject *
     create(JSContext *cx)
     {
-        JS::CompartmentOptions compartment_options;
-        JS::RootedObject global(cx,
-            JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
-                               JS::FireOnNewGlobalHook, compartment_options));
+        JS::RealmOptions options;
+        JS::RootedObject global(
+            cx, JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
+                                   JS::FireOnNewGlobalHook, options));
         if (!global)
             return nullptr;
 
-        JSAutoCompartment ac(cx, global);
+        JSAutoRealm ar(cx, global);
 
         if (!JS_InitReflectParse(cx, global) ||
             !JS_DefineDebuggerObject(cx, global))
@@ -255,7 +255,7 @@ class GjsGlobal {
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* compartment_name,
+                                  const char* realm_name,
                                   const char* bootstrap_script) {
         const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
         if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
@@ -263,10 +263,10 @@ class GjsGlobal {
             !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
             return false;
 
-        JSCompartment* compartment = js::GetObjectCompartment(global);
-        // const_cast is allowed here if we never free the compartment data
-        JS_SetCompartmentPrivate(compartment,
-                                 const_cast<char*>(compartment_name));
+        JS::Realm* realm = JS::GetObjectRealmOrNull(global);
+        g_assert(realm && "Global object must be associated with a realm");
+        // const_cast is allowed here if we never free the realm data
+        JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
 
         JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
         g_assert(((void) "importer should be defined before passing null "
@@ -274,8 +274,7 @@ class GjsGlobal {
                   v_importer.isObject()));
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
-        /* Wrapping is a no-op if the importer is already in the same
-         * compartment. */
+        // Wrapping is a no-op if the importer is already in the same realm.
         if (!JS_WrapObject(cx, &root_importer) ||
             !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
                                    GJS_MODULE_PROP_FLAGS))
@@ -309,7 +308,7 @@ gjs_create_global_object(JSContext *cx)
  * gjs_define_global_properties:
  * @cx: a #JSContext
  * @global: a JS global object that has not yet been passed to this function
- * @compartment_name: (nullable): name of the compartment, for debug output
+ * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
  * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or %NULL for
  * none
@@ -324,17 +323,17 @@ gjs_create_global_object(JSContext *cx)
  * root importer in between calling gjs_create_global_object() and
  * gjs_define_global_properties().
  *
- * The caller of this function should be in the compartment for @global.
- * If the root importer object belongs to a different compartment, this
- * function will create a cross-compartment wrapper for it.
+ * The caller of this function should be in the realm for @global.
+ * If the root importer object belongs to a different realm, this function will
+ * create a wrapper for it.
  *
  * Returns: true on success, false otherwise, in which case an exception is
  * pending on @cx
  */
 bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* compartment_name,
+                                  const char* realm_name,
                                   const char* bootstrap_script) {
-    return GjsGlobal::define_properties(cx, global, compartment_name,
+    return GjsGlobal::define_properties(cx, global, realm_name,
                                         bootstrap_script);
 }
 

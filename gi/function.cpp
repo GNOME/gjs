@@ -229,8 +229,8 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
         return;
     }
 
-    JSAutoCompartment ac(context, JS_GetFunctionObject(gjs_closure_get_callable(
-                                      trampoline->js_function)));
+    JSAutoRealm ar(context, JS_GetFunctionObject(gjs_closure_get_callable(
+                                trampoline->js_function)));
 
     bool can_throw_gerror = g_callable_info_can_throw_gerror(trampoline->info);
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -1751,8 +1751,7 @@ GJS_USE
 static inline JSObject *
 gjs_builtin_function_get_proto(JSContext *cx)
 {
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
-    return JS_GetFunctionPrototype(cx, global);
+    return JS::GetRealmFunctionPrototype(cx);
 }
 
 GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(function, builtin_function)

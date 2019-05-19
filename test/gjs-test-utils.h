@@ -28,14 +28,16 @@
 
 #include "gjs/context.h"
 
-struct JSCompartment;
 struct JSContext;
+namespace JS {
+class Realm;
+};
 
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 struct _GjsUnitTestFixture {
     GjsContext *gjs_context;
     JSContext *cx;
-    JSCompartment *compartment;
+    JS::Realm* realm;
 };
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void* unused);

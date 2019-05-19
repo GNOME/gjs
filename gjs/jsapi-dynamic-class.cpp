@@ -278,7 +278,7 @@ gjs_dynamic_property_private_slot(JSObject *accessor_obj)
 bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,
                                    JS::HandleObject check_obj,
                                    bool* is_in_chain) {
-    JS::RootedObject object_prototype(cx, JS_GetObjectPrototype(cx, check_obj));
+    JS::RootedObject object_prototype(cx, JS::GetRealmObjectPrototype(cx));
     if (!object_prototype)
         return false;
 

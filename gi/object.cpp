@@ -1124,8 +1124,8 @@ ObjectInstance::toggle_up(void)
      * in case the wrapper has data in it that the app cares about
      */
     if (!wrapper_is_rooted()) {
-        /* FIXME: thread the context through somehow. Maybe by looking up
-         * the compartment that obj belongs to. */
+        // FIXME: thread the context through somehow. Maybe by looking up the
+        // realm that obj belongs to.
         debug_lifecycle("Rooting wrapper");
         auto* cx = GjsContextPrivate::from_current_context()->context();
         switch_to_rooted(cx);
@@ -1301,7 +1301,8 @@ bool ObjectPrototype::init(JSContext* cx) {
  * notifies when weak pointers need to be either moved or swept.
  */
 void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
-                                                       JSCompartment*, void*) {
+                                                       JS::Compartment*,
+                                                       void*) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
                         ObjectInstance::num_wrapped_gobjects());

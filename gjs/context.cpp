@@ -88,7 +88,7 @@ void GjsContextPrivate::EnvironmentPreparer::invoke(JS::HandleObject scope,
                                                     Closure& closure) {
     g_assert(!JS_IsExceptionPending(m_cx));
 
-    JSAutoCompartment ac(m_cx, scope);
+    JSAutoRealm ar(m_cx, scope);
     if (!closure(m_cx))
         gjs_log_exception(m_cx);
 }
@@ -488,7 +488,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to initialize global object");
     }
 
-    JSAutoCompartment ac(m_cx, global);
+    JSAutoRealm ar(m_cx, global);
 
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
@@ -725,7 +725,7 @@ bool GjsContextPrivate::run_jobs(void) {
 
         m_job_queue[ix] = nullptr;
         {
-            JSAutoCompartment ac(m_cx, job);
+            JSAutoRealm ar(m_cx, job);
             if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
                 /* Uncatchable exception - return false so that
                  * System.exit() works in the interactive shell and when
@@ -869,7 +869,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
         auto_profile = false;
 
-    JSAutoCompartment ac(m_cx, m_global);
+    JSAutoRealm ar(m_cx, m_global);
 
     if (auto_profile)
         gjs_profiler_start(m_profiler);
@@ -1046,7 +1046,7 @@ gjs_context_define_string_array(GjsContext  *js_context,
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
-    JSAutoCompartment ac(gjs->context(), gjs->global());
+    JSAutoRealm ar(gjs->context(), gjs->global());
 
     JS::RootedObject global_root(gjs->context(), gjs->global());
     if (!gjs_define_string_array(gjs->context(), global_root, array_name,
