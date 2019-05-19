@@ -254,7 +254,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
     }
 
     n_outargs = 0;
-    JS::AutoValueVector jsargs(context);
+    JS::RootedValueVector jsargs(context);
 
     if (!jsargs.reserve(n_args))
         g_error("Unable to reserve space for vector");
@@ -800,7 +800,7 @@ gjs_invoke_c_function(JSContext                             *context,
     bool is_object_method = false;
     GITypeInfo return_info;
     GITypeTag return_tag;
-    JS::AutoValueVector return_values(context);
+    JS::RootedValueVector return_values(context);
     guint8 next_rval = 0; /* index into return_values */
 
     /* Because we can't free a closure while we're in it, we defer

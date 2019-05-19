@@ -987,7 +987,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
                                utf16_string.size() - offset,
                                JS::SourceBufferHolder::NoOwnership);
 
-    JS::AutoObjectVector scope_chain(m_cx);
+    JS::RootedObjectVector scope_chain(m_cx);
     if (!scope_chain.append(eval_obj)) {
         JS_ReportOutOfMemory(m_cx);
         return false;

@@ -572,7 +572,7 @@ gjs_array_from_strv(JSContext             *context,
                     const char           **strv)
 {
     guint i;
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
 
     /* We treat a NULL strv as an empty array, since this function should always
      * set an array value when returning true.
@@ -1018,7 +1018,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
     }
 
     unsigned int i;
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
     if (!elems.resize(length)) {
         JS_ReportOutOfMemory(context);
         return false;
@@ -2232,7 +2232,7 @@ gjs_array_from_g_list (JSContext             *context,
 {
     unsigned int i;
     GArgument arg;
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
 
     i = 0;
     if (list_tag == GI_TYPE_TAG_GLIST) {
@@ -2312,7 +2312,7 @@ gjs_array_from_carray_internal (JSContext             *context,
         return true;
     }
 
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
     if (!elems.resize(length)) {
         JS_ReportOutOfMemory(context);
         return false;
@@ -2532,7 +2532,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
     if (element_type == GI_TYPE_TAG_UNICHAR)
         return gjs_string_from_ucs4(context, (gunichar *) c_array, -1, value_p);
 
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
 
 #define ITERATE(type) \
     do { \

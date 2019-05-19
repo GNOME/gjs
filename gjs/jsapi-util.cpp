@@ -211,7 +211,7 @@ gjs_build_string_array(JSContext   *context,
     if (array_length == -1)
         array_length = g_strv_length(array_values);
 
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
     if (!elems.reserve(array_length)) {
         JS_ReportOutOfMemory(context);
         return nullptr;

@@ -227,7 +227,7 @@ closure_marshal(GClosure        *closure,
         g_base_info_unref((GIBaseInfo *)signal_info);
     }
 
-    JS::AutoValueVector argv(context);
+    JS::RootedValueVector argv(context);
     /* May end up being less */
     if (!argv.reserve(n_param_values))
         g_error("Unable to reserve space");

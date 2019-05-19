@@ -346,10 +346,9 @@ class GIWrapperBase {
      * Prototype::new_enumerate_impl() method.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    static bool new_enumerate(
-        JSContext* cx, JS::HandleObject obj,
-        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
-        bool only_enumerable) {
+    static bool new_enumerate(JSContext* cx, JS::HandleObject obj,
+                              JS::MutableHandleIdVector properties,
+                              bool only_enumerable) {
         Base* priv = Base::for_js(cx, obj);
 
         priv->debug_jsprop("Enumerate hook", "(all)", obj);
