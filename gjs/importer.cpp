@@ -386,7 +386,7 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
-                                 JS::AutoIdVector& prop_ids,
+                                 JS::MutableHandleIdVector prop_ids,
                                  const char* init_path) {
     size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
@@ -632,7 +632,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
-                                   JS::AutoIdVector& properties,
+                                   JS::MutableHandleIdVector properties,
                                    bool enumerable_only G_GNUC_UNUSED) {
     Importer *priv;
     guint32 search_path_len;

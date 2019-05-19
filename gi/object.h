@@ -269,10 +269,9 @@ class ObjectPrototype
                       const char* prop_name, bool* resolved);
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool new_enumerate_impl(
-        JSContext* cx, JS::HandleObject obj,
-        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
-        bool only_enumerable);
+    bool new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+                            JS::MutableHandleIdVector properties,
+                            bool only_enumerable);
     void trace_impl(JSTracer* tracer);
 
     /* JS methods */

@@ -859,7 +859,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 }
 
 bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
-                                         JS::AutoIdVector& properties,
+                                         JS::MutableHandleIdVector properties,
                                          bool only_enumerable G_GNUC_UNUSED) {
     unsigned n_interfaces;
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);

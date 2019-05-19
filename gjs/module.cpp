@@ -105,7 +105,7 @@ class GjsModule {
                                    utf16_string.size() - offset,
                                    JS::SourceBufferHolder::NoOwnership);
 
-        JS::AutoObjectVector scope_chain(cx);
+        JS::RootedObjectVector scope_chain(cx);
         if (!scope_chain.append(module)) {
             JS_ReportOutOfMemory(cx);
             return false;
