@@ -34,11 +34,6 @@
 #include "gjs/macros.h"
 #include "jsapi-wrapper.h"
 
-#ifdef __GNUC__
-#define GJS_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#define GJS_ALWAYS_INLINE
-#endif
 
 struct GjsAutoTakeOwnership {};
 
