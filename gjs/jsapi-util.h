@@ -188,9 +188,11 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
  * A convenience macro for getting the 'this' object a function was called with.
  * Use in any JSNative function.
  */
-#define GJS_GET_THIS(cx, argc, vp, args, to)                   \
-    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);          \
-    JS::RootedObject to(cx, &args.computeThis(cx).toObject())
+#define GJS_GET_THIS(cx, argc, vp, args, to)          \
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp); \
+    JS::RootedObject to(cx);                          \
+    if (!args.computeThis(cx, &to))                   \
+        return false;
 
 GJS_USE
 JSObject*   gjs_get_import_global            (JSContext       *context);

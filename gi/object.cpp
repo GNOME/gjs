@@ -2293,7 +2293,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         offset = g_field_info_get_offset(field_info);
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
-        if (!JS_ObjectIsFunction(cx, function)) {
+        if (!js::IsFunctionObject(function)) {
             gjs_throw(cx, "Tried to deal with a vfunc that wasn't a function");
             return false;
         }

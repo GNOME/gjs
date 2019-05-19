@@ -93,7 +93,7 @@ struct GjsHeapOperation<JSObject *> {
         /* If the object has been swept already, then the zone is nullptr */
         if (!obj || !js::gc::detail::GetGCThingZone(uintptr_t(obj)))
             return;
-        if (!JS::CurrentThreadIsHeapCollecting())
+        if (!JS::RuntimeHeapIsCollecting())
             JS::ExposeObjectToActiveJS(obj);
     }
 };
@@ -104,7 +104,7 @@ struct GjsHeapOperation<JSFunction*> {
         JSFunction* func = thing.unbarrieredGet();
         if (!func || !js::gc::detail::GetGCThingZone(uintptr_t(func)))
             return;
-        if (!JS::CurrentThreadIsHeapCollecting())
+        if (!JS::RuntimeHeapIsCollecting())
             js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(func));
     }
 };
@@ -246,7 +246,7 @@ class GjsMaybeOwned {
     {
         debug("root()");
         g_assert(!m_root);
-        g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
+        g_assert(m_heap.get() == JS::SafelyInitialized<T>());
         m_heap.~Heap();
         m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
 
@@ -275,7 +275,7 @@ class GjsMaybeOwned {
     void reset() {
         debug("reset()");
         if (!m_root) {
-            m_heap = JS::GCPolicy<T>::initial();
+            m_heap = JS::SafelyInitialized<T>();
             return;
         }
 
