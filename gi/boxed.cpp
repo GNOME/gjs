@@ -134,7 +134,7 @@ BoxedPrototype::FieldMap* BoxedPrototype::create_field_map(
 
     auto* result = new BoxedPrototype::FieldMap();
     n_fields = g_struct_info_get_n_fields(struct_info);
-    if (!result->init(n_fields)) {
+    if (!result->reserve(n_fields)) {
         JS_ReportOutOfMemory(cx);
         return nullptr;
     }

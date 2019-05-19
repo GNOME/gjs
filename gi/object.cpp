@@ -1296,14 +1296,6 @@ ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
     GJS_INC_COUNTER(object_prototype);
 }
 
-bool ObjectPrototype::init(JSContext* cx) {
-    if (!m_property_cache.init() || !m_field_cache.init()) {
-        JS_ReportOutOfMemory(cx);
-        return false;
-    }
-    return true;
-}
-
 /*
  * ObjectInstance::update_heap_wrapper_weak_pointers:
  *

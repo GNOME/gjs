@@ -207,7 +207,6 @@ class ObjectPrototype
     FieldCache m_field_cache;
 
     ObjectPrototype(GIObjectInfo* info, GType gtype);
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
     ~ObjectPrototype();
 
     static constexpr InfoType::Tag info_type_tag = InfoType::Object;
