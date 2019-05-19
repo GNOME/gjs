@@ -348,7 +348,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_USE bool weak_pointer_was_finalized(void);
     static void ensure_weak_pointer_callback(JSContext* cx);
     static void update_heap_wrapper_weak_pointers(JSContext* cx,
-                                                  JSCompartment* compartment,
+                                                  JS::Compartment* compartment,
                                                   void* data);
 
  public:

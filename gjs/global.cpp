@@ -44,7 +44,7 @@ run_bootstrap(JSContext       *cx,
     GjsAutoChar uri = g_strdup_printf(
         "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
-    JSAutoCompartment ac(cx, global);
+    JSAutoRealm ar(cx, global);
 
     JS::CompileOptions options(cx);
     options.setUTF8(true)
@@ -237,14 +237,14 @@ class GjsGlobal {
     static JSObject *
     create(JSContext *cx)
     {
-        JS::CompartmentOptions compartment_options;
-        JS::RootedObject global(cx,
-            JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
-                               JS::FireOnNewGlobalHook, compartment_options));
+        JS::RealmOptions options;
+        JS::RootedObject global(
+            cx, JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
+                                   JS::FireOnNewGlobalHook, options));
         if (!global)
             return nullptr;
 
-        JSAutoCompartment ac(cx, global);
+        JSAutoRealm ar(cx, global);
 
         if (!JS_InitReflectParse(cx, global) ||
             !JS_DefineDebuggerObject(cx, global))
@@ -271,8 +271,7 @@ class GjsGlobal {
                   v_importer.isObject()));
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
-        /* Wrapping is a no-op if the importer is already in the same
-         * compartment. */
+        // Wrapping is a no-op if the importer is already in the same realm.
         if (!JS_WrapObject(cx, &root_importer) ||
             !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
                                    GJS_MODULE_PROP_FLAGS))
@@ -320,9 +319,9 @@ gjs_create_global_object(JSContext *cx)
  * root importer in between calling gjs_create_global_object() and
  * gjs_define_global_properties().
  *
- * The caller of this function should be in the compartment for @global.
- * If the root importer object belongs to a different compartment, this
- * function will create a cross-compartment wrapper for it.
+ * The caller of this function should be in the realm for @global.
+ * If the root importer object belongs to a different realm, this function will
+ * create a wrapper for it.
  *
  * Returns: true on success, false otherwise, in which case an exception is
  * pending on @cx

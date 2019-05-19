@@ -195,7 +195,7 @@ gjs_closure_invoke(GClosure                   *closure,
     }
 
     context = c->context;
-    JSAutoCompartment ac(context, JS_GetFunctionObject(c->func));
+    JSAutoRealm ar(context, JS_GetFunctionObject(c->func));
 
     if (JS_IsExceptionPending(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "

@@ -337,11 +337,10 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
                                            uninitialized_gjs);
 
-    /* We use this to handle "lazy sources" that SpiderMonkey doesn't need to
-     * keep in memory. Most sources should be kept in memory, but we can skip
-     * doing that for the compartment bootstrap code, as it is already in memory
-     * in the form of a GResource. Instead we use the "source hook" to
-     * retrieve it. */
+    // We use this to handle "lazy sources" that SpiderMonkey doesn't need to
+    // keep in memory. Most sources should be kept in memory, but we can skip
+    // doing that for the realm bootstrap code, as it is already in memory in
+    // the form of a GResource. Instead we use the "source hook" to retrieve it.
     auto hook = mozilla::MakeUnique<GjsSourceHook>();
     js::SetSourceHook(cx, std::move(hook));
 

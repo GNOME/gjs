@@ -48,7 +48,7 @@ struct _GjsCoverage {
 typedef struct {
     gchar **prefixes;
     GjsContext *context;
-    JS::Heap<JSObject *> compartment;
+    JS::Heap<JSObject*> global;
 
     GFile *output_dir;
 } GjsCoveragePrivate;
@@ -309,7 +309,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
     GError *error = nullptr;
 
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
-    JSAutoCompartment ac(cx, gjs_get_import_global(cx));
+    JSAutoRealm ar(cx, gjs_get_import_global(cx));
 
     GjsAutoUnref<GFile> output_file = write_statistics_internal(coverage, cx, &error);
     if (!output_file) {
@@ -330,7 +330,7 @@ coverage_tracer(JSTracer *trc, void *data)
     GjsCoverage *coverage = (GjsCoverage *) data;
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    JS::TraceEdge<JSObject *>(trc, &priv->compartment, "Coverage compartment");
+    JS::TraceEdge<JSObject*>(trc, &priv->global, "Coverage global object");
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -342,26 +342,25 @@ bootstrap_coverage(GjsCoverage *coverage)
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
 
     JSObject *debuggee = gjs_get_import_global(context);
-    JS::RootedObject debugger_compartment(context,
-                                          gjs_create_global_object(context));
+    JS::RootedObject debugger_global(context,
+                                     gjs_create_global_object(context));
     {
-        JSAutoCompartment compartment(context, debugger_compartment);
+        JSAutoRealm ar(context, debugger_global);
         JS::RootedObject debuggeeWrapper(context, debuggee);
         if (!JS_WrapObject(context, &debuggeeWrapper))
             return false;
 
         const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
-        if (!JS_SetPropertyById(context, debugger_compartment, atoms.debuggee(),
+        if (!JS_SetPropertyById(context, debugger_global, atoms.debuggee(),
                                 debuggeeWrapperValue) ||
-            !gjs_define_global_properties(context, debugger_compartment,
-                                          "coverage"))
+            !gjs_define_global_properties(context, debugger_global, "coverage"))
             return false;
 
         /* Add a tracer, as suggested by jdm on #jsapi */
         JS_AddExtraGCRootsTracer(context, coverage_tracer, coverage);
 
-        priv->compartment = debugger_compartment;
+        priv->global = debugger_global;
     }
 
     return true;
@@ -374,11 +373,11 @@ gjs_coverage_constructed(GObject *object)
 
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
-    new (&priv->compartment) JS::Heap<JSObject *>();
+    new (&priv->global) JS::Heap<JSObject*>();
 
     if (!bootstrap_coverage(coverage)) {
         JSContext *context = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
-        JSAutoCompartment compartment(context, gjs_get_import_global(context));
+        JSAutoRealm ar(context, gjs_get_import_global(context));
         gjs_log_exception(context);
     }
 }
@@ -420,7 +419,7 @@ gjs_coverage_dispose(GObject *object)
      * disposing of the context */
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
     JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, coverage);
-    priv->compartment = nullptr;
+    priv->global = nullptr;
 
     g_clear_object(&priv->context);
 
@@ -435,7 +434,7 @@ gjs_coverage_finalize (GObject *object)
 
     g_strfreev(priv->prefixes);
     g_clear_object(&priv->output_dir);
-    priv->compartment.~Heap();
+    priv->global.~Heap();
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }
