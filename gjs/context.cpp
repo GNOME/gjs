@@ -473,12 +473,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     JSRuntime* rt = JS_GetRuntime(m_cx);
     m_fundamental_table = new JS::WeakCache<FundamentalTable>(rt);
-    if (!m_fundamental_table->init())
-        g_error("Failed to initialize fundamental objects table");
-
     m_gtype_table = new JS::WeakCache<GTypeTable>(rt);
-    if (!m_gtype_table->init())
-        g_error("Failed to initialize GType objects table");
 
     m_atoms = new GjsAtoms();
 
