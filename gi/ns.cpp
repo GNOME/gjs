@@ -97,8 +97,6 @@ ns_resolve(JSContext       *context,
               "Found info type %s for '%s' in namespace '%s'",
               gjs_info_type_name(info.type()), info.name(), info.ns());
 
-    JSAutoRequest ar(context);
-
     if (!gjs_define_info(context, obj, info, &defined)) {
         gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
                   info.name());

@@ -56,7 +56,7 @@
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSAutoRequest ar(cx);
+
     int32_t exitcode;
     if (!gjs_parse_call_args(cx, "quit", args, "i", "exitcode", &exitcode))
         return false;
@@ -69,7 +69,6 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSAutoRequest ar(cx);
 
     JS::UniqueChars prompt;
     if (!gjs_parse_call_args(cx, "readline", args, "|s", "prompt", &prompt))
@@ -128,7 +127,6 @@ static JSFunctionSpec debugger_funcs[] = {
 
 void gjs_context_setup_debugger_console(GjsContext* gjs) {
     auto cx = static_cast<JSContext*>(gjs_context_get_native_context(gjs));
-    JSAutoRequest ar(cx);
 
     JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
     JS::RootedObject debugger_compartment(cx, gjs_create_global_object(cx));

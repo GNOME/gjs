@@ -310,7 +310,6 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
 
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
     JSAutoCompartment ac(cx, gjs_get_import_global(cx));
-    JSAutoRequest ar(cx);
 
     GjsAutoUnref<GFile> output_file = write_statistics_internal(coverage, cx, &error);
     if (!output_file) {
@@ -341,7 +340,6 @@ bootstrap_coverage(GjsCoverage *coverage)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
-    JSAutoRequest ar(context);
 
     JSObject *debuggee = gjs_get_import_global(context);
     JS::RootedObject debugger_compartment(context,

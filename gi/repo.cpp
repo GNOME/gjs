@@ -89,8 +89,6 @@ static bool resolve_namespace_object(JSContext* context,
                                      JS::HandleId ns_id) {
     GError *error;
 
-    JSAutoRequest ar(context);
-
     JS::UniqueChars version;
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
@@ -552,7 +550,7 @@ gjs_lookup_namespace_object(JSContext  *context,
 }
 
 /* Check if an exception's 'name' property is equal to compare_name. Ignores
- * all errors that might arise. Requires request. */
+ * all errors that might arise. */
 GJS_USE
 static bool
 error_has_name(JSContext       *cx,
@@ -589,7 +587,6 @@ lookup_override_function(JSContext             *cx,
                          JS::HandleId           ns_name,
                          JS::MutableHandleValue function)
 {
-    JSAutoRequest ar(cx);
     JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
@@ -635,8 +632,6 @@ JSObject*
 gjs_lookup_namespace_object_by_name(JSContext      *context,
                                     JS::HandleId    ns_name)
 {
-    JSAutoRequest ar(context);
-
     JS::RootedValue importer(context,
         gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());

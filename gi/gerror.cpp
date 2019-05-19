@@ -500,8 +500,6 @@ bool gjs_throw_gerror(JSContext* cx, GError* error) {
     // in the calling code, and the caller expects to throw.
     g_return_val_if_fail(error, false);
 
-    JSAutoRequest ar(cx);
-
     JS::RootedObject err_obj(cx, ErrorInstance::object_for_c_ptr(cx, error));
     if (!err_obj || !gjs_define_error_properties(cx, err_obj))
         return false;

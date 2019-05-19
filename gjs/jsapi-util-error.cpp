@@ -56,8 +56,6 @@ gjs_throw_valist(JSContext       *context,
 
     s = g_strdup_vprintf(format, args);
 
-    JS_BeginRequest(context);
-
     if (JS_IsExceptionPending(context)) {
         /* Often it's unclear whether a given jsapi.h function
          * will throw an exception, so we will throw ourselves
@@ -71,7 +69,6 @@ gjs_throw_valist(JSContext       *context,
                   "Ignoring second exception: '%s'",
                   s);
         g_free(s);
-        JS_EndRequest(context);
         return;
     }
 
@@ -117,8 +114,6 @@ gjs_throw_valist(JSContext       *context,
         JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s);
     }
     g_free(s);
-
-    JS_EndRequest(context);
 }
 
 /* Throws an exception, like "throw new Error(message)"

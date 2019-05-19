@@ -292,7 +292,6 @@ class GjsMaybeOwned {
 
         /* Prevent the thing from being garbage collected while it is in neither
          * m_heap nor m_root */
-        JSAutoRequest ar(cx);
         JS::Rooted<T> thing(cx, m_heap);
 
         reset();
@@ -306,7 +305,6 @@ class GjsMaybeOwned {
 
         /* Prevent the thing from being garbage collected while it is in neither
          * m_heap nor m_root */
-        JSAutoRequest ar(cx);
         JS::Rooted<T> thing(cx, *m_root);
 
         reset();

@@ -55,8 +55,6 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
        use JS_InitClass for static classes like Math */
     g_assert (constructor_native != NULL);
 
-    JSAutoRequest ar(context);
-
     /* Class initalization consists of five parts:
        - building a prototype
        - defining prototype properties and functions
@@ -166,8 +164,6 @@ gjs_construct_object_dynamic(JSContext                  *context,
                              JS::HandleObject            proto,
                              const JS::HandleValueArray& args)
 {
-    JSAutoRequest ar(context);
-
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject constructor(context);
 

@@ -195,7 +195,6 @@ gjs_closure_invoke(GClosure                   *closure,
     }
 
     context = c->context;
-    JSAutoRequest ar(context);
     JSAutoCompartment ac(context, JS_GetFunctionObject(c->func));
 
     if (JS_IsExceptionPending(context)) {
@@ -295,7 +294,6 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
      * the context that created it.
      */
     c->context = context;
-    JS_BeginRequest(context);
 
     GJS_INC_COUNTER(closure);
 
@@ -317,8 +315,6 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
 
     gjs_debug_closure("Create closure %p which calls function %p '%s'", gc,
                       c->func.debug_addr(), description);
-
-    JS_EndRequest(context);
 
     return &gc->base;
 }

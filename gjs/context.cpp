@@ -362,8 +362,6 @@ void GjsContextPrivate::dispose(void) {
                   "Checking unhandled promise rejections");
         warn_about_unhandled_promise_rejections();
 
-        JS_BeginRequest(m_cx);
-
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing cached JS wrappers");
         m_fundamental_table->clear();
         m_gtype_table->clear();
@@ -374,7 +372,6 @@ void GjsContextPrivate::dispose(void) {
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Final triggered GC");
         JS_GC(m_cx);
-        JS_EndRequest(m_cx);
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Destroying JS context");
         m_destroying = true;
@@ -485,8 +482,6 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_atoms = new GjsAtoms();
 
-    JS_BeginRequest(m_cx);
-
     JS::RootedObject global(m_cx, gjs_create_global_object(m_cx));
     if (!global) {
         gjs_log_exception(m_cx);
@@ -521,8 +516,6 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         gjs_log_exception(m_cx);
         g_error("Failed to define properties on global object");
     }
-
-    JS_EndRequest(m_cx);
 }
 
 static void
@@ -707,8 +700,6 @@ bool GjsContextPrivate::run_jobs(void) {
     if (m_draining_job_queue || m_should_exit)
         return true;
 
-    JSAutoRequest ar(m_cx);
-
     m_draining_job_queue = true;  // Ignore reentrant calls
 
     JS::RootedObject job(m_cx);
@@ -879,7 +870,6 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         auto_profile = false;
 
     JSAutoCompartment ac(m_cx, m_global);
-    JSAutoRequest ar(m_cx);
 
     if (auto_profile)
         gjs_profiler_start(m_profiler);
@@ -978,8 +968,6 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
                                         const char* script, ssize_t script_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
-    JSAutoRequest ar(m_cx);
-
     /* log and clear exception if it's set (should not be, normally...) */
     if (JS_IsExceptionPending(m_cx)) {
         g_warning("eval_with_scope() called with a pending exception");
@@ -1040,8 +1028,6 @@ bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
                                       JS::HandleValue func_val,
                                       const JS::HandleValueArray& args,
                                       JS::MutableHandleValue rval) {
-    JSAutoRequest ar(m_cx);
-
     if (!JS_CallFunctionValue(m_cx, this_obj, func_val, args, rval))
         return false;
 
@@ -1061,7 +1047,6 @@ gjs_context_define_string_array(GjsContext  *js_context,
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
     JSAutoCompartment ac(gjs->context(), gjs->global());
-    JSAutoRequest ar(gjs->context());
 
     JS::RootedObject global_root(gjs->context(), gjs->global());
     if (!gjs_define_string_array(gjs->context(), global_root, array_name,

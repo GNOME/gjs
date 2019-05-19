@@ -106,7 +106,6 @@ static GObject* gjs_object_constructor(
      * Construct the JS object from the constructor, then use the GObject
      * that was associated in gjs_object_custom_init()
      */
-    JSAutoRequest ar(cx);
     JSAutoCompartment ac(cx, gjs_get_import_global(cx));
 
     JS::RootedObject constructor(
@@ -151,7 +150,6 @@ static void gjs_object_set_gproperty(GObject* object,
     JSContext *cx = current_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
-    JSAutoRequest ar(cx);
     JSAutoCompartment ac(cx, js_obj);
 
     if (!jsobj_set_gproperty(cx, js_obj, value, pspec))
@@ -166,7 +164,6 @@ static void gjs_object_get_gproperty(GObject* object,
 
     JS::RootedObject js_obj(cx, priv->wrapper());
     JS::RootedValue jsvalue(cx);
-    JSAutoRequest ar(cx);
     JSAutoCompartment ac(cx, js_obj);
 
     GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);

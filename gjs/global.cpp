@@ -77,8 +77,6 @@ gjs_log(JSContext *cx,
         return false;
     }
 
-    JSAutoRequest ar(cx);
-
     /* JS::ToString might throw, in which case we will only log that the value
      * could not be converted to string */
     JS::AutoSaveExceptionState exc_state(cx);
@@ -113,8 +111,6 @@ gjs_log_error(JSContext *cx,
         return false;
     }
 
-    JSAutoRequest ar(cx);
-
     JS::RootedString jstr(cx);
 
     if (argc == 2) {
@@ -139,8 +135,6 @@ gjs_print_parse_args(JSContext              *cx,
 {
     GString *str;
     guint n;
-
-    JSAutoRequest ar(cx);
 
     str = g_string_new("");
     for (n = 0; n < argv.length(); ++n) {

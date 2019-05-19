@@ -83,7 +83,6 @@ bool gjs_define_property_dynamic(JSContext       *cx,
     }                                                                          \
     GJS_ALWAYS_INLINE GJS_USE static inline type* priv_from_js(                \
         JSContext* cx, JS::HandleObject obj) {                                 \
-        JSAutoRequest ar(cx);                                                  \
         return static_cast<type*>(                                             \
             JS_GetInstancePrivate(cx, obj, &klass, nullptr));                  \
     }                                                                          \

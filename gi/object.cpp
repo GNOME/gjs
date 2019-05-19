@@ -1169,8 +1169,8 @@ static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
      * of it is taken care by JS::Heap, which we use in GjsMaybeOwned,
      * so we're safe. As for sweeping, it is too late: the JS object
      * is dead, and attempting to keep it alive would soon crash
-     * the process. Plus, if we touch the JSAPI, libmozjs aborts in
-     * the first BeginRequest.
+     * the process. Plus, if we touch the JSAPI from another thread, libmozjs
+     * aborts in most cases when in debug mode.
      * Thus, we drain the toggle queue when GC starts, in order to
      * prevent this from happening.
      * In practice, a toggle up during JS finalize can only happen

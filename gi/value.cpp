@@ -171,7 +171,6 @@ closure_marshal(GClosure        *closure,
     }
 
     JSFunction* func = gjs_closure_get_callable(closure);
-    JSAutoRequest ar(context);
     JSAutoCompartment ac(context, JS_GetFunctionObject(func));
 
     if (marshal_data) {
