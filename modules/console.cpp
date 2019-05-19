@@ -52,6 +52,7 @@
 #include <glib/gprintf.h>  // for g_fprintf
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/Warnings.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Unused.h"
 

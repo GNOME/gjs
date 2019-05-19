@@ -34,6 +34,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/Warnings.h"
 #include "mozilla/Maybe.h"
 
 #include "gi/arg.h"
@@ -826,9 +827,12 @@ gjs_invoke_c_function(JSContext                             *context,
      */
     if (args.length() > function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
-        JS_ReportWarningUTF8(context, "Too many arguments to %s: expected %d, "
-                             "got %" G_GSIZE_FORMAT, name.get(),
-                             function->expected_js_argc, args.length());
+        if (!JS::WarnUTF8(context,
+                          "Too many arguments to %s: expected %d, "
+                          "got %" G_GSIZE_FORMAT,
+                          name.get(), function->expected_js_argc,
+                          args.length()))
+            return false;
     } else if (args.length() < function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
         gjs_throw(context, "Too few arguments to %s: "

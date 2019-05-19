@@ -29,6 +29,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/Warnings.h"
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -104,13 +105,12 @@ static bool resolve_namespace_object(JSContext* context,
     GList* versions = g_irepository_enumerate_versions(nullptr, ns_name.get());
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
-        !g_irepository_is_registered(nullptr, ns_name.get(), nullptr)) {
-        GjsAutoChar warn_text = g_strdup_printf(
-            "Requiring %s but it has %u versions available; use "
-            "imports.gi.versions to pick one",
-            ns_name.get(), nversions);
-        JS_ReportWarningUTF8(context, "%s", warn_text.get());
-    }
+        !g_irepository_is_registered(nullptr, ns_name.get(), nullptr) &&
+        !JS::WarnUTF8(context,
+                      "Requiring %s but it has %u versions available; use "
+                      "imports.gi.versions to pick one",
+                      ns_name.get(), nversions))
+        return false;
     g_list_free_full(versions, g_free);
 
     error = NULL;

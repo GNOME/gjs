@@ -1434,12 +1434,12 @@ ObjectInstance::init_impl(JSContext              *context,
 
     g_assert(gtype() != G_TYPE_NONE);
 
-    if (args.length() > 1) {
-        JS_ReportWarningUTF8(context,
-                             "Too many arguments to the constructor of %s: "
-                             "expected 1, got %u",
-                             name(), args.length());
-    }
+    if (args.length() > 1 &&
+        !JS::WarnUTF8(context,
+                      "Too many arguments to the constructor of %s: expected "
+                      "1, got %u",
+                      name(), args.length()))
+        return false;
 
     std::vector<const char *> names;
     AutoGValueVector values;
