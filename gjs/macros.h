@@ -64,4 +64,10 @@
  */
 #define GJS_JSAPI_RETURN_CONVENTION GJS_USE
 
+#ifdef __GNUC__
+#    define GJS_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#    define GJS_ALWAYS_INLINE
+#endif
+
 #endif /* GJS_MACROS_H */
