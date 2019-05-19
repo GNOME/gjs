@@ -24,6 +24,7 @@
 #include <girepository.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/Warnings.h"
 
 #include "gi/function.h"
 #include "gi/repo.h"
@@ -142,9 +143,10 @@ union_new(JSContext       *context,
 bool UnionInstance::constructor_impl(JSContext* context,
                                      JS::HandleObject object,
                                      const JS::CallArgs& args) {
-    if (args.length() > 0)
-        JS_ReportWarningASCII(context, "Arguments to constructor of %s ignored",
-                              name());
+    if (args.length() > 0 &&
+        !JS::WarnUTF8(context, "Arguments to constructor of %s ignored",
+                      name()))
+        return false;
 
     /* union_new happens to be implemented by calling
      * gjs_invoke_c_function(), which returns a JS::Value.

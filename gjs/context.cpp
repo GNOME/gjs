@@ -50,6 +50,7 @@
 
 #include "gjs/jsapi-wrapper.h"
 #include "js/GCHashTable.h"  // for WeakCache
+#include "js/Warnings.h"
 
 #include "gi/object.h"
 #include "gi/private.h"

@@ -35,6 +35,7 @@
 
 #include "gjs/jsapi-wrapper.h"
 #include "js/Initialization.h"  // for JS_Init, JS_ShutDown
+#include "js/Warnings.h"
 #include "mozilla/UniquePtr.h"
 
 #include "gi/object.h"
