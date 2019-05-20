@@ -216,8 +216,8 @@ public:
             g_assert(!JSREPORT_IS_WARNING(report->flags));
             gjs_console_print_error(report);
         } else {
-            GjsAutoChar string = gjs_value_debug_string(m_cx, v_exn);
-            g_printerr("error: %s\n", string.get());
+            GjsAutoChar display_str = gjs_value_debug_string(m_cx, v_exn);
+            g_printerr("error: %s\n", display_str.get());
             return;
         }
 
