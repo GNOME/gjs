@@ -1,3 +1,35 @@
+Version 1.57.2
+--------------
+
+- There are now overrides for Gio.SettingsSchema and Gio.Settings which avoid
+  aborting the whole process when trying to access a nonexistent key or child
+  schema. The original API from GLib was intended for apps, since apps should
+  have complete control over which settings keys they are allowed to access.
+  However, it is not a good fit for shell extensions, which may need to access
+  different settings keys depending on the version of GNOME shell they're
+  running on.
+
+  This feature is based on code from Cinnamon which the copyright holders have
+  kindly agreed to relicense to GJS's license.
+
+- New JS API: It is now possible to pass GObject.TypeFlags to
+  GObject.registerClass(). For example, passing
+  `GTypeFlags: GObject.TypeFlags.ABSTRACT` in the class info object, will create
+  a class that cannot be instantiated. This functionality was present in
+  Lang.Class but has been missing from GObject.registerClass().
+
+- Closed bugs and merge requests:
+  * Document logging features [#230, !288, Andy Holmes]
+  * Support optional GTypeFlags value in GObject subclasses [!290, Florian
+    Müllner]
+  * Ensure const-correctness in C++ objects [#105, !291, Onur Şahin]
+  * Programmer errors with GSettings cause segfaults [#205, !284, Philip
+    Chimento]
+  * Various maintenance [!292, Philip Chimento]
+  * debugger: Fix summary help [!293, Florian Müllner]
+  * context: Use Heap pointers for GC objects stored in vectors [!294, Philip
+    Chimento]
+
 Version 1.56.2
 --------------
 
