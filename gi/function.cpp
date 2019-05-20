@@ -1507,20 +1507,17 @@ function_to_string (JSContext *context,
                     JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
-    gchar *string;
-    bool free;
-    bool ret = false;
     int i, n_args, n_jsargs;
     GString *arg_names_str;
     gchar *arg_names;
 
     if (priv == NULL) {
-        string = (gchar *) "function () {\n}";
-        free = false;
-        goto out;
+        JSString* retval = JS_NewStringCopyZ(context, "function () {\n}");
+        if (!retval)
+            return false;
+        rec.rval().setString(retval);
+        return true;
     }
-
-    free = true;
 
     n_args = g_callable_info_get_n_args(priv->info);
     n_jsargs = 0;
@@ -1544,26 +1541,21 @@ function_to_string (JSContext *context,
     }
     arg_names = g_string_free(arg_names_str, false);
 
+    GjsAutoChar descr;
     if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
-        string = g_strdup_printf(
+        descr = g_strdup_printf(
             "function %s(%s) {\n\t/* wrapper for native symbol %s(); */\n}",
             g_base_info_get_name(priv->info), arg_names,
             g_function_info_get_symbol(priv->info));
     } else {
-        string = g_strdup_printf(
+        descr = g_strdup_printf(
             "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
             g_base_info_get_name(priv->info), arg_names);
     }
 
     g_free(arg_names);
 
- out:
-    if (gjs_string_from_utf8(context, string, rec.rval()))
-        ret = true;
-
-    if (free)
-        g_free(string);
-    return ret;
+    return gjs_string_from_utf8(context, descr, rec.rval());
 }
 
 /* The bizarre thing about this vtable is that it applies to both
