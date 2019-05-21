@@ -34,7 +34,9 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/ContextOptions.h"
 #include "js/Initialization.h"  // for JS_Init, JS_ShutDown
+#include "js/Promise.h"
 #include "js/Warnings.h"
 #include "js/experimental/SourceHook.h"
 #include "mozilla/UniquePtr.h"
