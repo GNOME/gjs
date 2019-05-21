@@ -52,6 +52,8 @@
 #include <glib/gprintf.h>  // for g_fprintf
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
+#include "js/SourceText.h"
 #include "js/Warnings.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Unused.h"
@@ -271,12 +273,15 @@ gjs_console_eval_and_print(JSContext  *cx,
                            size_t      length,
                            int         lineno)
 {
+    JS::SourceText<mozilla::Utf8Unit> source;
+    if (!source.init(cx, bytes, length, JS::SourceOwnership::Borrowed))
+        return false;
+
     JS::CompileOptions options(cx);
-    options.setUTF8(true)
-           .setFileAndLine("typein", lineno);
+    options.setFileAndLine("typein", lineno);
 
     JS::RootedValue result(cx);
-    if (!JS::Evaluate(cx, options, bytes, length, &result)) {
+    if (!JS::Evaluate(cx, options, source, &result)) {
         if (!JS_IsExceptionPending(cx))
             return false;
     }
@@ -332,8 +337,8 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, global,
-                                            buffer->str, buffer->len));
+        } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer->str,
+                                                buffer->len));
 
         bool ok;
         {

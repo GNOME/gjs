@@ -30,6 +30,8 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
+#include "js/SourceText.h"
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -97,9 +99,13 @@ class GjsModule {
                          const char* filename) {
         std::u16string utf16_string =
             gjs_utf8_script_to_utf16(script, script_len);
-
-        JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                                   JS::SourceBufferHolder::NoOwnership);
+        // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
+        // but that messes up code coverage. See bug
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
+        JS::SourceText<char16_t> buf;
+        if (!buf.init(cx, utf16_string.c_str(), utf16_string.size(),
+                      JS::SourceOwnership::Borrowed))
+            return false;
 
         JS::RootedObjectVector scope_chain(cx);
         if (!scope_chain.append(module)) {

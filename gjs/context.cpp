@@ -51,7 +51,10 @@
 #endif
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
 #include "js/GCHashTable.h"  // for WeakCache
+#include "js/SourceText.h"
+#include "js/experimental/SourceHook.h"
 
 #include "gi/object.h"
 #include "gi/private.h"
@@ -974,9 +977,13 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
         eval_obj = JS_NewPlainObject(m_cx);
 
     std::u16string utf16_string = gjs_utf8_script_to_utf16(script, script_len);
-
-    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                               JS::SourceBufferHolder::NoOwnership);
+    // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
+    // but that messes up code coverage. See bug
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
+    JS::SourceText<char16_t> buf;
+    if (!buf.init(m_cx, utf16_string.c_str(), utf16_string.size(),
+                  JS::SourceOwnership::Borrowed))
+        return false;
 
     JS::RootedObjectVector scope_chain(m_cx);
     if (!scope_chain.append(eval_obj)) {

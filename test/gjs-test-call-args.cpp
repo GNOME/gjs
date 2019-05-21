@@ -4,6 +4,8 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
+#include "js/SourceText.h"
 
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -273,11 +275,16 @@ run_code(GjsUnitTestFixture *fx,
 {
     const char *script = (const char *) code;
 
+    JS::SourceText<mozilla::Utf8Unit> source;
+    bool ok = source.init(fx->cx, script, strlen(script),
+                          JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
     JS::CompileOptions options(fx->cx);
     options.setFileAndLine("unit test", 1);
 
     JS::RootedValue ignored(fx->cx);
-    bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
+    ok = JS::Evaluate(fx->cx, options, source, &ignored);
 
     g_assert_null(gjs_test_get_exception_message(fx->cx));
     g_assert_true(ok);
@@ -289,11 +296,16 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
 {
     const char *script = (const char *) code;
 
+    JS::SourceText<mozilla::Utf8Unit> source;
+    bool ok = source.init(fx->cx, script, strlen(script),
+                          JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
     JS::CompileOptions options(fx->cx);
     options.setFileAndLine("unit test", 1);
 
     JS::RootedValue ignored(fx->cx);
-    bool ok = JS::Evaluate(fx->cx, options, script, strlen(script), &ignored);
+    ok = JS::Evaluate(fx->cx, options, source, &ignored);
     g_assert_false(ok);
     GjsAutoChar message = gjs_test_get_exception_message(fx->cx);
     g_assert_nonnull(message);

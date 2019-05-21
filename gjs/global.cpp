@@ -28,6 +28,8 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
+#include "js/SourceText.h"
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -47,17 +49,20 @@ run_bootstrap(JSContext       *cx,
     JSAutoRealm ar(cx, global);
 
     JS::CompileOptions options(cx);
-    options.setUTF8(true)
-           .setFileAndLine(uri, 1)
-           .setSourceIsLazy(true);
+    options.setFileAndLine(uri, 1).setSourceIsLazy(true);
 
-    JS::UniqueTwoByteChars script;
+    char* script;
     size_t script_len;
-    if (!gjs_load_internal_source(cx, uri.get(), &script, &script_len))
+    if (!gjs_load_internal_source(cx, uri, &script, &script_len))
         return false;
 
-    JS::RootedScript compiled_script(cx);
-    if (!JS::Compile(cx, options, script.get(), script_len, &compiled_script))
+    JS::SourceText<mozilla::Utf8Unit> source;
+    if (!source.init(cx, script, script_len,
+                     JS::SourceOwnership::TakeOwnership))
+        return false;
+
+    JS::RootedScript compiled_script(cx, JS::Compile(cx, options, source));
+    if (!compiled_script)
         return false;
 
     JS::RootedValue ignored(cx);
