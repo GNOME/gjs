@@ -27,6 +27,7 @@
 #include <glib-object.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/SavedFrameAPI.h"
 
 #include "gi/boxed.h"
 #include "gi/enumeration.h"
@@ -286,13 +287,13 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
     uint32_t line, column;
 
     if (!JS::CaptureCurrentStack(cx, &frame) ||
-        !JS::BuildStackString(cx, frame, &stack))
+        !JS::BuildStackString(cx, nullptr, frame, &stack))
         return false;
 
     auto ok = JS::SavedFrameResult::Ok;
-    if (JS::GetSavedFrameSource(cx, frame, &source) != ok ||
-        JS::GetSavedFrameLine(cx, frame, &line) != ok ||
-        JS::GetSavedFrameColumn(cx, frame, &column) != ok) {
+    if (JS::GetSavedFrameSource(cx, nullptr, frame, &source) != ok ||
+        JS::GetSavedFrameLine(cx, nullptr, frame, &line) != ok ||
+        JS::GetSavedFrameColumn(cx, nullptr, frame, &column) != ok) {
         gjs_throw(cx, "Error getting saved frame information");
         return false;
     }
