@@ -651,37 +651,67 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
     return m_should_exit;
 }
 
+void GjsContextPrivate::start_draining_job_queue(void) {
+    if (!m_idle_drain_handler)
+        m_idle_drain_handler = g_idle_add_full(
+            G_PRIORITY_DEFAULT, drain_job_queue_idle_handler, this, nullptr);
+}
+
+void GjsContextPrivate::stop_draining_job_queue(void) {
+    m_draining_job_queue = false;
+    if (m_idle_drain_handler) {
+        g_source_remove(m_idle_drain_handler);
+        m_idle_drain_handler = 0;
+    }
+}
+
 gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
-    if (!gjs->run_jobs())
-        gjs_log_exception(gjs->context());
+    gjs->runJobs(gjs->context());
     /* Uncatchable exceptions are swallowed here - no way to get a handle on
      * the main loop to exit it from this idle handler */
-    g_assert(((void)"GjsContextPrivate::run_jobs() should have emptied queue",
-              gjs->m_idle_drain_handler == 0));
+    g_assert(gjs->empty() && gjs->m_idle_drain_handler == 0 &&
+             "GjsContextPrivate::runJobs() should have emptied queue");
     return G_SOURCE_REMOVE;
 }
 
+JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
+    return gjs_get_import_global(cx);
+}
+
 /* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
-bool GjsContextPrivate::enqueue_job(JS::HandleObject job) {
+bool GjsContextPrivate::enqueuePromiseJob(
+    JSContext* cx, JS::HandleObject promise G_GNUC_UNUSED, JS::HandleObject job,
+    JS::HandleObject allocation_site G_GNUC_UNUSED,
+    JS::HandleObject incumbent_global G_GNUC_UNUSED) {
+    g_assert(cx == m_cx);
+    g_assert(from_cx(cx) == this);
+
     if (m_idle_drain_handler)
-        g_assert(m_job_queue.length() > 0);
+        g_assert(!empty());
     else
-        g_assert(m_job_queue.length() == 0);
+        g_assert(empty());
 
     if (!m_job_queue.append(job)) {
         JS_ReportOutOfMemory(m_cx);
         return false;
     }
-    if (!m_idle_drain_handler)
-        m_idle_drain_handler = g_idle_add_full(
-            G_PRIORITY_DEFAULT, drain_job_queue_idle_handler, this, nullptr);
 
+    start_draining_job_queue();
     return true;
 }
 
+// Override of JobQueue::runJobs(). Called by js::RunJobs(), and when execution
+// of the job queue was interrupted by the debugger and is resuming.
+void GjsContextPrivate::runJobs(JSContext* cx) {
+    g_assert(cx == m_cx);
+    g_assert(from_cx(cx) == this);
+    if (!run_jobs_fallible())
+        gjs_log_exception(cx);
+}
+
 /*
- * GjsContext::run_jobs:
+ * GjsContext::run_jobs_fallible:
  *
  * Drains the queue of promise callbacks that the JS engine has reported
  * finished, calling each one and logging any exceptions that it throws.
@@ -692,7 +722,7 @@ bool GjsContextPrivate::enqueue_job(JS::HandleObject job) {
  * Returns: false if one of the jobs threw an uncatchable exception;
  * otherwise true.
  */
-bool GjsContextPrivate::run_jobs(void) {
+bool GjsContextPrivate::run_jobs_fallible(void) {
     bool retval = true;
 
     if (m_draining_job_queue || m_should_exit)
@@ -743,13 +773,45 @@ bool GjsContextPrivate::run_jobs(void) {
         }
     }
 
-    m_draining_job_queue = false;
     m_job_queue.clear();
-    if (m_idle_drain_handler) {
-        g_source_remove(m_idle_drain_handler);
-        m_idle_drain_handler = 0;
-    }
+    stop_draining_job_queue();
     return retval;
+}
+
+class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
+ private:
+    GjsContextPrivate* m_gjs;
+    JS::PersistentRooted<JobQueueStorage> m_queue;
+    bool m_was_draining : 1;
+
+ public:
+    explicit SavedQueue(GjsContextPrivate* gjs)
+        : m_gjs(gjs),
+          m_queue(gjs->m_cx, std::move(gjs->m_job_queue)),
+          m_was_draining(gjs->m_draining_job_queue) {
+        gjs->stop_draining_job_queue();
+    }
+
+    ~SavedQueue(void) {
+        m_gjs->m_job_queue = std::move(m_queue.get());
+        if (m_was_draining)
+            m_gjs->start_draining_job_queue();
+    }
+};
+
+js::UniquePtr<JS::JobQueue::SavedJobQueue> GjsContextPrivate::saveJobQueue(
+    JSContext* cx) {
+    g_assert(cx == m_cx);
+    g_assert(from_cx(cx) == this);
+
+    auto saved_queue = js::MakeUnique<SavedQueue>(this);
+    if (!saved_queue) {
+        JS_ReportOutOfMemory(cx);
+        return nullptr;
+    }
+
+    g_assert(m_job_queue.empty());
+    return saved_queue;
 }
 
 void GjsContextPrivate::register_unhandled_promise_rejection(
@@ -880,7 +942,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
      * uncaught exceptions have been reported since draining runs callbacks. */
     {
         JS::AutoSaveExceptionState saved_exc(m_cx);
-        ok = run_jobs() && ok;
+        ok = run_jobs_fallible() && ok;
     }
 
     if (auto_profile)

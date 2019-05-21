@@ -110,15 +110,6 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool on_enqueue_promise_job(
-    JSContext*, JS::HandleObject callback,
-    JS::HandleObject allocation_site G_GNUC_UNUSED,
-    JS::HandleObject global G_GNUC_UNUSED, void* data) {
-    auto* gjs = static_cast<GjsContextPrivate*>(data);
-    return gjs->enqueue_job(callback);
-}
-
 static void on_promise_unhandled_rejection(
     JSContext* cx, JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
@@ -240,9 +231,7 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, uninitialized_gjs);
     JS_SetGCCallback(cx, on_garbage_collect, uninitialized_gjs);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
-    JS::SetGetIncumbentGlobalCallback(cx, gjs_get_import_global);
-    JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job,
-                                     uninitialized_gjs);
+    JS::SetJobQueue(cx, dynamic_cast<JS::JobQueue*>(uninitialized_gjs));
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
                                            uninitialized_gjs);
 
