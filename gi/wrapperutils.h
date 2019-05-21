@@ -35,6 +35,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/MemoryFunctions.h"
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -61,6 +62,10 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 
 namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct, Union };
+}
+
+namespace MemoryUse {
+constexpr JS::MemoryUse GObjectInstanceStruct = JS::MemoryUse::Embedding1;
 }
 
 struct GjsTypecheckNoThrow {};

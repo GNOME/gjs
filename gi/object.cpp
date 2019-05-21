@@ -1276,6 +1276,12 @@ void ObjectInstance::prepare_shutdown(void) {
 
 ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
     : GIWrapperInstance(cx, object) {
+    GTypeQuery query;
+    type_query_dynamic_safe(&query);
+    if (G_LIKELY(query.type))
+        JS::AddAssociatedMemory(object, query.instance_size,
+                                MemoryUse::GObjectInstanceStruct);
+
     GJS_INC_COUNTER(object_instance);
 }
 
@@ -1430,8 +1436,6 @@ ObjectInstance::init_impl(JSContext              *context,
                           const JS::CallArgs&     args,
                           JS::MutableHandleObject object)
 {
-    GTypeQuery query;
-
     g_assert(gtype() != G_TYPE_NONE);
 
     if (args.length() > 1 &&
@@ -1498,10 +1502,6 @@ ObjectInstance::init_impl(JSContext              *context,
         return true;
     }
 
-    type_query_dynamic_safe(&query);
-    if (G_LIKELY (query.type))
-        JS_updateMallocCounter(context, query.instance_size);
-
     if (G_IS_INITIALLY_UNOWNED(gobj) &&
         !g_object_is_floating(gobj)) {
         /* GtkWindow does not return a ref to caller of g_object_new.
@@ -1562,6 +1562,16 @@ void ObjectBase::trace_impl(JSTracer* tracer) {
 void ObjectPrototype::trace_impl(JSTracer* tracer) {
     m_property_cache.trace(tracer);
     m_field_cache.trace(tracer);
+}
+
+void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
+    GTypeQuery query;
+    type_query_dynamic_safe(&query);
+    if (G_LIKELY(query.type))
+        JS::RemoveAssociatedMemory(obj, query.instance_size,
+                                   MemoryUse::GObjectInstanceStruct);
+
+    GIWrapperInstance::finalize_impl(fop, obj);
 }
 
 ObjectInstance::~ObjectInstance() {
