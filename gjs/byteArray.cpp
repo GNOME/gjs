@@ -29,6 +29,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/ArrayBuffer.h"
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"
@@ -38,16 +39,10 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 
-/* Callbacks to use with JS_NewExternalArrayBuffer() */
+/* Callbacks to use with JS::NewExternalArrayBuffer() */
 
 static void gfree_arraybuffer_contents(void* contents, void*) {
     g_free(contents);
-}
-
-static void bytes_ref_arraybuffer(void* contents G_GNUC_UNUSED,
-                                  void* user_data) {
-    auto* gbytes = static_cast<GBytes*>(user_data);
-    g_bytes_ref(gbytes);
 }
 
 static void bytes_unref_arraybuffer(void* contents G_GNUC_UNUSED,
@@ -236,7 +231,7 @@ from_string_func(JSContext *context,
          */
         size_t len = strlen(utf8.get());
         array_buffer =
-            JS_NewArrayBufferWithContents(context, len, utf8.release());
+            JS::NewArrayBufferWithContents(context, len, utf8.release());
     } else {
         JSString *str = argv[0].toString();  /* Rooted by argv */
         GError *error = NULL;
@@ -278,8 +273,8 @@ from_string_func(JSContext *context,
             return gjs_throw_gerror_message(context, error);  // frees GError
 
         array_buffer =
-            JS_NewExternalArrayBuffer(context, bytes_written, encoded, nullptr,
-                                      gfree_arraybuffer_contents, nullptr);
+            JS::NewExternalArrayBuffer(context, bytes_written, encoded,
+                                       gfree_arraybuffer_contents, nullptr);
     }
 
     if (!array_buffer)
@@ -320,10 +315,10 @@ from_gbytes_func(JSContext *context,
     const void* data = g_bytes_get_data(gbytes, &len);
     JS::RootedObject array_buffer(
         context,
-        JS_NewExternalArrayBuffer(
+        JS::NewExternalArrayBuffer(
             context, len,
             const_cast<void*>(data),  // the ArrayBuffer won't modify the data
-            bytes_ref_arraybuffer, bytes_unref_arraybuffer, gbytes));
+            bytes_unref_arraybuffer, gbytes));
     if (!array_buffer)
         return false;
 
@@ -345,9 +340,10 @@ JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
     JS::RootedObject array_buffer(cx);
     // a null data pointer takes precedence over whatever `nbytes` says
     if (data)
-        array_buffer = JS_NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes));
+        array_buffer =
+            JS::NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes));
     else
-        array_buffer = JS_NewArrayBuffer(cx, 0);
+        array_buffer = JS::NewArrayBuffer(cx, 0);
     if (!array_buffer)
         return nullptr;
 
