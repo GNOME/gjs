@@ -250,8 +250,8 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     if (entry)
         return entry->value();
 
-    JS::UniqueChars js_prop_name;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
+    JS::UniqueChars js_prop_name(JS_EncodeStringToUTF8(cx, key));
+    if (!js_prop_name)
         return nullptr;
 
     GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name.get());
