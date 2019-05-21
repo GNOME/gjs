@@ -37,6 +37,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/MemoryFunctions.h"
 
 #include "gi/arg.h"
 #include "gi/closure.h"
@@ -1438,7 +1439,7 @@ ObjectInstance::init_impl(JSContext              *context,
                           const JS::CallArgs&     args,
                           JS::MutableHandleObject object)
 {
-    GTypeQuery query;
+    // GTypeQuery query;
 
     g_assert(gtype() != G_TYPE_NONE);
 
@@ -1487,9 +1488,10 @@ ObjectInstance::init_impl(JSContext              *context,
         return true;
     }
 
-    type_query_dynamic_safe(&query);
-    if (G_LIKELY (query.type))
-        JS_updateMallocCounter(context, query.instance_size);
+    // type_query_dynamic_safe(&query);
+    // if (G_LIKELY (query.type))
+    //     JS::AddAssociatedMemory(object, query.instance_size,
+    //                             JS::MemoryUse::DOMBinding);  // FIXME
 
     if (G_IS_INITIALLY_UNOWNED(gobj) &&
         !g_object_is_floating(gobj)) {
