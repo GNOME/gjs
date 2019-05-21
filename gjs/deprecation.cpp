@@ -84,10 +84,7 @@ static char* get_callsite(JSContext* cx) {
     if (!frame_string)
         return nullptr;
 
-    JS::UniqueChars frame_utf8;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(frame_string), &frame_utf8))
-        return nullptr;
-    return frame_utf8.release();
+    return JS_EncodeStringToUTF8(cx, frame_string);
 }
 
 /* Note, this can only be called from the JS thread because it uses the full
