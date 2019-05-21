@@ -282,9 +282,8 @@ gjs_string_from_ucs4(JSContext             *cx,
     long u16_string_length;
     GError *error = NULL;
 
-    char16_t *u16_string =
-        reinterpret_cast<char16_t *>(g_ucs4_to_utf16(ucs4_string, n_chars, NULL,
-                                                     &u16_string_length, &error));
+    gunichar2* u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, nullptr,
+                                            &u16_string_length, &error);
     if (!u16_string) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
                   error->message);
@@ -292,8 +291,13 @@ gjs_string_from_ucs4(JSContext             *cx,
         return false;
     }
 
-    /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
-    JS::RootedString str(cx, JS_NewUCString(cx, u16_string, u16_string_length));
+    // Sadly, must copy, because js::UniquePtr forces that chars passed to
+    // JS_NewUCString() must have been allocated by the JS engine.
+    JS::RootedString str(
+        cx, JS_NewUCStringCopyN(cx, reinterpret_cast<char16_t*>(u16_string),
+                                u16_string_length));
+
+    g_free(u16_string);
 
     if (!str) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16");
