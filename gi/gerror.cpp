@@ -464,16 +464,16 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!JS_GetPropertyById(cx, obj, atoms.name(), &v_name))
         return nullptr;
 
-    JS::UniqueChars name;
-    if (!gjs_string_to_utf8(cx, v_name, &name))
+    JS::UniqueChars name = gjs_string_to_utf8(cx, v_name);
+    if (!name)
         return nullptr;
 
     JS::RootedValue v_message(cx);
     if (!JS_GetPropertyById(cx, obj, atoms.message(), &v_message))
         return nullptr;
 
-    JS::UniqueChars message;
-    if (!gjs_string_to_utf8(cx, v_message, &message))
+    JS::UniqueChars message = gjs_string_to_utf8(cx, v_message);
+    if (!message)
         return nullptr;
 
     GjsAutoTypeClass<GEnumClass> klass(GJS_TYPE_JS_ERROR);

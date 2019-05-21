@@ -211,7 +211,7 @@ gjs_format_stack_trace(JSContext       *cx,
     JS::RootedString stack_trace(cx);
     JS::UniqueChars stack_utf8;
     if (JS::BuildStackString(cx, nullptr, saved_frame, &stack_trace, 2))
-        stack_utf8.reset(JS_EncodeStringToUTF8(cx, stack_trace));
+        stack_utf8 = JS_EncodeStringToUTF8(cx, stack_trace);
 
     saved_exc.restore();
 

@@ -633,8 +633,8 @@ gjs_array_to_strv(JSContext   *context,
             return false;
         }
 
-        JS::UniqueChars tmp_result;
-        if (!gjs_string_to_utf8(context, elem, &tmp_result)) {
+        JS::UniqueChars tmp_result = gjs_string_to_utf8(context, elem);
+        if (!tmp_result) {
             g_strfreev(result);
             return false;
         }

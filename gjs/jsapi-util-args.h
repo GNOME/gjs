@@ -88,8 +88,10 @@ static inline void assign(JSContext* cx, char c, bool nullable,
         ref->reset();
         return;
     }
-    if (!gjs_string_to_utf8(cx, value, ref))
+    JS::UniqueChars tmp = gjs_string_to_utf8(cx, value);
+    if (!tmp)
         throw g_strdup("Couldn't convert to string");
+    *ref = std::move(tmp);
 }
 
 GJS_ALWAYS_INLINE
