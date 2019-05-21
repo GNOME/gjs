@@ -30,6 +30,8 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
+#include "js/SourceText.h"
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -101,9 +103,12 @@ class GjsModule {
         unsigned start_line_number = 1;
         size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
 
-        JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
-                                   utf16_string.size() - offset,
-                                   JS::SourceBufferHolder::NoOwnership);
+        // FIXME compile utf8string
+        JS::SourceText<char16_t> buf;
+        if (!buf.init(cx, utf16_string.c_str() + offset,
+                      utf16_string.size() - offset,
+                      JS::SourceOwnership::Borrowed))
+            return false;
 
         JS::RootedObjectVector scope_chain(cx);
         if (!scope_chain.append(module)) {

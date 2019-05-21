@@ -49,8 +49,11 @@
 #endif
 
 #include "gjs/jsapi-wrapper.h"
+#include "js/CompilationAndEvaluation.h"
 #include "js/GCHashTable.h"  // for WeakCache
+#include "js/SourceText.h"
 #include "js/Warnings.h"
+#include "js/experimental/SourceHook.h"
 
 #include "gi/object.h"
 #include "gi/private.h"
@@ -977,9 +980,11 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     unsigned start_line_number = 1;
     size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
 
-    JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
-                               utf16_string.size() - offset,
-                               JS::SourceBufferHolder::NoOwnership);
+    // FIXME compile utf8string
+    JS::SourceText<char16_t> buf;
+    if (!buf.init(m_cx, utf16_string.c_str() + offset,
+                  utf16_string.size() - offset, JS::SourceOwnership::Borrowed))
+        return false;
 
     JS::RootedObjectVector scope_chain(m_cx);
     if (!scope_chain.append(eval_obj)) {

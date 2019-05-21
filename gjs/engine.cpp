@@ -36,6 +36,7 @@
 #include "gjs/jsapi-wrapper.h"
 #include "js/Initialization.h"  // for JS_Init, JS_ShutDown
 #include "js/Warnings.h"
+#include "js/experimental/SourceHook.h"
 #include "mozilla/UniquePtr.h"
 
 #include "gi/object.h"
@@ -216,36 +217,25 @@ static void on_promise_unhandled_rejection(
     gjs->register_unhandled_promise_rejection(id, std::move(stack));
 }
 
-bool gjs_load_internal_source(JSContext* cx, const char* filename,
-                              JS::UniqueTwoByteChars* src, size_t* length) {
+bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
+                              size_t* length) {
     GError* error = nullptr;
     const char* path = filename + 11;  // len("resource://")
-    GjsAutoPointer<GBytes, GBytes, g_bytes_unref> script_bytes;
-    script_bytes =
+    GBytes* script_bytes =
         g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
     if (!script_bytes)
         return gjs_throw_gerror_message(cx, error);
 
-    size_t script_len;
-    const void* script_data = g_bytes_get_data(script_bytes, &script_len);
-    JS::ConstUTF8CharsZ script(static_cast<const char*>(script_data),
-                               script_len);
-    JS::TwoByteCharsZ chs = JS::UTF8CharsToNewTwoByteCharsZ(cx, script, length);
-    if (!chs)
-        return false;
-
-    src->reset(chs.get());
+    *src = static_cast<char*>(g_bytes_unref_to_data(script_bytes, length));
     return true;
 }
 
 class GjsSourceHook : public js::SourceHook {
-    bool load(JSContext* cx, const char* filename, char16_t** src,
+    bool load(JSContext* cx, const char* filename,
+              char16_t** two_byte_source G_GNUC_UNUSED, char** utf8_source,
               size_t* length) {
-        JS::UniqueTwoByteChars chars;
-        if (!gjs_load_internal_source(cx, filename, &chars, length))
-            return false;
-        *src = chars.release();  // caller owns, per documentation of SourceHook
-        return true;
+        // caller owns the source, per documentation of SourceHook
+        return gjs_load_internal_source(cx, filename, utf8_source, length);
     }
 };
 
