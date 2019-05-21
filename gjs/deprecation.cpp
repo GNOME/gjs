@@ -74,7 +74,7 @@ struct hash<DeprecationEntry> {
 static std::unordered_set<DeprecationEntry> logged_messages;
 
 GJS_JSAPI_RETURN_CONVENTION
-static char* get_callsite(JSContext* cx) {
+static JS::UniqueChars get_callsite(JSContext* cx) {
     JS::RootedObject stack_frame(cx);
     if (!JS::CaptureCurrentStack(cx, &stack_frame,
                                  JS::StackCapture(JS::MaxFrames(1))) ||

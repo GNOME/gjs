@@ -90,8 +90,8 @@ importer_to_string(JSContext *cx,
     if (module_path.isNull()) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
-        JS::UniqueChars path;
-        if (!gjs_string_to_utf8(cx, module_path, &path))
+        JS::UniqueChars path = gjs_string_to_utf8(cx, module_path);
+        if (!path)
             return false;
         output = g_strdup_printf("[%s %s]", klass->name, path.get());
     }
@@ -156,8 +156,9 @@ define_meta_properties(JSContext       *context,
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
-            JS::UniqueChars parent_path;
-            if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
+            JS::UniqueChars parent_path =
+                gjs_string_to_utf8(context, parent_module_path);
+            if (!parent_path)
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }

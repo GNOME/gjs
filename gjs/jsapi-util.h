@@ -240,8 +240,7 @@ char *gjs_value_debug_string(JSContext      *context,
 void gjs_warning_reporter(JSContext*, JSErrorReport* report);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_to_utf8(JSContext* cx, const JS::Value string_val,
-                        JS::UniqueChars* utf8_string_p);
+JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value string_val);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,

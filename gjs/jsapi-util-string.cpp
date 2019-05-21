@@ -51,7 +51,6 @@ char* gjs_hyphen_to_underscore(const char* str) {
  * gjs_string_to_utf8:
  * @cx: JSContext
  * @value: a JS::Value containing a string
- * @utf8_string_p: return location for a unique JS chars pointer
  *
  * Converts the JSString in @value to UTF-8 and puts it in @utf8_string_p.
  *
@@ -59,17 +58,17 @@ char* gjs_hyphen_to_underscore(const char* str) {
  * typechecks the JS::Value and throws an exception if it's the wrong type.
  * Don't use this function if you already have a JS::RootedString, or if you
  * know the value already holds a string; use JS_EncodeStringToUTF8() instead.
+ *
+ * Returns: Unique UTF8 chars, empty on exception throw.
  */
-bool gjs_string_to_utf8(JSContext* cx, const JS::Value value,
-                        JS::UniqueChars* utf8_string_p) {
+JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
     if (!value.isString()) {
         gjs_throw(cx, "Value is not a string, cannot convert to UTF-8");
-        return false;
+        return nullptr;
     }
 
     JS::RootedString str(cx, value.toString());
-    utf8_string_p->reset(JS_EncodeStringToUTF8(cx, str));
-    return !!*utf8_string_p;
+    return JS_EncodeStringToUTF8(cx, str);
 }
 
 bool
@@ -105,14 +104,12 @@ gjs_string_to_filename(JSContext      *context,
                        GjsAutoChar    *filename_string)
 {
     GError *error;
-    JS::UniqueChars tmp;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
-    if (!gjs_string_to_utf8(context, filename_val, &tmp)) {
-        /* exception already set */
+    JS::UniqueChars tmp = gjs_string_to_utf8(context, filename_val);
+    if (!tmp)
         return false;
-    }
 
     error = NULL;
     *filename_string =
@@ -325,7 +322,7 @@ bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
     }
 
     JS::RootedString s(cx, JS_FORGET_STRING_FLATNESS(JSID_TO_FLAT_STRING(id)));
-    name_p->reset(JS_EncodeStringToUTF8(cx, s));
+    *name_p = JS_EncodeStringToUTF8(cx, s);
     return !!*name_p;
 }
 
@@ -346,8 +343,8 @@ gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
 {
-    JS::UniqueChars utf8_str;
-    if (gjs_string_to_utf8(context, value, &utf8_str)) {
+    JS::UniqueChars utf8_str = gjs_string_to_utf8(context, value);
+    if (utf8_str) {
         *result = g_utf8_get_char(utf8_str.get());
         return true;
     }

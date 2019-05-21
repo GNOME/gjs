@@ -32,6 +32,7 @@
 
 #include <codecvt>  // for codecvt_utf8_utf16
 #include <locale>   // for wstring_convert
+#include <utility>  // for move
 
 #include "gjs/jsapi-wrapper.h"
 
@@ -124,15 +125,19 @@ gjs_object_require_property(JSContext       *cx,
     return false;
 }
 
-/* Converts JS string value to UTF-8 string. value must be freed with JS_free. */
+/* Converts JS string value to UTF-8 string. */
 bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
                                  const char* description,
                                  JS::HandleId property_name,
                                  JS::UniqueChars* value) {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
-        gjs_string_to_utf8(cx, prop_value, value))
-        return true;
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value)) {
+        JS::UniqueChars tmp = gjs_string_to_utf8(cx, prop_value);
+        if (tmp) {
+            *value = std::move(tmp);
+            return true;
+        }
+    }
 
     throw_property_lookup_error(cx, obj, description, property_name,
                                 "it was not a valid string");
@@ -339,9 +344,6 @@ char*
 gjs_value_debug_string(JSContext      *context,
                        JS::HandleValue value)
 {
-    char *bytes;
-    char *debugstr;
-
     /* Special case debug strings for strings */
     if (value.isString()) {
         JS::RootedString str(context, value.toString());
@@ -377,12 +379,8 @@ gjs_value_debug_string(JSContext      *context,
 
     g_assert(str);
 
-    bytes = JS_EncodeStringToUTF8(context, str);
-
-    debugstr = _gjs_g_utf8_make_valid(bytes);
-    JS_free(context, bytes);
-
-    return debugstr;
+    JS::UniqueChars bytes = JS_EncodeStringToUTF8(context, str);
+    return _gjs_g_utf8_make_valid(bytes.get());
 }
 
 bool
@@ -397,7 +395,7 @@ gjs_log_exception_full(JSContext       *context,
     JS::RootedString exc_str(context, JS::ToString(context, exc));
     JS::UniqueChars utf8_exception;
     if (exc_str)
-        utf8_exception.reset(JS_EncodeStringToUTF8(context, exc_str));
+        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
     if (!utf8_exception)
         JS_ClearPendingException(context);
 
@@ -411,7 +409,7 @@ gjs_log_exception_full(JSContext       *context,
 
     JS::UniqueChars utf8_message;
     if (message)
-        utf8_message.reset(JS_EncodeStringToUTF8(context, message));
+        utf8_message = JS_EncodeStringToUTF8(context, message);
 
     /* We log syntax errors differently, because the stack for those includes
        only the referencing module, but we want to print out the filename and
@@ -429,19 +427,20 @@ gjs_log_exception_full(JSContext       *context,
         JS::UniqueChars utf8_filename;
         if (js_fileName.isString()) {
             JS::RootedString str(context, js_fileName.toString());
-            utf8_filename.reset(JS_EncodeStringToUTF8(context, str));
+            utf8_filename = JS_EncodeStringToUTF8(context, str);
         }
-        if (!utf8_filename)
-            utf8_filename.reset(JS_strdup(context, "unknown"));
 
         lineNumber = js_lineNumber.toInt32();
 
         if (message) {
             g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(),
-                       utf8_exception.get(), utf8_filename.get(), lineNumber);
+                       utf8_exception.get(),
+                       utf8_filename ? utf8_filename.get() : "unknown",
+                       lineNumber);
         } else {
             g_critical("JS ERROR: %s @ %s:%u", utf8_exception.get(),
-                       utf8_filename.get(), lineNumber);
+                       utf8_filename ? utf8_filename.get() : "unknown",
+                       lineNumber);
         }
 
     } else {
@@ -452,7 +451,7 @@ gjs_log_exception_full(JSContext       *context,
             JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack) &&
             stack.isString()) {
             JS::RootedString str(context, stack.toString());
-            utf8_stack.reset(JS_EncodeStringToUTF8(context, str));
+            utf8_stack = JS_EncodeStringToUTF8(context, str);
         }
 
         if (message) {
