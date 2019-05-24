@@ -194,7 +194,9 @@ main(int argc, char **argv)
     char * const *script_argv;
     const char *env_coverage_output_path;
     const char *env_coverage_prefixes;
+    const char *env_tracefd;
     bool interactive_mode = false;
+    int tracefd = -1;
 
     setlocale(LC_ALL, "");
 
@@ -281,6 +283,15 @@ main(int argc, char **argv)
     /* This should be removed after a suitable time has passed */
     check_script_args_for_stray_gjs_args(script_argc, script_argv);
 
+    /* Check for GJS_TRACE_FD for sysprof profiling */
+    env_tracefd = g_getenv("GJS_TRACE_FD");
+    if (env_tracefd != NULL) {
+        tracefd = g_ascii_strtoll(env_tracefd, NULL, 10);
+        g_setenv("GJS_TRACE_FD", "", TRUE);
+        if (tracefd > 0)
+            enable_profiler = true;
+    }
+
     if (interactive_mode && enable_profiler) {
         g_message("Profiler disabled in interactive mode.");
         enable_profiler = false;
@@ -318,6 +329,15 @@ main(int argc, char **argv)
     if (enable_profiler && profile_output_path) {
         GjsProfiler *profiler = gjs_context_get_profiler(js_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
+    } else if (enable_profiler && tracefd > -1) {
+        GjsProfiler *profiler = gjs_context_get_profiler(js_context);
+        gjs_profiler_set_fd(profiler, tracefd);
+        tracefd = -1;
+    }
+
+    if (tracefd != -1) {
+        close(tracefd);
+        tracefd = -1;
     }
 
     /* prepare command line arguments */
