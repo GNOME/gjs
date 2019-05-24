@@ -106,8 +106,7 @@ static gboolean parse_profile_arg(const char* option_name G_GNUC_UNUSED,
                                   GError** error_out G_GNUC_UNUSED) {
     enable_profiler = true;
     g_free(profile_output_path);
-    if (value)
-        profile_output_path = g_strdup(value);
+    profile_output_path = g_strdup(value);
     return true;
 }
 
