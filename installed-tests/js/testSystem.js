@@ -23,6 +23,21 @@ describe('System.refcount()', function () {
     });
 });
 
+describe('System.addressOfGObject()', function () {
+    it('gives different results for different objects', function () {
+        let a = new GObject.Object({});
+        let b = new GObject.Object({});
+        expect(System.addressOfGObject(a)).toEqual(System.addressOfGObject(a));
+        expect(System.addressOfGObject(a)).not.toEqual(System.addressOfGObject(b));
+    });
+
+    it('returns (nil) for non GObject objects', function () {
+        let a = new GObject.Object({});
+        expect(System.addressOfGObject(a)).not.toEqual(System.addressOfGObject({}))
+        expect(System.addressOfGObject({})).toEqual('(nil)');
+    });
+});
+
 describe('System.gc()', function () {
     it('does not crash the application', function () {
         expect(System.gc).not.toThrow();

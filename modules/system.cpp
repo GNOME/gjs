@@ -59,6 +59,26 @@ gjs_address_of(JSContext *context,
 }
 
 static bool
+gjs_address_of_gobject(JSContext *context,
+                       unsigned   argc,
+                       JS::Value *vp)
+{
+    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::RootedObject target_obj(context);
+    GObject *obj;
+
+    if (!gjs_parse_call_args(context, "addressOfGObject", argv, "o",
+                             "object", &target_obj))
+        return false;
+
+    if (!ObjectBase::to_c_ptr(context, target_obj, &obj))
+        obj = nullptr;
+
+    GjsAutoChar pointer_string = g_strdup_printf("%p", obj);
+    return gjs_string_from_utf8(context, pointer_string, argv.rval());
+}
+
+static bool
 gjs_refcount(JSContext *context,
              unsigned   argc,
              JS::Value *vp)
@@ -174,6 +194,7 @@ gjs_clear_date_caches(JSContext *context,
 
 static JSFunctionSpec module_funcs[] = {
     JS_FN("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("addressOfGObject", gjs_address_of_gobject, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("dumpHeap", gjs_dump_heap, 1, GJS_MODULE_PROP_FLAGS),
