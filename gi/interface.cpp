@@ -165,6 +165,14 @@ gjs_define_interface_class(JSContext              *context,
 }
 
 bool
+InterfaceBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
+    if (ObjectBase::to_string(cx, argc, vp))
+        return true;
+
+    return GIWrapperBase::to_string(cx, argc, vp);
+}
+
+bool
 gjs_lookup_interface_constructor(JSContext             *context,
                                  GType                  gtype,
                                  JS::MutableHandleValue value_p)

@@ -284,4 +284,9 @@ describe('GObject interface', function () {
         expect(obj instanceof AGObjectInterface).toBeTruthy();
         expect(obj.interface_prop).toEqual('foobar');  // override not needed
     });
+
+    it('has a toString() defintion', function () {
+        expect(new GObjectImplementingGObjectInterface().toString()).toMatch(
+            /\[object instance wrapper GType:Gjs_GObjectImplementingGObjectInterface jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
 });

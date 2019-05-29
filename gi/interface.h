@@ -78,6 +78,9 @@ class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
     }
 
     GJS_JSAPI_RETURN_CONVENTION
+    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    GJS_JSAPI_RETURN_CONVENTION
     static bool has_instance(JSContext* cx, unsigned argc, JS::Value* vp);
 };
 
