@@ -20,7 +20,6 @@
 
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
-var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
 
@@ -124,7 +123,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
         _validateFDVariant(inVariant, fdList);
     }
 
-    var asyncCallback = function (proxy, result) {
+    var asyncCallback = (proxy, result) => {
         try {
             const [outVariant, outFdList] =
                 proxy.call_with_unix_fd_list_finish(result);
@@ -174,7 +173,7 @@ function _propertyGetter(name) {
     return value ? value.deep_unpack() : null;
 }
 
-function _propertySetter(value, name, signature) {
+function _propertySetter(name, signature, value) {
     let variant = new GLib.Variant(signature, value);
     this.set_cached_property(name, variant);
 
@@ -183,14 +182,14 @@ function _propertySetter(value, name, signature) {
                                [this.g_interface_name,
                                 name, variant]),
               Gio.DBusCallFlags.NONE, -1, null,
-              Lang.bind(this, function(proxy, result) {
+              (proxy, result) => {
                   try {
                       this.call_finish(result);
                   } catch(e) {
                       log('Could not set property ' + name + ' on remote object ' +
                           this.g_object_path + ': ' + e.message);
                   }
-              }));
+              });
 }
 
 function _addDBusConvenience() {
@@ -212,8 +211,8 @@ function _addDBusConvenience() {
     for (i = 0; i < properties.length; i++) {
         let name = properties[i].name;
         let signature = properties[i].signature;
-        Object.defineProperty(this, name, { get: Lang.bind(this, _propertyGetter, name),
-                                            set: Lang.bind(this, _propertySetter, name, signature),
+        Object.defineProperty(this, name, { get: _propertyGetter.bind(this, name),
+                                            set: _propertySetter.bind(this, name, signature),
                                             configurable: true,
                                             enumerable: true });
     }
@@ -234,7 +233,7 @@ function _makeProxyWrapper(interfaceXml) {
         if (!cancellable)
             cancellable = null;
         if (asyncCallback)
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, function(initable, result) {
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (initable, result) => {
                 let caughtErrorWhenInitting = null;
                 try {
                     initable.init_finish(result);
