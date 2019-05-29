@@ -187,7 +187,7 @@ function _propertySetter(value, name, signature) {
                 this.call_finish(result);
             } catch (e) {
                 log(`Could not set property ${name} on remote object ${
-                    this.g_object_path  }: ${e.message}`);
+                    this.g_object_path}: ${e.message}`);
             }
         });
 }
@@ -211,8 +211,7 @@ function _addDBusConvenience() {
     for (i = 0; i < properties.length; i++) {
         let name = properties[i].name;
         let signature = properties[i].signature;
-        Object.defineProperty(this, name, {
-            get: _propertyGetter.bind(this, name),
+        Object.defineProperty(this, name, {get: _propertyGetter.bind(this, name),
             set: _propertySetter.bind(this, name, signature),
             configurable: true,
             enumerable: true});
