@@ -224,11 +224,12 @@ function _makeProxyWrapper(interfaceXml) {
     var iname = info.name;
     return function(bus, name, object, asyncCallback, cancellable, flags) {
         var obj = new Gio.DBusProxy({ g_connection: bus,
-                                      g_interface_name: iname,
-                                      g_interface_info: info,
-                                      g_name: name,
-                                      g_flags: flags || Gio.DBusProxyFlags.NONE,
-                                      g_object_path: object });
+            g_interface_name: iname,
+            g_interface_info: info,
+            g_name: name,
+            g_flags: flags || Gio.DBusProxyFlags.NONE,
+            g_object_path: object });
+
         if (!cancellable)
             cancellable = null;
         if (asyncCallback)
