@@ -89,8 +89,8 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var maxNumberArgs = signatureLength + 4;
 
     if (arg_array.length < minNumberArgs) {
-        throw new Error("Not enough arguments passed for method: " + methodName +
-                       ". Expected " + minNumberArgs + ", got " + arg_array.length);
+        throw new Error('Not enough arguments passed for method: ' + methodName +
+                        '. Expected ' + minNumberArgs + ', got ' + arg_array.length);
     } else if (arg_array.length > maxNumberArgs) {
         throw new Error(`Too many arguments passed for method ${methodName}. ` +
             `Maximum is ${maxNumberArgs} including one callback, ` +
@@ -100,9 +100,9 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     while (arg_array.length > signatureLength) {
         var argNum = arg_array.length - 1;
         var arg = arg_array.pop();
-        if (typeof(arg) == "function" && !sync) {
+        if (typeof(arg) == 'function' && !sync) {
             replyFunc = arg;
-        } else if (typeof(arg) == "number") {
+        } else if (typeof(arg) == 'number') {
             flags = arg;
         } else if (arg instanceof Gio.Cancellable) {
             cancellable = arg;
@@ -120,7 +120,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     if (inTypeString.includes('h')) {
         if (!fdList)
             throw new Error(`Method ${methodName} with input type containing ` +
-                '"h" must have a Gio.UnixFDList as an argument');
+                '\'h\' must have a Gio.UnixFDList as an argument');
         _validateFDVariant(inVariant, fdList);
     }
 
@@ -148,7 +148,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 
 function _logReply(result, exc) {
     if (exc != null) {
-        log("Ignored exception from dbus method: " + exc.toString());
+        log('Ignored exception from dbus method: ' + exc.toString());
     }
 }
 
@@ -319,7 +319,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                     // likely to be a normal JS error
                     name = 'org.gnome.gjs.JSError.' + name;
                 }
-                logError(e, "Exception in method call: " + method_name);
+                logError(e, 'Exception in method call: ' + method_name);
                 invocation.return_dbus_error(name, e.message);
             }
             return;
@@ -349,7 +349,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
         } catch(e) {
             // if we don't do this, the other side will never see a reply
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
-                                         "Service implementation returned an incorrect value type");
+                                         'Service implementation returned an incorrect value type');
         }
     } else if (this[method_name + 'Async']) {
         const fdList = invocation.get_message().get_unix_fd_list();
@@ -521,8 +521,8 @@ function _init() {
             const requiredProps = ['schema', 'schema-id', 'schema_id', 'schemaId',
                 'settings-schema', 'settings_schema', 'settingsSchema'];
             if (requiredProps.every(prop => !(prop in props)))
-                throw new Error("One of property 'schema-id' or " +
-                    "'settings-schema' are required for Gio.Settings");
+                throw new Error('One of property \'schema-id\' or ' +
+                    '\'settings-schema\' are required for Gio.Settings');
 
             const checkSchemasProps = ['schema', 'schema-id', 'schema_id', 'schemaId'];
             const source = Gio.SettingsSchemaSource.get_default();
