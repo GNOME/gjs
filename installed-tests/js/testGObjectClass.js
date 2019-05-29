@@ -377,4 +377,11 @@ describe('GObject class with decorator', function () {
         expect(mon.networkAvailable).toBeDefined();
         expect(mon['network-available']).toBeDefined();
     });
+
+    it('has a toString() defintion', function() {
+        expect(myInstance.toString()).toMatch(
+            /\[object instance wrapper GType:Gjs_MyObject jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+        expect(new Derived().toString()).toMatch(
+            /\[object instance wrapper GType:Gjs_Derived jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
 });
