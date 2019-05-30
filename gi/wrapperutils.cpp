@@ -105,6 +105,8 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 template <InfoType::Tag TAG>
 struct InfoMethodsPolicy {};
 
+static GIStructInfo* no_type_struct(GIBaseInfo*) { return nullptr; }
+
 #define DECLARE_POLICY(tag, type, type_struct_func)                            \
     template <>                                                                \
     struct InfoMethodsPolicy<InfoType::tag> {                                  \
@@ -115,10 +117,10 @@ struct InfoMethodsPolicy {};
         static constexpr GIStructInfo* (*type_struct)(T*) = type_struct_func;  \
     };
 
-DECLARE_POLICY(Enum, enum, nullptr)
+DECLARE_POLICY(Enum, enum, no_type_struct)
 DECLARE_POLICY(Interface, interface, g_interface_info_get_iface_struct)
 DECLARE_POLICY(Object, object, g_object_info_get_class_struct)
-DECLARE_POLICY(Struct, struct, nullptr)
+DECLARE_POLICY(Struct, struct, no_type_struct)
 
 #undef DECLARE_POLICY
 
@@ -143,16 +145,14 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
         }
     }
 
-    // Casting to void* avoids warning that the function pointer will never be
-    // null in template instantiations where it is not null
-    if (!reinterpret_cast<void*>(InfoMethodsPolicy<TAG>::type_struct))
-        return true;
-
     // Also define class/interface methods if there is a gtype struct
 
     GjsAutoStructInfo type_struct = InfoMethodsPolicy<TAG>::type_struct(info);
+    // Not an error for it to be null even in the case of Object and Interface;
+    // documentation says g_object_info_get_class_struct() and
+    // g_interface_info_get_iface_struct() can validly return a null pointer.
     if (!type_struct)
-        return true;  // not an error?
+        return true;
 
     n_methods = g_struct_info_get_n_methods(type_struct);
 
