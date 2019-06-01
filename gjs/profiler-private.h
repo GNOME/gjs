@@ -24,6 +24,8 @@
 #ifndef GJS_PROFILER_PRIVATE_H
 #define GJS_PROFILER_PRIVATE_H
 
+#include <stdint.h>
+
 #include "context.h"
 #include "gjs/macros.h"
 #include "profiler.h"
@@ -33,7 +35,7 @@ G_BEGIN_DECLS
 GjsProfiler *_gjs_profiler_new(GjsContext *context);
 void _gjs_profiler_free(GjsProfiler *self);
 
-void _gjs_profiler_add_mark(GjsProfiler* self, gint64 time, gint64 duration,
+void _gjs_profiler_add_mark(GjsProfiler* self, int64_t time, int64_t duration,
                             const char* group, const char* name,
                             const char* message);
 
