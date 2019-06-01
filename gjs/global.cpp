@@ -210,18 +210,20 @@ gjs_printerr(JSContext *context,
 }
 
 class GjsGlobal {
+    // clang-format off
     static constexpr JSClassOps class_ops = {
         nullptr,  // addProperty
         nullptr,  // deleteProperty
         nullptr,  // enumerate
-        nullptr,  // newEnumerate
-        nullptr,  // resolve
-        nullptr,  // mayResolve
+        JS_NewEnumerateStandardClasses,
+        JS_ResolveStandardClass,
+        JS_MayResolveStandardClass,
         nullptr,  // finalize
         nullptr,  // call
         nullptr,  // hasInstance
         nullptr,  // construct
         JS_GlobalObjectTraceHook};
+    // clang-format on
 
     static constexpr JSClass klass = {
         "GjsGlobal",
@@ -250,8 +252,7 @@ class GjsGlobal {
 
         JSAutoCompartment ac(cx, global);
 
-        if (!JS_InitStandardClasses(cx, global) ||
-            !JS_InitReflectParse(cx, global) ||
+        if (!JS_InitReflectParse(cx, global) ||
             !JS_DefineDebuggerObject(cx, global))
             return nullptr;
 
