@@ -131,9 +131,9 @@ union_new(JSContext       *context,
             if (rval.isNull()) {
                 gjs_throw(context,
                           "Unable to construct union type %s as its"
-                          "constructor function returned NULL",
+                          "constructor function returned null",
                           g_base_info_get_name(info));
-                return NULL;
+                return nullptr;
             } else {
                 JS::RootedObject rval_obj(context, &rval.toObject());
                 return UnionBase::to_c_ptr(context, rval_obj);
@@ -144,7 +144,7 @@ union_new(JSContext       *context,
     gjs_throw(context, "Unable to construct union type %s since it has no zero-args <constructor>, can only wrap an existing one",
               g_base_info_get_name((GIBaseInfo*) info));
 
-    return NULL;
+    return nullptr;
 }
 
 // See GIWrapperBase::constructor().
@@ -162,9 +162,8 @@ bool UnionInstance::constructor_impl(JSContext* context,
      */
     void* gboxed = union_new(context, object, info());
 
-    if (gboxed == NULL) {
+    if (!gboxed)
         return false;
-    }
 
     /* Because "gboxed" is owned by a JS::Value and will
      * be garbage collected, we make a copy here to be
@@ -221,8 +220,8 @@ gjs_union_from_c_union(JSContext    *context,
 {
     GType gtype;
 
-    if (gboxed == NULL)
-        return NULL;
+    if (!gboxed)
+        return nullptr;
 
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
@@ -230,7 +229,7 @@ gjs_union_from_c_union(JSContext    *context,
     gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
     if (gtype == G_TYPE_NONE) {
         gjs_throw(context, "Unions must currently be registered as boxed types");
-        return NULL;
+        return nullptr;
     }
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,
