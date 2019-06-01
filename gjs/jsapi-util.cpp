@@ -43,7 +43,6 @@
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "util/error.h"
-#include "util/glib.h"
 #include "util/log.h"
 #include "util/misc.h"
 

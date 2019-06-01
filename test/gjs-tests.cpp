@@ -27,13 +27,13 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <util/glib.h>
 
 #include <gjs/gjs.h>
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
 #include "gjs-test-utils.h"
 #include "util/error.h"
+#include "util/misc.h"
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
 
@@ -286,7 +286,7 @@ static void test_jsapi_util_debug_string_object_with_complicated_to_string(
 }
 
 static void
-gjstest_test_func_util_glib_strv_concat_null(void)
+gjstest_test_func_util_misc_strv_concat_null(void)
 {
     char **ret;
 
@@ -298,7 +298,7 @@ gjstest_test_func_util_glib_strv_concat_null(void)
 }
 
 static void
-gjstest_test_func_util_glib_strv_concat_pointers(void)
+gjstest_test_func_util_misc_strv_concat_pointers(void)
 {
     char  *strv0[2] = {(char*)"foo", NULL};
     char  *strv1[1] = {NULL};
@@ -408,8 +408,10 @@ main(int    argc,
     g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang",
                     gjstest_test_strip_shebang_advance_to_end_for_just_shebang);
     g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
-    g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
-    g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
+    g_test_add_func("/util/misc/strv/concat/null",
+                    gjstest_test_func_util_misc_strv_concat_null);
+    g_test_add_func("/util/misc/strv/concat/pointers",
+                    gjstest_test_func_util_misc_strv_concat_pointers);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
