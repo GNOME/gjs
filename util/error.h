@@ -21,8 +21,12 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_ERROR_H__
-#define __GJS_UTIL_ERROR_H__
+#ifndef GJS_UTIL_ERROR_H_
+#define GJS_UTIL_ERROR_H_
+
+#if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
+#    error "Only <gjs/gjs.h> can be included directly."
+#endif
 
 #include <glib-object.h>
 
@@ -61,4 +65,4 @@ typedef enum {
 
 G_END_DECLS
 
-#endif  /* __GJS_UTIL_ERROR_H__ */
+#endif /* GJS_UTIL_ERROR_H_ */

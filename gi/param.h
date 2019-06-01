@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PARAM_H__
-#define __GJS_PARAM_H__
+#ifndef GI_PARAM_H_
+#define GI_PARAM_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -53,4 +53,4 @@ bool        gjs_typecheck_param(JSContext       *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_PARAM_H__ */
+#endif  // GI_PARAM_H_

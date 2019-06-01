@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_UTIL_ROOT_H
-#define GJS_JSAPI_UTIL_ROOT_H
+#ifndef GJS_JSAPI_UTIL_ROOT_H_
+#define GJS_JSAPI_UTIL_ROOT_H_
 
 #include <glib.h>
 #include <glib-object.h>
@@ -368,4 +368,4 @@ public:
     GJS_USE bool rooted(void) const { return m_rooted; }
 };
 
-#endif /* GJS_JSAPI_UTIL_ROOT_H */
+#endif  // GJS_JSAPI_UTIL_ROOT_H_

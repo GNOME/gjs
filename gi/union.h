@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UNION_H__
-#define __GJS_UNION_H__
+#ifndef GI_UNION_H_
+#define GI_UNION_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -111,4 +111,4 @@ JSObject* gjs_union_from_c_union       (JSContext    *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_UNION_H__ */
+#endif  // GI_UNION_H_

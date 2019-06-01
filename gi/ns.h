@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_NS_H__
-#define __GJS_NS_H__
+#ifndef GI_NS_H_
+#define GI_NS_H_
 
 #include <glib.h>
 #include <girepository.h>
@@ -38,4 +38,4 @@ JSObject* gjs_create_ns(JSContext    *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_NS_H__ */
+#endif  // GI_NS_H_

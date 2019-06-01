@@ -20,8 +20,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __CAIRO_PRIVATE_H__
-#define __CAIRO_PRIVATE_H__
+#ifndef MODULES_CAIRO_PRIVATE_H_
+#define MODULES_CAIRO_PRIVATE_H_
 
 #include "cairo-module.h"
 #include <cairo.h>
@@ -202,5 +202,4 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject *       gjs_cairo_solid_pattern_from_pattern   (JSContext       *context,
                                                          cairo_pattern_t *pattern);
 
-#endif /* __CAIRO_PRIVATE_H__ */
-
+#endif  // MODULES_CAIRO_PRIVATE_H_

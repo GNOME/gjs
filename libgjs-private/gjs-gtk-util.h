@@ -20,8 +20,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PRIVATE_GTK_UTIL_H__
-#define __GJS_PRIVATE_GTK_UTIL_H__
+#ifndef LIBGJS_PRIVATE_GJS_GTK_UTIL_H_
+#define LIBGJS_PRIVATE_GJS_GTK_UTIL_H_
 
 #include "config.h"
 
@@ -43,4 +43,4 @@ G_END_DECLS
 
 #endif
 
-#endif /* __GJS_PRIVATE_GTK_UTIL_H__ */
+#endif /* LIBGJS_PRIVATE_GJS_GTK_UTIL_H_ */

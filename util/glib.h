@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_GLIB_H__
-#define __GJS_UTIL_GLIB_H__
+#ifndef UTIL_GLIB_H_
+#define UTIL_GLIB_H_
 
 #include <glib.h>
 
@@ -33,4 +33,4 @@ char**   gjs_g_strv_concat           (char      ***strv_array,
 
 G_END_DECLS
 
-#endif  /* __GJS_UTIL_GLIB_H__ */
+#endif  // UTIL_GLIB_H_

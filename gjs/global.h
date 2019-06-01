@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_GLOBAL_H
-#define GJS_GLOBAL_H
+#ifndef GJS_GLOBAL_H_
+#define GJS_GLOBAL_H_
 
 #include <glib.h>
 
@@ -72,4 +72,4 @@ G_END_DECLS
 
 JS::Value gjs_get_global_slot(JSContext* cx, GjsGlobalSlot slot);
 
-#endif  /* GJS_GLOBAL_H */
+#endif  // GJS_GLOBAL_H_

@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_MODULE_H
-#define GJS_MODULE_H
+#ifndef GJS_MODULE_H_
+#define GJS_MODULE_H_
 
 #include <gio/gio.h>
 
@@ -41,4 +41,4 @@ gjs_module_import(JSContext       *cx,
 
 G_END_DECLS
 
-#endif  /* GJS_MODULE_H */
+#endif  // GJS_MODULE_H_

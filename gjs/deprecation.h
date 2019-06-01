@@ -34,4 +34,4 @@ enum GjsDeprecationMessageId {
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
                                             GjsDeprecationMessageId message);
 
-#endif  /* GJS_DEPRECATION_H_ */
+#endif  // GJS_DEPRECATION_H_

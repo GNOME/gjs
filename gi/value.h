@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_VALUE_H__
-#define __GJS_VALUE_H__
+#ifndef GI_VALUE_H_
+#define GI_VALUE_H_
 
 #include <stdbool.h>
 #include <glib-object.h>
@@ -56,4 +56,4 @@ GClosure* gjs_closure_new_for_signal(JSContext* cx, JSFunction* callable,
 
 G_END_DECLS
 
-#endif  /* __GJS_VALUE_H__ */
+#endif  // GI_VALUE_H_

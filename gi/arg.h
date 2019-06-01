@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ARG_H__
-#define __GJS_ARG_H__
+#ifndef GI_ARG_H_
+#define GI_ARG_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -125,4 +125,4 @@ bool gjs_array_to_strv (JSContext   *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_ARG_H__ */
+#endif  // GI_ARG_H_
