@@ -21,7 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <glib.h>
 
 #include "gjs/mem-private.h"
 #include "gjs/mem.h"

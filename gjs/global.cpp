@@ -23,14 +23,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <gio/gio.h>
+#include <stddef.h>  // for size_t
 
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
-#include "global.h"
-#include "importer.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include "gjs/global.h"
+#include "gjs/jsapi-util.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool

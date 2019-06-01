@@ -21,16 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#include <codecvt>
-#include <locale>
+#include <stddef.h>     // for size_t
+#include <sys/types.h>  // for ssize_t
+
+#include <string>  // for u16string
 
 #include <gio/gio.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
-#include "module.h"
+#include "gjs/module.h"
 #include "util/log.h"
 
 class GjsModule {

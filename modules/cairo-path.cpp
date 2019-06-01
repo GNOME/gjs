@@ -20,13 +20,15 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include "cairo-private.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"  // IWYU pragma: keep
 
 typedef struct {
     JSContext       *context;

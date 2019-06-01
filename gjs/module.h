@@ -26,8 +26,9 @@
 
 #include <gio/gio.h>
 
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
-#include "jsapi-wrapper.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *

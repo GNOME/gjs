@@ -24,13 +24,15 @@
 #ifndef GI_ARG_H_
 #define GI_ARG_H_
 
-#include <stdbool.h>
-#include <glib.h>
-
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
+#include <stddef.h>  // for size_t
+#include <stdint.h>
 
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/macros.h"
 
 // Different roles for a GIArgument; currently used only in exception and debug
 // messages.

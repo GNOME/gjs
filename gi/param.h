@@ -24,11 +24,10 @@
 #ifndef GI_PARAM_H_
 #define GI_PARAM_H_
 
-#include <stdbool.h>
-#include <glib.h>
-#include <girepository.h>
+#include <glib-object.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

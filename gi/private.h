@@ -25,6 +25,7 @@
 #define GI_PRIVATE_H_
 
 #include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

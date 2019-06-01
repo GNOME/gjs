@@ -22,13 +22,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <glib-object.h>
 #include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gjs-test-utils.h"
 #include "test/gjs-test-common.h"
+#include "test/gjs-test-utils.h"
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();

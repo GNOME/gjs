@@ -21,25 +21,35 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for strcmp, strlen, memcpy
 
-#include <cmath>
-#include <cstdlib>
+#include <cmath>   // for std::abs
+#include <limits>  // for numeric_limits
+#include <string>
 
-#include "arg.h"
-#include "gtype.h"
-#include "object.h"
-#include "interface.h"
-#include "foreign.h"
-#include "fundamental.h"
-#include "boxed.h"
-#include "union.h"
-#include "param.h"
-#include "value.h"
-#include "gerror.h"
-#include "gjs/byteArray.h"
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
 #include "gjs/jsapi-wrapper.h"
-#include <util/log.h>
+
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/foreign.h"
+#include "gi/fundamental.h"
+#include "gi/gerror.h"
+#include "gi/gtype.h"
+#include "gi/interface.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/union.h"
+#include "gi/value.h"
+#include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
+#include "gjs/byteArray.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
+#include "util/log.h"
 
 bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
     GFlagsValue *v;

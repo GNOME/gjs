@@ -21,22 +21,16 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <string.h>
-
-#include "function.h"
-#include "gi/wrapperutils.h"
-#include "gjs/context-private.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gtype.h"
-#include "repo.h"
-
-#include <util/log.h>
-
 #include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
 
-#include "enumeration.h"
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/enumeration.h"
+#include "gi/wrapperutils.h"
+#include "gjs/jsapi-util.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
