@@ -31,8 +31,6 @@
 #include "gjs/macros.h"
 #include "util/log.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                 const char* objtype, GIBaseInfo* info,
@@ -48,8 +46,6 @@ bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
                                    GType gtype);
-
-G_END_DECLS
 
 namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct, Union };

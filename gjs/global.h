@@ -29,8 +29,6 @@
 #include "gjs/macros.h"
 #include "jsapi-wrapper.h"
 
-G_BEGIN_DECLS
-
 typedef enum {
     GJS_GLOBAL_SLOT_IMPORTS,
     GJS_GLOBAL_SLOT_PROTOTYPE_gtype,
@@ -67,8 +65,6 @@ bool gjs_define_global_properties(JSContext       *cx,
 void gjs_set_global_slot(JSContext    *context,
                          GjsGlobalSlot slot,
                          JS::Value     value);
-
-G_END_DECLS
 
 JS::Value gjs_get_global_slot(JSContext* cx, GjsGlobalSlot slot);
 

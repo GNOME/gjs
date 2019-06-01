@@ -26,10 +26,6 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS
-
 bool    gjs_environment_variable_is_set   (const char *env_variable_name);
-
-G_END_DECLS
 
 #endif  // UTIL_MISC_H_

@@ -165,8 +165,6 @@ template <>
 struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 }  // namespace JS
 
-G_BEGIN_DECLS
-
 /* Flags that should be set on properties exported from native code modules.
  * Basically set these on API, but do NOT set them on data.
  *
@@ -291,8 +289,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 
 void gjs_maybe_gc (JSContext *context);
 void gjs_gc_if_needed(JSContext *cx);
-
-G_END_DECLS
 
 GJS_USE
 size_t gjs_unix_shebang_len(const std::u16string& script,

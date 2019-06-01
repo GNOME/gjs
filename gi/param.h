@@ -31,8 +31,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_param_class(JSContext       *context,
                             JS::HandleObject in_object);
@@ -50,7 +48,5 @@ bool        gjs_typecheck_param(JSContext       *context,
                                 JS::HandleObject obj,
                                 GType            expected_type,
                                 bool             throw_error);
-
-G_END_DECLS
 
 #endif  // GI_PARAM_H_

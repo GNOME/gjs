@@ -168,8 +168,6 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
     static JSObject* object_for_c_ptr(JSContext* cx, GError* gerror);
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
@@ -178,7 +176,5 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
 
 bool gjs_throw_gerror(JSContext* cx, GError* error);
-
-G_END_DECLS
 
 #endif  // GI_GERROR_H_
