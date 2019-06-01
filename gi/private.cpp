@@ -355,7 +355,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
             break;
         case 0:
         default:
-            accumulator = NULL;
+            accumulator = nullptr;
     }
 
     GType return_type;

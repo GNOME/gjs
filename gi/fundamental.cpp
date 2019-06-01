@@ -197,7 +197,7 @@ bool FundamentalInstance::invoke_constructor(JSContext* context,
     JS::RootedId constructor_name(context, get_prototype()->constructor_name());
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gjs_object_require_property(context, obj, NULL, atoms.constructor(),
+    if (!gjs_object_require_property(context, obj, nullptr, atoms.constructor(),
                                      &js_constructor) ||
         constructor_name == JSID_VOID) {
         gjs_throw(context, "Couldn't find a constructor for type %s.%s", ns(),
@@ -206,7 +206,7 @@ bool FundamentalInstance::invoke_constructor(JSContext* context,
     }
 
     JS::RootedObject constructor(context);
-    if (!gjs_object_require_property(context, js_constructor, NULL,
+    if (!gjs_object_require_property(context, js_constructor, nullptr,
                                      constructor_name, &constructor)) {
         gjs_throw(context, "Couldn't find a constructor for type %s.%s", ns(),
                   name());
@@ -320,11 +320,11 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     }
 
     if (G_UNLIKELY (!in_object))
-        return NULL;
+        return nullptr;
 
     JS::RootedValue value(context);
     if (!JS_GetProperty(context, in_object, constructor_name, &value))
-        return NULL;
+        return nullptr;
 
     JS::RootedObject constructor(context);
     if (value.isUndefined()) {
@@ -339,7 +339,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
             gjs_throw(context,
                       "Fundamental constructor was not an object, it was a %s",
                       JS::InformalValueTypeName(value));
-            return NULL;
+            return nullptr;
         }
 
         constructor = &value.toObject();
@@ -351,7 +351,7 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     JS::RootedObject prototype(context);
     if (!gjs_object_require_property(context, constructor, "constructor object",
                                      atoms.prototype(), &prototype))
-        return NULL;
+        return nullptr;
 
     return prototype;
 }
@@ -435,7 +435,7 @@ JSObject* FundamentalInstance::object_for_c_ptr(JSContext* context,
                                                 void* gfundamental) {
     if (!gfundamental) {
         gjs_throw(context, "Cannot get JSObject for null fundamental pointer");
-        return NULL;
+        return nullptr;
     }
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
@@ -450,7 +450,7 @@ JSObject* FundamentalInstance::object_for_c_ptr(JSContext* context,
         gjs_lookup_fundamental_prototype_from_gtype(context,
                                                     G_TYPE_FROM_INSTANCE(gfundamental)));
     if (!proto)
-        return NULL;
+        return nullptr;
 
     JS::RootedObject object(context, JS_NewObjectWithGivenProto(
                                          context, JS_GetClass(proto), proto));
@@ -489,7 +489,7 @@ JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
     void* fobj = proto_priv->call_get_value_function(value);
     if (!fobj) {
         gjs_throw(cx, "Failed to convert GValue to a fundamental instance");
-        return NULL;
+        return nullptr;
     }
 
     return FundamentalInstance::object_for_c_ptr(cx, fobj);
