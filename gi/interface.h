@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_INTERFACE_H__
-#define __GJS_INTERFACE_H__
+#ifndef GI_INTERFACE_H_
+#define GI_INTERFACE_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -134,4 +134,4 @@ bool gjs_lookup_interface_constructor(JSContext             *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_INTERFACE_H__ */
+#endif  // GI_INTERFACE_H_

@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_FUNDAMENTAL_H__
-#define __GJS_FUNDAMENTAL_H__
+#ifndef GI_FUNDAMENTAL_H_
+#define GI_FUNDAMENTAL_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -185,4 +185,4 @@ class FundamentalInstance
     static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
 };
 
-#endif  /* __GJS_FUNDAMENTAL_H__ */
+#endif  // GI_FUNDAMENTAL_H_

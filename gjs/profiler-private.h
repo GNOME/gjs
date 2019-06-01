@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_PROFILER_PRIVATE_H
-#define GJS_PROFILER_PRIVATE_H
+#ifndef GJS_PROFILER_PRIVATE_H_
+#define GJS_PROFILER_PRIVATE_H_
 
 #include <stdint.h>
 
@@ -46,4 +46,4 @@ void _gjs_profiler_setup_signals(GjsProfiler *self, GjsContext *context);
 
 G_END_DECLS
 
-#endif  /* GJS_PROFILER_PRIVATE_H */
+#endif  // GJS_PROFILER_PRIVATE_H_

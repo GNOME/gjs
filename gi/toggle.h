@@ -23,8 +23,8 @@
  * Authored by: Philip Chimento <philip@endlessm.com>, <philip.chimento@gmail.com>
  */
 
-#ifndef GJS_TOGGLE_H
-#define GJS_TOGGLE_H
+#ifndef GI_TOGGLE_H_
+#define GI_TOGGLE_H_
 
 #include <atomic>
 #include <deque>
@@ -111,4 +111,4 @@ private:
     }
 };
 
-#endif  /* GJS_TOGGLE_H */
+#endif  // GI_TOGGLE_H_

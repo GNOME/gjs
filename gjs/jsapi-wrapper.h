@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_WRAPPER_H
-#define GJS_JSAPI_WRAPPER_H
+#ifndef GJS_JSAPI_WRAPPER_H_
+#define GJS_JSAPI_WRAPPER_H_
 
 #include <config.h>
 
@@ -42,4 +42,4 @@
 #include <jsfriendapi.h>
 #include <js/Conversions.h>
 
-#endif  /* GJS_JSAPI_WRAPPER_H */
+#endif  // GJS_JSAPI_WRAPPER_H_

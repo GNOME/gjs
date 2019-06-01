@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_FUNCTION_H__
-#define __GJS_FUNCTION_H__
+#ifndef GI_FUNCTION_H_
+#define GI_FUNCTION_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -86,4 +86,4 @@ bool gjs_invoke_constructor_from_c(JSContext                  *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_FUNCTION_H__ */
+#endif  // GI_FUNCTION_H_

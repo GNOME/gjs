@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GTYPE_H__
-#define __GJS_GTYPE_H__
+#ifndef GI_GTYPE_H_
+#define GI_GTYPE_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -49,4 +49,4 @@ bool        gjs_typecheck_gtype         (JSContext             *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_INTERFACE_H__ */
+#endif  // GI_GTYPE_H_

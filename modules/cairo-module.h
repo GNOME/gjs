@@ -20,8 +20,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __CAIRO_MODULE_H__
-#define __CAIRO_MODULE_H__
+#ifndef MODULES_CAIRO_MODULE_H_
+#define MODULES_CAIRO_MODULE_H_
 
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/macros.h"
@@ -30,4 +30,4 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_js_define_cairo_stuff(JSContext              *context,
                                JS::MutableHandleObject module);
 
-#endif /* __CAIRO_MODULE_H__ */
+#endif  // MODULES_CAIRO_MODULE_H_

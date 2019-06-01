@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_JSAPI_UTIL_H__
-#define __GJS_JSAPI_UTIL_H__
+#ifndef GJS_JSAPI_UTIL_H_
+#define GJS_JSAPI_UTIL_H_
 
 #include <memory>
 #include <string>
@@ -361,4 +361,4 @@ char* gjs_hyphen_to_underscore(const char* str);
 GJS_USE std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str);
 #endif
 
-#endif  /* __GJS_JSAPI_UTIL_H__ */
+#endif  // GJS_JSAPI_UTIL_H_

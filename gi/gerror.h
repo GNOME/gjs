@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ERROR_H__
-#define __GJS_ERROR_H__
+#ifndef GI_GERROR_H_
+#define GI_GERROR_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -181,4 +181,4 @@ bool gjs_throw_gerror(JSContext* cx, GError* error);
 
 G_END_DECLS
 
-#endif  /* __GJS_ERROR_H__ */
+#endif  // GI_GERROR_H_
