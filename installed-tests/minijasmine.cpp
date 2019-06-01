@@ -31,11 +31,7 @@
 
 #include <gjs/gjs.h>
 
-G_GNUC_NORETURN
-static void
-bail_out(GjsContext *gjs_context,
-         const char *msg)
-{
+[[noreturn]] static void bail_out(GjsContext* gjs_context, const char* msg) {
     g_object_unref(gjs_context);
     g_print("Bail out! %s\n", msg);
     exit(1);
