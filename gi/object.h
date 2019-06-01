@@ -448,8 +448,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                                        GObject* where_the_object_was);
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_object_constructor(JSContext             *context,
                                    GType                  gtype,
@@ -461,7 +459,5 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
 
 void gjs_object_clear_toggles(void);
 void gjs_object_shutdown_toggle_queue(void);
-
-G_END_DECLS
 
 #endif  // GI_OBJECT_H_

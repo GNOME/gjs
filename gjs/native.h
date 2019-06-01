@@ -30,8 +30,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 typedef bool (* GjsDefineModuleFunc) (JSContext              *context,
                                       JS::MutableHandleObject module_out);
 
@@ -48,7 +46,5 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_load_native_module(JSContext              *cx,
                             const char             *name,
                             JS::MutableHandleObject module_out);
-
-G_END_DECLS
 
 #endif  // GJS_NATIVE_H_

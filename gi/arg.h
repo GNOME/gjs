@@ -32,8 +32,6 @@
 
 #include <girepository.h>
 
-G_BEGIN_DECLS
-
 // Different roles for a GIArgument; currently used only in exception and debug
 // messages.
 typedef enum {
@@ -122,7 +120,5 @@ bool gjs_array_to_strv (JSContext   *context,
                         JS::Value    array_value,
                         unsigned int length,
                         void       **arr_p);
-
-G_END_DECLS
 
 #endif  // GI_ARG_H_

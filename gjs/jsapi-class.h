@@ -31,8 +31,6 @@
 #include "jsapi-wrapper.h"
 #include "util/log.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_init_class_dynamic(
     JSContext* cx, JS::HandleObject in_object, JS::HandleObject parent_proto,
@@ -320,8 +318,6 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         gjs_throw_abstract_constructor_error(context, args);    \
         return false;                                           \
     }
-
-G_END_DECLS
 
 GJS_USE
 JS::Value gjs_dynamic_property_private_slot(JSObject *accessor_obj);

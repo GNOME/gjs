@@ -97,8 +97,6 @@ class UnionInstance
     static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_union_class(JSContext       *context,
                             JS::HandleObject in_object,
@@ -108,7 +106,5 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
-
-G_END_DECLS
 
 #endif  // GI_UNION_H_

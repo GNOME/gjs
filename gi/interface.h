@@ -125,13 +125,9 @@ class InterfaceInstance
     G_GNUC_NORETURN ~InterfaceInstance(void) { g_assert_not_reached(); }
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_interface_constructor(JSContext             *context,
                                       GType                  gtype,
                                       JS::MutableHandleValue value_p);
-
-G_END_DECLS
 
 #endif  // GI_INTERFACE_H_

@@ -33,8 +33,6 @@
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,
                      JS::MutableHandleObject repo);
@@ -74,7 +72,5 @@ char*       gjs_hyphen_from_camel               (const char     *camel_name);
 #if GJS_VERBOSE_ENABLE_GI_USAGE
 void _gjs_log_info_usage(GIBaseInfo *info);
 #endif
-
-G_END_DECLS
 
 #endif  // GI_REPO_H_

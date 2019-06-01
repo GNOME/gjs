@@ -32,8 +32,6 @@
 
 #include <girepository.h>
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enum_values(JSContext       *context,
                             JS::HandleObject in_object,
@@ -43,7 +41,5 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enumeration(JSContext       *context,
                             JS::HandleObject in_object,
                             GIEnumInfo      *info);
-
-G_END_DECLS
 
 #endif  // GI_ENUMERATION_H_

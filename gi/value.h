@@ -30,8 +30,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool       gjs_value_to_g_value         (JSContext      *context,
                                          JS::HandleValue value,
@@ -53,7 +51,5 @@ GJS_USE
 GClosure* gjs_closure_new_for_signal(JSContext* cx, JSFunction* callable,
                                      const char* description,
                                      unsigned signal_id);
-
-G_END_DECLS
 
 #endif  // GI_VALUE_H_

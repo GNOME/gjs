@@ -30,8 +30,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_USE
 GClosure* gjs_closure_new(JSContext* cx, JSFunction* callable,
                           const char* description, bool root_function);
@@ -52,7 +50,5 @@ JSFunction* gjs_closure_get_callable(GClosure* closure);
 
 void       gjs_closure_trace         (GClosure     *closure,
                                       JSTracer     *tracer);
-
-G_END_DECLS
 
 #endif  // GI_CLOSURE_H_

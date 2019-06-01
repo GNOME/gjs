@@ -31,12 +31,8 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_js_define_system_stuff(JSContext              *context,
                                 JS::MutableHandleObject module);
-
-G_END_DECLS
 
 #endif  // MODULES_SYSTEM_H_
