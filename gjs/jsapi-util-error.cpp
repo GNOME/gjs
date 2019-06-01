@@ -95,7 +95,7 @@ gjs_throw_valist(JSContext       *context,
     if (!new_exc)
         goto out;
 
-    if (error_name != NULL) {
+    if (error_name) {
         const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue name_value(context);
         if (!gjs_string_from_utf8(context, error_name, &name_value) ||

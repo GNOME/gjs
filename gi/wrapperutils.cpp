@@ -43,12 +43,12 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
     buf = g_string_new("");
     g_string_append_c(buf, '[');
     g_string_append(buf, objtype);
-    if (native_address == NULL)
+    if (!native_address)
         g_string_append(buf, " prototype of");
     else
         g_string_append(buf, " instance wrapper");
 
-    if (info != NULL) {
+    if (info) {
         g_string_append_printf(buf, " GIName:%s.%s",
                                g_base_info_get_namespace(info),
                                g_base_info_get_name(info));
@@ -58,7 +58,7 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
     }
 
     g_string_append_printf(buf, " jsobj@%p", this_obj);
-    if (native_address != NULL)
+    if (native_address)
         g_string_append_printf(buf, " native@%p", native_address);
 
     g_string_append_c(buf, ']');

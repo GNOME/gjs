@@ -72,7 +72,7 @@ ns_resolve(JSContext       *context,
                      "Resolve prop '%s' hook, obj %s, priv %p",
                      gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
 
-    if (priv == NULL) {
+    if (!priv) {
         *resolved = false;  /* we are the prototype, or have the wrong class */
         return true;
     }
@@ -117,7 +117,7 @@ get_name (JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, args, obj, Ns, priv);
 
-    if (priv == NULL)
+    if (!priv)
         return false;
 
     return gjs_string_from_utf8(context, priv->gi_namespace, args.rval());
@@ -131,7 +131,7 @@ static void ns_finalize(JSFreeOp*, JSObject* obj) {
     priv = (Ns *)JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
                         "finalize, obj %p priv %p", obj, priv);
-    if (priv == NULL)
+    if (!priv)
         return; /* we are the prototype, not a real instance */
 
     if (priv->gi_namespace)
@@ -190,7 +190,7 @@ ns_new(JSContext    *context,
 
     GJS_INC_COUNTER(ns);
 
-    g_assert(priv_from_js(context, ns) == NULL);
+    g_assert(!priv_from_js(context, ns));
     JS_SetPrivate(ns, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p",

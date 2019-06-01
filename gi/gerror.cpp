@@ -144,7 +144,7 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     }
 
     ErrorBase* priv = ErrorBase::for_js_typecheck(context, self, rec);
-    if (priv == NULL)
+    if (!priv)
         return false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
@@ -176,7 +176,7 @@ bool ErrorBase::value_of(JSContext* context, unsigned argc, JS::Value* vp) {
     }
 
     ErrorBase* priv = ErrorBase::for_js_typecheck(context, prototype, rec);
-    if (priv == NULL)
+    if (!priv)
         return false;
 
     rec.rval().setInt32(priv->domain());
@@ -251,22 +251,26 @@ find_error_domain_info(GQuark domain)
     GIEnumInfo *info;
 
     /* first an attempt without loading extra libraries */
-    info = g_irepository_find_by_error_domain(NULL, domain);
+    info = g_irepository_find_by_error_domain(nullptr, domain);
     if (info)
         return info;
 
     /* load standard stuff */
-    g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    g_irepository_require(NULL, "GObject", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    g_irepository_require(NULL, "Gio", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    info = g_irepository_find_by_error_domain(NULL, domain);
+    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    g_irepository_require(nullptr, "GObject", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    g_irepository_require(nullptr, "Gio", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    info = g_irepository_find_by_error_domain(nullptr, domain);
     if (info)
         return info;
 
     /* last attempt: load GIRepository (for invoke errors, rarely
        needed) */
-    g_irepository_require(NULL, "GIRepository", "1.0", (GIRepositoryLoadFlags) 0, NULL);
-    info = g_irepository_find_by_error_domain(NULL, domain);
+    g_irepository_require(nullptr, "GIRepository", "1.0",
+                          GIRepositoryLoadFlags(0), nullptr);
+    info = g_irepository_find_by_error_domain(nullptr, domain);
 
     return info;
 }
@@ -349,8 +353,8 @@ gjs_error_from_js_gerror(JSContext *cx,
 JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
     GIEnumInfo *info;
 
-    if (gerror == NULL)
-        return NULL;
+    if (!gerror)
+        return nullptr;
 
     if (gerror->domain == GJS_JS_ERROR)
         return gjs_error_from_js_gerror(context, gerror);
@@ -363,7 +367,7 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
         GIBaseInfo *glib_boxed;
         JSObject *retval;
 
-        glib_boxed = g_irepository_find_by_name(NULL, "GLib", "Error");
+        glib_boxed = g_irepository_find_by_name(nullptr, "GLib", "Error");
         retval = BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
 
         g_base_info_unref(glib_boxed);

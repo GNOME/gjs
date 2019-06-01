@@ -30,7 +30,7 @@ gjs_environment_variable_is_set(const char *env_variable_name)
     const char *s;
 
     s = g_getenv(env_variable_name);
-    if (s == NULL)
+    if (!s)
         return false;
 
     if (*s == '\0')

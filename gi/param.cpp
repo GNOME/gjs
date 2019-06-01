@@ -38,7 +38,7 @@
 #include <util/log.h>
 
 typedef struct {
-    GParamSpec *gparam; /* NULL if we are the prototype and not an instance */
+    GParamSpec* gparam;  // nullptr if we are the prototype and not an instance
 } Param;
 
 extern struct JSClass gjs_param_class;
@@ -57,7 +57,7 @@ param_resolve(JSContext       *context,
               bool            *resolved)
 {
     Param* priv = priv_from_js(context, obj);
-    if (priv != NULL) {
+    if (!priv) {
         /* instance, not prototype */
         *resolved = false;
         return true;
@@ -112,13 +112,10 @@ static void param_finalize(JSFreeOp*, JSObject* obj) {
     priv = (Param*) JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
                         "finalize, obj %p priv %p", obj, priv);
-    if (priv == NULL)
+    if (!priv)
         return; /* wrong class? */
 
-    if (priv->gparam) {
-        g_param_spec_unref(priv->gparam);
-        priv->gparam = NULL;
-    }
+    g_clear_pointer(&priv->gparam, g_param_spec_unref);
 
     GJS_DEC_COUNTER(param);
     g_slice_free(Param, priv);
@@ -165,23 +162,19 @@ gjs_lookup_param_prototype(JSContext    *context)
         context, gjs_lookup_namespace_object_by_name(context, atoms.gobject()));
 
     if (G_UNLIKELY (!in_object))
-        return NULL;
+        return nullptr;
 
     JS::RootedValue value(context);
-    if (!JS_GetPropertyById(context, in_object, atoms.param_spec(), &value))
-        return NULL;
-
-    if (G_UNLIKELY (!value.isObject()))
-        return NULL;
+    if (!JS_GetPropertyById(context, in_object, atoms.param_spec(), &value) ||
+        G_UNLIKELY(!value.isObject()))
+        return nullptr;
 
     JS::RootedObject constructor(context, &value.toObject());
     g_assert(constructor);
 
-    if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
-        return NULL;
-
-    if (G_UNLIKELY (!value.isObjectOrNull()))
-        return NULL;
+    if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value) ||
+        G_UNLIKELY(!value.isObjectOrNull()))
+        return nullptr;
 
     return value.toObjectOrNull();
 }
@@ -195,20 +188,14 @@ gjs_define_param_class(JSContext       *context,
 
     constructor_name = "ParamSpec";
 
-    if (!gjs_init_class_dynamic(context, in_object, nullptr, "GObject",
-                                constructor_name,
-                                &gjs_param_class,
-                                gjs_param_constructor, 0,
-                                /* props of prototype */
-                                &gjs_param_proto_props[0],
-                                /* funcs of prototype */
-                                &gjs_param_proto_funcs[0],
-                                /* props of constructor, MyConstructor.myprop */
-                                NULL,
-                                /* funcs of constructor, MyConstructor.myfunc() */
-                                gjs_param_constructor_funcs,
-                                &prototype,
-                                &constructor))
+    if (!gjs_init_class_dynamic(
+            context, in_object, nullptr, "GObject", constructor_name,
+            &gjs_param_class, gjs_param_constructor, 0,
+            gjs_param_proto_props,  // props of prototype
+            gjs_param_proto_funcs,  // funcs of prototype
+            nullptr,  // props of constructor, MyConstructor.myprop
+            gjs_param_constructor_funcs,  // funcs of constructor
+            &prototype, &constructor))
         return false;
 
     if (!gjs_wrapper_define_gtype_prop(context, constructor, G_TYPE_PARAM))
@@ -232,8 +219,8 @@ gjs_param_from_g_param(JSContext    *context,
     JSObject *obj;
     Param *priv;
 
-    if (gparam == NULL)
-        return NULL;
+    if (!gparam)
+        return nullptr;
 
     gjs_debug(GJS_DEBUG_GPARAM,
               "Wrapping %s '%s' on %s with JSObject",
@@ -265,7 +252,7 @@ gjs_g_param_from_param(JSContext       *context,
     Param *priv;
 
     if (!obj)
-        return NULL;
+        return nullptr;
 
     priv = priv_from_js(context, obj);
 
@@ -286,7 +273,7 @@ gjs_typecheck_param(JSContext       *context,
 
     priv = priv_from_js(context, object);
 
-    if (priv->gparam == NULL) {
+    if (!priv->gparam) {
         if (throw_error) {
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object is GObject.ParamSpec.prototype, not an object instance - "

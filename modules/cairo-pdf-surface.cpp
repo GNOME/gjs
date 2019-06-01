@@ -87,9 +87,10 @@ JSObject *
 gjs_cairo_pdf_surface_from_surface(JSContext       *context,
                                    cairo_surface_t *surface)
 {
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(surface != NULL, NULL);
-    g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(surface, nullptr);
+    g_return_val_if_fail(
+        cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF, nullptr);
 
     JS::RootedObject proto(context, gjs_cairo_pdf_surface_get_proto(context));
     JS::RootedObject object(context,
@@ -97,7 +98,7 @@ gjs_cairo_pdf_surface_from_surface(JSContext       *context,
                                    proto));
     if (!object) {
         gjs_throw(context, "failed to create pdf surface");
-        return NULL;
+        return nullptr;
     }
 
     gjs_cairo_surface_construct(context, object, surface);
@@ -112,6 +113,6 @@ gjs_cairo_pdf_surface_from_surface(JSContext       *context,
     gjs_throw(context,
         "could not create PDF surface, recompile cairo and gjs with "
         "PDF support.");
-    return NULL;
+    return nullptr;
 }
 #endif /* CAIRO_HAS_PDF_SURFACE */

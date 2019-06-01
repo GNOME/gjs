@@ -64,7 +64,7 @@ static inline void assign(JSContext*, char c, bool nullable,
     if (c != 'o')
         throw g_strdup_printf("Wrong type for %c, got JS::MutableHandleObject", c);
     if (nullable && value.isNull()) {
-        ref.set(NULL);
+        ref.set(nullptr);
         return;
     }
     if (!value.isObject())
@@ -209,7 +209,7 @@ free_if_necessary(JS::MutableHandleObject param_ref)
     /* This is not exactly right, since before we consumed a JS::ObjectValue
      * there may have been something different inside the handle. But it has
      * already been clobbered at this point anyhow */
-    param_ref.set(NULL);
+    param_ref.set(nullptr);
 }
 
 template <typename T>
@@ -220,7 +220,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
     bool nullable = false;
     const char *fchar = fmt_required;
 
-    g_return_val_if_fail (param_name != NULL, false);
+    g_return_val_if_fail(param_name, false);
 
     if (*fchar != '\0') {
         nullable = check_nullable(fchar, fmt_required);
@@ -383,7 +383,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
 
     GjsAutoStrv parts = g_strsplit(format, "|", 2);
     fmt_required = parts.get()[0];
-    fmt_optional = parts.get()[1];  // may be NULL
+    fmt_optional = parts.get()[1];  // may be null
 
     return parse_call_args_helper(cx, function_name, args, fmt_required,
                                   fmt_optional, 0, params...);

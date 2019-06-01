@@ -51,8 +51,8 @@ get_region(JSContext       *context,
            JS::HandleObject obj)
 {
     GjsCairoRegion *priv = priv_from_js(context, obj);
-    if (priv == NULL)
-        return NULL;
+    if (!priv)
+        return nullptr;
     else
         return priv->region;
 }
@@ -65,7 +65,7 @@ fill_rectangle(JSContext             *context,
 
 #define PRELUDE                                                       \
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoRegion, priv); \
-    cairo_region_t *this_region = priv ? priv->region : NULL;
+    cairo_region_t* this_region = priv ? priv->region : nullptr;
 
 #define RETURN_STATUS                                           \
     return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
@@ -247,7 +247,7 @@ _gjs_cairo_region_construct_internal(JSContext       *context,
 
     priv = g_slice_new0(GjsCairoRegion);
 
-    g_assert(priv_from_js(context, obj) == NULL);
+    g_assert(!priv_from_js(context, obj));
     JS_SetPrivate(obj, priv);
 
     priv->context = context;
@@ -278,7 +278,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
 static void gjs_cairo_region_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoRegion *priv;
     priv = (GjsCairoRegion*) JS_GetPrivate(obj);
-    if (priv == NULL)
+    if (!priv)
         return;
 
     cairo_region_destroy(priv->region);
@@ -294,7 +294,7 @@ gjs_cairo_region_from_region(JSContext *context,
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_region_class, proto));
     if (!object)
-        return NULL;
+        return nullptr;
 
     _gjs_cairo_region_construct_internal(context, object, region);
 
