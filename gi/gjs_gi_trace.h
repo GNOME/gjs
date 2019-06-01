@@ -26,9 +26,7 @@
 #ifndef GI_GJS_GI_TRACE_H_
 #define GI_GJS_GI_TRACE_H_
 
-#ifndef GJS_VERSION
-#    error "config.h must be included prior to gjs_trace.h"
-#endif
+#include <config.h>  // IWYU pragma: keep
 
 #ifdef HAVE_DTRACE
 

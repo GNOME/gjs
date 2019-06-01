@@ -21,16 +21,21 @@
  * IN THE SOFTWARE.
  */
 
-#include <glib-object.h>
-
 #include <unordered_map>
+#include <utility>  // for move, pair
 
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/gobject.h"
+#include "gi/object.h"
+#include "gi/value.h"
+#include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gobject.h"
-#include "object.h"
-#include "value.h"
+#include "gjs/macros.h"
 
 static std::unordered_map<GType, AutoParamArray> class_init_properties;
 

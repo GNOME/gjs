@@ -28,9 +28,10 @@
 #    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
+#include <glib-object.h>
 #include <glib.h>
 
-#include <gjs/context.h>
+#include <gjs/macros.h>
 
 G_BEGIN_DECLS
 

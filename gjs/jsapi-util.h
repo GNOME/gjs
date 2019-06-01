@@ -24,16 +24,20 @@
 #ifndef GJS_JSAPI_UTIL_H_
 #define GJS_JSAPI_UTIL_H_
 
-#include <memory>
-#include <string>
-#include <stdbool.h>
+#include <stddef.h>  // for size_t
+#include <stdint.h>
+#include <sys/types.h>  // for ssize_t
 
+#include <memory>  // for unique_ptr
+#include <string>  // for string, u16string
+
+#include <girepository.h>
 #include <glib-object.h>
+#include <glib.h>
 
-#include "gi/gtype.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
-#include "jsapi-wrapper.h"
-
 
 struct GjsAutoTakeOwnership {};
 

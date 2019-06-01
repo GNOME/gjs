@@ -24,10 +24,6 @@
 #ifndef MODULES_MODULES_H_
 #define MODULES_MODULES_H_
 
-#include <config.h>
-#include <glib.h>
-#include "gjs/jsapi-util.h"
-
 void gjs_register_static_modules (void);
 
 #endif  // MODULES_MODULES_H_

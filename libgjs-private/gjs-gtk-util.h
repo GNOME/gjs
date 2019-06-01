@@ -23,13 +23,15 @@
 #ifndef LIBGJS_PRIVATE_GJS_GTK_UTIL_H_
 #define LIBGJS_PRIVATE_GJS_GTK_UTIL_H_
 
-#include "config.h"
+#include <config.h> /* for ENABLE_GTK */
 
 #ifdef ENABLE_GTK
 
-#include <gtk/gtk.h>
+#    include <glib-object.h>
+#    include <glib.h>
+#    include <gtk/gtk.h>
 
-#include <gjs/macros.h>
+#    include "gjs/macros.h"
 
 G_BEGIN_DECLS
 

@@ -24,18 +24,23 @@
 #ifndef GJS_CONTEXT_PRIVATE_H_
 #define GJS_CONTEXT_PRIVATE_H_
 
-#include <inttypes.h>
+#include <stdint.h>
+#include <sys/types.h>  // for ssize_t
 
+#include <type_traits>  // for is_same
 #include <unordered_map>
 
-#include "context.h"
-#include "gjs/atoms.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include <glib-object.h>
+#include <glib.h>
 
+#include "gjs/jsapi-wrapper.h"
 #include "js/GCHashTable.h"
-#include "js/GCPolicyAPI.h"
-#include "js/SweepingAPI.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "gjs/profiler.h"
 
 using JobQueue = JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using ObjectInitList =

@@ -21,12 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <string.h>  // for strlen
+
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/enumeration.h"
-#include "gi/foreign.h"
 #include "gi/function.h"
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
@@ -36,14 +42,13 @@
 #include "gi/param.h"
 #include "gi/repo.h"
 #include "gi/union.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/global.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
-
-#include <util/misc.h>
-
-#include <girepository.h>
-#include <string.h>
+#include "util/log.h"
 
 typedef struct {
     void *dummy;

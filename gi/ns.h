@@ -24,11 +24,10 @@
 #ifndef GI_NS_H_
 #define GI_NS_H_
 
-#include <glib.h>
-#include <girepository.h>
-
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+class JSObject;
+struct JSContext;
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_create_ns(JSContext    *context,

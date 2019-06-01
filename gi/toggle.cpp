@@ -23,12 +23,15 @@
  * Authored by: Philip Chimento <philip@endlessm.com>, <philip.chimento@gmail.com>
  */
 
-#include <algorithm>
+#include <algorithm>  // for find_if
 #include <deque>
 #include <mutex>
-#include <glib-object.h>
+#include <utility>  // for pair
 
-#include "toggle.h"
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gi/toggle.h"
 
 std::deque<ToggleQueue::Item>::iterator
 ToggleQueue::find_operation_locked(const GObject               *gobj,

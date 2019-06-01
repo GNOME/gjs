@@ -24,6 +24,7 @@
 #define MODULES_CAIRO_MODULE_H_
 
 #include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

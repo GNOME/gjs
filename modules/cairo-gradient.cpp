@@ -20,13 +20,15 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include "cairo-private.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
 GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT("Gradient", cairo_gradient,
                                       cairo_pattern,

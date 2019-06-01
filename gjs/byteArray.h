@@ -24,10 +24,12 @@
 #ifndef GJS_BYTEARRAY_H_
 #define GJS_BYTEARRAY_H_
 
-#include <stdbool.h>
+#include <stddef.h>  // for size_t
+
 #include <glib.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

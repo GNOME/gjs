@@ -21,23 +21,28 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <gio/gio.h>
-
-#include "jsapi-wrapper.h"
-#include <js/Initialization.h>
-
-#include "context-private.h"
-#include "engine.h"
-#include "gi/object.h"
-#include "jsapi-util.h"
-#include "util/log.h"
+#include <stdint.h>
 
 #ifdef G_OS_WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
 #endif
+
+#include <utility>  // for move
+
+#include <gio/gio.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/Initialization.h"  // for JS_Init, JS_ShutDown
+#include "mozilla/UniquePtr.h"
+
+#include "gi/object.h"
+#include "gjs/context-private.h"
+#include "gjs/engine.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "util/log.h"
 
 /* Implementations of locale-specific operations; these are used
  * in the implementation of String.localeCompare(), Date.toLocaleDateString(),

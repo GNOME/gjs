@@ -24,10 +24,9 @@
 #ifndef GJS_GLOBAL_H_
 #define GJS_GLOBAL_H_
 
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/macros.h"
-#include "jsapi-wrapper.h"
 
 typedef enum {
     GJS_GLOBAL_SLOT_IMPORTS,

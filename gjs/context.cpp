@@ -23,46 +23,52 @@
 
 #include <config.h>
 
-#include <signal.h>
-#include <sys/types.h>
+#include <signal.h>  // for sigaction, SIGUSR1, sa_handler
+#include <stdint.h>
+#include <stdio.h>      // for FILE, fclose, size_t
+#include <string.h>     // for memset
+#include <sys/types.h>  // IWYU pragma: keep
 
-#include <array>
-#include <codecvt>
-#include <locale>
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>  // for getpid
+#endif
+
+#include <new>
+#include <string>  // for u16string
 #include <unordered_map>
+#include <utility>  // for move
 
 #include <gio/gio.h>
-
-#include "byteArray.h"
-#include "context-private.h"
-#include "engine.h"
-#include "gi/object.h"
-#include "gi/private.h"
-#include "gi/repo.h"
-#include "gjs/error-types.h"
-#include "global.h"
-#include "importer.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
-#include "mem.h"
-#include "native.h"
-#include "profiler-private.h"
-
-#include <modules/modules.h>
-
-#include <util/log.h>
-#include "util/misc.h"
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
-#    include <unistd.h>
-#endif
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for WeakCache
 
-#include <string.h>
+#include "gi/object.h"
+#include "gi/private.h"
+#include "gi/repo.h"
+#include "gjs/atoms.h"
+#include "gjs/byteArray.h"
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/engine.h"
+#include "gjs/error-types.h"
+#include "gjs/global.h"
+#include "gjs/importer.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/mem.h"
+#include "gjs/native.h"
+#include "gjs/profiler-private.h"
+#include "gjs/profiler.h"
+#include "modules/modules.h"
+#include "util/log.h"
 
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);

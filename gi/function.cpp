@@ -21,7 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <stdlib.h>  // for exit
+#include <string.h>  // for strcmp, memset, size_t
+
+#include <new>
+
+#include <ffi.h>
+#include <girepository.h>
+#include <girffi.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "mozilla/Maybe.h"
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -34,16 +47,11 @@
 #include "gi/param.h"
 #include "gi/union.h"
 #include "gjs/context-private.h"
+#include "gjs/context.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
-
-#include <util/log.h>
-
-#include <girepository.h>
-
-#include <errno.h>
-#include <string.h>
+#include "util/log.h"
 
 /* We use guint8 for arguments; functions can't
  * have more than this.

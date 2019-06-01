@@ -21,23 +21,23 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <string.h>
-
-#include "boxed.h"
-#include "enumeration.h"
-#include "gerror.h"
-#include "gjs/context-private.h"
-#include "gjs/error-types.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gjs/mem-private.h"
-#include "repo.h"
-
-#include <util/log.h>
+#include <stdint.h>
 
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/boxed.h"
+#include "gi/enumeration.h"
+#include "gi/gerror.h"
+#include "gi/repo.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/error-types.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/mem-private.h"
+#include "util/log.h"
 
 ErrorPrototype::ErrorPrototype(GIEnumInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype),

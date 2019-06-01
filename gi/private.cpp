@@ -22,20 +22,24 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdint.h>
+
 #include <glib-object.h>
+#include <glib.h>
 
-#include <unordered_map>
+#include "gjs/jsapi-wrapper.h"
 
+#include "gi/gobject.h"
+#include "gi/gtype.h"
+#include "gi/interface.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/private.h"
+#include "gi/repo.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gobject.h"
-#include "interface.h"
-#include "object.h"
-#include "param.h"
-#include "private.h"
-#include "repo.h"
 
 /* gi/private.cpp - private "imports._gi" module with operations that we need
  * to use from JS in order to create GObject classes, but should not be exposed

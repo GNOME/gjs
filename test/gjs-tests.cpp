@@ -21,18 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for size_t, strlen
 
-#include <string>
+#include <string>  // for u16string, u32string
 
-#include <glib.h>
 #include <glib-object.h>
+#include <glib.h>
 
-#include <gjs/gjs.h>
-#include "gjs-test-utils.h"
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/context.h"
 #include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/profiler.h"
+#include "test/gjs-test-utils.h"
 #include "util/misc.h"
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
