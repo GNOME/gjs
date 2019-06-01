@@ -101,6 +101,9 @@ struct _GjsProfiler {
     /* The filename to write to */
     char *filename;
 
+    /* An FD to capture to */
+    int fd;
+
 #ifdef ENABLE_PROFILER
     /* Our POSIX timer to wakeup SIGPROF */
     timer_t timer;
@@ -219,6 +222,7 @@ _gjs_profiler_new(GjsContext *context)
     self->cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
     self->pid = getpid();
 #endif
+    self->fd = -1;
 
     profiling_context = context;
 
@@ -244,6 +248,9 @@ _gjs_profiler_free(GjsProfiler *self)
         gjs_profiler_stop(self);
 
     profiling_context = nullptr;
+
+    if (self->fd != -1)
+        close(self->fd);
 
     g_clear_pointer(&self->filename, g_free);
 #ifdef ENABLE_PROFILER
@@ -399,11 +406,16 @@ gjs_profiler_start(GjsProfiler *self)
     struct itimerspec its = { 0 };
     struct itimerspec old_its;
 
-    GjsAutoChar path = g_strdup(self->filename);
-    if (!path)
-        path = g_strdup_printf("gjs-%jd.syscap", intmax_t(self->pid));
+    if (self->fd != -1) {
+        self->capture = sp_capture_writer_new_from_fd(self->fd, 0);
+        self->fd = -1;
+    } else {
+        GjsAutoChar path = g_strdup(self->filename);
+        if (!path)
+            path = g_strdup_printf("gjs-%jd.syscap", intmax_t(self->pid));
 
-    self->capture = sp_capture_writer_new(path, 0);
+        self->capture = sp_capture_writer_new(path, 0);
+    }
 
     if (!self->capture) {
         g_warning("Failed to open profile capture");
@@ -635,4 +647,15 @@ gjs_profiler_set_filename(GjsProfiler *self,
 
     g_free(self->filename);
     self->filename = g_strdup(filename);
+}
+
+void gjs_profiler_set_fd(GjsProfiler* self, int fd) {
+    g_return_if_fail(self);
+    g_return_if_fail(!self->running);
+
+    if (self->fd != fd) {
+        if (self->fd != -1)
+            close(self->fd);
+        self->fd = fd;
+    }
 }
