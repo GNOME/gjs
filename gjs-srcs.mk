@@ -91,8 +91,6 @@ gjs_srcs =				\
 	modules/modules.cpp		\
 	modules/modules.h		\
 	util/error.cpp			\
-	util/glib.cpp			\
-	util/glib.h			\
 	util/log.cpp			\
 	util/log.h			\
 	util/misc.cpp			\

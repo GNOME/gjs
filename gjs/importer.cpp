@@ -34,8 +34,8 @@
 #include "jsapi-wrapper.h"
 #include "module.h"
 #include "native.h"
-#include "util/glib.h"
 #include "util/log.h"
+#include "util/misc.h"
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
