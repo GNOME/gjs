@@ -300,7 +300,7 @@ gjs_context_class_init(GjsContextClass *klass)
 void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     JS::TraceEdge<JSObject*>(trc, &gjs->m_global, "GJS global object");
-    gjs->m_atoms.trace(trc);
+    gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
 }
@@ -393,6 +393,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_fundamental_table;
         delete m_gtype_table;
+        delete m_atoms;
 
         /* Tear down JS */
         JS_DestroyContext(m_cx);
@@ -476,6 +477,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     if (!m_gtype_table->init())
         g_error("Failed to initialize GType objects table");
 
+    m_atoms = new GjsAtoms();
+
     JS_BeginRequest(m_cx);
 
     JS::RootedObject global(m_cx, gjs_create_global_object(m_cx));
@@ -489,7 +492,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
 
-    if (!m_atoms.init_atoms(m_cx)) {
+    if (!m_atoms->init_atoms(m_cx)) {
         gjs_log_exception(m_cx);
         g_error("Failed to initialize global strings");
     }
