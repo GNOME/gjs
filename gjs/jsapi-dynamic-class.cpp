@@ -25,7 +25,6 @@
 #include <config.h>
 
 #include <util/log.h>
-#include <util/glib.h>
 #include <util/misc.h>
 
 #include "gjs/context-private.h"

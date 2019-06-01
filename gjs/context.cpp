@@ -50,8 +50,8 @@
 #include <modules/modules.h>
 
 #include <util/log.h>
-#include <util/glib.h>
 #include <util/error.h>
+#include "util/misc.h"
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
