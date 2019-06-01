@@ -36,13 +36,11 @@ struct _GjsUnitTestFixture {
     JSCompartment *compartment;
 };
 
-void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
-                                 gconstpointer       unused);
+void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void* unused);
 
 void gjs_unit_test_destroy_context(GjsUnitTestFixture *fx);
 
-void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
-                                    gconstpointer      unused);
+void gjs_unit_test_fixture_teardown(GjsUnitTestFixture* fx, const void* unused);
 
 void gjs_test_add_tests_for_coverage ();
 

@@ -93,17 +93,13 @@ bool gjs_g_argument_release    (JSContext  *context,
                                 GITypeInfo *type_info,
                                 GArgument  *arg);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_out_array (JSContext  *context,
-                                       GITransfer  transfer,
-                                       GITypeInfo *type_info,
-                                       guint       length,
-                                       GArgument  *arg);
+bool gjs_g_argument_release_out_array(JSContext* cx, GITransfer transfer,
+                                      GITypeInfo* type_info, unsigned length,
+                                      GIArgument* arg);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_in_array (JSContext  *context,
-                                      GITransfer  transfer,
-                                      GITypeInfo *type_info,
-                                      guint       length,
-                                      GArgument  *arg);
+bool gjs_g_argument_release_in_array(JSContext* cx, GITransfer transfer,
+                                     GITypeInfo* type_info, unsigned length,
+                                     GIArgument* arg);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release_in_arg (JSContext  *context,
                                     GITransfer  transfer,
@@ -111,13 +107,10 @@ bool gjs_g_argument_release_in_arg (JSContext  *context,
                                     GArgument  *arg);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool _gjs_flags_value_is_valid (JSContext   *context,
-                                GType        gtype,
-                                gint64       value);
+bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value);
 
 GJS_USE
-gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
-                           int         int_value);
+int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_strv(JSContext             *context,
