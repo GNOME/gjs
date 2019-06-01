@@ -33,8 +33,6 @@
 #include <girepository.h>
 #include <girffi.h>
 
-G_BEGIN_DECLS
-
 typedef enum {
     PARAM_NORMAL,
     PARAM_SKIPPED,
@@ -83,7 +81,5 @@ bool gjs_invoke_constructor_from_c(JSContext                  *context,
                                    JS::HandleObject            obj,
                                    const JS::HandleValueArray& args,
                                    GIArgument                 *rvalue);
-
-G_END_DECLS
 
 #endif  // GI_FUNCTION_H_

@@ -30,8 +30,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_create_root_importer(JSContext          *cx,
                                    const char * const *search_path);
@@ -40,7 +38,5 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_import_native_module(JSContext       *cx,
                               JS::HandleObject importer,
                               const char      *name);
-
-G_END_DECLS
 
 #endif  // GJS_IMPORTER_H_

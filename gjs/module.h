@@ -29,8 +29,6 @@
 #include "gjs/macros.h"
 #include "jsapi-wrapper.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *
 gjs_module_import(JSContext       *cx,
@@ -38,7 +36,5 @@ gjs_module_import(JSContext       *cx,
                   JS::HandleId     id,
                   const char      *name,
                   GFile           *file);
-
-G_END_DECLS
 
 #endif  // GJS_MODULE_H_

@@ -26,8 +26,6 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS
-
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app
  * should have its own entry in the enum. Be sure to add new enum entries
@@ -171,7 +169,5 @@ typedef enum {
 void gjs_debug(GjsDebugTopic topic,
                const char   *format,
                ...) G_GNUC_PRINTF (2, 3);
-
-G_END_DECLS
 
 #endif  // UTIL_LOG_H_

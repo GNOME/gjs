@@ -32,8 +32,6 @@
 #include "gjs/jsapi-wrapper.h"
 #include "gjs/macros.h"
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
                                            GType      gtype);
@@ -46,7 +44,5 @@ GJS_USE
 bool        gjs_typecheck_gtype         (JSContext             *context,
                                          JS::HandleObject       obj,
                                          bool                   throw_error);
-
-G_END_DECLS
 
 #endif  // GI_GTYPE_H_

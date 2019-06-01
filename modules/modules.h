@@ -28,10 +28,6 @@
 #include <glib.h>
 #include "gjs/jsapi-util.h"
 
-G_BEGIN_DECLS
-
 void gjs_register_static_modules (void);
-
-G_END_DECLS
 
 #endif  // MODULES_MODULES_H_
