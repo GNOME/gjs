@@ -121,11 +121,11 @@ class InterfaceInstance
     friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
                                InterfaceInstance>;
 
-    G_GNUC_NORETURN InterfaceInstance(JSContext* cx, JS::HandleObject obj)
+    [[noreturn]] InterfaceInstance(JSContext* cx, JS::HandleObject obj)
         : GIWrapperInstance(cx, obj) {
         g_assert_not_reached();
     }
-    G_GNUC_NORETURN ~InterfaceInstance(void) { g_assert_not_reached(); }
+    [[noreturn]] ~InterfaceInstance(void) { g_assert_not_reached(); }
 };
 
 GJS_JSAPI_RETURN_CONVENTION
