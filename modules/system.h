@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_SYSTEM_H__
-#define __GJS_SYSTEM_H__
+#ifndef MODULES_SYSTEM_H_
+#define MODULES_SYSTEM_H_
 
 #include <config.h>
 #include <glib.h>
@@ -39,4 +39,4 @@ bool gjs_js_define_system_stuff(JSContext              *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_SYSTEM_H__ */
+#endif  // MODULES_SYSTEM_H_

@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_BOXED_H__
-#define __GJS_BOXED_H__
+#ifndef GI_BOXED_H_
+#define GI_BOXED_H_
 
 #include <girepository.h>
 #include <glib.h>
@@ -240,4 +240,4 @@ class BoxedInstance
                                       void* gboxed, NoCopy);
 };
 
-#endif  /* __GJS_BOXED_H__ */
+#endif  // GI_BOXED_H_

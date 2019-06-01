@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_ENGINE_H
-#define GJS_ENGINE_H
+#ifndef GJS_ENGINE_H_
+#define GJS_ENGINE_H_
 
 #include "gjs/context-private.h"
 #include "jsapi-wrapper.h"
@@ -32,4 +32,4 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 bool gjs_load_internal_source(JSContext* cx, const char* filename,
                               JS::UniqueTwoByteChars* src, size_t* length);
 
-#endif  /* GJS_ENGINE_H */
+#endif  // GJS_ENGINE_H_

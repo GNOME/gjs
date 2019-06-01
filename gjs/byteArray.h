@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_BYTE_ARRAY_H__
-#define __GJS_BYTE_ARRAY_H__
+#ifndef GJS_BYTEARRAY_H_
+#define GJS_BYTEARRAY_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -51,4 +51,4 @@ GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj);
 
 G_END_DECLS
 
-#endif  /* __GJS_BYTE_ARRAY_H__ */
+#endif  // GJS_BYTEARRAY_H_

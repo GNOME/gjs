@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_REPO_H__
-#define __GJS_REPO_H__
+#ifndef GI_REPO_H_
+#define GI_REPO_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -77,4 +77,4 @@ void _gjs_log_info_usage(GIBaseInfo *info);
 
 G_END_DECLS
 
-#endif  /* __GJS_REPO_H__ */
+#endif  // GI_REPO_H_

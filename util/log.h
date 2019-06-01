@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_LOG_H__
-#define __GJS_UTIL_LOG_H__
+#ifndef UTIL_LOG_H_
+#define UTIL_LOG_H_
 
 #include <glib.h>
 
@@ -174,4 +174,4 @@ void gjs_debug(GjsDebugTopic topic,
 
 G_END_DECLS
 
-#endif  /* __GJS_UTIL_LOG_H__ */
+#endif  // UTIL_LOG_H_

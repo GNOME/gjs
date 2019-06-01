@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_MODULES_H__
-#define __GJS_MODULES_H__
+#ifndef MODULES_MODULES_H_
+#define MODULES_MODULES_H_
 
 #include <config.h>
 #include <glib.h>
@@ -34,4 +34,4 @@ void gjs_register_static_modules (void);
 
 G_END_DECLS
 
-#endif  /* __GJS_CONSOLE_H__ */
+#endif  // MODULES_MODULES_H_

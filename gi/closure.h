@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CLOSURE_H__
-#define __GJS_CLOSURE_H__
+#ifndef GI_CLOSURE_H_
+#define GI_CLOSURE_H_
 
 #include <stdbool.h>
 #include <glib-object.h>
@@ -55,4 +55,4 @@ void       gjs_closure_trace         (GClosure     *closure,
 
 G_END_DECLS
 
-#endif  /* __GJS_CLOSURE_H__ */
+#endif  // GI_CLOSURE_H_

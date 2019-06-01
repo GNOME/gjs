@@ -21,8 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GJS_H__
-#define __GJS_GJS_H__
+#ifndef GJS_GJS_H_
+#define GJS_GJS_H_
+
+#define INSIDE_GJS_H
 
 #include <gjs/context.h>
 #include <gjs/coverage.h>
@@ -31,4 +33,6 @@
 #include <gjs/profiler.h>
 #include <util/error.h>
 
-#endif /* __GJS_GJS_H__ */
+#undef INSIDE_GJS_H
+
+#endif /* GJS_GJS_H_ */

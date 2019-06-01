@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_IMPORTER_H__
-#define __GJS_IMPORTER_H__
+#ifndef GJS_IMPORTER_H_
+#define GJS_IMPORTER_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -43,4 +43,4 @@ bool gjs_import_native_module(JSContext       *cx,
 
 G_END_DECLS
 
-#endif  /* __GJS_IMPORTER_H__ */
+#endif  // GJS_IMPORTER_H_

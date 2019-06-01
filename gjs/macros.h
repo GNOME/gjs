@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_MACROS_H
-#define GJS_MACROS_H
+#ifndef GJS_MACROS_H_
+#define GJS_MACROS_H_
 
 #include <glib.h>
 
@@ -70,4 +70,4 @@
 #    define GJS_ALWAYS_INLINE
 #endif
 
-#endif /* GJS_MACROS_H */
+#endif /* GJS_MACROS_H_ */

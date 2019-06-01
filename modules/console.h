@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CONSOLE_H__
-#define __GJS_CONSOLE_H__
+#ifndef MODULES_CONSOLE_H_
+#define MODULES_CONSOLE_H_
 
 #include <config.h>
 #include <glib.h>
@@ -38,4 +38,4 @@ bool gjs_define_console_stuff(JSContext              *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_CONSOLE_H__ */
+#endif  // MODULES_CONSOLE_H_

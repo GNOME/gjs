@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ENUMERATION_H__
-#define __GJS_ENUMERATION_H__
+#ifndef GI_ENUMERATION_H_
+#define GI_ENUMERATION_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -46,4 +46,4 @@ bool gjs_define_enumeration(JSContext       *context,
 
 G_END_DECLS
 
-#endif  /* __GJS_ENUMERATION_H__ */
+#endif  // GI_ENUMERATION_H_

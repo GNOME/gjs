@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_NATIVE_H__
-#define __GJS_NATIVE_H__
+#ifndef GJS_NATIVE_H_
+#define GJS_NATIVE_H_
 
 #include <stdbool.h>
 #include <glib.h>
@@ -51,4 +51,4 @@ bool gjs_load_native_module(JSContext              *cx,
 
 G_END_DECLS
 
-#endif  /* __GJS_NATIVE_H__ */
+#endif  // GJS_NATIVE_H_

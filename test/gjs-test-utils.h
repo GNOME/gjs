@@ -23,8 +23,8 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#ifndef GJS_TEST_UTILS_H
-#define GJS_TEST_UTILS_H
+#ifndef TEST_GJS_TEST_UTILS_H_
+#define TEST_GJS_TEST_UTILS_H_
 
 #include "gjs/context.h"
 #include "gjs/jsapi-wrapper.h"
@@ -48,4 +48,4 @@ void gjs_test_add_tests_for_parse_call_args(void);
 
 void gjs_test_add_tests_for_rooting(void);
 
-#endif
+#endif  // TEST_GJS_TEST_UTILS_H_

@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_OBJECT_H__
-#define __GJS_OBJECT_H__
+#ifndef GI_OBJECT_H_
+#define GI_OBJECT_H_
 
 #include <glib-object.h>
 #include <girepository.h>
@@ -464,4 +464,4 @@ void gjs_object_shutdown_toggle_queue(void);
 
 G_END_DECLS
 
-#endif  /* __GJS_OBJECT_H__ */
+#endif  // GI_OBJECT_H_

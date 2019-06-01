@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_CLASS_H
-#define GJS_JSAPI_CLASS_H
+#ifndef GJS_JSAPI_CLASS_H_
+#define GJS_JSAPI_CLASS_H_
 
 #include "gi/wrapperutils.h"
 #include "gjs/context-private.h"
@@ -326,4 +326,4 @@ G_END_DECLS
 GJS_USE
 JS::Value gjs_dynamic_property_private_slot(JSObject *accessor_obj);
 
-#endif /* GJS_JSAPI_CLASS_H */
+#endif  // GJS_JSAPI_CLASS_H_

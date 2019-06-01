@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CONTEXT_PRIVATE_H__
-#define __GJS_CONTEXT_PRIVATE_H__
+#ifndef GJS_CONTEXT_PRIVATE_H_
+#define GJS_CONTEXT_PRIVATE_H_
 
 #include <inttypes.h>
 
@@ -203,4 +203,4 @@ class GjsContextPrivate {
     void dispose(void);
 };
 
-#endif  /* __GJS_CONTEXT_PRIVATE_H__ */
+#endif  // GJS_CONTEXT_PRIVATE_H_
