@@ -24,10 +24,11 @@
 #ifndef GI_FOREIGN_H_
 #define GI_FOREIGN_H_
 
-#include <stdbool.h>
 #include <girepository.h>
 
-#include "arg.h"
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
 #include "gjs/macros.h"
 
 typedef bool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,

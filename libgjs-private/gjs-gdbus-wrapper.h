@@ -23,11 +23,11 @@
 #ifndef LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
 #define LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
 
-#include <glib.h>
-#include <glib-object.h>
 #include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
 
-#include <gjs/macros.h>
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 

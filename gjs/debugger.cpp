@@ -22,26 +22,36 @@
  * Authored By: Philip Chimento <philip.chimento@gmail.com>
  */
 
-#include <gio/gio.h>
+#include <config.h>  // for HAVE_READLINE_READLINE_H, HAVE_UNISTD_H
 
-#include "gjs/context-private.h"
-#include "gjs/global.h"
-#include "gjs/jsapi-util-args.h"
+#include <stdint.h>
+#include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
 
 #ifdef HAVE_READLINE_READLINE_H
-#include <readline/history.h>
-#include <readline/readline.h>
-#include <stdio.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
-#    include <unistd.h>
+#    include <unistd.h>  // for isatty, STDIN_FILENO
 #elif defined(XP_WIN)
 #    include <io.h>
 #    ifndef STDIN_FILENO
 #        define STDIN_FILENO 0
 #    endif
 #endif
+
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/global.h"
+#include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {

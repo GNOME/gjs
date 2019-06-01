@@ -21,13 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <string>
-#include <unordered_set>
+#include <cstddef>        // for size_t
+#include <string>         // for string
+#include <unordered_set>  // for unordered_set
+#include <utility>        // for hash, move
 
-#include "gjs/context-private.h"
+#include <glib.h>  // for g_warning
+
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/deprecation.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/macros.h"
 
 const char* messages[] = {
     // None:

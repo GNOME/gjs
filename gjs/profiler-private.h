@@ -24,9 +24,9 @@
 #ifndef GJS_PROFILER_PRIVATE_H_
 #define GJS_PROFILER_PRIVATE_H_
 
-#include "context.h"
+#include "gjs/context.h"
 #include "gjs/macros.h"
-#include "profiler.h"
+#include "gjs/profiler.h"
 
 GjsProfiler *_gjs_profiler_new(GjsContext *context);
 void _gjs_profiler_free(GjsProfiler *self);

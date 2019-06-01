@@ -28,7 +28,8 @@
 #    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <stdbool.h>
+#include <stdbool.h> /* IWYU pragma: keep */
+
 #include <glib.h>
 
 #include "gjs/macros.h"

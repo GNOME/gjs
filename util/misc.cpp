@@ -21,8 +21,9 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-#include "misc.h"
+#include <glib.h>
+
+#include "util/misc.h"
 
 bool
 gjs_environment_variable_is_set(const char *env_variable_name)

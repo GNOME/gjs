@@ -21,14 +21,22 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdint.h>
+#include <string.h>  // for strcmp, memchr, strlen
+
+#include <girepository.h>
+#include <glib-object.h>
 #include <glib.h>
 
-#include "byteArray.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gi/boxed.h"
+#include "gjs/atoms.h"
+#include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/deprecation.h"
-#include "jsapi-util-args.h"
-#include "jsapi-wrapper.h"
+#include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-util.h"
 
 /* Callbacks to use with JS_NewExternalArrayBuffer() */
 

@@ -21,13 +21,16 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
 #include <string>
+#include <tuple>  // for tie
 #include <unordered_map>
+#include <utility>  // for pair
+
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/native.h"
 #include "util/log.h"
 

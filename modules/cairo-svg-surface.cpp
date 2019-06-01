@@ -20,16 +20,21 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
+#include <cairo-features.h>  // for CAIRO_HAS_SVG_SURFACE
 #include <cairo.h>
-#include "cairo-private.h"
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/jsapi-util.h"
 
 #if CAIRO_HAS_SVG_SURFACE
-#include <cairo-svg.h>
+#    include <cairo-svg.h>
+#    include <glib.h>
+
+#    include "gjs/jsapi-class.h"
+#    include "gjs/jsapi-util-args.h"
+#    include "gjs/macros.h"
+#    include "modules/cairo-private.h"
 
 GJS_USE
 static JSObject *gjs_cairo_svg_surface_get_proto(JSContext *);

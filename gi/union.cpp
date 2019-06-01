@@ -21,25 +21,16 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <string.h>
-
 #include <girepository.h>
 
-/* include first for logging related #define used in repo.h */
-#include <util/log.h>
-
-#include "arg.h"
-#include "gi/function.h"
-#include "gi/gtype.h"
-#include "gi/object.h"
-#include "gi/union.h"
-#include "gi/wrapperutils.h"
-#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gi/function.h"
+#include "gi/repo.h"
+#include "gi/union.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
-#include "repo.h"
+#include "util/log.h"
 
 UnionPrototype::UnionPrototype(GIUnionInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype) {

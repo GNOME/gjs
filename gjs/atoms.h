@@ -26,6 +26,7 @@
 #define GJS_ATOMS_H_
 
 #include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
 
 // clang-format off

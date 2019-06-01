@@ -30,11 +30,12 @@
 #    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <glib-object.h>
 #include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h> /* for G_BEGIN_DECLS, G_END_DECLS */
 
-#include "context.h"
-#include "gjs/macros.h"
+#include <gjs/context.h>
+#include <gjs/macros.h>
 
 G_BEGIN_DECLS
 

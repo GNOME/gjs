@@ -24,12 +24,15 @@
 #ifndef GJS_JSAPI_CLASS_H_
 #define GJS_JSAPI_CLASS_H_
 
-#include "gi/wrapperutils.h"
-#include "gjs/context-private.h"
-#include "global.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
-#include "util/log.h"
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/wrapperutils.h"  // IWYU pragma: keep
+#include "gjs/global.h"       // IWYU pragma: keep
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_init_class_dynamic(

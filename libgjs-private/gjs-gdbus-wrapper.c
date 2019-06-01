@@ -1,10 +1,13 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /* Copyright 2011 Giovanni Campagna. All Rights Reserved. */
 
-#include <config.h>
-#include <string.h>
+#include <string.h>  // for strcmp
 
-#include "gjs-gdbus-wrapper.h"
+#include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "libgjs-private/gjs-gdbus-wrapper.h"
 
 enum {
     PROP_0,

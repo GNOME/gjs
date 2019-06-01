@@ -1,6 +1,9 @@
-#include "gjs/jsapi-util.h"
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/jsapi-util-root.h"
-#include "gjs-test-utils.h"
+#include "test/gjs-test-utils.h"
 
 static GMutex gc_lock;
 static GCond gc_finished;

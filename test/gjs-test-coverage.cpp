@@ -23,23 +23,19 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
+#include <errno.h>   // for errno
+#include <stdio.h>   // for sscanf, size_t
+#include <stdlib.h>  // for strtol, atoi, mkdtemp
+#include <string.h>  // for strlen, strstr, strcmp, strncmp, strcspn
 
-#include <sys/types.h>
-#include <fcntl.h>
-#include <ftw.h>
-
-#include <glib.h>
 #include <gio/gio.h>
-#include <gjs/gjs.h>
+#include <glib-object.h>
+#include <glib.h>
 
+#include "gjs/context.h"
 #include "gjs/coverage.h"
 #include "gjs/jsapi-util.h"
-#include "gjs-test-utils.h"
+#include "test/gjs-test-utils.h"  // IWYU pragma: keep
 
 typedef struct _GjsCoverageFixture {
     GjsContext    *context;

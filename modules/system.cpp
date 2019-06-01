@@ -22,22 +22,25 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <config.h>  // for GJS_VERSION
 
 #include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <time.h>
+#include <stdio.h>   // for FILE, fclose, stdout
+#include <string.h>  // for strerror
+#include <time.h>    // for tzset
+
+#include <glib-object.h>
+#include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
-#include <js/Date.h>
-
-#include <gjs/context.h>
+#include "js/Date.h"  // for ResetTimeZone
 
 #include "gi/object.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
-#include "system.h"
+#include "gjs/jsapi-util.h"
+#include "modules/system.h"
 
 /* Note that this cannot be relied on to test whether two objects are the same!
  * SpiderMonkey can move objects around in memory during garbage collection,

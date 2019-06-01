@@ -21,16 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <glib.h>
 
-#include <string.h>
-#include <limits.h>
-#include <util/log.h>
+#include <new>
 
-#include "closure.h"
-#include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gi/closure.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util-root.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
+#include "util/log.h"
 
 struct Closure {
     JSContext *context;

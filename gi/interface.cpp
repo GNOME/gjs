@@ -22,20 +22,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/function.h"
-#include "gi/gtype.h"
 #include "gi/interface.h"
 #include "gi/object.h"
 #include "gi/repo.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
 #include "gjs/mem-private.h"
-
-#include <util/log.h>
-
-#include <girepository.h>
 
 InterfacePrototype::InterfacePrototype(GIInterfaceInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype),

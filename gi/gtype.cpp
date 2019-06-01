@@ -22,17 +22,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <glib-object.h>
+#include <glib.h>
 
-#include <girepository.h>
-
-#include <unordered_map>
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for WeakCache
 
 #include "gi/gtype.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
-#include "util/log.h"
+#include "gjs/jsapi-util.h"
 
 GJS_USE static JSObject* gjs_gtype_get_proto(JSContext* cx) G_GNUC_UNUSED;
 GJS_JSAPI_RETURN_CONVENTION

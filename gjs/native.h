@@ -24,10 +24,8 @@
 #ifndef GJS_NATIVE_H_
 #define GJS_NATIVE_H_
 
-#include <stdbool.h>
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 typedef bool (* GjsDefineModuleFunc) (JSContext              *context,

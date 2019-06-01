@@ -21,15 +21,15 @@
  * IN THE SOFTWARE.
  */
 
-#include <locale.h>
-#include <unistd.h>
+#include <locale.h>  // for setlocale, LC_ALL
+#include <stdlib.h>  // for exit
 
 #include <gio/gio.h>
 #include <girepository.h>
+#include <glib-object.h>
 #include <glib.h>
-#include <glib/gstdio.h>
 
-#include "gjs/gjs.h"
+#include <gjs/gjs.h>
 
 G_GNUC_NORETURN
 static void

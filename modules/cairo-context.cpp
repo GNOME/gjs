@@ -20,19 +20,22 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
 #include <vector>
 
+#include <cairo-gobject.h>
+#include <cairo.h>
+#include <girepository.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-
-#include <cairo.h>
-#include <cairo-gobject.h>
-#include "cairo-private.h"
+#include "modules/cairo-private.h"
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname)                        \
     GJS_JSAPI_RETURN_CONVENTION                                            \

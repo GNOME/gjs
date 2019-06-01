@@ -21,12 +21,15 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-#include <string.h>
-#include <stdlib.h>
-#include <locale.h>
+#include <config.h>  // for PACKAGE_STRING
+
+#include <locale.h>  // for setlocale, LC_ALL
+#include <stdlib.h>  // for exit
+#include <string.h>  // for strcmp, strlen
 
 #include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
 
 #include <gjs/gjs.h>
 

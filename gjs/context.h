@@ -28,8 +28,11 @@
 #    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <stdbool.h>
+#include <stdbool.h>    /* IWYU pragma: keep */
+#include <sys/signal.h> /* for siginfo_t */
+
 #include <glib-object.h>
+#include <glib.h>
 
 #include <gjs/macros.h>
 #include <gjs/profiler.h>

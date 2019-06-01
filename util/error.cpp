@@ -21,11 +21,9 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
 #include <glib-object.h>
 
-#include "error.h"
+#include "util/error.h"
 
 GQuark
 gjs_error_quark (void)

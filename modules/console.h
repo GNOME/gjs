@@ -24,10 +24,8 @@
 #ifndef MODULES_CONSOLE_H_
 #define MODULES_CONSOLE_H_
 
-#include <config.h>
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

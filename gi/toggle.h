@@ -29,7 +29,10 @@
 #include <atomic>
 #include <deque>
 #include <mutex>
+#include <utility>  // for pair
+
 #include <glib-object.h>
+#include <glib.h>
 
 #include "gjs/macros.h"
 #include "util/log.h"

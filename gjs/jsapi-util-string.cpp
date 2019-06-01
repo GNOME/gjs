@@ -21,16 +21,21 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <string.h>     // for size_t, strlen
+#include <sys/types.h>  // for ssize_t
 
-#include <algorithm>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <string.h>
+#include <algorithm>  // for copy
+#include <iomanip>    // for operator<<, setfill, setw
+#include <sstream>    // for operator<<, basic_ostream, ostring...
+#include <string>     // for allocator, char_traits
 
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 char* gjs_hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);

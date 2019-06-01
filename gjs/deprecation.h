@@ -24,7 +24,7 @@
 #ifndef GJS_DEPRECATION_H_
 #define GJS_DEPRECATION_H_
 
-#include "gjs/jsapi-wrapper.h"
+struct JSContext;
 
 enum GjsDeprecationMessageId {
     None,

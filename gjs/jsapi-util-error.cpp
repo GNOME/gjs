@@ -21,17 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdarg.h>
 
-#include "gi/gerror.h"
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
+#include "util/log.h"
 #include "util/misc.h"
-
-#include <util/log.h>
-
-#include <string.h>
 
 /*
  * See:

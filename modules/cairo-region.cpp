@@ -20,17 +20,22 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo-gobject.h>
+#include <cairo.h>
+#include <girepository.h>
+#include <glib.h>
 
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
 #include "gi/foreign.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
-
-#include <cairo.h>
-#include <cairo-gobject.h>
-#include "cairo-private.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
 typedef struct {
     JSContext *context;

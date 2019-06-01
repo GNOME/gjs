@@ -23,10 +23,9 @@
 #ifndef GI_GOBJECT_H_
 #define GI_GOBJECT_H_
 
-#include <glib-object.h>
-
-#include <unordered_map>
 #include <vector>
+
+#include <glib-object.h>
 
 #include "gjs/jsapi-util.h"
 

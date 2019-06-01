@@ -21,15 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for strcmp
 
-#include <string.h>
 #include <girepository.h>
+#include <glib.h>
 
-#include "arg.h"
-#include "foreign.h"
-#include "gjs/context-private.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
+#include "gi/foreign.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 
 static struct {
     char *gi_namespace;

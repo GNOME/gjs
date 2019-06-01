@@ -24,8 +24,11 @@
 #ifndef GJS_ENGINE_H_
 #define GJS_ENGINE_H_
 
-#include "gjs/context-private.h"
-#include "jsapi-wrapper.h"
+#include <stddef.h>  // for size_t
+
+#include "gjs/jsapi-wrapper.h"
+
+class GjsContextPrivate;
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 

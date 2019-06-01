@@ -23,17 +23,23 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#include <sys/stat.h>
+#include <stdlib.h>  // for free, size_t
+#include <string.h>  // for strcmp, strlen
+
+#include <new>
+
 #include <gio/gio.h>
+#include <glib-object.h>
 
-#include <gjs/context.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "coverage.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "global.h"
-#include "importer.h"
-#include "jsapi-util-args.h"
-#include "util/error.h"
+#include "gjs/context.h"
+#include "gjs/coverage.h"
+#include "gjs/global.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 struct _GjsCoverage {
     GObject parent;

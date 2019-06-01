@@ -25,13 +25,14 @@
 #ifndef GI_FUNDAMENTAL_H_
 #define GI_FUNDAMENTAL_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/wrapperutils.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 class FundamentalPrototype;
 class FundamentalInstance;

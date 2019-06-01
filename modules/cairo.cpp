@@ -20,14 +20,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE, CAIRO_HAS_PS_SURFA...
+#include <cairo.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
-#include "cairo-private.h"
+#include "modules/cairo-module.h"  // IWYU pragma: keep
+#include "modules/cairo-private.h"
 
 #ifdef CAIRO_HAS_XLIB_SURFACE
-#include "cairo-xlib.h"
+#    include <cairo-xlib.h>
 
 class XLibConstructor {
  public:

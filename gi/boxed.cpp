@@ -21,29 +21,30 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <string.h>  // for memcpy, size_t, strcmp
 
-#include <string.h>
-
-#include <utility>
-
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"
-
-#include "arg.h"
-#include "boxed.h"
-#include "function.h"
-#include "gi/gerror.h"
-#include "gi/wrapperutils.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/mem-private.h"
-#include "gtype.h"
-#include "object.h"
-#include "repo.h"
-
-#include <util/log.h>
+#include <string>       // for string
+#include <type_traits>  // for remove_reference
+#include <utility>      // for move, forward
 
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
+
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/function.h"
+#include "gi/gerror.h"
+#include "gi/repo.h"
+#include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"
+#include "gjs/mem-private.h"
+#include "util/log.h"
 
 BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
     : GIWrapperInstance(cx, obj), m_owning_ptr(false) {

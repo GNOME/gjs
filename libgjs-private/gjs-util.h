@@ -24,10 +24,11 @@
 #define LIBGJS_PRIVATE_GJS_UTIL_H_
 
 #include <locale.h>
-#include <glib.h>
-#include <glib-object.h>
 
-#include <gjs/macros.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 

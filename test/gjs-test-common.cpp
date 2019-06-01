@@ -24,6 +24,7 @@
 #include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
+
 #include "test/gjs-test-common.h"
 
 char* gjs_test_get_exception_message(JSContext* cx) {

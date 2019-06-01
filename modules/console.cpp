@@ -38,27 +38,27 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <config.h>
+#include <config.h>  // for HAVE_READLINE_READLINE_H
 
-#include <mozilla/Unused.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>   // for fputc, fputs, stderr, size_t, fflush
+#include <string.h>  // for strchr
 
 #ifdef HAVE_READLINE_READLINE_H
-#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
 
 #include <glib.h>
-#include <glib/gprintf.h>
+#include <glib/gprintf.h>  // for g_fprintf
 
-#include <string>
-
-#include "console.h"
-#include "gjs/context.h"
-#include "gjs/context-private.h"
 #include "gjs/jsapi-wrapper.h"
+#include "mozilla/UniquePtr.h"
+#include "mozilla/Unused.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
+#include "modules/console.h"
 
 enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 

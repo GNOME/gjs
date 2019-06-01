@@ -21,13 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+#include <glib-object.h>
 
-#include <string.h>
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/function.h"
+#include "gi/gtype.h"
 #include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 
 /* Default spidermonkey toString is worthless.  Replace it
  * with something that gives us both the introspection name

@@ -20,21 +20,27 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <config.h> /* IWYU pragma: keep */
 
-#include <errno.h>
-#include <fcntl.h>
-#include <string.h>
+#include <locale.h>    /* for setlocale */
+#include <stddef.h>    /* for size_t */
+#include <sys/types.h> /* IWYU pragma: keep */
 
 #include <gio/gio.h>
+#include <glib-object.h>
 #include <glib.h>
-#include <glib/gi18n.h>
-
-#include "gjs-util.h"
+#include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, textdomain */
 
 #ifdef G_OS_UNIX
-#    include <glib-unix.h>
+#    include <errno.h>
+#    include <fcntl.h> /* for FD_CLOEXEC */
+#    include <stdarg.h>
+#    include <unistd.h> /* for close, write */
+
+#    include <glib-unix.h> /* for g_unix_open_pipe */
 #endif
+
+#include "libgjs-private/gjs-util.h"
 
 char *
 gjs_format_int_alternative_output(int n)
@@ -117,6 +123,8 @@ gjs_param_spec_get_owner_type(GParamSpec *pspec)
     return pspec->owner_type;
 }
 
+#ifdef G_OS_UNIX
+
 // Adapted from glnx_throw_errno_prefix()
 G_GNUC_PRINTF(2, 3)
 static gboolean throw_errno_prefix(GError** error, const char* fmt, ...) {
@@ -147,6 +155,8 @@ static gboolean throw_errno_prefix(GError** error, const char* fmt, ...) {
     errno = errsv;
     return FALSE;
 }
+
+#endif /* G_OS_UNIX */
 
 /**
  * gjs_open_bytes:

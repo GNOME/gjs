@@ -25,13 +25,16 @@
 #ifndef GI_INTERFACE_H_
 #define GI_INTERFACE_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 class InterfacePrototype;
 class InterfaceInstance;

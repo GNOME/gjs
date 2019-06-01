@@ -26,12 +26,16 @@
 #ifndef GJS_JSAPI_UTIL_ARGS_H_
 #define GJS_JSAPI_UTIL_ARGS_H_
 
-#include <type_traits>
+#include <stdint.h>
+
+#include <type_traits>  // for enable_if, is_enum, is_same
 
 #include <glib.h>
 
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 GJS_ALWAYS_INLINE GJS_USE static inline bool check_nullable(
     const char*& fchar, const char*& fmt_string) {
