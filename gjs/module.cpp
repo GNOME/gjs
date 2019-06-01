@@ -138,7 +138,7 @@ class GjsModule {
             return gjs_throw_gerror_message(cx, error);
 
         GjsAutoChar script = unowned_script;  /* steals ownership */
-        g_assert(script != nullptr);
+        g_assert(script);
 
         GjsAutoChar full_path = g_file_get_parse_name(file);
         return evaluate_import(cx, module, script, script_len, full_path);
