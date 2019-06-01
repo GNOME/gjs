@@ -80,7 +80,7 @@ class GjsContextPrivate {
 
     unsigned m_auto_gc_id;
 
-    GjsAtoms m_atoms;
+    GjsAtoms* m_atoms;
 
     JobQueue m_job_queue;
     unsigned m_idle_drain_handler;
@@ -152,7 +152,7 @@ class GjsContextPrivate {
     GJS_USE JSContext* context(void) const { return m_cx; }
     GJS_USE JSObject* global(void) const { return m_global.get(); }
     GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
-    GJS_USE const GjsAtoms& atoms(void) const { return m_atoms; }
+    GJS_USE const GjsAtoms& atoms(void) const { return *m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
     GJS_USE bool sweeping(void) const { return m_in_gc_sweep; }
     GJS_USE const char* program_name(void) const { return m_program_name; }
@@ -175,7 +175,9 @@ class GjsContextPrivate {
         return m_object_init_list;
     }
     GJS_USE
-    static const GjsAtoms& atoms(JSContext* cx) { return from_cx(cx)->m_atoms; }
+    static const GjsAtoms& atoms(JSContext* cx) {
+        return *(from_cx(cx)->m_atoms);
+    }
 
     GJS_JSAPI_RETURN_CONVENTION
     bool eval(const char* script, ssize_t script_len, const char* filename,
