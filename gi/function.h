@@ -44,7 +44,7 @@ typedef enum {
 } GjsParamType;
 
 struct GjsCallbackTrampoline {
-    gint ref_count;
+    int ref_count;
     GICallableInfo *info;
 
     GClosure *js_function;
