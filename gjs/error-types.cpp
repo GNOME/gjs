@@ -21,8 +21,6 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
 #include <glib-object.h>
 
 #include "gjs/error-types.h"

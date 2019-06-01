@@ -22,25 +22,22 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+#include <glib.h>
 
-#include "fundamental.h"
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for WeakCache
 
-#include "arg.h"
-#include "boxed.h"
-#include "function.h"
-#include "gi/gtype.h"
-#include "gi/object.h"
+#include "gi/arg.h"
+#include "gi/function.h"
+#include "gi/fundamental.h"
 #include "gi/repo.h"
 #include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
-
-#include <gjs/context.h>
-#include <util/log.h>
-#include <girepository.h>
+#include "util/log.h"
 
 FundamentalInstance::FundamentalInstance(JSContext* cx, JS::HandleObject obj)
     : GIWrapperInstance(cx, obj) {

@@ -24,7 +24,7 @@
 #ifndef GJS_MACROS_H_
 #define GJS_MACROS_H_
 
-#include <glib.h>
+#include <glib.h> /* IWYU pragma: keep */
 
 #ifdef G_OS_WIN32
 # ifdef GJS_COMPILATION

@@ -22,37 +22,39 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for memset, strcmp
 
-#include <memory>
-#include <string.h>
-#include <tuple>
-#include <unordered_map>
+#include <algorithm>   // for move, find
+#include <functional>  // for mem_fn
+#include <string>
+#include <tuple>        // for tie
+#include <type_traits>  // for remove_reference<>::type
 #include <vector>
+
+#include <ffi.h>
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/arg.h"
 #include "gi/closure.h"
 #include "gi/function.h"
 #include "gi/gjs_gi_trace.h"
 #include "gi/object.h"
-#include "gi/param.h"
+#include "gi/repo.h"
+#include "gi/toggle.h"
+#include "gi/value.h"
 #include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/context.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/mem-private.h"
-#include "gtype.h"
-#include "interface.h"
-#include "repo.h"
-#include "toggle.h"
-#include "value.h"
-
-#include <util/log.h>
-#include <girepository.h>
-
-#include "js/GCHashTable.h"
+#include "util/log.h"
 
 /* This is a trick to print out the sizes of the structs at compile time, in
  * an error message. */

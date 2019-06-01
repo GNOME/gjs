@@ -24,10 +24,10 @@
 #ifndef GI_CLOSURE_H_
 #define GI_CLOSURE_H_
 
-#include <stdbool.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
 
 GJS_USE

@@ -27,7 +27,9 @@
 #define TEST_GJS_TEST_UTILS_H_
 
 #include "gjs/context.h"
-#include "gjs/jsapi-wrapper.h"
+
+struct JSCompartment;
+struct JSContext;
 
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 struct _GjsUnitTestFixture {

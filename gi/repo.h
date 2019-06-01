@@ -24,14 +24,12 @@
 #ifndef GI_REPO_H_
 #define GI_REPO_H_
 
-#include <stdbool.h>
-#include <glib.h>
-
 #include <girepository.h>
 
-#include <util/log.h>
 #include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,

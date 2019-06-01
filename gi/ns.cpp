@@ -21,19 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/ns.h"
-#include "gi/param.h"
 #include "gi/repo.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/mem-private.h"
-
-#include <util/log.h>
-#include <girepository.h>
-
-#include <string.h>
+#include "util/log.h"
 
 typedef struct {
     char *gi_namespace;

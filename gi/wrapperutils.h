@@ -25,8 +25,20 @@
 #ifndef GI_WRAPPERUTILS_H_
 #define GI_WRAPPERUTILS_H_
 
+#include <stdint.h>
+
+#include <new>
+#include <string>
+
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-class.h"  // IWYU pragma: keep
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"

@@ -1,0 +1,6 @@
+# IWYU mapping file for files that use the API of libgjs
+[
+  {"ref": "gjs-private-iwyu.imp"},
+
+  {"include": ["\"gjs/macros.h\"", "private", "<gjs/gjs.h>", "public"]}
+]

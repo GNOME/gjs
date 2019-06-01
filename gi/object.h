@@ -24,22 +24,28 @@
 #ifndef GI_OBJECT_H_
 #define GI_OBJECT_H_
 
-#include <glib-object.h>
-#include <girepository.h>
+#include <stddef.h>  // for size_t
 
 #include <forward_list>
 #include <functional>
 #include <vector>
 
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
+
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
-#include "js/GCHashTable.h"
-
+class GjsAtoms;
 class ObjectInstance;
+class ObjectPrototype;
 
 class GjsListLink {
  private:
@@ -61,8 +67,6 @@ struct AutoGValueVector : public std::vector<GValue> {
             g_value_unset(&value);
     }
 };
-
-class ObjectPrototype;
 
 /*
  * ObjectBase:

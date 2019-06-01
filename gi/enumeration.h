@@ -24,13 +24,11 @@
 #ifndef GI_ENUMERATION_H_
 #define GI_ENUMERATION_H_
 
-#include <stdbool.h>
-#include <glib.h>
-
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
-
 #include <girepository.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enum_values(JSContext       *context,

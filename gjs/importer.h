@@ -24,10 +24,8 @@
 #ifndef GJS_IMPORTER_H_
 #define GJS_IMPORTER_H_
 
-#include <stdbool.h>
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

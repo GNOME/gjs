@@ -24,7 +24,7 @@
 #ifndef TEST_GJS_TEST_COMMON_H_
 #define TEST_GJS_TEST_COMMON_H_
 
-#include "gjs/jsapi-wrapper.h"
+struct JSContext;
 
 char* gjs_test_get_exception_message(JSContext* cx);
 

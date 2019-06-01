@@ -21,27 +21,34 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <mozilla/Unused.h>
-
-#include <util/log.h>
-
-#include "foreign.h"
-#include "value.h"
-#include "closure.h"
-#include "arg.h"
-#include "param.h"
-#include "object.h"
-#include "fundamental.h"
-#include "boxed.h"
-#include "union.h"
-#include "gtype.h"
-#include "gerror.h"
-#include "gjs/context-private.h"
-#include "gjs/jsapi-wrapper.h"
+#include <limits.h>  // for SCHAR_MAX, SCHAR_MIN, UCHAR_MAX
+#include <stdint.h>
+#include <string.h>  // for memset
 
 #include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "mozilla/Unused.h"
+
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/closure.h"
+#include "gi/foreign.h"
+#include "gi/fundamental.h"
+#include "gi/gerror.h"
+#include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/union.h"
+#include "gi/value.h"
+#include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/jsapi-util.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(JSContext             *context,

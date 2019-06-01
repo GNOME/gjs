@@ -21,21 +21,21 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+#include <glib.h>
 
-#include <string.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gi/arg.h"
 #include "gi/function.h"
-#include "gi/gtype.h"
-#include "gi/object.h"
 #include "gi/param.h"
 #include "gi/repo.h"
+#include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
-
-#include <util/log.h>
+#include "util/log.h"
 
 typedef struct {
     GParamSpec* gparam;  // nullptr if we are the prototype and not an instance

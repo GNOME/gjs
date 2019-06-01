@@ -29,6 +29,7 @@
 #endif
 
 #include <glib-object.h>
+#include <glib.h>
 
 #include <gjs/macros.h>
 

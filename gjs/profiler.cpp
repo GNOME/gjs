@@ -21,34 +21,45 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
 
-#include <algorithm>
-#include <errno.h>
-#include <memory>
-#include <signal.h>
-#include <sys/types.h>
+#include <sys/signal.h>  // for siginfo_t, sigevent, ...
 
-#include "jsapi-wrapper.h"
-#include <js/ProfilingStack.h>
-
-#include "context.h"
-#include "jsapi-util.h"
-#include "profiler-private.h"
+#include <glib-object.h>
+#include <glib.h>
 
 #ifdef ENABLE_PROFILER
-# include <alloca.h>
+#    include <alloca.h>
+#    include <errno.h>
+#    include <signal.h>  // for sigaction, SIGPROF, sigemptyset
+#    include <stddef.h>  // for size_t
+#    include <stdint.h>
+#    include <stdio.h>      // for sscanf
+#    include <string.h>     // for memcpy, strlen
+#    include <sys/time.h>   // for CLOCK_MONOTONIC
+#    include <sys/types.h>  // for timer_t
+#    include <syscall.h>    // for __NR_gettid
+#    include <time.h>       // for itimerspec, timer_delete, ...
 #    ifdef HAVE_SYS_SYSCALL_H
-#        include <sys/syscall.h>
+#        include <sys/syscall.h>  // IWYU pragma: keep
 #    endif
 #    ifdef HAVE_UNISTD_H
-#        include <unistd.h>
+#        include <unistd.h>  // for getpid, syscall
 #    endif
 #    ifdef G_OS_UNIX
 #        include <glib-unix.h>
 #    endif
 #    include <sysprof-capture.h>
 #endif
+
+#include "gjs/jsapi-wrapper.h"  // IWYU pragma: keep
+#include "js/ProfilingStack.h"  // for EnableContextProfilingStack, ...
+
+#include "gjs/context.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "gjs/profiler-private.h"  // IWYU pragma: keep
+#include "gjs/profiler.h"
 
 #define FLUSH_DELAY_SECONDS 3
 

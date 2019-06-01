@@ -21,28 +21,35 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <gio/gio.h>
-
-#include <vector>
-
-#include "gjs/context-private.h"
-#include "gjs/mem-private.h"
-#include "importer.h"
-#include "jsapi-class.h"
-#include "jsapi-wrapper.h"
-#include "module.h"
-#include "native.h"
-#include "util/log.h"
-#include "util/misc.h"
+#include <string.h>  // for size_t, strcmp, strlen
 
 #ifdef G_OS_WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
 #endif
 
-#include <string.h>
+#include <memory>   // for allocator_traits<>::value_type
+#include <utility>  // for move
+#include <vector>   // for vector
+
+#include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "mozilla/UniquePtr.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/global.h"
+#include "gjs/importer.h"
+#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/mem-private.h"
+#include "gjs/module.h"
+#include "gjs/native.h"
+#include "util/log.h"
+#include "util/misc.h"
 
 #define MODULE_INIT_FILENAME "__init__.js"
 

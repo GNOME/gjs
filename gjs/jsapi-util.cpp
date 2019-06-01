@@ -22,29 +22,22 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <math.h>
-#include <string.h>
-
-#include <codecvt>
-#include <locale>
-
-#include "jsapi-wrapper.h"
-#include <js/GCAPI.h>
-#include <js/Printf.h>
+#include <stdio.h>   // for sscanf
+#include <string.h>  // for strlen
 
 #ifdef XP_WIN
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 #endif
 
+#include <codecvt>  // for codecvt_utf8_utf16
+#include <locale>   // for wstring_convert
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/error-types.h"
-#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "util/log.h"
-#include "util/misc.h"
 
 static void
 throw_property_lookup_error(JSContext       *cx,

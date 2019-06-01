@@ -407,6 +407,71 @@ in the implementation file (as mentioned above).
 This way there won't be any hidden dependencies that you'll find out
 about later.
 
+The tool [IWYU][iwyu] can help with this, but it generates a lot of
+false positives, so we don't automate it.
+
+[iwyu]: https://include-what-you-use.org/
+
+#### Header inclusion order ####
+
+Headers should be included in the following order:
+
+- `<config.h>`
+- C system headers
+- C++ system headers
+- GNOME library headers
+- SpiderMonkey library headers
+- GJS headers
+
+Each of these groups must be separated by blank lines.
+Within each group, all the headers should be alphabetized.
+The first four groups should use angle brackets for the includes.
+
+SpiderMonkey headers should in theory also all use angle brackets, but
+currently due to a bug in SpiderMonkey, the GJS header
+`"gjs/jsapi-wrapper.h"` must be included instead of `<jsapi.h>` and
+`<jsfriendapi.h>`, and before any other SpiderMonkey headers.
+So the SpiderMonkey headers should use quotes for the includes.
+
+GJS headers should use quotes, _except_ in public header files (any
+header file included from `<gjs/gjs.h>`.)
+
+If you need to include headers conditionally, add the conditional
+after the group that it belongs to, separated by a blank line.
+
+If it is not obvious, you may add a comment after the include,
+explaining what this header is included for.
+This makes it easier to figure out whether to remove a header later if
+its functionality is no longer used in the file.
+
+Here is an example of all of the above rules together:
+
+```c++
+#include <config.h>  // for ENABLE_CAIRO
+
+#include <string.h>  // for strlen
+
+#ifdef XP_WIN
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#endif
+
+#include <codecvt>  // for codecvt_utf8_utf16
+#include <locale>   // for wstring_convert
+#include <vector>
+
+#include <girepository.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
+#include "mozilla/Unused.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
+```
+
 #### Keep "Internal" Headers Private ####
 
 Many modules have a complex implementation that causes them to use more
