@@ -17,6 +17,24 @@
     ],
     "modules": [
         {
+            "name": "sysprof",
+            "builddir": true,
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Denable_gtk=false",
+                "-Dhelp=false",
+                "-Dlibsysprof=false",
+                "-Dwith_sysprofd=none"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "branch": "master",
+                    "url": "https://gitlab.gnome.org/GNOME/sysprof.git"
+                }
+            ]
+        },
+        {
             "name": "gjs",
             "builddir": true,
             "sources": [
