@@ -609,6 +609,26 @@ void GjsContextPrivate::schedule_gc_if_needed(void) {
     schedule_gc_internal(false);
 }
 
+void GjsContextPrivate::set_sweeping(bool value) {
+    // If we have a profiler enabled, record the duration of GC sweep
+    if (this->m_profiler != nullptr) {
+        int64_t now = g_get_monotonic_time() * 1000L;
+
+        if (value) {
+            m_sweep_begin_time = now;
+        } else {
+            if (m_sweep_begin_time != 0) {
+                _gjs_profiler_add_mark(this->m_profiler, m_sweep_begin_time,
+                                       now - m_sweep_begin_time, "GJS", "Sweep",
+                                       nullptr);
+                m_sweep_begin_time = 0;
+            }
+        }
+    }
+
+    m_in_gc_sweep = value;
+}
+
 void GjsContextPrivate::exit(uint8_t exit_code) {
     g_assert(!m_should_exit);
     m_should_exit = true;

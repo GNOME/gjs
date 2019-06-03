@@ -33,6 +33,10 @@ G_BEGIN_DECLS
 GjsProfiler *_gjs_profiler_new(GjsContext *context);
 void _gjs_profiler_free(GjsProfiler *self);
 
+void _gjs_profiler_add_mark(GjsProfiler *self, gint64 time, gint64 duration,
+                            const char *group, const char *name,
+                            const char *message);
+
 GJS_USE
 bool _gjs_profiler_is_running(GjsProfiler *self);
 
