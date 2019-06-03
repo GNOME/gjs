@@ -115,9 +115,3 @@ gjs_gtk_private_srcs =			\
 gjs_console_srcs =	\
 	gjs/console.cpp	\
 	$(NULL)
-
-gjs_sysprof_srcs =			\
-	util/sp-capture-types.h		\
-	util/sp-capture-writer.c	\
-	util/sp-capture-writer.h	\
-	$(NULL)
