@@ -117,6 +117,8 @@ class GjsContextPrivate {
     bool m_should_profile : 1;
     bool m_should_listen_sigusr2 : 1;
 
+    int64_t m_sweep_begin_time;
+
     void schedule_gc_internal(bool force_gc);
     static gboolean trigger_gc_if_needed(void* data);
     static gboolean drain_job_queue_idle_handler(void* data);
@@ -148,7 +150,6 @@ class GjsContextPrivate {
     GJS_USE const GjsAtoms& atoms(void) const { return m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
     GJS_USE bool sweeping(void) const { return m_in_gc_sweep; }
-    void set_sweeping(bool value) { m_in_gc_sweep = value; }
     GJS_USE const char* program_name(void) const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
     void set_search_path(char** value) { m_search_path = value; }
@@ -193,6 +194,8 @@ class GjsContextPrivate {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+
+    void set_sweeping(bool value);
 
     static void trace(JSTracer* trc, void* data);
 
