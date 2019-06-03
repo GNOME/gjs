@@ -281,10 +281,21 @@ main(int argc, char **argv)
     /* This should be removed after a suitable time has passed */
     check_script_args_for_stray_gjs_args(script_argc, script_argv);
 
+    /* Check for GJS_TRACE_FD for sysprof profiling */
+    const char* env_tracefd = g_getenv("GJS_TRACE_FD");
+    int tracefd = -1;
+    if (env_tracefd) {
+        tracefd = g_ascii_strtoll(env_tracefd, nullptr, 10);
+        g_setenv("GJS_TRACE_FD", "", true);
+        if (tracefd > 0)
+            enable_profiler = true;
+    }
+
     if (interactive_mode && enable_profiler) {
         g_message("Profiler disabled in interactive mode.");
         enable_profiler = false;
         g_unsetenv("GJS_ENABLE_PROFILER");  /* ignore env var in eval() */
+        g_unsetenv("GJS_TRACE_FD");         /* ignore env var in eval() */
     }
 
     js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
@@ -318,6 +329,15 @@ main(int argc, char **argv)
     if (enable_profiler && profile_output_path) {
         GjsProfiler *profiler = gjs_context_get_profiler(js_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
+    } else if (enable_profiler && tracefd > -1) {
+        GjsProfiler* profiler = gjs_context_get_profiler(js_context);
+        gjs_profiler_set_fd(profiler, tracefd);
+        tracefd = -1;
+    }
+
+    if (tracefd != -1) {
+        close(tracefd);
+        tracefd = -1;
     }
 
     /* prepare command line arguments */

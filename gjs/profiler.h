@@ -40,6 +40,8 @@ GType gjs_profiler_get_type(void);
 GJS_EXPORT
 void gjs_profiler_set_filename(GjsProfiler *self,
                                const char  *filename);
+GJS_EXPORT
+void gjs_profiler_set_fd(GjsProfiler* self, int fd);
 
 GJS_EXPORT
 void gjs_profiler_start(GjsProfiler *self);
