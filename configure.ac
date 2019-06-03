@@ -147,9 +147,26 @@ AS_IF([test x$have_gtk = xyes], [
 ], [AS_IF([test "x$with_gtk" = "xyes"],
   [AC_MSG_ERROR([GTK requested but not found])])])
 
-# Some Linux APIs required for profiler
 AC_ARG_ENABLE([profiler],
-  [AS_HELP_STRING([--disable-profiler], [Don't build profiler])])
+  [AS_HELP_STRING([--disable-profiler], [Don't build profiler])],
+  [],
+  [enable_profiler=auto])
+
+# Use sysprof-capture-3 for profiler
+PKG_CHECK_MODULES([SYSPROF_CAPTURE],
+                  [sysprof-capture-3],
+                  [have_sysprof_capture=yes],
+                  [have_sysprof_capture=no])
+AS_IF([test x$enable_profiler = xauto],[
+  AS_IF([test $have_sysprof_capture = no],[enable_profiler=no])
+])
+AS_IF([test x$enable_profiler = yes],[
+  AS_IF([test $have_sysprof_capture = no],[
+    AC_MSG_ERROR([--enable-profiler requires sysprof-capture-3.pc])
+  ])
+])
+
+# Some Linux APIs required for profiler
 AS_IF([test x$enable_profiler != xno], [
   # Requires timer_settime() - only on Linux
   gl_TIMER_TIME
@@ -166,8 +183,11 @@ AS_IF([test x$enable_profiler != xno], [
     [AC_MSG_ERROR([The profiler is currently only supported on Linux.
 The standard library must support timer_settime() and SIGEV_THREAD_ID.
 Configure with --disable-profiler to skip it on other platforms.])])
+  AC_SUBST([SYSPROF_CAPTURE_CFLAGS])
+  AC_SUBST([SYSPROF_CAPTURE_LIBS])
   AC_DEFINE([ENABLE_PROFILER], [1], [Define if the profiler should be built.])
 ])
+
 AM_CONDITIONAL([ENABLE_PROFILER], [test x$enable_profiler != xno])
 
 # Optional redline dep (enabled by default)

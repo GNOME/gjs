@@ -87,8 +87,8 @@ endif
 libgjs_la_SOURCES = $(gjs_srcs)
 
 if ENABLE_PROFILER
-libgjs_la_SOURCES += $(gjs_sysprof_srcs)
-libgjs_la_LIBADD += $(LIB_TIMER_TIME)
+libgjs_la_CPPFLAGS += $(SYSPROF_CAPTURE_CFLAGS)
+libgjs_la_LIBADD += $(LIB_TIMER_TIME) $(SYSPROF_CAPTURE_LIBS)
 endif
 
 # Also, these files used to be a separate library
