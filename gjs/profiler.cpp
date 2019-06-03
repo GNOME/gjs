@@ -639,3 +639,16 @@ gjs_profiler_set_filename(GjsProfiler *self,
     g_free(self->filename);
     self->filename = g_strdup(filename);
 }
+
+void _gjs_profiler_add_mark(GjsProfiler* self, gint64 time_nsec,
+                            gint64 duration_nsec, const char* group,
+                            const char* name, const char* message) {
+    g_return_if_fail(self);
+    g_return_if_fail(group);
+    g_return_if_fail(name);
+
+    if (self->running && self->capture != nullptr) {
+        sysprof_capture_writer_add_mark(self->capture, time_nsec, -1, self->pid,
+                                        duration_nsec, group, name, message);
+    }
+}
