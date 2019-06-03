@@ -391,6 +391,7 @@ main(int    argc,
 {
     /* Avoid interference in the tests from stray environment variable */
     g_unsetenv("GJS_ENABLE_PROFILER");
+    g_unsetenv("GJS_TRACE_FD");
 
     g_test_init(&argc, &argv, NULL);
 
