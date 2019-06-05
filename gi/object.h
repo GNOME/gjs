@@ -291,7 +291,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     // GIWrapperInstance::m_ptr may be null in ObjectInstance.
 
-    GjsMaybeOwned<JSObject*> m_wrapper;
+    GjsMaybeOwned<JSObject*>::Ptr m_wrapper;
 
     GjsListLink m_instance_link;
 
@@ -328,18 +328,31 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
  public:
     GJS_USE
-    JSObject* wrapper(void) const { return m_wrapper; }
+    JSObject* wrapper(void) const { return *m_wrapper; }
 
     /* Methods to manipulate the JS object wrapper */
 
  private:
-    void discard_wrapper(void) { m_wrapper.reset(); }
-    void switch_to_rooted(JSContext* cx) { m_wrapper.switch_to_rooted(cx); }
-    void switch_to_unrooted(void) { m_wrapper.switch_to_unrooted(); }
+    void discard_wrapper(void) {
+        if (m_wrapper)
+            m_wrapper->reset();
+    }
+    void switch_to_rooted(JSContext* cx) {
+        if (m_wrapper)
+            m_wrapper->switch_to_rooted(cx);
+    }
+    void switch_to_unrooted(void) {
+        if (m_wrapper)
+            m_wrapper->switch_to_unrooted();
+    }
     GJS_USE
-    bool update_after_gc(void) { return m_wrapper.update_after_gc(); }
+    bool update_after_gc(void) {
+        return m_wrapper && m_wrapper->update_after_gc();
+    }
     GJS_USE
-    bool wrapper_is_rooted(void) const { return m_wrapper.rooted(); }
+    bool wrapper_is_rooted(void) const {
+        return m_wrapper && m_wrapper->rooted();
+    }
     void release_native_object(void);
     void associate_js_gobject(JSContext* cx, JS::HandleObject obj,
                               GObject* gobj);

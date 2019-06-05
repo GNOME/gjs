@@ -1362,7 +1362,7 @@ ObjectInstance::associate_js_gobject(JSContext       *context,
     m_uses_toggle_ref = false;
     m_ptr = gobj;
     set_object_qdata();
-    m_wrapper = object;
+    m_wrapper = GjsMaybeOwned<JSObject*>::newWrapper(object);
 
     ensure_weak_pointer_callback(context);
     link();
@@ -1480,7 +1480,8 @@ ObjectInstance::init_impl(JSContext              *context,
                                                  names.data(), values.data());
 
     ObjectInstance *other_priv = ObjectInstance::for_gobject(gobj);
-    if (other_priv && other_priv->m_wrapper != object.get()) {
+    if (other_priv && other_priv->m_wrapper &&
+        *other_priv->m_wrapper != object.get()) {
         /* g_object_new_with_properties() returned an object that's already
          * tracked by a JS object. Let's assume this is a singleton like
          * IBus.IBus and return the existing JS wrapper object.
@@ -1491,7 +1492,7 @@ ObjectInstance::init_impl(JSContext              *context,
          * this would require a non-trivial amount of work.
          * */
         other_priv->ensure_uses_toggle_ref(context);
-        object.set(other_priv->m_wrapper);
+        object.set(*other_priv->m_wrapper);
         g_object_unref(gobj); /* We already own a reference */
         gobj = NULL;
         return true;
@@ -1761,7 +1762,7 @@ ObjectInstance::connect_impl(JSContext          *context,
     guint signal_id;
     GQuark signal_detail;
 
-    gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
+    gjs_debug_gsignal("connect obj %p priv %p", m_wrapper->get(), this);
 
     if (!check_gobject_disposed("connect to any signal on"))
         return true;
@@ -1819,7 +1820,7 @@ ObjectInstance::emit_impl(JSContext          *context,
     unsigned int i;
     bool failed;
 
-    gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
+    gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper->get(), this,
                       argv.length());
 
     if (!check_gobject_disposed("emit any signal on"))
