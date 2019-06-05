@@ -50,6 +50,8 @@
 #    include <sysprof-capture.h>
 #endif
 
+#define FLUSH_DELAY_SECONDS 3
+
 /*
  * This is mostly non-exciting code wrapping the builtin Profiler in
  * mozjs. In particular, the profiler consumer is required to "bring your
@@ -424,6 +426,11 @@ gjs_profiler_start(GjsProfiler *self)
         g_warning("Failed to open profile capture");
         return;
     }
+
+    /* Automatically flush to be resilient against SIGINT, etc */
+    sysprof_capture_writer_set_flush_delay(self->capture,
+                                           g_main_context_get_thread_default(),
+                                           FLUSH_DELAY_SECONDS);
 
     if (!gjs_profiler_extract_maps(self)) {
         g_warning("Failed to extract proc maps");
