@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2017 Endless Mobile, Inc.
+ * Copyright (c) 2019 Canonical, Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,11 +22,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_UTIL_ROOT_H
-#define GJS_JSAPI_UTIL_ROOT_H
+#ifndef GJS_JSAPI_UTIL_ROOT_H_
+#define GJS_JSAPI_UTIL_ROOT_H_
 
-#include <glib.h>
 #include <glib-object.h>
+#include <glib.h>
+
+#include <functional>
+#include <memory>
 
 #include "gjs/context-private.h"
 #include "gjs/context.h"
@@ -99,17 +103,15 @@ struct GjsHeapOperation<JSFunction*> {
     }
 };
 
-/* GjsMaybeOwned is intended only for use in heap allocation. Do not allocate it
- * on the stack, and do not allocate any instances of structures that have it as
- * a member on the stack either. Unfortunately we cannot enforce this at compile
- * time with a private constructor; that would prevent the intended usage as a
- * member of a heap-allocated struct. */
+/* GjsMaybeOwned is intended only for use in heap allocation.
+ * Use static method to allocate the GjsMaybeOwned::Ptr */
 template<typename T>
 class GjsMaybeOwned {
-public:
-    typedef void (*DestroyNotify)(JS::Handle<T> thing, void *data);
+ public:
+    using DestroyNotify = std::function<void(JS::Handle<T>, void*)>;
+    using Ptr = std::unique_ptr<GjsMaybeOwned<T>>;
 
-private:
+ private:
     bool m_rooted;  /* wrapper is in rooted mode */
     bool m_has_weakref;  /* we have a weak reference to the GjsContext */
 
@@ -181,17 +183,27 @@ private:
             reset();
     }
 
-public:
-    GjsMaybeOwned(void) :
-        m_rooted(false),
-        m_has_weakref(false),
-        m_cx(nullptr),
-        m_notify(nullptr),
-        m_data(nullptr)
-    {
+ private:
+    GjsMaybeOwned()
+        : m_rooted(false),
+          m_has_weakref(false),
+          m_cx(nullptr),
+          m_notify(nullptr),
+          m_data(nullptr) {
         debug("created");
     }
 
+    explicit GjsMaybeOwned(const T& thing)
+        : m_rooted(false),
+          m_has_weakref(false),
+          m_cx(nullptr),
+          m_notify(nullptr),
+          m_data(nullptr) {
+        debug("created");
+        *this = thing;
+    }
+
+ public:
     ~GjsMaybeOwned(void)
     {
         debug("destroyed");
@@ -200,6 +212,25 @@ public:
 
         /* Call in either case; teardown_rooting() constructs a new Heap */
         m_thing.heap.~Heap();
+    }
+
+    GJS_USE
+    static GjsMaybeOwned<T>::Ptr newWrapper() {
+        return GjsMaybeOwned<T>::Ptr{new GjsMaybeOwned<T>()};
+    }
+
+    GJS_USE
+    static GjsMaybeOwned<T>::Ptr newWrapper(const T& thing) {
+        return GjsMaybeOwned<T>::Ptr{new GjsMaybeOwned<T>(thing)};
+    }
+
+    GJS_USE
+    static GjsMaybeOwned<T>::Ptr newRooted(JSContext* cx, const T& thing,
+                                           DestroyNotify notify = nullptr,
+                                           void* data = nullptr) {
+        GjsMaybeOwned<T>::Ptr ptr{new GjsMaybeOwned<T>(thing)};
+        ptr->root(cx, notify, data);
+        return ptr;
     }
 
     /* To access the GC thing, call get(). In many cases you can just use the
@@ -368,4 +399,4 @@ public:
     GJS_USE bool rooted(void) const { return m_rooted; }
 };
 
-#endif /* GJS_JSAPI_UTIL_ROOT_H */
+#endif /* GJS_JSAPI_UTIL_ROOT_H_ */
