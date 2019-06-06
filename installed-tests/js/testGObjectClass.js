@@ -378,3 +378,67 @@ describe('GObject class with decorator', function () {
         expect(mon['network-available']).toBeDefined();
     });
 });
+
+const MyObjectWithJSObjectProperty = GObject.registerClass({
+    Properties: {
+        'jsobj-prop': GObject.ParamSpec.jsobject('jsobj-prop', 'jsobj-prop', 'jsobj-prop',
+            GObject.ParamFlags.CONSTRUCT | GObject.ParamFlags.READWRITE, ''),
+    }
+}, class MyObjectWithJSObjectProperty extends GObject.Object {
+});
+
+describe('GObject class with JSObject property', function () {
+    it('assigns a valid JSObject on construct', function () {
+        let date = new Date();
+        let obj = new MyObjectWithJSObjectProperty({jsobj_prop: date});
+        expect(obj.jsobj_prop).toEqual(date);
+        expect(obj.jsobj_prop).not.toEqual(new Date(0));
+        expect(() => obj.jsobj_prop.setFullYear(1985)).not.toThrow();
+        expect(obj.jsobj_prop.getFullYear()).toEqual(1985);
+    });
+
+    it('Set null with an empty JSObject on construct', function () {
+        expect(new MyObjectWithJSObjectProperty().jsobj_prop).toBeNull();
+        expect(new MyObjectWithJSObjectProperty({}).jsobj_prop).toBeNull();
+    });
+
+    it('assigns a null JSObject on construct', function () {
+        expect(new MyObjectWithJSObjectProperty({jsobj_prop: null}).jsobj_prop)
+            .toBeNull();
+    });
+
+    it('assigns a JSObject Array on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: [1, 2, 3]}))
+            .not.toThrow();
+    });
+
+    it('assigns a Function on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: () => {
+            return true;
+        }})).not.toThrow();
+    });
+
+    it('throws an error when using a boolean value on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: true}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using an int value on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: 1}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using a numeric value on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: Math.PI}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using a string value on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: 'string'}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using an undefined value on construct', function () {
+        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: undefined})).toThrow();
+    });
+});
