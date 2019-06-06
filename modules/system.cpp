@@ -58,6 +58,26 @@ gjs_address_of(JSContext *context,
     return gjs_string_from_utf8(context, pointer_string, argv.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
+                                   JS::Value* vp) {
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::RootedObject target_obj(cx);
+    GObject *obj;
+
+    if (!gjs_parse_call_args(cx, "addressOfGObject", argv, "o", "object",
+                             &target_obj))
+        return false;
+
+    if (!ObjectBase::to_c_ptr(cx, target_obj, &obj)) {
+        gjs_throw(cx, "Object %p is not a GObject", &target_obj);
+        return false;
+    }
+
+    GjsAutoChar pointer_string = g_strdup_printf("%p", obj);
+    return gjs_string_from_utf8(cx, pointer_string, argv.rval());
+}
+
 static bool
 gjs_refcount(JSContext *context,
              unsigned   argc,
@@ -174,6 +194,7 @@ gjs_clear_date_caches(JSContext *context,
 
 static JSFunctionSpec module_funcs[] = {
     JS_FN("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("addressOfGObject", gjs_address_of_gobject, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("dumpHeap", gjs_dump_heap, 1, GJS_MODULE_PROP_FLAGS),
