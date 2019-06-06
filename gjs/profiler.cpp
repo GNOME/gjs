@@ -317,7 +317,7 @@ gjs_profiler_sigprof(int        signum,
          * 512 is an arbitrarily large size, very likely to be enough to
          * hold the final string.
          */
-        char final_string[512] = { 0, };
+        char final_string[512];
         char *position = final_string;
         size_t available_length = sizeof (final_string) - 1;
 
@@ -348,8 +348,11 @@ gjs_profiler_sigprof(int        signum,
             if (dynamic_string_length > 0) {
                 size_t remaining_length = MIN(available_length, dynamic_string_length);
                 memcpy(position, dynamic_string, remaining_length);
+                position += remaining_length;
             }
         }
+
+        *position = 0;
 
         /*
          * GeckoProfiler will put "js::RunScript" on the stack, but it has
