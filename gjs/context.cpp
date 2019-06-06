@@ -72,6 +72,7 @@
 #include "gjs/mem.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
+#include "gjs/objectbox.h"
 #include "gjs/profiler-private.h"
 #include "gjs/profiler.h"
 #include "modules/modules.h"
@@ -484,6 +485,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_gtype_table = new JS::WeakCache<GTypeTable>(rt);
 
     m_atoms = new GjsAtoms();
+
+    if (ObjectBox::gtype() == 0)
+        g_error("Failed to initialize JSObject GType");
 
     JS::RootedObject internal_global(
         m_cx, gjs_create_global_object(cx, GjsGlobalType::INTERNAL));

@@ -261,6 +261,10 @@ function _init() {
     GObject.String = String;
     String.$gtype = GObject.TYPE_STRING;
 
+    GObject.TYPE_JSOBJECT = GObject.type_from_name('JSObject');
+    GObject.JSObject = Object;
+    Object.$gtype = GObject.TYPE_JSOBJECT;
+
     GObject.TYPE_POINTER = GObject.type_from_name('gpointer');
     GObject.TYPE_BOXED = GObject.type_from_name('GBoxed');
     GObject.TYPE_PARAM = GObject.type_from_name('GParam');
@@ -332,6 +336,10 @@ function _init() {
 
     GObject.ParamSpec.object = function (name, nick, blurb, flags, objectType) {
         return GObject.param_spec_object(name, nick, blurb, objectType, flags);
+    };
+
+    GObject.ParamSpec.jsobject = function (name, nick, blurb, flags) {
+        return GObject.param_spec_boxed(name, nick, blurb, Object.$gtype, flags);
     };
 
     GObject.ParamSpec.param = function (name, nick, blurb, flags, paramType) {

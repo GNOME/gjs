@@ -42,6 +42,7 @@ testParamSpec('enum', [Regress.TestEnum, Regress.TestEnum.VALUE2],
 testParamSpec('flags', [Regress.TestFlags, Regress.TestFlags.FLAG2],
     Regress.TestFlags.FLAG2);
 testParamSpec('object', [GObject.Object], null);
+testParamSpec('jsobject', [], null);
 
 describe('GObject.ParamSpec object', function () {
     it("doesn't crash when resolving a non-string property", function () {

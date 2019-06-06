@@ -406,6 +406,7 @@ libgjs_sources = [
     'gjs/mem.cpp', 'gjs/mem-private.h',
     'gjs/module.cpp', 'gjs/module.h',
     'gjs/native.cpp', 'gjs/native.h',
+    'gjs/objectbox.cpp', 'gjs/objectbox.h',
     'gjs/profiler.cpp', 'gjs/profiler-private.h',
     'gjs/stack.cpp',
     'modules/console.cpp', 'modules/console.h',
