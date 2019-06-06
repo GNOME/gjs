@@ -67,6 +67,8 @@ gjs_srcs =				\
 	gjs/engine.cpp			\
 	gjs/engine.h			\
 	gjs/global.cpp			\
+	gjs/gjsobject.cpp		\
+	gjs/gjsobject.h			\
 	gjs/global.h			\
 	gjs/importer.cpp		\
 	gjs/importer.h			\

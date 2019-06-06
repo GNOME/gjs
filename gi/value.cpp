@@ -27,19 +27,20 @@
 
 #include <util/log.h>
 
-#include "foreign.h"
-#include "value.h"
-#include "closure.h"
 #include "arg.h"
-#include "param.h"
-#include "object.h"
-#include "fundamental.h"
 #include "boxed.h"
-#include "union.h"
-#include "gtype.h"
+#include "closure.h"
+#include "foreign.h"
+#include "fundamental.h"
 #include "gerror.h"
 #include "gjs/context-private.h"
+#include "gjs/gjsobject.h"
 #include "gjs/jsapi-wrapper.h"
+#include "gtype.h"
+#include "object.h"
+#include "param.h"
+#include "union.h"
+#include "value.h"
 
 #include <girepository.h>
 
@@ -527,7 +528,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+            if (g_type_is_a(gtype, GJSObject::gtype())) {
+                g_value_set_boxed(gvalue, GJSObject::boxed(context, obj).get());
+                return true;
+            } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 /* special case GError */
                 gboxed = ErrorBase::to_c_ptr(context, obj);
                 if (!gboxed)
@@ -841,6 +845,20 @@ gjs_value_from_g_value_internal(JSContext             *context,
             gboxed = g_value_get_boxed(gvalue);
         else
             gboxed = g_value_get_variant(gvalue);
+
+        if (g_type_is_a(gtype, GJSObject::gtype())) {
+            if (!gboxed) {
+                value_p.setNull();
+                return true;
+            }
+
+            obj = GJSObject::object_for_c_ptr(context,
+                                              static_cast<GJSObject*>(gboxed));
+            if (!obj)
+                return false;
+            value_p.setObject(*obj);
+            return true;
+        }
 
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {

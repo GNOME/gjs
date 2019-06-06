@@ -39,6 +39,7 @@
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
+#include "gjs/gjsobject.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util.h"
@@ -469,6 +470,11 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_gtype_table = new JS::WeakCache<GTypeTable>(rt);
     if (!m_gtype_table->init())
         g_error("Failed to initialize GType objects table");
+
+    if (GJSObject::gtype() == 0) {
+        gjs_log_exception(cx);
+        g_error("Failed to initialize JSObject GType");
+    }
 
     JS_BeginRequest(m_cx);
 
