@@ -21,13 +21,25 @@
  * IN THE SOFTWARE.
  */
 
+#include <vector>
+
 #include "gjs/gjsobject.h"
 #include "gjs/jsapi-util.h"
+
+namespace {
+std::vector<GJSObject*> m_wrappers;
+}
 
 struct GJSObject::impl {
     impl(GJSObject* parent, JSContext* cx, const JS::HandleObject& obj)
         : m_parent(parent), m_root(cx, obj) {
         g_atomic_ref_count_init(&m_refcount);
+        m_wrappers.push_back(m_parent);
+    }
+
+    ~impl() {
+        auto it = std::find(m_wrappers.begin(), m_wrappers.end(), m_parent);
+        m_wrappers.erase(it);
     }
 
     void ref() { g_atomic_ref_count_inc(&m_refcount); }
@@ -46,9 +58,20 @@ GJSObject::GJSObject(JSContext* cx, const JS::HandleObject& obj)
     : m_impl(std::make_unique<GJSObject::impl>(this, cx, obj)) {}
 
 GJSObject::Ptr GJSObject::boxed(JSContext* cx, const JS::HandleObject& obj) {
-    return GJSObject::Ptr(new GJSObject(cx, obj), [](GJSObject* gjsobject) {
-        gjsobject->m_impl->unref();
-    });
+    GJSObject* gjsobj = nullptr;
+
+    for (auto* g : m_wrappers) {
+        if (g->m_impl->m_root == obj) {
+            gjsobj = g;
+            gjsobj->m_impl->ref();
+            break;
+        }
+    }
+
+    if (!gjsobj)
+        gjsobj = new GJSObject(cx, obj);
+
+    return GJSObject::Ptr(gjsobj, [](GJSObject* g) { g->m_impl->unref(); });
 }
 
 JSObject* GJSObject::object_for_c_ptr(JSContext* cx, GJSObject* gjsobject) {
