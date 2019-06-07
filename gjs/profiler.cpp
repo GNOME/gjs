@@ -47,8 +47,10 @@
 #    ifdef G_OS_UNIX
 #        include <glib-unix.h>
 #    endif
-#    include "util/sp-capture-writer.h"
+#    include <sysprof-capture.h>
 #endif
+
+#define FLUSH_DELAY_SECONDS 3
 
 /*
  * This is mostly non-exciting code wrapping the builtin Profiler in
@@ -95,11 +97,14 @@ struct _GjsProfiler {
     JSContext *cx;
 
     /* Buffers and writes our sampled stacks */
-    SpCaptureWriter *capture;
+    SysprofCaptureWriter* capture;
 #endif  /* ENABLE_PROFILER */
 
     /* The filename to write to */
     char *filename;
+
+    /* An FD to capture to */
+    int fd;
 
 #ifdef ENABLE_PROFILER
     /* Our POSIX timer to wakeup SIGPROF */
@@ -166,8 +171,8 @@ gjs_profiler_extract_maps(GjsProfiler *self)
             inode = 0;
         }
 
-        if (!sp_capture_writer_add_map(self->capture, now, -1, self->pid, start,
-                                       end, offset, inode, file))
+        if (!sysprof_capture_writer_add_map(self->capture, now, -1, self->pid,
+                                            start, end, offset, inode, file))
             return false;
     }
 
@@ -219,6 +224,7 @@ _gjs_profiler_new(GjsContext *context)
     self->cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
     self->pid = getpid();
 #endif
+    self->fd = -1;
 
     profiling_context = context;
 
@@ -247,7 +253,10 @@ _gjs_profiler_free(GjsProfiler *self)
 
     g_clear_pointer(&self->filename, g_free);
 #ifdef ENABLE_PROFILER
-    g_clear_pointer(&self->capture, sp_capture_writer_unref);
+    g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+
+    if (self->fd != -1)
+        close(self->fd);
 #endif
     g_free(self);
 }
@@ -304,7 +313,8 @@ gjs_profiler_sigprof(int        signum,
      * here since we are in a signal handler.
      */
     // cppcheck-suppress allocaCalled
-    SpCaptureAddress *addrs = static_cast<SpCaptureAddress *>(alloca(sizeof *addrs * depth));
+    SysprofCaptureAddress* addrs =
+        static_cast<SysprofCaptureAddress*>(alloca(sizeof *addrs * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {
         js::ProfileEntry& entry = self->stack.entries[ix];
@@ -360,12 +370,14 @@ gjs_profiler_sigprof(int        signum,
          * everything will show up as [stack] when building callgraphs.
          */
         if (final_string[0] != '\0')
-            addrs[flipped] = sp_capture_writer_add_jitmap(self->capture, final_string);
+            addrs[flipped] =
+                sysprof_capture_writer_add_jitmap(self->capture, final_string);
         else
-            addrs[flipped] = SpCaptureAddress(entry.stackAddress());
+            addrs[flipped] = SysprofCaptureAddress(entry.stackAddress());
     }
 
-    if (!sp_capture_writer_add_sample(self->capture, now, -1, self->pid, addrs, depth))
+    if (!sysprof_capture_writer_add_sample(self->capture, now, -1, self->pid,
+                                           -1, addrs, depth))
         gjs_profiler_stop(self);
 }
 
@@ -402,20 +414,30 @@ gjs_profiler_start(GjsProfiler *self)
     struct itimerspec its = { 0 };
     struct itimerspec old_its;
 
-    GjsAutoChar path = g_strdup(self->filename);
-    if (!path)
-        path = g_strdup_printf("gjs-%jd.syscap", intmax_t(self->pid));
+    if (self->fd != -1) {
+        self->capture = sysprof_capture_writer_new_from_fd(self->fd, 0);
+        self->fd = -1;
+    } else {
+        GjsAutoChar path = g_strdup(self->filename);
+        if (!path)
+            path = g_strdup_printf("gjs-%jd.syscap", intmax_t(self->pid));
 
-    self->capture = sp_capture_writer_new(path, 0);
+        self->capture = sysprof_capture_writer_new(path, 0);
+    }
 
     if (!self->capture) {
         g_warning("Failed to open profile capture");
         return;
     }
 
+    /* Automatically flush to be resilient against SIGINT, etc */
+    sysprof_capture_writer_set_flush_delay(self->capture,
+                                           g_main_context_get_thread_default(),
+                                           FLUSH_DELAY_SECONDS);
+
     if (!gjs_profiler_extract_maps(self)) {
         g_warning("Failed to extract proc maps");
-        g_clear_pointer(&self->capture, sp_capture_writer_unref);
+        g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         return;
     }
 
@@ -426,7 +448,7 @@ gjs_profiler_start(GjsProfiler *self)
 
     if (sigaction(SIGPROF, &sa, nullptr) == -1) {
         g_warning("Failed to register sigaction handler: %s", g_strerror(errno));
-        g_clear_pointer(&self->capture, sp_capture_writer_unref);
+        g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         return;
     }
 
@@ -446,7 +468,7 @@ gjs_profiler_start(GjsProfiler *self)
 
     if (timer_create(CLOCK_MONOTONIC, &sev, &self->timer) == -1) {
         g_warning("Failed to create profiler timer: %s", g_strerror(errno));
-        g_clear_pointer(&self->capture, sp_capture_writer_unref);
+        g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         return;
     }
 
@@ -460,7 +482,7 @@ gjs_profiler_start(GjsProfiler *self)
     if (timer_settime(self->timer, 0, &its, &old_its) != 0) {
         g_warning("Failed to enable profiler timer: %s", g_strerror(errno));
         timer_delete(self->timer);
-        g_clear_pointer(&self->capture, sp_capture_writer_unref);
+        g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         return;
     }
 
@@ -515,9 +537,9 @@ gjs_profiler_stop(GjsProfiler *self)
     js::EnableContextProfilingStack(self->cx, false);
     js::SetContextProfilingStack(self->cx, nullptr);
 
-    sp_capture_writer_flush(self->capture);
+    sysprof_capture_writer_flush(self->capture);
 
-    g_clear_pointer(&self->capture, sp_capture_writer_unref);
+    g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
 
     g_message("Profiler stopped");
 
@@ -638,4 +660,33 @@ gjs_profiler_set_filename(GjsProfiler *self,
 
     g_free(self->filename);
     self->filename = g_strdup(filename);
+}
+
+void _gjs_profiler_add_mark(GjsProfiler* self, gint64 time_nsec,
+                            gint64 duration_nsec, const char* group,
+                            const char* name, const char* message) {
+    g_return_if_fail(self);
+    g_return_if_fail(group);
+    g_return_if_fail(name);
+
+#ifdef ENABLE_PROFILER
+    if (self->running && self->capture != nullptr) {
+        sysprof_capture_writer_add_mark(self->capture, time_nsec, -1, self->pid,
+                                        duration_nsec, group, name, message);
+    }
+#endif
+}
+
+void gjs_profiler_set_fd(GjsProfiler* self, int fd) {
+    g_return_if_fail(self);
+    g_return_if_fail(!self->filename);
+    g_return_if_fail(!self->running);
+
+#ifdef ENABLE_PROFILER
+    if (self->fd != fd) {
+        if (self->fd != -1)
+            close(self->fd);
+        self->fd = fd;
+    }
+#endif
 }
