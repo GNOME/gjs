@@ -2,6 +2,7 @@ const GLib = imports.gi.GLib;
 const Lang = imports.lang;
 const Signals = imports.signals;
 
+/* eslint-disable-next-line no-restricted-properties */
 const Foo = new Lang.Class({
     Name: 'Foo',
     Implements: [Signals.WithSignals],

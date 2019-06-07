@@ -237,7 +237,7 @@ describe('Tweener', function () {
 
         Tweener.addCaller(object, {
             onUpdate: () => {
-                object.foo += 1; 
+                object.foo += 1;
             },
             count: 10,
             time: 0.1,
@@ -275,10 +275,10 @@ describe('Tweener', function () {
         Tweener.registerSpecialProperty(
             'negative_x',
             function(obj) {
-                return -obj.x; 
+                return -obj.x;
             },
             function(obj, val) {
-                obj.x = -val; 
+                obj.x = -val;
             }
         );
 
@@ -338,7 +338,7 @@ describe('Tweener', function () {
             'xnegy',
             function(val) {
                 return [{name: 'x', value: val},
-                    {name: 'y', value: -val}]; 
+                    {name: 'y', value: -val}];
             }
         );
 

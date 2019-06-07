@@ -239,7 +239,7 @@ describe('Life, the Universe and Everything', function () {
     it('callback with destroy-notify', function () {
         let testObj = {
             test: function (data) {
-                return data; 
+                return data;
             },
         };
         spyOn(testObj, 'test').and.callThrough();

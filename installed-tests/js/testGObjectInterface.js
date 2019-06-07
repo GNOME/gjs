@@ -116,7 +116,7 @@ describe('GObject interface', function () {
     it('can be implemented by a GObject class', function () {
         let obj;
         expect(() => {
-            obj = new GObjectImplementingGObjectInterface(); 
+            obj = new GObjectImplementingGObjectInterface();
         })
             .not.toThrow();
         expect(obj instanceof AGObjectInterface).toBeTruthy();
@@ -151,7 +151,7 @@ describe('GObject interface', function () {
     it("doesn't have to have its optional function implemented", function () {
         let obj;
         expect(() => {
-            obj = new MinimalImplementationOfAGObjectInterface(); 
+            obj = new MinimalImplementationOfAGObjectInterface();
         })
             .not.toThrow();
         expect(obj instanceof AGObjectInterface).toBeTruthy();
@@ -170,7 +170,7 @@ describe('GObject interface', function () {
     it('can require another interface', function () {
         let obj;
         expect(() => {
-            obj = new ImplementationOfTwoInterfaces(); 
+            obj = new ImplementationOfTwoInterfaces();
         }).not.toThrow();
         expect(obj instanceof AGObjectInterface).toBeTruthy();
         expect(obj instanceof InterfaceRequiringGObjectInterface).toBeTruthy();

@@ -1,4 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
+/* eslint-disable no-restricted-properties */
 
 const Lang = imports.lang;
 
@@ -126,7 +127,7 @@ const MagicBase = new Lang.Class({
     Name: 'MagicBase',
 
     _init: function(a, buffer) {
-        if (buffer) 
+        if (buffer)
             buffer.push(a);
         this.a = a;
     },
@@ -148,7 +149,7 @@ const Magic = new Lang.Class({
 
     _init: function(a, b, buffer) {
         this.parent(a, buffer);
-        if (buffer) 
+        if (buffer)
             buffer.push(b);
         this.b = b;
     },
@@ -454,7 +455,7 @@ describe('An interface', function () {
     it('can be implemented by a class', function () {
         let obj;
         expect(() => {
-            obj = new ObjectImplementingAnInterface(); 
+            obj = new ObjectImplementingAnInterface();
         }).not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
     });
@@ -555,7 +556,7 @@ describe('An interface', function () {
     it('can require another interface', function () {
         let obj;
         expect(() => {
-            obj = new ImplementationOfTwoInterfaces(); 
+            obj = new ImplementationOfTwoInterfaces();
         }).not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
         expect(obj.constructor.implements(InterfaceRequiringOtherInterface)).toBeTruthy();
@@ -695,10 +696,10 @@ describe('ES6 class inheriting from Lang.Class', function () {
             overrideMe() {},
 
             get property() {
-                return this._property + 1; 
+                return this._property + 1;
             },
             set property(value) {
-                this._property = value - 2; 
+                this._property = value - 2;
             },
         });
         Legacy.staticMethod = function () {};
@@ -713,7 +714,7 @@ describe('ES6 class inheriting from Lang.Class', function () {
             }
 
             chainUpToMe() {
-                super.chainUpToMe(); 
+                super.chainUpToMe();
             }
             overrideMe() {}
         };

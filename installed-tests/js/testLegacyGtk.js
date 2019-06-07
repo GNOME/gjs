@@ -1,4 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
+/* eslint-disable no-restricted-properties */
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;

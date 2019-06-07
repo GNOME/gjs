@@ -1,4 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
+/* eslint-disable no-restricted-properties */
 imports.gi.versions.Gtk = '3.0';
 
 const Gio = imports.gi.Gio;
@@ -283,11 +284,11 @@ describe('GObject class', function () {
         let stack = [];
         let runLastSpy = jasmine.createSpy('runLastSpy')
             .and.callFake(() => {
-                stack.push(1); 
+                stack.push(1);
             });
         myInstance.connect('run-last', runLastSpy);
         myInstance.emit_run_last(() => {
-            stack.push(2); 
+            stack.push(2);
         });
 
         expect(stack).toEqual([1, 2]);
@@ -494,7 +495,7 @@ describe('GObject interface', function () {
     it('class can implement a Lang.Interface', function () {
         let obj;
         expect(() => {
-            obj = new GObjectImplementingLangInterface(); 
+            obj = new GObjectImplementingLangInterface();
         })
             .not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
@@ -520,7 +521,7 @@ describe('GObject interface', function () {
         });
         let obj;
         expect(() => {
-            obj = new ObjectImplementingLangInterfaceAndCInterface(); 
+            obj = new ObjectImplementingLangInterfaceAndCInterface();
         })
             .not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
@@ -547,7 +548,7 @@ describe('GObject interface', function () {
     it('can be implemented by a GObject class', function () {
         let obj;
         expect(() => {
-            obj = new GObjectImplementingGObjectInterface(); 
+            obj = new GObjectImplementingGObjectInterface();
         })
             .not.toThrow();
         expect(obj.constructor.implements(AGObjectInterface)).toBeTruthy();
@@ -578,7 +579,7 @@ describe('GObject interface', function () {
         });
         let obj;
         expect(() => {
-            obj = new GObjectImplementingBothKindsOfInterface(); 
+            obj = new GObjectImplementingBothKindsOfInterface();
         })
             .not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
@@ -607,7 +608,7 @@ describe('GObject interface', function () {
     it("doesn't have to have its optional function implemented", function () {
         let obj;
         expect(() => {
-            obj = new MinimalImplementationOfAGObjectInterface(); 
+            obj = new MinimalImplementationOfAGObjectInterface();
         })
             .not.toThrow();
         expect(obj.constructor.implements(AGObjectInterface)).toBeTruthy();
@@ -626,7 +627,7 @@ describe('GObject interface', function () {
     it('can require another interface', function () {
         let obj;
         expect(() => {
-            obj = new ImplementationOfTwoInterfaces(); 
+            obj = new ImplementationOfTwoInterfaces();
         }).not.toThrow();
         expect(obj.constructor.implements(AGObjectInterface)).toBeTruthy();
         expect(obj.constructor.implements(InterfaceRequiringGObjectInterface))
@@ -814,17 +815,17 @@ const Legacy = new Lang.Class({
     overrideMe() {},
 
     get property() {
-        return this._property + 1; 
+        return this._property + 1;
     },
     set property(value) {
-        this._property = value - 2; 
+        this._property = value - 2;
     },
 
     get override_property() {
-        return this._override_property + 1; 
+        return this._override_property + 1;
     },
     set override_property(value) {
-        this._override_property = value - 2; 
+        this._override_property = value - 2;
     },
 });
 Legacy.staticMethod = function () {};
@@ -843,10 +844,10 @@ const Shiny = GObject.registerClass({
     overrideMe() {}
 
     get override_property() {
-        return this._override_property + 2; 
+        return this._override_property + 2;
     }
     set override_property(value) {
-        this._override_property = value - 1; 
+        this._override_property = value - 1;
     }
 });
 

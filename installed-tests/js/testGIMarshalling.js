@@ -569,22 +569,22 @@ describe('Callback', function () {
 
 const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
     vfunc_vfunc_return_value_only() {
-        return 42; 
+        return 42;
     }
     vfunc_vfunc_one_out_parameter() {
-        return 43; 
+        return 43;
     }
     vfunc_vfunc_multiple_out_parameters() {
-        return [44, 45]; 
+        return [44, 45];
     }
     vfunc_vfunc_return_value_and_one_out_parameter() {
-        return [46, 47]; 
+        return [46, 47];
     }
     vfunc_vfunc_return_value_and_multiple_out_parameters() {
-        return [48, 49, 50]; 
+        return [48, 49, 50];
     }
     vfunc_vfunc_array_out_parameter() {
-        return [50, 51]; 
+        return [50, 51];
     }
     vfunc_vfunc_meth_with_err(x) {
         switch (x) {
