@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-properties */
 // tests for imports.lang module
 // except for Lang.Class and Lang.Interface, which are tested in testLegacyClass
 
