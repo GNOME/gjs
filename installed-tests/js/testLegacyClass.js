@@ -1,4 +1,5 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
+/* eslint-disable no-restricted-properties */
 
 const Lang = imports.lang;
 
