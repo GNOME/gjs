@@ -9,6 +9,6 @@ db> c
 Debugger statement, <anonymous>([object Array], 0, [object Array]) at backtrace.debugger.js:3:4
 db> where
 #0    <anonymous>([object Array], 0, [object Array]) at backtrace.debugger.js:3:4
-#1    toplevel at backtrace.debugger.js:2:0
+#1    toplevel at backtrace.debugger.js:2:36
 db> q
 Program exited with code 0
