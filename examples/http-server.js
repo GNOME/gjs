@@ -10,8 +10,8 @@ function main() {
     };
     let helloHandler = function(server, msg, path, query) {
         if (!query) {
-	    msg.set_redirect(302, '/');
-	    return;
+            msg.set_redirect(302, '/');
+            return;
         }
 
         msg.status_code = 200;
