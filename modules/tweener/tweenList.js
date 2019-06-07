@@ -35,14 +35,14 @@ http://code.google.com/p/tweener/wiki/License
 */
 
 function TweenList(scope, timeStart, timeComplete,
-                      useFrames, transition, transitionParams) {
+    useFrames, transition, transitionParams) {
     this._init(scope, timeStart, timeComplete, useFrames, transition,
-               transitionParams);
+        transitionParams);
 }
 
 TweenList.prototype = {
     _init: function(scope, timeStart, timeComplete,
-                    userFrames, transition, transitionParams) {
+        userFrames, transition, transitionParams) {
         this.scope = scope;
         this.timeStart = timeStart;
         this.timeComplete = timeComplete;
@@ -63,7 +63,7 @@ TweenList.prototype = {
 
     clone: function(omitEvents) {
         var tween = new TweenList(this.scope, this.timeStart, this.timeComplete, this.userFrames,
-                                  this.transition, this.transitionParams);
+            this.transition, this.transitionParams);
         tween.properties = new Array();
         for (let name in this.properties) {
             tween.properties[name] = this.properties[name];

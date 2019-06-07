@@ -350,7 +350,7 @@ PARAMETER
 function frameCommand(rest) {
     let n, f;
     if (rest.match(/[0-9]+/)) {
-        n = +rest;
+        n = Number(rest);
         f = topFrame;
         if (f === null) {
             print('No stack.');
@@ -696,7 +696,7 @@ function _groupCommands() {
         if ([commentCommand, evalCommand].includes(cmd) ||
             ['#', '!'].includes(cmd))
             continue;
-        
+
         if (typeof cmd === 'string') {
             groups[groups.length - 1]['aliases'].push(cmd);
         } else {

@@ -38,13 +38,13 @@ function run(name) {
 
 function quit(name) {
     if (!_mainLoops[name])
-	throw new Error("No main loop with this id");
+        throw new Error('No main loop with this id');
 
     let loop = _mainLoops[name];
     _mainLoops[name] = null;
 
     if (!loop.is_running())
-	throw new Error("Main loop was stopped already");
+        throw new Error('Main loop was stopped already');
 
     loop.quit();
 }

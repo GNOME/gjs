@@ -26,11 +26,7 @@ getMetaClass, Interface */
 var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
-    let count = 0;
-    for (let property in obj) {
-        count += 1;
-    }
-    return count;
+    return Object.keys(obj).length;
 }
 
 function getPropertyDescriptor(obj, property) {
@@ -73,20 +69,20 @@ function copyPublicProperties(source, dest) {
 function bind(obj, callback) {
     if (typeof(obj) != 'object') {
         throw new Error(
-            "first argument to Lang.bind() must be an object, not " +
-                typeof(obj));
+            `first argument to Lang.bind() must be an object, not ${
+                typeof(obj)}`);
     }
 
     if (typeof(callback) != 'function') {
         throw new Error(
-            "second argument to Lang.bind() must be a function, not " +
-                typeof(callback));
+            `second argument to Lang.bind() must be a function, not ${
+                typeof(callback)}`);
     }
 
     // Use ES5 Function.prototype.bind, but only if not passing any bindArguments,
     // because ES5 has them at the beginning, not at the end
     if (arguments.length == 2)
-	return callback.bind(obj);
+        return callback.bind(obj);
 
     let me = obj;
     let bindArguments = Array.prototype.slice.call(arguments, 2);

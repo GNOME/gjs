@@ -61,7 +61,7 @@ function _findEffectiveEntryPointName() {
 
 function _runningFromSource() {
     let binary = Gio.File.new_for_path(System.programInvocationName);
-    let sourceBinary = Gio.File.new_for_path('./src/' + name);
+    let sourceBinary = Gio.File.new_for_path(`./src/${name}`);
     return binary.equal(sourceBinary);
 }
 
@@ -71,7 +71,7 @@ function _runningFromMesonSource() {
 }
 
 function _makeNamePath(name) {
-    return '/' + name.replace(/\./g, '/');
+    return `/${name.replace(/\./g, '/')}`;
 }
 
 /**
@@ -159,10 +159,10 @@ function init(params) {
         GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([bld, 'src',
-                                                                  name + '.src.gresource']));
+                `${name  }.src.gresource`]));
             resource._register();
-            moduledir = 'resource://' + _makeNamePath(name) + '/js';
-        } catch(e) {
+            moduledir = `resource://${_makeNamePath(name)  }/js`;
+        } catch (e) {
             moduledir = GLib.build_filenamev([src, 'src']);
         }
     } else {
@@ -175,11 +175,11 @@ function init(params) {
 
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
-                                                                   name + '.src.gresource']));
+                `${name  }.src.gresource`]));
             resource._register();
 
-            moduledir = 'resource://' + _makeNamePath(name) + '/js';
-        } catch(e) {
+            moduledir = `resource://${_makeNamePath(name)}/js`;
+        } catch (e) {
             moduledir = pkgdatadir;
         }
     }
@@ -190,9 +190,9 @@ function init(params) {
 
     try {
         let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
-                                                               name + '.data.gresource']));
+            `${name  }.data.gresource`]));
         resource._register();
-    } catch(e) { }
+    } catch (e) { }
 }
 
 /**
@@ -281,7 +281,7 @@ function checkSymbol(lib, version, symbol) {
 
     try {
         Lib = imports.gi[lib];
-    } catch(e) {
+    } catch (e) {
         return false;
     }
 
@@ -319,7 +319,9 @@ function initGettext() {
     let gettext = imports.gettext;
     window._ = gettext.gettext;
     window.C_ = gettext.pgettext;
-    window.N_ = function(x) { return x; }
+    window.N_ = function(x) {
+        return x;
+    };
 }
 
 function initFormat() {

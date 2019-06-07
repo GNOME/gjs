@@ -20,7 +20,7 @@ _Base.prototype._construct = function() {
 };
 _Base.prototype.__name__ = '_Base';
 _Base.prototype.toString = function() {
-    return '[object ' + this.__name__ + ']';
+    return `[object ${this.__name__}]`;
 };
 
 function _parent() {
@@ -34,7 +34,7 @@ function _parent() {
     let previous = parent ? parent.prototype[name] : undefined;
 
     if (!previous)
-        throw new TypeError("The method '" + name + "' is not on the superclass");
+        throw new TypeError(`The method '${name}' is not on the superclass`);
 
     return previous.apply(this, arguments);
 }
@@ -74,7 +74,8 @@ Class.prototype.constructor = Class;
 Class.prototype.__name__ = 'Class';
 
 Class.prototype.wrapFunction = function(name, meth) {
-    if (meth._origin) meth = meth._origin;
+    if (meth._origin)
+        meth = meth._origin;
 
     function wrapper() {
         let prevCaller = this.__caller__;
@@ -92,7 +93,7 @@ Class.prototype.wrapFunction = function(name, meth) {
 };
 
 Class.prototype.toString = function() {
-    return '[object ' + this.__name__ + ' for ' + this.prototype.__name__ + ']';
+    return `[object ${this.__name__} for ${this.prototype.__name__}]`;
 };
 
 Class.prototype._construct = function(params) {
@@ -107,7 +108,7 @@ Class.prototype._construct = function(params) {
 
     let newClass = function() {
         if (params.Abstract && new.target.name === name)
-            throw new TypeError('Cannot instantiate abstract class ' + name);
+            throw new TypeError(`Cannot instantiate abstract class ${name}`);
 
         this.__caller__ = null;
 
@@ -347,8 +348,8 @@ Interface.prototype._check = function (proto) {
         // is just so that we print something if there is garbage in Requires.
         required.prototype.__name__ || required.name || required);
     if (unfulfilledReqs.length > 0) {
-        throw new Error('The following interfaces must be implemented before ' +
-            this.prototype.__name__ + ': ' + unfulfilledReqs.join(', '));
+        throw new Error(`The following interfaces must be implemented before ${
+            this.prototype.__name__}: ${unfulfilledReqs.join(', ')}`);
     }
 
     // Check that this interface's required methods are implemented
@@ -356,12 +357,12 @@ Interface.prototype._check = function (proto) {
     .filter((p) => this.prototype[p] === Interface.UNIMPLEMENTED)
     .filter((p) => !(p in proto) || proto[p] === Interface.UNIMPLEMENTED);
     if (unimplementedFns.length > 0)
-        throw new Error('The following members of ' + this.prototype.__name__ +
-            ' are not implemented yet: ' + unimplementedFns.join(', '));
+        throw new Error(`The following members of ${this.prototype.__name__
+        } are not implemented yet: ${unimplementedFns.join(', ')}`);
 };
 
 Interface.prototype.toString = function () {
-    return '[interface ' + this.__name__ + ' for ' + this.prototype.__name__ + ']';
+    return `[interface ${this.__name__} for ${this.prototype.__name__}]`;
 };
 
 Interface.prototype._init = function (params) {
@@ -425,7 +426,7 @@ function defineGObjectLegacyObjects(GObject) {
             try {
                 obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);
             } catch (e) {
-                throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
+                throw new TypeError(`Invalid signal ${signalName}: ${e.message}`);
             }
         }
     }
@@ -434,7 +435,7 @@ function defineGObjectLegacyObjects(GObject) {
         if (params.GTypeName)
             return params.GTypeName;
         else
-            return 'Gjs_' + params.Name.replace(/[^a-z0-9_+-]/gi, '_');
+            return `Gjs_${params.Name.replace(/[^a-z0-9_+-]/gi, '_')}`;
     }
 
     function _getGObjectInterfaces(interfaces) {
@@ -520,7 +521,7 @@ function defineGObjectLegacyObjects(GObject) {
             let parent = params.Extends;
 
             if (!this._isValidClass(parent))
-                throw new TypeError('GObject.Class used with invalid base class (is ' + parent + ')');
+                throw new TypeError(`GObject.Class used with invalid base class (is ${parent})`);
 
             let interfaces = params.Implements || [];
             if (parent instanceof Class)

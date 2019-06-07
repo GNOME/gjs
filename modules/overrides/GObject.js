@@ -105,7 +105,7 @@ function _createSignals(gtype, signals) {
         try {
             obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);
         } catch (e) {
-            throw new TypeError('Invalid signal ' + signalName + ': ' + e.message);
+            throw new TypeError(`Invalid signal ${signalName}: ${e.message}`);
         }
     }
 }
@@ -179,8 +179,10 @@ function _init() {
 
     function _makeDummyClass(obj, name, upperName, gtypeName, actual) {
         let gtype = GObject.type_from_name(gtypeName);
-        obj['TYPE_' + upperName] = gtype;
-        obj[name] = function(v) { return new actual(v); };
+        obj[`TYPE_${upperName}`] = gtype;
+        obj[name] = function(v) {
+            return new actual(v);
+        };
         obj[name].$gtype = gtype;
     }
 
@@ -292,33 +294,51 @@ function _init() {
     GObject.ParamSpec.override = Gi.override_property;
 
     Object.defineProperties(GObject.ParamSpec.prototype, {
-        'name': { configurable: false,
-                  enumerable: false,
-                  get: function() { return this.get_name() } },
-        '_nick': { configurable: false,
-                   enumerable: false,
-                   get: function() { return this.get_nick() } },
-        'nick': { configurable: false,
-                  enumerable: false,
-                  get: function() { return this.get_nick() } },
-        '_blurb': { configurable: false,
-                    enumerable: false,
-                    get: function() { return this.get_blurb() } },
-        'blurb': { configurable: false,
-                   enumerable: false,
-                   get: function() { return this.get_blurb() } },
-        'default_value': { configurable: false,
-                           enumerable: false,
-                           get: function() { return this.get_default_value() } },
-        'flags':  { configurable: false,
-                    enumerable: false,
-                    get: function() { return GjsPrivate.param_spec_get_flags(this) } },
-        'value_type':  { configurable: false,
-                         enumerable: false,
-                         get: function() { return GjsPrivate.param_spec_get_value_type(this) } },
-        'owner_type':  { configurable: false,
-                         enumerable: false,
-                         get: function() { return GjsPrivate.param_spec_get_owner_type(this) } },
+        'name': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return this.get_name();
+            }},
+        '_nick': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return this.get_nick();
+            }},
+        'nick': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return this.get_nick();
+            }},
+        '_blurb': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return this.get_blurb();
+            }},
+        'blurb': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return this.get_blurb();
+            }},
+        'default_value': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return this.get_default_value();
+            }},
+        'flags': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return GjsPrivate.param_spec_get_flags(this);
+            }},
+        'value_type': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return GjsPrivate.param_spec_get_value_type(this);
+            }},
+        'owner_type': {configurable: false,
+            enumerable: false,
+            get: function() {
+                return GjsPrivate.param_spec_get_owner_type(this);
+            }},
     });
 
     let {GObjectMeta, GObjectInterface} = Legacy.defineGObjectLegacyObjects(GObject);
@@ -438,7 +458,9 @@ function _init() {
      * implementation of the interface.
      */
     GObject.NotImplementedError = class NotImplementedError extends Error {
-        get name() { return 'NotImplementedError'; }
+        get name() {
+            return 'NotImplementedError';
+        }
     };
 
     // These will be copied in the Gtk overrides

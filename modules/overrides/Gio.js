@@ -20,7 +20,6 @@
 
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
-var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
 
@@ -89,8 +88,8 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var maxNumberArgs = signatureLength + 4;
 
     if (arg_array.length < minNumberArgs) {
-        throw new Error("Not enough arguments passed for method: " + methodName +
-                       ". Expected " + minNumberArgs + ", got " + arg_array.length);
+        throw new Error(`Not enough arguments passed for method: ${methodName
+        }. Expected ${minNumberArgs}, got ${arg_array.length}`);
     } else if (arg_array.length > maxNumberArgs) {
         throw new Error(`Too many arguments passed for method ${methodName}. ` +
             `Maximum is ${maxNumberArgs} including one callback, ` +
@@ -100,9 +99,9 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     while (arg_array.length > signatureLength) {
         var argNum = arg_array.length - 1;
         var arg = arg_array.pop();
-        if (typeof(arg) == "function" && !sync) {
+        if (typeof(arg) == 'function' && !sync) {
             replyFunc = arg;
-        } else if (typeof(arg) == "number") {
+        } else if (typeof(arg) == 'number') {
             flags = arg;
         } else if (arg instanceof Gio.Cancellable) {
             cancellable = arg;
@@ -124,7 +123,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
         _validateFDVariant(inVariant, fdList);
     }
 
-    var asyncCallback = function (proxy, result) {
+    var asyncCallback = (proxy, result) => {
         try {
             const [outVariant, outFdList] =
                 proxy.call_with_unix_fd_list_finish(result);
@@ -148,7 +147,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 
 function _logReply(result, exc) {
     if (exc != null) {
-        log("Ignored exception from dbus method: " + exc.toString());
+        log(`Ignored exception from dbus method: ${exc.toString()}`);
     }
 }
 
@@ -156,7 +155,7 @@ function _makeProxyMethod(method, sync) {
     var i;
     var name = method.name;
     var inArgs = method.in_args;
-    var inSignature = [ ];
+    var inSignature = [];
     for (i = 0; i < inArgs.length; i++)
         inSignature.push(inArgs[i].signature);
 
@@ -179,18 +178,18 @@ function _propertySetter(value, name, signature) {
     this.set_cached_property(name, variant);
 
     this.call('org.freedesktop.DBus.Properties.Set',
-              new GLib.Variant('(ssv)',
-                               [this.g_interface_name,
-                                name, variant]),
-              Gio.DBusCallFlags.NONE, -1, null,
-              Lang.bind(this, function(proxy, result) {
-                  try {
-                      this.call_finish(result);
-                  } catch(e) {
-                      log('Could not set property ' + name + ' on remote object ' +
-                          this.g_object_path + ': ' + e.message);
-                  }
-              }));
+        new GLib.Variant('(ssv)',
+            [this.g_interface_name,
+                name, variant]),
+        Gio.DBusCallFlags.NONE, -1, null,
+        (proxy, result) => {
+            try {
+                this.call_finish(result);
+            } catch (e) {
+                log(`Could not set property ${name} on remote object ${
+                    this.g_object_path  }: ${e.message}`);
+            }
+        });
 }
 
 function _addDBusConvenience() {
@@ -204,18 +203,19 @@ function _addDBusConvenience() {
     let i, methods = info.methods;
     for (i = 0; i < methods.length; i++) {
         var method = methods[i];
-        this[method.name + 'Remote'] = _makeProxyMethod(methods[i], false);
-        this[method.name + 'Sync'] = _makeProxyMethod(methods[i], true);
+        this[`${method.name  }Remote`] = _makeProxyMethod(methods[i], false);
+        this[`${method.name  }Sync`] = _makeProxyMethod(methods[i], true);
     }
 
     let properties = info.properties;
     for (i = 0; i < properties.length; i++) {
         let name = properties[i].name;
         let signature = properties[i].signature;
-        Object.defineProperty(this, name, { get: Lang.bind(this, _propertyGetter, name),
-                                            set: Lang.bind(this, _propertySetter, name, signature),
-                                            configurable: true,
-                                            enumerable: true });
+        Object.defineProperty(this, name, {
+            get: _propertyGetter.bind(this, name),
+            set: _propertySetter.bind(this, name, signature),
+            configurable: true,
+            enumerable: true});
     }
 }
 
@@ -223,19 +223,19 @@ function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
     return function(bus, name, object, asyncCallback, cancellable) {
-        var obj = new Gio.DBusProxy({ g_connection: bus,
-                                      g_interface_name: iname,
-                                      g_interface_info: info,
-                                      g_name: name,
-                                      g_object_path: object });
+        var obj = new Gio.DBusProxy({g_connection: bus,
+            g_interface_name: iname,
+            g_interface_info: info,
+            g_name: name,
+            g_object_path: object});
         if (!cancellable)
             cancellable = null;
         if (asyncCallback)
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, function(initable, result) {
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (initable, result) => {
                 let caughtErrorWhenInitting = null;
                 try {
                     initable.init_finish(result);
-                } catch(e) {
+                } catch (e) {
                     caughtErrorWhenInitting = e;
                 }
 
@@ -297,7 +297,7 @@ function _makeOutSignature(args) {
     for (var i = 0; i < args.length; i++)
         ret += args[i].signature;
 
-    return ret + ')';
+    return `${ret  })`;
 }
 
 function _handleMethodCall(info, impl, method_name, parameters, invocation) {
@@ -314,9 +314,9 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                 let name = e.name;
                 if (name.indexOf('.') == -1) {
                     // likely to be a normal JS error
-                    name = 'org.gnome.gjs.JSError.' + name;
+                    name = `org.gnome.gjs.JSError.${name}`;
                 }
-                logError(e, "Exception in method call: " + method_name);
+                logError(e, `Exception in method call: ${method_name}`);
                 invocation.return_dbus_error(name, e.message);
             }
             return;
@@ -343,18 +343,18 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                 retval = new GLib.Variant(outSignature, retval);
             }
             invocation.return_value_with_unix_fd_list(retval, outFdList);
-        } catch(e) {
+        } catch (e) {
             // if we don't do this, the other side will never see a reply
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
-                                         "Service implementation returned an incorrect value type");
+                'Service implementation returned an incorrect value type');
         }
-    } else if (this[method_name + 'Async']) {
+    } else if (this[`${method_name  }Async`]) {
         const fdList = invocation.get_message().get_unix_fd_list();
         this[`${method_name}Async`](parameters.deep_unpack(), invocation, fdList);
     } else {
-        log('Missing handler for DBus method ' + method_name);
-        invocation.return_gerror(new Gio.DBusError({ code: Gio.DBusError.UNKNOWN_METHOD,
-                                                     message: 'Method ' + method_name + ' is not implemented' }));
+        log(`Missing handler for DBus method ${method_name}`);
+        invocation.return_gerror(new Gio.DBusError({code: Gio.DBusError.UNKNOWN_METHOD,
+            message: `Method ${method_name} is not implemented`}));
     }
 }
 
@@ -379,7 +379,7 @@ function _wrapJSObject(interfaceInfo, jsObj) {
         info = Gio.DBusInterfaceInfo.new_for_xml(interfaceInfo);
     info.cache_build();
 
-    var impl = new GjsPrivate.DBusImplementation({ g_interface_info: info });
+    var impl = new GjsPrivate.DBusImplementation({g_interface_info: info});
     impl.connect('handle-method-call', function(impl, method_name, parameters, invocation) {
         return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation);
     });
@@ -404,7 +404,7 @@ function* _listModelIterator() {
 function _promisify(proto, asyncFunc, finishFunc) {
     proto[`_original_${asyncFunc}`] = proto[asyncFunc];
     proto[asyncFunc] = function(...args) {
-        if (!args.every(arg => typeof arg !== 'function')) 
+        if (!args.every(arg => typeof arg !== 'function'))
             return this[`_original_${asyncFunc}`](...args);
         return new Promise((resolve, reject) => {
             const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
@@ -415,9 +415,9 @@ function _promisify(proto, asyncFunc, finishFunc) {
                         result.shift();
                     resolve(result);
                 } catch (error) {
-                    if (error.stack) 
+                    if (error.stack)
                         error.stack += `### Promise created here: ###\n${callStack}`;
-                    else 
+                    else
                         error.stack = callStack;
                     reject(error);
                 }
@@ -438,17 +438,17 @@ function _init() {
         },
 
         // Namespace some functions
-        get:        Gio.bus_get,
+        get: Gio.bus_get,
         get_finish: Gio.bus_get_finish,
-        get_sync:   Gio.bus_get_sync,
+        get_sync: Gio.bus_get_sync,
 
-        own_name:               Gio.bus_own_name,
+        own_name: Gio.bus_own_name,
         own_name_on_connection: Gio.bus_own_name_on_connection,
-        unown_name:             Gio.bus_unown_name,
+        unown_name: Gio.bus_unown_name,
 
-        watch_name:               Gio.bus_watch_name,
+        watch_name: Gio.bus_watch_name,
         watch_name_on_connection: Gio.bus_watch_name_on_connection,
-        unwatch_name:             Gio.bus_unwatch_name
+        unwatch_name: Gio.bus_unwatch_name
     };
 
     Gio.DBusConnection.prototype.watch_name = function(name, flags, appeared, vanished) {
