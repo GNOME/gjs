@@ -20,7 +20,7 @@ describe('Access to destroyed GObject', () => {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
 
-        let title = destroyedWindow.title;
+        expect(destroyedWindow.title).toThrow();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectPropertyGet');
@@ -40,7 +40,7 @@ describe('Access to destroyed GObject', () => {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
 
-        let title = destroyedWindow.get_title();
+        destroyedWindow.get_title();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodGet');

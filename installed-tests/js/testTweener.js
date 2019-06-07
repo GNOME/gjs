@@ -6,10 +6,10 @@ function installFrameTicker() {
     let ticker = {
         FRAME_RATE: 50,
 
-        _init : function() {
+        _init: function() {
         },
 
-        start : function() {
+        start: function() {
             this._currentTime = 0;
 
             this._timeoutID = setInterval(() => {
@@ -18,7 +18,7 @@ function installFrameTicker() {
             }, Math.floor(1000 / this.FRAME_RATE));
         },
 
-        stop : function() {
+        stop: function() {
             if ('_timeoutID' in this) {
                 clearInterval(this._timeoutID);
                 delete this._timeoutID;
@@ -27,7 +27,7 @@ function installFrameTicker() {
             this._currentTime = 0;
         },
 
-        getTime : function() {
+        getTime: function() {
             return this._currentTime;
         }
     };
@@ -65,8 +65,8 @@ describe('Tweener', function () {
             y: 0
         };
 
-        Tweener.addTween(objectA, { x: 10, y: 10, time: 1, transition: "linear" });
-        Tweener.addTween(objectB, { x: 10, y: 10, time: 1, delay: 0.5, transition: "linear" });
+        Tweener.addTween(objectA, {x: 10, y: 10, time: 1, transition: 'linear'});
+        Tweener.addTween(objectB, {x: 10, y: 10, time: 1, delay: 0.5, transition: 'linear'});
 
         jasmine.clock().tick(1001);
 
@@ -103,16 +103,16 @@ describe('Tweener', function () {
             baaz: 0
         };
 
-        Tweener.addTween(objectA, { foo: 100, time: 0.1 });
-        Tweener.addTween(objectC, { baaz: 100, time: 0.1 });
-        Tweener.addTween(objectB, { bar: 100, time: 0.1 });
+        Tweener.addTween(objectA, {foo: 100, time: 0.1});
+        Tweener.addTween(objectC, {baaz: 100, time: 0.1});
+        Tweener.addTween(objectB, {bar: 100, time: 0.1});
 
         Tweener.pauseTweens(objectA);
         // This should do nothing
         expect(Tweener.pauseTweens(objectB, 'quux')).toBeFalsy();
         /* Pause and resume should be equal to doing nothing */
-        Tweener.pauseTweens(objectC, "baaz");
-        Tweener.resumeTweens(objectC, "baaz");
+        Tweener.pauseTweens(objectC, 'baaz');
+        Tweener.resumeTweens(objectC, 'baaz');
 
         jasmine.clock().tick(101);
 
@@ -128,12 +128,12 @@ describe('Tweener', function () {
             baaz: 0
         };
 
-        Tweener.addTween(object, { foo: 50, time: 0.1 });
-        Tweener.addTween(object, { bar: 50, time: 0.1 });
-        Tweener.addTween(object, { baaz: 50, time: 0.1});
+        Tweener.addTween(object, {foo: 50, time: 0.1});
+        Tweener.addTween(object, {bar: 50, time: 0.1});
+        Tweener.addTween(object, {baaz: 50, time: 0.1});
 
         /* The Tween on property foo should still be run after removing the other two */
-        Tweener.removeTweens(object, "bar", "baaz");
+        Tweener.removeTweens(object, 'bar', 'baaz');
 
         jasmine.clock().tick(101);
 
@@ -147,8 +147,8 @@ describe('Tweener', function () {
             foo: 0
         };
 
-        Tweener.addTween(objectA, { foo: 100, time: 0.1 });
-        Tweener.addTween(objectA, { foo: 0, time: 0.1 });
+        Tweener.addTween(objectA, {foo: 100, time: 0.1});
+        Tweener.addTween(objectA, {foo: 0, time: 0.1});
 
         jasmine.clock().tick(101);
 
@@ -163,8 +163,8 @@ describe('Tweener', function () {
         /* In this case both tweens should be executed, as they don't
          * act on the object at the same time (the second one has a
          * delay equal to the running time of the first one) */
-        Tweener.addTween(objectB, { bar: 100, time: 0.1 });
-        Tweener.addTween(objectB, { bar: 150, time: 0.1, delay: 0.1 });
+        Tweener.addTween(objectB, {bar: 100, time: 0.1});
+        Tweener.addTween(objectB, {bar: 150, time: 0.1, delay: 0.1});
 
         jasmine.clock(0).tick(201);
 
@@ -179,8 +179,8 @@ describe('Tweener', function () {
             bar: 0
         };
 
-        Tweener.addTween(objectA, { foo: 100, time: 0.1 });
-        Tweener.addTween(objectB, { bar: 100, time: 0.1 });
+        Tweener.addTween(objectA, {foo: 100, time: 0.1});
+        Tweener.addTween(objectB, {bar: 100, time: 0.1});
 
         Tweener.pauseAllTweens();
 
@@ -202,8 +202,8 @@ describe('Tweener', function () {
             bar: 0
         };
 
-        Tweener.addTween(objectA, { foo: 100, time: 0.1 });
-        Tweener.addTween(objectB, { bar: 100, time: 0.1 });
+        Tweener.addTween(objectA, {foo: 100, time: 0.1});
+        Tweener.addTween(objectB, {bar: 100, time: 0.1});
 
         Tweener.removeAllTweens();
 
@@ -218,13 +218,12 @@ describe('Tweener', function () {
             foo: 100
         };
 
-        Tweener.addTween(object, { foo: 50, time: 0, delay: 0 });
-        Tweener.addTween(object, { foo: 200, time: 0.1,
+        Tweener.addTween(object, {foo: 50, time: 0, delay: 0});
+        Tweener.addTween(object, {foo: 200, time: 0.1,
             onStart: () => {
                 /* The immediate tween should set it to 50 before we run */
                 expect(object.foo).toEqual(50);
-            },
-        });
+            }});
 
         jasmine.clock().tick(101);
 
@@ -237,7 +236,9 @@ describe('Tweener', function () {
         };
 
         Tweener.addCaller(object, {
-            onUpdate: () => { object.foo += 1; },
+            onUpdate: () => {
+                object.foo += 1; 
+            },
             count: 10,
             time: 0.1,
         });
@@ -257,13 +258,13 @@ describe('Tweener', function () {
 
         expect(Tweener.getTweenCount(object)).toEqual(0);
 
-        Tweener.addTween(object, { foo: 100, time: 0.1 });
+        Tweener.addTween(object, {foo: 100, time: 0.1});
         expect(Tweener.getTweenCount(object)).toEqual(1);
-        Tweener.addTween(object, { bar: 100, time: 0.1 });
+        Tweener.addTween(object, {bar: 100, time: 0.1});
         expect(Tweener.getTweenCount(object)).toEqual(2);
-        Tweener.addTween(object, { baaz: 100, time: 0.1 });
+        Tweener.addTween(object, {baaz: 100, time: 0.1});
         expect(Tweener.getTweenCount(object)).toEqual(3);
-        Tweener.addTween(object, { quux: 100, time: 0.1 });
+        Tweener.addTween(object, {quux: 100, time: 0.1});
         expect(Tweener.getTweenCount(object)).toEqual(4);
 
         Tweener.removeTweens(object, 'bar', 'baaz');
@@ -273,8 +274,12 @@ describe('Tweener', function () {
     it('can register special properties', function () {
         Tweener.registerSpecialProperty(
             'negative_x',
-            function(obj) { return -obj.x; },
-            function(obj, val) { obj.x = -val; }
+            function(obj) {
+                return -obj.x; 
+            },
+            function(obj, val) {
+                obj.x = -val; 
+            }
         );
 
         var objectA = {
@@ -282,7 +287,7 @@ describe('Tweener', function () {
             y: 0
         };
 
-        Tweener.addTween(objectA, { negative_x: 10, y: 10, time: 1, transition: "linear" });
+        Tweener.addTween(objectA, {negative_x: 10, y: 10, time: 1, transition: 'linear'});
 
         jasmine.clock().tick(1001);
 
@@ -292,12 +297,14 @@ describe('Tweener', function () {
 
     it('can register special modifiers for properties', function () {
         Tweener.registerSpecialPropertyModifier('discrete',
-                                                discrete_modifier,
-                                                discrete_get);
+            discrete_modifier,
+            discrete_get);
         function discrete_modifier(props) {
-            return props.map(function (prop) { return { name: prop, parameters: null }; });
+            return props.map(function (prop) {
+                return {name: prop, parameters: null};
+            });
         }
-        function discrete_get(begin, end, time, params) {
+        function discrete_get(begin, end, time) {
             return Math.floor(begin + time * (end - begin));
         }
 
@@ -308,16 +315,15 @@ describe('Tweener', function () {
             yFraction: false
         };
 
-        Tweener.addTween(objectA, { x: 10, y: 10, time: 1,
-            discrete: ["x"],
-            transition: "linear",
+        Tweener.addTween(objectA, {x: 10, y: 10, time: 1,
+            discrete: ['x'],
+            transition: 'linear',
             onUpdate: function() {
                 if (objectA.x != Math.floor(objectA.x))
                     objectA.xFraction = true;
                 if (objectA.y != Math.floor(objectA.y))
                     objectA.yFraction = true;
-            },
-        });
+            }});
 
         jasmine.clock().tick(1001);
 
@@ -330,8 +336,10 @@ describe('Tweener', function () {
     it('can split properties into more than one special property', function () {
         Tweener.registerSpecialPropertySplitter(
             'xnegy',
-            function(val) { return [ { name: "x", value: val },
-                                     { name: "y", value: -val } ]; }
+            function(val) {
+                return [{name: 'x', value: val},
+                    {name: 'y', value: -val}]; 
+            }
         );
 
         var objectA = {
@@ -339,7 +347,7 @@ describe('Tweener', function () {
             y: 0
         };
 
-        Tweener.addTween(objectA, { xnegy: 10, time: 1, transition: "linear" });
+        Tweener.addTween(objectA, {xnegy: 10, time: 1, transition: 'linear'});
 
         jasmine.clock().tick(1001);
 
@@ -355,16 +363,14 @@ describe('Tweener', function () {
             d: 0
         };
 
-        var tweenA = { a: 10, b: 10, c: 10, d: 10, time: 0.1,
+        var tweenA = {a: 10, b: 10, c: 10, d: 10, time: 0.1,
             onStart: start,
             onOverwrite: overwrite,
-            onComplete: complete,
-        };
-        var tweenB = { a: 20, b: 20, c: 20, d: 20, time: 0.1,
+            onComplete: complete};
+        var tweenB = {a: 20, b: 20, c: 20, d: 20, time: 0.1,
             onStart: start,
             onOverwrite: overwrite,
-            onComplete: complete,
-        };
+            onComplete: complete};
 
         Tweener.addTween(object, tweenA);
         Tweener.addTween(object, tweenB);
@@ -384,19 +390,17 @@ describe('Tweener', function () {
             d: 0
         };
 
-        var tweenA = { a: 10, b: 10, c: 10, d: 10, time: 0.1,
+        var tweenA = {a: 10, b: 10, c: 10, d: 10, time: 0.1,
             onStart: () => {
                 start();
                 Tweener.addTween(object, tweenB);
             },
             onOverwrite: overwrite,
-            onComplete: complete,
-        };
-        var tweenB = { a: 20, b: 20, c: 20, d: 20, time: 0.1,
+            onComplete: complete};
+        var tweenB = {a: 20, b: 20, c: 20, d: 20, time: 0.1,
             onStart: start,
             onOverwrite: overwrite,
-            onComplete: complete,
-        };
+            onComplete: complete};
 
         Tweener.addTween(object, tweenA);
 
@@ -418,8 +422,8 @@ describe('Tweener', function () {
             y: 0
         };
 
-        Tweener.addTween(objectA, { x: 300, y: 300, time: 1, max: 255, transition: "linear" });
-        Tweener.addTween(objectB, { x: -200, y: -200, time: 1, delay: 0.5, min: 0, transition: "linear" });
+        Tweener.addTween(objectA, {x: 300, y: 300, time: 1, max: 255, transition: 'linear'});
+        Tweener.addTween(objectB, {x: -200, y: -200, time: 1, delay: 0.5, min: 0, transition: 'linear'});
 
         jasmine.clock().tick(1001);
 

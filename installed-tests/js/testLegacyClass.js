@@ -96,8 +96,8 @@ describe('A metaclass', function () {
         });
 
         it('gets all the properties from its class and metaclass', function () {
-            expect(instanceOne).toEqual(jasmine.objectContaining({ one: 1, two: 2 }));
-            expect(instanceTwo).toEqual(jasmine.objectContaining({ one: 1, two: 2 }));
+            expect(instanceOne).toEqual(jasmine.objectContaining({one: 1, two: 2}));
+            expect(instanceTwo).toEqual(jasmine.objectContaining({one: 1, two: 2}));
         });
 
         it('gets dynamically defined properties from metaclass', function () {
@@ -111,7 +111,7 @@ describe('A metaclass', function () {
         expect(CustomMetaSubclass.DYNAMIC_CONSTANT).toEqual(2);
 
         let instance = new CustomMetaSubclass();
-        expect(instance).toEqual(jasmine.objectContaining({ one: 1, two: 2, three: 3 }));
+        expect(instance).toEqual(jasmine.objectContaining({one: 1, two: 2, three: 3}));
         expect(instance.dynamic_method()).toEqual(73);
     });
 
@@ -126,7 +126,8 @@ const MagicBase = new Lang.Class({
     Name: 'MagicBase',
 
     _init: function(a, buffer) {
-        if (buffer) buffer.push(a);
+        if (buffer) 
+            buffer.push(a);
         this.a = a;
     },
 
@@ -147,7 +148,8 @@ const Magic = new Lang.Class({
 
     _init: function(a, b, buffer) {
         this.parent(a, buffer);
-        if (buffer) buffer.push(b);
+        if (buffer) 
+            buffer.push(b);
         this.b = b;
     },
 
@@ -158,7 +160,7 @@ const Magic = new Lang.Class({
     },
 
     bar: function(a, buffer) {
-        this.foo(a, 2*a, buffer);
+        this.foo(a, 2 * a, buffer);
         return this.parent(a);
     }
 });
@@ -237,7 +239,7 @@ describe('Class framework', function () {
 
             toString: function() {
                 let oldToString = this.parent();
-                return oldToString + '; hello';
+                return `${oldToString  }; hello`;
             }
         });
 
@@ -293,7 +295,7 @@ describe('Class framework', function () {
     });
 
     it('allows ES6 classes to inherit from abstract base classes', function() {
-        class AbstractImpl extends AbstractBase {};
+        class AbstractImpl extends AbstractBase {}
 
         let newAbstract = new AbstractImpl();
         expect(newAbstract.foo).toEqual(42);
@@ -350,7 +352,7 @@ const AnInterface = new Lang.Interface({
     },
 
     argumentGeneric: function (arg) {
-        return 'AnInterface.argumentGeneric(' + arg + ')';
+        return `AnInterface.argumentGeneric(${arg})`;
     },
 
     usesThis: function () {
@@ -372,22 +374,22 @@ const AnInterface = new Lang.Interface({
 
 const InterfaceRequiringOtherInterface = new Lang.Interface({
     Name: 'InterfaceRequiringOtherInterface',
-    Requires: [ AnInterface ],
+    Requires: [AnInterface],
 
     optional: function () {
-        return 'InterfaceRequiringOtherInterface.optional()\n' +
-            AnInterface.prototype.optional.apply(this, arguments);
+        return `InterfaceRequiringOtherInterface.optional()
+${AnInterface.prototype.optional.apply(this, arguments)}`;
     },
 
     optionalGeneric: function () {
-        return 'InterfaceRequiringOtherInterface.optionalGeneric()\n' +
-            AnInterface.optionalGeneric(this);
+        return `InterfaceRequiringOtherInterface.optionalGeneric()
+${AnInterface.optionalGeneric(this)}`;
     }
 });
 
 const ObjectImplementingAnInterface = new Lang.Class({
     Name: 'ObjectImplementingAnInterface',
-    Implements: [ AnInterface ],
+    Implements: [AnInterface],
 
     _init: function () {
         this.parent();
@@ -404,25 +406,25 @@ const ObjectImplementingAnInterface = new Lang.Class({
     },
 
     argumentGeneric: function (arg) {
-        return AnInterface.argumentGeneric(this, arg + ' (hello from class)');
+        return AnInterface.argumentGeneric(this, `${arg  } (hello from class)`);
     }
 });
 
 const InterfaceRequiringClassAndInterface = new Lang.Interface({
     Name: 'InterfaceRequiringClassAndInterface',
-    Requires: [ ObjectImplementingAnInterface, InterfaceRequiringOtherInterface ],
+    Requires: [ObjectImplementingAnInterface, InterfaceRequiringOtherInterface],
 });
 
 const MinimalImplementationOfAnInterface = new Lang.Class({
     Name: 'MinimalImplementationOfAnInterface',
-    Implements: [ AnInterface ],
+    Implements: [AnInterface],
 
     required: function () {}
 });
 
 const ImplementationOfTwoInterfaces = new Lang.Class({
     Name: 'ImplementationOfTwoInterfaces',
-    Implements: [ AnInterface, InterfaceRequiringOtherInterface ],
+    Implements: [AnInterface, InterfaceRequiringOtherInterface],
 
     required: function () {},
 
@@ -451,7 +453,9 @@ describe('An interface', function () {
 
     it('can be implemented by a class', function () {
         let obj;
-        expect(() => { obj = new ObjectImplementingAnInterface(); }).not.toThrow();
+        expect(() => {
+            obj = new ObjectImplementingAnInterface(); 
+        }).not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
     });
 
@@ -523,7 +527,7 @@ describe('An interface', function () {
     it('can have its property getter overridden', function () {
         const ObjectWithGetter = new Lang.Class({
             Name: 'ObjectWithGetter',
-            Implements: [ AnInterface ],
+            Implements: [AnInterface],
             required: function () {},
             get some_prop() {
                 return 'ObjectWithGetter.some_prop getter';
@@ -536,7 +540,7 @@ describe('An interface', function () {
     it('can have its property setter overridden', function () {
         const ObjectWithSetter = new Lang.Class({
             Name: 'ObjectWithSetter',
-            Implements: [ AnInterface ],
+            Implements: [AnInterface],
             required: function () {},
             set some_prop(value) {  /* setter without getter */// jshint ignore:line
                 this.overridden_some_prop_setter_called = true;
@@ -550,7 +554,9 @@ describe('An interface', function () {
 
     it('can require another interface', function () {
         let obj;
-        expect(() => { obj = new ImplementationOfTwoInterfaces(); }).not.toThrow();
+        expect(() => {
+            obj = new ImplementationOfTwoInterfaces(); 
+        }).not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
         expect(obj.constructor.implements(InterfaceRequiringOtherInterface)).toBeTruthy();
     });
@@ -582,7 +588,7 @@ describe('An interface', function () {
     it('has its optional function defer to that of the last interface', function () {
         const MinimalImplementationOfTwoInterfaces = new Lang.Class({
             Name: 'MinimalImplementationOfTwoInterfaces',
-            Implements: [ AnInterface, InterfaceRequiringOtherInterface ],
+            Implements: [AnInterface, InterfaceRequiringOtherInterface],
 
             required: function () {}
         });
@@ -594,7 +600,7 @@ describe('An interface', function () {
     it('must have all its required interfaces implemented', function () {
         expect(() => new Lang.Class({
             Name: 'ObjectWithNotEnoughInterfaces',
-            Implements: [ InterfaceRequiringOtherInterface ],
+            Implements: [InterfaceRequiringOtherInterface],
             required: function () {}
         })).toThrow();
     });
@@ -602,7 +608,7 @@ describe('An interface', function () {
     it('must have all its required interfaces implemented in the correct order', function () {
         expect(() => new Lang.Class({
             Name: 'ObjectWithInterfacesInWrongOrder',
-            Implements: [ InterfaceRequiringOtherInterface, AnInterface ],
+            Implements: [InterfaceRequiringOtherInterface, AnInterface],
             required: function () {}
         })).toThrow();
     });
@@ -613,7 +619,7 @@ describe('An interface', function () {
             const ObjectInheritingFromInterfaceImplementation = new Lang.Class({
                 Name: 'ObjectInheritingFromInterfaceImplementation',
                 Extends: ObjectImplementingAnInterface,
-                Implements: [ InterfaceRequiringOtherInterface ],
+                Implements: [InterfaceRequiringOtherInterface],
             });
             obj = new ObjectInheritingFromInterfaceImplementation();
         }).not.toThrow();
@@ -627,7 +633,7 @@ describe('An interface', function () {
             const ObjectImplementingInterfaceRequiringParentObject = new Lang.Class({
                 Name: 'ObjectImplementingInterfaceRequiringParentObject',
                 Extends: ObjectImplementingAnInterface,
-                Implements: [ InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ]
+                Implements: [InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface]
             });
             obj = new ObjectImplementingInterfaceRequiringParentObject();
         }).not.toThrow();
@@ -639,7 +645,7 @@ describe('An interface', function () {
     it('must be implemented by an object which subclasses the required class', function () {
         expect(() => new Lang.Class({
             Name: 'ObjectWithoutRequiredParent',
-            Implements: [ AnInterface, InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface ],
+            Implements: [AnInterface, InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface],
             required: function () {},
         })).toThrow();
     });
@@ -662,7 +668,7 @@ describe('An interface', function () {
         const SubImplementer = new Lang.Class({
             Name: 'SubImplementer',
             Extends: ObjectImplementingAnInterface,
-            Implements: [ AnInterface ]
+            Implements: [AnInterface]
         });
         let obj = new SubImplementer();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
@@ -688,8 +694,12 @@ describe('ES6 class inheriting from Lang.Class', function () {
             chainUpToMe() {},
             overrideMe() {},
 
-            get property() { return this._property + 1; },
-            set property(value) { this._property = value - 2; },
+            get property() {
+                return this._property + 1; 
+            },
+            set property(value) {
+                this._property = value - 2; 
+            },
         });
         Legacy.staticMethod = function () {};
         spyOn(Legacy, 'staticMethod');
@@ -702,7 +712,9 @@ describe('ES6 class inheriting from Lang.Class', function () {
                 super(someval);
             }
 
-            chainUpToMe() { super.chainUpToMe(); }
+            chainUpToMe() {
+                super.chainUpToMe(); 
+            }
             overrideMe() {}
         };
     });

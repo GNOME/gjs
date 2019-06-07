@@ -2,8 +2,8 @@
 
 /* exported bar, foo, testToString, toString */
 
-var foo = "This is foo";
-var bar = "This is bar";
+var foo = 'This is foo';
+var bar = 'This is bar';
 
 var toString = x => x;
 

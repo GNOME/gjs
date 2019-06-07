@@ -18,17 +18,17 @@ const MyObject = GObject.registerClass({
     },
     Signals: {
         'empty': {},
-        'minimal': { param_types: [ GObject.TYPE_INT, GObject.TYPE_INT ] },
+        'minimal': {param_types: [GObject.TYPE_INT, GObject.TYPE_INT]},
         'full': {
             flags: GObject.SignalFlags.RUN_LAST,
             accumulator: GObject.AccumulatorType.FIRST_WINS,
             return_type: GObject.TYPE_INT,
             param_types: [],
         },
-        'run-last': { flags: GObject.SignalFlags.RUN_LAST },
+        'run-last': {flags: GObject.SignalFlags.RUN_LAST},
         'detailed': {
             flags: GObject.SignalFlags.RUN_FIRST | GObject.SignalFlags.DETAILED,
-            param_types: [ GObject.TYPE_STRING ],
+            param_types: [GObject.TYPE_STRING],
         },
     },
 }, class MyObject extends GObject.Object {
@@ -120,7 +120,7 @@ const MyAbstractObject = GObject.registerClass({
 });
 
 const MyApplication = GObject.registerClass({
-    Signals: { 'custom': { param_types: [ GObject.TYPE_INT ] } },
+    Signals: {'custom': {param_types: [GObject.TYPE_INT]}},
 }, class MyApplication extends Gio.Application {
     emit_custom(n) {
         this.emit('custom', n);
@@ -128,7 +128,7 @@ const MyApplication = GObject.registerClass({
 });
 
 const MyInitable = GObject.registerClass({
-    Implements: [ Gio.Initable ],
+    Implements: [Gio.Initable],
 }, class MyInitable extends GObject.Object {
     vfunc_init(cancellable) {
         if (!(cancellable instanceof Gio.Cancellable))
@@ -140,7 +140,7 @@ const MyInitable = GObject.registerClass({
 
 const Derived = GObject.registerClass(class Derived extends MyObject {
     _init() {
-        super._init({ readwrite: 'yes' });
+        super._init({readwrite: 'yes'});
     }
 });
 
@@ -174,7 +174,7 @@ describe('GObject class with decorator', function () {
     });
 
     it('constructs with a hash of property values', function () {
-        let myInstance2 = new MyObject({ readwrite: 'baz', construct: 'asdf' });
+        let myInstance2 = new MyObject({readwrite: 'baz', construct: 'asdf'});
         expect(myInstance2.readwrite).toEqual('baz');
         expect(myInstance2.readonly).toEqual('bar');
         expect(myInstance2.construct).toEqual('asdf');
@@ -257,18 +257,22 @@ describe('GObject class with decorator', function () {
     });
 
     it('calls run-last default handler last', function () {
-        let stack = [ ];
+        let stack = [];
         let runLastSpy = jasmine.createSpy('runLastSpy')
-            .and.callFake(() => { stack.push(1); });
+            .and.callFake(() => {
+                stack.push(1);
+            });
         myInstance.connect('run-last', runLastSpy);
-        myInstance.emit_run_last(() => { stack.push(2); });
+        myInstance.emit_run_last(() => {
+            stack.push(2);
+        });
 
         expect(stack).toEqual([1, 2]);
     });
 
     it("can inherit from something that's not GObject.Object", function () {
         // ...and still get all the goodies of GObject.Class
-        let instance = new MyApplication({ application_id: 'org.gjs.Application' });
+        let instance = new MyApplication({application_id: 'org.gjs.Application'});
         let customSpy = jasmine.createSpy('customSpy');
         instance.connect('custom', customSpy);
 
@@ -324,7 +328,7 @@ describe('GObject class with decorator', function () {
             },
         }, class InterfacePropObject extends GObject.Object {});
         let file = Gio.File.new_for_path('dummy');
-        expect(() => new InterfacePropObject({ file: file })).not.toThrow();
+        expect(() => new InterfacePropObject({file: file})).not.toThrow();
     });
 
     it('can override a property from the parent class', function () {
@@ -337,7 +341,7 @@ describe('GObject class with decorator', function () {
                 return this._subclass_readwrite;
             }
             set readwrite(val) {
-                this._subclass_readwrite = 'subclass' + val;
+                this._subclass_readwrite = `subclass${val}`;
             }
         });
         let obj = new OverrideObject();

@@ -7,7 +7,7 @@ let blurb = 'This is the foo property';
 let flags = GObject.ParamFlags.READABLE;
 
 function testParamSpec(type, params, defaultValue) {
-    describe('GObject.ParamSpec.' + type, function () {
+    describe(`GObject.ParamSpec.${type}`, function () {
         let paramSpec;
         beforeEach(function () {
             paramSpec = GObject.ParamSpec[type].apply(GObject.ParamSpec,
