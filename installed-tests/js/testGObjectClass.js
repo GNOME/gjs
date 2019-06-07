@@ -442,3 +442,218 @@ describe('GObject class with JSObject property', function () {
         expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: undefined})).toThrow();
     });
 });
+
+const MyObjectWithJSObjectSignals = GObject.registerClass({
+    Signals: {
+        'send-object': {param_types: [GObject.TYPE_JSOBJECT]},
+        'send-many-objects': {
+            param_types: [GObject.TYPE_JSOBJECT,
+                GObject.TYPE_JSOBJECT,
+                GObject.TYPE_JSOBJECT]
+        },
+        'get-object': {
+            flags: GObject.SignalFlags.RUN_LAST,
+            accumulator: GObject.AccumulatorType.FIRST_WINS,
+            return_type: GObject.TYPE_JSOBJECT,
+            param_types: [GObject.TYPE_JSOBJECT],
+        },
+    },
+}, class MyObjectWithJSObjectSignals extends GObject.Object {
+    emitObject(obj) {
+        this.emit('send-object', obj);
+    }
+});
+
+describe('GObject class with JSObject signals', function () {
+    let myInstance;
+    beforeEach(function () {
+        myInstance = new MyObjectWithJSObjectSignals();
+    });
+
+    it('emits signal with null JSObject parameter', function () {
+        let customSpy = jasmine.createSpy('sendObjectSpy');
+        myInstance.connect('send-object', customSpy);
+        myInstance.emitObject(null);
+        expect(customSpy).toHaveBeenCalledWith(myInstance, null);
+    });
+
+    it('emits signal with JSObject parameter', function () {
+        let customSpy = jasmine.createSpy('sendObjectSpy');
+        myInstance.connect('send-object', customSpy);
+
+        let obj = {
+            foo: [1, 2, 3],
+            sub: {a: {}, 'b': this},
+            desc: 'test',
+            date: new Date()
+        };
+        myInstance.emitObject(obj);
+        expect(customSpy).toHaveBeenCalledWith(myInstance, obj);
+    });
+
+    it('emits signal with multiple JSObject parameters', function () {
+        let customSpy = jasmine.createSpy('sendManyObjectsSpy');
+        myInstance.connect('send-many-objects', customSpy);
+
+        let obj = {
+            foo: [9, 8, 7, 'a', 'b', 'c'],
+            sub: {a: {}, 'b': this},
+            desc: 'test',
+            date: new RegExp('\\w+')
+        };
+        myInstance.emit('send-many-objects', obj, obj.foo, obj.sub);
+        expect(customSpy).toHaveBeenCalledWith(myInstance, obj, obj.foo, obj.sub);
+    });
+
+    it('re-emits signal with same JSObject parameter', function () {
+        const System = imports.system;
+        let obj = {
+            foo: [9, 8, 7, 'a', 'b', 'c'],
+            sub: {a: {}, 'b': this},
+            func: (arg) => {
+                return {ret: [arg]};
+            },
+        };
+
+        myInstance.connect('send-many-objects', (instance, func, args, foo) => {
+            expect(instance).toEqual(myInstance);
+            expect(System.addressOf(instance)).toEqual(System.addressOf(myInstance));
+            expect(foo).toEqual(obj.foo);
+            expect(System.addressOf(foo)).toEqual(System.addressOf(obj.foo));
+            expect(func(args).ret[0]).toEqual(args);
+        });
+        myInstance.connect('send-object', (instance, param) => {
+            expect(instance).toEqual(myInstance);
+            expect(System.addressOf(instance)).toEqual(System.addressOf(myInstance));
+            expect(param).toEqual(obj);
+            expect(System.addressOf(param)).toEqual(System.addressOf(obj));
+            expect(() => instance.emit('send-many-objects', param.func, param, param.foo))
+                .not.toThrow();
+        });
+
+        myInstance.emit('send-object', obj);
+    });
+
+    it('throws an error when using a boolean value as parameter', function () {
+        expect(() => myInstance.emit('send-object', true))
+            .toThrowError(/JSObject expected/);
+        expect(() => myInstance.emit('send-many-objects', ['a'], true, {}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using an int value as parameter', function () {
+        expect(() => myInstance.emit('send-object', 1))
+            .toThrowError(/JSObject expected/);
+        expect(() => myInstance.emit('send-many-objects', ['a'], 1, {}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using a numeric value as parameter', function () {
+        expect(() => myInstance.emit('send-object', Math.PI))
+            .toThrowError(/JSObject expected/);
+        expect(() => myInstance.emit('send-many-objects', ['a'], Math.PI, {}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using a string value as parameter', function () {
+        expect(() => myInstance.emit('send-object', 'string'))
+            .toThrowError(/JSObject expected/);
+        expect(() => myInstance.emit('send-many-objects', ['a'], 'string', {}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('throws an error when using an undefined value as parameter', function () {
+        expect(() => myInstance.emit('send-object', undefined))
+            .toThrowError(/JSObject expected/);
+        expect(() => myInstance.emit('send-many-objects', ['a'], undefined, {}))
+            .toThrowError(/JSObject expected/);
+    });
+
+    it('returns a JSObject', function () {
+        let data = {
+            foo: [9, 8, 7, 'a', 'b', 'c'],
+            sub: {a: {}, 'b': this},
+            func: (arg) => {
+                return {ret: [arg]};
+            },
+        };
+        let id = myInstance.connect('get-object', () => {
+            return data;
+        });
+        expect(myInstance.emit('get-object', {})).toBe(data);
+        myInstance.disconnect(id);
+
+        myInstance.connect('get-object', (instance, input) => {
+            if (input) {
+                if (typeof input === 'function')
+                    input();
+                return input;
+            }
+
+            class SubObject {
+                constructor() {
+                    this.pi = Math.PI;
+                }
+                method() {}
+                gobject() {
+                    return GObject.Object;
+                }
+                get data() {
+                    return data;
+                }
+            }
+
+            return new SubObject();
+        });
+
+        expect(myInstance.emit('get-object', null).constructor.name).toBe('SubObject');
+        expect(myInstance.emit('get-object', null).data).toBe(data);
+        expect(myInstance.emit('get-object', null).pi).toBe(Math.PI);
+        expect(() => myInstance.emit('get-object', null).method()).not.toThrow();
+        expect(myInstance.emit('get-object', null).gobject()).toBe(GObject.Object);
+        expect(new (myInstance.emit('get-object', null).gobject()) instanceof GObject.Object)
+            .toBeTruthy();
+        expect(myInstance.emit('get-object', data)).toBe(data);
+        expect(myInstance.emit('get-object', jasmine.createSpy('callMeSpy')))
+            .toHaveBeenCalled();
+    });
+
+    it('returns null when returning undefined', function () {
+        myInstance.connect('get-object', () => {
+            return undefined;
+        });
+        expect(myInstance.emit('get-object', {})).toBeNull();
+    });
+
+    it('returns null when not returning', function () {
+        myInstance.connect('get-object', () => { });
+        expect(myInstance.emit('get-object', {})).toBeNull();
+    });
+
+    // These tests really throws an error, but I can't find a way to catch it
+    //
+    // it('throws an error when returning a boolean value', function () {
+    //     myInstance.connect('get-object', (instance, obj) => { return true; });
+    //     expect(() => myInstance.emit('get-object', {}))
+    //         .toThrowError(/JSObject expected/);
+    // });
+
+    // it('throws an error when returning an int value', function () {
+    //     myInstance.connect('get-object', (instance, obj) => { return 1; });
+    //     expect(() => myInstance.emit('get-object', {}))
+    //         .toThrowError(/JSObject expected/);
+    // });
+
+    // it('throws an error when returning a numeric value', function () {
+    //     myInstance.connect('get-object', (instance, obj) => { return Math.PI; });
+    //     expect(() => myInstance.emit('get-object', {}))
+    //         .toThrowError(/JSObject expected/);
+    // });
+
+    // it('throws an error when returning a string value', function () {
+    //     myInstance.connect('get-object', (instance, obj) => { return 'string'; });
+    //     expect(() => myInstance.emit('get-object', {}))
+    //         .toThrowError(/JSObject expected/);
+    // });
+});
+
