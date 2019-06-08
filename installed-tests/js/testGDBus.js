@@ -281,7 +281,8 @@ describe('Exported DBus object', function () {
                 proxy = obj;
                 expect(proxy).not.toBeNull();
                 loop.quit();
-            });
+            },
+            Gio.DBusProxyFlags.NONE);
         loop.run();
     });
 
