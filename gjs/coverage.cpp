@@ -30,10 +30,10 @@
 
 #include "coverage.h"
 #include "gjs/context-private.h"
+#include "gjs/error-types.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util-args.h"
-#include "util/error.h"
 
 struct _GjsCoverage {
     GObject parent;
