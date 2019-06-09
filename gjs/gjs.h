@@ -28,10 +28,10 @@
 
 #include <gjs/context.h>
 #include <gjs/coverage.h>
+#include <gjs/error-types.h>
 #include <gjs/macros.h>
 #include <gjs/mem.h>
 #include <gjs/profiler.h>
-#include <util/error.h>
 
 #undef INSIDE_GJS_H
 

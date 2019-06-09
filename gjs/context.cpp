@@ -39,6 +39,7 @@
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
+#include "gjs/error-types.h"
 #include "global.h"
 #include "importer.h"
 #include "jsapi-util.h"
@@ -50,7 +51,6 @@
 #include <modules/modules.h>
 
 #include <util/log.h>
-#include <util/error.h>
 #include "util/misc.h"
 
 #ifdef G_OS_WIN32

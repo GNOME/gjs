@@ -40,9 +40,9 @@
 #endif
 
 #include "gjs/context-private.h"
+#include "gjs/error-types.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "util/error.h"
 #include "util/log.h"
 #include "util/misc.h"
 

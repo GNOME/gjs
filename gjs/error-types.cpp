@@ -21,48 +21,36 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_UTIL_ERROR_H_
-#define GJS_UTIL_ERROR_H_
-
-#if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
-#    error "Only <gjs/gjs.h> can be included directly."
-#endif
+#include <config.h>
 
 #include <glib-object.h>
 
-#include <gjs/macros.h>
+#include "gjs/error-types.h"
 
-G_BEGIN_DECLS
+// clang-format off
+G_DEFINE_QUARK(gjs-error-quark, gjs_error)
+G_DEFINE_QUARK(gjs-js-error-quark, gjs_js_error)
+// clang-format on
 
-GJS_EXPORT
-GQuark gjs_error_quark(void);
-#define GJS_ERROR gjs_error_quark()
+GType gjs_js_error_get_type(void) {
+    static volatile GType g_type_id;
 
-typedef enum {
-    GJS_ERROR_FAILED,
-    GJS_ERROR_SYSTEM_EXIT,
-} GjsError;
+    if (g_once_init_enter(&g_type_id)) {
+        static GEnumValue errors[] = {
+            { GJS_JS_ERROR_ERROR, "Error", "error" },
+            { GJS_JS_ERROR_EVAL_ERROR, "EvalError", "eval-error" },
+            { GJS_JS_ERROR_INTERNAL_ERROR, "InternalError", "internal-error" },
+            { GJS_JS_ERROR_RANGE_ERROR, "RangeError", "range-error" },
+            { GJS_JS_ERROR_REFERENCE_ERROR, "ReferenceError", "reference-error" },
+            { GJS_JS_ERROR_STOP_ITERATION, "StopIteration", "stop-iteration" },
+            { GJS_JS_ERROR_SYNTAX_ERROR, "SyntaxError", "syntax-error" },
+            { GJS_JS_ERROR_TYPE_ERROR, "TypeError", "type-error" },
+            { GJS_JS_ERROR_URI_ERROR, "URIError", "uri-error" },
+            { 0, nullptr, nullptr }
+        };
 
-GJS_EXPORT
-GQuark gjs_js_error_quark(void);
-#define GJS_JS_ERROR gjs_js_error_quark()
+        g_type_id = g_enum_register_static("GjsJSError", errors);
+    }
 
-GJS_EXPORT
-GType gjs_js_error_get_type(void);
-#define GJS_TYPE_JS_ERROR gjs_js_error_get_type()
-
-typedef enum {
-    GJS_JS_ERROR_ERROR,
-    GJS_JS_ERROR_EVAL_ERROR,
-    GJS_JS_ERROR_INTERNAL_ERROR,
-    GJS_JS_ERROR_RANGE_ERROR,
-    GJS_JS_ERROR_REFERENCE_ERROR,
-    GJS_JS_ERROR_STOP_ITERATION,
-    GJS_JS_ERROR_SYNTAX_ERROR,
-    GJS_JS_ERROR_TYPE_ERROR,
-    GJS_JS_ERROR_URI_ERROR,
-} GjsJSError;
-
-G_END_DECLS
-
-#endif /* GJS_UTIL_ERROR_H_ */
+    return g_type_id;
+}

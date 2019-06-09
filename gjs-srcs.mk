@@ -1,11 +1,11 @@
 gjs_public_headers =		\
 	gjs/context.h		\
 	gjs/coverage.h		\
+	gjs/error-types.h	\
 	gjs/gjs.h		\
 	gjs/macros.h		\
 	gjs/mem.h		\
 	gjs/profiler.h		\
-	util/error.h		\
 	$(NULL)
 
 # For historical reasons, some files live in gi/
@@ -64,6 +64,7 @@ gjs_srcs =				\
 	gjs/debugger.cpp		\
 	gjs/deprecation.cpp		\
 	gjs/deprecation.h		\
+	gjs/error-types.cpp		\
 	gjs/engine.cpp			\
 	gjs/engine.h			\
 	gjs/global.cpp			\
@@ -90,7 +91,6 @@ gjs_srcs =				\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\
-	util/error.cpp			\
 	util/log.cpp			\
 	util/log.h			\
 	util/misc.cpp			\
