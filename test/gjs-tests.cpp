@@ -29,10 +29,10 @@
 #include <glib-object.h>
 
 #include <gjs/gjs.h>
+#include "gjs-test-utils.h"
+#include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs-test-utils.h"
-#include "util/error.h"
 #include "util/misc.h"
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
