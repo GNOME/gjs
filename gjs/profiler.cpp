@@ -323,8 +323,8 @@ gjs_profiler_sigprof(int        signum,
      * easily overflow the stack; however, dynamic allocation is not an option
      * here since we are in a signal handler.
      */
-    // cppcheck-suppress allocaCalled
     SysprofCaptureAddress* addrs =
+        // cppcheck-suppress allocaCalled
         static_cast<SysprofCaptureAddress*>(alloca(sizeof *addrs * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {
