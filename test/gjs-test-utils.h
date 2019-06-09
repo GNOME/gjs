@@ -23,11 +23,13 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#ifndef GJS_TEST_UTILS_H
-#define GJS_TEST_UTILS_H
+#ifndef TEST_GJS_TEST_UTILS_H_
+#define TEST_GJS_TEST_UTILS_H_
 
 #include "gjs/context.h"
-#include "gjs/jsapi-wrapper.h"
+
+struct JSCompartment;
+struct JSContext;
 
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 struct _GjsUnitTestFixture {
@@ -36,13 +38,11 @@ struct _GjsUnitTestFixture {
     JSCompartment *compartment;
 };
 
-void gjs_unit_test_fixture_setup(GjsUnitTestFixture *fx,
-                                 gconstpointer       unused);
+void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void* unused);
 
 void gjs_unit_test_destroy_context(GjsUnitTestFixture *fx);
 
-void gjs_unit_test_fixture_teardown(GjsUnitTestFixture *fx,
-                                    gconstpointer      unused);
+void gjs_unit_test_fixture_teardown(GjsUnitTestFixture* fx, const void* unused);
 
 void gjs_test_add_tests_for_coverage ();
 
@@ -50,4 +50,4 @@ void gjs_test_add_tests_for_parse_call_args(void);
 
 void gjs_test_add_tests_for_rooting(void);
 
-#endif
+#endif  // TEST_GJS_TEST_UTILS_H_

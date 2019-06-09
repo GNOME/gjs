@@ -20,14 +20,16 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo-gobject.h>
+#include <cairo.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include <cairo-gobject.h>
-#include "cairo-private.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
 typedef struct {
     void            *dummy;
@@ -44,7 +46,7 @@ GJS_DEFINE_PRIV_FROM_JS(GjsCairoPattern, gjs_cairo_pattern_class)
 static void gjs_cairo_pattern_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoPattern *priv;
     priv = (GjsCairoPattern*) JS_GetPrivate(obj);
-    if (priv == NULL)
+    if (!priv)
         return;
     cairo_pattern_destroy(priv->pattern);
     g_slice_free(GjsCairoPattern, priv);
@@ -110,13 +112,13 @@ gjs_cairo_pattern_construct(JSContext       *context,
 {
     GjsCairoPattern *priv;
 
-    g_return_if_fail(context != NULL);
-    g_return_if_fail(object != nullptr);
-    g_return_if_fail(pattern != NULL);
+    g_return_if_fail(context);
+    g_return_if_fail(object);
+    g_return_if_fail(pattern);
 
     priv = g_slice_new0(GjsCairoPattern);
 
-    g_assert(priv_from_js(context, object) == NULL);
+    g_assert(!priv_from_js(context, object));
     JS_SetPrivate(object, priv);
 
     priv->context = context;
@@ -138,8 +140,8 @@ void
 gjs_cairo_pattern_finalize_pattern(JSFreeOp *fop,
                                    JSObject *object)
 {
-    g_return_if_fail(fop != NULL);
-    g_return_if_fail(object != NULL);
+    g_return_if_fail(fop);
+    g_return_if_fail(object);
 
     gjs_cairo_pattern_finalize(fop, object);
 }
@@ -157,8 +159,8 @@ JSObject *
 gjs_cairo_pattern_from_pattern(JSContext       *context,
                                cairo_pattern_t *pattern)
 {
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(pattern != NULL, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(pattern, nullptr);
 
     switch (cairo_pattern_get_type(pattern)) {
         case CAIRO_PATTERN_TYPE_SOLID:
@@ -175,7 +177,7 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
             gjs_throw(context,
                       "failed to create pattern, unsupported pattern type %d",
                       cairo_pattern_get_type(pattern));
-            return NULL;
+            return nullptr;
     }
 }
 
@@ -193,12 +195,12 @@ gjs_cairo_pattern_get_pattern(JSContext *context,
 {
     GjsCairoPattern *priv;
 
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(object != NULL, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(object, nullptr);
 
     priv = (GjsCairoPattern*) JS_GetPrivate(object);
-    if (priv == NULL)
-        return NULL;
+    if (!priv)
+        return nullptr;
 
     return priv->pattern;
 }

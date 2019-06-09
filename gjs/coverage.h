@@ -23,14 +23,19 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#ifndef _GJS_COVERAGE_H
-#define _GJS_COVERAGE_H
+#ifndef GJS_COVERAGE_H_
+#define GJS_COVERAGE_H_
 
-#include <glib-object.h>
+#if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
+#    error "Only <gjs/gjs.h> can be included directly."
+#endif
+
 #include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h> /* for G_BEGIN_DECLS, G_END_DECLS */
 
-#include "context.h"
-#include "gjs/macros.h"
+#include <gjs/context.h>
+#include <gjs/macros.h>
 
 G_BEGIN_DECLS
 
@@ -47,4 +52,4 @@ GJS_EXPORT GJS_USE GjsCoverage* gjs_coverage_new(
 
 G_END_DECLS
 
-#endif
+#endif /* GJS_COVERAGE_H_ */

@@ -40,12 +40,14 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <config.h>
+#include <stdio.h>  // for stderr
+
+#include <glib-object.h>
 #include <glib.h>
-#include <string.h>
-#include "context.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/context.h"
 
 void
 gjs_context_print_stack_stderr(GjsContext *context)

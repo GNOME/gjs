@@ -21,15 +21,11 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_MISC_H__
-#define __GJS_UTIL_MISC_H__
-
-#include <glib.h>
-
-G_BEGIN_DECLS
+#ifndef UTIL_MISC_H_
+#define UTIL_MISC_H_
 
 bool    gjs_environment_variable_is_set   (const char *env_variable_name);
 
-G_END_DECLS
+char** gjs_g_strv_concat(char*** strv_array, int len);
 
-#endif  /* __GJS_UTIL_MISC_H__ */
+#endif  // UTIL_MISC_H_

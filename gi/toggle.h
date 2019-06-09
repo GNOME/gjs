@@ -23,13 +23,16 @@
  * Authored by: Philip Chimento <philip@endlessm.com>, <philip.chimento@gmail.com>
  */
 
-#ifndef GJS_TOGGLE_H
-#define GJS_TOGGLE_H
+#ifndef GI_TOGGLE_H_
+#define GI_TOGGLE_H_
 
 #include <atomic>
 #include <deque>
 #include <mutex>
+#include <utility>  // for pair
+
 #include <glib-object.h>
+#include <glib.h>
 
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -111,4 +114,4 @@ private:
     }
 };
 
-#endif  /* GJS_TOGGLE_H */
+#endif  // GI_TOGGLE_H_

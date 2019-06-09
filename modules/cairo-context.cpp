@@ -20,19 +20,22 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
 #include <vector>
 
+#include <cairo-gobject.h>
+#include <cairo.h>
+#include <girepository.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-
-#include <cairo.h>
-#include <cairo-gobject.h>
-#include "cairo-private.h"
+#include "modules/cairo-private.h"
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(mname)                        \
     GJS_JSAPI_RETURN_CONVENTION                                            \
@@ -254,7 +257,7 @@ _gjs_cairo_context_construct_internal(JSContext       *context,
 
     priv = g_slice_new0(GjsCairoContext);
 
-    g_assert(priv_from_js(context, obj) == NULL);
+    g_assert(!priv_from_js(context, obj));
     JS_SetPrivate(obj, priv);
 
     priv->context = context;
@@ -297,10 +300,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
 static void gjs_cairo_context_finalize(JSFreeOp*, JSObject* obj) {
     GjsCairoContext *priv;
     priv = (GjsCairoContext*) JS_GetPrivate(obj);
-    if (priv == NULL)
+    if (!priv)
         return;
 
-    if (priv->cr != NULL)
+    if (priv->cr)
         cairo_destroy(priv->cr);
 
     g_slice_free(GjsCairoContext, priv);
@@ -398,10 +401,8 @@ dispose_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, GjsCairoContext, priv);
 
-    if (priv->cr != NULL) {
-        cairo_destroy(priv->cr);
-        priv->cr = NULL;
-    }
+    g_clear_pointer(&priv->cr, cairo_destroy);
+
     rec.rval().setUndefined();
     return true;
 }
@@ -415,7 +416,7 @@ appendPath_func(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject path_wrapper(context);
     cairo_path_t *path;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "path", argv, "o",
                              "path", &path_wrapper))
@@ -440,7 +441,7 @@ copyPath_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     cairo_path_t *path;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "", argv, ""))
         return false;
@@ -458,7 +459,7 @@ copyPathFlat_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     cairo_path_t *path;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "", argv, ""))
         return false;
@@ -477,7 +478,7 @@ mask_func(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject pattern_wrapper(context);
     cairo_pattern_t *pattern;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "mask", argv, "o",
                              "pattern", &pattern_wrapper))
@@ -508,7 +509,7 @@ maskSurface_func(JSContext *context,
     JS::RootedObject surface_wrapper(context);
     double x, y;
     cairo_surface_t *surface;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "maskSurface", argv, "off",
                              "surface", &surface_wrapper,
@@ -539,7 +540,7 @@ setDash_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     guint i;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
     JS::RootedObject dashes(context);
     double offset;
     guint len;
@@ -599,7 +600,7 @@ setSource_func(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject pattern_wrapper(context);
     cairo_pattern_t *pattern;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "setSource", argv, "o",
                              "pattern", &pattern_wrapper))
@@ -631,7 +632,7 @@ setSourceSurface_func(JSContext *context,
     JS::RootedObject surface_wrapper(context);
     double x, y;
     cairo_surface_t *surface;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "setSourceSurface", argv, "off",
                              "surface", &surface_wrapper,
@@ -663,7 +664,7 @@ showText_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::UniqueChars utf8;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "showText", argv, "s",
                              "utf8", &utf8))
@@ -689,7 +690,7 @@ selectFontFace_func(JSContext *context,
     JS::UniqueChars family;
     cairo_font_slant_t slant;
     cairo_font_weight_t weight;
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "selectFontFace", argv, "sii",
                              "family", &family,
@@ -713,7 +714,7 @@ popGroup_func(JSContext *context,
               JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, GjsCairoContext, priv);
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
 
@@ -744,7 +745,7 @@ getSource_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, GjsCairoContext, priv);
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
     cairo_pattern_t *pattern;
     JSObject *pattern_wrapper;
 
@@ -776,7 +777,7 @@ getTarget_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, GjsCairoContext, priv);
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
     cairo_surface_t *surface;
     JSObject *surface_wrapper;
 
@@ -808,7 +809,7 @@ getGroupTarget_func(JSContext *context,
                     JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, obj, GjsCairoContext, priv);
-    cairo_t *cr = priv ? priv->cr : NULL;
+    cairo_t* cr = priv ? priv->cr : nullptr;
     cairo_surface_t *surface;
     JSObject *surface_wrapper;
 
@@ -944,7 +945,7 @@ gjs_cairo_context_from_context(JSContext *context,
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_context_class, proto));
     if (!object)
-        return NULL;
+        return nullptr;
 
     _gjs_cairo_context_construct_internal(context, object, cr);
 
@@ -957,8 +958,8 @@ gjs_cairo_context_get_context(JSContext       *context,
 {
     GjsCairoContext *priv;
     priv = priv_from_js(context, object);
-    if (priv == NULL)
-        return NULL;
+    if (!priv)
+        return nullptr;
 
     return priv->cr;
 }

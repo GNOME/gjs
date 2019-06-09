@@ -20,14 +20,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_DBUS_H__
-#define __GJS_UTIL_DBUS_H__
+#ifndef LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
+#define LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
 
-#include <glib.h>
-#include <glib-object.h>
 #include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
 
-#include <gjs/macros.h>
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
@@ -62,4 +62,4 @@ void                   gjs_dbus_implementation_emit_signal           (GjsDBusImp
 
 G_END_DECLS
 
-#endif  /* __GJS_UTIL_DBUS_H__ */
+#endif /* LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_ */

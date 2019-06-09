@@ -21,15 +21,23 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_UTIL_ROOT_H
-#define GJS_JSAPI_UTIL_ROOT_H
+#ifndef GJS_JSAPI_UTIL_ROOT_H_
+#define GJS_JSAPI_UTIL_ROOT_H_
 
-#include <glib.h>
+#include <stdint.h>  // for uintptr_t
+
+#include <cstddef>  // for nullptr_t
+#include <new>
+#include <type_traits>  // for enable_if_t, is_pointer
+
 #include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/context-private.h"
 #include "gjs/context.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/macros.h"
 #include "util/log.h"
 
 /* jsapi-util-root.h - Utilities for dealing with the lifetime and ownership of
@@ -368,4 +376,4 @@ public:
     GJS_USE bool rooted(void) const { return m_rooted; }
 };
 
-#endif /* GJS_JSAPI_UTIL_ROOT_H */
+#endif  // GJS_JSAPI_UTIL_ROOT_H_

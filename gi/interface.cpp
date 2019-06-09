@@ -22,20 +22,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/function.h"
-#include "gi/gtype.h"
 #include "gi/interface.h"
 #include "gi/object.h"
 #include "gi/repo.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
 #include "gjs/mem-private.h"
-
-#include <util/log.h>
-
-#include <girepository.h>
 
 InterfacePrototype::InterfacePrototype(GIInterfaceInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype),
@@ -141,30 +138,6 @@ JSFunctionSpec InterfaceBase::static_methods[] = {
 // clang-format on
 
 bool
-gjs_define_interface_class(JSContext              *context,
-                           JS::HandleObject        in_object,
-                           GIInterfaceInfo        *info,
-                           GType                   gtype,
-                           JS::MutableHandleObject constructor)
-{
-    JS::RootedObject prototype(context);
-
-    if (!InterfacePrototype::create_class(context, in_object, info, gtype,
-                                          constructor, &prototype))
-        return false;
-
-    /* If we have no GIRepository information, then this interface was defined
-     * from within GJS and therefore has no C static methods to be defined. */
-    if (info) {
-        if (!gjs_define_static_methods<InfoType::Interface>(
-                context, constructor, gtype, info))
-            return false;
-    }
-
-    return true;
-}
-
-bool
 gjs_lookup_interface_constructor(JSContext             *context,
                                  GType                  gtype,
                                  JS::MutableHandleValue value_p)
@@ -172,9 +145,9 @@ gjs_lookup_interface_constructor(JSContext             *context,
     JSObject *constructor;
     GIBaseInfo *interface_info;
 
-    interface_info = g_irepository_find_by_gtype(NULL, gtype);
+    interface_info = g_irepository_find_by_gtype(nullptr, gtype);
 
-    if (interface_info == NULL) {
+    if (!interface_info) {
         gjs_throw(context, "Cannot expose non introspectable interface %s",
                   g_type_name(gtype));
         return false;
@@ -184,7 +157,7 @@ gjs_lookup_interface_constructor(JSContext             *context,
              GI_INFO_TYPE_INTERFACE);
 
     constructor = gjs_lookup_generic_constructor(context, interface_info);
-    if (G_UNLIKELY (constructor == NULL))
+    if (G_UNLIKELY(!constructor))
         return false;
 
     g_base_info_unref(interface_info);

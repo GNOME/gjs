@@ -21,16 +21,12 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_NATIVE_H__
-#define __GJS_NATIVE_H__
+#ifndef GJS_NATIVE_H_
+#define GJS_NATIVE_H_
 
-#include <stdbool.h>
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-
-G_BEGIN_DECLS
 
 typedef bool (* GjsDefineModuleFunc) (JSContext              *context,
                                       JS::MutableHandleObject module_out);
@@ -49,6 +45,4 @@ bool gjs_load_native_module(JSContext              *cx,
                             const char             *name,
                             JS::MutableHandleObject module_out);
 
-G_END_DECLS
-
-#endif  /* __GJS_NATIVE_H__ */
+#endif  // GJS_NATIVE_H_

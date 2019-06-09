@@ -21,13 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <girepository.h>
+#include <glib-object.h>
 
-#include <string.h>
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/function.h"
+#include "gi/gtype.h"
 #include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 
 /* Default spidermonkey toString is worthless.  Replace it
  * with something that gives us both the introspection name
@@ -43,12 +47,12 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
     buf = g_string_new("");
     g_string_append_c(buf, '[');
     g_string_append(buf, objtype);
-    if (native_address == NULL)
+    if (!native_address)
         g_string_append(buf, " prototype of");
     else
         g_string_append(buf, " instance wrapper");
 
-    if (info != NULL) {
+    if (info) {
         g_string_append_printf(buf, " GIName:%s.%s",
                                g_base_info_get_namespace(info),
                                g_base_info_get_name(info));
@@ -58,7 +62,7 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
     }
 
     g_string_append_printf(buf, " jsobj@%p", this_obj);
-    if (native_address != NULL)
+    if (native_address)
         g_string_append_printf(buf, " native@%p", native_address);
 
     g_string_append_c(buf, ']');
@@ -121,6 +125,7 @@ DECLARE_POLICY(Enum, enum, no_type_struct)
 DECLARE_POLICY(Interface, interface, g_interface_info_get_iface_struct)
 DECLARE_POLICY(Object, object, g_object_info_get_class_struct)
 DECLARE_POLICY(Struct, struct, no_type_struct)
+DECLARE_POLICY(Union, union, no_type_struct)
 
 #undef DECLARE_POLICY
 
@@ -175,4 +180,6 @@ template bool gjs_define_static_methods<InfoType::Interface>(
 template bool gjs_define_static_methods<InfoType::Object>(
     JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
 template bool gjs_define_static_methods<InfoType::Struct>(
+    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+template bool gjs_define_static_methods<InfoType::Union>(
     JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);

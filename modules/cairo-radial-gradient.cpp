@@ -20,13 +20,16 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include "cairo-private.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
 GJS_USE
 static JSObject *gjs_cairo_radial_gradient_get_proto(JSContext *);
@@ -86,9 +89,10 @@ JSObject *
 gjs_cairo_radial_gradient_from_pattern(JSContext       *context,
                                        cairo_pattern_t *pattern)
 {
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(pattern != NULL, NULL);
-    g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_RADIAL, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(pattern, nullptr);
+    g_return_val_if_fail(
+        cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_RADIAL, nullptr);
 
     JS::RootedObject proto(context,
                            gjs_cairo_radial_gradient_get_proto(context));
@@ -97,7 +101,7 @@ gjs_cairo_radial_gradient_from_pattern(JSContext       *context,
                                    proto));
     if (!object) {
         gjs_throw(context, "failed to create radial gradient pattern");
-        return NULL;
+        return nullptr;
     }
 
     gjs_cairo_pattern_construct(context, object, pattern);

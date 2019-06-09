@@ -21,13 +21,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_OVERRIDE_H__
-#define __GJS_OVERRIDE_H__
+#ifndef GI_FOREIGN_H_
+#define GI_FOREIGN_H_
 
-#include <stdbool.h>
 #include <girepository.h>
 
-#include "arg.h"
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
 #include "gjs/macros.h"
 
 typedef bool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
@@ -76,4 +77,4 @@ bool  gjs_struct_foreign_release_g_argument      (JSContext      *context,
                                                   GIBaseInfo     *interface_info,
                                                   GArgument      *arg);
 
-#endif /* __GJS_OVERRIDE_H__ */
+#endif  // GI_FOREIGN_H_

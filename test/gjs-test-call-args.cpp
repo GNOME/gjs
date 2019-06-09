@@ -1,10 +1,12 @@
-#include <string.h>
+#include <stdint.h>
+#include <string.h>  // for strlen, strstr
 
 #include <glib.h>
 
-#include "gjs/context.h"
-#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-util.h"
 #include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
 

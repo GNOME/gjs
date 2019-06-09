@@ -22,37 +22,39 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for memset, strcmp
 
-#include <memory>
-#include <string.h>
-#include <tuple>
-#include <unordered_map>
+#include <algorithm>   // for move, find
+#include <functional>  // for mem_fn
+#include <string>
+#include <tuple>        // for tie
+#include <type_traits>  // for remove_reference<>::type
 #include <vector>
+
+#include <ffi.h>
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/arg.h"
 #include "gi/closure.h"
 #include "gi/function.h"
 #include "gi/gjs_gi_trace.h"
 #include "gi/object.h"
-#include "gi/param.h"
+#include "gi/repo.h"
+#include "gi/toggle.h"
+#include "gi/value.h"
 #include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/context.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/mem-private.h"
-#include "gtype.h"
-#include "interface.h"
-#include "repo.h"
-#include "toggle.h"
-#include "value.h"
-
-#include <util/log.h>
-#include <girepository.h>
-
-#include "js/GCHashTable.h"
+#include "util/log.h"
 
 /* This is a trick to print out the sizes of the structs at compile time, in
  * an error message. */
@@ -248,8 +250,8 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
     if (entry)
         return entry->value();
 
-    JS::UniqueChars js_prop_name;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(key), &js_prop_name))
+    JS::UniqueChars js_prop_name(JS_EncodeStringToUTF8(cx, key));
+    if (!js_prop_name)
         return nullptr;
 
     GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name.get());
@@ -2000,17 +2002,9 @@ bool ObjectPrototype::define_class(JSContext* context,
     /* Hook_up_vfunc can't be included in gjs_object_instance_proto_funcs
      * because it's a custom symbol. */
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!JS_DefineFunctionById(context, prototype, atoms.hook_up_vfunc(),
-                               &ObjectBase::hook_up_vfunc, 3,
-                               GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    if (info)
-        if (!gjs_define_static_methods<InfoType::Object>(context, constructor,
-                                                         gtype, info))
-            return false;
-
-    return true;
+    return JS_DefineFunctionById(context, prototype, atoms.hook_up_vfunc(),
+                                 &ObjectBase::hook_up_vfunc, 3,
+                                 GJS_MODULE_PROP_FLAGS);
 }
 
 /*

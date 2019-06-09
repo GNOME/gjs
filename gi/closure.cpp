@@ -21,16 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <glib.h>
 
-#include <string.h>
-#include <limits.h>
-#include <util/log.h>
+#include <new>
 
-#include "closure.h"
-#include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gi/closure.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util-root.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
+#include "util/log.h"
 
 struct Closure {
     JSContext *context;
@@ -90,7 +92,7 @@ invalidate_js_pointers(GjsClosure *gc)
         return;
 
     c->func.reset();
-    c->context = NULL;
+    c->context = nullptr;
 
     /* Notify any closure reference holders they
      * may want to drop references.
@@ -188,7 +190,7 @@ gjs_closure_invoke(GClosure                   *closure,
 
     if (!c->func) {
         /* We were destroyed; become a no-op */
-        c->context = NULL;
+        c->context = nullptr;
         return false;
     }
 
@@ -243,7 +245,7 @@ gjs_closure_is_valid(GClosure *closure)
 
     c = &((GjsClosure*) closure)->priv;
 
-    return c->context != NULL;
+    return !!c->context;
 }
 
 JSContext*
@@ -281,10 +283,10 @@ gjs_closure_trace(GClosure *closure,
 GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
                           const char* description GJS_USED_VERBOSE_GCLOSURE,
                           bool root_function) {
-    GjsClosure *gc;
     Closure *c;
 
-    gc = (GjsClosure*) g_closure_new_simple(sizeof(GjsClosure), NULL);
+    auto* gc = reinterpret_cast<GjsClosure*>(
+        g_closure_new_simple(sizeof(GjsClosure), nullptr));
     c = new (&gc->priv) Closure();
 
     /* The saved context is used for lifetime management, so that the closure will
@@ -301,15 +303,17 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
         /* Fully manage closure lifetime if so asked */
         c->func.root(context, callable, global_context_finalized, gc);
 
-        g_closure_add_invalidate_notifier(&gc->base, NULL, closure_invalidated);
+        g_closure_add_invalidate_notifier(&gc->base, nullptr,
+                                          closure_invalidated);
     } else {
         c->func = callable;
         /* Only mark the closure as invalid if memory is managed
            outside (i.e. by object.c for signals) */
-        g_closure_add_invalidate_notifier(&gc->base, NULL, closure_set_invalid);
+        g_closure_add_invalidate_notifier(&gc->base, nullptr,
+                                          closure_set_invalid);
     }
 
-    g_closure_add_finalize_notifier(&gc->base, NULL, closure_finalize);
+    g_closure_add_finalize_notifier(&gc->base, nullptr, closure_finalize);
 
     gjs_debug_closure("Create closure %p which calls function %p '%s'", gc,
                       c->func.debug_addr(), description);

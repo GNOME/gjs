@@ -22,16 +22,17 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_FUNDAMENTAL_H__
-#define __GJS_FUNDAMENTAL_H__
+#ifndef GI_FUNDAMENTAL_H_
+#define GI_FUNDAMENTAL_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/wrapperutils.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 class FundamentalPrototype;
 class FundamentalInstance;
@@ -90,6 +91,8 @@ class FundamentalPrototype
     ~FundamentalPrototype(void);
 
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
+
+    static constexpr InfoType::Tag info_type_tag = InfoType::Object;
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
@@ -183,4 +186,4 @@ class FundamentalInstance
     static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
 };
 
-#endif  /* __GJS_FUNDAMENTAL_H__ */
+#endif  // GI_FUNDAMENTAL_H_

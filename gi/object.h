@@ -21,25 +21,31 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_OBJECT_H__
-#define __GJS_OBJECT_H__
+#ifndef GI_OBJECT_H_
+#define GI_OBJECT_H_
 
-#include <glib-object.h>
-#include <girepository.h>
+#include <stddef.h>  // for size_t
 
 #include <forward_list>
 #include <functional>
 #include <vector>
 
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
+
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
-#include "js/GCHashTable.h"
-
+class GjsAtoms;
 class ObjectInstance;
+class ObjectPrototype;
 
 class GjsListLink {
  private:
@@ -61,8 +67,6 @@ struct AutoGValueVector : public std::vector<GValue> {
             g_value_unset(&value);
     }
 };
-
-class ObjectPrototype;
 
 /*
  * ObjectBase:
@@ -205,6 +209,8 @@ class ObjectPrototype
     ObjectPrototype(GIObjectInfo* info, GType gtype);
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
     ~ObjectPrototype();
+
+    static constexpr InfoType::Tag info_type_tag = InfoType::Object;
 
  public:
     GJS_USE
@@ -446,8 +452,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                                        GObject* where_the_object_was);
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_object_constructor(JSContext             *context,
                                    GType                  gtype,
@@ -460,6 +464,4 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
 void gjs_object_clear_toggles(void);
 void gjs_object_shutdown_toggle_queue(void);
 
-G_END_DECLS
-
-#endif  /* __GJS_OBJECT_H__ */
+#endif  // GI_OBJECT_H_

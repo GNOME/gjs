@@ -22,16 +22,19 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_INTERFACE_H__
-#define __GJS_INTERFACE_H__
+#ifndef GI_INTERFACE_H_
+#define GI_INTERFACE_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 class InterfacePrototype;
 class InterfaceInstance;
@@ -93,6 +96,8 @@ class InterfacePrototype
     // the GTypeInterface vtable wrapped by this JS object
     GTypeInterface* m_vtable;
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Interface;
+
     explicit InterfacePrototype(GIInterfaceInfo* info, GType gtype);
     ~InterfacePrototype(void);
 
@@ -116,27 +121,16 @@ class InterfaceInstance
     friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
                                InterfaceInstance>;
 
-    G_GNUC_NORETURN InterfaceInstance(JSContext* cx, JS::HandleObject obj)
+    [[noreturn]] InterfaceInstance(JSContext* cx, JS::HandleObject obj)
         : GIWrapperInstance(cx, obj) {
         g_assert_not_reached();
     }
-    G_GNUC_NORETURN ~InterfaceInstance(void) { g_assert_not_reached(); }
+    [[noreturn]] ~InterfaceInstance(void) { g_assert_not_reached(); }
 };
-
-G_BEGIN_DECLS
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_interface_class(JSContext              *context,
-                                JS::HandleObject        in_object,
-                                GIInterfaceInfo        *info,
-                                GType                   gtype,
-                                JS::MutableHandleObject constructor);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_interface_constructor(JSContext             *context,
                                       GType                  gtype,
                                       JS::MutableHandleValue value_p);
 
-G_END_DECLS
-
-#endif  /* __GJS_INTERFACE_H__ */
+#endif  // GI_INTERFACE_H_
