@@ -21,16 +21,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CLOSURE_H__
-#define __GJS_CLOSURE_H__
+#ifndef GI_CLOSURE_H_
+#define GI_CLOSURE_H_
 
-#include <stdbool.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
+#include "gjs/jsapi-wrapper.h"
 
-G_BEGIN_DECLS
+#include "gjs/macros.h"
 
 GJS_USE
 GClosure* gjs_closure_new(JSContext* cx, JSFunction* callable,
@@ -53,6 +51,4 @@ JSFunction* gjs_closure_get_callable(GClosure* closure);
 void       gjs_closure_trace         (GClosure     *closure,
                                       JSTracer     *tracer);
 
-G_END_DECLS
-
-#endif  /* __GJS_CLOSURE_H__ */
+#endif  // GI_CLOSURE_H_

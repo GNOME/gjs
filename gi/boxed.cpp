@@ -21,29 +21,30 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <string.h>  // for memcpy, size_t, strcmp
 
-#include <string.h>
-
-#include <utility>
-
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"
-
-#include "arg.h"
-#include "boxed.h"
-#include "function.h"
-#include "gi/gerror.h"
-#include "gi/wrapperutils.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/mem-private.h"
-#include "gtype.h"
-#include "object.h"
-#include "repo.h"
-
-#include <util/log.h>
+#include <string>       // for string
+#include <type_traits>  // for remove_reference
+#include <utility>      // for move, forward
 
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
+
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/function.h"
+#include "gi/gerror.h"
+#include "gi/repo.h"
+#include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"
+#include "gjs/mem-private.h"
+#include "util/log.h"
 
 BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
     : GIWrapperInstance(cx, obj), m_owning_ptr(false) {
@@ -957,13 +958,11 @@ bool BoxedPrototype::init(JSContext* context) {
 bool BoxedPrototype::define_class(JSContext* context,
                                   JS::HandleObject in_object,
                                   GIStructInfo* info) {
-    JS::RootedObject prototype(context), constructor(context);
+    JS::RootedObject prototype(context), unused_constructor(context);
     GType gtype = g_registered_type_info_get_g_type(info);
     BoxedPrototype* priv = BoxedPrototype::create_class(
-        context, in_object, info, gtype, &constructor, &prototype);
-    if (!priv || !priv->define_boxed_class_fields(context, prototype) ||
-        !gjs_define_static_methods<InfoType::Struct>(context, constructor, gtype,
-                                                     info))
+        context, in_object, info, gtype, &unused_constructor, &prototype);
+    if (!priv || !priv->define_boxed_class_fields(context, prototype))
         return false;
 
     if (gtype == G_TYPE_ERROR &&

@@ -21,19 +21,15 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_REPO_H__
-#define __GJS_REPO_H__
-
-#include <stdbool.h>
-#include <glib.h>
+#ifndef GI_REPO_H_
+#define GI_REPO_H_
 
 #include <girepository.h>
 
-#include <util/log.h>
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/macros.h"
 
-G_BEGIN_DECLS
+#include "gjs/macros.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,
@@ -75,6 +71,4 @@ char*       gjs_hyphen_from_camel               (const char     *camel_name);
 void _gjs_log_info_usage(GIBaseInfo *info);
 #endif
 
-G_END_DECLS
-
-#endif  /* __GJS_REPO_H__ */
+#endif  // GI_REPO_H_

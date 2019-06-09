@@ -22,21 +22,15 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_SYSTEM_H__
-#define __GJS_SYSTEM_H__
+#ifndef MODULES_SYSTEM_H_
+#define MODULES_SYSTEM_H_
 
-#include <config.h>
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-
-G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_js_define_system_stuff(JSContext              *context,
                                 JS::MutableHandleObject module);
 
-G_END_DECLS
-
-#endif  /* __GJS_SYSTEM_H__ */
+#endif  // MODULES_SYSTEM_H_

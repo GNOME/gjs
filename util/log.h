@@ -21,12 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_LOG_H__
-#define __GJS_UTIL_LOG_H__
+#ifndef UTIL_LOG_H_
+#define UTIL_LOG_H_
 
 #include <glib.h>
-
-G_BEGIN_DECLS
 
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app
@@ -172,6 +170,4 @@ void gjs_debug(GjsDebugTopic topic,
                const char   *format,
                ...) G_GNUC_PRINTF (2, 3);
 
-G_END_DECLS
-
-#endif  /* __GJS_UTIL_LOG_H__ */
+#endif  // UTIL_LOG_H_

@@ -21,16 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ERROR_H__
-#define __GJS_ERROR_H__
+#ifndef GI_GERROR_H_
+#define GI_GERROR_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/wrapperutils.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 class ErrorPrototype;
 class ErrorInstance;
@@ -116,6 +118,8 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
 
     GQuark m_domain;
 
+    static constexpr InfoType::Tag info_type_tag = InfoType::Enum;
+
     explicit ErrorPrototype(GIEnumInfo* info, GType gtype);
     ~ErrorPrototype(void);
 
@@ -166,8 +170,6 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
     static JSObject* object_for_c_ptr(JSContext* cx, GError* gerror);
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 GError *gjs_gerror_make_from_error(JSContext       *cx,
                                    JS::HandleObject obj);
@@ -177,6 +179,4 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
 
 bool gjs_throw_gerror(JSContext* cx, GError* error);
 
-G_END_DECLS
-
-#endif  /* __GJS_ERROR_H__ */
+#endif  // GI_GERROR_H_

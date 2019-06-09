@@ -21,12 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_PROFILER_H
-#define GJS_PROFILER_H
+#ifndef GJS_PROFILER_H_
+#define GJS_PROFILER_H_
 
+#if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
+#    error "Only <gjs/gjs.h> can be included directly."
+#endif
+
+#include <glib-object.h>
 #include <glib.h>
 
-#include <gjs/context.h>
+#include <gjs/macros.h>
 
 G_BEGIN_DECLS
 
@@ -51,4 +56,4 @@ void gjs_profiler_stop(GjsProfiler *self);
 
 G_END_DECLS
 
-#endif /* GJS_PROFILER_H */
+#endif  // GJS_PROFILER_H_

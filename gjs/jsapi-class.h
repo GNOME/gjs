@@ -21,17 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_CLASS_H
-#define GJS_JSAPI_CLASS_H
+#ifndef GJS_JSAPI_CLASS_H_
+#define GJS_JSAPI_CLASS_H_
 
-#include "gi/wrapperutils.h"
-#include "gjs/context-private.h"
-#include "global.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
-#include "util/log.h"
+#include <glib-object.h>
+#include <glib.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/wrapperutils.h"  // IWYU pragma: keep
+#include "gjs/global.h"       // IWYU pragma: keep
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_init_class_dynamic(
@@ -321,9 +322,7 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         return false;                                           \
     }
 
-G_END_DECLS
-
 GJS_USE
 JS::Value gjs_dynamic_property_private_slot(JSObject *accessor_obj);
 
-#endif /* GJS_JSAPI_CLASS_H */
+#endif  // GJS_JSAPI_CLASS_H_

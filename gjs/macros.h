@@ -21,10 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_MACROS_H
-#define GJS_MACROS_H
+#ifndef GJS_MACROS_H_
+#define GJS_MACROS_H_
 
-#include <glib.h>
+#include <glib.h> /* IWYU pragma: keep */
 
 #ifdef G_OS_WIN32
 # ifdef GJS_COMPILATION
@@ -64,4 +64,10 @@
  */
 #define GJS_JSAPI_RETURN_CONVENTION GJS_USE
 
-#endif /* GJS_MACROS_H */
+#ifdef __GNUC__
+#    define GJS_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#    define GJS_ALWAYS_INLINE
+#endif
+
+#endif /* GJS_MACROS_H_ */

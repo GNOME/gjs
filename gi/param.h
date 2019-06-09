@@ -21,17 +21,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PARAM_H__
-#define __GJS_PARAM_H__
+#ifndef GI_PARAM_H_
+#define GI_PARAM_H_
 
-#include <stdbool.h>
-#include <glib.h>
-#include <girepository.h>
+#include <glib-object.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
-
-G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_param_class(JSContext       *context,
@@ -51,6 +48,4 @@ bool        gjs_typecheck_param(JSContext       *context,
                                 GType            expected_type,
                                 bool             throw_error);
 
-G_END_DECLS
-
-#endif  /* __GJS_PARAM_H__ */
+#endif  // GI_PARAM_H_

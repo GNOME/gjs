@@ -21,23 +21,23 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <string.h>
-
-#include "boxed.h"
-#include "enumeration.h"
-#include "gerror.h"
-#include "gjs/context-private.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gjs/mem-private.h"
-#include "repo.h"
-#include "util/error.h"
-
-#include <util/log.h>
+#include <stdint.h>
 
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/boxed.h"
+#include "gi/enumeration.h"
+#include "gi/gerror.h"
+#include "gi/repo.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/error-types.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/mem-private.h"
+#include "util/log.h"
 
 ErrorPrototype::ErrorPrototype(GIEnumInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype),
@@ -144,7 +144,7 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     }
 
     ErrorBase* priv = ErrorBase::for_js_typecheck(context, self, rec);
-    if (priv == NULL)
+    if (!priv)
         return false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
@@ -176,7 +176,7 @@ bool ErrorBase::value_of(JSContext* context, unsigned argc, JS::Value* vp) {
     }
 
     ErrorBase* priv = ErrorBase::for_js_typecheck(context, prototype, rec);
-    if (priv == NULL)
+    if (!priv)
         return false;
 
     rec.rval().setInt32(priv->domain());
@@ -238,13 +238,10 @@ bool ErrorPrototype::define_class(JSContext* context,
     // prototype of GLib.Error; and create_class() will not define it since we
     // supply a parent in get_parent_proto().
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!JS_DefineFunctionById(context, prototype, atoms.to_string(),
-                               &ErrorBase::to_string, 0, GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    return gjs_define_enum_values(context, constructor, info) &&
-           gjs_define_static_methods<InfoType::Enum>(context, constructor,
-                                                     G_TYPE_ERROR, info);
+    return JS_DefineFunctionById(context, prototype, atoms.to_string(),
+                                 &ErrorBase::to_string, 0,
+                                 GJS_MODULE_PROP_FLAGS) &&
+           gjs_define_enum_values(context, constructor, info);
 }
 
 GJS_USE
@@ -254,22 +251,26 @@ find_error_domain_info(GQuark domain)
     GIEnumInfo *info;
 
     /* first an attempt without loading extra libraries */
-    info = g_irepository_find_by_error_domain(NULL, domain);
+    info = g_irepository_find_by_error_domain(nullptr, domain);
     if (info)
         return info;
 
     /* load standard stuff */
-    g_irepository_require(NULL, "GLib", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    g_irepository_require(NULL, "GObject", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    g_irepository_require(NULL, "Gio", "2.0", (GIRepositoryLoadFlags) 0, NULL);
-    info = g_irepository_find_by_error_domain(NULL, domain);
+    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    g_irepository_require(nullptr, "GObject", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    g_irepository_require(nullptr, "Gio", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    info = g_irepository_find_by_error_domain(nullptr, domain);
     if (info)
         return info;
 
     /* last attempt: load GIRepository (for invoke errors, rarely
        needed) */
-    g_irepository_require(NULL, "GIRepository", "1.0", (GIRepositoryLoadFlags) 0, NULL);
-    info = g_irepository_find_by_error_domain(NULL, domain);
+    g_irepository_require(nullptr, "GIRepository", "1.0",
+                          GIRepositoryLoadFlags(0), nullptr);
+    info = g_irepository_find_by_error_domain(nullptr, domain);
 
     return info;
 }
@@ -352,8 +353,8 @@ gjs_error_from_js_gerror(JSContext *cx,
 JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
     GIEnumInfo *info;
 
-    if (gerror == NULL)
-        return NULL;
+    if (!gerror)
+        return nullptr;
 
     if (gerror->domain == GJS_JS_ERROR)
         return gjs_error_from_js_gerror(context, gerror);
@@ -366,7 +367,7 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
         GIBaseInfo *glib_boxed;
         JSObject *retval;
 
-        glib_boxed = g_irepository_find_by_name(NULL, "GLib", "Error");
+        glib_boxed = g_irepository_find_by_name(nullptr, "GLib", "Error");
         retval = BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
 
         g_base_info_unref(glib_boxed);

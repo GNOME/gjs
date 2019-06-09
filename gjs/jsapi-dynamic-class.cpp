@@ -22,19 +22,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for strlen
 
-#include <util/log.h>
-#include <util/glib.h>
-#include <util/misc.h>
+#include <glib.h>
 
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "jsapi-class.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
-
-#include <string.h>
-#include <math.h>
+#include "gjs/jsapi-class.h"  // IWYU pragma: keep
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 /* Reserved slots of JSNative accessor wrappers */
 enum {

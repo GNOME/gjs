@@ -24,8 +24,9 @@
 
 #define GJS_USE_ATOM_FOREACH
 
-#include "gjs/atoms.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 
 bool GjsAtom::init(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);

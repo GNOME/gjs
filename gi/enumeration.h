@@ -21,18 +21,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ENUMERATION_H__
-#define __GJS_ENUMERATION_H__
-
-#include <stdbool.h>
-#include <glib.h>
-
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
+#ifndef GI_ENUMERATION_H_
+#define GI_ENUMERATION_H_
 
 #include <girepository.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enum_values(JSContext       *context,
@@ -44,6 +40,4 @@ bool gjs_define_enumeration(JSContext       *context,
                             JS::HandleObject in_object,
                             GIEnumInfo      *info);
 
-G_END_DECLS
-
-#endif  /* __GJS_ENUMERATION_H__ */
+#endif  // GI_ENUMERATION_H_

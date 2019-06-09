@@ -22,17 +22,14 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_GTYPE_H__
-#define __GJS_GTYPE_H__
+#ifndef GI_GTYPE_H_
+#define GI_GTYPE_H_
 
-#include <stdbool.h>
-#include <glib.h>
-#include <girepository.h>
+#include <glib-object.h>
 
 #include "gjs/jsapi-wrapper.h"
-#include "gjs/macros.h"
 
-G_BEGIN_DECLS
+#include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject * gjs_gtype_create_gtype_wrapper (JSContext *context,
@@ -47,6 +44,4 @@ bool        gjs_typecheck_gtype         (JSContext             *context,
                                          JS::HandleObject       obj,
                                          bool                   throw_error);
 
-G_END_DECLS
-
-#endif  /* __GJS_INTERFACE_H__ */
+#endif  // GI_GTYPE_H_

@@ -1,6 +1,9 @@
-#include "gjs/jsapi-util.h"
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/jsapi-util-root.h"
-#include "gjs-test-utils.h"
+#include "test/gjs-test-utils.h"
 
 static GMutex gc_lock;
 static GCond gc_finished;
@@ -222,8 +225,9 @@ static void test_maybe_owned_object_destroyed_after_notify(
 void
 gjs_test_add_tests_for_rooting(void)
 {
-#define ADD_ROOTING_TEST(path, f) \
-    g_test_add("/rooting/" path, GjsRootingFixture, NULL, setup, f,  teardown);
+#define ADD_ROOTING_TEST(path, f)                                      \
+    g_test_add("/rooting/" path, GjsRootingFixture, nullptr, setup, f, \
+               teardown);
 
     ADD_ROOTING_TEST("maybe-owned/rooted-flag-set-when-rooted",
                      test_maybe_owned_rooted_flag_set_when_rooted);

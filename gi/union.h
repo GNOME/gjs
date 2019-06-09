@@ -21,16 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UNION_H__
-#define __GJS_UNION_H__
+#ifndef GI_UNION_H_
+#define GI_UNION_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
+#include <glib-object.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gi/wrapperutils.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 class UnionPrototype;
 class UnionInstance;
@@ -58,6 +59,8 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
     friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
                                     GIUnionInfo>;
     friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
+
+    static constexpr InfoType::Tag info_type_tag = InfoType::Union;
 
     explicit UnionPrototype(GIUnionInfo* info, GType gtype);
     ~UnionPrototype(void);
@@ -95,8 +98,6 @@ class UnionInstance
     static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
 };
 
-G_BEGIN_DECLS
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_union_class(JSContext       *context,
                             JS::HandleObject in_object,
@@ -107,6 +108,4 @@ JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
 
-G_END_DECLS
-
-#endif  /* __GJS_UNION_H__ */
+#endif  // GI_UNION_H_

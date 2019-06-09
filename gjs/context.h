@@ -21,15 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CONTEXT_H__
-#define __GJS_CONTEXT_H__
+#ifndef GJS_CONTEXT_H_
+#define GJS_CONTEXT_H_
 
-#if !defined (__GJS_GJS_H__) && !defined (GJS_COMPILATION)
-#error "Only <gjs/gjs.h> can be included directly."
+#if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
+#    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <stdbool.h>
+#include <stdbool.h>    /* IWYU pragma: keep */
+#include <sys/signal.h> /* for siginfo_t */
+
 #include <glib-object.h>
+#include <glib.h>
 
 #include <gjs/macros.h>
 #include <gjs/profiler.h>
@@ -96,4 +99,4 @@ void gjs_context_setup_debugger_console(GjsContext* gjs);
 
 G_END_DECLS
 
-#endif  /* __GJS_CONTEXT_H__ */
+#endif /* GJS_CONTEXT_H_ */

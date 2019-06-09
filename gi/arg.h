@@ -21,18 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_ARG_H__
-#define __GJS_ARG_H__
+#ifndef GI_ARG_H_
+#define GI_ARG_H_
 
-#include <stdbool.h>
-#include <glib.h>
-
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
+#include <stddef.h>  // for size_t
+#include <stdint.h>
 
 #include <girepository.h>
+#include <glib-object.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/macros.h"
 
 // Different roles for a GIArgument; currently used only in exception and debug
 // messages.
@@ -93,17 +93,13 @@ bool gjs_g_argument_release    (JSContext  *context,
                                 GITypeInfo *type_info,
                                 GArgument  *arg);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_out_array (JSContext  *context,
-                                       GITransfer  transfer,
-                                       GITypeInfo *type_info,
-                                       guint       length,
-                                       GArgument  *arg);
+bool gjs_g_argument_release_out_array(JSContext* cx, GITransfer transfer,
+                                      GITypeInfo* type_info, unsigned length,
+                                      GIArgument* arg);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_in_array (JSContext  *context,
-                                      GITransfer  transfer,
-                                      GITypeInfo *type_info,
-                                      guint       length,
-                                      GArgument  *arg);
+bool gjs_g_argument_release_in_array(JSContext* cx, GITransfer transfer,
+                                     GITypeInfo* type_info, unsigned length,
+                                     GIArgument* arg);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release_in_arg (JSContext  *context,
                                     GITransfer  transfer,
@@ -111,13 +107,10 @@ bool gjs_g_argument_release_in_arg (JSContext  *context,
                                     GArgument  *arg);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool _gjs_flags_value_is_valid (JSContext   *context,
-                                GType        gtype,
-                                gint64       value);
+bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value);
 
 GJS_USE
-gint64 _gjs_enum_from_int (GIEnumInfo *enum_info,
-                           int         int_value);
+int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_strv(JSContext             *context,
@@ -130,6 +123,4 @@ bool gjs_array_to_strv (JSContext   *context,
                         unsigned int length,
                         void       **arr_p);
 
-G_END_DECLS
-
-#endif  /* __GJS_ARG_H__ */
+#endif  // GI_ARG_H_

@@ -21,24 +21,23 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_JSAPI_UTIL_H__
-#define __GJS_JSAPI_UTIL_H__
+#ifndef GJS_JSAPI_UTIL_H_
+#define GJS_JSAPI_UTIL_H_
 
-#include <memory>
-#include <string>
-#include <stdbool.h>
+#include <stddef.h>  // for size_t
+#include <stdint.h>
+#include <sys/types.h>  // for ssize_t
 
+#include <memory>  // for unique_ptr
+#include <string>  // for string, u16string
+
+#include <girepository.h>
 #include <glib-object.h>
+#include <glib.h>
 
-#include "gi/gtype.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/macros.h"
-#include "jsapi-wrapper.h"
-
-#ifdef __GNUC__
-#define GJS_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#define GJS_ALWAYS_INLINE
-#endif
 
 struct GjsAutoTakeOwnership {};
 
@@ -170,8 +169,6 @@ template <>
 struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 }  // namespace JS
 
-G_BEGIN_DECLS
-
 /* Flags that should be set on properties exported from native code modules.
  * Basically set these on API, but do NOT set them on data.
  *
@@ -297,8 +294,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 void gjs_maybe_gc (JSContext *context);
 void gjs_gc_if_needed(JSContext *cx);
 
-G_END_DECLS
-
 GJS_USE
 size_t gjs_unix_shebang_len(const std::u16string& script,
                             unsigned* start_line_number);
@@ -366,4 +361,4 @@ char* gjs_hyphen_to_underscore(const char* str);
 GJS_USE std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str);
 #endif
 
-#endif  /* __GJS_JSAPI_UTIL_H__ */
+#endif  // GJS_JSAPI_UTIL_H_

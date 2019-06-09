@@ -21,19 +21,22 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_BOXED_H__
-#define __GJS_BOXED_H__
+#ifndef GI_BOXED_H_
+#define GI_BOXED_H_
+
+#include <stdint.h>
 
 #include <girepository.h>
+#include <glib-object.h>
 #include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/jsapi-wrapper.h"
 #include "gjs/macros.h"
 #include "util/log.h"
-
-#include "js/GCHashTable.h"
 
 class BoxedPrototype;
 class BoxedInstance;
@@ -98,6 +101,8 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     ~BoxedPrototype(void);
 
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
+
+    static constexpr InfoType::Tag info_type_tag = InfoType::Struct;
 
     // Accessors
 
@@ -238,4 +243,4 @@ class BoxedInstance
                                       void* gboxed, NoCopy);
 };
 
-#endif  /* __GJS_BOXED_H__ */
+#endif  // GI_BOXED_H_

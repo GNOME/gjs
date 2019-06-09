@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_WRAPPER_H
-#define GJS_JSAPI_WRAPPER_H
+#ifndef GJS_JSAPI_WRAPPER_H_
+#define GJS_JSAPI_WRAPPER_H_
 
 #include <config.h>
 
@@ -38,8 +38,12 @@
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 #pragma GCC system_header
 #endif
+// COMPAT: These are the headers that cause compiler warnings and need to be
+// marked as system headers.
+// IWYU pragma: begin_exports
+#include <js/Conversions.h>
 #include <jsapi.h>
 #include <jsfriendapi.h>
-#include <js/Conversions.h>
+// IWYU pragma: end_exports
 
-#endif  /* GJS_JSAPI_WRAPPER_H */
+#endif  // GJS_JSAPI_WRAPPER_H_

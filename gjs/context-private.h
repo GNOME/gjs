@@ -21,21 +21,26 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CONTEXT_PRIVATE_H__
-#define __GJS_CONTEXT_PRIVATE_H__
+#ifndef GJS_CONTEXT_PRIVATE_H_
+#define GJS_CONTEXT_PRIVATE_H_
 
-#include <inttypes.h>
+#include <stdint.h>
+#include <sys/types.h>  // for ssize_t
 
+#include <type_traits>  // for is_same
 #include <unordered_map>
 
-#include "context.h"
-#include "gjs/atoms.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include <glib-object.h>
+#include <glib.h>
 
+#include "gjs/jsapi-wrapper.h"
 #include "js/GCHashTable.h"
-#include "js/GCPolicyAPI.h"
-#include "js/SweepingAPI.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "gjs/profiler.h"
 
 using JobQueue = JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using ObjectInitList =
@@ -75,7 +80,7 @@ class GjsContextPrivate {
 
     unsigned m_auto_gc_id;
 
-    GjsAtoms m_atoms;
+    GjsAtoms* m_atoms;
 
     JobQueue m_job_queue;
     unsigned m_idle_drain_handler;
@@ -147,7 +152,7 @@ class GjsContextPrivate {
     GJS_USE JSContext* context(void) const { return m_cx; }
     GJS_USE JSObject* global(void) const { return m_global.get(); }
     GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
-    GJS_USE const GjsAtoms& atoms(void) const { return m_atoms; }
+    GJS_USE const GjsAtoms& atoms(void) const { return *m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
     GJS_USE bool sweeping(void) const { return m_in_gc_sweep; }
     GJS_USE const char* program_name(void) const { return m_program_name; }
@@ -170,7 +175,9 @@ class GjsContextPrivate {
         return m_object_init_list;
     }
     GJS_USE
-    static const GjsAtoms& atoms(JSContext* cx) { return from_cx(cx)->m_atoms; }
+    static const GjsAtoms& atoms(JSContext* cx) {
+        return *(from_cx(cx)->m_atoms);
+    }
 
     GJS_JSAPI_RETURN_CONVENTION
     bool eval(const char* script, ssize_t script_len, const char* filename,
@@ -203,4 +210,4 @@ class GjsContextPrivate {
     void dispose(void);
 };
 
-#endif  /* __GJS_CONTEXT_PRIVATE_H__ */
+#endif  // GJS_CONTEXT_PRIVATE_H_

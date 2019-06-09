@@ -21,19 +21,16 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_FUNCTION_H__
-#define __GJS_FUNCTION_H__
+#ifndef GI_FUNCTION_H_
+#define GI_FUNCTION_H_
 
-#include <stdbool.h>
-#include <glib.h>
-
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
-
+#include <ffi.h>
 #include <girepository.h>
-#include <girffi.h>
+#include <glib-object.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/macros.h"
 
 typedef enum {
     PARAM_NORMAL,
@@ -44,7 +41,7 @@ typedef enum {
 } GjsParamType;
 
 struct GjsCallbackTrampoline {
-    gint ref_count;
+    int ref_count;
     GICallableInfo *info;
 
     GClosure *js_function;
@@ -84,6 +81,4 @@ bool gjs_invoke_constructor_from_c(JSContext                  *context,
                                    const JS::HandleValueArray& args,
                                    GIArgument                 *rvalue);
 
-G_END_DECLS
-
-#endif  /* __GJS_FUNCTION_H__ */
+#endif  // GI_FUNCTION_H_

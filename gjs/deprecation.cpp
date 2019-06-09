@@ -21,13 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <string>
-#include <unordered_set>
+#include <cstddef>        // for size_t
+#include <string>         // for string
+#include <unordered_set>  // for unordered_set
+#include <utility>        // for hash, move
 
-#include "gjs/context-private.h"
-#include "gjs/deprecation.h"
-#include "gjs/jsapi-util.h"
+#include <glib.h>  // for g_warning
+
 #include "gjs/jsapi-wrapper.h"
+
+#include "gjs/deprecation.h"
+#include "gjs/macros.h"
 
 const char* messages[] = {
     // None:
@@ -79,10 +83,7 @@ static char* get_callsite(JSContext* cx) {
     if (!frame_string)
         return nullptr;
 
-    JS::UniqueChars frame_utf8;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(frame_string), &frame_utf8))
-        return nullptr;
-    return frame_utf8.release();
+    return JS_EncodeStringToUTF8(cx, frame_string);
 }
 
 /* Note, this can only be called from the JS thread because it uses the full

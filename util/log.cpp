@@ -21,16 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#include "config.h"
-
-#include "log.h"
-#include "misc.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <errno.h>
-#include <sys/types.h>
+#include <stdarg.h>
+#include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
+#include <string.h>  // for strchr, strcmp
 
 #ifdef G_OS_WIN32
 # include <io.h>
@@ -39,8 +33,11 @@
 #  define F_OK 0
 # endif
 #else
-# include <unistd.h>
+#    include <unistd.h>  // for getpid
 #endif
+
+#include "util/log.h"
+#include "util/misc.h"
 
 /* prefix is allowed if it's in the ;-delimited environment variable
  * GJS_DEBUG_TOPICS or if that variable is not set.

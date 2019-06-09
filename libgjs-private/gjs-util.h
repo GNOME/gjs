@@ -20,14 +20,15 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PRIVATE_UTIL_H__
-#define __GJS_PRIVATE_UTIL_H__
+#ifndef LIBGJS_PRIVATE_GJS_UTIL_H_
+#define LIBGJS_PRIVATE_GJS_UTIL_H_
 
 #include <locale.h>
-#include <glib.h>
-#include <glib-object.h>
 
-#include <gjs/macros.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
@@ -72,4 +73,4 @@ int gjs_open_bytes(GBytes* bytes, GError** error);
 
 G_END_DECLS
 
-#endif
+#endif /* LIBGJS_PRIVATE_GJS_UTIL_H_ */

@@ -25,13 +25,23 @@
 #ifndef GI_WRAPPERUTILS_H_
 #define GI_WRAPPERUTILS_H_
 
+#include <stdint.h>
+
+#include <new>
+#include <string>
+
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-class.h"  // IWYU pragma: keep
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
-
-G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
@@ -49,10 +59,8 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
                                    GType gtype);
 
-G_END_DECLS
-
 namespace InfoType {
-enum Tag { Enum, Interface, Object, Struct };
+enum Tag { Enum, Interface, Object, Struct, Union };
 }
 
 struct GjsTypecheckNoThrow {};
@@ -748,7 +756,7 @@ class GIWrapperPrototype : public Base {
     GJS_JSAPI_RETURN_CONVENTION
     bool init(JSContext*) { return true; }
 
-    // The following three methods are private because they are used only in
+    // The following four methods are private because they are used only in
     // create_class().
 
  private:
@@ -861,6 +869,22 @@ class GIWrapperPrototype : public Base {
         return true;
     }
 
+    /*
+     * GIWrapperPrototype::define_static_methods:
+     *
+     * Defines all introspectable static methods on @constructor, including
+     * class methods for objects, and interface methods for interfaces. See
+     * gjs_define_static_methods() for details.
+     *
+     * It requires Prototype to have an info_type_tag member to indicate
+     * the correct template specialization of gjs_define_static_methods().
+     */
+    GJS_JSAPI_RETURN_CONVENTION
+    bool define_static_methods(JSContext* cx, JS::HandleObject constructor) {
+        return gjs_define_static_methods<Prototype::info_type_tag>(
+            cx, constructor, m_gtype, m_info);
+    }
+
  public:
     /**
      * GIWrapperPrototype::create_class:
@@ -918,6 +942,11 @@ class GIWrapperPrototype : public Base {
             if (!JS_DefineFunctionById(cx, prototype, atoms.to_string(),
                                        &Base::to_string, 0,
                                        GJS_MODULE_PROP_FLAGS))
+                return nullptr;
+        }
+
+        if (!priv->is_custom_js_class()) {
+            if (!priv->define_static_methods(cx, constructor))
                 return nullptr;
         }
 

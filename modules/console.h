@@ -21,21 +21,15 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_CONSOLE_H__
-#define __GJS_CONSOLE_H__
+#ifndef MODULES_CONSOLE_H_
+#define MODULES_CONSOLE_H_
 
-#include <config.h>
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-
-G_BEGIN_DECLS
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_console_stuff(JSContext              *context,
                               JS::MutableHandleObject module);
 
-G_END_DECLS
-
-#endif  /* __GJS_CONSOLE_H__ */
+#endif  // MODULES_CONSOLE_H_

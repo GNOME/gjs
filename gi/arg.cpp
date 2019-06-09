@@ -21,31 +21,37 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for strcmp, strlen, memcpy
 
-#include <cmath>
-#include <cstdlib>
+#include <cmath>   // for std::abs
+#include <limits>  // for numeric_limits
+#include <string>
 
-#include "arg.h"
-#include "gtype.h"
-#include "object.h"
-#include "interface.h"
-#include "foreign.h"
-#include "fundamental.h"
-#include "boxed.h"
-#include "union.h"
-#include "param.h"
-#include "value.h"
-#include "gerror.h"
-#include "gjs/byteArray.h"
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
 #include "gjs/jsapi-wrapper.h"
-#include <util/log.h>
 
-bool
-_gjs_flags_value_is_valid(JSContext   *context,
-                          GType        gtype,
-                          gint64       value)
-{
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/foreign.h"
+#include "gi/fundamental.h"
+#include "gi/gerror.h"
+#include "gi/gtype.h"
+#include "gi/interface.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/union.h"
+#include "gi/value.h"
+#include "gi/wrapperutils.h"
+#include "gjs/atoms.h"
+#include "gjs/byteArray.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
+#include "util/log.h"
+
+bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
     GFlagsValue *v;
     guint32 tmpval;
 
@@ -80,11 +86,8 @@ _gjs_flags_value_is_valid(JSContext   *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-_gjs_enum_value_is_valid(JSContext  *context,
-                         GIEnumInfo *enum_info,
-                         gint64      value)
-{
+static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
+                                     int64_t value) {
     bool found;
     int n_values;
     int i;
@@ -94,10 +97,9 @@ _gjs_enum_value_is_valid(JSContext  *context,
 
     for (i = 0; i < n_values; ++i) {
         GIValueInfo *value_info;
-        gint64 enum_value;
 
         value_info = g_enum_info_get_value(enum_info, i);
-        enum_value = g_value_info_get_value(value_info);
+        int64_t enum_value = g_value_info_get_value(value_info);
         g_base_info_unref((GIBaseInfo *)value_info);
 
         if (enum_value == value) {
@@ -134,14 +136,11 @@ _gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
  */
 
 GJS_USE
-gint64
-_gjs_enum_from_int (GIEnumInfo *enum_info,
-                    int         int_value)
-{
+int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value) {
     if (_gjs_enum_uses_signed_type (enum_info))
-        return (gint64)int_value;
+        return int64_t(int_value);
     else
-        return (gint64)(guint32)int_value;
+        return int64_t(uint32_t(int_value));
 }
 
 /* Here for symmetry, but result is the same for the two cases */
@@ -2790,7 +2789,8 @@ gjs_value_from_g_argument (JSContext             *context,
 
             /* Enum/Flags are aren't pointer types, unlike the other interface subtypes */
             if (interface_type == GI_INFO_TYPE_ENUM) {
-                gint64 value_int64 = _gjs_enum_from_int ((GIEnumInfo *)interface_info, arg->v_int);
+                int64_t value_int64 =
+                    _gjs_enum_from_int(interface_info, arg->v_int);
 
                 if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64)) {
                     value = JS::NumberValue(value_int64);
@@ -2798,7 +2798,8 @@ gjs_value_from_g_argument (JSContext             *context,
 
                 goto out;
             } else if (interface_type == GI_INFO_TYPE_FLAGS) {
-                gint64 value_int64 = _gjs_enum_from_int ((GIEnumInfo *)interface_info, arg->v_int);
+                int64_t value_int64 =
+                    _gjs_enum_from_int(interface_info, arg->v_int);
 
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
                 if (_gjs_flags_value_is_valid(context, gtype, value_int64)) {
@@ -3590,13 +3591,9 @@ gjs_g_argument_release_in_arg(JSContext  *context,
     return true;
 }
 
-bool
-gjs_g_argument_release_in_array (JSContext  *context,
-                                 GITransfer  transfer,
-                                 GITypeInfo *type_info,
-                                 guint       length,
-                                 GArgument  *arg)
-{
+bool gjs_g_argument_release_in_array(JSContext* context, GITransfer transfer,
+                                     GITypeInfo* type_info, unsigned length,
+                                     GIArgument* arg) {
     GITypeInfo *param_type;
     gpointer *array;
     GArgument elem;
@@ -3639,13 +3636,9 @@ gjs_g_argument_release_in_array (JSContext  *context,
     return ret;
 }
 
-bool
-gjs_g_argument_release_out_array (JSContext  *context,
-                                  GITransfer  transfer,
-                                  GITypeInfo *type_info,
-                                  guint       length,
-                                  GArgument  *arg)
-{
+bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
+                                      GITypeInfo* type_info, unsigned length,
+                                      GIArgument* arg) {
     GITypeInfo *param_type;
     gpointer *array;
     GArgument elem;
