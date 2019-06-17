@@ -628,8 +628,8 @@ describe('Exported DBus object', function () {
             GLib.Variant.new_string(PROP_READ_WRITE_INITIAL_VALUE.toString()));
     });
 
-    it('reading writeonly property returns null', function () {
-        expect(proxy.PropWriteOnly).toBeNull();
+    it('reading writeonly throws an error', function () {
+        expect(() => proxy.PropWriteOnly).toThrowError('Property PropWriteOnly is not readable');
     });
 
     it('Setting a readwrite property works', function () {
@@ -649,13 +649,16 @@ describe('Exported DBus object', function () {
             proxy.PropWriteOnly = testValue;
         }).not.toThrow();
 
+        expect(() => proxy.PropWriteOnly).toThrow();
         expect(waitForServerProperty('_propWriteOnly', testValue)).toEqual(testValue);
     });
 
-    it('Setting a readonly property does not throw', function () {
+    it('Setting a readonly property throws an error', function () {
         let testValue = Math.random().toString();
         expect(() => {
             proxy.PropReadOnly = testValue;
-        }).not.toThrow();
+        }).toThrowError('Property PropReadOnly is not writable');
+
+        expect(proxy.PropReadOnly).toBe(PROP_READ_ONLY_INITIAL_VALUE);
     });
 });
