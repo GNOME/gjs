@@ -406,8 +406,9 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     }
     using Action = std::function<void(ObjectInstance*)>;
     using Predicate = std::function<bool(ObjectInstance*)>;
-    static void iterate_wrapped_gobjects(Action action);
-    static void remove_wrapped_gobjects_if(Predicate predicate, Action action);
+    static void iterate_wrapped_gobjects(const Action& action);
+    static void remove_wrapped_gobjects_if(const Predicate& predicate,
+                                           const Action& action);
 
  public:
     GJS_USE GjsListLink* get_link(void) { return &m_instance_link; }
