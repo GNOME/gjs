@@ -5,98 +5,99 @@ const {Gio, GjsPrivate, GLib} = imports.gi;
  *
  * *** NOTE: If you add stuff here, you need to update the Test class below.
  */
-var TestIface = '<node> \
-<interface name="org.gnome.gjs.Test"> \
-<method name="nonJsonFrobateStuff"> \
-    <arg type="i" direction="in"/> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="frobateStuff"> \
-    <arg type="a{sv}" direction="in"/> \
-    <arg type="a{sv}" direction="out"/> \
-</method> \
-<method name="alwaysThrowException"> \
-    <arg type="a{sv}" direction="in"/> \
-    <arg type="a{sv}" direction="out"/> \
-</method> \
-<method name="thisDoesNotExist"/> \
-<method name="noInParameter"> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="multipleInArgs"> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="noReturnValue"/> \
-<method name="emitSignal"/> \
-<method name="multipleOutValues"> \
-    <arg type="s" direction="out"/> \
-    <arg type="s" direction="out"/> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="oneArrayOut"> \
-    <arg type="as" direction="out"/> \
-</method> \
-<method name="arrayOfArrayOut"> \
-    <arg type="aas" direction="out"/> \
-</method> \
-<method name="multipleArrayOut"> \
-    <arg type="as" direction="out"/> \
-    <arg type="as" direction="out"/> \
-</method> \
-<method name="arrayOutBadSig"> \
-    <arg type="i" direction="out"/> \
-</method> \
-<method name="byteArrayEcho"> \
-    <arg type="ay" direction="in"/> \
-    <arg type="ay" direction="out"/> \
-</method> \
-<method name="byteEcho"> \
-    <arg type="y" direction="in"/> \
-    <arg type="y" direction="out"/> \
-</method> \
-<method name="dictEcho"> \
-    <arg type="a{sv}" direction="in"/> \
-    <arg type="a{sv}" direction="out"/> \
-</method> \
-<method name="echo"> \
-    <arg type="s" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="s" direction="out"/> \
-    <arg type="i" direction="out"/> \
-</method> \
-<method name="structArray"> \
-    <arg type="a(ii)" direction="out"/> \
-</method> \
-<method name="fdIn"> \
-    <arg type="h" direction="in"/> \
-    <arg type="ay" direction="out"/> \
-</method> \
-<method name="fdIn2"> \
-    <arg type="h" direction="in"/> \
-    <arg type="ay" direction="out"/> \
-</method> \
-<method name="fdOut"> \
-    <arg type="ay" direction="in"/> \
-    <arg type="h" direction="out"/> \
-</method> \
-<method name="fdOut2"> \
-    <arg type="ay" direction="in"/> \
-    <arg type="h" direction="out"/> \
-</method> \
-<signal name="signalFoo"> \
-    <arg type="s" direction="out"/> \
-</signal> \
-<property name="PropReadOnly" type="b" access="read" /> \
-<property name="PropWriteOnly" type="s" access="write" /> \
-<property name="PropReadWrite" type="v" access="readwrite" /> \
-</interface> \
-</node>';
+var TestIface = `<node>
+<interface name="org.gnome.gjs.Test">
+<method name="nonJsonFrobateStuff">
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+</method>
+<method name="frobateStuff">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="alwaysThrowException">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="thisDoesNotExist"/>
+<method name="noInParameter">
+    <arg type="s" direction="out"/>
+</method>
+<method name="multipleInArgs">
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+</method>
+<method name="noReturnValue"/>
+<method name="emitSignal"/>
+<method name="multipleOutValues">
+    <arg type="s" direction="out"/>
+    <arg type="s" direction="out"/>
+    <arg type="s" direction="out"/>
+</method>
+<method name="oneArrayOut">
+    <arg type="as" direction="out"/>
+</method>
+<method name="arrayOfArrayOut">
+    <arg type="aas" direction="out"/>
+</method>
+<method name="multipleArrayOut">
+    <arg type="as" direction="out"/>
+    <arg type="as" direction="out"/>
+</method>
+<method name="arrayOutBadSig">
+    <arg type="i" direction="out"/>
+</method>
+<method name="byteArrayEcho">
+    <arg type="ay" direction="in"/>
+    <arg type="ay" direction="out"/>
+</method>
+<method name="byteEcho">
+    <arg type="y" direction="in"/>
+    <arg type="y" direction="out"/>
+</method>
+<method name="dictEcho">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="echo">
+    <arg type="s" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+    <arg type="i" direction="out"/>
+</method>
+<method name="structArray">
+    <arg type="a(ii)" direction="out"/>
+</method>
+<method name="fdIn">
+    <arg type="h" direction="in"/>
+    <arg type="ay" direction="out"/>
+</method>
+<method name="fdIn2">
+    <arg type="h" direction="in"/>
+    <arg type="ay" direction="out"/>
+</method>
+<method name="fdOut">
+    <arg type="ay" direction="in"/>
+    <arg type="h" direction="out"/>
+</method>
+<method name="fdOut2">
+    <arg type="ay" direction="in"/>
+    <arg type="h" direction="out"/>
+</method>
+<signal name="signalFoo">
+    <arg type="s" direction="out"/>
+</signal>
+<property name="PropReadOnly" type="d" access="read" />
+<property name="PropWriteOnly" type="s" access="write" />
+<property name="PropReadWrite" type="v" access="readwrite" />
+</interface>
+</node>`;
 
+const PROP_READ_ONLY_INITIAL_VALUE = Math.random();
 const PROP_READ_WRITE_INITIAL_VALUE = 58;
 const PROP_WRITE_ONLY_INITIAL_VALUE = "Initial value";
 
