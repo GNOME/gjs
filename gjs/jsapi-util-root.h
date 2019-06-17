@@ -149,9 +149,7 @@ private:
         self->invalidate();
     }
 
-    void
-    teardown_rooting(void)
-    {
+    void teardown_rooting() {
         debug("teardown_rooting()");
         g_assert(m_rooted);
 
@@ -200,8 +198,7 @@ public:
         debug("created");
     }
 
-    ~GjsMaybeOwned(void)
-    {
+    ~GjsMaybeOwned() {
         debug("destroyed");
         if (m_rooted)
             teardown_rooting();
@@ -214,10 +211,10 @@ public:
      * GjsMaybeOwned wrapper in place of the GC thing itself due to the implicit
      * cast operator. But if you want to call methods on the GC thing, for
      * example if it's a JS::Value, you have to use get(). */
-    GJS_USE const T get(void) const {
+    GJS_USE const T get() const {
         return m_rooted ? m_thing.root->get() : m_thing.heap.get();
     }
-    operator const T(void) const { return get(); }
+    operator const T() const { return get(); }
 
     /* Use debug_addr() only for debug logging, because it is unbarriered. */
     template <typename U = T>
@@ -252,7 +249,7 @@ public:
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
-    GJS_USE JS::Handle<T> handle(void) {
+    GJS_USE JS::Handle<T> handle() {
         g_assert(m_rooted);
         return *m_thing.root;
     }
@@ -296,17 +293,13 @@ public:
     /* Marks an object as reachable for one GC with ExposeObjectToActiveJS().
      * Use to avoid stopping tracing an object during GC. This makes no sense
      * in the rooted case. */
-    void
-    prevent_collection(void)
-    {
+    void prevent_collection() {
         debug("prevent_collection()");
         g_assert(!m_rooted);
         GjsHeapOperation<T>::expose_to_js(m_thing.heap);
     }
 
-    void
-    reset(void)
-    {
+    void reset() {
         debug("reset()");
         if (!m_rooted) {
             m_thing.heap = JS::GCPolicy<T>::initial();
@@ -337,9 +330,7 @@ public:
         g_assert(m_rooted);
     }
 
-    void
-    switch_to_unrooted(void)
-    {
+    void switch_to_unrooted() {
         debug("switch to unrooted");
         g_assert(m_rooted);
 
@@ -367,13 +358,13 @@ public:
     /* If not tracing, then you must call this method during GC in order to
      * update the object's location if it was moved, or null it out if it was
      * finalized. If the object was finalized, returns true. */
-    GJS_USE bool update_after_gc(void) {
+    GJS_USE bool update_after_gc() {
         debug("update_after_gc()");
         g_assert(!m_rooted);
         return GjsHeapOperation<T>::update_after_gc(&m_thing.heap);
     }
 
-    GJS_USE bool rooted(void) const { return m_rooted; }
+    GJS_USE bool rooted() const { return m_rooted; }
 };
 
 #endif  // GJS_JSAPI_UTIL_ROOT_H_
