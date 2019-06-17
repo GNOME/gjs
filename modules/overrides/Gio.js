@@ -213,7 +213,7 @@ function _addDBusConvenience() {
         let signature = properties[i].signature;
         Object.defineProperty(this, name, { get: _propertyGetter.bind(this, name),
                                             set: _propertySetter.bind(this, name, signature),
-                                            configurable: true,
+                                            configurable: false,
                                             enumerable: true });
     }
 }
