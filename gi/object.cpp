@@ -1033,9 +1033,8 @@ ObjectInstance::gobj_dispose_notify(void)
     unlink();
 }
 
-void
-ObjectInstance::iterate_wrapped_gobjects(ObjectInstance::Action action)
-{
+void ObjectInstance::iterate_wrapped_gobjects(
+    const ObjectInstance::Action& action) {
     ObjectInstance *link = ObjectInstance::wrapped_gobject_list;
     while (link) {
         ObjectInstance *next = link->next();
@@ -1044,12 +1043,11 @@ ObjectInstance::iterate_wrapped_gobjects(ObjectInstance::Action action)
     }
 }
 
-void
-ObjectInstance::remove_wrapped_gobjects_if(ObjectInstance::Predicate predicate,
-                                           ObjectInstance::Action action)
-{
+void ObjectInstance::remove_wrapped_gobjects_if(
+    const ObjectInstance::Predicate& predicate,
+    const ObjectInstance::Action& action) {
     std::vector<ObjectInstance *> removed;
-    iterate_wrapped_gobjects([&](ObjectInstance *link) {
+    iterate_wrapped_gobjects([&predicate, &removed](ObjectInstance* link) {
         if (predicate(link)) {
             removed.push_back(link);
             link->unlink();
