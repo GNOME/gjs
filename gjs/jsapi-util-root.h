@@ -120,18 +120,51 @@ class GjsMaybeOwned {
     typedef void (*DestroyNotify)(JS::Handle<T> thing, void *data);
 
  private:
-    bool m_has_weakref;  /* we have a weak reference to the GjsContext */
-
-    JSContext *m_cx;
-
     /* m_root value controls which of these members we can access. When switching
      * from one to the other, be careful to call the constructor and destructor
      * of JS::Heap, since they use post barriers. */
     JS::Heap<T> m_heap;
     std::unique_ptr<JS::PersistentRooted<T>> m_root;
 
-    DestroyNotify m_notify;
-    void *m_data;
+    struct Notifier {
+        Notifier(GjsMaybeOwned<T> *parent, DestroyNotify func, void *data)
+            : m_parent(parent)
+            , m_func(func)
+            , m_data(data)
+        {
+            GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
+            g_object_weak_ref(G_OBJECT(gjs->public_context()),
+                              on_context_destroy, this);
+        }
+
+        ~Notifier() { disconnect(); }
+
+        static void on_context_destroy(void* data,
+                                       GObject* ex_context G_GNUC_UNUSED) {
+            auto self = static_cast<Notifier*>(data);
+            auto *parent = self->m_parent;
+            self->m_parent = nullptr;
+            self->m_func(parent->handle(), self->m_data);
+        }
+
+        void disconnect() {
+            if (!m_parent)
+                return;
+
+            GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
+            g_object_weak_unref(G_OBJECT(gjs->public_context()), on_context_destroy,
+                                this);
+            m_parent = nullptr;
+        }
+
+     private:
+        GjsMaybeOwned<T> *m_parent;
+        DestroyNotify m_func;
+        void *m_data;
+    };
+    std::unique_ptr<Notifier> m_notify;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
     inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
@@ -139,66 +172,25 @@ class GjsMaybeOwned {
                             what);
     }
 
-    static void on_context_destroy(void* data,
-                                   GObject* ex_context G_GNUC_UNUSED) {
-        auto self = static_cast<GjsMaybeOwned<T> *>(data);
-        self->invalidate();
-    }
-
-    void teardown_rooting() {
+    void
+    teardown_rooting()
+    {
         debug("teardown_rooting()");
         g_assert(m_root);
 
         m_root.reset();
+        m_notify.reset();
+
         new (&m_heap) JS::Heap<T>();
-
-        if (!m_has_weakref)
-            return;
-
-        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
-        g_object_weak_unref(G_OBJECT(gjs->public_context()), on_context_destroy,
-                            this);
-        m_has_weakref = false;
-    }
-
-    /* Called for a rooted wrapper when the JSContext is about to be destroyed.
-     * This calls the destroy-notify callback if one was passed to root(), and
-     * then removes all rooting from the object. */
-    void
-    invalidate(void)
-    {
-        debug("invalidate()");
-        g_assert(m_root);
-
-        /* The weak ref is already gone because the context is dead, so no need
-         * to remove it. */
-        m_has_weakref = false;
-
-        /* The object is still live entering this callback. The callback
-         * must reset() this wrapper. */
-        if (m_notify)
-            m_notify(handle(), m_data);
-        else
-            reset();
     }
 
  public:
-    GjsMaybeOwned()
-        : m_has_weakref(false),
-          m_cx(nullptr),
-          m_root(nullptr),
-          m_notify(nullptr),
-          m_data(nullptr) {
+    GjsMaybeOwned() {
         debug("created");
     }
 
     ~GjsMaybeOwned() {
         debug("destroyed");
-        if (m_root)
-            teardown_rooting();
-
-        /* Call in either case; teardown_rooting() constructs a new Heap */
-        m_heap.~Heap();
     }
 
     /* To access the GC thing, call get(). In many cases you can just use the
@@ -259,19 +251,11 @@ class GjsMaybeOwned {
         debug("root()");
         g_assert(!m_root);
         g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
-        m_cx = cx;
-        m_notify = notify;
-        m_data = data;
         m_heap.~Heap();
-        m_root = std::make_unique<JS::PersistentRooted<T>>(m_cx, thing);
+        m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
 
-        if (notify) {
-            GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
-            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
-            g_object_weak_ref(G_OBJECT(gjs->public_context()),
-                              on_context_destroy, this);
-            m_has_weakref = true;
-        }
+        if (notify)
+            m_notify = std::make_unique<Notifier>(this, notify, data);
     }
 
     /* You can only assign directly to the GjsMaybeOwned wrapper in the
@@ -300,9 +284,6 @@ class GjsMaybeOwned {
         }
 
         teardown_rooting();
-        m_cx = nullptr;
-        m_notify = nullptr;
-        m_data = nullptr;
     }
 
     void
@@ -329,8 +310,9 @@ class GjsMaybeOwned {
 
         /* Prevent the thing from being garbage collected while it is in neither
          * m_heap nor m_root */
-        JSAutoRequest ar(m_cx);
-        JS::Rooted<T> thing(m_cx, *m_root);
+        JSContext *cx = GjsContextPrivate::from_current_context()->context();
+        JSAutoRequest ar(cx);
+        JS::Rooted<T> thing(cx, *m_root);
 
         reset();
         m_heap = thing;
