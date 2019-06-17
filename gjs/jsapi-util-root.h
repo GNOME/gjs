@@ -117,21 +117,15 @@ class GjsMaybeOwned {
     using Ptr = std::unique_ptr<GjsMaybeOwned<T>>;
 
  private:
-    bool m_rooted;  /* wrapper is in rooted mode */
     bool m_has_weakref;  /* we have a weak reference to the GjsContext */
 
     JSContext *m_cx;
 
-    /* m_rooted controls which of these members we can access. When switching
+    /* m_root value controls which of these members we can access. When switching
      * from one to the other, be careful to call the constructor and destructor
      * of JS::Heap, since they use post barriers. */
-    union RootUnion {
-        JS::Heap<T> heap;
-        JS::PersistentRooted<T>* root;
-
-        RootUnion() : heap() {}
-        ~RootUnion() {}
-    } m_thing;
+    JS::Heap<T> m_heap;
+    std::unique_ptr<JS::PersistentRooted<T>> m_root;
 
     DestroyNotify m_notify;
     void *m_data;
@@ -152,11 +146,10 @@ class GjsMaybeOwned {
     teardown_rooting(void)
     {
         debug("teardown_rooting()");
-        g_assert(m_rooted);
+        g_assert(m_root);
 
-        delete m_thing.root;
-        new (&m_thing.heap) JS::Heap<T>();
-        m_rooted = false;
+        m_root.reset();
+        new (&m_heap) JS::Heap<T>();
 
         if (!m_has_weakref)
             return;
@@ -174,7 +167,7 @@ class GjsMaybeOwned {
     invalidate(void)
     {
         debug("invalidate()");
-        g_assert(m_rooted);
+        g_assert(m_root);
 
         /* The weak ref is already gone because the context is dead, so no need
          * to remove it. */
@@ -190,18 +183,18 @@ class GjsMaybeOwned {
 
  private:
     GjsMaybeOwned()
-        : m_rooted(false),
-          m_has_weakref(false),
+        : m_has_weakref(false),
           m_cx(nullptr),
+          m_root(nullptr),
           m_notify(nullptr),
           m_data(nullptr) {
         debug("created");
     }
 
     explicit GjsMaybeOwned(const T& thing)
-        : m_rooted(false),
-          m_has_weakref(false),
+        : m_has_weakref(false),
           m_cx(nullptr),
+          m_root(nullptr),
           m_notify(nullptr),
           m_data(nullptr) {
         debug("created");
@@ -212,11 +205,11 @@ class GjsMaybeOwned {
     ~GjsMaybeOwned(void)
     {
         debug("destroyed");
-        if (m_rooted)
+        if (m_root)
             teardown_rooting();
 
         /* Call in either case; teardown_rooting() constructs a new Heap */
-        m_thing.heap.~Heap();
+        m_heap.~Heap();
     }
 
     friend std::unique_ptr<GjsMaybeOwned<T>> std::make_unique<GjsMaybeOwned<T>>();
@@ -246,7 +239,7 @@ class GjsMaybeOwned {
      * cast operator. But if you want to call methods on the GC thing, for
      * example if it's a JS::Value, you have to use get(). */
     GJS_USE const T get(void) const {
-        return m_rooted ? m_thing.root->get() : m_thing.heap.get();
+        return m_root ? m_root->get() : m_heap.get();
     }
     operator const T(void) const { return get(); }
 
@@ -254,15 +247,15 @@ class GjsMaybeOwned {
     template <typename U = T>
     GJS_USE const T
     debug_addr(std::enable_if_t<std::is_pointer<U>::value>* = nullptr) const {
-        return m_rooted ? m_thing.root->get() : m_thing.heap.unbarrieredGet();
+        return m_root ? m_root->get() : m_heap.unbarrieredGet();
     }
 
     bool
     operator==(const T& other) const
     {
-        if (m_rooted)
-            return m_thing.root->get() == other;
-        return m_thing.heap == other;
+        if (m_root)
+            return m_root->get() == other;
+        return m_heap == other;
     }
     inline bool operator!=(const T& other) const { return !(*this == other); }
 
@@ -271,9 +264,9 @@ class GjsMaybeOwned {
     bool
     operator==(std::nullptr_t) const
     {
-        if (m_rooted)
-            return m_thing.root->get() == nullptr;
-        return m_thing.heap.unbarrieredGet() == nullptr;
+        if (m_root)
+            return m_root->get() == nullptr;
+        return m_heap.unbarrieredGet() == nullptr;
     }
     inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
@@ -284,8 +277,8 @@ class GjsMaybeOwned {
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
     GJS_USE JS::Handle<T> handle(void) {
-        g_assert(m_rooted);
-        return *m_thing.root;
+        g_assert(m_root);
+        return *m_root;
     }
 
     /* Roots the GC thing. You must not use this if you're already using the
@@ -297,14 +290,13 @@ class GjsMaybeOwned {
          void         *data   = nullptr)
     {
         debug("root()");
-        g_assert(!m_rooted);
-        g_assert(m_thing.heap.get() == JS::GCPolicy<T>::initial());
-        m_rooted = true;
+        g_assert(!m_root);
+        g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
         m_cx = cx;
         m_notify = notify;
         m_data = data;
-        m_thing.heap.~Heap();
-        m_thing.root = new JS::PersistentRooted<T>(m_cx, thing);
+        m_heap.~Heap();
+        m_root = std::make_unique<JS::PersistentRooted<T>>(m_cx, thing);
 
         if (notify) {
             GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
@@ -320,8 +312,8 @@ class GjsMaybeOwned {
     void
     operator=(const T& thing)
     {
-        g_assert(!m_rooted);
-        m_thing.heap = thing;
+        g_assert(!m_root);
+        m_heap = thing;
     }
 
     /* Marks an object as reachable for one GC with ExposeObjectToActiveJS().
@@ -331,16 +323,16 @@ class GjsMaybeOwned {
     prevent_collection(void)
     {
         debug("prevent_collection()");
-        g_assert(!m_rooted);
-        GjsHeapOperation<T>::expose_to_js(m_thing.heap);
+        g_assert(!m_root);
+        GjsHeapOperation<T>::expose_to_js(m_heap);
     }
 
     void
     reset(void)
     {
         debug("reset()");
-        if (!m_rooted) {
-            m_thing.heap = JS::GCPolicy<T>::initial();
+        if (!m_root) {
+            m_heap = JS::GCPolicy<T>::initial();
             return;
         }
 
@@ -356,32 +348,32 @@ class GjsMaybeOwned {
                      void         *data   = nullptr)
     {
         debug("switch to rooted");
-        g_assert(!m_rooted);
+        g_assert(!m_root);
 
         /* Prevent the thing from being garbage collected while it is in neither
-         * m_thing.heap nor m_thing.root */
+         * m_heap nor m_root */
         JSAutoRequest ar(cx);
-        JS::Rooted<T> thing(cx, m_thing.heap);
+        JS::Rooted<T> thing(cx, m_heap);
 
         reset();
         root(cx, thing, notify, data);
-        g_assert(m_rooted);
+        g_assert(m_root);
     }
 
     void
     switch_to_unrooted(void)
     {
         debug("switch to unrooted");
-        g_assert(m_rooted);
+        g_assert(m_root);
 
         /* Prevent the thing from being garbage collected while it is in neither
-         * m_thing.heap nor m_thing.root */
+         * m_heap nor m_root */
         JSAutoRequest ar(m_cx);
-        JS::Rooted<T> thing(m_cx, *m_thing.root);
+        JS::Rooted<T> thing(m_cx, *m_root);
 
         reset();
-        m_thing.heap = thing;
-        g_assert(!m_rooted);
+        m_heap = thing;
+        g_assert(!m_root);
     }
 
     /* Tracing makes no sense in the rooted case, because JS::PersistentRooted
@@ -391,8 +383,8 @@ class GjsMaybeOwned {
           const char *name)
     {
         debug("trace()");
-        g_assert(!m_rooted);
-        JS::TraceEdge<T>(tracer, &m_thing.heap, name);
+        g_assert(!m_root);
+        JS::TraceEdge<T>(tracer, &m_heap, name);
     }
 
     /* If not tracing, then you must call this method during GC in order to
@@ -400,11 +392,11 @@ class GjsMaybeOwned {
      * finalized. If the object was finalized, returns true. */
     GJS_USE bool update_after_gc(void) {
         debug("update_after_gc()");
-        g_assert(!m_rooted);
-        return GjsHeapOperation<T>::update_after_gc(&m_thing.heap);
+        g_assert(!m_root);
+        return GjsHeapOperation<T>::update_after_gc(&m_heap);
     }
 
-    GJS_USE bool rooted(void) const { return m_rooted; }
+    GJS_USE bool rooted(void) const { return m_root != nullptr; }
 };
 
 #endif  // GJS_JSAPI_UTIL_ROOT_H_
