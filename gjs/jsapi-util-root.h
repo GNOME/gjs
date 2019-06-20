@@ -77,15 +77,15 @@
  */
 template<typename T>
 struct GjsHeapOperation {
-    GJS_USE static bool update_after_gc(JS::Heap<T>* location);
+    GJS_USE static bool update_after_gc(const JS::Heap<T>& location);
     static void expose_to_js(JS::Heap<T>& thing);
 };
 
 template<>
 struct GjsHeapOperation<JSObject *> {
-    GJS_USE static bool update_after_gc(JS::Heap<JSObject*>* location) {
-        JS_UpdateWeakPointerAfterGC(location);
-        return (location->unbarrieredGet() == nullptr);
+    GJS_USE static bool update_after_gc(JS::Heap<JSObject*>& location) {
+        JS_UpdateWeakPointerAfterGC(&location);
+        return (location.unbarrieredGet() == nullptr);
     }
 
     static void expose_to_js(JS::Heap<JSObject *>& thing) {
@@ -334,7 +334,7 @@ class GjsMaybeOwned {
     GJS_USE bool update_after_gc() {
         debug("update_after_gc()");
         g_assert(!m_root);
-        return GjsHeapOperation<T>::update_after_gc(&m_heap);
+        return GjsHeapOperation<T>::update_after_gc(m_heap);
     }
 
     GJS_USE bool rooted() const { return m_root != nullptr; }
