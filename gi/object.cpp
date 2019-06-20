@@ -641,7 +641,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name,
                                       ResolveWhat resolve_props) {
-    GIInterfaceInfo *interfaces;
+    GIInterfaceInfo** interfaces;
     guint n_interfaces;
     guint i;
     g_irepository_get_object_gtype_interfaces(nullptr, m_gtype, &n_interfaces,
@@ -654,7 +654,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     }
 
     for (i = 0; i < n_interfaces; i++) {
-        GIInterfaceInfo *iface_info = interfaces + i;
+        GIInterfaceInfo* iface_info = *(interfaces + i);
         GjsAutoFunctionInfo method_info =
             g_interface_info_find_method(iface_info, name);
         if (method_info) {
