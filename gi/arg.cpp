@@ -2237,6 +2237,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_carray_internal (JSContext             *context,
                                 JS::MutableHandleValue value_p,
+                                GIArrayType            array_type,
                                 GITypeInfo            *param_info,
                                 guint                  length,
                                 gpointer               array)
@@ -2325,7 +2326,8 @@ gjs_array_from_carray_internal (JSContext             *context,
             GIBaseInfo *interface_info = g_type_info_get_interface (param_info);
             GIInfoType info_type = g_base_info_get_type (interface_info);
 
-            if ((info_type == GI_INFO_TYPE_STRUCT ||
+            if (array_type != GI_ARRAY_TYPE_PTR_ARRAY &&
+                (info_type == GI_INFO_TYPE_STRUCT ||
                  info_type == GI_INFO_TYPE_UNION) &&
                 !g_type_info_is_pointer(param_info)) {
                 size_t struct_size;
@@ -2394,7 +2396,9 @@ gjs_array_from_fixed_size_array (JSContext             *context,
 
     param_info = g_type_info_get_param_type(type_info, 0);
 
-    res = gjs_array_from_carray_internal(context, value_p, param_info, length, array);
+    res = gjs_array_from_carray_internal(context, value_p,
+                                         g_type_info_get_array_type(type_info),
+                                         param_info, length, array);
 
     g_base_info_unref((GIBaseInfo*)param_info);
 
@@ -2413,7 +2417,9 @@ gjs_value_from_explicit_array(JSContext             *context,
 
     param_info = g_type_info_get_param_type(type_info, 0);
 
-    res = gjs_array_from_carray_internal(context, value_p, param_info, length, arg->v_pointer);
+    res = gjs_array_from_carray_internal(context, value_p,
+                                         g_type_info_get_array_type(type_info),
+                                         param_info, length, arg->v_pointer);
 
     g_base_info_unref((GIBaseInfo*)param_info);
 
@@ -2456,7 +2462,8 @@ gjs_array_from_boxed_array (JSContext             *context,
         g_assert_not_reached();
     }
 
-    return gjs_array_from_carray_internal(context, value_p, param_info, length, data);
+    return gjs_array_from_carray_internal(context, value_p, array_type,
+                                          param_info, length, data);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
