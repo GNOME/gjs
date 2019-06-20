@@ -870,15 +870,13 @@ importer_new(JSContext *context,
 }
 
 GJS_USE
-static G_CONST_RETURN char * G_CONST_RETURN *
-gjs_get_search_path(void)
-{
+static const char* const* gjs_get_search_path(void) {
     char **search_path;
 
     /* not thread safe */
 
     if (!gjs_search_path) {
-        G_CONST_RETURN gchar* G_CONST_RETURN * system_data_dirs;
+        const char* const* system_data_dirs;
         const char *envstr;
         GPtrArray *path;
         gsize i;
@@ -929,7 +927,7 @@ gjs_get_search_path(void)
         search_path = gjs_search_path;
     }
 
-    return (G_CONST_RETURN char * G_CONST_RETURN *)search_path;
+    return const_cast<const char* const*>(search_path);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
