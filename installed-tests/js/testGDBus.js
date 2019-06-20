@@ -5,104 +5,106 @@ const {Gio, GjsPrivate, GLib} = imports.gi;
  *
  * *** NOTE: If you add stuff here, you need to update the Test class below.
  */
-var TestIface = '<node> \
-<interface name="org.gnome.gjs.Test"> \
-<method name="nonJsonFrobateStuff"> \
-    <arg type="i" direction="in"/> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="frobateStuff"> \
-    <arg type="a{sv}" direction="in"/> \
-    <arg type="a{sv}" direction="out"/> \
-</method> \
-<method name="alwaysThrowException"> \
-    <arg type="a{sv}" direction="in"/> \
-    <arg type="a{sv}" direction="out"/> \
-</method> \
-<method name="thisDoesNotExist"/> \
-<method name="noInParameter"> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="multipleInArgs"> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="noReturnValue"/> \
-<method name="emitSignal"/> \
-<method name="multipleOutValues"> \
-    <arg type="s" direction="out"/> \
-    <arg type="s" direction="out"/> \
-    <arg type="s" direction="out"/> \
-</method> \
-<method name="oneArrayOut"> \
-    <arg type="as" direction="out"/> \
-</method> \
-<method name="arrayOfArrayOut"> \
-    <arg type="aas" direction="out"/> \
-</method> \
-<method name="multipleArrayOut"> \
-    <arg type="as" direction="out"/> \
-    <arg type="as" direction="out"/> \
-</method> \
-<method name="arrayOutBadSig"> \
-    <arg type="i" direction="out"/> \
-</method> \
-<method name="byteArrayEcho"> \
-    <arg type="ay" direction="in"/> \
-    <arg type="ay" direction="out"/> \
-</method> \
-<method name="byteEcho"> \
-    <arg type="y" direction="in"/> \
-    <arg type="y" direction="out"/> \
-</method> \
-<method name="dictEcho"> \
-    <arg type="a{sv}" direction="in"/> \
-    <arg type="a{sv}" direction="out"/> \
-</method> \
-<method name="echo"> \
-    <arg type="s" direction="in"/> \
-    <arg type="i" direction="in"/> \
-    <arg type="s" direction="out"/> \
-    <arg type="i" direction="out"/> \
-</method> \
-<method name="structArray"> \
-    <arg type="a(ii)" direction="out"/> \
-</method> \
-<method name="fdIn"> \
-    <arg type="h" direction="in"/> \
-    <arg type="ay" direction="out"/> \
-</method> \
-<method name="fdIn2"> \
-    <arg type="h" direction="in"/> \
-    <arg type="ay" direction="out"/> \
-</method> \
-<method name="fdOut"> \
-    <arg type="ay" direction="in"/> \
-    <arg type="h" direction="out"/> \
-</method> \
-<method name="fdOut2"> \
-    <arg type="ay" direction="in"/> \
-    <arg type="h" direction="out"/> \
-</method> \
-<signal name="signalFoo"> \
-    <arg type="s" direction="out"/> \
-</signal> \
-<property name="PropReadOnly" type="b" access="read" /> \
-<property name="PropWriteOnly" type="s" access="write" /> \
-<property name="PropReadWrite" type="v" access="readwrite" /> \
-</interface> \
-</node>';
+var TestIface = `<node>
+<interface name="org.gnome.gjs.Test">
+<method name="nonJsonFrobateStuff">
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+</method>
+<method name="frobateStuff">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="alwaysThrowException">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="thisDoesNotExist"/>
+<method name="noInParameter">
+    <arg type="s" direction="out"/>
+</method>
+<method name="multipleInArgs">
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+</method>
+<method name="noReturnValue"/>
+<method name="emitSignal"/>
+<method name="multipleOutValues">
+    <arg type="s" direction="out"/>
+    <arg type="s" direction="out"/>
+    <arg type="s" direction="out"/>
+</method>
+<method name="oneArrayOut">
+    <arg type="as" direction="out"/>
+</method>
+<method name="arrayOfArrayOut">
+    <arg type="aas" direction="out"/>
+</method>
+<method name="multipleArrayOut">
+    <arg type="as" direction="out"/>
+    <arg type="as" direction="out"/>
+</method>
+<method name="arrayOutBadSig">
+    <arg type="i" direction="out"/>
+</method>
+<method name="byteArrayEcho">
+    <arg type="ay" direction="in"/>
+    <arg type="ay" direction="out"/>
+</method>
+<method name="byteEcho">
+    <arg type="y" direction="in"/>
+    <arg type="y" direction="out"/>
+</method>
+<method name="dictEcho">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="echo">
+    <arg type="s" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+    <arg type="i" direction="out"/>
+</method>
+<method name="structArray">
+    <arg type="a(ii)" direction="out"/>
+</method>
+<method name="fdIn">
+    <arg type="h" direction="in"/>
+    <arg type="ay" direction="out"/>
+</method>
+<method name="fdIn2">
+    <arg type="h" direction="in"/>
+    <arg type="ay" direction="out"/>
+</method>
+<method name="fdOut">
+    <arg type="ay" direction="in"/>
+    <arg type="h" direction="out"/>
+</method>
+<method name="fdOut2">
+    <arg type="ay" direction="in"/>
+    <arg type="h" direction="out"/>
+</method>
+<signal name="signalFoo">
+    <arg type="s" direction="out"/>
+</signal>
+<property name="PropReadOnly" type="d" access="read" />
+<property name="PropWriteOnly" type="s" access="write" />
+<property name="PropReadWrite" type="v" access="readwrite" />
+</interface>
+</node>`;
 
+const PROP_READ_ONLY_INITIAL_VALUE = Math.random();
 const PROP_READ_WRITE_INITIAL_VALUE = 58;
 const PROP_WRITE_ONLY_INITIAL_VALUE = "Initial value";
 
 /* Test is the actual object exporting the dbus methods */
 class Test {
     constructor() {
+        this._propReadOnly = PROP_READ_ONLY_INITIAL_VALUE;
         this._propWriteOnly = PROP_WRITE_ONLY_INITIAL_VALUE;
         this._propReadWrite = PROP_READ_WRITE_INITIAL_VALUE;
 
@@ -195,9 +197,9 @@ class Test {
         });
     }
 
-    // boolean
+    // double
     get PropReadOnly() {
-        return true;
+        return this._propReadOnly;
     }
 
     // string
@@ -259,6 +261,23 @@ describe('Exported DBus object', function () {
     var test;
     var proxy;
     let loop;
+
+    let waitForServerProperty = function (property, value = undefined, timeout = 500) {
+        let waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
+            waitId = 0;
+            throw new Error(`Timeout waiting for property ${property} expired`);
+        });
+
+        while (waitId && (!test[property] ||
+                          (value !== undefined && test[property] != value)))
+            loop.get_context().iteration(true);
+
+        if (waitId)
+            GLib.source_remove(waitId);
+
+        expect(waitId).not.toBe(0);
+        return test[property];
+    };
 
     beforeAll(function () {
         loop = new GLib.MainLoop(null, false);
@@ -592,5 +611,51 @@ describe('Exported DBus object', function () {
     it('throws an exception when passing a handle out of range of a Gio.UnixFDList', function () {
         const fdList = new Gio.UnixFDList();
         expect(() => proxy.fdInRemote(0, fdList, () => {})).toThrow();
+    });
+
+    it('Has defined properties', function () {
+        expect(proxy.hasOwnProperty('PropReadWrite')).toBeTruthy();
+        expect(proxy.hasOwnProperty('PropReadOnly')).toBeTruthy();
+        expect(proxy.hasOwnProperty('PropWriteOnly')).toBeTruthy();
+    });
+
+    it('reading readonly property works', function () {
+        expect(proxy.PropReadOnly).toEqual(PROP_READ_ONLY_INITIAL_VALUE);
+    });
+
+    it('reading readwrite property works', function () {
+        expect(proxy.PropReadWrite).toEqual(
+            GLib.Variant.new_string(PROP_READ_WRITE_INITIAL_VALUE.toString()));
+    });
+
+    it('reading writeonly property returns null', function () {
+        expect(proxy.PropWriteOnly).toBeNull();
+    });
+
+    it('Setting a readwrite property works', function () {
+        let testStr = 'GjsVariantValue';
+        expect(() => {
+            proxy.PropReadWrite = GLib.Variant.new_string(testStr);
+        }).not.toThrow();
+
+        expect(proxy.PropReadWrite.deep_unpack()).toEqual(testStr);
+
+        expect(waitForServerProperty('_propReadWrite', testStr)).toEqual(testStr);
+    });
+
+    it('Setting a writeonly property works', function () {
+        let testValue = Math.random().toString();
+        expect(() => {
+            proxy.PropWriteOnly = testValue;
+        }).not.toThrow();
+
+        expect(waitForServerProperty('_propWriteOnly', testValue)).toEqual(testValue);
+    });
+
+    it('Setting a readonly property does not throw', function () {
+        let testValue = Math.random().toString();
+        expect(() => {
+            proxy.PropReadOnly = testValue;
+        }).not.toThrow();
     });
 });

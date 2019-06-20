@@ -20,7 +20,6 @@
 
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
-var Lang = imports.lang;
 var Signals = imports.signals;
 var Gio;
 
@@ -89,8 +88,8 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var maxNumberArgs = signatureLength + 4;
 
     if (arg_array.length < minNumberArgs) {
-        throw new Error("Not enough arguments passed for method: " + methodName +
-                       ". Expected " + minNumberArgs + ", got " + arg_array.length);
+        throw new Error('Not enough arguments passed for method: ' + methodName +
+                        '. Expected ' + minNumberArgs + ', got ' + arg_array.length);
     } else if (arg_array.length > maxNumberArgs) {
         throw new Error(`Too many arguments passed for method ${methodName}. ` +
             `Maximum is ${maxNumberArgs} including one callback, ` +
@@ -100,9 +99,9 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     while (arg_array.length > signatureLength) {
         var argNum = arg_array.length - 1;
         var arg = arg_array.pop();
-        if (typeof(arg) == "function" && !sync) {
+        if (typeof(arg) == 'function' && !sync) {
             replyFunc = arg;
-        } else if (typeof(arg) == "number") {
+        } else if (typeof(arg) == 'number') {
             flags = arg;
         } else if (arg instanceof Gio.Cancellable) {
             cancellable = arg;
@@ -120,11 +119,11 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     if (inTypeString.includes('h')) {
         if (!fdList)
             throw new Error(`Method ${methodName} with input type containing ` +
-                '"h" must have a Gio.UnixFDList as an argument');
+                '\'h\' must have a Gio.UnixFDList as an argument');
         _validateFDVariant(inVariant, fdList);
     }
 
-    var asyncCallback = function (proxy, result) {
+    var asyncCallback = (proxy, result) => {
         try {
             const [outVariant, outFdList] =
                 proxy.call_with_unix_fd_list_finish(result);
@@ -148,7 +147,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 
 function _logReply(result, exc) {
     if (exc != null) {
-        log("Ignored exception from dbus method: " + exc.toString());
+        log('Ignored exception from dbus method: ' + exc.toString());
     }
 }
 
@@ -174,7 +173,7 @@ function _propertyGetter(name) {
     return value ? value.deep_unpack() : null;
 }
 
-function _propertySetter(value, name, signature) {
+function _propertySetter(name, signature, value) {
     let variant = new GLib.Variant(signature, value);
     this.set_cached_property(name, variant);
 
@@ -183,14 +182,14 @@ function _propertySetter(value, name, signature) {
                                [this.g_interface_name,
                                 name, variant]),
               Gio.DBusCallFlags.NONE, -1, null,
-              Lang.bind(this, function(proxy, result) {
+              (proxy, result) => {
                   try {
                       this.call_finish(result);
                   } catch(e) {
                       log('Could not set property ' + name + ' on remote object ' +
                           this.g_object_path + ': ' + e.message);
                   }
-              }));
+              });
 }
 
 function _addDBusConvenience() {
@@ -212,9 +211,9 @@ function _addDBusConvenience() {
     for (i = 0; i < properties.length; i++) {
         let name = properties[i].name;
         let signature = properties[i].signature;
-        Object.defineProperty(this, name, { get: Lang.bind(this, _propertyGetter, name),
-                                            set: Lang.bind(this, _propertySetter, name, signature),
-                                            configurable: true,
+        Object.defineProperty(this, name, { get: _propertyGetter.bind(this, name),
+                                            set: _propertySetter.bind(this, name, signature),
+                                            configurable: false,
                                             enumerable: true });
     }
 }
@@ -234,7 +233,7 @@ function _makeProxyWrapper(interfaceXml) {
         if (!cancellable)
             cancellable = null;
         if (asyncCallback)
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, function(initable, result) {
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (initable, result) => {
                 let caughtErrorWhenInitting = null;
                 try {
                     initable.init_finish(result);
@@ -319,7 +318,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                     // likely to be a normal JS error
                     name = 'org.gnome.gjs.JSError.' + name;
                 }
-                logError(e, "Exception in method call: " + method_name);
+                logError(e, 'Exception in method call: ' + method_name);
                 invocation.return_dbus_error(name, e.message);
             }
             return;
@@ -349,7 +348,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
         } catch(e) {
             // if we don't do this, the other side will never see a reply
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
-                                         "Service implementation returned an incorrect value type");
+                                         'Service implementation returned an incorrect value type');
         }
     } else if (this[method_name + 'Async']) {
         const fdList = invocation.get_message().get_unix_fd_list();
@@ -521,8 +520,8 @@ function _init() {
             const requiredProps = ['schema', 'schema-id', 'schema_id', 'schemaId',
                 'settings-schema', 'settings_schema', 'settingsSchema'];
             if (requiredProps.every(prop => !(prop in props)))
-                throw new Error("One of property 'schema-id' or " +
-                    "'settings-schema' are required for Gio.Settings");
+                throw new Error('One of property \'schema-id\' or ' +
+                    '\'settings-schema\' are required for Gio.Settings');
 
             const checkSchemasProps = ['schema', 'schema-id', 'schema_id', 'schemaId'];
             const source = Gio.SettingsSchemaSource.get_default();
