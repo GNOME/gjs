@@ -152,7 +152,8 @@ static gboolean gjs_dbus_implementation_property_set(
 
 static void
 gjs_dbus_implementation_init(GjsDBusImplementation *self) {
-    GjsDBusImplementationPrivate *priv = G_TYPE_INSTANCE_GET_PRIVATE (self, GJS_TYPE_DBUS_IMPLEMENTATION, GjsDBusImplementationPrivate);
+    GjsDBusImplementationPrivate* priv =
+        gjs_dbus_implementation_get_instance_private(self);
 
     self->priv = priv;
 
