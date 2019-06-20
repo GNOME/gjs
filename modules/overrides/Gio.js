@@ -211,10 +211,26 @@ function _addDBusConvenience() {
     for (i = 0; i < properties.length; i++) {
         let name = properties[i].name;
         let signature = properties[i].signature;
-        Object.defineProperty(this, name, { get: _propertyGetter.bind(this, name),
-                                            set: _propertySetter.bind(this, name, signature),
-                                            configurable: false,
-                                            enumerable: true });
+        let flags = properties[i].flags;
+        let getter = () => {
+            throw new Error(`Property ${name} is not readable`);
+        };
+        let setter = () => {
+            throw new Error(`Property ${name} is not writable`);
+        };
+
+        if (flags & Gio.DBusPropertyInfoFlags.READABLE)
+            getter = _propertyGetter.bind(this, name);
+
+        if (flags & Gio.DBusPropertyInfoFlags.WRITABLE)
+            setter = _propertySetter.bind(this, name, signature);
+
+        Object.defineProperty(this, name, {
+            get: getter,
+            set: setter,
+            configurable: false,
+            enumerable: true
+        });
     }
 }
 
