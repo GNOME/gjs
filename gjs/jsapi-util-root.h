@@ -109,11 +109,9 @@ struct GjsHeapOperation<JSFunction*> {
     }
 };
 
-/* GjsMaybeOwned is intended only for use in heap allocation. Do not allocate it
- * on the stack, and do not allocate any instances of structures that have it as
- * a member on the stack either. Unfortunately we cannot enforce this at compile
- * time with a private constructor; that would prevent the intended usage as a
- * member of a heap-allocated struct. */
+/* GjsMaybeOwned is intended for use as a member of classes that are allocated
+ * on the heap. Do not allocate GjsMaybeOwned on the stack, and do not allocate
+ * any instances of classes that have it as a member on the stack either. */
 template<typename T>
 class GjsMaybeOwned {
 public:
