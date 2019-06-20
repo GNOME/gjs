@@ -1,3 +1,37 @@
+Version 1.57.3
+--------------
+
+- The GJS profiler is now integrated directly into Sysprof 3, via the
+  GJS_TRACE_FD environment variable. Call stack information and garbage
+  collector timing will show up in Sysprof. See also GNOME/Initiatives#10
+
+- New JS API: System.addressOfGObject(obj) will return a string with the hex
+  address of the underlying GObject of `obj` if it is a GObject wrapper, or
+  throw an exception if it is not. This is intended for debugging.
+
+- New JS API: It's now possible to pass a value from Gio.DBusProxyFlags to the
+  constructor of a class created by Gio.DBusProxy.makeProxyWrapper().
+
+- Backwards-incompatible change: Trying to read a write-only property on a DBus
+  proxy object, or write a read-only property, will now throw an exception.
+  Previously it would fail silently. It seems unlikely any code is relying on
+  the old behaviour, and if so then it was probably masking a bug.
+
+- Closed bugs and merge requests:
+  * Build failure on Continuous [#253, !300, Philip Chimento]
+  * build: Bump glib requirement [!302, Florian Müllner]
+  * profiler: avoid clearing 512 bytes of stack [!304, Christian Hergert]
+  * system: add addressOfGObject method [!296, Marco Trevisan]
+  * Add support for GJS_TRACE_FD [!295, Christian Hergert]
+  * Gio: Make possible to pass DBusProxyFlags to proxy wrapper [!297, Marco
+    Trevisan]
+  * Various maintenance [!301, Philip Chimento]
+  * Marshalling of GPtrArray broken [#9, !307, Stéphane Seng]
+  * Build fix [!308, Philip Chimento]
+  * Gio: sync dbus wrapper properties flags [!298, Marco Trevisan]
+  * GjsMaybeOwned: Reduce allocation when used as Object member [!303, Marco
+    Trevisan]
+
 Version 1.57.2
 --------------
 
