@@ -187,7 +187,7 @@ AS_IF([test x$enable_profiler != xno], [
           [AC_MSG_ERROR([The profiler is currently only supported on Linux.
 The standard library must support timer_settime() and SIGEV_THREAD_ID.
 Configure with --disable-profiler to skip it on other platforms.])],
-          [enable_profiler=no])])
+          [enable_profiler=no]))
   AS_IF([test x$enable_profiler = xauto],[enable_profiler=yes])
   AC_DEFINE([ENABLE_PROFILER], [test x$enable_profiler = xyes], [Define if the profiler should be built.])
 ])
