@@ -71,6 +71,7 @@ common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"
+gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"
 
 AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
 dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
@@ -154,7 +155,7 @@ AC_ARG_ENABLE([profiler],
 
 # Use sysprof-capture-3 for profiler
 PKG_CHECK_MODULES([SYSPROF_CAPTURE],
-                  [sysprof-capture-3],
+                  [$gjs_sysprof_packages],
                   [have_sysprof_capture=yes],
                   [have_sysprof_capture=no])
 AC_SUBST([SYSPROF_CAPTURE_CFLAGS])
@@ -187,7 +188,7 @@ AS_IF([test x$enable_profiler != xno], [
           [AC_MSG_ERROR([The profiler is currently only supported on Linux.
 The standard library must support timer_settime() and SIGEV_THREAD_ID.
 Configure with --disable-profiler to skip it on other platforms.])],
-          [enable_profiler=no])])
+          [enable_profiler=no]))
   AS_IF([test x$enable_profiler = xauto],[enable_profiler=yes])
   AC_DEFINE([ENABLE_PROFILER], [test x$enable_profiler = xyes], [Define if the profiler should be built.])
 ])
