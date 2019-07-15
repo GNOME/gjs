@@ -20,7 +20,7 @@ Use CamelCase when importing modules to distinguish them from ordinary variables
 
 ```js
 const Big = imports.big;
-const GLib = imports.gi.GLib;
+const {GLib} = imports.gi;
 ```
 
 ## Variable declaration ##
@@ -30,11 +30,11 @@ Always use one of `const`, `var`, or `let` when defining a variable. Always use 
 ```js
 // Iterating over an array
 for (let i = 0; i < 10; ++i) {
-  let foo = bar(i);
+    let foo = bar(i);
 }
 // Iterating over an object's properties
 for (let prop in someobj) {
-  ...
+    ...
 }
 ```
 
@@ -44,7 +44,9 @@ See [What's new in JavaScript 1.7][1]
 A common case where this matters is when you have a closure inside a loop:
 ```js
 for (let i = 0; i < 10; ++i) {
-  mainloop.idle_add(function() { log("number is: " + i); });
+    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, function() {
+        log(`number is: ${i}`);
+    });
 }
 ```
 
@@ -70,13 +72,13 @@ A more realistic example would be connecting to a signal on a
 method of a prototype:
 
 ```js
-MyPrototype = {
-    _init : function() {
-       fnorb.connect('frobate', this._onFnorbFrobate.bind(this));
+const MyPrototype = {
+    _init() {
+        fnorb.connect('frobate', this._onFnorbFrobate.bind(this));
     },
 
-    _onFnorbFrobate : function(fnorb) {
-       this._updateFnorb();
+    _onFnorbFrobate(fnorb) {
+        this._updateFnorb();
     },
 };
 ```
@@ -85,8 +87,8 @@ MyPrototype = {
 
 JavaScript allows equivalently:
 ```js
-foo = { 'bar' : 42 };
-foo = { bar: 42 };
+foo = {'bar': 42};
+foo = {bar: 42};
 ```
 and
 ```js
@@ -94,9 +96,9 @@ var b = foo['bar'];
 var b = foo.bar;
 ```
 
-If your usage of an object is like an object, then you're defining "member variables." For member variables, use the no-quotes no-brackets syntax, that is, `{ bar: 42 }` and `foo.bar`.
+If your usage of an object is like an object, then you're defining "member variables." For member variables, use the no-quotes no-brackets syntax, that is, `{bar: 42}` and `foo.bar`.
 
-If your usage of an object is like a hash table (and thus conceptually the keys can have special chars in them), don't use quotes, but use brackets, `{ bar: 42 }`, `foo['bar']`.
+If your usage of an object is like a hash table (and thus conceptually the keys can have special chars in them), don't use quotes, but use brackets, `{bar: 42}`, `foo['bar']`.
 
 ## Variable naming ##
 
