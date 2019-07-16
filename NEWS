@@ -1,3 +1,12 @@
+Version 1.57.4
+--------------
+
+- Closed bugs and merge requests:
+  * gjs 1.57 requires a recent sysprof version for sysprof-capture-3 [#258,
+    !309, Olivier Fourdan]
+
+- Misc documentation changes [Philip Chimento]
+
 Version 1.57.3
 --------------
 
