@@ -212,6 +212,13 @@ describe('GArray', function () {
                 0x73, 0x74, 0x20, 0x2665, 0x20, 0x75, 0x74, 0x66, 0x38])).not.toThrow();
         });
     });
+
+    describe('of structs', function () {
+        xit('can be returned with transfer full', function () {
+            expect(GIMarshallingTests.garray_boxed_struct_full_return().map(e => e.long_))
+                .toEqual([42, 43, 44]);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/160');
+    });
 });
 
 describe('GByteArray', function() {
@@ -277,20 +284,29 @@ describe('GBytes', function() {
 });
 
 describe('GPtrArray', function () {
-    const refArray = ['0', '1', '2'];
+    describe('of strings', function() {
+        const refArray = ['0', '1', '2'];
 
-    it('can be passed to a function with transfer none', function () {
-        expect(() => GIMarshallingTests.gptrarray_utf8_none_in(refArray))
-            .not.toThrow();
-    });
+        it('can be passed to a function with transfer none', function () {
+            expect(() => GIMarshallingTests.gptrarray_utf8_none_in(refArray))
+                .not.toThrow();
+        });
 
-    ['return', 'out'].forEach(method => {
-        ['none', 'container', 'full'].forEach(transfer => {
-            it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
-                    .toEqual(refArray);
+        ['return', 'out'].forEach(method => {
+            ['none', 'container', 'full'].forEach(transfer => {
+                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
+                    expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
+                        .toEqual(refArray);
+                });
             });
         });
+    });
+
+    describe('of structs', function () {
+        xit('can be returned with transfer full', function () {
+            expect(GIMarshallingTests.gptrarray_boxed_struct_full_return().map(e => e.long_))
+                .toEqual([42, 43, 44]);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/160');
     });
 });
 
