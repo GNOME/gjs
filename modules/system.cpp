@@ -72,10 +72,8 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
                              &target_obj))
         return false;
 
-    if (!ObjectBase::to_c_ptr(cx, target_obj, &obj)) {
-        gjs_throw(cx, "Object %p is not a GObject", &target_obj);
+    if (!ObjectBase::to_c_ptr(cx, target_obj, &obj))
         return false;
-    }
 
     GjsAutoChar pointer_string = g_strdup_printf("%p", obj);
     return gjs_string_from_utf8(cx, pointer_string, argv.rval());

@@ -33,7 +33,7 @@ describe('System.addressOfGObject()', function () {
 
     it('throws for non GObject objects', function () {
         expect(() => System.addressOfGObject({})).
-            toThrowError(/Object 0x[a-f0-9]+ is not a GObject/);
+            toThrowError(/Object 0x[a-f0-9]+ is not a .*GObject/);
     });
 });
 
