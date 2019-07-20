@@ -66,7 +66,7 @@ function do_Build_JHBuild(){
     cd /jhbuild
     git log --pretty=format:"%h %cd %s" -1
     echo
-    ./autogen.sh
+    ./autogen.sh PYTHON=$(which python2)
     make -sj2
     make install
     PATH=$PATH:~/.local/bin
