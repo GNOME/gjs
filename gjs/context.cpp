@@ -703,6 +703,7 @@ bool GjsContextPrivate::register_module(const char* identifier,
 }
 
 static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
+    printf("%s", "resolving");
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
     return gjs->module_resolve(argc, vp);
@@ -717,10 +718,6 @@ static void gjs_context_constructed(GObject* object) {
     JSContext* cx = gjs_create_js_context(gjs_location);
     if (!cx)
         g_error("Failed to create javascript context");
-
-    JS::RootedFunction mod_resolve(
-        cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
-    SetModuleResolveHook(cx, mod_resolve);
 
     new (gjs_location) GjsContextPrivate(cx, js_context);
 
@@ -775,6 +772,11 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
+
+
+    JS::RootedFunction mod_resolve(
+        cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
+    SetModuleResolveHook(cx, mod_resolve);
 
     if (!m_atoms->init_atoms(m_cx)) {
         gjs_log_exception(m_cx);
