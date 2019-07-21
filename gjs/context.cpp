@@ -468,6 +468,8 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
     if (auto_profile)
         gjs_profiler_start(m_profiler);
 
+    g_warning("Evalling: %s", identifier);
+
     auto it = m_id_to_module.find(identifier);
     if (it == m_id_to_module.end()) {
         g_error("Attempted to evaluate unknown module: %s", identifier);
@@ -550,11 +552,14 @@ out:
     it to be used as part of the module resolve hook.
 */
 bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
-                                      
-                                        const char* identifier,
-                                        const char* filename,
-                                        const char* mod_text, size_t mod_len) {
+
+                                              const char* identifier,
+                                              const char* filename,
+                                              const char* mod_text,
+                                              size_t mod_len) {
     JSContext* cx = m_cx;
+
+    g_warning("Registering: %s", identifier);
 
     if (m_id_to_module.find(identifier) != m_id_to_module.end()) {
         gjs_throw(cx, "Module '%s' is already registered", identifier);
@@ -562,8 +567,9 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
     }
 
     unsigned int start_line_number = 1;
-    //mod_text = gjs_strip_unix_shebang(mod_text, &mod_len, &start_line_number);
-    
+    // mod_text = gjs_strip_unix_shebang(mod_text, &mod_len,
+    // &start_line_number);
+
     JS::CompileOptions options(cx);
     options.setFileAndLine(identifier, start_line_number).setSourceIsLazy(true);
 
@@ -571,9 +577,11 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
     std::u16string utf16_string = convert.from_bytes(mod_text);
     size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
 
-    JS::SourceBufferHolder buf(utf16_string.c_str() + offset, utf16_string.size() - offset,
+    JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
+                               utf16_string.size() - offset,
                                JS::SourceBufferHolder::NoOwnership);
 
+    g_warning("src: %s %lu", mod_text, offset);
     JS::RootedObject new_module(cx);
     if (!CompileModule(cx, options, buf, &new_module)) {
         gjs_throw(cx, "Failed to compile module: %s", identifier);
@@ -644,10 +652,10 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
         GjsAutoChar mod_text(mod_text_raw);
 
-        if (!register_module_inner(gjs_cx, full_path, full_path,
-                                                mod_text, mod_len))
-            // GjsContextPrivate::_register_module_inner should have already thrown any
-            // relevant errors
+        if (!register_module_inner(gjs_cx, full_path, full_path, mod_text,
+                                   mod_len))
+            // GjsContextPrivate::_register_module_inner should have already
+            // thrown any relevant errors
             return false;
 
         args.rval().setObject(*m_id_to_module[full_path.get()]);
@@ -683,8 +691,7 @@ bool GjsContextPrivate::register_module(const char* identifier,
     // then restore the original exception state.
     JS::AutoSaveExceptionState exp_state(m_cx);
 
-    if (register_module_inner(gjs_cx, identifier, filename,
-                                           mod_text, mod_len))
+    if (register_module_inner(gjs_cx, identifier, filename, mod_text, mod_len))
         return true;
 
     // Our message could come from memory owned by us or by the runtime.
@@ -700,9 +707,9 @@ bool GjsContextPrivate::register_module(const char* identifier,
         } else {
             JS::RootedString js_message(m_cx, JS::ToString(m_cx, exc));
             if (js_message) {
-                //auto_msg = JS_EncodeStringToUTF8(m_cx, js_message);
-                //auto_msg = js_message;
-                msg = "TODO: Fix Broken Message"; //auto_msg.get();
+                // auto_msg = JS_EncodeStringToUTF8(m_cx, js_message);
+                // auto_msg = js_message;
+                msg = "TODO: Fix Broken Message";  // auto_msg.get();
             }
         }
     }
@@ -719,6 +726,12 @@ bool GjsContextPrivate::register_module(const char* identifier,
     return false;
 }
 
+static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+
+    return gjs->module_resolve(argc, vp);
+}
+
 static void gjs_context_constructed(GObject* object) {
     GjsContext* js_context = GJS_CONTEXT(object);
 
@@ -728,6 +741,10 @@ static void gjs_context_constructed(GObject* object) {
     JSContext* cx = gjs_create_js_context(gjs_location);
     if (!cx)
         g_error("Failed to create javascript context");
+
+    JS::RootedFunction mod_resolve(
+        cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
+    SetModuleResolveHook(cx, mod_resolve);
 
     new (gjs_location) GjsContextPrivate(cx, js_context);
 
@@ -1138,7 +1155,7 @@ bool gjs_context_eval(GjsContext* js_context, const char* script,
 }
 
 bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
-                     uint8_t* code, GError** error) {
+                             uint8_t* code, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
@@ -1148,9 +1165,8 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
 }
 
 bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
-                                        const char* filename,
-                                        const char* mod_text, size_t mod_len,
-                                        GError** error) {
+                                 const char* filename, const char* mod_text,
+                                 size_t mod_len, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
