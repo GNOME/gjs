@@ -21,12 +21,19 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-#include <string.h>
-#include <stdlib.h>
-#include <locale.h>
+#include <config.h>  // for PACKAGE_STRING
+
+#include <locale.h>  // for setlocale, LC_ALL
+#include <stdlib.h>  // for exit
+#include <string.h>  // for strcmp, strlen
+
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>  // for close
+#endif
 
 #include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
 
 #include <gjs/gjs.h>
 
@@ -43,7 +50,6 @@ static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
 
-/* Keep in sync with entries in check_script_args_for_stray_gjs_args() */
 // clang-format off
 static GOptionEntry entries[] = {
     { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
@@ -64,6 +70,7 @@ static GOptionEntry entries[] = {
 };
 // clang-format on
 
+GJS_USE
 static char **
 strndupv(int           n,
          char * const *strv)
@@ -78,6 +85,7 @@ strndupv(int           n,
     return retval;
 }
 
+GJS_USE
 static char **
 strcatv(char **strv1,
         char **strv2)
@@ -103,30 +111,13 @@ strcatv(char **strv1,
     return retval;
 }
 
-static gboolean
-parse_profile_arg(const char *option_name,
-                  const char *value,
-                  void       *data,
-                  GError    **error_out)
-{
+static gboolean parse_profile_arg(const char* option_name G_GNUC_UNUSED,
+                                  const char* value, void*,
+                                  GError** error_out G_GNUC_UNUSED) {
     enable_profiler = true;
     g_free(profile_output_path);
-    if (value)
-        profile_output_path = g_strdup(value);
+    profile_output_path = g_strdup(value);
     return true;
-}
-
-static gboolean
-check_stray_profile_arg(const char *option_name,
-                        const char *value,
-                        void       *data,
-                        GError    **error_out)
-{
-    g_warning("You used the --profile option after the script on the GJS "
-              "command line. Support for this will be removed in a future "
-              "version. Place the option before the script or use the "
-              "GJS_ENABLE_PROFILER environment variable.");
-    return parse_profile_arg(option_name, value, data, error_out);
 }
 
 static void
@@ -137,14 +128,13 @@ check_script_args_for_stray_gjs_args(int           argc,
     char **new_coverage_prefixes = NULL;
     char *new_coverage_output_path = NULL;
     char **new_include_paths = NULL;
-    /* Keep in sync with entries[] at the top */
-    // clang-format off
+    // Don't add new entries here. This is only for arguments that were
+    // previously accepted after the script name on the command line, for
+    // backwards compatibility.
     static GOptionEntry script_check_entries[] = {
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
-        { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
-          G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&check_stray_profile_arg) },
         { NULL }
     };
     // clang-format on
@@ -302,10 +292,21 @@ main(int argc, char **argv)
     /* This should be removed after a suitable time has passed */
     check_script_args_for_stray_gjs_args(script_argc, script_argv);
 
+    /* Check for GJS_TRACE_FD for sysprof profiling */
+    const char* env_tracefd = g_getenv("GJS_TRACE_FD");
+    int tracefd = -1;
+    if (env_tracefd) {
+        tracefd = g_ascii_strtoll(env_tracefd, nullptr, 10);
+        g_setenv("GJS_TRACE_FD", "", true);
+        if (tracefd > 0)
+            enable_profiler = true;
+    }
+
     if (interactive_mode && enable_profiler) {
         g_message("Profiler disabled in interactive mode.");
         enable_profiler = false;
         g_unsetenv("GJS_ENABLE_PROFILER");  /* ignore env var in eval() */
+        g_unsetenv("GJS_TRACE_FD");         /* ignore env var in eval() */
     }
 
     js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
@@ -339,6 +340,15 @@ main(int argc, char **argv)
     if (enable_profiler && profile_output_path) {
         GjsProfiler *profiler = gjs_context_get_profiler(js_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
+    } else if (enable_profiler && tracefd > -1) {
+        GjsProfiler* profiler = gjs_context_get_profiler(js_context);
+        gjs_profiler_set_fd(profiler, tracefd);
+        tracefd = -1;
+    }
+
+    if (tracefd != -1) {
+        close(tracefd);
+        tracefd = -1;
     }
 
     /* prepare command line arguments */

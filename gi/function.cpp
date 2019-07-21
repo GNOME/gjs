@@ -21,29 +21,37 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <stdlib.h>  // for exit
+#include <string.h>  // for strcmp, memset, size_t
 
-#include "function.h"
-#include "arg.h"
-#include "object.h"
-#include "fundamental.h"
-#include "boxed.h"
-#include "union.h"
-#include "gerror.h"
-#include "closure.h"
-#include "gtype.h"
-#include "param.h"
-#include "gjs/context-private.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
+#include <new>
 
-#include <util/log.h>
-
+#include <ffi.h>
 #include <girepository.h>
+#include <girffi.h>
+#include <glib-object.h>
+#include <glib.h>
 
-#include <errno.h>
-#include <string.h>
+#include "gjs/jsapi-wrapper.h"
+#include "mozilla/Maybe.h"
+
+#include "gi/arg.h"
+#include "gi/boxed.h"
+#include "gi/closure.h"
+#include "gi/function.h"
+#include "gi/fundamental.h"
+#include "gi/gerror.h"
+#include "gi/gtype.h"
+#include "gi/object.h"
+#include "gi/param.h"
+#include "gi/union.h"
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/mem-private.h"
+#include "util/log.h"
 
 /* We use guint8 for arguments; functions can't
  * have more than this.
@@ -182,12 +190,8 @@ warn_about_illegal_js_callback(const GjsCallbackTrampoline *trampoline,
  * In other words, everything we need to call the JS function and
  * getting the return value back.
  */
-static void
-gjs_callback_closure(ffi_cif *cif,
-                     void *result,
-                     void **ffi_args,
-                     void *data)
-{
+static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
+                                 void** ffi_args, void* data) {
     JSContext *context;
     GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs, c_args_offset = 0;
@@ -209,7 +213,8 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     context = gjs_closure_get_context(trampoline->js_function);
-    if (G_UNLIKELY(_gjs_context_is_sweeping(context))) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    if (G_UNLIKELY(gjs->sweeping())) {
         warn_about_illegal_js_callback(trampoline, "during garbage collection",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
             "connected, or using the destroy(), dispose(), or remove() vfuncs");
@@ -217,8 +222,7 @@ gjs_callback_closure(ffi_cif *cif,
         return;
     }
 
-    auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
-    if (G_UNLIKELY (!_gjs_context_get_is_owner_thread(gjs_cx))) {
+    if (G_UNLIKELY(!gjs->is_owner_thread())) {
         warn_about_illegal_js_callback(trampoline, "on a different thread",
             "an API not intended to be used in JS");
         gjs_callback_trampoline_unref(trampoline);
@@ -226,8 +230,8 @@ gjs_callback_closure(ffi_cif *cif,
     }
 
     JS_BeginRequest(context);
-    JSAutoCompartment ac(context,
-                         gjs_closure_get_callable(trampoline->js_function));
+    JSAutoCompartment ac(context, JS_GetFunctionObject(gjs_closure_get_callable(
+                                      trampoline->js_function)));
 
     bool can_throw_gerror = g_callable_info_can_throw_gerror(trampoline->info);
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -236,8 +240,14 @@ gjs_callback_closure(ffi_cif *cif,
 
     JS::RootedObject this_object(context);
     if (trampoline->is_vfunc) {
-        auto this_gobject = static_cast<GObject *>(args[0]->v_pointer);
-        this_object = gjs_object_from_g_object(context, this_gobject);
+        GObject* gobj = G_OBJECT(args[0]->v_pointer);
+        if (gobj) {
+            this_object = ObjectInstance::wrapper_from_gobject(context, gobj);
+            if (!this_object) {
+                gjs_log_exception(context);
+                return;
+            }
+        }
 
         /* "this" is not included in the GI signature, but is in the C (and
          * FFI) signature */
@@ -313,6 +323,8 @@ gjs_callback_closure(ffi_cif *cif,
             case PARAM_CALLBACK:
                 /* Callbacks that accept another callback as a parameter are not
                  * supported, see gjs_callback_trampoline_new() */
+            case PARAM_UNKNOWN:
+                // PARAM_UNKNOWN is currently not ever set on a callback's args.
             default:
                 g_assert_not_reached();
         }
@@ -434,9 +446,8 @@ out:
              * main loop, or maybe not, but there's no way to tell, so we have
              * to exit here instead of propagating the exception back to the
              * original calling JS code. */
-            auto gcx = static_cast<GjsContext *>(JS_GetContextPrivate(context));
             uint8_t code;
-            if (_gjs_context_should_exit(gcx, &code))
+            if (gjs->should_exit(&code))
                 exit(code);
 
             /* Some other uncatchable exception, e.g. out of memory */
@@ -446,7 +457,8 @@ out:
 
         /* Fill in the result with some hopefully neutral value */
         g_callable_info_load_return_type(trampoline->info, &ret_type);
-        gjs_g_argument_init_default (context, &ret_type, (GArgument *) result);
+        gjs_gi_argument_init_default(&ret_type,
+                                     static_cast<GIArgument*>(result));
 
         /* If the callback has a GError** argument and invoking the closure
          * returned an error, try to make a GError from it */
@@ -473,7 +485,7 @@ out:
     }
 
     gjs_callback_trampoline_unref(trampoline);
-    gjs_schedule_gc_if_needed(context);
+    gjs->schedule_gc_if_needed();
 
     JS_EndRequest(context);
 }
@@ -490,22 +502,14 @@ gjs_destroy_notify_callback(gpointer data)
     gjs_callback_trampoline_unref(trampoline);
 }
 
-GjsCallbackTrampoline*
-gjs_callback_trampoline_new(JSContext       *context,
-                            JS::HandleValue  function,
-                            GICallableInfo  *callable_info,
-                            GIScopeType      scope,
-                            JS::HandleObject scope_object,
-                            bool             is_vfunc)
-{
+GjsCallbackTrampoline* gjs_callback_trampoline_new(
+    JSContext* context, JS::HandleFunction function,
+    GICallableInfo* callable_info, GIScopeType scope,
+    JS::HandleObject scope_object, bool is_vfunc) {
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
-    if (function.isNull()) {
-        return NULL;
-    }
-
-    g_assert(JS_TypeOfValue(context, function) == JSTYPE_FUNCTION);
+    g_assert(function);
 
     trampoline = g_slice_new(GjsCallbackTrampoline);
     new (trampoline) GjsCallbackTrampoline();
@@ -519,12 +523,17 @@ gjs_callback_trampoline_new(JSContext       *context,
      *   (and same for vfuncs, which are associated with a GObject prototype)
      */
     bool should_root = scope != GI_SCOPE_TYPE_NOTIFIED || !scope_object;
-    trampoline->js_function = gjs_closure_new(context, &function.toObject(),
-                                              g_base_info_get_name(callable_info),
-                                              should_root);
-    if (!should_root && scope_object)
-        gjs_object_associate_closure(context, scope_object,
-                                     trampoline->js_function);
+    trampoline->js_function = gjs_closure_new(
+        context, function, g_base_info_get_name(callable_info), should_root);
+    if (!should_root && scope_object) {
+        ObjectBase* scope_priv = ObjectBase::for_js(context, scope_object);
+        if (!scope_priv) {
+            gjs_throw(context, "Signal connected to wrong type of object");
+            return nullptr;
+        }
+
+        scope_priv->associate_closure(context, trampoline->js_function);
+    }
 
     /* Analyze param types and directions, similarly to init_cached_function_data */
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -594,6 +603,7 @@ gjs_callback_trampoline_new(JSContext       *context,
 /* an helper function to retrieve array lengths from a GArgument
    (letting the compiler generate good instructions in case of
    big endian machines) */
+GJS_USE
 static unsigned long
 get_length_from_arg (GArgument *arg, GITypeTag tag)
 {
@@ -616,6 +626,7 @@ get_length_from_arg (GArgument *arg, GITypeTag tag)
     g_assert_not_reached();
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_fill_method_instance(JSContext       *context,
                          JS::HandleObject obj,
@@ -633,19 +644,17 @@ gjs_fill_method_instance(JSContext       *context,
     if (type == GI_INFO_TYPE_STRUCT || type == GI_INFO_TYPE_BOXED) {
         /* GError must be special cased */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
-            if (!gjs_typecheck_gerror(context, obj, true))
+            if (!ErrorBase::transfer_to_gi_argument(context, obj, out_arg,
+                                                    GI_DIRECTION_OUT, transfer))
                 return false;
-
-            out_arg->v_pointer = gjs_gerror_from_error(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                out_arg->v_pointer = g_error_copy ((GError*) out_arg->v_pointer);
         } else if (type == GI_INFO_TYPE_STRUCT &&
                    g_struct_info_is_gtype_struct((GIStructInfo*) container)) {
             /* And so do GType structures */
             GType actual_gtype;
             gpointer klass;
 
-            actual_gtype = gjs_gtype_get_actual_gtype(context, obj);
+            if (!gjs_gtype_get_actual_gtype(context, obj, &actual_gtype))
+                return false;
 
             if (actual_gtype == G_TYPE_NONE) {
                 gjs_throw(context, "Invalid GType class passed for instance parameter");
@@ -665,36 +674,24 @@ gjs_fill_method_instance(JSContext       *context,
 
             out_arg->v_pointer = klass;
         } else {
-            if (!gjs_typecheck_boxed(context, obj, container, gtype, true))
+            if (!BoxedBase::transfer_to_gi_argument(context, obj, out_arg,
+                                                    GI_DIRECTION_OUT, transfer,
+                                                    gtype, container))
                 return false;
-
-            out_arg->v_pointer = gjs_c_struct_from_boxed(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING) {
-                if (gtype != G_TYPE_NONE)
-                    out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
-                else {
-                    gjs_throw (context, "Cannot transfer ownership of instance argument for non boxed structure");
-                    return false;
-                }
-            }
         }
 
     } else if (type == GI_INFO_TYPE_UNION) {
-        if (!gjs_typecheck_union(context, obj, container, gtype, true))
+        if (!UnionBase::transfer_to_gi_argument(context, obj, out_arg,
+                                                GI_DIRECTION_OUT, transfer,
+                                                gtype, container))
             return false;
-
-        out_arg->v_pointer = gjs_c_union_from_union(context, obj);
-        if (transfer == GI_TRANSFER_EVERYTHING)
-            out_arg->v_pointer = g_boxed_copy (gtype, out_arg->v_pointer);
 
     } else if (type == GI_INFO_TYPE_OBJECT || type == GI_INFO_TYPE_INTERFACE) {
         if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-            if (!gjs_typecheck_object(context, obj, gtype, true))
+            if (!ObjectBase::transfer_to_gi_argument(
+                    context, obj, out_arg, GI_DIRECTION_OUT, transfer, gtype))
                 return false;
-            out_arg->v_pointer = gjs_g_object_from_object(context, obj);
             is_gobject = true;
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                g_object_ref (out_arg->v_pointer);
         } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
             if (!gjs_typecheck_param(context, obj, G_TYPE_PARAM, true))
                 return false;
@@ -702,26 +699,22 @@ gjs_fill_method_instance(JSContext       *context,
             if (transfer == GI_TRANSFER_EVERYTHING)
                 g_param_spec_ref ((GParamSpec*) out_arg->v_pointer);
         } else if (G_TYPE_IS_INTERFACE(gtype)) {
-            if (gjs_typecheck_is_object(context, obj, false)) {
-                if (!gjs_typecheck_object(context, obj, gtype, true))
+            if (ObjectBase::check_jsclass(context, obj)) {
+                if (!ObjectBase::transfer_to_gi_argument(context, obj, out_arg,
+                                                         GI_DIRECTION_OUT,
+                                                         transfer, gtype))
                     return false;
-                out_arg->v_pointer = gjs_g_object_from_object(context, obj);
                 is_gobject = true;
-                if (transfer == GI_TRANSFER_EVERYTHING)
-                    g_object_ref (out_arg->v_pointer);
             } else {
-                if (!gjs_typecheck_fundamental(context, obj, gtype, true))
+                if (!FundamentalBase::transfer_to_gi_argument(
+                        context, obj, out_arg, GI_DIRECTION_OUT, transfer,
+                        gtype))
                     return false;
-                out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
-                if (transfer == GI_TRANSFER_EVERYTHING)
-                    gjs_fundamental_ref (context, out_arg->v_pointer);
             }
         } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-            if (!gjs_typecheck_fundamental(context, obj, gtype, true))
+            if (!FundamentalBase::transfer_to_gi_argument(
+                    context, obj, out_arg, GI_DIRECTION_OUT, transfer, gtype))
                 return false;
-            out_arg->v_pointer = gjs_g_fundamental_from_object(context, obj);
-            if (transfer == GI_TRANSFER_EVERYTHING)
-                gjs_fundamental_ref (context, out_arg->v_pointer);
         } else {
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "%s.%s is not an object instance neither a fundamental instance of a supported type",
@@ -738,6 +731,7 @@ gjs_fill_method_instance(JSContext       *context,
 }
 
 /* Intended for error messages. Return value must be freed */
+GJS_USE
 static char *
 format_function_name(Function *function,
                      bool      is_method)
@@ -772,6 +766,7 @@ complete_async_calls(void)
  * you can decide to keep the return values in #GArgument format by
  * providing a @r_value argument.
  */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_invoke_c_function(JSContext                             *context,
                       Function                              *function,
@@ -875,10 +870,15 @@ gjs_invoke_c_function(JSContext                             *context,
         GIArgInfo arg_info;
         bool arg_removed = false;
 
-        /* gjs_debug(GJS_DEBUG_GFUNCTION, "gi_arg_pos: %d c_arg_pos: %d js_arg_pos: %d", gi_arg_pos, c_arg_pos, js_arg_pos); */
-
         g_callable_info_load_arg( (GICallableInfo*) function->info, gi_arg_pos, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
+
+        gjs_debug_marshal(
+            GJS_DEBUG_GFUNCTION,
+            "Processing argument '%s' (direction %d), %d/%d GI args, "
+            "%d/%d C args, %d/%zu JS args",
+            g_base_info_get_name(&arg_info), direction, gi_arg_pos, gi_argc,
+            c_arg_pos, c_argc, js_arg_pos, args.length());
 
         g_assert_cmpuint(c_arg_pos, <, c_argc);
         ffi_arg_pointers[c_arg_pos] = &in_arg_cvalues[c_arg_pos];
@@ -957,13 +957,12 @@ gjs_invoke_c_function(JSContext                             *context,
                         break;
                     }
 
+                    JS::RootedFunction func(
+                        context, JS_GetObjectFunction(&current_arg.toObject()));
                     callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
-                    trampoline = gjs_callback_trampoline_new(context,
-                                                             current_arg,
-                                                             callable_info,
-                                                             scope,
-                                                             is_object_method ? obj : nullptr,
-                                                             false);
+                    trampoline = gjs_callback_trampoline_new(
+                        context, func, callable_info, scope,
+                        is_object_method ? obj : nullptr, false);
                     closure = trampoline->closure;
                     g_base_info_unref(callable_info);
                 }
@@ -1039,6 +1038,18 @@ gjs_invoke_c_function(JSContext                             *context,
 
                 break;
             }
+
+            case PARAM_UNKNOWN:
+                gjs_throw(context,
+                          "Error invoking %s.%s: impossible to determine what "
+                          "to pass to the '%s' argument. It may be that the "
+                          "function is unsupported, or there may be a bug in "
+                          "its annotations.",
+                          g_base_info_get_namespace(function->info),
+                          g_base_info_get_name(function->info),
+                          g_base_info_get_name(&arg_info));
+                failed = true;
+                break;
 
             default:
                 ;
@@ -1196,7 +1207,15 @@ release:
 
             if (direction == GI_DIRECTION_IN) {
                 arg = &in_arg_cvalues[c_arg_pos];
-                transfer = g_arg_info_get_ownership_transfer(&arg_info);
+
+                // If we failed before calling the function, or if the function
+                // threw an exception, then any GI_TRANSFER_EVERYTHING or
+                // GI_TRANSFER_CONTAINER parameters were not transferred. Treat
+                // them as GI_TRANSFER_NOTHING so that they are freed.
+                if (!failed && !did_throw_gerror)
+                    transfer = g_arg_info_get_ownership_transfer(&arg_info);
+                else
+                    transfer = GI_TRANSFER_NOTHING;
             } else {
                 arg = &inout_original_arg_cvalues[c_arg_pos];
                 /* For inout, transfer refers to what we get back from the function; for
@@ -1205,6 +1224,14 @@ release:
                  */
                 transfer = GI_TRANSFER_NOTHING;
             }
+
+            gjs_debug_marshal(
+                GJS_DEBUG_GFUNCTION,
+                "Releasing in-argument '%s' (direction %d, transfer %d), "
+                "%d/%d GI args, %d/%d C args",
+                g_base_info_get_name(&arg_info), direction, transfer,
+                gi_arg_pos, gi_argc, c_arg_pos, processed_c_args);
+
             if (param_type == PARAM_CALLBACK) {
                 ffi_closure *closure = (ffi_closure *) arg->v_pointer;
                 if (closure) {
@@ -1303,16 +1330,14 @@ release:
             transfer = g_arg_info_get_ownership_transfer(&arg_info);
             if (!arg_failed) {
                 if (array_length_pos >= 0) {
-                    gjs_g_argument_release_out_array(context,
-                                                     transfer,
-                                                     &arg_type_info,
-                                                     array_length.toInt32(),
-                                                     arg);
+                    if (!gjs_g_argument_release_out_array(
+                            context, transfer, &arg_type_info,
+                            array_length.toInt32(), arg))
+                        postinvoke_release_failed = true;
                 } else {
-                    gjs_g_argument_release(context,
-                                           transfer,
-                                           &arg_type_info,
-                                           arg);
+                    if (!gjs_g_argument_release(context, transfer,
+                                                &arg_type_info, arg))
+                        postinvoke_release_failed = true;
                 }
             }
 
@@ -1382,8 +1407,7 @@ release:
     }
 
     if (!failed && did_throw_gerror) {
-        gjs_throw_g_error(context, local_error);
-        return false;
+        return gjs_throw_gerror(context, local_error);
     } else if (failed) {
         return false;
     } else {
@@ -1391,6 +1415,7 @@ release:
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 function_call(JSContext *context,
               unsigned   js_argc,
@@ -1436,10 +1461,7 @@ uninit_cached_function_data (Function *function)
     g_function_invoker_destroy(&function->invoker);
 }
 
-static void
-function_finalize(JSFreeOp *fop,
-                  JSObject *obj)
-{
+static void function_finalize(JSFreeOp*, JSObject* obj) {
     Function *priv;
 
     priv = (Function *) JS_GetPrivate(obj);
@@ -1454,6 +1476,7 @@ function_finalize(JSFreeOp *fop,
     g_slice_free(Function, priv);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_num_arguments (JSContext *context,
                    unsigned   argc,
@@ -1485,26 +1508,24 @@ get_num_arguments (JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 function_to_string (JSContext *context,
                     guint      argc,
                     JS::Value *vp)
 {
     GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
-    gchar *string;
-    bool free;
-    bool ret = false;
     int i, n_args, n_jsargs;
     GString *arg_names_str;
     gchar *arg_names;
 
     if (priv == NULL) {
-        string = (gchar *) "function () {\n}";
-        free = false;
-        goto out;
+        JSString* retval = JS_NewStringCopyZ(context, "function () {\n}");
+        if (!retval)
+            return false;
+        rec.rval().setString(retval);
+        return true;
     }
-
-    free = true;
 
     n_args = g_callable_info_get_n_args(priv->info);
     n_jsargs = 0;
@@ -1528,26 +1549,21 @@ function_to_string (JSContext *context,
     }
     arg_names = g_string_free(arg_names_str, false);
 
+    GjsAutoChar descr;
     if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
-        string = g_strdup_printf("function %s(%s) {\n\t/* proxy for native symbol %s(); */\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
-                                 arg_names,
-                                 g_function_info_get_symbol ((GIFunctionInfo *) priv->info));
+        descr = g_strdup_printf(
+            "function %s(%s) {\n\t/* wrapper for native symbol %s(); */\n}",
+            g_base_info_get_name(priv->info), arg_names,
+            g_function_info_get_symbol(priv->info));
     } else {
-        string = g_strdup_printf("function %s(%s) {\n\t/* proxy for native symbol */\n}",
-                                 g_base_info_get_name ((GIBaseInfo *) priv->info),
-                                 arg_names);
+        descr = g_strdup_printf(
+            "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
+            g_base_info_get_name(priv->info), arg_names);
     }
 
     g_free(arg_names);
 
- out:
-    if (gjs_string_from_utf8(context, string, rec.rval()))
-        ret = true;
-
-    if (free)
-        g_free(string);
-    return ret;
+    return gjs_string_from_utf8(context, descr, rec.rval());
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -1584,6 +1600,7 @@ static JSFunctionSpec gjs_function_proto_funcs[] = {
 
 static JSFunctionSpec *gjs_function_static_funcs = nullptr;
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 init_cached_function_data (JSContext      *context,
                            Function       *function,
@@ -1602,8 +1619,7 @@ init_cached_function_data (JSContext      *context,
         if (!g_function_info_prep_invoker((GIFunctionInfo *)info,
                                           &(function->invoker),
                                           &error)) {
-            gjs_throw_g_error(context, error);
-            return false;
+            return gjs_throw_gerror(context, error);
         }
     } else if (info_type == GI_INFO_TYPE_VFUNC) {
         gpointer addr;
@@ -1611,7 +1627,7 @@ init_cached_function_data (JSContext      *context,
         addr = g_vfunc_info_get_address((GIVFuncInfo *)info, gtype, &error);
         if (error != NULL) {
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
-                gjs_throw_g_error(context, error);
+                return gjs_throw_gerror(context, error);
 
             g_clear_error(&error);
             return false;
@@ -1620,8 +1636,7 @@ init_cached_function_data (JSContext      *context,
         if (!g_function_invoker_new_for_address(addr, info,
                                                 &(function->invoker),
                                                 &error)) {
-            gjs_throw_g_error(context, error);
-            return false;
+            return gjs_throw_gerror(context, error);
         }
     }
 
@@ -1662,8 +1677,13 @@ init_cached_function_data (JSContext      *context,
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
                 if (strcmp(g_base_info_get_name(interface_info), "DestroyNotify") == 0 &&
                     strcmp(g_base_info_get_namespace(interface_info), "GLib") == 0) {
-                    /* Skip GDestroyNotify if they appear before the respective callback */
-                    function->param_types[i] = PARAM_SKIPPED;
+                    // We don't know (yet) what to do with GDestroyNotify
+                    // appearing before a callback. If the callback comes later
+                    // in the argument list, then PARAM_UNKNOWN will be
+                    // overwritten with PARAM_SKIPPED. If no callback follows,
+                    // then this is probably an unsupported function, so the
+                    // value will remain PARAM_UNKNOWN.
+                    function->param_types[i] = PARAM_UNKNOWN;
                 } else {
                     function->param_types[i] = PARAM_CALLBACK;
                     function->expected_js_argc += 1;
@@ -1732,6 +1752,7 @@ init_cached_function_data (JSContext      *context,
     return true;
 }
 
+GJS_USE
 static inline JSObject *
 gjs_builtin_function_get_proto(JSContext *cx)
 {
@@ -1741,6 +1762,7 @@ gjs_builtin_function_get_proto(JSContext *cx)
 
 GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(function, builtin_function)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 function_new(JSContext      *context,
              GType           gtype,
@@ -1776,6 +1798,7 @@ function_new(JSContext      *context,
     return function;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject*
 gjs_define_function(JSContext       *context,
                     JS::HandleObject in_object,

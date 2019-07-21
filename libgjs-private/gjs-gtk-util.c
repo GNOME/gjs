@@ -20,10 +20,13 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stddef.h>  // for NULL
+
+#include <glib-object.h>
+#include <glib.h>
 #include <gtk/gtk.h>
 
-#include "gjs-gtk-util.h"
+#include "libgjs-private/gjs-gtk-util.h"
 
 void
 gjs_gtk_container_child_set_property (GtkContainer *container,

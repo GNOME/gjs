@@ -23,17 +23,28 @@
  * Authored by: Philip Chimento <philip@endlessm.com>, <philip.chimento@gmail.com>
  */
 
-#include <algorithm>
+#include <algorithm>  // for find_if
 #include <deque>
 #include <mutex>
-#include <glib-object.h>
+#include <utility>  // for pair
 
-#include "toggle.h"
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gi/toggle.h"
 
 std::deque<ToggleQueue::Item>::iterator
-ToggleQueue::find_operation_locked(GObject               *gobj,
-                                   ToggleQueue::Direction direction)
-{
+ToggleQueue::find_operation_locked(const GObject               *gobj,
+                                   ToggleQueue::Direction direction) {
+    return std::find_if(q.begin(), q.end(),
+        [gobj, direction](const Item& item)->bool {
+            return item.gobj == gobj && item.direction == direction;
+        });
+}
+
+std::deque<ToggleQueue::Item>::const_iterator
+ToggleQueue::find_operation_locked(const GObject *gobj,
+                                   ToggleQueue::Direction direction) const {
     return std::find_if(q.begin(), q.end(),
         [gobj, direction](const Item& item)->bool {
             return item.gobj == gobj && item.direction == direction;
@@ -41,7 +52,7 @@ ToggleQueue::find_operation_locked(GObject               *gobj,
 }
 
 bool
-ToggleQueue::find_and_erase_operation_locked(GObject               *gobj,
+ToggleQueue::find_and_erase_operation_locked(const GObject               *gobj,
                                              ToggleQueue::Direction direction)
 {
     auto pos = find_operation_locked(gobj, direction);
@@ -71,7 +82,7 @@ ToggleQueue::idle_destroy_notify(void *data)
 }
 
 std::pair<bool, bool>
-ToggleQueue::is_queued(GObject *gobj)
+ToggleQueue::is_queued(GObject *gobj) const
 {
     std::lock_guard<std::mutex> hold(lock);
     bool has_toggle_down = find_operation_locked(gobj, DOWN) != q.end();
@@ -112,7 +123,7 @@ ToggleQueue::handle_toggle(Handler handler)
     debug("handle", item.gobj);
     if (item.needs_unref)
         g_object_unref(item.gobj);
-    
+
     return true;
 }
 

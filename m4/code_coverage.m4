@@ -1,91 +1,18 @@
-# ===========================================================================
+# Fork of an old version of AX_CODE_COVERAGE:
 #     https://www.gnu.org/software/autoconf-archive/ax_code_coverage.html
-# ===========================================================================
 #
-# SYNOPSIS
-#
-#   AX_CODE_COVERAGE()
-#
-# DESCRIPTION
-#
-#   Defines CODE_COVERAGE_CPPFLAGS, CODE_COVERAGE_CFLAGS,
-#   CODE_COVERAGE_CXXFLAGS and CODE_COVERAGE_LIBS which should be included
-#   in the CPPFLAGS, CFLAGS CXXFLAGS and LIBS/LIBADD variables of every
-#   build target (program or library) which should be built with code
-#   coverage support. Also defines CODE_COVERAGE_RULES which should be
-#   substituted in your Makefile; and $enable_code_coverage which can be
-#   used in subsequent configure output. CODE_COVERAGE_ENABLED is defined
-#   and substituted, and corresponds to the value of the
-#   --enable-code-coverage option, which defaults to being disabled.
-#
-#   Test also for gcov program and create GCOV variable that could be
-#   substituted.
-#
-#   Note that all optimization flags in CFLAGS must be disabled when code
-#   coverage is enabled.
-#
-#   Usage example:
-#
-#   configure.ac:
-#
-#     AX_CODE_COVERAGE
-#
-#   Makefile.am:
-#
-#     @CODE_COVERAGE_RULES@
-#     my_program_LIBS = ... $(CODE_COVERAGE_LIBS) ...
-#     my_program_CPPFLAGS = ... $(CODE_COVERAGE_CPPFLAGS) ...
-#     my_program_CFLAGS = ... $(CODE_COVERAGE_CFLAGS) ...
-#     my_program_CXXFLAGS = ... $(CODE_COVERAGE_CXXFLAGS) ...
-#
-#   This results in a "check-code-coverage" rule being added to any
-#   Makefile.am which includes "@CODE_COVERAGE_RULES@" (assuming the module
-#   has been configured with --enable-code-coverage). Running `make
-#   check-code-coverage` in that directory will run the module's test suite
-#   (`make check`) and build a code coverage report detailing the code which
-#   was touched, then print the URI for the report.
-#
-#   In earlier versions of this macro, CODE_COVERAGE_LDFLAGS was defined
-#   instead of CODE_COVERAGE_LIBS. They are both still defined, but use of
-#   CODE_COVERAGE_LIBS is preferred for clarity; CODE_COVERAGE_LDFLAGS is
-#   deprecated. They have the same value.
-#
-#   This code was derived from Makefile.decl in GLib, originally licenced
-#   under LGPLv2.1+.
-#
-# LICENSE
-#
-#   Copyright (c) 2012, 2016 Philip Withnall
-#   Copyright (c) 2012 Xan Lopez
-#   Copyright (c) 2012 Christian Persch
-#   Copyright (c) 2012 Paolo Borelli
-#   Copyright (c) 2012 Dan Winship
-#   Copyright (c) 2015 Bastien ROUCARIES
-#
-#   This library is free software; you can redistribute it and/or modify it
-#   under the terms of the GNU Lesser General Public License as published by
-#   the Free Software Foundation; either version 2.1 of the License, or (at
-#   your option) any later version.
-#
-#   This library is distributed in the hope that it will be useful, but
-#   WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser
-#   General Public License for more details.
-#
-#   You should have received a copy of the GNU Lesser General Public License
-#   along with this program. If not, see <https://www.gnu.org/licenses/>.
+# This macro broke API, and had some bugs introduced in it, so this is a copy of
+# the last good version.
 
-#serial 25
-
-AC_DEFUN([AX_CODE_COVERAGE],[
+AC_DEFUN([GJS_CODE_COVERAGE],[
 	dnl Check for --enable-code-coverage
 	AC_REQUIRE([AC_PROG_SED])
 
 	# allow to override gcov location
 	AC_ARG_WITH([gcov],
 	  [AS_HELP_STRING([--with-gcov[=GCOV]], [use given GCOV for coverage (GCOV=gcov).])],
-	  [_AX_CODE_COVERAGE_GCOV_PROG_WITH=$with_gcov],
-	  [_AX_CODE_COVERAGE_GCOV_PROG_WITH=gcov])
+	  [_GJS_CODE_COVERAGE_GCOV_PROG_WITH=$with_gcov],
+	  [_GJS_CODE_COVERAGE_GCOV_PROG_WITH=gcov])
 
 	AC_MSG_CHECKING([whether to build with code coverage support])
 	AC_ARG_ENABLE([code-coverage],
@@ -100,7 +27,7 @@ AC_DEFUN([AX_CODE_COVERAGE],[
 	AS_IF([ test "$enable_code_coverage" = "yes" ], [
 		# check for gcov
 		AC_CHECK_TOOL([GCOV],
-		  [$_AX_CODE_COVERAGE_GCOV_PROG_WITH],
+		  [$_GJS_CODE_COVERAGE_GCOV_PROG_WITH],
 		  [:])
 		AS_IF([test "X$GCOV" = "X:"],
 		  [AC_MSG_ERROR([gcov is needed to do coverage])])

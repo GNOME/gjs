@@ -1,35 +1,6 @@
 # Valgrind suppressions file for GJS
 # This is intended to be used in addition to GLib's glib.supp file.
 
-# We leak a small wrapper in GJS for each registered GType.
-
-{
-   gtype-wrapper-new
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:_Znwm
-   fun:gjs_gtype_create_gtype_wrapper
-}
-
-{
-   gtype-wrapper-qdata
-   Memcheck:Leak
-   match-leak-kinds: possible
-   ...
-   fun:type_set_qdata_W
-   fun:g_type_set_qdata
-   fun:gjs_gtype_create_gtype_wrapper
-}
-
-{
-   g_type_register_fundamental never freed
-   Memcheck:Leak
-   fun:calloc
-   ...
-   fun:g_type_register_fundamental
-   ...
-}
-
 # SpiderMonkey leaks
 
 {
@@ -185,6 +156,17 @@
    fun:_cairo_gstate_get_scaled_font
    fun:_cairo_default_context_get_scaled_font
    fun:cairo_show_text
+}
+
+# https://gitlab.gnome.org/GNOME/gobject-introspection/issues/265
+{
+   gobject-introspection-default-repository
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   ...
+   fun:build_typelib_key
+   fun:register_internal
 }
 
 # SpiderMonkey data races

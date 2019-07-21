@@ -21,34 +21,35 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_VALUE_H__
-#define __GJS_VALUE_H__
+#ifndef GI_VALUE_H_
+#define GI_VALUE_H_
 
-#include <stdbool.h>
 #include <glib-object.h>
-#include "gjs/jsapi-util.h"
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
 
+#include "gjs/macros.h"
+
+GJS_JSAPI_RETURN_CONVENTION
 bool       gjs_value_to_g_value         (JSContext      *context,
                                          JS::HandleValue value,
                                          GValue         *gvalue);
+GJS_JSAPI_RETURN_CONVENTION
 bool       gjs_value_to_g_value_no_copy (JSContext      *context,
                                          JS::HandleValue value,
                                          GValue         *gvalue);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_g_value(JSContext             *context,
                             JS::MutableHandleValue value_p,
                             const GValue          *gvalue);
 
-GClosure*  gjs_closure_new_marshaled    (JSContext    *context,
-                                         JSObject     *callable,
-                                         const char   *description);
-GClosure*  gjs_closure_new_for_signal   (JSContext    *context,
-                                         JSObject     *callable,
-                                         const char   *description,
-                                         guint         signal_id);
+GJS_USE
+GClosure* gjs_closure_new_marshaled(JSContext* cx, JSFunction* callable,
+                                    const char* description);
+GJS_USE
+GClosure* gjs_closure_new_for_signal(JSContext* cx, JSFunction* callable,
+                                     const char* description,
+                                     unsigned signal_id);
 
-G_END_DECLS
-
-#endif  /* __GJS_VALUE_H__ */
+#endif  // GI_VALUE_H_

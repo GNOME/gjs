@@ -1,11 +1,11 @@
 gjs_public_headers =		\
 	gjs/context.h		\
 	gjs/coverage.h		\
+	gjs/error-types.h	\
 	gjs/gjs.h		\
 	gjs/macros.h		\
 	gjs/mem.h		\
 	gjs/profiler.h		\
-	util/error.h		\
 	$(NULL)
 
 # For historical reasons, some files live in gi/
@@ -44,8 +44,6 @@ gjs_srcs =				\
 	gi/param.h			\
 	gi/private.cpp			\
 	gi/private.h			\
-	gi/proxyutils.cpp		\
-	gi/proxyutils.h			\
 	gi/repo.cpp			\
 	gi/repo.h			\
 	gi/toggle.cpp			\
@@ -54,6 +52,10 @@ gjs_srcs =				\
 	gi/union.h			\
 	gi/value.cpp			\
 	gi/value.h			\
+	gi/wrapperutils.cpp		\
+	gi/wrapperutils.h		\
+	gjs/atoms.cpp			\
+	gjs/atoms.h			\
 	gjs/byteArray.cpp		\
 	gjs/byteArray.h			\
 	gjs/context.cpp			\
@@ -62,6 +64,7 @@ gjs_srcs =				\
 	gjs/debugger.cpp		\
 	gjs/deprecation.cpp		\
 	gjs/deprecation.h		\
+	gjs/error-types.cpp		\
 	gjs/engine.cpp			\
 	gjs/engine.h			\
 	gjs/global.cpp			\
@@ -78,6 +81,7 @@ gjs_srcs =				\
 	gjs/jsapi-util-string.cpp	\
 	gjs/jsapi-wrapper.h		\
 	gjs/mem.cpp			\
+	gjs/mem-private.h		\
 	gjs/module.h			\
 	gjs/module.cpp			\
 	gjs/native.cpp			\
@@ -87,9 +91,6 @@ gjs_srcs =				\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\
-	util/error.cpp			\
-	util/glib.cpp			\
-	util/glib.h			\
 	util/log.cpp			\
 	util/log.h			\
 	util/misc.cpp			\
@@ -98,9 +99,9 @@ gjs_srcs =				\
 
 # These files were part of a separate library
 gjs_private_srcs =				\
-	libgjs-private/gjs-gdbus-wrapper.cpp	\
+	libgjs-private/gjs-gdbus-wrapper.c	\
 	libgjs-private/gjs-gdbus-wrapper.h	\
-	libgjs-private/gjs-util.cpp		\
+	libgjs-private/gjs-util.c		\
 	libgjs-private/gjs-util.h		\
 	libgjs-private/gjs-gtk-util.h		\
 	$(NULL)
@@ -111,10 +112,4 @@ gjs_gtk_private_srcs =			\
 
 gjs_console_srcs =	\
 	gjs/console.cpp	\
-	$(NULL)
-
-gjs_sysprof_srcs =			\
-	util/sp-capture-types.h		\
-	util/sp-capture-writer.c	\
-	util/sp-capture-writer.h	\
 	$(NULL)

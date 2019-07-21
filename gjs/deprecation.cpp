@@ -21,13 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <string>
-#include <unordered_set>
+#include <cstddef>        // for size_t
+#include <string>         // for string
+#include <unordered_set>  // for unordered_set
+#include <utility>        // for hash, move
 
-#include "gjs/context-private.h"
-#include "gjs/deprecation.h"
-#include "gjs/jsapi-util.h"
+#include <glib.h>  // for g_warning
+
 #include "gjs/jsapi-wrapper.h"
+
+#include "gjs/deprecation.h"
+#include "gjs/macros.h"
 
 const char* messages[] = {
     // None:
@@ -66,6 +70,7 @@ struct hash<DeprecationEntry> {
 
 static std::unordered_set<DeprecationEntry> logged_messages;
 
+GJS_JSAPI_RETURN_CONVENTION
 static char* get_callsite(JSContext* cx) {
     JS::RootedObject stack_frame(cx);
     if (!JS::CaptureCurrentStack(cx, &stack_frame,
@@ -78,10 +83,7 @@ static char* get_callsite(JSContext* cx) {
     if (!frame_string)
         return nullptr;
 
-    GjsAutoJSChar frame_utf8;
-    if (!gjs_string_to_utf8(cx, JS::StringValue(frame_string), &frame_utf8))
-        return nullptr;
-    return frame_utf8.release();
+    return JS_EncodeStringToUTF8(cx, frame_string);
 }
 
 /* Note, this can only be called from the JS thread because it uses the full
@@ -89,8 +91,8 @@ static char* get_callsite(JSContext* cx) {
  * stdout or stderr. Do not use this function during GC, for example. */
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
                                             const GjsDeprecationMessageId id) {
-    GjsAutoJSChar callsite = get_callsite(cx);
-    DeprecationEntry entry(id, callsite);
+    JS::UniqueChars callsite(get_callsite(cx));
+    DeprecationEntry entry(id, callsite.get());
     if (!logged_messages.count(entry)) {
         JS::UniqueChars stack_dump = JS::FormatStackDump(cx, nullptr, false,
             false, false);

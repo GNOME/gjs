@@ -22,43 +22,168 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_FUNDAMENTAL_H__
-#define __GJS_FUNDAMENTAL_H__
+#ifndef GI_FUNDAMENTAL_H_
+#define GI_FUNDAMENTAL_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
-#include "gjs/jsapi-util.h"
+#include <glib-object.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
 
-bool gjs_define_fundamental_class(JSContext              *context,
-                                  JS::HandleObject        in_object,
-                                  GIObjectInfo           *info,
-                                  JS::MutableHandleObject constructor,
-                                  JS::MutableHandleObject prototype);
+#include "gi/wrapperutils.h"
+#include "gjs/macros.h"
+#include "util/log.h"
 
-JSObject* gjs_object_from_g_fundamental      (JSContext     *context,
-                                              GIObjectInfo  *info,
-                                              void          *fobj);
+class FundamentalPrototype;
+class FundamentalInstance;
 
-void     *gjs_g_fundamental_from_object(JSContext       *context,
-                                        JS::HandleObject obj);
+/* To conserve memory, we have two different kinds of private data for JS
+ * wrappers for fundamental types: FundamentalInstance, and
+ * FundamentalPrototype. Both inherit from FundamentalBase for their common
+ * functionality. For more information, see the notes in wrapperutils.h.
+ */
 
-JSObject *gjs_fundamental_from_g_value       (JSContext     *context,
-                                              const GValue  *value,
-                                              GType          gtype);
+class FundamentalBase
+    : public GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                           FundamentalInstance> {
+    friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance>;
 
-bool      gjs_typecheck_fundamental(JSContext       *context,
-                                    JS::HandleObject object,
-                                    GType            expected_gtype,
-                                    bool             throw_error);
+ protected:
+    explicit FundamentalBase(FundamentalPrototype* proto = nullptr)
+        : GIWrapperBase(proto) {}
+    ~FundamentalBase(void) {}
 
-void*     gjs_fundamental_ref                (JSContext     *context,
-                                              void          *fobj);
-void      gjs_fundamental_unref              (JSContext     *context,
-                                              void          *fobj);
+    static const GjsDebugTopic debug_topic = GJS_DEBUG_GFUNDAMENTAL;
+    static constexpr const char* debug_tag = "fundamental";
 
-G_END_DECLS
+    static const struct JSClassOps class_ops;
+    static const struct JSClass klass;
 
-#endif  /* __GJS_FUNDAMENTAL_H__ */
+    // Helper methods
+
+    GJS_USE const char* to_string_kind(void) const { return "fundamental"; }
+
+    // Public API
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool to_gvalue(JSContext* cx, JS::HandleObject obj, GValue* gvalue);
+};
+
+class FundamentalPrototype
+    : public GIWrapperPrototype<FundamentalBase, FundamentalPrototype,
+                                FundamentalInstance> {
+    friend class GIWrapperPrototype<FundamentalBase, FundamentalPrototype,
+                                    FundamentalInstance>;
+    friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance>;
+
+    GIObjectInfoRefFunction m_ref_function;
+    GIObjectInfoUnrefFunction m_unref_function;
+    GIObjectInfoGetValueFunction m_get_value_function;
+    GIObjectInfoSetValueFunction m_set_value_function;
+
+    JS::Heap<jsid> m_constructor_name;
+    GICallableInfo* m_constructor_info;
+
+    explicit FundamentalPrototype(GIObjectInfo* info, GType gtype);
+    ~FundamentalPrototype(void);
+
+    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
+
+    static constexpr InfoType::Tag info_type_tag = InfoType::Object;
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static FundamentalPrototype* for_gtype(JSContext* cx, GType gtype);
+
+    // Accessors
+
+    GJS_USE
+    jsid constructor_name(void) const { return m_constructor_name.get(); }
+    GJS_USE
+    GICallableInfo* constructor_info(void) const { return m_constructor_info; }
+
+    void* call_ref_function(void* ptr) const { return m_ref_function(ptr); }
+    void call_unref_function(void* ptr) const { m_unref_function(ptr); }
+    GJS_USE void* call_get_value_function(const GValue* value) const {
+        return m_get_value_function(value);
+    }
+    void call_set_value_function(GValue* value, void* object) const {
+        m_set_value_function(value, object);
+    }
+
+    // Helper methods
+
+ private:
+    GJS_JSAPI_RETURN_CONVENTION
+    bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const;
+
+    GJS_USE unsigned constructor_nargs(void) const;
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool resolve_interface(JSContext* cx, JS::HandleObject obj, bool* resolved,
+                           const char* name);
+
+    // JSClass operations
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                      const char* prop_name, bool* resolved);
+    void trace_impl(JSTracer* trc);
+
+    // Public API
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIObjectInfo* info,
+                             JS::MutableHandleObject constructor);
+};
+
+class FundamentalInstance
+    : public GIWrapperInstance<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance> {
+    friend class FundamentalBase;  // for set_value()
+    friend class GIWrapperInstance<FundamentalBase, FundamentalPrototype,
+                                   FundamentalInstance>;
+    friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
+                               FundamentalInstance>;
+
+    explicit FundamentalInstance(JSContext* cx, JS::HandleObject obj);
+    ~FundamentalInstance(void);
+
+    // Helper methods
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool invoke_constructor(JSContext* cx, JS::HandleObject obj,
+                            const JS::HandleValueArray& args,
+                            GIArgument* rvalue);
+
+    void ref(void) { get_prototype()->call_ref_function(m_ptr); }
+    void unref(void) { get_prototype()->call_unref_function(m_ptr); }
+    void set_value(GValue* gvalue) const {
+        get_prototype()->call_set_value_function(gvalue, m_ptr);
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool associate_js_instance(JSContext* cx, JSObject* object,
+                               void* gfundamental);
+
+    // JS constructor
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool constructor_impl(JSContext* cx, JS::HandleObject obj,
+                          const JS::CallArgs& args);
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* object_for_c_ptr(JSContext* cx, void* gfundamental);
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* object_for_gvalue(JSContext* cx, const GValue* gvalue,
+                                       GType gtype);
+
+    static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
+};
+
+#endif  // GI_FUNDAMENTAL_H_

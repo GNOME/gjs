@@ -22,40 +22,32 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for strlen
 
-#include <util/log.h>
-#include <util/glib.h>
-#include <util/misc.h>
+#include <glib.h>
 
-#include "jsapi-class.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include "gjs/jsapi-wrapper.h"
 
-#include <string.h>
-#include <math.h>
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"  // IWYU pragma: keep
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 /* Reserved slots of JSNative accessor wrappers */
 enum {
     DYNAMIC_PROPERTY_PRIVATE_SLOT,
 };
 
-bool
-gjs_init_class_dynamic(JSContext              *context,
-                       JS::HandleObject        in_object,
-                       JS::HandleObject        parent_proto,
-                       const char             *ns_name,
-                       const char             *class_name,
-                       JSClass                *clasp,
-                       JSNative                constructor_native,
-                       unsigned                nargs,
-                       JSPropertySpec         *proto_ps,
-                       JSFunctionSpec         *proto_fs,
-                       JSPropertySpec         *static_ps,
-                       JSFunctionSpec         *static_fs,
-                       JS::MutableHandleObject prototype,
-                       JS::MutableHandleObject constructor)
-{
+bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
+                            JS::HandleObject parent_proto, const char* ns_name,
+                            const char* class_name, const JSClass* clasp,
+                            JSNative constructor_native, unsigned nargs,
+                            JSPropertySpec* proto_ps, JSFunctionSpec* proto_fs,
+                            JSPropertySpec* static_ps,
+                            JSFunctionSpec* static_fs,
+                            JS::MutableHandleObject prototype,
+                            JS::MutableHandleObject constructor) {
     /* Force these variables on the stack, so the conservative GC will
        find them */
     JSFunction * volatile constructor_fun;
@@ -71,7 +63,7 @@ gjs_init_class_dynamic(JSContext              *context,
 
     JS_BeginRequest(context);
 
-    /* Class initalization consists of three parts:
+    /* Class initalization consists of five parts:
        - building a prototype
        - defining prototype properties and functions
        - building a constructor and definining it on the right object
@@ -125,13 +117,13 @@ gjs_init_class_dynamic(JSContext              *context,
     } else {
         /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
          * the resolve hook */
-        if (!gjs_object_define_property(context, constructor,
-                                        GJS_STRING_PROTOTYPE, prototype,
-                                        JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+        if (!JS_DefinePropertyById(
+                context, constructor, atoms.prototype(), prototype,
+                JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
             goto out;
-        if (!gjs_object_define_property(context, prototype,
-                                        GJS_STRING_CONSTRUCTOR, constructor,
-                                        JSPROP_RESOLVING))
+        if (!JS_DefinePropertyById(context, prototype, atoms.constructor(),
+                                   constructor, JSPROP_RESOLVING))
             goto out;
     }
 
@@ -152,6 +144,7 @@ gjs_init_class_dynamic(JSContext              *context,
     return res;
 }
 
+GJS_USE
 static const char*
 format_dynamic_class_name (const char *name)
 {
@@ -190,16 +183,17 @@ gjs_construct_object_dynamic(JSContext                  *context,
 {
     JSAutoRequest ar(context);
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject constructor(context);
 
     if (!gjs_object_require_property(context, proto, "prototype",
-                                     GJS_STRING_CONSTRUCTOR,
-                                     &constructor))
+                                     atoms.constructor(), &constructor))
         return NULL;
 
     return JS_New(context, constructor, args);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject *
 define_native_accessor_wrapper(JSContext      *cx,
                                JSNative        call,

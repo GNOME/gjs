@@ -1,6 +1,4 @@
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
+const {GIMarshallingTests, Gio, GLib, GObject} = imports.gi;
 
 const Foo = GObject.registerClass({
     Properties: {
@@ -114,16 +112,22 @@ describe('logError', function () {
         logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }));
     });
 
-    it('logs an error with no stack trace for an error created with the GLib.Error constructor', function () {
+    it('logs an error created with the GLib.Error constructor', function marker() {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: Gio.IOErrorEnum: a message');
+            'JS ERROR: Gio.IOErrorEnum: a message\nmarker@*');
         logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'));
     });
 
-    it('logs the quark for a JS-created GError type', function () {
+    it('logs the quark for a JS-created GError type', function marker() {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: GLib.Error my-error: a message');
+            'JS ERROR: GLib.Error my-error: a message\nmarker@*');
         logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'));
+    });
+
+    it('logs with stack for a GError created from a C struct', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: GLib.Error gi-marshalling-tests-gerror-domain: gi-marshalling-tests-gerror-message\nmarker@*');
+        logError(GIMarshallingTests.gerror_return());
     });
 
     // Now with prefix
@@ -147,24 +151,6 @@ describe('logError', function () {
         } catch(e) {
             logError(e, 'prefix');
         }
-    });
-
-    it('logs a non-thrown error with prefix', function marker() {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: prefix: Gio.IOErrorEnum: a message\nmarker@*');
-        logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }), 'prefix');
-    });
-
-    it('logs a GLib.Error with prefix', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: prefix: Gio.IOErrorEnum: a message');
-        logError(new GLib.Error(Gio.IOErrorEnum, 0, 'a message'), 'prefix');
-    });
-
-    it('logs a JS-created GLib.Error with prefix', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: prefix: GLib.Error my-error: a message');
-        logError(new GLib.Error(GLib.quark_from_string('my-error'), 0, 'a message'), 'prefix');
     });
 });
 

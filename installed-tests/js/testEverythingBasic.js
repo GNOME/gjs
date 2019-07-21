@@ -565,6 +565,13 @@ describe('Life, the Universe and Everything', function () {
             o.emit('sig-with-array-len-prop', null);
             expect(handler).toHaveBeenCalledWith([jasmine.any(Object), null]);
         }).pend('Not yet implemented');
+
+        xit('signal with int in-out parameter', function() {
+            let handler = jasmine.createSpy('handler').and.callFake(() => 43);
+            o.connect('sig-with-inout-int', handler);
+            o.emit_sig_with_inout_int();
+            expect(handler.toHaveBeenCalledWith([jasmine.any(Object), 42]));
+        }).pend('Not yet implemented');
     });
 
     describe('Signal alternative syntax', function () {

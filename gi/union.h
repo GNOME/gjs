@@ -21,32 +21,91 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UNION_H__
-#define __GJS_UNION_H__
+#ifndef GI_UNION_H_
+#define GI_UNION_H_
 
-#include <stdbool.h>
-#include <glib.h>
 #include <girepository.h>
-#include "gjs/jsapi-util.h"
+#include <glib-object.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
 
+#include "gi/wrapperutils.h"
+#include "gjs/macros.h"
+#include "util/log.h"
+
+class UnionPrototype;
+class UnionInstance;
+
+class UnionBase
+    : public GIWrapperBase<UnionBase, UnionPrototype, UnionInstance> {
+    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
+
+ protected:
+    explicit UnionBase(UnionPrototype* proto = nullptr)
+        : GIWrapperBase(proto) {}
+    ~UnionBase(void) {}
+
+    static const GjsDebugTopic debug_topic = GJS_DEBUG_GBOXED;
+    static constexpr const char* debug_tag = "union";
+
+    static const JSClassOps class_ops;
+    static const JSClass klass;
+
+    GJS_USE static const char* to_string_kind(void) { return "union"; }
+};
+
+class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
+                                                 UnionInstance, GIUnionInfo> {
+    friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
+                                    GIUnionInfo>;
+    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
+
+    static constexpr InfoType::Tag info_type_tag = InfoType::Union;
+
+    explicit UnionPrototype(GIUnionInfo* info, GType gtype);
+    ~UnionPrototype(void);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                      const char* prop_name, bool* resolved);
+
+    // Overrides GIWrapperPrototype::constructor_nargs().
+    GJS_USE unsigned constructor_nargs(void) const { return 0; }
+};
+
+class UnionInstance
+    : public GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance> {
+    friend class GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance>;
+    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
+
+    explicit UnionInstance(JSContext* cx, JS::HandleObject obj);
+    ~UnionInstance(void);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool constructor_impl(JSContext* cx, JS::HandleObject obj,
+                          const JS::CallArgs& args);
+
+ public:
+    /*
+     * UnionInstance::copy_union:
+     *
+     * Allocate a new union pointer using g_boxed_copy(), from a raw union
+     * pointer.
+     */
+    void copy_union(void* ptr) { m_ptr = g_boxed_copy(gtype(), ptr); }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
+};
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_union_class(JSContext       *context,
                             JS::HandleObject in_object,
                             GIUnionInfo     *info);
 
-void     *gjs_c_union_from_union(JSContext       *context,
-                                 JS::HandleObject obj);
-
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_union_from_c_union       (JSContext    *context,
                                         GIUnionInfo  *info,
                                         void         *gboxed);
-bool      gjs_typecheck_union          (JSContext             *context,
-                                        JS::HandleObject       obj,
-                                        GIStructInfo          *expected_info,
-                                        GType                  expected_type,
-                                        bool                   throw_error);
 
-G_END_DECLS
-
-#endif  /* __GJS_UNION_H__ */
+#endif  // GI_UNION_H_

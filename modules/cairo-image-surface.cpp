@@ -20,15 +20,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include "cairo-private.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
+GJS_USE
 static JSObject *gjs_cairo_image_surface_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("ImageSurface", cairo_image_surface,
@@ -73,6 +76,7 @@ JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
     JS_PS_END
 };
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 createFromPNG_func(JSContext *context,
                    unsigned   argc,
@@ -106,6 +110,7 @@ createFromPNG_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getFormat_func(JSContext *context,
                unsigned   argc,
@@ -130,6 +135,7 @@ getFormat_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getWidth_func(JSContext *context,
               unsigned   argc,
@@ -154,6 +160,7 @@ getWidth_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getHeight_func(JSContext *context,
                unsigned   argc,
@@ -178,6 +185,7 @@ getHeight_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getStride_func(JSContext *context,
                unsigned   argc,
@@ -219,9 +227,10 @@ JSObject *
 gjs_cairo_image_surface_from_surface(JSContext       *context,
                                      cairo_surface_t *surface)
 {
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(surface != NULL, NULL);
-    g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(surface, nullptr);
+    g_return_val_if_fail(
+        cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, nullptr);
 
     JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
     JS::RootedObject object(context,
@@ -229,7 +238,7 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
                                    proto));
     if (!object) {
         gjs_throw(context, "failed to create image surface");
-        return NULL;
+        return nullptr;
     }
 
     gjs_cairo_surface_construct(context, object, surface);

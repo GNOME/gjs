@@ -20,17 +20,22 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PRIVATE_GTK_UTIL_H__
-#define __GJS_PRIVATE_GTK_UTIL_H__
+#ifndef LIBGJS_PRIVATE_GJS_GTK_UTIL_H_
+#define LIBGJS_PRIVATE_GJS_GTK_UTIL_H_
 
-#include "config.h"
+#include <config.h> /* for ENABLE_GTK */
 
 #ifdef ENABLE_GTK
 
-#include <gtk/gtk.h>
+#    include <glib-object.h>
+#    include <glib.h>
+#    include <gtk/gtk.h>
+
+#    include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
+GJS_EXPORT
 void gjs_gtk_container_child_set_property (GtkContainer *container,
                                            GtkWidget    *child,
                                            const gchar  *property,
@@ -40,4 +45,4 @@ G_END_DECLS
 
 #endif
 
-#endif /* __GJS_PRIVATE_GTK_UTIL_H__ */
+#endif /* LIBGJS_PRIVATE_GJS_GTK_UTIL_H_ */

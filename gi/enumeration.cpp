@@ -21,21 +21,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include <string.h>
+#include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
 
 #include "gjs/jsapi-wrapper.h"
-#include "repo.h"
-#include "gtype.h"
-#include "function.h"
 
-#include <util/log.h>
+#include "gi/enumeration.h"
+#include "gi/wrapperutils.h"
+#include "gjs/jsapi-util.h"
+#include "util/log.h"
 
-#include <girepository.h>
-
-#include "enumeration.h"
-
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_enum_value(JSContext       *context,
                       JS::HandleObject in_object,
@@ -83,7 +80,6 @@ gjs_define_enum_values(JSContext       *context,
                        JS::HandleObject in_object,
                        GIEnumInfo      *info)
 {
-    GType gtype;
     int i, n_values;
 
     /* Fill in enum values first, so we don't define the enum itself until we're
@@ -102,47 +98,6 @@ gjs_define_enum_values(JSContext       *context,
             return false;
         }
     }
-
-    gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
-    JS::RootedObject gtype_obj(context,
-        gjs_gtype_create_gtype_wrapper(context, gtype));
-    JS_DefineProperty(context, in_object, "$gtype", gtype_obj, JSPROP_PERMANENT);
-
-    return true;
-}
-
-bool
-gjs_define_enum_static_methods(JSContext       *context,
-                               JS::HandleObject constructor,
-                               GIEnumInfo      *enum_info)
-{
-    int i, n_methods;
-
-    n_methods = g_enum_info_get_n_methods(enum_info);
-
-    for (i = 0; i < n_methods; i++) {
-        GIFunctionInfo *meth_info;
-        GIFunctionInfoFlags flags;
-
-        meth_info = g_enum_info_get_method(enum_info, i);
-        flags = g_function_info_get_flags(meth_info);
-
-        g_warn_if_fail(!(flags & GI_FUNCTION_IS_METHOD));
-        /* Anything that isn't a method we put on the prototype of the
-         * constructor.  This includes <constructor> introspection
-         * methods, as well as the forthcoming "static methods"
-         * support.  We may want to change this to use
-         * GI_FUNCTION_IS_CONSTRUCTOR and GI_FUNCTION_IS_STATIC or the
-         * like in the near future.
-         */
-        if (!(flags & GI_FUNCTION_IS_METHOD)) {
-            gjs_define_function(context, constructor, G_TYPE_NONE,
-                                (GICallableInfo *)meth_info);
-        }
-
-        g_base_info_unref((GIBaseInfo*) meth_info);
-    }
-
     return true;
 }
 
@@ -166,14 +121,18 @@ gjs_define_enumeration(JSContext       *context,
 
     JS::RootedObject enum_obj(context, JS_NewPlainObject(context));
     if (!enum_obj) {
-        g_error("Could not create enumeration %s.%s",
-               	g_base_info_get_namespace( (GIBaseInfo*) info),
-                enum_name);
+        gjs_throw(context, "Could not create enumeration %s.%s",
+                  g_base_info_get_namespace(info), enum_name);
+        return false;
     }
 
-    if (!gjs_define_enum_values(context, enum_obj, info))
+    GType gtype = g_registered_type_info_get_g_type(info);
+
+    if (!gjs_define_enum_values(context, enum_obj, info) ||
+        !gjs_define_static_methods<InfoType::Enum>(context, enum_obj, gtype,
+                                                   info) ||
+        !gjs_wrapper_define_gtype_prop(context, enum_obj, gtype))
         return false;
-    gjs_define_enum_static_methods (context, enum_obj, info);
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining %s.%s as %p",

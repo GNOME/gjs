@@ -20,17 +20,23 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
+#include <cairo-features.h>  // for CAIRO_HAS_PS_SURFACE
 #include <cairo.h>
-#include "cairo-private.h"
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/jsapi-util.h"
 
 #if CAIRO_HAS_PS_SURFACE
-#include <cairo-ps.h>
+#    include <cairo-ps.h>
+#    include <glib.h>
 
+#    include "gjs/jsapi-class.h"
+#    include "gjs/jsapi-util-args.h"
+#    include "gjs/macros.h"
+#    include "modules/cairo-private.h"
+
+GJS_USE
 static JSObject *gjs_cairo_ps_surface_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("PSSurface", cairo_ps_surface, cairo_surface,
@@ -95,16 +101,17 @@ JSObject *
 gjs_cairo_ps_surface_from_surface(JSContext       *context,
                                   cairo_surface_t *surface)
 {
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(surface != NULL, NULL);
-    g_return_val_if_fail(cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PS, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(surface, nullptr);
+    g_return_val_if_fail(
+        cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PS, nullptr);
 
     JS::RootedObject proto(context, gjs_cairo_ps_surface_get_proto(context));
     JS::RootedObject object(context,
         JS_NewObjectWithGivenProto(context, &gjs_cairo_ps_surface_class, proto));
     if (!object) {
         gjs_throw(context, "failed to create ps surface");
-        return NULL;
+        return nullptr;
     }
 
     gjs_cairo_surface_construct(context, object, surface);
@@ -119,6 +126,6 @@ gjs_cairo_ps_surface_from_surface(JSContext       *context,
     gjs_throw(context,
         "could not create PS surface, recompile cairo and gjs with "
         "PS support.");
-    return NULL;
+    return nullptr;
 }
 #endif /* CAIRO_HAS_PS_SURFACE */

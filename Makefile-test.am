@@ -36,7 +36,12 @@ jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_
 jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
 	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
 
-BUILT_SOURCES += mock-js-resources.c jsunit-resources.h jsunit-resources.c
+BUILT_SOURCES += 		\
+	mock-js-resources.c	\
+	mock-js-resources.h	\
+	jsunit-resources.c	\
+	jsunit-resources.h	\
+	$(NULL)
 
 EXTRA_DIST += 							\
 	$(mock_js_resources_files)				\
@@ -46,9 +51,14 @@ EXTRA_DIST += 							\
 
 CLEANFILES +=						\
 	mock-js-resources.c				\
+	mock-js-resources.h				\
 	jsunit-resources.c				\
 	jsunit-resources.h				\
 	$(NULL)
+
+gsettings_SCHEMAS = installed-tests/js/org.gnome.GjsTest.gschema.xml
+EXTRA_DIST += $(gsettings_SCHEMAS)
+@GSETTINGS_RULES@
 
 ### TEST PROGRAMS ######################################################
 
@@ -81,14 +91,11 @@ gjs_tests_gtester_SOURCES =				\
 	test/gjs-test-call-args.cpp			\
 	test/gjs-test-coverage.cpp			\
 	test/gjs-test-rooting.cpp			\
-	mock-js-resources.c				\
 	$(NULL)
+nodist_gjs_tests_gtester_SOURCES = mock-js-resources.c mock-js-resources.h
 
-minijasmine_SOURCES =			\
-	installed-tests/minijasmine.cpp	\
-	jsunit-resources.c		\
-	jsunit-resources.h		\
-	$(NULL)
+minijasmine_SOURCES = installed-tests/minijasmine.cpp
+nodist_minijasmine_SOURCES = jsunit-resources.c jsunit-resources.h
 
 minijasmine_CPPFLAGS =				\
 	$(AM_CPPFLAGS)				\
@@ -275,6 +282,12 @@ else
 COVERAGE_TESTS_ENVIRONMENT =
 endif
 
+installed-tests/js/testGio.log: gschemas.compiled
+
+gschemas.compiled: installed-tests/js/org.gnome.GjsTest.gschema.xml
+	$(AM_V_GEN)$(GLIB_COMPILE_SCHEMAS) --targetdir=. $(<D)
+CLEANFILES += gschemas.compiled
+
 # GJS_PATH is empty here since we want to force the use of our own
 # resources. G_FILENAME_ENCODING ensures filenames are not UTF-8.
 AM_TESTS_ENVIRONMENT =					\
@@ -286,7 +299,8 @@ AM_TESTS_ENVIRONMENT =					\
 	export G_FILENAME_ENCODING=latin1;		\
 	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
 	export NO_AT_BRIDGE=1;				\
-	export LC_ALL=C.UTF-8;				\
+	export LC_ALL=$(TESTS_LOCALE);			\
+	export GSETTINGS_SCHEMA_DIR="$(builddir)";	\
 	$(COVERAGE_TESTS_ENVIRONMENT)			\
 	$(GTK_TESTS_ENVIRONMENT)			\
 	$(XVFB_START)					\

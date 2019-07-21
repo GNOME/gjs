@@ -114,6 +114,11 @@ const MyObject = GObject.registerClass({
     }
 });
 
+const MyAbstractObject = GObject.registerClass({
+    GTypeFlags: GObject.TypeFlags.ABSTRACT
+}, class MyAbstractObject extends GObject.Object {
+});
+
 const MyApplication = GObject.registerClass({
     Signals: { 'custom': { param_types: [ GObject.TYPE_INT ] } },
 }, class MyApplication extends Gio.Application {
@@ -156,6 +161,10 @@ describe('GObject class with decorator', function () {
     it('throws an error when not used with a GObject-derived class', function () {
         class Foo {}
         expect (() => GObject.registerClass(class Bar extends Foo {})).toThrow();
+    });
+
+    it('throws an error when used with an abstract class', function() {
+        expect (() => new MyAbstractObject()).toThrow();
     });
 
     it('constructs with default values for properties', function () {

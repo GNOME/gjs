@@ -21,21 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <locale.h>
-#include <unistd.h>
+#include <locale.h>  // for setlocale, LC_ALL
+#include <stdlib.h>  // for exit
 
 #include <gio/gio.h>
 #include <girepository.h>
+#include <glib-object.h>
 #include <glib.h>
-#include <glib/gstdio.h>
 
-#include "gjs/gjs.h"
+#include <gjs/gjs.h>
 
-G_GNUC_NORETURN
-static void
-bail_out(GjsContext *gjs_context,
-         const char *msg)
-{
+[[noreturn]] static void bail_out(GjsContext* gjs_context, const char* msg) {
     g_object_unref(gjs_context);
     g_print("Bail out! %s\n", msg);
     exit(1);

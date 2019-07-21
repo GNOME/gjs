@@ -21,53 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_MEM_H__
-#define __GJS_MEM_H__
+#ifndef GJS_MEM_H_
+#define GJS_MEM_H_
 
-#include <stdbool.h>
+#if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
+#    error "Only <gjs/gjs.h> can be included directly."
+#endif
+
+#include <stdbool.h> /* IWYU pragma: keep */
+
 #include <glib.h>
 
 #include "gjs/macros.h"
 
 G_BEGIN_DECLS
-
-typedef struct {
-    volatile int value;
-    const char *name;
-} GjsMemCounter;
-
-#define GJS_DECLARE_COUNTER(name) \
-    extern GjsMemCounter gjs_counter_ ## name ;
-
-GJS_DECLARE_COUNTER(everything)
-
-GJS_DECLARE_COUNTER(boxed)
-GJS_DECLARE_COUNTER(closure)
-GJS_DECLARE_COUNTER(function)
-GJS_DECLARE_COUNTER(fundamental)
-GJS_DECLARE_COUNTER(gerror)
-GJS_DECLARE_COUNTER(importer)
-GJS_DECLARE_COUNTER(interface)
-GJS_DECLARE_COUNTER(ns)
-GJS_DECLARE_COUNTER(object_instance)
-GJS_DECLARE_COUNTER(object_prototype)
-GJS_DECLARE_COUNTER(param)
-GJS_DECLARE_COUNTER(repo)
-
-#define GJS_INC_COUNTER(name)                \
-    do {                                        \
-        g_atomic_int_add(&gjs_counter_everything.value, 1); \
-        g_atomic_int_add(&gjs_counter_ ## name .value, 1); \
-    } while (0)
-
-#define GJS_DEC_COUNTER(name)                \
-    do {                                        \
-        g_atomic_int_add(&gjs_counter_everything.value, -1); \
-        g_atomic_int_add(&gjs_counter_ ## name .value, -1); \
-    } while (0)
-
-#define GJS_GET_COUNTER(name) \
-    g_atomic_int_get(&gjs_counter_ ## name .value)
 
 GJS_EXPORT
 void gjs_memory_report(const char *where,
@@ -75,4 +42,4 @@ void gjs_memory_report(const char *where,
 
 G_END_DECLS
 
-#endif  /* __GJS_MEM_H__ */
+#endif  // GJS_MEM_H_

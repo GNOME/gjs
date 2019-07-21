@@ -21,33 +21,51 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdint.h>
+#include <string.h>  // for strcmp, memchr, strlen
+
+#include <girepository.h>
+#include <glib-object.h>
 #include <glib.h>
 
-#include "byteArray.h"
+#include "gjs/jsapi-wrapper.h"
+
 #include "gi/boxed.h"
+#include "gjs/atoms.h"
+#include "gjs/byteArray.h"
+#include "gjs/context-private.h"
 #include "gjs/deprecation.h"
-#include "jsapi-util-args.h"
-#include "jsapi-wrapper.h"
+#include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-util.h"
 
 /* Callbacks to use with JS_NewExternalArrayBuffer() */
 
-static void gfree_arraybuffer_contents(void* contents, void* unused) {
+static void gfree_arraybuffer_contents(void* contents, void*) {
     g_free(contents);
 }
 
-static void bytes_ref_arraybuffer(void* contents, void* user_data) {
+static void bytes_ref_arraybuffer(void* contents G_GNUC_UNUSED,
+                                  void* user_data) {
     auto* gbytes = static_cast<GBytes*>(user_data);
     g_bytes_ref(gbytes);
 }
 
-static void bytes_unref_arraybuffer(void* contents, void* user_data) {
+static void bytes_unref_arraybuffer(void* contents G_GNUC_UNUSED,
+                                    void* user_data) {
     auto* gbytes = static_cast<GBytes*>(user_data);
     g_bytes_unref(gbytes);
 }
 
 /* implement toString() with an optional encoding arg */
+GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
                            const char* encoding, JS::MutableHandleValue rval) {
+    if (!JS_IsUint8Array(byte_array)) {
+        gjs_throw(context,
+                  "Argument to ByteArray.toString() must be a Uint8Array");
+        return false;
+    }
+
     bool encoding_is_utf8;
     uint8_t* data;
 
@@ -64,6 +82,11 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
     uint32_t len;
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
+
+    if (len == 0) {
+        rval.setString(JS_GetEmptyString(context));
+        return true;
+    }
 
     if (encoding_is_utf8) {
         /* optimization, avoids iconv overhead and runs
@@ -83,15 +106,18 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
         GError *error;
 
         error = NULL;
-        GjsAutoChar u16_str =
-            g_convert(reinterpret_cast<char*>(data), len, "UTF-16", encoding,
-                      nullptr, /* bytes read */
-                      &bytes_written, &error);
-        if (u16_str == NULL) {
-            /* frees the GError */
-            gjs_throw_g_error(context, error);
-            return false;
-        }
+        GjsAutoChar u16_str = g_convert(reinterpret_cast<char*>(data), len,
+        // Make sure the bytes of the UTF-16 string are laid out in memory
+        // such that we can simply reinterpret_cast<char16_t> them.
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                                        "UTF-16LE",
+#else
+                                        "UTF-16BE",
+#endif
+                                        encoding, nullptr, /* bytes read */
+                                        &bytes_written, &error);
+        if (!u16_str)
+            return gjs_throw_gerror_message(context, error);  // frees GError
 
         /* bytes_written should be bytes in a UTF-16 string so
          * should be a multiple of 2
@@ -110,25 +136,27 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    GjsAutoJSChar encoding;
+    JS::UniqueChars encoding;
     JS::RootedObject byte_array(cx);
 
     if (!gjs_parse_call_args(cx, "toString", args, "o|s", "byteArray",
                              &byte_array, "encoding", &encoding))
         return false;
 
-    return to_string_impl(cx, byte_array, encoding, args.rval());
+    return to_string_impl(cx, byte_array, encoding.get(), args.rval());
 }
 
 /* Workaround to keep existing code compatible. This function is tacked onto
  * any Uint8Array instances created in situations where previously a ByteArray
  * would have been created. It logs a compatibility warning. */
+GJS_JSAPI_RETURN_CONVENTION
 static bool instance_to_string_func(JSContext* cx, unsigned argc,
                                     JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, this_obj);
-    GjsAutoJSChar encoding;
+    JS::UniqueChars encoding;
 
     _gjs_warn_deprecated_once_per_callsite(
         cx, GjsDeprecationMessageId::ByteArrayInstanceToString);
@@ -136,16 +164,16 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
     if (!gjs_parse_call_args(cx, "toString", args, "|s", "encoding", &encoding))
         return false;
 
-    return to_string_impl(cx, this_obj, encoding, args.rval());
+    return to_string_impl(cx, this_obj, encoding.get(), args.rval());
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 to_gbytes_func(JSContext *context,
                unsigned   argc,
                JS::Value *vp)
 {
     JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
-    JSObject *ret_bytes_obj;
     GIBaseInfo *gbytes_info;
     JS::RootedObject byte_array(context);
 
@@ -153,25 +181,37 @@ to_gbytes_func(JSContext *context,
                              "byteArray", &byte_array))
         return false;
 
-    GBytes* bytes = gjs_byte_array_get_bytes(byte_array);
-    gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
-    ret_bytes_obj = gjs_boxed_from_c_struct(context, (GIStructInfo*)gbytes_info,
-                                            bytes, GJS_BOXED_CREATION_NONE);
-    g_bytes_unref(bytes);
+    if (!JS_IsUint8Array(byte_array)) {
+        gjs_throw(context,
+                  "Argument to ByteArray.toGBytes() must be a Uint8Array");
+        return false;
+    }
 
-    rec.rval().setObjectOrNull(ret_bytes_obj);
+    GBytes* bytes = gjs_byte_array_get_bytes(byte_array);
+
+    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
+                          nullptr);
+    gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
+    JSObject* ret_bytes_obj =
+        BoxedInstance::new_for_c_struct(context, gbytes_info, bytes);
+    g_bytes_unref(bytes);
+    if (!ret_bytes_obj)
+        return false;
+
+    rec.rval().setObject(*ret_bytes_obj);
     return true;
 }
 
 /* fromString() function implementation */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 from_string_func(JSContext *context,
                  unsigned   argc,
                  JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    GjsAutoJSChar encoding;
-    GjsAutoJSChar utf8;
+    JS::UniqueChars encoding;
+    JS::UniqueChars utf8;
     bool encoding_is_utf8;
     JS::RootedObject obj(context), array_buffer(context);
 
@@ -185,7 +225,7 @@ from_string_func(JSContext *context,
          * doesn't matter much though. encoding_is_utf8 is
          * just an optimization anyway.
          */
-        encoding_is_utf8 = (strcmp(encoding, "UTF-8") == 0);
+        encoding_is_utf8 = (strcmp(encoding.get(), "UTF-8") == 0);
     } else {
         encoding_is_utf8 = true;
     }
@@ -194,7 +234,7 @@ from_string_func(JSContext *context,
         /* optimization? avoids iconv overhead and runs
          * libmozjs hardwired utf16-to-utf8.
          */
-        size_t len = strlen(utf8);
+        size_t len = strlen(utf8.get());
         array_buffer =
             JS_NewArrayBufferWithContents(context, len, utf8.release());
     } else {
@@ -216,7 +256,7 @@ from_string_func(JSContext *context,
                     return false;
 
                 encoded = g_convert((char *) chars, len,
-                                    encoding,  /* to_encoding */
+                                    encoding.get(),  // to_encoding
                                     "LATIN1",  /* from_encoding */
                                     NULL,  /* bytes read */
                                     &bytes_written, &error);
@@ -227,18 +267,15 @@ from_string_func(JSContext *context,
                     return false;
 
                 encoded = g_convert((char *) chars, len * 2,
-                                    encoding,  /* to_encoding */
+                                    encoding.get(),  // to_encoding
                                     "UTF-16",  /* from_encoding */
                                     NULL,  /* bytes read */
                                     &bytes_written, &error);
             }
         }
 
-        if (encoded == NULL) {
-            /* frees the GError */
-            gjs_throw_g_error(context, error);
-            return false;
-        }
+        if (!encoded)
+            return gjs_throw_gerror_message(context, error);  // frees GError
 
         array_buffer =
             JS_NewExternalArrayBuffer(context, bytes_written, encoded, nullptr,
@@ -248,11 +285,17 @@ from_string_func(JSContext *context,
     if (!array_buffer)
         return false;
     obj = JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1);
-    JS_DefineFunction(context, obj, "toString", instance_to_string_func, 1, 0);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!JS_DefineFunctionById(context, obj, atoms.to_string(),
+                               instance_to_string_func, 1, 0))
+        return false;
+
     argv.rval().setObject(*obj);
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 from_gbytes_func(JSContext *context,
                  unsigned   argc,
@@ -266,10 +309,12 @@ from_gbytes_func(JSContext *context,
                              "bytes", &bytes_obj))
         return false;
 
-    if (!gjs_typecheck_boxed(context, bytes_obj, NULL, G_TYPE_BYTES, true))
+    if (!BoxedBase::typecheck(context, bytes_obj, nullptr, G_TYPE_BYTES))
         return false;
 
-    gbytes = (GBytes*) gjs_c_struct_from_boxed(context, bytes_obj);
+    gbytes = BoxedBase::to_c_ptr<GBytes>(context, bytes_obj);
+    if (!gbytes)
+        return false;
 
     size_t len;
     const void* data = g_bytes_get_data(gbytes, &len);
@@ -286,21 +331,33 @@ from_gbytes_func(JSContext *context,
         context, JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1));
     if (!obj)
         return false;
-    JS_DefineFunction(context, obj, "toString", instance_to_string_func, 1, 0);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (!JS_DefineFunctionById(context, obj, atoms.to_string(),
+                               instance_to_string_func, 1, 0))
+        return false;
 
     argv.rval().setObject(*obj);
     return true;
 }
 
 JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
-    JS::RootedObject array_buffer(
-        cx, JS_NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes)));
+    JS::RootedObject array_buffer(cx);
+    // a null data pointer takes precedence over whatever `nbytes` says
+    if (data)
+        array_buffer = JS_NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes));
+    else
+        array_buffer = JS_NewArrayBuffer(cx, 0);
     if (!array_buffer)
         return nullptr;
 
     JS::RootedObject array(cx,
                            JS_NewUint8ArrayWithBuffer(cx, array_buffer, 0, -1));
-    JS_DefineFunction(cx, array, "toString", instance_to_string_func, 1, 0);
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_DefineFunctionById(cx, array, atoms.to_string(),
+                               instance_to_string_func, 1, 0))
+        return nullptr;
     return array;
 }
 

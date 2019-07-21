@@ -22,112 +22,22 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdio.h>   // for sscanf
+#include <string.h>  // for strlen
 
-#include <codecvt>
-#include <locale>
-#include "jsapi-wrapper.h"
-#include <js/GCAPI.h>
+#ifdef XP_WIN
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#endif
 
-#include <util/log.h>
-#include <util/glib.h>
-#include <util/misc.h>
-#include <util/error.h>
+#include <codecvt>  // for codecvt_utf8_utf16
+#include <locale>   // for wstring_convert
 
-#include "jsapi-class.h"
-#include "jsapi-util.h"
-#include "context-private.h"
-#include <gi/boxed.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include <string.h>
-#include <math.h>
-
-GQuark
-gjs_util_error_quark (void)
-{
-    return g_quark_from_static_string ("gjs-util-error-quark");
-}
-
-bool
-gjs_object_get_property(JSContext             *cx,
-                        JS::HandleObject       obj,
-                        GjsConstString         property_name,
-                        JS::MutableHandleValue value_p)
-{
-    return JS_GetPropertyById(cx, obj,
-                              gjs_context_get_const_string(cx, property_name),
-                              value_p);
-}
-
-bool
-gjs_object_set_property(JSContext       *cx,
-                        JS::HandleObject obj,
-                        GjsConstString   property_name,
-                        JS::HandleValue  value)
-{
-    return JS_SetPropertyById(cx, obj,
-                              gjs_context_get_const_string(cx, property_name),
-                              value);
-}
-
-bool
-gjs_object_has_property(JSContext       *cx,
-                        JS::HandleObject obj,
-                        GjsConstString   property_name,
-                        bool            *found)
-{
-    return JS_HasPropertyById(cx, obj,
-                              gjs_context_get_const_string(cx, property_name),
-                              found);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           JS::HandleValue  value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           JS::HandleObject value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           JS::HandleString value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
-
-bool
-gjs_object_define_property(JSContext       *cx,
-                           JS::HandleObject obj,
-                           GjsConstString   property_name,
-                           uint32_t         value,
-                           unsigned         flags)
-{
-    return JS_DefinePropertyById(cx, obj,
-                                 gjs_context_get_const_string(cx, property_name),
-                                 value, flags);
-}
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 
 static void
 throw_property_lookup_error(JSContext       *cx,
@@ -217,13 +127,10 @@ gjs_object_require_property(JSContext       *cx,
 }
 
 /* Converts JS string value to UTF-8 string. value must be freed with JS_free. */
-bool
-gjs_object_require_property(JSContext       *cx,
-                            JS::HandleObject obj,
-                            const char      *description,
-                            JS::HandleId     property_name,
-                            GjsAutoJSChar   *value)
-{
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name,
+                                 JS::UniqueChars* value) {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         gjs_string_to_utf8(cx, prop_value, value))
@@ -285,10 +192,10 @@ gjs_throw_abstract_constructor_error(JSContext    *context,
     const JSClass *proto_class;
     const char *name = "anonymous";
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject callee(context, &args.callee());
     JS::RootedValue prototype(context);
-    if (gjs_object_get_property(context, callee, GJS_STRING_PROTOTYPE,
-                                &prototype)) {
+    if (JS_GetPropertyById(context, callee, atoms.prototype(), &prototype)) {
         proto_class = JS_GetClass(&prototype.toObject());
         name = proto_class->name;
     }
@@ -307,15 +214,16 @@ gjs_build_string_array(JSContext   *context,
         array_length = g_strv_length(array_values);
 
     JS::AutoValueVector elems(context);
-    if (!elems.reserve(array_length))
-        g_error("Unable to reserve memory for vector");
+    if (!elems.reserve(array_length)) {
+        JS_ReportOutOfMemory(context);
+        return nullptr;
+    }
 
     for (i = 0; i < array_length; ++i) {
         JS::ConstUTF8CharsZ chars(array_values[i], strlen(array_values[i]));
         JS::RootedValue element(context,
             JS::StringValue(JS_NewStringCopyUTF8Z(context, chars)));
-        if (!elems.append(element))
-            g_error("Unable to append to vector");
+        elems.infallibleAppend(element);
     }
 
     return JS_NewArrayObject(context, elems);
@@ -352,6 +260,7 @@ gjs_define_string_array(JSContext       *context,
  * are \x escaped.
  *
  */
+GJS_USE
 static char *
 gjs_string_readable(JSContext       *context,
                     JS::HandleString string)
@@ -362,7 +271,7 @@ gjs_string_readable(JSContext       *context,
 
     g_string_append_c(buf, '"');
 
-    GjsAutoJSChar chars = JS_EncodeStringToUTF8(context, string);
+    JS::UniqueChars chars(JS_EncodeStringToUTF8(context, string));
     if (!chars) {
         /* I'm not sure this code will actually ever be reached except in the
          * case of OOM, since JS_EncodeStringToUTF8() seems to happily output
@@ -377,7 +286,7 @@ gjs_string_readable(JSContext       *context,
         g_string_append(buf, escaped);
         g_free(escaped);
     } else {
-        g_string_append(buf, chars);
+        g_string_append(buf, chars.get());
     }
 
     g_string_append_c(buf, '"');
@@ -387,6 +296,7 @@ gjs_string_readable(JSContext       *context,
     return g_string_free(buf, false);
 }
 
+GJS_USE
 static char *
 _gjs_g_utf8_make_valid (const char *name)
 {
@@ -451,6 +361,11 @@ gjs_value_debug_string(JSContext      *context,
     JS::RootedString str(context, JS::ToString(context, value));
 
     if (!str) {
+        JS_ClearPendingException(context);
+        str = JS_ValueToSource(context, value);
+    }
+
+    if (!str) {
         if (value.isObject()) {
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
@@ -485,52 +400,34 @@ gjs_value_debug_string(JSContext      *context,
     return debugstr;
 }
 
-static char *
-utf8_exception_from_non_gerror_value(JSContext      *cx,
-                                     JS::HandleValue exc)
-{
-    JS::RootedString exc_str(cx, JS::ToString(cx, exc));
-    if (!exc_str)
-        return nullptr;
-
-    GjsAutoJSChar utf8_exception = JS_EncodeStringToUTF8(cx, exc_str);
-    return utf8_exception.copy();
-}
-
 bool
 gjs_log_exception_full(JSContext       *context,
                        JS::HandleValue  exc,
                        JS::HandleString message)
 {
-    char *utf8_exception;
     bool is_syntax;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     JS_BeginRequest(context);
     JS::RootedObject exc_obj(context);
+    JS::RootedString exc_str(context, JS::ToString(context, exc));
+    JS::UniqueChars utf8_exception;
+    if (exc_str)
+        utf8_exception.reset(JS_EncodeStringToUTF8(context, exc_str));
+    if (!utf8_exception)
+        JS_ClearPendingException(context);
 
     is_syntax = false;
-
-    if (!exc.isObject()) {
-        utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
-    } else {
+    if (exc.isObject()) {
         exc_obj = &exc.toObject();
-        if (gjs_typecheck_boxed(context, exc_obj, NULL, G_TYPE_ERROR, false)) {
-            GError *gerror = (GError *) gjs_c_struct_from_boxed(context, exc_obj);
-            utf8_exception = g_strdup_printf("GLib.Error %s: %s",
-                                             g_quark_to_string(gerror->domain),
-                                             gerror->message);
-        } else {
-            const JSClass *syntax_error =
-                js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
-            is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
-
-            utf8_exception = utf8_exception_from_non_gerror_value(context, exc);
-        }
+        const JSClass* syntax_error =
+            js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
+        is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
     }
 
-    GjsAutoJSChar utf8_message;
+    JS::UniqueChars utf8_message;
     if (message)
-        utf8_message = JS_EncodeStringToUTF8(context, message);
+        utf8_message.reset(JS_EncodeStringToUTF8(context, message));
 
     /* We log syntax errors differently, because the stack for those includes
        only the referencing module, but we want to print out the filename and
@@ -541,55 +438,54 @@ gjs_log_exception_full(JSContext       *context,
         JS::RootedValue js_lineNumber(context), js_fileName(context);
         unsigned lineNumber;
 
-        gjs_object_get_property(context, exc_obj, GJS_STRING_LINE_NUMBER,
-                                &js_lineNumber);
-        gjs_object_get_property(context, exc_obj, GJS_STRING_FILENAME,
-                                &js_fileName);
+        JS_GetPropertyById(context, exc_obj, atoms.line_number(),
+                           &js_lineNumber);
+        JS_GetPropertyById(context, exc_obj, atoms.file_name(), &js_fileName);
 
-        GjsAutoJSChar utf8_filename;
+        JS::UniqueChars utf8_filename;
         if (js_fileName.isString()) {
             JS::RootedString str(context, js_fileName.toString());
-            utf8_filename = JS_EncodeStringToUTF8(context, str);
+            utf8_filename.reset(JS_EncodeStringToUTF8(context, str));
         }
         if (!utf8_filename)
-            utf8_filename = JS_strdup(context, "unknown");
+            utf8_filename.reset(JS_strdup(context, "unknown"));
 
         lineNumber = js_lineNumber.toInt32();
 
         if (message) {
-            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(), utf8_exception,
-                       utf8_filename.get(), lineNumber);
+            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(),
+                       utf8_exception.get(), utf8_filename.get(), lineNumber);
         } else {
-            g_critical("JS ERROR: %s @ %s:%u", utf8_exception,
+            g_critical("JS ERROR: %s @ %s:%u", utf8_exception.get(),
                        utf8_filename.get(), lineNumber);
         }
 
     } else {
-        GjsAutoJSChar utf8_stack;
+        JS::UniqueChars utf8_stack;
         JS::RootedValue stack(context);
 
         if (exc.isObject() &&
-            gjs_object_get_property(context, exc_obj, GJS_STRING_STACK,
-                                    &stack) &&
+            JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack) &&
             stack.isString()) {
             JS::RootedString str(context, stack.toString());
-            utf8_stack = JS_EncodeStringToUTF8(context, str);
+            utf8_stack.reset(JS_EncodeStringToUTF8(context, str));
         }
 
         if (message) {
             if (utf8_stack)
-                g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(), utf8_exception, utf8_stack.get());
+                g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(),
+                          utf8_exception.get(), utf8_stack.get());
             else
-                g_warning("JS ERROR: %s: %s", utf8_message.get(), utf8_exception);
+                g_warning("JS ERROR: %s: %s", utf8_message.get(),
+                          utf8_exception.get());
         } else {
             if (utf8_stack)
-                g_warning("JS ERROR: %s\n%s", utf8_exception, utf8_stack.get());
+                g_warning("JS ERROR: %s\n%s", utf8_exception.get(),
+                          utf8_stack.get());
             else
-                g_warning("JS ERROR: %s", utf8_exception);
+                g_warning("JS ERROR: %s", utf8_exception.get());
         }
     }
-
-    g_free(utf8_exception);
 
     JS_EndRequest(context);
 
@@ -617,26 +513,6 @@ gjs_log_exception(JSContext  *context)
     JS_EndRequest(context);
 
     return retval;
-}
-
-bool
-gjs_call_function_value(JSContext                  *context,
-                        JS::HandleObject            obj,
-                        JS::HandleValue             fval,
-                        const JS::HandleValueArray& args,
-                        JS::MutableHandleValue      rval)
-{
-    bool result;
-
-    JS_BeginRequest(context);
-
-    result = JS_CallFunctionValue(context, obj, fval, args, rval);
-
-    if (result)
-        gjs_schedule_gc_if_needed(context);
-
-    JS_EndRequest(context);
-    return result;
 }
 
 #ifdef __linux__
@@ -713,6 +589,8 @@ gjs_gc_if_needed (JSContext *context)
             linux_rss_trigger = (rss_size * 1.25);
         }
     }
+#else  // !__linux__
+    (void)context;
 #endif
 }
 
@@ -728,130 +606,70 @@ gjs_maybe_gc (JSContext *context)
     gjs_gc_if_needed(context);
 }
 
-void
-gjs_schedule_gc_if_needed (JSContext *context)
-{
-    GjsContext *gjs_context;
-
-    /* We call JS_MaybeGC immediately, but defer a check for a full
-     * GC cycle to an idle handler.
-     */
-    JS_MaybeGC(context);
-
-    gjs_context = (GjsContext *) JS_GetContextPrivate(context);
-    if (gjs_context)
-        _gjs_context_schedule_gc_if_needed(gjs_context);
-}
-
 /**
- * gjs_strip_unix_shebang:
+ * gjs_unix_shebang_len:
  *
- * @script: (in): A pointer to a JS script
- * @script_len: (inout): A pointer to the script length. The
- * pointer will be modified if a shebang is stripped.
- * @new_start_line_number: (out) (allow-none): A pointer to
- * write the start-line number to account for the offset
- * as a result of stripping the shebang.
+ * @script: A JS script
+ * @start_line_number: (out): the new start-line number to account for the
+ * offset as a result of stripping the shebang; can be either 1 or 2.
  *
- * Returns a pointer to the beginning of a script with unix
- * shebangs removed. The outparams are useful to know the
- * new length of the script and on what line of the
+ * Returns the offset in @script where the actual script begins with Unix
+ * shebangs removed. The outparam is useful to know what line of the
  * original script we're executing from, so that any relevant
  * offsets can be applied to the results of an execution pass.
  */
-const char *
-gjs_strip_unix_shebang(const char  *script,
-                       size_t      *script_len,
-                       int         *start_line_number_out)
-{
-    g_assert(script_len);
+size_t gjs_unix_shebang_len(const std::u16string& script,
+                            unsigned* start_line_number) {
+    g_assert(start_line_number);
 
-    /* handle scripts with UNIX shebangs */
-    if (strncmp(script, "#!", 2) == 0) {
-        /* If we found a newline, advance the script by one line */
-        const char *s = (const char *) strstr (script, "\n");
-        if (s != NULL) {
-            if (*script_len > 0)
-                *script_len -= (s + 1 - script);
-            script = s + 1;
-
-            if (start_line_number_out)
-                *start_line_number_out = 2;
-
-            return script;
-        } else {
-            /* Just a shebang */
-            if (start_line_number_out)
-                *start_line_number_out = -1;
-
-            *script_len = 0;
-
-            return NULL;
-        }
+    if (script.compare(0, 2, u"#!") != 0) {
+        // No shebang, leave the script unchanged
+        *start_line_number = 1;
+        return 0;
     }
 
-    /* No shebang, return the original script */
-    if (start_line_number_out)
-        *start_line_number_out = 1;
+    *start_line_number = 2;
 
-    return script;
+    size_t newline_pos = script.find('\n', 2);
+    if (newline_pos == std::u16string::npos)
+        return script.size();  // Script consists only of a shebang line
+
+    // Point the offset after the newline
+    return newline_pos + 1;
 }
 
-bool
-gjs_eval_with_scope(JSContext             *context,
-                    JS::HandleObject       object,
-                    const char            *script,
-                    ssize_t                script_len,
-                    const char            *filename,
-                    JS::MutableHandleValue retval)
-{
-    int start_line_number = 1;
-    JSAutoRequest ar(context);
-    size_t real_len = script_len;
+#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
+/* Unfortunately Visual Studio's C++ .lib somehow did not contain the right
+ * codecvt stuff that we need to convert from utf8 to utf16 (char16_t), so we
+ * need to work around this Visual Studio bug.  Use Windows API
+ * MultiByteToWideChar() and obtain the std::u16string on the std::wstring we
+ * obtain from MultiByteToWideChar().  See:
+ * https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral
+ */
+static std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str,
+                                                  ssize_t len) {
+    int bufsize = MultiByteToWideChar(CP_UTF8, 0, str, len, nullptr, 0);
+    if (bufsize == 0)
+        return nullptr;
 
-    if (script_len < 0)
-        real_len = strlen(script);
+    std::wstring wstr(bufsize, 0);
+    int result = MultiByteToWideChar(CP_UTF8, 0, str, len, &wstr[0], bufsize);
+    if (result == 0)
+        return nullptr;
 
-    script = gjs_strip_unix_shebang(script,
-                                    &real_len,
-                                    &start_line_number);
+    wstr.resize(len < 0 ? strlen(str) : len);
+    return wstr;
+}
+#endif
 
-    /* log and clear exception if it's set (should not be, normally...) */
-    if (JS_IsExceptionPending(context)) {
-        g_warning("gjs_eval_in_scope called with a pending exception");
-        return false;
-    }
-
-    JS::RootedObject eval_obj(context, object);
-    if (!eval_obj)
-        eval_obj = JS_NewPlainObject(context);
-
-    JS::CompileOptions options(context);
-    options.setFileAndLine(filename, start_line_number)
-           .setSourceIsLazy(true);
-
+std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len) {
+#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
+    std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script, len);
+    return std::u16string(reinterpret_cast<const char16_t*>(wscript.c_str()));
+#else
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    std::u16string utf16_string = convert.from_bytes(script);
-    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
-                               JS::SourceBufferHolder::NoOwnership);
-
-    JS::AutoObjectVector scope_chain(context);
-    if (!scope_chain.append(eval_obj))
-        g_error("Unable to append to vector");
-
-    if (!JS::Evaluate(context, scope_chain, options, buf, retval))
-        return false;
-
-    gjs_schedule_gc_if_needed(context);
-
-    if (JS_IsExceptionPending(context)) {
-        g_warning("EvaluateScript returned true but exception was pending; "
-                  "did somebody call gjs_throw() without returning false?");
-        return false;
-    }
-
-    gjs_debug(GJS_DEBUG_CONTEXT,
-              "Script evaluation succeeded");
-
-    return true;
+    if (len < 0)
+        return convert.from_bytes(script);
+    return convert.from_bytes(script, script + len);
+#endif
 }

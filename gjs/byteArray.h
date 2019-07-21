@@ -21,27 +21,32 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_BYTE_ARRAY_H__
-#define __GJS_BYTE_ARRAY_H__
+#ifndef GJS_BYTEARRAY_H_
+#define GJS_BYTEARRAY_H_
 
-#include <stdbool.h>
+#include <stddef.h>  // for size_t
+
 #include <glib.h>
-#include "gjs/jsapi-util.h"
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
 
+#include "gjs/macros.h"
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_byte_array_stuff(JSContext              *context,
                                  JS::MutableHandleObject module);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
                                               GByteArray *array);
 
+GJS_USE
 GByteArray* gjs_byte_array_get_byte_array(JS::HandleObject obj);
 
+GJS_USE
 GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj);
 
-G_END_DECLS
-
-#endif  /* __GJS_BYTE_ARRAY_H__ */
+#endif  // GJS_BYTEARRAY_H_

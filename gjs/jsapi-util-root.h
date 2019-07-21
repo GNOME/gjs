@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2017 Endless Mobile, Inc.
+ * Copyright (c) 2019 Canonical, Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,14 +22,24 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_JSAPI_UTIL_ROOT_H
-#define GJS_JSAPI_UTIL_ROOT_H
+#ifndef GJS_JSAPI_UTIL_ROOT_H_
+#define GJS_JSAPI_UTIL_ROOT_H_
 
-#include <glib.h>
+#include <stdint.h>  // for uintptr_t
+
+#include <cstddef>  // for nullptr_t
+#include <memory>
+#include <new>
+#include <type_traits>  // for enable_if_t, is_pointer
+
 #include <glib-object.h>
+#include <glib.h>
 
-#include "gjs/context.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/macros.h"
 #include "util/log.h"
 
 /* jsapi-util-root.h - Utilities for dealing with the lifetime and ownership of
@@ -66,15 +77,13 @@
  */
 template<typename T>
 struct GjsHeapOperation {
-    static bool update_after_gc(JS::Heap<T> *location);
+    GJS_USE static bool update_after_gc(JS::Heap<T>* location);
     static void expose_to_js(JS::Heap<T>& thing);
 };
 
 template<>
 struct GjsHeapOperation<JSObject *> {
-    static bool
-    update_after_gc(JS::Heap<JSObject *> *location)
-    {
+    GJS_USE static bool update_after_gc(JS::Heap<JSObject*>* location) {
         JS_UpdateWeakPointerAfterGC(location);
         return (location->unbarrieredGet() == nullptr);
     }
@@ -89,132 +98,121 @@ struct GjsHeapOperation<JSObject *> {
     }
 };
 
-template<>
-struct GjsHeapOperation<JS::Value> {};
+template <>
+struct GjsHeapOperation<JSFunction*> {
+    static void expose_to_js(const JS::Heap<JSFunction*>& thing) {
+        JSFunction* func = thing.unbarrieredGet();
+        if (!func || !js::gc::detail::GetGCThingZone(uintptr_t(func)))
+            return;
+        if (!JS::CurrentThreadIsHeapCollecting())
+            js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(func));
+    }
+};
 
-/* GjsMaybeOwned is intended only for use in heap allocation. Do not allocate it
- * on the stack, and do not allocate any instances of structures that have it as
- * a member on the stack either. Unfortunately we cannot enforce this at compile
- * time with a private constructor; that would prevent the intended usage as a
- * member of a heap-allocated struct. */
+/* GjsMaybeOwned is intended for use as a member of classes that are allocated
+ * on the heap. Do not allocate GjsMaybeOwned on the stack, and do not allocate
+ * any instances of classes that have it as a member on the stack either. */
 template<typename T>
 class GjsMaybeOwned {
-public:
+ public:
     typedef void (*DestroyNotify)(JS::Handle<T> thing, void *data);
 
-private:
-    bool m_rooted;  /* wrapper is in rooted mode */
-    bool m_has_weakref;  /* we have a weak reference to the GjsContext */
-
-    JSContext *m_cx;
-
-    /* m_rooted controls which of these members we can access. When switching
+ private:
+    /* m_root value controls which of these members we can access. When switching
      * from one to the other, be careful to call the constructor and destructor
      * of JS::Heap, since they use post barriers. */
-    union RootUnion {
-        JS::Heap<T> heap;
-        JS::PersistentRooted<T>* root;
+    JS::Heap<T> m_heap;
+    std::unique_ptr<JS::PersistentRooted<T>> m_root;
 
-        RootUnion() : heap() {}
-        ~RootUnion() {}
-    } m_thing;
+    struct Notifier {
+        Notifier(GjsMaybeOwned<T> *parent, DestroyNotify func, void *data)
+            : m_parent(parent)
+            , m_func(func)
+            , m_data(data)
+        {
+            GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
+            g_object_weak_ref(G_OBJECT(gjs->public_context()),
+                              on_context_destroy, this);
+        }
 
-    DestroyNotify m_notify;
-    void *m_data;
+        ~Notifier() { disconnect(); }
+
+        static void on_context_destroy(void* data,
+                                       GObject* ex_context G_GNUC_UNUSED) {
+            auto self = static_cast<Notifier*>(data);
+            auto *parent = self->m_parent;
+            self->m_parent = nullptr;
+            self->m_func(parent->handle(), self->m_data);
+        }
+
+        void disconnect() {
+            if (!m_parent)
+                return;
+
+            GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
+            g_object_weak_unref(G_OBJECT(gjs->public_context()), on_context_destroy,
+                                this);
+            m_parent = nullptr;
+        }
+
+     private:
+        GjsMaybeOwned<T> *m_parent;
+        DestroyNotify m_func;
+        void *m_data;
+    };
+    std::unique_ptr<Notifier> m_notify;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
-    inline void
-    debug(const char *what)
-    {
+    inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned %p %s", this,
                             what);
     }
 
-    static void
-    on_context_destroy(void    *data,
-                       GObject *ex_context)
-    {
-        auto self = static_cast<GjsMaybeOwned<T> *>(data);
-        self->invalidate();
-    }
-
     void
-    teardown_rooting(void)
+    teardown_rooting()
     {
         debug("teardown_rooting()");
-        g_assert(m_rooted);
+        g_assert(m_root);
 
-        delete m_thing.root;
-        new (&m_thing.heap) JS::Heap<T>();
-        m_rooted = false;
+        m_root.reset();
+        m_notify.reset();
 
-        if (!m_has_weakref)
-            return;
-
-        auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
-        g_object_weak_unref(G_OBJECT(gjs_cx), on_context_destroy, this);
-        m_has_weakref = false;
+        new (&m_heap) JS::Heap<T>();
     }
 
-    /* Called for a rooted wrapper when the JSContext is about to be destroyed.
-     * This calls the destroy-notify callback if one was passed to root(), and
-     * then removes all rooting from the object. */
-    void
-    invalidate(void)
-    {
-        debug("invalidate()");
-        g_assert(m_rooted);
-
-        /* The weak ref is already gone because the context is dead, so no need
-         * to remove it. */
-        m_has_weakref = false;
-
-        /* The object is still live entering this callback. The callback
-         * must reset() this wrapper. */
-        if (m_notify)
-            m_notify(handle(), m_data);
-        else
-            reset();
-    }
-
-public:
-    GjsMaybeOwned(void) :
-        m_rooted(false),
-        m_has_weakref(false),
-        m_cx(nullptr),
-        m_notify(nullptr),
-        m_data(nullptr)
-    {
+ public:
+    GjsMaybeOwned() {
         debug("created");
     }
 
-    ~GjsMaybeOwned(void)
-    {
+    ~GjsMaybeOwned() {
         debug("destroyed");
-        if (m_rooted)
-            teardown_rooting();
-
-        /* Call in either case; teardown_rooting() constructs a new Heap */
-        m_thing.heap.~Heap();
     }
 
     /* To access the GC thing, call get(). In many cases you can just use the
      * GjsMaybeOwned wrapper in place of the GC thing itself due to the implicit
      * cast operator. But if you want to call methods on the GC thing, for
      * example if it's a JS::Value, you have to use get(). */
-    const T
-    get(void) const
-    {
-        return m_rooted ? m_thing.root->get() : m_thing.heap.get();
+    GJS_USE const T get() const {
+        return m_root ? m_root->get() : m_heap.get();
     }
-    operator const T(void) const { return get(); }
+    operator const T() const { return get(); }
+
+    /* Use debug_addr() only for debug logging, because it is unbarriered. */
+    template <typename U = T>
+    GJS_USE const T
+    debug_addr(std::enable_if_t<std::is_pointer<U>::value>* = nullptr) const {
+        return m_root ? m_root->get() : m_heap.unbarrieredGet();
+    }
 
     bool
     operator==(const T& other) const
     {
-        if (m_rooted)
-            return m_thing.root->get() == other;
-        return m_thing.heap == other;
+        if (m_root)
+            return m_root->get() == other;
+        return m_heap == other;
     }
     inline bool operator!=(const T& other) const { return !(*this == other); }
 
@@ -223,9 +221,9 @@ public:
     bool
     operator==(std::nullptr_t) const
     {
-        if (m_rooted)
-            return m_thing.root->get() == nullptr;
-        return m_thing.heap.unbarrieredGet() == nullptr;
+        if (m_root)
+            return m_root->get() == nullptr;
+        return m_heap.unbarrieredGet() == nullptr;
     }
     inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
@@ -235,11 +233,9 @@ public:
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
-    JS::Handle<T>
-    handle(void)
-    {
-        g_assert(m_rooted);
-        return *m_thing.root;
+    GJS_USE JS::Handle<T> handle() {
+        g_assert(m_root);
+        return *m_root;
     }
 
     /* Roots the GC thing. You must not use this if you're already using the
@@ -251,21 +247,13 @@ public:
          void         *data   = nullptr)
     {
         debug("root()");
-        g_assert(!m_rooted);
-        g_assert(m_thing.heap.get() == JS::GCPolicy<T>::initial());
-        m_rooted = true;
-        m_cx = cx;
-        m_notify = notify;
-        m_data = data;
-        m_thing.heap.~Heap();
-        m_thing.root = new JS::PersistentRooted<T>(m_cx, thing);
+        g_assert(!m_root);
+        g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
+        m_heap.~Heap();
+        m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
 
-        if (notify) {
-            auto gjs_cx = static_cast<GjsContext *>(JS_GetContextPrivate(m_cx));
-            g_assert(GJS_IS_CONTEXT(gjs_cx));
-            g_object_weak_ref(G_OBJECT(gjs_cx), on_context_destroy, this);
-            m_has_weakref = true;
-        }
+        if (notify)
+            m_notify = std::make_unique<Notifier>(this, notify, data);
     }
 
     /* You can only assign directly to the GjsMaybeOwned wrapper in the
@@ -273,34 +261,27 @@ public:
     void
     operator=(const T& thing)
     {
-        g_assert(!m_rooted);
-        m_thing.heap = thing;
+        g_assert(!m_root);
+        m_heap = thing;
     }
 
     /* Marks an object as reachable for one GC with ExposeObjectToActiveJS().
      * Use to avoid stopping tracing an object during GC. This makes no sense
      * in the rooted case. */
-    void
-    prevent_collection(void)
-    {
+    void prevent_collection() {
         debug("prevent_collection()");
-        g_assert(!m_rooted);
-        GjsHeapOperation<T>::expose_to_js(m_thing.heap);
+        g_assert(!m_root);
+        GjsHeapOperation<T>::expose_to_js(m_heap);
     }
 
-    void
-    reset(void)
-    {
+    void reset() {
         debug("reset()");
-        if (!m_rooted) {
-            m_thing.heap = JS::GCPolicy<T>::initial();
+        if (!m_root) {
+            m_heap = JS::GCPolicy<T>::initial();
             return;
         }
 
         teardown_rooting();
-        m_cx = nullptr;
-        m_notify = nullptr;
-        m_data = nullptr;
     }
 
     void
@@ -309,32 +290,31 @@ public:
                      void         *data   = nullptr)
     {
         debug("switch to rooted");
-        g_assert(!m_rooted);
+        g_assert(!m_root);
 
         /* Prevent the thing from being garbage collected while it is in neither
-         * m_thing.heap nor m_thing.root */
+         * m_heap nor m_root */
         JSAutoRequest ar(cx);
-        JS::Rooted<T> thing(cx, m_thing.heap);
+        JS::Rooted<T> thing(cx, m_heap);
 
         reset();
         root(cx, thing, notify, data);
-        g_assert(m_rooted);
+        g_assert(m_root);
     }
 
-    void
-    switch_to_unrooted(void)
-    {
+    void switch_to_unrooted() {
         debug("switch to unrooted");
-        g_assert(m_rooted);
+        g_assert(m_root);
 
         /* Prevent the thing from being garbage collected while it is in neither
-         * m_thing.heap nor m_thing.root */
-        JSAutoRequest ar(m_cx);
-        JS::Rooted<T> thing(m_cx, *m_thing.root);
+         * m_heap nor m_root */
+        JSContext *cx = GjsContextPrivate::from_current_context()->context();
+        JSAutoRequest ar(cx);
+        JS::Rooted<T> thing(cx, *m_root);
 
         reset();
-        m_thing.heap = thing;
-        g_assert(!m_rooted);
+        m_heap = thing;
+        g_assert(!m_root);
     }
 
     /* Tracing makes no sense in the rooted case, because JS::PersistentRooted
@@ -344,22 +324,20 @@ public:
           const char *name)
     {
         debug("trace()");
-        g_assert(!m_rooted);
-        JS::TraceEdge<T>(tracer, &m_thing.heap, name);
+        g_assert(!m_root);
+        JS::TraceEdge<T>(tracer, &m_heap, name);
     }
 
     /* If not tracing, then you must call this method during GC in order to
      * update the object's location if it was moved, or null it out if it was
      * finalized. If the object was finalized, returns true. */
-    bool
-    update_after_gc(void)
-    {
+    GJS_USE bool update_after_gc() {
         debug("update_after_gc()");
-        g_assert(!m_rooted);
-        return GjsHeapOperation<T>::update_after_gc(&m_thing.heap);
+        g_assert(!m_root);
+        return GjsHeapOperation<T>::update_after_gc(&m_heap);
     }
 
-    bool rooted(void) const { return m_rooted; }
+    GJS_USE bool rooted() const { return m_root != nullptr; }
 };
 
-#endif /* GJS_JSAPI_UTIL_ROOT_H */
+#endif  // GJS_JSAPI_UTIL_ROOT_H_

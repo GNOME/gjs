@@ -1,9 +1,6 @@
 # SpiderMonkey leaks a mutex for each GC helper thread.
 leak:js::HelperThread::threadLoop
 
-# We leak a small wrapper in GJS for each registered GType.
-leak:gjs_gtype_create_gtype_wrapper
-
 # https://bugs.freedesktop.org/show_bug.cgi?id=105466
 leak:libfontconfig.so.1
 

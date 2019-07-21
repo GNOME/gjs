@@ -1,5 +1,4 @@
-const GLib = imports.gi.GLib;
-const Regress = imports.gi.Regress;
+const {GLib, GObject, Regress} = imports.gi;
 const System = imports.system;
 
 describe('Introspected structs', function () {
@@ -234,6 +233,29 @@ describe('Introspected GObject', function () {
         expect(obj.name_conflict).toEqual(42);
         expect(obj.name_conflict instanceof Function).toBeFalsy();
     });
+
+    xit('sets write-only properties', function () {
+        expect(obj.int).not.toEqual(0);
+        obj.write_only = true;
+        expect(obj.int).toEqual(0);
+    });
+
+    it('gives undefined for write-only properties', function () {
+        expect(obj.write_only).not.toBeDefined();
+    });
+
+    it('can read fields from a parent class', function () {
+        let subobj = new Regress.TestSubObj({
+            int: 42,
+            float: 3.1416,
+            double: 2.71828,
+        });
+
+        // see "can access fields with simple types" above
+        expect(subobj.some_int8).toEqual(subobj.int);
+        expect(subobj.some_float).toEqual(subobj.float);
+        expect(subobj.some_double).toEqual(subobj.double);
+    });
 });
 
 describe('Introspected function length', function () {
@@ -279,5 +301,19 @@ describe('Garbage collection of introspected objects', function () {
         orphanObject();
         System.gc();
         GLib.idle_add(GLib.PRIORITY_LOW, () => done());
+    });
+});
+
+describe('Introspected interface', function () {
+    const Implementor = GObject.registerClass({
+        Implements: [Regress.TestInterface],
+    }, class Implementor extends GObject.Object {});
+
+    it('correctly emits interface signals', function () {
+        let obj = new Implementor();
+        let handler = jasmine.createSpy('handler').and.callFake(() => {});
+        obj.connect('interface-signal', handler);
+        obj.emit_signal();
+        expect(handler).toHaveBeenCalled();
     });
 });

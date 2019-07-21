@@ -21,13 +21,15 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_OVERRIDE_H__
-#define __GJS_OVERRIDE_H__
+#ifndef GI_FOREIGN_H_
+#define GI_FOREIGN_H_
 
-#include <stdbool.h>
 #include <girepository.h>
-#include <gjs/gjs.h>
-#include "arg.h"
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
+#include "gjs/macros.h"
 
 typedef bool (*GjsArgOverrideToGArgumentFunc) (JSContext      *context,
                                                JS::Value       value,
@@ -51,10 +53,10 @@ typedef struct {
     GjsArgOverrideReleaseGArgumentFunc release_func;
 } GjsForeignInfo;
 
-bool  gjs_struct_foreign_register                (const char     *gi_namespace,
-                                                  const char     *type_name,
-                                                  GjsForeignInfo *info);
+void gjs_struct_foreign_register(const char* gi_namespace,
+                                 const char* type_name, GjsForeignInfo* info);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool  gjs_struct_foreign_convert_to_g_argument   (JSContext      *context,
                                                   JS::Value       value,
                                                   GIBaseInfo     *interface_info,
@@ -63,14 +65,16 @@ bool  gjs_struct_foreign_convert_to_g_argument   (JSContext      *context,
                                                   GITransfer      transfer,
                                                   bool            may_be_null,
                                                   GArgument      *arg);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
                                                 JS::MutableHandleValue value_p,
                                                 GIBaseInfo            *interface_info,
                                                 GIArgument            *arg);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool  gjs_struct_foreign_release_g_argument      (JSContext      *context,
                                                   GITransfer      transfer,
                                                   GIBaseInfo     *interface_info,
                                                   GArgument      *arg);
 
-#endif /* __GJS_OVERRIDE_H__ */
+#endif  // GI_FOREIGN_H_

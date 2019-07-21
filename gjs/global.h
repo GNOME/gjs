@@ -21,14 +21,12 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef GJS_GLOBAL_H
-#define GJS_GLOBAL_H
+#ifndef GJS_GLOBAL_H_
+#define GJS_GLOBAL_H_
 
-#include <glib.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "jsapi-wrapper.h"
-
-G_BEGIN_DECLS
+#include "gjs/macros.h"
 
 typedef enum {
     GJS_GLOBAL_SLOT_IMPORTS,
@@ -55,8 +53,10 @@ typedef enum {
     GJS_GLOBAL_SLOT_LAST,
 } GjsGlobalSlot;
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_create_global_object(JSContext *cx);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_global_properties(JSContext       *cx,
                                   JS::HandleObject global,
                                   const char      *bootstrap_script);
@@ -65,8 +65,6 @@ void gjs_set_global_slot(JSContext    *context,
                          GjsGlobalSlot slot,
                          JS::Value     value);
 
-G_END_DECLS
-
 JS::Value gjs_get_global_slot(JSContext* cx, GjsGlobalSlot slot);
 
-#endif  /* GJS_GLOBAL_H */
+#endif  // GJS_GLOBAL_H_

@@ -2,40 +2,60 @@
 
 ## Setting up ##
 
-We use the
-[Google style guide](https://google.github.io/styleguide/cppguide.html)
-for C++ code, with a few exceptions, 4-space indents being the main one.
-There is a handy git commit hook that will autoformat your code when you
-commit it.
+First of all, if you are contributing C++ code, install the handy git
+commit hook that will autoformat your code when you commit it.
 In your GJS checkout directory, run
 `tools/git-pre-commit-format install`.
 For more information, see
 <https://github.com/barisione/clang-format-hooks/>.
+(You can skip this step if it doesn't work for you, but in that case
+you'll need to manually format your code before it gets merged.
+You can also skip this step if you are not writing any C++ code.)
 
 For the time being, we recommend using JHBuild to develop GJS.
 Follow the [instructions from GNOME](https://wiki.gnome.org/HowDoI/Jhbuild) for [JHBuild](https://git.gnome.org/browse/jhbuild/).
 
-Even if your system includes a development package for mozjs, we
+GJS requires four other libraries to be installed: GLib, libffi,
+gobject-introspection, and SpiderMonkey (also called "mozjs60" on some
+systems.)
+The readline library is not required, but strongly recommended.
+We recommend installing your system's development packages for libffi
+and readline, and building the others with JHBuild.
+(For example, on Ubuntu these packages are called `libffi-dev` and
+`libreadline-dev`.)
+
+Even if your system includes a development package for SpiderMonkey, we
 recommend building it on JHBuild so that you can enable the debugging
-features. Add this to your JHBuild configuration file:
+features.
+Add this to your JHBuild configuration file (usually
+`~/.config/jhbuildrc`):
 ```python
 module_autogenargs['mozjs60'] = '--enable-debug'
 ```
-
 Make sure it is built first with `jhbuild build mozjs60`, otherwise
 `jhbuild build gjs` will skip it if you have the system package
 installed.
 
-Debugging features in mozjs reduce performance by quite a lot, in
-exchange for performing many runtime checks that can alert you when
-you're not using the JS API correctly.
+These debugging features reduce performance by quite a lot, but they
+will help catch mistakes in the API that could otherwise go unnoticed
+and cause crashes in gnome-shell later on.
 
 ## Making Sure Your Stuff Doesn't Break Anything Else ##
+
+Make your changes in your GJS checkout directory, then run
+`jhbuild make` to build a modified copy of GJS.
 
 Each changeset should ensure that the test suite still passes.
 In fact, each commit should ensure that the test suite still passes,
 though there are some exceptions to this rule.
 You can run the test suite with `jhbuild make check`.
+
+For some contributions, it's a good idea to test your modified version
+of GJS with GNOME Shell.
+For this, build GNOME Shell with `jhbuild build gnome-shell`, and run
+it with `jhbuild run gnome-shell --replace`.
+You need to be logged into an Xorg session, not Wayland, for this to
+work.
 
 ## Debugging ##
 

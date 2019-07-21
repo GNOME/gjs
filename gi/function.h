@@ -21,28 +21,27 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_FUNCTION_H__
-#define __GJS_FUNCTION_H__
+#ifndef GI_FUNCTION_H_
+#define GI_FUNCTION_H_
 
-#include <stdbool.h>
-#include <glib.h>
-
-#include "gjs/jsapi-util.h"
-
+#include <ffi.h>
 #include <girepository.h>
-#include <girffi.h>
+#include <glib-object.h>
 
-G_BEGIN_DECLS
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/macros.h"
 
 typedef enum {
     PARAM_NORMAL,
     PARAM_SKIPPED,
     PARAM_ARRAY,
-    PARAM_CALLBACK
+    PARAM_CALLBACK,
+    PARAM_UNKNOWN,
 } GjsParamType;
 
 struct GjsCallbackTrampoline {
-    gint ref_count;
+    int ref_count;
     GICallableInfo *info;
 
     GClosure *js_function;
@@ -54,33 +53,32 @@ struct GjsCallbackTrampoline {
     GjsParamType *param_types;
 };
 
-GjsCallbackTrampoline* gjs_callback_trampoline_new(JSContext       *context,
-                                                   JS::HandleValue  function,
-                                                   GICallableInfo  *callable_info,
-                                                   GIScopeType      scope,
-                                                   JS::HandleObject scope_object,
-                                                   bool             is_vfunc);
+GJS_JSAPI_RETURN_CONVENTION
+GjsCallbackTrampoline* gjs_callback_trampoline_new(
+    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
+    GIScopeType scope, JS::HandleObject scope_object, bool is_vfunc);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_define_function(JSContext       *context,
                               JS::HandleObject in_object,
                               GType            gtype,
                               GICallableInfo  *info);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_c_function_uncached(JSContext                  *context,
                                     GIFunctionInfo             *info,
                                     JS::HandleObject            obj,
                                     const JS::HandleValueArray& args,
                                     JS::MutableHandleValue      rval);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_constructor_from_c(JSContext                  *context,
                                    JS::HandleObject            constructor,
                                    JS::HandleObject            obj,
                                    const JS::HandleValueArray& args,
                                    GIArgument                 *rvalue);
 
-G_END_DECLS
-
-#endif  /* __GJS_FUNCTION_H__ */
+#endif  // GI_FUNCTION_H_

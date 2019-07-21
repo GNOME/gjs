@@ -38,66 +38,115 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "config.h"
+#include <config.h>  // for HAVE_READLINE_READLINE_H
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>   // for fputc, fputs, stderr, size_t, fflush
+#include <string.h>  // for strchr
 
 #ifdef HAVE_READLINE_READLINE_H
-#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
 
 #include <glib.h>
-#include <glib/gprintf.h>
+#include <glib/gprintf.h>  // for g_fprintf
 
-#include "console.h"
-#include "gjs/context.h"
-#include "gjs/context-private.h"
 #include "gjs/jsapi-wrapper.h"
+#include "mozilla/UniquePtr.h"
+#include "mozilla/Unused.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
+#include "modules/console.h"
+
+enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
+
+template <typename T>
+static void print_single_error(T* report, PrintErrorKind kind);
+static void print_error_line(const char* prefix, JSErrorReport* report);
+static void print_error_line(const char*, JSErrorNotes::Note*) {}
 
 static void
 gjs_console_print_error(JSErrorReport *report)
 {
-    /* Code modified from SpiderMonkey js/src/jscntxt.cpp, js::PrintError() */
+    // Code modified from SpiderMonkey js/src/vm/JSContext.cpp, js::PrintError()
 
     g_assert(report);
 
-    char *prefix = nullptr;
-    if (report->filename)
-        prefix = g_strdup_printf("%s:", report->filename);
-    if (report->lineno) {
-        char *tmp = prefix;
-        prefix = g_strdup_printf("%s%u:%u ", tmp ? tmp : "", report->lineno,
-                                 report->column);
-        g_free(tmp);
-    }
+    PrintErrorKind kind = PrintErrorKind::Error;
     if (JSREPORT_IS_WARNING(report->flags)) {
-        char *tmp = prefix;
-        prefix = g_strdup_printf("%s%swarning: ",
-                                 tmp ? tmp : "",
-                                 JSREPORT_IS_STRICT(report->flags) ? "strict " : "");
-        g_free(tmp);
+        if (JSREPORT_IS_STRICT(report->flags))
+            kind = PrintErrorKind::StrictWarning;
+        else
+            kind = PrintErrorKind::Warning;
+    }
+    print_single_error(report, kind);
+
+    if (report->notes) {
+        for (auto&& note : *report->notes)
+            print_single_error(note.get(), PrintErrorKind::Note);
     }
 
-    const char *message = report->message().c_str();
+    return;
+}
+
+template <typename T>
+static void print_single_error(T* report, PrintErrorKind kind) {
+    JS::UniqueChars prefix;
+    if (report->filename)
+        prefix.reset(g_strdup_printf("%s:", report->filename));
+
+    if (report->lineno) {
+        prefix.reset(g_strdup_printf("%s%u:%u ", prefix ? prefix.get() : "",
+                                     report->lineno, report->column));
+    }
+
+    if (kind != PrintErrorKind::Error) {
+        const char* kindPrefix = nullptr;
+        switch (kind) {
+            case PrintErrorKind::Warning:
+                kindPrefix = "warning";
+                break;
+            case PrintErrorKind::StrictWarning:
+                kindPrefix = "strict warning";
+                break;
+            case PrintErrorKind::Note:
+                kindPrefix = "note";
+                break;
+            case PrintErrorKind::Error:
+            default:
+                g_assert_not_reached();
+        }
+
+        prefix.reset(
+            g_strdup_printf("%s%s: ", prefix ? prefix.get() : "", kindPrefix));
+    }
+
+    const char* message = report->message().c_str();
 
     /* embedded newlines -- argh! */
     const char *ctmp;
     while ((ctmp = strchr(message, '\n')) != 0) {
         ctmp++;
         if (prefix)
-            fputs(prefix, stderr);
-        fwrite(message, 1, ctmp - message, stderr);
+            fputs(prefix.get(), stderr);
+        mozilla::Unused << fwrite(message, 1, ctmp - message, stderr);
         message = ctmp;
     }
 
     /* If there were no filename or lineno, the prefix might be empty */
     if (prefix)
-        fputs(prefix, stderr);
+        fputs(prefix.get(), stderr);
     fputs(message, stderr);
 
+    print_error_line(prefix.get(), report);
+    fputc('\n', stderr);
+
+    fflush(stderr);
+}
+
+static void print_error_line(const char* prefix, JSErrorReport* report) {
     if (const char16_t* linebuf = report->linebuf()) {
         size_t n = report->linebufLength();
 
@@ -127,20 +176,29 @@ gjs_console_print_error(JSErrorReport *report)
         }
         fputc('^', stderr);
     }
-    fputc('\n', stderr);
-    fflush(stderr);
-    g_free(prefix);
 }
 
-static void
-gjs_console_warning_reporter(JSContext *cx, JSErrorReport *report)
-{
+static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
     gjs_console_print_error(report);
 }
 
 /* Based on js::shell::AutoReportException from SpiderMonkey. */
 class AutoReportException {
     JSContext *m_cx;
+
+    JSErrorReport* error_from_exception_value(JS::HandleValue v_exn) const {
+        if (!v_exn.isObject())
+            return nullptr;
+        JS::RootedObject exn(m_cx, &v_exn.toObject());
+        return JS_ErrorFromException(m_cx, exn);
+    }
+
+    JSObject* stack_from_exception_value(JS::HandleValue v_exn) const {
+        if (!v_exn.isObject())
+            return nullptr;
+        JS::RootedObject exn(m_cx, &v_exn.toObject());
+        return ExceptionStackOrNull(exn);
+    }
 
 public:
     explicit AutoReportException(JSContext *cx) : m_cx(cx) {}
@@ -153,22 +211,17 @@ public:
         JS::RootedValue v_exn(m_cx);
         (void) JS_GetPendingException(m_cx, &v_exn);
 
-        JS::RootedObject exn(m_cx, &v_exn.toObject());
-        JSErrorReport *report = JS_ErrorFromException(m_cx, exn);
+        JSErrorReport* report = error_from_exception_value(v_exn);
         if (report) {
             g_assert(!JSREPORT_IS_WARNING(report->flags));
             gjs_console_print_error(report);
         } else {
-            JS::RootedString message(m_cx, JS::ToString(m_cx, v_exn));
-            if (!message) {
-                g_printerr("(could not convert thrown exception to string)\n");
-            } else {
-                GjsAutoJSChar message_utf8 = JS_EncodeStringToUTF8(m_cx, message);
-                g_printerr("%s\n", message_utf8.get());
-            }
+            GjsAutoChar display_str = gjs_value_debug_string(m_cx, v_exn);
+            g_printerr("error: %s\n", display_str.get());
+            return;
         }
 
-        JS::RootedObject stack(m_cx, ExceptionStackOrNull(exn));
+        JS::RootedObject stack(m_cx, stack_from_exception_value(v_exn));
         if (stack) {
             GjsAutoChar stack_str = gjs_format_stack_trace(m_cx, stack);
             if (!stack_str)
@@ -182,9 +235,8 @@ public:
 };
 
 #ifdef HAVE_READLINE_READLINE_H
-static bool
-gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
-{
+GJS_USE
+static bool gjs_console_readline(char** bufp, const char* prompt) {
     char *line;
     line = readline(prompt);
     if (!line)
@@ -195,13 +247,12 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
     return true;
 }
 #else
-static bool
-gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
-{
+GJS_USE
+static bool gjs_console_readline(char** bufp, const char* prompt) {
     char line[256];
     fprintf(stdout, "%s", prompt);
     fflush(stdout);
-    if (!fgets(line, sizeof line, file))
+    if (!fgets(line, sizeof line, stdin))
         return false;
     *bufp = g_strdup(line);
     return true;
@@ -212,6 +263,7 @@ gjs_console_readline(JSContext *cx, char **bufp, FILE *file, const char *prompt)
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
+GJS_USE
 static bool
 gjs_console_eval_and_print(JSContext  *cx,
                            const char *bytes,
@@ -228,13 +280,10 @@ gjs_console_eval_and_print(JSContext  *cx,
             return false;
     }
 
-    gjs_schedule_gc_if_needed(cx);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    gjs->schedule_gc_if_needed();
 
     if (result.isUndefined())
-        return true;
-
-    JS::RootedString str(cx, JS::ToString(cx, result));
-    if (!str)
         return true;
 
     char *display_str;
@@ -246,6 +295,7 @@ gjs_console_eval_and_print(JSContext  *cx,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_console_interact(JSContext *context,
                      unsigned   argc,
@@ -258,7 +308,6 @@ gjs_console_interact(JSContext *context,
     char *temp_buf = NULL;
     int lineno;
     int startline;
-    FILE *file = stdin;
 
     JS::SetWarningReporter(context, gjs_console_warning_reporter);
 
@@ -274,8 +323,8 @@ gjs_console_interact(JSContext *context,
         startline = lineno;
         buffer = g_string_new("");
         do {
-            if (!gjs_console_readline(context, &temp_buf, file,
-                                      startline == lineno ? "gjs> " : ".... ")) {
+            if (!gjs_console_readline(
+                    &temp_buf, startline == lineno ? "gjs> " : ".... ")) {
                 eof = true;
                 break;
             }
@@ -293,8 +342,8 @@ gjs_console_interact(JSContext *context,
         }
         g_string_free(buffer, true);
 
-        auto gjs_context = static_cast<GjsContext *>(JS_GetContextPrivate(context));
-        ok = _gjs_context_run_jobs(gjs_context) && ok;
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        ok = gjs->run_jobs() && ok;
 
         if (!ok) {
             /* If this was an uncatchable exception, throw another uncatchable
@@ -308,9 +357,6 @@ gjs_console_interact(JSContext *context,
 
     g_fprintf(stdout, "\n");
 
-    if (file != stdin)
-        fclose(file);
-
     argv.rval().setUndefined();
     return true;
 }
@@ -320,6 +366,8 @@ gjs_define_console_stuff(JSContext              *context,
                          JS::MutableHandleObject module)
 {
     module.set(JS_NewPlainObject(context));
-    return JS_DefineFunction(context, module, "interact", gjs_console_interact,
-                             1, GJS_MODULE_PROP_FLAGS);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    return JS_DefineFunctionById(context, module, atoms.interact(),
+                                 gjs_console_interact, 1,
+                                 GJS_MODULE_PROP_FLAGS);
 }

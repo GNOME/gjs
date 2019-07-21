@@ -1,6 +1,6 @@
 {
-    "id": "<<ID>>",
-    "branch": "<<master>>",
+    "id": "org.gnome.GjsDevel",
+    "branch": "master",
     "runtime": "org.gnome.Platform",
     "runtime-version": "master",
     "sdk": "org.gnome.Sdk",
@@ -17,13 +17,33 @@
     ],
     "modules": [
         {
-            "name": "gjs",
-            "buildsystem": "autotools",
+            "name": "sysprof",
             "builddir": true,
+            "buildsystem": "meson",
+            "config-opts": [
+                "-Denable_gtk=false",
+                "-Dhelp=false",
+                "-Dlibsysprof=false",
+                "-Dwith_sysprofd=none"
+            ],
             "sources": [
                 {
                     "type": "git",
-                    "branch": "<<current>>",
+                    "branch": "master",
+                    "url": "https://gitlab.gnome.org/GNOME/sysprof.git"
+                }
+            ]
+        },
+        {
+            "name": "gjs",
+            "builddir": true,
+            "config-opts": [
+                "--enable-profiler"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "branch": "HEAD",
                     "path": "."
                 }
             ]

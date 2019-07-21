@@ -23,14 +23,18 @@
  * Authored by: Philip Chimento <philip@endlessm.com>, <philip.chimento@gmail.com>
  */
 
-#ifndef GJS_TOGGLE_H
-#define GJS_TOGGLE_H
+#ifndef GI_TOGGLE_H_
+#define GI_TOGGLE_H_
 
 #include <atomic>
 #include <deque>
 #include <mutex>
-#include <glib-object.h>
+#include <utility>  // for pair
 
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/macros.h"
 #include "util/log.h"
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
@@ -52,7 +56,7 @@ private:
         unsigned needs_unref : 1;
     };
 
-    std::mutex lock;
+    mutable std::mutex lock;
     std::deque<Item> q;
     std::atomic_bool m_shutdown = ATOMIC_VAR_INIT(false);
 
@@ -60,21 +64,30 @@ private:
     Handler m_toggle_handler;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
-    inline void debug(const char *did, void *what) {
+    inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
+                      const void* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
     }
 
-    std::deque<Item>::iterator find_operation_locked(GObject  *gobj,
+    GJS_USE
+    std::deque<Item>::iterator find_operation_locked(const GObject  *gobj,
                                                      Direction direction);
-    bool find_and_erase_operation_locked(GObject *gobj, Direction direction);
+
+    GJS_USE
+    std::deque<Item>::const_iterator find_operation_locked(const GObject *gobj,
+                                                           Direction direction) const;
+
+    GJS_USE
+    bool find_and_erase_operation_locked(const GObject *gobj, Direction direction);
 
     static gboolean idle_handle_toggle(void *data);
     static void idle_destroy_notify(void *data);
 
-public:
+ public:
     /* These two functions return a pair DOWN, UP signifying whether toggles
      * are / were queued. is_queued() just checks and does not modify. */
-    std::pair<bool, bool> is_queued(GObject *gobj);
+    GJS_USE
+    std::pair<bool, bool> is_queued(GObject *gobj) const;
     /* Cancels pending toggles and returns whether any were queued. */
     std::pair<bool, bool> cancel(GObject *gobj);
 
@@ -93,6 +106,7 @@ public:
                  Direction direction,
                  Handler   handler);
 
+    GJS_USE
     static ToggleQueue&
     get_default(void) {
         static ToggleQueue the_singleton;
@@ -100,4 +114,4 @@ public:
     }
 };
 
-#endif  /* GJS_TOGGLE_H */
+#endif  // GI_TOGGLE_H_

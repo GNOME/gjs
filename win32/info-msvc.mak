@@ -2,8 +2,6 @@
 
 GTK_SUPPORT = yes
 CAIRO_SUPPORT = yes
-BUILT_TOOLS = gsf.exe gsf-vba-dump.exe
-BUILT_LIBRARIES = libgsf libgsf-win32
 
 !if "$(NO_CAIRO)" == "1"
 CAIRO_SUPPORT = no

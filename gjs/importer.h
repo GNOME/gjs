@@ -21,22 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_IMPORTER_H__
-#define __GJS_IMPORTER_H__
+#ifndef GJS_IMPORTER_H_
+#define GJS_IMPORTER_H_
 
-#include <stdbool.h>
-#include <glib.h>
-#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-wrapper.h"
 
-G_BEGIN_DECLS
+#include "gjs/macros.h"
 
+GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_create_root_importer(JSContext          *cx,
                                    const char * const *search_path);
 
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_import_native_module(JSContext       *cx,
                               JS::HandleObject importer,
                               const char      *name);
 
-G_END_DECLS
-
-#endif  /* __GJS_IMPORTER_H__ */
+#endif  // GJS_IMPORTER_H_

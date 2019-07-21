@@ -23,16 +23,23 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#include <sys/stat.h>
+#include <stdlib.h>  // for free, size_t
+#include <string.h>  // for strcmp, strlen
+
+#include <new>
+
 #include <gio/gio.h>
+#include <glib-object.h>
 
-#include <gjs/context.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "coverage.h"
-#include "global.h"
-#include "importer.h"
-#include "jsapi-util-args.h"
-#include "util/error.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/coverage.h"
+#include "gjs/global.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 struct _GjsCoverage {
     GObject parent;
@@ -68,6 +75,7 @@ enum {
 
 static GParamSpec *properties[PROP_N] = { NULL, };
 
+GJS_USE
 static char *
 get_file_identifier(GFile *source_file) {
     char *path = g_file_get_path(source_file);
@@ -76,6 +84,7 @@ get_file_identifier(GFile *source_file) {
     return path;
 }
 
+GJS_USE
 static bool
 write_source_file_header(GOutputStream *stream,
                          GFile         *source_file,
@@ -85,6 +94,7 @@ write_source_file_header(GOutputStream *stream,
     return g_output_stream_printf(stream, NULL, NULL, error, "SF:%s\n", path.get());
 }
 
+GJS_USE
 static bool
 copy_source_file_to_coverage_output(GFile   *source_file,
                                     GFile   *destination_file,
@@ -107,6 +117,7 @@ copy_source_file_to_coverage_output(GFile   *source_file,
  * the string with the URI scheme stripped or NULL
  * if the path was not a valid URI
  */
+GJS_USE
 static char *
 strip_uri_scheme(const char *potential_uri)
 {
@@ -142,6 +153,7 @@ strip_uri_scheme(const char *potential_uri)
  * automatically return the full URI path with
  * the URI scheme and leading slash stripped out.
  */
+GJS_USE
 static char *
 find_diverging_child_components(GFile *child,
                                 GFile *parent)
@@ -174,6 +186,7 @@ find_diverging_child_components(GFile *child,
     return stripped_uri;
 }
 
+GJS_USE
 static bool
 filename_has_coverage_prefixes(GjsCoverage *self, const char *filename)
 {
@@ -194,14 +207,12 @@ write_line(GOutputStream *out,
     return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
 }
 
+GJS_USE
 static GjsAutoUnref<GFile>
 write_statistics_internal(GjsCoverage *coverage,
                           JSContext   *cx,
                           GError     **error)
 {
-    using AutoCChar = std::unique_ptr<char, decltype(&free)>;
-    using AutoStrv = std::unique_ptr<char *, decltype(&g_strfreev)>;
-
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     /* Create output directory if it doesn't exist */
@@ -214,7 +225,8 @@ write_statistics_internal(GjsCoverage *coverage,
     GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     size_t lcov_length;
-    AutoCChar lcov(js::GetCodeCoverageSummary(cx, &lcov_length), free);
+    GjsAutoPointer<char, void, free> lcov(
+        js::GetCodeCoverageSummary(cx, &lcov_length));
 
     GjsAutoUnref<GOutputStream> ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
@@ -224,8 +236,8 @@ write_statistics_internal(GjsCoverage *coverage,
     if (!ostream)
         return nullptr;
 
-    AutoStrv lcov_lines(g_strsplit(lcov.get(), "\n", -1), g_strfreev);
-    GjsAutoChar test_name;
+    GjsAutoStrv lcov_lines = g_strsplit(lcov, "\n", -1);
+    const char* test_name = NULL;
     bool ignoring_file = false;
 
     for (const char * const *iter = lcov_lines.get(); *iter; iter++) {
@@ -248,7 +260,7 @@ write_statistics_internal(GjsCoverage *coverage,
             }
 
             /* Now we can write the test name before writing the source file */
-            if (!write_line(ostream, test_name.get(), error))
+            if (!write_line(ostream, test_name, error))
                 return nullptr;
 
             /* The source file could be a resource, so we must use
@@ -311,10 +323,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
     g_message("Wrote coverage statistics to %s", output_file_path.get());
 }
 
-static void
-gjs_coverage_init(GjsCoverage *self)
-{
-}
+static void gjs_coverage_init(GjsCoverage*) {}
 
 static void
 coverage_tracer(JSTracer *trc, void *data)
@@ -325,6 +334,7 @@ coverage_tracer(JSTracer *trc, void *data)
     JS::TraceEdge<JSObject *>(trc, &priv->compartment, "Coverage compartment");
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 bootstrap_coverage(GjsCoverage *coverage)
 {
@@ -342,9 +352,10 @@ bootstrap_coverage(GjsCoverage *coverage)
         if (!JS_WrapObject(context, &debuggeeWrapper))
             return false;
 
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
-        if (!JS_SetProperty(context, debugger_compartment, "debuggee",
-                            debuggeeWrapperValue) ||
+        if (!JS_SetPropertyById(context, debugger_compartment, atoms.debuggee(),
+                                debuggeeWrapperValue) ||
             !gjs_define_global_properties(context, debugger_compartment,
                                           "coverage"))
             return false;

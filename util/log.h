@@ -21,12 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_UTIL_LOG_H__
-#define __GJS_UTIL_LOG_H__
+#ifndef UTIL_LOG_H_
+#define UTIL_LOG_H_
 
 #include <glib.h>
-
-G_BEGIN_DECLS
 
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app
@@ -50,6 +48,7 @@ typedef enum {
     GJS_DEBUG_GPARAM,
     GJS_DEBUG_GERROR,
     GJS_DEBUG_GFUNDAMENTAL,
+    GJS_DEBUG_GINTERFACE,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and
@@ -102,51 +101,73 @@ typedef enum {
 #endif
 
 #if GJS_VERBOSE_ENABLE_PROPS
-#define gjs_debug_jsprop(topic, ...) \
-    do { gjs_debug(topic, __VA_ARGS__); } while(0)
+#    define GJS_USED_VERBOSE_PROPS
+#    define gjs_debug_jsprop(topic, ...)   \
+        do {                               \
+            gjs_debug(topic, __VA_ARGS__); \
+        } while (0)
 #else
-#define gjs_debug_jsprop(topic, ...) ((void)0)
+#    define GJS_USED_VERBOSE_PROPS G_GNUC_UNUSED
+#    define gjs_debug_jsprop(topic, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_MARSHAL
-#define gjs_debug_marshal(topic, ...) \
-    do { gjs_debug(topic, __VA_ARGS__); } while(0)
+#    define GJS_USED_VERBOSE_MARSHAL
+#    define gjs_debug_marshal(topic, ...)  \
+        do {                               \
+            gjs_debug(topic, __VA_ARGS__); \
+        } while (0)
 #else
-#define gjs_debug_marshal(topic, ...) ((void)0)
+#    define GJS_USED_VERBOSE_MARSHAL G_GNUC_UNUSED
+#    define gjs_debug_marshal(topic, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_LIFECYCLE
-#define gjs_debug_lifecycle(topic, ...) \
-    do { gjs_debug(topic, __VA_ARGS__); } while(0)
+#    define GJS_USED_VERBOSE_LIFECYCLE
+#    define gjs_debug_lifecycle(topic, ...) \
+        do {                                \
+            gjs_debug(topic, __VA_ARGS__);  \
+        } while (0)
 #else
-#define gjs_debug_lifecycle(topic, ...) ((void)0)
+#    define GJS_USED_VERBOSE_LIFECYCLE G_GNUC_UNUSED
+#    define gjs_debug_lifecycle(topic, ...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-#define gjs_debug_gi_usage(...) \
-    do { gjs_debug(GJS_DEBUG_GI_USAGE, __VA_ARGS__); } while(0)
+#    define GJS_USED_VERBOSE_GI_USAGE
+#    define gjs_debug_gi_usage(...)                     \
+        do {                                            \
+            gjs_debug(GJS_DEBUG_GI_USAGE, __VA_ARGS__); \
+        } while (0)
 #else
-#define gjs_debug_gi_usage(...) ((void)0)
+#    define GJS_USED_VERBOSE_GI_USAGE G_GNUC_UNUSED
+#    define gjs_debug_gi_usage(...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GCLOSURE
-#define gjs_debug_closure(...) \
-    do { gjs_debug(GJS_DEBUG_GCLOSURE, __VA_ARGS__); } while(0)
+#    define GJS_USED_VERBOSE_GCLOSURE
+#    define gjs_debug_closure(...)                      \
+        do {                                            \
+            gjs_debug(GJS_DEBUG_GCLOSURE, __VA_ARGS__); \
+        } while (0)
 #else
-#define gjs_debug_closure(...) ((void)0)
+#    define GJS_USED_VERBOSE_GCLOSURE G_GNUC_UNUSED
+#    define gjs_debug_closure(...) ((void)0)
 #endif
 
 #if GJS_VERBOSE_ENABLE_GSIGNAL
-#define gjs_debug_gsignal(...) \
-    do { gjs_debug(GJS_DEBUG_GOBJECT, __VA_ARGS__); } while(0)
+#    define GJS_USED_VERBOSE_GSIGNAL
+#    define gjs_debug_gsignal(...)                     \
+        do {                                           \
+            gjs_debug(GJS_DEBUG_GOBJECT, __VA_ARGS__); \
+        } while (0)
 #else
-#define gjs_debug_gsignal(...) ((void)0)
+#    define GJS_USED_VERBOSE_GSIGNAL G_GNUC_UNUSED
+#    define gjs_debug_gsignal(...) ((void)0)
 #endif
 
 void gjs_debug(GjsDebugTopic topic,
                const char   *format,
                ...) G_GNUC_PRINTF (2, 3);
 
-G_END_DECLS
-
-#endif  /* __GJS_UTIL_LOG_H__ */
+#endif  // UTIL_LOG_H_

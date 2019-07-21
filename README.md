@@ -10,30 +10,83 @@
 JavaScript bindings for GNOME
 =============================
 
-It's mainly based on Spidermonkey javascript engine and the GObject introspection framework.
-
-Available as part of your GNOME distribution. Powers GNOME Shell, Polari,
-GNOME Documents, and many other apps.
+Use the GNOME platform libraries in your JavaScript programs.
+GJS powers GNOME Shell, Polari, GNOME Documents, and many other apps.
+Under the hood it uses SpiderMonkey, Mozilla's JavaScript engine
+originally developed for Firefox.
 
 Wiki: https://gitlab.gnome.org/GNOME/gjs/wikis/Home
 
-How to build and run if you want to contribute to GJS: see doc/Hacking.md
+## Installation
 
-## Testing
+Available as part of your GNOME distribution by default.
+In most package managers the package will be called `gjs`.
 
-Our CI (continuous integration) testing scheme stresses the source code using:
-- Ubuntu 18.04, Fedora 29 (devel), and Ubuntu 18.10 (devel);
-- gcc 7.3, gcc 8.1, and clang 6.0;
-- C/C++ and Javascript Linters;
-- Code Climate (https://codeclimate.com/);
-- ASAN (address sanitizer) and UBSAN (undefined behavior sanitizer);
-- Valgrind (https://en.wikipedia.org/wiki/Valgrind);
-- Code Coverage (https://en.wikipedia.org/wiki/Code_coverage);
-- Text only and graphics builds;
-- Profiler enabled and disabled builds;
-- ARMv8 and PPC64LE builds;
-- And DevOps with Flatpak.
+## Usage
+
+GJS includes a command-line interpreter, usually installed in
+`/usr/bin/gjs`.
+Type `gjs` to start it and test out your JavaScript statements
+interactively.
+Hit Ctrl+D to exit.
+
+`gjs filename.js` runs a whole program.
+`gjs -d filename.js` does that and starts a debugger as well.
+
+There are also facilities for generating code coverage reports.
+Type `gjs --help` for more information.
+
+`-d` only available in gjs >= 1.53.90
+
+## Contributing
+
+For instructions on how to get started contributing to GJS, please read
+the contributing guide,
+<https://gitlab.gnome.org/GNOME/gjs/blob/master/CONTRIBUTING.md>.
+
+## History
+
+GJS probably started in August 2008 with [this blog post][havocp] and
+[this experimental code][gscript].
+GJS in its current form was first developed in October 2008 at a company
+called litl, for their [litl webbook] product.
+It was soon adopted as the basis of [GNOME Shell]'s UI code and
+extensions system and debuted as a fundamental component of GNOME 3.0.
+
+In February 2013 at the GNOME Developer Experience Hackfest GJS was
+declared the ['first among equals'][treitter] of languages for GNOME
+application development.
+That proved controversial for many, and was later abandoned.
+
+At the time of writing (2018) GJS is used in many systems including
+Endless OS's [framework for offline content][eos-knowledge-lib] and, as
+a forked version, [Cinnamon].
+
+## Reading material
+
+### JavaScript & SpiderMonkey
+
+* https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples
+
+### GNOME Contribution
+
+* https://wiki.gnome.org/GitLab
+* https://wiki.gnome.org/Newcomers/
 
 ## License
 
 Dual licensed under LGPL 2.0+ and MIT.
+
+## Thanks ##
+
+The form of this README was inspired by [Nadia Odunayo][hospitable] on
+the Greater Than Code podcast.
+
+[havocp]: https://blog.ometer.com/2008/08/25/embeddable-languages/
+[gscript]: https://gitlab.gnome.org/Archive/gscript/tree/master/gscript
+[litl webbook]: https://en.wikipedia.org/wiki/Litl
+[GNOME Shell]: https://wiki.gnome.org/Projects/GnomeShell
+[treitter]: https://treitter.livejournal.com/14871.html
+[eos-knowledge-lib]: http://endlessm.github.io/eos-knowledge-lib/
+[Cinnamon]: https://en.wikipedia.org/wiki/Cinnamon_(software)
+[hospitable]: http://www.greaterthancode.com/2017/11/08/054-code-hospitality-with-nadia-odunayo/

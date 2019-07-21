@@ -21,19 +21,20 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
-
-#include "ns.h"
-#include "repo.h"
-#include "param.h"
-#include "gjs/jsapi-class.h"
-#include "gjs/jsapi-wrapper.h"
-#include "gjs/mem.h"
-
-#include <util/log.h>
 #include <girepository.h>
+#include <glib.h>
 
-#include <string.h>
+#include "gjs/jsapi-wrapper.h"
+
+#include "gi/ns.h"
+#include "gi/repo.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "gjs/mem-private.h"
+#include "util/log.h"
 
 typedef struct {
     char *gi_namespace;
@@ -45,6 +46,7 @@ GJS_DEFINE_PRIV_FROM_JS(Ns, gjs_ns_class)
 
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 ns_resolve(JSContext       *context,
            JS::HandleObject obj,
@@ -52,8 +54,6 @@ ns_resolve(JSContext       *context,
            bool            *resolved)
 {
     Ns *priv;
-    GIRepository *repo;
-    GIBaseInfo *info;
     bool defined;
 
     if (!JSID_IS_STRING(id)) {
@@ -62,9 +62,8 @@ ns_resolve(JSContext       *context,
     }
 
     /* let Object.prototype resolve these */
-    JSFlatString *str = JSID_TO_FLAT_STRING(id);
-    if (JS_FlatStringEqualsAscii(str, "valueOf") ||
-        JS_FlatStringEqualsAscii(str, "toString")) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    if (id == atoms.to_string() || id == atoms.value_of()) {
         *resolved = false;
         return true;
     }
@@ -74,48 +73,44 @@ ns_resolve(JSContext       *context,
                      "Resolve prop '%s' hook, obj %s, priv %p",
                      gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
 
-    if (priv == NULL) {
+    if (!priv) {
         *resolved = false;  /* we are the prototype, or have the wrong class */
         return true;
     }
 
-    GjsAutoJSChar name;
-    if (!gjs_get_string_id(context, id, &name)) {
+    JS::UniqueChars name;
+    if (!gjs_get_string_id(context, id, &name))
+        return false;
+    if (!name) {
         *resolved = false;
         return true;  /* not resolved, but no error */
     }
 
-    repo = g_irepository_get_default();
-
-    info = g_irepository_find_by_name(repo, priv->gi_namespace, name);
-    if (info == NULL) {
+    GjsAutoBaseInfo info =
+        g_irepository_find_by_name(nullptr, priv->gi_namespace, name.get());
+    if (!info) {
         *resolved = false; /* No property defined, but no error either */
         return true;
     }
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Found info type %s for '%s' in namespace '%s'",
-              gjs_info_type_name(g_base_info_get_type(info)),
-              g_base_info_get_name(info),
-              g_base_info_get_namespace(info));
+              gjs_info_type_name(info.type()), info.name(), info.ns());
 
     JSAutoRequest ar(context);
 
     if (!gjs_define_info(context, obj, info, &defined)) {
-        gjs_debug(GJS_DEBUG_GNAMESPACE,
-                  "Failed to define info '%s'",
-                  g_base_info_get_name(info));
-
-        g_base_info_unref(info);
+        gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
+                  info.name());
         return false;
     }
 
     /* we defined the property in this object? */
-    g_base_info_unref(info);
     *resolved = defined;
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_name (JSContext *context,
           unsigned   argc,
@@ -123,7 +118,7 @@ get_name (JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, args, obj, Ns, priv);
 
-    if (priv == NULL)
+    if (!priv)
         return false;
 
     return gjs_string_from_utf8(context, priv->gi_namespace, args.rval());
@@ -131,16 +126,13 @@ get_name (JSContext *context,
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)
 
-static void
-ns_finalize(JSFreeOp *fop,
-            JSObject *obj)
-{
+static void ns_finalize(JSFreeOp*, JSObject* obj) {
     Ns *priv;
 
     priv = (Ns *)JS_GetPrivate(obj);
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
                         "finalize, obj %p priv %p", obj, priv);
-    if (priv == NULL)
+    if (!priv)
         return; /* we are the prototype, not a real instance */
 
     if (priv->gi_namespace)
@@ -179,6 +171,7 @@ static JSFunctionSpec *gjs_ns_static_funcs = nullptr;
 
 GJS_DEFINE_PROTO_FUNCS(ns)
 
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 ns_new(JSContext    *context,
        const char   *ns_name)
@@ -192,13 +185,13 @@ ns_new(JSContext    *context,
     JS::RootedObject ns(context,
         JS_NewObjectWithGivenProto(context, &gjs_ns_class, proto));
     if (!ns)
-        g_error("No memory to create ns object");
+        return nullptr;
 
     priv = g_slice_new0(Ns);
 
     GJS_INC_COUNTER(ns);
 
-    g_assert(priv_from_js(context, ns) == NULL);
+    g_assert(!priv_from_js(context, ns));
     JS_SetPrivate(ns, priv);
 
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p",

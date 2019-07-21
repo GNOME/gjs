@@ -46,20 +46,23 @@ GTK_LIBS = gtk-3.0.lib gdk-3.0.lib
 # so that we don't have to worry about the Visual Studio linker dropping items during
 # optimization
 GJS_DEFINES =
-GJS_INCLUDED_MODULES =				\
-	$(CFG)\$(PLAT)\module-console.lib	\
-	$(CFG)\$(PLAT)\module-system.lib
+GJS_INCLUDED_MODULES =					\
+	vs$(VSVER)\$(CFG)\$(PLAT)\module-console.lib	\
+	vs$(VSVER)\$(CFG)\$(PLAT)\module-system.lib
 
 GJS_BASE_CFLAGS =			\
 	/I..				\
+	/Ivs$(VSVER)\$(CFG)\$(PLAT)\libgjs	\
 	/FImsvc_recommended_pragmas.h	\
 	/FIjs\RequiredDefines.h		\
 	/Dssize_t=gssize		\
-	/DG_LOG_DOMAIN=\"Gjs\"		\
 	/wd4530				\
 	/wd4099				\
 	/wd4251				\
-	/wd4800
+	/wd4800				\
+	/Zc:externConstexpr
+
+GJS_CFLAGS_WITH_LOG = /DG_LOG_DOMAIN=\"Gjs\"
 
 LIBGJS_DEP_INCLUDES = $(BASE_INCLUDES)
 LIBGJS_DEP_LIBS = $(LIBGJS_BASE_DEP_LIBS)
@@ -68,9 +71,9 @@ LIBGJS_PRIVATE_SOURCES = $(gjs_private_srcs)
 LIBGJS_HEADERS = $(gjs_public_headers:/=\)
 
 # We build libgjs and gjs-console at least
-GJS_LIBS = $(CFG)\$(PLAT)\gjs.lib
+GJS_LIBS = vs$(VSVER)\$(CFG)\$(PLAT)\gjs.lib
 
-GJS_UTILS = $(CFG)\$(PLAT)\gjs-console.exe
+GJS_UTILS = vs$(VSVER)\$(CFG)\$(PLAT)\gjs-console.exe
 GJS_TESTS =
 
 # Enable Cairo
@@ -78,7 +81,7 @@ GJS_TESTS =
 GJS_DEFINES = $(GJS_DEFINES) /DENABLE_CAIRO
 GJS_INCLUDED_MODULES =		\
 	$(GJS_INCLUDED_MODULES)	\
-	$(CFG)\$(PLAT)\module-cairo.lib
+	vs$(VSVER)\$(CFG)\$(PLAT)\module-cairo.lib
 LIBGJS_DEP_LIBS = $(CAIRO_LIBS) $(LIBGJS_DEP_LIBS)
 !endif
 
@@ -101,9 +104,9 @@ LIBGJS_SOURCES = $(gjs_srcs) $(LIBGJS_PRIVATE_SOURCES)
 
 # Use libtool-style DLL names, if desired
 !if "$(LIBTOOL_DLL_NAME)" == "1"
-LIBGJS_DLL_FILENAME = $(CFG)\$(PLAT)\libgjs-0
+LIBGJS_DLL_FILENAME = vs$(VSVER)\$(CFG)\$(PLAT)\libgjs-0
 !else
-LIBGJS_DLL_FILENAME = $(CFG)\$(PLAT)\gjs-vs$(VSVER)
+LIBGJS_DLL_FILENAME = vs$(VSVER)\$(CFG)\$(PLAT)\gjs-vs$(VSVER)
 !endif
 
 TEST_PROGRAMS =
@@ -111,13 +114,13 @@ TEST_PROGRAMS =
 # Enable Introspection
 !if "$(INTROSPECTION)" == "1"
 CHECK_PACKAGE = $(GJS_INTROSPECTION_CHECK_PACKAGE)
-EXTRA_TARGETS = $(CFG)\$(PLAT)\GjsPrivate-1.0.gir $(CFG)\$(PLAT)\GjsPrivate-1.0.typelib
+EXTRA_TARGETS = vs$(VSVER)\$(CFG)\$(PLAT)\GjsPrivate-1.0.gir vs$(VSVER)\$(CFG)\$(PLAT)\GjsPrivate-1.0.typelib
 !else
 EXTRA_TARGETS =
 !endif
 
 # Put together the CFLAGS
-LIBGJS_CFLAGS =				\
+LIBGJS_CFLAGS_BASE =			\
 	$(GJS_DEFINES)			\
 	$(MOZ_BUG_WORKAROUND_CFLAG)	\
 	/DGJS_COMPILATION		\
@@ -126,8 +129,11 @@ LIBGJS_CFLAGS =				\
 	$(GJS_BASE_CFLAGS)		\
 	$(LIBGJS_DEP_INCLUDES)
 
+LIBGJS_CFLAGS = $(LIBGJS_CFLAGS_BASE) $(GJS_CFLAGS_WITH_LOG)
+
 GJS_CFLAGS =				\
 	$(GJS_DEFINES)			\
 	$(MOZ_BUG_WORKAROUND_CFLAG)	\
 	$(GJS_BASE_CFLAGS)		\
+	$(GJS_CFLAGS_WITH_LOG)		\
 	$(BASE_INCLUDES)

@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define(pkg_major_version, 1)
-m4_define(pkg_minor_version, 55)
-m4_define(pkg_micro_version, 1)
+m4_define(pkg_minor_version, 57)
+m4_define(pkg_micro_version, 90)
 m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 + pkg_micro_version)
 
 AC_PREREQ([2.64])
-AC_INIT([gjs],[pkg_version],[http://bugzilla.gnome.org/enter_bug.cgi?product=gjs],[gjs],[https://wiki.gnome.org/Projects/Gjs])
+AC_INIT([gjs],[pkg_version],[https://gitlab.gnome.org/GNOME/gjs/issues],[gjs],[https://wiki.gnome.org/Projects/Gjs])
 AM_INIT_AUTOMAKE([1.11.1 subdir-objects dist-xz no-dist-gzip tar-ustar -Wno-portability])
 AX_IS_RELEASE([git-directory])
 AC_CONFIG_SRCDIR([gjs/console.cpp])
@@ -19,9 +19,6 @@ AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_SUBST(GJS_VERSION, m4_eval(pkg_int_version))
 AC_DEFINE([GJS_VERSION], pkg_int_version, [The gjs version as an integer])
 
-AC_SUBST([GETTEXT_PACKAGE], [gjs])
-AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], ["$GETTEXT_PACKAGE"], [The name of the gettext domain])
-
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
@@ -29,10 +26,14 @@ AM_SILENT_RULES([yes])
 PKG_PROG_PKG_CONFIG
 PKG_INSTALLDIR
 
+AC_PROG_CC
+AC_PROG_CC_C99
+
 AC_LANG([C++])
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_14
+AC_CHECK_HEADERS([sys/syscall.h unistd.h])
 
 LT_PREREQ([2.2.0])
 # no stupid static libraries
@@ -43,10 +44,11 @@ AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_SED
 AC_PROG_AWK
+GLIB_GSETTINGS
 
 AX_COMPILER_FLAGS
 
-AX_CODE_COVERAGE
+GJS_CODE_COVERAGE
 dnl Clang does not need to link with -lgcov
 AX_CHECK_LINK_FLAG([-lgcov],, [
 	CODE_COVERAGE_LIBS=
@@ -59,7 +61,7 @@ AX_VALGRIND_DFLT([sgcheck], [off])
 AX_VALGRIND_CHECK
 
 # Checks for libraries.
-m4_define(glib_required_version, 2.54.0)
+m4_define(glib_required_version, 2.58.0)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
@@ -69,6 +71,7 @@ common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"
+gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"
 
 AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
 dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
@@ -145,9 +148,29 @@ AS_IF([test x$have_gtk = xyes], [
 ], [AS_IF([test "x$with_gtk" = "xyes"],
   [AC_MSG_ERROR([GTK requested but not found])])])
 
-# Some Linux APIs required for profiler
 AC_ARG_ENABLE([profiler],
-  [AS_HELP_STRING([--disable-profiler], [Don't build profiler])])
+  [AS_HELP_STRING([--disable-profiler], [Don't build profiler])],
+  [],
+  [enable_profiler=auto])
+
+# Use sysprof-capture-3 for profiler
+PKG_CHECK_MODULES([SYSPROF_CAPTURE],
+                  [$gjs_sysprof_packages],
+                  [have_sysprof_capture=yes],
+                  [have_sysprof_capture=no])
+AC_SUBST([SYSPROF_CAPTURE_CFLAGS])
+AC_SUBST([SYSPROF_CAPTURE_LIBS])
+
+AS_IF([test x$enable_profiler = xauto],[
+  AS_IF([test $have_sysprof_capture = no],[enable_profiler=no])
+])
+AS_IF([test x$enable_profiler = xyes],[
+  AS_IF([test $have_sysprof_capture = no],[
+    AC_MSG_ERROR([--enable-profiler requires sysprof-capture-3.pc])
+  ])
+])
+
+# Some Linux APIs required for profiler
 AS_IF([test x$enable_profiler != xno], [
   # Requires timer_settime() - only on Linux
   gl_TIMER_TIME
@@ -161,11 +184,15 @@ AS_IF([test x$enable_profiler != xno], [
     AC_MSG_RESULT([yes])
   ], [AC_MSG_RESULT([no])])
   AS_IF([test x$ac_cv_func_timer_settime = xno -o x$have_sigev_thread_id = xno],
-    [AC_MSG_ERROR([The profiler is currently only supported on Linux.
+    AS_IF([test x$enable_profiler = xyes],
+          [AC_MSG_ERROR([The profiler is currently only supported on Linux.
 The standard library must support timer_settime() and SIGEV_THREAD_ID.
-Configure with --disable-profiler to skip it on other platforms.])])
-  AC_DEFINE([ENABLE_PROFILER], [1], [Define if the profiler should be built.])
+Configure with --disable-profiler to skip it on other platforms.])],
+          [enable_profiler=no]))
+  AS_IF([test x$enable_profiler = xauto],[enable_profiler=yes])
+  AC_DEFINE([ENABLE_PROFILER], [test x$enable_profiler = xyes], [Define if the profiler should be built.])
 ])
+
 AM_CONDITIONAL([ENABLE_PROFILER], [test x$enable_profiler != xno])
 
 # Optional redline dep (enabled by default)
@@ -265,7 +292,7 @@ AS_IF([test "x$enable_Bsymbolic" != "xno"],
   [AX_APPEND_LINK_FLAGS([-Bsymbolic-functions])])
 
 dnl
-dnl Check for -fsanitize=address and -fsanitize=undefined support
+dnl Check for sanitizer support
 dnl
 AC_ARG_ENABLE([asan],
   [AS_HELP_STRING([--enable-asan], [Build with address sanitizer support @<:@default: no@:>@])])
@@ -278,12 +305,12 @@ AS_IF([test "x$enable_asan" = "xyes"], [
 ])
 
 AC_ARG_ENABLE([ubsan],
-  [AS_HELP_STRING([--enable-ubsan], [Build with undefined behavior sanitizer support @<:@default: no@:>@])])
+  [AS_HELP_STRING([--enable-ubsan], [Build with undefined behavior and integer overflow sanitizer support @<:@default: no@:>@])])
 
 AS_IF([test "x$enable_ubsan" = "xyes"], [
-  AX_CHECK_COMPILE_FLAG([-fsanitize=undefined -fno-sanitize=vptr -fno-omit-frame-pointer -g], [
-    AX_CHECK_LINK_FLAG([-fsanitize=undefined -fno-sanitize=vptr])
-    SAN_FLAGS="$SAN_FLAGS -fsanitize=undefined -fno-sanitize=vptr"
+  AX_CHECK_COMPILE_FLAG([-fsanitize=undefined -fsanitize=integer -fno-sanitize=vptr -fno-omit-frame-pointer -g], [
+    AX_CHECK_LINK_FLAG([-fsanitize=undefined -fsanitize=integer -fno-sanitize=vptr])
+    SAN_FLAGS="$SAN_FLAGS -fsanitize=undefined -fsanitize=integer -fno-sanitize=vptr"
   ])
 ])
 
@@ -334,12 +361,18 @@ AS_IF([test "x$with_dbus_tests" != "xno"], [
 ])
 AM_CONDITIONAL([DBUS_TESTS], [test "x$with_dbus_tests" != "xno"])
 
+AC_MSG_CHECKING([for a suitable UTF-8 locale to run the tests in])
+TESTS_LOCALE=$($srcdir/build/choose-tests-locale.sh)
+AC_MSG_RESULT([$TESTS_LOCALE])
+AC_SUBST([TESTS_LOCALE])
+
 AC_SUBST([gjsjsdir], [\${datadir}/gjs-1.0])
 
 dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc win32/config.h.win32])
+AC_CONFIG_FILES([tools/run_iwyu.sh], [chmod +x tools/run_iwyu.sh])
 dnl Symlink the files from gobject-introspection's test libraries into the tree;
 dnl Automake plans to drop support for compiling them in-place.
 AC_CONFIG_LINKS([
@@ -354,10 +387,16 @@ AC_CONFIG_LINKS([
 AC_OUTPUT
 
 # Warn about conditions that affect runtime
-PKG_CHECK_EXISTS([gobject-introspection-1.0 >= 1.53.4], [], [
+PKG_CHECK_EXISTS([gobject-introspection-1.0 >= 1.59.2], [], [
     AC_MSG_WARN([You do not have a new enough version of
 gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.])])
+
+AS_IF([test "$TESTS_LOCALE" = "C"], [
+  AC_MSG_WARN([Your libc does not have the C.UTF-8 locale and no other
+suitable UTF-8 fallback locale could be found. You can still build GJS, but
+some tests will fail.])
+])
 
 TEST_MSG=
 AM_COND_IF([XVFB_TESTS], [TEST_MSG="xvfb "])
@@ -375,7 +414,7 @@ AC_MSG_RESULT([
 	readline:		${ac_cv_header_readline_readline_h}
 	dtrace:			${enable_dtrace:-no}
 	systemtap:		${enable_systemtap:-no}
-	Profiler:		${enable_profiler:-yes}
+	Profiler:		${enable_profiler}
 	Run tests under:	${TEST_MSG}
 	Code coverage:		${enable_code_coverage}
 ])

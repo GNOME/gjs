@@ -21,16 +21,21 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <stdint.h>
+#include <string.h>     // for size_t, strlen
+#include <sys/types.h>  // for ssize_t
 
-#include <algorithm>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <string.h>
+#include <algorithm>  // for copy
+#include <iomanip>    // for operator<<, setfill, setw
+#include <sstream>    // for operator<<, basic_ostream, ostring...
+#include <string>     // for allocator, char_traits
 
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 char* gjs_hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);
@@ -55,11 +60,8 @@ char* gjs_hyphen_to_underscore(const char* str) {
  * Don't use this function if you already have a JS::RootedString, or if you
  * know the value already holds a string; use JS_EncodeStringToUTF8() instead.
  */
-bool
-gjs_string_to_utf8(JSContext      *cx,
-                   const JS::Value value,
-                   GjsAutoJSChar  *utf8_string_p)
-{
+bool gjs_string_to_utf8(JSContext* cx, const JS::Value value,
+                        JS::UniqueChars* utf8_string_p) {
     JSAutoRequest ar(cx);
 
     if (!value.isString()) {
@@ -110,7 +112,7 @@ gjs_string_to_filename(JSContext      *context,
                        GjsAutoChar    *filename_string)
 {
     GError *error;
-    GjsAutoJSChar tmp;
+    JS::UniqueChars tmp;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -120,11 +122,10 @@ gjs_string_to_filename(JSContext      *context,
     }
 
     error = NULL;
-    *filename_string = g_filename_from_utf8(tmp, -1, NULL, NULL, &error);
-    if (!*filename_string) {
-        gjs_throw_g_error(context, error);
-        return false;
-    }
+    *filename_string =
+        g_filename_from_utf8(tmp.get(), -1, nullptr, nullptr, &error);
+    if (!*filename_string)
+        return gjs_throw_gerror_message(context, error);
 
     return true;
 }
@@ -155,13 +156,10 @@ gjs_string_from_filename(JSContext             *context,
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
  * type, by what the compiler believes is the most efficient method possible */
-template<typename T>
-static bool
-from_latin1(JSContext *cx,
-            JSString  *str,
-            T        **data_p,
-            size_t    *len_p)
-{
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
+                                                    JSString* str, T** data_p,
+                                                    size_t* len_p) {
     /* No garbage collection should be triggered while we are using the string's
      * chars. Crash if that happens. */
     JS::AutoCheckCannotGC nogc;
@@ -288,6 +286,12 @@ gjs_string_from_ucs4(JSContext             *cx,
                      ssize_t                n_chars,
                      JS::MutableHandleValue value_p)
 {
+    // a null array pointer takes precedence over whatever `n_chars` says
+    if (!ucs4_string) {
+        value_p.setString(JS_GetEmptyString(cx));
+        return true;
+    }
+
     long u16_string_length;
     GError *error = NULL;
 
@@ -316,32 +320,24 @@ gjs_string_from_ucs4(JSContext             *cx,
 
 /**
  * gjs_get_string_id:
- * @context: a #JSContext
+ * @cx: a #JSContext
  * @id: a jsid that is an object hash key (could be an int or string)
  * @name_p place to store ASCII string version of key
  *
- * If the id is not a string ID, return false and set *name_p to %NULL.
+ * If the id is not a string ID, return true and set *name_p to nullptr.
  * Otherwise, return true and fill in *name_p with ASCII name of id.
  *
- * Returns: true if *name_p is non-%NULL
+ * Returns: false on error, otherwise true
  **/
-bool
-gjs_get_string_id (JSContext       *context,
-                   jsid             id,
-                   GjsAutoJSChar   *name_p)
-{
-    JS::RootedValue id_val(context);
-
-    if (!JS_IdToValue(context, id, &id_val))
-        return false;
-
-    if (id_val.isString()) {
-        JS::RootedString str(context, id_val.toString());
-        name_p->reset(JS_EncodeStringToUTF8(context, str));
-        return !!*name_p;
-    } else {
-        return false;
+bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
+    if (!JSID_IS_STRING(id)) {
+        name_p->reset();
+        return true;
     }
+
+    JS::RootedString s(cx, JS_FORGET_STRING_FLATNESS(JSID_TO_FLAT_STRING(id)));
+    name_p->reset(JS_EncodeStringToUTF8(cx, s));
+    return !!*name_p;
 }
 
 /**
@@ -361,9 +357,9 @@ gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
 {
-    GjsAutoJSChar utf8_str;
+    JS::UniqueChars utf8_str;
     if (gjs_string_to_utf8(context, value, &utf8_str)) {
-        *result = g_utf8_get_char(utf8_str);
+        *result = g_utf8_get_char(utf8_str.get());
         return true;
     }
     return false;
@@ -375,9 +371,12 @@ gjs_intern_string_to_id(JSContext  *cx,
 {
     JSAutoRequest ar(cx);
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
+    if (!str)
+        return JSID_VOID;
     return INTERNED_STRING_TO_JSID(cx, str);
 }
 
+GJS_USE
 static std::string
 gjs_debug_flat_string(JSFlatString *fstr)
 {

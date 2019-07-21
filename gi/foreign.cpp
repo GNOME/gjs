@@ -21,14 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for strcmp
 
-#include <string.h>
 #include <girepository.h>
+#include <glib.h>
 
-#include "arg.h"
-#include "foreign.h"
 #include "gjs/jsapi-wrapper.h"
+
+#include "gi/arg.h"
+#include "gi/foreign.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 
 static struct {
     char *gi_namespace;
@@ -41,6 +44,7 @@ static struct {
 
 static GHashTable* foreign_structs_table = NULL;
 
+GJS_USE
 static GHashTable*
 get_foreign_structs(void)
 {
@@ -54,6 +58,7 @@ get_foreign_structs(void)
     return foreign_structs_table;
 }
 
+GJS_USE
 static bool
 gjs_foreign_load_foreign_module(JSContext *context,
                                 const gchar *gi_namespace)
@@ -73,8 +78,8 @@ gjs_foreign_load_foreign_module(JSContext *context,
         //        and only execute this statement if isn't
         script = g_strdup_printf("imports.%s;", gi_namespace);
         JS::RootedValue retval(context);
-        if (!gjs_eval_with_scope(context, nullptr, script, strlen(script),
-                                 "<internal>", &retval)) {
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+        if (!gjs->eval_with_scope(nullptr, script, -1, "<internal>", &retval)) {
             g_critical("ERROR importing foreign module %s\n", gi_namespace);
             g_free(script);
             return false;
@@ -87,22 +92,19 @@ gjs_foreign_load_foreign_module(JSContext *context,
     return false;
 }
 
-bool
-gjs_struct_foreign_register(const char *gi_namespace,
-                            const char *type_name,
-                            GjsForeignInfo *info)
-{
+void gjs_struct_foreign_register(const char* gi_namespace,
+                                 const char* type_name, GjsForeignInfo* info) {
     char *canonical_name;
 
-    g_return_val_if_fail(info != NULL, false);
-    g_return_val_if_fail(info->to_func != NULL, false);
-    g_return_val_if_fail(info->from_func != NULL, false);
+    g_return_if_fail(info);
+    g_return_if_fail(info->to_func);
+    g_return_if_fail(info->from_func);
 
     canonical_name = g_strdup_printf("%s.%s", gi_namespace, type_name);
     g_hash_table_insert(get_foreign_structs(), canonical_name, info);
-    return true;
 }
 
+GJS_USE
 static GjsForeignInfo *
 gjs_struct_foreign_lookup(JSContext  *context,
                           GIBaseInfo *interface_info)

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.GjsTest" path="/org/gnome/GjsTest/">
+    <key name="window-size" type="(ii)">
+      <default>(-1, -1)</default>
+    </key>
+    <key name="maximized" type="b">
+      <default>false</default>
+    </key>
+    <key name="fullscreen" type="b">
+      <default>false</default>
+    </key>
+    <child name="sub" schema="org.gnome.GjsTest.Sub"/>
+  </schema>
+  <schema id="org.gnome.GjsTest.Sub">
+    <key name="marine" type="u">
+      <range min="1" max="100"/>
+      <default>10</default>
+    </key>
+  </schema>
+</schemalist>

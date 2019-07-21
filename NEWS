@@ -1,3 +1,334 @@
+Version 1.57.4
+--------------
+
+- Closed bugs and merge requests:
+  * gjs 1.57 requires a recent sysprof version for sysprof-capture-3 [#258,
+    !309, Olivier Fourdan]
+
+- Misc documentation changes [Philip Chimento]
+
+Version 1.57.3
+--------------
+
+- The GJS profiler is now integrated directly into Sysprof 3, via the
+  GJS_TRACE_FD environment variable. Call stack information and garbage
+  collector timing will show up in Sysprof. See also GNOME/Initiatives#10
+
+- New JS API: System.addressOfGObject(obj) will return a string with the hex
+  address of the underlying GObject of `obj` if it is a GObject wrapper, or
+  throw an exception if it is not. This is intended for debugging.
+
+- New JS API: It's now possible to pass a value from Gio.DBusProxyFlags to the
+  constructor of a class created by Gio.DBusProxy.makeProxyWrapper().
+
+- Backwards-incompatible change: Trying to read a write-only property on a DBus
+  proxy object, or write a read-only property, will now throw an exception.
+  Previously it would fail silently. It seems unlikely any code is relying on
+  the old behaviour, and if so then it was probably masking a bug.
+
+- Closed bugs and merge requests:
+  * Build failure on Continuous [#253, !300, Philip Chimento]
+  * build: Bump glib requirement [!302, Florian Müllner]
+  * profiler: avoid clearing 512 bytes of stack [!304, Christian Hergert]
+  * system: add addressOfGObject method [!296, Marco Trevisan]
+  * Add support for GJS_TRACE_FD [!295, Christian Hergert]
+  * Gio: Make possible to pass DBusProxyFlags to proxy wrapper [!297, Marco
+    Trevisan]
+  * Various maintenance [!301, Philip Chimento]
+  * Marshalling of GPtrArray broken [#9, !307, Stéphane Seng]
+  * Build fix [!308, Philip Chimento]
+  * Gio: sync dbus wrapper properties flags [!298, Marco Trevisan]
+  * GjsMaybeOwned: Reduce allocation when used as Object member [!303, Marco
+    Trevisan]
+
+Version 1.57.2
+--------------
+
+- There are now overrides for Gio.SettingsSchema and Gio.Settings which avoid
+  aborting the whole process when trying to access a nonexistent key or child
+  schema. The original API from GLib was intended for apps, since apps should
+  have complete control over which settings keys they are allowed to access.
+  However, it is not a good fit for shell extensions, which may need to access
+  different settings keys depending on the version of GNOME shell they're
+  running on.
+
+  This feature is based on code from Cinnamon which the copyright holders have
+  kindly agreed to relicense to GJS's license.
+
+- New JS API: It is now possible to pass GObject.TypeFlags to
+  GObject.registerClass(). For example, passing
+  `GTypeFlags: GObject.TypeFlags.ABSTRACT` in the class info object, will create
+  a class that cannot be instantiated. This functionality was present in
+  Lang.Class but has been missing from GObject.registerClass().
+
+- Closed bugs and merge requests:
+  * Document logging features [#230, !288, Andy Holmes]
+  * Support optional GTypeFlags value in GObject subclasses [!290, Florian
+    Müllner]
+  * Ensure const-correctness in C++ objects [#105, !291, Onur Şahin]
+  * Programmer errors with GSettings cause segfaults [#205, !284, Philip
+    Chimento]
+  * Various maintenance [!292, Philip Chimento]
+  * debugger: Fix summary help [!293, Florian Müllner]
+  * context: Use Heap pointers for GC objects stored in vectors [!294, Philip
+    Chimento]
+
+Version 1.56.2
+--------------
+
+- Closed bugs and merge requests:
+  * Crash in BoxedInstance when struct could not be allocated directly [#240,
+    !285, Philip Chimento]
+  * Cairo conversion bugs [!286, Philip Chimento]
+  * Gjs crashes when binding inherited property to js added gobject-property
+    [#246, !289, Marco Trevisan]
+  * console: Don't accept --profile after the script name [!287, Philip
+    Chimento]
+
+Version 1.57.1
+--------------
+
+- Closed bugs and merge requests:
+  * Various maintenance [!279, Philip Chimento]
+  * mainloop: Assign null to property instead of deleting [!280, Jason Hicks]
+  * Added -d version note README.md [!282, Nauman Umer]
+  * Extra help for debugger commands [#236, !283, Nauman Umer]
+  * Crash in BoxedInstance when struct could not be allocated directly [#240,
+    !285, Philip Chimento]
+  * Cairo conversion bugs [!286, Philip Chimento]
+
+Version 1.56.1
+--------------
+
+- Closed bugs and merge requests:
+  * Calling dumpHeap() on non-existent directory causes crash [#134, !277,
+    Philip Chimento]
+  * Using Gio.MemoryInputStream.new_from_data ("string") causes segfault [#221,
+    !278, Philip Chimento]
+  * Fix gjs_context_eval() for non-zero-terminated strings [!281, Philip
+    Chimento]
+
+Version 1.56.0
+--------------
+
+- No change from 1.55.92.
+
+Version 1.55.92
+---------------
+
+- Closed bugs and merge requests:
+  * Fix CI failures [!269, Philip Chimento]
+  * Possible memory allocation/deallocation bug (possibly in js_free() in GJS)
+    [!270, Chun-wei Fan, Philip Chimento]
+  * cairo-context: Special-case 0-sized vector [!271, Florian Müllner]
+  * Add some more eslint rules [!272, Florian Müllner]
+  * win32/NMake: Fix introspection builds [!274, Chun-wei Fan]
+  * NMake/libgjs-private: Export all the public symbols there [!275, Chun-wei
+    Fan]
+
+Version 1.55.91
+---------------
+
+- The problem of freezing while running the tests using GCC's sanitizers was
+  determined to be a bug in GCC, which was fixed in GCC 9.0.1.
+
+- Closed bugs and merge requests:
+  * gnome-sound-recorder crashes deep inside libgjs [#223, !266, Philip
+    Chimento]
+  * Various maintenance [!267, Philip Chimento]
+  * wrapperutils: Define $gtype property as non-enumerable [!268, Philip
+    Chimento]
+
+Version 1.55.90
+---------------
+
+- New JS API: It's now possible to call and implement DBus methods whose
+  parameters or return types include file descriptor lists (type signature 'h'.)
+  This involves passing or receiving a Gio.UnixFDList instance along with the
+  parameters or return values.
+
+  To call a method with a file descriptor list, pass the Gio.UnixFDList along
+  with the rest of the parameters, in any order, the same way you would pass a
+  Gio.Cancellable or async callback.
+
+  For return values, things are a little more complicated, in order to avoid
+  breaking existing code. Previously, synchronously called DBus proxy methods
+  would return an unpacked GVariant. Now, but only if called with a
+  Gio.UnixFDList, they will return [unpacked GVariant, Gio.UnixFDList]. This
+  does not break existing code because it was not possible to call a method with
+  a Gio.UnixFDList before, and the return value is unchanged if not calling with
+  a Gio.UnixFDList. This does mean, unfortunately, that if you have a method
+  with an 'h' in its return signature but not in its argument signatures, you
+  will have to call it with an empty FDList in order to receive an FDList with
+  the return value, when calling synchronously.
+
+  On the DBus service side, when receiving a method call, we now pass the
+  Gio.UnixFDList received from DBus to the called method. Previously, sync
+  methods were passed the parameters, and async methods were passed the
+  parameters plus the Gio.DBusInvocation object. Appending the Gio.UnixFDList to
+  those parameters also should not break existing code.
+
+  See the new tests in installed-tests/js/testGDBus.js for examples of calling
+  methods with FD lists.
+
+- We have observed on the CI server that GJS 1.55.90 will hang forever while
+  running the test suite compiled with GCC 9.0.0 and configured with the
+  --enable-asan and --enable-ubsan arguments. This should be addressed in one of
+  the following 1.55.x releases.
+
+- Closed bugs and merge requests:
+  * GDBus proxy overrides should support Gio.DBusProxy.call_with_unix_fd_list()
+    [#204, !263, Philip Chimento]
+  * Add regression tests for GObject vfuncs [!259, Jason Hicks]
+  * GjsPrivate: Sources should be C files [!262, Philip Chimento]
+  * build: Vendor last-good version of AX_CODE_COVERAGE [!264, Philip Chimento]
+
+Version 1.55.4
+--------------
+
+- Closed bugs and merge requests:
+  * Various maintenance [!258, Philip Chimento]
+  * Boxed copy constructor should not be called, split Boxed into prototype and
+    instance structs [#215, !260, Philip Chimento]
+
+Version 1.55.3
+--------------
+
+- Closed bugs and merge requests:
+  * Manually constructed ByteArray toString segfaults [#219, !254, Philip
+    Chimento]
+  * signals: Add _signalHandlerIsConnected method [!255, Jason Hicks]
+  * Various maintenance [!257, Philip Chimento]
+
+Version 1.52.5
+--------------
+
+- This was a release consisting only of backports from the GNOME 3.30 branch to
+  the GNOME 3.28 branch.
+
+- This release includes the "Big Hammer" patch from GNOME 3.30 to reduce memory
+  usage. For more information, read the blog post at
+  https://feaneron.com/2018/04/20/the-infamous-gnome-shell-memory-leak/
+  It was not originally intended to be backported to GNOME 3.28, but in practice
+  several Linux distributions already backported it, and it has been working
+  well to reduce memory usage, and the bugs have been ironed out of it.
+
+  It does decrease performance somewhat, so if you don't want that then don't
+  install this update.
+
+- Closed bugs and merge requests:
+
+  * Ensure not to miss the force_gc flag [#150, !132, Carlos Garnacho]
+  * Make GC much more aggressive [#62, !50, Giovanni Campagna, Georges Basile
+    Stavracas Neto, Philip Chimento]
+  * Queue GC when a GObject reference is toggled down [#140, !114, !127, Georges
+    Basile Stavracas Neto]
+  * Reduce memory overhead of g_object_weak_ref() [#144, !122, Carlos Garnacho,
+    Philip Chimento]
+  * context: Defer and therefore batch forced GC runs [performance] [!236,
+    Daniel van Vugt]
+  * context: use timeout with seconds to schedule a gc trigger [!239, Marco
+    Trevisan]
+  * Use compacting GC on RSS size growth [!133, #151, Carlos Garnacho]
+  * GType memleak fixes [!244, Marco Trevisan]
+
+Version 1.55.2
+--------------
+
+- Closed bugs and merge requests:
+  * Gnome-shell crashes on destroying cached param specs [#213, !240, Marco
+    Trevisan]
+  * Various maintenance [!235, !250, Philip Chimento]
+  * Auto pointers builder [!243, Marco Trevisan]
+  * configure.ac: Update bug link [!245, Andrea Azzarone]
+  * SIGSEGV when exiting gnome-shell [#212, !247, Andrea Azzarone, Philip
+    Chimento]
+  * Fix build with --enable-dtrace and create CI job to ensure it doesn't break
+    in the future [#196, !237, !253, Philip Chimento]
+  * Delay JSString-to-UTF8 conversion [!249, Philip Chimento]
+  * Annotate return values [!251, Philip Chimento]
+  * Fix a regression with GError toString() [!252, Philip Chimento]
+  * GType memleak fixes [!244, Marco Trevisan]
+  * Atoms refactor [!233, Philip Chimento, Marco Trevisan]
+  * Write a "Code Hospitable" README file [#17, !248, Philip Chimento, Andy
+    Holmes, Avi Zajac]
+  * object: Method lookup repeatedly traverses introspection [#54, !53, Colin
+    Walters, Philip Chimento]
+  * Handler of GtkEditable::insert-text signal is not run [#147, !143, Tomasz
+    Miąsko, Philip Chimento]
+
+Version 1.54.3
+--------------
+
+- Closed bugs and merge requests:
+  * object: Fix write-only properties [!246, Philip Chimento]
+  * SIGSEGV when exiting gnome-shell [#212, !247, Andrea Azzarone]
+  * SelectionData.get_targets crashes with "Unable to resize vector" [#201,
+    !241, Philip Chimento]
+  * Gnome-shell crashes on destroying cached param specs [#213, !240, Marco
+    Trevisan]
+  * GType memleak fixes [!244, Marco Trevisan]
+  * Fix build with --enable-dtrace and create CI job to ensure it doesn't break
+    in the future [#196, !253, Philip Chimento]
+
+Version 1.54.2
+--------------
+
+- Closed bugs and merge requests:
+  * context: Defer and therefore batch forced GC runs [performance] [!236,
+    Daniel van Vugt]
+  * context: use timeout with seconds to schedule a gc trigger [!239, Marco
+    Trevisan]
+  * fundamental: Check if gtype is valid before using it [!242, Georges Basile
+    Stavracas Neto]
+
+- Backported a fix for a crash in the interactive interpreter when executing
+  something like `throw "foo"` [Philip Chimento]
+
+- Backported various maintenance from 3.31 [Philip Chimento]
+
+Version 1.55.1
+--------------
+
+- New API for programs that embed GJS: gjs_memory_report(). This was already an
+  internal API, but now it is exported.
+
+- Closed bugs and merge requests:
+
+  * object: Implement newEnumerate hook for GObject [!155, Ole Jørgen Brønner]
+  * Various maintenance [!228, Philip Chimento]
+  * ByteArray.toString should stop at null bytes [#195, !232, Philip Chimento]
+  * Byte arrays that represent encoded strings should be 0-terminated [#203,
+    !232, Philip Chimento]
+  * context: Defer and therefore batch forced GC runs [performance] [!236,
+    Daniel van Vugt]
+  * context: use timeout with seconds to schedule a gc trigger [!239, Marco
+    Trevisan]
+  * arg: Add special-case for byte arrays going to C [#67, !49, Jasper
+    St. Pierre, Philip Chimento]
+
+Version 1.52.4
+--------------
+
+- This was a release consisting only of backports from the GNOME 3.30 branch to
+  the GNOME 3.28 branch.
+
+- Closed bugs and merge requests:
+
+  * `ARGV` encoding issues [#22, !108, Evan Welsh]
+  * Segfault on enumeration of GjSFileImporter properties when a searchpath
+    entry contains a symlink [#154, !144, Ole Jørgen Brønner]
+  * Possible refcounting bug around GtkListbox signal handlers [#24, !154,
+    Philip Chimento]
+  * Fix up GJS_DISABLE_JIT flag now the JIT is enabled by default in
+    SpiderMonkey [!159, Christopher Wheeldon]
+  * Expose GObject static property symbols. [!197, Evan Welsh]
+  * Do not run linters on tagged commits [!181, Claudio André]
+  * gjs-1.52.0 fails to compile against x86_64 musl systems [#132, !214, Philip
+    Chimento]
+  * gjs no longer builds after recent autoconf-archive updates [#149, !217,
+    Philip Chimento]
+
 Version 1.54.1
 --------------
 

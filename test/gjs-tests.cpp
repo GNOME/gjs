@@ -21,19 +21,21 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string.h>  // for size_t, strlen
 
-#include <string>
+#include <string>  // for u16string, u32string
 
-#include <glib.h>
 #include <glib-object.h>
-#include <util/glib.h>
+#include <glib.h>
 
-#include <gjs/gjs.h>
-#include "gjs/jsapi-util.h"
 #include "gjs/jsapi-wrapper.h"
-#include "gjs-test-utils.h"
-#include "util/error.h"
+
+#include "gjs/context.h"
+#include "gjs/error-types.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/profiler.h"
+#include "test/gjs-test-utils.h"
+#include "util/misc.h"
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
 
@@ -63,6 +65,19 @@ gjstest_test_func_gjs_context_construct_eval(void)
     if (!gjs_context_eval (context, "1+1", -1, "<input>", &estatus, &error))
         g_error ("%s", error->message);
     g_object_unref (context);
+}
+
+static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = NULL;
+    int status;
+
+    // This string is invalid JS if it is treated as zero-terminated
+    bool ok = gjs_context_eval(gjs, "77!", 2, "<input>", &status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    g_assert_cmpint(status, ==, 77);
 }
 
 static void
@@ -115,59 +130,19 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
     g_object_unref(context);
 }
 
-static void gjstest_test_func_gjs_context_register_module(void) {
-    GjsContext* context = gjs_context_new();
-    uint8_t exit_code = 0;
-    GError* error = nullptr;
-
-    g_assert_true(gjs_context_register_module(
-        context, "test", nullptr, "import {foo} from 'test_rep'", 26, &error));
-    g_assert_no_error(error);
-
-    // Should fail because the module doesn't parse
-    g_assert_false(gjs_context_register_module(context, "test_rep", nullptr,
-                                               "export = 5;", 11, &error));
-    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
-    g_error_free(error);
-    error = nullptr;
-
-    // Should succeed because the former name was never registered
-    g_assert_true(gjs_context_register_module(
-        context, "test_rep", nullptr, "export const foo = 5;", 21, &error));
-    g_assert_no_error(error);
-
-    // Should fail because the name is already taken
-    g_assert_false(gjs_context_register_module(
-        context, "test_rep", nullptr, "export const bar = 5;", 21, &error));
-    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
-    g_error_free(error);
-    error = nullptr;
-
-    // Execute the modules to ensure the imports were successfully resolved
-    g_assert_true(gjs_context_eval_module(context, "test", &exit_code, &error));
-    g_assert_no_error(error);
-    g_assert_cmpint(exit_code, ==, 0);
-
-    g_object_unref(context);
-}
-
-static void
-gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
-                                                       gconstpointer       unused)
-{
+static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
+    GjsUnitTestFixture* fx, const void*) {
     JS::RootedValue js_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
     g_assert(js_string.isString());
 
-    GjsAutoJSChar utf8_result;
+    JS::UniqueChars utf8_result;
     g_assert(gjs_string_to_utf8(fx->cx, js_string, &utf8_result));
-    g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result);
+    g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result.get());
 }
 
-static void
-gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
-                                             gconstpointer       unused)
-{
+static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
+                                                         const void*) {
     JS::RootedValue exc(fx->cx), value(fx->cx);
 
     /* Test that we can throw */
@@ -184,10 +159,11 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
 
     g_assert(value.isString());
 
-    GjsAutoJSChar s;
-    gjs_string_to_utf8(fx->cx, value, &s);
+    JS::UniqueChars s;
+    bool ok = gjs_string_to_utf8(fx->cx, value, &s);
+    g_assert_true(ok);
     g_assert_nonnull(s);
-    g_assert_cmpstr(s, ==, "This is an exception 42");
+    g_assert_cmpstr(s.get(), ==, "This is an exception 42");
 
     /* keep this around before we clear it */
     JS::RootedValue previous(fx->cx, exc);
@@ -211,10 +187,8 @@ gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture *fx,
     g_assert(&exc.toObject() == &previous.toObject());
 }
 
-static void
-test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture *fx,
-                                         const void         *unused)
-{
+static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
+                                                     const void*) {
     JS::RootedValue v_out(fx->cx);
     bool ok = gjs_string_from_utf8_n(fx->cx, VALID_UTF8_STRING,
                                      strlen(VALID_UTF8_STRING), &v_out);
@@ -222,10 +196,8 @@ test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture *fx,
     g_assert_true(v_out.isString());
 }
 
-static void
-test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
-                                   gconstpointer       unused)
-{
+static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
+                                               const void*) {
     char16_t *chars;
     size_t len;
 
@@ -245,10 +217,8 @@ test_jsapi_util_string_char16_data(GjsUnitTestFixture *fx,
     g_free(chars);
 }
 
-static void
-test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
-                               gconstpointer       unused)
-{
+static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
+                                           const void*) {
     gunichar *chars;
     size_t len;
 
@@ -269,10 +239,8 @@ test_jsapi_util_string_to_ucs4(GjsUnitTestFixture *fx,
     g_free(chars);
 }
 
-static void
-test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
-                                        gconstpointer       unused)
-{
+static void test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture* fx,
+                                                    const void*) {
     JS::RootedValue v_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
 
@@ -284,10 +252,8 @@ test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture *fx,
     g_free(debug_output);
 }
 
-static void
-test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
-                                          gconstpointer       unused)
-{
+static void test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture* fx,
+                                                      const void*) {
     g_test_skip("SpiderMonkey doesn't validate UTF-8 after encoding it");
 
     JS::RootedValue v_string(fx->cx);
@@ -302,10 +268,8 @@ test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture *fx,
     g_free(debug_output);
 }
 
-static void
-test_jsapi_util_debug_string_object_with_complicated_to_string(GjsUnitTestFixture *fx,
-                                                               gconstpointer       unused)
-{
+static void test_jsapi_util_debug_string_object_with_complicated_to_string(
+    GjsUnitTestFixture* fx, const void*) {
     const char16_t desserts[] = {
         0xd83c, 0xdf6a,  /* cookie */
         0xd83c, 0xdf69,  /* doughnut */
@@ -324,7 +288,7 @@ test_jsapi_util_debug_string_object_with_complicated_to_string(GjsUnitTestFixtur
 }
 
 static void
-gjstest_test_func_util_glib_strv_concat_null(void)
+gjstest_test_func_util_misc_strv_concat_null(void)
 {
     char **ret;
 
@@ -336,7 +300,7 @@ gjstest_test_func_util_glib_strv_concat_null(void)
 }
 
 static void
-gjstest_test_func_util_glib_strv_concat_pointers(void)
+gjstest_test_func_util_misc_strv_concat_pointers(void)
 {
     char  *strv0[2] = {(char*)"foo", NULL};
     char  *strv1[1] = {NULL};
@@ -364,52 +328,37 @@ gjstest_test_func_util_glib_strv_concat_pointers(void)
 static void
 gjstest_test_strip_shebang_no_advance_for_no_shebang(void)
 {
-    const char *script = "foo\nbar";
-    size_t script_len_original = strlen(script);
-    size_t script_len = script_len_original;
-    int        line_number = 1;
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"foo\nbar", &line_number);
 
-    const char *stripped = gjs_strip_unix_shebang(script,
-                                                  &script_len,
-                                                  &line_number);
+    g_assert_cmpuint(offset, ==, 0);
+    g_assert_cmpuint(line_number, ==, 1);
+}
 
-    g_assert_cmpstr(script, ==, stripped);
-    g_assert(script_len == script_len_original);
-    g_assert(line_number == 1);
+static void gjstest_test_strip_shebang_no_advance_for_too_short_string(void) {
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"Z", &line_number);
+
+    g_assert_cmpuint(offset, ==, 0);
+    g_assert_cmpuint(line_number, ==, 1);
 }
 
 static void
 gjstest_test_strip_shebang_advance_for_shebang(void)
 {
-    const char *script = "#!foo\nbar";
-    size_t script_len_original = strlen(script);
-    size_t script_len = script_len_original;
-    int        line_number = 1;
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"#!foo\nbar", &line_number);
 
-    const char *stripped = gjs_strip_unix_shebang(script,
-                                                  &script_len,
-                                                  &line_number);
-
-    g_assert_cmpstr(stripped, ==, "bar");
-    g_assert(script_len == 3);
-    g_assert(line_number == 2);
+    g_assert_cmpuint(offset, ==, 6);
+    g_assert_cmpuint(line_number, ==, 2);
 }
 
-static void
-gjstest_test_strip_shebang_return_null_for_just_shebang(void)
-{
-    const char *script = "#!foo";
-    size_t script_len_original = strlen(script);
-    size_t script_len = script_len_original;
-    int        line_number = 1;
+static void gjstest_test_strip_shebang_advance_to_end_for_just_shebang(void) {
+    unsigned line_number = 1;
+    size_t offset = gjs_unix_shebang_len(u"#!foo", &line_number);
 
-    const char *stripped = gjs_strip_unix_shebang(script,
-                                                  &script_len,
-                                                  &line_number);
-
-    g_assert(stripped == NULL);
-    g_assert(script_len == 0);
-    g_assert(line_number == -1);
+    g_assert_cmpuint(offset, ==, 5);
+    g_assert_cmpuint(line_number, ==, 2);
 }
 
 static void
@@ -444,21 +393,24 @@ main(int    argc,
 {
     /* Avoid interference in the tests from stray environment variable */
     g_unsetenv("GJS_ENABLE_PROFILER");
+    g_unsetenv("GJS_TRACE_FD");
 
     g_test_init(&argc, &argv, NULL);
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
-    g_test_add_func("/gjs/context/module/register",
-                    gjstest_test_func_gjs_context_register_module);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
-    g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
+    g_test_add_func("/gjs/jsutil/strip_shebang/short_string",
+                    gjstest_test_strip_shebang_no_advance_for_too_short_string);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
-    g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang", gjstest_test_strip_shebang_return_null_for_just_shebang);
+    g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang",
+                    gjstest_test_strip_shebang_advance_to_end_for_just_shebang);
     g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
-    g_test_add_func("/util/glib/strv/concat/null", gjstest_test_func_util_glib_strv_concat_null);
-    g_test_add_func("/util/glib/strv/concat/pointers", gjstest_test_func_util_glib_strv_concat_pointers);
+    g_test_add_func("/util/misc/strv/concat/null",
+                    gjstest_test_func_util_misc_strv_concat_null);
+    g_test_add_func("/util/misc/strv/concat/pointers",
+                    gjstest_test_func_util_misc_strv_concat_pointers);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \

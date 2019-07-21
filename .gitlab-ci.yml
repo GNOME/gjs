@@ -129,7 +129,7 @@ stages:
 fedora:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-70238_SM60-debug-gcc.fedora-dev  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-286759_SM60-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
@@ -158,10 +158,21 @@ with_logging:
   variables:
     TASK_ID: "ubuntu-x86_64-clang-default-logging-check"
     CC: clang
-    BUILD_OPTS: "CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_CLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
+    BUILD_OPTS: "CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
     TEST: "check"
     SCRIPTCHECK: "yes"
     ENABLE_GTK: "yes"
+  except:
+    - schedules
+
+with_systemtap:
+  <<: *build
+  stage: test
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-systemtap-check"
+    TEST: "check"
+    BUILD_OPTS: "--enable-systemtap"
   except:
     - schedules
 
@@ -618,9 +629,8 @@ flatpak:
   variables:
     TASK_ID: "flatpak packaging"
     CODECHECK: "FLATPAK"
-    APPID: "org.gnome.GjsDevel"
     BUNDLE: "org.gnome.GjsDevel.flatpak"
-    MANIFEST_PATH: "org.gnome.GjsDevel.json"
+    MANIFEST: org.gnome.GjsDevel.json
     RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
 
   environment:

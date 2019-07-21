@@ -212,6 +212,13 @@ describe('GArray', function () {
                 0x73, 0x74, 0x20, 0x2665, 0x20, 0x75, 0x74, 0x66, 0x38])).not.toThrow();
         });
     });
+
+    describe('of structs', function () {
+        xit('can be returned with transfer full', function () {
+            expect(GIMarshallingTests.garray_boxed_struct_full_return().map(e => e.long_))
+                .toEqual([42, 43, 44]);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/160');
+    });
 });
 
 describe('GByteArray', function() {
@@ -277,20 +284,29 @@ describe('GBytes', function() {
 });
 
 describe('GPtrArray', function () {
-    const refArray = ['0', '1', '2'];
+    describe('of strings', function() {
+        const refArray = ['0', '1', '2'];
 
-    it('can be passed to a function with transfer none', function () {
-        expect(() => GIMarshallingTests.gptrarray_utf8_none_in(refArray))
-            .not.toThrow();
-    });
+        it('can be passed to a function with transfer none', function () {
+            expect(() => GIMarshallingTests.gptrarray_utf8_none_in(refArray))
+                .not.toThrow();
+        });
 
-    ['return', 'out'].forEach(method => {
-        ['none', 'container', 'full'].forEach(transfer => {
-            it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
-                    .toEqual(refArray);
+        ['return', 'out'].forEach(method => {
+            ['none', 'container', 'full'].forEach(transfer => {
+                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
+                    expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
+                        .toEqual(refArray);
+                });
             });
         });
+    });
+
+    describe('of structs', function () {
+        xit('can be returned with transfer full', function () {
+            expect(GIMarshallingTests.gptrarray_boxed_struct_full_return().map(e => e.long_))
+                .toEqual([42, 43, 44]);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/160');
     });
 });
 
@@ -658,6 +674,81 @@ describe('Virtual function', function () {
     });
 });
 
+describe('GObject virtual function', function () {
+    it('can have its property read', function () {
+        expect(GObject.Object.prototype.vfunc_constructed).toBeTruthy();
+    });
+
+    it('can have its property overridden with an anonymous function', function () {
+        let callback;
+
+        let key = 'vfunc_constructed';
+
+        class _SimpleTestClass1 extends GObject.Object {
+            _init() {
+                super._init(...arguments);
+            }
+        }
+
+        if (GObject.Object.prototype.vfunc_constructed) {
+            let parentFunc = GObject.Object.prototype.vfunc_constructed;
+            _SimpleTestClass1.prototype[key] = function () {
+                parentFunc.call(this, ...arguments);
+                callback('123');
+            };
+        } else {
+            _SimpleTestClass1.prototype[key] = function () {
+                callback('abc');
+            };
+        }
+
+        callback = jasmine.createSpy('callback');
+
+        const SimpleTestClass1 = GObject.registerClass({GTypeName: 'SimpleTestClass1'}, _SimpleTestClass1);
+        new SimpleTestClass1();
+
+        expect(callback).toHaveBeenCalledWith('123');
+    });
+
+    it('can access the parent prototype with super()', function () {
+        let callback;
+
+        class _SimpleTestClass2 extends GObject.Object {
+            _init() {
+                super._init(...arguments);
+            }
+
+            vfunc_constructed() {
+                super.vfunc_constructed();
+                callback('vfunc_constructed');
+            }
+        }
+
+        callback = jasmine.createSpy('callback');
+
+        const SimpleTestClass2 = GObject.registerClass({GTypeName: 'SimpleTestClass2'}, _SimpleTestClass2);
+        new SimpleTestClass2();
+
+        expect(callback).toHaveBeenCalledWith('vfunc_constructed');
+    });
+
+    it('handles non-existing properties', function () {
+        const _SimpleTestClass3 = class extends GObject.Object {
+            _init() {
+                super._init(...arguments);
+            }
+        };
+
+        _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
+
+        if (GObject.Object.prototype.vfunc_doesnt_exist) {
+            fail('Virtual function should not exist');
+        }
+
+        expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
+    });
+});
+
 describe('Interface', function () {
     it('can be returned', function () {
         let ifaceImpl = new GIMarshallingTests.InterfaceImpl();
@@ -686,4 +777,13 @@ describe('GObject properties', function () {
     xit('throws when setting a read-only property', function () {
         expect(() => obj.some_readonly = 35).toThrow();
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
+});
+
+describe('GDestroyNotify parameters', function () {
+    it('throws when encountering a GDestroyNotify not associated with a callback', function () {
+        // the 'destroy' argument applies to the data, which is not supported in
+        // gobject-introspection
+        expect(() => Gio.MemoryInputStream.new_from_data('foobar'))
+            .toThrowError(/destroy/);
+    });
 });

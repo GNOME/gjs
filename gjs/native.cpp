@@ -21,32 +21,32 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <string>
+#include <tuple>  // for tie
+#include <unordered_map>
+#include <utility>  // for pair
 
-#include <gmodule.h>
+#include <glib.h>
 
-#include <util/log.h>
+#include "gjs/jsapi-wrapper.h"
 
-#include "native.h"
-#include "jsapi-wrapper.h"
-#include "jsapi-util.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/native.h"
+#include "util/log.h"
 
-static GHashTable *modules = NULL;
+static std::unordered_map<std::string, GjsDefineModuleFunc> modules;
 
 void
 gjs_register_native_module (const char          *module_id,
                             GjsDefineModuleFunc  func)
 {
-    if (modules == NULL)
-        modules = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
-
-    if (g_hash_table_lookup(modules, module_id) != NULL) {
+    bool inserted;
+    std::tie(std::ignore, inserted) = modules.insert({module_id, func});
+    if (!inserted) {
         g_warning("A second native module tried to register the same id '%s'",
                   module_id);
         return;
     }
-
-    g_hash_table_replace(modules, g_strdup(module_id), (void*) func);
 
     gjs_debug(GJS_DEBUG_NATIVE,
               "Registered native JS module '%s'",
@@ -55,30 +55,22 @@ gjs_register_native_module (const char          *module_id,
 
 /**
  * gjs_is_registered_native_module:
- * @context:
- * @parent: the parent object defining the namespace
  * @name: name of the module
  *
  * Checks if a native module corresponding to @name has already
  * been registered. This is used to check to see if a name is a
  * builtin module without starting to try and load it.
  */
-bool
-gjs_is_registered_native_module(JSContext  *context,
-                                JSObject   *parent,
-                                const char *name)
-{
-    if (modules == NULL)
-        return false;
-
-    return g_hash_table_lookup(modules, name) != NULL;
+bool gjs_is_registered_native_module(const char* name) {
+    return modules.count(name) > 0;
 }
 
 /**
  * gjs_load_native_module:
  * @context: the #JSContext
- * @name: Name under which the module was registered with
- *  gjs_register_native_module()
+ * @parse_name: Name under which the module was registered with
+ *  gjs_register_native_module(), should be in the format as returned by
+ *  g_file_get_parse_name()
  * @module_out: Return location for a #JSObject
  *
  * Loads a builtin native-code module called @name into @module_out.
@@ -87,26 +79,21 @@ gjs_is_registered_native_module(JSContext  *context,
  */
 bool
 gjs_load_native_module(JSContext              *context,
-                       const char             *name,
+                       const char             *parse_name,
                        JS::MutableHandleObject module_out)
 {
-    GjsDefineModuleFunc func;
-
     gjs_debug(GJS_DEBUG_NATIVE,
               "Defining native module '%s'",
-              name);
+              parse_name);
 
-    if (modules != NULL)
-        func = (GjsDefineModuleFunc) g_hash_table_lookup(modules, name);
-    else
-        func = NULL;
+    const auto& iter = modules.find(parse_name);
 
-    if (!func) {
+    if (iter == modules.end()) {
         gjs_throw(context,
                   "No native module '%s' has registered itself",
-                  name);
+                  parse_name);
         return false;
     }
 
-    return func (context, module_out);
+    return iter->second(context, module_out);
 }

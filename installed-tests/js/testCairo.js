@@ -137,6 +137,8 @@ describe('Cairo', function () {
                 cr.paint();
                 cr.paintWithAlpha(1);
 
+                cr.setDash([1, 0.5], 1);
+
                 cr.stroke();
                 cr.strokePreserve();
 
@@ -153,7 +155,7 @@ describe('Cairo', function () {
                 cr.showText("foobar");
 
                 cr.moveTo(0, 0);
-                cr.setDash([1, 0.5], 1);
+                cr.setDash([], 1);
                 cr.lineTo(1, 0);
                 cr.lineTo(1, 1);
                 cr.lineTo(0, 1);

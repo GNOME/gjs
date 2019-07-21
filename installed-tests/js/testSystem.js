@@ -23,8 +23,28 @@ describe('System.refcount()', function () {
     });
 });
 
+describe('System.addressOfGObject()', function () {
+    it('gives different results for different objects', function () {
+        let a = new GObject.Object({});
+        let b = new GObject.Object({});
+        expect(System.addressOfGObject(a)).toEqual(System.addressOfGObject(a));
+        expect(System.addressOfGObject(a)).not.toEqual(System.addressOfGObject(b));
+    });
+
+    it('throws for non GObject objects', function () {
+        expect(() => System.addressOfGObject({})).
+            toThrowError(/Object 0x[a-f0-9]+ is not a GObject/);
+    });
+});
+
 describe('System.gc()', function () {
     it('does not crash the application', function () {
         expect(System.gc).not.toThrow();
+    });
+});
+
+describe('System.dumpHeap()', function () {
+    it('throws but does not crash when given a nonexistent path', function () {
+        expect(() => System.dumpHeap('/does/not/exist')).toThrow();
     });
 });

@@ -22,20 +22,38 @@
  * Authored By: Philip Chimento <philip.chimento@gmail.com>
  */
 
-#include <unistd.h>
+#include <config.h>  // for HAVE_READLINE_READLINE_H, HAVE_UNISTD_H
 
-#include <gio/gio.h>
-
-#include "gjs/context-private.h"
-#include "gjs/global.h"
-#include "gjs/jsapi-util-args.h"
+#include <stdint.h>
+#include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
 
 #ifdef HAVE_READLINE_READLINE_H
-#include <readline/history.h>
-#include <readline/readline.h>
-#include <stdio.h>
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#    include <unistd.h>  // for isatty, STDIN_FILENO
+#elif defined(XP_WIN)
+#    include <io.h>
+#    ifndef STDIN_FILENO
+#        define STDIN_FILENO 0
+#    endif
+#endif
+
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/context.h"
+#include "gjs/global.h"
+#include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSAutoRequest ar(cx);
@@ -43,16 +61,17 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "quit", args, "i", "exitcode", &exitcode))
         return false;
 
-    auto* gjs = static_cast<GjsContext*>(JS_GetContextPrivate(cx));
-    _gjs_context_exit(gjs, exitcode);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    gjs->exit(exitcode);
     return false;  // without gjs_throw() == "throw uncatchable exception"
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JSAutoRequest ar(cx);
 
-    GjsAutoJSChar prompt;
+    JS::UniqueChars prompt;
     if (!gjs_parse_call_args(cx, "readline", args, "|s", "prompt", &prompt))
         return false;
 
@@ -88,7 +107,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
             args.rval().setUndefined();
             return true;
         }
-    } while (line && line[0] == '\0');
+    } while (line && line.get()[0] == '\0');
 
     /* Add line to history and convert it to a JSString so that we can pass it
      * back as the return value */
@@ -122,8 +141,10 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
         return;
     }
 
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
-    if (!JS_SetProperty(cx, debugger_compartment, "debuggee", v_wrapper) ||
+    if (!JS_SetPropertyById(cx, debugger_compartment, atoms.debuggee(),
+                            v_wrapper) ||
         !JS_DefineFunctions(cx, debugger_compartment, debugger_funcs) ||
         !gjs_define_global_properties(cx, debugger_compartment, "debugger"))
         gjs_log_exception(cx);

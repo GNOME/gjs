@@ -20,14 +20,18 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include "cairo-private.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
+GJS_USE
 static JSObject *gjs_cairo_surface_pattern_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_WITH_PARENT("SurfacePattern", cairo_surface_pattern,
@@ -77,7 +81,7 @@ JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
     JS_PS_END
 };
 
-
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setExtend_func(JSContext *context,
                unsigned   argc,
@@ -101,6 +105,7 @@ setExtend_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getExtend_func(JSContext *context,
                unsigned   argc,
@@ -126,6 +131,7 @@ getExtend_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 setFilter_func(JSContext *context,
                unsigned   argc,
@@ -149,6 +155,7 @@ setFilter_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 getFilter_func(JSContext *context,
                unsigned   argc,
@@ -187,9 +194,10 @@ JSObject *
 gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
                                        cairo_pattern_t *pattern)
 {
-    g_return_val_if_fail(context != NULL, NULL);
-    g_return_val_if_fail(pattern != NULL, NULL);
-    g_return_val_if_fail(cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SURFACE, NULL);
+    g_return_val_if_fail(context, nullptr);
+    g_return_val_if_fail(pattern, nullptr);
+    g_return_val_if_fail(
+        cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SURFACE, nullptr);
 
     JS::RootedObject proto(context,
                            gjs_cairo_surface_pattern_get_proto(context));
@@ -198,7 +206,7 @@ gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
                                    proto));
     if (!object) {
         gjs_throw(context, "failed to create surface pattern");
-        return NULL;
+        return nullptr;
     }
 
     gjs_cairo_pattern_construct(context, object, pattern);

@@ -14,17 +14,19 @@ This is a good approach for "embeddable" interpreters, because unlike say the Bo
 
 An object has two forms.
 * `JS::Value` is a type-tagged version, think of `GValue` (though it is much more efficient)
-* inside a `JS::Value` can be one of: a 32-bit integer, a boolean, a double, a `JSString*`, or a `JSObject*`.
+* inside a `JS::Value` can be one of: a 32-bit integer, a boolean, a double, a `JSString*`, a `JS::Symbol*`, or a `JSObject*`.
 
 `JS::Value` is a 64 bits-wide union. Some of the bits are a type tag. However, don't rely on the layout of `JS::Value`, as it may change between API versions.
 
-You check the type tag with the methods `val.isObject()`, `val.isInt32()`, `val.isDouble()`, `val.isString()`, `val.isBoolean()`. Use `val.isNull()` and `val.isUndefined()` rather than comparing `val == JSVAL_NULL` and `val == JSVAL_VOID` to avoid an extra memory access.
+You check the type tag with the methods `val.isObject()`, `val.isInt32()`, `val.isDouble()`, `val.isString()`, `val.isBoolean()`, `val.isSymbol()`.
+Use `val.isNull()` and `val.isUndefined()` rather than comparing `val == JSVAL_NULL` and `val == JSVAL_VOID` to avoid an extra memory access.
 
 null does not count as an object, so `val.isObject()` does not return true for null. This contrasts with the behavior of `JSVAL_IS_OBJECT(val)`, which was the previous API, but this was changed because the object-or-null behavior was a source of bugs. If you still want this behaviour use `val.isObjectOrNull()`.
 
 The methods `val.toObject()`, `val.toInt32()`, etc. are just accessing the appropriate members of the union.
 
-The jsapi.h header is pretty readable, if you want to learn more. Types you see in there not mentioned above, such as `JSFunction*`, would show up as an object - `val.isObject()` would return true. From a `JS::Value` perspective, everything is one of object, string, double, int, boolean, null, or undefined.
+The jsapi.h header is pretty readable, if you want to learn more. Types you see in there not mentioned above, such as `JSFunction*`, would show up as an object - `val.isObject()` would return true.
+From a `JS::Value` perspective, everything is one of object, string, symbol, double, int, boolean, null, or undefined.
 
 ## Value types vs. allocated types; "gcthing" ##
 
@@ -32,17 +34,21 @@ For integers, booleans, doubles, null, and undefined there is no pointer. The va
 
 The importance is: these types just get ignored by the garbage collector.
 
-However, strings and objects are all allocated pointers that get finalized eventually. These are what garbage collection applies to.
+However, strings, symbols, and objects are all allocated pointers that get finalized eventually.
+These are what garbage collection applies to.
 
-The API refers to these allocated types as "GC things." The macro `val.toGCThing()` returns the value part of the union as a pointer. `val.isGCThing()` returns true for string, object, null; and false for void, boolean, double, integer.
+The API refers to these allocated types as "GC things."
+The macro `val.toGCThing()` returns the value part of the union as a pointer.
+`val.isGCThing()` returns true for string, object, symbol, null; and false for void, boolean, double, integer.
 
 ## Tracing ##
 
 The general rule is that SpiderMonkey has a set of GC roots. To do the garbage collection, it finds all objects accessible from those roots, and finalizes all objects that are not.
 
-So if you have a `JS::Value` or `JSObject*`/`JSString*`/`JSFunction*` somewhere that is not reachable from one of SpiderMonkey's GC roots - say, declared on the stack or in the private data of an object - that will not be found. SpiderMonkey may try to finalize this object even though you have a reference to it.
+So if you have a `JS::Value` or `JSObject*`/`JSString*`/`JSFunction*`/`JS::Symbol*` somewhere that is not reachable from one of SpiderMonkey's GC roots - say, declared on the stack or in the private data of an object - that will not be found.
+SpiderMonkey may try to finalize this object even though you have a reference to it.
 
-If you reference JavaScript objects from your custom object, you have to use `JS::Heap<T>` and set the `JSCLASS_MARK_IS_TRACE` flag in your JSClass, and define a trace function in the class struct. A trace function just invokes `JS_CallHeapValueTracer()`, `JS_CallHeapObjectTracer()`, etc. to tell SpiderMonkey about any objects you reference. See [JSTraceOp docs][2].
+If you reference JavaScript objects from your custom object, you have to use `JS::Heap<T>` and set the `JSCLASS_MARK_IS_TRACE` flag in your JSClass, and define a trace function in the class struct. A trace function just invokes `JS::TraceEdge<T>()` to tell SpiderMonkey about any objects you reference. See [JSTraceOp docs][2].
 
 Tracing doesn't add a GC thing to the GC root set!
 It just notifies the interpreter that a thing is reachable from another thing.

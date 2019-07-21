@@ -23,13 +23,10 @@
  * Author: Colin Walters <walters@verbum.org>
  */
 
+#ifndef GI_GJS_GI_TRACE_H_
+#define GI_GJS_GI_TRACE_H_
 
-#ifndef __GJS_TRACE_H__
-#define __GJS_TRACE_H__
-
-#ifndef GETTEXT_PACKAGE
-#error "config.h must be included prior to gjs_trace.h"
-#endif
+#include <config.h>  // IWYU pragma: keep
 
 #ifdef HAVE_DTRACE
 
@@ -44,4 +41,4 @@
 
 #endif
 
-#endif /* __GJS_TRACE_H__ */
+#endif  // GI_GJS_GI_TRACE_H_

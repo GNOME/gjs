@@ -1,4 +1,5 @@
 
+const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 
@@ -15,7 +16,7 @@ function cat(filename) {
             loop.quit();
             return;
         }
-        print(contents);
+        print(ByteArray.toString(contents));
         loop.quit();
     });
 

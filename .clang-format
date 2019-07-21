@@ -8,9 +8,13 @@ BasedOnStyle: Google
 AccessModifierOffset: -3  # to match cpplint
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+CommentPragmas: '^ NOLINT'
 DerivePointerAlignment: false
 ForEachMacros: []
+IndentPPDirectives: AfterHash
 IndentWidth: 4
+MacroBlockBegin: "^JSNATIVE_TEST_FUNC_BEGIN$"
+MacroBlockEnd: "^JSNATIVE_TEST_FUNC_END$"
 PointerAlignment: Left  # Google style allows both, but clang-format doesn't
 SpacesBeforeTrailingComments: 2
 ---

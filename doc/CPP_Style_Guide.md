@@ -46,12 +46,12 @@ portable C++ code as the implementation language of choice.
 
 ### C++ Standard Versions ###
 
-GJS is currently written using C++11 conforming code, although we
+GJS is currently written using C++14 conforming code, although we
 restrict ourselves to features which are available in the major
 toolchains.
 
 Regardless of the supported features, code is expected to (when
-reasonable) be standard, portable, and modern C++11 code.
+reasonable) be standard, portable, and modern C++14 code.
 We avoid unnecessary vendor-specific extensions, etc., including
 `g_autoptr()` and friends.
 
@@ -65,9 +65,9 @@ and friends, for their type safety and memory management.
 There are some exceptions such as the standard I/O streams library which
 is avoided, and use in space-constrained situations.
 
-### Supported C++11 Language and Library Features ###
+### Supported C++14 Language and Library Features ###
 
-While GJS and SpiderMonkey use C++11, not all features are available in
+While GJS and SpiderMonkey use C++14, not all features are available in
 all of the toolchains which we support.
 A good rule of thumb is to check whether SpiderMonkey uses the feature.
 If so, it's okay to use in GJS.
@@ -289,8 +289,8 @@ This can lead to problems at link time.
 
 #### Use `auto` Type Deduction to Make Code More Readable ####
 
-Some are advocating a policy of "almost always `auto`" in C++11, but GJS
-uses a more moderate stance.
+Some are advocating a policy of "almost always `auto`" in C++11 and
+later, but GJS uses a more moderate stance.
 Use `auto` only if it makes the code more readable or easier to
 maintain.
 Don't "almost always" use `auto`, but do use `auto` with initializers
@@ -406,6 +406,71 @@ in your module header, make sure to include your module header **first**
 in the implementation file (as mentioned above).
 This way there won't be any hidden dependencies that you'll find out
 about later.
+
+The tool [IWYU][iwyu] can help with this, but it generates a lot of
+false positives, so we don't automate it.
+
+[iwyu]: https://include-what-you-use.org/
+
+#### Header inclusion order ####
+
+Headers should be included in the following order:
+
+- `<config.h>`
+- C system headers
+- C++ system headers
+- GNOME library headers
+- SpiderMonkey library headers
+- GJS headers
+
+Each of these groups must be separated by blank lines.
+Within each group, all the headers should be alphabetized.
+The first four groups should use angle brackets for the includes.
+
+SpiderMonkey headers should in theory also all use angle brackets, but
+currently due to a bug in SpiderMonkey, the GJS header
+`"gjs/jsapi-wrapper.h"` must be included instead of `<jsapi.h>` and
+`<jsfriendapi.h>`, and before any other SpiderMonkey headers.
+So the SpiderMonkey headers should use quotes for the includes.
+
+GJS headers should use quotes, _except_ in public header files (any
+header file included from `<gjs/gjs.h>`.)
+
+If you need to include headers conditionally, add the conditional
+after the group that it belongs to, separated by a blank line.
+
+If it is not obvious, you may add a comment after the include,
+explaining what this header is included for.
+This makes it easier to figure out whether to remove a header later if
+its functionality is no longer used in the file.
+
+Here is an example of all of the above rules together:
+
+```c++
+#include <config.h>  // for ENABLE_CAIRO
+
+#include <string.h>  // for strlen
+
+#ifdef XP_WIN
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#endif
+
+#include <codecvt>  // for codecvt_utf8_utf16
+#include <locale>   // for wstring_convert
+#include <vector>
+
+#include <girepository.h>
+#include <glib.h>
+
+#include "gjs/jsapi-wrapper.h"
+#include "js/GCHashTable.h"  // for GCHashMap
+#include "mozilla/Unused.h"
+
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
+```
 
 #### Keep "Internal" Headers Private ####
 

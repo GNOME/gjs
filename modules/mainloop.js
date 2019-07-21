@@ -41,7 +41,7 @@ function quit(name) {
 	throw new Error("No main loop with this id");
 
     let loop = _mainLoops[name];
-    delete _mainLoops[name];
+    _mainLoops[name] = null;
 
     if (!loop.is_running())
 	throw new Error("Main loop was stopped already");

@@ -23,18 +23,22 @@
  * Authored by: Philip Chimento <philip@endlessm.com>
  */
 
-#include <type_traits>
+#ifndef GJS_JSAPI_UTIL_ARGS_H_
+#define GJS_JSAPI_UTIL_ARGS_H_
+
+#include <stdint.h>
+
+#include <type_traits>  // for enable_if, is_enum, is_same
 
 #include <glib.h>
 
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
+#include "gjs/jsapi-wrapper.h"
 
-GJS_ALWAYS_INLINE
-static inline bool
-check_nullable(const char*& fchar,
-               const char*& fmt_string)
-{
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+
+GJS_ALWAYS_INLINE GJS_USE static inline bool check_nullable(
+    const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
         return false;
 
@@ -48,13 +52,8 @@ check_nullable(const char*& fchar,
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to use JS::ToBoolean instead? */
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       bool           *ref)
-{
+static inline void assign(JSContext*, char c, bool nullable,
+                          JS::HandleValue value, bool* ref) {
     if (c != 'b')
         throw g_strdup_printf("Wrong type for %c, got bool*", c);
     if (!value.isBoolean())
@@ -67,17 +66,12 @@ assign(JSContext      *cx,
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to box primitive types instead of throwing? */
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext              *cx,
-       char                    c,
-       bool                    nullable,
-       JS::HandleValue         value,
-       JS::MutableHandleObject ref)
-{
+static inline void assign(JSContext*, char c, bool nullable,
+                          JS::HandleValue value, JS::MutableHandleObject ref) {
     if (c != 'o')
         throw g_strdup_printf("Wrong type for %c, got JS::MutableHandleObject", c);
     if (nullable && value.isNull()) {
-        ref.set(NULL);
+        ref.set(nullptr);
         return;
     }
     if (!value.isObject())
@@ -86,15 +80,10 @@ assign(JSContext              *cx,
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       GjsAutoJSChar  *ref)
-{
+static inline void assign(JSContext* cx, char c, bool nullable,
+                          JS::HandleValue value, JS::UniqueChars* ref) {
     if (c != 's')
-        throw g_strdup_printf("Wrong type for %c, got GjsAutoJSChar*", c);
+        throw g_strdup_printf("Wrong type for %c, got JS::UniqueChars*", c);
     if (nullable && value.isNull()) {
         ref->reset();
         return;
@@ -215,10 +204,10 @@ assign(JSContext      *cx,
 
 /* Force JS::RootedObject * to be converted to JS::MutableHandleObject,
  * see overload in jsapi-util-args.cpp */
-template<typename T,
-         typename std::enable_if<!std::is_same<T, JS::RootedObject *>::value, int>::type = 0>
-static inline void
-free_if_necessary(T param_ref) {}
+template <typename T,
+          typename std::enable_if<!std::is_same<T, JS::RootedObject*>::value,
+                                  int>::type = 0>
+static inline void free_if_necessary(T param_ref G_GNUC_UNUSED) {}
 
 GJS_ALWAYS_INLINE
 static inline void
@@ -227,25 +216,18 @@ free_if_necessary(JS::MutableHandleObject param_ref)
     /* This is not exactly right, since before we consumed a JS::ObjectValue
      * there may have been something different inside the handle. But it has
      * already been clobbered at this point anyhow */
-    param_ref.set(NULL);
+    param_ref.set(nullptr);
 }
 
-template<typename T>
-static bool
-parse_call_args_helper(JSContext          *cx,
-                       const char         *function_name,
-                       const JS::CallArgs& args,
-                       bool                ignore_trailing_args,
-                       const char*&        fmt_required,
-                       const char*&        fmt_optional,
-                       unsigned            param_ix,
-                       const char         *param_name,
-                       T                   param_ref)
-{
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    const char*& fmt_required, const char*& fmt_optional, unsigned param_ix,
+    const char* param_name, T param_ref) {
     bool nullable = false;
     const char *fchar = fmt_required;
 
-    g_return_val_if_fail (param_name != NULL, false);
+    g_return_val_if_fail(param_name, false);
 
     if (*fchar != '\0') {
         nullable = check_nullable(fchar, fmt_required);
@@ -277,30 +259,17 @@ parse_call_args_helper(JSContext          *cx,
     return true;
 }
 
-template<typename T, typename... Args>
-static bool
-parse_call_args_helper(JSContext          *cx,
-                       const char         *function_name,
-                       const JS::CallArgs& args,
-                       bool                ignore_trailing_args,
-                       const char*&        fmt_required,
-                       const char*&        fmt_optional,
-                       unsigned            param_ix,
-                       const char         *param_name,
-                       T                   param_ref,
-                       Args             ...params)
-{
-    bool retval;
-
-    if (!parse_call_args_helper(cx, function_name, args, ignore_trailing_args,
-                                fmt_required, fmt_optional, param_ix,
-                                param_name, param_ref))
+template <typename T, typename... Args>
+GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    const char*& fmt_required, const char*& fmt_optional, unsigned param_ix,
+    const char* param_name, T param_ref, Args... params) {
+    if (!parse_call_args_helper(cx, function_name, args, fmt_required,
+                                fmt_optional, param_ix, param_name, param_ref))
         return false;
 
-    retval = parse_call_args_helper(cx, function_name, args,
-                                    ignore_trailing_args,
-                                    fmt_required, fmt_optional, ++param_ix,
-                                    params...);
+    bool retval = parse_call_args_helper(cx, function_name, args, fmt_required,
+                                         fmt_optional, ++param_ix, params...);
 
     /* We still own the strings in the error case, free any we converted */
     if (!retval)
@@ -309,13 +278,9 @@ parse_call_args_helper(JSContext          *cx,
 }
 
 /* Empty-args version of the template */
-G_GNUC_UNUSED
-static bool
-gjs_parse_call_args(JSContext          *cx,
-                    const char         *function_name,
-                    const JS::CallArgs& args,
-                    const char         *format)
-{
+G_GNUC_UNUSED GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    const char* format) {
     bool ignore_trailing_args = false;
 
     if (*format == '!') {
@@ -352,7 +317,7 @@ gjs_parse_call_args(JSContext          *cx,
  * value location pairs.  The currently accepted format specifiers are:
  *
  * b: A boolean (pass a bool *)
- * s: A string, converted into UTF-8 (pass a GjsAutoJSChar *)
+ * s: A string, converted into UTF-8 (pass a JS::UniqueChars*)
  * F: A string, converted into "filename encoding" (i.e. active locale) (pass
  *   a GjsAutoChar *)
  * i: A number, will be converted to a 32-bit int (pass an int32_t * or a
@@ -373,18 +338,13 @@ gjs_parse_call_args(JSContext          *cx,
  * may be null. For 's' or 'F' a null pointer is returned, for 'o' the handle is
  * set to null.
  */
-template<typename... Args>
-static bool
-gjs_parse_call_args(JSContext          *cx,
-                    const char         *function_name,
-                    const JS::CallArgs& args,
-                    const char         *format,
-                    Args             ...params)
-{
+template <typename... Args>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
+    JSContext* cx, const char* function_name, const JS::CallArgs& args,
+    const char* format, Args... params) {
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
-    bool optional_args = false, ignore_trailing_args = false, retval;
-    char **parts;
+    bool optional_args = false, ignore_trailing_args = false;
 
     if (*format == '!') {
         ignore_trailing_args = true;
@@ -428,14 +388,12 @@ gjs_parse_call_args(JSContext          *cx,
         return false;
     }
 
-    parts = g_strsplit(format, "|", 2);
-    fmt_required = parts[0];
-    fmt_optional = parts[1];  /* may be NULL */
+    GjsAutoStrv parts = g_strsplit(format, "|", 2);
+    fmt_required = parts.get()[0];
+    fmt_optional = parts.get()[1];  // may be null
 
-    retval = parse_call_args_helper(cx, function_name, args,
-                                    ignore_trailing_args, fmt_required,
-                                    fmt_optional, 0, params...);
-
-    g_strfreev(parts);
-    return retval;
+    return parse_call_args_helper(cx, function_name, args, fmt_required,
+                                  fmt_optional, 0, params...);
 }
+
+#endif  // GJS_JSAPI_UTIL_ARGS_H_

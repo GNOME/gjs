@@ -155,9 +155,6 @@ report "--coverage-prefix after script should succeed but give a warning"
 $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
 rm -f foo/coverage.lcov
-$gjs -c 'imports.system.exit(0)' --profile=foo 2>&1 | grep -q 'Gjs-WARNING.*--profile'
-report "--profile after script should succeed but give a warning"
-rm -rf foo
 
 for version_arg in --version --jsversion; do
     # --version and --jsversion work
@@ -218,6 +215,21 @@ report "main program exceptions are not swallowed by queued promise jobs"
 # https://gitlab.gnome.org/GNOME/gjs/issues/26
 $gjs -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
 report "object unref from other thread after shutdown should not race"
+
+# https://gitlab.gnome.org/GNOME/gjs/issues/212
+if test -n "$ENABLE_GTK"; then
+    $gjs -c 'imports.gi.versions.Gtk = "3.0";
+             const Gtk = imports.gi.Gtk;
+             const GObject = imports.gi.GObject;
+             Gtk.init(null);
+             let BadWidget = GObject.registerClass(class BadWidget extends Gtk.Widget {
+                vfunc_destroy() {};
+             });
+             let w = new BadWidget ();'
+    report "avoid crashing when GTK vfuncs are called on context destroy"
+else
+    skip "avoid crashing when GTK vfuncs are called on context destroy" "GTK disabled"
+fi
 
 rm -f exit.js help.js promise.js awaitcatch.js
 

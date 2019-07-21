@@ -214,9 +214,7 @@ elif [[ $1 == "SH_CHECKS" ]]; then
     export LANG=C.UTF-8
     export LANGUAGE=C.UTF-8
 
-    installed-tests/scripts/testCommandLine.sh > scripts.log
-    installed-tests/scripts/testExamples.sh   >> scripts.log
-    installed-tests/scripts/testWarnings.sh   >> scripts.log
+    installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
 
 elif [[ $1 == "GJS_COVERAGE" ]]; then
@@ -252,15 +250,19 @@ elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
 elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Print_Labels 'C/C++ Linter report '
 
-    cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/analysis/current-report.txt | sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' > /cwd/current-report.txt
+    cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 >/dev/null | \
+        tee "$save_dir"/analysis/current-report.txt | \
+        sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
+        > /cwd/current-report.txt
     cat "$save_dir"/analysis/current-report.txt
     echo
 
     # Get the code committed at upstream master
     do_Get_Upstream_Master "cppLint"
-    cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 | \
-        tee "$save_dir"/analysis/master-report.txt | sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' > /cwd/master-report.txt
+    cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 >/dev/null | \
+        tee "$save_dir"/analysis/master-report.txt | \
+        sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
+        > /cwd/master-report.txt
     echo
 
     # Compare the report with master and fail if new warnings are found
@@ -299,15 +301,11 @@ elif [[ $1 == "FLATPAK" ]]; then
     do_Print_Labels 'Flatpak packaging'
 
     # Move the manifest file to the root folder
-    cp test/*.json .
+    cp "test/$MANIFEST" .
 
-    # Ajust to the current branch
-    sed -i "s,<<ID>>,$APPID,g" ${MANIFEST_PATH}
-    sed -i "s,<<master>>,master,g" ${MANIFEST_PATH}
-    sed -i "s,<<current>>,origin/$CI_COMMIT_REF_NAME,g" ${MANIFEST_PATH}
-
-    flatpak-builder --bundle-sources --repo=devel build ${MANIFEST_PATH}
-    flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} ${APPID}
+    flatpak-builder --version
+    flatpak-builder --bundle-sources --repo=devel build "$MANIFEST"
+    flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} org.gnome.GjsDevel
 fi
 
 # Releases stuff and finishes

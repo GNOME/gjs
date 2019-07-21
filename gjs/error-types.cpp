@@ -21,43 +21,34 @@
  * IN THE SOFTWARE.
  */
 
-#include <glib.h>
+#include <glib-object.h>
 
-#include "util/glib.h"
+#include "gjs/error-types.h"
 
-/** gjs_g_strv_concat:
- *
- * Concate an array of string arrays to one string array. The strings in each
- * array is copied to the resulting array.
- *
- * @strv_array: array of NULL-terminated arrays of strings. NULL elements are
- * allowed.
- * @len: number of arrays in @strv_array
- *
- * @return: a newly allocated NULL-terminated array of strings. Use
- * g_strfreev() to free it
- */
-char**
-gjs_g_strv_concat(char ***strv_array, int len)
-{
-    GPtrArray *array;
-    int i;
+// clang-format off
+G_DEFINE_QUARK(gjs-error-quark, gjs_error)
+G_DEFINE_QUARK(gjs-js-error-quark, gjs_js_error)
+// clang-format on
 
-    array = g_ptr_array_sized_new(16);
+GType gjs_js_error_get_type(void) {
+    static volatile GType g_type_id;
 
-    for (i = 0; i < len; i++) {
-        char **strv;
-        int j;
+    if (g_once_init_enter(&g_type_id)) {
+        static GEnumValue errors[] = {
+            { GJS_JS_ERROR_ERROR, "Error", "error" },
+            { GJS_JS_ERROR_EVAL_ERROR, "EvalError", "eval-error" },
+            { GJS_JS_ERROR_INTERNAL_ERROR, "InternalError", "internal-error" },
+            { GJS_JS_ERROR_RANGE_ERROR, "RangeError", "range-error" },
+            { GJS_JS_ERROR_REFERENCE_ERROR, "ReferenceError", "reference-error" },
+            { GJS_JS_ERROR_STOP_ITERATION, "StopIteration", "stop-iteration" },
+            { GJS_JS_ERROR_SYNTAX_ERROR, "SyntaxError", "syntax-error" },
+            { GJS_JS_ERROR_TYPE_ERROR, "TypeError", "type-error" },
+            { GJS_JS_ERROR_URI_ERROR, "URIError", "uri-error" },
+            { 0, nullptr, nullptr }
+        };
 
-        strv = strv_array[i];
-        if (strv == NULL)
-            continue;
-
-        for (j = 0; strv[j] != NULL; ++j)
-            g_ptr_array_add(array, g_strdup(strv[j]));
+        g_type_id = g_enum_register_static("GjsJSError", errors);
     }
 
-    g_ptr_array_add(array, NULL);
-
-    return (char**)g_ptr_array_free(array, false);
+    return g_type_id;
 }

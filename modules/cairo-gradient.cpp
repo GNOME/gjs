@@ -20,13 +20,15 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>
+#include <cairo.h>
+
+#include "gjs/jsapi-wrapper.h"
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-wrapper.h"
-#include <cairo.h>
-#include "cairo-private.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
+#include "modules/cairo-private.h"
 
 GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT("Gradient", cairo_gradient,
                                       cairo_pattern,
@@ -46,6 +48,7 @@ JSPropertySpec gjs_cairo_gradient_proto_props[] = {
 
 /* Methods */
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 addColorStopRGB_func(JSContext *context,
                      unsigned   argc,
@@ -73,6 +76,7 @@ addColorStopRGB_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 addColorStopRGBA_func(JSContext *context,
                       unsigned   argc,

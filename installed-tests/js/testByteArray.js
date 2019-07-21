@@ -47,9 +47,8 @@ describe('Byte array', function () {
     it('can be converted to a string of encoded characters even with a 0 byte', function () {
         const a = Uint8Array.of(97, 98, 99, 100, 0);
         const s = ByteArray.toString(a, 'LATIN1');
-        expect(s.length).toEqual(5);
-        expect(s).toEqual('\uFEFFabcd');
-        // GLib puts a BOM in the string, who knows why
+        expect(s.length).toEqual(4);
+        expect(s).toEqual('abcd');
     });
 
     it('stops converting to a string at an embedded 0 byte', function () {
@@ -57,6 +56,18 @@ describe('Byte array', function () {
         const s = ByteArray.toString(a);
         expect(s.length).toEqual(2);
         expect(s).toEqual('ab');
+    });
+
+    it('deals gracefully with a 0-length array', function () {
+        const a = new Uint8Array(0);
+        expect(ByteArray.toString(a)).toEqual('');
+        expect(ByteArray.toGBytes(a).get_size()).toEqual(0);
+    });
+
+    it('deals gracefully with a non Uint8Array', function () {
+        const a = [97, 98, 99, 100, 0];
+        expect(() => ByteArray.toString(a)).toThrow();
+        expect(() => ByteArray.toGBytes(a)).toThrow();
     });
 
     describe('legacy toString() behavior', function () {

@@ -20,18 +20,20 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef __GJS_PRIVATE_UTIL_H__
-#define __GJS_PRIVATE_UTIL_H__
+#ifndef LIBGJS_PRIVATE_GJS_UTIL_H_
+#define LIBGJS_PRIVATE_GJS_UTIL_H_
 
 #include <locale.h>
-#include <glib.h>
-#include <glib-object.h>
 
-#include <gjs/macros.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
 /* For imports.format */
+GJS_EXPORT
 char * gjs_format_int_alternative_output (int n);
 
 /* For imports.gettext */
@@ -46,19 +48,29 @@ typedef enum
   GJS_LOCALE_CATEGORY_TIME = LC_TIME
 } GjsLocaleCategory;
 
+GJS_EXPORT
 const char *gjs_setlocale                (GjsLocaleCategory category,
                                           const char       *locale);
+GJS_EXPORT
 void        gjs_textdomain               (const char *domain);
+GJS_EXPORT
 void        gjs_bindtextdomain           (const char *domain,
                                           const char *location);
 GJS_EXPORT
 GType       gjs_locale_category_get_type (void) G_GNUC_CONST;
 
 /* For imports.overrides.GObject */
+GJS_EXPORT
 GParamFlags gjs_param_spec_get_flags (GParamSpec *pspec);
+GJS_EXPORT
 GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
+GJS_EXPORT
 GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
+
+/* For tests */
+GJS_EXPORT
+int gjs_open_bytes(GBytes* bytes, GError** error);
 
 G_END_DECLS
 
-#endif
+#endif /* LIBGJS_PRIVATE_GJS_UTIL_H_ */
