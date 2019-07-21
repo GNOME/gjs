@@ -448,27 +448,16 @@ static void gjs_context_finalize(GObject* object) {
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
-// TODO
-void GjsContextPrivate::context_reset_exit() {
-    m_should_exit = false;
-    m_exit_code = 0;
-}
-
 bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
                                     GError** error) {
     bool ret = false;
-
     bool auto_profile = m_should_profile;
     if (auto_profile &&
         (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
         auto_profile = false;
 
-    g_object_ref(G_OBJECT(m_cx));
-
     if (auto_profile)
         gjs_profiler_start(m_profiler);
-
-    g_warning("Evalling: %s", identifier);
 
     auto it = m_id_to_module.find(identifier);
     if (it == m_id_to_module.end()) {
@@ -485,8 +474,12 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
         return false;
     }
 
-    if (!JS::ModuleEvaluate(m_cx, it->second))
+    if (!JS::ModuleEvaluate(m_cx, it->second)) {
+        gjs_log_exception(m_cx);
+        g_warning(
+            "Failed to evaluate module! %s", identifier);
         return false;
+    }
 
     *code = 0;
 
@@ -508,14 +501,14 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
      * uncaught exceptions have been reported since draining runs callbacks. */
     {
         JS::AutoSaveExceptionState saved_exc(m_cx);
-        ok = GjsContextPrivate::run_jobs() && ok;
+        ok = run_jobs() && ok;
     }
 
     if (auto_profile)
         gjs_profiler_stop(m_profiler);
 
     if (!ok) {
-        if (GjsContextPrivate::should_exit(code)) {
+        if (should_exit(code)) {
             g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
                         "Exit with code %d", *code);
             goto out;  // Don't log anything
@@ -541,8 +534,7 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
     ret = true;
 
 out:
-    g_object_unref(G_OBJECT(m_cx));
-    context_reset_exit();
+    reset_exit();
     return ret;
 }
 
@@ -557,20 +549,14 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
                                               const char* filename,
                                               const char* mod_text,
                                               size_t mod_len) {
-    JSContext* cx = m_cx;
-
-    g_warning("Registering: %s", identifier);
-
     if (m_id_to_module.find(identifier) != m_id_to_module.end()) {
-        gjs_throw(cx, "Module '%s' is already registered", identifier);
+        gjs_throw(m_cx, "Module '%s' is already registered", identifier);
         return false;
     }
 
     unsigned int start_line_number = 1;
-    // mod_text = gjs_strip_unix_shebang(mod_text, &mod_len,
-    // &start_line_number);
 
-    JS::CompileOptions options(cx);
+    JS::CompileOptions options(m_cx);
     options.setFileAndLine(identifier, start_line_number).setSourceIsLazy(true);
 
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
@@ -581,18 +567,17 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
                                utf16_string.size() - offset,
                                JS::SourceBufferHolder::NoOwnership);
 
-    g_warning("src: %s %lu", mod_text, offset);
-    JS::RootedObject new_module(cx);
-    if (!CompileModule(cx, options, buf, &new_module)) {
-        gjs_throw(cx, "Failed to compile module: %s", identifier);
+    JS::RootedObject new_module(m_cx);
+    if (!CompileModule(m_cx, options, buf, &new_module)) {
+        gjs_throw(m_cx, "Failed to compile module: %s", identifier);
         return false;
     }
 
     if (filename != NULL) {
         // Since this is a file-based module, be sure to set it's host field
-        JS::RootedValue filename_val(cx);
-        if (!gjs_string_from_utf8(cx, filename, &filename_val)) {
-            gjs_throw(cx, "Failed to encode full module path (%s) as JS string",
+        JS::RootedValue filename_val(m_cx);
+        if (!gjs_string_from_utf8(m_cx, filename, &filename_val)) {
+            gjs_throw(m_cx, "Failed to encode full module path (%s) as JS string",
                       filename);
             return false;
         }
@@ -600,7 +585,7 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
         JS::SetModuleHostDefinedField(new_module, filename_val);
     }
 
-    m_id_to_module[identifier].init(cx, new_module);
+    m_id_to_module[identifier].init(m_cx, new_module);
     return true;
 }
 
@@ -609,15 +594,14 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
     // The module from which the resolve request is coming
     JS::RootedObject mod_obj(m_cx);
-    JS::UniqueChars
-        id;  // The string identifier of the module we wish to import
+    JS::UniqueChars id;  // The string identifier of the module we wish to import
 
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     args.rval().setNull();
     if (!gjs_parse_call_args(m_cx, "ModuleResolver", args, "os", "sourceModule",
                              &mod_obj, "identifier", &id))
         return false;
-
+  
     // check if path is relative
     if (id[0] == '.' && (id[1] == '/' || (id[1] == '.' && id[2] == '/'))) {
         // If a module has a path, we'll have stored it in the host field
@@ -639,7 +623,7 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
         GjsAutoChar full_path = g_file_get_path(output);
         auto module = m_id_to_module.find(full_path.get());
         if (module != m_id_to_module.end()) {
-            args.rval().setObject(*module->second);
+            args.rval().setObject(*(module->second));
             return true;
         }
 
@@ -727,7 +711,6 @@ bool GjsContextPrivate::register_module(const char* identifier,
 }
 
 static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
-    printf("%s", "resolving");
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
     return gjs->module_resolve(argc, vp);
