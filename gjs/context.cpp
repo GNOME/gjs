@@ -476,8 +476,7 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
 
     if (!JS::ModuleEvaluate(m_cx, it->second)) {
         gjs_log_exception(m_cx);
-        g_warning(
-            "Failed to evaluate module! %s", identifier);
+        g_warning("Failed to evaluate module! %s", identifier);
         return false;
     }
 
@@ -577,7 +576,8 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
         // Since this is a file-based module, be sure to set it's host field
         JS::RootedValue filename_val(m_cx);
         if (!gjs_string_from_utf8(m_cx, filename, &filename_val)) {
-            gjs_throw(m_cx, "Failed to encode full module path (%s) as JS string",
+            gjs_throw(m_cx,
+                      "Failed to encode full module path (%s) as JS string",
                       filename);
             return false;
         }
@@ -594,14 +594,15 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
     // The module from which the resolve request is coming
     JS::RootedObject mod_obj(m_cx);
-    JS::UniqueChars id;  // The string identifier of the module we wish to import
+    JS::UniqueChars
+        id;  // The string identifier of the module we wish to import
 
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     args.rval().setNull();
     if (!gjs_parse_call_args(m_cx, "ModuleResolver", args, "os", "sourceModule",
                              &mod_obj, "identifier", &id))
         return false;
-  
+
     // check if path is relative
     if (id[0] == '.' && (id[1] == '/' || (id[1] == '.' && id[2] == '/'))) {
         // If a module has a path, we'll have stored it in the host field
@@ -779,7 +780,6 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
-
 
     JS::RootedFunction mod_resolve(
         cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));

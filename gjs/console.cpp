@@ -37,18 +37,18 @@
 
 #include <gjs/gjs.h>
 
-static char **include_path = NULL;
-static char **coverage_prefixes = NULL;
-static char *coverage_output_path = NULL;
-static char *profile_output_path = nullptr;
-static char *command = NULL;
+static char** include_path = NULL;
+static char** coverage_prefixes = NULL;
+static char* coverage_output_path = NULL;
+static char* profile_output_path = nullptr;
+static char* command = NULL;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
 static gboolean debugging = false;
 static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
-static gboolean parse_profile_arg(const char *, const char *, void *, GError**);
+static gboolean parse_profile_arg(const char*, const char*, void*, GError**);
 
 // clang-format off
 static GOptionEntry entries[] = {
