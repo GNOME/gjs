@@ -330,6 +330,7 @@ int main(int argc, char** argv) {
     }
 
     env_force_modules = g_getenv("GJS_FORCE_MODULES");
+
     if (env_force_modules != NULL) {
         if (strcmp(env_force_modules, "1") == 0) {
             force_modules = true;
