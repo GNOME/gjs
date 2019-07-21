@@ -86,6 +86,7 @@ class GjsContextPrivate {
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
+    std::unordered_map<std::string, JS::PersistentRootedObject> m_id_to_module;
 
     GjsProfiler* m_profiler;
 
@@ -134,6 +135,12 @@ class GjsContextPrivate {
     }
 
  public:
+    bool register_module_inner(GjsContext* gjs_cx,
+                                        const char* identifier,
+                                        const char* filename,
+                                        const char* mod_text, size_t mod_len);
+
+
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
     GJS_USE static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
@@ -187,6 +194,9 @@ class GjsContextPrivate {
                          ssize_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
     GJS_JSAPI_RETURN_CONVENTION
+    bool eval_module(const char* identifier, uint8_t* code, GError** error);
+    bool module_resolve(unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,
                        JS::MutableHandleValue rval);
@@ -201,6 +211,12 @@ class GjsContextPrivate {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+
+    void context_reset_exit();
+
+    bool register_module(const char* identifier,
+                                 const char* filename, const char* mod_text,
+                                 size_t mod_len, GError** error);
 
     void set_sweeping(bool value);
 

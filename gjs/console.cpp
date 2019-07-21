@@ -128,6 +128,8 @@ check_script_args_for_stray_gjs_args(int           argc,
     char **new_coverage_prefixes = NULL;
     char *new_coverage_output_path = NULL;
     char **new_include_paths = NULL;
+    /* Keep in sync with entries[] at the top */
+    // clang-format off
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
