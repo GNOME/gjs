@@ -565,6 +565,132 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
     return true;
 }
 
+static char* gir_uri_part(const char* uri, int part) {
+    const char* scheme = g_uri_parse_scheme(uri);
+
+    if (scheme != NULL && strcmp(scheme, "gir") == 0) {
+        // ARR: ["gir", url]
+        gchar** protocol_sep_url = g_strsplit(uri, "://", 2);
+        // url
+        gchar* url = protocol_sep_url[1];
+        // ARR: [part0, part1, part2, ...partsn]
+        gchar** parts = g_strsplit(url, "/", -1);
+
+        g_strfreev(protocol_sep_url);
+
+        guint num_of_parts = g_strv_length(parts);
+
+        if (num_of_parts == 0) {
+            // CASE: ""
+            g_warning("gir:// cannot be empty!");
+            g_strfreev(parts);
+            return NULL;
+        } else if (num_of_parts > 2) {
+            // CASE: "A/B/[C]"
+            g_warning("gir:// uris have at most one part.");
+            g_strfreev(parts);
+            return NULL;
+        } else {
+            // CASE: "A/?" or "A?" or "A/B"
+            // ARR: []
+            gchar** lastpart_sep_query =
+                g_strsplit(parts[num_of_parts - 1], "?", 2);
+
+            bool is_query = g_strv_length(lastpart_sep_query) > 1;
+
+            if (!is_query) {
+                if (part == 0) {
+                    gchar* ns = parts[0];
+                    char* ns_cpy = strdup(ns);
+                    g_strfreev(lastpart_sep_query);
+                    g_strfreev(parts);
+
+                    return ns_cpy;
+                } else {
+                    // TODO
+                    return NULL;
+                }
+            }
+
+            gchar* last_part = lastpart_sep_query[0];
+
+            // EX: ?a=0&b=2
+            gchar* query_string = lastpart_sep_query[1];
+
+            // CASE: "A/B"
+            if (num_of_parts == 2 && strlen(last_part) > 0) {
+                g_warning("gir:// uris have at most one part.");
+                g_strfreev(lastpart_sep_query);
+
+                return NULL;
+            }
+
+            gchar** query_parts = g_strsplit(query_string, "&", -1);
+
+            if (part == 0 && strlen(last_part) > 0) {
+                char* ns_cpy = g_strdup(last_part);
+                g_strfreev(parts);
+
+                g_strfreev(lastpart_sep_query);
+
+                return ns_cpy;
+            } else if (part == 0) {
+                gchar* ns = parts[0];
+                char* ns_cpy = g_strdup(ns);
+                g_strfreev(parts);
+                g_strfreev(lastpart_sep_query);
+
+                return ns_cpy;
+            } else {
+                g_strfreev(lastpart_sep_query);
+
+                char* eq;
+                int i = 0;
+                for (eq = query_parts[i]; eq != NULL; eq = query_parts[++i]) {
+                    gchar** eq_parts = g_strsplit(eq, "=", 0);
+
+                    if (strcmp(eq_parts[0], "v") == 0) {
+                        char* version = g_strdup(eq_parts[1]);
+                        g_strfreev(eq_parts);
+                        g_strfreev(parts);
+                        g_strfreev(query_parts);
+                        return version;
+                    }
+
+                    g_strfreev(eq_parts);
+                }
+
+                g_strfreev(parts);
+                g_strfreev(query_parts);
+
+                return NULL;
+            }
+        }
+    } else {
+        g_warning("url did not begin with gir://");
+        return NULL;
+    }
+}
+
+static char* gir_uri_ns(const char* uri) { return gir_uri_part(uri, 0); }
+static char* gir_uri_version(const char* uri) { return gir_uri_part(uri, 1); }
+static bool is_gir_uri(const char* uri) {
+    const char* scheme = g_uri_parse_scheme(uri);
+    return scheme != NULL && strcmp(scheme, "gir") == 0;
+}
+
+static char* gir_js_mod_ver(const char* ns, const char* version) {
+    return g_strdup_printf(
+        "imports.gi.versions.%s = '%s';\nimport gi from \'gi\';\nexport "
+        "default (gi.%s);",
+        ns, version, ns);
+}
+
+static char* gir_js_mod(const char* ns) {
+    return g_strdup_printf("import gi from \'gi\';\nexport default (gi.%s);",
+                           ns);
+}
+
 bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
     auto gjs_cx = static_cast<GjsContext*>(JS_GetContextPrivate(m_cx));
 
@@ -621,6 +747,35 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
         args.rval().setObject(*m_id_to_module[full_path.get()]);
         return true;
+    }
+
+    if (is_gir_uri(id.get())) {
+        char* ns = gir_uri_ns(id.get());
+        char* version = gir_uri_version(id.get());
+        char* gir_mod = NULL;
+        if (ns == NULL && version == NULL) {
+            gjs_throw(m_cx, "Attempted to load invalid module path %s",
+                      id.get());
+            return false;
+        } else if (version == NULL) {
+            gir_mod = gir_js_mod(ns);
+        } else if (ns == NULL) {
+            gjs_throw(m_cx, "Attempted to load invalid module path %s",
+                      id.get());
+            return false;
+        } else {
+            gir_mod = gir_js_mod_ver(ns, version);
+        }
+
+        auto module = m_id_to_module.find(id.get());
+        if (gir_mod != NULL && module == m_id_to_module.end()) {
+            register_module(id.get(), "//internal_gi_ns//", gir_mod,
+                            strlen(gir_mod), nullptr);
+        }
+
+        g_free(gir_mod);
+        g_free(ns);
+        g_free(version);
     }
 
     auto module = m_id_to_module.find(id.get());
@@ -756,6 +911,13 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
+
+    const char* sys_mod = "export default (imports.system)";
+    gjs_context_register_module(public_context, "system", "//internal//",
+                                sys_mod, strlen(sys_mod), nullptr);
+    const char* gi_mod = "export default (imports.gi)";
+    gjs_context_register_module(public_context, "gi", "//internal//", gi_mod,
+                                strlen(gi_mod), nullptr);
 
     JS::RootedFunction mod_resolve(
         cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
