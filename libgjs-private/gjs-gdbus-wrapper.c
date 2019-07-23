@@ -177,7 +177,7 @@ gjs_dbus_implementation_finalize(GObject *object) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
 
     g_dbus_interface_info_unref (self->priv->ifaceinfo);
-    g_hash_table_unref (self->priv->outstanding_properties);
+    g_hash_table_destroy(self->priv->outstanding_properties);
 
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->finalize(object);
 }
