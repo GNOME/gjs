@@ -5,6 +5,8 @@ locales=$(locale -a)
 case $locales in
   # Prefer C.UTF-8 although it is only available with newer libc
   *C.UTF-8*) tests_locale=C.UTF-8 ;;
+  # C.utf8 has also been observed in the wild
+  *C.utf8*) tests_locale=C.utf8 ;;
 
   # Most systems will probably have this
   *en_US.UTF-8*) tests_locale=en_US.UTF-8 ;;
