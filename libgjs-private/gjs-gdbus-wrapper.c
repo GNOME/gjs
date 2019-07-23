@@ -164,6 +164,14 @@ gjs_dbus_implementation_init(GjsDBusImplementation *self) {
     priv->outstanding_properties = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
 }
 
+static void gjs_dbus_implementation_dispose(GObject* object) {
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
+
+    g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+
+    G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->dispose(object);
+}
+
 static void
 gjs_dbus_implementation_finalize(GObject *object) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
@@ -273,6 +281,7 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     GDBusInterfaceSkeletonClass *skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS(klass);
 
+    gobject_class->dispose = gjs_dbus_implementation_dispose;
     gobject_class->finalize = gjs_dbus_implementation_finalize;
     gobject_class->set_property = gjs_dbus_implementation_set_property;
 
