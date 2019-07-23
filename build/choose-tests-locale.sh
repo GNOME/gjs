@@ -1,6 +1,6 @@
 #!/bin/sh
 
-locales=$(locale -a)
+locales=$(locale -a | xargs -n1)
 
 case $locales in
   # Prefer C.UTF-8 although it is only available with newer libc
