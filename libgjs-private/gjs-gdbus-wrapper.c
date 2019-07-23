@@ -270,10 +270,7 @@ gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
                                    NULL /* error */);
 
     g_hash_table_remove_all(self->priv->outstanding_properties);
-    if (self->priv->idle_id) {
-        g_source_remove(self->priv->idle_id);
-        self->priv->idle_id = 0;
-    }
+    g_clear_handle_id(&self->priv->idle_id, g_source_remove);
 }
 
 void
