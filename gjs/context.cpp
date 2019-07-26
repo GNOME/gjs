@@ -44,6 +44,8 @@
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
+#include <libsoup/soup.h>
+#include <modules/modules.h>
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -589,118 +591,33 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
     return true;
 }
 
-static char* gir_uri_part(const char* uri, int part) {
-    const char* scheme = g_uri_parse_scheme(uri);
+SoupURI* get_gi_uri(const char* uri) { return soup_uri_new(uri); }
 
-    if (scheme != NULL && strcmp(scheme, "gir") == 0) {
-        // ARR: ["gir", url]
-        gchar** protocol_sep_url = g_strsplit(uri, "://", 2);
-        // url
-        gchar* url = protocol_sep_url[1];
-        // ARR: [part0, part1, part2, ...partsn]
-        gchar** parts = g_strsplit(url, "/", -1);
+static char* gir_uri_ns(const char* uri) {
+    SoupURI* url = get_gi_uri(uri);
 
-        g_strfreev(protocol_sep_url);
+    const char* path = soup_uri_get_host(url);
 
-        guint num_of_parts = g_strv_length(parts);
-
-        if (num_of_parts == 0) {
-            // CASE: ""
-            g_warning("gir:// cannot be empty!");
-            g_strfreev(parts);
-            return NULL;
-        } else if (num_of_parts > 2) {
-            // CASE: "A/B/[C]"
-            g_warning("gir:// uris have at most one part.");
-            g_strfreev(parts);
-            return NULL;
-        } else {
-            // CASE: "A/?" or "A?" or "A/B"
-            // ARR: []
-            gchar** lastpart_sep_query =
-                g_strsplit(parts[num_of_parts - 1], "?", 2);
-
-            bool is_query = g_strv_length(lastpart_sep_query) > 1;
-
-            if (!is_query) {
-                if (part == 0) {
-                    gchar* ns = parts[0];
-                    char* ns_cpy = strdup(ns);
-                    g_strfreev(lastpart_sep_query);
-                    g_strfreev(parts);
-
-                    return ns_cpy;
-                } else {
-                    // TODO
-                    return NULL;
-                }
-            }
-
-            gchar* last_part = lastpart_sep_query[0];
-
-            // EX: ?a=0&b=2
-            gchar* query_string = lastpart_sep_query[1];
-
-            // CASE: "A/B"
-            if (num_of_parts == 2 && strlen(last_part) > 0) {
-                g_warning("gir:// uris have at most one part.");
-                g_strfreev(lastpart_sep_query);
-
-                return NULL;
-            }
-
-            gchar** query_parts = g_strsplit(query_string, "&", -1);
-
-            if (part == 0 && strlen(last_part) > 0) {
-                char* ns_cpy = g_strdup(last_part);
-                g_strfreev(parts);
-
-                g_strfreev(lastpart_sep_query);
-
-                return ns_cpy;
-            } else if (part == 0) {
-                gchar* ns = parts[0];
-                char* ns_cpy = g_strdup(ns);
-                g_strfreev(parts);
-                g_strfreev(lastpart_sep_query);
-
-                return ns_cpy;
-            } else {
-                g_strfreev(lastpart_sep_query);
-
-                char* eq;
-                int i = 0;
-                for (eq = query_parts[i]; eq != NULL; eq = query_parts[++i]) {
-                    gchar** eq_parts = g_strsplit(eq, "=", 0);
-
-                    if (strcmp(eq_parts[0], "v") == 0) {
-                        char* version = g_strdup(eq_parts[1]);
-                        g_strfreev(eq_parts);
-                        g_strfreev(parts);
-                        g_strfreev(query_parts);
-                        return version;
-                    }
-
-                    g_strfreev(eq_parts);
-                }
-
-                g_strfreev(parts);
-                g_strfreev(query_parts);
-
-                return NULL;
-            }
-        }
-    } else {
-        g_warning("url did not begin with gir://");
-        return NULL;
-    }
+    return strdup(path);
 }
 
-static char* gir_uri_ns(const char* uri) { return gir_uri_part(uri, 0); }
-static char* gir_uri_version(const char* uri) { return gir_uri_part(uri, 1); }
+static char* gir_uri_version(const char* uri) {
+    SoupURI* url = get_gi_uri(uri);
+    const char* q = soup_uri_get_query(url);
+    if (q == NULL)
+        return NULL;
+
+    GHashTable_autoptr queries = soup_form_decode(q);
+    char* key = g_strdup("v");
+    char* version = (char*)g_hash_table_lookup(queries, key);
+    g_free(key);
+
+    return strdup(version);
+}
+
 static bool is_gir_uri(const char* uri) {
     const char* scheme = g_uri_parse_scheme(uri);
-    return scheme != NULL && strcmp(scheme, "gir") == 0;
+    return scheme != NULL && strcmp(scheme, "gi") == 0;
 }
 
 static char* gir_js_mod_ver(const char* ns, const char* version) {
@@ -730,6 +647,7 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
         return false;
 
     // check if path is relative
+
     if (id[0] == '.' && (id[1] == '/' || (id[1] == '.' && id[2] == '/'))) {
         // If a module has a path, we'll have stored it in the host field
         JS::Value mod_loc_val = JS::GetModuleHostDefinedField(mod_obj);
@@ -743,11 +661,12 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
             return false;
         }
 
-        GjsAutoChar mod_dir = g_path_get_dirname(g_strdup(mod_loc.get()));
+        GjsAutoChar mod_dir(g_path_get_dirname(g_strdup(mod_loc.get())));
 
         GFile* output =
             g_file_new_for_commandline_arg_and_cwd(id.get(), mod_dir);
-        GjsAutoChar full_path = g_file_get_path(output);
+        GjsAutoChar full_path(g_file_get_path(output));
+
         auto module = m_id_to_module.find(full_path.get());
         if (module != m_id_to_module.end()) {
             args.rval().setObject(*(module->second));
@@ -793,8 +712,8 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
         auto module = m_id_to_module.find(id.get());
         if (gir_mod != NULL && module == m_id_to_module.end()) {
-            register_module(id.get(), "//internal_gi_ns//", gir_mod,
-                            strlen(gir_mod), nullptr);
+            register_module(id.get(), id.get(), gir_mod, strlen(gir_mod),
+                            nullptr);
         }
 
         g_free(gir_mod);
@@ -803,10 +722,42 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
     }
 
     auto module = m_id_to_module.find(id.get());
+
     if (module == m_id_to_module.end()) {
-        gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
-                  id.get());
-        return false;
+        const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
+        GjsAutoChar filename = g_strdup_printf("%s.js", id.get());
+        GjsAutoChar full_path =
+            g_build_filename(dirname, filename.get(), nullptr);
+        GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+
+        bool exists = g_file_query_exists(gfile, NULL);
+
+        if (exists) {
+            char* mod_text_raw;
+            gsize mod_len;
+            GError* err = NULL;
+
+            if (!g_file_load_contents(gfile, NULL, &mod_text_raw, &mod_len,
+                                      NULL, &err)) {
+                gjs_throw(m_cx, "Failed to read internal resource: %s \n%s",
+                          full_path.get(), err->message);
+
+                return false;
+            }
+
+            GjsAutoChar mod_text(mod_text_raw);
+
+            if (!register_module(id.get(), full_path, mod_text, mod_len, NULL))
+                return false;
+
+            args.rval().setObject(*m_id_to_module[id.get()]);
+
+            return true;
+        } else {
+            gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
+                      id.get());
+            return false;
+        }
     }
 
     args.rval().setObject(*module->second);
@@ -827,8 +778,8 @@ bool GjsContextPrivate::register_module(const char* identifier,
     JSAutoCompartment ac(m_cx, m_global);
 
     // Module registration uses exceptions to report errors
-    // so we'll store the exception state, clear it, attempt to load the module,
-    // then restore the original exception state.
+    // so we'll store the exception state, clear it, attempt to load the
+    // module, then restore the original exception state.
     JS::AutoSaveExceptionState exp_state(m_cx);
 
     if (register_module_inner(gjs_cx, identifier, filename, mod_text, mod_len))
@@ -935,13 +886,6 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
-
-    const char* sys_mod = "export default (imports.system)";
-    gjs_context_register_module(public_context, "system", "//internal//",
-                                sys_mod, strlen(sys_mod), nullptr);
-    const char* gi_mod = "export default (imports.gi)";
-    gjs_context_register_module(public_context, "gi", "//internal//", gi_mod,
-                                strlen(gi_mod), nullptr);
 
     JS::RootedFunction mod_resolve(
         cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
@@ -1059,8 +1003,8 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
 /*
  * GjsContextPrivate::schedule_gc_if_needed:
  *
- * Does a minor GC immediately if the JS engine decides one is needed, but also
- * schedules a full GC in the next idle time.
+ * Does a minor GC immediately if the JS engine decides one is needed, but
+ * also schedules a full GC in the next idle time.
  */
 void GjsContextPrivate::schedule_gc_if_needed(void) {
     // We call JS_MaybeGC immediately, but defer a check for a full GC cycle
@@ -1182,8 +1126,8 @@ bool GjsContextPrivate::run_jobs(void) {
                  * System.exit() works in the interactive shell and when
                  * exiting the interpreter. */
                 if (!JS_IsExceptionPending(m_cx)) {
-                    /* System.exit() is an uncatchable exception, but does not
-                     * indicate a bug. Log everything else. */
+                    /* System.exit() is an uncatchable exception, but does
+                     * not indicate a bug. Log everything else. */
                     if (!should_exit(nullptr))
                         g_critical(
                             "Promise callback terminated with uncatchable "
@@ -1260,12 +1204,12 @@ void gjs_context_gc(GjsContext* context) {
 /**
  * gjs_context_get_all:
  *
- * Returns a newly-allocated list containing all known instances of #GjsContext.
- * This is useful for operating on the contexts from a process-global situation
- * such as a debugger.
+ * Returns a newly-allocated list containing all known instances of
+ * #GjsContext. This is useful for operating on the contexts from a
+ * process-global situation such as a debugger.
  *
- * Return value: (element-type GjsContext) (transfer full): Known #GjsContext
- * instances
+ * Return value: (element-type GjsContext) (transfer full): Known
+ * #GjsContext instances
  */
 GList* gjs_context_get_all(void) {
     GList* result;
@@ -1281,8 +1225,8 @@ GList* gjs_context_get_all(void) {
 /**
  * gjs_context_get_native_context:
  *
- * Returns a pointer to the underlying native context.  For SpiderMonkey, this
- * is a JSContext *
+ * Returns a pointer to the underlying native context.  For SpiderMonkey,
+ * this is a JSContext *
  */
 void* gjs_context_get_native_context(GjsContext* js_context) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), NULL);
@@ -1343,7 +1287,8 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
-     * uncaught exceptions have been reported since draining runs callbacks. */
+     * uncaught exceptions have been reported since draining runs callbacks.
+     */
     {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs() && ok;
@@ -1355,8 +1300,8 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     if (!ok) {
         uint8_t code;
         if (should_exit(&code)) {
-            /* exit_status_p is public API so can't be changed, but should be
-             * uint8_t, not int */
+            /* exit_status_p is public API so can't be changed, but should
+             * be uint8_t, not int */
             *exit_status_p = code;
             g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
                         "Exit with code %d", code);
@@ -1422,10 +1367,9 @@ bool gjs_context_eval_file(GjsContext* js_context, const char* filename,
  * @filename: filename to use as the origin of @script
  * @retval: location for the return value of @script
  *
- * Executes @script with a local scope so that nothing from the script leaks out
- * into the global scope.
- * If @scope_object is given, then everything that @script placed in the global
- * namespace is defined on @scope_object.
+ * Executes @script with a local scope so that nothing from the script leaks
+ * out into the global scope. If @scope_object is given, then everything
+ * that @script placed in the global namespace is defined on @scope_object.
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
@@ -1487,8 +1431,8 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
  * @rval: Location for the return value
  *
  * Use this instead of JS_CallFunctionValue(), because it schedules a GC if
- * one is needed. It's good practice to check if a GC should be run every time
- * we return from JS back into C++.
+ * one is needed. It's good practice to check if a GC should be run every
+ * time we return from JS back into C++.
  */
 bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
                                       JS::HandleValue func_val,
