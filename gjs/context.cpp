@@ -450,10 +450,12 @@ static void gjs_context_finalize(GObject* object) {
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
-bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
-                                    GError** error) {
+bool GjsContextPrivate::eval_module(const char* identifier,
+                                    uint8_t* exit_status_p, GError** error) {
     bool ret = false;
+
     bool auto_profile = m_should_profile;
+
     if (auto_profile &&
         (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
         auto_profile = false;
@@ -476,13 +478,13 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
         return false;
     }
 
+    bool ok = true;
+
     if (!JS::ModuleEvaluate(m_cx, it->second)) {
         gjs_log_exception(m_cx);
         g_warning("Failed to evaluate module! %s", identifier);
-        return false;
+        ok = false;
     }
-
-    *code = 0;
 
     schedule_gc_if_needed();
 
@@ -490,12 +492,10 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
         g_warning(
             "ModuleEvaluation returned true but exception was pending; "
             "did somebody call gjs_throw() without returning false?");
-        return false;
+        ok = false;
     }
 
     gjs_debug(GJS_DEBUG_CONTEXT, "Module evaluation succeeded");
-
-    bool ok = true;
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
@@ -509,10 +509,13 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
         gjs_profiler_stop(m_profiler);
 
     if (!ok) {
-        if (should_exit(code)) {
+        uint8_t code;
+
+        if (should_exit(&code)) {
+            *exit_status_p = code;
             g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
-                        "Exit with code %d", *code);
-            goto out;  // Don't log anything
+                        "Exit with code %d", code);
+            goto out; /* Don't log anything */
         }
 
         if (!JS_IsExceptionPending(m_cx)) {
@@ -528,8 +531,13 @@ bool GjsContextPrivate::eval_module(const char* identifier, uint8_t* code,
 
         gjs_log_exception(m_cx);
         /* No exit code from script, but we don't want to exit(0) */
-        *code = 1;
+        *exit_status_p = 1;
         goto out;
+    }
+
+    if (exit_status_p) {
+        /* Assume success if no integer was returned */
+        *exit_status_p = 0;
     }
 
     ret = true;
@@ -1246,13 +1254,13 @@ bool gjs_context_eval(GjsContext* js_context, const char* script,
 }
 
 bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
-                             uint8_t* code, GError** error) {
+                             uint8_t* exit_status_p, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
-    return gjs->eval_module(identifier, code, error);
+    return gjs->eval_module(identifier, exit_status_p, error);
 }
 
 bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
