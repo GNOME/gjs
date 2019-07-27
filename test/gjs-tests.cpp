@@ -130,46 +130,8 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
     g_object_unref(context);
 }
 
-static void gjstest_test_func_gjs_context_register_module(void) {
-    GjsContext* context = gjs_context_new();
-    uint8_t exit_code = 0;
-    GError* error = nullptr;
-
-    g_assert_true(gjs_context_register_module(
-        context, "test", nullptr, "import {foo} from 'test_rep'", 26, &error));
-    g_assert_no_error(error);
-
-    // Should fail because the module doesn't parse
-    g_assert_false(gjs_context_register_module(context, "test_rep", nullptr,
-                                               "export = 5;", 11, &error));
-    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
-    g_error_free(error);
-    error = nullptr;
-
-    // Should succeed because the former name was never registered
-    g_assert_true(gjs_context_register_module(
-        context, "test_rep", nullptr, "export const foo = 5;", 21, &error));
-    g_assert_no_error(error);
-
-    // Should fail because the name is already taken
-    g_assert_false(gjs_context_register_module(
-        context, "test_rep", nullptr, "export const bar = 5;", 21, &error));
-    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
-    g_error_free(error);
-    error = nullptr;
-
-    // Execute the modules to ensure the imports were successfully resolved
-    g_assert_true(gjs_context_eval_module(context, "test", &exit_code, &error));
-    g_assert_no_error(error);
-    g_assert_cmpint(exit_code, ==, 0);
-
-    g_object_unref(context);
-}
-
-static void
-gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(GjsUnitTestFixture *fx,
-                                                       gconstpointer       unused)
-{
+static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
+    GjsUnitTestFixture* fx, const void*) {
     JS::RootedValue js_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
     g_assert(js_string.isString());
@@ -437,13 +399,8 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
-    g_test_add_func("/gjs/context/eval/non-zero-terminated",
-                    gjstest_test_func_gjs_context_eval_non_zero_terminated);
-    g_test_add_func("/gjs/context/module/register",
-                    gjstest_test_func_gjs_context_register_module);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
-    g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/short_string",
                     gjstest_test_strip_shebang_no_advance_for_too_short_string);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);

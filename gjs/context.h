@@ -36,6 +36,11 @@
 
 #include <glib.h>
 
+#include <gjs/macros.h>
+#include <gjs/profiler.h>
+
+G_BEGIN_DECLS
+
 typedef struct _GjsContext      GjsContext;
 typedef struct _GjsContextClass GjsContextClass;
 

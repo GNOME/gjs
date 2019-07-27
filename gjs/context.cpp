@@ -41,6 +41,21 @@
 #include <utility>  // for move
 
 #include <gio/gio.h>
+#include "byteArray.h"
+#include "context-private.h"
+#include "engine.h"
+#include "gi/object.h"
+#include "gi/private.h"
+#include "gi/repo.h"
+#include "gjs/jsapi-util-args.h"
+#include "global.h"
+#include "importer.h"
+#include "jsapi-util.h"
+#include "jsapi-wrapper.h"
+#include "mem.h"
+#include "native.h"
+#include "profiler-private.h"
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -48,8 +63,8 @@
 #include <modules/modules.h>
 
 #ifdef G_OS_WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
 #endif
 
 #include "gjs/jsapi-wrapper.h"
@@ -93,49 +108,9 @@ void GjsContextPrivate::EnvironmentPreparer::invoke(JS::HandleObject scope,
 
 struct _GjsContext {
     GObject parent;
-    JSContext *context;
-    JS::Heap<JSObject*> global;
-    GThread *owner_thread;
-
-    char *program_name;
-
-    char **search_path;
-
-    bool destroying;
-    bool in_gc_sweep;
-
-    bool should_exit;
-    uint8_t exit_code;
-
-    guint    auto_gc_id;
-    bool     force_gc;
-
-    std::array<JS::PersistentRootedId*, GJS_STRING_LAST> const_strings;
-
-    JS::PersistentRooted<JobQueue> *job_queue;
-    unsigned idle_drain_handler;
-    bool draining_job_queue;
-
-    std::unordered_map<uint64_t, GjsAutoChar> unhandled_rejection_stacks;
-    std::unordered_map<std::string, JS::PersistentRootedObject> idToModule;
-
-    GjsProfiler *profiler;
-    bool should_profile : 1;
-    bool should_listen_sigusr2 : 1;
-
-    GjsEnvironmentPreparer environment_preparer;
 };
 
-/* Keep this consistent with GjsConstString */
-static const char *const_strings[] = {
-    "constructor", "prototype", "length",
-    "imports", "__parentModule__", "__init__", "searchPath",
-    "__gjsKeepAlive", "__gjsPrivateNS",
-    "gi", "versions", "overrides",
-    "_init", "_instance_init", "_new_internal", "new",
-    "message", "code", "stack", "fileName", "lineNumber", "columnNumber",
-    "name", "x", "y", "width", "height", "__modulePath__"
-};
+struct _GjsContextClass {
     GObjectClass parent;
 };
 
@@ -921,19 +896,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to define properties on global object");
     }
 
-    JS::RootedFunction mod_resolve(
-        cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
-    SetModuleResolveHook(cx, mod_resolve);
-
-    JS_EndRequest(cx);
-
-    g_mutex_lock (&contexts_lock);
-    all_contexts = g_list_prepend(all_contexts, object);
-    g_mutex_unlock (&contexts_lock);
-
-    setup_dump_heap();
-
-    g_object_weak_ref(object, gjs_object_context_dispose_notify, nullptr);
+    JS_EndRequest(m_cx);
 }
 
 static void gjs_context_get_property(GObject* object, guint prop_id,

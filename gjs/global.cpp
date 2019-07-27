@@ -27,6 +27,8 @@
 
 #include <glib.h>
 
+#include "gjs/jsapi-wrapper.h"
+
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
@@ -34,83 +36,9 @@
 #include "gjs/jsapi-util.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_set_module_resolve_hook(JSContext* cx, unsigned argc,
-                                        JS::Value* vp) {
-    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    if (args.length() != 1) {
-        gjs_throw(cx, "Must pass 1 arguments to setModuleResolveHook()");
-        return false;
-    }
-
-    if (!args[0].isObject() || !JS_ObjectIsFunction(cx, &args[0].toObject())) {
-        const char* typeName = JS::InformalValueTypeName(args[0]);
-        gjs_throw(cx, "expected hook function, got %s", typeName);
-        return false;
-    }
-    JSFunction* fptr = JS_GetObjectFunction(&args[0].toObject());
-    JS::RootedFunction f(cx, fptr);
-    JS::SetModuleResolveHook(cx, f);
-
-    args.rval().setUndefined();
-    return true;
-}
-
-static bool gjs_parse_module(JSContext* context, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    if (argv.length() == 0) {
-        gjs_throw(context, "Must pass 1 or 2 arguments to parseModule()");
-        return false;
-    }
-
-    if (!argv[0].isString()) {
-        const char* typeName = InformalValueTypeName(argv[0]);
-        gjs_throw(context, "expected string to compile, got %s", typeName);
-        return false;
-    }
-
-    JSString* scriptContents = argv[0].toString();
-    if (!scriptContents)
-        return false;
-
-    JS::UniqueChars filename;
-    JS::CompileOptions options(context);
-    if (argv.length() > 1) {
-        if (!argv[1].isString()) {
-            const char* typeName = InformalValueTypeName(argv[1]);
-            JS_ReportErrorASCII(context, "expected filename string, got %s",
-                                typeName);
-            return false;
-        }
-
-        JS::RootedString str(context, argv[1].toString());
-        filename.reset(JS_EncodeString(context, str));
-        if (!filename)
-            return false;
-
-        options.setFileAndLine(filename.get(), 1);
-    } else {
-        options.setFileAndLine("<string>", 1);
-    }
-
-    js::AutoStableStringChars stableChars(context);
-    if (!stableChars.initTwoByte(context, scriptContents))
-        return false;
-
-    const char16_t* chars = stableChars.twoByteRange().begin().get();
-    JS::SourceBufferHolder srcBuf(chars, JS_GetStringLength(scriptContents),
-                                  JS::SourceBufferHolder::NoOwnership);
-
-    JS::RootedObject module(context);
-    CompileModule(context, options, srcBuf, &module);
-    if (!module)
-        return false;
-
-    argv.rval().setObject(*module);
-    return true;
-}
-
-static bool
-              JS::HandleObject global)
+static bool run_bootstrap(JSContext* cx, const char* bootstrap_script,
+                          JS::HandleObject global) {
+    GjsAutoChar uri = g_strdup_printf(
         "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
     JSAutoCompartment ac(cx, global);
