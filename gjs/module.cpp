@@ -38,16 +38,14 @@
 #include "util/log.h"
 
 class GjsModule {
-    char *m_name;
+    char* m_name;
 
-    GjsModule(const char *name)
-    {
+    GjsModule(const char* name) {
         m_name = g_strdup(name);
         GJS_INC_COUNTER(module);
     }
 
-    ~GjsModule()
-    {
+    ~GjsModule() {
         g_free(m_name);
         GJS_DEC_COUNTER(module);
     }
@@ -55,31 +53,22 @@ class GjsModule {
     /* Private data accessors */
 
     GJS_USE
-    static inline GjsModule *
-    priv(JSObject *module)
-    {
-        return static_cast<GjsModule *>(JS_GetPrivate(module));
+    static inline GjsModule* priv(JSObject* module) {
+        return static_cast<GjsModule*>(JS_GetPrivate(module));
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
     GJS_USE
-    static JSObject *
-    create(JSContext  *cx,
-           const char *name)
-    {
-        JSObject *module = JS_NewObject(cx, &GjsModule::klass);
+    static JSObject* create(JSContext* cx, const char* name) {
+        JSObject* module = JS_NewObject(cx, &GjsModule::klass);
         JS_SetPrivate(module, new GjsModule(name));
         return module;
     }
 
     /* Defines the empty module as a property on the importer */
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    define_import(JSContext       *cx,
-                  JS::HandleObject module,
-                  JS::HandleObject importer,
-                  JS::HandleId     name) const
-    {
+    bool define_import(JSContext* cx, JS::HandleObject module,
+                       JS::HandleObject importer, JS::HandleId name) const {
         if (!JS_DefinePropertyById(cx, importer, name, module,
                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
             gjs_debug(GJS_DEBUG_IMPORTER, "Failed to define '%s' in importer",
@@ -128,20 +117,16 @@ class GjsModule {
 
     /* Loads JS code from a file and imports it */
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    import_file(JSContext       *cx,
-                JS::HandleObject module,
-                GFile           *file)
-    {
-        GError *error = nullptr;
-        char *unowned_script;
+    bool import_file(JSContext* cx, JS::HandleObject module, GFile* file) {
+        GError* error = nullptr;
+        char* unowned_script;
         size_t script_len = 0;
 
         if (!(g_file_load_contents(file, nullptr, &unowned_script, &script_len,
                                    nullptr, &error)))
             return gjs_throw_gerror_message(cx, error);
 
-        GjsAutoChar script = unowned_script;  /* steals ownership */
+        GjsAutoChar script = unowned_script; /* steals ownership */
         g_assert(script);
 
         GjsAutoChar full_path = g_file_get_parse_name(file);
@@ -151,16 +136,12 @@ class GjsModule {
     /* JSClass operations */
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    resolve_impl(JSContext       *cx,
-                 JS::HandleObject module,
-                 JS::HandleId     id,
-                 bool            *resolved)
-    {
+    bool resolve_impl(JSContext* cx, JS::HandleObject module, JS::HandleId id,
+                      bool* resolved) {
         JS::RootedObject lexical(cx, JS_ExtensibleLexicalEnvironment(module));
         if (!lexical) {
             *resolved = false;
-            return true;  /* nothing imported yet */
+            return true; /* nothing imported yet */
         }
 
         if (!JS_HasPropertyById(cx, lexical, id, resolved))
@@ -172,27 +153,24 @@ class GjsModule {
          * be supported according to ES6. For compatibility with earlier GJS,
          * we treat it as if it were a real property, but warn about it. */
 
-        g_warning("Some code accessed the property '%s' on the module '%s'. "
-                  "That property was defined with 'let' or 'const' inside the "
-                  "module. This was previously supported, but is not correct "
-                  "according to the ES6 standard. Any symbols to be exported "
-                  "from a module must be defined with 'var'. The property "
-                  "access will work as previously for the time being, but "
-                  "please fix your code anyway.",
-                  gjs_debug_id(id).c_str(), m_name);
+        g_warning(
+            "Some code accessed the property '%s' on the module '%s'. "
+            "That property was defined with 'let' or 'const' inside the "
+            "module. This was previously supported, but is not correct "
+            "according to the ES6 standard. Any symbols to be exported "
+            "from a module must be defined with 'var'. The property "
+            "access will work as previously for the time being, but "
+            "please fix your code anyway.",
+            gjs_debug_id(id).c_str(), m_name);
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx);
         return JS_GetPropertyDescriptorById(cx, lexical, id, &desc) &&
-            JS_DefinePropertyById(cx, module, id, desc);
+               JS_DefinePropertyById(cx, module, id, desc);
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool
-    resolve(JSContext       *cx,
-            JS::HandleObject module,
-            JS::HandleId     id,
-            bool            *resolved)
-    {
+    static bool resolve(JSContext* cx, JS::HandleObject module, JS::HandleId id,
+                        bool* resolved) {
         return priv(module)->resolve_impl(cx, module, id, resolved);
     }
 
@@ -217,16 +195,10 @@ class GjsModule {
  public:
     /* Carries out the import operation */
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject *
-    import(JSContext       *cx,
-           JS::HandleObject importer,
-           JS::HandleId     id,
-           const char      *name,
-           GFile           *file)
-    {
+    static JSObject* import(JSContext* cx, JS::HandleObject importer,
+                            JS::HandleId id, const char* name, GFile* file) {
         JS::RootedObject module(cx, GjsModule::create(cx, name));
-        if (!module ||
-            !priv(module)->define_import(cx, module, importer, id) ||
+        if (!module || !priv(module)->define_import(cx, module, importer, id) ||
             !priv(module)->import_file(cx, module, file))
             return nullptr;
 
@@ -250,13 +222,8 @@ class GjsModule {
  *
  * Returns: the JS module object, or nullptr on failure.
  */
-JSObject *
-gjs_module_import(JSContext       *cx,
-                  JS::HandleObject importer,
-                  JS::HandleId     id,
-                  const char      *name,
-                  GFile           *file)
-{
+JSObject* gjs_module_import(JSContext* cx, JS::HandleObject importer,
+                            JS::HandleId id, const char* name, GFile* file) {
     return GjsModule::import(cx, importer, id, name, file);
 }
 
