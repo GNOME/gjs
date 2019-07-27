@@ -599,10 +599,10 @@ bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
     return true;
 }
 
-SoupURI* get_gi_uri(const char* uri) { return soup_uri_new(uri); }
+static SoupURI* get_gi_uri(const char* uri) { return soup_uri_new(uri); }
 
 static char* gir_uri_ns(const char* uri) {
-    SoupURI* url = get_gi_uri(uri);
+    SoupURI_autoptr url = get_gi_uri(uri);
 
     const char* path = soup_uri_get_host(url);
 
@@ -610,15 +610,17 @@ static char* gir_uri_ns(const char* uri) {
 }
 
 static char* gir_uri_version(const char* uri) {
-    SoupURI* url = get_gi_uri(uri);
+    SoupURI_autoptr url = get_gi_uri(uri);
+
     const char* q = soup_uri_get_query(url);
-    if (q == NULL)
+
+    if (q == NULL) {
         return NULL;
+    }
 
     GHashTable_autoptr queries = soup_form_decode(q);
-    char* key = g_strdup("v");
+    GjsAutoChar key = g_strdup("v");
     char* version = (char*)g_hash_table_lookup(queries, key);
-    g_free(key);
 
     return strdup(version);
 }
@@ -701,9 +703,9 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
     }
 
     if (is_gir_uri(id.get())) {
-        char* ns = gir_uri_ns(id.get());
-        char* version = gir_uri_version(id.get());
-        char* gir_mod = NULL;
+        GjsAutoChar ns = gir_uri_ns(id.get());
+        GjsAutoChar version = gir_uri_version(id.get());
+        GjsAutoChar gir_mod = NULL;
         if (ns == NULL && version == NULL) {
             gjs_throw(m_cx, "Attempted to load invalid module path %s",
                       id.get());
@@ -723,10 +725,6 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
             register_module(id.get(), id.get(), gir_mod, strlen(gir_mod),
                             nullptr);
         }
-
-        g_free(gir_mod);
-        g_free(ns);
-        g_free(version);
     }
 
     auto module = m_id_to_module.find(id.get());
