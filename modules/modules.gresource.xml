@@ -15,6 +15,11 @@
     <file>modules/overrides/GObject.js</file>
     <file>modules/overrides/Gtk.js</file>
 
+    <file>modules/esm/system.js</file>
+    <file>modules/esm/gi.js</file>
+    <file>modules/esm/gettext.js</file>
+    <file>modules/esm/byteArray.js</file>
+
     <file>modules/byteArray.js</file>
     <file>modules/cairo.js</file>
     <file>modules/gettext.js</file>

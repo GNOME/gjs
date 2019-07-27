@@ -194,7 +194,8 @@ class GjsContextPrivate {
                          ssize_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool eval_module(const char* identifier, uint8_t* code, GError** error);
+    bool eval_module(const char* identifier, uint8_t* exit_code_p,
+                     GError** error);
     bool module_resolve(unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
