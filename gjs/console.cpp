@@ -71,11 +71,14 @@ static GOptionEntry entries[] = {
 // clang-format on
 
 GJS_USE
-static char **strndupv(int n, char *const *strv) {
+static char **
+strndupv(int          n, 
+         char *const *strv)
+{
     int ix;
     if (n == 0)
         return NULL;
-    char **retval = g_new(char*, n + 1);
+    char **retval = g_new(char *, n + 1);
     for (ix = 0; ix < n; ix++)
         retval[ix] = g_strdup(strv[ix]);
     retval[n] = NULL;
@@ -83,7 +86,10 @@ static char **strndupv(int n, char *const *strv) {
 }
 
 GJS_USE
-static char **strcatv(char **strv1, char **strv2) {
+static char **
+strcatv(char **strv1,
+        char **strv2)
+{
     if (strv1 == NULL && strv2 == NULL)
         return NULL;
     if (strv1 == NULL)
@@ -93,7 +99,7 @@ static char **strcatv(char **strv1, char **strv2) {
 
     unsigned len1 = g_strv_length(strv1);
     unsigned len2 = g_strv_length(strv2);
-    char **retval = g_new(char*, len1 + len2 + 1);
+    char **retval = g_new(char *, len1 + len2 + 1);
     unsigned ix;
 
     for (ix = 0; ix < len1; ix++)
@@ -131,7 +137,7 @@ static void check_script_args_for_stray_gjs_args(int argc, char *const *argv) {
         { NULL }
     };
     // clang-format on
-    char **argv_copy = g_new(char*, argc + 2);
+    char **argv_copy = g_new(char *, argc + 2);
     int ix;
 
     argv_copy[0] = g_strdup("dummy"); /* Fake argv[0] for GOptionContext */
@@ -362,7 +368,7 @@ int main(int argc, char **argv) {
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV", script_argc,
-                                         (const char**)script_argv, &error)) {
+                                         (const char **)script_argv, &error)) {
         code = 1;
         g_printerr("Failed to defined ARGV: %s", error->message);
         g_clear_error(&error);
