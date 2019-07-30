@@ -120,7 +120,8 @@ static gboolean parse_profile_arg(const char* option_name G_GNUC_UNUSED,
     return true;
 }
 
-static void check_script_args_for_stray_gjs_args(int           argc, 
+static void
+check_script_args_for_stray_gjs_args(int           argc, 
                                                  char * const *argv)
 {
     GError *error = NULL;
@@ -189,7 +190,8 @@ static void check_script_args_for_stray_gjs_args(int           argc,
     g_strfreev(argv_copy);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     GOptionContext *context;
     GError *error = NULL;
@@ -349,10 +351,10 @@ int main(int argc, char **argv)
     }
 
     if (enable_profiler && profile_output_path) {
-        GjsProfiler* profiler = gjs_context_get_profiler(js_context);
+        GjsProfiler *profiler = gjs_context_get_profiler(js_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
     } else if (enable_profiler && tracefd > -1) {
-        GjsProfiler *profiler = gjs_context_get_profiler(js_context);
+        GjsProfiler* profiler = gjs_context_get_profiler(js_context);
         gjs_profiler_set_fd(profiler, tracefd);
         tracefd = -1;
     }
@@ -363,8 +365,9 @@ int main(int argc, char **argv)
     }
 
     /* prepare command line arguments */
-    if (!gjs_context_define_string_array(js_context, "ARGV", script_argc,
-                                         (const char **)script_argv, &error)) {
+    if (!gjs_context_define_string_array(js_context, "ARGV",
+                                         script_argc, (const char **)script_argv,
+                                         &error)) {
         code = 1;
         g_printerr("Failed to defined ARGV: %s", error->message);
         g_clear_error(&error);
@@ -401,7 +404,7 @@ int main(int argc, char **argv)
         goto out;
     }
 
-out:
+ out:
     g_strfreev(gjs_argv_addr);
 
     /* Probably doesn't make sense to write statistics on failure */

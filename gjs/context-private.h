@@ -69,18 +69,18 @@ struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
 }  // namespace JS
 
 class GjsContextPrivate {
-    GjsContext *m_public_context;
-    JSContext *m_cx;
+    GjsContext* m_public_context;
+    JSContext* m_cx;
     JS::Heap<JSObject*> m_global;
-    GThread *m_owner_thread;
+    GThread* m_owner_thread;
 
-    char *m_program_name;
+    char* m_program_name;
 
-    char **m_search_path;
+    char** m_search_path;
 
     unsigned m_auto_gc_id;
 
-    GjsAtoms *m_atoms;
+    GjsAtoms* m_atoms;
 
     JobQueue m_job_queue;
     unsigned m_idle_drain_handler;
@@ -88,12 +88,12 @@ class GjsContextPrivate {
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
     std::unordered_map<std::string, JS::PersistentRootedObject> m_id_to_module;
 
-    GjsProfiler *m_profiler;
+    GjsProfiler* m_profiler;
 
     /* Environment preparer needed for debugger, taken from SpiderMonkey's
      * JS shell */
     struct EnvironmentPreparer final : protected js::ScriptEnvironmentPreparer {
-        JSContext *m_cx;
+        JSContext* m_cx;
 
         explicit EnvironmentPreparer(JSContext *cx) : m_cx(cx) {
             js::SetScriptEnvironmentPreparer(m_cx, this);
@@ -104,8 +104,8 @@ class GjsContextPrivate {
     EnvironmentPreparer m_environment_preparer;
 
     // Weak pointer mapping from fundamental native pointer to JSObject
-    JS::WeakCache<FundamentalTable> *m_fundamental_table;
-    JS::WeakCache<GTypeTable> *m_gtype_table;
+    JS::WeakCache<FundamentalTable>* m_fundamental_table;
+    JS::WeakCache<GTypeTable>* m_gtype_table;
 
     // List that holds JSObject GObject wrappers for JS-created classes, from
     // the time of their creation until their GObject instance init function is
@@ -126,8 +126,8 @@ class GjsContextPrivate {
     int64_t m_sweep_begin_time;
 
     void schedule_gc_internal(bool force_gc);
-    static gboolean trigger_gc_if_needed(void *data);
-    static gboolean drain_job_queue_idle_handler(void *data);
+    static gboolean trigger_gc_if_needed(void* data);
+    static gboolean drain_job_queue_idle_handler(void* data);
     void warn_about_unhandled_promise_rejections(void);
     void reset_exit(void) {
         m_should_exit = false;
@@ -142,29 +142,29 @@ class GjsContextPrivate {
 
 
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
-    GJS_USE static GjsContextPrivate *from_cx(JSContext *cx) {
+    GJS_USE static GjsContextPrivate* from_cx(JSContext *cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
     }
-    GJS_USE static GjsContextPrivate *from_object(GObject *public_context);
-    GJS_USE static GjsContextPrivate *from_object(GjsContext *public_context);
-    GJS_USE static GjsContextPrivate *from_current_context(void) {
+    GJS_USE static GjsContextPrivate* from_object(GObject *public_context);
+    GJS_USE static GjsContextPrivate* from_object(GjsContext *public_context);
+    GJS_USE static GjsContextPrivate* from_current_context(void) {
         return from_object(gjs_context_get_current());
     }
 
-    GjsContextPrivate(JSContext *cx, GjsContext *public_context);
+    GjsContextPrivate(JSContext* cx, GjsContext* public_context);
     ~GjsContextPrivate(void);
 
     /* Accessors */
-    GJS_USE GjsContext *public_context(void) const { return m_public_context; }
-    GJS_USE JSContext *context(void) const { return m_cx; }
-    GJS_USE JSObject *global(void) const { return m_global.get(); }
-    GJS_USE GjsProfiler *profiler(void) const { return m_profiler; }
+    GJS_USE GjsContext* public_context(void) const { return m_public_context; }
+    GJS_USE JSContext* context(void) const { return m_cx; }
+    GJS_USE JSObject* global(void) const { return m_global.get(); }
+    GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
     GJS_USE const GjsAtoms& atoms(void) const { return *m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
     GJS_USE bool sweeping(void) const { return m_in_gc_sweep; }
-    GJS_USE const char *program_name(void) const { return m_program_name; }
-    void set_program_name(char *value) { m_program_name = value; }
-    void set_search_path(char **value) { m_search_path = value; }
+    GJS_USE const char* program_name(void) const { return m_program_name; }
+    void set_program_name(char* value) { m_program_name = value; }
+    void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
@@ -182,16 +182,16 @@ class GjsContextPrivate {
         return m_object_init_list;
     }
     GJS_USE
-    static const GjsAtoms& atoms(JSContext *cx) {
+    static const GjsAtoms& atoms(JSContext* cx) {
         return *(from_cx(cx)->m_atoms);
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool eval(const char *script, ssize_t script_len, const char *filename,
-              int *exit_status_p, GError **error);
+    bool eval(const char* script, ssize_t script_len, const char* filename,
+              int* exit_status_p, GError** error);
     GJS_JSAPI_RETURN_CONVENTION
-    bool eval_with_scope(JS::HandleObject scope_object, const char *script,
-                         ssize_t script_len, const char *filename,
+    bool eval_with_scope(JS::HandleObject scope_object, const char* script,
+                         ssize_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
     GJS_JSAPI_RETURN_CONVENTION
     bool eval_module(const char *identifier, uint8_t *exit_code_p,
