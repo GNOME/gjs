@@ -62,7 +62,9 @@
  * static analysis tools to do better consistency checks. It's also intended as
  * documentation for the programmer.
  */
-#define GJS_JSAPI_RETURN_CONVENTION GJS_USE
+#define GJS_JSAPI_RETURN_CONVENTION \
+    GJS_USE                         \
+    __attribute__((annotate("jsapi_return_convention")))
 
 #ifdef __GNUC__
 #    define GJS_ALWAYS_INLINE __attribute__((always_inline))
