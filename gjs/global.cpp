@@ -36,8 +36,10 @@
 #include "gjs/jsapi-util.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool run_bootstrap(JSContext* cx, const char* bootstrap_script,
-                          JS::HandleObject global) {
+static bool run_bootstrap(JSContext       *cx, 
+                          const char      *bootstrap_script,
+                          JS::HandleObject global)
+{
     GjsAutoChar uri = g_strdup_printf(
         "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
