@@ -58,13 +58,13 @@ class GjsModule {
     static inline GjsModule *
     priv(JSObject *module)
     {
-        return static_cast<GjsModule*>(JS_GetPrivate(module));
+        return static_cast<GjsModule* >(JS_GetPrivate(module));
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
     GJS_USE
     static JSObject *
-    create(JSContext *cx,
+    create(JSContext  *cx,
            const char *name)
     {
         JSObject *module = JS_NewObject(cx, &GjsModule::klass);
@@ -143,7 +143,7 @@ class GjsModule {
                                    nullptr, &error)))
             return gjs_throw_gerror_message(cx, error);
 
-        GjsAutoChar script = unowned_script; /* steals ownership */
+        GjsAutoChar script = unowned_script;  /* steals ownership */
         g_assert(script);
 
         GjsAutoChar full_path = g_file_get_parse_name(file);
@@ -218,6 +218,7 @@ class GjsModule {
 
  public:
     /* Carries out the import operation */
+    GJS_JSAPI_RETURN_CONVENTION
     static JSObject *
     import(JSContext       *cx,
            JS::HandleObject importer,
@@ -250,8 +251,13 @@ class GjsModule {
  *
  * Returns: the JS module object, or nullptr on failure.
  */
-JSObject *gjs_module_import(JSContext *cx, JS::HandleObject importer,
-                            JS::HandleId id, const char *name, GFile *file) {
+JSObject *
+gjs_module_import(JSContext       *cx,
+                  JS::HandleObject importer,
+                  JS::HandleId     id,
+                  const char      *name,
+                  GFile           *file)
+{
     return GjsModule::import(cx, importer, id, name, file);
 }
 

@@ -38,5 +38,4 @@ gjs_module_import(JSContext       *cx,
                   const char      *name,
                   GFile           *file);
 
-
 #endif  // GJS_MODULE_H_
