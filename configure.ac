@@ -68,7 +68,7 @@ GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
 common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
-gjs_packages="gobject-introspection-1.0 libffi libsoup-2.4 >= 2.56 $common_packages"
+gjs_packages="gobject-introspection-1.0 libffi libsoup-2.4 >= 2.32 $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_gtk_packages="gtk+-3.0 >= 3.20"
 gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"

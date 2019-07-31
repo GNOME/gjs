@@ -332,6 +332,7 @@ main(int argc, char **argv)
         coverage_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
     }
 
+    // TODO: REMOVE BEFORE MERGE (development only)
     env_force_modules = g_getenv("GJS_FORCE_MODULES");
 
     if (env_force_modules != NULL) {
