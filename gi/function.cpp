@@ -1702,6 +1702,7 @@ init_cached_function_data (JSContext      *context,
                                   g_base_info_get_namespace( (GIBaseInfo*) info),
                                   g_base_info_get_name( (GIBaseInfo*) info));
                         g_base_info_unref(interface_info);
+                        g_free(function->param_types);
                         return false;
                     }
                 }
@@ -1719,6 +1720,7 @@ init_cached_function_data (JSContext      *context,
                         gjs_throw(context, "Function %s.%s has an array with different-direction length arg, not supported",
                                   g_base_info_get_namespace( (GIBaseInfo*) info),
                                   g_base_info_get_name( (GIBaseInfo*) info));
+                        g_free(function->param_types);
                         return false;
                     }
 
