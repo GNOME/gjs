@@ -121,8 +121,8 @@ static gboolean parse_profile_arg(const char* option_name G_GNUC_UNUSED,
 }
 
 static void
-check_script_args_for_stray_gjs_args(int           argc, 
-                                                 char * const *argv)
+check_script_args_for_stray_gjs_args(int           argc,
+                                     char * const *argv)
 {
     GError *error = NULL;
     char **new_coverage_prefixes = NULL;
@@ -313,10 +313,11 @@ main(int argc, char **argv)
         g_unsetenv("GJS_TRACE_FD");         /* ignore env var in eval() */
     }
 
-    js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT, 
+    js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
                                             "search-path", include_path,
                                             "program-name", program_name,
-                                            "profiler-enabled", enable_profiler, NULL);
+                                            "profiler-enabled", enable_profiler,
+                                            NULL);
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != NULL) {
@@ -366,7 +367,7 @@ main(int argc, char **argv)
 
     /* prepare command line arguments */
     if (!gjs_context_define_string_array(js_context, "ARGV",
-                                         script_argc, (const char **)script_argv,
+                                         script_argc, (const char **) script_argv,
                                          &error)) {
         code = 1;
         g_printerr("Failed to defined ARGV: %s", error->message);
