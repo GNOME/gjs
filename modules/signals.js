@@ -100,7 +100,7 @@ function _disconnectAll() {
     }
 }
 
-function _emit(name /* , arg1, arg2 */) {
+function _emit(name, ...args) {
     // may not be any signal handlers at all, if not then return
     if (!('_signalConnections' in this))
         return;
@@ -125,13 +125,7 @@ function _emit(name /* , arg1, arg2 */) {
     // which does pass it in. Also if we pass in the emitter here,
     // people don't create closures with the emitter in them,
     // which would be a cycle.
-
-    let arg_array = [ this ];
-    // arguments[0] should be signal name so skip it
-    length = arguments.length;
-    for (i = 1; i < length; ++i) {
-        arg_array.push(arguments[i]);
-    }
+    let arg_array = [ this, ...args ];
 
     length = handlers.length;
     for (i = 0; i < length; ++i) {
