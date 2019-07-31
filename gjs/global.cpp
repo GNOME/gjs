@@ -37,7 +37,7 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
-run_bootstrap(JSContext       *cx, 
+run_bootstrap(JSContext       *cx,
               const char      *bootstrap_script,
               JS::HandleObject global)
 {

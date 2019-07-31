@@ -58,7 +58,7 @@ class GjsModule {
     static inline GjsModule *
     priv(JSObject *module)
     {
-        return static_cast<GjsModule* >(JS_GetPrivate(module));
+        return static_cast<GjsModule *>(JS_GetPrivate(module));
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
@@ -80,7 +80,6 @@ class GjsModule {
                   JS::HandleObject importer,
                   JS::HandleId     name) const
     {
-
         if (!JS_DefinePropertyById(cx, importer, name, module,
                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
             gjs_debug(GJS_DEBUG_IMPORTER, "Failed to define '%s' in importer",
