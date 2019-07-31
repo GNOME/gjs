@@ -546,9 +546,7 @@ out:
     errors by throwing within the JS context. This allows
     it to be used as part of the module resolve hook.
 */
-bool GjsContextPrivate::register_module_inner(GjsContext* gjs_cx,
-
-                                              const char* identifier,
+bool GjsContextPrivate::register_module_inner(const char* identifier,
                                               const char* filename,
                                               const char* mod_text,
                                               size_t mod_len) {
@@ -637,8 +635,6 @@ static char* gir_js_mod(const char* ns) {
 }
 
 bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
-    auto gjs_cx = static_cast<GjsContext*>(JS_GetContextPrivate(m_cx));
-
     // The module from which the resolve request is coming
     JS::RootedObject mod_obj(m_cx);
     JS::UniqueChars
@@ -686,8 +682,7 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
         GjsAutoChar mod_text(mod_text_raw);
 
-        if (!register_module_inner(gjs_cx, full_path, full_path, mod_text,
-                                   mod_len))
+        if (!register_module_inner(full_path, full_path, mod_text, mod_len))
             // GjsContextPrivate::_register_module_inner should have already
             // thrown any relevant errors
             return false;
@@ -772,8 +767,6 @@ bool GjsContextPrivate::register_module(const char* identifier,
                                         const char* filename,
                                         const char* mod_text, size_t mod_len,
                                         GError** error) {
-    auto gjs_cx = static_cast<GjsContext*>(JS_GetContextPrivate(m_cx));
-
     JSAutoRequest ar(m_cx);
     JSAutoCompartment ac(m_cx, m_global);
 
@@ -782,7 +775,7 @@ bool GjsContextPrivate::register_module(const char* identifier,
     // module, then restore the original exception state.
     JS::AutoSaveExceptionState exp_state(m_cx);
 
-    if (register_module_inner(gjs_cx, identifier, filename, mod_text, mod_len))
+    if (register_module_inner(identifier, filename, mod_text, mod_len))
         return true;
 
     // Our message could come from memory owned by us or by the runtime.
