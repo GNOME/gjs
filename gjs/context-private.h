@@ -95,7 +95,7 @@ class GjsContextPrivate {
     struct EnvironmentPreparer final : protected js::ScriptEnvironmentPreparer {
         JSContext* m_cx;
 
-        explicit EnvironmentPreparer(JSContext *cx) : m_cx(cx) {
+        explicit EnvironmentPreparer(JSContext* cx) : m_cx(cx) {
             js::SetScriptEnvironmentPreparer(m_cx, this);
         }
 
@@ -142,11 +142,11 @@ class GjsContextPrivate {
 
 
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
-    GJS_USE static GjsContextPrivate* from_cx(JSContext *cx) {
+    GJS_USE static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
     }
-    GJS_USE static GjsContextPrivate* from_object(GObject *public_context);
-    GJS_USE static GjsContextPrivate* from_object(GjsContext *public_context);
+    GJS_USE static GjsContextPrivate* from_object(GObject* public_context);
+    GJS_USE static GjsContextPrivate* from_object(GjsContext* public_context);
     GJS_USE static GjsContextPrivate* from_current_context(void) {
         return from_object(gjs_context_get_current());
     }
@@ -206,7 +206,7 @@ class GjsContextPrivate {
     void schedule_gc_if_needed(void);
 
     void exit(uint8_t exit_code);
-    GJS_USE bool should_exit(uint8_t *exit_code_p) const;
+    GJS_USE bool should_exit(uint8_t* exit_code_p) const;
 
     GJS_JSAPI_RETURN_CONVENTION bool enqueue_job(JS::HandleObject job);
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs(void);
@@ -221,7 +221,7 @@ class GjsContextPrivate {
 
     void set_sweeping(bool value);
 
-    static void trace(JSTracer *trc, void *data);
+    static void trace(JSTracer* trc, void* data);
 
     void free_profiler(void);
     void dispose(void);

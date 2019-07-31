@@ -257,7 +257,7 @@ main(int argc, char **argv)
     if (!g_option_context_parse_strv(context, &gjs_argv, &error))
         g_error("option parsing failed: %s", error->message);
 
-    g_option_context_free(context);
+    g_option_context_free (context);
 
     if (print_version) {
         g_print("%s\n", PACKAGE_STRING);

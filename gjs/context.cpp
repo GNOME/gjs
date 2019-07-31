@@ -63,8 +63,8 @@
 #include <modules/modules.h>
 
 #ifdef G_OS_WIN32
-#    define WIN32_LEAN_AND_MEAN
-#    include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 
 #include "gjs/jsapi-wrapper.h"
@@ -89,13 +89,17 @@
 #include "modules/modules.h"
 #include "util/log.h"
 
-static void gjs_context_dispose(GObject* object);
-static void gjs_context_finalize(GObject* object);
-static void gjs_context_constructed(GObject* object);
-static void gjs_context_get_property(GObject* object, guint prop_id,
-                                     GValue* value, GParamSpec* pspec);
-static void gjs_context_set_property(GObject* object, guint prop_id,
-                                     const GValue* value, GParamSpec* pspec);
+static void     gjs_context_dispose           (GObject               *object);
+static void     gjs_context_finalize          (GObject               *object);
+static void     gjs_context_constructed       (GObject               *object);
+static void     gjs_context_get_property      (GObject               *object,
+                                                  guint                  prop_id,
+                                                  GValue                *value,
+                                                  GParamSpec            *pspec);
+static void     gjs_context_set_property      (GObject               *object,
+                                                  guint                  prop_id,
+                                                  const GValue          *value,
+                                                  GParamSpec            *pspec);
 
 void GjsContextPrivate::EnvironmentPreparer::invoke(JS::HandleObject scope,
                                                     Closure& closure) {
@@ -117,14 +121,14 @@ struct _GjsContextClass {
 /* Temporary workaround for https://bugzilla.gnome.org/show_bug.cgi?id=793175 */
 #if __GNUC__ >= 8
 _Pragma("GCC diagnostic push")
-    _Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
+_Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
 #endif
-        G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
+G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
 #if __GNUC__ >= 8
 _Pragma("GCC diagnostic pop")
 #endif
 
-    GjsContextPrivate* GjsContextPrivate::from_object(GObject* js_context) {
+GjsContextPrivate* GjsContextPrivate::from_object(GObject* js_context) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
     return static_cast<GjsContextPrivate*>(
         gjs_context_get_instance_private(GJS_CONTEXT(js_context)));
@@ -145,14 +149,16 @@ enum {
 };
 
 static GMutex contexts_lock;
-static GList* all_contexts = NULL;
+static GList *all_contexts = NULL;
 
 static GjsAutoChar dump_heap_output;
 static unsigned dump_heap_idle_id = 0;
 
 #ifdef G_OS_UNIX
 /* Currently heap dumping is only supported on UNIX platforms! */
-static void gjs_context_dump_heaps(void) {
+static void
+gjs_context_dump_heaps(void)
+{
     static unsigned counter = 0;
 
     gjs_memory_report("signal handler", false);
@@ -166,7 +172,7 @@ static void gjs_context_dump_heaps(void) {
     if (!fp)
         return;
 
-    for (GList* l = all_contexts; l; l = g_list_next(l)) {
+    for (GList *l = all_contexts; l; l = g_list_next(l)) {
         auto* gjs = static_cast<GjsContextPrivate*>(l->data);
         js::DumpHeap(gjs->context(), fp, js::IgnoreNurseryObjects);
     }
@@ -189,13 +195,15 @@ static void dump_heap_signal_handler(int signum G_GNUC_UNUSED) {
 }
 #endif
 
-static void setup_dump_heap(void) {
+static void
+setup_dump_heap(void)
+{
     static bool dump_heap_initialized = false;
     if (!dump_heap_initialized) {
         dump_heap_initialized = true;
 
         /* install signal handler only if environment variable is set */
-        const char* heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
+        const char *heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
         if (heap_output) {
 #ifdef G_OS_UNIX
             struct sigaction sa;
@@ -213,13 +221,17 @@ static void setup_dump_heap(void) {
     }
 }
 
-static void gjs_context_init(GjsContext* js_context) {
+static void
+gjs_context_init(GjsContext *js_context)
+{
     gjs_context_make_current(js_context);
 }
 
-static void gjs_context_class_init(GjsContextClass* klass) {
-    GObjectClass* object_class = G_OBJECT_CLASS(klass);
-    GParamSpec* pspec;
+static void
+gjs_context_class_init(GjsContextClass *klass)
+{
+    GObjectClass *object_class = G_OBJECT_CLASS(klass);
+    GParamSpec *pspec;
 
     object_class->dispose = gjs_context_dispose;
     object_class->finalize = gjs_context_finalize;
@@ -228,20 +240,26 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
-    pspec = g_param_spec_boxed(
-        "search-path", "Search path",
-        "Path where modules to import should reside", G_TYPE_STRV,
-        (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boxed("search-path",
+                               "Search path",
+                               "Path where modules to import should reside", 
+                               G_TYPE_STRV, 
+                               (GParamFlags) (G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class, PROP_SEARCH_PATH, pspec);
+    g_object_class_install_property(object_class, 
+                                    PROP_SEARCH_PATH,
+                                    pspec);
     g_param_spec_unref(pspec);
 
-    pspec = g_param_spec_string(
-        "program-name", "Program Name",
-        "The filename of the launched JS program", "",
-        (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_string("program-name",
+                                "Program Name",
+                                "The filename of the launched JS program",
+                                "",
+                                (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class, PROP_PROGRAM_NAME, pspec);
+    g_object_class_install_property(object_class,
+                                    PROP_PROGRAM_NAME,
+                                    pspec);
     g_param_spec_unref(pspec);
 
     /**
@@ -256,10 +274,11 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      *
      * You may only have one context with the profiler enabled at a time.
      */
-    pspec = g_param_spec_boolean(
-        "profiler-enabled", "Profiler enabled",
-        "Whether to profile JS code run by this context", FALSE,
-        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boolean("profiler-enabled", "Profiler enabled",
+                                 "Whether to profile JS code run by this context",
+                                 FALSE,
+                                 GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+
     g_object_class_install_property(object_class, PROP_PROFILER_ENABLED, pspec);
     g_param_spec_unref(pspec);
 
@@ -270,10 +289,10 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      * stops the profiler. This property also implies that
      * #GjsContext:profiler-enabled is set.
      */
-    pspec = g_param_spec_boolean(
-        "profiler-sigusr2", "Profiler SIGUSR2",
-        "Whether to activate the profiler on SIGUSR2", FALSE,
-        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boolean("profiler-sigusr2", "Profiler SIGUSR2",
+                                 "Whether to activate the profiler on SIGUSR2",
+                                 FALSE,
+                                 GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
     g_object_class_install_property(object_class, PROP_PROFILER_SIGUSR2, pspec);
     g_param_spec_unref(pspec);
 
@@ -281,9 +300,9 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char* basedir =
+        char *basedir =
             g_win32_get_package_installation_directory_of_module(gjs_dll);
-        char* priv_typelib_dir =
+        char *priv_typelib_dir =
             g_build_filename(basedir, "lib", "girepository-1.0", NULL);
         g_free(basedir);
 #else
@@ -291,7 +310,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
             g_build_filename(PKGLIBDIR, "girepository-1.0", NULL);
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
-        g_free(priv_typelib_dir);
+    g_free(priv_typelib_dir);
     }
 
     gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
