@@ -31,7 +31,12 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_module_import(JSContext* cx, JS::HandleObject importer,
-                            JS::HandleId id, const char* name, GFile* file);
+JSObject *
+gjs_module_import(JSContext       *cx,
+                  JS::HandleObject importer,
+                  JS::HandleId     id,
+                  const char      *name,
+                  GFile           *file);
+
 
 #endif  // GJS_MODULE_H_
