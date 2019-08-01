@@ -41,21 +41,6 @@
 #include <utility>  // for move
 
 #include <gio/gio.h>
-#include "byteArray.h"
-#include "context-private.h"
-#include "engine.h"
-#include "gi/object.h"
-#include "gi/private.h"
-#include "gi/repo.h"
-#include "gjs/jsapi-util-args.h"
-#include "global.h"
-#include "importer.h"
-#include "jsapi-util.h"
-#include "jsapi-wrapper.h"
-#include "mem.h"
-#include "native.h"
-#include "profiler-private.h"
-
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -81,6 +66,7 @@
 #include "gjs/error-types.h"
 #include "gjs/global.h"
 #include "gjs/importer.h"
+#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem.h"
 #include "gjs/native.h"
