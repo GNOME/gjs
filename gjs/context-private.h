@@ -52,6 +52,28 @@ using GTypeTable =
     JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
 
+class CppStringHashPolicy {
+ public:
+    typedef std::string Lookup;
+
+    static js::HashNumber hash(const Lookup& l) {
+        return std::hash<std::string>{}(std::string(l));
+    }
+
+    static bool match(const std::string& k, const Lookup& l) {
+        return k.compare(l) == 0;
+    }
+
+    static void rekey(std::string& k, const std::string& newKey) { k = newKey; }
+};
+
+namespace JS {
+template <>
+struct GCPolicy<std::string> : public IgnoreGCPolicy<std::string> {};
+}  // namespace JS
+using ModuleTable = JS::GCHashMap<std::string, JS::Heap<JSObject*>,
+                                  CppStringHashPolicy, js::SystemAllocPolicy>;
+
 struct Dummy {};
 using GTypeNotUint64 =
     std::conditional_t<!std::is_same<GType, uint64_t>::value, GType, Dummy>;
@@ -86,6 +108,7 @@ class GjsContextPrivate {
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
+    ModuleTable em_id_to_module;
     std::unordered_map<std::string, JS::PersistentRootedObject> m_id_to_module;
 
     GjsProfiler* m_profiler;
@@ -191,9 +214,9 @@ class GjsContextPrivate {
                          ssize_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool eval_module(const char *identifier, uint8_t *exit_code_p,
-                     GError **error);
-    bool module_resolve(unsigned argc, JS::Value *vp);
+    bool eval_module(const char* identifier, uint8_t* exit_code_p,
+                     GError** error);
+    bool module_resolve(unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,
@@ -212,9 +235,8 @@ class GjsContextPrivate {
 
     void context_reset_exit();
 
-    bool register_module(const char *identifier,
-                                 const char *filename, const char *mod_text,
-                                 size_t mod_len, GError **error);
+    bool register_module(const char* identifier, const char* filename,
+                         const char* mod_text, size_t mod_len, GError** error);
 
     void set_sweeping(bool value);
 
