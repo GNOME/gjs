@@ -558,8 +558,8 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
                                JS::SourceBufferHolder::NoOwnership);
 
     JS::RootedObject new_module(m_cx);
+
     if (!CompileModule(m_cx, options, buf, &new_module)) {
-        gjs_throw(m_cx, "Failed to compile module: %s", identifier);
         return false;
     }
 
@@ -567,9 +567,6 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
         // Since this is a file-based module, be sure to set it's host field
         JS::RootedValue filename_val(m_cx);
         if (!gjs_string_from_utf8(m_cx, filename, &filename_val)) {
-            gjs_throw(m_cx,
-                      "Failed to encode full module path (%s) as JS string",
-                      filename);
             return false;
         }
 
@@ -582,19 +579,13 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
     return true;
 }
 
-static SoupURI* get_gi_uri(const char* uri) { return soup_uri_new(uri); }
-
-static char* gir_uri_ns(const char* uri) {
-    SoupURI_autoptr url = get_gi_uri(uri);
-
+static char* gir_uri_ns(SoupURI* url) {
     const char* path = soup_uri_get_host(url);
 
-    return strdup(path);
+    return g_strdup(path);
 }
 
-static char* gir_uri_version(const char* uri) {
-    SoupURI_autoptr url = get_gi_uri(uri);
-
+static char* gir_uri_version(SoupURI* url) {
     const char* q = soup_uri_get_query(url);
 
     if (q == NULL) {
@@ -605,11 +596,11 @@ static char* gir_uri_version(const char* uri) {
     GjsAutoChar key = g_strdup("v");
     char* version = (char*)g_hash_table_lookup(queries, key);
 
-    return strdup(version);
+    return g_strdup(version);
 }
 
-static bool is_gir_uri(const char* uri) {
-    const char* scheme = g_uri_parse_scheme(uri);
+static bool is_gir_uri(SoupURI* uri) {
+    const char* scheme = soup_uri_get_scheme(uri);
     return scheme != NULL && strcmp(scheme, "gi") == 0;
 }
 
@@ -685,9 +676,11 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
         return true;
     }
 
-    if (is_gir_uri(id.get())) {
-        GjsAutoChar ns = gir_uri_ns(id.get());
-        GjsAutoChar version = gir_uri_version(id.get());
+    g_autoptr(SoupURI) uri = soup_uri_new(id.get());
+
+    if (uri != NULL && is_gir_uri(uri)) {
+        GjsAutoChar ns = gir_uri_ns(uri);
+        GjsAutoChar version = gir_uri_version(uri);
         GjsAutoChar gir_mod = NULL;
         if (ns == NULL && version == NULL) {
             gjs_throw(m_cx, "Attempted to load invalid module path %s",
