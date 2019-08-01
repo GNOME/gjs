@@ -246,7 +246,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                G_TYPE_STRV,
                                (GParamFlags) (G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class, 
+    g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
                                     pspec);
     g_param_spec_unref(pspec);
@@ -278,7 +278,6 @@ gjs_context_class_init(GjsContextClass *klass)
                                  "Whether to profile JS code run by this context",
                                  FALSE,
                                  GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
-
     g_object_class_install_property(object_class, PROP_PROFILER_ENABLED, pspec);
     g_param_spec_unref(pspec);
 
@@ -300,11 +299,11 @@ gjs_context_class_init(GjsContextClass *klass)
     {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir = g_win32_get_package_installation_directory_of_module(gjs_dll);
-        char *priv_typelib_dir = g_build_filename(basedir, "lib", "girepository-1.0", NULL);
-        g_free(basedir);
+        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
+        char *priv_typelib_dir = g_build_filename (basedir, "lib", "girepository-1.0", NULL);
+        g_free (basedir);
 #else
-        char* priv_typelib_dir = g_build_filename(PKGLIBDIR, "girepository-1.0", NULL);
+        char *priv_typelib_dir = g_build_filename(PKGLIBDIR, "girepository-1.0", NULL);
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
     g_free (priv_typelib_dir);
@@ -328,7 +327,6 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
     for (auto& kv : m_unhandled_rejection_stacks) {
-        const char* stack = kv.second;
         const char *stack = kv.second;
         g_warning("Unhandled promise rejection. To suppress this warning, add "
                   "an error handler to your promise chain with .catch() or a "
@@ -972,6 +970,7 @@ gjs_context_set_property (GObject      *object,
     }
 }
 
+
 GjsContext*
 gjs_context_new(void)
 {
@@ -1174,7 +1173,7 @@ void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
 /**
  * gjs_context_maybe_gc:
  * @context: a #GjsContext
- *
+ * 
  * Similar to the Spidermonkey JS_MaybeGC() call which
  * heuristically looks at JS runtime memory usage and
  * may initiate a garbage collection. 
@@ -1202,7 +1201,7 @@ gjs_context_maybe_gc (GjsContext  *context)
 /**
  * gjs_context_gc:
  * @context: a #GjsContext
- *
+ * 
  * Initiate a full GC; may or may not block until complete.  This
  * function just calls Spidermonkey JS_GC().
  */ 
@@ -1472,11 +1471,13 @@ bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
     return true;
 }
 
-bool gjs_context_define_string_array(GjsContext* js_context,
-                                     const char* array_name,
-                                     gssize array_length,
-                                     const char** array_values,
-                                     GError** error) {
+bool
+gjs_context_define_string_array(GjsContext  *js_context,
+                                const char    *array_name,
+                                gssize         array_length,
+                                const char   **array_values,
+                                GError       **error)
+{
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
@@ -1510,7 +1511,7 @@ void
 gjs_context_make_current (GjsContext *context)
 {
     g_assert (context == NULL || current_context == NULL);
- 
+
     current_context = context;
 }
 
