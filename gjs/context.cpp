@@ -230,7 +230,7 @@ gjs_context_init(GjsContext *js_context)
 static void
 gjs_context_class_init(GjsContextClass *klass)
 {
-    GObjectClass *object_class = G_OBJECT_CLASS(klass);
+    GObjectClass* object_class = G_OBJECT_CLASS(klass);
     GParamSpec *pspec;
 
     object_class->dispose = gjs_context_dispose;
@@ -240,11 +240,10 @@ gjs_context_class_init(GjsContextClass *klass)
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
-    pspec = g_param_spec_boxed("search-path",
-                               "Search path",
-                               "Path where modules to import should reside", 
-                               G_TYPE_STRV, 
-                               (GParamFlags) (G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boxed(
+        "search-path", "Search path",
+        "Path where modules to import should reside", G_TYPE_STRV,
+        (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class, 
                                     PROP_SEARCH_PATH,
@@ -300,9 +299,9 @@ gjs_context_class_init(GjsContextClass *klass)
     {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir =
+        char* basedir =
             g_win32_get_package_installation_directory_of_module(gjs_dll);
-        char *priv_typelib_dir =
+        char* priv_typelib_dir =
             g_build_filename(basedir, "lib", "girepository-1.0", NULL);
         g_free(basedir);
 #else
@@ -310,7 +309,7 @@ gjs_context_class_init(GjsContextClass *klass)
             g_build_filename(PKGLIBDIR, "girepository-1.0", NULL);
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
-    g_free(priv_typelib_dir);
+        g_free(priv_typelib_dir);
     }
 
     gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
@@ -331,6 +330,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
     for (auto& kv : m_unhandled_rejection_stacks) {
+        const char* stack = kv.second;
         const char* stack = kv.second;
         g_warning(
             "Unhandled promise rejection. To suppress this warning, add "
@@ -997,8 +997,8 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
 /*
  * GjsContextPrivate::schedule_gc_if_needed:
  *
- * Does a minor GC immediately if the JS engine decides one is needed, but
- * also schedules a full GC in the next idle time.
+ * Does a minor GC immediately if the JS engine decides one is needed, but also
+ * schedules a full GC in the next idle time.
  */
 void GjsContextPrivate::schedule_gc_if_needed(void) {
     // We call JS_MaybeGC immediately, but defer a check for a full GC cycle
@@ -1120,8 +1120,8 @@ bool GjsContextPrivate::run_jobs(void) {
                  * System.exit() works in the interactive shell and when
                  * exiting the interpreter. */
                 if (!JS_IsExceptionPending(m_cx)) {
-                    /* System.exit() is an uncatchable exception, but does
-                     * not indicate a bug. Log everything else. */
+                    /* System.exit() is an uncatchable exception, but does not
+                     * indicate a bug. Log everything else. */
                     if (!should_exit(nullptr))
                         g_critical(
                             "Promise callback terminated with uncatchable "
@@ -1198,12 +1198,12 @@ void gjs_context_gc(GjsContext* context) {
 /**
  * gjs_context_get_all:
  *
- * Returns a newly-allocated list containing all known instances of
- * #GjsContext. This is useful for operating on the contexts from a
- * process-global situation such as a debugger.
+ * Returns a newly-allocated list containing all known instances of #GjsContext.
+ * This is useful for operating on the contexts from a process-global situation
+ * such as a debugger.
  *
- * Return value: (element-type GjsContext) (transfer full): Known
- * #GjsContext instances
+ * Return value: (element-type GjsContext) (transfer full): Known #GjsContext
+ * instances
  */
 GList* gjs_context_get_all(void) {
     GList* result;
@@ -1219,8 +1219,8 @@ GList* gjs_context_get_all(void) {
 /**
  * gjs_context_get_native_context:
  *
- * Returns a pointer to the underlying native context.  For SpiderMonkey,
- * this is a JSContext *
+ * Returns a pointer to the underlying native context.  For SpiderMonkey, this
+ * is a JSContext *
  */
 void* gjs_context_get_native_context(GjsContext* js_context) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), NULL);
@@ -1281,8 +1281,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
-     * uncaught exceptions have been reported since draining runs callbacks.
-     */
+     * uncaught exceptions have been reported since draining runs callbacks. */
     {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs() && ok;
@@ -1294,8 +1293,8 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     if (!ok) {
         uint8_t code;
         if (should_exit(&code)) {
-            /* exit_status_p is public API so can't be changed, but should
-             * be uint8_t, not int */
+            /* exit_status_p is public API so can't be changed, but should be
+             * uint8_t, not int */
             *exit_status_p = code;
             g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
                         "Exit with code %d", code);
@@ -1361,9 +1360,10 @@ bool gjs_context_eval_file(GjsContext* js_context, const char* filename,
  * @filename: filename to use as the origin of @script
  * @retval: location for the return value of @script
  *
- * Executes @script with a local scope so that nothing from the script leaks
- * out into the global scope. If @scope_object is given, then everything
- * that @script placed in the global namespace is defined on @scope_object.
+ * Executes @script with a local scope so that nothing from the script leaks out
+ * into the global scope.
+ * If @scope_object is given, then everything that @script placed in the global
+ * namespace is defined on @scope_object.
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
@@ -1425,8 +1425,8 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
  * @rval: Location for the return value
  *
  * Use this instead of JS_CallFunctionValue(), because it schedules a GC if
- * one is needed. It's good practice to check if a GC should be run every
- * time we return from JS back into C++.
+ * one is needed. It's good practice to check if a GC should be run every time
+ * we return from JS back into C++.
  */
 bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
                                       JS::HandleValue func_val,
