@@ -931,8 +931,15 @@ class GIWrapperPrototype : public Base {
         JS::RootedObject parent_proto(cx);
         if (!priv->get_parent_proto(cx, &parent_proto) ||
             !priv->define_jsclass(cx, in_object, parent_proto, constructor,
-                                  prototype) ||
-            !gjs_wrapper_define_gtype_prop(cx, constructor, gtype))
+                                  prototype))
+            return nullptr;
+
+        // Init the private variable of @private before we do anything else. If
+        // a garbage collection or error happens subsequently, then this object
+        // might be traced and we would end up dereferencing a null pointer.
+        JS_SetPrivate(prototype, priv);
+
+        if (!gjs_wrapper_define_gtype_prop(cx, constructor, gtype))
             return nullptr;
 
         // Every class has a toString() with C++ implementation, so define that
@@ -950,7 +957,6 @@ class GIWrapperPrototype : public Base {
                 return nullptr;
         }
 
-        JS_SetPrivate(prototype, priv);
         return priv;
     }
 
