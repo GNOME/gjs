@@ -286,7 +286,7 @@ function _init() {
     };
     this.Variant.prototype.toString = function() {
 	return '[object variant of type "' + this.get_type_string() + '"]';
-    };
+	};
 
     this.Bytes.prototype.toArray = function() {
 	return imports.byteArray.fromGBytes(this);
@@ -301,4 +301,13 @@ function _init() {
         GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
     };
 
+	this.VariantDict.prototype.lookup = function(key, variantType = null, deep = false) {
+	    if (typeof variantType === 'string') {
+			variantType = new GLib.VariantType(variantType);
+		}
+
+		const variant = this.lookup_value(key, variantType);
+		if (variant === null) return null;
+		return _unpack_variant(variant, deep);
+	};
 }
