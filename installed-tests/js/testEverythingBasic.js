@@ -743,7 +743,7 @@ describe('Life, the Universe and Everything', function () {
             subclassObject = new Regress.TestSubObj();
         });
 
-        // Everything.func_obj_null_in expects a Everything.TestObj
+        // Regress.func_obj_null_in expects a Regress.TestObj
         it('function does not accept a GObject of the wrong type', function () {
             expect(() => Regress.func_obj_null_in(wrongObject)).toThrow();
         });
