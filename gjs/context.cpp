@@ -308,7 +308,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
-    gjs->em_id_to_module.trace(trc);
+    gjs->m_id_to_module.trace(trc);
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
@@ -443,7 +443,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     if (auto_profile)
         gjs_profiler_start(m_profiler);
 
-    auto it = em_id_to_module.lookup(identifier);
+    auto it = m_id_to_module.lookup(identifier);
     if (!it || !it.found()) {
         return false;
     }
@@ -538,7 +538,7 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
                                               bool is_internal,
                                               const char* mod_text,
                                               size_t mod_len) {
-    auto it = em_id_to_module.lookupForAdd(identifier);
+    auto it = m_id_to_module.lookupForAdd(identifier);
     if (it && it.found()) {
         gjs_throw(m_cx, "Module '%s' is already registered", identifier);
         return false;
@@ -575,7 +575,7 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
     }
 
     GjsAutoChar iden = g_strdup(identifier);
-    if (!em_id_to_module.add(it, iden, new_module)) {
+    if (!m_id_to_module.add(it, iden, new_module)) {
         g_warning("Failed to add module %s to registry.", identifier);
         return false;
     }
@@ -653,7 +653,7 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
             g_file_new_for_commandline_arg_and_cwd(id.get(), mod_dir);
         GjsAutoChar full_path(g_file_get_path(output));
 
-        auto module = em_id_to_module.lookup(full_path.get());
+        auto module = m_id_to_module.lookup(full_path.get());
 
         if (module && module.found()) {
             JS::RootedObject obj(m_cx, module->value().get());
@@ -677,7 +677,7 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
             return false;
 
         args.rval().setObject(
-            *em_id_to_module.lookup(full_path.get())->value().get());
+            *m_id_to_module.lookup(full_path.get())->value().get());
         return true;
     }
 
@@ -701,14 +701,14 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
             gir_mod = gir_js_mod_ver(ns, version);
         }
 
-        auto module = em_id_to_module.lookup(id.get());
+        auto module = m_id_to_module.lookup(id.get());
         if (gir_mod != NULL && (!module || !module.found())) {
             register_module(id.get(), id.get(), gir_mod, strlen(gir_mod),
                             nullptr);
         }
     }
 
-    auto module = em_id_to_module.lookup(id.get());
+    auto module = m_id_to_module.lookup(id.get());
 
     if (!module || !module.found()) {
         const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
@@ -739,7 +739,7 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
                 return false;
 
             args.rval().setObject(
-                *em_id_to_module.lookup(id.get())->value().get());
+                *m_id_to_module.lookup(id.get())->value().get());
 
             return true;
         } else {
@@ -861,7 +861,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     if (!m_gtype_table->init())
         g_error("Failed to initialize GType objects table");
 
-    if (!em_id_to_module.init())
+    if (!m_id_to_module.init())
         g_error("Failed to initialize module table.");
 
     m_atoms = new GjsAtoms();
