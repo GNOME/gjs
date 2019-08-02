@@ -475,7 +475,8 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         ok = false;
     }
 
-    gjs_debug(GJS_DEBUG_CONTEXT, "Module evaluation succeeded");
+    gjs_debug(GJS_DEBUG_CONTEXT, "Module evaluation succeeded for module %s.",
+              identifier);
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
