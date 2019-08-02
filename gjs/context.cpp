@@ -289,7 +289,7 @@ gjs_context_class_init(GjsContextClass *klass)
         char *priv_typelib_dir = g_build_filename (basedir, "lib", "girepository-1.0", NULL);
         g_free (basedir);
 #else
-        char *priv_typelib_dir = g_build_filename(PKGLIBDIR, "girepository-1.0", NULL);
+        char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
     g_free (priv_typelib_dir);
@@ -810,8 +810,10 @@ static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
     return gjs->module_resolve(args);
 }
 
-static void gjs_context_constructed(GObject* object) {
-    GjsContext* js_context = GJS_CONTEXT(object);
+static void
+gjs_context_constructed(GObject *object)
+{
+    GjsContext *js_context = GJS_CONTEXT(object);
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
