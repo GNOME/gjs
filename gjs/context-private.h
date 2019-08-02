@@ -159,7 +159,8 @@ class GjsContextPrivate {
 
  public:
     bool register_module_inner(const char* identifier, const char* filename,
-                               const char* mod_text, size_t mod_len);
+                               bool is_internal, const char* mod_text,
+                               size_t mod_len);
 
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
     GJS_USE static GjsContextPrivate* from_cx(JSContext* cx) {

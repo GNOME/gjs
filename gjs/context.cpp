@@ -534,6 +534,7 @@ out:
 */
 bool GjsContextPrivate::register_module_inner(const char* identifier,
                                               const char* filename,
+                                              bool is_internal,
                                               const char* mod_text,
                                               size_t mod_len) {
     auto it = em_id_to_module.lookupForAdd(identifier);
@@ -545,7 +546,8 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
     unsigned int start_line_number = 1;
 
     JS::CompileOptions options(m_cx);
-    options.setFileAndLine(identifier, start_line_number).setSourceIsLazy(true);
+    options.setFileAndLine(identifier, start_line_number)
+        .setSourceIsLazy(is_internal);
 
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
     std::u16string utf16_string = convert.from_bytes(mod_text);
@@ -667,7 +669,8 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
         GjsAutoChar mod_text(mod_text_raw);
 
-        if (!register_module_inner(full_path, full_path, mod_text, mod_len))
+        if (!register_module_inner(full_path, full_path, false, mod_text,
+                                   mod_len))
             // GjsContextPrivate::_register_module_inner should have already
             // thrown any relevant errors
             return false;
@@ -730,7 +733,8 @@ bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
 
             GjsAutoChar mod_text(mod_text_raw);
 
-            if (!register_module(id.get(), full_path, mod_text, mod_len, NULL))
+            if (!register_module_inner(id.get(), full_path, true, mod_text,
+                                       mod_len))
                 return false;
 
             args.rval().setObject(
@@ -764,7 +768,7 @@ bool GjsContextPrivate::register_module(const char* identifier,
     // module, then restore the original exception state.
     JS::AutoSaveExceptionState exp_state(m_cx);
 
-    if (register_module_inner(identifier, filename, mod_text, mod_len))
+    if (register_module_inner(identifier, filename, false, mod_text, mod_len))
         return true;
 
     // Our message could come from memory owned by us or by the runtime.
