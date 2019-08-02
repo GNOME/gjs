@@ -1970,7 +1970,8 @@ _Pragma("GCC diagnostic pop")
             if (!array)
                 wrong = true;
             else {
-                g_array_append_vals(array, data, length);
+                if (data)
+                    g_array_append_vals(array, data, length);
                 arg->v_pointer = array;
             }
 
@@ -1978,7 +1979,9 @@ _Pragma("GCC diagnostic pop")
         } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
             GByteArray *byte_array = g_byte_array_sized_new(length);
 
-            g_byte_array_append(byte_array, (const guint8 *) data, length);
+            if (data)
+                g_byte_array_append(byte_array,
+                                    static_cast<const uint8_t*>(data), length);
             arg->v_pointer = byte_array;
 
             g_free(data);
@@ -1986,7 +1989,8 @@ _Pragma("GCC diagnostic pop")
             GPtrArray *array = g_ptr_array_sized_new(length);
 
             g_ptr_array_set_size(array, length);
-            memcpy(array->pdata, data, sizeof(gpointer) * length);
+            if (data)
+                memcpy(array->pdata, data, sizeof(void*) * length);
             arg->v_pointer = array;
 
             g_free(data);

@@ -128,7 +128,7 @@ check_script_args_for_stray_gjs_args(int           argc,
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
-    static GOptionEntry script_check_entries[] = {
+    GOptionEntry script_check_entries[] = {
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &new_coverage_prefixes },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &new_coverage_output_path },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },

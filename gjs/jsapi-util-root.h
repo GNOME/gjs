@@ -130,10 +130,9 @@ class GjsMaybeOwned {
             , m_func(func)
             , m_data(data)
         {
-            GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
-            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
-            g_object_weak_ref(G_OBJECT(gjs->public_context()),
-                              on_context_destroy, this);
+            GjsContext* current = gjs_context_get_current();
+            g_assert(GJS_IS_CONTEXT(current));
+            g_object_weak_ref(G_OBJECT(current), on_context_destroy, this);
         }
 
         ~Notifier() { disconnect(); }
@@ -150,10 +149,9 @@ class GjsMaybeOwned {
             if (!m_parent)
                 return;
 
-            GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
-            g_assert(GJS_IS_CONTEXT(gjs->public_context()));
-            g_object_weak_unref(G_OBJECT(gjs->public_context()), on_context_destroy,
-                                this);
+            GjsContext* current = gjs_context_get_current();
+            g_assert(GJS_IS_CONTEXT(current));
+            g_object_weak_unref(G_OBJECT(current), on_context_destroy, this);
             m_parent = nullptr;
         }
 
