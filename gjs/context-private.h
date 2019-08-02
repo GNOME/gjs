@@ -216,7 +216,7 @@ class GjsContextPrivate {
     GJS_JSAPI_RETURN_CONVENTION
     bool eval_module(const char* identifier, uint8_t* exit_code_p,
                      GError** error);
-    bool module_resolve(unsigned argc, JS::Value* vp);
+    bool module_resolve(const JS::CallArgs& args);
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,

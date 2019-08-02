@@ -620,13 +620,12 @@ static char* gir_js_mod(const char* ns) {
                            ns);
 }
 
-bool GjsContextPrivate::module_resolve(unsigned argc, JS::Value* vp) {
+bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
     // The module from which the resolve request is coming
     JS::RootedObject mod_obj(m_cx);
     // The string identifier of the module we wish to import
     JS::UniqueChars id;
 
-    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     args.rval().setNull();
     if (!gjs_parse_call_args(m_cx, "ModuleResolver", args, "os", "sourceModule",
                              &mod_obj, "identifier", &id))
@@ -806,8 +805,9 @@ bool GjsContextPrivate::register_module(const char* identifier,
 
 static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    return gjs->module_resolve(argc, vp);
+    return gjs->module_resolve(args);
 }
 
 static void gjs_context_constructed(GObject* object) {
