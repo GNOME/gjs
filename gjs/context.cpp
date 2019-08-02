@@ -462,7 +462,6 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     bool ok = true;
 
     if (!JS::ModuleEvaluate(m_cx, obj)) {
-        gjs_log_exception(m_cx);
         g_warning("Failed to evaluate module! %s", identifier);
         ok = false;
     }
