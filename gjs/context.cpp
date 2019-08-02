@@ -445,7 +445,6 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
     auto it = em_id_to_module.lookup(identifier);
     if (!it || !it.found()) {
-        g_error("Attempted to evaluate unknown module: %s", identifier);
         return false;
     }
 
@@ -574,8 +573,11 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
     }
 
     GjsAutoChar iden = g_strdup(identifier);
-    em_id_to_module.add(it, iden, new_module);
-    // m_id_to_module[identifier].init(m_cx, new_module);
+    if (!em_id_to_module.add(it, iden, new_module)) {
+        g_warning("Failed to add module %s to registry.", identifier);
+        return false;
+    }
+
     return true;
 }
 
