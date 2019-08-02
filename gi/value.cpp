@@ -849,6 +849,13 @@ gjs_value_from_g_value_internal(JSContext             *context,
         else
             gboxed = g_value_get_variant(gvalue);
 
+        if (!gboxed) {
+            gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
+                              "Converting null boxed pointer to JS::Value");
+            value_p.setNull();
+            return true;
+        }
+
         /* special case GError */
         if (g_type_is_a(gtype, G_TYPE_ERROR)) {
             obj = ErrorInstance::object_for_c_ptr(context,

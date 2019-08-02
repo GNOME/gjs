@@ -719,6 +719,31 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    describe('GError signal', function () {
+        let o;
+        beforeEach(function () {
+            o = new Regress.TestObj();
+        });
+
+        it('with GError set', function (done) {
+            o.connect('sig-with-gerror', (obj, e) => {
+                expect(e instanceof Gio.IOErrorEnum).toBeTruthy();
+                expect(e.domain).toEqual(Gio.io_error_quark());
+                expect(e.code).toEqual(Gio.IOErrorEnum.FAILED);
+                done();
+            });
+            o.emit_sig_with_error();
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/169');
+
+        it('with no GError set', function (done) {
+            o.connect('sig-with-gerror', (obj, e) => {
+                expect(e).toBeNull();
+                done();
+            });
+            o.emit_sig_with_null_error();
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/169');
+    });
+
     // Calling matches() on an unpaired error used to JSUnit.assert:
     // https://bugzilla.gnome.org/show_bug.cgi?id=689482
     it('bug 689482', function () {
