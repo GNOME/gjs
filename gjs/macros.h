@@ -58,11 +58,17 @@
  * return value of false or nullptr means that an exception must be pending, or
  * else an uncatchable exception has been thrown.
  *
- * Same as %GJS_USE for now, but in the future this should be able to be used by
- * static analysis tools to do better consistency checks. It's also intended as
- * documentation for the programmer.
+ * It's intended for use by static analysis tools to do better consistency
+ * checks. If not using them, then it has the same effect as %GJS_USE above.
+ * It's also intended as documentation for the programmer.
  */
-#define GJS_JSAPI_RETURN_CONVENTION GJS_USE
+#ifdef __clang_analyzer__
+#    define GJS_JSAPI_RETURN_CONVENTION \
+        GJS_USE                         \
+        __attribute__((annotate("jsapi_return_convention")))
+#else
+#    define GJS_JSAPI_RETURN_CONVENTION GJS_USE
+#endif
 
 #ifdef __GNUC__
 #    define GJS_ALWAYS_INLINE __attribute__((always_inline))
