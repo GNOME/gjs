@@ -286,9 +286,11 @@ function _init() {
     this.Variant.prototype.unpack = function() {
 	return _unpack_variant(this, false);
     };
-    this.Variant.prototype.deep_unpack = function() {
+    this.Variant.prototype.deepUnpack = function() {
 	return _unpack_variant(this, true);
     };
+    // backwards compatibility alias
+    this.Variant.prototype.deep_unpack = this.Variant.prototype.deepUnpack;
 
     // Note: discards type information, if the variant contains any 'v' types
     this.Variant.prototype.recursiveUnpack = function () {

@@ -78,6 +78,7 @@ describe('GVariant unpack', function () {
     });
 
     it('preserves type information if the unpacked object contains variants', function () {
+        expect(v.deepUnpack().foo instanceof GLib.Variant).toBeTruthy();
         expect(v.deep_unpack().foo instanceof GLib.Variant).toBeTruthy();
     });
 
