@@ -400,6 +400,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_fundamental_table;
         delete m_gtype_table;
+        delete m_id_to_module;
         delete m_atoms;
 
         /* Tear down JS */
@@ -414,9 +415,6 @@ void GjsContextPrivate::dispose(void) {
 GjsContextPrivate::~GjsContextPrivate(void) {
     g_clear_pointer(&m_search_path, g_strfreev);
     g_clear_pointer(&m_program_name, g_free);
-
-    if (m_id_to_module)
-        delete m_id_to_module;
 }
 
 static void
