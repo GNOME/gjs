@@ -308,7 +308,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
-    gjs->m_id_to_module.trace(trc);
+    gjs->m_id_to_module->trace(trc);
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
@@ -367,6 +367,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing cached JS wrappers");
         m_fundamental_table->clear();
         m_gtype_table->clear();
+        m_id_to_module->clear();
 
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
@@ -413,6 +414,9 @@ void GjsContextPrivate::dispose(void) {
 GjsContextPrivate::~GjsContextPrivate(void) {
     g_clear_pointer(&m_search_path, g_strfreev);
     g_clear_pointer(&m_program_name, g_free);
+
+    if (m_id_to_module)
+        delete m_id_to_module;
 }
 
 static void
@@ -443,7 +447,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     if (auto_profile)
         gjs_profiler_start(m_profiler);
 
-    auto it = m_id_to_module.lookup(identifier);
+    auto it = m_id_to_module->lookup(identifier);
     if (!it || !it.found()) {
         return false;
     }
@@ -538,7 +542,7 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
                                               bool is_internal,
                                               const char* mod_text,
                                               size_t mod_len) {
-    auto it = m_id_to_module.lookupForAdd(identifier);
+    auto it = m_id_to_module->lookupForAdd(identifier);
     if (it && it.found()) {
         gjs_throw(m_cx, "Module '%s' is already registered", identifier);
         return false;
@@ -575,7 +579,7 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
     }
 
     GjsAutoChar iden = g_strdup(identifier);
-    if (!m_id_to_module.add(it, iden, new_module)) {
+    if (!m_id_to_module->add(it, iden, new_module)) {
         g_warning("Failed to add module %s to registry.", identifier);
         return false;
     }
@@ -652,7 +656,7 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
             g_file_new_for_commandline_arg_and_cwd(id.get(), mod_dir);
         GjsAutoChar full_path(g_file_get_path(output));
 
-        auto module = m_id_to_module.lookup(full_path.get());
+        auto module = m_id_to_module->lookup(full_path.get());
 
         if (module && module.found()) {
             JS::RootedObject obj(m_cx, module->value().get());
@@ -676,7 +680,7 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
             return false;
 
         args.rval().setObject(
-            *m_id_to_module.lookup(full_path.get())->value().get());
+            *m_id_to_module->lookup(full_path.get())->value().get());
         return true;
     }
 
@@ -700,14 +704,14 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
             gir_mod = gir_js_mod_ver(ns, version);
         }
 
-        auto module = m_id_to_module.lookup(id.get());
+        auto module = m_id_to_module->lookup(id.get());
         if (gir_mod != NULL && (!module || !module.found())) {
             register_module(id.get(), id.get(), gir_mod, strlen(gir_mod),
                             nullptr);
         }
     }
 
-    auto module = m_id_to_module.lookup(id.get());
+    auto module = m_id_to_module->lookup(id.get());
 
     if (!module || !module.found()) {
         const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
@@ -738,7 +742,7 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
                 return false;
 
             args.rval().setObject(
-                *m_id_to_module.lookup(id.get())->value().get());
+                *m_id_to_module->lookup(id.get())->value().get());
 
             return true;
         } else {
@@ -863,7 +867,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     if (!m_gtype_table->init())
         g_error("Failed to initialize GType objects table");
 
-    if (!m_id_to_module.init())
+    m_id_to_module = new ModuleTable();
+    if (!m_id_to_module->init())
         g_error("Failed to initialize module table.");
 
     m_atoms = new GjsAtoms();

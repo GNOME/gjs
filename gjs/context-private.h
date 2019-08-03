@@ -108,7 +108,7 @@ class GjsContextPrivate {
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
-    ModuleTable m_id_to_module;
+    ModuleTable* m_id_to_module;
 
     GjsProfiler* m_profiler;
 
