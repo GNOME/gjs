@@ -205,8 +205,12 @@ function _unpack_variant(variant, deep) {
     case 's':
 	// g_variant_get_string has length as out argument
 	return variant.get_string()[0];
-    case 'v':
-	return variant.get_variant();
+    case 'v': {
+	const ret = variant.get_variant();
+	if (ret instanceof GLib.Variant)
+	    return _unpack_variant(ret, deep);
+	return ret;
+    }
     case 'm':
 	let val = variant.get_maybe();
 	if (deep && val)
