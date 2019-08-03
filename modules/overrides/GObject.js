@@ -126,9 +126,9 @@ function _propertiesAsArray(klass) {
     return propertiesArray;
 }
 
-function _copyAllDescriptors(target, source) {
+function _copyAllDescriptors(target, source, filter) {
     Object.getOwnPropertyNames(source)
-    .filter(key => !['prototype', 'constructor'].includes(key))
+    .filter(key => !['prototype', 'constructor'].concat(filter).includes(key))
     .concat(Object.getOwnPropertySymbols(source))
     .forEach(key => {
         let descriptor = Object.getOwnPropertyDescriptor(source, key);
@@ -354,7 +354,8 @@ function _init() {
 
         _copyAllDescriptors(newClass, klass);
         gobjectInterfaces.forEach(iface =>
-            _copyAllDescriptors(newClass.prototype, iface.prototype));
+            _copyAllDescriptors(newClass.prototype, iface.prototype,
+                ['toString']));
         _copyAllDescriptors(newClass.prototype, klass.prototype);
 
         Object.getOwnPropertyNames(newClass.prototype)
