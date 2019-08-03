@@ -70,3 +70,25 @@ describe('GVariant constructor', function () {
             expect(a[ix]).toEqual(val));
     });
 });
+
+describe('GVariantDict lookup', function () {
+    let variantDict;
+    beforeEach(function () {
+        variantDict = new GLib.VariantDict(null);
+        variantDict.insert_value('foo', GLib.Variant.new_string('bar'));
+    });
+
+    it('returns the unpacked variant', function () {
+        expect(variantDict.lookup('foo')).toEqual('bar');
+        expect(variantDict.lookup('foo', null)).toEqual('bar');
+        expect(variantDict.lookup('foo', 's')).toEqual('bar');
+        expect(variantDict.lookup('foo', new GLib.VariantType('s'))).toEqual('bar');
+    });
+
+    it("returns null if the key isn't present", function () {
+        expect(variantDict.lookup('bar')).toBeNull();
+        expect(variantDict.lookup('bar', null)).toBeNull();
+        expect(variantDict.lookup('bar', 's')).toBeNull();
+        expect(variantDict.lookup('bar', new GLib.VariantType('s'))).toBeNull();
+    });
+});
