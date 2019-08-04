@@ -397,8 +397,8 @@ var restrictedWords = {
 };
 
 function _constructPropertyList(obj) {
-    var properties = new Object();
-    var modifiedProperties = new Object();
+    var properties = {};
+    var modifiedProperties = {};
 
     for (let istr in obj) {
         if (restrictedWords[istr])
@@ -543,7 +543,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
     for (let i = 0; i < scopes.length; i++) {
         if (!isCaller) {
             // Make a copy of the properties
-            var copyProperties = new Object();
+            var copyProperties = {};
             for (istr in properties) {
                 copyProperties[istr] = new PropertyInfo(properties[istr].valueStart,
                     properties[istr].valueComplete,
