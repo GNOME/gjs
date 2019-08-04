@@ -96,6 +96,7 @@ rules:
   no-unused-vars:
     - error
     - varsIgnorePattern: ^unused
+  no-useless-call: error
   nonblock-statement-body-position:
     - error
     - below

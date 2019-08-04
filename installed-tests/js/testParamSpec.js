@@ -10,8 +10,7 @@ function testParamSpec(type, params, defaultValue) {
     describe(`GObject.ParamSpec.${type}`, function () {
         let paramSpec;
         beforeEach(function () {
-            paramSpec = GObject.ParamSpec[type].apply(GObject.ParamSpec,
-                [name, nick, blurb, flags, ...params]);
+            paramSpec = GObject.ParamSpec[type](name, nick, blurb, flags, ...params);
         });
 
         it('has the correct name strings', function () {
