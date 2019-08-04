@@ -99,10 +99,10 @@ Object.defineProperty(Debugger.Frame.prototype, 'num', {
 });
 
 Debugger.Frame.prototype.describeFrame = function() {
-    if (this.type == 'call') {
+    if (this.type === 'call') {
         return `${this.callee.name || '<anonymous>'}(${
             this.arguments.map(dvToString).join(', ')})`;
-    } else if (this.type == 'global') {
+    } else if (this.type === 'global') {
         return 'toplevel';
     } else {
         return `${this.type} code`;
@@ -199,7 +199,7 @@ backtraceCommand.helpText = `USAGE
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
-    if (space == -1) {
+    if (space === -1) {
         print('Invalid set <option> <value> command');
     } else {
         var name = rest.substr(0, space);
@@ -229,9 +229,9 @@ function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
     if (!m)
         return [s, style];
-    if (m[1].indexOf('p') != -1)
+    if (m[1].startsWith('p'))
         style.pretty = true;
-    if (m[1].indexOf('b') != -1)
+    if (m[1].startsWith('b'))
         style.brief = true;
     return [s.substr(m[0].length).trimLeft(), style];
 }
@@ -471,7 +471,7 @@ function doStepOrNext(kind) {
 
     function stepEntered(newFrame) {
         print(`entered frame: ${newFrame.describeFull()}`);
-        if (!kind.until || newFrame.line == kind.stopLine) {
+        if (!kind.until || newFrame.line === kind.stopLine) {
             topFrame = focusedFrame = newFrame;
             return repl();
         }
@@ -489,17 +489,17 @@ function doStepOrNext(kind) {
             stop = true;
         } else if (kind.until) {
             // running until a given line is reached
-            if (this.line == kind.stopLine)
+            if (this.line === kind.stopLine)
                 stop = true;
         } else {
             // regular step; stop whenever the line number changes
-            if ((this.line != startLine) || (this != startFrame))
+            if ((this.line !== startLine) || (this !== startFrame))
                 stop = true;
         }
 
         if (stop) {
             topFrame = focusedFrame = this;
-            if (focusedFrame != startFrame)
+            if (focusedFrame !== startFrame)
                 print(focusedFrame.describeFull());
             return repl();
         }
@@ -751,7 +751,7 @@ PARAMETERS
 //
 function breakcmd(cmd) {
     cmd = cmd.trimLeft();
-    if ("!@#$%^&*_+=/?.,<>:;'\"".indexOf(cmd.substr(0, 1)) != -1)
+    if ("!@#$%^&*_+=/?.,<>:;'\"".includes(cmd.substr(0, 1)))
         return [cmd.substr(0, 1), cmd.substr(1).trimLeft()];
     var m = /\s+|(?=\/)/.exec(cmd);
     if (m === null)

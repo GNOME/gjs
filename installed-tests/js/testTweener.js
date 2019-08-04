@@ -322,9 +322,9 @@ describe('Tweener', function () {
             discrete: ['x'],
             transition: 'linear',
             onUpdate: function() {
-                if (objectA.x != Math.floor(objectA.x))
+                if (objectA.x !== Math.floor(objectA.x))
                     objectA.xFraction = true;
-                if (objectA.y != Math.floor(objectA.y))
+                if (objectA.y !== Math.floor(objectA.y))
                     objectA.yFraction = true;
             },
         });

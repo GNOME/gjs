@@ -100,9 +100,9 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
     while (argArray.length > signatureLength) {
         var argNum = argArray.length - 1;
         var arg = argArray.pop();
-        if (typeof(arg) == 'function' && !sync) {
+        if (typeof(arg) === 'function' && !sync) {
             replyFunc = arg;
-        } else if (typeof(arg) == 'number') {
+        } else if (typeof(arg) === 'number') {
             flags = arg;
         } else if (arg instanceof Gio.Cancellable) {
             cancellable = arg;
@@ -148,7 +148,7 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
 }
 
 function _logReply(result, exc) {
-    if (exc != null)
+    if (exc !== null)
         log(`Ignored exception from dbus method: ${exc}`);
 }
 
@@ -272,7 +272,7 @@ function _makeProxyWrapper(interfaceXml) {
 
 
 function _newNodeInfo(constructor, value) {
-    if (typeof value == 'string')
+    if (typeof value === 'string')
         return constructor(value);
     throw TypeError(`Invalid type ${Object.prototype.toString.call(value)}`);
 }
@@ -331,7 +331,7 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
                 invocation.return_gerror(e);
             } else {
                 let name = e.name;
-                if (name.indexOf('.') == -1) {
+                if (!name.includes('.')) {
                     // likely to be a normal JS error
                     name = `org.gnome.gjs.JSError.${name}`;
                 }
@@ -354,7 +354,7 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
                 if (outSignature.includes('h') &&
                     retval[retval.length - 1] instanceof Gio.UnixFDList) {
                     outFdList = retval.pop();
-                } else if (outArgs.length == 1) {
+                } else if (outArgs.length === 1) {
                     // if one arg, we don't require the handler wrapping it
                     // into an Array
                     retval = [retval];
@@ -382,7 +382,7 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
 function _handlePropertyGet(info, impl, propertyName) {
     let propInfo = info.lookup_property(propertyName);
     let jsval = this[propertyName];
-    if (jsval != undefined)
+    if (jsval !== undefined)
         return new GLib.Variant(propInfo.signature, jsval);
     else
         return null;

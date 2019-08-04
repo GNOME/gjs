@@ -1,5 +1,5 @@
 /* -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil; -*- */
-/* eslint-disable block-scoped-var */
+/* eslint-disable block-scoped-var, eqeqeq */
 
 /* Copyright 2008  litl, LLC. */
 /**

@@ -39,7 +39,7 @@ const MyObject = GObject.registerClass({
     }
 
     set readwrite(val) {
-        if (val == 'ignore')
+        if (val === 'ignore')
             return;
 
         this._readwrite = val;

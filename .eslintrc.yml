@@ -35,6 +35,7 @@ rules:
     - error
     - property
   eol-last: error
+  eqeqeq: error
   indent:
     - error
     - 4

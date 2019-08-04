@@ -33,7 +33,7 @@ const Lang = imports.lang;
 function _connect(name, callback) {
     // be paranoid about callback arg since we'd start to throw from emit()
     // if it was messed up
-    if (typeof(callback) != 'function')
+    if (typeof(callback) !== 'function')
         throw new Error('When connecting signal must give a callback that is a function');
 
     // we instantiate the "signal machinery" only on-demand if anything
@@ -64,7 +64,7 @@ function _disconnect(id) {
         let length = this._signalConnections.length;
         for (i = 0; i < length; ++i) {
             let connection = this._signalConnections[i];
-            if (connection.id == id) {
+            if (connection.id === id) {
                 if (connection.disconnected)
                     throw new Error(`Signal handler id ${id} already disconnected`);
 
@@ -114,7 +114,7 @@ function _emit(name, ...args) {
     let length = this._signalConnections.length;
     for (i = 0; i < length; ++i) {
         let connection = this._signalConnections[i];
-        if (connection.name == name)
+        if (connection.name === name)
             handlers.push(connection);
     }
 
@@ -148,7 +148,7 @@ function _emit(name, ...args) {
 }
 
 function _addSignalMethod(proto, functionName, func) {
-    if (proto[functionName] && proto[functionName] != func)
+    if (proto[functionName] && proto[functionName] !== func)
         log(`WARNING: addSignalMethods is replacing existing ${proto} ${functionName} method`);
 
     proto[functionName] = func;

@@ -178,7 +178,7 @@ const Accessor = new Lang.Class({
     },
 
     set value(val) {
-        if (val != 42)
+        if (val !== 42)
             throw TypeError('Value is not a magic number');
         this._val = val;
     },

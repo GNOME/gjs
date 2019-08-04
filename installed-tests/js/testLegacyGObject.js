@@ -54,7 +54,7 @@ const MyObject = new GObject.Class({
     },
 
     set readwrite(val) {
-        if (val == 'ignore')
+        if (val === 'ignore')
             return;
 
         this._readwrite = val;
