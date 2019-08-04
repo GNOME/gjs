@@ -57,6 +57,7 @@ rules:
     - error
     - unix
   lines-between-class-members: error
+  no-array-constructor: error
   no-constant-condition:
     - error
     - checkLoops: false
