@@ -129,6 +129,12 @@ rules:
     - before: false
       after: true
   space-before-blocks: error
+  space-before-function-paren:
+    - error
+    - named: never
+      # for `function ()` and `async () =>`, preserve space around keywords
+      anonymous: always
+      asyncArrow: always
   space-infix-ops:
     - error
     - int32Hint: false

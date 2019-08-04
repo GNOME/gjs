@@ -13,13 +13,13 @@ function _Base() {
 }
 
 _Base.__super__ = null;
-_Base.prototype._init = function() { };
-_Base.prototype._construct = function(...args) {
+_Base.prototype._init = function () { };
+_Base.prototype._construct = function (...args) {
     this._init(...args);
     return this;
 };
 _Base.prototype.__name__ = '_Base';
-_Base.prototype.toString = function() {
+_Base.prototype.toString = function () {
     return `[object ${this.__name__}]`;
 };
 
@@ -72,7 +72,7 @@ Class.prototype = Object.create(_Base.prototype);
 Class.prototype.constructor = Class;
 Class.prototype.__name__ = 'Class';
 
-Class.prototype.wrapFunction = function(name, meth) {
+Class.prototype.wrapFunction = function (name, meth) {
     if (meth._origin)
         meth = meth._origin;
 
@@ -91,11 +91,11 @@ Class.prototype.wrapFunction = function(name, meth) {
     return wrapper;
 };
 
-Class.prototype.toString = function() {
+Class.prototype.toString = function () {
     return `[object ${this.__name__} for ${this.prototype.__name__}]`;
 };
 
-Class.prototype._construct = function(params, ...otherArgs) {
+Class.prototype._construct = function (params, ...otherArgs) {
     if (!params.Name)
         throw new TypeError("Classes require an explicit 'Name' parameter.");
 
@@ -174,7 +174,7 @@ Class.prototype.implements = function (iface) {
 };
 
 // key can be either a string or a symbol
-Class.prototype._copyPropertyDescriptor = function(params, propertyObj, key) {
+Class.prototype._copyPropertyDescriptor = function (params, propertyObj, key) {
     let descriptor = Object.getOwnPropertyDescriptor(params, key);
 
     if (typeof descriptor.value === 'function')
@@ -188,7 +188,7 @@ Class.prototype._copyPropertyDescriptor = function(params, propertyObj, key) {
     propertyObj[key] = descriptor;
 };
 
-Class.prototype._init = function(params) {
+Class.prototype._init = function (params) {
     let className = params.Name;
 
     let propertyObj = { };
@@ -287,7 +287,7 @@ Class.MetaInterface = Interface;
  * of the interface. Creating a class that doesn't override the function will
  * throw an error.
  */
-Interface.UNIMPLEMENTED = function UNIMPLEMENTED () {
+Interface.UNIMPLEMENTED = function UNIMPLEMENTED() {
     throw new Error('Not implemented');
 };
 
@@ -465,7 +465,7 @@ function defineGObjectLegacyObjects(GObject) {
             if (signals)
                 _createSignals(this.$gtype, signals);
 
-            Object.getOwnPropertyNames(params).forEach(function(name) {
+            Object.getOwnPropertyNames(params).forEach(name => {
                 if (['Name', 'Extends', 'Abstract'].includes(name))
                     return;
 
@@ -480,7 +480,7 @@ function defineGObjectLegacyObjects(GObject) {
                     } else if (name.startsWith('on_')) {
                         let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
                         if (id !== 0) {
-                            GObject.signal_override_class_closure(id, this.$gtype, function(...argArray) {
+                            GObject.signal_override_class_closure(id, this.$gtype, function (...argArray) {
                                 let emitter = argArray.shift();
 
                                 return wrapped.apply(emitter, argArray);
@@ -488,7 +488,7 @@ function defineGObjectLegacyObjects(GObject) {
                         }
                     }
                 }
-            }.bind(this));
+            });
         },
 
         _isValidClass(klass) {
@@ -661,7 +661,7 @@ function defineGtkLegacyObjects(GObject, Gtk) {
             delete params.CssName;
 
             if (template) {
-                params._instance_init = function() {
+                params._instance_init = function () {
                     this.init_template();
                 };
             }

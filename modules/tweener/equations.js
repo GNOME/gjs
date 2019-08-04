@@ -51,7 +51,7 @@ easeOutInSine, easeOutQuad, easeOutQuart, easeOutQuint, easeOutSine, linear */
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeNone (t, b, c, d, pParams) {
+function easeNone(t, b, c, d, pParams) {
     return c * t / d + b;
 }
 
@@ -69,7 +69,7 @@ function linear(t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInQuad (t, b, c, d, pParams) {
+function easeInQuad(t, b, c, d, pParams) {
     return c * (t /= d) * t + b;
 }
 
@@ -82,7 +82,7 @@ function easeInQuad (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutQuad (t, b, c, d, pParams) {
+function easeOutQuad(t, b, c, d, pParams) {
     return -c * (t /= d) * (t - 2) + b;
 }
 
@@ -95,7 +95,7 @@ function easeOutQuad (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutQuad (t, b, c, d, pParams) {
+function easeInOutQuad(t, b, c, d, pParams) {
     if ((t /= d / 2) < 1)
         return c / 2 * t * t + b;
     return -c / 2 * (--t * (t - 2) - 1) + b;
@@ -110,7 +110,7 @@ function easeInOutQuad (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInQuad (t, b, c, d, pParams) {
+function easeOutInQuad(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutQuad(t * 2, b, c / 2, d, pParams);
     return easeInQuad(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -125,7 +125,7 @@ function easeOutInQuad (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInCubic (t, b, c, d, pParams) {
+function easeInCubic(t, b, c, d, pParams) {
     return c * (t /= d) * t * t + b;
 }
 
@@ -138,7 +138,7 @@ function easeInCubic (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutCubic (t, b, c, d, pParams) {
+function easeOutCubic(t, b, c, d, pParams) {
     return c * ((t = t / d - 1) * t * t + 1) + b;
 }
 
@@ -151,7 +151,7 @@ function easeOutCubic (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutCubic (t, b, c, d, pParams) {
+function easeInOutCubic(t, b, c, d, pParams) {
     if ((t /= d / 2) < 1)
         return c / 2 * t * t * t + b;
     return c / 2 * ((t -= 2) * t * t + 2) + b;
@@ -166,7 +166,7 @@ function easeInOutCubic (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInCubic (t, b, c, d, pParams) {
+function easeOutInCubic(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutCubic(t * 2, b, c / 2, d, pParams);
     return easeInCubic(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -181,7 +181,7 @@ function easeOutInCubic (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInQuart (t, b, c, d, pParams) {
+function easeInQuart(t, b, c, d, pParams) {
     return c * (t /= d) * t * t * t + b;
 }
 
@@ -194,7 +194,7 @@ function easeInQuart (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutQuart (t, b, c, d, pParams) {
+function easeOutQuart(t, b, c, d, pParams) {
     return -c * ((t = t / d - 1) * t * t * t - 1) + b;
 }
 
@@ -207,7 +207,7 @@ function easeOutQuart (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutQuart (t, b, c, d, pParams) {
+function easeInOutQuart(t, b, c, d, pParams) {
     if ((t /= d / 2) < 1)
         return c / 2 * t * t * t * t + b;
     return -c / 2 * ((t -= 2) * t * t * t - 2) + b;
@@ -222,7 +222,7 @@ function easeInOutQuart (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInQuart (t, b, c, d, pParams) {
+function easeOutInQuart(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutQuart(t * 2, b, c / 2, d, pParams);
     return easeInQuart(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -237,7 +237,7 @@ function easeOutInQuart (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInQuint (t, b, c, d, pParams) {
+function easeInQuint(t, b, c, d, pParams) {
     return c * (t /= d) * t * t * t * t + b;
 }
 
@@ -250,7 +250,7 @@ function easeInQuint (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutQuint (t, b, c, d, pParams) {
+function easeOutQuint(t, b, c, d, pParams) {
     return c * ((t = t / d - 1) * t * t * t * t + 1) + b;
 }
 
@@ -263,7 +263,7 @@ function easeOutQuint (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutQuint (t, b, c, d, pParams) {
+function easeInOutQuint(t, b, c, d, pParams) {
     if ((t /= d / 2) < 1)
         return c / 2 * t * t * t * t * t + b;
     return c / 2 * ((t -= 2) * t * t * t * t + 2) + b;
@@ -278,7 +278,7 @@ function easeInOutQuint (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInQuint (t, b, c, d, pParams) {
+function easeOutInQuint(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutQuint(t * 2, b, c / 2, d, pParams);
     return easeInQuint(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -293,7 +293,7 @@ function easeOutInQuint (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInSine (t, b, c, d, pParams) {
+function easeInSine(t, b, c, d, pParams) {
     return -c * Math.cos(t / d * (Math.PI / 2)) + c + b;
 }
 
@@ -306,7 +306,7 @@ function easeInSine (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutSine (t, b, c, d, pParams) {
+function easeOutSine(t, b, c, d, pParams) {
     return c * Math.sin(t / d * (Math.PI / 2)) + b;
 }
 
@@ -319,7 +319,7 @@ function easeOutSine (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutSine (t, b, c, d, pParams) {
+function easeInOutSine(t, b, c, d, pParams) {
     return -c / 2 * (Math.cos(Math.PI * t / d) - 1) + b;
 }
 
@@ -332,7 +332,7 @@ function easeInOutSine (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInSine (t, b, c, d, pParams) {
+function easeOutInSine(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutSine(t * 2, b, c / 2, d, pParams);
     return easeInSine(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -347,7 +347,7 @@ function easeOutInSine (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInExpo (t, b, c, d, pParams) {
+function easeInExpo(t, b, c, d, pParams) {
     return t <= 0 ? b : c * Math.pow(2, 10 * (t / d - 1)) + b;
 }
 
@@ -360,7 +360,7 @@ function easeInExpo (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutExpo (t, b, c, d, pParams) {
+function easeOutExpo(t, b, c, d, pParams) {
     return t >= d ? b + c : c * (-Math.pow(2, -10 * t / d) + 1) + b;
 }
 
@@ -373,7 +373,7 @@ function easeOutExpo (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutExpo (t, b, c, d, pParams) {
+function easeInOutExpo(t, b, c, d, pParams) {
     if (t <= 0)
         return b;
     if (t >= d)
@@ -392,7 +392,7 @@ function easeInOutExpo (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInExpo (t, b, c, d, pParams) {
+function easeOutInExpo(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutExpo(t * 2, b, c / 2, d, pParams);
     return easeInExpo(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -407,7 +407,7 @@ function easeOutInExpo (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInCirc (t, b, c, d, pParams) {
+function easeInCirc(t, b, c, d, pParams) {
     return -c * (Math.sqrt(1 - (t /= d) * t) - 1) + b;
 }
 
@@ -420,7 +420,7 @@ function easeInCirc (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutCirc (t, b, c, d, pParams) {
+function easeOutCirc(t, b, c, d, pParams) {
     return c * Math.sqrt(1 - (t = t / d - 1) * t) + b;
 }
 
@@ -433,7 +433,7 @@ function easeOutCirc (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutCirc (t, b, c, d, pParams) {
+function easeInOutCirc(t, b, c, d, pParams) {
     if ((t /= d / 2) < 1)
         return -c / 2 * (Math.sqrt(1 - t * t) - 1) + b;
     return c / 2 * (Math.sqrt(1 - (t -= 2) * t) + 1) + b;
@@ -448,7 +448,7 @@ function easeInOutCirc (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInCirc (t, b, c, d, pParams) {
+function easeOutInCirc(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutCirc(t * 2, b, c / 2, d, pParams);
     return easeInCirc(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -465,7 +465,7 @@ function easeOutInCirc (t, b, c, d, pParams) {
  * @param p             Period.
  * @return              The correct value.
  */
-function easeInElastic (t, b, c, d, pParams) {
+function easeInElastic(t, b, c, d, pParams) {
     if (t <= 0)
         return b;
     if ((t /= d) >= 1)
@@ -493,7 +493,7 @@ function easeInElastic (t, b, c, d, pParams) {
  * @param p             Period.
  * @return              The correct value.
  */
-function easeOutElastic (t, b, c, d, pParams) {
+function easeOutElastic(t, b, c, d, pParams) {
     if (t <= 0)
         return b;
     if ((t /= d) >= 1)
@@ -521,7 +521,7 @@ function easeOutElastic (t, b, c, d, pParams) {
  * @param p             Period.
  * @return              The correct value.
  */
-function easeInOutElastic (t, b, c, d, pParams) {
+function easeInOutElastic(t, b, c, d, pParams) {
     if (t <= 0)
         return b;
     if ((t /= d / 2) >= 2)
@@ -551,7 +551,7 @@ function easeInOutElastic (t, b, c, d, pParams) {
  * @param p             Period.
  * @return              The correct value.
  */
-function easeOutInElastic (t, b, c, d, pParams) {
+function easeOutInElastic(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutElastic(t * 2, b, c / 2, d, pParams);
     return easeInElastic(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -567,7 +567,7 @@ function easeOutInElastic (t, b, c, d, pParams) {
  * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
-function easeInBack (t, b, c, d, pParams) {
+function easeInBack(t, b, c, d, pParams) {
     var s = !pParams || isNaN(pParams.overshoot) ? 1.70158 : pParams.overshoot;
     return c * (t /= d) * t * ((s + 1) * t - s) + b;
 }
@@ -582,7 +582,7 @@ function easeInBack (t, b, c, d, pParams) {
  * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
-function easeOutBack (t, b, c, d, pParams) {
+function easeOutBack(t, b, c, d, pParams) {
     var s = !pParams || isNaN(pParams.overshoot) ? 1.70158 : pParams.overshoot;
     return c * ((t = t / d - 1) * t * ((s + 1) * t + s) + 1) + b;
 }
@@ -597,7 +597,7 @@ function easeOutBack (t, b, c, d, pParams) {
  * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
-function easeInOutBack (t, b, c, d, pParams) {
+function easeInOutBack(t, b, c, d, pParams) {
     var s = !pParams || isNaN(pParams.overshoot) ? 1.70158 : pParams.overshoot;
     if ((t /= d / 2) < 1)
         return c / 2 * (t * t * (((s *= (1.525)) + 1) * t - s)) + b;
@@ -614,7 +614,7 @@ function easeInOutBack (t, b, c, d, pParams) {
  * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
-function easeOutInBack (t, b, c, d, pParams) {
+function easeOutInBack(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutBack(t * 2, b, c / 2, d, pParams);
     return easeInBack(t * 2 - d, b + c / 2, c / 2, d, pParams);
@@ -629,7 +629,7 @@ function easeOutInBack (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInBounce (t, b, c, d, pParams) {
+function easeInBounce(t, b, c, d, pParams) {
     return c - easeOutBounce(d - t, 0, c, d) + b;
 }
 
@@ -642,7 +642,7 @@ function easeInBounce (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutBounce (t, b, c, d, pParams) {
+function easeOutBounce(t, b, c, d, pParams) {
     if ((t /= d) < 1 / 2.75)
         return c * (7.5625 * t * t) + b;
     else if (t < 2 / 2.75)
@@ -662,7 +662,7 @@ function easeOutBounce (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeInOutBounce (t, b, c, d, pParams) {
+function easeInOutBounce(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeInBounce(t * 2, 0, c, d) * .5 + b;
     else
@@ -678,7 +678,7 @@ function easeInOutBounce (t, b, c, d, pParams) {
  * @param d             Expected easing duration (in frames or seconds).
  * @return              The correct value.
  */
-function easeOutInBounce (t, b, c, d, pParams) {
+function easeOutInBounce(t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutBounce(t * 2, b, c / 2, d, pParams);
     return easeInBounce(t * 2 - d, b + c / 2, c / 2, d, pParams);

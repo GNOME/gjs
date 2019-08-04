@@ -51,7 +51,7 @@ const MyComplexGtkSubclass = GObject.registerClass({
 // Sadly, putting this in the body of the class will prevent calling
 // get_template_child, since MyComplexGtkSubclass will be bound to the ES6
 // class name without the GObject goodies in it
-MyComplexGtkSubclass.prototype.testChildrenExist = function() {
+MyComplexGtkSubclass.prototype.testChildrenExist = function () {
     this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
     expect(this._internalLabel).toEqual(jasmine.anything());
 

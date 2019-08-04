@@ -7,7 +7,7 @@ let loop = GLib.MainLoop.new(null, false);
 
 function cat(filename) {
     let f = Gio.file_new_for_path(filename);
-    f.load_contents_async(null, function(obj, res) {
+    f.load_contents_async(null, (obj, res) => {
         let contents;
         try {
             contents = obj.load_contents_finish(res)[1];

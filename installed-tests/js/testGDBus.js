@@ -190,7 +190,7 @@ class Test {
      * the input arguments */
     echoAsync(parameters, invocation) {
         var [someString, someInt] = parameters;
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
         });
@@ -243,7 +243,7 @@ class Test {
     }
 
     fdOut2Async([bytes], invocation) {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
             const fd = GjsPrivate.open_bytes(bytes);
             const fdList = Gio.UnixFDList.new_from_array([fd]);
             invocation.return_value_with_unix_fd_list(new GLib.Variant('(h)', [0]),
@@ -354,7 +354,7 @@ describe('Exported DBus object', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Exception in method call: alwaysThrowException: *');
 
-        proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
+        proxy.alwaysThrowExceptionRemote({}, function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
         });
@@ -370,7 +370,7 @@ describe('Exported DBus object', function () {
         // argument destructuring will not propagate across the FFI boundary
         // and the main loop will never quit.
         // https://bugzilla.gnome.org/show_bug.cgi?id=729015
-        proxy.alwaysThrowExceptionRemote({}, function([a, b, c], excp) {
+        proxy.alwaysThrowExceptionRemote({}, function ([a, b, c], excp) {
             expect(a).not.toBeDefined();
             expect(b).not.toBeDefined();
             expect(c).not.toBeDefined();
@@ -444,7 +444,7 @@ describe('Exported DBus object', function () {
     });
 
     it('can call a remote method with multiple return values', function () {
-        proxy.multipleOutValuesRemote(function(result, excp) {
+        proxy.multipleOutValuesRemote(function (result, excp) {
             expect(result).toEqual(['Hello', 'World', '!']);
             expect(excp).toBeNull();
             loop.quit();
@@ -482,7 +482,7 @@ describe('Exported DBus object', function () {
     });
 
     it('handles a bad signature by throwing an exception', function () {
-        proxy.arrayOutBadSigRemote(function(result, excp) {
+        proxy.arrayOutBadSigRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
         });
@@ -494,7 +494,7 @@ describe('Exported DBus object', function () {
         let someInt = 42;
 
         proxy.echoRemote(someString, someInt,
-            function(result, excp) {
+            function (result, excp) {
                 expect(excp).toBeNull();
                 expect(result).toEqual([someString, someInt]);
                 loop.quit();

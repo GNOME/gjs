@@ -221,7 +221,7 @@ describe('GArray', function () {
     });
 });
 
-describe('GByteArray', function() {
+describe('GByteArray', function () {
     const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     it('can be passed in with transfer none', function () {
@@ -239,7 +239,7 @@ describe('GByteArray', function() {
     });
 });
 
-describe('GBytes', function() {
+describe('GBytes', function () {
     const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     it('can be created from an array and passed in', function () {
@@ -284,7 +284,7 @@ describe('GBytes', function() {
 });
 
 describe('GPtrArray', function () {
-    describe('of strings', function() {
+    describe('of strings', function () {
         const refArray = ['0', '1', '2'];
 
         it('can be passed to a function with transfer none', function () {

@@ -160,7 +160,7 @@ function _makeProxyMethod(method, sync) {
     for (i = 0; i < inArgs.length; i++)
         inSignature.push(inArgs[i].signature);
 
-    return function(...args) {
+    return function (...args) {
         return _proxyInvoker.call(this, name, sync, inSignature, args);
     };
 }
@@ -236,7 +236,7 @@ function _addDBusConvenience() {
 function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
-    return function(bus, name, object, asyncCallback, cancellable,
+    return function (bus, name, object, asyncCallback, cancellable,
         flags = Gio.DBusProxyFlags.NONE) {
         var obj = new Gio.DBusProxy({
             g_connection: bus,
@@ -285,7 +285,7 @@ function _newInterfaceInfo(value) {
 function _injectToMethod(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function(...args) {
+    klass[method] = function (...args) {
         addition.apply(this, args);
         return previous.apply(this, args);
     };
@@ -294,7 +294,7 @@ function _injectToMethod(klass, method, addition) {
 function _injectToStaticMethod(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function(...parameters) {
+    klass[method] = function (...parameters) {
         let obj = previous.apply(this, parameters);
         addition.apply(obj, parameters);
         return obj;
@@ -304,7 +304,7 @@ function _injectToStaticMethod(klass, method, addition) {
 function _wrapFunction(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function(...args) {
+    klass[method] = function (...args) {
         args.unshift(previous);
         return addition.apply(this, args);
     };
@@ -400,13 +400,13 @@ function _wrapJSObject(interfaceInfo, jsObj) {
     info.cache_build();
 
     var impl = new GjsPrivate.DBusImplementation({g_interface_info: info});
-    impl.connect('handle-method-call', function(self, methodName, parameters, invocation) {
+    impl.connect('handle-method-call', function (self, methodName, parameters, invocation) {
         return _handleMethodCall.call(jsObj, info, self, methodName, parameters, invocation);
     });
-    impl.connect('handle-property-get', function(self, propertyName) {
+    impl.connect('handle-property-get', function (self, propertyName) {
         return _handlePropertyGet.call(jsObj, info, self, propertyName);
     });
-    impl.connect('handle-property-set', function(self, propertyName, value) {
+    impl.connect('handle-property-set', function (self, propertyName, value) {
         return _handlePropertySet.call(jsObj, info, self, propertyName, value);
     });
 
@@ -422,12 +422,12 @@ function* _listModelIterator() {
 
 function _promisify(proto, asyncFunc, finishFunc) {
     proto[`_original_${asyncFunc}`] = proto[asyncFunc];
-    proto[asyncFunc] = function(...args) {
+    proto[asyncFunc] = function (...args) {
         if (!args.every(arg => typeof arg !== 'function'))
             return this[`_original_${asyncFunc}`](...args);
         return new Promise((resolve, reject) => {
             const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
-            this[`_original_${asyncFunc}`](...args, function(source, res) {
+            this[`_original_${asyncFunc}`](...args, function (source, res) {
                 try {
                     const result = source[finishFunc](res);
                     if (Array.isArray(result) && result.length > 1 && result[0] === true)
@@ -470,16 +470,16 @@ function _init() {
         unwatch_name: Gio.bus_unwatch_name,
     };
 
-    Gio.DBusConnection.prototype.watch_name = function(name, flags, appeared, vanished) {
+    Gio.DBusConnection.prototype.watch_name = function (name, flags, appeared, vanished) {
         return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
     };
-    Gio.DBusConnection.prototype.unwatch_name = function(id) {
+    Gio.DBusConnection.prototype.unwatch_name = function (id) {
         return Gio.bus_unwatch_name(id);
     };
-    Gio.DBusConnection.prototype.own_name = function(name, flags, acquired, lost) {
+    Gio.DBusConnection.prototype.own_name = function (name, flags, acquired, lost) {
         return Gio.bus_own_name_on_connection(this, name, flags, acquired, lost);
     };
-    Gio.DBusConnection.prototype.unown_name = function(id) {
+    Gio.DBusConnection.prototype.unown_name = function (id) {
         return Gio.bus_unown_name(id);
     };
 
@@ -515,7 +515,7 @@ function _init() {
     // shell-extension writers
 
     Gio.SettingsSchema.prototype._realGetKey = Gio.SettingsSchema.prototype.get_key;
-    Gio.SettingsSchema.prototype.get_key = function(key) {
+    Gio.SettingsSchema.prototype.get_key = function (key) {
         if (!this.has_key(key))
             throw new Error(`GSettings key ${key} not found in schema ${this.get_id()}`);
         return this._realGetKey(key);
@@ -524,7 +524,7 @@ function _init() {
     Gio.Settings.prototype._realMethods = Object.assign({}, Gio.Settings.prototype);
 
     function createCheckedMethod(method, checkMethod = '_checkKey') {
-        return function(id, ...args) {
+        return function (id, ...args) {
             this[checkMethod](id);
             return this._realMethods[method].call(this, id, ...args);
         };
