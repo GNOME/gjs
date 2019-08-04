@@ -75,6 +75,7 @@ rules:
     - allow:
       - '!!'
   no-lonely-if: error
+  no-new-object: error
   no-prototype-builtins: 'off'
   no-restricted-properties:
     - error

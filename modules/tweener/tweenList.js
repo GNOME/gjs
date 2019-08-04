@@ -51,7 +51,7 @@ TweenList.prototype = {
         this.transitionParams = transitionParams;
 
         /* Other default information */
-        this.properties = new Object();
+        this.properties = {};
         this.isPaused = false;
         this.timePaused = undefined;
         this.isCaller = false;
