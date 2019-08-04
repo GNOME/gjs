@@ -7,7 +7,7 @@ const Gtk = imports.gi.Gtk;
 Gtk.init(null);
 
 // Construct a top-level window
-let win = new Gtk.Window ({
+let win = new Gtk.Window({
     type: Gtk.WindowType.TOPLEVEL,
     title: 'A default title',
     default_width: 300,
