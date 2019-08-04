@@ -27,9 +27,8 @@ var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
     let count = 0;
-    for (let property in obj) {
+    for (let unusedProperty in obj)
         count += 1;
-    }
     return count;
 }
 

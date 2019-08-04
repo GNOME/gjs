@@ -1,4 +1,4 @@
-/* global Debugger, debuggee, quit, readline, uneval */
+/* global debuggee, quit, readline, uneval */
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*-
  *
  * This Source Code Form is subject to the terms of the Mozilla Public

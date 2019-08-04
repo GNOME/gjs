@@ -526,7 +526,7 @@ describe('Life, the Universe and Everything', function () {
         });
 
         it('throws errors for invalid signals', function () {
-            expect(() => o.connect('invalid-signal', o => {})).toThrow();
+            expect(() => o.connect('invalid-signal', () => {})).toThrow();
             expect(() => o.emit('invalid-signal')).toThrow();
         });
 

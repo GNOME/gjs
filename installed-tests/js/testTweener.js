@@ -307,7 +307,7 @@ describe('Tweener', function () {
                 return {name: prop, parameters: null};
             });
         }
-        function discrete_get(begin, end, time, params) {
+        function discrete_get(begin, end, time) {
             return Math.floor(begin + time * (end - begin));
         }
 
