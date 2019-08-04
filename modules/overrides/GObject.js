@@ -80,9 +80,10 @@ function registerClass(klass) {
     }
 
     if (!(klass.prototype instanceof GObject.Object) &&
-        !(klass.prototype instanceof GObject.Interface))
+        !(klass.prototype instanceof GObject.Interface)) {
         throw new TypeError('GObject.registerClass() used with invalid base ' +
             `class (is ${Object.getPrototypeOf(klass).name})`);
+    }
 
     // Find the "least derived" class with a _classInit static function; there
     // definitely is one, since this class must inherit from GObject
@@ -119,9 +120,8 @@ function _createGTypeName(klass) {
 function _propertiesAsArray(klass) {
     let propertiesArray = [];
     if (klass.hasOwnProperty(properties)) {
-        for (let prop in klass[properties]) {
+        for (let prop in klass[properties])
             propertiesArray.push(klass[properties][prop]);
-        }
     }
     return propertiesArray;
 }

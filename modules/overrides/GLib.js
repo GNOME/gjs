@@ -31,8 +31,9 @@ function _read_single_type(signature, forceSimple) {
     if (SIMPLE_TYPES.indexOf(char) == -1) {
         if (forceSimple)
             throw new TypeError('Invalid GVariant signature (a simple type was expected)');
-    } else
+    } else {
         isSimple = true;
+    }
 
     if (char == 'm' || char == 'a')
         return [char].concat(_read_single_type(signature, false));
@@ -313,9 +314,8 @@ function _init() {
 
     this.log_structured = function(logDomain, logLevel, stringFields) {
         let fields = {};
-        for (let key in stringFields) {
+        for (let key in stringFields)
             fields[key] = new GLib.Variant('s', stringFields[key]);
-        }
 
         GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
     };

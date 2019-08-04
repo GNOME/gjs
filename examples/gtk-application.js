@@ -31,13 +31,12 @@ var ExampleApplication = GObject.registerClass({
             flags: Gio.ApplicationFlags.FLAGS_NONE,
         });
     }
-    
+
     // Example property getter/setter
     get exampleprop() {
-        if (typeof this._exampleprop === 'undefined') {
+        if (typeof this._exampleprop === 'undefined')
             return 'a default value';
-        }
-        
+
         return this._exampleprop;
     }
     
@@ -64,10 +63,9 @@ var ExampleApplication = GObject.registerClass({
         
         exampleAction.connect('activate', (action, param) => {
             param = param.deep_unpack().toString();
-            
-            if (param === 'exampleParameter') {
+
+            if (param === 'exampleParameter')
                 log('Yes!');
-            }
         });
         
         this.add_action(exampleAction);

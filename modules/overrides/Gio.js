@@ -44,9 +44,10 @@ function _validateFDVariant(variant, fdList) {
     case 'h': {
         const val = variant.get_handle();
         const numFds = fdList.get_length();
-        if (val >= numFds)
+        if (val >= numFds) {
             throw new Error(`handle ${val} is out of range of Gio.UnixFDList ` +
                 `containing ${numFds} FDs`);
+        }
         return;
     }
     case 'v':
@@ -117,9 +118,10 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     const inTypeString = `(${inSignature.join('')})`;
     const inVariant = new GLib.Variant(inTypeString, arg_array);
     if (inTypeString.includes('h')) {
-        if (!fdList)
+        if (!fdList) {
             throw new Error(`Method ${methodName} with input type containing ` +
                 '\'h\' must have a Gio.UnixFDList as an argument');
+        }
         _validateFDVariant(inVariant, fdList);
     }
 
@@ -146,9 +148,8 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
 }
 
 function _logReply(result, exc) {
-    if (exc != null) {
+    if (exc != null)
         log(`Ignored exception from dbus method: ${exc}`);
-    }
 }
 
 function _makeProxyMethod(method, sync) {
@@ -248,7 +249,7 @@ function _makeProxyWrapper(interfaceXml) {
 
         if (!cancellable)
             cancellable = null;
-        if (asyncCallback)
+        if (asyncCallback) {
             obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (initable, result) => {
                 let caughtErrorWhenInitting = null;
                 try {
@@ -257,14 +258,14 @@ function _makeProxyWrapper(interfaceXml) {
                     caughtErrorWhenInitting = e;
                 }
 
-                if (caughtErrorWhenInitting === null) {
+                if (caughtErrorWhenInitting === null)
                     asyncCallback(initable, null);
-                } else {
+                else
                     asyncCallback(null, caughtErrorWhenInitting);
-                }
             });
-        else
+        } else {
             obj.init(cancellable);
+        }
         return obj;
     };
 }
@@ -416,15 +417,14 @@ function _wrapJSObject(interfaceInfo, jsObj) {
 function* _listModelIterator() {
     let _index = 0;
     const _len = this.get_n_items();
-    while (_index < _len) {
+    while (_index < _len)
         yield this.get_item(_index++);
-    }
 }
 
 function _promisify(proto, asyncFunc, finishFunc) {
     proto[`_original_${asyncFunc}`] = proto[asyncFunc];
     proto[asyncFunc] = function(...args) {
-        if (!args.every(arg => typeof arg !== 'function')) 
+        if (!args.every(arg => typeof arg !== 'function'))
             return this[`_original_${asyncFunc}`](...args);
         return new Promise((resolve, reject) => {
             const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
@@ -435,9 +435,9 @@ function _promisify(proto, asyncFunc, finishFunc) {
                         result.shift();
                     resolve(result);
                 } catch (error) {
-                    if (error.stack) 
+                    if (error.stack)
                         error.stack += `### Promise created here: ###\n${callStack}`;
-                    else 
+                    else
                         error.stack = callStack;
                     reject(error);
                 }
@@ -537,9 +537,10 @@ function _init() {
             // 'schema' is a deprecated alias for schema_id
             const requiredProps = ['schema', 'schema-id', 'schema_id', 'schemaId',
                 'settings-schema', 'settings_schema', 'settingsSchema'];
-            if (requiredProps.every(prop => !(prop in props)))
+            if (requiredProps.every(prop => !(prop in props))) {
                 throw new Error('One of property \'schema-id\' or ' +
                     '\'settings-schema\' are required for Gio.Settings');
+            }
 
             const checkSchemasProps = ['schema', 'schema-id', 'schema_id', 'schemaId'];
             const source = Gio.SettingsSchemaSource.get_default();

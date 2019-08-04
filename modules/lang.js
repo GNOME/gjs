@@ -44,19 +44,17 @@ function _copyProperty(source, dest, property) {
 }
 
 function copyProperties(source, dest) {
-    for (let property in source) {
+    for (let property in source)
         _copyProperty(source, dest, property);
-    }
 }
 
 function copyPublicProperties(source, dest) {
     for (let property in source) {
         if (typeof(property) == 'string' &&
-            property.substring(0, 1) == '_') {
+            property.substring(0, 1) == '_')
             continue;
-        } else {
+        else
             _copyProperty(source, dest, property);
-        }
     }
 }
 

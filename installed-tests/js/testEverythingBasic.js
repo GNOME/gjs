@@ -89,16 +89,18 @@ describe('Life, the Universe and Everything', function () {
             if (skip[limit + bytes])
                 pending("This test doesn't work");
 
-            if (bytes === '64')
+            if (bytes === '64') {
                 GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
                     '*cannot be safely stored*');
+            }
 
             let val = Limits[bytes][limit];
             expect(Regress[method_stem + bytes](val)).toBe(val);
 
-            if (bytes === '64')
+            if (bytes === '64') {
                 GLib.test_assert_expected_messages_internal('Gjs',
                     'testEverythingBasic.js', 0, 'Ignore message');
+            }
         }
         ['8', '16', '32', '64'].forEach(bytes => {
             it(`marshals max value of unsigned ${bytes}-bit integers`, function () {

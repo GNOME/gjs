@@ -95,9 +95,8 @@ function _signalHandlerIsConnected(id) {
 
 function _disconnectAll() {
     if ('_signalConnections' in this) {
-        while (this._signalConnections.length > 0) {
+        while (this._signalConnections.length > 0)
             _disconnect.call(this, this._signalConnections[0].id);
-        }
     }
 }
 
@@ -115,9 +114,8 @@ function _emit(name, ...args) {
     let length = this._signalConnections.length;
     for (i = 0; i < length; ++i) {
         let connection = this._signalConnections[i];
-        if (connection.name == name) {
+        if (connection.name == name)
             handlers.push(connection);
-        }
     }
 
     // create arg array which is emitter + everything passed in except
@@ -138,9 +136,8 @@ function _emit(name, ...args) {
 
                 // if the callback returns true, we don't call the next
                 // signal handlers
-                if (ret === true) {
+                if (ret === true)
                     break;
-                }
             } catch (e) {
                 // just log any exceptions so that callbacks can't disrupt
                 // signal emission
@@ -151,9 +148,8 @@ function _emit(name, ...args) {
 }
 
 function _addSignalMethod(proto, functionName, func) {
-    if (proto[functionName] && proto[functionName] != func) {
+    if (proto[functionName] && proto[functionName] != func)
         log(`WARNING: addSignalMethods is replacing existing ${proto} ${functionName} method`);
-    }
 
     proto[functionName] = func;
 }

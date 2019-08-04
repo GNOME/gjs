@@ -23,8 +23,7 @@ function cat(filename) {
     loop.run();
 }
 
-if (ARGV.length != 1) {
+if (ARGV.length != 1)
     printerr('Usage: gio-cat.js filename');
-} else {
+else
     cat(ARGV[0]);
-}

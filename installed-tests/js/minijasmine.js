@@ -75,9 +75,8 @@ class TapReporter {
             this._failedSuites.push(result);
         }
 
-        if (result.status === 'disabled') {
+        if (result.status === 'disabled')
             print('# Suite was disabled:', result.fullName);
-        }
     }
 
     specStarted() {

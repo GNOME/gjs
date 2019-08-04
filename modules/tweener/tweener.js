@@ -149,9 +149,8 @@ function _startEngine() {
     _engineExists = true;
     _tweenList = new Array();
 
-    if (!_ticker) {
+    if (!_ticker)
         throw new Error('Must call setFrameTicker()');
-    }
 
     _prepareFrameId = _ticker.connect('prepare-frame',
         _onEnterFrame);
@@ -273,9 +272,8 @@ function _updateTweenByIndex(i) {
 
                 if (tweening.properties[name].isSpecialProperty) {
                     // It's a special property, tunnel via the special property function
-                    if (_specialPropertyList[name].preProcess != undefined) {
+                    if (_specialPropertyList[name].preProcess != undefined)
                         tweening.properties[name].valueComplete = _specialPropertyList[name].preProcess(scope, _specialPropertyList[name].parameters, tweening.properties[name].originalValueComplete, tweening.properties[name].extra);
-                    }
                     pv = _specialPropertyList[name].getValue(scope, _specialPropertyList[name].parameters, tweening.properties[name].extra);
                 } else {
                     // Directly read property
@@ -511,10 +509,11 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
                 properties[istr].isSpecialProperty = true;
             } else {
                 for (var i = 0; i < scopes.length; i++) {
-                    if (scopes[i][istr] == undefined)
+                    if (scopes[i][istr] == undefined) {
                         log(`The property ${istr} doesn't seem to be a ` +
                             `normal object property of ${scopes[i]} or a ` +
                             'registered special property');
+                    }
                 }
             }
         }
@@ -533,11 +532,10 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
     var transition;
 
     // FIXME: Tweener allows you to use functions with an all lower-case name
-    if (typeof obj.transition == 'string') {
+    if (typeof obj.transition == 'string')
         transition = imports.tweener.equations[obj.transition];
-    } else {
+    else
         transition = obj.transition;
-    }
 
     if (!transition)
         transition = imports.tweener.equations['easeOutExpo'];
@@ -662,9 +660,8 @@ function removeTweensByTime(scope, properties, timeStart, timeComplete) {
             }
 
             if (removedLocally &&
-                _getNumberOfProperties(_tweenList[i].properties) == 0) {
+                _getNumberOfProperties(_tweenList[i].properties) == 0)
                 _removeTweenByIndex(i);
-            }
         }
     }
 
@@ -734,9 +731,8 @@ function _affectTweens(affectFunction, scope, properties) {
             // Must check whether this tween must have specific properties affected
             var affectedProperties = new Array();
             for (let j = 0; j < properties.length; j++) {
-                if (_tweenList[i].properties[properties[j]]) {
+                if (_tweenList[i].properties[properties[j]])
                     affectedProperties.push(properties[j]);
-                }
             }
 
             if (affectedProperties.length > 0) {
@@ -776,11 +772,10 @@ function _affectTweensWithFunction(func, args) {
     var affected = false;
     var scopes;
 
-    if (scope instanceof Array) {
+    if (scope instanceof Array)
         scopes = scope.concat();
-    } else {
+    else
         scopes = new Array(scope);
-    }
 
     for (let i = 1; args[i] != undefined; i++) {
         if (typeof(args[i]) == 'string' && !_isInArray(args[i], properties)) {
@@ -790,15 +785,15 @@ function _affectTweensWithFunction(func, args) {
                 var specialProps = sps.splitValues(scope, null);
                 for (let j = 0; j < specialProps.length; j++)
                     properties.push(specialProps[j].name);
-            } else
+            } else {
                 properties.push(args[i]);
+            }
         }
     }
 
     // the return now value means: "affect at least one tween"
-    for (let i = 0; i < scopes.length; i++) {
+    for (let i = 0; i < scopes.length; i++)
         affected = affected || _affectTweens(func, scopes[i], properties);
-    }
 
     return affected;
 }

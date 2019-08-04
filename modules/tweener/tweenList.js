@@ -65,9 +65,8 @@ TweenList.prototype = {
         var tween = new TweenList(this.scope, this.timeStart, this.timeComplete, this.userFrames,
             this.transition, this.transitionParams);
         tween.properties = new Array();
-        for (let name in this.properties) {
+        for (let name in this.properties)
             tween.properties[name] = this.properties[name];
-        }
         tween.skipUpdates = this.skipUpdates;
         tween.updatesSkipped = this.updatesSkipped;
 
