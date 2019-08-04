@@ -103,6 +103,7 @@ rules:
     # Vars use a suffix _ instead of a prefix because of file-scope private vars
     - varsIgnorePattern: (^unused|_$)
       argsIgnorePattern: ^(unused|_)
+  no-useless-call: error
   nonblock-statement-body-position:
     - error
     - below
