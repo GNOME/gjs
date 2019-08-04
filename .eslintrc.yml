@@ -64,6 +64,7 @@ rules:
   no-empty:
     - error
     - allowEmptyCatch: true
+  no-extra-bind: error
   no-implicit-coercion:
     - error
     - allow:
