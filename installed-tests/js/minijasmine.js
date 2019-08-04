@@ -101,11 +101,11 @@ class TapReporter {
 
         // Print additional diagnostic info on failure
         if (result.status === 'failed' && result.failedExpectations) {
-            result.failedExpectations.forEach((failedExpectation) => {
+            result.failedExpectations.forEach(failedExpectation => {
                 print('# Message:', _removeNewlines(failedExpectation.message));
                 print('# Stack:');
                 let stackTrace = _filterStack(failedExpectation.stack).trim();
-                print(stackTrace.split('\n').map((str) => `#   ${str}`).join('\n'));
+                print(stackTrace.split('\n').map(str => `#   ${str}`).join('\n'));
             });
         }
     }

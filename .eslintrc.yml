@@ -9,6 +9,9 @@ rules:
   array-bracket-spacing:
     - error
     - never
+  arrow-parens:
+    - error
+    - as-needed
   arrow-spacing: error
   brace-style: error
   comma-spacing:

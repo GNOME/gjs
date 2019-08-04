@@ -726,7 +726,7 @@ function helpCommand(cmd) {
         _printCommandsList();
     } else {
         var cmdGroups = _groupCommands();
-        var command = cmdGroups.find((c) => c.aliases.includes(cmd));
+        var command = cmdGroups.find(c => c.aliases.includes(cmd));
 
         if (command && command.helpText) {
             _printCommand(command);
