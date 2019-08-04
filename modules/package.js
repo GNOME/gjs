@@ -35,7 +35,7 @@ const System = imports.system;
 
 const Gettext = imports.gettext;
 
-/*< public >*/
+// public
 var name;
 var version;
 var prefix;
@@ -46,7 +46,7 @@ var pkglibdir;
 var moduledir;
 var localedir;
 
-/*< private >*/
+// private
 let _pkgname;
 let _base;
 let _submoduledir;

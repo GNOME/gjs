@@ -18,7 +18,7 @@ describe('GVariant constructor', function () {
         let struct_variant = new GLib.Variant('(sogvau)', [
             'a string',
             '/a/object/path',
-            'asig', //nature
+            'asig', // nature
             new GLib.Variant('s', 'variant'),
             [7, 3],
         ]);
