@@ -72,15 +72,13 @@ function copyPublicProperties(source, dest) {
  */
 function bind(obj, callback) {
     if (typeof(obj) != 'object') {
-        throw new Error(
-            "first argument to Lang.bind() must be an object, not " +
-                typeof(obj));
+        throw new Error(`first argument to Lang.bind() must be an object, not ${
+            typeof(obj)}`);
     }
 
     if (typeof(callback) != 'function') {
-        throw new Error(
-            "second argument to Lang.bind() must be a function, not " +
-                typeof(callback));
+        throw new Error(`second argument to Lang.bind() must be a function, not ${
+            typeof(callback)}`);
     }
 
     // Use ES5 Function.prototype.bind, but only if not passing any bindArguments,

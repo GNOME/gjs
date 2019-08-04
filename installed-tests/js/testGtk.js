@@ -100,12 +100,12 @@ const MyComplexGtkSubclassFromFile = GObject.registerClass({
 const SubclassSubclass = GObject.registerClass(
     class SubclassSubclass extends MyComplexGtkSubclass {});
 
-function validateTemplate(description, ClassName, pending=false) {
+function validateTemplate(description, ClassName, pending = false) {
     let suite = pending ? xdescribe : describe;
     suite(description, function () {
         let win, content;
         beforeEach(function () {
-            win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
+            win = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
             content = new ClassName();
             content.label_child.emit('grab-focus');
             win.add(content);

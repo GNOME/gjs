@@ -75,10 +75,10 @@ function FrameTicker() {
 FrameTicker.prototype = {
     FRAME_RATE: 65,
 
-    _init : function() {
+    _init: function() {
     },
 
-    start : function() {
+    start: function() {
         this._currentTime = 0;
 
         let me = this;
@@ -93,7 +93,7 @@ FrameTicker.prototype = {
             });
     },
 
-    stop : function() {
+    stop: function() {
         if ('_timeoutID' in this) {
             GLib.source_remove(this._timeoutID);
             delete this._timeoutID;
@@ -102,7 +102,7 @@ FrameTicker.prototype = {
         this._currentTime = 0;
     },
 
-    getTime : function() {
+    getTime: function() {
         return this._currentTime;
     }
 };
@@ -200,14 +200,13 @@ function _resumeTweenByIndex(i) {
 }
 
 /* FIXME: any way to get the function name from the fn itself? */
-function _callOnFunction(fn, fnname, scope, fallbackScope, params)
-{
+function _callOnFunction(fn, fnname, scope, fallbackScope, params) {
     if (fn) {
         var eventScope = scope ? scope : fallbackScope;
         try {
             fn.apply(eventScope, params);
         } catch (e) {
-            logError(e, 'Error calling ' + fnname);
+            logError(e, `Error calling ${fnname}`);
         }
     }
 }
@@ -230,7 +229,7 @@ function _updateTweenByIndex(i) {
 
     if (tweening.isCaller) {
         do {
-            t = ((tweening.timeComplete - tweening.timeStart)/tweening.count) *
+            t = ((tweening.timeComplete - tweening.timeStart) / tweening.count) *
                 (tweening.timesCalled + 1);
             b = tweening.timeStart;
             c = tweening.timeComplete - tweening.timeStart;
@@ -511,15 +510,19 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
             } else {
                 for (var i = 0; i < scopes.length; i++) {
                     if (scopes[i][istr] == undefined)
-                        log('The property ' + istr + ' doesn\'t seem to be a normal object property of ' + scopes[i] + ' or a registered special property');
+                        log(`The property ${istr} doesn't seem to be a ` +
+                            `normal object property of ${scopes[i]} or a ` +
+                            'registered special property');
                 }
             }
         }
     }
 
     // Creates the main engine if it isn't active
-    if (!_inited) _init();
-    if (!_engineExists) _startEngine();
+    if (!_inited)
+        _init();
+    if (!_engineExists)
+        _startEngine();
 
     // Creates a "safer", more strict tweening object
     var time = obj.time || 0;
@@ -599,7 +602,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         // Immediate update and removal if it's an immediate tween
         // If not deleted, it executes at the end of this frame execution
         if (time == 0 && delay == 0) {
-            var myT = _tweenList.length-1;
+            var myT = _tweenList.length - 1;
             _updateTweenByIndex(myT);
             _removeTweenByIndex(myT);
         }

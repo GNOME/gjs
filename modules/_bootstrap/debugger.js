@@ -350,7 +350,7 @@ PARAMETER
 function frameCommand(rest) {
     let n, f;
     if (rest.match(/[0-9]+/)) {
-        n = +rest;
+        n = Number(rest);
         f = topFrame;
         if (f === null) {
             print('No stack.');

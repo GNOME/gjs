@@ -152,7 +152,7 @@ describe('Cairo', function () {
                 cr.rotate(180);
                 cr.identityMatrix();
 
-                cr.showText("foobar");
+                cr.showText('foobar');
 
                 cr.moveTo(0, 0);
                 cr.setDash([], 1);

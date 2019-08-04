@@ -68,7 +68,7 @@ function _init() {
 
             let internalChildren = this.constructor[Gtk.internalChildren] || [];
             for (let child of internalChildren) {
-                this['_' + child.replace(/-/g, '_')] =
+                this[`_${child.replace(/-/g, '_')}`] =
                     this.get_template_child(this.constructor, child);
             }
         }

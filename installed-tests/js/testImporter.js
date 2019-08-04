@@ -64,7 +64,7 @@ describe('Importer', function () {
 
     it('throws an import error when trying to import a nonexistent module', function () {
         expect(() => imports.nonexistentModuleName)
-            .toThrow(jasmine.objectContaining({ name: 'ImportError' }));
+            .toThrow(jasmine.objectContaining({name: 'ImportError'}));
     });
 
     it('throws an error when evaluating the module file throws an error', function () {

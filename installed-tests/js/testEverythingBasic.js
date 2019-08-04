@@ -17,29 +17,29 @@ describe('Life, the Universe and Everything', function () {
     });
 
     [8, 16, 32, 64].forEach(bits => {
-        it('includes ' + bits + '-bit integers', function () {
-            let method = 'test_int' + bits;
+        it(`includes ${bits}-bit integers`, function () {
+            let method = `test_int${bits}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
         });
 
-        it('includes unsigned ' + bits + '-bit integers', function () {
-            let method = 'test_uint' + bits;
+        it(`includes unsigned ${bits}-bit integers`, function () {
+            let method = `test_uint${bits}`;
             expect(Regress[method](42)).toBe(42);
         });
     });
 
     ['short', 'int', 'long', 'ssize', 'float', 'double'].forEach(type => {
-        it('includes ' + type + 's', function () {
-            let method = 'test_' + type;
+        it(`includes ${type}s`, function () {
+            let method = `test_${type}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
         });
     });
 
     ['ushort', 'uint', 'ulong', 'size'].forEach(type => {
-        it('includes ' + type + 's', function () {
-            let method = 'test_' + type;
+        it(`includes ${type}s`, function () {
+            let method = `test_${type}`;
             expect(Regress[method](42)).toBe(42);
         });
     });
@@ -86,12 +86,12 @@ describe('Life, the Universe and Everything', function () {
         };
 
         function run_test(bytes, limit, method_stem) {
-            if(skip[limit + bytes])
+            if (skip[limit + bytes])
                 pending("This test doesn't work");
 
             if (bytes === '64')
                 GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                    "*cannot be safely stored*");
+                    '*cannot be safely stored*');
 
             let val = Limits[bytes][limit];
             expect(Regress[method_stem + bytes](val)).toBe(val);
@@ -101,24 +101,24 @@ describe('Life, the Universe and Everything', function () {
                     'testEverythingBasic.js', 0, 'Ignore message');
         }
         ['8', '16', '32', '64'].forEach(bytes => {
-            it('marshals max value of unsigned ' + bytes + '-bit integers', function () {
+            it(`marshals max value of unsigned ${bytes}-bit integers`, function () {
                 run_test(bytes, 'UMAX', 'test_uint');
             });
 
-            it('marshals min value of signed ' + bytes + '-bit integers', function () {
+            it(`marshals min value of signed ${bytes}-bit integers`, function () {
                 run_test(bytes, 'MIN', 'test_int');
             });
 
-            it('marshals max value of signed ' + bytes + '-bit integers', function () {
+            it(`marshals max value of signed ${bytes}-bit integers`, function () {
                 run_test(bytes, 'MAX', 'test_int');
             });
         });
 
         it('warns when conversion is lossy', function () {
             GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                "*cannot be safely stored*");
+                '*cannot be safely stored*');
             GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                "*cannot be safely stored*");
+                '*cannot be safely stored*');
             void GLib.MAXINT64;
             void GLib.MAXUINT64;
             GLib.test_assert_expected_messages_internal('Gjs',
@@ -129,8 +129,8 @@ describe('Life, the Universe and Everything', function () {
 
     describe('No implicit conversion to unsigned', function () {
         ['uint8', 'uint16', 'uint32', 'uint64', 'uint', 'size'].forEach(type => {
-            it('for ' + type, function () {
-                expect(() => Regress['test_' + type](-42)).toThrow();
+            it(`for ${type}`, function () {
+                expect(() => Regress[`test_${type}`](-42)).toThrow();
             });
         });
     });
@@ -158,14 +158,14 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('in after out', function () {
-        const str = "hello";
+        const str = 'hello';
         let len = Regress.test_int_out_utf8(str);
         expect(len).toEqual(str.length);
     });
 
     describe('UTF-8 strings', function () {
-        const CONST_STR = "const \u2665 utf8";
-        const NONCONST_STR = "nonconst \u2665 utf8";
+        const CONST_STR = 'const \u2665 utf8';
+        const NONCONST_STR = 'nonconst \u2665 utf8';
 
         it('as return types', function () {
             expect(Regress.test_utf8_const_return()).toEqual(CONST_STR);
@@ -192,7 +192,7 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('static methods', function () {
-        let v = Regress.TestObj.new_from_file("/enoent");
+        let v = Regress.TestObj.new_from_file('/enoent');
         expect(v instanceof Regress.TestObj).toBeTruthy();
     });
 
@@ -222,7 +222,7 @@ describe('Life, the Universe and Everything', function () {
     it('array callbacks', function () {
         let callback = jasmine.createSpy('callback').and.returnValue(7);
         expect(Regress.test_array_callback(callback)).toEqual(14);
-        expect(callback).toHaveBeenCalledWith([-1, 0, 1, 2], ["one", "two", "three"]);
+        expect(callback).toHaveBeenCalledWith([-1, 0, 1, 2], ['one', 'two', 'three']);
     });
 
     it('null array callback', function () {
@@ -231,14 +231,16 @@ describe('Life, the Universe and Everything', function () {
 
     it('callback with transfer-full return value', function () {
         function callback() {
-            return Regress.TestObj.new_from_file("/enoent");
+            return Regress.TestObj.new_from_file('/enoent');
         }
         Regress.test_callback_return_full(callback);
     });
 
     it('callback with destroy-notify', function () {
         let testObj = {
-            test: function (data) { return data; },
+            test: function (data) {
+                return data;
+            },
         };
         spyOn(testObj, 'test').and.callThrough();
         expect(Regress.test_callback_destroy_notify(function () {
@@ -281,43 +283,43 @@ describe('Life, the Universe and Everything', function () {
     });
 
     ['glist', 'gslist'].forEach(list => {
-        describe(list + ' types', function () {
+        describe(`${list} types`, function () {
             const STR_LIST = ['1', '2', '3'];
 
             it('return with transfer-none', function () {
-                expect(Regress['test_' + list + '_nothing_return']()).toEqual(STR_LIST);
-                expect(Regress['test_' + list + '_nothing_return2']()).toEqual(STR_LIST);
+                expect(Regress[`test_${list}_nothing_return`]()).toEqual(STR_LIST);
+                expect(Regress[`test_${list}_nothing_return2`]()).toEqual(STR_LIST);
             });
 
             it('return with transfer-container', function () {
-                expect(Regress['test_' + list + '_container_return']()).toEqual(STR_LIST);
+                expect(Regress[`test_${list}_container_return`]()).toEqual(STR_LIST);
             });
 
             it('return with transfer-full', function () {
-                expect(Regress['test_' + list + '_everything_return']()).toEqual(STR_LIST);
+                expect(Regress[`test_${list}_everything_return`]()).toEqual(STR_LIST);
             });
 
             it('in with transfer-none', function () {
-                Regress['test_' + list + '_nothing_in'](STR_LIST);
-                Regress['test_' + list + '_nothing_in2'](STR_LIST);
+                Regress[`test_${list}_nothing_in`](STR_LIST);
+                Regress[`test_${list}_nothing_in2`](STR_LIST);
             });
 
             xit('in with transfer-container', function () {
-                Regress['test_' + list + '_container_in'](STR_LIST);
+                Regress[`test_${list}_container_in`](STR_LIST);
             }).pend('Function not added to gobject-introspection test suite yet');
         });
     });
 
     ['int', 'gint8', 'gint16', 'gint32', 'gint64'].forEach(inttype => {
-        it('arrays of ' + inttype + ' in', function () {
-            expect(Regress['test_array_' + inttype + '_in']([1, 2, 3, 4])).toEqual(10);
+        it(`arrays of ${inttype} in`, function () {
+            expect(Regress[`test_array_${inttype}_in`]([1, 2, 3, 4])).toEqual(10);
         });
     });
 
     it('implicit conversions from strings to int arrays', function () {
-        expect(Regress.test_array_gint8_in("\x01\x02\x03\x04")).toEqual(10);
-        expect(Regress.test_array_gint16_in("\x01\x02\x03\x04")).toEqual(10);
-        expect(Regress.test_array_gint16_in("\u0100\u0200\u0300\u0400")).toEqual(2560);
+        expect(Regress.test_array_gint8_in('\x01\x02\x03\x04')).toEqual(10);
+        expect(Regress.test_array_gint16_in('\x01\x02\x03\x04')).toEqual(10);
+        expect(Regress.test_array_gint16_in('\u0100\u0200\u0300\u0400')).toEqual(2560);
     });
 
     it('GType arrays', function () {
@@ -356,8 +358,8 @@ describe('Life, the Universe and Everything', function () {
         expect(ints).toEqual([22, 33, 44]);
     });
 
-    describe('GHash type', function () {;
-        const EXPECTED_HASH = { baz: 'bat', foo: 'bar', qux: 'quux' };
+    describe('GHash type', function () {
+        const EXPECTED_HASH = {baz: 'bat', foo: 'bar', qux: 'quux'};
 
         it('null GHash in', function () {
             Regress.test_ghash_null_in(null);
@@ -380,7 +382,7 @@ describe('Life, the Universe and Everything', function () {
         });
 
         it('nested GHash', function () {
-            const EXPECTED_NESTED_HASH = { wibble: EXPECTED_HASH };
+            const EXPECTED_NESTED_HASH = {wibble: EXPECTED_HASH};
 
             expect(Regress.test_ghash_nested_everything_return())
                 .toEqual(EXPECTED_NESTED_HASH);
@@ -419,7 +421,7 @@ describe('Life, the Universe and Everything', function () {
 
     xit('can be answered with GObject.set()', function() {
         let o = new Regress.TestObj();
-        o.set({ string: 'Answer', int: 42 });
+        o.set({string: 'Answer', int: 42});
         expect(o.string).toBe('Answer');
         expect(o.int).toBe(42);
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/113');

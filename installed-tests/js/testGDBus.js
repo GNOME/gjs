@@ -99,7 +99,7 @@ var TestIface = `<node>
 
 const PROP_READ_ONLY_INITIAL_VALUE = Math.random();
 const PROP_READ_WRITE_INITIAL_VALUE = 58;
-const PROP_WRITE_ONLY_INITIAL_VALUE = "Initial value";
+const PROP_WRITE_ONLY_INITIAL_VALUE = 'Initial value';
 
 /* Test is the actual object exporting the dbus methods */
 class Test {
@@ -113,19 +113,19 @@ class Test {
     }
 
     frobateStuff(args) {
-        return { hello: new GLib.Variant('s', 'world') };
+        return {hello: new GLib.Variant('s', 'world')};
     }
 
     nonJsonFrobateStuff(i) {
         if (i == 42) {
-            return "42 it is!";
+            return '42 it is!';
         } else {
-            return "Oops";
+            return 'Oops';
         }
     }
 
     alwaysThrowException() {
-        throw Error("Exception!");
+        throw Error('Exception!');
     }
 
     thisDoesNotExist() {
@@ -133,15 +133,15 @@ class Test {
     }
 
     noInParameter() {
-        return "Yes!";
+        return 'Yes!';
     }
 
     multipleInArgs(a, b, c, d, e) {
-        return a + " " + b + " " + c + " " + d + " " + e;
+        return `${a} ${b} ${c} ${d} ${e}`;
     }
 
     emitSignal() {
-        this._impl.emit_signal('signalFoo', GLib.Variant.new('(s)', [ "foobar" ]));
+        this._impl.emit_signal('signalFoo', GLib.Variant.new('(s)', ['foobar']));
     }
 
     noReturnValue() {
@@ -153,22 +153,22 @@ class Test {
      * multipleOutValues is "sss", while oneArrayOut is "as"
      */
     multipleOutValues() {
-        return [ "Hello", "World", "!" ];
+        return ['Hello', 'World', '!'];
     }
 
     oneArrayOut() {
-        return [ "Hello", "World", "!" ];
+        return ['Hello', 'World', '!'];
     }
 
     /* Same thing again. In this case multipleArrayOut is "asas",
      * while arrayOfArrayOut is "aas".
      */
     multipleArrayOut() {
-        return [[ "Hello", "World" ], [ "World", "Hello" ]];
+        return [['Hello', 'World'], ['World', 'Hello']];
     }
 
     arrayOfArrayOut() {
-        return [[ "Hello", "World" ], [ "World", "Hello" ]];
+        return [['Hello', 'World'], ['World', 'Hello']];
     }
 
     arrayOutBadSig() {
@@ -286,11 +286,11 @@ describe('Exported DBus object', function () {
         own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
             Gio.BusNameOwnerFlags.NONE,
             name => {
-                log("Acquired name " + name);
+                log(`Acquired name ${name}`);
                 loop.quit();
             },
             name => {
-                log("Lost name " + name);
+                log(`Lost name ${name}`);
             });
         loop.run();
         new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
@@ -491,7 +491,7 @@ describe('Exported DBus object', function () {
     });
 
     it('can call a remote method that is implemented asynchronously', function () {
-        let someString = "Hello world!";
+        let someString = 'Hello world!';
         let someInt = 42;
 
         proxy.echoRemote(someString, someInt,
@@ -506,7 +506,7 @@ describe('Exported DBus object', function () {
     it('can send and receive bytes from a remote method', function () {
         let loop = GLib.MainLoop.new(null, false);
 
-        let someBytes = [ 0, 63, 234 ];
+        let someBytes = [0, 63, 234];
         someBytes.forEach(b => {
             proxy.byteEchoRemote(b, ([result], excp) => {
                 expect(excp).toBeNull();
