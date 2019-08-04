@@ -290,14 +290,14 @@ function checkSymbol(lib, version, symbol) {
 
     let [klass, sym] = symbol.split('.');
     if (klass === symbol) // global symbol
-        return (typeof Lib[symbol] !== 'undefined');
+        return typeof Lib[symbol] !== 'undefined';
 
     let obj = Lib[klass];
     if (typeof obj === 'undefined')
         return false;
 
     if (typeof obj[sym] !== 'undefined' ||
-        (obj.prototype && typeof obj.prototype[sym] !== 'undefined'))
+        obj.prototype && typeof obj.prototype[sym] !== 'undefined')
         return true; // class- or object method
 
     // GObject property
@@ -309,7 +309,7 @@ function checkSymbol(lib, version, symbol) {
         pspec = GObject.Object.find_property.call(obj.$gtype, sym);
     }
 
-    return (pspec !== null);
+    return pspec !== null;
 }
 
 function initGettext() {

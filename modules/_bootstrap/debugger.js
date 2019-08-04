@@ -34,7 +34,7 @@ function dvToString(v) {
         return 'undefined';  // uneval(undefined) === '(void 0)', confusing
     if (v === null)
         return 'null';  // typeof null === 'object', so avoid that case
-    return (typeof v !== 'object' || v === null) ? uneval(v) : `[object ${v.class}]`;
+    return typeof v !== 'object' || v === null ? uneval(v) : `[object ${v.class}]`;
 }
 
 function summarizeObject(dv) {
@@ -493,7 +493,7 @@ function doStepOrNext(kind) {
                 stop = true;
         } else {
             // regular step; stop whenever the line number changes
-            if ((this.line !== startLine) || (this !== startFrame))
+            if (this.line !== startLine || this !== startFrame)
                 stop = true;
         }
 

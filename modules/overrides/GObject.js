@@ -98,10 +98,10 @@ function registerClass(klass) {
 function _createSignals(gtype, signals) {
     for (let signalName in signals) {
         let obj = signals[signalName];
-        let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
-        let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
-        let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
-        let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
+        let flags = obj.flags !== undefined ? obj.flags : GObject.SignalFlags.RUN_FIRST;
+        let accumulator = obj.accumulator !== undefined ? obj.accumulator : GObject.AccumulatorType.NONE;
+        let rtype = obj.return_type !== undefined ? obj.return_type : GObject.TYPE_NONE;
+        let paramtypes = obj.param_types !== undefined ? obj.param_types : [];
 
         try {
             obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);
@@ -159,9 +159,9 @@ function _checkInterface(iface, proto) {
         // so that required interfaces don't copy over properties from other
         // interfaces that require them.
         let ifaces = proto.constructor[interfaces];
-        return ((!_interfacePresent(required, proto.constructor) ||
+        return (!_interfacePresent(required, proto.constructor) ||
             ifaces.indexOf(required) > ifaces.indexOf(iface)) &&
-            !(proto instanceof required));
+            !(proto instanceof required);
     }).map(required =>
         // required.name will be present on JS classes, but on introspected
         // GObjects it will be the C name. The alternative is just so that

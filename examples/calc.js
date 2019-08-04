@@ -43,13 +43,12 @@ function pressed_operator(button) {
 }
 
 function pressed_number(button) {
-    calc_val = (((calc_val === 0) ? '' : calc_val) + button.label);
+    calc_val = (calc_val === 0 ? '' : calc_val) + button.label;
     update_display();
 }
 
 function swap_sign() {
-    calc_val = ((calc_val[0] === '-') ?
-        calc_val.substring(1) : `-${calc_val}`);
+    calc_val = calc_val[0] === '-' ? calc_val.substring(1) : `-${calc_val}`;
     update_display();
 }
 

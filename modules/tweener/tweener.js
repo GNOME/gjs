@@ -230,7 +230,7 @@ function _updateTweenByIndex(i) {
 
     if (tweening.isCaller) {
         do {
-            t = ((tweening.timeComplete - tweening.timeStart) / tweening.count) *
+            t = (tweening.timeComplete - tweening.timeStart) / tweening.count *
                 (tweening.timesCalled + 1);
             b = tweening.timeStart;
             c = tweening.timeComplete - tweening.timeStart;
@@ -559,8 +559,8 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         }
 
         tween = new TweenList.TweenList(scopes[i],
-            _ticker.getTime() + ((delay * 1000) / _timeScale),
-            _ticker.getTime() + (((delay * 1000) + (time * 1000)) / _timeScale),
+            _ticker.getTime() + delay * 1000 / _timeScale,
+            _ticker.getTime() + (delay * 1000 + time * 1000) / _timeScale,
             false,
             transition,
             obj.transitionParams || null);
@@ -778,7 +778,7 @@ function _affectTweensWithFunction(func, args) {
         scopes = new Array(scope);
 
     for (let i = 1; args[i] != undefined; i++) {
-        if (typeof(args[i]) == 'string' && !_isInArray(args[i], properties)) {
+        if (typeof args[i] == 'string' && !_isInArray(args[i], properties)) {
             if (_specialPropertySplitterList[args[i]]) {
                 // special property, get splitter array first
                 var sps = _specialPropertySplitterList[arguments[i]];

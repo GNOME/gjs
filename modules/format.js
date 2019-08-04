@@ -12,8 +12,8 @@ function vprintf(str, args) {
             genericGroup !== 'f')
             throw new Error("Precision can only be specified for 'f'");
 
-        let hasAlternativeIntFlag = (flagsGroup &&
-            flagsGroup.indexOf('I') !== -1);
+        let hasAlternativeIntFlag = flagsGroup &&
+            flagsGroup.indexOf('I') !== -1;
         if (hasAlternativeIntFlag && genericGroup !== 'd')
             throw new Error("Alternative output digits can only be specfied for 'd'");
 
@@ -23,7 +23,7 @@ function vprintf(str, args) {
         if (usePos && pos === 0 || !usePos && pos > 0)
             throw new Error('Numbered and unnumbered conversion specifications cannot be mixed');
 
-        let fillChar = (widthGroup && widthGroup[0] === '0') ? '0' : ' ';
+        let fillChar = widthGroup && widthGroup[0] === '0' ? '0' : ' ';
         let width = parseInt(widthGroup, 10) || 0;
 
         function fillWidth(s, c, w) {
