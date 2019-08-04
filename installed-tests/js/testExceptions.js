@@ -24,7 +24,7 @@ const Bar = GObject.registerClass({
 describe('Exceptions', function () {
     it('are thrown from property setter', function () {
         let foo = new Foo();
-        expect(() => foo.prop = 'bar').toThrowError(/set/);
+        expect(() => (foo.prop = 'bar')).toThrowError(/set/);
     });
 
     it('are thrown from property getter', function () {

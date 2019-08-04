@@ -792,7 +792,7 @@ describe('GObject properties', function () {
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
 
     xit('throws when setting a read-only property', function () {
-        expect(() => obj.some_readonly = 35).toThrow();
+        expect(() => (obj.some_readonly = 35)).toThrow();
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
 });
 
