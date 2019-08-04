@@ -160,11 +160,11 @@ describe('GObject class with decorator', function () {
 
     it('throws an error when not used with a GObject-derived class', function () {
         class Foo {}
-        expect (() => GObject.registerClass(class Bar extends Foo {})).toThrow();
+        expect(() => GObject.registerClass(class Bar extends Foo {})).toThrow();
     });
 
     it('throws an error when used with an abstract class', function() {
-        expect (() => new MyAbstractObject()).toThrow();
+        expect(() => new MyAbstractObject()).toThrow();
     });
 
     it('constructs with default values for properties', function () {
@@ -372,7 +372,7 @@ describe('GObject class with decorator', function () {
             }
         });
 
-        expect (() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
+        expect(() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
     });
 
     it('resolves properties from interfaces', function() {
