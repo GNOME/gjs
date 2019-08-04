@@ -75,12 +75,9 @@ function _makeNamePath(n) {
 }
 
 /**
- * init:
- * @params: package parameters
- *
  * Initialize directories and global variables. Must be called
  * before any of other API in Package is used.
- * @params must be an object with at least the following keys:
+ * `params` must be an object with at least the following keys:
  *  - name: the package name ($(PACKAGE_NAME) in autotools,
  *          eg. org.foo.Bar)
  *  - version: the package version
@@ -116,6 +113,8 @@ function _makeNamePath(n) {
  * All paths are absolute and will not end with '/'.
  *
  * As a side effect, init() calls GLib.set_prgname().
+ *
+ * @param {object} params package parameters
  */
 function init(params) {
     window.pkg = imports.package;
@@ -196,13 +195,11 @@ function init(params) {
 }
 
 /**
- * start:
- * @params: see init()
- *
  * This is a convenience function if your package has a
  * single entry point.
  * You must define a main(ARGV) function inside a main.js
  * module in moduledir.
+ * @param {object} params see init()
  */
 function start(params) {
     init(params);
@@ -210,9 +207,6 @@ function start(params) {
 }
 
 /**
- * run:
- * @module: the module to run
- *
  * This is the function to use if you want to have multiple
  * entry points in one package.
  * You must define a main(ARGV) function inside the passed
@@ -220,20 +214,21 @@ function start(params) {
  *
  * imports.package.init(...);
  * imports.package.run(imports.entrypoint);
+ *
+ * @param {object} module the module to run
+ * @returns {number|undefined} the exit code of the module's main() function
  */
 function run(module) {
     return module.main([System.programInvocationName].concat(ARGV));
 }
 
 /**
- * require:
- * @libs: the external dependencies to import
- *
  * Mark a dependency on a specific version of one or more
  * external GI typelibs.
- * @libs must be an object whose keys are a typelib name,
+ * `libs` must be an object whose keys are a typelib name,
  * and values are the respective version. The empty string
  * indicates any version.
+ * @param {object} libs the external dependencies to import
  */
 function require(libs) {
     for (let l in libs)
@@ -241,10 +236,11 @@ function require(libs) {
 }
 
 /**
- * requireSymbol:
- *
  * As checkSymbol(), but exit with an error if the
  * dependency cannot be satisfied.
+ * @param {string} lib an external dependency to import
+ * @param {string} [ver] version of the dependency
+ * @param {string} [symbol] symbol to check for
  */
 function requireSymbol(lib, ver, symbol) {
     if (!checkSymbol(lib, ver, symbol)) {
@@ -257,11 +253,6 @@ function requireSymbol(lib, ver, symbol) {
 }
 
 /**
- * checkSymbol:
- * @lib: an external dependency to import
- * @version: optional version of the dependency
- * @symbol: optional symbol to check for
- *
  * Check whether an external GI typelib can be imported
  * and provides @symbol.
  *
@@ -271,7 +262,11 @@ function requireSymbol(lib, ver, symbol) {
  *  - class / instance methods ('IconTheme.get_default' / 'IconTheme.has_icon')
  *  - GObject properties       ('Window.default_height')
  *
- * Returns: %true if @lib can be imported and provides @symbol, %false otherwise
+ * @param {string} lib an external dependency to import
+ * @param {string} [ver] version of the dependency
+ * @param {string} [symbol] symbol to check for
+ * @return {boolean} true if `lib` can be imported and provides `symbol`, false
+ * otherwise
  */
 function checkSymbol(lib, ver, symbol) {
     let Lib = null;

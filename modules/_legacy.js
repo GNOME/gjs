@@ -162,8 +162,7 @@ Class.prototype._construct = function (params, ...otherArgs) {
 /**
  * Check whether this class conforms to the interface "iface".
  * @param {object} iface a Lang.Interface
- * @returns: whether this class implements iface
- * @type: boolean
+ * @returns {boolean} whether this class implements iface
  */
 Class.prototype.implements = function (iface) {
     if (_interfacePresent(iface, this.prototype))

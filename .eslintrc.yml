@@ -141,6 +141,9 @@ rules:
     - int32Hint: false
   space-unary-ops: error
   spaced-comment: error
+  valid-jsdoc:
+    - error
+    - requireReturn: false
 globals:
   ARGV: readonly
   Debugger: readonly

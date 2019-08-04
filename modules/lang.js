@@ -62,9 +62,8 @@ function copyPublicProperties(source, dest) {
  * using this within the callback.
  * @param {object} obj the object to bind
  * @param {function} callback callback to bind obj in
- * @param arguments additional arguments to the callback
- * @returns: a new callback
- * @type: function
+ * @param {*} bindArguments additional arguments to the callback
+ * @returns {function} a new callback
  */
 function bind(obj, callback, ...bindArguments) {
     if (typeof obj !== 'object') {
