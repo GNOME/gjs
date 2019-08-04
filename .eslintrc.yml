@@ -104,6 +104,7 @@ rules:
     - varsIgnorePattern: (^unused|_$)
       argsIgnorePattern: ^(unused|_)
   no-useless-call: error
+  no-useless-constructor: error
   nonblock-statement-body-position:
     - error
     - below
