@@ -92,7 +92,8 @@ Object.defineProperty(Debugger.Frame.prototype, 'num', {
     enumerable: false,
     get: function() {
         let i = 0;
-        for (var f = topFrame; f && f !== this; f = f.older)
+        let f;
+        for (f = topFrame; f && f !== this; f = f.older)
             i++;
         return f === null ? undefined : i;
     }

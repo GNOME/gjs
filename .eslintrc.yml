@@ -13,6 +13,7 @@ rules:
     - error
     - as-needed
   arrow-spacing: error
+  block-scoped-var: error
   brace-style: error
   comma-spacing:
     - error
