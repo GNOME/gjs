@@ -80,9 +80,8 @@ function dpgettext(dom, context, msgid) {
  * Create an object with bindings for gettext, ngettext,
  * and pgettext bound to a particular translation domain.
  *
- * @param domainName Translation domain string
- * @returns: an object with gettext bindings
- * @type: function
+ * @param {string} domainName Translation domain string
+ * @returns {object} an object with gettext bindings
  */
 function domain(domainName) {
     return {
