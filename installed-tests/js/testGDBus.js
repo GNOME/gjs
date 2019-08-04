@@ -117,7 +117,7 @@ class Test {
     }
 
     nonJsonFrobateStuff(i) {
-        if (i == 42)
+        if (i === 42)
             return '42 it is!';
         else
             return 'Oops';
@@ -268,7 +268,7 @@ describe('Exported DBus object', function () {
         });
 
         while (waitId && (!test[property] ||
-                          (value !== undefined && test[property] != value)))
+                          (value !== undefined && test[property] !== value)))
             loop.get_context().iteration(true);
 
         if (waitId)

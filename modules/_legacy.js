@@ -61,7 +61,7 @@ function getMetaClass(params) {
 function Class(params) {
     let metaClass = getMetaClass(params);
 
-    if (metaClass && metaClass != this.constructor)
+    if (metaClass && metaClass !== this.constructor)
         return new metaClass(...arguments);
     else
         return this._construct.apply(this, arguments);
@@ -467,7 +467,7 @@ function defineGObjectLegacyObjects(GObject) {
                 _createSignals(this.$gtype, signals);
 
             Object.getOwnPropertyNames(params).forEach(function(name) {
-                if (name == 'Name' || name == 'Extends' || name == 'Abstract')
+                if (['Name', 'Extends', 'Abstract'].includes(name))
                     return;
 
                 let descriptor = Object.getOwnPropertyDescriptor(params, name);
@@ -475,10 +475,10 @@ function defineGObjectLegacyObjects(GObject) {
                 if (typeof descriptor.value === 'function') {
                     let wrapped = this.prototype[name];
 
-                    if (name.slice(0, 6) == 'vfunc_') {
+                    if (name.startsWith('vfunc_')) {
                         this.prototype[Gi.hook_up_vfunc_symbol](name.slice(6),
                             wrapped);
-                    } else if (name.slice(0, 3) == 'on_') {
+                    } else if (name.startsWith('on_')) {
                         let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
                         if (id !== 0) {
                             GObject.signal_override_class_closure(id, this.$gtype, function() {
@@ -499,10 +499,10 @@ function defineGObjectLegacyObjects(GObject) {
             if (!proto)
                 return false;
 
-            // If proto == GObject.Object.prototype, then
+            // If proto === GObject.Object.prototype, then
             // proto.__proto__ is Object, so "proto instanceof GObject.Object"
             // will return false.
-            return proto == GObject.Object.prototype ||
+            return proto === GObject.Object.prototype ||
                 proto instanceof GObject.Object;
         },
 
@@ -674,7 +674,7 @@ function defineGtkLegacyObjects(GObject, Gtk) {
                 Gtk.Widget.set_css_name.call(this, cssName);
 
             if (template) {
-                if (typeof template == 'string' &&
+                if (typeof template === 'string' &&
                     template.startsWith('resource:///'))
                     Gtk.Widget.set_template_from_resource.call(this, template.slice(11));
                 else
@@ -702,11 +702,11 @@ function defineGtkLegacyObjects(GObject, Gtk) {
             if (!proto)
                 return false;
 
-            // If proto == Gtk.Widget.prototype, then
+            // If proto === Gtk.Widget.prototype, then
             // proto.__proto__ is GObject.InitiallyUnowned, so
             // "proto instanceof Gtk.Widget"
             // will return false.
-            return proto == Gtk.Widget.prototype ||
+            return proto === Gtk.Widget.prototype ||
                 proto instanceof Gtk.Widget;
         },
     });

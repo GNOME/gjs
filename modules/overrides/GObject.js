@@ -40,7 +40,7 @@ var _gtkInternalChildren = Symbol('GTK widget template internal children');
 var _gtkTemplate = Symbol('GTK widget template');
 
 function registerClass(klass) {
-    if (arguments.length == 2) {
+    if (arguments.length === 2) {
         // The two-argument form is the convenient syntax without ESnext
         // decorators and class data properties. The first argument is an
         // object with meta info such as properties and signals. The second

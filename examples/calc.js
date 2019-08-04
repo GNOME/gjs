@@ -30,7 +30,7 @@ function pressed_equals() {
     calc_val = calc_val.replace('tan', 'Math.tan');
     calc_val = eval(calc_val);
     // Avoid ridiculous amounts of precision from toString.
-    if (calc_val == Math.floor(calc_val))
+    if (calc_val === Math.floor(calc_val))
         calc_val = Math.floor(calc_val);
     else // bizarrely gjs loses str.toFixed() somehow?!
         calc_val = Math.floor(calc_val * 10000) / 10000;
@@ -48,7 +48,7 @@ function pressed_number(button) {
 }
 
 function swap_sign() {
-    calc_val = ((calc_val[0] == '-') ?
+    calc_val = ((calc_val[0] === '-') ?
         calc_val.substring(1) : `-${calc_val}`);
     update_display();
 }

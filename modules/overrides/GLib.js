@@ -28,30 +28,30 @@ function _read_single_type(signature, forceSimple) {
     let char = signature.shift();
     let isSimple = false;
 
-    if (SIMPLE_TYPES.indexOf(char) == -1) {
+    if (!SIMPLE_TYPES.includes(char)) {
         if (forceSimple)
             throw new TypeError('Invalid GVariant signature (a simple type was expected)');
     } else {
         isSimple = true;
     }
 
-    if (char == 'm' || char == 'a')
+    if (char === 'm' || char === 'a')
         return [char].concat(_read_single_type(signature, false));
-    if (char == '{') {
+    if (char === '{') {
         let key = _read_single_type(signature, true);
         let val = _read_single_type(signature, false);
         let close = signature.shift();
-        if (close != '}')
+        if (close !== '}')
             throw new TypeError('Invalid GVariant signature for type DICT_ENTRY (expected "}"');
         return [char].concat(key, val, close);
     }
-    if (char == '(') {
+    if (char === '(') {
         let res = [char];
         while (true) {
-            if (signature.length == 0)
+            if (signature.length === 0)
                 throw new TypeError('Invalid GVariant signature for type TUPLE (expected ")")');
             let next = signature[0];
-            if (next == ')') {
+            if (next === ')') {
                 signature.shift();
                 return res.concat(next);
             }
@@ -61,7 +61,7 @@ function _read_single_type(signature, forceSimple) {
     }
 
     // Valid types are simple types, arrays, maybes, tuples, dictionary entries and variants
-    if (!isSimple && char != 'v')
+    if (!isSimple && char !== 'v')
         throw new TypeError(`Invalid GVariant signature (${char} is not a valid type)`);
 
     return [char];
@@ -75,7 +75,7 @@ function _makeBytes(byteArray) {
 }
 
 function _pack_variant(signature, value) {
-    if (signature.length == 0)
+    if (signature.length === 0)
         throw new TypeError('GVariant signature cannot be empty');
 
     let char = signature.shift();
@@ -109,17 +109,17 @@ function _pack_variant(signature, value) {
     case 'v':
         return GLib.Variant.new_variant(value);
     case 'm':
-        if (value != null)
+        if (value !== null)
             return GLib.Variant.new_maybe(null, _pack_variant(signature, value));
         else
             return GLib.Variant.new_maybe(new GLib.VariantType(_read_single_type(signature, false).join('')), null);
     case 'a': {
         let arrayType = _read_single_type(signature, false);
-        if (arrayType[0] == 's') {
+        if (arrayType[0] === 's') {
             // special case for array of strings
             return GLib.Variant.new_strv(value);
         }
-        if (arrayType[0] == 'y') {
+        if (arrayType[0] === 'y') {
             // special case for array of bytes
             let bytes;
             if (typeof value === 'string') {
@@ -135,7 +135,7 @@ function _pack_variant(signature, value) {
         }
 
         let arrayValue = [];
-        if (arrayType[0] == '{') {
+        if (arrayType[0] === '{') {
             // special case for dictionaries
             for (let key in value) {
                 let copy = [].concat(arrayType);
@@ -156,12 +156,12 @@ function _pack_variant(signature, value) {
         let children = [];
         for (let i = 0; i < value.length; i++) {
             let next = signature[0];
-            if (next == ')')
+            if (next === ')')
                 break;
             children.push(_pack_variant(signature, value[i]));
         }
 
-        if (signature[0] != ')')
+        if (signature[0] !== ')')
             throw new TypeError('Invalid GVariant signature for type TUPLE (expected ")")');
         signature.shift();
         return GLib.Variant.new_tuple(children);
@@ -170,7 +170,7 @@ function _pack_variant(signature, value) {
         let key = _pack_variant(signature, value[0]);
         let child = _pack_variant(signature, value[1]);
 
-        if (signature[0] != '}')
+        if (signature[0] !== '}')
             throw new TypeError('Invalid GVariant signature for type DICT_ENTRY (expected "}")');
         signature.shift();
 
@@ -280,7 +280,7 @@ function _init() {
         let signature = Array.prototype.slice.call(sig);
 
         let variant = _pack_variant(signature, value);
-        if (signature.length != 0)
+        if (signature.length !== 0)
             throw new TypeError('Invalid GVariant signature (more than one single complete type)');
 
         return variant;
