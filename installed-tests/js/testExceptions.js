@@ -6,11 +6,11 @@ const Foo = GObject.registerClass({
     },
 }, class Foo extends GObject.Object {
     set prop(v) {
-	throw new Error('set');
+        throw new Error('set');
     }
 
     get prop() {
-	throw new Error('get');
+        throw new Error('get');
     }
 });
 

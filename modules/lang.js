@@ -86,7 +86,7 @@ function bind(obj, callback) {
     // Use ES5 Function.prototype.bind, but only if not passing any bindArguments,
     // because ES5 has them at the beginning, not at the end
     if (arguments.length == 2)
-	return callback.bind(obj);
+        return callback.bind(obj);
 
     let me = obj;
     let bindArguments = Array.prototype.slice.call(arguments, 2);
