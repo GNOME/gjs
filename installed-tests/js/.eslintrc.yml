@@ -1,6 +1,21 @@
 ---
 env:
   jasmine: true
+rules:
+  no-restricted-syntax:
+    - error
+    - selector: CallExpression[callee.name="it"] > ArrowFunctionExpression
+      message: Arrow functions can mess up some Jasmine APIs. Use function () instead
+    - selector: CallExpression[callee.name="describe"] > ArrowFunctionExpression
+      message: Arrow functions can mess up some Jasmine APIs. Use function () instead
+    - selector: CallExpression[callee.name="beforeEach"] > ArrowFunctionExpression
+      message: Arrow functions can mess up some Jasmine APIs. Use function () instead
+    - selector: CallExpression[callee.name="afterEach"] > ArrowFunctionExpression
+      message: Arrow functions can mess up some Jasmine APIs. Use function () instead
+    - selector: CallExpression[callee.name="beforeAll"] > ArrowFunctionExpression
+      message: Arrow functions can mess up some Jasmine APIs. Use function () instead
+    - selector: CallExpression[callee.name="afterAll"] > ArrowFunctionExpression
+      message: Arrow functions can mess up some Jasmine APIs. Use function () instead
 globals:
   clearInterval: writable
   clearTimeout: writable
