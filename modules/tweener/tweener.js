@@ -77,10 +77,10 @@ function FrameTicker() {
 FrameTicker.prototype = {
     FRAME_RATE: 65,
 
-    _init: function() {
+    _init() {
     },
 
-    start: function() {
+    start() {
         this._currentTime = 0;
 
         let me = this;
@@ -95,7 +95,7 @@ FrameTicker.prototype = {
             });
     },
 
-    stop: function() {
+    stop() {
         if ('_timeoutID' in this) {
             GLib.source_remove(this._timeoutID);
             delete this._timeoutID;
@@ -104,7 +104,7 @@ FrameTicker.prototype = {
         this._currentTime = 0;
     },
 
-    getTime: function() {
+    getTime() {
         return this._currentTime;
     },
 };
@@ -464,7 +464,7 @@ function PropertyInfo(valueStart, valueComplete, originalValueComplete,
 }
 
 PropertyInfo.prototype = {
-    _init: function(valueStart, valueComplete, originalValueComplete,
+    _init(valueStart, valueComplete, originalValueComplete,
         arrayIndex, extra, isSpecialProperty,
         modifierFunction, modifierParameters) {
         this.valueStart             =       valueStart;
@@ -853,7 +853,7 @@ function registerSpecialProperty(name, getFunction, setFunction,
     _specialPropertyList[name] = {
         getValue: getFunction,
         setValue: setFunction,
-        parameters: parameters,
+        parameters,
         preProcess: preProcessFunction,
     };
 }
@@ -868,7 +868,7 @@ function registerSpecialPropertyModifier(name, modifyFunction, getFunction) {
 function registerSpecialPropertySplitter(name, splitFunction, parameters) {
     _specialPropertySplitterList[name] = {
         splitValues: splitFunction,
-        parameters: parameters,
+        parameters,
     };
 }
 

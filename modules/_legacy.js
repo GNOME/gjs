@@ -456,7 +456,7 @@ function defineGObjectLegacyObjects(GObject) {
         Name: 'GObjectClass',
         Extends: Class,
 
-        _init: function (params) {
+        _init(params) {
             // retrieve signals and remove them from params before chaining
             let signals = params.Signals;
             delete params.Signals;
@@ -493,7 +493,7 @@ function defineGObjectLegacyObjects(GObject) {
             }.bind(this));
         },
 
-        _isValidClass: function(klass) {
+        _isValidClass(klass) {
             let proto = klass.prototype;
 
             if (!proto)
@@ -508,7 +508,7 @@ function defineGObjectLegacyObjects(GObject) {
 
         // If we want an object with a custom JSClass, we can't just
         // use a function. We have to use a custom constructor here.
-        _construct: function(params) {
+        _construct(params) {
             if (!params.Name)
                 throw new TypeError("Classes require an explicit 'Name' parameter.");
             let name = params.Name;
@@ -572,7 +572,7 @@ function defineGObjectLegacyObjects(GObject) {
         },
 
         // Overrides Lang.Class.implements()
-        implements: function (iface) {
+        implements(iface) {
             if (iface instanceof GObject.Interface)
                 return GObject.type_is_a(this.$gtype, iface.$gtype);
             else
@@ -649,7 +649,7 @@ function defineGtkLegacyObjects(GObject, Gtk) {
         Name: 'GtkWidgetClass',
         Extends: GObject.Class,
 
-        _init: function(params) {
+        _init(params) {
             let template = params.Template;
             delete params.Template;
 
@@ -696,7 +696,7 @@ function defineGtkLegacyObjects(GObject, Gtk) {
             }
         },
 
-        _isValidClass: function(klass) {
+        _isValidClass(klass) {
             let proto = klass.prototype;
 
             if (!proto)

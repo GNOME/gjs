@@ -41,7 +41,7 @@ function TweenList(scope, timeStart, timeComplete,
 }
 
 TweenList.prototype = {
-    _init: function(scope, timeStart, timeComplete,
+    _init(scope, timeStart, timeComplete,
         userFrames, transition, transitionParams) {
         this.scope = scope;
         this.timeStart = timeStart;
@@ -61,7 +61,7 @@ TweenList.prototype = {
         this.hasStarted = false;
     },
 
-    clone: function(omitEvents) {
+    clone(omitEvents) {
         var tween = new TweenList(this.scope, this.timeStart, this.timeComplete, this.userFrames,
             this.transition, this.transitionParams);
         tween.properties = [];

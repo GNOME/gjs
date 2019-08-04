@@ -6,7 +6,7 @@ const Lang = imports.lang;
 const NormalClass = new Lang.Class({
     Name: 'NormalClass',
 
-    _init: function() {
+    _init() {
         this.one = 1;
     },
 });
@@ -16,7 +16,7 @@ const MetaClass = new Lang.Class({
     Name: 'MetaClass',
     Extends: Lang.Class,
 
-    _init: function(params) {
+    _init(params) {
         Subclassed.push(params.Name);
         this.parent(params);
 
@@ -35,7 +35,7 @@ const CustomMetaOne = new MetaClass({
     Extends: NormalClass,
     Extended: false,
 
-    _init: function() {
+    _init() {
         this.parent();
 
         this.two = 2;
@@ -47,7 +47,7 @@ const CustomMetaTwo = new MetaClass({
     Extends: NormalClass,
     Extended: true,
 
-    _init: function() {
+    _init() {
         this.parent();
 
         this.two = 2;
@@ -61,7 +61,7 @@ const CustomMetaSubclass = new Lang.Class({
     Extends: CustomMetaOne,
     Extended: true,
 
-    _init: function() {
+    _init() {
         this.parent();
 
         this.three = 3;
@@ -126,18 +126,18 @@ describe('A metaclass', function () {
 const MagicBase = new Lang.Class({
     Name: 'MagicBase',
 
-    _init: function(a, buffer) {
+    _init(a, buffer) {
         if (buffer)
             buffer.push(a);
         this.a = a;
     },
 
-    foo: function(a, buffer) {
+    foo(a, buffer) {
         buffer.push(a);
         return a * 3;
     },
 
-    bar: function(a) {
+    bar(a) {
         return a * 5;
     },
 });
@@ -147,20 +147,20 @@ const Magic = new Lang.Class({
 
     Extends: MagicBase,
 
-    _init: function(a, b, buffer) {
+    _init(a, b, buffer) {
         this.parent(a, buffer);
         if (buffer)
             buffer.push(b);
         this.b = b;
     },
 
-    foo: function(a, b, buffer) {
+    foo(a, b, buffer) {
         let val = this.parent(a, buffer);
         buffer.push(b);
         return val * 2;
     },
 
-    bar: function(a, buffer) {
+    bar(a, buffer) {
         this.foo(a, 2 * a, buffer);
         return this.parent(a);
     },
@@ -169,7 +169,7 @@ const Magic = new Lang.Class({
 const Accessor = new Lang.Class({
     Name: 'AccessorMagic',
 
-    _init: function(val) {
+    _init(val) {
         this._val = val;
     },
 
@@ -188,7 +188,7 @@ const AbstractBase = new Lang.Class({
     Name: 'AbstractBase',
     Abstract: true,
 
-    _init: function() {
+    _init() {
         this.foo = 42;
     },
 });
@@ -238,7 +238,7 @@ describe('Class framework', function () {
         const ToStringOverride = new Lang.Class({
             Name: 'ToStringOverride',
 
-            toString: function() {
+            toString() {
                 let oldToString = this.parent();
                 return `${oldToString}; hello`;
             },
@@ -274,7 +274,7 @@ describe('Class framework', function () {
             Name: 'AbstractImpl',
             Extends: AbstractBase,
 
-            _init: function() {
+            _init() {
                 this.parent();
                 this.bar = 42;
             },
@@ -315,7 +315,7 @@ describe('Class framework', function () {
         const CustomConstruct = new Lang.Class({
             Name: 'CustomConstruct',
 
-            _construct: function(one, two) {
+            _construct(one, two) {
                 return [one, two];
             },
         });
@@ -344,23 +344,23 @@ const AnInterface = new Lang.Interface({
 
     required: Lang.Interface.UNIMPLEMENTED,
 
-    optional: function () {
+    optional() {
         return 'AnInterface.optional()';
     },
 
-    optionalGeneric: function () {
+    optionalGeneric() {
         return 'AnInterface.optionalGeneric()';
     },
 
-    argumentGeneric: function (arg) {
+    argumentGeneric(arg) {
         return `AnInterface.argumentGeneric(${arg})`;
     },
 
-    usesThis: function () {
+    usesThis() {
         return this._interfacePrivateMethod();
     },
 
-    _interfacePrivateMethod: function () {
+    _interfacePrivateMethod() {
         return 'interface private method';
     },
 
@@ -377,12 +377,12 @@ const InterfaceRequiringOtherInterface = new Lang.Interface({
     Name: 'InterfaceRequiringOtherInterface',
     Requires: [AnInterface],
 
-    optional: function () {
+    optional() {
         return `InterfaceRequiringOtherInterface.optional()\n${
             AnInterface.prototype.optional.apply(this, arguments)}`;
     },
 
-    optionalGeneric: function () {
+    optionalGeneric() {
         return `InterfaceRequiringOtherInterface.optionalGeneric()\n${
             AnInterface.optionalGeneric(this)}`;
     },
@@ -392,21 +392,21 @@ const ObjectImplementingAnInterface = new Lang.Class({
     Name: 'ObjectImplementingAnInterface',
     Implements: [AnInterface],
 
-    _init: function () {
+    _init() {
         this.parent();
     },
 
-    required: function () {},
+    required() {},
 
-    optional: function () {
+    optional() {
         return AnInterface.prototype.optional.apply(this, arguments);
     },
 
-    optionalGeneric: function () {
+    optionalGeneric() {
         return AnInterface.optionalGeneric(this);
     },
 
-    argumentGeneric: function (arg) {
+    argumentGeneric(arg) {
         return AnInterface.argumentGeneric(this, `${arg} (hello from class)`);
     },
 });
@@ -420,20 +420,20 @@ const MinimalImplementationOfAnInterface = new Lang.Class({
     Name: 'MinimalImplementationOfAnInterface',
     Implements: [AnInterface],
 
-    required: function () {},
+    required() {},
 });
 
 const ImplementationOfTwoInterfaces = new Lang.Class({
     Name: 'ImplementationOfTwoInterfaces',
     Implements: [AnInterface, InterfaceRequiringOtherInterface],
 
-    required: function () {},
+    required() {},
 
-    optional: function () {
+    optional() {
         return InterfaceRequiringOtherInterface.prototype.optional.apply(this, arguments);
     },
 
-    optionalGeneric: function () {
+    optionalGeneric() {
         return InterfaceRequiringOtherInterface.optionalGeneric(this);
     },
 });
@@ -529,7 +529,7 @@ describe('An interface', function () {
         const ObjectWithGetter = new Lang.Class({
             Name: 'ObjectWithGetter',
             Implements: [AnInterface],
-            required: function () {},
+            required() {},
             get some_prop() {
                 return 'ObjectWithGetter.some_prop getter';
             },
@@ -542,7 +542,7 @@ describe('An interface', function () {
         const ObjectWithSetter = new Lang.Class({
             Name: 'ObjectWithSetter',
             Implements: [AnInterface],
-            required: function () {},
+            required() {},
             set some_prop(value) {  /* setter without getter */// jshint ignore:line
                 this.overridden_some_prop_setter_called = true;
             },
@@ -591,7 +591,7 @@ describe('An interface', function () {
             Name: 'MinimalImplementationOfTwoInterfaces',
             Implements: [AnInterface, InterfaceRequiringOtherInterface],
 
-            required: function () {},
+            required() {},
         });
         let obj = new MinimalImplementationOfTwoInterfaces();
         expect(obj.optionalGeneric())
@@ -602,7 +602,7 @@ describe('An interface', function () {
         expect(() => new Lang.Class({
             Name: 'ObjectWithNotEnoughInterfaces',
             Implements: [InterfaceRequiringOtherInterface],
-            required: function () {},
+            required() {},
         })).toThrow();
     });
 
@@ -610,7 +610,7 @@ describe('An interface', function () {
         expect(() => new Lang.Class({
             Name: 'ObjectWithInterfacesInWrongOrder',
             Implements: [InterfaceRequiringOtherInterface, AnInterface],
-            required: function () {},
+            required() {},
         })).toThrow();
     });
 
@@ -647,7 +647,7 @@ describe('An interface', function () {
         expect(() => new Lang.Class({
             Name: 'ObjectWithoutRequiredParent',
             Implements: [AnInterface, InterfaceRequiringOtherInterface, InterfaceRequiringClassAndInterface],
-            required: function () {},
+            required() {},
         })).toThrow();
     });
 

@@ -297,63 +297,63 @@ function _init() {
         'name': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return this.get_name();
             },
         },
         '_nick': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return this.get_nick();
             },
         },
         'nick': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return this.get_nick();
             },
         },
         '_blurb': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return this.get_blurb();
             },
         },
         'blurb': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return this.get_blurb();
             },
         },
         'default_value': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return this.get_default_value();
             },
         },
         'flags': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return GjsPrivate.param_spec_get_flags(this);
             },
         },
         'value_type': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return GjsPrivate.param_spec_get_value_type(this);
             },
         },
         'owner_type': {
             configurable: false,
             enumerable: false,
-            get: function() {
+            get() {
                 return GjsPrivate.param_spec_get_owner_type(this);
             },
         },

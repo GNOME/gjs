@@ -89,7 +89,7 @@ function showDebuggeeValue(dv, style = {pretty: options.pretty}) {
 Object.defineProperty(Debugger.Frame.prototype, 'num', {
     configurable: true,
     enumerable: false,
-    get: function() {
+    get() {
         let i = 0;
         let f;
         for (f = topFrame; f && f !== this; f = f.older)
@@ -126,7 +126,7 @@ Debugger.Frame.prototype.describeFull = function() {
 Object.defineProperty(Debugger.Frame.prototype, 'line', {
     configurable: true,
     enumerable: false,
-    get: function() {
+    get() {
         if (this.script)
             return this.script.getOffsetLocation(this.offset).lineNumber;
         else
