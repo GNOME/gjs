@@ -147,7 +147,7 @@ function _startEngine() {
         return;
 
     _engineExists = true;
-    _tweenList = new Array();
+    _tweenList = [];
 
     if (!_ticker)
         throw new Error('Must call setFrameTicker()');
@@ -729,7 +729,7 @@ function _affectTweens(affectFunction, scope, properties) {
             affected = true;
         } else {
             // Must check whether this tween must have specific properties affected
-            var affectedProperties = new Array();
+            var affectedProperties = [];
             for (let j = 0; j < properties.length; j++) {
                 if (_tweenList[i].properties[properties[j]])
                     affectedProperties.push(properties[j]);
@@ -767,7 +767,7 @@ function _isInArray(string, array) {
 }
 
 function _affectTweensWithFunction(func, args) {
-    var properties = new Array();
+    var properties = [];
     var scope = args[0];
     var affected = false;
     var scopes;
