@@ -239,9 +239,9 @@ function splitPrintOptions(s, style) {
 function doPrint(expr, style) {
     // This is the real deal.
     const cv = saveExcursion(
-        () => focusedFrame === null
-            ? debuggeeGlobalWrapper.executeInGlobalWithBindings(expr, debuggeeValues)
-            : focusedFrame.evalWithBindings(expr, debuggeeValues));
+        () => focusedFrame === null ?
+            debuggeeGlobalWrapper.executeInGlobalWithBindings(expr, debuggeeValues) :
+            focusedFrame.evalWithBindings(expr, debuggeeValues));
     if (cv === null) {
         if (!dbg.enabled)
             return [cv];
