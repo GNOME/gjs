@@ -114,6 +114,21 @@ rules:
     - object: imports
       property: mainloop
       message: Use GLib main loops and timeouts
+  no-restricted-syntax:
+    - error
+    - selector: >-
+        MethodDefinition[key.name="_init"] >
+        FunctionExpression[params.length=1] >
+        BlockStatement[body.length=1]
+        CallExpression[arguments.length=1][callee.object.type="Super"][callee.property.name="_init"] >
+        Identifier:first-child
+      message: _init() that only calls super._init() is unnecessary
+    - selector: >-
+        MethodDefinition[key.name="_init"] >
+        FunctionExpression[params.length=0] >
+        BlockStatement[body.length=1]
+        CallExpression[arguments.length=0][callee.object.type="Super"][callee.property.name="_init"]
+      message: _init() that only calls super._init() is unnecessary
   no-return-assign: error
   no-return-await: error
   no-self-compare: error
