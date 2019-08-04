@@ -151,7 +151,7 @@ function _pack_variant(signature, value) {
         return GLib.Variant.new_array(new GLib.VariantType(arrayType.join('')), arrayValue);
     }
 
-    case '(':
+    case '(': {
         let children = [];
         for (let i = 0; i < value.length; i++) {
             let next = signature[0];
@@ -164,7 +164,8 @@ function _pack_variant(signature, value) {
             throw new TypeError('Invalid GVariant signature for type TUPLE (expected ")")');
         signature.shift();
         return GLib.Variant.new_tuple(children);
-    case '{':
+    }
+    case '{': {
         let key = _pack_variant(signature, value[0]);
         let child = _pack_variant(signature, value[1]);
 
@@ -173,6 +174,7 @@ function _pack_variant(signature, value) {
         signature.shift();
 
         return GLib.Variant.new_dict_entry(key, child);
+    }
     default:
         throw new TypeError(`Invalid GVariant signature (unexpected character ${char})`);
     }
@@ -211,12 +213,13 @@ function _unpack_variant(variant, deep, recursive = false) {
             return _unpack_variant(ret, deep, recursive);
         return ret;
     }
-    case 'm':
+    case 'm': {
         let val = variant.get_maybe();
         if (deep && val)
             return _unpack_variant(val, deep, recursive);
         else
             return val;
+    }
     case 'a':
         if (variant.is_of_type(new GLib.VariantType('a{?*}'))) {
             // special case containers
@@ -243,7 +246,7 @@ function _unpack_variant(variant, deep, recursive = false) {
 
         // fall through
     case '(':
-    case '{':
+    case '{': {
         let ret = [];
         let nElements = variant.n_children();
         for (let i = 0; i < nElements; i++) {
@@ -254,6 +257,7 @@ function _unpack_variant(variant, deep, recursive = false) {
                 ret.push(val);
         }
         return ret;
+    }
     }
 
     throw new Error('Assertion failure: this code should not be reached');

@@ -7,7 +7,7 @@ const Gtk = imports.gi.Gtk;
 Gtk.init(null);
 
 // Construct a top-level window
-let window = new Gtk.Window ({
+let win = new Gtk.Window ({
     type: Gtk.WindowType.TOPLEVEL,
     title: 'A default title',
     default_width: 300,
@@ -20,7 +20,7 @@ let window = new Gtk.Window ({
 
 // Object properties can also be set or changed after construction, unless they
 // are marked construct-only.
-window.title = 'Hello World!';
+win.title = 'Hello World!';
 
 // This is a callback function
 function onDeleteEvent() {
@@ -36,14 +36,14 @@ function onDeleteEvent() {
 // When the window is given the "delete_event" signal (this is given by the
 // window manager, usually by the "close" option, or on the titlebar), we ask
 // it to call the onDeleteEvent() function as defined above.
-window.connect('delete-event', onDeleteEvent);
+win.connect('delete-event', onDeleteEvent);
 
 // GJS will warn when calling a C function with unexpected arguments...
 //
 //     window.connect("destroy", Gtk.main_quit);
 //
 // ...so use arrow functions for inline callbacks with arguments to adjust
-window.connect('destroy', () => {
+win.connect('destroy', () => {
     Gtk.main_quit();
 });
 
@@ -60,13 +60,13 @@ let button = new Gtk.Button({
 });
 
 // Connect to the 'clicked' signal, using another way to call an arrow function
-button.connect('clicked', () => window.destroy());
+button.connect('clicked', () => win.destroy());
 
 // Add the button to the window
-window.add(button);
+win.add(button);
 
 // Show the window
-window.show();
+win.show();
 
 // All gtk applications must have a Gtk.main(). Control will end here and wait
 // for an event to occur (like a key press or mouse event). The main loop will

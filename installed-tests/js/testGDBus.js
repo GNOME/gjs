@@ -112,7 +112,7 @@ class Test {
         this._impl.export(Gio.DBus.session, '/org/gnome/gjs/Test');
     }
 
-    frobateStuff(args) {
+    frobateStuff() {
         return {hello: new GLib.Variant('s', 'world')};
     }
 

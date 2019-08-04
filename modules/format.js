@@ -44,13 +44,14 @@ function vprintf(str, args) {
         case 's':
             s = String(getArg());
             break;
-        case 'd':
+        case 'd': {
             let intV = parseInt(getArg());
             if (hasAlternativeIntFlag)
                 s = GjsPrivate.format_int_alternative_output(intV);
             else
                 s = intV.toString();
             break;
+        }
         case 'x':
             s = parseInt(getArg()).toString(16);
             break;
