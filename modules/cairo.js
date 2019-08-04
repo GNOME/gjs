@@ -27,25 +27,25 @@ var Antialias = {
     DEFAULT: 0,
     NONE: 1,
     GRAY: 2,
-    SUBPIXEL: 3
+    SUBPIXEL: 3,
 };
 
 var Content = {
     COLOR: 0x1000,
     ALPHA: 0x2000,
-    COLOR_ALPHA: 0x3000
+    COLOR_ALPHA: 0x3000,
 };
 
 var Extend = {
     NONE: 0,
     REPEAT: 1,
     REFLECT: 2,
-    PAD: 3
+    PAD: 3,
 };
 
 var FillRule = {
     WINDING: 0,
-    EVEN_ODD: 1
+    EVEN_ODD: 1,
 };
 
 var Filter = {
@@ -54,18 +54,18 @@ var Filter = {
     BEST: 2,
     NEAREST: 3,
     BILINEAR: 4,
-    GAUSSIAN: 5
+    GAUSSIAN: 5,
 };
 
 var FontSlant = {
     NORMAL: 0,
     ITALIC: 1,
-    OBLIQUE: 2
+    OBLIQUE: 2,
 };
 
 var FontWeight = {
     NORMAL: 0,
-    BOLD: 1
+    BOLD: 1,
 };
 
 var Format = {
@@ -74,19 +74,19 @@ var Format = {
     A8: 2,
     A1: 3,
     // The value of 4 is reserved by a deprecated enum value
-    RGB16_565: 5
+    RGB16_565: 5,
 };
 
 var LineCap = {
     BUTT: 0,
     ROUND: 1,
-    SQUASH: 2
+    SQUASH: 2,
 };
 
 var LineJoin = {
     MITER: 0,
     ROUND: 1,
-    BEVEL: 2
+    BEVEL: 2,
 };
 
 var Operator = {
@@ -118,14 +118,14 @@ var Operator = {
     HSL_HUE: 25,
     HSL_SATURATION: 26,
     HSL_COLOR: 27,
-    HSL_LUMINOSITY: 28
+    HSL_LUMINOSITY: 28,
 };
 
 var PatternType = {
     SOLID: 0,
     SURFACE: 1,
     LINEAR: 2,
-    RADIAL: 3
+    RADIAL: 3,
 };
 
 var SurfaceType = {
@@ -142,7 +142,7 @@ var SurfaceType = {
     SVG: 10,
     OS2: 11,
     WIN32_PRINTING: 12,
-    QUARTZ_IMAGE: 13
+    QUARTZ_IMAGE: 13,
 };
 
 // Merge stuff defined in native code

@@ -165,8 +165,8 @@ describe('Introspected boxed types', function () {
             nested_a: {
                 some_int: 43,
                 some_int8: 44,
-                some_double: 43.5
-            }
+                some_double: 43.5,
+            },
         });
         expect(simple2.some_int8).toEqual(42);
         expect(simple2.nested_a.some_int).toEqual(43);

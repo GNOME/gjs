@@ -96,7 +96,7 @@ Object.defineProperty(Debugger.Frame.prototype, 'num', {
         for (f = topFrame; f && f !== this; f = f.older)
             i++;
         return f === null ? undefined : i;
-    }
+    },
 });
 
 Debugger.Frame.prototype.describeFrame = function() {
@@ -131,7 +131,7 @@ Object.defineProperty(Debugger.Frame.prototype, 'line', {
             return this.script.getOffsetLocation(this.offset).lineNumber;
         else
             return null;
-    }
+    },
 });
 
 Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
@@ -704,7 +704,7 @@ function _groupCommands() {
             groups.push({
                 summary: cmd.summary,
                 helpText: cmd.helpText,
-                aliases: [cmd.name.replace(/Command$/, '')]
+                aliases: [cmd.name.replace(/Command$/, '')],
             });
         }
     }

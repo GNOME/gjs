@@ -21,14 +21,14 @@ var ExampleApplication = GObject.registerClass({
             'An example read write property',   // description
             GObject.ParamFlags.READWRITE,       // read/write/construct...
             ''                                  // implement defaults manually
-        )
+        ),
     },
     Signals: {'examplesig': {param_types: [GObject.TYPE_INT]}},
 }, class ExampleApplication extends Gtk.Application {
     _init() {
         super._init({
             application_id: 'org.gnome.gjs.ExampleApplication',
-            flags: Gio.ApplicationFlags.FLAGS_NONE
+            flags: Gio.ApplicationFlags.FLAGS_NONE,
         });
     }
     
@@ -59,7 +59,7 @@ var ExampleApplication = GObject.registerClass({
         // An example GAction, see: https://wiki.gnome.org/HowDoI/GAction
         let exampleAction = new Gio.SimpleAction({
             name: 'exampleAction',
-            parameter_type: new GLib.VariantType('s')
+            parameter_type: new GLib.VariantType('s'),
         });
         
         exampleAction.connect('activate', (action, param) => {
@@ -83,7 +83,7 @@ var ExampleApplication = GObject.registerClass({
             application: this,
             title: 'Example Application Window',
             default_width: 300,
-            default_height: 200
+            default_height: 200,
         });
         
         let label = new Gtk.Label({label: this.exampleprop});

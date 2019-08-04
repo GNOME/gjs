@@ -115,7 +115,7 @@ const MyObject = GObject.registerClass({
 });
 
 const MyAbstractObject = GObject.registerClass({
-    GTypeFlags: GObject.TypeFlags.ABSTRACT
+    GTypeFlags: GObject.TypeFlags.ABSTRACT,
 }, class MyAbstractObject extends GObject.Object {
 });
 
@@ -324,7 +324,7 @@ describe('GObject class with decorator', function () {
             Properties: {
                 'file': GObject.ParamSpec.object('file', 'File', 'File',
                     GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                    Gio.File.$gtype)
+                    Gio.File.$gtype),
             },
         }, class InterfacePropObject extends GObject.Object {});
         let file = Gio.File.new_for_path('dummy');

@@ -96,7 +96,7 @@ var domain = function(domainName) {
 
         pgettext: function(context, msgid) {
             return GLib.dpgettext2(domainName, context, msgid);
-        }
+        },
     };
 };
 

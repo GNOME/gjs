@@ -507,7 +507,7 @@ function _init() {
     GObject.AccumulatorType = {
         NONE: 0,
         FIRST_WINS: 1,
-        TRUE_HANDLED: 2
+        TRUE_HANDLED: 2,
     };
 
     GObject.Object.prototype.disconnect = function(id) {

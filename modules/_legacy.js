@@ -579,7 +579,7 @@ function defineGObjectLegacyObjects(GObject) {
             } else {
                 return this.parent(iface);
             }
-        }
+        },
     });
 
     function GObjectInterface() {

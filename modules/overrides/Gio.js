@@ -227,7 +227,7 @@ function _addDBusConvenience() {
             get: getter,
             set: setter,
             configurable: false,
-            enumerable: true
+            enumerable: true,
         });
     }
 }
@@ -468,7 +468,7 @@ function _init() {
 
         watch_name: Gio.bus_watch_name,
         watch_name_on_connection: Gio.bus_watch_name_on_connection,
-        unwatch_name: Gio.bus_unwatch_name
+        unwatch_name: Gio.bus_unwatch_name,
     };
 
     Gio.DBusConnection.prototype.watch_name = function(name, flags, appeared, vanished) {

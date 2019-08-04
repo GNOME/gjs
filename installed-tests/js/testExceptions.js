@@ -2,7 +2,7 @@ const {GIMarshallingTests, Gio, GLib, GObject} = imports.gi;
 
 const Foo = GObject.registerClass({
     Properties: {
-        'prop': GObject.ParamSpec.string('prop', '', '', GObject.ParamFlags.READWRITE, '')
+        'prop': GObject.ParamSpec.string('prop', '', '', GObject.ParamFlags.READWRITE, ''),
     },
 }, class Foo extends GObject.Object {
     set prop(v) {
@@ -18,7 +18,7 @@ const Bar = GObject.registerClass({
     Properties: {
         'prop': GObject.ParamSpec.string('prop', '', '',
             GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT, ''),
-    }
+    },
 }, class Bar extends GObject.Object {});
 
 describe('Exceptions', function () {

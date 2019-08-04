@@ -4,7 +4,7 @@ const Foo = GObject.registerClass({
     Properties: {
         boolval: GObject.ParamSpec.boolean('boolval', '', '',
             GObject.ParamFlags.READWRITE, false),
-    }
+    },
 }, class Foo extends GObject.Object {
     _init(value) {
         super._init();
