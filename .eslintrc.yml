@@ -26,6 +26,9 @@ rules:
     - error
     - multi-or-nest
     - consistent
+  dot-location:
+    - error
+    - property
   indent:
     - error
     - 4
