@@ -151,7 +151,7 @@ const MyInitable = new Lang.Class({
 
     vfunc_init: function(cancellable) { // error?
         if (!(cancellable instanceof Gio.Cancellable))
-            throw 'Bad argument';
+            throw new Error('Bad argument');
 
         this.inited = true;
     },

@@ -132,7 +132,7 @@ const MyInitable = GObject.registerClass({
 }, class MyInitable extends GObject.Object {
     vfunc_init(cancellable) {
         if (!(cancellable instanceof Gio.Cancellable))
-            throw 'Bad argument';
+            throw new Error('Bad argument');
 
         this.inited = true;
     }

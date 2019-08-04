@@ -23,7 +23,7 @@ describe('Test harness internal consistency', function () {
         expect(someNumber).not.toBeNaN();
 
         expect(() => {
-            throw {}; 
+            throw new Error();
         }).toThrow();
 
         expect(() => expect(true).toThrow()).toThrow();
