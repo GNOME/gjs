@@ -85,6 +85,9 @@ rules:
     - object: Lang
       property: Class
       message: Use ES6 classes
+    - object: imports
+      property: mainloop
+      message: Use GLib main loops and timeouts
   no-tabs: error
   no-unused-vars:
     - error

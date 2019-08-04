@@ -1,7 +1,6 @@
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
-const Mainloop = imports.mainloop;
 
 const AGObjectInterface = GObject.registerClass({
     GTypeName: 'ArbitraryGTypeName',
@@ -222,29 +221,34 @@ describe('GObject interface', function () {
         }, class BadObject {})).toThrow();
     });
 
-    it('can define signals on the implementing class', function () {
+    it('can connect class signals on the implementing class', function (done) {
         function quitLoop() {
-            Mainloop.quit('signal');
+            expect(classSignalSpy).toHaveBeenCalled();
+            done();
         }
         let obj = new GObjectImplementingGObjectInterface();
-        let interfaceSignalSpy = jasmine.createSpy('interfaceSignalSpy')
-            .and.callFake(quitLoop);
         let classSignalSpy = jasmine.createSpy('classSignalSpy')
             .and.callFake(quitLoop);
-        obj.connect('interface-signal', interfaceSignalSpy);
         obj.connect('class-signal', classSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('interface-signal');
-            return GLib.SOURCE_REMOVE;
-        });
-        Mainloop.run('signal');
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             obj.emit('class-signal');
             return GLib.SOURCE_REMOVE;
         });
-        Mainloop.run('signal');
-        expect(interfaceSignalSpy).toHaveBeenCalled();
-        expect(classSignalSpy).toHaveBeenCalled();
+    });
+
+    it('can connect interface signals on the implementing class', function (done) {
+        function quitLoop() {
+            expect(interfaceSignalSpy).toHaveBeenCalled();
+            done();
+        }
+        let obj = new GObjectImplementingGObjectInterface();
+        let interfaceSignalSpy = jasmine.createSpy('interfaceSignalSpy')
+            .and.callFake(quitLoop);
+        obj.connect('interface-signal', interfaceSignalSpy);
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            obj.emit('interface-signal');
+            return GLib.SOURCE_REMOVE;
+        });
     });
 
     it('can define properties on the implementing class', function () {
