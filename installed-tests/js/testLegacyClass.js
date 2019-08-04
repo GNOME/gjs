@@ -259,7 +259,7 @@ describe('Class framework', function () {
         let newAccessor = new Accessor(11);
 
         expect(newAccessor.value).toEqual(11);
-        expect(() => newAccessor.value = 12).toThrow();
+        expect(() => (newAccessor.value = 12)).toThrow();
 
         newAccessor.value = 42;
         expect(newAccessor.value).toEqual(42);
@@ -494,7 +494,7 @@ describe('An interface', function () {
 
     it('does not have to have its optional methods implemented', function () {
         let obj;
-        expect(() => obj = new MinimalImplementationOfAnInterface()).not.toThrow();
+        expect(() => (obj = new MinimalImplementationOfAnInterface())).not.toThrow();
         expect(obj.constructor.implements(AnInterface)).toBeTruthy();
     });
 

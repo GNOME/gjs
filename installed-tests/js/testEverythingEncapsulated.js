@@ -216,7 +216,7 @@ describe('Introspected GObject', function () {
     });
 
     it('throws when setting a read-only field', function () {
-        expect(() => obj.some_int8 = 41).toThrow();
+        expect(() => (obj.some_int8 = 41)).toThrow();
     });
 
     it('has normal Object methods', function () {
