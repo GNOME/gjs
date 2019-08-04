@@ -9,11 +9,13 @@ rules:
   array-bracket-spacing:
     - error
     - never
+  array-callback-return: error
   arrow-parens:
     - error
     - as-needed
   arrow-spacing: error
   block-scoped-var: error
+  block-spacing: error
   brace-style: error
   comma-dangle:
     - error
@@ -22,6 +24,10 @@ rules:
     - error
     - before: false
       after: true
+  comma-style:
+    - error
+    - last
+  computed-property-spacing: error
   curly:
     - error
     - multi-or-nest
@@ -32,6 +38,7 @@ rules:
   eol-last: error
   eqeqeq: error
   func-call-spacing: error
+  func-name-matching: error
   func-style:
     - error
     - declaration
@@ -57,10 +64,16 @@ rules:
     - error
     - unix
   lines-between-class-members: error
+  max-nested-callbacks: error
+  max-statements-per-line: error
+  new-parens: error
   no-array-constructor: error
+  no-await-in-loop: error
+  no-caller: error
   no-constant-condition:
     - error
     - checkLoops: false
+  no-div-regex: error
   no-empty:
     - error
     - allowEmptyCatch: true
@@ -74,8 +87,16 @@ rules:
     - error
     - allow:
       - '!!'
+  no-invalid-this: error
+  no-iterator: error
+  no-label-var: error
   no-lonely-if: error
+  no-loop-func: error
+  no-nested-ternary: error
   no-new-object: error
+  no-new-wrappers: error
+  no-octal-escape: error
+  no-proto: error
   no-prototype-builtins: 'off'
   no-restricted-properties:
     - error
@@ -85,19 +106,36 @@ rules:
     - object: Lang
       property: Class
       message: Use ES6 classes
+    - object: this
+      property: parent
+      message: Use super
     - object: imports
       property: mainloop
       message: Use GLib main loops and timeouts
   no-return-assign: error
+  no-return-await: error
+  no-self-compare: error
   no-shadow: error
+  no-shadow-restricted-names: error
+  no-spaced-func: error
   no-tabs: error
+  no-template-curly-in-string: error
   no-throw-literal: error
   no-trailing-spaces: error
+  no-undef-init: error
+  no-unneeded-ternary: error
+  no-unused-expressions: error
   no-unused-vars:
     - error
     - varsIgnorePattern: ^unused
   no-useless-call: error
+  no-useless-computed-key: error
+  no-useless-concat: error
   no-useless-constructor: error
+  no-useless-rename: error
+  no-useless-return: error
+  no-whitespace-before-property: error
+  no-with: error
   nonblock-statement-body-position:
     - error
     - below
@@ -106,9 +144,15 @@ rules:
     - consistent: true
   object-curly-spacing: error
   object-shorthand: error
+  operator-assignment: error
   operator-linebreak:
     - error
     - after
+  # These may be a bit controversial, we can try them out and enable them later
+  # prefer-const: error
+  # prefer-destructuring: error
+  prefer-numeric-literals: error
+  prefer-promise-reject-errors: error
   prefer-rest-params: error
   prefer-spread: error
   prefer-template: error
@@ -116,6 +160,8 @@ rules:
     - error
     - single
     - avoidEscape: true
+  require-await: error
+  rest-spread-spacing: error
   semi:
     - error
     - always
@@ -123,6 +169,7 @@ rules:
     - error
     - before: false
       after: true
+  semi-style: error
   space-before-blocks: error
   space-before-function-paren:
     - error
@@ -136,9 +183,19 @@ rules:
     - int32Hint: false
   space-unary-ops: error
   spaced-comment: error
+  switch-colon-spacing: error
+  symbol-description: error
+  template-curly-spacing: error
+  template-tag-spacing: error
+  unicode-bom: error
   valid-jsdoc:
     - error
     - requireReturn: false
+  wrap-iife:
+    - error
+    - inside
+  yield-star-spacing: error
+  yoda: error
 globals:
   ARGV: false
   Debugger: false
