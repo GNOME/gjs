@@ -293,21 +293,19 @@ function _updateTweenByIndex(i) {
                 if (isOver) {
                     // Tweening time has finished, just set it to the final value
                     nv = property.valueComplete;
+                } else if (property.hasModifier) {
+                    // Modified
+                    t = currentTime - tweening.timeStart;
+                    d = tweening.timeComplete - tweening.timeStart;
+                    nv = tweening.transition(t, 0, 1, d, tweening.transitionParams);
+                    nv = property.modifierFunction(property.valueStart, property.valueComplete, nv, property.modifierParameters);
                 } else {
-                    if (property.hasModifier) {
-                        // Modified
-                        t = currentTime - tweening.timeStart;
-                        d = tweening.timeComplete - tweening.timeStart;
-                        nv = tweening.transition(t, 0, 1, d, tweening.transitionParams);
-                        nv = property.modifierFunction(property.valueStart, property.valueComplete, nv, property.modifierParameters);
-                    } else {
-                        // Normal update
-                        t = currentTime - tweening.timeStart;
-                        b = property.valueStart;
-                        c = property.valueComplete - property.valueStart;
-                        d = tweening.timeComplete - tweening.timeStart;
-                        nv = tweening.transition(t, b, c, d, tweening.transitionParams);
-                    }
+                    // Normal update
+                    t = currentTime - tweening.timeStart;
+                    b = property.valueStart;
+                    c = property.valueComplete - property.valueStart;
+                    d = tweening.timeComplete - tweening.timeStart;
+                    nv = tweening.transition(t, b, c, d, tweening.transitionParams);
                 }
 
                 if (tweening.rounded)

@@ -79,6 +79,7 @@ rules:
     - error
     - allow:
       - '!!'
+  no-lonely-if: error
   no-prototype-builtins: 'off'
   no-restricted-properties:
     - error
