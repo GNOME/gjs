@@ -261,7 +261,7 @@ describe('Exported DBus object', function () {
     var proxy;
     let loop;
 
-    let waitForServerProperty = function (property, value = undefined, timeout = 500) {
+    function waitForServerProperty(property, value = undefined, timeout = 500) {
         let waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
             waitId = 0;
             throw new Error(`Timeout waiting for property ${property} expired`);
@@ -276,7 +276,7 @@ describe('Exported DBus object', function () {
 
         expect(waitId).not.toBe(0);
         return test[property];
-    };
+    }
 
     beforeAll(function () {
         loop = new GLib.MainLoop(null, false);

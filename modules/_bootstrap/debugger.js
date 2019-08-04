@@ -677,9 +677,9 @@ for (var i = 0; i < commandArray.length; i++) {
 function _printCommandsList() {
     print('Available commands:');
 
-    var printcmd = function (cmd) {
+    function printcmd(cmd) {
         print(`  ${cmd.aliases.join(', ')} -- ${cmd.summary}`);
-    };
+    }
 
     var cmdGroups = _groupCommands();
 
