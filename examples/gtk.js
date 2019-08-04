@@ -15,7 +15,7 @@ let win = new Gtk.Window ({
     // A decent example of how constants are mapped:
     //     'Gtk' and 'WindowPosition' from the enum name GtkWindowPosition,
     //     'CENTER' from the enum's constant GTK_WIN_POS_CENTER
-    window_position: Gtk.WindowPosition.CENTER
+    window_position: Gtk.WindowPosition.CENTER,
 });
 
 // Object properties can also be set or changed after construction, unless they
@@ -56,7 +56,7 @@ let button = new Gtk.Button({
     //     'Gtk' and 'Align' are taken from the GtkAlign enum,
     //     'CENTER' from the constant GTK_ALIGN_CENTER
     valign: Gtk.Align.CENTER,
-    halign: Gtk.Align.CENTER
+    halign: Gtk.Align.CENTER,
 });
 
 // Connect to the 'clicked' signal, using another way to call an arrow function

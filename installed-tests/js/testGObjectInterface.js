@@ -10,10 +10,10 @@ const AGObjectInterface = GObject.registerClass({
         'interface-prop': GObject.ParamSpec.string('interface-prop',
             'Interface property', 'Must be overridden in implementation',
             GObject.ParamFlags.READABLE,
-            'foobar')
+            'foobar'),
     },
     Signals: {
-        'interface-signal': {}
+        'interface-signal': {},
     },
 }, class AGObjectInterface extends GObject.Interface {
     requiredG() {
@@ -41,7 +41,7 @@ const GObjectImplementingGObjectInterface = GObject.registerClass({
             AGObjectInterface),
         'class-prop': GObject.ParamSpec.string('class-prop', 'Class property',
             'A property that is not on the interface',
-            GObject.ParamFlags.READABLE, 'meh')
+            GObject.ParamFlags.READABLE, 'meh'),
     },
     Signals: {
         'class-signal': {},
@@ -65,7 +65,7 @@ const MinimalImplementationOfAGObjectInterface = GObject.registerClass({
     Implements: [AGObjectInterface],
     Properties: {
         'interface-prop': GObject.ParamSpec.override('interface-prop',
-            AGObjectInterface)
+            AGObjectInterface),
     },
 }, class MinimalImplementationOfAGObjectInterface extends GObject.Object {
     requiredG() {}
@@ -75,7 +75,7 @@ const ImplementationOfTwoInterfaces = GObject.registerClass({
     Implements: [AGObjectInterface, InterfaceRequiringGObjectInterface],
     Properties: {
         'interface-prop': GObject.ParamSpec.override('interface-prop',
-            AGObjectInterface)
+            AGObjectInterface),
     },
 }, class ImplementationOfTwoInterfaces extends GObject.Object {
     requiredG() {}
@@ -92,8 +92,8 @@ const ImplementationOfIntrospectedInterface = GObject.registerClass({
         'state': GObject.ParamSpec.override('state', Gio.Action),
         'state-type': GObject.ParamSpec.override('state-type', Gio.Action),
         'parameter-type': GObject.ParamSpec.override('parameter-type',
-            Gio.Action)
-    }
+            Gio.Action),
+    },
 }, class ImplementationOfIntrospectedInterface extends GObject.Object {
     get name() {
         return 'inaction';
@@ -140,8 +140,8 @@ describe('GObject interface', function () {
             Implements: [AGObjectInterface],
             Properties: {
                 'interface-prop': GObject.ParamSpec.override('interface-prop',
-                    AGObjectInterface)
-            }
+                    AGObjectInterface),
+            },
         }, class BadObject extends GObject.Object {});
         expect(() => new BadObject().requiredG())
            .toThrowError(GObject.NotImplementedError);
@@ -185,7 +185,7 @@ describe('GObject interface', function () {
             Implements: [AGObjectInterface, InterfaceRequiringGObjectInterface],
             Properties: {
                 'interface-prop': GObject.ParamSpec.override('interface-prop',
-                    AGObjectInterface)
+                    AGObjectInterface),
             },
         }, class MinimalImplementationOfTwoInterfaces extends GObject.Object {
             requiredG() {}
@@ -213,7 +213,7 @@ describe('GObject interface', function () {
 
     it('can require an interface from C', function () {
         const InitableInterface = GObject.registerClass({
-            Requires: [GObject.Object, Gio.Initable]
+            Requires: [GObject.Object, Gio.Initable],
         }, class InitableInterface extends GObject.Interface {});
         expect(() => GObject.registerClass({
             Implements: [InitableInterface],

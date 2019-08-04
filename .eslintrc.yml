@@ -20,6 +20,9 @@ rules:
   #   - error
   #   - properties: never
   #     allow: [^vfunc_, ^on_, _instance_init]
+  comma-dangle:
+    - error
+    - always-multiline
   comma-spacing:
     - error
     - before: false

@@ -35,7 +35,7 @@ describe('Lang module', function () {
             },
             set c(n) {
                 this.a = n;
-            }
+            },
         };
         var bar = {};
 
@@ -60,7 +60,7 @@ describe('Lang module', function () {
             o = {
                 callback() {
                     return true;
-                }
+                },
             };
             spyOn(o, 'callback').and.callThrough();
         });

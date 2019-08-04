@@ -20,7 +20,7 @@ describe('GVariant constructor', function () {
             '/a/object/path',
             'asig', //nature
             new GLib.Variant('s', 'variant'),
-            [7, 3]
+            [7, 3],
         ]);
         expect(structVariant.n_children()).toEqual(5);
 

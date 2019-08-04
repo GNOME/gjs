@@ -29,7 +29,7 @@ function installFrameTicker() {
 
         getTime: function() {
             return this._currentTime;
-        }
+        },
     };
     imports.signals.addSignalMethods(ticker);
 
@@ -57,12 +57,12 @@ describe('Tweener', function () {
     it('runs a simple tween', function () {
         var objectA = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         var objectB = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         Tweener.addTween(objectA, {x: 10, y: 10, time: 1, transition: 'linear'});
@@ -92,15 +92,15 @@ describe('Tweener', function () {
 
     it('can pause tweens', function () {
         var objectA = {
-            foo: 0
+            foo: 0,
         };
 
         var objectB = {
-            bar: 0
+            bar: 0,
         };
 
         var objectC = {
-            baaz: 0
+            baaz: 0,
         };
 
         Tweener.addTween(objectA, {foo: 100, time: 0.1});
@@ -125,7 +125,7 @@ describe('Tweener', function () {
         var object = {
             foo: 0,
             bar: 0,
-            baaz: 0
+            baaz: 0,
         };
 
         Tweener.addTween(object, {foo: 50, time: 0.1});
@@ -144,7 +144,7 @@ describe('Tweener', function () {
 
     it('overrides a tween with another one acting on the same object and property at the same time', function () {
         var objectA = {
-            foo: 0
+            foo: 0,
         };
 
         Tweener.addTween(objectA, {foo: 100, time: 0.1});
@@ -157,7 +157,7 @@ describe('Tweener', function () {
 
     it('does not override a tween with another one acting not at the same time', function () {
         var objectB = {
-            bar: 0
+            bar: 0,
         };
 
         /* In this case both tweens should be executed, as they don't
@@ -173,10 +173,10 @@ describe('Tweener', function () {
 
     it('can pause and resume all tweens', function () {
         var objectA = {
-            foo: 0
+            foo: 0,
         };
         var objectB = {
-            bar: 0
+            bar: 0,
         };
 
         Tweener.addTween(objectA, {foo: 100, time: 0.1});
@@ -196,10 +196,10 @@ describe('Tweener', function () {
 
     it('can remove all tweens', function () {
         var objectA = {
-            foo: 0
+            foo: 0,
         };
         var objectB = {
-            bar: 0
+            bar: 0,
         };
 
         Tweener.addTween(objectA, {foo: 100, time: 0.1});
@@ -215,7 +215,7 @@ describe('Tweener', function () {
 
     it('runs a tween with a time of 0 immediately', function () {
         var object = {
-            foo: 100
+            foo: 100,
         };
 
         Tweener.addTween(object, {foo: 50, time: 0, delay: 0});
@@ -235,7 +235,7 @@ describe('Tweener', function () {
 
     it('can call a callback a certain number of times', function () {
         var object = {
-            foo: 0
+            foo: 0,
         };
 
         Tweener.addCaller(object, {
@@ -256,7 +256,7 @@ describe('Tweener', function () {
             foo: 0,
             bar: 0,
             baaz: 0,
-            quux: 0
+            quux: 0,
         };
 
         expect(Tweener.getTweenCount(object)).toEqual(0);
@@ -287,7 +287,7 @@ describe('Tweener', function () {
 
         var objectA = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         Tweener.addTween(objectA, {negative_x: 10, y: 10, time: 1, transition: 'linear'});
@@ -314,7 +314,7 @@ describe('Tweener', function () {
             x: 0,
             y: 0,
             xFraction: false,
-            yFraction: false
+            yFraction: false,
         };
 
         Tweener.addTween(objectA, {
@@ -348,7 +348,7 @@ describe('Tweener', function () {
 
         var objectA = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         Tweener.addTween(objectA, {xnegy: 10, time: 1, transition: 'linear'});
@@ -364,7 +364,7 @@ describe('Tweener', function () {
             a: 0,
             b: 0,
             c: 0,
-            d: 0
+            d: 0,
         };
 
         var tweenA = {
@@ -395,7 +395,7 @@ describe('Tweener', function () {
             a: 0,
             b: 0,
             c: 0,
-            d: 0
+            d: 0,
         };
 
         var tweenA = {
@@ -426,12 +426,12 @@ describe('Tweener', function () {
     it('stays within min and max values', function () {
         var objectA = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         var objectB = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         Tweener.addTween(objectA, {x: 300, y: 300, time: 1, max: 255, transition: 'linear'});

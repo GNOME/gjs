@@ -85,7 +85,7 @@ function createButtons() {
         createButton('←', backspace),
         createButton('↻', randomNum),
         createButton('Clr', clear),
-        createButton('±', swapSign)
+        createButton('±', swapSign),
     ], vbox);
 
     packButtons([
@@ -93,7 +93,7 @@ function createButtons() {
         createButton('7', pressedNumber),
         createButton('8', pressedNumber),
         createButton('9', pressedNumber),
-        createButton('/', pressedOperator)
+        createButton('/', pressedOperator),
     ], vbox);
 
     packButtons([
@@ -101,7 +101,7 @@ function createButtons() {
         createButton('4', pressedNumber),
         createButton('5', pressedNumber),
         createButton('6', pressedNumber),
-        createButton('*', pressedOperator)
+        createButton('*', pressedOperator),
     ], vbox);
 
     packButtons([
@@ -109,7 +109,7 @@ function createButtons() {
         createButton('1', pressedNumber),
         createButton('2', pressedNumber),
         createButton('3', pressedNumber),
-        createButton('-', pressedOperator)
+        createButton('-', pressedOperator),
     ], vbox);
 
     packButtons([
@@ -117,7 +117,7 @@ function createButtons() {
         createButton('0', pressedNumber),
         createButton('.', pressedNumber),
         createButton('=', pressedEquals),
-        createButton('+', pressedOperator)
+        createButton('+', pressedOperator),
     ], vbox);
 
     return vbox;

@@ -106,7 +106,7 @@ FrameTicker.prototype = {
 
     getTime: function() {
         return this._currentTime;
-    }
+    },
 };
 Signals.addSignalMethods(FrameTicker.prototype);
 
@@ -397,7 +397,7 @@ var restrictedWords = {
     onUpdateScope: true,
     onCompleteScope: true,
     onOverwriteScope: true,
-    onErrorScope: true
+    onErrorScope: true,
 };
 
 function _constructPropertyList(obj) {
@@ -419,7 +419,7 @@ function _constructPropertyList(obj) {
                             valueStart: undefined,
                             valueComplete: splitProperties2[j].value,
                             arrayIndex: splitProperties2[j].arrayIndex,
-                            isSpecialProperty: false
+                            isSpecialProperty: false,
                         };
                     }
                 } else {
@@ -427,7 +427,7 @@ function _constructPropertyList(obj) {
                         valueStart: undefined,
                         valueComplete: splitProperties[i].value,
                         arrayIndex: splitProperties[i].arrayIndex,
-                        isSpecialProperty: false
+                        isSpecialProperty: false,
                     };
                 }
             }
@@ -437,13 +437,13 @@ function _constructPropertyList(obj) {
             for (let i = 0; i < tempModifiedProperties.length; i++) {
                 modifiedProperties[tempModifiedProperties[i].name] = {
                     modifierParameters: tempModifiedProperties[i].parameters,
-                    modifierFunction: _specialPropertyModifierList[istr].getValue
+                    modifierFunction: _specialPropertyModifierList[istr].getValue,
                 };
             }
         } else {
             properties[istr] = {
                 valueStart: undefined,
-                valueComplete: obj[istr]
+                valueComplete: obj[istr],
             };
         }
     }
@@ -480,7 +480,7 @@ PropertyInfo.prototype = {
         this.hasModifier            =       Boolean(modifierFunction);
         this.modifierFunction       =       modifierFunction;
         this.modifierParameters     =       modifierParameters;
-    }
+    },
 };
 
 function _addTweenOrCaller(target, tweeningParameters, isCaller) {
@@ -861,21 +861,21 @@ function registerSpecialProperty(name, getFunction, setFunction,
         getValue: getFunction,
         setValue: setFunction,
         parameters: parameters,
-        preProcess: preProcessFunction
+        preProcess: preProcessFunction,
     };
 }
 
 function registerSpecialPropertyModifier(name, modifyFunction, getFunction) {
     _specialPropertyModifierList[name] = {
         modifyValues: modifyFunction,
-        getValue: getFunction
+        getValue: getFunction,
     };
 }
 
 function registerSpecialPropertySplitter(name, splitFunction, parameters) {
     _specialPropertySplitterList[name] = {
         splitValues: splitFunction,
-        parameters: parameters
+        parameters: parameters,
     };
 }
 

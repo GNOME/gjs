@@ -50,7 +50,7 @@ const MyComplexGtkSubclass = new Lang.Class({
 
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());
-    }
+    },
 });
 
 const MyComplexGtkSubclassFromResource = new Lang.Class({
@@ -64,7 +64,7 @@ const MyComplexGtkSubclassFromResource = new Lang.Class({
         expect(this.label_child).toEqual(jasmine.anything());
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());
-    }
+    },
 });
 
 function validateTemplate(description, ClassName) {

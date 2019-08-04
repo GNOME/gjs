@@ -99,7 +99,7 @@ TweenList.prototype = {
         tween.hasStarted = this.hasStarted;
 
         return tween;
-    }
+    },
 };
 
 function makePropertiesChain(obj) {
