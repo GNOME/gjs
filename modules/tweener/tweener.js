@@ -623,7 +623,7 @@ function _getNumberOfProperties(object) {
     // the following line is disabled becasue eslint was picking up the following error: the variable name is defined but never used, however since it is required to search the object it is used and we'll allow the line to be ignored to get rid of the error message
     /* eslint-disable-next-line */
     for (let name in object) {
-        totalProperties ++;
+        totalProperties++;
     }
 
 
