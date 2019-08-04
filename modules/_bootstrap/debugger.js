@@ -491,10 +491,9 @@ function doStepOrNext(kind) {
             // running until a given line is reached
             if (this.line === kind.stopLine)
                 stop = true;
-        } else {
+        } else if (this.line !== startLine || this !== startFrame) {
             // regular step; stop whenever the line number changes
-            if (this.line !== startLine || this !== startFrame)
-                stop = true;
+            stop = true;
         }
 
         if (stop) {
