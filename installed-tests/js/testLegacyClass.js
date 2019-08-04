@@ -716,6 +716,7 @@ describe('ES6 class inheriting from Lang.Class', function () {
             chainUpToMe() {
                 super.chainUpToMe();
             }
+
             overrideMe() {}
         };
     });

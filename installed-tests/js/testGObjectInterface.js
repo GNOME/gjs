@@ -56,6 +56,7 @@ const GObjectImplementingGObjectInterface = GObject.registerClass({
     }
 
     requiredG() {}
+
     optionalG() {
         return AGObjectInterface.optionalG(this);
     }
@@ -79,6 +80,7 @@ const ImplementationOfTwoInterfaces = GObject.registerClass({
     },
 }, class ImplementationOfTwoInterfaces extends GObject.Object {
     requiredG() {}
+
     optionalG() {
         return InterfaceRequiringGObjectInterface.optionalG(this);
     }

@@ -842,6 +842,7 @@ const Shiny = GObject.registerClass({
     get override_property() {
         return this._override_property + 2;
     }
+
     set override_property(value) {
         this._override_property = value - 1;
     }
