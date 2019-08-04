@@ -247,7 +247,7 @@ describe('Life, the Universe and Everything', function () {
         spyOn(testObj, 'test').and.callThrough();
         expect(Regress.test_callback_destroy_notify(function () {
             return testObj.test(42);
-        }.bind(testObj))).toEqual(42);
+        })).toEqual(42);
         expect(testObj.test).toHaveBeenCalledTimes(1);
         expect(Regress.test_callback_thaw_notifications()).toEqual(42);
     });
