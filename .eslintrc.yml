@@ -97,6 +97,7 @@ rules:
     - error
     - varsIgnorePattern: ^unused
   no-useless-call: error
+  no-useless-constructor: error
   nonblock-statement-body-position:
     - error
     - below
