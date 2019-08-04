@@ -277,10 +277,10 @@ describe('Tweener', function () {
     it('can register special properties', function () {
         Tweener.registerSpecialProperty(
             'negative_x',
-            function(obj) {
+            function (obj) {
                 return -obj.x;
             },
-            function(obj, val) {
+            function (obj, val) {
                 obj.x = -val;
             }
         );
@@ -341,7 +341,7 @@ describe('Tweener', function () {
     it('can split properties into more than one special property', function () {
         Tweener.registerSpecialPropertySplitter(
             'xnegy',
-            function(val) {
+            function (val) {
                 return [{name: 'x', value: val},
                     {name: 'y', value: -val}];
             }

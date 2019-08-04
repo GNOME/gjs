@@ -272,11 +272,11 @@ function _init() {
     // small HACK: we add a matches() method to standard Errors so that
     // you can do "if (e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
     // without checking instanceof
-    Error.prototype.matches = function() {
+    Error.prototype.matches = function () {
         return false;
     };
 
-    this.Variant._new_internal = function(sig, value) {
+    this.Variant._new_internal = function (sig, value) {
         let signature = Array.prototype.slice.call(sig);
 
         let variant = _pack_variant(signature, value);
@@ -287,13 +287,13 @@ function _init() {
     };
 
     // Deprecate version of new GLib.Variant()
-    this.Variant.new = function(sig, value) {
+    this.Variant.new = function (sig, value) {
         return new GLib.Variant(sig, value);
     };
-    this.Variant.prototype.unpack = function() {
+    this.Variant.prototype.unpack = function () {
         return _unpack_variant(this, false);
     };
-    this.Variant.prototype.deepUnpack = function() {
+    this.Variant.prototype.deepUnpack = function () {
         return _unpack_variant(this, true);
     };
     // backwards compatibility alias
@@ -304,15 +304,15 @@ function _init() {
         return _unpack_variant(this, true, true);
     };
 
-    this.Variant.prototype.toString = function() {
+    this.Variant.prototype.toString = function () {
         return `[object variant of type "${this.get_type_string()}"]`;
     };
 
-    this.Bytes.prototype.toArray = function() {
+    this.Bytes.prototype.toArray = function () {
         return imports.byteArray.fromGBytes(this);
     };
 
-    this.log_structured = function(logDomain, logLevel, stringFields) {
+    this.log_structured = function (logDomain, logLevel, stringFields) {
         let fields = {};
         for (let key in stringFields)
             fields[key] = new GLib.Variant('s', stringFields[key]);
@@ -320,7 +320,7 @@ function _init() {
         GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
     };
 
-    this.VariantDict.prototype.lookup = function(key, variantType = null, deep = false) {
+    this.VariantDict.prototype.lookup = function (key, variantType = null, deep = false) {
         if (typeof variantType === 'string')
             variantType = new GLib.VariantType(variantType);
 

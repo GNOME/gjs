@@ -163,7 +163,7 @@ describe('GObject class with decorator', function () {
         expect(() => GObject.registerClass(class Bar extends Foo {})).toThrow();
     });
 
-    it('throws an error when used with an abstract class', function() {
+    it('throws an error when used with an abstract class', function () {
         expect(() => new MyAbstractObject()).toThrow();
     });
 
@@ -376,14 +376,14 @@ describe('GObject class with decorator', function () {
         expect(() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
     });
 
-    it('resolves properties from interfaces', function() {
+    it('resolves properties from interfaces', function () {
         const mon = Gio.NetworkMonitor.get_default();
         expect(mon.network_available).toBeDefined();
         expect(mon.networkAvailable).toBeDefined();
         expect(mon['network-available']).toBeDefined();
     });
 
-    it('has a toString() defintion', function() {
+    it('has a toString() defintion', function () {
         expect(myInstance.toString()).toMatch(
             /\[object instance wrapper GType:Gjs_MyObject jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
         expect(new Derived().toString()).toMatch(

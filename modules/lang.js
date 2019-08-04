@@ -83,7 +83,7 @@ function bind(obj, callback, ...bindArguments) {
         return callback.bind(obj);
 
     let me = obj;
-    return function(...args) {
+    return function (...args) {
         args = args.concat(bindArguments);
         return callback.apply(me, args);
     };

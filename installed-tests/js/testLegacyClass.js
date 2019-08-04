@@ -21,7 +21,7 @@ const MetaClass = new Lang.Class({
         this.parent(params);
 
         if (params.Extended) {
-            this.prototype.dynamic_method = this.wrapFunction('dynamic_method', function() {
+            this.prototype.dynamic_method = this.wrapFunction('dynamic_method', function () {
                 return 73;
             });
 
@@ -295,7 +295,7 @@ describe('Class framework', function () {
         expect(newAbstract.foo).toEqual(42);
     });
 
-    it('allows ES6 classes to inherit from abstract base classes', function() {
+    it('allows ES6 classes to inherit from abstract base classes', function () {
         class AbstractImpl extends AbstractBase {}
 
         let newAbstract = new AbstractImpl();

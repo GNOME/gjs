@@ -421,7 +421,7 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.TestEnum.param(Regress.TestEnum.VALUE4)).toEqual('value4');
     });
 
-    xit('can be answered with GObject.set()', function() {
+    xit('can be answered with GObject.set()', function () {
         let o = new Regress.TestObj();
         o.set({string: 'Answer', int: 42});
         expect(o.string).toBe('Answer');
@@ -570,7 +570,7 @@ describe('Life, the Universe and Everything', function () {
             expect(handler).toHaveBeenCalledWith([jasmine.any(Object), null]);
         }).pend('Not yet implemented');
 
-        xit('signal with int in-out parameter', function() {
+        xit('signal with int in-out parameter', function () {
             let handler = jasmine.createSpy('handler').and.callFake(() => 43);
             o.connect('sig-with-inout-int', handler);
             o.emit_sig_with_inout_int();
@@ -759,7 +759,7 @@ describe('Life, the Universe and Everything', function () {
         }
     });
 
-    it('correctly converts a NULL strv in a GValue to an empty array', function() {
+    it('correctly converts a NULL strv in a GValue to an empty array', function () {
         let v = Regress.test_null_strv_in_gvalue();
         expect(v.length).toEqual(0);
     });

@@ -98,7 +98,7 @@ Object.defineProperty(Debugger.Frame.prototype, 'num', {
     },
 });
 
-Debugger.Frame.prototype.describeFrame = function() {
+Debugger.Frame.prototype.describeFrame = function () {
     if (this.type === 'call') {
         return `${this.callee.name || '<anonymous>'}(${
             this.arguments.map(dvToString).join(', ')})`;
@@ -109,13 +109,13 @@ Debugger.Frame.prototype.describeFrame = function() {
     }
 };
 
-Debugger.Frame.prototype.describePosition = function() {
+Debugger.Frame.prototype.describePosition = function () {
     if (this.script)
         return this.script.describeOffset(this.offset);
     return null;
 };
 
-Debugger.Frame.prototype.describeFull = function() {
+Debugger.Frame.prototype.describeFull = function () {
     const fr = this.describeFrame();
     const pos = this.describePosition();
     if (pos)
@@ -821,12 +821,12 @@ function onInitialEnterFrame(frame) {
 }
 
 var dbg = new Debugger();
-dbg.onNewPromise = function({promiseID, promiseAllocationSite}) {
+dbg.onNewPromise = function ({promiseID, promiseAllocationSite}) {
     const site = promiseAllocationSite.toString().split('\n')[0];
     print(`Promise ${promiseID} started from ${site}`);
     return undefined;
 };
-dbg.onPromiseSettled = function(promise) {
+dbg.onPromiseSettled = function (promise) {
     let message = `Promise ${promise.promiseID} ${promise.promiseState} `;
     message += `after ${promise.promiseTimeToResolution.toFixed(3)} ms`;
     let brief, full;
@@ -843,14 +843,14 @@ dbg.onPromiseSettled = function(promise) {
         print(full);
     return undefined;
 };
-dbg.onDebuggerStatement = function(frame) {
+dbg.onDebuggerStatement = function (frame) {
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print(`Debugger statement, ${frame.describeFull()}`);
         return repl();
     });
 };
-dbg.onExceptionUnwind = function(frame, value) {
+dbg.onExceptionUnwind = function (frame, value) {
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print("Unwinding due to exception. (Type 'c' to continue unwinding.)");

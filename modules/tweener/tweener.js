@@ -88,7 +88,7 @@ FrameTicker.prototype = {
         this._timeoutID = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
             Math.floor(1000 / me.FRAME_RATE),
-            function() {
+            function () {
                 me._currentTime += 1000 / me.FRAME_RATE;
                 me.emit('prepare-frame');
                 return true;

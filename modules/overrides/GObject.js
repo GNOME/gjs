@@ -181,13 +181,13 @@ function _init() {
     function _makeDummyClass(obj, name, upperName, gtypeName, actual) {
         let gtype = GObject.type_from_name(gtypeName);
         obj[`TYPE_${upperName}`] = gtype;
-        obj[name] = function(v) {
+        obj[name] = function (v) {
             return new actual(v);
         };
         obj[name].$gtype = gtype;
     }
 
-    _makeDummyClass(GObject, 'VoidType', 'NONE', 'void', function() {});
+    _makeDummyClass(GObject, 'VoidType', 'NONE', 'void', function () {});
     _makeDummyClass(GObject, 'Char', 'CHAR', 'gchar', Number);
     _makeDummyClass(GObject, 'UChar', 'UCHAR', 'guchar', Number);
     _makeDummyClass(GObject, 'Unichar', 'UNICHAR', 'gint', String);
@@ -224,71 +224,71 @@ function _init() {
 
     _makeDummyClass(GObject, 'Type', 'GTYPE', 'GType', GObject.type_from_name);
 
-    GObject.ParamSpec.char = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.char = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_char(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.uchar = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.uchar = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_uchar(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.int = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.int = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_int(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.uint = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.uint = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_uint(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.long = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.long = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_long(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.ulong = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.ulong = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_ulong(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.int64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.int64 = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_int64(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.uint64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.uint64 = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_uint64(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.float = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.float = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_float(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.boolean = function(name, nick, blurb, flags, default_value) {
+    GObject.ParamSpec.boolean = function (name, nick, blurb, flags, default_value) {
         return GObject.param_spec_boolean(name, nick, blurb, default_value, flags);
     };
 
-    GObject.ParamSpec.flags = function(name, nick, blurb, flags, flags_type, default_value) {
+    GObject.ParamSpec.flags = function (name, nick, blurb, flags, flags_type, default_value) {
         return GObject.param_spec_flags(name, nick, blurb, flags_type, default_value, flags);
     };
 
-    GObject.ParamSpec.enum = function(name, nick, blurb, flags, enum_type, default_value) {
+    GObject.ParamSpec.enum = function (name, nick, blurb, flags, enum_type, default_value) {
         return GObject.param_spec_enum(name, nick, blurb, enum_type, default_value, flags);
     };
 
-    GObject.ParamSpec.double = function(name, nick, blurb, flags, minimum, maximum, default_value) {
+    GObject.ParamSpec.double = function (name, nick, blurb, flags, minimum, maximum, default_value) {
         return GObject.param_spec_double(name, nick, blurb, minimum, maximum, default_value, flags);
     };
 
-    GObject.ParamSpec.string = function(name, nick, blurb, flags, default_value) {
+    GObject.ParamSpec.string = function (name, nick, blurb, flags, default_value) {
         return GObject.param_spec_string(name, nick, blurb, default_value, flags);
     };
 
-    GObject.ParamSpec.boxed = function(name, nick, blurb, flags, boxed_type) {
+    GObject.ParamSpec.boxed = function (name, nick, blurb, flags, boxed_type) {
         return GObject.param_spec_boxed(name, nick, blurb, boxed_type, flags);
     };
 
-    GObject.ParamSpec.object = function(name, nick, blurb, flags, object_type) {
+    GObject.ParamSpec.object = function (name, nick, blurb, flags, object_type) {
         return GObject.param_spec_object(name, nick, blurb, object_type, flags);
     };
 
-    GObject.ParamSpec.param = function(name, nick, blurb, flags, param_type) {
+    GObject.ParamSpec.param = function (name, nick, blurb, flags, param_type) {
         return GObject.param_spec_param(name, nick, blurb, param_type, flags);
     };
 
@@ -367,14 +367,14 @@ function _init() {
 
     // For compatibility with Lang.Class... we need a _construct
     // or the Lang.Class constructor will fail.
-    GObject.Object.prototype._construct = function(...args) {
+    GObject.Object.prototype._construct = function (...args) {
         this._init(...args);
         return this;
     };
 
     GObject.registerClass = registerClass;
 
-    GObject.Object._classInit = function(klass) {
+    GObject.Object._classInit = function (klass) {
         let gtypename = _createGTypeName(klass);
         let gflags = klass.hasOwnProperty(GTypeFlags) ?
             klass[GTypeFlags] : 0;
@@ -412,7 +412,7 @@ function _init() {
                 let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
                     newClass.$gtype);
                 if (id !== 0) {
-                    GObject.signal_override_class_closure(id, newClass.$gtype, function(...argArray) {
+                    GObject.signal_override_class_closure(id, newClass.$gtype, function (...argArray) {
                         let emitter = argArray.shift();
 
                         return func.apply(emitter, argArray);
@@ -425,7 +425,7 @@ function _init() {
             _checkInterface(iface, newClass.prototype));
 
         // For backwards compatibility only. Use instanceof instead.
-        newClass.implements = function(iface) {
+        newClass.implements = function (iface) {
             if (iface.$gtype)
                 return GObject.type_is_a(newClass.$gtype, iface.$gtype);
             return false;
@@ -434,7 +434,7 @@ function _init() {
         return newClass;
     };
 
-    GObject.Interface._classInit = function(klass) {
+    GObject.Interface._classInit = function (klass) {
         let gtypename = _createGTypeName(klass);
         let gobjectInterfaces = klass.hasOwnProperty(requires) ?
             klass[requires] : [];
@@ -498,7 +498,7 @@ function _init() {
     GObject.signals = signals;
 
     // Replacement for non-introspectable g_object_set()
-    GObject.Object.prototype.set = function(params) {
+    GObject.Object.prototype.set = function (params) {
         Object.assign(this, params);
     };
 
@@ -509,7 +509,7 @@ function _init() {
         TRUE_HANDLED: 2,
     };
 
-    GObject.Object.prototype.disconnect = function(id) {
+    GObject.Object.prototype.disconnect = function (id) {
         return GObject.signal_handler_disconnect(this, id);
     };
 
@@ -517,13 +517,13 @@ function _init() {
     // methods (such as Gio.Socket.connect or NMClient.Device.disconnect)
     // The original g_signal_* functions are not introspectable anyway, because
     // we need our own handling of signal argument marshalling
-    GObject.signal_connect = function(object, name, handler) {
+    GObject.signal_connect = function (object, name, handler) {
         return GObject.Object.prototype.connect.call(object, name, handler);
     };
-    GObject.signal_connect_after = function(object, name, handler) {
+    GObject.signal_connect_after = function (object, name, handler) {
         return GObject.Object.prototype.connect_after.call(object, name, handler);
     };
-    GObject.signal_emit_by_name = function(object, ...nameAndArgs) {
+    GObject.signal_emit_by_name = function (object, ...nameAndArgs) {
         return GObject.Object.prototype.emit.apply(object, nameAndArgs);
     };
 }

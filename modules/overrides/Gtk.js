@@ -37,12 +37,12 @@ function _init() {
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
 
     if (GjsPrivate.gtk_container_child_set_property) {
-        Gtk.Container.prototype.child_set_property = function(child, property, value) {
+        Gtk.Container.prototype.child_set_property = function (child, property, value) {
             GjsPrivate.gtk_container_child_set_property(this, child, property, value);
         };
     }
 
-    Gtk.Widget.prototype._init = function(params) {
+    Gtk.Widget.prototype._init = function (params) {
         if (this.constructor[Gtk.template]) {
             Gtk.Widget.set_connect_func.call(this.constructor, (builder, obj, signalName, handlerName, connectObj, flags) => {
                 if (connectObj !== null)
@@ -73,14 +73,14 @@ function _init() {
         }
     };
 
-    Gtk.Widget._classInit = function(klass) {
+    Gtk.Widget._classInit = function (klass) {
         let template = klass[Gtk.template];
         let cssName = klass[Gtk.cssName];
         let children = klass[Gtk.children];
         let internalChildren = klass[Gtk.internalChildren];
 
         if (template) {
-            klass.prototype._instance_init = function() {
+            klass.prototype._instance_init = function () {
                 this.init_template();
             };
         }

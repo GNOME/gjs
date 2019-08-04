@@ -319,7 +319,7 @@ function initGettext() {
     let gettext = imports.gettext;
     window._ = gettext.gettext;
     window.C_ = gettext.pgettext;
-    window.N_ = function(x) {
+    window.N_ = function (x) {
         return x;
     };
 }

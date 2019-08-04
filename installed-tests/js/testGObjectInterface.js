@@ -273,7 +273,7 @@ describe('GObject interface', function () {
             253, 'testGObjectMustOverrideInterfaceProperties');
     });
 
-    it('can have introspected properties overriden', function() {
+    it('can have introspected properties overriden', function () {
         let obj = new ImplementationOfIntrospectedInterface();
         expect(obj.name).toEqual('inaction');
     });
