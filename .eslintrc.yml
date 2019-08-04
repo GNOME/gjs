@@ -29,6 +29,7 @@ rules:
   dot-location:
     - error
     - property
+  eol-last: error
   indent:
     - error
     - 4
