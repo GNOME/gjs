@@ -86,15 +86,15 @@ function dpgettext(dom, context, msgid) {
  */
 function domain(domainName) {
     return {
-        gettext: function(msgid) {
+        gettext(msgid) {
             return GLib.dgettext(domainName, msgid);
         },
 
-        ngettext: function(msgid1, msgid2, n) {
+        ngettext(msgid1, msgid2, n) {
             return GLib.dngettext(domainName, msgid1, msgid2, n);
         },
 
-        pgettext: function(context, msgid) {
+        pgettext(context, msgid) {
             return GLib.dpgettext2(domainName, context, msgid);
         },
     };

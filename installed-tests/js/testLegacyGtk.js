@@ -44,7 +44,7 @@ const MyComplexGtkSubclass = new Lang.Class({
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
 
-    testChildrenExist: function () {
+    testChildrenExist() {
         this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
         expect(this._internalLabel).toEqual(jasmine.anything());
 
@@ -60,7 +60,7 @@ const MyComplexGtkSubclassFromResource = new Lang.Class({
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
 
-    testChildrenExist: function () {
+    testChildrenExist() {
         expect(this.label_child).toEqual(jasmine.anything());
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());

@@ -7,7 +7,7 @@ const Signals = imports.signals;
 const Foo = new Lang.Class({
     Name: 'Foo',
     Implements: [Signals.WithSignals],
-    _init: function () {},
+    _init() {},
 });
 
 describe('Legacy object with signals', function () {

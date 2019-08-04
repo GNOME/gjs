@@ -9,11 +9,11 @@ function ImporterClass() {
 }
 
 ImporterClass.prototype = {
-    _init: function() {
+    _init() {
         this._a = '__init__ class tested';
     },
 
-    testMethod: function() {
+    testMethod() {
         return this._a;
     },
 };

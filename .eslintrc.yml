@@ -105,6 +105,7 @@ rules:
     - error
     - consistent: true
   object-curly-spacing: error
+  object-shorthand: error
   prefer-template: error
   quotes:
     - error

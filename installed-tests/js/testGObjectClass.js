@@ -328,7 +328,7 @@ describe('GObject class with decorator', function () {
             },
         }, class InterfacePropObject extends GObject.Object {});
         let file = Gio.File.new_for_path('dummy');
-        expect(() => new InterfacePropObject({file: file})).not.toThrow();
+        expect(() => new InterfacePropObject({file})).not.toThrow();
     });
 
     it('can override a property from the parent class', function () {

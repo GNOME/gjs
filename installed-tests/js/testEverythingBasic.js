@@ -240,7 +240,7 @@ describe('Life, the Universe and Everything', function () {
 
     it('callback with destroy-notify', function () {
         let testObj = {
-            test: function (data) {
+            test(data) {
                 return data;
             },
         };

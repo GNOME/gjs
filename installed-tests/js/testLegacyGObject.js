@@ -38,7 +38,7 @@ const MyObject = new GObject.Class({
         },
     },
 
-    _init: function(props) {
+    _init(props) {
         // check that it's safe to set properties before
         // chaining up (priv is NULL at this point, remember)
         this._readwrite = 'foo';
@@ -82,43 +82,43 @@ const MyObject = new GObject.Class({
         this._constructCalled = true;
     },
 
-    notify_prop: function() {
+    notify_prop() {
         this._readonly = 'changed';
 
         this.notify('readonly');
     },
 
-    emit_empty: function() {
+    emit_empty() {
         this.emit('empty');
     },
 
-    emit_minimal: function(one, two) {
+    emit_minimal(one, two) {
         this.emit('minimal', one, two);
     },
 
-    emit_full: function() {
+    emit_full() {
         return this.emit('full');
     },
 
-    emit_detailed: function() {
+    emit_detailed() {
         this.emit('detailed::one');
         this.emit('detailed::two');
     },
 
-    emit_run_last: function(callback) {
+    emit_run_last(callback) {
         this._run_last_callback = callback;
         this.emit('run-last');
     },
 
-    on_run_last: function() {
+    on_run_last() {
         this._run_last_callback();
     },
 
-    on_empty: function() {
+    on_empty() {
         this.empty_called = true;
     },
 
-    on_full: function() {
+    on_full() {
         this.full_default_handler_called = true;
         return 79;
     },
@@ -129,11 +129,11 @@ const MyApplication = new Lang.Class({
     Extends: Gio.Application,
     Signals: {'custom': {param_types: [GObject.TYPE_INT]}},
 
-    _init: function(params) {
+    _init(params) {
         this.parent(params);
     },
 
-    emit_custom: function(n) {
+    emit_custom(n) {
         this.emit('custom', n);
     },
 });
@@ -143,13 +143,13 @@ const MyInitable = new Lang.Class({
     Extends: GObject.Object,
     Implements: [Gio.Initable],
 
-    _init: function(params) {
+    _init(params) {
         this.parent(params);
 
         this.inited = false;
     },
 
-    vfunc_init: function(cancellable) { // error?
+    vfunc_init(cancellable) { // error?
         if (!(cancellable instanceof Gio.Cancellable))
             throw new Error('Bad argument');
 
@@ -161,7 +161,7 @@ const Derived = new Lang.Class({
     Name: 'Derived',
     Extends: MyObject,
 
-    _init: function() {
+    _init() {
         this.parent({readwrite: 'yes'});
     },
 });
@@ -175,13 +175,13 @@ const MyCustomInit = new Lang.Class({
     Name: 'MyCustomInit',
     Extends: GObject.Object,
 
-    _init: function() {
+    _init() {
         this.foo = false;
 
         this.parent();
     },
 
-    _instance_init: function() {
+    _instance_init() {
         this.foo = true;
     },
 });
@@ -350,7 +350,7 @@ describe('GObject class', function () {
             },
         });
         let file = Gio.File.new_for_path('dummy');
-        expect(() => new InterfacePropObject({file: file})).not.toThrow();
+        expect(() => new InterfacePropObject({file})).not.toThrow();
     });
 
     it('can override a property from the parent class', function () {
@@ -391,10 +391,6 @@ const GObjectImplementingLangInterface = new Lang.Class({
     Name: 'GObjectImplementingLangInterface',
     Extends: GObject.Object,
     Implements: [AnInterface],
-
-    _init: function (props = {}) {
-        this.parent(props);
-    },
 });
 
 const AGObjectInterface = new Lang.Interface({
@@ -412,7 +408,7 @@ const AGObjectInterface = new Lang.Interface({
     },
 
     requiredG: Lang.Interface.UNIMPLEMENTED,
-    optionalG: function () {
+    optionalG() {
         return 'AGObjectInterface.optionalG()';
     },
 });
@@ -421,7 +417,7 @@ const InterfaceRequiringGObjectInterface = new Lang.Interface({
     Name: 'InterfaceRequiringGObjectInterface',
     Requires: [AGObjectInterface],
 
-    optionalG: function () {
+    optionalG() {
         return `InterfaceRequiringGObjectInterface.optionalG()\n${
             AGObjectInterface.optionalG(this)}`;
     },
@@ -450,11 +446,8 @@ const GObjectImplementingGObjectInterface = new Lang.Class({
         return 'meh';
     },
 
-    _init: function (props = {}) {
-        this.parent(props);
-    },
-    requiredG: function () {},
-    optionalG: function () {
+    requiredG() {},
+    optionalG() {
         return AGObjectInterface.optionalG(this);
     },
 });
@@ -468,10 +461,7 @@ const MinimalImplementationOfAGObjectInterface = new Lang.Class({
             AGObjectInterface),
     },
 
-    _init: function (props = {}) {
-        this.parent(props);
-    },
-    requiredG: function () {},
+    requiredG() {},
 });
 
 const ImplementationOfTwoInterfaces = new Lang.Class({
@@ -483,11 +473,8 @@ const ImplementationOfTwoInterfaces = new Lang.Class({
             AGObjectInterface),
     },
 
-    _init: function (props = {}) {
-        this.parent(props);
-    },
-    requiredG: function () {},
-    optionalG: function () {
+    requiredG() {},
+    optionalG() {
         return InterfaceRequiringGObjectInterface.optionalG(this);
     },
 });
@@ -514,10 +501,6 @@ describe('GObject interface', function () {
             Name: 'ObjectImplementingLangInterfaceAndCInterface',
             Extends: GObject.Object,
             Implements: [AnInterface, Gio.Initable],
-
-            _init: function (props = {}) {
-                this.parent(props);
-            },
         });
         let obj;
         expect(() => {
@@ -569,11 +552,8 @@ describe('GObject interface', function () {
                     AGObjectInterface),
             },
 
-            _init: function (props = {}) {
-                this.parent(props);
-            },
-            required: function () {},
-            requiredG: function () {},
+            required() {},
+            requiredG() {},
         });
         let obj;
         expect(() => {
@@ -646,10 +626,7 @@ describe('GObject interface', function () {
                     AGObjectInterface),
             },
 
-            _init: function (props = {}) {
-                this.parent(props);
-            },
-            requiredG: function () {},
+            requiredG() {},
         });
         let obj = new MinimalImplementationOfTwoInterfaces();
         expect(obj.optionalG())
@@ -660,7 +637,7 @@ describe('GObject interface', function () {
         expect(() => new Lang.Class({
             Name: 'BadObject',
             Implements: [InterfaceRequiringGObjectInterface],
-            required: function () {},
+            required() {},
         })).toThrow();
     });
 
@@ -668,7 +645,7 @@ describe('GObject interface', function () {
         expect(() => new Lang.Class({
             Name: 'BadObject',
             Implements: [InterfaceRequiringGObjectInterface, AGObjectInterface],
-            required: function () {},
+            required() {},
         })).toThrow();
     });
 
@@ -724,10 +701,8 @@ describe('GObject interface', function () {
             Name: 'MyNaughtyObject',
             Extends: GObject.Object,
             Implements: [AGObjectInterface],
-            _init: function (props = {}) {
-                this.parent(props);
-            },
-            requiredG: function () {},
+
+            requiredG() {},
         });
         // g_test_assert_expected_messages() is a macro, not introspectable
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectInterface.js',

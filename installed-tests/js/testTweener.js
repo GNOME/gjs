@@ -6,10 +6,10 @@ function installFrameTicker() {
     let ticker = {
         FRAME_RATE: 50,
 
-        _init: function() {
+        _init() {
         },
 
-        start: function() {
+        start() {
             this._currentTime = 0;
 
             this._timeoutID = setInterval(() => {
@@ -18,7 +18,7 @@ function installFrameTicker() {
             }, Math.floor(1000 / this.FRAME_RATE));
         },
 
-        stop: function() {
+        stop() {
             if ('_timeoutID' in this) {
                 clearInterval(this._timeoutID);
                 delete this._timeoutID;
@@ -27,7 +27,7 @@ function installFrameTicker() {
             this._currentTime = 0;
         },
 
-        getTime: function() {
+        getTime() {
             return this._currentTime;
         },
     };
@@ -322,7 +322,7 @@ describe('Tweener', function () {
             x: 10, y: 10, time: 1,
             discrete: ['x'],
             transition: 'linear',
-            onUpdate: function() {
+            onUpdate() {
                 if (objectA.x !== Math.floor(objectA.x))
                     objectA.xFraction = true;
                 if (objectA.y !== Math.floor(objectA.y))

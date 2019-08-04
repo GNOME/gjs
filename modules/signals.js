@@ -50,9 +50,9 @@ function _connect(name, callback) {
     // it's right to optimize for low memory and reentrancy-safety
     // rather than speed
     this._signalConnections.push({
-        'id': id,
-        'name': name,
-        'callback': callback,
+        id,
+        name,
+        callback,
         'disconnected': false,
     });
     return id;
