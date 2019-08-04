@@ -32,6 +32,10 @@ rules:
   eol-last: error
   eqeqeq: error
   func-call-spacing: error
+  func-style:
+    - error
+    - declaration
+    - allowArrowFunctions: true
   indent:
     - error
     - 4

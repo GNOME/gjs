@@ -84,7 +84,7 @@ function dpgettext(domain, context, msgid) {
  * @returns: an object with gettext bindings
  * @type: function
  */
-var domain = function(domainName) {
+function domain(domainName) {
     return {
         gettext: function(msgid) {
             return GLib.dgettext(domainName, msgid);
@@ -98,5 +98,4 @@ var domain = function(domainName) {
             return GLib.dpgettext2(domainName, context, msgid);
         },
     };
-};
-
+}
