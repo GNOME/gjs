@@ -61,6 +61,7 @@ rules:
   linebreak-style:
     - error
     - unix
+  lines-between-class-members: error
   no-constant-condition:
     - error
     - checkLoops: false

@@ -340,6 +340,7 @@ describe('GObject class with decorator', function () {
             get readwrite() {
                 return this._subclass_readwrite;
             }
+
             set readwrite(val) {
                 this._subclass_readwrite = `subclass${val}`;
             }
