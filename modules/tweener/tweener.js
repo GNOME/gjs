@@ -1,4 +1,6 @@
 /* -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil; -*- */
+/* eslint-disable block-scoped-var */
+
 /* Copyright 2008  litl, LLC. */
 /**
  * Tweener
