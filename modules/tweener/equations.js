@@ -98,7 +98,7 @@ function easeOutQuad (t, b, c, d, pParams) {
 function easeInOutQuad (t, b, c, d, pParams) {
     if ((t /= d / 2) < 1)
         return c / 2 * t * t + b;
-    return -c / 2 * ((--t) * (t - 2) - 1) + b;
+    return -c / 2 * (--t * (t - 2) - 1) + b;
 }
 
 /**
@@ -113,7 +113,7 @@ function easeInOutQuad (t, b, c, d, pParams) {
 function easeOutInQuad (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutQuad(t * 2, b, c / 2, d, pParams);
-    return easeInQuad((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInQuad(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -169,7 +169,7 @@ function easeInOutCubic (t, b, c, d, pParams) {
 function easeOutInCubic (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutCubic(t * 2, b, c / 2, d, pParams);
-    return easeInCubic((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInCubic(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -225,7 +225,7 @@ function easeInOutQuart (t, b, c, d, pParams) {
 function easeOutInQuart (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutQuart(t * 2, b, c / 2, d, pParams);
-    return easeInQuart((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInQuart(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -281,7 +281,7 @@ function easeInOutQuint (t, b, c, d, pParams) {
 function easeOutInQuint (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutQuint(t * 2, b, c / 2, d, pParams);
-    return easeInQuint((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInQuint(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -335,7 +335,7 @@ function easeInOutSine (t, b, c, d, pParams) {
 function easeOutInSine (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutSine(t * 2, b, c / 2, d, pParams);
-    return easeInSine((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInSine(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -348,7 +348,7 @@ function easeOutInSine (t, b, c, d, pParams) {
  * @return              The correct value.
  */
 function easeInExpo (t, b, c, d, pParams) {
-    return (t <= 0) ? b : c * Math.pow(2, 10 * (t / d - 1)) + b;
+    return t <= 0 ? b : c * Math.pow(2, 10 * (t / d - 1)) + b;
 }
 
 /**
@@ -361,7 +361,7 @@ function easeInExpo (t, b, c, d, pParams) {
  * @return              The correct value.
  */
 function easeOutExpo (t, b, c, d, pParams) {
-    return (t >= d) ? b + c : c * (-Math.pow(2, -10 * t / d) + 1) + b;
+    return t >= d ? b + c : c * (-Math.pow(2, -10 * t / d) + 1) + b;
 }
 
 /**
@@ -395,7 +395,7 @@ function easeInOutExpo (t, b, c, d, pParams) {
 function easeOutInExpo (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutExpo(t * 2, b, c / 2, d, pParams);
-    return easeInExpo((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInExpo(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -451,7 +451,7 @@ function easeInOutCirc (t, b, c, d, pParams) {
 function easeOutInCirc (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutCirc(t * 2, b, c / 2, d, pParams);
-    return easeInCirc((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInCirc(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -507,7 +507,7 @@ function easeOutElastic (t, b, c, d, pParams) {
     } else {
         s = p / (2 * Math.PI) * Math.asin(c / a);
     }
-    return (a * Math.pow(2, -10 * t) * Math.sin( (t * d - s) * (2 * Math.PI) / p ) + c + b);
+    return a * Math.pow(2, -10 * t) * Math.sin( (t * d - s) * (2 * Math.PI) / p ) + c + b;
 }
 
 /**
@@ -554,7 +554,7 @@ function easeInOutElastic (t, b, c, d, pParams) {
 function easeOutInElastic (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutElastic(t * 2, b, c / 2, d, pParams);
-    return easeInElastic((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInElastic(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -617,7 +617,7 @@ function easeInOutBack (t, b, c, d, pParams) {
 function easeOutInBack (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutBack(t * 2, b, c / 2, d, pParams);
-    return easeInBack((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInBack(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }
 
 /**
@@ -643,11 +643,11 @@ function easeInBounce (t, b, c, d, pParams) {
  * @return              The correct value.
  */
 function easeOutBounce (t, b, c, d, pParams) {
-    if ((t /= d) < (1 / 2.75))
+    if ((t /= d) < 1 / 2.75)
         return c * (7.5625 * t * t) + b;
-    else if (t < (2 / 2.75))
+    else if (t < 2 / 2.75)
         return c * (7.5625 * (t -= (1.5 / 2.75)) * t + .75) + b;
-    else if (t < (2.5 / 2.75))
+    else if (t < 2.5 / 2.75)
         return c * (7.5625 * (t -= (2.25 / 2.75)) * t + .9375) + b;
     else
         return c * (7.5625 * (t -= (2.625 / 2.75)) * t + .984375) + b;
@@ -681,5 +681,5 @@ function easeInOutBounce (t, b, c, d, pParams) {
 function easeOutInBounce (t, b, c, d, pParams) {
     if (t < d / 2)
         return easeOutBounce(t * 2, b, c / 2, d, pParams);
-    return easeInBounce((t * 2) - d, b + c / 2, c / 2, d, pParams);
+    return easeInBounce(t * 2 - d, b + c / 2, c / 2, d, pParams);
 }

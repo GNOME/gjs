@@ -70,6 +70,11 @@ rules:
     - error
     - allowEmptyCatch: true
   no-extra-bind: error
+  no-extra-parens:
+    - error
+    - all
+    - conditionalAssign: false
+      returnAssign: false
   no-implicit-coercion:
     - error
     - allow:

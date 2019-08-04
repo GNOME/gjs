@@ -337,9 +337,9 @@ Interface.prototype._check = function (proto) {
         // so that required interfaces don't copy over properties from other
         // interfaces that require them.
         let interfaces = proto.__interfaces__;
-        return ((!_interfacePresent(required, proto) ||
+        return (!_interfacePresent(required, proto) ||
             interfaces.indexOf(required) > interfaces.indexOf(this)) &&
-            !(proto instanceof required));
+            !(proto instanceof required);
     }).map(required =>
         // __name__ is only present on GJS-created classes and will be the most
         // accurate name. required.name will be present on introspected GObjects
@@ -419,10 +419,10 @@ function defineGObjectLegacyObjects(GObject) {
     function _createSignals(gtype, signals) {
         for (let signalName in signals) {
             let obj = signals[signalName];
-            let flags = (obj.flags !== undefined) ? obj.flags : GObject.SignalFlags.RUN_FIRST;
-            let accumulator = (obj.accumulator !== undefined) ? obj.accumulator : GObject.AccumulatorType.NONE;
-            let rtype = (obj.return_type !== undefined) ? obj.return_type : GObject.TYPE_NONE;
-            let paramtypes = (obj.param_types !== undefined) ? obj.param_types : [];
+            let flags = obj.flags !== undefined ? obj.flags : GObject.SignalFlags.RUN_FIRST;
+            let accumulator = obj.accumulator !== undefined ? obj.accumulator : GObject.AccumulatorType.NONE;
+            let rtype = obj.return_type !== undefined ? obj.return_type : GObject.TYPE_NONE;
+            let paramtypes = obj.param_types !== undefined ? obj.param_types : [];
 
             try {
                 obj.signal_id = Gi.signal_new(gtype, signalName, flags, accumulator, rtype, paramtypes);

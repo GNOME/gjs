@@ -33,7 +33,7 @@ const Lang = imports.lang;
 function _connect(name, callback) {
     // be paranoid about callback arg since we'd start to throw from emit()
     // if it was messed up
-    if (typeof(callback) !== 'function')
+    if (typeof callback !== 'function')
         throw new Error('When connecting signal must give a callback that is a function');
 
     // we instantiate the "signal machinery" only on-demand if anything

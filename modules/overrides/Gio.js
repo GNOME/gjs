@@ -100,9 +100,9 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
     while (argArray.length > signatureLength) {
         var argNum = argArray.length - 1;
         var arg = argArray.pop();
-        if (typeof(arg) === 'function' && !sync) {
+        if (typeof arg === 'function' && !sync) {
             replyFunc = arg;
-        } else if (typeof(arg) === 'number') {
+        } else if (typeof arg === 'number') {
             flags = arg;
         } else if (arg instanceof Gio.Cancellable) {
             cancellable = arg;
