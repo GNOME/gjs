@@ -54,14 +54,14 @@ class TapReporter {
     }
 
     jasmineStarted(info) {
-        print('1..' + info.totalSpecsDefined);
+        print(`1..${info.totalSpecsDefined}`);
     }
 
     jasmineDone() {
         this._failedSuites.forEach(failure => {
             failure.failedExpectations.forEach(result => {
                 print('not ok - An error was thrown outside a test');
-                print('# ' + result.message);
+                print(`# ${result.message}`);
             });
         });
 
@@ -91,10 +91,10 @@ class TapReporter {
         } else {
             tap_report = 'ok';
         }
-        tap_report += ' ' + this._specCount + ' ' + result.fullName;
+        tap_report += ` ${this._specCount} ${result.fullName}`;
         if (result.status === 'pending' || result.status === 'disabled') {
             let reason = result.pendingReason || result.status;
-            tap_report += ' # SKIP ' + reason;
+            tap_report += ` # SKIP ${reason}`;
         }
         print(tap_report);
 
@@ -104,7 +104,7 @@ class TapReporter {
                 print('# Message:', _removeNewlines(failedExpectation.message));
                 print('# Stack:');
                 let stackTrace = _filterStack(failedExpectation.stack).trim();
-                print(stackTrace.split('\n').map((str) => '#   ' + str).join('\n'));
+                print(stackTrace.split('\n').map((str) => `#   ${str}`).join('\n'));
             });
         }
     }

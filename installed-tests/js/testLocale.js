@@ -6,7 +6,7 @@ describe('JS_SetLocaleCallbacks', function () {
     // Requesting the weekday name tests locale_to_unicode
     it('toLocaleDateString() works', function () {
         let date = new Date('12/15/1981');
-        let datestr = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+        let datestr = date.toLocaleDateString('pt-BR', {weekday: 'long'});
         expect(datestr).toEqual('terça-feira');
     });
 

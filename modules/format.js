@@ -21,7 +21,7 @@ function vprintf(str, args) {
         if (usePos == false && i == 0)
             usePos = pos > 0;
         if (usePos && pos == 0 || !usePos && pos > 0)
-            throw new Error("Numbered and unnumbered conversion specifications cannot be mixed");
+            throw new Error('Numbered and unnumbered conversion specifications cannot be mixed');
 
         let fillChar = (widthGroup && widthGroup[0] == '0') ? '0' : ' ';
         let width = parseInt(widthGroup, 10) || 0;
@@ -61,7 +61,7 @@ function vprintf(str, args) {
                 s = parseFloat(getArg()).toFixed(parseInt(precisionGroup));
             break;
         default:
-            throw new Error('Unsupported conversion character %' + genericGroup);
+            throw new Error(`Unsupported conversion character %${genericGroup}`);
         }
         return fillWidth(s, fillChar, width);
     });

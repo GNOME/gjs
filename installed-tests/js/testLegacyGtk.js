@@ -71,7 +71,7 @@ function validateTemplate(description, ClassName) {
     describe(description, function () {
         let win, content;
         beforeEach(function () {
-            win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
+            win = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
             content = new ClassName();
             win.add(content);
         });

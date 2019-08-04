@@ -66,7 +66,7 @@ describe('Introspected structs', function () {
         });
 
         it('catches bad field names', function () {
-            expect(() => new Regress.TestStructA({ junk: 42 })).toThrow();
+            expect(() => new Regress.TestStructA({junk: 42})).toThrow();
         });
 
         it('copies an object from another object of the same type', function () {
@@ -123,7 +123,7 @@ describe('Introspected boxed types', function () {
         });
 
         it('catches bad field names', function () {
-            expect(() => new Regress.TestSimpleBoxedA({ junk: 42 })).toThrow();
+            expect(() => new Regress.TestSimpleBoxedA({junk: 42})).toThrow();
         });
 
         it('copies an object from another object of the same type', function () {
@@ -149,12 +149,12 @@ describe('Introspected boxed types', function () {
         });
 
         it('assigns nested struct field from an instance', function () {
-            simple_boxed.nested_a = new Regress.TestSimpleBoxedA({ some_int: 53 });
+            simple_boxed.nested_a = new Regress.TestSimpleBoxedA({some_int: 53});
             expect(simple_boxed.nested_a.some_int).toEqual(53);
         });
 
         it('assigns nested struct field directly from a hash of field values', function () {
-            simple_boxed.nested_a = { some_int: 63 };
+            simple_boxed.nested_a = {some_int: 63};
             expect(simple_boxed.nested_a.some_int).toEqual(63);
         });
     });
@@ -185,7 +185,7 @@ describe('Introspected boxed types', function () {
     // The two real world structs that have this behavior are
     // Clutter.Color and Clutter.ActorBox.
     it('constructs using a custom constructor in backwards compatibility mode', function () {
-        let boxed = new Regress.TestBoxedB({ some_int8: 7, some_long: 5 });
+        let boxed = new Regress.TestBoxedB({some_int8: 7, some_long: 5});
         expect(boxed.some_int8).toEqual(7);
         expect(boxed.some_long).toEqual(5);
     });

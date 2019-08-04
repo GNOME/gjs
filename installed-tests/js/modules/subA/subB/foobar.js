@@ -2,5 +2,5 @@
 
 /* exported bar, foo */
 
-var foo = "This is foo";
-var bar = "This is bar";
+var foo = 'This is foo';
+var bar = 'This is bar';

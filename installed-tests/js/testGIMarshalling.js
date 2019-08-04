@@ -186,8 +186,8 @@ describe('GArray', function () {
 
         ['return', 'out'].forEach(method => {
             ['none', 'container', 'full'].forEach(transfer => {
-                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                    expect(GIMarshallingTests['garray_utf8_' + transfer + '_' + method]())
+                it(`can be passed as ${method} with transfer ${transfer}`, function () {
+                    expect(GIMarshallingTests[`garray_utf8_${transfer}_${method}`]())
                         .toEqual(['0', '1', '2']);
                 });
             });
@@ -259,7 +259,7 @@ describe('GBytes', function() {
     });
 
     it('can be created from a string and is encoded in UTF-8', function () {
-        let bytes = GLib.Bytes.new("const \u2665 utf8");
+        let bytes = GLib.Bytes.new('const \u2665 utf8');
         expect(() => GIMarshallingTests.utf8_as_uint8array_in(bytes.toArray()))
             .not.toThrow();
     });
@@ -294,8 +294,8 @@ describe('GPtrArray', function () {
 
         ['return', 'out'].forEach(method => {
             ['none', 'container', 'full'].forEach(transfer => {
-                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                    expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
+                it(`can be passed as ${method} with transfer ${transfer}`, function () {
+                    expect(GIMarshallingTests[`gptrarray_utf8_${transfer}_${method}`]())
                         .toEqual(refArray);
                 });
             });
@@ -383,8 +383,8 @@ describe('GHashTable', function () {
 
     ['return', 'out'].forEach(method => {
         ['none', 'container', 'full'].forEach(transfer => {
-            it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                expect(GIMarshallingTests['ghashtable_utf8_' + transfer + '_' + method]())
+            it(`can be passed as ${method} with transfer ${transfer}`, function () {
+                expect(GIMarshallingTests[`ghashtable_utf8_${transfer}_${method}`]())
                     .toEqual(STRING_DICT);
             });
         });
@@ -508,7 +508,7 @@ describe('GValue', function () {
         let Cairo;
         try {
             Cairo = imports.cairo;
-        } catch(e) {
+        } catch (e) {
             pending('Compiled without Cairo support');
             return;
         }
@@ -584,12 +584,24 @@ describe('Callback', function () {
 });
 
 const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
-    vfunc_vfunc_return_value_only() { return 42; }
-    vfunc_vfunc_one_out_parameter() { return 43; }
-    vfunc_vfunc_multiple_out_parameters() { return [44, 45]; }
-    vfunc_vfunc_return_value_and_one_out_parameter() { return [46, 47]; }
-    vfunc_vfunc_return_value_and_multiple_out_parameters() { return [48, 49, 50]; }
-    vfunc_vfunc_array_out_parameter() { return [50, 51]; }
+    vfunc_vfunc_return_value_only() {
+        return 42;
+    }
+    vfunc_vfunc_one_out_parameter() {
+        return 43;
+    }
+    vfunc_vfunc_multiple_out_parameters() {
+        return [44, 45];
+    }
+    vfunc_vfunc_return_value_and_one_out_parameter() {
+        return [46, 47];
+    }
+    vfunc_vfunc_return_value_and_multiple_out_parameters() {
+        return [48, 49, 50];
+    }
+    vfunc_vfunc_array_out_parameter() {
+        return [50, 51];
+    }
     vfunc_vfunc_meth_with_err(x) {
         switch (x) {
         case -1:

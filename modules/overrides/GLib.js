@@ -61,7 +61,7 @@ function _read_single_type(signature, forceSimple) {
 
     // Valid types are simple types, arrays, maybes, tuples, dictionary entries and variants
     if (!isSimple && char != 'v')
-        throw new TypeError('Invalid GVariant signature (' + char + ' is not a valid type)');
+        throw new TypeError(`Invalid GVariant signature (${char} is not a valid type)`);
 
     return [char];
 }
@@ -152,7 +152,7 @@ function _pack_variant(signature, value) {
     }
 
     case '(':
-        let children = [ ];
+        let children = [];
         for (let i = 0; i < value.length; i++) {
             let next = signature[0];
             if (next == ')')
@@ -174,7 +174,7 @@ function _pack_variant(signature, value) {
 
         return GLib.Variant.new_dict_entry(key, child);
     default:
-        throw new TypeError('Invalid GVariant signature (unexpected character ' + char + ')');
+        throw new TypeError(`Invalid GVariant signature (unexpected character ${char})`);
     }
 }
 
@@ -244,7 +244,7 @@ function _unpack_variant(variant, deep, recursive = false) {
         // fall through
     case '(':
     case '{':
-        let ret = [ ];
+        let ret = [];
         let nElements = variant.n_children();
         for (let i = 0; i < nElements; i++) {
             let val = variant.get_child_value(i);
@@ -267,7 +267,9 @@ function _init() {
     // small HACK: we add a matches() method to standard Errors so that
     // you can do "if (e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
     // without checking instanceof
-    Error.prototype.matches = function() { return false; };
+    Error.prototype.matches = function() {
+        return false;
+    };
 
     this.Variant._new_internal = function(sig, value) {
         let signature = Array.prototype.slice.call(sig);
@@ -298,7 +300,7 @@ function _init() {
     };
 
     this.Variant.prototype.toString = function() {
-        return '[object variant of type "' + this.get_type_string() + '"]';
+        return `[object variant of type "${this.get_type_string()}"]`;
     };
 
     this.Bytes.prototype.toArray = function() {
