@@ -18,22 +18,19 @@ describe('Legacy byte array', function() {
         });
 
         it('is initialized to zeroes', function() {
-            for (let i = 0; i < a.length; ++i) {
+            for (let i = 0; i < a.length; ++i)
                 expect(a[i]).toEqual(0);
-            }
         });
     });
 
     it('assigns values correctly', function() {
         let a = new ByteArray.ByteArray(256);
 
-        for (let i = 0; i < a.length; ++i) {
+        for (let i = 0; i < a.length; ++i)
             a[i] = 255 - i;
-        }
 
-        for (let i = 0; i < a.length; ++i) {
+        for (let i = 0; i < a.length; ++i)
             expect(a[i]).toEqual(255 - i);
-        }
     });
 
     describe('assignment past end', function() {

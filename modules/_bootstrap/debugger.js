@@ -41,9 +41,8 @@ function summarizeObject(dv) {
     const obj = {};
     for (var name of dv.getOwnPropertyNames()) {
         var v = dv.getOwnPropertyDescriptor(name).value;
-        if (v instanceof Debugger.Object) {
+        if (v instanceof Debugger.Object)
             v = '(...)';
-        }
         obj[name] = v;
     }
     return obj;
@@ -100,13 +99,14 @@ Object.defineProperty(Debugger.Frame.prototype, 'num', {
 });
 
 Debugger.Frame.prototype.describeFrame = function() {
-    if (this.type == 'call')
+    if (this.type == 'call') {
         return `${this.callee.name || '<anonymous>'}(${
             this.arguments.map(dvToString).join(', ')})`;
-    else if (this.type == 'global')
+    } else if (this.type == 'global') {
         return 'toplevel';
-    else
+    } else {
         return `${this.type} code`;
+    }
 };
 
 Debugger.Frame.prototype.describePosition = function() {
@@ -368,11 +368,10 @@ function frameCommand(rest) {
         focusedFrame = f;
         showFrame(f, n);
     } else if (rest === '') {
-        if (topFrame === null) {
+        if (topFrame === null)
             print('No stack.');
-        } else {
+        else
             showFrame();
-        }
     } else {
         print('do what now?');
     }
@@ -385,11 +384,11 @@ PARAMETER
     · frame_num: frame to jump to`;
 
 function upCommand() {
-    if (focusedFrame === null)
+    if (focusedFrame === null) {
         print('No stack.');
-    else if (focusedFrame.older === null)
+    } else if (focusedFrame.older === null) {
         print('Initial frame selected; you cannot go up.');
-    else {
+    } else {
         focusedFrame.older.younger = focusedFrame;
         focusedFrame = focusedFrame.older;
         showFrame();
@@ -400,11 +399,11 @@ upCommand.helpText = `USAGE
     up`;
 
 function downCommand() {
-    if (focusedFrame === null)
+    if (focusedFrame === null) {
         print('No stack.');
-    else if (!focusedFrame.younger)
+    } else if (!focusedFrame.younger) {
         print('Youngest frame selected; you cannot go down.');
-    else {
+    } else {
         focusedFrame = focusedFrame.younger;
         showFrame();
     }
@@ -684,9 +683,8 @@ function _printCommandsList() {
 
     var cmdGroups = _groupCommands();
 
-    for (var group of cmdGroups) {
+    for (var group of cmdGroups)
         printcmd(group);
-    }
 }
 
 function _groupCommands() {
@@ -697,7 +695,7 @@ function _groupCommands() {
         if ([commentCommand, evalCommand].includes(cmd) ||
             ['#', '!'].includes(cmd))
             continue;
-        
+
         if (typeof cmd === 'string') {
             groups[groups.length - 1]['aliases'].push(cmd);
         } else {
@@ -716,9 +714,8 @@ function _printCommand(cmd) {
 
     if (cmd.aliases.length > 1) {
         print('\nALIASES');
-        for (var alias of cmd.aliases) {
+        for (var alias of cmd.aliases)
             print(`    · ${alias}`);
-        }
     }
 }
 
@@ -729,11 +726,10 @@ function helpCommand(cmd) {
         var cmdGroups = _groupCommands();
         var command = cmdGroups.find(c => c.aliases.includes(cmd));
 
-        if (command && command.helpText) {
+        if (command && command.helpText)
             _printCommand(command);
-        } else {
+        else
             print(`No help found for ${cmd} command`);
-        }
     }
 }
 helpCommand.summary = 'Show help for the specified command else list all commands';
@@ -803,15 +799,16 @@ function repl() {
         try {
             prevcmd = cmd;
             var result = runcmd(cmd);
-            if (result === undefined)
-                void result;  // do nothing, return to prompt
-            else if (Array.isArray(result))
+            if (result === undefined) {
+                // do nothing, return to prompt
+            } else if (Array.isArray(result)) {
                 return result[0];
-            else if (result === null)
+            } else if (result === null) {
                 return null;
-            else
+            } else {
                 throw new Error(
                     `Internal error: result of runcmd wasn't array or undefined: ${result}`);
+            }
         } catch (exc) {
             logError(exc, '*** Internal error: exception in the debugger code');
         }

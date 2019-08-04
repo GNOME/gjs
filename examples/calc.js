@@ -10,9 +10,8 @@ var calcVal = '';
 function updateDisplay() {
     label.set_markup(`<span size='30000'>${calcVal}</span>`);
 
-    if (calcVal === '') {
+    if (calcVal === '')
         label.set_markup("<span size='30000'>0</span>");
-    }
 }
 
 function clear() {
@@ -66,9 +65,8 @@ function packButtons(buttons, vbox) {
 
     vbox.pack_start(hbox, true, true, 2);
 
-    for (let i = 0; i <= 4; i++) {
+    for (let i = 0; i <= 4; i++)
         hbox.pack_start(buttons[i], true, true, 1);
-    }
 }
 
 function createButton(str, func) {

@@ -27,6 +27,10 @@ rules:
     - error
     - before: false
       after: true
+  curly:
+    - error
+    - multi-or-nest
+    - consistent
   indent:
     - error
     - 4

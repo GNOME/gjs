@@ -117,11 +117,10 @@ class Test {
     }
 
     nonJsonFrobateStuff(i) {
-        if (i == 42) {
+        if (i == 42)
             return '42 it is!';
-        } else {
+        else
             return 'Oops';
-        }
     }
 
     alwaysThrowException() {

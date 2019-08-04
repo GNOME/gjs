@@ -17,16 +17,14 @@ describe('ListStore iterator', function () {
 
     beforeEach(function () {
         list = new Gio.ListStore({item_type: Foo});
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 100; i++)
             list.append(new Foo(i));
-        }
     });
 
     it('ListStore iterates', function () {
         let i = 0;
-        for (let f of list) {
+        for (let f of list)
             expect(f.value).toBe(i++);
-        }
     });
 });
 

@@ -31,8 +31,9 @@ function _readSingleType(signature, forceSimple) {
     if (SIMPLE_TYPES.indexOf(char) == -1) {
         if (forceSimple)
             throw new TypeError('Invalid GVariant signature (a simple type was expected)');
-    } else
+    } else {
         isSimple = true;
+    }
 
     if (char == 'm' || char == 'a')
         return [char].concat(_readSingleType(signature, false));
@@ -108,11 +109,12 @@ function _packVariant(signature, value) {
     case 'v':
         return GLib.Variant.new_variant(value);
     case 'm':
-        if (value != null)
+        if (value != null) {
             return GLib.Variant.new_maybe(null, _packVariant(signature, value));
-        else
+        } else {
             return GLib.Variant.new_maybe(new GLib.VariantType(
                 _readSingleType(signature, false).join('')), null);
+        }
     case 'a': {
         let arrayType = _readSingleType(signature, false);
         if (arrayType[0] == 's') {
@@ -314,9 +316,8 @@ function _init() {
 
     this.log_structured = function(logDomain, logLevel, stringFields) {
         let fields = {};
-        for (let key in stringFields) {
+        for (let key in stringFields)
             fields[key] = new GLib.Variant('s', stringFields[key]);
-        }
 
         GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
     };

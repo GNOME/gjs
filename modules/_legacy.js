@@ -61,11 +61,10 @@ function getMetaClass(params) {
 function Class(params) {
     let metaClass = getMetaClass(params);
 
-    if (metaClass && metaClass != this.constructor) {
+    if (metaClass && metaClass != this.constructor)
         return new metaClass(...arguments);
-    } else {
+    else
         return this._construct.apply(this, arguments);
-    }
 }
 
 Class.__super__ = _Base;
@@ -74,7 +73,7 @@ Class.prototype.constructor = Class;
 Class.prototype.__name__ = 'Class';
 
 Class.prototype.wrapFunction = function(name, meth) {
-    if (meth._origin) 
+    if (meth._origin)
         meth = meth._origin;
 
     function wrapper() {
@@ -97,9 +96,9 @@ Class.prototype.toString = function() {
 };
 
 Class.prototype._construct = function(params) {
-    if (!params.Name) {
+    if (!params.Name)
         throw new TypeError("Classes require an explicit 'Name' parameter.");
-    }
+
     let name = params.Name;
 
     let parent = params.Extends;
@@ -356,10 +355,11 @@ Interface.prototype._check = function (proto) {
     let unimplementedFns = Object.getOwnPropertyNames(this.prototype)
     .filter(p => this.prototype[p] === Interface.UNIMPLEMENTED)
     .filter(p => !(p in proto) || proto[p] === Interface.UNIMPLEMENTED);
-    if (unimplementedFns.length > 0)
+    if (unimplementedFns.length > 0) {
         throw new Error(`The following members of ${
             this.prototype.__name__} are not implemented yet: ${
             unimplementedFns.join(', ')}`);
+    }
 };
 
 Interface.prototype.toString = function () {
@@ -446,9 +446,8 @@ function defineGObjectLegacyObjects(GObject) {
     function _propertiesAsArray(params) {
         let propertiesArray = [];
         if (params.Properties) {
-            for (let prop in params.Properties) {
+            for (let prop in params.Properties)
                 propertiesArray.push(params.Properties[prop]);
-            }
         }
         return propertiesArray;
     }
@@ -574,11 +573,10 @@ function defineGObjectLegacyObjects(GObject) {
 
         // Overrides Lang.Class.implements()
         implements: function (iface) {
-            if (iface instanceof GObject.Interface) {
+            if (iface instanceof GObject.Interface)
                 return GObject.type_is_a(this.$gtype, iface.$gtype);
-            } else {
+            else
                 return this.parent(iface);
-            }
         },
     });
 
@@ -594,9 +592,8 @@ function defineGObjectLegacyObjects(GObject) {
     GObjectInterface.prototype.__name__ = 'GObjectInterface';
 
     GObjectInterface.prototype._construct = function (params) {
-        if (!params.Name) {
+        if (!params.Name)
             throw new TypeError("Interfaces require an explicit 'Name' parameter.");
-        }
 
         let gtypename = _createGTypeName(params);
         delete params.GTypeName;

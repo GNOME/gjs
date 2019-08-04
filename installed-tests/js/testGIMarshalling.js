@@ -753,9 +753,8 @@ describe('GObject virtual function', function () {
 
         _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
 
-        if (GObject.Object.prototype.vfunc_doesnt_exist) {
+        if (GObject.Object.prototype.vfunc_doesnt_exist)
             fail('Virtual function should not exist');
-        }
 
         expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
     });
