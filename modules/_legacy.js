@@ -130,7 +130,7 @@ Class.prototype._construct = function(params) {
     let interfaces = params.Implements || [];
     // If the parent already implements an interface, then we do too
     if (parent instanceof Class)
-        interfaces = interfaces.filter((iface) => !parent.implements(iface));
+        interfaces = interfaces.filter(iface => !parent.implements(iface));
 
     Object.defineProperties(newClass.prototype, {
         '__metaclass__': {
@@ -153,7 +153,7 @@ Class.prototype._construct = function(params) {
         value: name,
     });
 
-    interfaces.forEach((iface) => {
+    interfaces.forEach(iface => {
         iface._check(newClass.prototype);
     });
 
@@ -195,11 +195,11 @@ Class.prototype._init = function(params) {
     let propertyObj = { };
 
     let interfaces = params.Implements || [];
-    interfaces.forEach((iface) => {
+    interfaces.forEach(iface => {
         Object.getOwnPropertyNames(iface.prototype)
-        .filter((name) => !name.startsWith('__') && name !== 'constructor')
-        .filter((name) => !(name in this.prototype))
-        .forEach((name) => {
+        .filter(name => !name.startsWith('__') && name !== 'constructor')
+        .filter(name => !(name in this.prototype))
+        .forEach(name => {
             let descriptor = Object.getOwnPropertyDescriptor(iface.prototype,
                 name);
             // writable and enumerable are inherited, see note above
@@ -241,7 +241,7 @@ function _getMetaInterface(params) {
     if (!params.Requires || params.Requires.length === 0)
         return null;
 
-    let metaInterface = params.Requires.map((req) => {
+    let metaInterface = params.Requires.map(req => {
         if (req instanceof Interface)
             return req.__super__;
         for (let metaclass = req.prototype.__metaclass__; metaclass;
@@ -332,7 +332,7 @@ Interface.prototype._check = function (proto) {
     // whereas "this.prototype" is the interface's prototype (which may still
     // contain unimplemented methods.)
 
-    let unfulfilledReqs = this.prototype.__requires__.filter((required) => {
+    let unfulfilledReqs = this.prototype.__requires__.filter(required => {
         // Either the interface is not present or it is not listed before the
         // interface that requires it or the class does not inherit it. This is
         // so that required interfaces don't copy over properties from other
@@ -341,7 +341,7 @@ Interface.prototype._check = function (proto) {
         return ((!_interfacePresent(required, proto) ||
             interfaces.indexOf(required) > interfaces.indexOf(this)) &&
             !(proto instanceof required));
-    }).map((required) =>
+    }).map(required =>
         // __name__ is only present on GJS-created classes and will be the most
         // accurate name. required.name will be present on introspected GObjects
         // but is not preferred because it will be the C name. The last option
@@ -354,8 +354,8 @@ Interface.prototype._check = function (proto) {
 
     // Check that this interface's required methods are implemented
     let unimplementedFns = Object.getOwnPropertyNames(this.prototype)
-    .filter((p) => this.prototype[p] === Interface.UNIMPLEMENTED)
-    .filter((p) => !(p in proto) || proto[p] === Interface.UNIMPLEMENTED);
+    .filter(p => this.prototype[p] === Interface.UNIMPLEMENTED)
+    .filter(p => !(p in proto) || proto[p] === Interface.UNIMPLEMENTED);
     if (unimplementedFns.length > 0)
         throw new Error(`The following members of ${
             this.prototype.__name__} are not implemented yet: ${
@@ -371,8 +371,8 @@ Interface.prototype._init = function (params) {
 
     let propertyObj = {};
     Object.getOwnPropertyNames(params)
-    .filter((name) => ['Name', 'Requires'].indexOf(name) === -1)
-    .forEach((name) => {
+    .filter(name => ['Name', 'Requires'].indexOf(name) === -1)
+    .forEach(name => {
         let descriptor = Object.getOwnPropertyDescriptor(params, name);
 
         // Create wrappers on the interface object so that generics work (e.g.
@@ -440,7 +440,7 @@ function defineGObjectLegacyObjects(GObject) {
     }
 
     function _getGObjectInterfaces(interfaces) {
-        return interfaces.filter((iface) => iface.hasOwnProperty('$gtype'));
+        return interfaces.filter(iface => iface.hasOwnProperty('$gtype'));
     }
 
     function _propertiesAsArray(params) {
@@ -564,7 +564,7 @@ function defineGObjectLegacyObjects(GObject) {
                 value: name,
             });
 
-            interfaces.forEach((iface) => {
+            interfaces.forEach(iface => {
                 if (iface instanceof Interface)
                     iface._check(newClass.prototype);
             });
