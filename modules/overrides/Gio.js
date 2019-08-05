@@ -160,8 +160,8 @@ function _makeProxyMethod(method, sync) {
     for (i = 0; i < inArgs.length; i++)
         inSignature.push(inArgs[i].signature);
 
-    return function() {
-        return _proxyInvoker.call(this, name, sync, inSignature, arguments);
+    return function(...args) {
+        return _proxyInvoker.call(this, name, sync, inSignature, args);
     };
 }
 
@@ -285,9 +285,9 @@ function _newInterfaceInfo(value) {
 function _injectToMethod(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function() {
-        addition.apply(this, arguments);
-        return previous.apply(this, arguments);
+    klass[method] = function(...args) {
+        addition.apply(this, args);
+        return previous.apply(this, args);
     };
 }
 
@@ -304,8 +304,7 @@ function _injectToStaticMethod(klass, method, addition) {
 function _wrapFunction(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function() {
-        var args = Array.prototype.slice.call(arguments);
+    klass[method] = function(...args) {
         args.unshift(previous);
         return addition.apply(this, args);
     };

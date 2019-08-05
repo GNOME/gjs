@@ -66,8 +66,7 @@ function vprintf(string, args) {
     });
 }
 
-function printf() {
-    let args = Array.prototype.slice.call(arguments);
+function printf(...args) {
     let fmt = args.shift();
     print(vprintf(fmt, args));
 }
@@ -83,6 +82,6 @@ function printf() {
  * field width, e.g. "%5s".format("foo"). Unless the width is prefixed
  * with '0', the formatted string will be padded with spaces.
  */
-function format() {
-    return vprintf(this, arguments);
+function format(...args) {
+    return vprintf(this, args);
 }

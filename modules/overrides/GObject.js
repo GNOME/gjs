@@ -39,8 +39,9 @@ var _gtkCssName = Symbol('GTK widget CSS name');
 var _gtkInternalChildren = Symbol('GTK widget template internal children');
 var _gtkTemplate = Symbol('GTK widget template');
 
-function registerClass(klass) {
-    if (arguments.length === 2) {
+function registerClass(...args) {
+    let klass = args[0];
+    if (args.length === 2) {
         // The two-argument form is the convenient syntax without ESnext
         // decorators and class data properties. The first argument is an
         // object with meta info such as properties and signals. The second
@@ -55,8 +56,8 @@ function registerClass(klass) {
         //
         // When decorators and class data properties become part of the JS
         // standard, this function can be used directly as a decorator.
-        let metaInfo = arguments[0];
-        klass = arguments[1];
+        let metaInfo = args[0];
+        klass = args[1];
         if ('GTypeName' in metaInfo)
             klass[GTypeName] = metaInfo.GTypeName;
         if ('GTypeFlags' in metaInfo)
@@ -366,8 +367,8 @@ function _init() {
 
     // For compatibility with Lang.Class... we need a _construct
     // or the Lang.Class constructor will fail.
-    GObject.Object.prototype._construct = function() {
-        this._init.apply(this, arguments);
+    GObject.Object.prototype._construct = function(...args) {
+        this._init(...args);
         return this;
     };
 
@@ -411,8 +412,7 @@ function _init() {
                 let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
                     newClass.$gtype);
                 if (id !== 0) {
-                    GObject.signal_override_class_closure(id, newClass.$gtype, function() {
-                        let argArray = Array.from(arguments);
+                    GObject.signal_override_class_closure(id, newClass.$gtype, function(...argArray) {
                         let emitter = argArray.shift();
 
                         return func.apply(emitter, argArray);
@@ -460,9 +460,8 @@ function _init() {
             // SomeInterface.prototype.some_function.call(this, blah)
             if (typeof descr.value === 'function') {
                 let interfaceProto = klass.prototype;  // capture in closure
-                newInterface[key] = function () {
-                    return interfaceProto[key].call.apply(interfaceProto[key],
-                        arguments);
+                newInterface[key] = function (thisObj, ...args) {
+                    return interfaceProto[key].call(thisObj, ...args);
                 };
             }
 

@@ -109,6 +109,8 @@ rules:
   operator-linebreak:
     - error
     - after
+  prefer-rest-params: error
+  prefer-spread: error
   prefer-template: error
   quotes:
     - error

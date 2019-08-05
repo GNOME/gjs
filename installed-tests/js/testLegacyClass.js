@@ -377,9 +377,9 @@ const InterfaceRequiringOtherInterface = new Lang.Interface({
     Name: 'InterfaceRequiringOtherInterface',
     Requires: [AnInterface],
 
-    optional() {
+    optional(...args) {
         return `InterfaceRequiringOtherInterface.optional()\n${
-            AnInterface.prototype.optional.apply(this, arguments)}`;
+            AnInterface.prototype.optional.apply(this, args)}`;
     },
 
     optionalGeneric() {
@@ -398,8 +398,8 @@ const ObjectImplementingAnInterface = new Lang.Class({
 
     required() {},
 
-    optional() {
-        return AnInterface.prototype.optional.apply(this, arguments);
+    optional(...args) {
+        return AnInterface.prototype.optional.apply(this, args);
     },
 
     optionalGeneric() {
@@ -429,8 +429,8 @@ const ImplementationOfTwoInterfaces = new Lang.Class({
 
     required() {},
 
-    optional() {
-        return InterfaceRequiringOtherInterface.prototype.optional.apply(this, arguments);
+    optional(...args) {
+        return InterfaceRequiringOtherInterface.prototype.optional.apply(this, args);
     },
 
     optionalGeneric() {
