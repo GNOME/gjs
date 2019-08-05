@@ -403,7 +403,7 @@ describe('GHashTable', function () {
     xit('can be passed as inout with transfer full', function () {
         expect(GIMarshallingTests.ghashtable_utf8_full_inout(STRING_DICT))
             .toEqual(STRING_DICT_OUT);
-    }).pend('https://bugzilla.gnome.org/show_bug.cgi?id=773763');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/100');
 });
 
 describe('GValue', function () {

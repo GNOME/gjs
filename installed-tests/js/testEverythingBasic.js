@@ -183,7 +183,7 @@ describe('Life, the Universe and Everything', function () {
         // FIXME: this is broken due to a change in gobject-introspection.
         xit('as in-out parameters', function () {
             expect(Regress.test_utf8_inout(CONST_STR)).toEqual(NONCONST_STR);
-        }).pend('https://bugzilla.gnome.org/show_bug.cgi?id=736517');
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192');
     });
 
     it('return values in filename encoding', function () {
