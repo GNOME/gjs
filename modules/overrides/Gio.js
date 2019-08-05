@@ -401,14 +401,14 @@ function _wrapJSObject(interfaceInfo, jsObj) {
     info.cache_build();
 
     var impl = new GjsPrivate.DBusImplementation({g_interface_info: info});
-    impl.connect('handle-method-call', function(impl, methodName, parameters, invocation) {
-        return _handleMethodCall.call(jsObj, info, impl, methodName, parameters, invocation);
+    impl.connect('handle-method-call', function(self, methodName, parameters, invocation) {
+        return _handleMethodCall.call(jsObj, info, self, methodName, parameters, invocation);
     });
-    impl.connect('handle-property-get', function(impl, propertyName) {
-        return _handlePropertyGet.call(jsObj, info, impl, propertyName);
+    impl.connect('handle-property-get', function(self, propertyName) {
+        return _handlePropertyGet.call(jsObj, info, self, propertyName);
     });
-    impl.connect('handle-property-set', function(impl, propertyName, value) {
-        return _handlePropertySet.call(jsObj, info, impl, propertyName, value);
+    impl.connect('handle-property-set', function(self, propertyName, value) {
+        return _handlePropertySet.call(jsObj, info, self, propertyName, value);
     });
 
     return impl;

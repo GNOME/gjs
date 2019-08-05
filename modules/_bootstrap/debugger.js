@@ -567,7 +567,7 @@ function findBreakpointOffsets(line, currentScript) {
 
     return scripts
         .map(script => ({script, offsets: script.getLineOffsets(line)}))
-        .filter(({offsets}) => offsets.length !== 0);
+        .filter(({offsets: o}) => o.length !== 0);
 }
 
 class BreakpointHandler {
@@ -666,7 +666,7 @@ var commandArray = [
 // clang-format on
 var currentCmd = null;
 for (var i = 0; i < commandArray.length; i++) {
-    var cmd = commandArray[i];
+    let cmd = commandArray[i];
     if (typeof cmd === 'string')
         commands[cmd] = currentCmd;
     else

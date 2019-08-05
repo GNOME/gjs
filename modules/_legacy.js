@@ -189,7 +189,7 @@ Class.prototype._copyPropertyDescriptor = function(params, propertyObj, key) {
 };
 
 Class.prototype._init = function(params) {
-    let name = params.Name;
+    let className = params.Name;
 
     let propertyObj = { };
 
@@ -219,7 +219,7 @@ Class.prototype._init = function(params) {
             writable: false,
             configurable: false,
             enumerable: false,
-            value: name,
+            value: className,
         },
         'parent': {
             writable: false,
@@ -367,7 +367,7 @@ Interface.prototype.toString = function () {
 };
 
 Interface.prototype._init = function (params) {
-    let name = params.Name;
+    let ifaceName = params.Name;
 
     let propertyObj = {};
     Object.getOwnPropertyNames(params)
@@ -398,7 +398,7 @@ Interface.prototype._init = function (params) {
             writable: false,
             configurable: false,
             enumerable: false,
-            value: name,
+            value: ifaceName,
         },
         '__requires__': {
             writable: false,

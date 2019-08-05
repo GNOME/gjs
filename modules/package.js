@@ -70,8 +70,8 @@ function _runningFromMesonSource() {
            GLib.getenv('MESON_SOURCE_ROOT');
 }
 
-function _makeNamePath(name) {
-    return `/${name.replace(/\./g, '/')}`;
+function _makeNamePath(n) {
+    return `/${n.replace(/\./g, '/')}`;
 }
 
 /**
@@ -246,8 +246,8 @@ function require(libs) {
  * As checkSymbol(), but exit with an error if the
  * dependency cannot be satisfied.
  */
-function requireSymbol(lib, version, symbol) {
-    if (!checkSymbol(lib, version, symbol)) {
+function requireSymbol(lib, ver, symbol) {
+    if (!checkSymbol(lib, ver, symbol)) {
         if (symbol)
             printerr(`Unsatisfied dependency: No ${symbol} in ${lib}`);
         else
@@ -273,11 +273,11 @@ function requireSymbol(lib, version, symbol) {
  *
  * Returns: %true if @lib can be imported and provides @symbol, %false otherwise
  */
-function checkSymbol(lib, version, symbol) {
+function checkSymbol(lib, ver, symbol) {
     let Lib = null;
 
-    if (version)
-        imports.gi.versions[lib] = version;
+    if (ver)
+        imports.gi.versions[lib] = ver;
 
     try {
         Lib = imports.gi[lib];
@@ -329,11 +329,11 @@ function initFormat() {
     String.prototype.format = format.format;
 }
 
-function initSubmodule(name) {
+function initSubmodule(moduleName) {
     if (_runningFromMesonSource() || _runningFromSource()) {
-        // Running from source tree, add './name' to search paths
+        // Running from source tree, add './moduleName' to search paths
 
-        let submoduledir = GLib.build_filenamev([_submoduledir, name]);
+        let submoduledir = GLib.build_filenamev([_submoduledir, moduleName]);
         let libpath;
         if (_runningFromMesonSource())
             libpath = submoduledir;

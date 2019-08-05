@@ -708,7 +708,7 @@ describe('ES6 class inheriting from Lang.Class', function () {
         spyOn(Legacy.prototype, 'chainUpToMe');
         spyOn(Legacy.prototype, 'overrideMe');
 
-        Shiny = class Shiny extends Legacy {
+        Shiny = class extends Legacy {
             constructor(someval) {
                 super(someval);
             }
