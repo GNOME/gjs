@@ -71,6 +71,23 @@ describe('GVariant constructor', function () {
     });
 });
 
+describe('GVariant unpack', function () {
+    let v;
+    beforeEach(function () {
+        v = new GLib.Variant('a{sv}', {foo: new GLib.Variant('s', 'bar')});
+    });
+
+    it('preserves type information if the unpacked object contains variants', function () {
+        expect(v.deepUnpack().foo instanceof GLib.Variant).toBeTruthy();
+        expect(v.deep_unpack().foo instanceof GLib.Variant).toBeTruthy();
+    });
+
+    it('recursive leaves no variants in the unpacked object', function () {
+        expect(v.recursiveUnpack().foo instanceof GLib.Variant).toBeFalsy();
+        expect(v.recursiveUnpack().foo).toEqual('bar');
+    });
+});
+
 describe('GVariantDict lookup', function () {
     let variantDict;
     beforeEach(function () {
