@@ -39,6 +39,8 @@
  - the terms of any one of the MPL, the GPL or the LGPL.
 */
 
+imports._internal.deprecateModule('jsUnit');
+
 var JSUNIT_UNDEFINED_VALUE;
 var JSUNIT_VERSION="2.1";
 var isTestPageLoaded = false;
