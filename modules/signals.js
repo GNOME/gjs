@@ -28,7 +28,7 @@
 // 3) the expectation is that a given object will have a very small number of
 //    connections, but they may be to different signal names
 
-const Lang = imports.lang;
+const {Interface} = imports.lang;
 
 function _connect(name, callback) {
     // be paranoid about callback arg since we'd start to throw from emit()
@@ -167,7 +167,7 @@ function addSignalMethods(proto) {
     _addSignalMethod(proto, "disconnectAll", _disconnectAll);
 }
 
-var WithSignals = new Lang.Interface({
+var WithSignals = new Interface({
     Name: 'WithSignals',
     connect: _connect,
     disconnect: _disconnect,

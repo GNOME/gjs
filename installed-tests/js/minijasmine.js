@@ -1,7 +1,6 @@
 #!/usr/bin/env gjs
 
 const GLib = imports.gi.GLib;
-const Lang = imports.lang;
 
 function _removeNewlines(str) {
     let allNewlines = /\n/g;
@@ -44,7 +43,7 @@ window._jasmineRetval = 0;
 
 // Install Jasmine API on the global object
 let jasmineInterface = jasmineRequire.interface(jasmineCore, window._jasmineEnv);
-Lang.copyProperties(jasmineInterface, window);
+Object.assign(window, jasmineInterface)
 
 // Reporter that outputs according to the Test Anything Protocol
 // See http://testanything.org/tap-specification.html
