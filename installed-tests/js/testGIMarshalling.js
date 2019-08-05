@@ -702,16 +702,12 @@ describe('GObject virtual function', function () {
 
         let key = 'vfunc_constructed';
 
-        class _SimpleTestClass1 extends GObject.Object {
-            _init() {
-                super._init(...arguments);
-            }
-        }
+        class _SimpleTestClass1 extends GObject.Object {}
 
         if (GObject.Object.prototype.vfunc_constructed) {
             let parentFunc = GObject.Object.prototype.vfunc_constructed;
-            _SimpleTestClass1.prototype[key] = function () {
-                parentFunc.call(this, ...arguments);
+            _SimpleTestClass1.prototype[key] = function (...args) {
+                parentFunc.call(this, ...args);
                 callback('123');
             };
         } else {
@@ -732,10 +728,6 @@ describe('GObject virtual function', function () {
         let callback;
 
         class _SimpleTestClass2 extends GObject.Object {
-            _init() {
-                super._init(...arguments);
-            }
-
             vfunc_constructed() {
                 super.vfunc_constructed();
                 callback('vfunc_constructed');
@@ -751,11 +743,7 @@ describe('GObject virtual function', function () {
     });
 
     it('handles non-existing properties', function () {
-        const _SimpleTestClass3 = class extends GObject.Object {
-            _init() {
-                super._init(...arguments);
-            }
-        };
+        const _SimpleTestClass3 = class extends GObject.Object {};
 
         _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
 

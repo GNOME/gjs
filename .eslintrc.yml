@@ -114,6 +114,8 @@ rules:
   object-curly-spacing: error
   object-shorthand: error
   operator-linebreak: error
+  prefer-rest-params: error
+  prefer-spread: error
   prefer-template: error
   quotes:
     - error

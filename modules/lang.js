@@ -66,7 +66,7 @@ function copyPublicProperties(source, dest) {
  * @returns: a new callback
  * @type: function
  */
-function bind(obj, callback) {
+function bind(obj, callback, ...bindArguments) {
     if (typeof obj !== 'object') {
         throw new Error(`first argument to Lang.bind() must be an object, not ${
             typeof obj}`);
@@ -83,10 +83,7 @@ function bind(obj, callback) {
         return callback.bind(obj);
 
     let me = obj;
-    let bindArguments = Array.prototype.slice.call(arguments, 2);
-
-    return function() {
-        let args = Array.prototype.slice.call(arguments);
+    return function(...args) {
         args = args.concat(bindArguments);
         return callback.apply(me, args);
     };

@@ -14,8 +14,8 @@ function _Base() {
 
 _Base.__super__ = null;
 _Base.prototype._init = function() { };
-_Base.prototype._construct = function() {
-    this._init.apply(this, arguments);
+_Base.prototype._construct = function(...args) {
+    this._init(...args);
     return this;
 };
 _Base.prototype.__name__ = '_Base';
@@ -23,7 +23,7 @@ _Base.prototype.toString = function() {
     return `[object ${this.__name__}]`;
 };
 
-function _parent() {
+function _parent(...args) {
     if (!this.__caller__)
         throw new TypeError("The method 'parent' cannot be called");
 
@@ -36,7 +36,7 @@ function _parent() {
     if (!previous)
         throw new TypeError(`The method '${name}' is not on the superclass`);
 
-    return previous.apply(this, arguments);
+    return previous.apply(this, args);
 }
 
 function _interfacePresent(required, proto) {
@@ -58,13 +58,13 @@ function getMetaClass(params) {
     return null;
 }
 
-function Class(params) {
+function Class(params, ...otherArgs) {
     let metaClass = getMetaClass(params);
 
     if (metaClass && metaClass !== this.constructor)
-        return new metaClass(...arguments);
+        return new metaClass(params, ...otherArgs);
     else
-        return this._construct.apply(this, arguments);
+        return this._construct(params, ...otherArgs);
 }
 
 Class.__super__ = _Base;
@@ -76,10 +76,10 @@ Class.prototype.wrapFunction = function(name, meth) {
     if (meth._origin)
         meth = meth._origin;
 
-    function wrapper() {
+    function wrapper(...args) {
         let prevCaller = this.__caller__;
         this.__caller__ = wrapper;
-        let result = meth.apply(this, arguments);
+        let result = meth.apply(this, args);
         this.__caller__ = prevCaller;
         return result;
     }
@@ -95,7 +95,7 @@ Class.prototype.toString = function() {
     return `[object ${this.__name__} for ${this.prototype.__name__}]`;
 };
 
-Class.prototype._construct = function(params) {
+Class.prototype._construct = function(params, ...otherArgs) {
     if (!params.Name)
         throw new TypeError("Classes require an explicit 'Name' parameter.");
 
@@ -105,13 +105,13 @@ Class.prototype._construct = function(params) {
     if (!parent)
         parent = _Base;
 
-    function newClass() {
+    function newClass(...args) {
         if (params.Abstract && new.target.name === name)
             throw new TypeError(`Cannot instantiate abstract class ${name}`);
 
         this.__caller__ = null;
 
-        return this._construct(...arguments);
+        return this._construct(...args);
     }
 
     // Since it's not possible to create a constructor with
@@ -124,7 +124,7 @@ Class.prototype._construct = function(params) {
     newClass.prototype = Object.create(parent.prototype);
     newClass.prototype.constructor = newClass;
 
-    newClass._init.apply(newClass, arguments);
+    newClass._init(params, ...otherArgs);
 
     let interfaces = params.Implements || [];
     // If the parent already implements an interface, then we do too
@@ -273,11 +273,11 @@ function _getMetaInterface(params) {
     return metaInterface;
 }
 
-function Interface(params) {
+function Interface(params, ...otherArgs) {
     let metaInterface = _getMetaInterface(params);
     if (metaInterface && metaInterface !== this.constructor)
-        return new metaInterface(...arguments);
-    return this._construct.apply(this, arguments);
+        return new metaInterface(params, ...otherArgs);
+    return this._construct(params, ...otherArgs);
 }
 
 Class.MetaInterface = Interface;
@@ -296,7 +296,7 @@ Interface.prototype = Object.create(_Base.prototype);
 Interface.prototype.constructor = Interface;
 Interface.prototype.__name__ = 'Interface';
 
-Interface.prototype._construct = function (params) {
+Interface.prototype._construct = function (params, ...otherArgs) {
     if (!params.Name)
         throw new TypeError("Interfaces require an explicit 'Name' parameter.");
 
@@ -307,7 +307,7 @@ Interface.prototype._construct = function (params) {
     newInterface.prototype.constructor = newInterface;
     newInterface.prototype.__name__ = params.Name;
 
-    newInterface._init.apply(newInterface, arguments);
+    newInterface._init(params, ...otherArgs);
 
     Object.defineProperty(newInterface.prototype, '__metaclass__', {
         writable: false,
@@ -380,9 +380,8 @@ Interface.prototype._init = function (params) {
         // SomeInterface.prototype.some_function.call(this, blah)
         if (typeof descriptor.value === 'function') {
             let interfaceProto = this.prototype;  // capture in closure
-            this[name] = function () {
-                return interfaceProto[name].call.apply(interfaceProto[name],
-                    arguments);
+            this[name] = function (thisObj, ...args) {
+                return interfaceProto[name].call(thisObj, ...args);
             };
         }
 
@@ -481,8 +480,7 @@ function defineGObjectLegacyObjects(GObject) {
                     } else if (name.startsWith('on_')) {
                         let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
                         if (id !== 0) {
-                            GObject.signal_override_class_closure(id, this.$gtype, function() {
-                                let argArray = Array.prototype.slice.call(arguments);
+                            GObject.signal_override_class_closure(id, this.$gtype, function(...argArray) {
                                 let emitter = argArray.shift();
 
                                 return wrapped.apply(emitter, argArray);
@@ -508,7 +506,7 @@ function defineGObjectLegacyObjects(GObject) {
 
         // If we want an object with a custom JSClass, we can't just
         // use a function. We have to use a custom constructor here.
-        _construct(params) {
+        _construct(params, ...otherArgs) {
             if (!params.Name)
                 throw new TypeError("Classes require an explicit 'Name' parameter.");
             let name = params.Name;
@@ -539,7 +537,7 @@ function defineGObjectLegacyObjects(GObject) {
             Object.setPrototypeOf(newClass, this.constructor.prototype);
             newClass.__super__ = parent;
 
-            newClass._init.apply(newClass, arguments);
+            newClass._init(params, ...otherArgs);
 
             Object.defineProperties(newClass.prototype, {
                 '__metaclass__': {
@@ -580,8 +578,8 @@ function defineGObjectLegacyObjects(GObject) {
         },
     });
 
-    function GObjectInterface() {
-        return this._construct.apply(this, arguments);
+    function GObjectInterface(...args) {
+        return this._construct(...args);
     }
 
     GObjectMeta.MetaInterface = GObjectInterface;
@@ -591,7 +589,7 @@ function defineGObjectLegacyObjects(GObject) {
     GObjectInterface.prototype.constructor = GObjectInterface;
     GObjectInterface.prototype.__name__ = 'GObjectInterface';
 
-    GObjectInterface.prototype._construct = function (params) {
+    GObjectInterface.prototype._construct = function (params, ...otherArgs) {
         if (!params.Name)
             throw new TypeError("Interfaces require an explicit 'Name' parameter.");
 
@@ -613,7 +611,7 @@ function defineGObjectLegacyObjects(GObject) {
         newInterface.__super__ = GObjectInterface;
         newInterface.prototype.constructor = newInterface;
 
-        newInterface._init.apply(newInterface, arguments);
+        newInterface._init(params, ...otherArgs);
 
         Object.defineProperty(newInterface.prototype, '__metaclass__', {
             writable: false,
