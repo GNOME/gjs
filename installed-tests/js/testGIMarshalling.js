@@ -504,7 +504,7 @@ describe('GValue', function () {
             .not.toThrow();
     });
 
-    xit('can have its type inferred as a foreign struct', function () {
+    it('can have its type inferred as a foreign struct', function () {
         let Cairo;
         try {
             Cairo = imports.cairo;
@@ -519,7 +519,7 @@ describe('GValue', function () {
             .not.toThrow();
         expect(() => GIMarshallingTests.gvalue_in_with_type(surface, Cairo.Surface))
             .not.toThrow();
-    }).pend('Errors out with "not a subclass of GObject_Boxed"');
+    });
 });
 
 describe('GType', function () {
@@ -775,13 +775,13 @@ describe('GObject properties', function () {
         expect(obj.some_gvalue).toEqual('foo');
     });
 
-    xit('gets a read-only property', function () {
+    it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
+    });
 
-    xit('throws when setting a read-only property', function () {
+    it('throws when setting a read-only property', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
+    });
 });
 
 describe('GDestroyNotify parameters', function () {

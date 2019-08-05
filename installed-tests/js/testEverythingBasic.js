@@ -421,12 +421,12 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.TestEnum.param(Regress.TestEnum.VALUE4)).toEqual('value4');
     });
 
-    xit('can be answered with GObject.set()', function () {
+    it('can be answered with GObject.set()', function () {
         let o = new Regress.TestObj();
         o.set({string: 'Answer', int: 42});
         expect(o.string).toBe('Answer');
         expect(o.int).toBe(42);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/113');
+    });
 
     describe('Object properties on GtkBuilder-constructed objects', function () {
         let o1;
@@ -488,7 +488,7 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
-    xdescribe('Overridden properties on interfaces', function () {
+    describe('Overridden properties on interfaces', function () {
         it('set and get properly', function () {
             const o = new Regress.TestSubObj();
             o.number = 4;
@@ -505,7 +505,7 @@ describe('Life, the Universe and Everything', function () {
             const o = new Regress.TestSubObj({number: 4});
             expect(o.number).toEqual(4);
         });
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/59');
+    });
 
     describe('Signal connection', function () {
         let o;

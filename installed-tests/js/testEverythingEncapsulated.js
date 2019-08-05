@@ -234,7 +234,7 @@ describe('Introspected GObject', function () {
         expect(obj.name_conflict instanceof Function).toBeFalsy();
     });
 
-    xit('sets write-only properties', function () {
+    it('sets write-only properties', function () {
         expect(obj.int).not.toEqual(0);
         obj.write_only = true;
         expect(obj.int).toEqual(0);
