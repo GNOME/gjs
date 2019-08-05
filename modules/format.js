@@ -4,10 +4,10 @@
 
 const GjsPrivate = imports.gi.GjsPrivate;
 
-function vprintf(str, args) {
+function vprintf(string, args) {
     let i = 0;
     let usePos = false;
-    return str.replace(/%(?:([1-9][0-9]*)\$)?(I+)?([0-9]+)?(?:\.([0-9]+))?(.)/g, function (str, posGroup, flagsGroup, widthGroup, precisionGroup, genericGroup) {
+    return string.replace(/%(?:([1-9][0-9]*)\$)?(I+)?([0-9]+)?(?:\.([0-9]+))?(.)/g, function (str, posGroup, flagsGroup, widthGroup, precisionGroup, genericGroup) {
         if (precisionGroup !== '' && precisionGroup !== undefined &&
             genericGroup !== 'f')
             throw new Error("Precision can only be specified for 'f'");
@@ -27,9 +27,7 @@ function vprintf(str, args) {
         let width = parseInt(widthGroup, 10) || 0;
 
         function fillWidth(s, c, w) {
-            let fill = '';
-            for (let i = 0; i < w; i++)
-                fill += c;
+            let fill = c.repeat(w);
             return fill.substr(s.length) + s;
         }
 

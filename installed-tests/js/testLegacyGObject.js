@@ -870,7 +870,7 @@ describe('ES6 GObject class inheriting from GObject.Class', function () {
     });
 
     it("passes arguments to the parent class's constructor", function () {
-        let instance = new Shiny(42);
+        instance = new Shiny(42);
         expect(instance.constructorCalledWith).toEqual(42);
     });
 

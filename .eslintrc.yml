@@ -89,6 +89,7 @@ rules:
       property: mainloop
       message: Use GLib main loops and timeouts
   no-return-assign: error
+  no-shadow: error
   no-tabs: error
   no-unused-vars:
     - error

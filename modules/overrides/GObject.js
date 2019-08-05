@@ -95,9 +95,9 @@ function registerClass(klass) {
 
 // Some common functions between GObject.Class and GObject.Interface
 
-function _createSignals(gtype, signals) {
-    for (let signalName in signals) {
-        let obj = signals[signalName];
+function _createSignals(gtype, sigs) {
+    for (let signalName in sigs) {
+        let obj = sigs[signalName];
         let flags = obj.flags !== undefined ? obj.flags : GObject.SignalFlags.RUN_FIRST;
         let accumulator = obj.accumulator !== undefined ? obj.accumulator : GObject.AccumulatorType.NONE;
         let rtype = obj.return_type !== undefined ? obj.return_type : GObject.TYPE_NONE;
@@ -438,12 +438,12 @@ function _init() {
         let gtypename = _createGTypeName(klass);
         let gobjectInterfaces = klass.hasOwnProperty(requires) ?
             klass[requires] : [];
-        let properties = _propertiesAsArray(klass);
+        let props = _propertiesAsArray(klass);
         let gobjectSignals = klass.hasOwnProperty(signals) ?
             klass[signals] : [];
 
         let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
-            properties);
+            props);
 
         _createSignals(newInterface.$gtype, gobjectSignals);
 

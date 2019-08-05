@@ -79,7 +79,7 @@ describe('Introspected structs', function () {
     });
 
     it('containing fixed array', function () {
-        let struct = new Regress.TestStructFixedArray();
+        struct = new Regress.TestStructFixedArray();
         struct.frob();
         expect(struct.just_int).toEqual(7);
         expect(struct.array).toEqual([42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);

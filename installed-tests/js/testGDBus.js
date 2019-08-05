@@ -503,8 +503,6 @@ describe('Exported DBus object', function () {
     });
 
     it('can send and receive bytes from a remote method', function () {
-        let loop = GLib.MainLoop.new(null, false);
-
         let someBytes = [0, 63, 234];
         someBytes.forEach(b => {
             proxy.byteEchoRemote(b, ([result], excp) => {
