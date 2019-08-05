@@ -1,3 +1,37 @@
+Version 1.57.90
+---------------
+
+- New JS API: GLib.Variant has gained a recursiveUnpack() method which
+  transforms the variant entirely into a JS object, discarding all type
+  information. This can be useful for dealing with a{sv} dictionaries, where
+  deepUnpack() will keep the values as GLib.Variant instances in order to
+  preserve the type information.
+
+- New JS API: GLib.Variant has gained a deepUnpack() method which is exactly the
+  same as the already existing deep_unpack(), but fits with the other camelCase
+  APIs that GJS adds.
+
+- Closed bugs and merge requests:
+  * Marshalling of GPtrArray broken [#9, !311, Stéphane Seng]
+  * Fix locale chooser [!313, Philip Chimento]
+  * dbus-wrapper: Remove interface skeleton flush idle on dispose [!312, Marco
+    Trevisan]
+  * gobject: Use auto-compartment when getting property as well [!316, Florian
+    Müllner]
+  * modules/signals: Use array destructuring in _emit [!317, Jonas Dreßler]
+  * GJS can't call glibtop_init function from libgtop [#259, !319,
+    Philip Chimento]
+  * GLib's VariantDict is missing lookup [#263, !320, Sonny Piers]
+  * toString on an object implementing an interface fails [#252, !299, Marco
+    Trevisan]
+  * Regression in GstPbutils.Discoverer::discovered callback [#262, !318, Philip
+    Chimento]
+  * GLib.Variant.deep_unpack not working properly with a{sv} variants [#225,
+    !321, Fabián Orccón, Philip Chimento]
+  * Various maintenance [!315, Philip Chimento]
+
+- Various CI fixes [Philip Chimento]
+
 Version 1.57.4
 --------------
 
