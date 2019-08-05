@@ -178,7 +178,7 @@ function _pack_variant(signature, value) {
     }
 }
 
-function _unpack_variant(variant, deep) {
+function _unpack_variant(variant, deep, recursive = false) {
     switch (String.fromCharCode(variant.classify())) {
     case 'b':
 	return variant.get_boolean();
@@ -205,12 +205,16 @@ function _unpack_variant(variant, deep) {
     case 's':
 	// g_variant_get_string has length as out argument
 	return variant.get_string()[0];
-    case 'v':
-	return variant.get_variant();
+    case 'v': {
+        const ret = variant.get_variant();
+        if (deep && recursive && ret instanceof GLib.Variant)
+            return _unpack_variant(ret, deep, recursive);
+        return ret;
+    }
     case 'm':
 	let val = variant.get_maybe();
 	if (deep && val)
-	    return _unpack_variant(val, deep);
+            return _unpack_variant(val, deep, recursive);
 	else
 	    return val;
     case 'a':
@@ -221,7 +225,8 @@ function _unpack_variant(variant, deep) {
 	    for (let i = 0; i < nElements; i++) {
 		// always unpack the dictionary entry, and always unpack
 		// the key (or it cannot be added as a key)
-		let val = _unpack_variant(variant.get_child_value(i), deep);
+                let val = _unpack_variant(variant.get_child_value(i), deep,
+                    recursive);
 		let key;
 		if (!deep)
 		    key = _unpack_variant(val[0], true);
@@ -244,7 +249,7 @@ function _unpack_variant(variant, deep) {
 	for (let i = 0; i < nElements; i++) {
 	    let val = variant.get_child_value(i);
 	    if (deep)
-		ret.push(_unpack_variant(val, deep));
+                ret.push(_unpack_variant(val, deep, recursive));
 	    else
 		ret.push(val);
 	}
@@ -281,9 +286,17 @@ function _init() {
     this.Variant.prototype.unpack = function() {
 	return _unpack_variant(this, false);
     };
-    this.Variant.prototype.deep_unpack = function() {
+    this.Variant.prototype.deepUnpack = function() {
 	return _unpack_variant(this, true);
     };
+    // backwards compatibility alias
+    this.Variant.prototype.deep_unpack = this.Variant.prototype.deepUnpack;
+
+    // Note: discards type information, if the variant contains any 'v' types
+    this.Variant.prototype.recursiveUnpack = function () {
+        return _unpack_variant(this, true, true);
+    };
+
     this.Variant.prototype.toString = function() {
 	return '[object variant of type "' + this.get_type_string() + '"]';
     };
