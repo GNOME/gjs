@@ -21,8 +21,6 @@
 /* exported Antialias, Content, Extend, FillRule, Filter, FontSlant, FontWeight,
 Format, LineCap, LineJoin, Operator, PatternType, SurfaceType */
 
-const Lang = imports.lang;
-
 var Antialias = {
     DEFAULT: 0,
     NONE: 1,
@@ -146,5 +144,5 @@ var SurfaceType = {
 };
 
 // Merge stuff defined in native code
-Lang.copyProperties(imports.cairoNative, this);
+Object.assign(this, imports.cairoNative);
 
