@@ -809,6 +809,7 @@ gjs_invoke_c_function(JSContext                             *context,
     GITypeTag return_tag;
     JS::AutoValueVector return_values(context);
     guint8 next_rval = 0; /* index into return_values */
+    uint8_t num_out_skipped = 0;
 
     /* Because we can't free a closure while we're in it, we defer
      * freeing until the next time a C function is invoked.  What
@@ -1030,6 +1031,11 @@ gjs_invoke_c_function(JSContext                             *context,
                 break;
             }
             case PARAM_NORMAL: {
+                if (g_arg_info_is_skip(&arg_info)) {
+                    arg_removed = true;
+                    break;
+                }
+
                 /* Ok, now just convert argument normally */
                 g_assert_cmpuint(js_arg_pos, <, args.length());
                 if (!gjs_value_to_arg(context, args[js_arg_pos], &arg_info,
@@ -1124,7 +1130,8 @@ gjs_invoke_c_function(JSContext                             *context,
             if (!return_values.append(JS::UndefinedValue()))
                 g_error("Unable to append to vector");
 
-        if (return_tag != GI_TYPE_TAG_VOID) {
+        if (return_tag != GI_TYPE_TAG_VOID &&
+            !g_callable_info_skip_return(function->info)) {
             GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);
             bool arg_failed = false;
             gint array_length_pos;
@@ -1289,6 +1296,11 @@ release:
             JS::RootedValue array_length(context, JS::Int32Value(0));
             GITransfer transfer;
 
+            if (g_arg_info_is_skip(&arg_info)) {
+                ++num_out_skipped;
+                continue;
+            }
+
             g_assert(next_rval < function->js_out_argc);
 
             arg = &out_arg_cvalues[c_arg_pos];
@@ -1379,16 +1391,18 @@ release:
     if (postinvoke_release_failed)
         failed = true;
 
-    g_assert(failed || did_throw_gerror || next_rval == (guint8)function->js_out_argc);
+    g_assert(failed ||
+             did_throw_gerror ||
+             next_rval + num_out_skipped == uint8_t(function->js_out_argc));
     g_assert_cmpuint(c_arg_pos, ==, processed_c_args);
 
-    if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
+    if (next_rval > 0 && (!failed && !did_throw_gerror)) {
         /* if we have 1 return value or out arg, return that item
          * on its own, otherwise return a JavaScript array with
          * [return value, out arg 1, out arg 2, ...]
          */
         if (js_rval) {
-            if (function->js_out_argc == 1) {
+            if (next_rval == 1) {
                 js_rval.ref().set(return_values[0]);
             } else {
                 JSObject *array;
@@ -1641,7 +1655,8 @@ init_cached_function_data (JSContext      *context,
     }
 
     g_callable_info_load_return_type((GICallableInfo*)info, &return_type);
-    if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID)
+    if (g_type_info_get_tag(&return_type) != GI_TYPE_TAG_VOID &&
+        !g_callable_info_skip_return(info))
         function->js_out_argc += 1;
 
     n_args = g_callable_info_get_n_args((GICallableInfo*) info);
@@ -1740,8 +1755,10 @@ init_cached_function_data (JSContext      *context,
 
         if (function->param_types[i] == PARAM_NORMAL ||
             function->param_types[i] == PARAM_ARRAY) {
-            if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT)
-                function->expected_js_argc += 1;
+            if (direction == GI_DIRECTION_IN || direction == GI_DIRECTION_INOUT) {
+                if (!g_arg_info_is_skip(&arg_info))
+                    function->expected_js_argc += 1;
+            }
             if (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT)
                 function->js_out_argc += 1;
         }

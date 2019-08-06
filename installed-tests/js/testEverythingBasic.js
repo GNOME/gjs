@@ -648,6 +648,29 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    describe('Skip annotations', function () {
+        let o;
+        beforeEach(function () {
+            o = new Regress.TestObj();
+        });
+
+        it('return value', function () {
+            expect(o.skip_return_val(50, 42.0, 60, 2, 3)).toEqual([51, 61, 32]);
+        });
+
+        it('parameter', function () {
+            expect(o.skip_param(50, 60, 2, 3)).toEqual([true, 51, 61, 32]);
+        });
+
+        it('out parameter', function () {
+            expect(o.skip_out_param(50, 42.0, 60, 2, 3)).toEqual([true, 61, 32]);
+        });
+
+        it('inout parameter', function () {
+            expect(o.skip_inout_param(50, 42.0, 2, 3)).toEqual([true, 51, 32]);
+        });
+    });
+
     // Cannot access the variant contents, for now
     it('integer GVariant', function () {
         let ivar = Regress.test_gvariant_i();

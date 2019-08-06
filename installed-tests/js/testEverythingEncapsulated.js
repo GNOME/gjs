@@ -276,9 +276,9 @@ describe('Introspected function length', function () {
         expect(obj.skip_return_val.length).toEqual(5);
     });
 
-    xit('skips over parameters annotated with skip', function () {
+    it('skips over parameters annotated with skip', function () {
         expect(obj.skip_param.length).toEqual(4);
-    }).pend('Not implemented yet');
+    });
 
     it('gives number of arguments for static methods', function () {
         expect(Regress.TestObj.new_from_file.length).toEqual(1);
