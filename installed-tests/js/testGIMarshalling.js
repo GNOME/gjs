@@ -692,68 +692,6 @@ describe('Virtual function', function () {
     });
 });
 
-describe('GObject virtual function', function () {
-    it('can have its property read', function () {
-        expect(GObject.Object.prototype.vfunc_constructed).toBeTruthy();
-    });
-
-    it('can have its property overridden with an anonymous function', function () {
-        let callback;
-
-        let key = 'vfunc_constructed';
-
-        class _SimpleTestClass1 extends GObject.Object {}
-
-        if (GObject.Object.prototype.vfunc_constructed) {
-            let parentFunc = GObject.Object.prototype.vfunc_constructed;
-            _SimpleTestClass1.prototype[key] = function (...args) {
-                parentFunc.call(this, ...args);
-                callback('123');
-            };
-        } else {
-            _SimpleTestClass1.prototype[key] = function () {
-                callback('abc');
-            };
-        }
-
-        callback = jasmine.createSpy('callback');
-
-        const SimpleTestClass1 = GObject.registerClass({GTypeName: 'SimpleTestClass1'}, _SimpleTestClass1);
-        new SimpleTestClass1();
-
-        expect(callback).toHaveBeenCalledWith('123');
-    });
-
-    it('can access the parent prototype with super()', function () {
-        let callback;
-
-        class _SimpleTestClass2 extends GObject.Object {
-            vfunc_constructed() {
-                super.vfunc_constructed();
-                callback('vfunc_constructed');
-            }
-        }
-
-        callback = jasmine.createSpy('callback');
-
-        const SimpleTestClass2 = GObject.registerClass({GTypeName: 'SimpleTestClass2'}, _SimpleTestClass2);
-        new SimpleTestClass2();
-
-        expect(callback).toHaveBeenCalledWith('vfunc_constructed');
-    });
-
-    it('handles non-existing properties', function () {
-        const _SimpleTestClass3 = class extends GObject.Object {};
-
-        _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
-
-        if (GObject.Object.prototype.vfunc_doesnt_exist)
-            fail('Virtual function should not exist');
-
-        expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
-    });
-});
-
 describe('Interface', function () {
     it('can be returned', function () {
         let ifaceImpl = new GIMarshallingTests.InterfaceImpl();
@@ -781,14 +719,5 @@ describe('GObject properties', function () {
 
     it('throws when setting a read-only property', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
-    });
-});
-
-describe('GDestroyNotify parameters', function () {
-    it('throws when encountering a GDestroyNotify not associated with a callback', function () {
-        // the 'destroy' argument applies to the data, which is not supported in
-        // gobject-introspection
-        expect(() => Gio.MemoryInputStream.new_from_data('foobar'))
-            .toThrowError(/destroy/);
     });
 });

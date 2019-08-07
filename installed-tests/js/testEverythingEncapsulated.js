@@ -1,5 +1,4 @@
-const {GLib, GObject, Regress} = imports.gi;
-const System = imports.system;
+const {GObject, Regress} = imports.gi;
 
 describe('Introspected structs', function () {
     let struct;
@@ -286,21 +285,6 @@ describe('Introspected function length', function () {
 
     it('skips over destroy-notify and user-data parameters', function () {
         expect(Regress.TestObj.new_callback.length).toEqual(1);
-    });
-});
-
-describe('Garbage collection of introspected objects', function () {
-    // This tests a regression that would very rarely crash, but
-    // when run under valgrind this code would show use-after-free.
-    it('collects objects properly with signals connected', function (done) {
-        function orphanObject() {
-            let obj = new Regress.TestObj();
-            obj.connect('notify', () => {});
-        }
-
-        orphanObject();
-        System.gc();
-        GLib.idle_add(GLib.PRIORITY_LOW, () => done());
     });
 });
 
