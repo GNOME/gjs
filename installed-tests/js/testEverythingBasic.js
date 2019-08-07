@@ -113,18 +113,6 @@ describe('Life, the Universe and Everything', function () {
                 run_test(bytes, 'MAX', 'test_int');
             });
         });
-
-        it('warns when conversion is lossy', function () {
-            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                "*cannot be safely stored*");
-            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-                "*cannot be safely stored*");
-            void GLib.MAXINT64;
-            void GLib.MAXUINT64;
-            GLib.test_assert_expected_messages_internal('Gjs',
-                'testEverythingBasic.js', 0,
-                'Limits warns when conversion is lossy');
-        });
     });
 
     describe('No implicit conversion to unsigned', function () {
@@ -133,11 +121,6 @@ describe('Life, the Universe and Everything', function () {
                 expect(() => Regress['test_' + type](-42)).toThrow();
             });
         });
-    });
-
-    it('throws when constructor called without new', function () {
-        expect(() => Gio.AppLaunchContext())
-            .toThrowError(/Constructor called as normal method/);
     });
 
     describe('String arrays', function () {
@@ -401,58 +384,8 @@ describe('Life, the Universe and Everything', function () {
             .toEqual('value2');
     });
 
-    it('enum has a $gtype property', function () {
-        expect(Regress.TestEnumUnsigned.$gtype).toBeDefined();
-    });
-
-    it('enum $gtype property is enumerable', function () {
-        expect('$gtype' in Regress.TestEnumUnsigned).toBeTruthy();
-    });
-
-    it('Number converts error to quark', function () {
-        expect(Regress.TestError.quark()).toEqual(Number(Regress.TestError));
-    });
-
     it('converts enum to string', function () {
         expect(Regress.TestEnum.param(Regress.TestEnum.VALUE4)).toEqual('value4');
-    });
-
-    it('can be answered with GObject.set()', function() {
-        let o = new Regress.TestObj();
-        o.set({ string: 'Answer', int: 42 });
-        expect(o.string).toBe('Answer');
-        expect(o.int).toBe(42);
-    });
-
-    describe('Object properties on GtkBuilder-constructed objects', function () {
-        let o1;
-        beforeAll(function () {
-            Gtk.init(null);
-        });
-
-        beforeEach(function () {
-            const ui = `
-                <interface>
-                  <object class="GtkButton" id="button">
-                    <property name="label">Click me</property>
-                  </object>
-                </interface>`;
-
-            let builder = Gtk.Builder.new_from_string(ui, -1);
-            o1 = builder.get_object('button');
-        });
-
-        it('are found on the GObject itself', function () {
-            expect(o1.label).toBe('Click me');
-        });
-
-        it('are found on the GObject\'s parents', function () {
-            expect(o1.visible).toBeFalsy();
-        });
-
-        it('are found on the GObject\'s interfaces', function () {
-            expect(o1.action_name).toBeNull();
-        });
     });
 
     describe('Object-valued GProperty', function () {
@@ -574,30 +507,6 @@ describe('Life, the Universe and Everything', function () {
         }).pend('Not yet implemented');
     });
 
-    describe('Signal alternative syntax', function () {
-        let o, handler;
-        beforeEach(function () {
-            handler = jasmine.createSpy('handler');
-            o = new Regress.TestObj();
-            let handlerId = GObject.signal_connect(o, 'test', handler);
-            handler.and.callFake(() =>
-                GObject.signal_handler_disconnect(o, handlerId));
-
-            GObject.signal_emit_by_name(o, 'test');
-        });
-
-        it('handler is called with the right object', function () {
-            expect(handler).toHaveBeenCalledTimes(1);
-            expect(handler).toHaveBeenCalledWith(o);
-        });
-
-        it('disconnected handler is not called', function () {
-            handler.calls.reset();
-            GObject.signal_emit_by_name(o, 'test');
-            expect(handler).not.toHaveBeenCalled();
-        });
-    });
-
     it('torture signature 0', function () {
         let [y, z, q] = Regress.test_torture_signature_0(42, 'foo', 7);
         expect(Math.floor(y)).toEqual(42);
@@ -673,32 +582,6 @@ describe('Life, the Universe and Everything', function () {
 
     it('error enum names match error quarks', function () {
         expect(Number(Gio.IOErrorEnum)).toEqual(Gio.io_error_quark());
-    });
-
-    describe('thrown GError', function () {
-        let err;
-        beforeEach(function () {
-            try {
-                let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
-                file.read(null);
-            } catch (x) {
-                err = x;
-            }
-        });
-
-        it('is an instance of error enum type', function () {
-            expect(err instanceof Gio.IOErrorEnum).toBeTruthy();
-        });
-
-        it('matches error domain and code', function () {
-            expect(err.matches(Gio.io_error_quark(), Gio.IOErrorEnum.NOT_FOUND))
-                .toBeTruthy();
-        });
-
-        it('has properties for domain and code', function () {
-            expect(err.domain).toEqual(Gio.io_error_quark());
-            expect(err.code).toEqual(Gio.IOErrorEnum.NOT_FOUND);
-        });
     });
 
     it('GError callback', function (done) {
@@ -837,10 +720,5 @@ describe('Life, the Universe and Everything', function () {
             expect(() => Regress.TestSimpleBoxedA.prototype.copy.call(simpleBoxed))
                 .not.toThrow();
         });
-    });
-
-    it('presents GdkAtom as string', function () {
-        expect(Gdk.Atom.intern('CLIPBOARD', false)).toBe('CLIPBOARD');
-        expect(Gdk.Atom.intern('NONE', false)).toBe(null);
     });
 });

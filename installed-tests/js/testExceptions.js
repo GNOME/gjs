@@ -165,3 +165,29 @@ describe('Exception from function with too few arguments', function () {
         expect(() => file.read()).toThrowError(/Gio\.File\.read/);
     });
 });
+
+describe('thrown GError', function () {
+    let err;
+    beforeEach(function () {
+        try {
+            let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
+            file.read(null);
+        } catch (x) {
+            err = x;
+        }
+    });
+
+    it('is an instance of error enum type', function () {
+        expect(err).toEqual(jasmine.any(Gio.IOErrorEnum));
+    });
+
+    it('matches error domain and code', function () {
+        expect(err.matches(Gio.io_error_quark(), Gio.IOErrorEnum.NOT_FOUND))
+            .toBeTruthy();
+    });
+
+    it('has properties for domain and code', function () {
+        expect(err.domain).toEqual(Gio.io_error_quark());
+        expect(err.code).toEqual(Gio.IOErrorEnum.NOT_FOUND);
+    });
+});

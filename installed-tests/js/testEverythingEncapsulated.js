@@ -289,21 +289,6 @@ describe('Introspected function length', function () {
     });
 });
 
-describe('Garbage collection of introspected objects', function () {
-    // This tests a regression that would very rarely crash, but
-    // when run under valgrind this code would show use-after-free.
-    it('collects objects properly with signals connected', function (done) {
-        function orphanObject() {
-            let obj = new Regress.TestObj();
-            obj.connect('notify', () => {});
-        }
-
-        orphanObject();
-        System.gc();
-        GLib.idle_add(GLib.PRIORITY_LOW, () => done());
-    });
-});
-
 describe('Introspected interface', function () {
     const Implementor = GObject.registerClass({
         Implements: [Regress.TestInterface],
