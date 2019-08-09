@@ -10,7 +10,7 @@
 import re
 
 func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
-gobj_regex = re.compile('([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
+priv_regex = re.compile(r'([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
 
 
 ###############################################################################
@@ -51,7 +51,7 @@ def output_dot_file(args, graph, targs, fname):
         color = 'black'
         style = 'solid'
         shape = 'rect'
-        native = ''
+        priv = ''
 
         if label.endswith('<no private>'):
             label = label[:-13]
@@ -66,16 +66,16 @@ def output_dot_file(args, graph, targs, fname):
                 break
 
 
-        # GObject or something else with a native address
-        gm = gobj_regex.match(label)
+        # GObject or something else with JS instance private data
+        pm = priv_regex.match(label)
 
-        if gm:
-            label = gm.group(1)
+        if pm:
+            label = pm.group(1)
             color = 'orange'
             style = 'bold'
 
             if not args.no_addr:
-                native = gm.group(2)
+                priv = pm.group(2)
 
             # Some kind of GObject
             if label.startswith('GObject_'):
@@ -129,8 +129,8 @@ def output_dot_file(args, graph, targs, fname):
         node_label = label
         if not args.no_addr:
             node_label += '\\njsobj@' + addr
-            if native:
-                node_label += '\\nnative@' + native
+            if priv:
+                node_label += '\\npriv@' + priv
         annotation = graph.annotations.get(addr, None)
         if annotation:
             node_label += '\\n\\"{}\\"'.format(annotation)
