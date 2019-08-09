@@ -39,7 +39,7 @@ targ_opts = parser.add_mutually_exclusive_group()
 
 targ_opts.add_argument('--edge', '-e', dest='edge_target', action='store_true',
                        default=False,
-                       help='Treat TARGET as a function name')
+                       help='Treat TARGET as an edge name')
 
 targ_opts.add_argument('--function', '-f', dest='func_target', action='store_true',
                        default=False,
