@@ -569,6 +569,7 @@ def target_edge(graph, target):
         for destination in destinations:
             if target in graph.edge_labels[origin][destination]:
                 targets.append(destination)
+                targets.append(origin)
 
     sys.stderr.write('Found {} objects with edge label of {}\n'.format(len(targets), target))
     return targets
