@@ -99,6 +99,10 @@ filt_opts.add_argument('--hide-node', '-hn', dest='hide_nodes', action='append',
                                                  'GjsModule'],
                        help='Don\'t show nodes with labels containing LABEL')
 
+filt_opts.add_argument('--hide-edge', '-he', dest='hide_edges', action='append',
+                       metavar='LABEL', default=[],
+                       help="Don't show edges labeled LABEL")
+
 
 ###############################################################################
 # Heap Patterns
@@ -188,7 +192,8 @@ def parse_graph(fobj):
         e = edge_regex.match(line)
 
         if e:
-            if node_addr not in args.hide_addrs:
+            if (node_addr not in args.hide_addrs and
+                    e.group(3) not in args.hide_edges):
                 addEdge(node_addr, e.group(1), e.group(3))
         else:
             node = node_regex.match(line)

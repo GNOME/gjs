@@ -127,7 +127,7 @@ usage: heapgraph.py [-h] [--edge | --function | --string] [--count]
                     [--dot-graph] [--no-addr] [--diff-heap FILE]
                     [--no-gray-roots] [--no-weak-maps] [--show-global]
                     [--show-imports] [--hide-addr ADDR] [--hide-node LABEL]
-                    FILE TARGET
+                    [--hide-edge LABEL] FILE TARGET
 
 Find what is rooting or preventing an object from being collected in a GJS
 heap using a shortest-path breadth-first algorithm.
@@ -159,6 +159,8 @@ Node/Root Filtering:
                         Don't show roots with the heap address ADDR
   --hide-node LABEL, -hn LABEL
                         Don't show nodes with labels containing LABEL
+  --hide-edge LABEL, -he LABEL
+                        Don't show edges labelled LABEL
 ```
 
 ## See Also
