@@ -126,13 +126,17 @@ def output_dot_file(args, graph, targs, fname):
             color = 'red'
             style = 'bold'
 
-        if args.no_addr:
-            outf.write('  node [label="{0}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(label, color, shape, style, addr))
-        else:
+        node_label = label
+        if not args.no_addr:
+            node_label += '\\njsobj@' + addr
             if native:
-                outf.write('  node [label="{0}\\njsobj@{4}\\nnative@{5}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(label, color, shape, style, addr, native))
-            else:
-                outf.write('  node [label="{0}\\njsobj@{4}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(label, color, shape, style, addr))
+                node_label += '\\nnative@' + native
+        annotation = graph.annotations.get(addr, None)
+        if annotation:
+            node_label += '\\n\\"{}\\"'.format(annotation)
+
+        node_text = '  node [label="{0}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(node_label, color, shape, style, addr)
+        outf.write(node_text)
 
     # Edges (relationships)
     for origin, destinations in edges.items():

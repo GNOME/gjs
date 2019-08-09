@@ -20,6 +20,7 @@ try:
 except ImportError:
     sys.stderr.write('DOT graph output not available\n')
 
+NAME_ANNOTATION = '__heapgraph_name'
 
 ########################################################
 # Command line arguments.
@@ -100,7 +101,7 @@ filt_opts.add_argument('--hide-node', '-hn', dest='hide_nodes', action='append',
                        help='Don\'t show nodes with labels containing LABEL')
 
 filt_opts.add_argument('--hide-edge', '-he', dest='hide_edges', action='append',
-                       metavar='LABEL', default=[],
+                       metavar='LABEL', default=[NAME_ANNOTATION],
                        help="Don't show edges labeled LABEL")
 
 
@@ -108,7 +109,8 @@ filt_opts.add_argument('--hide-edge', '-he', dest='hide_edges', action='append',
 # Heap Patterns
 ###############################################################################
 
-GraphAttribs = namedtuple('GraphAttribs', 'edge_labels node_labels roots root_labels weakMapEntries')
+GraphAttribs = namedtuple('GraphAttribs',
+                          'edge_labels node_labels roots root_labels weakMapEntries annotations')
 WeakMapEntry = namedtuple('WeakMapEntry', 'weakMap key keyDelegate value')
 
 
@@ -119,6 +121,7 @@ wme_regex = re.compile(r'WeakMapEntry map=((?:0x)?[a-zA-Z0-9]+|\(nil\)) key=((?:
 
 func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
 gobj_regex = re.compile('([^ ]+) (0x[a-fA-F0-9]+$)')
+atom_regex = re.compile(r'^string <atom: length (?:\d+)> (.*)\r?$')
 
 ###############################################################################
 # Heap Parsing
@@ -172,6 +175,7 @@ def parse_graph(fobj):
     edges = {}
     edge_labels = {}
     node_labels = {}
+    annotations = {}
 
     def addNode (addr, node_label):
         edges[addr] = {}
@@ -192,9 +196,15 @@ def parse_graph(fobj):
         e = edge_regex.match(line)
 
         if e:
+            target, edge_label = e.group(1, 3)
+            if edge_label == NAME_ANNOTATION:
+                a = atom_regex.match(node_labels[target])
+                if a:
+                    annotations[node_addr] = a.group(1)
+
             if (node_addr not in args.hide_addrs and
-                    e.group(3) not in args.hide_edges):
-                addEdge(node_addr, e.group(1), e.group(3))
+                    edge_label not in args.hide_edges):
+                addEdge(node_addr, target, edge_label)
         else:
             node = node_regex.match(line)
 
@@ -217,7 +227,7 @@ def parse_graph(fobj):
                 sys.stderr.write('Error: Unknown line: {}\n'.format(line[:-1]))
 
     # yar, should pass the root crud in and wedge it in here, or somewhere
-    return [edges, edge_labels, node_labels]
+    return [edges, edge_labels, node_labels, annotations]
 
 
 def parse_heap(fname):
@@ -230,12 +240,12 @@ def parse_heap(fname):
         exit(-1)
 
     [roots, root_labels, weakMapEntries] = parse_roots(fobj)
-    [edges, edge_labels, node_labels] = parse_graph(fobj)
+    [edges, edge_labels, node_labels, annotations] = parse_graph(fobj)
     fobj.close()
 
     graph = GraphAttribs(edge_labels=edge_labels, node_labels=node_labels,
                          roots=roots, root_labels=root_labels,
-                         weakMapEntries=weakMapEntries)
+                         weakMapEntries=weakMapEntries, annotations=annotations)
 
     return (edges, graph)
 
@@ -309,6 +319,7 @@ class style:
     BOLD = '\033[1m'
     ITALIC = '\033[3m'
     UNDERLINE = '\033[4m'
+    PURPLE = '\033[0;36m'
     END = '\033[0m'
 
 
@@ -356,6 +367,10 @@ def get_node_label(graph, addr):
     return label[:50]
 
 
+def get_node_annotation(graph, addr):
+    return graph.annotations.get(addr, None)
+
+
 def output_tree_graph(graph, data, base='', parent=''):
     while data:
         addr, children = data.popitem()
@@ -367,6 +382,7 @@ def output_tree_graph(graph, data, base='', parent=''):
             edge = graph.root_labels[addr]
 
         node = get_node_label(graph, addr)
+        annotation = get_node_annotation(graph, addr)
         has_native = gobj_regex.match(node)
 
         # Color/Style
@@ -389,6 +405,14 @@ def output_tree_graph(graph, data, base='', parent=''):
             if has_native:
                 node = has_native.group(1)
                 orig += ' native@' + has_native.group(2)
+
+        # Add the annotation
+        if annotation:
+            if os.isatty(1):
+                node += ' "' + style.PURPLE + annotation + style.END + '"'
+            else:
+                node += ' "' + annotation + '"'
+
 
         # Print the path segment
         if args.no_addr:
