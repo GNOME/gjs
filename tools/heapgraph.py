@@ -120,7 +120,7 @@ edge_regex = re.compile ('> ((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
 wme_regex = re.compile(r'WeakMapEntry map=((?:0x)?[a-zA-Z0-9]+|\(nil\)) key=((?:0x)?[a-zA-Z0-9]+|\(nil\)) keyDelegate=((?:0x)?[a-zA-Z0-9]+|\(nil\)) value=((?:0x)?[a-zA-Z0-9]+)')
 
 func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
-gobj_regex = re.compile('([^ ]+) (0x[a-fA-F0-9]+$)')
+priv_regex = re.compile(r'([^ ]+) (0x[a-fA-F0-9]+$)')
 atom_regex = re.compile(r'^string <atom: length (?:\d+)> (.*)\r?$')
 
 ###############################################################################
@@ -383,7 +383,7 @@ def output_tree_graph(graph, data, base='', parent=''):
 
         node = get_node_label(graph, addr)
         annotation = get_node_annotation(graph, addr)
-        has_native = gobj_regex.match(node)
+        has_priv = gobj_regex.match(node)
 
         # Color/Style
         if os.isatty(1):
@@ -394,17 +394,17 @@ def output_tree_graph(graph, data, base='', parent=''):
 
             orig = style.UNDERLINE + 'jsobj@' + addr + style.END
 
-            if has_native:
-                node = style.BOLD + has_native.group(1) + style.END
-                orig += ' ' + style.UNDERLINE + 'native@' + has_native.group(2) + style.END
+            if has_priv:
+                node = style.BOLD + has_priv.group(1) + style.END
+                orig += ' ' + style.UNDERLINE + 'priv@' + has_priv.group(2) + style.END
             else:
                 node = style.BOLD + node + style.END
         else:
             orig = 'jsobj@' + addr
 
-            if has_native:
-                node = has_native.group(1)
-                orig += ' native@' + has_native.group(2)
+            if has_priv:
+                node = has_priv.group(1)
+                orig += ' priv@' + has_priv.group(2)
 
         # Add the annotation
         if annotation:
