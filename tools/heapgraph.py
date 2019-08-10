@@ -31,24 +31,23 @@ parser = argparse.ArgumentParser(description='Find what is rooting or preventing
 parser.add_argument('heap_file', metavar='FILE',
                     help='Garbage collector heap from System.dumpHeap()')
 
-parser.add_argument('target', metavar='TARGET',
+parser.add_argument('targets', metavar='TARGET', nargs='*',
                     help='Heap address (eg. 0x7fa814054d00) or type prefix (eg. Array, Object, GObject, Function...)')
 
 ### Target Options
-targ_opts = parser.add_mutually_exclusive_group()
+targ_opts = parser.add_argument_group('Target options')
 
+targ_opts.add_argument('--edge', '-e', dest='edge_targets',
+                       action='append', default=[],
+                       help='Add an edge label to the list of targets')
 
-targ_opts.add_argument('--edge', '-e', dest='edge_target', action='store_true',
-                       default=False,
-                       help='Treat TARGET as an edge name')
+targ_opts.add_argument('--function', '-f', dest='func_targets',
+                       action='append', default=[],
+                       help='Add a function name to the list of targets')
 
-targ_opts.add_argument('--function', '-f', dest='func_target', action='store_true',
-                       default=False,
-                       help='Treat TARGET as a function name')
-
-targ_opts.add_argument('--string', '-s', dest='string_target', action='store_true',
-                       default=False,
-                       help='Treat TARGET as a string literal or String()')
+targ_opts.add_argument('--string', '-s', dest='string_targets',
+                       action='append', default=[],
+                       help='Add a string literal or String() to the list of targets')
 
 ### Output Options
 out_opts = parser.add_argument_group('Output Options')
@@ -563,84 +562,89 @@ def find_roots_bfs(args, edges, graph, target):
 ########################################################
 
 def target_edge(graph, target):
-    targets = []
+    targets = set()
 
     for origin, destinations in graph.edge_labels.items():
         for destination in destinations:
             if target in graph.edge_labels[origin][destination]:
-                targets.append(destination)
-                targets.append(origin)
+                targets.add(destination)
+                targets.add(origin)
 
     sys.stderr.write('Found {} objects with edge label of {}\n'.format(len(targets), target))
     return targets
 
 
 def target_func(graph, target):
-    targets = []
+    targets = set()
 
     for addr, label in graph.node_labels.items():
         if not label[:9] == 'Function ':
             continue
 
         if label[9:] == target:
-            targets.append(addr)
+            targets.add(addr)
 
     sys.stderr.write('Found {} functions named "{}"\n'.format(len(targets), target))
     return targets
 
 
 def target_gobject(graph, target):
-    targets = []
+    targets = set()
 
     for addr, label in graph.node_labels.items():
         if label.endswith(target):
-            targets.append(addr)
+            targets.add(addr)
 
     sys.stderr.write('Found GObject with address of {}\n'.format(target))
     return targets
 
 
 def target_string(graph, target):
-    targets = []
+    targets = set()
 
     for addr, label in graph.node_labels.items():
         if label[:7] == 'string ' and target in label[7:]:
-            targets.append(addr)
+            targets.add(addr)
         elif label[:10] == 'substring ' and target in label[10:]:
-            targets.append(addr)
+            targets.add(addr)
 
     sys.stderr.write('Found {} strings containing "{}"\n'.format(len(targets), target))
     return targets
 
 
 def target_type(graph, target):
-    targets = []
+    targets = set()
 
     for addr in edges.keys():
-        if graph.node_labels.get(addr, '')[0:len(args.target)] == args.target:
-            targets.append(addr)
+        if graph.node_labels.get(addr, '')[0:len(target)] == target:
+            targets.add(addr)
 
     sys.stderr.write('Found {} targets with type "{}"\n'.format(len(targets), target))
     return targets
 
 
 def select_targets(args, edges, graph):
-    if args.edge_target:
-        return target_edge(graph, args.target)
-    elif args.func_target:
-        return target_func(graph, args.target)
-    elif args.string_target:
-        return target_string(graph, args.target)
-    # If args.target seems like an address search for a JS Object, then GObject
-    elif addr_regex.match(args.target):
-        if args.target in edges:
-            sys.stderr.write('Found object with address "{}"\n'.format(args.target))
-            return [args.target]
+    targets = set()
+    for target in args.targets:
+        # If target seems like an address search for a JS Object, then GObject
+        if addr_regex.match(target):
+            if target in edges:
+                sys.stderr.write('Found object with address "{}"\n'.format(target))
+                targets.add(target)
+            else:
+                targets.update(target_gobject(graph, target))
         else:
-            return target_gobject(graph, args.target)
+            # Fallback to looking for JavaScript objects by class name
+            targets.update(target_type(graph, target))
 
-    # Fallback to looking for JavaScript objects by class name
-    return target_type(graph, args.target)
+    for target in args.edge_targets:
+        targets.update(target_edge(graph, target))
+    for target in args.func_targets:
+        targets.update(target_func(graph, target))
+    for target in args.string_targets:
+        targets.update(target_string(graph, target))
+
+    return list(targets)
 
 
 if __name__ == "__main__":
@@ -655,8 +659,9 @@ if __name__ == "__main__":
         args.hide_nodes.remove('GIRepositoryNamespace')
 
     # Make sure we don't filter an explicit target
-    if args.target in args.hide_nodes:
-        args.hide_nodes.remove(args.target)
+    for target in args.targets:
+        if target in args.hide_nodes:
+            args.hide_nodes.remove(target)
 
     # Heap diffing; we do these addrs separately due to the sheer amount
     diff_addrs = []
@@ -669,7 +674,7 @@ if __name__ == "__main__":
     targets = select_targets(args, edges, graph)
 
     if len(targets) == 0:
-        sys.stderr.write('No targets found for "{}".\n'.format(args.target))
+        sys.stderr.write('No targets found.\n')
         sys.exit(-1)
     elif args.count:
         sys.exit(-1);
