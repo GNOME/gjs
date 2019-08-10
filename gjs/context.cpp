@@ -780,7 +780,6 @@ bool GjsContextPrivate::register_module(const char* identifier,
 
     // Our message could come from memory owned by us or by the runtime.
     const char* msg = nullptr;
-    JS::UniqueChars auto_msg = nullptr;
 
     JS::RootedValue exc(m_cx);
     if (JS_GetPendingException(m_cx, &exc)) {
@@ -790,10 +789,10 @@ bool GjsContextPrivate::register_module(const char* identifier,
             msg = report->message().c_str();
         } else {
             JS::RootedString js_message(m_cx, JS::ToString(m_cx, exc));
+
             if (js_message) {
-                // auto_msg = JS_EncodeStringToUTF8(m_cx, js_message);
-                // auto_msg = js_message;
-                msg = "TODO: Fix Broken Message";  // auto_msg.get();
+                JS::UniqueChars cstr(JS_EncodeStringToUTF8(m_cx, js_message));
+                msg = cstr.get();
             }
         }
     }
