@@ -400,7 +400,11 @@ main(int    argc,
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
+    g_test_add_func("/gjs/context/eval/non-zero-terminated",
+                    gjstest_test_func_gjs_context_eval_non_zero_terminated);
+    g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
+    g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
     g_test_add_func("/gjs/jsutil/strip_shebang/short_string",
                     gjstest_test_strip_shebang_no_advance_for_too_short_string);
     g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
