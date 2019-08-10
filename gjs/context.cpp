@@ -731,28 +731,27 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
             return false;
         }
 
-            char* mod_text_raw;
-            gsize mod_len;
-            GError* err = NULL;
+        char* mod_text_raw;
+        gsize mod_len;
+        GError* err = NULL;
 
-            if (!g_file_load_contents(gfile, NULL, &mod_text_raw, &mod_len,
-                                      NULL, &err)) {
-                gjs_throw(m_cx, "Failed to read internal resource: %s \n%s",
-                          full_path.get(), err->message);
+        if (!g_file_load_contents(gfile, NULL, &mod_text_raw, &mod_len, NULL,
+                                  &err)) {
+            gjs_throw(m_cx, "Failed to read internal resource: %s \n%s",
+                      full_path.get(), err->message);
 
-                return false;
-            }
+            return false;
+        }
 
-            GjsAutoChar mod_text(mod_text_raw);
+        GjsAutoChar mod_text(mod_text_raw);
 
-            if (!register_module_inner(id.get(), full_path, true, mod_text,
-                                       mod_len))
-                return false;
+        if (!register_module_inner(id.get(), full_path, true, mod_text,
+                                   mod_len))
+            return false;
 
-            args.rval().setObject(
-                *m_id_to_module->lookup(id.get())->value().get());
+        args.rval().setObject(*m_id_to_module->lookup(id.get())->value().get());
 
-            return true;
+        return true;
     }
 
     args.rval().setObject(*module->value().get());
