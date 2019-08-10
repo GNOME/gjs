@@ -75,6 +75,10 @@
 #include "modules/modules.h"
 #include "util/log.h"
 
+using AutoURI = GjsAutoPointer<SoupURI, SoupURI, soup_uri_free>;
+using AutoGHashTable =
+    GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
+
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
 static void     gjs_context_constructed       (GObject               *object);
@@ -446,7 +450,8 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         gjs_profiler_start(m_profiler);
 
     auto it = m_id_to_module->lookup(identifier);
-    if (!it || !it.found()) {
+
+    if (!it.found()) {
         return false;
     }
 
@@ -541,7 +546,8 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
                                               const char* mod_text,
                                               size_t mod_len) {
     auto it = m_id_to_module->lookupForAdd(identifier);
-    if (it && it.found()) {
+
+    if (it.found()) {
         gjs_throw(m_cx, "Module '%s' is already registered", identifier);
         return false;
     }
@@ -563,10 +569,11 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
     JS::RootedObject new_module(m_cx);
 
     if (!CompileModule(m_cx, options, buf, &new_module)) {
+        g_warning("Failed to compile module.");
         return false;
     }
 
-    if (filename != NULL) {
+    if (filename) {
         // Since this is a file-based module, be sure to set it's host field
         JS::RootedValue filename_val(m_cx);
         if (!gjs_string_from_utf8(m_cx, filename, &filename_val)) {
@@ -578,7 +585,7 @@ bool GjsContextPrivate::register_module_inner(const char* identifier,
 
     GjsAutoChar iden = g_strdup(identifier);
     if (!m_id_to_module->add(it, iden, new_module)) {
-        g_warning("Failed to add module %s to registry.", identifier);
+        JS_ReportOutOfMemory(m_cx);
         return false;
     }
 
@@ -594,27 +601,30 @@ static char* gir_uri_ns(SoupURI* url) {
 static char* gir_uri_version(SoupURI* url) {
     const char* q = soup_uri_get_query(url);
 
-    if (q == NULL) {
+    if (!q) {
         return NULL;
     }
 
-    GHashTable_autoptr queries = soup_form_decode(q);
+    AutoGHashTable queries = soup_form_decode(q);
     GjsAutoChar key = g_strdup("v");
-    char* version = (char*)g_hash_table_lookup(queries, key);
+    char* version = (char*)g_hash_table_lookup(queries.get(), key);
 
     return g_strdup(version);
 }
 
 static bool is_gir_uri(SoupURI* uri) {
     const char* scheme = soup_uri_get_scheme(uri);
-    return scheme != NULL && strcmp(scheme, "gi") == 0;
+
+    return scheme && strcmp(scheme, "gi") == 0;
 }
 
 static char* gir_js_mod_ver(const char* ns, const char* version) {
-    return g_strdup_printf(
-        "imports.gi.versions.%s = '%s';\nimport gi from \'gi\';\nexport "
-        "default (gi.%s);",
-        ns, version, ns);
+    return g_strdup_printf(R"js(
+        imports.gi.versions.%s = '%s';
+        import gi from 'gi';
+        export default (gi.%s);
+        )js",
+                           ns, version, ns);
 }
 
 static char* gir_js_mod(const char* ns) {
@@ -641,10 +651,6 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
 
         JS::UniqueChars mod_loc;
         if (!gjs_string_to_utf8(m_cx, mod_loc_val, &mod_loc)) {
-            gjs_throw(m_cx,
-                      "Attempting to resolve relative import (%s) from "
-                      "non-file module",
-                      mod_loc.get());
             return false;
         }
 
@@ -656,7 +662,7 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
 
         auto module = m_id_to_module->lookup(full_path.get());
 
-        if (module && module.found()) {
+        if (module.found()) {
             JS::RootedObject obj(m_cx, module->value().get());
             args.rval().setObject(*(obj));
             return true;
@@ -665,7 +671,10 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
         char* mod_text_raw;
         gsize mod_len;
         if (!g_file_get_contents(full_path, &mod_text_raw, &mod_len, nullptr)) {
-            gjs_throw(m_cx, "Failed to read file: %s", full_path.get());
+            gjs_throw(m_cx,
+                      "Attempting to resolve relative import (%s) from "
+                      "non-file module",
+                      full_path.get());
             return false;
         }
 
@@ -682,36 +691,32 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
         return true;
     }
 
-    g_autoptr(SoupURI) uri = soup_uri_new(id.get());
+    AutoURI uri = soup_uri_new(id.get());
 
-    if (uri != NULL && is_gir_uri(uri)) {
-        GjsAutoChar ns = gir_uri_ns(uri);
-        GjsAutoChar version = gir_uri_version(uri);
-        GjsAutoChar gir_mod = NULL;
-        if (ns == NULL && version == NULL) {
+    if (uri.get() && is_gir_uri(uri.get())) {
+        GjsAutoChar ns = gir_uri_ns(uri.get());
+        GjsAutoChar version = gir_uri_version(uri.get());
+
+        if (!ns.get()) {
             gjs_throw(m_cx, "Attempted to load invalid module path %s",
                       id.get());
             return false;
-        } else if (version == NULL) {
-            gir_mod = gir_js_mod(ns);
-        } else if (ns == NULL) {
-            gjs_throw(m_cx, "Attempted to load invalid module path %s",
-                      id.get());
-            return false;
-        } else {
-            gir_mod = gir_js_mod_ver(ns, version);
         }
 
+        GjsAutoChar gir_mod =
+            !version.get() ? gir_js_mod(ns) : gir_js_mod_ver(ns, version.get());
+
         auto module = m_id_to_module->lookup(id.get());
-        if (gir_mod != NULL && (!module || !module.found())) {
-            register_module(id.get(), id.get(), gir_mod, strlen(gir_mod),
-                            nullptr);
+
+        if (gir_mod.get() && !module.found()) {
+            register_module(id.get(), id.get(), gir_mod.get(),
+                            strlen(gir_mod.get()), nullptr);
         }
     }
 
     auto module = m_id_to_module->lookup(id.get());
 
-    if (!module || !module.found()) {
+    if (!module.found()) {
         const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
         GjsAutoChar filename = g_strdup_printf("%s.js", id.get());
         GjsAutoChar full_path =
