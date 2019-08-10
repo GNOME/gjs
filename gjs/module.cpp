@@ -133,7 +133,6 @@ class GjsModule {
                 JS::HandleObject module,
                 GFile           *file)
     {
-
         GError *error = nullptr;
         char *unowned_script;
         size_t script_len = 0;
@@ -226,7 +225,8 @@ class GjsModule {
            GFile           *file)
     {
         JS::RootedObject module(cx, GjsModule::create(cx, name));
-        if (!module || !priv(module)->define_import(cx, module, importer, id) ||
+        if (!module ||
+            !priv(module)->define_import(cx, module, importer, id) ||
             !priv(module)->import_file(cx, module, file))
             return nullptr;
 
