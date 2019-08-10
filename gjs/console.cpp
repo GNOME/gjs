@@ -128,7 +128,6 @@ check_script_args_for_stray_gjs_args(int           argc,
     char **new_coverage_prefixes = NULL;
     char *new_coverage_output_path = NULL;
     char **new_include_paths = NULL;
-    /* Keep in sync with entries[] at the top */
     // clang-format off
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
@@ -233,8 +232,8 @@ main(int argc, char **argv)
         }
 
         /* Check if -c or --command was given and split after following arg */
-        if (command != NULL && (strcmp(argv[ix], "-c") == 0 ||
-                                strcmp(argv[ix], "--command") == 0)) {
+        if (command != NULL &&
+            (strcmp(argv[ix], "-c") == 0 || strcmp(argv[ix], "--command") == 0)) {
             gjs_argc = ix + 2;
             break;
         }
@@ -335,7 +334,7 @@ main(int argc, char **argv)
     // TODO: REMOVE BEFORE MERGE (development only)
     env_force_modules = g_getenv("GJS_FORCE_MODULES");
 
-    if (env_force_modules != NULL) {
+    if (env_force_modules) {
         if (strcmp(env_force_modules, "1") == 0) {
             force_modules = true;
         } else {
