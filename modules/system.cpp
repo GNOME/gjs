@@ -143,6 +143,9 @@ gjs_dump_heap(JSContext *cx,
         js::DumpHeap(cx, stdout, js::IgnoreNurseryObjects);
     }
 
+    gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to %s",
+              filename ? filename.get() : "stdout");
+
     args.rval().setUndefined();
     return true;
 }

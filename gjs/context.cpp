@@ -583,11 +583,12 @@ gboolean GjsContextPrivate::trigger_gc_if_needed(void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     gjs->m_auto_gc_id = 0;
 
-    if (gjs->m_force_gc)
+    if (gjs->m_force_gc) {
+        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Big Hammer hit");
         JS_GC(gjs->m_cx);
-    else
+    } else {
         gjs_gc_if_needed(gjs->m_cx);
-
+    }
     gjs->m_force_gc = false;
 
     return G_SOURCE_REMOVE;
@@ -598,6 +599,9 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
 
     if (m_auto_gc_id > 0)
         return;
+
+    if (force_gc)
+        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Big Hammer scheduled");
 
     m_auto_gc_id = g_timeout_add_seconds_full(G_PRIORITY_LOW, 10,
                                               trigger_gc_if_needed, this,
