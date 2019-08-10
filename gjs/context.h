@@ -106,7 +106,7 @@ gboolean gjs_context_register_module(GjsContext* context, const char* name,
 
 GJS_EXPORT
 gboolean gjs_context_eval_module(GjsContext* context, const char* name,
-                                 uint8_t* code, GError** error);
+                                 uint8_t* exit_code, GError** error);
 
 G_END_DECLS
 
