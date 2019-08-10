@@ -1259,8 +1259,8 @@ gjs_context_eval(GjsContext   *js_context,
     return gjs->eval(script, script_len, filename, exit_status_p, error);
 }
 
-bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
-                             uint8_t* exit_status_p, GError** error) {
+gboolean gjs_context_eval_module(GjsContext* js_context, const char* identifier,
+                                 uint8_t* exit_status_p, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
@@ -1269,9 +1269,10 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
     return gjs->eval_module(identifier, exit_status_p, error);
 }
 
-bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
-                                 const char* filename, const char* mod_text,
-                                 size_t mod_len, GError** error) {
+gboolean gjs_context_register_module(GjsContext* js_context,
+                                     const char* identifier,
+                                     const char* filename, const char* mod_text,
+                                     size_t mod_len, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
