@@ -1517,8 +1517,6 @@ ObjectInstance::init_impl(JSContext              *context,
     if (!m_ptr)
         associate_js_gobject(context, object, gobj);
 
-    debug_lifecycle("JSObject created");
-
     TRACE(GJS_OBJECT_WRAPPER_NEW(this, m_ptr, ns(), name()));
 
     args.rval().setObject(*object);
