@@ -725,7 +725,12 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
 
         bool exists = g_file_query_exists(gfile, NULL);
 
-        if (exists) {
+        if (!exists) {
+            gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
+                      id.get());
+            return false;
+        }
+
             char* mod_text_raw;
             gsize mod_len;
             GError* err = NULL;
@@ -748,11 +753,6 @@ bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
                 *m_id_to_module->lookup(id.get())->value().get());
 
             return true;
-        } else {
-            gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
-                      id.get());
-            return false;
-        }
     }
 
     args.rval().setObject(*module->value().get());
