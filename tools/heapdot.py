@@ -189,5 +189,15 @@ def output_dot_file(args, graph, targs, fname):
 
             outf.write('  q{0} -> q{1} [label="{2}", color={3}, style="{4}"];\n'.format(origin, destination, label, color, style))
 
+    # Extra edges, marked as "interesting" via a command line argument
+    if args.edge_targets:
+        for origin, paths in graph.edge_labels.items():
+            for destination, labels in paths.items():
+                if destination in edges.get(origin, set()):
+                    continue  # already printed
+                for label in labels:
+                    if label in args.edge_targets:
+                        outf.write('  q{0} -> q{1} [label="{2}", color=black, style="solid"];\n'.format(origin, destination, label))
+
     outf.write('}\n')
     outf.close()
