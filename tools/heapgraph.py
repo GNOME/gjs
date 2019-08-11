@@ -484,17 +484,6 @@ def find_roots_bfs(args, edges, graph, target):
         if wme.keyDelegate != '0x0':
             weakData.setdefault(wme.keyDelegate, set([])).add(wme)
 
-    # Unlike JavaScript objects, GObjects can be "rooted" by their refcount so
-    # we have to use a fake root (repetitively)
-    startObject = 'FAKE START OBJECT'
-    rootEdges = set([])
-
-    for addr, isBlack in graph.roots.items():
-        if isBlack or not args.no_gray_roots:
-            rootEdges.add(addr)
-
-    #FIXME:
-    edges[startObject] = rootEdges
     distances[startObject] = (-1, None)
     workList.append(startObject)
 
@@ -678,6 +667,15 @@ if __name__ == "__main__":
         sys.exit(-1)
     elif args.count:
         sys.exit(-1);
+
+    # Unlike JavaScript objects, GObjects can be "rooted" by their refcount so
+    # we have to use a fake root (repetitively)
+    rootEdges = set([])
+    for addr, isBlack in graph.roots.items():
+        if isBlack or not args.no_gray_roots:
+            rootEdges.add(addr)
+    startObject = 'FAKE START OBJECT'
+    edges[startObject] = rootEdges
 
     for addr in targets:
         if addr in edges and addr not in diff_addrs:
