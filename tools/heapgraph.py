@@ -15,8 +15,8 @@ import re
 import sys
 
 try:
-    from heapdot import output_dot_file
-    from heapdot import add_dot_graph_path
+    from heapdot import (output_dot_file, add_dot_graph_path,
+                         add_dot_graph_unreachable)
 except ImportError:
     sys.stderr.write('DOT graph output not available\n')
 
@@ -74,6 +74,9 @@ filt_opts.add_argument('--diff-heap', '-dh', dest='diff_heap', action='store',
 filt_opts.add_argument('--no-gray-roots', '-ng', dest='no_gray_roots',
                        action='store_true', default=False,
                        help='Don\'t show gray roots (marked to be collected)')
+
+filt_opts.add_argument('--show-unreachable', '-u', action='store_true',
+                       help="Show objects that have no path to a root but are not collected yet")
 
 filt_opts.add_argument('--no-weak-maps', '-nwm', dest='no_weak_maps',
                        action='store_true', default=False,
@@ -312,6 +315,7 @@ def load_graph(fname):
 ###############################################################################
 
 tree_graph_paths = {}
+tree_graph_unreachables = set()
 
 
 class style:
@@ -370,19 +374,50 @@ def get_node_annotation(graph, addr):
     return graph.annotations.get(addr, None)
 
 
+def format_node(graph, addr, parent=''):
+    node = get_node_label(graph, addr)
+    annotation = get_node_annotation(graph, addr)
+    has_priv = priv_regex.match(node)
+
+    # Color/Style
+    if os.isatty(1):
+        orig = style.UNDERLINE + 'jsobj@' + addr + style.END
+
+        if has_priv:
+            node = style.BOLD + has_priv.group(1) + style.END
+            orig += ' ' + style.UNDERLINE + 'priv@' + has_priv.group(2) + style.END
+        else:
+            node = style.BOLD + node + style.END
+    else:
+        orig = 'jsobj@' + addr
+
+        if has_priv:
+            node = has_priv.group(1)
+            orig += ' priv@' + has_priv.group(2)
+
+    # Add the annotation
+    if annotation:
+        if os.isatty(1):
+            node += ' "' + style.PURPLE + annotation + style.END + '"'
+        else:
+            node += ' "' + annotation + '"'
+
+    if args.no_addr:
+        return node
+    return node + ' ' + orig
+
+
 def output_tree_graph(graph, data, base='', parent=''):
     while data:
         addr, children = data.popitem()
+
+        node = format_node(graph, addr, base)
 
         # Labels
         if parent:
             edge = get_edge_label(graph, parent, addr)
         else:
             edge = graph.root_labels[addr]
-
-        node = get_node_label(graph, addr)
-        annotation = get_node_annotation(graph, addr)
-        has_priv = priv_regex.match(node)
 
         # Color/Style
         if os.isatty(1):
@@ -391,39 +426,11 @@ def output_tree_graph(graph, data, base='', parent=''):
             else:
                 edge = style.BOLD + edge + style.END
 
-            orig = style.UNDERLINE + 'jsobj@' + addr + style.END
-
-            if has_priv:
-                node = style.BOLD + has_priv.group(1) + style.END
-                orig += ' ' + style.UNDERLINE + 'priv@' + has_priv.group(2) + style.END
-            else:
-                node = style.BOLD + node + style.END
-        else:
-            orig = 'jsobj@' + addr
-
-            if has_priv:
-                node = has_priv.group(1)
-                orig += ' priv@' + has_priv.group(2)
-
-        # Add the annotation
-        if annotation:
-            if os.isatty(1):
-                node += ' "' + style.PURPLE + annotation + style.END + '"'
-            else:
-                node += ' "' + annotation + '"'
-
-
         # Print the path segment
-        if args.no_addr:
-            if data:
-                print('{0}├─[{1}]─➤ [{2}]'.format(base, edge, node))
-            else:
-                print('{0}╰─[{1}]─➤ [{2}]'.format(base, edge, node))
+        if data:
+            print('{0}├─[{1}]─➤ [{2}]'.format(base, edge, node))
         else:
-            if data:
-                print('{0}├─[{1}]─➤ [{2} {3}]'.format(base, edge, node, orig))
-            else:
-                print('{0}╰─[{1}]─➤ [{2} {3}]'.format(base, edge, node, orig))
+            print('{0}╰─[{1}]─➤ [{2}]'.format(base, edge, node))
 
         # Print child segments
         if children:
@@ -438,6 +445,13 @@ def output_tree_graph(graph, data, base='', parent=''):
                 print(base + '  ')
 
 
+def output_tree_unreachables(graph, data):
+    while data:
+        addr = data.pop()
+        node = format_node(graph, addr)
+        print(' • Unreachable: [{}]'.format(node))
+
+
 def add_tree_graph_path(owner, path):
     o = owner.setdefault(path.pop(0), {})
     if path:
@@ -449,6 +463,13 @@ def add_path(args, graph, path):
         add_dot_graph_path(path)
     else:
         add_tree_graph_path(tree_graph_paths, path)
+
+
+def add_unreachable(args, node):
+    if args.dot_graph:
+        add_dot_graph_unreachable(node)
+    else:
+        tree_graph_unreachables.add(node)
 
 
 ###############################################################################
@@ -544,6 +565,10 @@ def find_roots_bfs(args, edges, graph, target):
             path.pop()
             path.reverse()
             add_path(args, graph, path)
+        elif args.show_unreachable:
+            # No path to a root. This object is eligible for collection on the
+            # next GC, but is still in an arena.
+            add_unreachable(args, target)
 
 
 ########################################################
@@ -685,4 +710,5 @@ if __name__ == "__main__":
         output_dot_file(args, graph, targets, args.heap_file + ".dot")
     else:
         output_tree_graph(graph, tree_graph_paths)
+        output_tree_unreachables(graph, tree_graph_unreachables)
 

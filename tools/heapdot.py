@@ -18,10 +18,15 @@ priv_regex = re.compile(r'([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
 ###############################################################################
 
 dot_graph_paths = []
+unreachable = set()
 
 
 def add_dot_graph_path(path):
     dot_graph_paths.append(path)
+
+
+def add_dot_graph_unreachable(node):
+    unreachable.add(node)
 
 
 def output_dot_file(args, graph, targs, fname):
@@ -30,6 +35,7 @@ def output_dot_file(args, graph, targs, fname):
     for p in dot_graph_paths:
         for x in p:
             nodes.add(x)
+    nodes.update(unreachable)
 
     # build the edge map
     edges = {}
@@ -127,6 +133,11 @@ def output_dot_file(args, graph, targs, fname):
             style = 'bold'
 
         node_label = label
+
+        if addr in unreachable:
+            style += ',dotted'
+            node_label = 'Unreachable\\n' + node_label
+
         if not args.no_addr:
             node_label += '\\njsobj@' + addr
             if priv:
