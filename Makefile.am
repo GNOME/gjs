@@ -76,11 +76,6 @@ libgjs_la_LIBADD = 		\
 	$(READLINE_LIBS)	\
 	$(NULL)
 
-if ENABLE_GTK
-libgjs_la_CPPFLAGS += $(GJS_GTK_CFLAGS)
-libgjs_la_LIBADD += $(GJS_GTK_LIBS)
-endif
-
 # Please see gjs-srcs.mk for brief expanations
 # of the layout of the sources due to historical
 # reasons
@@ -133,10 +128,6 @@ GjsPrivate_1_0_gir_SCANNERFLAGS =	\
 	--warn-all			\
 	$(WARN_SCANNERFLAGS)		\
 	$(NULL)
-
-if ENABLE_GTK
-GjsPrivate_1_0_gir_INCLUDES += Gtk-3.0
-endif
 
 INTROSPECTION_GIRS += GjsPrivate-1.0.gir
 

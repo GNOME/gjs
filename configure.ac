@@ -70,7 +70,6 @@ gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
 common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
-gjs_gtk_packages="gtk+-3.0 >= 3.20"
 gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"
 
 AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
@@ -138,15 +137,7 @@ AS_IF([test x$have_cairo = xyes], [
 # Optional GTK+ dep (enabled by default)
 AC_ARG_WITH(gtk,
   [AS_HELP_STRING([--without-gtk], [Don't build GTK-related code])])
-AS_IF([test "x$with_gtk" != "xno"],
-  [AX_PKG_CHECK_MODULES([GJS_GTK], [], [$gjs_gtk_packages],
-    [have_gtk=yes], [have_gtk=no])],
-  [have_gtk=no])
-AM_CONDITIONAL(ENABLE_GTK, test x$have_gtk = xyes)
-AS_IF([test x$have_gtk = xyes], [
-  AC_DEFINE([ENABLE_GTK],[1],[Define if you want to build with GTK+ support])
-], [AS_IF([test "x$with_gtk" = "xyes"],
-  [AC_MSG_ERROR([GTK requested but not found])])])
+AM_CONDITIONAL(ENABLE_GTK, [test "x$with_gtk" != "xno"])
 
 AC_ARG_ENABLE([profiler],
   [AS_HELP_STRING([--disable-profiler], [Don't build profiler])],
