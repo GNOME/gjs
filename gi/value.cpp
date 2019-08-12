@@ -523,6 +523,22 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (g_type_is_a(gtype, G_TYPE_VALUE)) {
             GValue nested_gvalue = G_VALUE_INIT;
 
+            /* explicitly handle values that are already GValues
+               to avoid infinite recursion */
+            if (value.isObject()) {
+                JS::RootedObject obj(context, &value.toObject());
+                GType guessed_gtype;
+
+                if (!gjs_value_guess_g_type(context, value, &guessed_gtype))
+                    return false;
+
+                if (guessed_gtype == G_TYPE_VALUE) {
+                    gboxed = BoxedBase::to_c_ptr<GValue>(context, obj);
+                    g_value_set_boxed(gvalue, gboxed);
+                    return true;
+                }
+            }
+
             if (!gjs_value_to_g_value(context, value, &nested_gvalue))
                 return false;
 
