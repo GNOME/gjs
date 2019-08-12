@@ -30,15 +30,6 @@ LIBGJS_BASE_DEP_LIBS =			\
 # For Cairo support
 CAIRO_LIBS = cairo-gobject.lib cairo.lib
 
-# For GTK+ support
-GTK_INCLUDES =					\
-	/I$(PREFIX)\include\gtk-3.0		\
-	/I$(PREFIX)\include\gdk-pixbuf-2.0	\
-	/I$(PREFIX)\include\pango-1.0		\
-	/I$(PREFIX)\include\atk-1.0
-
-GTK_LIBS = gtk-3.0.lib gdk-3.0.lib
-
 # Please do not change anything beneath this line unless maintaining the NMake Makefiles
 # Bare minimum features and sources built into GJS on Windows
 
@@ -86,19 +77,7 @@ LIBGJS_DEP_LIBS = $(CAIRO_LIBS) $(LIBGJS_DEP_LIBS)
 !endif
 
 INTROSPECTION_INCLUDE_PACKAGES = --include=Gio-2.0 --include=GObject-2.0
-
-# Enable GTK+
-!if "$(NO_GTK)" != "1"
-GJS_DEFINES = $(GJS_DEFINES) /DENABLE_GTK
-LIBGJS_PRIVATE_SOURCES = $(LIBGJS_PRIVATE_SOURCES)
-
-GJS_INTROSPECTION_CHECK_PACKAGE = gtk+-3.0
-INTROSPECTION_INCLUDE_PACKAGES = $(INTROSPECTION_INCLUDE_PACKAGES) --include=Gtk-3.0
-LIBGJS_DEP_INCLUDES = $(GTK_INCLUDES) $(LIBGJS_DEP_INCLUDES)
-LIBGJS_DEP_LIBS = $(GTK_LIBS) $(LIBGJS_DEP_LIBS)
-!else
 GJS_INTROSPECTION_CHECK_PACKAGE = gio-2.0
-!endif
 
 LIBGJS_SOURCES = $(gjs_srcs) $(LIBGJS_PRIVATE_SOURCES)
 
