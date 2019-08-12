@@ -67,6 +67,13 @@ GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
 GJS_EXPORT
 GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
 
+/* For imports.overrides.Gtk */
+GJS_EXPORT
+void gjs_gtk_container_child_set_property (GObject      *container,
+                                           GObject      *child,
+                                           const gchar  *property,
+                                           const GValue *value);
+
 /* For tests */
 GJS_EXPORT
 int gjs_open_bytes(GBytes* bytes, GError** error);

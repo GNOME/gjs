@@ -94,10 +94,6 @@ endif
 # Also, these files used to be a separate library
 libgjs_private_source_files = $(gjs_private_srcs)
 
-if ENABLE_GTK
-libgjs_private_source_files += $(gjs_gtk_private_srcs)
-endif
-
 libgjs_la_SOURCES += $(libgjs_private_source_files)
 
 # The built-in modules also used to be compiled separately
