@@ -25,24 +25,19 @@
 
 #include <config.h> /* for ENABLE_GTK */
 
-#ifdef ENABLE_GTK
+#include <glib-object.h>
+#include <glib.h>
 
-#    include <glib-object.h>
-#    include <glib.h>
-#    include <gtk/gtk.h>
-
-#    include "gjs/macros.h"
+#include "gjs/macros.h"
 
 G_BEGIN_DECLS
 
 GJS_EXPORT
-void gjs_gtk_container_child_set_property (GtkContainer *container,
-                                           GtkWidget    *child,
+void gjs_gtk_container_child_set_property (GObject      *container,
+                                           GObject      *child,
                                            const gchar  *property,
                                            const GValue *value);
 
 G_END_DECLS
-
-#endif
 
 #endif /* LIBGJS_PRIVATE_GJS_GTK_UTIL_H_ */
