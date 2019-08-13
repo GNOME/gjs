@@ -1438,7 +1438,6 @@ ObjectInstance::disassociate_js_gobject(void)
 
     /* Mark that a JS object once existed, but it doesn't any more */
     m_wrapper_finalized = true;
-    m_wrapper = nullptr;
 }
 
 bool
