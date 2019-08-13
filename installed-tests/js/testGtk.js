@@ -204,4 +204,15 @@ describe('Gtk overrides', function () {
          */
         expect(() => Gtk.Clipboard.get(null)).toThrowError(/null/);
     });
+
+    it('uses the correct GType for null child properties', function () {
+        let s = new Gtk.Stack();
+        let p = new Gtk.Box();
+
+        s.add_named(p, 'foo');
+        expect(s.get_child_by_name('foo')).toBe(p);
+
+        s.child_set_property(p, 'name', null);
+        expect(s.get_child_by_name('foo')).toBeNull();
+    });
 });
