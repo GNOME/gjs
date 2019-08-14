@@ -27,9 +27,8 @@ var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
     let count = 0;
-    for (let property in obj) {
+    for (let unusedProperty in obj)
         count += 1;
-    }
     return count;
 }
 
@@ -45,19 +44,16 @@ function _copyProperty(source, dest, property) {
 }
 
 function copyProperties(source, dest) {
-    for (let property in source) {
+    for (let property in source)
         _copyProperty(source, dest, property);
-    }
 }
 
 function copyPublicProperties(source, dest) {
     for (let property in source) {
-        if (typeof(property) == 'string' &&
-            property.substring(0, 1) == '_') {
+        if (typeof property === 'string' && property.startsWith('_'))
             continue;
-        } else {
+        else
             _copyProperty(source, dest, property);
-        }
     }
 }
 
@@ -66,33 +62,27 @@ function copyPublicProperties(source, dest) {
  * using this within the callback.
  * @param {object} obj the object to bind
  * @param {function} callback callback to bind obj in
- * @param arguments additional arguments to the callback
- * @returns: a new callback
- * @type: function
+ * @param {*} bindArguments additional arguments to the callback
+ * @returns {function} a new callback
  */
-function bind(obj, callback) {
-    if (typeof(obj) != 'object') {
-        throw new Error(
-            "first argument to Lang.bind() must be an object, not " +
-                typeof(obj));
+function bind(obj, callback, ...bindArguments) {
+    if (typeof obj !== 'object') {
+        throw new Error(`first argument to Lang.bind() must be an object, not ${
+            typeof obj}`);
     }
 
-    if (typeof(callback) != 'function') {
-        throw new Error(
-            "second argument to Lang.bind() must be a function, not " +
-                typeof(callback));
+    if (typeof callback !== 'function') {
+        throw new Error(`second argument to Lang.bind() must be a function, not ${
+            typeof callback}`);
     }
 
     // Use ES5 Function.prototype.bind, but only if not passing any bindArguments,
     // because ES5 has them at the beginning, not at the end
-    if (arguments.length == 2)
-	return callback.bind(obj);
+    if (arguments.length === 2)
+        return callback.bind(obj);
 
     let me = obj;
-    let bindArguments = Array.prototype.slice.call(arguments, 2);
-
-    return function() {
-        let args = Array.prototype.slice.call(arguments);
+    return function (...args) {
         args = args.concat(bindArguments);
         return callback.apply(me, args);
     };

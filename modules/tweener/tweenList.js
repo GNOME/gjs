@@ -35,14 +35,14 @@ http://code.google.com/p/tweener/wiki/License
 */
 
 function TweenList(scope, timeStart, timeComplete,
-                      useFrames, transition, transitionParams) {
+    useFrames, transition, transitionParams) {
     this._init(scope, timeStart, timeComplete, useFrames, transition,
-               transitionParams);
+        transitionParams);
 }
 
 TweenList.prototype = {
-    _init: function(scope, timeStart, timeComplete,
-                    userFrames, transition, transitionParams) {
+    _init(scope, timeStart, timeComplete,
+        userFrames, transition, transitionParams) {
         this.scope = scope;
         this.timeStart = timeStart;
         this.timeComplete = timeComplete;
@@ -51,7 +51,7 @@ TweenList.prototype = {
         this.transitionParams = transitionParams;
 
         /* Other default information */
-        this.properties = new Object();
+        this.properties = {};
         this.isPaused = false;
         this.timePaused = undefined;
         this.isCaller = false;
@@ -61,13 +61,12 @@ TweenList.prototype = {
         this.hasStarted = false;
     },
 
-    clone: function(omitEvents) {
+    clone(omitEvents) {
         var tween = new TweenList(this.scope, this.timeStart, this.timeComplete, this.userFrames,
-                                  this.transition, this.transitionParams);
-        tween.properties = new Array();
-        for (let name in this.properties) {
+            this.transition, this.transitionParams);
+        tween.properties = [];
+        for (let name in this.properties)
             tween.properties[name] = this.properties[name];
-        }
         tween.skipUpdates = this.skipUpdates;
         tween.updatesSkipped = this.updatesSkipped;
 
@@ -99,7 +98,7 @@ TweenList.prototype = {
         tween.hasStarted = this.hasStarted;
 
         return tween;
-    }
+    },
 };
 
 function makePropertiesChain(obj) {

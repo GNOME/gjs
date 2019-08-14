@@ -2,15 +2,15 @@ const {GIMarshallingTests, Gio, GLib, GObject} = imports.gi;
 
 const Foo = GObject.registerClass({
     Properties: {
-        'prop': GObject.ParamSpec.string('prop', '', '', GObject.ParamFlags.READWRITE, '')
+        'prop': GObject.ParamSpec.string('prop', '', '', GObject.ParamFlags.READWRITE, ''),
     },
 }, class Foo extends GObject.Object {
     set prop(v) {
-	throw new Error('set');
+        throw new Error('set');
     }
 
     get prop() {
-	throw new Error('get');
+        throw new Error('get');
     }
 });
 
@@ -18,13 +18,13 @@ const Bar = GObject.registerClass({
     Properties: {
         'prop': GObject.ParamSpec.string('prop', '', '',
             GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT, ''),
-    }
+    },
 }, class Bar extends GObject.Object {});
 
 describe('Exceptions', function () {
     it('are thrown from property setter', function () {
         let foo = new Foo();
-        expect(() => foo.prop = 'bar').toThrowError(/set/);
+        expect(() => (foo.prop = 'bar')).toThrowError(/set/);
     });
 
     it('are thrown from property getter', function () {
@@ -38,7 +38,7 @@ describe('Exceptions', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Error: set*');
 
-        new Foo({ prop: 'bar' });
+        new Foo({prop: 'bar'});
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testExceptions.js', 0,
             'testExceptionInPropertySetterFromConstructor');
@@ -91,7 +91,7 @@ describe('logError', function () {
         try {
             let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
             file.read(null);
-        } catch(e) {
+        } catch (e) {
             logError(e);
         }
     });
@@ -100,8 +100,8 @@ describe('logError', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Gio.IOErrorEnum: a message\nmarker@*');
         try {
-            throw new Gio.IOErrorEnum({ message: 'a message', code: 0 });
-        } catch(e) {
+            throw new Gio.IOErrorEnum({message: 'a message', code: 0});
+        } catch (e) {
             logError(e);
         }
     });
@@ -109,7 +109,7 @@ describe('logError', function () {
     it('also logs an error for a created GError that is not thrown', function marker() {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Gio.IOErrorEnum: a message\nmarker@*');
-        logError(new Gio.IOErrorEnum({ message: 'a message', code: 0 }));
+        logError(new Gio.IOErrorEnum({message: 'a message', code: 0}));
     });
 
     it('logs an error created with the GLib.Error constructor', function marker() {
@@ -138,7 +138,7 @@ describe('logError', function () {
         try {
             let file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
             file.read(null);
-        } catch(e) {
+        } catch (e) {
             logError(e, 'prefix');
         }
     });
@@ -147,8 +147,8 @@ describe('logError', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: prefix: Gio.IOErrorEnum: a message\nmarker@*');
         try {
-            throw new Gio.IOErrorEnum({ message: 'a message', code: 0 });
-        } catch(e) {
+            throw new Gio.IOErrorEnum({message: 'a message', code: 0});
+        } catch (e) {
             logError(e, 'prefix');
         }
     });

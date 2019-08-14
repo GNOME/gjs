@@ -66,7 +66,7 @@ describe('Introspected structs', function () {
         });
 
         it('catches bad field names', function () {
-            expect(() => new Regress.TestStructA({ junk: 42 })).toThrow();
+            expect(() => new Regress.TestStructA({junk: 42})).toThrow();
         });
 
         it('copies an object from another object of the same type', function () {
@@ -79,7 +79,7 @@ describe('Introspected structs', function () {
     });
 
     it('containing fixed array', function () {
-        let struct = new Regress.TestStructFixedArray();
+        struct = new Regress.TestStructFixedArray();
         struct.frob();
         expect(struct.just_int).toEqual(7);
         expect(struct.array).toEqual([42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);
@@ -87,18 +87,18 @@ describe('Introspected structs', function () {
 });
 
 describe('Introspected boxed types', function () {
-    let simple_boxed;
+    let simpleBoxed;
 
     it('sets fields correctly', function () {
-        simple_boxed = new Regress.TestSimpleBoxedA();
-        simple_boxed.some_int = 42;
-        simple_boxed.some_int8 = 43;
-        simple_boxed.some_double = 42.5;
-        simple_boxed.some_enum = Regress.TestEnum.VALUE3;
-        expect(simple_boxed.some_int).toEqual(42);
-        expect(simple_boxed.some_int8).toEqual(43);
-        expect(simple_boxed.some_double).toEqual(42.5);
-        expect(simple_boxed.some_enum).toEqual(Regress.TestEnum.VALUE3);
+        simpleBoxed = new Regress.TestSimpleBoxedA();
+        simpleBoxed.some_int = 42;
+        simpleBoxed.some_int8 = 43;
+        simpleBoxed.some_double = 42.5;
+        simpleBoxed.some_enum = Regress.TestEnum.VALUE3;
+        expect(simpleBoxed.some_int).toEqual(42);
+        expect(simpleBoxed.some_int8).toEqual(43);
+        expect(simpleBoxed.some_double).toEqual(42.5);
+        expect(simpleBoxed.some_enum).toEqual(Regress.TestEnum.VALUE3);
 
         let boxed = new Regress.TestBoxed();
         boxed.some_int8 = 42;
@@ -107,7 +107,7 @@ describe('Introspected boxed types', function () {
 
     describe('copy constructors', function () {
         beforeEach(function () {
-            simple_boxed = new Regress.TestSimpleBoxedA({
+            simpleBoxed = new Regress.TestSimpleBoxedA({
                 some_int: 42,
                 some_int8: 43,
                 some_double: 42.5,
@@ -116,18 +116,18 @@ describe('Introspected boxed types', function () {
         });
 
         it('"copies" an object from a hash of field values', function () {
-            expect(simple_boxed.some_int).toEqual(42);
-            expect(simple_boxed.some_int8).toEqual(43);
-            expect(simple_boxed.some_double).toEqual(42.5);
-            expect(simple_boxed.some_enum).toEqual(Regress.TestEnum.VALUE3);
+            expect(simpleBoxed.some_int).toEqual(42);
+            expect(simpleBoxed.some_int8).toEqual(43);
+            expect(simpleBoxed.some_double).toEqual(42.5);
+            expect(simpleBoxed.some_enum).toEqual(Regress.TestEnum.VALUE3);
         });
 
         it('catches bad field names', function () {
-            expect(() => new Regress.TestSimpleBoxedA({ junk: 42 })).toThrow();
+            expect(() => new Regress.TestSimpleBoxedA({junk: 42})).toThrow();
         });
 
         it('copies an object from another object of the same type', function () {
-            let copy = new Regress.TestSimpleBoxedA(simple_boxed);
+            let copy = new Regress.TestSimpleBoxedA(simpleBoxed);
             expect(copy instanceof Regress.TestSimpleBoxedA).toBeTruthy();
             expect(copy.some_int).toEqual(42);
             expect(copy.some_int8).toEqual(43);
@@ -138,24 +138,24 @@ describe('Introspected boxed types', function () {
 
     describe('nested', function () {
         beforeEach(function () {
-            simple_boxed = new Regress.TestSimpleBoxedB();
+            simpleBoxed = new Regress.TestSimpleBoxedB();
         });
 
         it('reads fields and nested fields', function () {
-            simple_boxed.some_int8 = 42;
-            simple_boxed.nested_a.some_int = 43;
-            expect(simple_boxed.some_int8).toEqual(42);
-            expect(simple_boxed.nested_a.some_int).toEqual(43);
+            simpleBoxed.some_int8 = 42;
+            simpleBoxed.nested_a.some_int = 43;
+            expect(simpleBoxed.some_int8).toEqual(42);
+            expect(simpleBoxed.nested_a.some_int).toEqual(43);
         });
 
         it('assigns nested struct field from an instance', function () {
-            simple_boxed.nested_a = new Regress.TestSimpleBoxedA({ some_int: 53 });
-            expect(simple_boxed.nested_a.some_int).toEqual(53);
+            simpleBoxed.nested_a = new Regress.TestSimpleBoxedA({some_int: 53});
+            expect(simpleBoxed.nested_a.some_int).toEqual(53);
         });
 
         it('assigns nested struct field directly from a hash of field values', function () {
-            simple_boxed.nested_a = { some_int: 63 };
-            expect(simple_boxed.nested_a.some_int).toEqual(63);
+            simpleBoxed.nested_a = {some_int: 63};
+            expect(simpleBoxed.nested_a.some_int).toEqual(63);
         });
     });
 
@@ -165,8 +165,8 @@ describe('Introspected boxed types', function () {
             nested_a: {
                 some_int: 43,
                 some_int8: 44,
-                some_double: 43.5
-            }
+                some_double: 43.5,
+            },
         });
         expect(simple2.some_int8).toEqual(42);
         expect(simple2.nested_a.some_int).toEqual(43);
@@ -185,7 +185,7 @@ describe('Introspected boxed types', function () {
     // The two real world structs that have this behavior are
     // Clutter.Color and Clutter.ActorBox.
     it('constructs using a custom constructor in backwards compatibility mode', function () {
-        let boxed = new Regress.TestBoxedB({ some_int8: 7, some_long: 5 });
+        let boxed = new Regress.TestBoxedB({some_int8: 7, some_long: 5});
         expect(boxed.some_int8).toEqual(7);
         expect(boxed.some_long).toEqual(5);
     });
@@ -216,7 +216,7 @@ describe('Introspected GObject', function () {
     });
 
     it('throws when setting a read-only field', function () {
-        expect(() => obj.some_int8 = 41).toThrow();
+        expect(() => (obj.some_int8 = 41)).toThrow();
     });
 
     it('has normal Object methods', function () {

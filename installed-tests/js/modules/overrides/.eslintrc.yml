@@ -1,0 +1,6 @@
+---
+rules:
+  no-throw-literal: 'off'  # these are intended to be bad code
+  no-unused-vars:
+    - error
+    - varsIgnorePattern: ^_init$

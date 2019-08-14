@@ -99,7 +99,7 @@ var TestIface = `<node>
 
 const PROP_READ_ONLY_INITIAL_VALUE = Math.random();
 const PROP_READ_WRITE_INITIAL_VALUE = 58;
-const PROP_WRITE_ONLY_INITIAL_VALUE = "Initial value";
+const PROP_WRITE_ONLY_INITIAL_VALUE = 'Initial value';
 
 /* Test is the actual object exporting the dbus methods */
 class Test {
@@ -112,20 +112,19 @@ class Test {
         this._impl.export(Gio.DBus.session, '/org/gnome/gjs/Test');
     }
 
-    frobateStuff(args) {
-        return { hello: new GLib.Variant('s', 'world') };
+    frobateStuff() {
+        return {hello: new GLib.Variant('s', 'world')};
     }
 
     nonJsonFrobateStuff(i) {
-        if (i == 42) {
-            return "42 it is!";
-        } else {
-            return "Oops";
-        }
+        if (i === 42)
+            return '42 it is!';
+        else
+            return 'Oops';
     }
 
     alwaysThrowException() {
-        throw Error("Exception!");
+        throw Error('Exception!');
     }
 
     thisDoesNotExist() {
@@ -133,15 +132,15 @@ class Test {
     }
 
     noInParameter() {
-        return "Yes!";
+        return 'Yes!';
     }
 
     multipleInArgs(a, b, c, d, e) {
-        return a + " " + b + " " + c + " " + d + " " + e;
+        return `${a} ${b} ${c} ${d} ${e}`;
     }
 
     emitSignal() {
-        this._impl.emit_signal('signalFoo', GLib.Variant.new('(s)', [ "foobar" ]));
+        this._impl.emit_signal('signalFoo', GLib.Variant.new('(s)', ['foobar']));
     }
 
     noReturnValue() {
@@ -153,22 +152,22 @@ class Test {
      * multipleOutValues is "sss", while oneArrayOut is "as"
      */
     multipleOutValues() {
-        return [ "Hello", "World", "!" ];
+        return ['Hello', 'World', '!'];
     }
 
     oneArrayOut() {
-        return [ "Hello", "World", "!" ];
+        return ['Hello', 'World', '!'];
     }
 
     /* Same thing again. In this case multipleArrayOut is "asas",
      * while arrayOfArrayOut is "aas".
      */
     multipleArrayOut() {
-        return [[ "Hello", "World" ], [ "World", "Hello" ]];
+        return [['Hello', 'World'], ['World', 'Hello']];
     }
 
     arrayOfArrayOut() {
-        return [[ "Hello", "World" ], [ "World", "Hello" ]];
+        return [['Hello', 'World'], ['World', 'Hello']];
     }
 
     arrayOutBadSig() {
@@ -191,7 +190,7 @@ class Test {
      * the input arguments */
     echoAsync(parameters, invocation) {
         var [someString, someInt] = parameters;
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
         });
@@ -213,7 +212,7 @@ class Test {
     }
 
     set PropReadWrite(value) {
-        this._propReadWrite = value.deep_unpack();
+        this._propReadWrite = value.deepUnpack();
     }
 
     structArray() {
@@ -244,7 +243,7 @@ class Test {
     }
 
     fdOut2Async([bytes], invocation) {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, function() {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
             const fd = GjsPrivate.open_bytes(bytes);
             const fdList = Gio.UnixFDList.new_from_array([fd]);
             invocation.return_value_with_unix_fd_list(new GLib.Variant('(h)', [0]),
@@ -257,19 +256,19 @@ class Test {
 const ProxyClass = Gio.DBusProxy.makeProxyWrapper(TestIface);
 
 describe('Exported DBus object', function () {
-    var own_name_id;
+    let ownNameID;
     var test;
     var proxy;
     let loop;
 
-    let waitForServerProperty = function (property, value = undefined, timeout = 500) {
+    function waitForServerProperty(property, value = undefined, timeout = 500) {
         let waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
             waitId = 0;
             throw new Error(`Timeout waiting for property ${property} expired`);
         });
 
         while (waitId && (!test[property] ||
-                          (value !== undefined && test[property] != value)))
+                          value !== undefined && test[property] !== value))
             loop.get_context().iteration(true);
 
         if (waitId)
@@ -277,20 +276,20 @@ describe('Exported DBus object', function () {
 
         expect(waitId).not.toBe(0);
         return test[property];
-    };
+    }
 
     beforeAll(function () {
         loop = new GLib.MainLoop(null, false);
 
         test = new Test();
-        own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
+        ownNameID = Gio.DBus.session.own_name('org.gnome.gjs.Test',
             Gio.BusNameOwnerFlags.NONE,
             name => {
-                log("Acquired name " + name);
+                log(`Acquired name ${name}`);
                 loop.quit();
             },
             name => {
-                log("Lost name " + name);
+                log(`Lost name ${name}`);
             });
         loop.run();
         new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
@@ -308,7 +307,7 @@ describe('Exported DBus object', function () {
     afterAll(function () {
         // Not really needed, but if we don't cleanup
         // memory checking will complain
-        Gio.DBus.session.unown_name(own_name_id);
+        Gio.DBus.session.unown_name(ownNameID);
     });
 
     beforeEach(function () {
@@ -318,7 +317,7 @@ describe('Exported DBus object', function () {
     it('can call a remote method', function () {
         proxy.frobateStuffRemote({}, ([result], excp) => {
             expect(excp).toBeNull();
-            expect(result.hello.deep_unpack()).toEqual('world');
+            expect(result.hello.deepUnpack()).toEqual('world');
             loop.quit();
         });
         loop.run();
@@ -343,7 +342,7 @@ describe('Exported DBus object', function () {
 
         otherProxy.frobateStuffRemote({}, ([result], excp) => {
             expect(excp).toBeNull();
-            expect(result.hello.deep_unpack()).toEqual('world');
+            expect(result.hello.deepUnpack()).toEqual('world');
             loop.quit();
         });
         loop.run();
@@ -355,7 +354,7 @@ describe('Exported DBus object', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Exception in method call: alwaysThrowException: *');
 
-        proxy.alwaysThrowExceptionRemote({}, function(result, excp) {
+        proxy.alwaysThrowExceptionRemote({}, function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
         });
@@ -371,7 +370,7 @@ describe('Exported DBus object', function () {
         // argument destructuring will not propagate across the FFI boundary
         // and the main loop will never quit.
         // https://bugzilla.gnome.org/show_bug.cgi?id=729015
-        proxy.alwaysThrowExceptionRemote({}, function([a, b, c], excp) {
+        proxy.alwaysThrowExceptionRemote({}, function ([a, b, c], excp) {
             expect(a).not.toBeDefined();
             expect(b).not.toBeDefined();
             expect(c).not.toBeDefined();
@@ -445,7 +444,7 @@ describe('Exported DBus object', function () {
     });
 
     it('can call a remote method with multiple return values', function () {
-        proxy.multipleOutValuesRemote(function(result, excp) {
+        proxy.multipleOutValuesRemote(function (result, excp) {
             expect(result).toEqual(['Hello', 'World', '!']);
             expect(excp).toBeNull();
             loop.quit();
@@ -483,7 +482,7 @@ describe('Exported DBus object', function () {
     });
 
     it('handles a bad signature by throwing an exception', function () {
-        proxy.arrayOutBadSigRemote(function(result, excp) {
+        proxy.arrayOutBadSigRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
         });
@@ -491,11 +490,11 @@ describe('Exported DBus object', function () {
     });
 
     it('can call a remote method that is implemented asynchronously', function () {
-        let someString = "Hello world!";
+        let someString = 'Hello world!';
         let someInt = 42;
 
         proxy.echoRemote(someString, someInt,
-            function(result, excp) {
+            function (result, excp) {
                 expect(excp).toBeNull();
                 expect(result).toEqual([someString, someInt]);
                 loop.quit();
@@ -504,9 +503,7 @@ describe('Exported DBus object', function () {
     });
 
     it('can send and receive bytes from a remote method', function () {
-        let loop = GLib.MainLoop.new(null, false);
-
-        let someBytes = [ 0, 63, 234 ];
+        let someBytes = [0, 63, 234];
         someBytes.forEach(b => {
             proxy.byteEchoRemote(b, ([result], excp) => {
                 expect(excp).toBeNull();
@@ -541,13 +538,13 @@ describe('Exported DBus object', function () {
             expect(result).not.toBeNull();
 
             // verify the fractional part was dropped off int
-            expect(result['anInteger'].deep_unpack()).toEqual(10);
+            expect(result['anInteger'].deepUnpack()).toEqual(10);
 
             // and not dropped off a double
-            expect(result['aDoubleBeforeAndAfter'].deep_unpack()).toEqual(10.5);
+            expect(result['aDoubleBeforeAndAfter'].deepUnpack()).toEqual(10.5);
 
             // check without type conversion
-            expect(result['aDouble'].deep_unpack()).toBe(10.0);
+            expect(result['aDouble'].deepUnpack()).toBe(10.0);
 
             loop.quit();
         });
@@ -638,7 +635,7 @@ describe('Exported DBus object', function () {
             proxy.PropReadWrite = GLib.Variant.new_string(testStr);
         }).not.toThrow();
 
-        expect(proxy.PropReadWrite.deep_unpack()).toEqual(testStr);
+        expect(proxy.PropReadWrite.deepUnpack()).toEqual(testStr);
 
         expect(waitForServerProperty('_propReadWrite', testStr)).toEqual(testStr);
     });

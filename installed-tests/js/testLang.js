@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-properties */
 // tests for imports.lang module
 // except for Lang.Class and Lang.Interface, which are tested in testLegacyClass
 
@@ -5,12 +6,12 @@ const Lang = imports.lang;
 
 describe('Lang module', function () {
     it('counts properties with Lang.countProperties()', function () {
-        var foo = { 'a' : 10, 'b' : 11 };
+        var foo = {'a': 10, 'b': 11};
         expect(Lang.countProperties(foo)).toEqual(2);
     });
 
     it('copies properties from one object to another with Lang.copyProperties()', function () {
-        var foo = { 'a' : 10, 'b' : 11 };
+        var foo = {'a': 10, 'b': 11};
         var bar = {};
 
         Lang.copyProperties(foo, bar);
@@ -18,23 +19,23 @@ describe('Lang module', function () {
     });
 
     it('copies properties without an underscore with Lang.copyPublicProperties()', function () {
-        var foo = { 'a' : 10, 'b' : 11, '_c' : 12 };
+        var foo = {'a': 10, 'b': 11, '_c': 12};
         var bar = {};
 
         Lang.copyPublicProperties(foo, bar);
-        expect(bar).toEqual({ 'a': 10, 'b': 11 });
+        expect(bar).toEqual({'a': 10, 'b': 11});
     });
 
     it('copies property getters and setters', function () {
         var foo = {
-            'a' : 10,
-            'b' : 11,
+            'a': 10,
+            'b': 11,
             get c() {
                 return this.a;
             },
             set c(n) {
                 this.a = n;
-            }
+            },
         };
         var bar = {};
 
@@ -59,7 +60,7 @@ describe('Lang module', function () {
             o = {
                 callback() {
                     return true;
-                }
+                },
             };
             spyOn(o, 'callback').and.callThrough();
         });

@@ -1,5 +1,6 @@
 /* exported ByteArray, fromArray, fromGBytes, fromString, toGBytes, toString */
 
+/* eslint no-redeclare: ["error", { "builtinGlobals": false }] */  // for toString
 var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;
 
 // For backwards compatibility

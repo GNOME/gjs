@@ -26,7 +26,7 @@ describe('Byte array', function () {
         [0xe2, 0x85, 0x9c].forEach((val, ix) => expect(a[ix]).toEqual(val));
     });
 
-    it('can be converted to a string of ASCII characters', function() {
+    it('can be converted to a string of ASCII characters', function () {
         let a = new Uint8Array(4);
         a[0] = 97;
         a[1] = 98;

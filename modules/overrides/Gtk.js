@@ -37,23 +37,22 @@ function _init() {
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
 
     if (GjsPrivate.gtk_container_child_set_property) {
-        Gtk.Container.prototype.child_set_property = function(child, property, value) {
+        Gtk.Container.prototype.child_set_property = function (child, property, value) {
             GjsPrivate.gtk_container_child_set_property(this, child, property, value);
         };
     }
 
-    Gtk.Widget.prototype._init = function(params) {
+    Gtk.Widget.prototype._init = function (params) {
         if (this.constructor[Gtk.template]) {
             Gtk.Widget.set_connect_func.call(this.constructor, (builder, obj, signalName, handlerName, connectObj, flags) => {
-                if (connectObj !== null) {
+                if (connectObj !== null)
                     throw new Error('Unsupported template signal attribute "object"');
-                } else if (flags & GObject.ConnectFlags.SWAPPED) {
+                else if (flags & GObject.ConnectFlags.SWAPPED)
                     throw new Error('Unsupported template signal flag "swapped"');
-                } else if (flags & GObject.ConnectFlags.AFTER) {
+                else if (flags & GObject.ConnectFlags.AFTER)
                     obj.connect_after(signalName, this[handlerName].bind(this));
-                } else {
+                else
                     obj.connect(signalName, this[handlerName].bind(this));
-                }
             });
         }
 
@@ -68,20 +67,20 @@ function _init() {
 
             let internalChildren = this.constructor[Gtk.internalChildren] || [];
             for (let child of internalChildren) {
-                this['_' + child.replace(/-/g, '_')] =
+                this[`_${child.replace(/-/g, '_')}`] =
                     this.get_template_child(this.constructor, child);
             }
         }
     };
 
-    Gtk.Widget._classInit = function(klass) {
+    Gtk.Widget._classInit = function (klass) {
         let template = klass[Gtk.template];
         let cssName = klass[Gtk.cssName];
         let children = klass[Gtk.children];
         let internalChildren = klass[Gtk.internalChildren];
 
         if (template) {
-            klass.prototype._instance_init = function() {
+            klass.prototype._instance_init = function () {
                 this.init_template();
             };
         }
@@ -101,8 +100,9 @@ function _init() {
                     let [, contents] = file.load_contents(null);
                     Gtk.Widget.set_template.call(klass, contents);
                 }
-            } else
+            } else {
                 Gtk.Widget.set_template.call(klass, template);
+            }
         }
 
         if (children) {

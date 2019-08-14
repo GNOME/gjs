@@ -1,4 +1,6 @@
 /* -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil; -*- */
+/* eslint-disable block-scoped-var, eqeqeq, no-shadow, prefer-rest-params */
+
 /* Copyright 2008  litl, LLC. */
 /**
  * Tweener
@@ -75,10 +77,10 @@ function FrameTicker() {
 FrameTicker.prototype = {
     FRAME_RATE: 65,
 
-    _init : function() {
+    _init() {
     },
 
-    start : function() {
+    start() {
         this._currentTime = 0;
 
         let me = this;
@@ -86,14 +88,14 @@ FrameTicker.prototype = {
         this._timeoutID = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
             Math.floor(1000 / me.FRAME_RATE),
-            function() {
+            function () {
                 me._currentTime += 1000 / me.FRAME_RATE;
                 me.emit('prepare-frame');
                 return true;
             });
     },
 
-    stop : function() {
+    stop() {
         if ('_timeoutID' in this) {
             GLib.source_remove(this._timeoutID);
             delete this._timeoutID;
@@ -102,9 +104,9 @@ FrameTicker.prototype = {
         this._currentTime = 0;
     },
 
-    getTime : function() {
+    getTime() {
         return this._currentTime;
-    }
+    },
 };
 Signals.addSignalMethods(FrameTicker.prototype);
 
@@ -145,11 +147,10 @@ function _startEngine() {
         return;
 
     _engineExists = true;
-    _tweenList = new Array();
+    _tweenList = [];
 
-    if (!_ticker) {
+    if (!_ticker)
         throw new Error('Must call setFrameTicker()');
-    }
 
     _prepareFrameId = _ticker.connect('prepare-frame',
         _onEnterFrame);
@@ -200,14 +201,13 @@ function _resumeTweenByIndex(i) {
 }
 
 /* FIXME: any way to get the function name from the fn itself? */
-function _callOnFunction(fn, fnname, scope, fallbackScope, params)
-{
+function _callOnFunction(fn, fnname, scope, fallbackScope, params) {
     if (fn) {
         var eventScope = scope ? scope : fallbackScope;
         try {
             fn.apply(eventScope, params);
         } catch (e) {
-            logError(e, 'Error calling ' + fnname);
+            logError(e, `Error calling ${fnname}`);
         }
     }
 }
@@ -230,7 +230,7 @@ function _updateTweenByIndex(i) {
 
     if (tweening.isCaller) {
         do {
-            t = ((tweening.timeComplete - tweening.timeStart)/tweening.count) *
+            t = (tweening.timeComplete - tweening.timeStart) / tweening.count *
                 (tweening.timesCalled + 1);
             b = tweening.timeStart;
             c = tweening.timeComplete - tweening.timeStart;
@@ -272,9 +272,8 @@ function _updateTweenByIndex(i) {
 
                 if (tweening.properties[name].isSpecialProperty) {
                     // It's a special property, tunnel via the special property function
-                    if (_specialPropertyList[name].preProcess != undefined) {
+                    if (_specialPropertyList[name].preProcess != undefined)
                         tweening.properties[name].valueComplete = _specialPropertyList[name].preProcess(scope, _specialPropertyList[name].parameters, tweening.properties[name].originalValueComplete, tweening.properties[name].extra);
-                    }
                     pv = _specialPropertyList[name].getValue(scope, _specialPropertyList[name].parameters, tweening.properties[name].extra);
                 } else {
                     // Directly read property
@@ -294,21 +293,19 @@ function _updateTweenByIndex(i) {
                 if (isOver) {
                     // Tweening time has finished, just set it to the final value
                     nv = property.valueComplete;
+                } else if (property.hasModifier) {
+                    // Modified
+                    t = currentTime - tweening.timeStart;
+                    d = tweening.timeComplete - tweening.timeStart;
+                    nv = tweening.transition(t, 0, 1, d, tweening.transitionParams);
+                    nv = property.modifierFunction(property.valueStart, property.valueComplete, nv, property.modifierParameters);
                 } else {
-                    if (property.hasModifier) {
-                        // Modified
-                        t = currentTime - tweening.timeStart;
-                        d = tweening.timeComplete - tweening.timeStart;
-                        nv = tweening.transition(t, 0, 1, d, tweening.transitionParams);
-                        nv = property.modifierFunction(property.valueStart, property.valueComplete, nv, property.modifierParameters);
-                    } else {
-                        // Normal update
-                        t = currentTime - tweening.timeStart;
-                        b = property.valueStart;
-                        c = property.valueComplete - property.valueStart;
-                        d = tweening.timeComplete - tweening.timeStart;
-                        nv = tweening.transition(t, b, c, d, tweening.transitionParams);
-                    }
+                    // Normal update
+                    t = currentTime - tweening.timeStart;
+                    b = property.valueStart;
+                    c = property.valueComplete - property.valueStart;
+                    d = tweening.timeComplete - tweening.timeStart;
+                    nv = tweening.transition(t, b, c, d, tweening.transitionParams);
                 }
 
                 if (tweening.rounded)
@@ -396,12 +393,12 @@ var restrictedWords = {
     onUpdateScope: true,
     onCompleteScope: true,
     onOverwriteScope: true,
-    onErrorScope: true
+    onErrorScope: true,
 };
 
 function _constructPropertyList(obj) {
-    var properties = new Object();
-    var modifiedProperties = new Object();
+    var properties = {};
+    var modifiedProperties = {};
 
     for (let istr in obj) {
         if (restrictedWords[istr])
@@ -418,7 +415,7 @@ function _constructPropertyList(obj) {
                             valueStart: undefined,
                             valueComplete: splitProperties2[j].value,
                             arrayIndex: splitProperties2[j].arrayIndex,
-                            isSpecialProperty: false
+                            isSpecialProperty: false,
                         };
                     }
                 } else {
@@ -426,7 +423,7 @@ function _constructPropertyList(obj) {
                         valueStart: undefined,
                         valueComplete: splitProperties[i].value,
                         arrayIndex: splitProperties[i].arrayIndex,
-                        isSpecialProperty: false
+                        isSpecialProperty: false,
                     };
                 }
             }
@@ -436,13 +433,13 @@ function _constructPropertyList(obj) {
             for (let i = 0; i < tempModifiedProperties.length; i++) {
                 modifiedProperties[tempModifiedProperties[i].name] = {
                     modifierParameters: tempModifiedProperties[i].parameters,
-                    modifierFunction: _specialPropertyModifierList[istr].getValue
+                    modifierFunction: _specialPropertyModifierList[istr].getValue,
                 };
             }
         } else {
             properties[istr] = {
                 valueStart: undefined,
-                valueComplete: obj[istr]
+                valueComplete: obj[istr],
             };
         }
     }
@@ -467,7 +464,7 @@ function PropertyInfo(valueStart, valueComplete, originalValueComplete,
 }
 
 PropertyInfo.prototype = {
-    _init: function(valueStart, valueComplete, originalValueComplete,
+    _init(valueStart, valueComplete, originalValueComplete,
         arrayIndex, extra, isSpecialProperty,
         modifierFunction, modifierParameters) {
         this.valueStart             =       valueStart;
@@ -479,7 +476,7 @@ PropertyInfo.prototype = {
         this.hasModifier            =       Boolean(modifierFunction);
         this.modifierFunction       =       modifierFunction;
         this.modifierParameters     =       modifierParameters;
-    }
+    },
 };
 
 function _addTweenOrCaller(target, tweeningParameters, isCaller) {
@@ -510,16 +507,21 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
                 properties[istr].isSpecialProperty = true;
             } else {
                 for (var i = 0; i < scopes.length; i++) {
-                    if (scopes[i][istr] == undefined)
-                        log('The property ' + istr + ' doesn\'t seem to be a normal object property of ' + scopes[i] + ' or a registered special property');
+                    if (scopes[i][istr] == undefined) {
+                        log(`The property ${istr} doesn't seem to be a ` +
+                            `normal object property of ${scopes[i]} or a ` +
+                            'registered special property');
+                    }
                 }
             }
         }
     }
 
     // Creates the main engine if it isn't active
-    if (!_inited) _init();
-    if (!_engineExists) _startEngine();
+    if (!_inited)
+        _init();
+    if (!_engineExists)
+        _startEngine();
 
     // Creates a "safer", more strict tweening object
     var time = obj.time || 0;
@@ -528,11 +530,10 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
     var transition;
 
     // FIXME: Tweener allows you to use functions with an all lower-case name
-    if (typeof obj.transition == 'string') {
+    if (typeof obj.transition == 'string')
         transition = imports.tweener.equations[obj.transition];
-    } else {
+    else
         transition = obj.transition;
-    }
 
     if (!transition)
         transition = imports.tweener.equations['easeOutExpo'];
@@ -542,7 +543,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
     for (let i = 0; i < scopes.length; i++) {
         if (!isCaller) {
             // Make a copy of the properties
-            var copyProperties = new Object();
+            var copyProperties = {};
             for (istr in properties) {
                 copyProperties[istr] = new PropertyInfo(properties[istr].valueStart,
                     properties[istr].valueComplete,
@@ -556,8 +557,8 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         }
 
         tween = new TweenList.TweenList(scopes[i],
-            _ticker.getTime() + ((delay * 1000) / _timeScale),
-            _ticker.getTime() + (((delay * 1000) + (time * 1000)) / _timeScale),
+            _ticker.getTime() + delay * 1000 / _timeScale,
+            _ticker.getTime() + (delay * 1000 + time * 1000) / _timeScale,
             false,
             transition,
             obj.transitionParams || null);
@@ -599,7 +600,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         // Immediate update and removal if it's an immediate tween
         // If not deleted, it executes at the end of this frame execution
         if (time == 0 && delay == 0) {
-            var myT = _tweenList.length-1;
+            var myT = _tweenList.length - 1;
             _updateTweenByIndex(myT);
             _removeTweenByIndex(myT);
         }
@@ -622,7 +623,7 @@ function _getNumberOfProperties(object) {
     // the following line is disabled becasue eslint was picking up the following error: the variable name is defined but never used, however since it is required to search the object it is used and we'll allow the line to be ignored to get rid of the error message
     /* eslint-disable-next-line */
     for (let name in object) {
-        totalProperties ++;
+        totalProperties++;
     }
 
 
@@ -657,9 +658,8 @@ function removeTweensByTime(scope, properties, timeStart, timeComplete) {
             }
 
             if (removedLocally &&
-                _getNumberOfProperties(_tweenList[i].properties) == 0) {
+                _getNumberOfProperties(_tweenList[i].properties) == 0)
                 _removeTweenByIndex(i);
-            }
         }
     }
 
@@ -727,11 +727,10 @@ function _affectTweens(affectFunction, scope, properties) {
             affected = true;
         } else {
             // Must check whether this tween must have specific properties affected
-            var affectedProperties = new Array();
+            var affectedProperties = [];
             for (let j = 0; j < properties.length; j++) {
-                if (_tweenList[i].properties[properties[j]]) {
+                if (_tweenList[i].properties[properties[j]])
                     affectedProperties.push(properties[j]);
-                }
             }
 
             if (affectedProperties.length > 0) {
@@ -766,34 +765,33 @@ function _isInArray(string, array) {
 }
 
 function _affectTweensWithFunction(func, args) {
-    var properties = new Array();
+    var properties = [];
     var scope = args[0];
     var affected = false;
     var scopes;
 
-    if (scope instanceof Array) {
+    if (scope instanceof Array)
         scopes = scope.concat();
-    } else {
+    else
         scopes = new Array(scope);
-    }
 
     for (let i = 1; args[i] != undefined; i++) {
-        if (typeof(args[i]) == 'string' && !_isInArray(args[i], properties)) {
+        if (typeof args[i] == 'string' && !_isInArray(args[i], properties)) {
             if (_specialPropertySplitterList[args[i]]) {
                 // special property, get splitter array first
                 var sps = _specialPropertySplitterList[arguments[i]];
                 var specialProps = sps.splitValues(scope, null);
                 for (let j = 0; j < specialProps.length; j++)
                     properties.push(specialProps[j].name);
-            } else
+            } else {
                 properties.push(args[i]);
+            }
         }
     }
 
     // the return now value means: "affect at least one tween"
-    for (let i = 0; i < scopes.length; i++) {
+    for (let i = 0; i < scopes.length; i++)
         affected = affected || _affectTweens(func, scopes[i], properties);
-    }
 
     return affected;
 }
@@ -855,22 +853,22 @@ function registerSpecialProperty(name, getFunction, setFunction,
     _specialPropertyList[name] = {
         getValue: getFunction,
         setValue: setFunction,
-        parameters: parameters,
-        preProcess: preProcessFunction
+        parameters,
+        preProcess: preProcessFunction,
     };
 }
 
 function registerSpecialPropertyModifier(name, modifyFunction, getFunction) {
     _specialPropertyModifierList[name] = {
         modifyValues: modifyFunction,
-        getValue: getFunction
+        getValue: getFunction,
     };
 }
 
 function registerSpecialPropertySplitter(name, splitFunction, parameters) {
     _specialPropertySplitterList[name] = {
         splitValues: splitFunction,
-        parameters: parameters
+        parameters,
     };
 }
 

@@ -54,14 +54,14 @@ class TapReporter {
     }
 
     jasmineStarted(info) {
-        print('1..' + info.totalSpecsDefined);
+        print(`1..${info.totalSpecsDefined}`);
     }
 
     jasmineDone() {
         this._failedSuites.forEach(failure => {
             failure.failedExpectations.forEach(result => {
                 print('not ok - An error was thrown outside a test');
-                print('# ' + result.message);
+                print(`# ${result.message}`);
             });
         });
 
@@ -74,9 +74,8 @@ class TapReporter {
             this._failedSuites.push(result);
         }
 
-        if (result.status === 'disabled') {
+        if (result.status === 'disabled')
             print('# Suite was disabled:', result.fullName);
-        }
     }
 
     specStarted() {
@@ -84,27 +83,27 @@ class TapReporter {
     }
 
     specDone(result) {
-        let tap_report;
+        let tapReport;
         if (result.status === 'failed') {
             window._jasmineRetval = 1;
-            tap_report = 'not ok';
+            tapReport = 'not ok';
         } else {
-            tap_report = 'ok';
+            tapReport = 'ok';
         }
-        tap_report += ' ' + this._specCount + ' ' + result.fullName;
+        tapReport += ` ${this._specCount} ${result.fullName}`;
         if (result.status === 'pending' || result.status === 'disabled') {
             let reason = result.pendingReason || result.status;
-            tap_report += ' # SKIP ' + reason;
+            tapReport += ` # SKIP ${reason}`;
         }
-        print(tap_report);
+        print(tapReport);
 
         // Print additional diagnostic info on failure
         if (result.status === 'failed' && result.failedExpectations) {
-            result.failedExpectations.forEach((failedExpectation) => {
+            result.failedExpectations.forEach(failedExpectation => {
                 print('# Message:', _removeNewlines(failedExpectation.message));
                 print('# Stack:');
                 let stackTrace = _filterStack(failedExpectation.stack).trim();
-                print(stackTrace.split('\n').map((str) => '#   ' + str).join('\n'));
+                print(stackTrace.split('\n').map(str => `#   ${str}`).join('\n'));
             });
         }
     }

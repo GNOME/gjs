@@ -5,119 +5,116 @@ const {Gtk} = imports.gi;
 
 Gtk.init(null);
 
-var calc_val = '';
+var calcVal = '';
 
-function update_display() {
-    label.set_markup(`<span size='30000'>${calc_val}</span>`);
+function updateDisplay() {
+    label.set_markup(`<span size='30000'>${calcVal}</span>`);
 
-    if (calc_val === '') {
+    if (calcVal === '')
         label.set_markup("<span size='30000'>0</span>");
-    }
 }
 
 function clear() {
-    calc_val = '';
-    update_display();
+    calcVal = '';
+    updateDisplay();
 }
 
 function backspace() {
-    calc_val = calc_val.substring(0, calc_val.length - 1);
-    update_display();
+    calcVal = calcVal.substring(0, calcVal.length - 1);
+    updateDisplay();
 }
 
-function pressed_equals() {
-    calc_val = calc_val.replace('sin', 'Math.sin');
-    calc_val = calc_val.replace('cos', 'Math.cos');
-    calc_val = calc_val.replace('tan', 'Math.tan');
-    calc_val = eval(calc_val);
+function pressedEquals() {
+    calcVal = calcVal.replace('sin', 'Math.sin');
+    calcVal = calcVal.replace('cos', 'Math.cos');
+    calcVal = calcVal.replace('tan', 'Math.tan');
+    calcVal = eval(calcVal);
     // Avoid ridiculous amounts of precision from toString.
-    if (calc_val == Math.floor(calc_val))
-        calc_val = Math.floor(calc_val);
+    if (calcVal === Math.floor(calcVal))
+        calcVal = Math.floor(calcVal);
     else // bizarrely gjs loses str.toFixed() somehow?!
-        calc_val = Math.floor(calc_val * 10000) / 10000;
-    label.set_markup(`<span size='30000'>${calc_val}</span>`);
+        calcVal = Math.floor(calcVal * 10000) / 10000;
+    label.set_markup(`<span size='30000'>${calcVal}</span>`);
 }
 
-function pressed_operator(button) {
-    calc_val += button.label;
-    update_display();
+function pressedOperator(button) {
+    calcVal += button.label;
+    updateDisplay();
 }
 
-function pressed_number(button) {
-    calc_val = (((calc_val === 0) ? '' : calc_val) + button.label);
-    update_display();
+function pressedNumber(button) {
+    calcVal = (calcVal === 0 ? '' : calcVal) + button.label;
+    updateDisplay();
 }
 
-function swap_sign() {
-    calc_val = ((calc_val[0] == '-') ?
-        calc_val.substring(1) : `-${calc_val}`);
-    update_display();
+function swapSign() {
+    calcVal = calcVal[0] === '-' ? calcVal.substring(1) : `-${calcVal}`;
+    updateDisplay();
 }
 
-function random_num() {
-    calc_val = `${Math.floor(Math.random() * 1000)}`;
-    update_display();
+function randomNum() {
+    calcVal = `${Math.floor(Math.random() * 1000)}`;
+    updateDisplay();
 }
 
-function pack_buttons(buttons, vbox) {
+function packButtons(buttons, vbox) {
     var hbox = new Gtk.HBox();
 
     hbox.homogeneous = true;
 
     vbox.pack_start(hbox, true, true, 2);
 
-    for (let i = 0; i <= 4; i++) {
+    for (let i = 0; i <= 4; i++)
         hbox.pack_start(buttons[i], true, true, 1);
-    }
 }
 
-function create_button(str, func) {
+function createButton(str, func) {
     var btn = new Gtk.Button({label: str});
     btn.connect('clicked', func);
     return btn;
 }
 
-function create_buttons() {
+function createButtons() {
     var vbox = new Gtk.VBox({homogeneous: true});
 
-    pack_buttons([
-        create_button('(', pressed_number),
-        create_button('←', backspace),
-        create_button('↻', random_num),
-        create_button('Clr', clear),
-        create_button('±', swap_sign)
+    packButtons([
+        createButton('(', pressedNumber),
+        createButton('←', backspace),
+        createButton('↻', randomNum),
+        createButton('Clr', clear),
+        createButton('±', swapSign),
     ], vbox);
 
-    pack_buttons([
-        create_button(')', pressed_number),
-        create_button('7', pressed_number),
-        create_button('8', pressed_number),
-        create_button('9', pressed_number),
-        create_button('/', pressed_operator)
+    packButtons([
+        createButton(')', pressedNumber),
+        createButton('7', pressedNumber),
+        createButton('8', pressedNumber),
+        createButton('9', pressedNumber),
+        createButton('/', pressedOperator),
     ], vbox);
 
-    pack_buttons([
-        create_button('sin(', pressed_number),
-        create_button('4', pressed_number),
-        create_button('5', pressed_number),
-        create_button('6', pressed_number),
-        create_button('*', pressed_operator)
+    packButtons([
+        createButton('sin(', pressedNumber),
+        createButton('4', pressedNumber),
+        createButton('5', pressedNumber),
+        createButton('6', pressedNumber),
+        createButton('*', pressedOperator),
     ], vbox);
 
-    pack_buttons([
-        create_button('cos(', pressed_number),
-        create_button('1', pressed_number),
-        create_button('2', pressed_number),
-        create_button('3', pressed_number),
-        create_button('-', pressed_operator)
+    packButtons([
+        createButton('cos(', pressedNumber),
+        createButton('1', pressedNumber),
+        createButton('2', pressedNumber),
+        createButton('3', pressedNumber),
+        createButton('-', pressedOperator),
     ], vbox);
 
-    pack_buttons([
-        create_button('tan(', pressed_number),
-        create_button('0', pressed_number),
-        create_button('.', pressed_number),
-        create_button('=', pressed_equals),
-        create_button('+', pressed_operator)
+    packButtons([
+        createButton('tan(', pressedNumber),
+        createButton('0', pressedNumber),
+        createButton('.', pressedNumber),
+        createButton('=', pressedEquals),
+        createButton('+', pressedOperator),
     ], vbox);
 
     return vbox;
@@ -134,12 +131,12 @@ win.connect('destroy', () => Gtk.main_quit());
 
 var label = new Gtk.Label({label: ''});
 label.set_alignment(1, 0);
-update_display();
+updateDisplay();
 
 var mainvbox = new Gtk.VBox();
 mainvbox.pack_start(label, false, true, 1);
 mainvbox.pack_start(new Gtk.HSeparator(), false, true, 5);
-mainvbox.pack_start(create_buttons(), true, true, 2);
+mainvbox.pack_start(createButtons(), true, true, 2);
 
 win.add(mainvbox);
 win.show_all();

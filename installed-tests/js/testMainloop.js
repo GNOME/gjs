@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-properties */
+
 const Mainloop = imports.mainloop;
 
 describe('Mainloop.timeout_add()', function () {
