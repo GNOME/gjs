@@ -375,14 +375,11 @@ function _init() {
 
     GObject.Object._classInit = function(klass) {
         let gtypename = _createGTypeName(klass);
-        let gflags = klass.hasOwnProperty(GTypeFlags) ?
-            klass[GTypeFlags] : 0;
-        let gobjectInterfaces = klass.hasOwnProperty(interfaces) ?
-            klass[interfaces] : [];
+        let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
+        let gobjectInterfaces = klass.hasOwnProperty(interfaces) ? klass[interfaces] : [];
         let propertiesArray = _propertiesAsArray(klass);
         let parent = Object.getPrototypeOf(klass);
-        let gobjectSignals = klass.hasOwnProperty(signals) ?
-            klass[signals] : [];
+        let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
 
         let newClass = Gi.register_type(parent.prototype, gtypename, gflags,
             gobjectInterfaces, propertiesArray);
@@ -436,11 +433,9 @@ function _init() {
 
     GObject.Interface._classInit = function(klass) {
         let gtypename = _createGTypeName(klass);
-        let gobjectInterfaces = klass.hasOwnProperty(requires) ?
-            klass[requires] : [];
+        let gobjectInterfaces = klass.hasOwnProperty(requires) ? klass[requires] : [];
         let props = _propertiesAsArray(klass);
-        let gobjectSignals = klass.hasOwnProperty(signals) ?
-            klass[signals] : [];
+        let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
 
         let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
             props);

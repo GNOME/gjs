@@ -113,6 +113,7 @@ rules:
     - consistent: true
   object-curly-spacing: error
   object-shorthand: error
+  operator-linebreak: error
   prefer-template: error
   quotes:
     - error
