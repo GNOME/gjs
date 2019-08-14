@@ -28,37 +28,34 @@
 
 #include "libgjs-private/gjs-gtk-util.h"
 
-void
-gjs_gtk_container_child_set_property (GtkContainer *container,
-                                      GtkWidget    *child,
-                                      const gchar  *property,
-                                      const GValue *value)
-{
-    GParamSpec *pspec;
+void gjs_gtk_container_child_set_property(GtkContainer* container,
+                                          GtkWidget* child,
+                                          const char* property,
+                                          const GValue* value) {
+    GParamSpec* pspec;
 
-    pspec = gtk_container_class_find_child_property (G_OBJECT_GET_CLASS (container),
-                                                     property);
+    pspec = gtk_container_class_find_child_property(
+        G_OBJECT_GET_CLASS(container), property);
     if (pspec == NULL) {
-      g_warning ("%s does not have a property called %s",
-                 g_type_name (G_OBJECT_TYPE (container)), property);
-      return;
+        g_warning("%s does not have a property called %s",
+                  g_type_name(G_OBJECT_TYPE(container)), property);
+        return;
     }
 
-    if ((G_VALUE_TYPE (value) == G_TYPE_POINTER) &&
-        (g_value_get_pointer (value) == NULL) &&
-        !g_value_type_transformable (G_VALUE_TYPE (value), pspec->value_type)) {
-        /* Set an empty value. This will happen when we set a NULL value from JS.
-         * Since GJS doesn't know the GParamSpec for this property, it
-         * will just put NULL into a G_TYPE_POINTER GValue, which will later
-         * fail when trying to transform it to the GParamSpec's GType.
+    if ((G_VALUE_TYPE(value) == G_TYPE_POINTER) &&
+        (g_value_get_pointer(value) == NULL) &&
+        !g_value_type_transformable(G_VALUE_TYPE(value), pspec->value_type)) {
+        /* Set an empty value. This will happen when we set a NULL value from
+         * JS. Since GJS doesn't know the GParamSpec for this property, it will
+         * just put NULL into a G_TYPE_POINTER GValue, which will later fail
+         * when trying to transform it to the GParamSpec's GType.
          */
         GValue null_value = G_VALUE_INIT;
-        g_value_init (&null_value, pspec->value_type);
-        gtk_container_child_set_property (container, child,
-                                          property, &null_value);
-        g_value_unset (&null_value);
+        g_value_init(&null_value, pspec->value_type);
+        gtk_container_child_set_property(container, child, property,
+                                         &null_value);
+        g_value_unset(&null_value);
     } else {
-        gtk_container_child_set_property (container, child,
-                                          property, value);
+        gtk_container_child_set_property(container, child, property, value);
     }
 }
