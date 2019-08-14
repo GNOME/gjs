@@ -100,7 +100,9 @@ rules:
   no-trailing-spaces: error
   no-unused-vars:
     - error
-    - varsIgnorePattern: ^unused
+    # Vars use a suffix _ instead of a prefix because of file-scope private vars
+    - varsIgnorePattern: (^unused|_$)
+      argsIgnorePattern: ^(unused|_)
   nonblock-statement-body-position:
     - error
     - below
