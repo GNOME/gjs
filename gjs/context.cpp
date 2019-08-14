@@ -28,6 +28,8 @@
 #include <stdio.h>      // for FILE, fclose, size_t
 #include <string.h>     // for memset
 #include <sys/types.h>  // IWYU pragma: keep
+#include <codecvt>
+#include <locale>
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for getpid
@@ -42,6 +44,8 @@
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
+#include <libsoup/soup.h>
+#include <modules/modules.h>
 
 #ifdef G_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -62,6 +66,7 @@
 #include "gjs/error-types.h"
 #include "gjs/global.h"
 #include "gjs/importer.h"
+#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem.h"
 #include "gjs/native.h"
@@ -69,6 +74,10 @@
 #include "gjs/profiler.h"
 #include "modules/modules.h"
 #include "util/log.h"
+
+using AutoURI = GjsAutoPointer<SoupURI, SoupURI, soup_uri_free>;
+using AutoGHashTable =
+    GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
 
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
@@ -303,6 +312,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
+    gjs->m_id_to_module->trace(trc);
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
@@ -361,6 +371,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing cached JS wrappers");
         m_fundamental_table->clear();
         m_gtype_table->clear();
+        m_id_to_module->clear();
 
         /* Do a full GC here before tearing down, since once we do
          * that we may not have the JS_GetPrivate() to access the
@@ -393,6 +404,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_fundamental_table;
         delete m_gtype_table;
+        delete m_id_to_module;
         delete m_atoms;
 
         /* Tear down JS */
@@ -422,6 +434,385 @@ gjs_context_finalize(GObject *object)
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
     gjs->~GjsContextPrivate();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
+}
+
+bool GjsContextPrivate::eval_module(const char* identifier,
+                                    uint8_t* exit_status_p, GError** error) {
+    bool ret = false;
+
+    bool auto_profile = m_should_profile;
+
+    if (auto_profile &&
+        (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
+        auto_profile = false;
+
+    if (auto_profile)
+        gjs_profiler_start(m_profiler);
+
+    auto it = m_id_to_module->lookup(identifier);
+
+    if (!it.found()) {
+        return false;
+    }
+
+    JSAutoCompartment ac(m_cx, m_global);
+    JSAutoRequest ar(m_cx);
+
+    JS::RootedObject obj(m_cx, it->value().get());
+
+    if (!JS::ModuleInstantiate(m_cx, obj)) {
+        gjs_log_exception(m_cx);
+        g_error("Failed to instantiate module: %s", identifier);
+        return false;
+    }
+
+    bool ok = true;
+
+    if (!JS::ModuleEvaluate(m_cx, obj)) {
+        g_warning("Failed to evaluate module! %s", identifier);
+        ok = false;
+    }
+
+    schedule_gc_if_needed();
+
+    if (JS_IsExceptionPending(m_cx)) {
+        g_warning(
+            "ModuleEvaluation returned true but exception was pending; "
+            "did somebody call gjs_throw() without returning false?");
+        ok = false;
+    }
+
+    gjs_debug(GJS_DEBUG_CONTEXT, "Module evaluation succeeded for module %s.",
+              identifier);
+
+    /* The promise job queue should be drained even on error, to finish
+     * outstanding async tasks before the context is torn down. Drain after
+     * uncaught exceptions have been reported since draining runs callbacks. */
+    {
+        JS::AutoSaveExceptionState saved_exc(m_cx);
+        ok = run_jobs() && ok;
+    }
+
+    if (auto_profile)
+        gjs_profiler_stop(m_profiler);
+
+    if (!ok) {
+        uint8_t code;
+
+        if (should_exit(&code)) {
+            *exit_status_p = code;
+            g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                        "Exit with code %d", code);
+            goto out; /* Don't log anything */
+        }
+
+        if (!JS_IsExceptionPending(m_cx)) {
+            g_critical("Module %s terminated with an uncatchable exception",
+                       identifier);
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Module %s terminated with an uncatchable exception",
+                        identifier);
+        } else {
+            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                        "Module %s threw an exception", identifier);
+        }
+
+        gjs_log_exception(m_cx);
+        /* No exit code from script, but we don't want to exit(0) */
+        *exit_status_p = 1;
+        goto out;
+    }
+
+    if (exit_status_p) {
+        /* Assume success if no integer was returned */
+        *exit_status_p = 0;
+    }
+
+    ret = true;
+
+out:
+    reset_exit();
+    return ret;
+}
+
+/*
+    An internal API for registering modules that returns
+    errors by throwing within the JS context. This allows
+    it to be used as part of the module resolve hook.
+*/
+bool GjsContextPrivate::register_module_inner(const char* identifier,
+                                              const char* filename,
+                                              bool is_internal,
+                                              const char* mod_text,
+                                              size_t mod_len) {
+    auto it = m_id_to_module->lookupForAdd(identifier);
+
+    if (it.found()) {
+        gjs_throw(m_cx, "Module '%s' is already registered", identifier);
+        return false;
+    }
+
+    unsigned int start_line_number = 1;
+
+    JS::CompileOptions options(m_cx);
+    options.setFileAndLine(identifier, start_line_number)
+        .setSourceIsLazy(is_internal);
+
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+    std::u16string utf16_string = convert.from_bytes(mod_text);
+    size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
+
+    JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
+                               utf16_string.size() - offset,
+                               JS::SourceBufferHolder::NoOwnership);
+
+    JS::RootedObject new_module(m_cx);
+
+    if (!CompileModule(m_cx, options, buf, &new_module)) {
+        g_warning("Failed to compile module.");
+        return false;
+    }
+
+    if (filename) {
+        // Since this is a file-based module, be sure to set it's host field
+        JS::RootedValue filename_val(m_cx);
+        if (!gjs_string_from_utf8(m_cx, filename, &filename_val)) {
+            return false;
+        }
+
+        JS::SetModuleHostDefinedField(new_module, filename_val);
+    }
+
+    GjsAutoChar iden = g_strdup(identifier);
+    if (!m_id_to_module->add(it, iden, new_module)) {
+        JS_ReportOutOfMemory(m_cx);
+        return false;
+    }
+
+    return true;
+}
+
+static char* gir_uri_ns(SoupURI* url) {
+    const char* path = soup_uri_get_host(url);
+
+    return g_strdup(path);
+}
+
+static char* gir_uri_version(SoupURI* url) {
+    const char* q = soup_uri_get_query(url);
+
+    if (!q) {
+        return NULL;
+    }
+
+    AutoGHashTable queries = soup_form_decode(q);
+    GjsAutoChar key = g_strdup("v");
+    char* version = (char*)g_hash_table_lookup(queries.get(), key);
+
+    return g_strdup(version);
+}
+
+static bool is_gir_uri(SoupURI* uri) {
+    const char* scheme = soup_uri_get_scheme(uri);
+
+    return scheme && strcmp(scheme, "gi") == 0;
+}
+
+static char* gir_js_mod_ver(const char* ns, const char* version) {
+    return g_strdup_printf(R"js(
+        imports.gi.versions.%s = '%s';
+        import gi from 'gi';
+        export default (gi.%s);
+        )js",
+                           ns, version, ns);
+}
+
+static char* gir_js_mod(const char* ns) {
+    return g_strdup_printf("import gi from \'gi\';\nexport default (gi.%s);",
+                           ns);
+}
+
+bool GjsContextPrivate::module_resolve(const JS::CallArgs& args) {
+    // The module from which the resolve request is coming
+    JS::RootedObject mod_obj(m_cx);
+    // The string identifier of the module we wish to import
+    JS::UniqueChars id;
+
+    args.rval().setNull();
+    if (!gjs_parse_call_args(m_cx, "ModuleResolver", args, "os", "sourceModule",
+                             &mod_obj, "identifier", &id))
+        return false;
+
+    // check if path is relative
+
+    if (id[0] == '.' && (id[1] == '/' || (id[1] == '.' && id[2] == '/'))) {
+        // If a module has a path, we'll have stored it in the host field
+        JS::Value mod_loc_val = JS::GetModuleHostDefinedField(mod_obj);
+
+        JS::UniqueChars mod_loc;
+        if (!gjs_string_to_utf8(m_cx, mod_loc_val, &mod_loc)) {
+            return false;
+        }
+
+        GjsAutoChar mod_dir(g_path_get_dirname(g_strdup(mod_loc.get())));
+
+        GFile* output =
+            g_file_new_for_commandline_arg_and_cwd(id.get(), mod_dir);
+        GjsAutoChar full_path(g_file_get_path(output));
+
+        auto module = m_id_to_module->lookup(full_path.get());
+
+        if (module.found()) {
+            JS::RootedObject obj(m_cx, module->value().get());
+            args.rval().setObject(*(obj));
+            return true;
+        }
+
+        char* mod_text_raw;
+        gsize mod_len;
+        if (!g_file_get_contents(full_path, &mod_text_raw, &mod_len, nullptr)) {
+            gjs_throw(m_cx,
+                      "Attempting to resolve relative import (%s) from "
+                      "non-file module",
+                      full_path.get());
+            return false;
+        }
+
+        GjsAutoChar mod_text(mod_text_raw);
+
+        if (!register_module_inner(full_path, full_path, false, mod_text,
+                                   mod_len))
+            // GjsContextPrivate::_register_module_inner should have already
+            // thrown any relevant errors
+            return false;
+
+        args.rval().setObject(
+            *m_id_to_module->lookup(full_path.get())->value().get());
+        return true;
+    }
+
+    AutoURI uri = soup_uri_new(id.get());
+
+    if (uri.get() && is_gir_uri(uri.get())) {
+        GjsAutoChar ns = gir_uri_ns(uri.get());
+        GjsAutoChar version = gir_uri_version(uri.get());
+
+        if (!ns.get()) {
+            gjs_throw(m_cx, "Attempted to load invalid module path %s",
+                      id.get());
+            return false;
+        }
+
+        GjsAutoChar gir_mod =
+            !version.get() ? gir_js_mod(ns) : gir_js_mod_ver(ns, version.get());
+
+        auto module = m_id_to_module->lookup(id.get());
+
+        if (gir_mod.get() && !module.found()) {
+            register_module(id.get(), id.get(), gir_mod.get(),
+                            strlen(gir_mod.get()), nullptr);
+        }
+    }
+
+    auto module = m_id_to_module->lookup(id.get());
+
+    if (!module.found()) {
+        const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
+        GjsAutoChar filename = g_strdup_printf("%s.js", id.get());
+        GjsAutoChar full_path =
+            g_build_filename(dirname, filename.get(), nullptr);
+        GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+
+        bool exists = g_file_query_exists(gfile, NULL);
+
+        if (!exists) {
+            gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
+                      id.get());
+            return false;
+        }
+
+        char* mod_text_raw;
+        gsize mod_len;
+        GError* err = NULL;
+
+        if (!g_file_load_contents(gfile, NULL, &mod_text_raw, &mod_len, NULL,
+                                  &err)) {
+            gjs_throw(m_cx, "Failed to read internal resource: %s \n%s",
+                      full_path.get(), err->message);
+
+            return false;
+        }
+
+        GjsAutoChar mod_text(mod_text_raw);
+
+        if (!register_module_inner(id.get(), full_path, true, mod_text,
+                                   mod_len))
+            return false;
+
+        args.rval().setObject(*m_id_to_module->lookup(id.get())->value().get());
+
+        return true;
+    }
+
+    args.rval().setObject(*module->value().get());
+    return true;
+}
+
+/*
+    Attempts to register a module, reporting any errors
+    through a combination of false return and error parameter
+*/
+bool GjsContextPrivate::register_module(const char* identifier,
+                                        const char* filename,
+                                        const char* mod_text, size_t mod_len,
+                                        GError** error) {
+    JSAutoRequest ar(m_cx);
+    JSAutoCompartment ac(m_cx, m_global);
+
+    // Module registration uses exceptions to report errors
+    // so we'll store the exception state, clear it, attempt to load the
+    // module, then restore the original exception state.
+    JS::AutoSaveExceptionState exp_state(m_cx);
+
+    if (register_module_inner(identifier, filename, false, mod_text, mod_len))
+        return true;
+
+    // Our message could come from memory owned by us or by the runtime.
+    const char* msg = nullptr;
+
+    JS::RootedValue exc(m_cx);
+    if (JS_GetPendingException(m_cx, &exc)) {
+        JS::RootedObject exc_obj(m_cx, &exc.toObject());
+        JSErrorReport* report = JS_ErrorFromException(m_cx, exc_obj);
+        if (report) {
+            msg = report->message().c_str();
+        } else {
+            JS::RootedString js_message(m_cx, JS::ToString(m_cx, exc));
+
+            if (js_message) {
+                JS::UniqueChars cstr(JS_EncodeStringToUTF8(m_cx, js_message));
+                msg = cstr.get();
+            }
+        }
+    }
+
+    g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                "Error registering module '%s': %s", identifier,
+                msg ? msg : "unknown");
+
+    // We've successfully handled the exception so we can clear it.
+    // This is necessary because AutoSaveExceptionState doesn't erase
+    // exceptions when it restores the previous exception state.
+    JS_ClearPendingException(m_cx);
+
+    return false;
+}
+
+static bool gjs_module_resolve(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    return gjs->module_resolve(args);
 }
 
 static void
@@ -477,6 +868,10 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     if (!m_gtype_table->init())
         g_error("Failed to initialize GType objects table");
 
+    m_id_to_module = new ModuleTable();
+    if (!m_id_to_module->init())
+        g_error("Failed to initialize module table.");
+
     m_atoms = new GjsAtoms();
 
     JS_BeginRequest(m_cx);
@@ -491,6 +886,10 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_global = global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
+
+    JS::RootedFunction mod_resolve(
+        cx, JS_NewFunction(cx, gjs_module_resolve, 2, 0, nullptr));
+    SetModuleResolveHook(cx, mod_resolve);
 
     if (!m_atoms->init_atoms(m_cx)) {
         gjs_log_exception(m_cx);
@@ -856,6 +1255,28 @@ gjs_context_eval(GjsContext   *js_context,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
     return gjs->eval(script, script_len, filename, exit_status_p, error);
+}
+
+gboolean gjs_context_eval_module(GjsContext* js_context, const char* identifier,
+                                 uint8_t* exit_status_p, GError** error) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
+
+    GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    return gjs->eval_module(identifier, exit_status_p, error);
+}
+
+gboolean gjs_context_register_module(GjsContext* js_context,
+                                     const char* identifier,
+                                     const char* filename, const char* mod_text,
+                                     size_t mod_len, GError** error) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
+
+    GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    return gjs->register_module(identifier, filename, mod_text, mod_len, error);
 }
 
 bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
