@@ -76,8 +76,8 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
 });
 
 const [templateFile, stream] = Gio.File.new_tmp(null);
-const base_stream = stream.get_output_stream();
-const out = new Gio.DataOutputStream({base_stream});
+const baseStream = stream.get_output_stream();
+const out = new Gio.DataOutputStream({baseStream});
 out.put_string(createTemplate('Gjs_MyComplexGtkSubclassFromFile'), null);
 out.close(null);
 

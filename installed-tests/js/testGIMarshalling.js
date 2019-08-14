@@ -607,10 +607,10 @@ const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallin
         case -1:
             return true;
         case 0:
-            undefined.throw_type_error();
+            undefined.throwTypeError();
             break;
         case 1:
-            void reference_error;  // eslint-disable-line no-undef
+            void referenceError;  // eslint-disable-line no-undef
             break;
         case 2:
             throw new Gio.IOErrorEnum({

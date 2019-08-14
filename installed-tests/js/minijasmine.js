@@ -84,19 +84,19 @@ class TapReporter {
     }
 
     specDone(result) {
-        let tap_report;
+        let tapReport;
         if (result.status === 'failed') {
             window._jasmineRetval = 1;
-            tap_report = 'not ok';
+            tapReport = 'not ok';
         } else {
-            tap_report = 'ok';
+            tapReport = 'ok';
         }
-        tap_report += ` ${this._specCount} ${result.fullName}`;
+        tapReport += ` ${this._specCount} ${result.fullName}`;
         if (result.status === 'pending' || result.status === 'disabled') {
             let reason = result.pendingReason || result.status;
-            tap_report += ` # SKIP ${reason}`;
+            tapReport += ` # SKIP ${reason}`;
         }
-        print(tap_report);
+        print(tapReport);
 
         // Print additional diagnostic info on failure
         if (result.status === 'failed' && result.failedExpectations) {

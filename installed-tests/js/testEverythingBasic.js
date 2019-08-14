@@ -85,7 +85,7 @@ describe('Life, the Universe and Everything', function () {
             'MAX64': true,   // FAIL: expected 9223372036854776000, got -9223372036854776000
         };
 
-        function run_test(bytes, limit, method_stem) {
+        function runTest(bytes, limit, methodStem) {
             if (skip[limit + bytes])
                 pending("This test doesn't work");
 
@@ -94,7 +94,7 @@ describe('Life, the Universe and Everything', function () {
                     '*cannot be safely stored*');
 
             let val = Limits[bytes][limit];
-            expect(Regress[method_stem + bytes](val)).toBe(val);
+            expect(Regress[methodStem + bytes](val)).toBe(val);
 
             if (bytes === '64')
                 GLib.test_assert_expected_messages_internal('Gjs',
@@ -102,15 +102,15 @@ describe('Life, the Universe and Everything', function () {
         }
         ['8', '16', '32', '64'].forEach(bytes => {
             it(`marshals max value of unsigned ${bytes}-bit integers`, function () {
-                run_test(bytes, 'UMAX', 'test_uint');
+                runTest(bytes, 'UMAX', 'test_uint');
             });
 
             it(`marshals min value of signed ${bytes}-bit integers`, function () {
-                run_test(bytes, 'MIN', 'test_int');
+                runTest(bytes, 'MIN', 'test_int');
             });
 
             it(`marshals max value of signed ${bytes}-bit integers`, function () {
-                run_test(bytes, 'MAX', 'test_int');
+                runTest(bytes, 'MAX', 'test_int');
             });
         });
 

@@ -213,7 +213,7 @@ class Test {
     }
 
     set PropReadWrite(value) {
-        this._propReadWrite = value.deep_unpack();
+        this._propReadWrite = value.deepUnpack();
     }
 
     structArray() {
@@ -257,7 +257,7 @@ class Test {
 const ProxyClass = Gio.DBusProxy.makeProxyWrapper(TestIface);
 
 describe('Exported DBus object', function () {
-    var own_name_id;
+    let ownNameID;
     var test;
     var proxy;
     let loop;
@@ -283,7 +283,7 @@ describe('Exported DBus object', function () {
         loop = new GLib.MainLoop(null, false);
 
         test = new Test();
-        own_name_id = Gio.DBus.session.own_name('org.gnome.gjs.Test',
+        ownNameID = Gio.DBus.session.own_name('org.gnome.gjs.Test',
             Gio.BusNameOwnerFlags.NONE,
             name => {
                 log(`Acquired name ${name}`);
@@ -308,7 +308,7 @@ describe('Exported DBus object', function () {
     afterAll(function () {
         // Not really needed, but if we don't cleanup
         // memory checking will complain
-        Gio.DBus.session.unown_name(own_name_id);
+        Gio.DBus.session.unown_name(ownNameID);
     });
 
     beforeEach(function () {
@@ -318,7 +318,7 @@ describe('Exported DBus object', function () {
     it('can call a remote method', function () {
         proxy.frobateStuffRemote({}, ([result], excp) => {
             expect(excp).toBeNull();
-            expect(result.hello.deep_unpack()).toEqual('world');
+            expect(result.hello.deepUnpack()).toEqual('world');
             loop.quit();
         });
         loop.run();
@@ -343,7 +343,7 @@ describe('Exported DBus object', function () {
 
         otherProxy.frobateStuffRemote({}, ([result], excp) => {
             expect(excp).toBeNull();
-            expect(result.hello.deep_unpack()).toEqual('world');
+            expect(result.hello.deepUnpack()).toEqual('world');
             loop.quit();
         });
         loop.run();
@@ -541,13 +541,13 @@ describe('Exported DBus object', function () {
             expect(result).not.toBeNull();
 
             // verify the fractional part was dropped off int
-            expect(result['anInteger'].deep_unpack()).toEqual(10);
+            expect(result['anInteger'].deepUnpack()).toEqual(10);
 
             // and not dropped off a double
-            expect(result['aDoubleBeforeAndAfter'].deep_unpack()).toEqual(10.5);
+            expect(result['aDoubleBeforeAndAfter'].deepUnpack()).toEqual(10.5);
 
             // check without type conversion
-            expect(result['aDouble'].deep_unpack()).toBe(10.0);
+            expect(result['aDouble'].deepUnpack()).toBe(10.0);
 
             loop.quit();
         });
@@ -638,7 +638,7 @@ describe('Exported DBus object', function () {
             proxy.PropReadWrite = GLib.Variant.new_string(testStr);
         }).not.toThrow();
 
-        expect(proxy.PropReadWrite.deep_unpack()).toEqual(testStr);
+        expect(proxy.PropReadWrite.deepUnpack()).toEqual(testStr);
 
         expect(waitForServerProperty('_propReadWrite', testStr)).toEqual(testStr);
     });

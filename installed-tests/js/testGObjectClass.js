@@ -72,30 +72,30 @@ const MyObject = GObject.registerClass({
         this._constructCalled = true;
     }
 
-    notify_prop() {
+    notifyProp() {
         this._readonly = 'changed';
 
         this.notify('readonly');
     }
 
-    emit_empty() {
+    emitEmpty() {
         this.emit('empty');
     }
 
-    emit_minimal(one, two) {
+    emitMinimal(one, two) {
         this.emit('minimal', one, two);
     }
 
-    emit_full() {
+    emitFull() {
         return this.emit('full');
     }
 
-    emit_detailed() {
+    emitDetailed() {
         this.emit('detailed::one');
         this.emit('detailed::two');
     }
 
-    emit_run_last(callback) {
+    emitRunLast(callback) {
         this._run_last_callback = callback;
         this.emit('run-last');
     }
@@ -122,7 +122,7 @@ const MyAbstractObject = GObject.registerClass({
 const MyApplication = GObject.registerClass({
     Signals: {'custom': {param_types: [GObject.TYPE_INT]}},
 }, class MyApplication extends Gio.Application {
-    emit_custom(n) {
+    emitCustom(n) {
         this.emit('custom', n);
     }
 });
@@ -207,8 +207,8 @@ describe('GObject class with decorator', function () {
         let notifySpy = jasmine.createSpy('notifySpy');
         myInstance.connect('notify::readonly', notifySpy);
 
-        myInstance.notify_prop();
-        myInstance.notify_prop();
+        myInstance.notifyProp();
+        myInstance.notifyProp();
 
         expect(notifySpy).toHaveBeenCalledTimes(2);
     });
@@ -216,7 +216,7 @@ describe('GObject class with decorator', function () {
     it('can define its own signals', function () {
         let emptySpy = jasmine.createSpy('emptySpy');
         myInstance.connect('empty', emptySpy);
-        myInstance.emit_empty();
+        myInstance.emitEmpty();
 
         expect(emptySpy).toHaveBeenCalled();
         expect(myInstance.empty_called).toBeTruthy();
@@ -225,7 +225,7 @@ describe('GObject class with decorator', function () {
     it('passes emitted arguments to signal handlers', function () {
         let minimalSpy = jasmine.createSpy('minimalSpy');
         myInstance.connect('minimal', minimalSpy);
-        myInstance.emit_minimal(7, 5);
+        myInstance.emitMinimal(7, 5);
 
         expect(minimalSpy).toHaveBeenCalledWith(myInstance, 7, 5);
     });
@@ -233,7 +233,7 @@ describe('GObject class with decorator', function () {
     it('can return values from signals', function () {
         let fullSpy = jasmine.createSpy('fullSpy').and.returnValue(42);
         myInstance.connect('full', fullSpy);
-        let result = myInstance.emit_full();
+        let result = myInstance.emitFull();
 
         expect(fullSpy).toHaveBeenCalled();
         expect(result).toEqual(42);
@@ -243,14 +243,14 @@ describe('GObject class with decorator', function () {
         let neverCalledSpy = jasmine.createSpy('neverCalledSpy');
         myInstance.connect('full', () => 42);
         myInstance.connect('full', neverCalledSpy);
-        myInstance.emit_full();
+        myInstance.emitFull();
 
         expect(neverCalledSpy).not.toHaveBeenCalled();
         expect(myInstance.full_default_handler_called).toBeFalsy();
     });
 
     it('gets the return value of the default handler', function () {
-        let result = myInstance.emit_full();
+        let result = myInstance.emitFull();
 
         expect(myInstance.full_default_handler_called).toBeTruthy();
         expect(result).toEqual(79);
@@ -263,7 +263,7 @@ describe('GObject class with decorator', function () {
                 stack.push(1);
             });
         myInstance.connect('run-last', runLastSpy);
-        myInstance.emit_run_last(() => {
+        myInstance.emitRunLast(() => {
             stack.push(2);
         });
 
@@ -276,7 +276,7 @@ describe('GObject class with decorator', function () {
         let customSpy = jasmine.createSpy('customSpy');
         instance.connect('custom', customSpy);
 
-        instance.emit_custom(73);
+        instance.emitCustom(73);
         expect(customSpy).toHaveBeenCalledWith(instance, 73);
     });
 

@@ -71,14 +71,14 @@ function _validateFDVariant(variant, fdList) {
     throw new Error('Assertion failure: this code should not be reached');
 }
 
-function _proxyInvoker(methodName, sync, inSignature, arg_array) {
+function _proxyInvoker(methodName, sync, inSignature, argArray) {
     var replyFunc;
     var flags = 0;
     var cancellable = null;
     let fdList = null;
 
-    /* Convert arg_array to a *real* array */
-    arg_array = Array.prototype.slice.call(arg_array);
+    /* Convert argArray to a *real* array */
+    argArray = Array.prototype.slice.call(argArray);
 
     /* The default replyFunc only logs the responses */
     replyFunc = _logReply;
@@ -87,18 +87,18 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     var minNumberArgs = signatureLength;
     var maxNumberArgs = signatureLength + 4;
 
-    if (arg_array.length < minNumberArgs) {
+    if (argArray.length < minNumberArgs) {
         throw new Error(`Not enough arguments passed for method: ${
-            methodName}. Expected ${minNumberArgs}, got ${arg_array.length}`);
-    } else if (arg_array.length > maxNumberArgs) {
+            methodName}. Expected ${minNumberArgs}, got ${argArray.length}`);
+    } else if (argArray.length > maxNumberArgs) {
         throw new Error(`Too many arguments passed for method ${methodName}. ` +
             `Maximum is ${maxNumberArgs} including one callback, ` +
             'Gio.Cancellable, Gio.UnixFDList, and/or flags');
     }
 
-    while (arg_array.length > signatureLength) {
-        var argNum = arg_array.length - 1;
-        var arg = arg_array.pop();
+    while (argArray.length > signatureLength) {
+        var argNum = argArray.length - 1;
+        var arg = argArray.pop();
         if (typeof(arg) == 'function' && !sync) {
             replyFunc = arg;
         } else if (typeof(arg) == 'number') {
@@ -115,7 +115,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
     }
 
     const inTypeString = `(${inSignature.join('')})`;
-    const inVariant = new GLib.Variant(inTypeString, arg_array);
+    const inVariant = new GLib.Variant(inTypeString, argArray);
     if (inTypeString.includes('h')) {
         if (!fdList)
             throw new Error(`Method ${methodName} with input type containing ` +
@@ -127,7 +127,7 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
         try {
             const [outVariant, outFdList] =
                 proxy.call_with_unix_fd_list_finish(result);
-            replyFunc(outVariant.deep_unpack(), null, outFdList);
+            replyFunc(outVariant.deepUnpack(), null, outFdList);
         } catch (e) {
             replyFunc([], e, null);
         }
@@ -137,8 +137,8 @@ function _proxyInvoker(methodName, sync, inSignature, arg_array) {
         const [outVariant, outFdList] = this.call_with_unix_fd_list_sync(
             methodName, inVariant, flags, -1, fdList, cancellable);
         if (fdList)
-            return [outVariant.deep_unpack(), outFdList];
-        return outVariant.deep_unpack();
+            return [outVariant.deepUnpack(), outFdList];
+        return outVariant.deepUnpack();
     }
 
     return this.call_with_unix_fd_list(methodName, inVariant, flags, -1, fdList,
@@ -164,13 +164,13 @@ function _makeProxyMethod(method, sync) {
     };
 }
 
-function _convertToNativeSignal(proxy, sender_name, signal_name, parameters) {
-    Signals._emit.call(proxy, signal_name, sender_name, parameters.deep_unpack());
+function _convertToNativeSignal(proxy, senderName, signalName, parameters) {
+    Signals._emit.call(proxy, signalName, senderName, parameters.deepUnpack());
 }
 
 function _propertyGetter(name) {
     let value = this.get_cached_property(name);
-    return value ? value.deep_unpack() : null;
+    return value ? value.deepUnpack() : null;
 }
 
 function _propertySetter(name, signature, value) {
@@ -318,13 +318,13 @@ function _makeOutSignature(args) {
     return `${ret})`;
 }
 
-function _handleMethodCall(info, impl, method_name, parameters, invocation) {
+function _handleMethodCall(info, impl, methodName, parameters, invocation) {
     // prefer a sync version if available
-    if (this[method_name]) {
+    if (this[methodName]) {
         let retval;
         try {
             const fdList = invocation.get_message().get_unix_fd_list();
-            retval = this[method_name](...parameters.deep_unpack(), fdList);
+            retval = this[methodName](...parameters.deepUnpack(), fdList);
         } catch (e) {
             if (e instanceof GLib.Error) {
                 invocation.return_gerror(e);
@@ -334,7 +334,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
                     // likely to be a normal JS error
                     name = `org.gnome.gjs.JSError.${name}`;
                 }
-                logError(e, `Exception in method call: ${method_name}`);
+                logError(e, `Exception in method call: ${methodName}`);
                 invocation.return_dbus_error(name, e.message);
             }
             return;
@@ -347,7 +347,7 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
             let outFdList = null;
             if (!(retval instanceof GLib.Variant)) {
                 // attempt packing according to out signature
-                let methodInfo = info.lookup_method(method_name);
+                let methodInfo = info.lookup_method(methodName);
                 let outArgs = methodInfo.out_args;
                 let outSignature = _makeOutSignature(outArgs);
                 if (outSignature.includes('h') &&
@@ -366,29 +366,29 @@ function _handleMethodCall(info, impl, method_name, parameters, invocation) {
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
                 'Service implementation returned an incorrect value type');
         }
-    } else if (this[`${method_name}Async`]) {
+    } else if (this[`${methodName}Async`]) {
         const fdList = invocation.get_message().get_unix_fd_list();
-        this[`${method_name}Async`](parameters.deep_unpack(), invocation, fdList);
+        this[`${methodName}Async`](parameters.deepUnpack(), invocation, fdList);
     } else {
-        log(`Missing handler for DBus method ${method_name}`);
+        log(`Missing handler for DBus method ${methodName}`);
         invocation.return_gerror(new Gio.DBusError({
             code: Gio.DBusError.UNKNOWN_METHOD,
-            message: `Method ${method_name} is not implemented`,
+            message: `Method ${methodName} is not implemented`,
         }));
     }
 }
 
-function _handlePropertyGet(info, impl, property_name) {
-    let propInfo = info.lookup_property(property_name);
-    let jsval = this[property_name];
+function _handlePropertyGet(info, impl, propertyName) {
+    let propInfo = info.lookup_property(propertyName);
+    let jsval = this[propertyName];
     if (jsval != undefined)
         return new GLib.Variant(propInfo.signature, jsval);
     else
         return null;
 }
 
-function _handlePropertySet(info, impl, property_name, new_value) {
-    this[property_name] = new_value.deep_unpack();
+function _handlePropertySet(info, impl, propertyName, newValue) {
+    this[propertyName] = newValue.deepUnpack();
 }
 
 function _wrapJSObject(interfaceInfo, jsObj) {
@@ -400,14 +400,14 @@ function _wrapJSObject(interfaceInfo, jsObj) {
     info.cache_build();
 
     var impl = new GjsPrivate.DBusImplementation({g_interface_info: info});
-    impl.connect('handle-method-call', function(impl, method_name, parameters, invocation) {
-        return _handleMethodCall.call(jsObj, info, impl, method_name, parameters, invocation);
+    impl.connect('handle-method-call', function(impl, methodName, parameters, invocation) {
+        return _handleMethodCall.call(jsObj, info, impl, methodName, parameters, invocation);
     });
-    impl.connect('handle-property-get', function(impl, property_name) {
-        return _handlePropertyGet.call(jsObj, info, impl, property_name);
+    impl.connect('handle-property-get', function(impl, propertyName) {
+        return _handlePropertyGet.call(jsObj, info, impl, propertyName);
     });
-    impl.connect('handle-property-set', function(impl, property_name, value) {
-        return _handlePropertySet.call(jsObj, info, impl, property_name, value);
+    impl.connect('handle-property-set', function(impl, propertyName, value) {
+        return _handlePropertySet.call(jsObj, info, impl, propertyName, value);
     });
 
     return impl;

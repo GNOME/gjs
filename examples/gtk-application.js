@@ -49,7 +49,7 @@ var ExampleApplication = GObject.registerClass({
     }
     
     // Example signal emission
-    emit_examplesig(number) {
+    emitExamplesig(number) {
         this.emit('examplesig', number);
     }
     
@@ -63,7 +63,7 @@ var ExampleApplication = GObject.registerClass({
         });
         
         exampleAction.connect('activate', (action, param) => {
-            param = param.deep_unpack().toString();
+            param = param.deepUnpack().toString();
             
             if (param === 'exampleParameter') {
                 log('Yes!');

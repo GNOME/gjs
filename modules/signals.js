@@ -126,7 +126,7 @@ function _emit(name, ...args) {
     // which does pass it in. Also if we pass in the emitter here,
     // people don't create closures with the emitter in them,
     // which would be a cycle.
-    let arg_array = [this, ...args];
+    let argArray = [this, ...args];
 
     length = handlers.length;
     for (i = 0; i < length; ++i) {
@@ -134,7 +134,7 @@ function _emit(name, ...args) {
         if (!connection.disconnected) {
             try {
                 // since we pass "null" for this, the global object will be used.
-                let ret = connection.callback.apply(null, arg_array);
+                let ret = connection.callback.apply(null, argArray);
 
                 // if the callback returns true, we don't call the next
                 // signal handlers

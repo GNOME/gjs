@@ -108,7 +108,7 @@ describe('Gio.Settings overrides', function () {
                 settings.set_boolean('fullscreen', true);
             }).not.toThrow();
 
-            expect(settings.get_value('window-size').deep_unpack()).toEqual([100, 100]);
+            expect(settings.get_value('window-size').deepUnpack()).toEqual([100, 100]);
             expect(settings.get_boolean('maximized')).toEqual(true);
             expect(settings.get_boolean('fullscreen')).toEqual(true);
 
@@ -117,9 +117,9 @@ describe('Gio.Settings overrides', function () {
             }).not.toThrow();
 
             KEYS.forEach(key => expect(settings.get_user_value(key)).toBeNull());
-            expect(settings.get_default_value('window-size').deep_unpack()).toEqual([-1, -1]);
-            expect(settings.get_default_value('maximized').deep_unpack()).toEqual(false);
-            expect(settings.get_default_value('fullscreen').deep_unpack()).toEqual(false);
+            expect(settings.get_default_value('window-size').deepUnpack()).toEqual([-1, -1]);
+            expect(settings.get_default_value('maximized').deepUnpack()).toEqual(false);
+            expect(settings.get_default_value('fullscreen').deepUnpack()).toEqual(false);
 
             const foo = new Foo({boolval: true});
             settings.bind('maximized', foo, 'boolval', Gio.SettingsBindFlags.GET);

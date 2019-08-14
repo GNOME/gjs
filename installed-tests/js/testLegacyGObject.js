@@ -817,11 +817,11 @@ const Legacy = new Lang.Class({
         this._property = value - 2;
     },
 
-    get override_property() {
-        return this._override_property + 1;
+    get overrideProperty() {
+        return this._overrideProperty + 1;
     },
-    set override_property(value) {
-        this._override_property = value - 2;
+    set overrideProperty(value) {
+        this._overrideProperty = value - 2;
     },
 });
 Legacy.staticMethod = function () {};
@@ -839,11 +839,11 @@ const Shiny = GObject.registerClass({
 
     overrideMe() {}
 
-    get override_property() {
-        return this._override_property + 2;
+    get overrideProperty() {
+        return this._overrideProperty + 2;
     }
-    set override_property(value) {
-        this._override_property = value - 1;
+    set overrideProperty(value) {
+        this._overrideProperty = value - 1;
     }
 });
 
@@ -889,8 +889,8 @@ describe('ES6 GObject class inheriting from GObject.Class', function () {
     });
 
     it('overrides a property from the parent class', function () {
-        instance.override_property = 42;
-        expect(instance.override_property).toEqual(43);
+        instance.overrideProperty = 42;
+        expect(instance.overrideProperty).toEqual(43);
     });
 
     it('inherits a signal from the parent class', function () {

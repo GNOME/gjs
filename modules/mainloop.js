@@ -49,6 +49,7 @@ function quit(name) {
     loop.quit();
 }
 
+// eslint-disable-next-line camelcase
 function idle_source(handler, priority) {
     let s = GLib.idle_source_new();
     GObject.source_set_closure(s, handler);
@@ -57,10 +58,12 @@ function idle_source(handler, priority) {
     return s;
 }
 
+// eslint-disable-next-line camelcase
 function idle_add(handler, priority) {
     return idle_source(handler, priority).attach(null);
 }
 
+// eslint-disable-next-line camelcase
 function timeout_source(timeout, handler, priority) {
     let s = GLib.timeout_source_new(timeout);
     GObject.source_set_closure(s, handler);
@@ -69,6 +72,7 @@ function timeout_source(timeout, handler, priority) {
     return s;
 }
 
+// eslint-disable-next-line camelcase
 function timeout_seconds_source(timeout, handler, priority) {
     let s = GLib.timeout_source_new_seconds(timeout);
     GObject.source_set_closure(s, handler);
@@ -77,14 +81,17 @@ function timeout_seconds_source(timeout, handler, priority) {
     return s;
 }
 
+// eslint-disable-next-line camelcase
 function timeout_add(timeout, handler, priority) {
     return timeout_source(timeout, handler, priority).attach(null);
 }
 
+// eslint-disable-next-line camelcase
 function timeout_add_seconds(timeout, handler, priority) {
     return timeout_seconds_source(timeout, handler, priority).attach(null);
 }
 
+// eslint-disable-next-line camelcase
 function source_remove(id) {
     return GLib.source_remove(id);
 }

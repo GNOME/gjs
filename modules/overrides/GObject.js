@@ -223,72 +223,72 @@ function _init() {
 
     _makeDummyClass(GObject, 'Type', 'GTYPE', 'GType', GObject.type_from_name);
 
-    GObject.ParamSpec.char = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_char(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.char = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_char(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.uchar = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_uchar(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.uchar = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_uchar(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.int = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_int(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.int = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_int(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.uint = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_uint(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.uint = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_uint(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.long = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_long(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.long = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_long(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.ulong = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_ulong(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.ulong = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_ulong(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.int64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_int64(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.int64 = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_int64(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.uint64 = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_uint64(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.uint64 = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_uint64(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.float = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_float(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.float = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_float(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.boolean = function(name, nick, blurb, flags, default_value) {
-        return GObject.param_spec_boolean(name, nick, blurb, default_value, flags);
+    GObject.ParamSpec.boolean = function(name, nick, blurb, flags, defaultValue) {
+        return GObject.param_spec_boolean(name, nick, blurb, defaultValue, flags);
     };
 
-    GObject.ParamSpec.flags = function(name, nick, blurb, flags, flags_type, default_value) {
-        return GObject.param_spec_flags(name, nick, blurb, flags_type, default_value, flags);
+    GObject.ParamSpec.flags = function(name, nick, blurb, flags, flagsType, defaultValue) {
+        return GObject.param_spec_flags(name, nick, blurb, flagsType, defaultValue, flags);
     };
 
-    GObject.ParamSpec.enum = function(name, nick, blurb, flags, enum_type, default_value) {
-        return GObject.param_spec_enum(name, nick, blurb, enum_type, default_value, flags);
+    GObject.ParamSpec.enum = function(name, nick, blurb, flags, enumType, defaultValue) {
+        return GObject.param_spec_enum(name, nick, blurb, enumType, defaultValue, flags);
     };
 
-    GObject.ParamSpec.double = function(name, nick, blurb, flags, minimum, maximum, default_value) {
-        return GObject.param_spec_double(name, nick, blurb, minimum, maximum, default_value, flags);
+    GObject.ParamSpec.double = function(name, nick, blurb, flags, minimum, maximum, defaultValue) {
+        return GObject.param_spec_double(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
-    GObject.ParamSpec.string = function(name, nick, blurb, flags, default_value) {
-        return GObject.param_spec_string(name, nick, blurb, default_value, flags);
+    GObject.ParamSpec.string = function(name, nick, blurb, flags, defaultValue) {
+        return GObject.param_spec_string(name, nick, blurb, defaultValue, flags);
     };
 
-    GObject.ParamSpec.boxed = function(name, nick, blurb, flags, boxed_type) {
-        return GObject.param_spec_boxed(name, nick, blurb, boxed_type, flags);
+    GObject.ParamSpec.boxed = function(name, nick, blurb, flags, boxedType) {
+        return GObject.param_spec_boxed(name, nick, blurb, boxedType, flags);
     };
 
-    GObject.ParamSpec.object = function(name, nick, blurb, flags, object_type) {
-        return GObject.param_spec_object(name, nick, blurb, object_type, flags);
+    GObject.ParamSpec.object = function(name, nick, blurb, flags, objectType) {
+        return GObject.param_spec_object(name, nick, blurb, objectType, flags);
     };
 
-    GObject.ParamSpec.param = function(name, nick, blurb, flags, param_type) {
-        return GObject.param_spec_param(name, nick, blurb, param_type, flags);
+    GObject.ParamSpec.param = function(name, nick, blurb, flags, paramType) {
+        return GObject.param_spec_param(name, nick, blurb, paramType, flags);
     };
 
     GObject.ParamSpec.override = Gi.override_property;

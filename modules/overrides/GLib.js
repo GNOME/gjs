@@ -24,7 +24,7 @@ let GLib;
 
 const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o', 'g'];
 
-function _read_single_type(signature, forceSimple) {
+function _readSingleType(signature, forceSimple) {
     let char = signature.shift();
     let isSimple = false;
 
@@ -35,10 +35,10 @@ function _read_single_type(signature, forceSimple) {
         isSimple = true;
 
     if (char == 'm' || char == 'a')
-        return [char].concat(_read_single_type(signature, false));
+        return [char].concat(_readSingleType(signature, false));
     if (char == '{') {
-        let key = _read_single_type(signature, true);
-        let val = _read_single_type(signature, false);
+        let key = _readSingleType(signature, true);
+        let val = _readSingleType(signature, false);
         let close = signature.shift();
         if (close != '}')
             throw new TypeError('Invalid GVariant signature for type DICT_ENTRY (expected "}"');
@@ -54,7 +54,7 @@ function _read_single_type(signature, forceSimple) {
                 signature.shift();
                 return res.concat(next);
             }
-            let el = _read_single_type(signature);
+            let el = _readSingleType(signature);
             res = res.concat(el);
         }
     }
@@ -73,7 +73,7 @@ function _makeBytes(byteArray) {
         return new GLib.Bytes(byteArray);
 }
 
-function _pack_variant(signature, value) {
+function _packVariant(signature, value) {
     if (signature.length == 0)
         throw new TypeError('GVariant signature cannot be empty');
 
@@ -109,11 +109,12 @@ function _pack_variant(signature, value) {
         return GLib.Variant.new_variant(value);
     case 'm':
         if (value != null)
-            return GLib.Variant.new_maybe(null, _pack_variant(signature, value));
+            return GLib.Variant.new_maybe(null, _packVariant(signature, value));
         else
-            return GLib.Variant.new_maybe(new GLib.VariantType(_read_single_type(signature, false).join('')), null);
+            return GLib.Variant.new_maybe(new GLib.VariantType(
+                _readSingleType(signature, false).join('')), null);
     case 'a': {
-        let arrayType = _read_single_type(signature, false);
+        let arrayType = _readSingleType(signature, false);
         if (arrayType[0] == 's') {
             // special case for array of strings
             return GLib.Variant.new_strv(value);
@@ -138,13 +139,13 @@ function _pack_variant(signature, value) {
             // special case for dictionaries
             for (let key in value) {
                 let copy = [].concat(arrayType);
-                let child = _pack_variant(copy, [key, value[key]]);
+                let child = _packVariant(copy, [key, value[key]]);
                 arrayValue.push(child);
             }
         } else {
             for (let i = 0; i < value.length; i++) {
                 let copy = [].concat(arrayType);
-                let child = _pack_variant(copy, value[i]);
+                let child = _packVariant(copy, value[i]);
                 arrayValue.push(child);
             }
         }
@@ -157,7 +158,7 @@ function _pack_variant(signature, value) {
             let next = signature[0];
             if (next == ')')
                 break;
-            children.push(_pack_variant(signature, value[i]));
+            children.push(_packVariant(signature, value[i]));
         }
 
         if (signature[0] != ')')
@@ -166,8 +167,8 @@ function _pack_variant(signature, value) {
         return GLib.Variant.new_tuple(children);
     }
     case '{': {
-        let key = _pack_variant(signature, value[0]);
-        let child = _pack_variant(signature, value[1]);
+        let key = _packVariant(signature, value[0]);
+        let child = _packVariant(signature, value[1]);
 
         if (signature[0] != '}')
             throw new TypeError('Invalid GVariant signature for type DICT_ENTRY (expected "}")');
@@ -180,7 +181,7 @@ function _pack_variant(signature, value) {
     }
 }
 
-function _unpack_variant(variant, deep, recursive = false) {
+function _unpackVariant(variant, deep, recursive = false) {
     switch (String.fromCharCode(variant.classify())) {
     case 'b':
         return variant.get_boolean();
@@ -210,13 +211,13 @@ function _unpack_variant(variant, deep, recursive = false) {
     case 'v': {
         const ret = variant.get_variant();
         if (deep && recursive && ret instanceof GLib.Variant)
-            return _unpack_variant(ret, deep, recursive);
+            return _unpackVariant(ret, deep, recursive);
         return ret;
     }
     case 'm': {
         let val = variant.get_maybe();
         if (deep && val)
-            return _unpack_variant(val, deep, recursive);
+            return _unpackVariant(val, deep, recursive);
         else
             return val;
     }
@@ -228,11 +229,11 @@ function _unpack_variant(variant, deep, recursive = false) {
             for (let i = 0; i < nElements; i++) {
                 // always unpack the dictionary entry, and always unpack
                 // the key (or it cannot be added as a key)
-                let val = _unpack_variant(variant.get_child_value(i), deep,
+                let val = _unpackVariant(variant.get_child_value(i), deep,
                     recursive);
                 let key;
                 if (!deep)
-                    key = _unpack_variant(val[0], true);
+                    key = _unpackVariant(val[0], true);
                 else
                     key = val[0];
                 ret[key] = val[1];
@@ -252,7 +253,7 @@ function _unpack_variant(variant, deep, recursive = false) {
         for (let i = 0; i < nElements; i++) {
             let val = variant.get_child_value(i);
             if (deep)
-                ret.push(_unpack_variant(val, deep, recursive));
+                ret.push(_unpackVariant(val, deep, recursive));
             else
                 ret.push(val);
         }
@@ -278,7 +279,7 @@ function _init() {
     this.Variant._new_internal = function(sig, value) {
         let signature = Array.prototype.slice.call(sig);
 
-        let variant = _pack_variant(signature, value);
+        let variant = _packVariant(signature, value);
         if (signature.length != 0)
             throw new TypeError('Invalid GVariant signature (more than one single complete type)');
 
@@ -290,17 +291,17 @@ function _init() {
         return new GLib.Variant(sig, value);
     };
     this.Variant.prototype.unpack = function() {
-        return _unpack_variant(this, false);
+        return _unpackVariant(this, false);
     };
     this.Variant.prototype.deepUnpack = function() {
-        return _unpack_variant(this, true);
+        return _unpackVariant(this, true);
     };
     // backwards compatibility alias
     this.Variant.prototype.deep_unpack = this.Variant.prototype.deepUnpack;
 
     // Note: discards type information, if the variant contains any 'v' types
     this.Variant.prototype.recursiveUnpack = function () {
-        return _unpack_variant(this, true, true);
+        return _unpackVariant(this, true, true);
     };
 
     this.Variant.prototype.toString = function() {
@@ -327,6 +328,6 @@ function _init() {
         const variant = this.lookup_value(key, variantType);
         if (variant === null)
             return null;
-        return _unpack_variant(variant, deep);
+        return _unpackVariant(variant, deep);
     };
 }

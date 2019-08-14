@@ -299,15 +299,14 @@ describe('Tweener', function () {
     });
 
     it('can register special modifiers for properties', function () {
-        Tweener.registerSpecialPropertyModifier('discrete',
-            discrete_modifier,
-            discrete_get);
-        function discrete_modifier(props) {
+        Tweener.registerSpecialPropertyModifier('discrete', discreteModifier,
+            discreteGet);
+        function discreteModifier(props) {
             return props.map(function (prop) {
                 return {name: prop, parameters: null};
             });
         }
-        function discrete_get(begin, end, time) {
+        function discreteGet(begin, end, time) {
             return Math.floor(begin + time * (end - begin));
         }
 
