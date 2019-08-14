@@ -1,4 +1,4 @@
-/* global Debugger, debuggee, quit, readline, uneval */
+/* global debuggee, quit, readline, uneval */
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*-
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -34,16 +34,15 @@ function dvToString(v) {
         return 'undefined';  // uneval(undefined) === '(void 0)', confusing
     if (v === null)
         return 'null';  // typeof null === 'object', so avoid that case
-    return (typeof v !== 'object' || v === null) ? uneval(v) : `[object ${v.class}]`;
+    return typeof v !== 'object' || v === null ? uneval(v) : `[object ${v.class}]`;
 }
 
 function summarizeObject(dv) {
     const obj = {};
     for (var name of dv.getOwnPropertyNames()) {
         var v = dv.getOwnPropertyDescriptor(name).value;
-        if (v instanceof Debugger.Object) {
+        if (v instanceof Debugger.Object)
             v = '(...)';
-        }
         obj[name] = v;
     }
     return obj;
@@ -90,31 +89,33 @@ function showDebuggeeValue(dv, style = {pretty: options.pretty}) {
 Object.defineProperty(Debugger.Frame.prototype, 'num', {
     configurable: true,
     enumerable: false,
-    get: function() {
+    get() {
         let i = 0;
-        for (var f = topFrame; f && f !== this; f = f.older)
+        let f;
+        for (f = topFrame; f && f !== this; f = f.older)
             i++;
         return f === null ? undefined : i;
-    }
+    },
 });
 
-Debugger.Frame.prototype.describeFrame = function() {
-    if (this.type == 'call')
+Debugger.Frame.prototype.describeFrame = function () {
+    if (this.type === 'call') {
         return `${this.callee.name || '<anonymous>'}(${
             this.arguments.map(dvToString).join(', ')})`;
-    else if (this.type == 'global')
+    } else if (this.type === 'global') {
         return 'toplevel';
-    else
+    } else {
         return `${this.type} code`;
+    }
 };
 
-Debugger.Frame.prototype.describePosition = function() {
+Debugger.Frame.prototype.describePosition = function () {
     if (this.script)
         return this.script.describeOffset(this.offset);
     return null;
 };
 
-Debugger.Frame.prototype.describeFull = function() {
+Debugger.Frame.prototype.describeFull = function () {
     const fr = this.describeFrame();
     const pos = this.describePosition();
     if (pos)
@@ -125,12 +126,12 @@ Debugger.Frame.prototype.describeFull = function() {
 Object.defineProperty(Debugger.Frame.prototype, 'line', {
     configurable: true,
     enumerable: false,
-    get: function() {
+    get() {
         if (this.script)
             return this.script.getOffsetLocation(this.offset).lineNumber;
         else
             return null;
-    }
+    },
 });
 
 Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
@@ -198,7 +199,7 @@ backtraceCommand.helpText = `USAGE
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
-    if (space == -1) {
+    if (space === -1) {
         print('Invalid set <option> <value> command');
     } else {
         var name = rest.substr(0, space);
@@ -228,9 +229,9 @@ function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
     if (!m)
         return [s, style];
-    if (m[1].indexOf('p') != -1)
+    if (m[1].startsWith('p'))
         style.pretty = true;
-    if (m[1].indexOf('b') != -1)
+    if (m[1].startsWith('b'))
         style.brief = true;
     return [s.substr(m[0].length).trimLeft(), style];
 }
@@ -350,7 +351,7 @@ PARAMETER
 function frameCommand(rest) {
     let n, f;
     if (rest.match(/[0-9]+/)) {
-        n = +rest;
+        n = Number(rest);
         f = topFrame;
         if (f === null) {
             print('No stack.');
@@ -367,11 +368,10 @@ function frameCommand(rest) {
         focusedFrame = f;
         showFrame(f, n);
     } else if (rest === '') {
-        if (topFrame === null) {
+        if (topFrame === null)
             print('No stack.');
-        } else {
+        else
             showFrame();
-        }
     } else {
         print('do what now?');
     }
@@ -384,11 +384,11 @@ PARAMETER
     · frame_num: frame to jump to`;
 
 function upCommand() {
-    if (focusedFrame === null)
+    if (focusedFrame === null) {
         print('No stack.');
-    else if (focusedFrame.older === null)
+    } else if (focusedFrame.older === null) {
         print('Initial frame selected; you cannot go up.');
-    else {
+    } else {
         focusedFrame.older.younger = focusedFrame;
         focusedFrame = focusedFrame.older;
         showFrame();
@@ -399,11 +399,11 @@ upCommand.helpText = `USAGE
     up`;
 
 function downCommand() {
-    if (focusedFrame === null)
+    if (focusedFrame === null) {
         print('No stack.');
-    else if (!focusedFrame.younger)
+    } else if (!focusedFrame.younger) {
         print('Youngest frame selected; you cannot go down.');
-    else {
+    } else {
         focusedFrame = focusedFrame.younger;
         showFrame();
     }
@@ -471,7 +471,7 @@ function doStepOrNext(kind) {
 
     function stepEntered(newFrame) {
         print(`entered frame: ${newFrame.describeFull()}`);
-        if (!kind.until || newFrame.line == kind.stopLine) {
+        if (!kind.until || newFrame.line === kind.stopLine) {
             topFrame = focusedFrame = newFrame;
             return repl();
         }
@@ -489,17 +489,16 @@ function doStepOrNext(kind) {
             stop = true;
         } else if (kind.until) {
             // running until a given line is reached
-            if (this.line == kind.stopLine)
+            if (this.line === kind.stopLine)
                 stop = true;
-        } else {
+        } else if (this.line !== startLine || this !== startFrame) {
             // regular step; stop whenever the line number changes
-            if ((this.line != startLine) || (this != startFrame))
-                stop = true;
+            stop = true;
         }
 
         if (stop) {
             topFrame = focusedFrame = this;
-            if (focusedFrame != startFrame)
+            if (focusedFrame !== startFrame)
                 print(focusedFrame.describeFull());
             return repl();
         }
@@ -568,7 +567,7 @@ function findBreakpointOffsets(line, currentScript) {
 
     return scripts
         .map(script => ({script, offsets: script.getLineOffsets(line)}))
-        .filter(({offsets}) => offsets.length !== 0);
+        .filter(({offsets: o}) => o.length !== 0);
 }
 
 class BreakpointHandler {
@@ -667,7 +666,7 @@ var commandArray = [
 // clang-format on
 var currentCmd = null;
 for (var i = 0; i < commandArray.length; i++) {
-    var cmd = commandArray[i];
+    let cmd = commandArray[i];
     if (typeof cmd === 'string')
         commands[cmd] = currentCmd;
     else
@@ -677,15 +676,14 @@ for (var i = 0; i < commandArray.length; i++) {
 function _printCommandsList() {
     print('Available commands:');
 
-    var printcmd = function (cmd) {
+    function printcmd(cmd) {
         print(`  ${cmd.aliases.join(', ')} -- ${cmd.summary}`);
-    };
+    }
 
     var cmdGroups = _groupCommands();
 
-    for (var group of cmdGroups) {
+    for (var group of cmdGroups)
         printcmd(group);
-    }
 }
 
 function _groupCommands() {
@@ -696,14 +694,14 @@ function _groupCommands() {
         if ([commentCommand, evalCommand].includes(cmd) ||
             ['#', '!'].includes(cmd))
             continue;
-        
+
         if (typeof cmd === 'string') {
             groups[groups.length - 1]['aliases'].push(cmd);
         } else {
             groups.push({
                 summary: cmd.summary,
                 helpText: cmd.helpText,
-                aliases: [cmd.name.replace(/Command$/, '')]
+                aliases: [cmd.name.replace(/Command$/, '')],
             });
         }
     }
@@ -715,9 +713,8 @@ function _printCommand(cmd) {
 
     if (cmd.aliases.length > 1) {
         print('\nALIASES');
-        for (var alias of cmd.aliases) {
+        for (var alias of cmd.aliases)
             print(`    · ${alias}`);
-        }
     }
 }
 
@@ -726,13 +723,12 @@ function helpCommand(cmd) {
         _printCommandsList();
     } else {
         var cmdGroups = _groupCommands();
-        var command = cmdGroups.find((c) => c.aliases.includes(cmd));
+        var command = cmdGroups.find(c => c.aliases.includes(cmd));
 
-        if (command && command.helpText) {
+        if (command && command.helpText)
             _printCommand(command);
-        } else {
+        else
             print(`No help found for ${cmd} command`);
-        }
     }
 }
 helpCommand.summary = 'Show help for the specified command else list all commands';
@@ -754,7 +750,7 @@ PARAMETERS
 //
 function breakcmd(cmd) {
     cmd = cmd.trimLeft();
-    if ("!@#$%^&*_+=/?.,<>:;'\"".indexOf(cmd.substr(0, 1)) != -1)
+    if ("!@#$%^&*_+=/?.,<>:;'\"".includes(cmd.substr(0, 1)))
         return [cmd.substr(0, 1), cmd.substr(1).trimLeft()];
     var m = /\s+|(?=\/)/.exec(cmd);
     if (m === null)
@@ -802,15 +798,16 @@ function repl() {
         try {
             prevcmd = cmd;
             var result = runcmd(cmd);
-            if (result === undefined)
-                void result;  // do nothing, return to prompt
-            else if (Array.isArray(result))
+            if (result === undefined) {
+                // do nothing, return to prompt
+            } else if (Array.isArray(result)) {
                 return result[0];
-            else if (result === null)
+            } else if (result === null) {
                 return null;
-            else
+            } else {
                 throw new Error(
                     `Internal error: result of runcmd wasn't array or undefined: ${result}`);
+            }
         } catch (exc) {
             logError(exc, '*** Internal error: exception in the debugger code');
         }
@@ -824,12 +821,12 @@ function onInitialEnterFrame(frame) {
 }
 
 var dbg = new Debugger();
-dbg.onNewPromise = function({promiseID, promiseAllocationSite}) {
+dbg.onNewPromise = function ({promiseID, promiseAllocationSite}) {
     const site = promiseAllocationSite.toString().split('\n')[0];
     print(`Promise ${promiseID} started from ${site}`);
     return undefined;
 };
-dbg.onPromiseSettled = function(promise) {
+dbg.onPromiseSettled = function (promise) {
     let message = `Promise ${promise.promiseID} ${promise.promiseState} `;
     message += `after ${promise.promiseTimeToResolution.toFixed(3)} ms`;
     let brief, full;
@@ -846,14 +843,14 @@ dbg.onPromiseSettled = function(promise) {
         print(full);
     return undefined;
 };
-dbg.onDebuggerStatement = function(frame) {
+dbg.onDebuggerStatement = function (frame) {
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print(`Debugger statement, ${frame.describeFull()}`);
         return repl();
     });
 };
-dbg.onExceptionUnwind = function(frame, value) {
+dbg.onExceptionUnwind = function (frame, value) {
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print("Unwinding due to exception. (Type 'c' to continue unwinding.)");

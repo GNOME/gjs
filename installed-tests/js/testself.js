@@ -3,8 +3,8 @@ describe('Test harness internal consistency', function () {
         var someUndefined;
         var someNumber = 1;
         var someOtherNumber = 42;
-        var someString = "hello";
-        var someOtherString = "world";
+        var someString = 'hello';
+        var someOtherString = 'world';
 
         expect(true).toBeTruthy();
         expect(false).toBeFalsy();
@@ -22,7 +22,9 @@ describe('Test harness internal consistency', function () {
         expect(0 / 0).toBeNaN();
         expect(someNumber).not.toBeNaN();
 
-        expect(() => { throw {}; }).toThrow();
+        expect(() => {
+            throw new Error();
+        }).toThrow();
 
         expect(() => expect(true).toThrow()).toThrow();
         expect(() => true).not.toThrow();

@@ -44,59 +44,57 @@ function setlocale(category, locale) {
     return GjsPrivate.setlocale(category, locale);
 }
 
-function textdomain(domain) {
-    return GjsPrivate.textdomain(domain);
+function textdomain(dom) {
+    return GjsPrivate.textdomain(dom);
 }
-function bindtextdomain(domain, location) {
-    return GjsPrivate.bindtextdomain(domain, location);
+function bindtextdomain(dom, location) {
+    return GjsPrivate.bindtextdomain(dom, location);
 }
 
 function gettext(msgid) {
     return GLib.dgettext(null, msgid);
 }
-function dgettext(domain, msgid) {
-    return GLib.dgettext(domain, msgid);
+function dgettext(dom, msgid) {
+    return GLib.dgettext(dom, msgid);
 }
-function dcgettext(domain, msgid, category) {
-    return GLib.dcgettext(domain, msgid, category);
+function dcgettext(dom, msgid, category) {
+    return GLib.dcgettext(dom, msgid, category);
 }
 
 function ngettext(msgid1, msgid2, n) {
     return GLib.dngettext(null, msgid1, msgid2, n);
 }
-function dngettext(domain, msgid1, msgid2, n) {
-    return GLib.dngettext(domain, msgid1, msgid2, n);
+function dngettext(dom, msgid1, msgid2, n) {
+    return GLib.dngettext(dom, msgid1, msgid2, n);
 }
 // FIXME: missing dcngettext ?
 
 function pgettext(context, msgid) {
     return GLib.dpgettext2(null, context, msgid);
 }
-function dpgettext(domain, context, msgid) {
-    return GLib.dpgettext2(domain, context, msgid);
+function dpgettext(dom, context, msgid) {
+    return GLib.dpgettext2(dom, context, msgid);
 }
 
 /**
  * Create an object with bindings for gettext, ngettext,
  * and pgettext bound to a particular translation domain.
  *
- * @param domainName Translation domain string
- * @returns: an object with gettext bindings
- * @type: function
+ * @param {string} domainName Translation domain string
+ * @returns {object} an object with gettext bindings
  */
-var domain = function(domainName) {
+function domain(domainName) {
     return {
-        gettext: function(msgid) {
+        gettext(msgid) {
             return GLib.dgettext(domainName, msgid);
         },
 
-        ngettext: function(msgid1, msgid2, n) {
+        ngettext(msgid1, msgid2, n) {
             return GLib.dngettext(domainName, msgid1, msgid2, n);
         },
 
-        pgettext: function(context, msgid) {
+        pgettext(context, msgid) {
             return GLib.dpgettext2(domainName, context, msgid);
-        }
+        },
     };
-};
-
+}

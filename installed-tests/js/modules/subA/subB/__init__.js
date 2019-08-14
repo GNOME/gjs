@@ -1,7 +1,7 @@
 /* exported ImporterClass, testImporterFunction */
 
 function testImporterFunction() {
-    return "__init__ function tested";
+    return '__init__ function tested';
 }
 
 function ImporterClass() {
@@ -9,11 +9,11 @@ function ImporterClass() {
 }
 
 ImporterClass.prototype = {
-    _init : function() {
-        this._a = "__init__ class tested";
+    _init() {
+        this._a = '__init__ class tested';
     },
 
-    testMethod : function() {
+    testMethod() {
         return this._a;
-    }
+    },
 };

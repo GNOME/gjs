@@ -1,19 +1,18 @@
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
-const Mainloop = imports.mainloop;
 
 const AGObjectInterface = GObject.registerClass({
     GTypeName: 'ArbitraryGTypeName',
-    Requires: [ GObject.Object ],
+    Requires: [GObject.Object],
     Properties: {
         'interface-prop': GObject.ParamSpec.string('interface-prop',
             'Interface property', 'Must be overridden in implementation',
             GObject.ParamFlags.READABLE,
-            'foobar')
+            'foobar'),
     },
     Signals: {
-        'interface-signal': {}
+        'interface-signal': {},
     },
 }, class AGObjectInterface extends GObject.Interface {
     requiredG() {
@@ -26,22 +25,22 @@ const AGObjectInterface = GObject.registerClass({
 });
 
 const InterfaceRequiringGObjectInterface = GObject.registerClass({
-    Requires: [ AGObjectInterface ],
+    Requires: [AGObjectInterface],
 }, class InterfaceRequiringGObjectInterface extends GObject.Interface {
     optionalG() {
-        return 'InterfaceRequiringGObjectInterface.optionalG()\n' +
-            AGObjectInterface.optionalG(this);
+        return `InterfaceRequiringGObjectInterface.optionalG()\n${
+            AGObjectInterface.optionalG(this)}`;
     }
 });
 
 const GObjectImplementingGObjectInterface = GObject.registerClass({
-    Implements: [ AGObjectInterface ],
+    Implements: [AGObjectInterface],
     Properties: {
         'interface-prop': GObject.ParamSpec.override('interface-prop',
             AGObjectInterface),
         'class-prop': GObject.ParamSpec.string('class-prop', 'Class property',
             'A property that is not on the interface',
-            GObject.ParamFlags.READABLE, 'meh')
+            GObject.ParamFlags.READABLE, 'meh'),
     },
     Signals: {
         'class-signal': {},
@@ -56,29 +55,31 @@ const GObjectImplementingGObjectInterface = GObject.registerClass({
     }
 
     requiredG() {}
+
     optionalG() {
         return AGObjectInterface.optionalG(this);
     }
 });
 
 const MinimalImplementationOfAGObjectInterface = GObject.registerClass({
-    Implements: [ AGObjectInterface ],
+    Implements: [AGObjectInterface],
     Properties: {
         'interface-prop': GObject.ParamSpec.override('interface-prop',
-            AGObjectInterface)
+            AGObjectInterface),
     },
 }, class MinimalImplementationOfAGObjectInterface extends GObject.Object {
     requiredG() {}
 });
 
 const ImplementationOfTwoInterfaces = GObject.registerClass({
-    Implements: [ AGObjectInterface, InterfaceRequiringGObjectInterface ],
+    Implements: [AGObjectInterface, InterfaceRequiringGObjectInterface],
     Properties: {
         'interface-prop': GObject.ParamSpec.override('interface-prop',
-            AGObjectInterface)
+            AGObjectInterface),
     },
 }, class ImplementationOfTwoInterfaces extends GObject.Object {
     requiredG() {}
+
     optionalG() {
         return InterfaceRequiringGObjectInterface.optionalG(this);
     }
@@ -92,8 +93,8 @@ const ImplementationOfIntrospectedInterface = GObject.registerClass({
         'state': GObject.ParamSpec.override('state', Gio.Action),
         'state-type': GObject.ParamSpec.override('state-type', Gio.Action),
         'parameter-type': GObject.ParamSpec.override('parameter-type',
-            Gio.Action)
-    }
+            Gio.Action),
+    },
 }, class ImplementationOfIntrospectedInterface extends GObject.Object {
     get name() {
         return 'inaction';
@@ -115,8 +116,9 @@ describe('GObject interface', function () {
 
     it('can be implemented by a GObject class', function () {
         let obj;
-        expect(() => { obj = new GObjectImplementingGObjectInterface(); })
-            .not.toThrow();
+        expect(() => {
+            obj = new GObjectImplementingGObjectInterface();
+        }).not.toThrow();
         expect(obj instanceof AGObjectInterface).toBeTruthy();
     });
 
@@ -136,11 +138,11 @@ describe('GObject interface', function () {
 
     it('must have its required function implemented', function () {
         const BadObject = GObject.registerClass({
-            Implements: [ AGObjectInterface ],
+            Implements: [AGObjectInterface],
             Properties: {
                 'interface-prop': GObject.ParamSpec.override('interface-prop',
-                    AGObjectInterface)
-            }
+                    AGObjectInterface),
+            },
         }, class BadObject extends GObject.Object {});
         expect(() => new BadObject().requiredG())
            .toThrowError(GObject.NotImplementedError);
@@ -148,8 +150,9 @@ describe('GObject interface', function () {
 
     it("doesn't have to have its optional function implemented", function () {
         let obj;
-        expect(() => { obj = new MinimalImplementationOfAGObjectInterface(); })
-            .not.toThrow();
+        expect(() => {
+            obj = new MinimalImplementationOfAGObjectInterface();
+        }).not.toThrow();
         expect(obj instanceof AGObjectInterface).toBeTruthy();
     });
 
@@ -165,7 +168,9 @@ describe('GObject interface', function () {
 
     it('can require another interface', function () {
         let obj;
-        expect(() => { obj = new ImplementationOfTwoInterfaces(); }).not.toThrow();
+        expect(() => {
+            obj = new ImplementationOfTwoInterfaces();
+        }).not.toThrow();
         expect(obj instanceof AGObjectInterface).toBeTruthy();
         expect(obj instanceof InterfaceRequiringGObjectInterface).toBeTruthy();
     });
@@ -178,10 +183,10 @@ describe('GObject interface', function () {
 
     it("defers to the last interface's optional function", function () {
         const MinimalImplementationOfTwoInterfaces = GObject.registerClass({
-            Implements: [ AGObjectInterface, InterfaceRequiringGObjectInterface ],
+            Implements: [AGObjectInterface, InterfaceRequiringGObjectInterface],
             Properties: {
                 'interface-prop': GObject.ParamSpec.override('interface-prop',
-                    AGObjectInterface)
+                    AGObjectInterface),
             },
         }, class MinimalImplementationOfTwoInterfaces extends GObject.Object {
             requiredG() {}
@@ -193,7 +198,7 @@ describe('GObject interface', function () {
 
     it('must be implemented by a class that implements all required interfaces', function () {
         expect(() => GObject.registerClass({
-            Implements: [ InterfaceRequiringGObjectInterface ],
+            Implements: [InterfaceRequiringGObjectInterface],
         }, class BadObject {
             required() {}
         })).toThrow();
@@ -201,7 +206,7 @@ describe('GObject interface', function () {
 
     it('must be implemented by a class that implements required interfaces in correct order', function () {
         expect(() => GObject.registerClass({
-            Implements: [ InterfaceRequiringGObjectInterface, AGObjectInterface ],
+            Implements: [InterfaceRequiringGObjectInterface, AGObjectInterface],
         }, class BadObject {
             required() {}
         })).toThrow();
@@ -209,36 +214,41 @@ describe('GObject interface', function () {
 
     it('can require an interface from C', function () {
         const InitableInterface = GObject.registerClass({
-            Requires: [ GObject.Object, Gio.Initable ]
+            Requires: [GObject.Object, Gio.Initable],
         }, class InitableInterface extends GObject.Interface {});
         expect(() => GObject.registerClass({
-            Implements: [ InitableInterface ],
+            Implements: [InitableInterface],
         }, class BadObject {})).toThrow();
     });
 
-    it('can define signals on the implementing class', function () {
+    it('can connect class signals on the implementing class', function (done) {
         function quitLoop() {
-            Mainloop.quit('signal');
+            expect(classSignalSpy).toHaveBeenCalled();
+            done();
         }
         let obj = new GObjectImplementingGObjectInterface();
-        let interfaceSignalSpy = jasmine.createSpy('interfaceSignalSpy')
-            .and.callFake(quitLoop);
         let classSignalSpy = jasmine.createSpy('classSignalSpy')
             .and.callFake(quitLoop);
-        obj.connect('interface-signal', interfaceSignalSpy);
         obj.connect('class-signal', classSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('interface-signal');
-            return GLib.SOURCE_REMOVE;
-        });
-        Mainloop.run('signal');
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             obj.emit('class-signal');
             return GLib.SOURCE_REMOVE;
         });
-        Mainloop.run('signal');
-        expect(interfaceSignalSpy).toHaveBeenCalled();
-        expect(classSignalSpy).toHaveBeenCalled();
+    });
+
+    it('can connect interface signals on the implementing class', function (done) {
+        function quitLoop() {
+            expect(interfaceSignalSpy).toHaveBeenCalled();
+            done();
+        }
+        let obj = new GObjectImplementingGObjectInterface();
+        let interfaceSignalSpy = jasmine.createSpy('interfaceSignalSpy')
+            .and.callFake(quitLoop);
+        obj.connect('interface-signal', interfaceSignalSpy);
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            obj.emit('interface-signal');
+            return GLib.SOURCE_REMOVE;
+        });
     });
 
     it('can define properties on the implementing class', function () {
@@ -254,7 +264,7 @@ describe('GObject interface', function () {
             "Object class * doesn't implement property 'interface-prop' from " +
             "interface 'ArbitraryGTypeName'");
         GObject.registerClass({
-            Implements: [ AGObjectInterface ],
+            Implements: [AGObjectInterface],
         }, class MyNaughtyObject extends GObject.Object {
             requiredG() {}
         });
@@ -263,7 +273,7 @@ describe('GObject interface', function () {
             253, 'testGObjectMustOverrideInterfaceProperties');
     });
 
-    it('can have introspected properties overriden', function() {
+    it('can have introspected properties overriden', function () {
         let obj = new ImplementationOfIntrospectedInterface();
         expect(obj.name).toEqual('inaction');
     });
@@ -278,7 +288,7 @@ describe('GObject interface', function () {
 
     it('can be reimplemented by a subclass of a class that already implements it', function () {
         const SubImplementer = GObject.registerClass({
-            Implements: [ AGObjectInterface ],
+            Implements: [AGObjectInterface],
         }, class SubImplementer extends GObjectImplementingGObjectInterface {});
         let obj = new SubImplementer();
         expect(obj instanceof AGObjectInterface).toBeTruthy();

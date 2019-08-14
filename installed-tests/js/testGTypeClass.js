@@ -5,9 +5,9 @@ const GObject = imports.gi.GObject;
 describe('Looking up param specs', function () {
     let p1, p2;
     beforeEach(function () {
-        let find_property = GObject.Object.find_property;
-        p1 = find_property.call(Gio.ThemedIcon, 'name');
-        p2 = find_property.call(Gio.SimpleAction, 'enabled');
+        let findProperty = GObject.Object.find_property;
+        p1 = findProperty.call(Gio.ThemedIcon, 'name');
+        p2 = findProperty.call(Gio.SimpleAction, 'enabled');
     });
 
     it('works', function () {

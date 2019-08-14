@@ -186,8 +186,8 @@ describe('GArray', function () {
 
         ['return', 'out'].forEach(method => {
             ['none', 'container', 'full'].forEach(transfer => {
-                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                    expect(GIMarshallingTests['garray_utf8_' + transfer + '_' + method]())
+                it(`can be passed as ${method} with transfer ${transfer}`, function () {
+                    expect(GIMarshallingTests[`garray_utf8_${transfer}_${method}`]())
                         .toEqual(['0', '1', '2']);
                 });
             });
@@ -221,7 +221,7 @@ describe('GArray', function () {
     });
 });
 
-describe('GByteArray', function() {
+describe('GByteArray', function () {
     const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     it('can be passed in with transfer none', function () {
@@ -239,7 +239,7 @@ describe('GByteArray', function() {
     });
 });
 
-describe('GBytes', function() {
+describe('GBytes', function () {
     const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     it('can be created from an array and passed in', function () {
@@ -259,7 +259,7 @@ describe('GBytes', function() {
     });
 
     it('can be created from a string and is encoded in UTF-8', function () {
-        let bytes = GLib.Bytes.new("const \u2665 utf8");
+        let bytes = GLib.Bytes.new('const \u2665 utf8');
         expect(() => GIMarshallingTests.utf8_as_uint8array_in(bytes.toArray()))
             .not.toThrow();
     });
@@ -284,7 +284,7 @@ describe('GBytes', function() {
 });
 
 describe('GPtrArray', function () {
-    describe('of strings', function() {
+    describe('of strings', function () {
         const refArray = ['0', '1', '2'];
 
         it('can be passed to a function with transfer none', function () {
@@ -294,8 +294,8 @@ describe('GPtrArray', function () {
 
         ['return', 'out'].forEach(method => {
             ['none', 'container', 'full'].forEach(transfer => {
-                it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                    expect(GIMarshallingTests['gptrarray_utf8_' + transfer + '_' + method]())
+                it(`can be passed as ${method} with transfer ${transfer}`, function () {
+                    expect(GIMarshallingTests[`gptrarray_utf8_${transfer}_${method}`]())
                         .toEqual(refArray);
                 });
             });
@@ -383,8 +383,8 @@ describe('GHashTable', function () {
 
     ['return', 'out'].forEach(method => {
         ['none', 'container', 'full'].forEach(transfer => {
-            it('can be passed as ' + method + ' with transfer ' + transfer, function () {
-                expect(GIMarshallingTests['ghashtable_utf8_' + transfer + '_' + method]())
+            it(`can be passed as ${method} with transfer ${transfer}`, function () {
+                expect(GIMarshallingTests[`ghashtable_utf8_${transfer}_${method}`]())
                     .toEqual(STRING_DICT);
             });
         });
@@ -508,7 +508,7 @@ describe('GValue', function () {
         let Cairo;
         try {
             Cairo = imports.cairo;
-        } catch(e) {
+        } catch (e) {
             pending('Compiled without Cairo support');
             return;
         }
@@ -584,21 +584,39 @@ describe('Callback', function () {
 });
 
 const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
-    vfunc_vfunc_return_value_only() { return 42; }
-    vfunc_vfunc_one_out_parameter() { return 43; }
-    vfunc_vfunc_multiple_out_parameters() { return [44, 45]; }
-    vfunc_vfunc_return_value_and_one_out_parameter() { return [46, 47]; }
-    vfunc_vfunc_return_value_and_multiple_out_parameters() { return [48, 49, 50]; }
-    vfunc_vfunc_array_out_parameter() { return [50, 51]; }
+    vfunc_vfunc_return_value_only() {
+        return 42;
+    }
+
+    vfunc_vfunc_one_out_parameter() {
+        return 43;
+    }
+
+    vfunc_vfunc_multiple_out_parameters() {
+        return [44, 45];
+    }
+
+    vfunc_vfunc_return_value_and_one_out_parameter() {
+        return [46, 47];
+    }
+
+    vfunc_vfunc_return_value_and_multiple_out_parameters() {
+        return [48, 49, 50];
+    }
+
+    vfunc_vfunc_array_out_parameter() {
+        return [50, 51];
+    }
+
     vfunc_vfunc_meth_with_err(x) {
         switch (x) {
         case -1:
             return true;
         case 0:
-            undefined.throw_type_error();
+            undefined.throwTypeError();
             break;
         case 1:
-            void reference_error;  // eslint-disable-line no-undef
+            void referenceError;  // eslint-disable-line no-undef
             break;
         case 2:
             throw new Gio.IOErrorEnum({
@@ -684,16 +702,12 @@ describe('GObject virtual function', function () {
 
         let key = 'vfunc_constructed';
 
-        class _SimpleTestClass1 extends GObject.Object {
-            _init() {
-                super._init(...arguments);
-            }
-        }
+        class _SimpleTestClass1 extends GObject.Object {}
 
         if (GObject.Object.prototype.vfunc_constructed) {
             let parentFunc = GObject.Object.prototype.vfunc_constructed;
-            _SimpleTestClass1.prototype[key] = function () {
-                parentFunc.call(this, ...arguments);
+            _SimpleTestClass1.prototype[key] = function (...args) {
+                parentFunc.call(this, ...args);
                 callback('123');
             };
         } else {
@@ -714,10 +728,6 @@ describe('GObject virtual function', function () {
         let callback;
 
         class _SimpleTestClass2 extends GObject.Object {
-            _init() {
-                super._init(...arguments);
-            }
-
             vfunc_constructed() {
                 super.vfunc_constructed();
                 callback('vfunc_constructed');
@@ -733,17 +743,12 @@ describe('GObject virtual function', function () {
     });
 
     it('handles non-existing properties', function () {
-        const _SimpleTestClass3 = class extends GObject.Object {
-            _init() {
-                super._init(...arguments);
-            }
-        };
+        const _SimpleTestClass3 = class extends GObject.Object {};
 
         _SimpleTestClass3.prototype.vfunc_doesnt_exist = function () {};
 
-        if (GObject.Object.prototype.vfunc_doesnt_exist) {
+        if (GObject.Object.prototype.vfunc_doesnt_exist)
             fail('Virtual function should not exist');
-        }
 
         expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
     });
@@ -775,7 +780,7 @@ describe('GObject properties', function () {
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
 
     xit('throws when setting a read-only property', function () {
-        expect(() => obj.some_readonly = 35).toThrow();
+        expect(() => (obj.some_readonly = 35)).toThrow();
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/32');
 });
 

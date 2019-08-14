@@ -126,7 +126,6 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
     case GI_TYPE_TAG_BOOLEAN:
     case GI_TYPE_TAG_UNICHAR:
         *(ffi_arg *) result = return_value->v_uint32;
-		
         break;
     case GI_TYPE_TAG_INT64:
         *(ffi_sarg *) result = return_value->v_int64;

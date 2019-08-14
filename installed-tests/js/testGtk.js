@@ -51,7 +51,7 @@ const MyComplexGtkSubclass = GObject.registerClass({
 // Sadly, putting this in the body of the class will prevent calling
 // get_template_child, since MyComplexGtkSubclass will be bound to the ES6
 // class name without the GObject goodies in it
-MyComplexGtkSubclass.prototype.testChildrenExist = function() {
+MyComplexGtkSubclass.prototype.testChildrenExist = function () {
     this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
     expect(this._internalLabel).toEqual(jasmine.anything());
 
@@ -76,8 +76,8 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
 });
 
 const [templateFile, stream] = Gio.File.new_tmp(null);
-const base_stream = stream.get_output_stream();
-const out = new Gio.DataOutputStream({base_stream});
+const baseStream = stream.get_output_stream();
+const out = new Gio.DataOutputStream({baseStream});
 out.put_string(createTemplate('Gjs_MyComplexGtkSubclassFromFile'), null);
 out.close(null);
 
@@ -100,12 +100,12 @@ const MyComplexGtkSubclassFromFile = GObject.registerClass({
 const SubclassSubclass = GObject.registerClass(
     class SubclassSubclass extends MyComplexGtkSubclass {});
 
-function validateTemplate(description, ClassName, pending=false) {
+function validateTemplate(description, ClassName, pending = false) {
     let suite = pending ? xdescribe : describe;
     suite(description, function () {
         let win, content;
         beforeEach(function () {
-            win = new Gtk.Window({ type: Gtk.WindowType.TOPLEVEL });
+            win = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
             content = new ClassName();
             content.label_child.emit('grab-focus');
             win.add(content);

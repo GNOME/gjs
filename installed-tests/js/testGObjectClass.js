@@ -18,17 +18,17 @@ const MyObject = GObject.registerClass({
     },
     Signals: {
         'empty': {},
-        'minimal': { param_types: [ GObject.TYPE_INT, GObject.TYPE_INT ] },
+        'minimal': {param_types: [GObject.TYPE_INT, GObject.TYPE_INT]},
         'full': {
             flags: GObject.SignalFlags.RUN_LAST,
             accumulator: GObject.AccumulatorType.FIRST_WINS,
             return_type: GObject.TYPE_INT,
             param_types: [],
         },
-        'run-last': { flags: GObject.SignalFlags.RUN_LAST },
+        'run-last': {flags: GObject.SignalFlags.RUN_LAST},
         'detailed': {
             flags: GObject.SignalFlags.RUN_FIRST | GObject.SignalFlags.DETAILED,
-            param_types: [ GObject.TYPE_STRING ],
+            param_types: [GObject.TYPE_STRING],
         },
     },
 }, class MyObject extends GObject.Object {
@@ -39,7 +39,7 @@ const MyObject = GObject.registerClass({
     }
 
     set readwrite(val) {
-        if (val == 'ignore')
+        if (val === 'ignore')
             return;
 
         this._readwrite = val;
@@ -72,30 +72,30 @@ const MyObject = GObject.registerClass({
         this._constructCalled = true;
     }
 
-    notify_prop() {
+    notifyProp() {
         this._readonly = 'changed';
 
         this.notify('readonly');
     }
 
-    emit_empty() {
+    emitEmpty() {
         this.emit('empty');
     }
 
-    emit_minimal(one, two) {
+    emitMinimal(one, two) {
         this.emit('minimal', one, two);
     }
 
-    emit_full() {
+    emitFull() {
         return this.emit('full');
     }
 
-    emit_detailed() {
+    emitDetailed() {
         this.emit('detailed::one');
         this.emit('detailed::two');
     }
 
-    emit_run_last(callback) {
+    emitRunLast(callback) {
         this._run_last_callback = callback;
         this.emit('run-last');
     }
@@ -115,24 +115,24 @@ const MyObject = GObject.registerClass({
 });
 
 const MyAbstractObject = GObject.registerClass({
-    GTypeFlags: GObject.TypeFlags.ABSTRACT
+    GTypeFlags: GObject.TypeFlags.ABSTRACT,
 }, class MyAbstractObject extends GObject.Object {
 });
 
 const MyApplication = GObject.registerClass({
-    Signals: { 'custom': { param_types: [ GObject.TYPE_INT ] } },
+    Signals: {'custom': {param_types: [GObject.TYPE_INT]}},
 }, class MyApplication extends Gio.Application {
-    emit_custom(n) {
+    emitCustom(n) {
         this.emit('custom', n);
     }
 });
 
 const MyInitable = GObject.registerClass({
-    Implements: [ Gio.Initable ],
+    Implements: [Gio.Initable],
 }, class MyInitable extends GObject.Object {
     vfunc_init(cancellable) {
         if (!(cancellable instanceof Gio.Cancellable))
-            throw 'Bad argument';
+            throw new Error('Bad argument');
 
         this.inited = true;
     }
@@ -140,7 +140,7 @@ const MyInitable = GObject.registerClass({
 
 const Derived = GObject.registerClass(class Derived extends MyObject {
     _init() {
-        super._init({ readwrite: 'yes' });
+        super._init({readwrite: 'yes'});
     }
 });
 
@@ -160,11 +160,11 @@ describe('GObject class with decorator', function () {
 
     it('throws an error when not used with a GObject-derived class', function () {
         class Foo {}
-        expect (() => GObject.registerClass(class Bar extends Foo {})).toThrow();
+        expect(() => GObject.registerClass(class Bar extends Foo {})).toThrow();
     });
 
-    it('throws an error when used with an abstract class', function() {
-        expect (() => new MyAbstractObject()).toThrow();
+    it('throws an error when used with an abstract class', function () {
+        expect(() => new MyAbstractObject()).toThrow();
     });
 
     it('constructs with default values for properties', function () {
@@ -174,7 +174,7 @@ describe('GObject class with decorator', function () {
     });
 
     it('constructs with a hash of property values', function () {
-        let myInstance2 = new MyObject({ readwrite: 'baz', construct: 'asdf' });
+        let myInstance2 = new MyObject({readwrite: 'baz', construct: 'asdf'});
         expect(myInstance2.readwrite).toEqual('baz');
         expect(myInstance2.readonly).toEqual('bar');
         expect(myInstance2.construct).toEqual('asdf');
@@ -207,8 +207,8 @@ describe('GObject class with decorator', function () {
         let notifySpy = jasmine.createSpy('notifySpy');
         myInstance.connect('notify::readonly', notifySpy);
 
-        myInstance.notify_prop();
-        myInstance.notify_prop();
+        myInstance.notifyProp();
+        myInstance.notifyProp();
 
         expect(notifySpy).toHaveBeenCalledTimes(2);
     });
@@ -216,7 +216,7 @@ describe('GObject class with decorator', function () {
     it('can define its own signals', function () {
         let emptySpy = jasmine.createSpy('emptySpy');
         myInstance.connect('empty', emptySpy);
-        myInstance.emit_empty();
+        myInstance.emitEmpty();
 
         expect(emptySpy).toHaveBeenCalled();
         expect(myInstance.empty_called).toBeTruthy();
@@ -225,7 +225,7 @@ describe('GObject class with decorator', function () {
     it('passes emitted arguments to signal handlers', function () {
         let minimalSpy = jasmine.createSpy('minimalSpy');
         myInstance.connect('minimal', minimalSpy);
-        myInstance.emit_minimal(7, 5);
+        myInstance.emitMinimal(7, 5);
 
         expect(minimalSpy).toHaveBeenCalledWith(myInstance, 7, 5);
     });
@@ -233,7 +233,7 @@ describe('GObject class with decorator', function () {
     it('can return values from signals', function () {
         let fullSpy = jasmine.createSpy('fullSpy').and.returnValue(42);
         myInstance.connect('full', fullSpy);
-        let result = myInstance.emit_full();
+        let result = myInstance.emitFull();
 
         expect(fullSpy).toHaveBeenCalled();
         expect(result).toEqual(42);
@@ -243,36 +243,40 @@ describe('GObject class with decorator', function () {
         let neverCalledSpy = jasmine.createSpy('neverCalledSpy');
         myInstance.connect('full', () => 42);
         myInstance.connect('full', neverCalledSpy);
-        myInstance.emit_full();
+        myInstance.emitFull();
 
         expect(neverCalledSpy).not.toHaveBeenCalled();
         expect(myInstance.full_default_handler_called).toBeFalsy();
     });
 
     it('gets the return value of the default handler', function () {
-        let result = myInstance.emit_full();
+        let result = myInstance.emitFull();
 
         expect(myInstance.full_default_handler_called).toBeTruthy();
         expect(result).toEqual(79);
     });
 
     it('calls run-last default handler last', function () {
-        let stack = [ ];
+        let stack = [];
         let runLastSpy = jasmine.createSpy('runLastSpy')
-            .and.callFake(() => { stack.push(1); });
+            .and.callFake(() => {
+                stack.push(1);
+            });
         myInstance.connect('run-last', runLastSpy);
-        myInstance.emit_run_last(() => { stack.push(2); });
+        myInstance.emitRunLast(() => {
+            stack.push(2);
+        });
 
         expect(stack).toEqual([1, 2]);
     });
 
     it("can inherit from something that's not GObject.Object", function () {
         // ...and still get all the goodies of GObject.Class
-        let instance = new MyApplication({ application_id: 'org.gjs.Application' });
+        let instance = new MyApplication({application_id: 'org.gjs.Application'});
         let customSpy = jasmine.createSpy('customSpy');
         instance.connect('custom', customSpy);
 
-        instance.emit_custom(73);
+        instance.emitCustom(73);
         expect(customSpy).toHaveBeenCalledWith(instance, 73);
     });
 
@@ -320,11 +324,11 @@ describe('GObject class with decorator', function () {
             Properties: {
                 'file': GObject.ParamSpec.object('file', 'File', 'File',
                     GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                    Gio.File.$gtype)
+                    Gio.File.$gtype),
             },
         }, class InterfacePropObject extends GObject.Object {});
         let file = Gio.File.new_for_path('dummy');
-        expect(() => new InterfacePropObject({ file: file })).not.toThrow();
+        expect(() => new InterfacePropObject({file})).not.toThrow();
     });
 
     it('can override a property from the parent class', function () {
@@ -336,8 +340,9 @@ describe('GObject class with decorator', function () {
             get readwrite() {
                 return this._subclass_readwrite;
             }
+
             set readwrite(val) {
-                this._subclass_readwrite = 'subclass' + val;
+                this._subclass_readwrite = `subclass${val}`;
             }
         });
         let obj = new OverrideObject();
@@ -368,17 +373,17 @@ describe('GObject class with decorator', function () {
             }
         });
 
-        expect (() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
+        expect(() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
     });
 
-    it('resolves properties from interfaces', function() {
+    it('resolves properties from interfaces', function () {
         const mon = Gio.NetworkMonitor.get_default();
         expect(mon.network_available).toBeDefined();
         expect(mon.networkAvailable).toBeDefined();
         expect(mon['network-available']).toBeDefined();
     });
 
-    it('has a toString() defintion', function() {
+    it('has a toString() defintion', function () {
         expect(myInstance.toString()).toMatch(
             /\[object instance wrapper GType:Gjs_MyObject jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
         expect(new Derived().toString()).toMatch(

@@ -7,10 +7,10 @@ let loop = GLib.MainLoop.new(null, false);
 
 function cat(filename) {
     let f = Gio.file_new_for_path(filename);
-    f.load_contents_async(null, function(f, res) {
+    f.load_contents_async(null, (obj, res) => {
         let contents;
         try {
-            contents = f.load_contents_finish(res)[1];
+            contents = obj.load_contents_finish(res)[1];
         } catch (e) {
             logError(e);
             loop.quit();
@@ -23,8 +23,7 @@ function cat(filename) {
     loop.run();
 }
 
-if (ARGV.length != 1) {
+if (ARGV.length !== 1)
     printerr('Usage: gio-cat.js filename');
-} else {
+else
     cat(ARGV[0]);
-}

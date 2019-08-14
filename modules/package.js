@@ -35,7 +35,7 @@ const System = imports.system;
 
 const Gettext = imports.gettext;
 
-/*< public >*/
+// public
 var name;
 var version;
 var prefix;
@@ -46,7 +46,7 @@ var pkglibdir;
 var moduledir;
 var localedir;
 
-/*< private >*/
+// private
 let _pkgname;
 let _base;
 let _submoduledir;
@@ -61,7 +61,7 @@ function _findEffectiveEntryPointName() {
 
 function _runningFromSource() {
     let binary = Gio.File.new_for_path(System.programInvocationName);
-    let sourceBinary = Gio.File.new_for_path('./src/' + name);
+    let sourceBinary = Gio.File.new_for_path(`./src/${name}`);
     return binary.equal(sourceBinary);
 }
 
@@ -70,17 +70,14 @@ function _runningFromMesonSource() {
            GLib.getenv('MESON_SOURCE_ROOT');
 }
 
-function _makeNamePath(name) {
-    return '/' + name.replace(/\./g, '/');
+function _makeNamePath(n) {
+    return `/${n.replace(/\./g, '/')}`;
 }
 
 /**
- * init:
- * @params: package parameters
- *
  * Initialize directories and global variables. Must be called
  * before any of other API in Package is used.
- * @params must be an object with at least the following keys:
+ * `params` must be an object with at least the following keys:
  *  - name: the package name ($(PACKAGE_NAME) in autotools,
  *          eg. org.foo.Bar)
  *  - version: the package version
@@ -116,6 +113,8 @@ function _makeNamePath(name) {
  * All paths are absolute and will not end with '/'.
  *
  * As a side effect, init() calls GLib.set_prgname().
+ *
+ * @param {object} params package parameters
  */
 function init(params) {
     window.pkg = imports.package;
@@ -159,10 +158,10 @@ function init(params) {
         GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([bld, 'src',
-                                                                  name + '.src.gresource']));
+                `${name}.src.gresource`]));
             resource._register();
-            moduledir = 'resource://' + _makeNamePath(name) + '/js';
-        } catch(e) {
+            moduledir = `resource://${_makeNamePath(name)}/js`;
+        } catch (e) {
             moduledir = GLib.build_filenamev([src, 'src']);
         }
     } else {
@@ -175,11 +174,11 @@ function init(params) {
 
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
-                                                                   name + '.src.gresource']));
+                `${name}.src.gresource`]));
             resource._register();
 
-            moduledir = 'resource://' + _makeNamePath(name) + '/js';
-        } catch(e) {
+            moduledir = `resource://${_makeNamePath(name)}/js`;
+        } catch (e) {
             moduledir = pkgdatadir;
         }
     }
@@ -190,19 +189,17 @@ function init(params) {
 
     try {
         let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
-                                                               name + '.data.gresource']));
+            `${name}.data.gresource`]));
         resource._register();
-    } catch(e) { }
+    } catch (e) { }
 }
 
 /**
- * start:
- * @params: see init()
- *
  * This is a convenience function if your package has a
  * single entry point.
  * You must define a main(ARGV) function inside a main.js
  * module in moduledir.
+ * @param {object} params see init()
  */
 function start(params) {
     init(params);
@@ -210,9 +207,6 @@ function start(params) {
 }
 
 /**
- * run:
- * @module: the module to run
- *
  * This is the function to use if you want to have multiple
  * entry points in one package.
  * You must define a main(ARGV) function inside the passed
@@ -220,20 +214,21 @@ function start(params) {
  *
  * imports.package.init(...);
  * imports.package.run(imports.entrypoint);
+ *
+ * @param {object} module the module to run
+ * @returns {number|undefined} the exit code of the module's main() function
  */
 function run(module) {
     return module.main([System.programInvocationName].concat(ARGV));
 }
 
 /**
- * require:
- * @libs: the external dependencies to import
- *
  * Mark a dependency on a specific version of one or more
  * external GI typelibs.
- * @libs must be an object whose keys are a typelib name,
+ * `libs` must be an object whose keys are a typelib name,
  * and values are the respective version. The empty string
  * indicates any version.
+ * @param {object} libs the external dependencies to import
  */
 function require(libs) {
     for (let l in libs)
@@ -241,13 +236,14 @@ function require(libs) {
 }
 
 /**
- * requireSymbol:
- *
  * As checkSymbol(), but exit with an error if the
  * dependency cannot be satisfied.
+ * @param {string} lib an external dependency to import
+ * @param {string} [ver] version of the dependency
+ * @param {string} [symbol] symbol to check for
  */
-function requireSymbol(lib, version, symbol) {
-    if (!checkSymbol(lib, version, symbol)) {
+function requireSymbol(lib, ver, symbol) {
+    if (!checkSymbol(lib, ver, symbol)) {
         if (symbol)
             printerr(`Unsatisfied dependency: No ${symbol} in ${lib}`);
         else
@@ -257,11 +253,6 @@ function requireSymbol(lib, version, symbol) {
 }
 
 /**
- * checkSymbol:
- * @lib: an external dependency to import
- * @version: optional version of the dependency
- * @symbol: optional symbol to check for
- *
  * Check whether an external GI typelib can be imported
  * and provides @symbol.
  *
@@ -271,17 +262,21 @@ function requireSymbol(lib, version, symbol) {
  *  - class / instance methods ('IconTheme.get_default' / 'IconTheme.has_icon')
  *  - GObject properties       ('Window.default_height')
  *
- * Returns: %true if @lib can be imported and provides @symbol, %false otherwise
+ * @param {string} lib an external dependency to import
+ * @param {string} [ver] version of the dependency
+ * @param {string} [symbol] symbol to check for
+ * @return {boolean} true if `lib` can be imported and provides `symbol`, false
+ * otherwise
  */
-function checkSymbol(lib, version, symbol) {
+function checkSymbol(lib, ver, symbol) {
     let Lib = null;
 
-    if (version)
-        imports.gi.versions[lib] = version;
+    if (ver)
+        imports.gi.versions[lib] = ver;
 
     try {
         Lib = imports.gi[lib];
-    } catch(e) {
+    } catch (e) {
         return false;
     }
 
@@ -290,14 +285,14 @@ function checkSymbol(lib, version, symbol) {
 
     let [klass, sym] = symbol.split('.');
     if (klass === symbol) // global symbol
-        return (typeof Lib[symbol] !== 'undefined');
+        return typeof Lib[symbol] !== 'undefined';
 
     let obj = Lib[klass];
     if (typeof obj === 'undefined')
         return false;
 
     if (typeof obj[sym] !== 'undefined' ||
-        (obj.prototype && typeof obj.prototype[sym] !== 'undefined'))
+        obj.prototype && typeof obj.prototype[sym] !== 'undefined')
         return true; // class- or object method
 
     // GObject property
@@ -309,7 +304,7 @@ function checkSymbol(lib, version, symbol) {
         pspec = GObject.Object.find_property.call(obj.$gtype, sym);
     }
 
-    return (pspec !== null);
+    return pspec !== null;
 }
 
 function initGettext() {
@@ -319,7 +314,9 @@ function initGettext() {
     let gettext = imports.gettext;
     window._ = gettext.gettext;
     window.C_ = gettext.pgettext;
-    window.N_ = function(x) { return x; }
+    window.N_ = function (x) {
+        return x;
+    };
 }
 
 function initFormat() {
@@ -327,11 +324,11 @@ function initFormat() {
     String.prototype.format = format.format;
 }
 
-function initSubmodule(name) {
+function initSubmodule(moduleName) {
     if (_runningFromMesonSource() || _runningFromSource()) {
-        // Running from source tree, add './name' to search paths
+        // Running from source tree, add './moduleName' to search paths
 
-        let submoduledir = GLib.build_filenamev([_submoduledir, name]);
+        let submoduledir = GLib.build_filenamev([_submoduledir, moduleName]);
         let libpath;
         if (_runningFromMesonSource())
             libpath = submoduledir;

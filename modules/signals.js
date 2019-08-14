@@ -33,8 +33,8 @@ const Lang = imports.lang;
 function _connect(name, callback) {
     // be paranoid about callback arg since we'd start to throw from emit()
     // if it was messed up
-    if (typeof(callback) != 'function')
-        throw new Error("When connecting signal must give a callback that is a function");
+    if (typeof callback !== 'function')
+        throw new Error('When connecting signal must give a callback that is a function');
 
     // we instantiate the "signal machinery" only on-demand if anything
     // gets connected.
@@ -49,11 +49,12 @@ function _connect(name, callback) {
     // this makes it O(n) in total connections to emit, but I think
     // it's right to optimize for low memory and reentrancy-safety
     // rather than speed
-    this._signalConnections.push({ 'id' : id,
-                                   'name' : name,
-                                   'callback' : callback,
-                                   'disconnected' : false
-                                 });
+    this._signalConnections.push({
+        id,
+        name,
+        callback,
+        'disconnected': false,
+    });
     return id;
 }
 
@@ -63,9 +64,9 @@ function _disconnect(id) {
         let length = this._signalConnections.length;
         for (i = 0; i < length; ++i) {
             let connection = this._signalConnections[i];
-            if (connection.id == id) {
+            if (connection.id === id) {
                 if (connection.disconnected)
-                    throw new Error("Signal handler id " + id + " already disconnected");
+                    throw new Error(`Signal handler id ${id} already disconnected`);
 
                 // set a flag to deal with removal during emission
                 connection.disconnected = true;
@@ -75,7 +76,7 @@ function _disconnect(id) {
             }
         }
     }
-    throw new Error("No signal connection " + id + " found");
+    throw new Error(`No signal connection ${id} found`);
 }
 
 function _signalHandlerIsConnected(id) {
@@ -94,9 +95,8 @@ function _signalHandlerIsConnected(id) {
 
 function _disconnectAll() {
     if ('_signalConnections' in this) {
-        while (this._signalConnections.length > 0) {
+        while (this._signalConnections.length > 0)
             _disconnect.call(this, this._signalConnections[0].id);
-        }
     }
 }
 
@@ -114,9 +114,8 @@ function _emit(name, ...args) {
     let length = this._signalConnections.length;
     for (i = 0; i < length; ++i) {
         let connection = this._signalConnections[i];
-        if (connection.name == name) {
+        if (connection.name === name)
             handlers.push(connection);
-        }
     }
 
     // create arg array which is emitter + everything passed in except
@@ -125,7 +124,7 @@ function _emit(name, ...args) {
     // which does pass it in. Also if we pass in the emitter here,
     // people don't create closures with the emitter in them,
     // which would be a cycle.
-    let arg_array = [ this, ...args ];
+    let argArray = [this, ...args];
 
     length = handlers.length;
     for (i = 0; i < length; ++i) {
@@ -133,38 +132,35 @@ function _emit(name, ...args) {
         if (!connection.disconnected) {
             try {
                 // since we pass "null" for this, the global object will be used.
-                let ret = connection.callback.apply(null, arg_array);
+                let ret = connection.callback.apply(null, argArray);
 
                 // if the callback returns true, we don't call the next
                 // signal handlers
-                if (ret === true) {
+                if (ret === true)
                     break;
-                }
-            } catch(e) {
+            } catch (e) {
                 // just log any exceptions so that callbacks can't disrupt
                 // signal emission
-                logError(e, "Exception in callback for signal: "+name);
+                logError(e, `Exception in callback for signal: ${name}`);
             }
         }
     }
 }
 
 function _addSignalMethod(proto, functionName, func) {
-    if (proto[functionName] && proto[functionName] != func) {
-        log("WARNING: addSignalMethods is replacing existing " +
-            proto + " " + functionName + " method");
-    }
+    if (proto[functionName] && proto[functionName] !== func)
+        log(`WARNING: addSignalMethods is replacing existing ${proto} ${functionName} method`);
 
     proto[functionName] = func;
 }
 
 function addSignalMethods(proto) {
-    _addSignalMethod(proto, "connect", _connect);
-    _addSignalMethod(proto, "disconnect", _disconnect);
-    _addSignalMethod(proto, "emit", _emit);
+    _addSignalMethod(proto, 'connect', _connect);
+    _addSignalMethod(proto, 'disconnect', _disconnect);
+    _addSignalMethod(proto, 'emit', _emit);
     _addSignalMethod(proto, 'signalHandlerIsConnected', _signalHandlerIsConnected);
     // this one is not in GObject, but useful
-    _addSignalMethod(proto, "disconnectAll", _disconnectAll);
+    _addSignalMethod(proto, 'disconnectAll', _disconnectAll);
 }
 
 var WithSignals = new Lang.Interface({
