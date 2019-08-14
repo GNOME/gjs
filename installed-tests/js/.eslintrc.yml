@@ -2,7 +2,7 @@
 env:
   jasmine: true
 globals:
-  clearInterval: false
-  clearTimeout: false
-  setInterval: false
-  setTimeout: false
+  clearInterval: writable
+  clearTimeout: writable
+  setInterval: writable
+  setTimeout: writable

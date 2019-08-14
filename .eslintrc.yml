@@ -74,15 +74,15 @@ rules:
     - error
     - int32Hint: false
 globals:
-  ARGV: false
-  Debugger: false
-  GIRepositoryGType: false
-  imports: false
-  Intl: false
-  log: false
-  logError: false
-  print: false
-  printerr: false
-  window: false
+  ARGV: readonly
+  Debugger: readonly
+  GIRepositoryGType: readonly
+  imports: readonly
+  Intl: readonly
+  log: readonly
+  logError: readonly
+  print: readonly
+  printerr: readonly
+  window: readonly
 parserOptions:
   ecmaVersion: 2017
