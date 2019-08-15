@@ -212,14 +212,19 @@ static GIBaseInfo* find_method_fallback(GIStructInfo* class_info,
     guint n_methods, i;
 
     n_methods = g_struct_info_get_n_methods(class_info);
+    g_warning("Fallback find_method()");
 
     for (i = 0; i < n_methods; i++) {
         method = g_struct_info_get_method(class_info, i);
+
+        g_warning("Checking %s", g_base_info_get_name(method));
 
         if (strcmp(g_base_info_get_name(method), method_name) == 0)
             return method;
         g_base_info_unref(method);
     }
+
+    g_warning("Method not found");
 
     return NULL;
 }
@@ -236,12 +241,17 @@ static GParamSpec* gjs_gtk_container_class_find_child_property(
     find_child_property_fun =
         g_struct_info_find_method(class_info, "find_child_property");
 
+    if (find_child_property_fun == NULL)
+        g_warning("g_struct_info_find_method() failed, try fallback implementation next");
+
     /* Workaround for
        https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/171
      */
     if (find_child_property_fun == NULL)
         find_child_property_fun =
             find_method_fallback(class_info, "find_child_property");
+
+    g_assert(find_child_property_fun != NULL);
 
     find_child_property_args[0].v_pointer = G_OBJECT_GET_CLASS(container);
     find_child_property_args[1].v_string = (char*)property;
