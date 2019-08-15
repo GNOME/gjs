@@ -126,7 +126,7 @@ stages:
 #############################################
 # Test despite any changes in the Docker image
 # SpiderMonkey has been configured with --enable-debug
-fedora:
+build_recommended:
   <<: *build
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:job-286759_SM60-debug-gcc.fedora-dev  # pinned on purpose
@@ -134,6 +134,10 @@ fedora:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
     WARNINGS: "count"
+    # FIXME: Add --enable-profiler
+    BUILD_OPTS: >-
+      --with-cairo --enable-readline
+      --disable-dtrace --disable-systemtap
   except:
     - schedules
 
@@ -151,62 +155,34 @@ sanitizer_gcc:
 # There are a lot of debug log statements that are ifdef'd out in normal usage.
 # These sometimes get invalid expressions in them, leading to annoyance the
 # next time you try to use debug logging.
-with_logging:
+build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
-    TASK_ID: "ubuntu-x86_64-clang-default-logging-check"
+    TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
-    BUILD_OPTS: "CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'"
+    # FIXME: add --enable-profiler
+    BUILD_OPTS: >-
+      CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+      --with-cairo --enable-readline
+      --enable-dtrace --enable-systemtap
     TEST: "check"
     SCRIPTCHECK: "yes"
     ENABLE_GTK: "yes"
   except:
     - schedules
 
-with_systemtap:
+build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-systemtap-check"
+    TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     TEST: "check"
-    BUILD_OPTS: "--enable-systemtap"
-  except:
-    - schedules
-
-no_graphics:
-  <<: *build
-  stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
-  variables:
-    TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
-    TEST: "check"
-    BUILD_OPTS: "--without-cairo --without-gtk-tests"
-    SCRIPTCHECK: "yes"
-  except:
-    - schedules
-
-no_profiler:
-  <<: *build
-  stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
-  variables:
-    TASK_ID: "fedora-x86_64-gcc-default-disable_profiler-check"
-    TEST: "check"
-    BUILD_OPTS: "--disable-profiler"
-  except:
-    - schedules
-
-no_readline:
-  <<: *build
-  stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
-  variables:
-    TASK_ID: "fedora-x86_64-gcc-default-disable_readline-check"
-    TEST: "check"
-    BUILD_OPTS: "--disable-readline"
+    BUILD_OPTS: >-
+      --without-cairo --disable-profiler --disable-readline
+      --disable-dtrace --disable-systemtap
   except:
     - schedules
 
