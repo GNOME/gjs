@@ -193,9 +193,9 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     do_Set_Env
 
     if [[ "$DEV" == "jhbuild" ]]; then
-        xvfb-run -a --server-args="-screen 0 1024x768x24" jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
+        xvfb-run -a jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
     else
-        xvfb-run -a --server-args="-screen 0 1024x768x24" dbus-run-session -- gnome-desktop-testing-runner gjs
+        xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
     fi
 
 elif [[ $1 == "VALGRIND" ]]; then

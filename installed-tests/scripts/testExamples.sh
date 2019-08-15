@@ -7,7 +7,7 @@ $gjs examples/gio-cat.js Makefile
 report "run the gio-cat.js example"
 
 if [[ -n "${ENABLE_GTK}" ]]; then
-    export graphical_gjs="xvfb-run -a --server-args='-screen 0 1024x768x24' dbus-run-session -- $gjs"
+    export graphical_gjs="xvfb-run -a dbus-run-session -- $gjs"
 
     eval timeout 5s $graphical_gjs examples/calc.js
     report_timeout "run the calc.js example"
