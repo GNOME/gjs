@@ -35,7 +35,8 @@ function do_Install_Dependencies(){
                           libxslt libtool flex \
                           cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
                           libedit-devel libasan libubsan libtsan compiler-rt \
-                          sysprof-devel lcov mesa-libGL-devel readline-devel
+                          sysprof-devel lcov mesa-libGL-devel readline-devel \
+                          webkit2gtk3
 
         if [[ $DEV == "devel" ]]; then
             dnf -y install time
