@@ -206,6 +206,24 @@ int gjs_open_bytes(GBytes* bytes, GError** error) {
 #endif
 }
 
+static GIBaseInfo* find_method_fallback(GIStructInfo* class_info,
+                                        const char* method_name) {
+    GIBaseInfo* method;
+    guint n_methods, i;
+
+    n_methods = g_struct_info_get_n_methods(class_info);
+
+    for (i = 0; i < n_methods; i++) {
+        method = g_struct_info_get_method(class_info, i);
+
+        if (strcmp(g_base_info_get_name(method), method_name) == 0)
+            return method;
+        g_base_info_unref(method);
+    }
+
+    return NULL;
+}
+
 static GParamSpec* gjs_gtk_container_class_find_child_property(
     GIObjectInfo* container_info, GObject* container, const char* property) {
     GIBaseInfo* class_info = NULL;
@@ -217,6 +235,13 @@ static GParamSpec* gjs_gtk_container_class_find_child_property(
     class_info = g_object_info_get_class_struct(container_info);
     find_child_property_fun =
         g_struct_info_find_method(class_info, "find_child_property");
+
+    /* Workaround for
+       https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/171
+     */
+    if (find_child_property_fun == NULL)
+        find_child_property_fun =
+            find_method_fallback(class_info, "find_child_property");
 
     find_child_property_args[0].v_pointer = G_OBJECT_GET_CLASS(container);
     find_child_property_args[1].v_string = (char*)property;
