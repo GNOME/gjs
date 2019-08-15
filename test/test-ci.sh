@@ -213,6 +213,7 @@ elif [[ $1 == "SH_CHECKS" ]]; then
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
     export LANGUAGE=C.UTF-8
+    export NO_AT_BRIDGE=1
 
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
