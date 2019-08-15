@@ -353,19 +353,6 @@ ubuntu_clang:
     variables:
       - $CRON_FREQUENCY == "Weekly"
 
-lts:
-  <<: *build
-  <<: *jhbuild
-  stage: thorough_tests
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-lts
-  variables:
-    TASK_ID: "ubuntu_lts-x86_64-gcc-default-default-check"
-    DEV: jhbuild
-    TEST: "check"
-  only:
-    variables:
-      - $CRON_FREQUENCY == "Weekly"
-
 valgrind:
   <<: *build
   stage: thorough_tests
@@ -566,19 +553,6 @@ ubuntu_clang:
     TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
     CC: clang
     TEST: "distcheck"
-  when: manual
-  except:
-    - schedules
-
-lts:
-  <<: *build
-  <<: *jhbuild
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-lts
-  variables:
-    TASK_ID: "ubuntu_lts-x86_64-gcc-default-default-check"
-    DEV: jhbuild
-    TEST: "check"
   when: manual
   except:
     - schedules
@@ -785,14 +759,6 @@ SM60-gcc.fedora-dev.ppc64le:
     NAME: "SM60-gcc.fedora-dev.ppc64le"
     STATIC: "qemu"
     TARGET_ARCH: "ppc64le"
-
-SM60-gcc.ubuntu-lts:
-  <<: *create_docker_image
-  variables:
-    BASE: "debian"
-    DOCKER_DRIVER: overlay
-    IMAGE: "ubuntu:18.04"
-    NAME: "SM60-gcc.ubuntu-lts"
 
 SM60-gcc.ubuntu-dev:
   <<: *create_docker_image
