@@ -1,3 +1,3 @@
 installed-tests/js/jasmine.js
-installed-tests/js/modules/overrides/WarnLib.js
+installed-tests/js/modules/badOverrides/WarnLib.js
 modules/jsUnit.js

@@ -6,11 +6,11 @@ describe('GI importer', function () {
 
     describe('on failure', function () {
         // For these tests, we provide special overrides files to sabotage the
-        // import, at the path resource:///org/gjs/jsunit/modules/overrides.
+        // import, at the path resource:///org/gjs/jsunit/modules/badOverrides.
         let oldSearchPath;
         beforeAll(function () {
             oldSearchPath = imports.overrides.searchPath.slice();
-            imports.overrides.searchPath = ['resource:///org/gjs/jsunit/modules/overrides'];
+            imports.overrides.searchPath = ['resource:///org/gjs/jsunit/modules/badOverrides'];
         });
 
         afterAll(function () {
