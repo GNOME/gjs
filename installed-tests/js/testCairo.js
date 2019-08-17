@@ -2,9 +2,7 @@ imports.gi.versions.Gdk = '3.0';
 imports.gi.versions.Gtk = '3.0';
 
 const Cairo = imports.cairo;
-const Gdk = imports.gi.Gdk;
-const Gtk = imports.gi.Gtk;
-const Regress = imports.gi.Regress;
+const {Gdk, GIMarshallingTests, Gtk, Regress} = imports.gi;
 
 function _ts(obj) {
     return obj.toString().slice(8, -1);
@@ -265,6 +263,13 @@ describe('Cairo', function () {
             o.connect('sig-with-foreign-struct', foreignSpy);
             o.emit_sig_with_foreign_struct();
             expect(foreignSpy).toHaveBeenCalledWith(o, cr);
+        });
+
+        it('can have its type inferred as a foreign struct', function () {
+            expect(() => GIMarshallingTests.gvalue_in_with_type(cr, Cairo.Context))
+                .not.toThrow();
+            expect(() => GIMarshallingTests.gvalue_in_with_type(surface, Cairo.Surface))
+                .not.toThrow();
         });
     });
 });
