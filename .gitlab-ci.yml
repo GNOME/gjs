@@ -183,7 +183,7 @@ no_graphics:
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-without_gtk-check"
     TEST: "check"
-    BUILD_OPTS: "--without-cairo --without-gtk"
+    BUILD_OPTS: "--without-cairo --without-gtk-tests"
     SCRIPTCHECK: "yes"
   except:
     - schedules

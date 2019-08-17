@@ -103,11 +103,6 @@ gjs_private_srcs =				\
 	libgjs-private/gjs-gdbus-wrapper.h	\
 	libgjs-private/gjs-util.c		\
 	libgjs-private/gjs-util.h		\
-	libgjs-private/gjs-gtk-util.h		\
-	$(NULL)
-
-gjs_gtk_private_srcs =			\
-	libgjs-private/gjs-gtk-util.c	\
 	$(NULL)
 
 gjs_console_srcs =	\
