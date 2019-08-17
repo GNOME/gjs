@@ -836,22 +836,9 @@ describe('GValue', function () {
             .not.toThrow();
     });
 
-    it('can have its type inferred as a foreign struct', function () {
-        let Cairo;
-        try {
-            Cairo = imports.cairo;
-        } catch (e) {
-            pending('Compiled without Cairo support');
-            return;
-        }
-
-        let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 2, 2);
-        let cr = new Cairo.Context(surface);
-        expect(() => GIMarshallingTests.gvalue_in_with_type(cr, Cairo.Context))
-            .not.toThrow();
-        expect(() => GIMarshallingTests.gvalue_in_with_type(surface, Cairo.Surface))
-            .not.toThrow();
-    });
+    // See testCairo.js for a test of GIMarshallingTests.gvalue_in_with_type()
+    // on Cairo foreign structs, since it will be skipped if compiling without
+    // Cairo support.
 });
 
 describe('Callback', function () {
