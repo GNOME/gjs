@@ -10,7 +10,7 @@
 import re
 
 func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
-gobj_regex = re.compile('([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
+priv_regex = re.compile(r'([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
 
 
 ###############################################################################
@@ -18,10 +18,15 @@ gobj_regex = re.compile('([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
 ###############################################################################
 
 dot_graph_paths = []
+unreachable = set()
 
 
 def add_dot_graph_path(path):
     dot_graph_paths.append(path)
+
+
+def add_dot_graph_unreachable(node):
+    unreachable.add(node)
 
 
 def output_dot_file(args, graph, targs, fname):
@@ -30,6 +35,7 @@ def output_dot_file(args, graph, targs, fname):
     for p in dot_graph_paths:
         for x in p:
             nodes.add(x)
+    nodes.update(unreachable)
 
     # build the edge map
     edges = {}
@@ -51,7 +57,7 @@ def output_dot_file(args, graph, targs, fname):
         color = 'black'
         style = 'solid'
         shape = 'rect'
-        native = ''
+        priv = ''
 
         if label.endswith('<no private>'):
             label = label[:-13]
@@ -66,16 +72,16 @@ def output_dot_file(args, graph, targs, fname):
                 break
 
 
-        # GObject or something else with a native address
-        gm = gobj_regex.match(label)
+        # GObject or something else with JS instance private data
+        pm = priv_regex.match(label)
 
-        if gm:
-            label = gm.group(1)
+        if pm:
+            label = pm.group(1)
             color = 'orange'
             style = 'bold'
 
             if not args.no_addr:
-                native = gm.group(2)
+                priv = pm.group(2)
 
             # Some kind of GObject
             if label.startswith('GObject_'):
@@ -126,13 +132,22 @@ def output_dot_file(args, graph, targs, fname):
             color = 'red'
             style = 'bold'
 
-        if args.no_addr:
-            outf.write('  node [label="{0}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(label, color, shape, style, addr))
-        else:
-            if native:
-                outf.write('  node [label="{0}\\njsobj@{4}\\nnative@{5}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(label, color, shape, style, addr, native))
-            else:
-                outf.write('  node [label="{0}\\njsobj@{4}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(label, color, shape, style, addr))
+        node_label = label
+
+        if addr in unreachable:
+            style += ',dotted'
+            node_label = 'Unreachable\\n' + node_label
+
+        if not args.no_addr:
+            node_label += '\\njsobj@' + addr
+            if priv:
+                node_label += '\\npriv@' + priv
+        annotation = graph.annotations.get(addr, None)
+        if annotation:
+            node_label += '\\n\\"{}\\"'.format(annotation)
+
+        node_text = '  node [label="{0}", color={1}, shape={2}, style="{3}"] q{4};\n'.format(node_label, color, shape, style, addr)
+        outf.write(node_text)
 
     # Edges (relationships)
     for origin, destinations in edges.items():
@@ -184,6 +199,16 @@ def output_dot_file(args, graph, targs, fname):
                 label = ',\\n'.join(ll)
 
             outf.write('  q{0} -> q{1} [label="{2}", color={3}, style="{4}"];\n'.format(origin, destination, label, color, style))
+
+    # Extra edges, marked as "interesting" via a command line argument
+    if args.edge_targets:
+        for origin, paths in graph.edge_labels.items():
+            for destination, labels in paths.items():
+                if destination in edges.get(origin, set()):
+                    continue  # already printed
+                for label in labels:
+                    if label in args.edge_targets:
+                        outf.write('  q{0} -> q{1} [label="{2}", color=black, style="solid"];\n'.format(origin, destination, label))
 
     outf.write('}\n')
     outf.close()

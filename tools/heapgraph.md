@@ -117,6 +117,20 @@ $ ./heapgraph.py --hide-addr 0x7f6ef022c060 \
 $ ./heapgraph.py --hide-node 0x55e93cf5deb0 /home/user/myApp2.heap Object
 ```
 
+### Labeling Nodes
+
+It can be hard to see what some nodes mean, especially if all the nodes
+you are interested in are labeled `GObject_Object`.
+Luckily there is a way to label the nodes in your program so that they
+are visible in the heap graph.
+Add a property named `__heapgraph_name` with a simple string value to
+your object:
+```js
+myObj.__heapgraph_name = 'My object';
+```
+Heapgraph will detect this and display the name as part of the node's
+label, e.g. GObject_Object "My object".
+
 ### Command-Line Arguments
 
 > **NOTE:** Command line arguments are subject to change; Check
@@ -127,7 +141,7 @@ usage: heapgraph.py [-h] [--edge | --function | --string] [--count]
                     [--dot-graph] [--no-addr] [--diff-heap FILE]
                     [--no-gray-roots] [--no-weak-maps] [--show-global]
                     [--show-imports] [--hide-addr ADDR] [--hide-node LABEL]
-                    FILE TARGET
+                    [--hide-edge LABEL] FILE TARGET
 
 Find what is rooting or preventing an object from being collected in a GJS
 heap using a shortest-path breadth-first algorithm.
@@ -159,6 +173,8 @@ Node/Root Filtering:
                         Don't show roots with the heap address ADDR
   --hide-node LABEL, -hn LABEL
                         Don't show nodes with labels containing LABEL
+  --hide-edge LABEL, -he LABEL
+                        Don't show edges labelled LABEL
 ```
 
 ## See Also
