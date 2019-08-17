@@ -5,16 +5,17 @@
     <file>jasmine.js</file>
     <file>minijasmine.js</file>
     <file>modules/alwaysThrows.js</file>
+    <file>modules/badOverrides/GIMarshallingTests.js</file>
+    <file>modules/badOverrides/Gio.js</file>
+    <file>modules/badOverrides/Regress.js</file>
+    <file>modules/badOverrides/WarnLib.js</file>
     <file>modules/foobar.js</file>
     <file>modules/lexicalScope.js</file>
     <file>modules/modunicode.js</file>
     <file>modules/mutualImport/a.js</file>
     <file>modules/mutualImport/b.js</file>
-    <file>modules/subA/subB/__init__.js</file>
     <file>modules/overrides/GIMarshallingTests.js</file>
-    <file>modules/overrides/Gio.js</file>
-    <file>modules/overrides/Regress.js</file>
-    <file>modules/overrides/WarnLib.js</file>
+    <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>
   </gresource>

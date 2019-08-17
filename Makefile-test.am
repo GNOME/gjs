@@ -200,18 +200,18 @@ common_jstests_files =						\
 	installed-tests/js/testself.js				\
 	installed-tests/js/testByteArray.js			\
 	installed-tests/js/testExceptions.js			\
-	installed-tests/js/testEverythingBasic.js		\
-	installed-tests/js/testEverythingEncapsulated.js	\
 	installed-tests/js/testFormat.js			\
 	installed-tests/js/testFundamental.js			\
 	installed-tests/js/testGettext.js			\
 	installed-tests/js/testGIMarshalling.js			\
 	installed-tests/js/testGLib.js				\
+	installed-tests/js/testGObject.js			\
 	installed-tests/js/testGObjectClass.js			\
 	installed-tests/js/testGObjectInterface.js		\
 	installed-tests/js/testGTypeClass.js			\
 	installed-tests/js/testGio.js				\
 	installed-tests/js/testImporter.js			\
+	installed-tests/js/testIntrospection.js			\
 	installed-tests/js/testLang.js				\
 	installed-tests/js/testLegacyByteArray.js		\
 	installed-tests/js/testLegacyClass.js			\
@@ -221,9 +221,11 @@ common_jstests_files =						\
 	installed-tests/js/testNamespace.js			\
 	installed-tests/js/testPackage.js			\
 	installed-tests/js/testParamSpec.js			\
+	installed-tests/js/testRegress.js			\
 	installed-tests/js/testSignals.js			\
 	installed-tests/js/testSystem.js			\
 	installed-tests/js/testTweener.js			\
+	installed-tests/js/testWarnLib.js			\
 	$(NULL)
 
 jasmine_tests = $(common_jstests_files)
@@ -361,7 +363,7 @@ DEBUGGER_LOG_DRIVER = $(LOG_DRIVER)
 DEBUGGER_LOG_COMPILER = $(top_srcdir)/installed-tests/debugger-test.sh
 EXTRA_DIST += installed-tests/debugger-test.sh
 
-CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test}/*
+CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test}/* *-resources.c
 CODE_COVERAGE_GENHTML_OPTIONS = 			\
 	$(CODE_COVERAGE_GENHTML_OPTIONS_DEFAULT)	\
 	lcov/coverage.lcov 				\

@@ -17,7 +17,7 @@ describe('Cairo', function () {
 
     let cr, surface;
     beforeEach(function () {
-        surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 1, 1);
+        surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 10, 10);
         cr = new Cairo.Context(surface);
     });
 
@@ -167,14 +167,6 @@ describe('Cairo', function () {
             }).not.toThrow();
         });
 
-        it('can be marshalled through a signal handler', function () {
-            let o = new Regress.TestObj();
-            let foreignSpy = jasmine.createSpy('sig-with-foreign-struct');
-            o.connect('sig-with-foreign-struct', foreignSpy);
-            o.emit_sig_with_foreign_struct();
-            expect(foreignSpy).toHaveBeenCalledWith(o, cr);
-        });
-
         it('has methods when created from a C function', function () {
             let win = new Gtk.OffscreenWindow();
             let da = new Gtk.DrawingArea();
@@ -227,6 +219,52 @@ describe('Cairo', function () {
             expect(_ts(p1)).toEqual('RadialGradient');
             cr.setSource(p1);
             expect(_ts(cr.getSource())).toEqual('RadialGradient');
+        });
+    });
+
+    describe('GI test suite', function () {
+        describe('for context', function () {
+            it('can be marshalled as a return value', function () {
+                const outCr = Regress.test_cairo_context_full_return();
+                const outSurface = outCr.getTarget();
+                expect(outSurface.getFormat()).toEqual(Cairo.Format.ARGB32);
+                expect(outSurface.getWidth()).toEqual(10);
+                expect(outSurface.getHeight()).toEqual(10);
+            });
+
+            it('can be marshalled as an in parameter', function () {
+                expect(() => Regress.test_cairo_context_none_in(cr)).not.toThrow();
+            });
+        });
+
+        describe('for surface', function () {
+            ['none', 'full'].forEach(transfer => {
+                it(`can be marshalled as a transfer-${transfer} return value`, function () {
+                    const outSurface = Regress[`test_cairo_surface_${transfer}_return`]();
+                    expect(outSurface.getFormat()).toEqual(Cairo.Format.ARGB32);
+                    expect(outSurface.getWidth()).toEqual(10);
+                    expect(outSurface.getHeight()).toEqual(10);
+                });
+            });
+
+            it('can be marshalled as an in parameter', function () {
+                expect(() => Regress.test_cairo_surface_none_in(surface)).not.toThrow();
+            });
+
+            it('can be marshalled as an out parameter', function () {
+                const outSurface = Regress.test_cairo_surface_full_out();
+                expect(outSurface.getFormat()).toEqual(Cairo.Format.ARGB32);
+                expect(outSurface.getWidth()).toEqual(10);
+                expect(outSurface.getHeight()).toEqual(10);
+            });
+        });
+
+        it('can be marshalled through a signal handler', function () {
+            let o = new Regress.TestObj();
+            let foreignSpy = jasmine.createSpy('sig-with-foreign-struct');
+            o.connect('sig-with-foreign-struct', foreignSpy);
+            o.emit_sig_with_foreign_struct();
+            expect(foreignSpy).toHaveBeenCalledWith(o, cr);
         });
     });
 });
