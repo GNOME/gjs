@@ -378,7 +378,7 @@ AC_CONFIG_LINKS([
 AC_OUTPUT
 
 # Warn about conditions that affect runtime
-PKG_CHECK_EXISTS([gobject-introspection-1.0 >= 1.59.2], [], [
+PKG_CHECK_EXISTS([gobject-introspection-1.0 >= 1.61.2], [], [
     AC_MSG_WARN([You do not have a new enough version of
 gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.])])
