@@ -15,11 +15,12 @@ import re
 import sys
 
 try:
-    from heapdot import output_dot_file
-    from heapdot import add_dot_graph_path
+    from heapdot import (output_dot_file, add_dot_graph_path,
+                         add_dot_graph_unreachable)
 except ImportError:
     sys.stderr.write('DOT graph output not available\n')
 
+NAME_ANNOTATION = '__heapgraph_name'
 
 ########################################################
 # Command line arguments.
@@ -30,24 +31,23 @@ parser = argparse.ArgumentParser(description='Find what is rooting or preventing
 parser.add_argument('heap_file', metavar='FILE',
                     help='Garbage collector heap from System.dumpHeap()')
 
-parser.add_argument('target', metavar='TARGET',
+parser.add_argument('targets', metavar='TARGET', nargs='*',
                     help='Heap address (eg. 0x7fa814054d00) or type prefix (eg. Array, Object, GObject, Function...)')
 
 ### Target Options
-targ_opts = parser.add_mutually_exclusive_group()
+targ_opts = parser.add_argument_group('Target options')
 
+targ_opts.add_argument('--edge', '-e', dest='edge_targets',
+                       action='append', default=[],
+                       help='Add an edge label to the list of targets')
 
-targ_opts.add_argument('--edge', '-e', dest='edge_target', action='store_true',
-                       default=False,
-                       help='Treat TARGET as a function name')
+targ_opts.add_argument('--function', '-f', dest='func_targets',
+                       action='append', default=[],
+                       help='Add a function name to the list of targets')
 
-targ_opts.add_argument('--function', '-f', dest='func_target', action='store_true',
-                       default=False,
-                       help='Treat TARGET as a function name')
-
-targ_opts.add_argument('--string', '-s', dest='string_target', action='store_true',
-                       default=False,
-                       help='Treat TARGET as a string literal or String()')
+targ_opts.add_argument('--string', '-s', dest='string_targets',
+                       action='append', default=[],
+                       help='Add a string literal or String() to the list of targets')
 
 ### Output Options
 out_opts = parser.add_argument_group('Output Options')
@@ -75,6 +75,9 @@ filt_opts.add_argument('--no-gray-roots', '-ng', dest='no_gray_roots',
                        action='store_true', default=False,
                        help='Don\'t show gray roots (marked to be collected)')
 
+filt_opts.add_argument('--show-unreachable', '-u', action='store_true',
+                       help="Show objects that have no path to a root but are not collected yet")
+
 filt_opts.add_argument('--no-weak-maps', '-nwm', dest='no_weak_maps',
                        action='store_true', default=False,
                        help='Don\'t show WeakMaps')
@@ -99,22 +102,28 @@ filt_opts.add_argument('--hide-node', '-hn', dest='hide_nodes', action='append',
                                                  'GjsModule'],
                        help='Don\'t show nodes with labels containing LABEL')
 
+filt_opts.add_argument('--hide-edge', '-he', dest='hide_edges', action='append',
+                       metavar='LABEL', default=[NAME_ANNOTATION],
+                       help="Don't show edges labeled LABEL")
+
 
 ###############################################################################
 # Heap Patterns
 ###############################################################################
 
-GraphAttribs = namedtuple('GraphAttribs', 'edge_labels node_labels roots root_labels weakMapEntries')
+GraphAttribs = namedtuple('GraphAttribs',
+                          'edge_labels node_labels roots root_labels weakMapEntries annotations')
 WeakMapEntry = namedtuple('WeakMapEntry', 'weakMap key keyDelegate value')
 
 
 addr_regex = re.compile('[A-F0-9]+$|0x[a-f0-9]+$')
 node_regex = re.compile ('((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
 edge_regex = re.compile ('> ((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
-wme_regex = re.compile ('WeakMapEntry map=([a-zA-Z0-9]+|\(nil\)) key=([a-zA-Z0-9]+|\(nil\)) keyDelegate=([a-zA-Z0-9]+|\(nil\)) value=([a-zA-Z0-9]+)\r?$')
+wme_regex = re.compile(r'WeakMapEntry map=((?:0x)?[a-zA-Z0-9]+|\(nil\)) key=((?:0x)?[a-zA-Z0-9]+|\(nil\)) keyDelegate=((?:0x)?[a-zA-Z0-9]+|\(nil\)) value=((?:0x)?[a-zA-Z0-9]+)')
 
 func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
-gobj_regex = re.compile('([^ ]+) (0x[a-fA-F0-9]+$)')
+priv_regex = re.compile(r'([^ ]+) (0x[a-fA-F0-9]+$)')
+atom_regex = re.compile(r'^string <atom: length (?:\d+)> (.*)\r?$')
 
 ###############################################################################
 # Heap Parsing
@@ -168,6 +177,7 @@ def parse_graph(fobj):
     edges = {}
     edge_labels = {}
     node_labels = {}
+    annotations = {}
 
     def addNode (addr, node_label):
         edges[addr] = {}
@@ -188,8 +198,15 @@ def parse_graph(fobj):
         e = edge_regex.match(line)
 
         if e:
-            if node_addr not in args.hide_addrs:
-                addEdge(node_addr, e.group(1), e.group(3))
+            target, edge_label = e.group(1, 3)
+            if edge_label == NAME_ANNOTATION:
+                a = atom_regex.match(node_labels[target])
+                if a:
+                    annotations[node_addr] = a.group(1)
+
+            if (node_addr not in args.hide_addrs and
+                    edge_label not in args.hide_edges):
+                addEdge(node_addr, target, edge_label)
         else:
             node = node_regex.match(line)
 
@@ -212,7 +229,7 @@ def parse_graph(fobj):
                 sys.stderr.write('Error: Unknown line: {}\n'.format(line[:-1]))
 
     # yar, should pass the root crud in and wedge it in here, or somewhere
-    return [edges, edge_labels, node_labels]
+    return [edges, edge_labels, node_labels, annotations]
 
 
 def parse_heap(fname):
@@ -225,12 +242,12 @@ def parse_heap(fname):
         exit(-1)
 
     [roots, root_labels, weakMapEntries] = parse_roots(fobj)
-    [edges, edge_labels, node_labels] = parse_graph(fobj)
+    [edges, edge_labels, node_labels, annotations] = parse_graph(fobj)
     fobj.close()
 
     graph = GraphAttribs(edge_labels=edge_labels, node_labels=node_labels,
                          roots=roots, root_labels=root_labels,
-                         weakMapEntries=weakMapEntries)
+                         weakMapEntries=weakMapEntries, annotations=annotations)
 
     return (edges, graph)
 
@@ -298,12 +315,14 @@ def load_graph(fname):
 ###############################################################################
 
 tree_graph_paths = {}
+tree_graph_unreachables = set()
 
 
 class style:
     BOLD = '\033[1m'
     ITALIC = '\033[3m'
     UNDERLINE = '\033[4m'
+    PURPLE = '\033[0;36m'
     END = '\033[0m'
 
 
@@ -351,18 +370,54 @@ def get_node_label(graph, addr):
     return label[:50]
 
 
+def get_node_annotation(graph, addr):
+    return graph.annotations.get(addr, None)
+
+
+def format_node(graph, addr, parent=''):
+    node = get_node_label(graph, addr)
+    annotation = get_node_annotation(graph, addr)
+    has_priv = priv_regex.match(node)
+
+    # Color/Style
+    if os.isatty(1):
+        orig = style.UNDERLINE + 'jsobj@' + addr + style.END
+
+        if has_priv:
+            node = style.BOLD + has_priv.group(1) + style.END
+            orig += ' ' + style.UNDERLINE + 'priv@' + has_priv.group(2) + style.END
+        else:
+            node = style.BOLD + node + style.END
+    else:
+        orig = 'jsobj@' + addr
+
+        if has_priv:
+            node = has_priv.group(1)
+            orig += ' priv@' + has_priv.group(2)
+
+    # Add the annotation
+    if annotation:
+        if os.isatty(1):
+            node += ' "' + style.PURPLE + annotation + style.END + '"'
+        else:
+            node += ' "' + annotation + '"'
+
+    if args.no_addr:
+        return node
+    return node + ' ' + orig
+
+
 def output_tree_graph(graph, data, base='', parent=''):
     while data:
         addr, children = data.popitem()
+
+        node = format_node(graph, addr, base)
 
         # Labels
         if parent:
             edge = get_edge_label(graph, parent, addr)
         else:
             edge = graph.root_labels[addr]
-
-        node = get_node_label(graph, addr)
-        has_native = gobj_regex.match(node)
 
         # Color/Style
         if os.isatty(1):
@@ -371,31 +426,11 @@ def output_tree_graph(graph, data, base='', parent=''):
             else:
                 edge = style.BOLD + edge + style.END
 
-            orig = style.UNDERLINE + 'jsobj@' + addr + style.END
-
-            if has_native:
-                node = style.BOLD + has_native.group(1) + style.END
-                orig += ' ' + style.UNDERLINE + 'native@' + has_native.group(2) + style.END
-            else:
-                node = style.BOLD + node + style.END
-        else:
-            orig = 'jsobj@' + addr
-
-            if has_native:
-                node = has_native.group(1)
-                orig += ' native@' + has_native.group(2)
-
         # Print the path segment
-        if args.no_addr:
-            if data:
-                print('{0}├─[{1}]─➤ [{2}]'.format(base, edge, node))
-            else:
-                print('{0}╰─[{1}]─➤ [{2}]'.format(base, edge, node))
+        if data:
+            print('{0}├─[{1}]─➤ [{2}]'.format(base, edge, node))
         else:
-            if data:
-                print('{0}├─[{1}]─➤ [{2} {3}]'.format(base, edge, node, orig))
-            else:
-                print('{0}╰─[{1}]─➤ [{2} {3}]'.format(base, edge, node, orig))
+            print('{0}╰─[{1}]─➤ [{2}]'.format(base, edge, node))
 
         # Print child segments
         if children:
@@ -410,6 +445,13 @@ def output_tree_graph(graph, data, base='', parent=''):
                 print(base + '  ')
 
 
+def output_tree_unreachables(graph, data):
+    while data:
+        addr = data.pop()
+        node = format_node(graph, addr)
+        print(' • Unreachable: [{}]'.format(node))
+
+
 def add_tree_graph_path(owner, path):
     o = owner.setdefault(path.pop(0), {})
     if path:
@@ -421,6 +463,13 @@ def add_path(args, graph, path):
         add_dot_graph_path(path)
     else:
         add_tree_graph_path(tree_graph_paths, path)
+
+
+def add_unreachable(args, node):
+    if args.dot_graph:
+        add_dot_graph_unreachable(node)
+    else:
+        tree_graph_unreachables.add(node)
 
 
 ###############################################################################
@@ -456,17 +505,6 @@ def find_roots_bfs(args, edges, graph, target):
         if wme.keyDelegate != '0x0':
             weakData.setdefault(wme.keyDelegate, set([])).add(wme)
 
-    # Unlike JavaScript objects, GObjects can be "rooted" by their refcount so
-    # we have to use a fake root (repetitively)
-    startObject = 'FAKE START OBJECT'
-    rootEdges = set([])
-
-    for addr, isBlack in graph.roots.items():
-        if isBlack or not args.no_gray_roots:
-            rootEdges.add(addr)
-
-    #FIXME:
-    edges[startObject] = rootEdges
     distances[startObject] = (-1, None)
     workList.append(startObject)
 
@@ -527,6 +565,10 @@ def find_roots_bfs(args, edges, graph, target):
             path.pop()
             path.reverse()
             add_path(args, graph, path)
+        elif args.show_unreachable:
+            # No path to a root. This object is eligible for collection on the
+            # next GC, but is still in an arena.
+            add_unreachable(args, target)
 
 
 ########################################################
@@ -534,83 +576,89 @@ def find_roots_bfs(args, edges, graph, target):
 ########################################################
 
 def target_edge(graph, target):
-    targets = []
+    targets = set()
 
     for origin, destinations in graph.edge_labels.items():
         for destination in destinations:
             if target in graph.edge_labels[origin][destination]:
-                targets.append(destination)
+                targets.add(destination)
+                targets.add(origin)
 
     sys.stderr.write('Found {} objects with edge label of {}\n'.format(len(targets), target))
     return targets
 
 
 def target_func(graph, target):
-    targets = []
+    targets = set()
 
     for addr, label in graph.node_labels.items():
         if not label[:9] == 'Function ':
             continue
 
         if label[9:] == target:
-            targets.append(addr)
+            targets.add(addr)
 
     sys.stderr.write('Found {} functions named "{}"\n'.format(len(targets), target))
     return targets
 
 
 def target_gobject(graph, target):
-    targets = []
+    targets = set()
 
     for addr, label in graph.node_labels.items():
         if label.endswith(target):
-            targets.append(addr)
+            targets.add(addr)
 
     sys.stderr.write('Found GObject with address of {}\n'.format(target))
     return targets
 
 
 def target_string(graph, target):
-    targets = []
+    targets = set()
 
     for addr, label in graph.node_labels.items():
         if label[:7] == 'string ' and target in label[7:]:
-            targets.append(addr)
+            targets.add(addr)
         elif label[:10] == 'substring ' and target in label[10:]:
-            targets.append(addr)
+            targets.add(addr)
 
     sys.stderr.write('Found {} strings containing "{}"\n'.format(len(targets), target))
     return targets
 
 
 def target_type(graph, target):
-    targets = []
+    targets = set()
 
     for addr in edges.keys():
-        if graph.node_labels.get(addr, '')[0:len(args.target)] == args.target:
-            targets.append(addr)
+        if graph.node_labels.get(addr, '')[0:len(target)] == target:
+            targets.add(addr)
 
     sys.stderr.write('Found {} targets with type "{}"\n'.format(len(targets), target))
     return targets
 
 
 def select_targets(args, edges, graph):
-    if args.edge_target:
-        return target_edge(graph, args.target)
-    elif args.func_target:
-        return target_func(graph, args.target)
-    elif args.string_target:
-        return target_string(graph, args.target)
-    # If args.target seems like an address search for a JS Object, then GObject
-    elif addr_regex.match(args.target):
-        if args.target in edges:
-            sys.stderr.write('Found object with address "{}"\n'.format(args.target))
-            return [args.target]
+    targets = set()
+    for target in args.targets:
+        # If target seems like an address search for a JS Object, then GObject
+        if addr_regex.match(target):
+            if target in edges:
+                sys.stderr.write('Found object with address "{}"\n'.format(target))
+                targets.add(target)
+            else:
+                targets.update(target_gobject(graph, target))
         else:
-            return target_gobject(graph, args.target)
+            # Fallback to looking for JavaScript objects by class name
+            targets.update(target_type(graph, target))
 
-    # Fallback to looking for JavaScript objects by class name
-    return target_type(graph, args.target)
+    for target in args.edge_targets:
+        targets.update(target_edge(graph, target))
+    for target in args.func_targets:
+        targets.update(target_func(graph, target))
+    for target in args.string_targets:
+        targets.update(target_string(graph, target))
+
+    return list(targets)
 
 
 if __name__ == "__main__":
@@ -625,8 +673,9 @@ if __name__ == "__main__":
         args.hide_nodes.remove('GIRepositoryNamespace')
 
     # Make sure we don't filter an explicit target
-    if args.target in args.hide_nodes:
-        args.hide_nodes.remove(args.target)
+    for target in args.targets:
+        if target in args.hide_nodes:
+            args.hide_nodes.remove(target)
 
     # Heap diffing; we do these addrs separately due to the sheer amount
     diff_addrs = []
@@ -639,10 +688,19 @@ if __name__ == "__main__":
     targets = select_targets(args, edges, graph)
 
     if len(targets) == 0:
-        sys.stderr.write('No targets found for "{}".\n'.format(args.target))
+        sys.stderr.write('No targets found.\n')
         sys.exit(-1)
     elif args.count:
         sys.exit(-1);
+
+    # Unlike JavaScript objects, GObjects can be "rooted" by their refcount so
+    # we have to use a fake root (repetitively)
+    rootEdges = set([])
+    for addr, isBlack in graph.roots.items():
+        if isBlack or not args.no_gray_roots:
+            rootEdges.add(addr)
+    startObject = 'FAKE START OBJECT'
+    edges[startObject] = rootEdges
 
     for addr in targets:
         if addr in edges and addr not in diff_addrs:
@@ -652,4 +710,5 @@ if __name__ == "__main__":
         output_dot_file(args, graph, targets, args.heap_file + ".dot")
     else:
         output_tree_graph(graph, tree_graph_paths)
+        output_tree_unreachables(graph, tree_graph_unreachables)
 
