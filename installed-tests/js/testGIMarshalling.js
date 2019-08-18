@@ -535,10 +535,10 @@ describe('GArray', function () {
         }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/106');
     });
 
-    xit('marshals boxed structs as a transfer-full return value', function () {
+    it('marshals boxed structs as a transfer-full return value', function () {
         expect(GIMarshallingTests.garray_boxed_struct_full_return().map(e => e.long_))
             .toEqual([42, 43, 44]);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/160');
+    });
 
     describe('of booleans with transfer none', function () {
         testInParameter('garray_bool_none', [-1, 0, 1, 2]);
@@ -560,10 +560,10 @@ describe('GPtrArray', function () {
     });
 
     describe('of structs', function () {
-        xit('can be returned with transfer full', function () {
+        it('can be returned with transfer full', function () {
             expect(GIMarshallingTests.gptrarray_boxed_struct_full_return().map(e => e.long_))
                 .toEqual([42, 43, 44]);
-        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/160');
+        });
     });
 });
 
