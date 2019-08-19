@@ -1438,7 +1438,6 @@ ObjectInstance::disassociate_js_gobject(void)
 
     /* Mark that a JS object once existed, but it doesn't any more */
     m_wrapper_finalized = true;
-    m_wrapper = nullptr;
 }
 
 bool
@@ -1516,8 +1515,6 @@ ObjectInstance::init_impl(JSContext              *context,
 
     if (!m_ptr)
         associate_js_gobject(context, object, gobj);
-
-    debug_lifecycle("JSObject created");
 
     TRACE(GJS_OBJECT_WRAPPER_NEW(this, m_ptr, ns(), name()));
 

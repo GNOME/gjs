@@ -181,8 +181,12 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
      * so that we can collect the JS wrapper objects, and in order to minimize
      * the chances of objects having a pending toggle up queued when they are
      * garbage collected. */
-    if (status == JSGC_BEGIN)
+    if (status == JSGC_BEGIN) {
+        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Begin garbage collection");
         gjs_object_clear_toggles();
+    } else if (status == JSGC_END) {
+        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
+    }
 }
 
 GJS_JSAPI_RETURN_CONVENTION

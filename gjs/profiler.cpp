@@ -685,6 +685,11 @@ void _gjs_profiler_add_mark(GjsProfiler* self, gint64 time_nsec,
         sysprof_capture_writer_add_mark(self->capture, time_nsec, -1, self->pid,
                                         duration_nsec, group, name, message);
     }
+#else
+    // Unused in the no-profiler case
+    (void)time_nsec;
+    (void)duration_nsec;
+    (void)message;
 #endif
 }
 
@@ -699,5 +704,7 @@ void gjs_profiler_set_fd(GjsProfiler* self, int fd) {
             close(self->fd);
         self->fd = fd;
     }
+#else
+    (void)fd;  // Unused in the no-profiler case
 #endif
 }
