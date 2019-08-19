@@ -1,3 +1,24 @@
+Version 1.57.91
+---------------
+
+- GJS no longer links to libgtk-3. This makes it possible to load the Gtk-4.0
+  typelib in GJS and write programs that use GTK 4.
+
+- The heapgraph tool has gained some improvements; it is now possible to print a
+  heap graph of multiple targets. You can also mark an object for better
+  identification in the heap graph by assigning a magic property: for example,
+  myObject.__heapgraph_name = 'Button' will make that object identify itself as
+  "Button" in heap graphs.
+
+- Closed bugs and merge requests:
+  * Remove usage of Lang in non legacy code [Sonny Piers, !322]
+  * GTK4 [Florian Müllner, #99, !328, !330]
+  * JS syntax fixes [Marco Trevisan, Philip Chimento, !306, !323]
+  * gi: Avoid infinite recursion when converting GValues [Florian Müllner, !329]
+  * Implement all GObject-introspection test suites [Philip Chimento, !327,
+    !332]
+  * Heapgraph improvements [Philip Chimento, !325]
+
 Version 1.57.90
 ---------------
 
