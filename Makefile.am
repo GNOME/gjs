@@ -27,7 +27,7 @@ MAINTAINERCLEANFILES =					\
 	$(GITIGNORE_MAINTAINERCLEANFILES_M4_LIBTOOL)	\
 	tap-driver.sh					\
 	$(NULL)
-GITIGNOREFILES = INSTALL m4
+GITIGNOREFILES = INSTALL m4 tools/__pycache__
 
 gjsjsdir = @gjsjsdir@
 gjsoverridedir = $(gjsjsdir)/overrides
