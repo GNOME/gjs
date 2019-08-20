@@ -332,16 +332,6 @@ AS_IF([test "x$enable_cpp_rtti" != "xyes"],
   [AX_APPEND_COMPILE_FLAGS([-fno-rtti])],
   [AX_APPEND_COMPILE_FLAGS([-GR-])])
 
-AC_ARG_WITH([xvfb-tests],
-  [AS_HELP_STRING([--with-xvfb-tests],
-    [Run all tests under an XVFB server @<:@default=no@:>@])])
-AS_IF([test "x$with_xvfb_tests" = "xyes"], [
-  AC_PATH_PROG([XVFB], [Xvfb])
-  AS_IF([test -z "$XVFB"],
-    [AC_MSG_ERROR([Xvfb is required for --with-xvfb-tests])])
-])
-AM_CONDITIONAL([XVFB_TESTS], [test "x$with_xvfb_tests" = "xyes"])
-
 AC_ARG_WITH([dbus-tests],
   [AS_HELP_STRING([--without-dbus-tests],
     [Don't try to use DBus during make check @<:@default=use@:>@])])
@@ -390,8 +380,7 @@ some tests will fail.])
 ])
 
 TEST_MSG=
-AM_COND_IF([XVFB_TESTS], [TEST_MSG="xvfb "])
-AM_COND_IF([DBUS_TESTS], [TEST_MSG="${TEST_MSG}dbus"])
+AM_COND_IF([DBUS_TESTS], [TEST_MSG="dbus-run-session"])
 AS_IF([test -z "$TEST_MSG"], [TEST_MSG="nothing special"])
 
 AC_MSG_RESULT([
