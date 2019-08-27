@@ -1528,6 +1528,21 @@ bool ObjectInstance::constructor_impl(JSContext* context,
                                       const JS::CallArgs& argv) {
     JS::RootedValue initer(context);
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+
+    g_assert(argv.newTarget().isObject() && "new.target needs to be an object");
+    JS::RootedObject new_target(context, &argv.newTarget().toObject());
+    bool has_gtype;
+    if (!JS_HasOwnPropertyById(context, new_target, gjs->atoms().gtype(),
+                               &has_gtype))
+        return false;
+    if (!has_gtype) {
+        gjs_throw(context,
+                  "Tried to construct an object without a GType; did you "
+                  "forget to use GObject.registerClass() when inheriting from "
+                  "a GObject type?");
+        return false;
+    }
+
     return gjs_object_require_property(context, object, "GObject instance",
                                        gjs->atoms().init(), &initer) &&
            gjs->call_function(object, initer, argv, argv.rval());
