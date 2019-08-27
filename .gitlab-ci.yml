@@ -101,9 +101,11 @@ stages:
     when: always
     paths: *reg_files
 
-  image: docker:latest
+  image: docker:19.03.0
   services:
-    - docker:dind
+    - docker:19.03.0-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
 
   script:
     # CI starts here. Previous messages are from GitLab Runner setup.
@@ -264,12 +266,13 @@ eslint:
 #############################################
 codequality:
   stage: source_check
-  image: docker:latest
+  image: docker:19.03.0
   variables:
     TASK_ID: "codequality"
     DOCKER_DRIVER: overlay
+    DOCKER_TLS_CERTDIR: ""
   services:
-    - docker:dind
+    - docker:19.03.0-dind
   script:
     - docker pull codeclimate/codeclimate
     - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
@@ -459,12 +462,13 @@ ppc64le:
 # Planned as daily
 codequality:
   stage: manual
-  image: docker:latest
+  image: docker:19.03.0
   variables:
     TASK_ID: "codequality"
     DOCKER_DRIVER: overlay
+    DOCKER_TLS_CERTDIR: ""
   services:
-    - docker:dind
+    - docker:19.03.0-dind
   script:
     - docker pull codeclimate/codeclimate
     - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
@@ -654,10 +658,13 @@ ppc64le:
 #          Create CI Docker Images          #
 #############################################
 .Docker image template: &create_docker_image
-  image: docker:latest
+  image: docker:19.03.0
   stage: deploy
   services:
-    - docker:dind
+    - docker:19.03.0-dind
+  variables:
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
   only:
     variables:
       - $CRON_TASK == "BUILD_CI_IMAGES"
