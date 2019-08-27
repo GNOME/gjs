@@ -257,8 +257,4 @@ cppcheck:
 		--enable=warning,performance,portability,information,missingInclude \
 		--force -q $(top_srcdir) -I $(top_builddir)
 
-# Include What You Use: run 'make iwyu | tee iwyu.log'
-iwyu: tools/run_iwyu.sh
-	SRCDIR=$(abs_top_srcdir) BUILDDIR=$(abs_top_builddir) tools/run_iwyu.sh 2>&1
-
 -include $(top_srcdir)/git.mk

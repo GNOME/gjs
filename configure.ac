@@ -357,7 +357,6 @@ dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc win32/config.h.win32])
-AC_CONFIG_FILES([tools/run_iwyu.sh], [chmod +x tools/run_iwyu.sh])
 dnl Symlink the files from gobject-introspection's test libraries into the tree;
 dnl Automake plans to drop support for compiling them in-place.
 AC_CONFIG_LINKS([
