@@ -385,7 +385,9 @@ bool FundamentalPrototype::get_parent_proto(
 
 // Overrides GIWrapperPrototype::constructor_nargs().
 unsigned FundamentalPrototype::constructor_nargs(void) const {
-    return g_callable_info_get_n_args(m_constructor_info);
+    if (m_constructor_info)
+        return g_callable_info_get_n_args(m_constructor_info);
+    return 0;
 }
 
 /*
