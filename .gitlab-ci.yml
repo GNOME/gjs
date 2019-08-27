@@ -662,9 +662,6 @@ ppc64le:
   stage: deploy
   services:
     - docker:19.03.0-dind
-  variables:
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
   only:
     variables:
       - $CRON_TASK == "BUILD_CI_IMAGES"
@@ -721,6 +718,8 @@ fedora.static-analysis:
   variables:
     BASE: "fedora"
     DOCKER_DRIVER: overlay
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
 
@@ -730,6 +729,8 @@ SM60-gcc.fedora-dev:
     BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-gcc.fedora-dev"
 
@@ -740,6 +741,8 @@ SM60-debug-gcc.fedora-dev:
     BUILD_OPTS: "--enable-debug"
     DEV: "devel"
     DOCKER_DRIVER: overlay
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-debug-gcc.fedora-dev"
 
@@ -749,6 +752,8 @@ SM60-gcc.fedora-dev.aarch64:
     BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
     IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.aarch64"
     NAME: "SM60-gcc.fedora-dev.aarch64"
@@ -761,6 +766,8 @@ SM60-gcc.fedora-dev.ppc64le:
     BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
     IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.ppc64le"
     NAME: "SM60-gcc.fedora-dev.ppc64le"
@@ -773,5 +780,7 @@ SM60-gcc.ubuntu-dev:
     BASE: "debian"
     DEV: "devel"
     DOCKER_DRIVER: overlay
+    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
+    DOCKER_TLS_CERTDIR: ""
     IMAGE: "ubuntu:devel"
     NAME: "SM60-gcc.ubuntu-dev"
