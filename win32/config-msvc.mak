@@ -1,7 +1,7 @@
 # NMake Makefile portion for enabling features for Windows builds
 
 # Spidermonkey release series (17, 24, 31, 38, 45 etc.)
-MOZJS_VERSION = 60
+MOZJS_VERSION = 68
 
 # Please see https://bugzilla.gnome.org/show_bug.cgi?id=775868,
 # comments 26, 27 and 28
