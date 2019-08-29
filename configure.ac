@@ -65,14 +65,18 @@ m4_define(glib_required_version, 2.58.0)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
+GLIB_REQUIREMENT="glib-2.0 >= glib_required_version"
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
+GIO_REQUIREMENT="gio-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
-common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
+common_packages="gthread-2.0 $GIO_REQUIREMENT mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"
 
-AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
+AX_PKG_CHECK_MODULES([GJS],
+  [$GLIB_REQUIREMENT $GOBJECT_REQUIREMENT $GIO_REQUIREMENT],
+  [$gjs_packages])
 dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJS_CONSOLE], [$gjs_base_packages])
