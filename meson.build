@@ -109,7 +109,7 @@ gio = dependency('gio-2.0', version: glib_required_version,
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
     fallback: ['gobject-introspection', 'girepo_dep'])
-spidermonkey = dependency('mozjs-60')
+spidermonkey = dependency('mozjs-68')
 
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC builds...
