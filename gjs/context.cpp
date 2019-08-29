@@ -29,7 +29,7 @@
 #include <string.h>     // for memset
 #include <sys/types.h>  // IWYU pragma: keep
 
-#ifdef HAVE_UNISTD_H
+#ifdef GJS_HAVE_UNISTD_H
 #    include <unistd.h>  // for getpid
 #endif
 

@@ -27,7 +27,7 @@
 #include <stdlib.h>  // for exit
 #include <string.h>  // for strcmp, strlen
 
-#ifdef HAVE_UNISTD_H
+#ifdef GJS_HAVE_UNISTD_H
 #    include <unistd.h>  // for close
 #endif
 

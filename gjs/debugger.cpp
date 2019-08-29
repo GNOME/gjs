@@ -22,7 +22,7 @@
  * Authored By: Philip Chimento <philip.chimento@gmail.com>
  */
 
-#include <config.h>  // for HAVE_READLINE_READLINE_H, HAVE_UNISTD_H
+#include <config.h>  // for GJS_HAVE_UNISTD_H, HAVE_READLINE_READLINE_H
 
 #include <stdint.h>
 #include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
@@ -32,7 +32,7 @@
 #    include <readline/readline.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef GJS_HAVE_UNISTD_H
 #    include <unistd.h>  // for isatty, STDIN_FILENO
 #elif defined(XP_WIN)
 #    include <io.h>

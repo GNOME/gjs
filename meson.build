@@ -242,7 +242,8 @@ if build_readline
             required: readline.found()))
 endif
 header_conf.set('HAVE_SYS_SYSCALL_H', cxx.check_header('sys/syscall.h'))
-header_conf.set('HAVE_UNISTD_H', cxx.check_header('unistd.h'))
+# HAVE_UNISTD_H is already in spidermonkey js-confdefs.h, sigh
+header_conf.set('GJS_HAVE_UNISTD_H', cxx.check_header('unistd.h'))
 
 # enable GNU extensions on systems that have them
 header_conf.set('_GNU_SOURCE', 1)
