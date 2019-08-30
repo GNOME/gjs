@@ -39,6 +39,8 @@ describe('Access to destroyed GObject', function () {
     it('Access to getter method', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
+        GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*GTK_IS_WINDOW*');
 
         void destroyedWindow.get_title();
 
@@ -49,6 +51,8 @@ describe('Access to destroyed GObject', function () {
     it('Access to setter method', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
+        GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*GTK_IS_WINDOW*');
 
         destroyedWindow.set_title('I am dead');
 

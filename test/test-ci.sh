@@ -165,7 +165,7 @@ if [[ $1 == "GJS" ]]; then
 
         jhbuild make --check
     else
-        export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=yes --with-xvfb-tests"
+        export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=yes"
 
         # Regular (autotools only) build
         echo "Autogen options: $ci_autogenargs"
@@ -174,9 +174,9 @@ if [[ $1 == "GJS" ]]; then
         make -sj 2>&1 | tee compilation.log
 
         if [[ $TEST == "distcheck" ]]; then
-            make -s distcheck
+            xvfb-run -a make -s distcheck
         elif [[ $TEST == "check" ]]; then
-            make -s check
+            xvfb-run -a make -s check
         fi
         make -sj install
     fi

@@ -9,6 +9,9 @@ fi
 # Avoid interference in the profiler tests from stray environment variable
 unset GJS_ENABLE_PROFILER
 
+# Avoid interference in the warning tests from G_DEBUG=fatal-warnings/criticals
+OLD_G_DEBUG="$G_DEBUG"
+
 # This JS script should exit immediately with code 42. If that is not working,
 # then it will exit after 3 seconds as a fallback, with code 0.
 cat <<EOF >exit.js
@@ -148,6 +151,7 @@ report "--help after -c should not print anything"
 # "$gjs" help.js --help -I sentinel
 # report_xfail "-I after script file should not be added to search path"
 # fi
+G_DEBUG=$(echo "$G_DEBUG" | sed -e 's/fatal-warnings,\{0,1\}//')
 $gjs help.js --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path'
 report "-I after script should succeed but give a warning"
 $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix'
@@ -155,6 +159,7 @@ report "--coverage-prefix after script should succeed but give a warning"
 $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
 rm -f foo/coverage.lcov
+G_DEBUG="$OLD_G_DEBUG"
 
 for version_arg in --version --jsversion; do
     # --version and --jsversion work
@@ -209,8 +214,10 @@ report "unhandled promise rejection should be reported"
 test -z "$($gjs awaitcatch.js)"
 report "catching an await expression should not cause unhandled rejection"
 # https://gitlab.gnome.org/GNOME/gjs/issues/18
+G_DEBUG=$(echo "$G_DEBUG" | sed -e 's/fatal-warnings,\{0,1\}//')
 $gjs -c "(async () => await true)(); void foobar;" 2>&1 | grep -q 'Script .* threw an exception'
 report "main program exceptions are not swallowed by queued promise jobs"
+G_DEBUG="$OLD_G_DEBUG"
 
 # https://gitlab.gnome.org/GNOME/gjs/issues/26
 $gjs -c 'new imports.gi.Gio.Subprocess({argv: ["true"]}).init(null);'
@@ -218,6 +225,7 @@ report "object unref from other thread after shutdown should not race"
 
 # https://gitlab.gnome.org/GNOME/gjs/issues/212
 if test -n "$ENABLE_GTK"; then
+    G_DEBUG=$(echo "$G_DEBUG" | sed -e 's/fatal-warnings,\{0,1\}//' -e 's/fatal-criticals,\{0,1\}//')
     $gjs -c 'imports.gi.versions.Gtk = "3.0";
              const Gtk = imports.gi.Gtk;
              const GObject = imports.gi.GObject;
@@ -227,6 +235,7 @@ if test -n "$ENABLE_GTK"; then
              });
              let w = new BadWidget ();'
     report "avoid crashing when GTK vfuncs are called on context destroy"
+    G_DEBUG="$OLD_G_DEBUG"
 else
     skip "avoid crashing when GTK vfuncs are called on context destroy" "GTK disabled"
 fi
