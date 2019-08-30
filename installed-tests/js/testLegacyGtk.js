@@ -65,6 +65,8 @@ const MyComplexGtkSubclassFromResource = new Lang.Class({
         expect(this.label_child2).toEqual(jasmine.anything());
         expect(this._internal_label_child).toEqual(jasmine.anything());
     },
+
+    templateCallback() {},
 });
 
 function validateTemplate(description, ClassName) {

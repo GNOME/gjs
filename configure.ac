@@ -65,14 +65,18 @@ m4_define(glib_required_version, 2.58.0)
 
 GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
 
+GLIB_REQUIREMENT="glib-2.0 >= glib_required_version"
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
+GIO_REQUIREMENT="gio-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
-common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-60"
+common_packages="gthread-2.0 $GIO_REQUIREMENT mozjs-60"
 gjs_packages="gobject-introspection-1.0 libffi $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"
 
-AX_PKG_CHECK_MODULES([GJS], [$GOBJECT_REQUIREMENT], [$gjs_packages])
+AX_PKG_CHECK_MODULES([GJS],
+  [$GLIB_REQUIREMENT $GOBJECT_REQUIREMENT $GIO_REQUIREMENT],
+  [$gjs_packages])
 dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJS_CONSOLE], [$gjs_base_packages])
@@ -332,16 +336,6 @@ AS_IF([test "x$enable_cpp_rtti" != "xyes"],
   [AX_APPEND_COMPILE_FLAGS([-fno-rtti])],
   [AX_APPEND_COMPILE_FLAGS([-GR-])])
 
-AC_ARG_WITH([xvfb-tests],
-  [AS_HELP_STRING([--with-xvfb-tests],
-    [Run all tests under an XVFB server @<:@default=no@:>@])])
-AS_IF([test "x$with_xvfb_tests" = "xyes"], [
-  AC_PATH_PROG([XVFB], [Xvfb])
-  AS_IF([test -z "$XVFB"],
-    [AC_MSG_ERROR([Xvfb is required for --with-xvfb-tests])])
-])
-AM_CONDITIONAL([XVFB_TESTS], [test "x$with_xvfb_tests" = "xyes"])
-
 AC_ARG_WITH([dbus-tests],
   [AS_HELP_STRING([--without-dbus-tests],
     [Don't try to use DBus during make check @<:@default=use@:>@])])
@@ -390,8 +384,7 @@ some tests will fail.])
 ])
 
 TEST_MSG=
-AM_COND_IF([XVFB_TESTS], [TEST_MSG="xvfb "])
-AM_COND_IF([DBUS_TESTS], [TEST_MSG="${TEST_MSG}dbus"])
+AM_COND_IF([DBUS_TESTS], [TEST_MSG="dbus-run-session"])
 AS_IF([test -z "$TEST_MSG"], [TEST_MSG="nothing special"])
 
 AC_MSG_RESULT([

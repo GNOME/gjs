@@ -33,7 +33,7 @@ function do_Configure_MainBuild(){
     do_Print_Labels 'Set Main JHBuild Configuration'
 
     mkdir -p ~/.config
-    autogenargs="--enable-compile-warnings=yes --with-xvfb-tests"
+    autogenargs="--enable-compile-warnings=yes"
 
     if [[ -n "${BUILD_OPTS}" ]]; then
         autogenargs="$autogenargs $BUILD_OPTS"

@@ -45,14 +45,18 @@ function _init() {
     Gtk.Widget.prototype._init = function (params) {
         if (this.constructor[Gtk.template]) {
             Gtk.Widget.set_connect_func.call(this.constructor, (builder, obj, signalName, handlerName, connectObj, flags) => {
-                if (connectObj !== null)
+                if (connectObj !== null) {
                     throw new Error('Unsupported template signal attribute "object"');
-                else if (flags & GObject.ConnectFlags.SWAPPED)
+                } else if (flags & GObject.ConnectFlags.SWAPPED) {
                     throw new Error('Unsupported template signal flag "swapped"');
-                else if (flags & GObject.ConnectFlags.AFTER)
+                } else if (typeof this[handlerName] === 'undefined') {
+                    throw new Error(`A handler called ${handlerName} was not ` +
+                        `defined for signal ${signalName} on ${this}`);
+                } else if (flags & GObject.ConnectFlags.AFTER) {
                     obj.connect_after(signalName, this[handlerName].bind(this));
-                else
+                } else {
                     obj.connect(signalName, this[handlerName].bind(this));
+                }
             });
         }
 
