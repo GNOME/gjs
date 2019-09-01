@@ -112,10 +112,53 @@ function _createSignals(gtype, sigs) {
     }
 }
 
+function _getCallerBasename() {
+    let stackLines = new Error().stack.trim().split('\n');
+    let regex = new RegExp(/@(.+:\/\/)?(.*\/)?(.+)\.js:\d+(:[\d]+)?$/);
+    let thisFile = null;
+    let thisDir = null;
+
+    for (let line of stackLines) {
+        let match = line.match(regex);
+        if (match) {
+            let scriptDir = match[2];
+            let scriptBasename = match[3];
+
+            if (!thisFile) {
+                thisDir = scriptDir;
+                thisFile = scriptBasename;
+                continue;
+            }
+
+            if (scriptDir === thisDir && scriptBasename === thisFile)
+                continue;
+
+            if (scriptDir && scriptDir.startsWith('/org/gnome/gjs/'))
+                continue;
+
+            let basename = scriptBasename;
+            if (scriptDir) {
+                scriptDir = scriptDir.replace(/^\/|\/$/g, '');
+                basename = `${scriptDir.split('/').reverse()[0]}_${basename}`;
+            }
+            return basename;
+        }
+    }
+
+    return null;
+}
+
 function _createGTypeName(klass) {
+    const sanitizeGType = s => s.replace(/[^a-z0-9+_-]/gi, '_');
+
     if (klass.hasOwnProperty(GTypeName))
         return klass[GTypeName];
-    return `Gjs_${klass.name.replace(/[^a-z0-9+_-]/gi, '_')}`;
+
+    let callerBasename = _getCallerBasename() || '';
+    if (callerBasename)
+        callerBasename = `${sanitizeGType(callerBasename)}_`;
+
+    return `Gjs_${callerBasename}${sanitizeGType(klass.name)}`;
 }
 
 function _propertiesAsArray(klass) {
