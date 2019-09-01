@@ -152,7 +152,7 @@ function _createGTypeName(klass) {
     const sanitizeGType = s => s.replace(/[^a-z0-9+_-]/gi, '_');
 
     if (klass.hasOwnProperty(GTypeName))
-        return klass[GTypeName];
+        return sanitizeGType(klass[GTypeName]);
 
     let callerBasename = _getCallerBasename() || '';
     if (callerBasename)
