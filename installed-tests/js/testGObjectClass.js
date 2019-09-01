@@ -453,3 +453,19 @@ describe('GObject virtual function', function () {
         expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
     });
 });
+
+describe('GObject creation using base classes without registered GType', function () {
+    it('fails when trying to instantiate a class that inherits from a GObject type', function () {
+        const BadInheritance = class extends GObject.Object {};
+        const BadDerivedInheritance = class extends Derived {};
+
+        expect(() => new BadInheritance()).toThrowError(/Tried to construct an object without a GType/);
+        expect(() => new BadDerivedInheritance()).toThrowError(/Tried to construct an object without a GType/);
+    });
+
+    it('fails when trying to register a GObject class that inherits from a non-GObject type', function () {
+        const BadInheritance = class extends GObject.Object {};
+        expect(() => GObject.registerClass(class BadInheritanceDerived extends BadInheritance {}))
+            .toThrowError(/Object 0x[a-f0-9]+ is not a subclass of GObject_Object, it's a Object/);
+    });
+});
