@@ -472,4 +472,12 @@ describe('Register GType name', function () {
 
         expect(GtypeClass.$gtype.name).toEqual('GTypeTestManualName');
     });
+
+    it('sanitizes use provided class name', function () {
+        const GtypeClass = GObject.registerClass({
+            GTypeName: 'GType$Test/WithLòt\'s of*bad§chars!',
+        }, class extends GObject.Object {});
+
+        expect(GtypeClass.$gtype.name).toEqual('GType_Test_WithL_t_s_of_bad_chars_');
+    });
 });
