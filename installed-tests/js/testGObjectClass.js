@@ -2,6 +2,7 @@
 imports.gi.versions.Gtk = '3.0';
 
 const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
@@ -521,5 +522,23 @@ describe('Register GType name', function () {
         }, class extends GObject.Object {});
 
         expect(GtypeClass.$gtype.name).toEqual('GTypeTestManualName');
+    });
+
+    it('sanitizes user provided class name', function () {
+        let gtypeName = 'GType$Test/WithLòt\'s of*bad§chars!';
+        let expectedSanitized = 'GType_Test_WithL_t_s_of_bad_chars_';
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            `*RangeError: Provided GType name '${gtypeName}' is not valid; ` +
+            `automatically sanitized to '${expectedSanitized}'*`);
+
+        const GtypeClass = GObject.registerClass({
+            GTypeName: gtypeName,
+        }, class extends GObject.Object {});
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectClass.js', 0,
+            'testGObjectRegisterClassSanitize');
+
+        expect(GtypeClass.$gtype.name).toEqual(expectedSanitized);
     });
 });
