@@ -469,3 +469,57 @@ describe('GObject creation using base classes without registered GType', functio
             .toThrowError(/Object 0x[a-f0-9]+ is not a subclass of GObject_Object, it's a Object/);
     });
 });
+
+describe('Register GType name', function () {
+    beforeAll(function () {
+        expect(GObject.gtypeNameBasedOnJSPath).toBeFalsy();
+    });
+
+    afterEach(function () {
+        GObject.gtypeNameBasedOnJSPath = false;
+    });
+
+    it('uses the class name', function () {
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoName extends GObject.Object { });
+
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_GTypeTestAutoName');
+    });
+
+    it('uses the sanitized class name', function () {
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoCla$$Name extends GObject.Object { });
+
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_GTypeTestAutoCla__Name');
+    });
+
+    it('use the file path and class name', function () {
+        GObject.gtypeNameBasedOnJSPath = true;
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoName extends GObject.Object {});
+
+        /* Update this test if the file is moved */
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_js_testGObjectClass_GTypeTestAutoName');
+    });
+
+    it('use the file path and sanitized class name', function () {
+        GObject.gtypeNameBasedOnJSPath = true;
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoCla$$Name extends GObject.Object { });
+
+        /* Update this test if the file is moved */
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_js_testGObjectClass_GTypeTestAutoCla__Name');
+    });
+
+    it('use provided class name', function () {
+        const GtypeClass = GObject.registerClass({
+            GTypeName: 'GTypeTestManualName',
+        }, class extends GObject.Object {});
+
+        expect(GtypeClass.$gtype.name).toEqual('GTypeTestManualName');
+    });
+});
