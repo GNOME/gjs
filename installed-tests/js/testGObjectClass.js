@@ -6,6 +6,7 @@ const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
 const MyObject = GObject.registerClass({
+    GTypeName: 'Gjs_MyObject',
     Properties: {
         'readwrite': GObject.ParamSpec.string('readwrite', 'ParamReadwrite',
             'A read write parameter', GObject.ParamFlags.READWRITE, ''),
@@ -387,7 +388,7 @@ describe('GObject class with decorator', function () {
         expect(myInstance.toString()).toMatch(
             /\[object instance wrapper GType:Gjs_MyObject jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
         expect(new Derived().toString()).toMatch(
-            /\[object instance wrapper GType:Gjs_Derived jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object instance wrapper GType:Gjs_([\w\d]+_)?Derived jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 });
 
@@ -451,5 +452,24 @@ describe('GObject virtual function', function () {
 
 
         expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
+    });
+});
+
+describe('Register GType name', function () {
+    it('handles class name automatically', function () {
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoName extends GObject.Object {});
+
+        /* Update this test if the file is moved */
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_js_testGObjectClass_GTypeTestAutoName');
+    });
+
+    it('use provided class name', function () {
+        const GtypeClass = GObject.registerClass({
+            GTypeName: 'GTypeTestManualName',
+        }, class extends GObject.Object {});
+
+        expect(GtypeClass.$gtype.name).toEqual('GTypeTestManualName');
     });
 });

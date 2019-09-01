@@ -297,6 +297,6 @@ describe('GObject interface', function () {
 
     it('has a toString() defintion', function () {
         expect(new GObjectImplementingGObjectInterface().toString()).toMatch(
-            /\[object instance wrapper GType:Gjs_GObjectImplementingGObjectInterface jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object instance wrapper GType:Gjs_([\w\d]+_)?GObjectImplementingGObjectInterface jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 });

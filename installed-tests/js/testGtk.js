@@ -38,7 +38,7 @@ function createTemplate(className) {
 }
 
 const MyComplexGtkSubclass = GObject.registerClass({
-    Template: ByteArray.fromString(createTemplate('Gjs_MyComplexGtkSubclass')),
+    Template: ByteArray.fromString(createTemplate('Gjs_js_testGtk_MyComplexGtkSubclass')),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
@@ -60,10 +60,11 @@ MyComplexGtkSubclass.prototype.testChildrenExist = function () {
 };
 
 const MyComplexGtkSubclassFromResource = GObject.registerClass({
+    GTypeName: 'Gjs_MyComplexGtkSubclassFromResource',
     Template: 'resource:///org/gjs/jsunit/complex.ui',
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
-}, class MyComplexGtkSubclassFromResource extends Gtk.Grid {
+}, class extends Gtk.Grid {
     testChildrenExist() {
         expect(this.label_child).toEqual(jasmine.anything());
         expect(this.label_child2).toEqual(jasmine.anything());
@@ -78,7 +79,7 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
 const [templateFile, stream] = Gio.File.new_tmp(null);
 const baseStream = stream.get_output_stream();
 const out = new Gio.DataOutputStream({baseStream});
-out.put_string(createTemplate('Gjs_MyComplexGtkSubclassFromFile'), null);
+out.put_string(createTemplate('Gjs_js_testGtk_MyComplexGtkSubclassFromFile'), null);
 out.close(null);
 
 const MyComplexGtkSubclassFromFile = GObject.registerClass({
