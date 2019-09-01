@@ -151,8 +151,14 @@ function _getCallerBasename() {
 function _createGTypeName(klass) {
     const sanitizeGType = s => s.replace(/[^a-z0-9+_-]/gi, '_');
 
-    if (klass.hasOwnProperty(GTypeName))
-        return klass[GTypeName];
+    if (klass.hasOwnProperty(GTypeName)) {
+        let sanitized = sanitizeGType(klass[GTypeName]);
+        if (sanitized !== klass[GTypeName]) {
+            logError(new RangeError(`Provided GType name '${klass[GTypeName]}' ` +
+                `is not valid; automatically sanitized to '${sanitized}'`));
+        }
+        return sanitized;
+    }
 
     let gtypeClassName = klass.name;
     if (GObject.gtypeNameBasedOnJSPath) {
