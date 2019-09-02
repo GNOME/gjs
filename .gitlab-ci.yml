@@ -178,7 +178,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     TEST: "check"
