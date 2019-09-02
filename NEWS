@@ -1,3 +1,11 @@
+Version 1.57.92
+---------------
+
+- Closed bugs and merge requests:
+  * tests: Enable regression test cases for GPtrArrays and GArrays of structures
+    [Stéphane Seng, !334]
+  * Various maintenance [Philip Chimento, !333, !335]
+
 Version 1.57.91
 ---------------
 
