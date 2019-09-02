@@ -136,9 +136,8 @@ build_recommended:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
     WARNINGS: "count"
-    # FIXME: Add --enable-profiler
     BUILD_OPTS: >-
-      --with-cairo --enable-readline
+      --with-cairo --enable-readline --enable-profiler
       --disable-dtrace --disable-systemtap
   except:
     - schedules
@@ -164,10 +163,9 @@ build_maximal:
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
-    # FIXME: add --enable-profiler
     BUILD_OPTS: >-
       CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
-      --with-cairo --enable-readline
+      --with-cairo --enable-readline --enable-profiler
       --enable-dtrace --enable-systemtap
     TEST: "check"
     SCRIPTCHECK: "yes"
