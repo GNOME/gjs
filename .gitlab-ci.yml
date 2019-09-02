@@ -131,7 +131,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-286759_SM60-debug-gcc.fedora-dev  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-414163_SM60-debug-gcc.fedora-dev  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
