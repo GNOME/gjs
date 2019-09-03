@@ -248,13 +248,4 @@ upload-release: $(DISTNAME) Makefile
 	scp $(DISTNAME) master.gnome.org:
 	ssh master.gnome.org install-module $(DISTNAME)
 
-
-CPPCHECK=cppcheck
-### cppcheck static code analysis
-#
-cppcheck:
-	$(CPPCHECK) --inline-suppr \
-		--enable=warning,performance,portability,information,missingInclude \
-		--force -q $(top_srcdir) -I $(top_builddir)
-
 -include $(top_srcdir)/git.mk
