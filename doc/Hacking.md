@@ -123,7 +123,7 @@ LSan executes faster than Valgrind, however.
 
 To execute cppcheck, a static code analysis tool for the C and C++, run:
 ```sh
-jhbuild make cppcheck
+tools/run_cppcheck.sh
 ```
 It is a versatile tool that can check non-standard code, including: variable 
 checking, bounds checking, leaks, etc. It can detect the types of bugs that
