@@ -88,7 +88,7 @@ gobject = dependency('gobject-2.0', version: glib_required_version,
 gio = dependency('gio-2.0', version: glib_required_version,
     fallback: ['glib', 'libgio_dep'])
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
-gi = dependency('gobject-introspection-1.0', version: '>= 1.41.4',
+gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
     fallback: ['gobject-introspection', 'girepo_dep'])
 spidermonkey = dependency('mozjs-60')
 cairo = dependency('cairo', required: get_option('cairo'))
