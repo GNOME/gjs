@@ -297,16 +297,6 @@ elif [[ $1 == "TOKEI" ]]; then
     do_Print_Labels 'Project statistics'
 
     tokei . | tee "$save_dir"/analysis/report.txt
-
-elif [[ $1 == "FLATPAK" ]]; then
-    do_Print_Labels 'Flatpak packaging'
-
-    # Move the manifest file to the root folder
-    cp "test/$MANIFEST" .
-
-    flatpak-builder --version
-    flatpak-builder --bundle-sources --repo=devel build "$MANIFEST"
-    flatpak build-bundle devel ${BUNDLE} --runtime-repo=${RUNTIME_REPO} org.gnome.GjsDevel
 fi
 
 # Releases stuff and finishes

@@ -24,7 +24,6 @@ stages:
 .JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
 .Coverage files: &cov_files [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
 .Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
-.Flatpak files: &pak_files  [./*.flatpak]
 
 .jhbuild: &jhbuild
   artifacts:
@@ -37,11 +36,6 @@ stages:
     name: log_coverage
     when: always
     paths: *cov_files
-
-.package: &package
-  artifacts:
-    name: log_package
-    paths: *pak_files
 
 # Regular build
 .build: &build
@@ -344,26 +338,6 @@ valgrind:
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
     TEST: "check"
   allow_failure: true
-  when: manual
-  except:
-    - schedules
-
-# Flatpak packaging (weekly)
-flatpak:
-  <<: *build
-  <<: *package
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
-  variables:
-    TASK_ID: "flatpak packaging"
-    CODECHECK: "FLATPAK"
-    BUNDLE: "org.gnome.GjsDevel.flatpak"
-    MANIFEST: org.gnome.GjsDevel.json
-    RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
-
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
   when: manual
   except:
     - schedules
