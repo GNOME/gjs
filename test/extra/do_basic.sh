@@ -19,11 +19,7 @@ function do_Install_Dependencies(){
                                libedit-dev libgl1-mesa-dev lcov libreadline-dev
 
     elif [[ $BASE == "fedora" ]]; then
-        if [[ $STATIC == *"qemu"* ]]; then
-            dnf -y --nogpgcheck upgrade --best --allowerasing
-        else
-            dnf -y upgrade --best --allowerasing
-        fi
+        dnf -y upgrade --best --allowerasing
 
         # Base dependencies
         dnf -y    install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
@@ -60,9 +56,8 @@ function do_Install_Extras(){
         # Distros development versions of needed libraries
         dnf -y install gobject-introspection-devel
 
-        if [[ $STATIC != *"qemu"* ]]; then
-            # Distros debug info of needed libraries
-            dnf -y debuginfo-install glib2-devel gobject-introspection-devel gtk3-devel expat fontconfig cairo glibc
-        fi
+        # Distros debug info of needed libraries
+        dnf -y debuginfo-install glib2-devel gobject-introspection-devel \
+          gtk3-devel expat fontconfig cairo glibc
     fi
 }

@@ -94,35 +94,6 @@ stages:
     # Done
     - *CI_footer
 
-# Cross (multi architecture) build
-.qemu: &multiarch
-  artifacts:
-    name: log
-    when: always
-    paths: *reg_files
-
-  image: docker:19.03.0
-  services:
-    - docker:19.03.0-dind
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-
-  script:
-    # CI starts here. Previous messages are from GitLab Runner setup.
-    - *CI_header
-
-    # Register QEMU archs
-    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
-
-    # Run the multiarch test job using QEMU
-    - 'docker run -v $(pwd):/cwd
-          -e TEST=check -e TASK_ID=$TASK_ID $IMAGE
-          bash -e -c "cd /cwd && test/test-ci.sh GJS"
-    '
-
-    # Done
-    - *CI_footer
-
 #############################################
 #               Regular tests               #
 #############################################
@@ -434,29 +405,6 @@ zeal_11:
   except:
     - schedules
 
-# Multiarch Tests (weekly)
-armv8:
-  <<: *multiarch
-  stage: manual
-  variables:
-    TASK_ID: "fedora-armv8-gcc-default-default-check"
-    DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.aarch64"
-  when: manual
-  except:
-    - schedules
-
-ppc64le:
-  <<: *multiarch
-  stage: manual
-  variables:
-    TASK_ID: "fedora-ppc64le-gcc-default-default-check"
-    DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.ppc64le"
-  when: manual
-  except:
-    - schedules
-
 #############################################
 #          Create CI Docker Images          #
 #############################################
@@ -478,13 +426,6 @@ ppc64le:
       if [[ -z "${CI_COMMIT_MESSAGE##*[skip images]*}" && -z "${CI_COMMIT_MESSAGE##*$NAME*}" ]]; then
         echo "== Nothing to do =="
         exit 0
-      fi
-
-    # Get multiarch stuff
-    - |
-      if [[ -n "${TARGET_ARCH}" ]]; then
-        docker run --rm --privileged multiarch/qemu-user-static:register --reset
-        wget https://github.com/multiarch/qemu-user-static/releases/download/v2.12.0/x86_64_qemu-${TARGET_ARCH}-static.tar.gz
       fi
 
     # Build using the Dockerfile
@@ -548,34 +489,6 @@ SM60-debug-gcc.fedora-dev:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-debug-gcc.fedora-dev"
-
-SM60-gcc.fedora-dev.aarch64:
-  <<: *create_docker_image
-  variables:
-    BASE: "fedora"
-    DEV: "devel"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.aarch64"
-    NAME: "SM60-gcc.fedora-dev.aarch64"
-    STATIC: "qemu"
-    TARGET_ARCH: "aarch64"
-
-SM60-gcc.fedora-dev.ppc64le:
-  <<: *create_docker_image
-  variables:
-    BASE: "fedora"
-    DEV: "devel"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.ppc64le"
-    NAME: "SM60-gcc.fedora-dev.ppc64le"
-    STATIC: "qemu"
-    TARGET_ARCH: "ppc64le"
 
 SM60-gcc.ubuntu-dev:
   <<: *create_docker_image
