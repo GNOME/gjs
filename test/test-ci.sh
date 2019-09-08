@@ -141,15 +141,6 @@ if [[ $1 == "GJS" ]]; then
     do_Set_Env
     do_Show_Info
 
-    if [[ "$DEV" == "jhbuild" ]]; then
-        do_Get_JHBuild
-        do_Build_JHBuild
-        do_Configure_JHBuild
-        do_Build_Package_Dependencies gjs
-
-    else
-        mkdir -p ~/jhbuild/checkout/gjs
-    fi
     do_Configure_MainBuild
 
     # Build and test the latest commit (merged or from a merge/pull request) of
@@ -159,27 +150,20 @@ if [[ $1 == "GJS" ]]; then
 
     do_Print_Labels 'Do the GJS build'
 
-    if [[ "$DEV" == "jhbuild" ]]; then
-        cp -r ./ ~/jhbuild/checkout/gjs
-        cd ~/jhbuild/checkout/gjs
+    export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=yes"
 
-        jhbuild make --check
-    else
-        export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=yes"
+    # Regular (autotools only) build
+    echo "Autogen options: $ci_autogenargs"
+    eval ./autogen.sh "$ci_autogenargs"
 
-        # Regular (autotools only) build
-        echo "Autogen options: $ci_autogenargs"
-        eval ./autogen.sh "$ci_autogenargs"
+    make -sj 2>&1 | tee compilation.log
 
-        make -sj 2>&1 | tee compilation.log
-
-        if [[ $TEST == "distcheck" ]]; then
-            xvfb-run -a make -s distcheck
-        elif [[ $TEST == "check" ]]; then
-            xvfb-run -a make -s check
-        fi
-        make -sj install
+    if [[ $TEST == "distcheck" ]]; then
+        xvfb-run -a make -s distcheck
+    elif [[ $TEST == "check" ]]; then
+        xvfb-run -a make -s check
     fi
+    make -sj install
 
     if [[ $WARNINGS == "count" ]]; then
         do_Print_Labels 'Warnings Report '
@@ -192,11 +176,7 @@ elif [[ $1 == "GJS_EXTRA" ]]; then
     do_Print_Labels 'Run GJS installed tests'
     do_Set_Env
 
-    if [[ "$DEV" == "jhbuild" ]]; then
-        xvfb-run -a jhbuild run dbus-run-session -- gnome-desktop-testing-runner gjs
-    else
-        xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
-    fi
+    xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
 
 elif [[ $1 == "VALGRIND" ]]; then
     # It doesn't (re)build, just run the 'Valgrind Tests'
