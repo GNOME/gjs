@@ -21,15 +21,8 @@ stages:
        echo "*********************************************";
     '
 
-.JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
 .Coverage files: &cov_files [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
 .Regular files: &reg_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
-
-.jhbuild: &jhbuild
-  artifacts:
-    name: log_jhbuild
-    when: always
-    paths: *JHB_files
 
 .coverage: &coverage
   artifacts:
