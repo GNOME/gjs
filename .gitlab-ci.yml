@@ -248,7 +248,7 @@ coverage:
   <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -260,9 +260,9 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
-    TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
+    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
     BUILD_OPTS: "--enable-asan --enable-ubsan"
     TEST: "check"
@@ -288,30 +288,6 @@ installed_tests:
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
-  when: manual
-  except:
-    - schedules
-
-# Planned as weekly
-ubuntu_gcc:
-  <<: *build
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
-  variables:
-    TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
-    TEST: "distcheck"
-  when: manual
-  except:
-    - schedules
-
-ubuntu_clang:
-  <<: *build
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
-  variables:
-    TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
-    CC: clang
-    TEST: "distcheck"
   when: manual
   except:
     - schedules
@@ -399,7 +375,7 @@ zeal_11:
     - |
       if [[ -n "${IMAGE}" ]]; then
         docker run --name $NAME -v $(pwd):/on-host \
-          -e BASE=$BASE -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE \
+          -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE \
           bash -e -c "cd /on-host && test/ci-images.sh BUILD_MOZ"
         docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
       fi
@@ -421,7 +397,6 @@ zeal_11:
 fedora.static-analysis:
   <<: *create_docker_image
   variables:
-    BASE: "fedora"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
@@ -431,7 +406,6 @@ fedora.static-analysis:
 SM60-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
-    BASE: "fedora"
     DEV: "devel"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
@@ -442,7 +416,6 @@ SM60-gcc.fedora-dev:
 SM60-debug-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
-    BASE: "fedora"
     BUILD_OPTS: "--enable-debug"
     DEV: "devel"
     DOCKER_DRIVER: overlay
@@ -450,14 +423,3 @@ SM60-debug-gcc.fedora-dev:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-debug-gcc.fedora-dev"
-
-SM60-gcc.ubuntu-dev:
-  <<: *create_docker_image
-  variables:
-    BASE: "debian"
-    DEV: "devel"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    IMAGE: "ubuntu:devel"
-    NAME: "SM60-gcc.ubuntu-dev"

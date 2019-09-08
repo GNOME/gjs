@@ -34,7 +34,7 @@ source test/extra/do_environment.sh
 
 # Show some environment info
 do_Print_Labels  'ENVIRONMENT'
-echo "Running on: $BASE $OS"
+echo "Running on: $OS"
 echo "Doing: $1 $extra_opts"
 
 source test/extra/do_basic.sh
