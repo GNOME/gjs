@@ -6,8 +6,7 @@ LABEL version="1.0"
 LABEL description="Docker image to run CI for GNOME GJS (JavaScript bindings for GNOME)."
 
 RUN dnf -y --nogpgcheck upgrade && \
-    dnf -y install \
-                   git cppcheck tokei nodejs python-devel && \
+    dnf -y install git cppcheck nodejs python-devel && \
     mkdir -p /cwd && \
     pip install cpplint && \
     npm install -g eslint && \

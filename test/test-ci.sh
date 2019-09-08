@@ -292,11 +292,6 @@ elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
 
     # Compare the report with master and fail if new warnings are found
     do_Compare_With_Upstream_Master "esLint"
-
-elif [[ $1 == "TOKEI" ]]; then
-    do_Print_Labels 'Project statistics'
-
-    tokei . | tee "$save_dir"/analysis/report.txt
 fi
 
 # Releases stuff and finishes

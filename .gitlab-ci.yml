@@ -22,8 +22,8 @@ stages:
     '
 
 .JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
-.Coverage files: &cov_files [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
-.Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
+.Coverage files: &cov_files [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
+.Regular files: &reg_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
 
 .jhbuild: &jhbuild
   artifacts:
@@ -169,15 +169,13 @@ coverage-automatic:
       - master@GNOME/gjs
 
 # Publishes
-# The reports (coverage and code statistics)
+# The code coverage report
 pages:
   stage: deploy
   dependencies:
     - coverage-automatic
-    - code_statistics
   script:
     - mv $(pwd)/coverage/ public/ || true
-    - mv $(pwd)/analysis/report.txt public/ || true
   artifacts:
     paths:
       - public
@@ -242,17 +240,6 @@ codequality:
     - docker run --env CODECLIMATE_CODE="$PWD" --volume "$PWD":/code --volume /var/run/docker.sock:/var/run/docker.sock --volume /tmp/cc:/tmp/cc codeclimate/codeclimate analyze -f json > codeclimate.json
   artifacts:
     paths: [codeclimate.json]
-  when: manual
-  except:
-    - schedules
-
-code_statistics:
-  <<: *build
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
-  variables:
-    TASK_ID: "code_statistics"
-    CODECHECK: "TOKEI"
   when: manual
   except:
     - schedules
