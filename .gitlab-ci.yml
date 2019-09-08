@@ -272,7 +272,7 @@ sanitizer_clang:
   except:
     - schedules
 
-fedora_gcc:
+distcheck:
   <<: *build
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
