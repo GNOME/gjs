@@ -26,8 +26,8 @@ if [[ -n "${BUILD_OPTS}" ]]; then
     extra_opts="($BUILD_OPTS)"
 fi
 
-if [[ -n "${STATIC}" ]]; then
-    extra_opts="$extra_opts  ($STATIC)"
+if [[ -n "${MOZJS_BRANCH}" ]]; then
+    extra_opts="$extra_opts  ($MOZJS_BRANCH)"
 fi
 
 source test/extra/do_environment.sh
