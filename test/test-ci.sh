@@ -268,30 +268,6 @@ elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
 
     # Compare the report with master and fail if new warnings are found
     do_Compare_With_Upstream_Master "cppLint"
-
-elif [[ $1 == "ESLINT" && "$log_message" != *'[skip eslint]'* ]]; then
-    do_Print_Labels 'Javascript Linter report'
-
-    tmp_path=$(dirname "$CI_PROJECT_DIR")
-
-    eslint examples installed-tests modules --format unix 2>&1 | \
-        tee "$save_dir"/analysis/current-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
-        > /cwd/current-report.txt
-        cat "$save_dir"/analysis/current-report.txt
-    echo
-
-    # Get the code committed at upstream master
-    do_Get_Upstream_Master "esLint"
-    cp "$save_dir"/.eslint* .
-    eslint examples installed-tests modules --format unix 2>&1 | \
-        tee "$save_dir"/analysis/master-report.txt | \
-        sed -E -e 's/:[0-9]+:[0-9]+:/:LINE:COL:/' -e 's/[0-9]+ problems//' -e 's/\/root\/tmp-upstream//' -e "s,$tmp_path,," \
-        > /cwd/master-report.txt
-    echo
-
-    # Compare the report with master and fail if new warnings are found
-    do_Compare_With_Upstream_Master "esLint"
 fi
 
 # Releases stuff and finishes
