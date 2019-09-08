@@ -190,12 +190,16 @@ pages:
 #              Static Analyzers             #
 #############################################
 cppcheck:
-  <<: *build
+  when: on_success
+  image: uilianries/docker-cppcheck
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
-  variables:
-    TASK_ID: "cppcheck"
-    CODECHECK: "CPPCHECK"
+  script:
+    - |
+      if [[ "$CI_COMMIT_MESSAGE" == "*[skip cppcheck]*" ]]; then
+        echo "== Nothing to do =="
+        exit 0
+      fi
+    - cppcheck . -v -f -q --error-exitcode=1 --inline-suppr --enable=warning,performance,portability
   except:
     - schedules
     - tags
