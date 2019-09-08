@@ -792,7 +792,8 @@ hit_count_is_more_than_for_function(const char *line,
 
     max_buf_size = strcspn(line, "\n");
     detected_function = g_new(char, max_buf_size + 1);
-    nmatches = sscanf(line, "%u,%s", &hit_count, detected_function);
+    GjsAutoChar format_string = g_strdup_printf("%%5u,%%%zus", max_buf_size);
+    nmatches = sscanf(line, format_string, &hit_count, detected_function);
     g_assert_cmpint(nmatches, ==, 2);
 
     g_assert_cmpstr(data->function, ==, detected_function);
