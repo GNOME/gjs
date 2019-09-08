@@ -212,12 +212,16 @@ cpplint:
     - tags
 
 eslint:
-  <<: *build
+  when: on_success
+  image: singapore/lint-condo
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
-  variables:
-    TASK_ID: "eslint"
-    CODECHECK: "ESLINT"
+  script:
+    - |
+      if [[ "$CI_COMMIT_MESSAGE" == "*[skip eslint]*" ]]; then
+        echo "== Nothing to do =="
+        exit 0
+      fi
+    - node /usr/src/lint-condo
   except:
     - schedules
     - tags
