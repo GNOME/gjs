@@ -6,22 +6,23 @@ function do_Install_Dependencies(){
 
     dnf -y upgrade --best --allowerasing
 
-    # Base dependencies
-    dnf -y    install @c-development @development-tools clang redhat-rpm-config gnome-common python-devel \
-                      pygobject2 dbus-python perl-Text-CSV perl-XML-Parser gettext-devel gtk-doc \
-                      autoconf-archive meson ninja-build zlib-devel libffi-devel \
-                      libtool libicu-devel nspr-devel systemtap-sdt-devel \
-                      gtk3 gtk3-devel gobject-introspection-devel Xvfb gnome-desktop-testing dbus-x11 \
-                      cairo intltool libxslt bison nspr python3-devel dbus-glib libicu \
-                      libxslt libtool flex \
-                      cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
-                      libedit-devel libasan libubsan libtsan compiler-rt \
-                      sysprof-devel lcov mesa-libGL-devel readline-devel \
-                      time
+    # Base dependencies: CI scripts, mozjs, gjs
+    # mozjs and gjs build dependencies adapted from the lists in:
+    # https://src.fedoraproject.org/rpms/mozjs60/blob/master/f/mozjs60.spec
+    # https://src.fedoraproject.org/rpms/gjs/blob/master/f/gjs.spec
+    dnf -y install @c-development @development-tools clang compiler-rt \
+        gnome-desktop-testing lcov libasan libubsan libtsan meson ninja-build \
+        systemtap-sdt-devel Xvfb xz \
+        \
+        perl-devel 'pkgconfig(libffi)' 'pkgconfig(zlib)' python2-devel \
+        readline-devel which /usr/bin/zip \
+        \
+        autoconf-archive cairo-gobject-devel dbus-daemon dbus-glib-devel \
+        glib2-devel gobject-introspection-devel gtk3-devel sysprof-devel
 
-    # Distros debug info of needed libraries
+    # Debuginfo needed for stack traces, e.g. in Valgrind
     dnf -y debuginfo-install glib2-devel gobject-introspection-devel \
-      gtk3-devel expat fontconfig cairo glibc
+        gtk3-devel fontconfig cairo glibc
 }
 
 function do_Set_Env(){
