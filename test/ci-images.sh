@@ -8,7 +8,6 @@ function do_Set_Env(){
     mkdir -p /on-host/.cache
     export XDG_CACHE_HOME=/on-host/.cache
 
-    export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
 
