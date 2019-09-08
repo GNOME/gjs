@@ -34,13 +34,8 @@ function do_Build_Mozilla(){
     echo
     echo '-- Building Mozilla SpiderMonkey --'
 
-    if [[ $STATIC == "moz52" ]]; then
-        git clone --depth 1 https://github.com/ptomato/mozjs.git -b mozjs52 /on-host/spider
-        cd /on-host/spider
-    else
-        git clone --depth 1 https://github.com/ptomato/mozjs.git -b mozjs60 /on-host/spider
-        cd /on-host/spider
-    fi
+    git clone --depth 1 https://github.com/ptomato/mozjs.git -b "${MOZJS_BRANCH:-mozjs60}" /on-host/spider
+    cd /on-host/spider
 
     mkdir -p _build
     cd _build
