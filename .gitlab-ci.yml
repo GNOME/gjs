@@ -383,7 +383,7 @@ zeal_11:
     - |
       if [[ -n "${IMAGE}" ]]; then
         docker run --name $NAME -v $(pwd):/on-host \
-          -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE \
+          -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e CC=gcc -e STATIC=$STATIC $IMAGE \
           bash -e -c "cd /on-host && test/ci-images.sh BUILD_MOZ"
         docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
       fi
@@ -414,7 +414,6 @@ fedora.static-analysis:
 SM60-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
-    DEV: "devel"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
@@ -425,7 +424,6 @@ SM60-debug-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
     BUILD_OPTS: "--enable-debug"
-    DEV: "devel"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
