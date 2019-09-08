@@ -231,23 +231,6 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     sed -e 's/<[^>]*>//g' "$save_dir"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------'
 
-elif [[ $1 == "CPPCHECK" && "$log_message" != *'[skip cppcheck]'* ]]; then
-    do_Print_Labels 'Static code analyzer report '
-
-    cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        tee "$save_dir"/analysis/current-report.txt | sed -E 's/:[0-9]+]/:LINE]/g' > /cwd/current-report.txt
-    cat "$save_dir"/analysis/current-report.txt
-    echo
-
-    # Get the code committed at upstream master
-    do_Get_Upstream_Master "cppCheck"
-    cppcheck --inline-suppr --enable=warning,performance,portability,information,missingInclude --force -q . 2>&1 | \
-        tee "$save_dir"/analysis/master-report.txt | sed -E 's/:[0-9]+]/:LINE]/g' > /cwd/master-report.txt
-    echo
-
-    # Compare the report with master and fail if new warnings are found
-    do_Compare_With_Upstream_Master "cppCheck"
-
 elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
     do_Print_Labels 'C/C++ Linter report '
 
