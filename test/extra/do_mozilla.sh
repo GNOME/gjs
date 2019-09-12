@@ -4,8 +4,8 @@ function do_Build_Mozilla(){
     echo
     echo '-- Building Mozilla SpiderMonkey --'
 
-    git clone --depth 1 https://github.com/ptomato/mozjs.git -b "${MOZJS_BRANCH:-mozjs60}" /on-host/spider
-    cd /on-host/spider
+    git clone --depth 1 https://github.com/ptomato/mozjs.git -b "${MOZJS_BRANCH:-mozjs60}" /on-host/mozjs
+    cd /on-host/mozjs
 
     mkdir -p _build
     cd _build
