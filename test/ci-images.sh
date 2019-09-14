@@ -17,7 +17,7 @@ function do_Install_Dependencies(){
                       cairo-devel zlib-devel libffi-devel pcre-devel libxml2-devel libxslt-devel \
                       libedit-devel libasan libubsan libtsan compiler-rt \
                       sysprof-devel lcov mesa-libGL-devel readline-devel \
-                      webkit2gtk3 time
+                      time
 
     # Distros debug info of needed libraries
     dnf -y debuginfo-install glib2-devel gobject-introspection-devel \
