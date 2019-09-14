@@ -96,13 +96,12 @@ do_Print_Labels  'ENVIRONMENT'
 echo "Running on: $OS"
 echo "Doing: $1 $extra_opts"
 
-if [[ $1 == "BUILD_MOZ" ]]; then
-    do_Install_Dependencies
-    do_Set_Env
-    do_Show_Info
-    do_Build_Mozilla
-    do_Shrink_Image
-fi
+do_Install_Dependencies
+do_Set_Env
+do_Show_Info
+do_Build_Mozilla
+do_Shrink_Image
+
 # Clear the environment
 unset BUILD_OPTS
 
