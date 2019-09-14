@@ -89,7 +89,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-414163_SM60-debug-gcc.fedora-dev  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-441328_fedora.mozjs60-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
@@ -103,7 +103,7 @@ build_recommended:
 sanitizer_gcc:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     BUILD_OPTS: "--enable-asan --enable-ubsan"
@@ -117,7 +117,7 @@ sanitizer_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
@@ -134,7 +134,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     TEST: "check"
@@ -150,7 +150,7 @@ coverage-automatic:
   <<: *build
   <<: *coverage
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -201,13 +201,15 @@ cppcheck:
       - '**/*.h'
 
 cpplint:
-  <<: *build
+  when: on_success
   stage: source_check
-  # FIXME: Change to alpine.cpplint image when available
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
+  image: registry.gitlab.gnome.org/gnome/gjs:alpine.cpplint
   variables:
     TASK_ID: "cpplint"
-    CODECHECK: "CPPLINT"
+  script:
+    - *CI_header
+    - test/test-ci.sh CPPLINT
+    - *CI_footer
   except:
     refs:
       - schedules
@@ -262,7 +264,7 @@ coverage:
   <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -274,7 +276,7 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -287,7 +289,7 @@ sanitizer_clang:
 distcheck:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
     TEST: "distcheck"
@@ -298,7 +300,7 @@ distcheck:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
@@ -309,7 +311,7 @@ installed_tests:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
@@ -323,7 +325,7 @@ valgrind:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST: "check"
@@ -335,7 +337,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST: "check"
@@ -347,7 +349,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-debug-gcc.fedora-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST: "check"
