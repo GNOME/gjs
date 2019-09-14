@@ -53,7 +53,13 @@ function do_Build_Mozilla(){
     mkdir -p _build
     cd _build
 
-    ../js/src/configure --prefix=/root/jhbuild/install --enable-posix-nspr-emulation --with-system-zlib --with-intl-api --disable-jemalloc AUTOCONF=autoconf ${BUILD_OPTS}
+    ../js/src/configure --prefix=/usr/local \
+         --enable-posix-nspr-emulation \
+         --with-system-zlib \
+         --with-intl-api \
+         --disable-jemalloc \
+         AUTOCONF=autoconf \
+         ${BUILD_OPTS}
     make -sj4
     make install
 
