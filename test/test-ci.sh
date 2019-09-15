@@ -1,7 +1,6 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
-function do_Set_Env(){
-
+do_Set_Env () {
     #Save cache on $pwd (required by artifacts)
     mkdir -p "$(pwd)"/.cache
     XDG_CACHE_HOME="$(pwd)"/.cache
@@ -18,21 +17,21 @@ function do_Set_Env(){
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
 
-    if [[ -z "${DISPLAY}" ]]; then
-        export DISPLAY=":0"
-    fi
+    export DISPLAY="${DISPLAY:-:0}"
 }
 
-function do_Get_Upstream_Master(){
+do_Get_Upstream_Master () {
+    if test "$CI_PROJECT_PATH_SLUG" = "gnome-gjs"; then
+        if test "$CI_BUILD_REF_SLUG" = "master" -o \
+            "$CI_BUILD_REF_SLUG" = "gnome-"* -o \
+             -n "$CI_COMMIT_TAG"; then
+            echo '-----------------------------------------'
+            echo 'Running against upstream'
+            echo "=> $1 Nothing to do"
 
-    if [[ "$CI_PROJECT_PATH_SLUG" == "gnome-gjs" && \
-         ("$CI_BUILD_REF_SLUG" == "master" || "$CI_BUILD_REF_SLUG" == "gnome-"* || -n "${CI_COMMIT_TAG}") ]]; then
-        echo '-----------------------------------------'
-        echo 'Running against upstream'
-        echo "=> $1 Nothing to do"
-
-        do_Done
-        exit 0
+            do_Done
+            exit 0
+        fi
     fi
 
     echo '-----------------------------------------'
@@ -43,13 +42,15 @@ function do_Get_Upstream_Master(){
     echo '-----------------------------------------'
 }
 
-function do_Compare_With_Upstream_Master(){
-
+do_Compare_With_Upstream_Master () {
     echo '-----------------------------------------'
     echo 'Compare the working code with upstream master'
 
-    NEW_WARNINGS=$(comm -13 <(sort < /cwd/master-report.txt) <(sort < /cwd/current-report.txt) | wc -l)
-    REMOVED_WARNINGS=$(comm -23 <(sort < /cwd/master-report.txt) <(sort < /cwd/current-report.txt) | wc -l)
+    sort < /cwd/master-report.txt > /cwd/master-report-sorted.txt
+    sort < /cwd/current-report.txt > /cwd/current-report-sorted.txt
+
+    NEW_WARNINGS=$(comm -13 /cwd/master-report-sorted.txt /cwd/current-report-sorted.txt | wc -l)
+    REMOVED_WARNINGS=$(comm -23 /cwd/master-report-sorted.txt /cwd/current-report-sorted.txt | wc -l)
     if test "$NEW_WARNINGS" -ne 0; then
         echo '-----------------------------------------'
         echo "### $NEW_WARNINGS new warning(s) found by $1 ###"
@@ -63,19 +64,17 @@ function do_Compare_With_Upstream_Master(){
     fi
 }
 
-function do_Create_Artifacts_Folder(){
-
+do_Create_Artifacts_Folder () {
     # Create the artifacts folders
     save_dir="$(pwd)"
 
-    if [[ $1 == "GJS_COVERAGE" ]]; then
+    if test "$1" = "GJS_COVERAGE"; then
          mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
     fi
     mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
 }
 
-function do_Get_Commit_Message(){
-
+do_Get_Commit_Message () {
     # Allow CI to skip jobs. Its goal is to simplify housekeeping.
     # Disable tasks using the commit message. Possibilities are (and/or):
     # [skip eslint]		[skip cpplint]		[skip cppcheck]
@@ -84,8 +83,7 @@ function do_Get_Commit_Message(){
     log_message=$(git log -n 1)
 }
 
-function do_Check_Warnings(){
-
+do_Check_Warnings () {
     local total=0
     cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
 
@@ -97,7 +95,7 @@ function do_Check_Warnings(){
 
     total=$(awk '{total+=1}END{print total}' warnings.log)
 
-    if [[ $total > 0 ]]; then
+    if test "$total" -gt 0; then
         echo '-----------------------------------------'
         echo "### $total new warning(s) found by compiler ###"
         echo '-----------------------------------------'
@@ -107,12 +105,11 @@ function do_Check_Warnings(){
     fi
 }
 
-function do_Check_Script_Errors(){
-
+do_Check_Script_Errors () {
     local total=0
     total=$(cat scripts.log | grep 'not ok ' | awk '{total+=1}END{print total}')
 
-    if [[ $total > 0 ]]; then
+    if test "$total" -gt 0; then
         echo '-----------------------------------------'
         echo "### Found $total errors on scripts.log ###"
         echo '-----------------------------------------'
@@ -121,11 +118,11 @@ function do_Check_Script_Errors(){
 }
 
 # ----------- Run the Tests -----------
-if [[ -n "${TEST}" ]]; then
+if test -n "$TEST"; then
     extra_opts="($TEST)"
 fi
 
-source test/extra/do_environment.sh
+. test/extra/do_environment.sh
 
 # Show some environment info
 do_Print_Labels  'ENVIRONMENT'
@@ -137,7 +134,7 @@ echo "Doing: $1 $extra_opts"
 do_Create_Artifacts_Folder "$1"
 do_Get_Commit_Message
 
-if [[ $1 == "GJS" ]]; then
+if test "$1" = "GJS"; then
     do_Set_Env
     do_Show_Info
 
@@ -158,34 +155,34 @@ if [[ $1 == "GJS" ]]; then
 
     make -sj 2>&1 | tee compilation.log
 
-    if [[ $TEST == "distcheck" ]]; then
+    if test "$TEST" = "distcheck"; then
         xvfb-run -a make -s distcheck
-    elif [[ $TEST == "check" ]]; then
+    elif test "$TEST" = "check"; then
         xvfb-run -a make -s check
     fi
     make -sj install
 
-    if [[ $WARNINGS == "count" ]]; then
+    if test "$WARNINGS" = "count"; then
         do_Print_Labels 'Warnings Report '
         do_Check_Warnings
         do_Print_Labels
     fi
 
-elif [[ $1 == "GJS_EXTRA" ]]; then
+elif test "$1" = "GJS_EXTRA"; then
     # It doesn't (re)build, just run the 'Installed Tests'
     do_Print_Labels 'Run GJS installed tests'
     do_Set_Env
 
     xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
 
-elif [[ $1 == "VALGRIND" ]]; then
+elif test "$1" = "VALGRIND"; then
     # It doesn't (re)build, just run the 'Valgrind Tests'
     do_Print_Labels 'Valgrind Report'
     do_Set_Env
 
     make check-valgrind
 
-elif [[ $1 == "SH_CHECKS" ]]; then
+elif test "$1" = "SH_CHECKS"; then
     # It doesn't (re)build, just run the 'Tests'
     do_Print_Labels 'Shell Scripts Check'
     do_Set_Env
@@ -198,7 +195,7 @@ elif [[ $1 == "SH_CHECKS" ]]; then
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
 
-elif [[ $1 == "GJS_COVERAGE" ]]; then
+elif test "$1" = "GJS_COVERAGE"; then
     # It doesn't (re)build, just run the 'Coverage Tests'
     do_Print_Labels 'Code Coverage Report'
     do_Set_Env
@@ -211,7 +208,7 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     sed -e 's/<[^>]*>//g' "$save_dir"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------'
 
-elif [[ $1 == "CPPLINT" ]]; then
+elif test "$1" = "CPPLINT"; then
     do_Print_Labels 'C/C++ Linter report '
 
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 >/dev/null | \
