@@ -1,11 +1,11 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
-function do_Configure_MainBuild(){
+do_Configure_MainBuild () {
     do_Print_Labels 'Set Main Build Configuration'
 
     autogenargs="--enable-compile-warnings=yes"
 
-    if [[ -n "${BUILD_OPTS}" ]]; then
+    if test -n "$BUILD_OPTS"; then
         autogenargs="$autogenargs $BUILD_OPTS"
     fi
     export ci_autogenargs="$autogenargs"
@@ -13,9 +13,8 @@ function do_Configure_MainBuild(){
     echo '-- Done --'
 }
 
-function do_Print_Labels(){
-
-    if [[ -n "${1}" ]]; then
+do_Print_Labels () {
+    if test -n "$1"; then
         label_len=${#1}
         span=$(((54 - $label_len) / 2))
 
@@ -29,15 +28,13 @@ function do_Print_Labels(){
     fi
 }
 
-function do_Done(){
-
+do_Done () {
     # Done. De-initializes whatever is needed
     do_Print_Labels  'FINISHED'
 }
 
-function do_Show_Info(){
-
-    local compiler=gcc
+do_Show_Info () {
+    local compiler="${CC:-gcc}"
 
     echo '-----------------------------------------'
     echo 'Build system information'
@@ -48,10 +45,6 @@ function do_Show_Info(){
     echo '-----------------------------------------'
     cat /etc/*-release
     echo '-----------------------------------------'
-
-    if [[ ! -z $CC ]]; then
-        compiler=$CC
-    fi
     echo 'Compiler version'
     $compiler --version
     echo '-----------------------------------------'
