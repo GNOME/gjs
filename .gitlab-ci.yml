@@ -210,8 +210,11 @@ cpplint:
     TASK_ID: "cpplint"
     CODECHECK: "CPPLINT"
   except:
-    - schedules
-    - tags
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip cpplint\]/
 
 eslint:
   when: on_success
@@ -362,13 +365,6 @@ zeal_11:
     # CI starts here. Previous messages are from GitLab Runner setup.
     - *CI_header
 
-    # Skip the build (if requested)
-    - |
-      if [[ -z "${CI_COMMIT_MESSAGE##*[skip images]*}" && -z "${CI_COMMIT_MESSAGE##*$NAME*}" ]]; then
-        echo "== Nothing to do =="
-        exit 0
-      fi
-
     # Build using the Dockerfile
     - |
       if [[ -n "${DOCKERFILE}" ]]; then
@@ -406,6 +402,9 @@ fedora.static-analysis:
     DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.static-analysis/
 
 SM60-gcc.fedora-dev:
   <<: *create_docker_image
@@ -416,6 +415,9 @@ SM60-gcc.fedora-dev:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-gcc.fedora-dev"
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /SM60-gcc.fedora-dev/
 
 SM60-debug-gcc.fedora-dev:
   <<: *create_docker_image
@@ -427,3 +429,6 @@ SM60-debug-gcc.fedora-dev:
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-debug-gcc.fedora-dev"
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /SM60-debug-gcc.fedora-dev/
