@@ -8,7 +8,6 @@ function do_Set_Env(){
     mkdir -p /on-host/.cache
     export XDG_CACHE_HOME=/on-host/.cache
 
-    export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
 
@@ -26,15 +25,15 @@ if [[ -n "${BUILD_OPTS}" ]]; then
     extra_opts="($BUILD_OPTS)"
 fi
 
-if [[ -n "${STATIC}" ]]; then
-    extra_opts="$extra_opts  ($STATIC)"
+if [[ -n "${MOZJS_BRANCH}" ]]; then
+    extra_opts="$extra_opts  ($MOZJS_BRANCH)"
 fi
 
 source test/extra/do_environment.sh
 
 # Show some environment info
 do_Print_Labels  'ENVIRONMENT'
-echo "Running on: $BASE $OS"
+echo "Running on: $OS"
 echo "Doing: $1 $extra_opts"
 
 source test/extra/do_basic.sh
