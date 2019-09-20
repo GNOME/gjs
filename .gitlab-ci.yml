@@ -193,6 +193,11 @@ cppcheck:
     - tags
     - variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
+  only:
+    changes:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
 
 cpplint:
   <<: *build
@@ -206,6 +211,11 @@ cpplint:
     - tags
     - variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip cpplint\]/
+  only:
+    changes:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
 
 eslint:
   when: on_success
@@ -218,6 +228,9 @@ eslint:
     - tags
     - variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip eslint\]/
+  only:
+    changes:
+      - '**/*.js'
 
 #############################################
 #                Manual Jobs                #
