@@ -203,6 +203,7 @@ cppcheck:
 cpplint:
   <<: *build
   stage: source_check
+  # FIXME: Change to alpine.cpplint image when available
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
   variables:
     TASK_ID: "cpplint"
@@ -371,18 +372,12 @@ zeal_11:
     # CI starts here. Previous messages are from GitLab Runner setup.
     - *CI_header
 
-    # Build using the Dockerfile
-    - |
-      if [[ -n "${DOCKERFILE}" ]]; then
-        docker build -f "$DOCKERFILE" -t "$CI_REGISTRY_IMAGE:$NAME" .
-      fi
-
     # Where the real magic happens
     - |
       if [[ -n "${IMAGE}" ]]; then
         docker run --name $NAME -v $(pwd):/on-host \
           -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e CC=gcc -e MOZJS_BRANCH=$MOZJS_BRANCH $IMAGE \
-          bash -e -c "cd /on-host && test/ci-images.sh BUILD_MOZ"
+          bash -e -c "cd /on-host && test/ci-images.sh"
         docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
       fi
 
@@ -400,31 +395,40 @@ zeal_11:
     # Done
     - *CI_footer
 
-fedora.static-analysis:
+alpine.cpplint:
   <<: *create_docker_image
+  script:
+    # Overrides the script from create_docker_image above
+    - *CI_header
+    - docker build -f test/extra/Dockerfile.alpine.cpplint -t "$CI_REGISTRY_IMAGE:alpine.cpplint" .
+    - docker tag "$CI_REGISTRY_IMAGE:alpine.cpplint" "$CI_REGISTRY_IMAGE:job-"$CI_JOB_ID"_alpine.cpplint"
+    - docker images
+    - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+    - |
+      if [[ "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        docker push "$CI_REGISTRY_IMAGE"
+      fi
+    - *CI_footer
   variables:
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
-    DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
-    NAME: "fedora.static-analysis"
   except:
     variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.static-analysis/
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /alpine.cpplint/
 
-SM60-gcc.fedora-dev:
+fedora.mozjs60:
   <<: *create_docker_image
   variables:
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
-    NAME: "SM60-gcc.fedora-dev"
   except:
     variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /SM60-gcc.fedora-dev/
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs60/
 
-SM60-debug-gcc.fedora-dev:
+fedora.mozjs60-debug:
   <<: *create_docker_image
   variables:
     BUILD_OPTS: "--enable-debug"
@@ -432,7 +436,6 @@ SM60-debug-gcc.fedora-dev:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
-    NAME: "SM60-debug-gcc.fedora-dev"
   except:
     variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /SM60-debug-gcc.fedora-dev/
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs60-debug/

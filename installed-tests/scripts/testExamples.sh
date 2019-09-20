@@ -20,18 +20,10 @@ if [[ -n "${ENABLE_GTK}" ]]; then
 
     eval timeout 5s $graphical_gjs examples/gettext.js
     report_timeout "run the gettext.js example"
-
-    if gjs -c 'imports.gi.WebKit2' >/dev/null 2>&1; then
-        eval timeout 15s $graphical_gjs examples/webkit.js
-        report_timeout "run the webkit.js example"
-    else
-        skip "run the webkit.js example" "WebKit2 not found"
-    fi
 else
     skip "run the calc.js example" "running without GTK"
     skip "run the gtk.js example" "running without GTK"
     skip "run the gtk-application.js example" "running without GTK"
     skip "run the gettext.js example" "running without GTK"
-    skip "run the webkit.js example" "running without GTK"
 fi
 echo "1..$total"
