@@ -231,7 +231,7 @@ elif [[ $1 == "GJS_COVERAGE" ]]; then
     sed -e 's/<[^>]*>//g' "$save_dir"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
     echo '-----------------------------------------'
 
-elif [[ $1 == "CPPLINT"  && "$log_message" != *'[skip cpplint]'* ]]; then
+elif [[ $1 == "CPPLINT" ]]; then
     do_Print_Labels 'C/C++ Linter report '
 
     cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 >/dev/null | \
