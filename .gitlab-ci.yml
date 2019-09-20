@@ -21,27 +21,14 @@ stages:
        echo "*********************************************";
     '
 
-.JHBuild files: &JHB_files  [.cache/jhbuild/build/gjs/*.log, .cache/jhbuild/build/gjs/Makefile, .cache/jhbuild/build/gjs/configure]
-.Coverage files: &cov_files [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
-.Regular files: &reg_files  [configure, Makefile, analysis/, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
-.Flatpak files: &pak_files  [./*.flatpak]
-
-.jhbuild: &jhbuild
-  artifacts:
-    name: log_jhbuild
-    when: always
-    paths: *JHB_files
+.Coverage files: &cov_files [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
+.Regular files: &reg_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
 
 .coverage: &coverage
   artifacts:
     name: log_coverage
     when: always
     paths: *cov_files
-
-.package: &package
-  artifacts:
-    name: log_package
-    paths: *pak_files
 
 # Regular build
 .build: &build
@@ -89,35 +76,6 @@ stages:
     - 'if [[ -n "${SCRIPTCHECK}" ]]; then
          $(pwd)/test/test-ci.sh SH_CHECKS;
        fi
-    '
-
-    # Done
-    - *CI_footer
-
-# Cross (multi architecture) build
-.qemu: &multiarch
-  artifacts:
-    name: log
-    when: always
-    paths: *reg_files
-
-  image: docker:19.03.0
-  services:
-    - docker:19.03.0-dind
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-
-  script:
-    # CI starts here. Previous messages are from GitLab Runner setup.
-    - *CI_header
-
-    # Register QEMU archs
-    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
-
-    # Run the multiarch test job using QEMU
-    - 'docker run -v $(pwd):/cwd
-          -e TEST=check -e TASK_ID=$TASK_ID $IMAGE
-          bash -e -c "cd /cwd && test/test-ci.sh GJS"
     '
 
     # Done
@@ -204,15 +162,13 @@ coverage-automatic:
       - master@GNOME/gjs
 
 # Publishes
-# The reports (coverage and code statistics)
+# The code coverage report
 pages:
   stage: deploy
   dependencies:
     - coverage-automatic
-    - code_statistics
   script:
     - mv $(pwd)/coverage/ public/ || true
-    - mv $(pwd)/analysis/report.txt public/ || true
   artifacts:
     paths:
       - public
@@ -227,15 +183,22 @@ pages:
 #              Static Analyzers             #
 #############################################
 cppcheck:
-  <<: *build
+  when: on_success
+  image: uilianries/docker-cppcheck
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
-  variables:
-    TASK_ID: "cppcheck"
-    CODECHECK: "CPPCHECK"
+  script:
+    - cppcheck . -v -f -q --error-exitcode=1 --inline-suppr --enable=warning,performance,portability
   except:
-    - schedules
-    - tags
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
+  only:
+    changes:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
 
 cpplint:
   <<: *build
@@ -245,19 +208,32 @@ cpplint:
     TASK_ID: "cpplint"
     CODECHECK: "CPPLINT"
   except:
-    - schedules
-    - tags
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip cpplint\]/
+  only:
+    changes:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
 
 eslint:
-  <<: *build
+  when: on_success
+  image: singapore/lint-condo
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
-  variables:
-    TASK_ID: "eslint"
-    CODECHECK: "ESLINT"
+  script:
+    - node /usr/src/lint-condo
   except:
-    - schedules
-    - tags
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip eslint\]/
+  only:
+    changes:
+      - '**/*.js'
 
 #############################################
 #                Manual Jobs                #
@@ -281,22 +257,11 @@ codequality:
   except:
     - schedules
 
-code_statistics:
-  <<: *build
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.static-analysis
-  variables:
-    TASK_ID: "code_statistics"
-    CODECHECK: "TOKEI"
-  when: manual
-  except:
-    - schedules
-
 coverage:
   <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
     TASK_ID: "coverage"
     BUILD_OPTS: "--enable-code-coverage"
@@ -308,9 +273,9 @@ coverage:
 sanitizer_clang:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
+  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
   variables:
-    TASK_ID: "ubuntu-x86_64-clang_ubsan_asan-default-default-check"
+    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
     BUILD_OPTS: "--enable-asan --enable-ubsan"
     TEST: "check"
@@ -318,7 +283,7 @@ sanitizer_clang:
   except:
     - schedules
 
-fedora_gcc:
+distcheck:
   <<: *build
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev
@@ -340,30 +305,6 @@ installed_tests:
   except:
     - schedules
 
-# Planned as weekly
-ubuntu_gcc:
-  <<: *build
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
-  variables:
-    TASK_ID: "ubuntu-x86_64-gcc-default-default-distcheck"
-    TEST: "distcheck"
-  when: manual
-  except:
-    - schedules
-
-ubuntu_clang:
-  <<: *build
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.ubuntu-dev
-  variables:
-    TASK_ID: "ubuntu-x86_64-clang-default-default-distcheck"
-    CC: clang
-    TEST: "distcheck"
-  when: manual
-  except:
-    - schedules
-
 valgrind:
   <<: *build
   stage: manual
@@ -373,26 +314,6 @@ valgrind:
     BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
     TEST: "check"
   allow_failure: true
-  when: manual
-  except:
-    - schedules
-
-# Flatpak packaging (weekly)
-flatpak:
-  <<: *build
-  <<: *package
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gnome-nightly-oci/nightly:master
-  variables:
-    TASK_ID: "flatpak packaging"
-    CODECHECK: "FLATPAK"
-    BUNDLE: "org.gnome.GjsDevel.flatpak"
-    MANIFEST: org.gnome.GjsDevel.json
-    RUNTIME_REPO: "https://sdk.gnome.org/gnome-nightly.flatpakrepo"
-
-  environment:
-    name: review/$CI_COMMIT_REF_NAME
-    url: https://gitlab.gnome.org/$CI_PROJECT_PATH/-/jobs/$CI_JOB_ID/artifacts/raw/${BUNDLE}
   when: manual
   except:
     - schedules
@@ -434,29 +355,6 @@ zeal_11:
   except:
     - schedules
 
-# Multiarch Tests (weekly)
-armv8:
-  <<: *multiarch
-  stage: manual
-  variables:
-    TASK_ID: "fedora-armv8-gcc-default-default-check"
-    DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.aarch64"
-  when: manual
-  except:
-    - schedules
-
-ppc64le:
-  <<: *multiarch
-  stage: manual
-  variables:
-    TASK_ID: "fedora-ppc64le-gcc-default-default-check"
-    DOCKER_DRIVER: overlay
-    IMAGE: "registry.gitlab.gnome.org/gnome/gjs:SM60-gcc.fedora-dev.ppc64le"
-  when: manual
-  except:
-    - schedules
-
 #############################################
 #          Create CI Docker Images          #
 #############################################
@@ -473,20 +371,6 @@ ppc64le:
     # CI starts here. Previous messages are from GitLab Runner setup.
     - *CI_header
 
-    # Skip the build (if requested)
-    - |
-      if [[ -z "${CI_COMMIT_MESSAGE##*[skip images]*}" && -z "${CI_COMMIT_MESSAGE##*$NAME*}" ]]; then
-        echo "== Nothing to do =="
-        exit 0
-      fi
-
-    # Get multiarch stuff
-    - |
-      if [[ -n "${TARGET_ARCH}" ]]; then
-        docker run --rm --privileged multiarch/qemu-user-static:register --reset
-        wget https://github.com/multiarch/qemu-user-static/releases/download/v2.12.0/x86_64_qemu-${TARGET_ARCH}-static.tar.gz
-      fi
-
     # Build using the Dockerfile
     - |
       if [[ -n "${DOCKERFILE}" ]]; then
@@ -497,7 +381,7 @@ ppc64le:
     - |
       if [[ -n "${IMAGE}" ]]; then
         docker run --name $NAME -v $(pwd):/on-host \
-          -e BASE=$BASE -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e DEV=$DEV -e CC=gcc -e STATIC=$STATIC $IMAGE \
+          -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e CC=gcc -e MOZJS_BRANCH=$MOZJS_BRANCH $IMAGE \
           bash -e -c "cd /on-host && test/ci-images.sh BUILD_MOZ"
         docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
       fi
@@ -519,71 +403,36 @@ ppc64le:
 fedora.static-analysis:
   <<: *create_docker_image
   variables:
-    BASE: "fedora"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     DOCKERFILE: "test/extra/Dockerfile.fedora.static-analysis"
     NAME: "fedora.static-analysis"
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.static-analysis/
 
 SM60-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
-    BASE: "fedora"
-    DEV: "devel"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-gcc.fedora-dev"
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /SM60-gcc.fedora-dev/
 
 SM60-debug-gcc.fedora-dev:
   <<: *create_docker_image
   variables:
-    BASE: "fedora"
     BUILD_OPTS: "--enable-debug"
-    DEV: "devel"
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
     NAME: "SM60-debug-gcc.fedora-dev"
-
-SM60-gcc.fedora-dev.aarch64:
-  <<: *create_docker_image
-  variables:
-    BASE: "fedora"
-    DEV: "devel"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    DOCKERFILE: "test/extra/Dockerfile.arm64v8.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.aarch64"
-    NAME: "SM60-gcc.fedora-dev.aarch64"
-    STATIC: "qemu"
-    TARGET_ARCH: "aarch64"
-
-SM60-gcc.fedora-dev.ppc64le:
-  <<: *create_docker_image
-  variables:
-    BASE: "fedora"
-    DEV: "devel"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    DOCKERFILE: "test/extra/Dockerfile.ppc64le.fedora.29"
-    IMAGE: "${CI_REGISTRY_IMAGE}:SM60-gcc.fedora-dev.ppc64le"
-    NAME: "SM60-gcc.fedora-dev.ppc64le"
-    STATIC: "qemu"
-    TARGET_ARCH: "ppc64le"
-
-SM60-gcc.ubuntu-dev:
-  <<: *create_docker_image
-  variables:
-    BASE: "debian"
-    DEV: "devel"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    IMAGE: "ubuntu:devel"
-    NAME: "SM60-gcc.ubuntu-dev"
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /SM60-debug-gcc.fedora-dev/
