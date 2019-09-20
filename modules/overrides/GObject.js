@@ -507,6 +507,12 @@ function _init() {
     GObject.Object.prototype.disconnect = function (id) {
         return GObject.signal_handler_disconnect(this, id);
     };
+    GObject.Object.prototype.block_signal_handler = function(id) {
+        return GObject.signal_handler_block(this, id);
+    };
+    GObject.Object.prototype.unblock_signal_handler = function(id) {
+        return GObject.signal_handler_unblock(this, id);
+    };
 
     // A simple workaround if you have a class with .connect, .disconnect or .emit
     // methods (such as Gio.Socket.connect or NMClient.Device.disconnect)
