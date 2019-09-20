@@ -5,8 +5,9 @@ var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;
 
 // For backwards compatibility
 
-function fromArray(a) {
-    return new ByteArray(Uint8Array.from(a));
+function fromArray                    (a) {
+    return new ByteArray(Uint8Array.from(a
+        ));
 }
 
 var ByteArray = class ByteArray {
