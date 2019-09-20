@@ -424,6 +424,7 @@ fedora.mozjs60:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
+    NAME: "fedora.mozjs60"
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs60/
@@ -436,6 +437,7 @@ fedora.mozjs60-debug:
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
     DOCKER_TLS_CERTDIR: ""
     IMAGE: "fedora:rawhide"
+    NAME: "fedora.mozjs60-debug"
   except:
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs60-debug/
