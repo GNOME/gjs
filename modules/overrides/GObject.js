@@ -26,7 +26,9 @@ const Legacy = imports._legacy;
 
 let GObject;
 
-var GTypeName = Symbol('GType name');
+var GTypeName =
+Symbol('GType name'
+    );
 var GTypeFlags = Symbol('GType flags');
 var interfaces = Symbol('GObject interfaces');
 var properties = Symbol('GObject properties');

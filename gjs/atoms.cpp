@@ -28,7 +28,16 @@
 
 #include "gjs/atoms.h"
 
-bool GjsAtom::init(JSContext* cx, const char* str) {
+bool
+
+
+GjsAtom::init
+
+
+(JSContext* cx, const char* str)
+
+
+{
     JSString* s = JS_AtomizeAndPinString(cx, str);
     if (!s)
         return false;

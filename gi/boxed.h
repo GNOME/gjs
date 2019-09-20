@@ -48,13 +48,18 @@ class BoxedInstance;
  */
 
 class BoxedBase
-    : public GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance> {
+    : p
+    ublic GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance> {
     friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
 
  protected:
     explicit BoxedBase(BoxedPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
-    ~BoxedBase(void) {}
+    ~BoxedBase(void)
+
+    {
+        
+    }
 
     static const GjsDebugTopic debug_topic = GJS_DEBUG_GBOXED;
     static constexpr const char* debug_tag = "GBoxed";
