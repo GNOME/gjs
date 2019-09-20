@@ -1,5 +1,30 @@
 #!/bin/bash -e
 
+function do_Install_Dependencies(){
+    echo
+    echo '-- Installing Base Dependencies --'
+
+    dnf -y upgrade --best --allowerasing
+
+    # Base dependencies: CI scripts, mozjs, gjs
+    # mozjs and gjs build dependencies adapted from the lists in:
+    # https://src.fedoraproject.org/rpms/mozjs60/blob/master/f/mozjs60.spec
+    # https://src.fedoraproject.org/rpms/gjs/blob/master/f/gjs.spec
+    dnf -y install @c-development @development-tools clang compiler-rt \
+        gnome-desktop-testing lcov libasan libubsan libtsan meson ninja-build \
+        systemtap-sdt-devel Xvfb xz \
+        \
+        perl-devel 'pkgconfig(libffi)' 'pkgconfig(zlib)' python2-devel \
+        readline-devel which /usr/bin/zip \
+        \
+        autoconf-archive cairo-gobject-devel dbus-daemon dbus-glib-devel \
+        glib2-devel gobject-introspection-devel gtk3-devel sysprof-devel
+
+    # Debuginfo needed for stack traces, e.g. in Valgrind
+    dnf -y debuginfo-install glib2-devel gobject-introspection-devel \
+        gtk3-devel fontconfig cairo glibc
+}
+
 function do_Set_Env(){
     echo
     echo '-- Set Environment --'
@@ -14,6 +39,41 @@ function do_Set_Env(){
     if [[ -z "${DISPLAY}" ]]; then
         export DISPLAY=":0"
     fi
+
+    echo '-- Done --'
+}
+
+function do_Build_Mozilla(){
+    echo
+    echo '-- Building Mozilla SpiderMonkey --'
+
+    git clone --depth 1 https://github.com/ptomato/mozjs.git -b "${MOZJS_BRANCH:-mozjs60}" /on-host/mozjs
+    cd /on-host/mozjs
+
+    mkdir -p _build
+    cd _build
+
+    ../js/src/configure --prefix=/usr/local \
+         --enable-posix-nspr-emulation \
+         --with-system-zlib \
+         --with-intl-api \
+         --disable-jemalloc \
+         AUTOCONF=autoconf \
+         ${BUILD_OPTS}
+    make -sj4
+    make install
+
+    cd -
+}
+
+function do_Shrink_Image(){
+    echo
+    echo '-- Cleaning image --'
+    PATH=$PATH:~/.local/bin
+    rm -rf ~/jhbuild/install/lib/libjs_static.ajs
+
+    dnf -y clean all
+    rm -rf /var/cache/dnf
 
     echo '-- Done --'
 }
@@ -36,9 +96,14 @@ do_Print_Labels  'ENVIRONMENT'
 echo "Running on: $OS"
 echo "Doing: $1 $extra_opts"
 
-source test/extra/do_basic.sh
-source test/extra/do_mozilla.sh
-source test/extra/do_docker.sh
+do_Install_Dependencies
+do_Set_Env
+do_Show_Info
+do_Build_Mozilla
+do_Shrink_Image
+
+# Clear the environment
+unset BUILD_OPTS
 
 # Releases stuff and finishes
 do_Done
