@@ -373,17 +373,17 @@ zeal_11:
     - *CI_header
 
     # Where the real magic happens
-    - docker run --name $NAME -v $(pwd):/on-host -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e CC=gcc -e MOZJS_BRANCH=$MOZJS_BRANCH $IMAGE bash -e -c "cd /on-host && test/ci-images.sh"
-    - docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
+    - docker run --name "$NAME" -v "$(pwd):/on-host" -e OS="$IMAGE" -e BUILD_OPTS="$BUILD_OPTS" -e CC=gcc -e MOZJS_BRANCH="$MOZJS_BRANCH" "$IMAGE" bash -e -c "cd /on-host && test/ci-images.sh"
+    - docker commit "$NAME" "$CI_REGISTRY_IMAGE:$NAME"
 
     # Prepare to publish
-    - docker tag "$CI_REGISTRY_IMAGE:$NAME" "$CI_REGISTRY_IMAGE:job-"$CI_JOB_ID"_$NAME"
+    - docker tag "$CI_REGISTRY_IMAGE:$NAME" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$NAME"
     - docker images
-    - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+    - docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
 
     # Publish (if running on a schedule)
     - |
-      if [[ "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+      if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
         docker push "$CI_REGISTRY_IMAGE"
       fi
 
@@ -396,11 +396,11 @@ alpine.cpplint:
     # Overrides the script from create_docker_image above
     - *CI_header
     - docker build -f test/extra/Dockerfile.alpine.cpplint -t "$CI_REGISTRY_IMAGE:alpine.cpplint" .
-    - docker tag "$CI_REGISTRY_IMAGE:alpine.cpplint" "$CI_REGISTRY_IMAGE:job-"$CI_JOB_ID"_alpine.cpplint"
+    - docker tag "$CI_REGISTRY_IMAGE:alpine.cpplint" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_alpine.cpplint"
     - docker images
-    - docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD}
+    - docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
     - |
-      if [[ "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+      if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
         docker push "$CI_REGISTRY_IMAGE"
       fi
     - *CI_footer
