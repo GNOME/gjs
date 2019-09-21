@@ -373,9 +373,7 @@ zeal_11:
     - *CI_header
 
     # Where the real magic happens
-    - docker run --name $NAME -v $(pwd):/on-host \
-        -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e CC=gcc -e MOZJS_BRANCH=$MOZJS_BRANCH $IMAGE \
-          bash -e -c "cd /on-host && test/ci-images.sh"
+    - docker run --name $NAME -v $(pwd):/on-host -e OS=$IMAGE -e BUILD_OPTS=$BUILD_OPTS -e CC=gcc -e MOZJS_BRANCH=$MOZJS_BRANCH $IMAGE bash -e -c "cd /on-host && test/ci-images.sh"
     - docker commit $NAME "$CI_REGISTRY_IMAGE:$NAME"
 
     # Prepare to publish
