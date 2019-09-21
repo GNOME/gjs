@@ -306,7 +306,6 @@ void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
     g_value_unset(&value_arg);
 
 out:
-    g_clear_pointer(&pspec, g_param_spec_unref);
     g_clear_pointer(&base_info, g_base_info_unref);
     g_clear_pointer(&child_set_property_fun, g_base_info_unref);
 }
