@@ -7,11 +7,11 @@ do_Set_Env () {
     export XDG_CACHE_HOME
 
     #SpiderMonkey and libgjs
-    export PKG_CONFIG_PATH=/root/jhbuild/install/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/jhbuild/install/lib:/usr/local/lib
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
     #Macros
-    export ACLOCAL_PATH=$ACLOCAL_PATH:/root/jhbuild/install/share/aclocal
+    export ACLOCAL_PATH=$ACLOCAL_PATH:/usr/local/share/aclocal
 
     export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
