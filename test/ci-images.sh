@@ -17,8 +17,9 @@ function do_Install_Dependencies(){
         perl-devel 'pkgconfig(libffi)' 'pkgconfig(zlib)' python2-devel \
         readline-devel which /usr/bin/zip \
         \
-        autoconf-archive cairo-gobject-devel dbus-daemon dbus-glib-devel \
-        glib2-devel gobject-introspection-devel gtk3-devel sysprof-devel
+        autoconf-archive cairo-gobject-devel dbus-daemon dbus-x11 \
+        dbus-glib-devel glib2-devel gobject-introspection-devel gtk3-devel \
+        sysprof-devel
 
     # Debuginfo needed for stack traces, e.g. in Valgrind
     dnf -y debuginfo-install glib2-devel gobject-introspection-devel \
