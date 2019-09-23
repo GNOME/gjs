@@ -443,7 +443,8 @@ libgjs = shared_library(meson.project_name(),
     cpp_args: ['-DGJS_COMPILATION'] + directory_defines,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     dependencies: libgjs_dependencies,
-    version: '0', soversion: '0.0.0',
+    version: '0.0.0',
+    soversion: '0',
     install: true)
 
 install_headers(gjs_public_headers, subdir: api_name / 'gjs')
