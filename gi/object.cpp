@@ -1135,9 +1135,8 @@ ObjectInstance::toggle_up(void)
     if (!wrapper_is_rooted()) {
         /* FIXME: thread the context through somehow. Maybe by looking up
          * the compartment that obj belongs to. */
-        GjsContext *context = gjs_context_get_current();
         debug_lifecycle("Rooting wrapper");
-        auto cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
+        auto* cx = GjsContextPrivate::from_current_context()->context();
         switch_to_rooted(cx);
     }
 }
