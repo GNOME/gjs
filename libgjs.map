@@ -1,11 +1,6 @@
-# Remove when https://gitlab.gnome.org/GNOME/gjs/issues/194 is completed
 {
 global:
     gjs_*;
-    extern "C++" {
-        gjs_*;
-        GjsContextPrivate::from_object*;
-    };
 local:
     *;
 };
