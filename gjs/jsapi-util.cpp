@@ -638,6 +638,29 @@ size_t gjs_unix_shebang_len(const std::u16string& script,
     return newline_pos + 1;
 }
 
+/**
+ * gjs_get_import_global:
+ * @context: a #JSContext
+ *
+ * Gets the "import global" for the context's runtime. The import
+ * global object is the global object for the context. It is used
+ * as the root object for the scope of modules loaded by GJS in this
+ * runtime, and should also be used as the globals 'obj' argument passed
+ * to JS_InitClass() and the parent argument passed to JS_ConstructObject()
+ * when creating a native classes that are shared between all contexts using
+ * the runtime. (The standard JS classes are not shared, but we share
+ * classes such as GObject proxy classes since objects of these classes can
+ * easily migrate between contexts and having different classes depending
+ * on the context where they were first accessed would be confusing.)
+ *
+ * Return value: the "import global" for the context's
+ *  runtime. Will never return %NULL while GJS has an active context
+ *  for the runtime.
+ */
+JSObject* gjs_get_import_global(JSContext* cx) {
+    return GjsContextPrivate::from_cx(cx)->global();
+}
+
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
 /* Unfortunately Visual Studio's C++ .lib somehow did not contain the right
  * codecvt stuff that we need to convert from utf8 to utf16 (char16_t), so we

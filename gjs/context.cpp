@@ -1097,31 +1097,6 @@ gjs_context_make_current (GjsContext *context)
 }
 
 /**
- * gjs_get_import_global:
- * @context: a #JSContext
- *
- * Gets the "import global" for the context's runtime. The import
- * global object is the global object for the context. It is used
- * as the root object for the scope of modules loaded by GJS in this
- * runtime, and should also be used as the globals 'obj' argument passed
- * to JS_InitClass() and the parent argument passed to JS_ConstructObject()
- * when creating a native classes that are shared between all contexts using
- * the runtime. (The standard JS classes are not shared, but we share
- * classes such as GObject proxy classes since objects of these classes can
- * easily migrate between contexts and having different classes depending
- * on the context where they were first accessed would be confusing.)
- *
- * Return value: the "import global" for the context's
- *  runtime. Will never return %NULL while GJS has an active context
- *  for the runtime.
- */
-JSObject*
-gjs_get_import_global(JSContext *context)
-{
-    return GjsContextPrivate::from_cx(context)->global();
-}
-
-/**
  * gjs_context_get_profiler:
  * @self: the #GjsContext
  *

@@ -135,7 +135,7 @@ class GjsContextPrivate {
 
  public:
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
-    GJS_USE static GjsContextPrivate* from_cx(JSContext* cx) {
+    GJS_USE GJS_ALWAYS_INLINE static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
     }
     GJS_USE static GjsContextPrivate* from_object(GObject* public_context);
