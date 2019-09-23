@@ -57,22 +57,42 @@ gjs_directory_defines = 				\
 	-DPKGLIBDIR=\"$(pkglibdir)\"
 
 ########################################################################
+noinst_LTLIBRARIES = libgjs-jsapi.la
+
+libgjs_jsapi_la_CPPFLAGS =	\
+	$(AM_CPPFLAGS)		\
+	$(GJS_CFLAGS)		\
+	$(gjs_directory_defines)\
+	-I$(top_srcdir)/gi	\
+	-DGJS_COMPILATION
+libgjs_jsapi_la_LDFLAGS = 	\
+	$(AM_LDFLAGS)		\
+	$(NO_UNDEFINED_FLAG)	\
+	$(NULL)
+libgjs_jsapi_la_LIBADD = 	\
+	$(GJS_LIBS)		\
+	$(NULL)
+
+libgjs_jsapi_la_SOURCES = $(gjs_jsapi_srcs)
+
 lib_LTLIBRARIES += libgjs.la
 
 libgjs_la_CPPFLAGS =		\
 	$(AM_CPPFLAGS)		\
 	$(GJS_CFLAGS)	\
+	-fvisibility=hidden	\
 	$(gjs_directory_defines)\
 	-I$(top_srcdir)/gi	\
 	-DGJS_COMPILATION
 libgjs_la_LDFLAGS = 			\
 	$(AM_LDFLAGS)			\
-	-export-symbols-regex "^[^_]"	\
+	-export-symbols-regex "^gjs_.*"	\
 	-version-info 0:0:0		\
 	$(NO_UNDEFINED_FLAG)		\
 	$(NULL)
 libgjs_la_LIBADD = 		\
 	$(GJS_LIBS)		\
+	libgjs-jsapi.la		\
 	$(READLINE_LIBS)	\
 	$(NULL)
 
@@ -167,7 +187,8 @@ gjs_console_CPPFLAGS = 		\
 	$(NULL)
 gjs_console_LDADD =		\
 	$(GJS_CONSOLE_LIBS)	\
-	libgjs.la
+	libgjs.la		\
+	libgjs-jsapi.la
 gjs_console_LDFLAGS = $(AM_LDFLAGS) -rdynamic
 gjs_console_SOURCES = $(gjs_console_srcs)
 
