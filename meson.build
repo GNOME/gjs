@@ -369,14 +369,6 @@ libgjs_sources = [
     'gjs/error-types.cpp',
     'gjs/global.cpp', 'gjs/global.h',
     'gjs/importer.cpp', 'gjs/importer.h',
-    'gjs/jsapi-class.h',
-    'gjs/jsapi-dynamic-class.cpp',
-    'gjs/jsapi-util.cpp', 'gjs/jsapi-util.h',
-    'gjs/jsapi-util-args.h',
-    'gjs/jsapi-util-error.cpp',
-    'gjs/jsapi-util-root.h',
-    'gjs/jsapi-util-string.cpp',
-    'gjs/jsapi-wrapper.h',
     'gjs/mem.cpp', 'gjs/mem-private.h',
     'gjs/module.cpp', 'gjs/module.h',
     'gjs/native.cpp', 'gjs/native.h',
@@ -385,14 +377,25 @@ libgjs_sources = [
     'modules/console.cpp', 'modules/console.h',
     'modules/modules.cpp', 'modules/modules.h',
     'modules/system.cpp', 'modules/system.h',
-    'util/log.cpp', 'util/log.h',
-    'util/misc.cpp', 'util/misc.h',
 ]
 
 # GjsPrivate introspection sources
 libgjs_private_sources = [
     'libgjs-private/gjs-gdbus-wrapper.c', 'libgjs-private/gjs-gdbus-wrapper.h',
     'libgjs-private/gjs-util.c', 'libgjs-private/gjs-util.h',
+]
+
+libgjs_jsapi_sources = [
+    'gjs/jsapi-class.h',
+    'gjs/jsapi-dynamic-class.cpp',
+    'gjs/jsapi-util-args.h',
+    'gjs/jsapi-util-error.cpp',
+    'gjs/jsapi-util-root.h',
+    'gjs/jsapi-util-string.cpp',
+    'gjs/jsapi-util.cpp', 'gjs/jsapi-util.h',
+    'gjs/jsapi-wrapper.h',
+    'util/log.cpp', 'util/log.h',
+    'util/misc.cpp', 'util/misc.h',
 ]
 
 module_cairo_srcs = [
@@ -437,15 +440,7 @@ if build_profiler
     libgjs_dependencies += profiler_deps
 endif
 
-symbol_map = files('libgjs.map')
-symbol_list = files('libgjs.symbols')
-link_args = cxx.get_supported_link_arguments([
-    '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_map[0]),
-    '-Wl,-exported_symbols_list,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_list[0]),  # macOS linker
-])
-
+link_args = []
 if cxx.has_link_argument('-Wl,-no-undefined')
     link_args += '-Wl,-no-undefined'
 else
@@ -454,7 +449,7 @@ else
     link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
 endif
 
-libgjs_cpp_args = ['-DGJS_COMPILATION']
+libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines
 
 # Check G-I and/or Meson on this one.
 libgjs_cpp_args += ['-DG_LOG_DOMAIN="Gjs"']
@@ -464,19 +459,37 @@ if host_machine.system() == 'windows'
     libgjs_cpp_args += ['-DWIN32', '-DXP_WIN']
 endif
 
+libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
+    libgjs_jsapi_sources, probes_header, probes_objfile,
+    cpp_args: libgjs_cpp_args,
+    link_args: link_args,
+    dependencies: libgjs_dependencies,
+    install: false)
+
+symbol_map = files('libgjs.map')
+symbol_list = files('libgjs.symbols')
+link_args += cxx.get_supported_link_arguments([
+    '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(),
+        symbol_map[0]),
+    '-Wl,-exported_symbols_list,@0@/@1@'.format(meson.current_source_dir(),
+        symbol_list[0]),  # macOS linker
+])
+
 libgjs = shared_library(meson.project_name(),
     libgjs_sources, libgjs_private_sources, module_resource_srcs,
     probes_header, probes_objfile,
-    cpp_args: libgjs_cpp_args + directory_defines,
+    cpp_args: libgjs_cpp_args,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
+    link_whole: libgjs_jsapi,
     dependencies: libgjs_dependencies,
     version: '0.0.0', soversion: '0',
+    gnu_symbol_visibility: 'hidden',
     install: true)
 
 install_headers(gjs_public_headers, subdir: api_name / 'gjs')
 
 # Allow using libgjs as a subproject
-libgjs_dep = declare_dependency(link_with: libgjs,
+libgjs_dep = declare_dependency(link_with: [libgjs, libgjs_jsapi],
     dependencies: libgjs_dependencies, include_directories: top_include)
 
 ### Build GjsPrivate introspection library #####################################

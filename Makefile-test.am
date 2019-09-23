@@ -61,6 +61,7 @@ gjs_tests_gtester_CPPFLAGS =			\
 
 gjs_tests_gtester_LDADD =	\
 	libgjs.la		\
+	libgjs-jsapi.la		\
 	$(GJS_LIBS)
 
 gjs_tests_gtester_SOURCES =				\
@@ -86,7 +87,7 @@ minijasmine_CPPFLAGS =				\
 	-DPKGLIBDIR=\"$(pkglibdir)\"		\
 	$(NULL)
 
-minijasmine_LDADD = $(GJS_LIBS) libgjs.la
+minijasmine_LDADD = $(GJS_LIBS) libgjs.la libgjs-jsapi.la
 
 ### TEST GIRS ##########################################################
 
