@@ -1093,7 +1093,8 @@ ObjectInstance::toggle_down(void)
      */
     if (wrapper_is_rooted()) {
         debug_lifecycle("Unrooting wrapper");
-        switch_to_unrooted();
+        GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+        switch_to_unrooted(gjs->context());
 
         /* During a GC, the collector asks each object which other
          * objects that it wants to hold on to so if there's an entire
@@ -1111,7 +1112,6 @@ ObjectInstance::toggle_down(void)
          * always queue a garbage collection when a toggle reference goes
          * down.
          */
-        GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
         if (!gjs->destroying())
             gjs->schedule_gc();
     }

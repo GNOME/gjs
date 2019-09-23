@@ -300,13 +300,12 @@ class GjsMaybeOwned {
         g_assert(m_root);
     }
 
-    void switch_to_unrooted() {
+    void switch_to_unrooted(JSContext* cx) {
         debug("switch to unrooted");
         g_assert(m_root);
 
         /* Prevent the thing from being garbage collected while it is in neither
          * m_heap nor m_root */
-        JSContext *cx = GjsContextPrivate::from_current_context()->context();
         JSAutoRequest ar(cx);
         JS::Rooted<T> thing(cx, *m_root);
 
