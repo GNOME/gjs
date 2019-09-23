@@ -121,6 +121,10 @@ GjsContextPrivate* GjsContextPrivate::from_object(GjsContext* js_context) {
         gjs_context_get_instance_private(js_context));
 }
 
+GjsContextPrivate* GjsContextPrivate::from_current_context() {
+    return from_object(gjs_context_get_current());
+}
+
 enum {
     PROP_0,
     PROP_SEARCH_PATH,

@@ -140,9 +140,7 @@ class GjsContextPrivate {
     }
     GJS_USE static GjsContextPrivate* from_object(GObject* public_context);
     GJS_USE static GjsContextPrivate* from_object(GjsContext* public_context);
-    GJS_USE static GjsContextPrivate* from_current_context(void) {
-        return from_object(gjs_context_get_current());
-    }
+    GJS_USE static GjsContextPrivate* from_current_context();
 
     GjsContextPrivate(JSContext* cx, GjsContext* public_context);
     ~GjsContextPrivate(void);
