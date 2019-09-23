@@ -89,7 +89,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-441328_fedora.mozjs60-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-443296_fedora.mozjs60-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST: "check"
