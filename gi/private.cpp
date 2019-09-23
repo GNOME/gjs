@@ -264,7 +264,13 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
                              "properties", &properties))
         return false;
 
-    if (!parent || !ObjectBase::for_js_typecheck(cx, parent, argv))
+    if (!parent)
+        return false;
+
+    /* Don't pass the argv to it, as otherwise we will log about the callee
+     * while we only care about the parent object type. */
+    auto* parent_priv = ObjectBase::for_js_typecheck(cx, parent);
+    if (!parent_priv)
         return false;
 
     uint32_t n_interfaces, n_properties;
@@ -285,7 +291,6 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    auto* parent_priv = ObjectPrototype::for_js(cx, parent);
     /* We checked parent above, in ObjectBase::for_js_typecheck() */
     g_assert(parent_priv);
 
