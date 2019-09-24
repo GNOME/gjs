@@ -793,7 +793,18 @@ hit_count_is_more_than_for_function(const char *line,
     max_buf_size = strcspn(line, "\n");
     detected_function = g_new(char, max_buf_size + 1);
     GjsAutoChar format_string = g_strdup_printf("%%5u,%%%zus", max_buf_size);
+
+// clang-format off
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
+#endif
     nmatches = sscanf(line, format_string, &hit_count, detected_function);
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+_Pragma("GCC diagnostic pop")
+#endif
+// clang-format on
+
     g_assert_cmpint(nmatches, ==, 2);
 
     g_assert_cmpstr(data->function, ==, detected_function);
