@@ -58,4 +58,4 @@ export class Application {
 //run the application
 let app = new Application();
 
-app.application.run(ARGV);
+app.application.run([]);
