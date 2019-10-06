@@ -266,6 +266,20 @@ function _unpackVariant(variant, deep, recursive = false) {
     throw new Error('Assertion failure: this code should not be reached');
 }
 
+function _notIntrospectableError(funcName, replacement) {
+    return new Error(`${funcName} is not introspectable. Use ${replacement} instead.`);
+}
+
+function _warnNotIntrospectable(funcName, replacement) {
+    logError(_notIntrospectableError(funcName, replacement));
+}
+
+function _escapeCharacterSetChars(char) {
+    if ('-^]\\'.includes(char))
+        return `\\${char}`;
+    return char;
+}
+
 function _init() {
     // this is imports.gi.GLib
 
@@ -330,5 +344,124 @@ function _init() {
         if (variant === null)
             return null;
         return _unpackVariant(variant, deep);
+    };
+
+    // Prevent user code from calling GLib string manipulation functions that
+    // return the same string that was passed in. These can't be annotated
+    // properly, and will mostly crash.
+    // Here we provide approximate implementations of the functions so that if
+    // they had happened to work in the past, they will continue working, but
+    // log a stack trace and a suggestion of what to use instead.
+    // Exceptions are thrown instead for GLib.stpcpy() of which the return value
+    // is useless anyway and GLib.ascii_formatd() which is too complicated to
+    // implement here.
+
+    this.stpcpy = function () {
+        throw _notIntrospectableError('GLib.stpcpy()', 'the + operator');
+    };
+
+    this.strstr_len = function (haystack, len, needle) {
+        _warnNotIntrospectable('GLib.strstr_len()', 'String.indexOf()');
+        let searchString = haystack;
+        if (len !== -1)
+            searchString = searchString.slice(0, len);
+        const index = searchString.indexOf(needle);
+        if (index === -1)
+            return null;
+        return haystack.slice(index);
+    };
+
+    this.strrstr = function (haystack, needle) {
+        _warnNotIntrospectable('GLib.strrstr()', 'String.lastIndexOf()');
+        const index = haystack.lastIndexOf(needle);
+        if (index === -1)
+            return null;
+        return haystack.slice(index);
+    };
+
+    this.strrstr_len = function (haystack, len, needle) {
+        _warnNotIntrospectable('GLib.strrstr_len()', 'String.lastIndexOf()');
+        let searchString = haystack;
+        if (len !== -1)
+            searchString = searchString.slice(0, len);
+        const index = searchString.lastIndexOf(needle);
+        if (index === -1)
+            return null;
+        return haystack.slice(index);
+    };
+
+    this.strup = function (string) {
+        _warnNotIntrospectable('GLib.strup()',
+            'String.toUpperCase() or GLib.ascii_strup()');
+        return string.toUpperCase();
+    };
+
+    this.strdown = function (string) {
+        _warnNotIntrospectable('GLib.strdown()',
+            'String.toLowerCase() or GLib.ascii_strdown()');
+        return string.toLowerCase();
+    };
+
+    this.strreverse = function (string) {
+        _warnNotIntrospectable('GLib.strreverse()',
+            'Array.reverse() and String.join()');
+        return [...string].reverse().join('');
+    };
+
+    this.ascii_dtostr = function (unused, len, number) {
+        _warnNotIntrospectable('GLib.ascii_dtostr()', 'JS string conversion');
+        return `${number}`.slice(0, len);
+    };
+
+    this.ascii_formatd = function () {
+        throw _notIntrospectableError('GLib.ascii_formatd()',
+            'Number.toExponential() and string interpolation');
+    };
+
+    this.strchug = function (string) {
+        // COMPAT: replace with trimStart() in mozjs68
+        _warnNotIntrospectable('GLib.strchug()',
+            'String.trimLeft() until SpiderMonkey 68, then String.trimStart()');
+        return string.trimLeft();
+    };
+
+    this.strchomp = function (string) {
+        // COMPAT: replace with trimEnd() in mozjs68
+        _warnNotIntrospectable('GLib.strchomp()',
+            'String.trimRight() until SpiderMonkey 68, then String.trimEnd()');
+        return string.trimRight();
+    };
+
+    // g_strstrip() is a macro and therefore doesn't even appear in the GIR
+    // file, but we may as well include it here since it's trivial
+    this.strstrip = function (string) {
+        _warnNotIntrospectable('GLib.strstrip()', 'String.trim()');
+        return string.trim();
+    };
+
+    this.strdelimit = function (string, delimiters, newDelimiter) {
+        _warnNotIntrospectable('GLib.strdelimit()', 'String.replace()');
+
+        if (delimiters === null)
+            delimiters = GLib.STR_DELIMITERS;
+        if (typeof newDelimiter === 'number')
+            newDelimiter = String.fromCharCode(newDelimiter);
+
+        const delimiterChars = delimiters.split('');
+        const escapedDelimiterChars = delimiterChars.map(_escapeCharacterSetChars);
+        const delimiterRegex = new RegExp(`[${escapedDelimiterChars.join('')}]`, 'g');
+        return string.replace(delimiterRegex, newDelimiter);
+    };
+
+    this.strcanon = function (string, validChars, substitutor) {
+        _warnNotIntrospectable('GLib.strcanon()', 'String.replace()');
+
+        if (typeof substitutor === 'number')
+            substitutor = String.fromCharCode(substitutor);
+
+        const validArray = validChars.split('');
+        const escapedValidArray = validArray.map(_escapeCharacterSetChars);
+        const invalidRegex = new RegExp(`[^${escapedValidArray.join('')}]`, 'g');
+        return string.replace(invalidRegex, substitutor);
     };
 }
