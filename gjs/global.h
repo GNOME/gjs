@@ -27,6 +27,7 @@
 #include "gjs/jsapi-wrapper.h"
 
 #include "gjs/macros.h"
+#include "gjs/module.h"
 
 typedef enum {
     GJS_GLOBAL_SLOT_IMPORTS,
@@ -53,18 +54,153 @@ typedef enum {
     GJS_GLOBAL_SLOT_LAST,
 } GjsGlobalSlot;
 
-GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_create_global_object(JSContext *cx);
+using ModuleTable = JS::GCHashMap<std::string, JS::Heap<JSObject*>,
+                                  CppStringHashPolicy, js::SystemAllocPolicy>;
+
+class GjsGlobal {
+    static const struct JSClassOps class_ops;
+    static const struct JSClass klass;
+
+ protected:
+    JSObject* js_global(JSContext* cx) { return JS::CurrentGlobalOrNull(cx); }
+
+ public:
+    GjsGlobal() {}
+
+    GJS_USE
+    static JSObject* create(JSContext* cx) {
+        JS::RealmCreationOptions creation;
+        creation.setFieldsEnabled(true);
+        auto cur = JS::CurrentGlobalOrNull(cx);
+        if (cur)
+            creation.setExistingCompartment(cur);
+        else
+            creation.setNewCompartmentInSystemZone();
+        JS::RealmBehaviors behaviors;
+        JS::RealmOptions compartment_options(creation, behaviors);
+        JS::RootedObject global(
+            cx, JS_NewGlobalObject(cx, &klass, nullptr, JS::FireOnNewGlobalHook,
+                                   compartment_options));
+        if (!global)
+            return nullptr;
+
+        JSAutoRealm ac(cx, global);
+
+        if (!JS_InitReflectParse(cx, global) ||
+            !JS_DefineDebuggerObject(cx, global))
+            return nullptr;
+
+        return global;
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    virtual bool define_properties(JSContext* cx,
+                                   const char* bootstrap_script) = 0;
+
+    virtual std::string global_type() = 0;
+};
+
+class GjsModuleGlobal : public GjsGlobal {
+    JSObject* m_global;
+    GjsModuleLoader* m_module_loader;
+
+ public:
+    GjsModuleGlobal(JSObject* global) : GjsGlobal() {
+        m_global = global;
+        m_module_loader = new GjsModuleLoader();
+    }
+
+    ~GjsModuleGlobal() { delete m_module_loader; }
+
+    static GjsModuleGlobal* from_cx(JSContext* cx) {
+        JSObject* glob = JS::CurrentGlobalOrNull(cx);
+
+        GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(glob);
+
+        g_assert_cmpstr(priv->global_type().c_str(), ==,
+                        GjsModuleGlobal::type().c_str());
+
+        GjsModuleGlobal* module_global = (GjsModuleGlobal*)priv;
+
+        return module_global;
+    }
+
+    static GjsModuleGlobal* from_global(JSObject* global) {
+        GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(global);
+
+        g_assert_cmpstr(priv->global_type().c_str(), ==,
+                        GjsModuleGlobal::type().c_str());
+
+        GjsModuleGlobal* module_global = (GjsModuleGlobal*)priv;
+
+        return module_global;
+    }
+
+    // TODO
+    GJS_USE
+    static JSObject* create(JSContext* cx) {
+        auto global = GjsGlobal::create(cx);
+
+        {
+            JSAutoRealm ac(cx, global);
+            JS_SetPrivate(global, new GjsModuleGlobal(global));
+            JSRuntime* rt = JS_GetRuntime(cx);
+
+            // TODO
+            g_warning("Setting module resolve hook...");
+            JS::SetModuleResolveHook(rt, gjs_module_resolve);
+            JS::SetModuleMetadataHook(rt, gjs_populate_module_meta);
+        }
+
+        return global;
+    }
+
+    GjsModuleLoader* loader();
+
+    JSObject* lookup_module(const char* identifier);
+
+    static std::string type() { return "esm"; }
+
+    virtual std::string global_type();
+
+    GJS_JSAPI_RETURN_CONVENTION
+    virtual bool define_properties(JSContext* cx, const char* bootstrap_script);
+};
+
+class GjsLegacyGlobal : public GjsGlobal {
+    JSObject* m_global;
+
+ public:
+    GjsLegacyGlobal(JSObject* global) : GjsGlobal() { m_global = global; }
+
+    static std::string type() { return "legacy"; }
+
+    virtual std::string global_type();
+
+    GJS_USE
+    static JSObject* create(JSContext* cx) {
+        auto global = GjsGlobal::create(cx);
+        JSAutoRealm ac(cx, global);
+        JS_SetPrivate(global, new GjsLegacyGlobal(global));
+
+        return global;
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    virtual bool define_properties(JSContext* cx, const char* bootstrap_script);
+};
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_global_properties(JSContext       *cx,
-                                  JS::HandleObject global,
-                                  const char      *bootstrap_script);
+JSObject* gjs_create_global_object(JSContext* cx, bool use_esm);
 
-void gjs_set_global_slot(JSContext    *context,
-                         GjsGlobalSlot slot,
-                         JS::Value     value);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
+                                  const char* bootstrap_script, bool use_esm);
 
-JS::Value gjs_get_global_slot(JSContext* cx, GjsGlobalSlot slot);
+void gjs_set_global_slot(JSContext* context, JSObject* global,
+                         GjsGlobalSlot slot, JS::Value value);
+
+JS::Value gjs_get_global_slot(JSContext* cx, JSObject* global,
+                              GjsGlobalSlot slot);
 
 #endif  // GJS_GLOBAL_H_

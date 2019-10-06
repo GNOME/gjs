@@ -31,50 +31,32 @@
 #include "js/CompilationAndEvaluation.h"
 #include "js/SourceText.h"
 
+#include <gio/gio.h>
+#include <glib-object.h>
+#include <glib.h>
+
+#include <girepository.h>
+#include <libsoup/soup.h>
+
+#include <codecvt>
+#include <locale>
+#include <string>  // for u16string
+
+#include <gjs/gjs.h>
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/global.h"
+#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/native.h"
+
+using AutoURI = GjsAutoPointer<SoupURI, SoupURI, soup_uri_free>;
+using AutoGHashTable =
+    GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-run_bootstrap(JSContext       *cx,
-              const char      *bootstrap_script,
-              JS::HandleObject global)
-{
-    GjsAutoChar uri = g_strdup_printf(
-        "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
-
-    JSAutoRealm ar(cx, global);
-
-    JS::CompileOptions options(cx);
-    options.setFileAndLine(uri, 1).setSourceIsLazy(true);
-
-    char* script;
-    size_t script_len;
-    if (!gjs_load_internal_source(cx, uri, &script, &script_len))
-        return false;
-
-    JS::SourceText<mozilla::Utf8Unit> source;
-    if (!source.init(cx, script, script_len,
-                     JS::SourceOwnership::TakeOwnership))
-        return false;
-
-    JS::RootedScript compiled_script(cx, JS::Compile(cx, options, source));
-    if (!compiled_script)
-        return false;
-
-    JS::RootedValue ignored(cx);
-    return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_log(JSContext *cx,
-        unsigned   argc,
-        JS::Value *vp)
-{
+static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     if (argc != 1) {
@@ -104,15 +86,13 @@ gjs_log(JSContext *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_log_error(JSContext *cx,
-              unsigned   argc,
-              JS::Value *vp)
-{
+static bool gjs_log_error(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
-        gjs_throw(cx, "Must pass an exception and optionally a message to logError()");
+        gjs_throw(
+            cx,
+            "Must pass an exception and optionally a message to logError()");
         return false;
     }
 
@@ -133,12 +113,9 @@ gjs_log_error(JSContext *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_print_parse_args(JSContext              *cx,
-                     const JS::CallArgs&    argv,
-                     GjsAutoChar            *buffer)
-{
-    GString *str;
+static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
+                                 GjsAutoChar* buffer) {
+    GString* str;
     guint n;
 
     str = g_string_new("");
@@ -157,7 +134,7 @@ gjs_print_parse_args(JSContext              *cx,
             }
 
             g_string_append(str, s.get());
-            if (n < (argv.length()-1))
+            if (n < (argv.length() - 1))
                 g_string_append_c(str, ' ');
         } else {
             *buffer = g_string_free(str, true);
@@ -165,7 +142,6 @@ gjs_print_parse_args(JSContext              *cx,
                 *buffer = g_strdup("<invalid string>");
             return true;
         }
-
     }
     *buffer = g_string_free(str, false);
 
@@ -173,12 +149,8 @@ gjs_print_parse_args(JSContext              *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_print(JSContext *context,
-          unsigned   argc,
-          JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+static bool gjs_print(JSContext* context, unsigned argc, JS::Value* vp) {
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     GjsAutoChar buffer;
     if (!gjs_print_parse_args(context, argv, &buffer))
@@ -191,11 +163,7 @@ gjs_print(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_printerr(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
+static bool gjs_printerr(JSContext* context, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     GjsAutoChar buffer;
@@ -208,73 +176,192 @@ gjs_printerr(JSContext *context,
     return true;
 }
 
-class GjsGlobal {
-    static constexpr JSClass klass = {
-        "GjsGlobal",
-        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
-        &JS::DefaultGlobalClassOps,
-    };
+static constexpr JSFunctionSpec static_funcs[] = {
+    JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS), JS_FS_END};
 
-    static constexpr JSFunctionSpec static_funcs[] = {
-        JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
-        JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
-        JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FS_END};
+bool gjs_load_internal_module(JSContext* js_context, unsigned argc,
+                              JS::Value* vp) {
+    GjsModuleGlobal* gjs = GjsModuleGlobal::from_cx(js_context);
+    return gjs->loader()->load_internal_module(js_context, argc, vp);
+}
 
- public:
-    GJS_USE
-    static JSObject *
-    create(JSContext *cx)
-    {
-        JS::RealmOptions options;
-        JS::RootedObject global(
-            cx, JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
-                                   JS::FireOnNewGlobalHook, options));
-        if (!global)
-            return nullptr;
+bool gjs_load_gi_module(JSContext* js_context, unsigned argc, JS::Value* vp) {
+    GjsModuleGlobal* gjs = GjsModuleGlobal::from_cx(js_context);
+    return gjs->loader()->load_gi_module(js_context, argc, vp);
+}
 
-        JSAutoRealm ar(cx, global);
-
-        if (!JS_InitReflectParse(cx, global) ||
-            !JS_DefineDebuggerObject(cx, global))
-            return nullptr;
-
-        return global;
-    }
-
-    GJS_JSAPI_RETURN_CONVENTION
-    static bool
-    define_properties(JSContext       *cx,
-                      JS::HandleObject global,
-                      const char      *bootstrap_script)
-    {
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-        if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
-                                   JSPROP_READONLY | JSPROP_PERMANENT) ||
-            !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
-            return false;
-
-        JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
-        g_assert(((void) "importer should be defined before passing null "
-                  "importer to GjsGlobal::define_properties",
-                  v_importer.isObject()));
-        JS::RootedObject root_importer(cx, &v_importer.toObject());
-
-        // Wrapping is a no-op if the importer is already in the same realm.
-        if (!JS_WrapObject(cx, &root_importer) ||
-            !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
-                                   GJS_MODULE_PROP_FLAGS))
-            return false;
-
-        if (bootstrap_script) {
-            if (!run_bootstrap(cx, bootstrap_script, global))
-                return false;
-        }
-
-        return true;
-    }
+static constexpr JSFunctionSpec internal_functions[] = {
+    JS_FN("require", gjs_load_internal_module, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("require_introspected", gjs_load_gi_module, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END,
 };
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
+                                 JS::HandleObject global) {
+    JSAutoRealm ac(cx, global);
+    GjsAutoChar uri = g_strdup_printf(
+        "resource:///org/gnome/gjs/modules/esm/_bootstrap/%s.js",
+        bootstrap_script);
+
+    char* module_text_raw;
+    gsize module_len;
+    GError* err = NULL;
+
+    auto gfile = g_file_new_for_uri(uri);
+
+    if (!g_file_load_contents(gfile, NULL, &module_text_raw, &module_len, NULL,
+                              &err)) {
+        g_warning("false 2");
+        return false;
+    }
+
+    GjsAutoChar mod_text(module_text_raw);
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+    std::u16string utf16_string = convert.from_bytes(mod_text);
+
+    JS::SourceText<char16_t> buf;
+    if (!buf.init(cx, utf16_string.c_str(), utf16_string.size(),
+                  JS::SourceOwnership::Borrowed)) {
+        return false;
+    }
+
+    JS::RootedObject bootstrap_module(cx);
+    g_warning("false 10");
+    JS::CompileOptions options(cx);
+    // UTF-8 = true?
+    options.setFileAndLine(uri, 1).setSourceIsLazy(true);
+    g_warning("false 11");
+    if (!JS::CompileModule(cx, options, buf, &bootstrap_module)) {
+        g_warning("Failed to compile internal module.");
+        return false;
+    }
+
+    auto mod = new GjsModule();
+    mod->set_module_uri(uri.get());
+    mod->set_module_record(bootstrap_module);
+    JS::SetModulePrivate(bootstrap_module, JS::PrivateValue(mod));
+
+    if (!JS::ModuleInstantiate(cx, bootstrap_module)) {
+        g_warning("Failed to instantiate module (2): %s", uri.get());
+        gjs_log_exception(cx);
+        return false;
+    }
+
+    g_warning("false 12");
+
+    if (!JS::ModuleEvaluate(cx, bootstrap_module)) {
+        gjs_log_exception(cx);
+        return false;
+    }
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool run_legacy_bootstrap(JSContext* cx, const char* bootstrap_script,
+                                 JS::HandleObject global) {
+    GjsAutoChar uri = g_strdup_printf(
+        "resource:///org/gnome/gjs/modules/legacy/_bootstrap/%s.js",
+        bootstrap_script);
+
+    JSAutoRealm ar(cx, global);
+
+    JS::CompileOptions options(cx);
+    options.setFileAndLine(uri, 1).setSourceIsLazy(true);
+
+    char* script;
+    size_t script_len;
+    if (!gjs_load_internal_source(cx, uri, &script, &script_len))
+        return false;
+
+    JS::SourceText<mozilla::Utf8Unit> source;
+    if (!source.init(cx, script, script_len,
+                     JS::SourceOwnership::TakeOwnership))
+        return false;
+
+    JS::RootedScript compiled_script(cx, JS::Compile(cx, options, source));
+    if (!compiled_script)
+        return false;
+
+    JS::RootedValue ignored(cx);
+    return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
+}
+
+
+
+
+std::string GjsModuleGlobal::global_type() {
+    return GjsModuleGlobal::type();
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool GjsModuleGlobal::define_properties(JSContext* cx,
+
+                                                const char* bootstrap_script) {
+    JSAutoRealm ac(cx, m_global);
+    JS::RootedObject global(cx, m_global);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
+                               JSPROP_READONLY | JSPROP_PERMANENT))
+        return false;
+
+    if (!JS_DefineFunctions(cx, global, internal_functions))
+        return false;
+
+    g_warning("bootstrapping esm...");
+    if (bootstrap_script) {
+        if (!run_module_bootstrap(cx, bootstrap_script, global))
+            return false;
+    }
+
+    return true;
+}
+
+std::string GjsLegacyGlobal::global_type() {
+    return GjsLegacyGlobal::type();
+}
+
+JSObject* GjsModuleGlobal::lookup_module(const char* identifier) {
+    return m_module_loader->lookup_module(identifier);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool GjsLegacyGlobal::define_properties(JSContext* cx,
+                                                const char* bootstrap_script) {
+    JSAutoRealm ac(cx, m_global);
+    JS::RootedObject global(cx, m_global);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
+                               JSPROP_READONLY | JSPROP_PERMANENT) ||
+        !JS_DefineFunctions(cx, global, static_funcs))
+        return false;
+
+    JS::Value v_importer =
+        gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_IMPORTS);
+    g_assert(((void)"importer should be defined before passing null "
+                    "importer to GjsGlobal::define_properties",
+              v_importer.isObject()));
+    JS::RootedObject root_importer(cx, &v_importer.toObject());
+
+    /* Wrapping is a no-op if the importer is already in the same
+     * compartment. */
+    if (!JS_WrapObject(cx, &root_importer) ||
+        !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
+                               GJS_MODULE_PROP_FLAGS))
+        return false;
+
+    if (bootstrap_script) {
+        JS::RootedObject obj(cx, global);
+        if (!run_legacy_bootstrap(cx, bootstrap_script, obj))
+            return false;
+    }
+
+    return true;
+}
 
 /**
  * gjs_create_global_object:
@@ -286,9 +373,20 @@ class GjsGlobal {
  * case an exception is pending on @cx
  */
 JSObject *
-gjs_create_global_object(JSContext *cx)
-{
-    return GjsGlobal::create(cx);
+gjs_create_global_object(JSContext *cx, bool esm) {
+    if (esm) {
+        return GjsModuleGlobal::create(cx);
+    } else {
+        return GjsLegacyGlobal::create(cx);
+    }
+}
+
+static GjsGlobal* current_global(JSContext* cx) {
+    JSObject* glob = JS::CurrentGlobalOrNull(cx);
+
+    GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(glob);
+
+    return priv;
 }
 
 /**
@@ -296,8 +394,8 @@ gjs_create_global_object(JSContext *cx)
  * @cx: a #JSContext
  * @global: a JS global object that has not yet been passed to this function
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
- * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or %NULL for
- * none
+ * resource://org/gnome/gjs/modules/legacy/_bootstrap/@bootstrap_script) or
+ * %NULL for none
  *
  * Defines properties on the global object such as 'window' and 'imports', and
  * runs a bootstrap JS script on the global object to define any properties
@@ -316,30 +414,48 @@ gjs_create_global_object(JSContext *cx)
  * Returns: true on success, false otherwise, in which case an exception is
  * pending on @cx
  */
-bool
-gjs_define_global_properties(JSContext       *cx,
-                             JS::HandleObject global,
-                             const char      *bootstrap_script)
-{
-    return GjsGlobal::define_properties(cx, global, bootstrap_script);
+bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
+                                  const char* bootstrap_script,
+                                  bool use_esm = false) {
+    GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(global);
+
+    JSAutoRealm ar(cx, global);
+
+    return priv->define_properties(cx, bootstrap_script);
 }
 
-void
-gjs_set_global_slot(JSContext    *cx,
-                    GjsGlobalSlot slot,
-                    JS::Value     value)
-{
-    JSObject *global = gjs_get_import_global(cx);
+void gjs_set_global_slot(JSContext* cx, JSObject* global, GjsGlobalSlot slot,
+                         JS::Value value) {
     JS_SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
 }
 
-JS::Value
-gjs_get_global_slot(JSContext    *cx,
-                    GjsGlobalSlot slot)
-{
-    JSObject *global = gjs_get_import_global(cx);
+JS::Value gjs_get_global_slot(JSContext* cx, JSObject* global,
+                              GjsGlobalSlot slot) {
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
-decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
-decltype(GjsGlobal::static_funcs) constexpr GjsGlobal::static_funcs;
+GjsModuleLoader* GjsModuleGlobal::loader() { return m_module_loader; }
+
+const struct JSClassOps GjsGlobal::class_ops = {nullptr,  // addProperty
+                                                nullptr,  // deleteProperty
+                                                nullptr,  // enumerate
+                                                JS_NewEnumerateStandardClasses,
+                                                JS_ResolveStandardClass,
+                                                JS_MayResolveStandardClass,
+                                                nullptr,  // finalize
+                                                nullptr,  // call
+                                                nullptr,  // hasInstance
+                                                nullptr,  // construct
+                                                JS_GlobalObjectTraceHook};
+// clang-format on
+
+const struct JSClass GjsGlobal::klass = {
+    "GjsGlobal",
+    JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) | JSCLASS_HAS_PRIVATE,
+    &class_ops,
+};
+// decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
+// decltype(GjsLegacyGlobal::static_funcs) constexpr
+// GjsLegacyGlobal::static_funcs;
+// MOVE: decltype(GjsModuleGlobal::internal_functions) constexpr
+// GjsModuleGlobal::internal_functions;

@@ -192,6 +192,7 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
     } else if (status == JSGC_END) {
         gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
     }
+
 }
 
 static void on_promise_unhandled_rejection(

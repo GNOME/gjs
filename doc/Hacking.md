@@ -26,8 +26,17 @@ the build process will download and build sufficient versions.
 SpiderMonkey cannot be auto-installed, so you will need to install it
 either through your system's package manager, or building it yourself.
 Even if your system includes a development package for SpiderMonkey, we
-still recommend building it if you are going to do any development on
-GJS so that you can enable the debugging features.
+recommend building it on JHBuild so that you can enable the debugging
+features.
+Add this to your JHBuild configuration file (usually
+`~/.config/jhbuildrc`):
+```python
+module_autogenargs['mozjs68'] = '--enable-debug'
+```
+Make sure it is built first with `jhbuild build mozjs68`, otherwise
+`jhbuild build gjs` will skip it if you have the system package
+installed.
+
 These debugging features reduce performance by quite a lot, but they
 will help catch mistakes in the API that could otherwise go unnoticed
 and cause crashes in gnome-shell later on.
@@ -77,8 +86,8 @@ mozjs, but you can grab them from your built copy of mozjs.
 
 After reaching a breakpoint in your program, type this to activate the
 pretty-printers:
-```sh
-source /path/to/spidermonkey/js/src/_build/shell/js-gdb.py
+```
+source ~/.cache/jhbuild/build/mozjs-68.Y.Z/js/src/shell/js-gdb.py
 ```
 
 (replace `/path/to/spidermonkey` with the path to your SpiderMonkey

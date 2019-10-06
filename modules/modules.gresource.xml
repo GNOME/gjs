@@ -1,29 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/gjs">
-    <file>modules/_bootstrap/debugger.js</file>
-    <file>modules/_bootstrap/default.js</file>
-    <file>modules/_bootstrap/coverage.js</file>
+    <file>modules/esm/_bootstrap/default.js</file>
 
-    <file>modules/tweener/equations.js</file>
-    <file>modules/tweener/tweener.js</file>
-    <file>modules/tweener/tweenList.js</file>
+    <file>modules/esm/internal/gjs.js</file>
+    <file>modules/esm/internal/signals.js</file>
+    <file>modules/esm/internal/template.js</file>
 
-    <file>modules/overrides/cairo.js</file>
-    <file>modules/overrides/GLib.js</file>
-    <file>modules/overrides/Gio.js</file>
-    <file>modules/overrides/GObject.js</file>
-    <file>modules/overrides/Gtk.js</file>
+    <file>modules/esm/overrides/cairo.js</file>
+    <file>modules/esm/overrides/GLib.js</file>
+    <file>modules/esm/overrides/Gio.js</file>
+    <file>modules/esm/overrides/GObject.js</file>
+    <file>modules/esm/overrides/Gtk.js</file>
 
-    <file>modules/byteArray.js</file>
-    <file>modules/cairo.js</file>
-    <file>modules/gettext.js</file>
-    <file>modules/lang.js</file>
-    <file>modules/_legacy.js</file>
-    <file>modules/mainloop.js</file>
-    <file>modules/jsUnit.js</file>
-    <file>modules/signals.js</file>
-    <file>modules/format.js</file>
-    <file>modules/package.js</file>
+    <file>modules/esm/cairo.js</file>
+    <file>modules/esm/console.js</file>
+    <file>modules/esm/format.js</file>
+    <file>modules/esm/gettext.js</file>
+    <file>modules/esm/gi.js</file>
+    <file>modules/esm/gjs.js</file>
+    <file>modules/esm/system.js</file>
+
+    <file>modules/legacy/_bootstrap/debugger.js</file>
+    <file>modules/legacy/_bootstrap/default.js</file>
+    <file>modules/legacy/_bootstrap/coverage.js</file>
+
+    <file>modules/legacy/overrides/cairo.js</file>
+    <file>modules/legacy/overrides/GLib.js</file>
+    <file>modules/legacy/overrides/Gio.js</file>
+    <file>modules/legacy/overrides/GObject.js</file>
+    <file>modules/legacy/overrides/Gtk.js</file>
+
+    <file>modules/legacy/tweener/equations.js</file>
+    <file>modules/legacy/tweener/tweener.js</file>
+    <file>modules/legacy/tweener/tweenList.js</file>
+
+    <file>modules/legacy/byteArray.js</file>
+    <file>modules/legacy/cairo.js</file>
+    <file>modules/legacy/gettext.js</file>
+    <file>modules/legacy/lang.js</file>
+    <file>modules/legacy/_legacy.js</file>
+    <file>modules/legacy/mainloop.js</file>
+    <file>modules/legacy/jsUnit.js</file>
+    <file>modules/legacy/signals.js</file>
+    <file>modules/legacy/format.js</file>
+    <file>modules/legacy/package.js</file>
   </gresource>
 </gresources>

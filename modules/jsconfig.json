@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "checkJs": true,
+        "lib": [
+            "es2017"
+        ],
+        "target": "es2017",
+        "noImplicitAny": true
+    },
+    "include": [
+        "./",
+        "esm/tweener",
+        "./overrides",
+        "./esm"
+    ]
+}

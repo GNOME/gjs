@@ -45,6 +45,7 @@ static char *command = NULL;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
 static gboolean debugging = false;
+static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
@@ -58,6 +59,8 @@ static GOptionEntry entries[] = {
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
+    { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
+                        "Execute the input as a js module (implies strict mode)" },
     { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
@@ -125,6 +128,7 @@ check_script_args_for_stray_gjs_args(int           argc,
     char **new_coverage_prefixes = NULL;
     char *new_coverage_output_path = NULL;
     char **new_include_paths = NULL;
+    // clang-format off
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
@@ -134,6 +138,7 @@ check_script_args_for_stray_gjs_args(int           argc,
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &new_include_paths },
         { NULL }
     };
+    // clang-format on
     char **argv_copy = g_new(char *, argc + 2);
     int ix;
 
@@ -201,6 +206,8 @@ main(int argc, char **argv)
     char * const *script_argv;
     const char *env_coverage_output_path;
     const char *env_coverage_prefixes;
+    const char *env_force_modules;
+    bool force_modules = false;
     bool interactive_mode = false;
 
     setlocale(LC_ALL, "");
@@ -244,6 +251,7 @@ main(int argc, char **argv)
     print_version = false;
     print_js_version = false;
     debugging = false;
+    exec_as_module = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
     if (!g_option_context_parse_strv(context, &gjs_argv, &error))
@@ -309,6 +317,7 @@ main(int argc, char **argv)
                                             "search-path", include_path,
                                             "program-name", program_name,
                                             "profiler-enabled", enable_profiler,
+                                            "modules", exec_as_module,
                                             NULL);
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
@@ -322,6 +331,17 @@ main(int argc, char **argv)
         if (coverage_prefixes != NULL)
             g_strfreev(coverage_prefixes);
         coverage_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
+    }
+
+    // TODO: REMOVE BEFORE MERGE (development only)
+    env_force_modules = g_getenv("GJS_FORCE_MODULES");
+
+    if (env_force_modules) {
+        if (strcmp(env_force_modules, "1") == 0) {
+            force_modules = true;
+        } else {
+            force_modules = false;
+        }
     }
 
     if (coverage_prefixes) {
@@ -347,24 +367,42 @@ main(int argc, char **argv)
         tracefd = -1;
     }
 
-    /* prepare command line arguments */
-    if (!gjs_context_define_string_array(js_context, "ARGV",
-                                         script_argc, (const char **) script_argv,
-                                         &error)) {
-        code = 1;
-        g_printerr("Failed to defined ARGV: %s", error->message);
-        g_clear_error(&error);
-        goto out;
-    }
+    // TODO Fix command line arguments (they depend on the global existing
+    // before eval)
+    // /* prepare command line arguments */
+    // if (!gjs_context_define_string_array(js_context, "ARGV",
+    //                                      script_argc, (const char **)
+    //                                      script_argv, &error)) {
+    //     code = 1;
+    //     g_printerr("Failed to defined ARGV: %s", error->message);
+    //     g_clear_error(&error);
+    //     goto out;
+    // }
 
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */
     if (debugging)
         gjs_context_setup_debugger_console(js_context);
 
-    /* evaluate the script */
-    if (!gjs_context_eval(js_context, script, len,
-                          filename, &code, &error)) {
+    if (force_modules || exec_as_module) {
+        GFile *output = g_file_new_for_commandline_arg(filename);
+        char *full_path = g_file_get_path(output);
+        if (!gjs_context_register_module(js_context, full_path, full_path,
+                                         script, len, &error)) {
+            g_printerr("%s\n", error->message);
+            code = 1;
+            goto out;
+        }
+
+        uint8_t code_8 = 0;
+        if (!gjs_context_eval_module(js_context, full_path, &code_8, &error)) {
+            code = code_8;
+            if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
+                g_printerr("%s\n", error->message);
+            goto out;
+        }
+    } else if (!gjs_context_eval(js_context, script, len, filename, &code,
+                                 &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
             g_printerr("%s\n", error->message);
         g_clear_error(&error);

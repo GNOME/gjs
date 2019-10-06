@@ -67,7 +67,7 @@ libgjs_la_CPPFLAGS =		\
 	-DGJS_COMPILATION
 libgjs_la_LDFLAGS = 			\
 	$(AM_LDFLAGS)			\
-	-export-symbols-regex "^[^_]"	\
+	-export-symbols-regex "^(_Z\d+)?[^_]"	\
 	-version-info 0:0:0		\
 	$(NO_UNDEFINED_FLAG)		\
 	$(NULL)
@@ -103,6 +103,7 @@ EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
 
 modules_source_files =		\
 	$(module_system_srcs)	\
+	$(module_print_srcs)	\
 	$(module_console_srcs)	\
 	$(NULL)
 

@@ -30,6 +30,8 @@
 #include <type_traits>  // for is_same
 #include <unordered_map>
 
+#include <functional>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -54,6 +56,28 @@ using GTypeTable =
     JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
 
+class CppStringHashPolicy {
+ public:
+    typedef std::string Lookup;
+
+    static js::HashNumber hash(const Lookup& l) {
+        return std::hash<std::string>{}(std::string(l));
+    }
+
+    static bool match(const std::string& k, const Lookup& l) {
+        return k.compare(l) == 0;
+    }
+
+    static void rekey(std::string& k, const std::string& newKey) { k = newKey; }
+};
+
+namespace JS {
+template <>
+struct GCPolicy<std::string> : public IgnoreGCPolicy<std::string> {};
+}  // namespace JS
+using ModuleTable = JS::GCHashMap<std::string, JS::Heap<JSObject*>,
+                                  CppStringHashPolicy, js::SystemAllocPolicy>;
+
 struct Dummy {};
 using GTypeNotUint64 =
     std::conditional_t<!std::is_same<GType, uint64_t>::value, GType, Dummy>;
@@ -73,7 +97,8 @@ struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
 class GjsContextPrivate : public JS::JobQueue {
     GjsContext* m_public_context;
     JSContext* m_cx;
-    JS::Heap<JSObject*> m_global;
+    JS::Heap<JSObject*> m_legacy_global;
+    JS::Heap<JSObject*> m_module_global;
     GThread* m_owner_thread;
 
     char* m_program_name;
@@ -88,6 +113,7 @@ class GjsContextPrivate : public JS::JobQueue {
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
+
 
     GjsProfiler* m_profiler;
 
@@ -122,7 +148,9 @@ class GjsContextPrivate : public JS::JobQueue {
     bool m_force_gc : 1;
     bool m_draining_job_queue : 1;
     bool m_should_profile : 1;
+    bool m_exec_as_module: 1;
     bool m_should_listen_sigusr2 : 1;
+    bool m_exec_as_legacy = false;
 
     int64_t m_sweep_begin_time;
 
@@ -141,6 +169,7 @@ class GjsContextPrivate : public JS::JobQueue {
     }
 
  public:
+ 
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
     GJS_USE static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
@@ -157,7 +186,9 @@ class GjsContextPrivate : public JS::JobQueue {
     /* Accessors */
     GJS_USE GjsContext* public_context(void) const { return m_public_context; }
     GJS_USE JSContext* context(void) const { return m_cx; }
-    GJS_USE JSObject* global(void) const { return m_global.get(); }
+    GJS_USE JSObject* global(void) const {
+        g_error("This should not be used!");
+    }
     GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
     GJS_USE const GjsAtoms& atoms(void) const { return *m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
@@ -166,6 +197,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_program_name(char* value) { m_program_name = value; }
     void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
+    void set_execute_as_module(bool value) { m_exec_as_module = value; }
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
@@ -194,6 +226,12 @@ class GjsContextPrivate : public JS::JobQueue {
                          ssize_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
     GJS_JSAPI_RETURN_CONVENTION
+    bool eval_module(const char* identifier, uint8_t* exit_code_p,
+                     GError** error);
+   
+  void execute_as_legacy(std::function<void(JSContext *)> fn);
+
+    GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,
                        JS::MutableHandleValue rval);
@@ -220,6 +258,11 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+
+    void context_reset_exit();
+
+    bool register_module(const char* identifier, const char* filename,
+                         const char* mod_text, size_t mod_len, GError** error);
 
     void set_sweeping(bool value);
 

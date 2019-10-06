@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* -*- mode: js; indent-tabs-mode: nil; -*- */
 /* exported Class, Interface, defineGObjectLegacyObjects,
 defineGtkLegacyObjects */

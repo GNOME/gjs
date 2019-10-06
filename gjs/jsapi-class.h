@@ -195,9 +195,10 @@ _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname,                    \
 GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
 
 #define _GJS_DEFINE_GET_PROTO(cname)                                           \
-    GJS_USE JSObject* gjs_##cname##_get_proto(JSContext* cx) {                 \
+    GJS_USE JSObject* gjs_##cname##_get_proto(JSContext* cx) { \
+        JSObject* global = JS::CurrentGlobalOrNull(cx);                \
         JS::RootedValue v_proto(                                               \
-            cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname));   \
+            cx, gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_PROTOTYPE_##cname));   \
         g_assert(((void)"gjs_" #cname "_define_proto() must be called before " \
                         "gjs_" #cname "_get_proto()",                          \
                   !v_proto.isUndefined()));                                    \
@@ -211,8 +212,9 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
     bool gjs_##cname##_define_proto(JSContext* cx, JS::HandleObject module,    \
                                     JS::MutableHandleObject proto) {           \
         /* If we've been here more than once, we already have the proto */     \
+        JSObject* global = JS::CurrentGlobalOrNull(cx);                   \
         JS::RootedValue v_proto(                                               \
-            cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname));   \
+            cx, gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_PROTOTYPE_##cname));   \
         if (!v_proto.isUndefined()) {                                          \
             g_assert(                                                          \
                 ((void)"Someone stored some weird value in a global slot",     \
@@ -233,8 +235,10 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
                                gjs_##cname##_proto_funcs, nullptr,             \
                                gjs_##cname##_static_funcs));                   \
         if (!proto)                                                            \
-            return false;                                                      \
-        gjs_set_global_slot(cx, GJS_GLOBAL_SLOT_PROTOTYPE_##cname,             \
+            return false; \
+ \
+                \
+        gjs_set_global_slot(cx, global, GJS_GLOBAL_SLOT_PROTOTYPE_##cname,     \
                             JS::ObjectValue(*proto));                          \
                                                                                \
         /* Look up the constructor */                                          \

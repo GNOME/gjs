@@ -1,6 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
- * Copyright 2013 Red Hat, Inc.
+ * Copyright (c) 2008  litl, LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -21,25 +21,14 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>  // for ENABLE_CAIRO
+#ifndef MODULES_PRINT_H_
+#define MODULES_PRINT_H_
 
-#include "gjs/native.h"
-#include "modules/console.h"
-#include "modules/modules.h"
-#include "modules/print.h"
-#include "modules/system.h"
+#include "gjs/jsapi-wrapper.h"
 
-#ifdef ENABLE_CAIRO
-#    include "modules/cairo-module.h"
-#endif
+#include "gjs/macros.h"
 
-void
-gjs_register_static_modules (void)
-{
-#ifdef ENABLE_CAIRO
-    gjs_register_native_module("cairoNative", gjs_js_define_cairo_stuff);
-#endif
-    gjs_register_native_module("system", gjs_js_define_system_stuff);
-    gjs_register_native_module("console", gjs_define_console_stuff);
-    gjs_register_native_module("print", gjs_define_print_stuff);
-}
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_print_stuff(JSContext* context, JS::MutableHandleObject module);
+
+#endif  // MODULES_PRINT_H_

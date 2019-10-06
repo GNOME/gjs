@@ -69,8 +69,8 @@ GLIB_REQUIREMENT="glib-2.0 >= glib_required_version"
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
 GIO_REQUIREMENT="gio-2.0 >= glib_required_version"
 gjs_base_packages="$GOBJECT_REQUIREMENT gio-2.0"
-common_packages="gthread-2.0 $GIO_REQUIREMENT mozjs-68"
-gjs_packages="gobject-introspection-1.0 libffi $common_packages"
+common_packages="gthread-2.0 gio-2.0 >= glib_required_version mozjs-68"
+gjs_packages="gobject-introspection-1.0 libffi libsoup-2.4 >= 2.32 $common_packages"
 gjs_cairo_packages="cairo cairo-gobject $common_packages"
 gjs_sysprof_packages="sysprof-capture-3 >= 3.33.2"
 
@@ -80,6 +80,9 @@ AX_PKG_CHECK_MODULES([GJS],
 dnl These don't need to be put in the .pc file so use regular PKG_CHECK_MODULES
 PKG_CHECK_MODULES([GJS_GDBUS], [$gjs_base_packages])
 PKG_CHECK_MODULES([GJS_CONSOLE], [$gjs_base_packages])
+
+AC_SUBST(LIBSOUP_CFLAGS)
+AC_SUBST(LIBSOUP_LIBS)
 
 CPPFLAGS_save="$CPPFLAGS"
 CPPFLAGS="$GJS_CFLAGS"

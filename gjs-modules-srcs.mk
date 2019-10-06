@@ -13,6 +13,11 @@ module_system_srcs =		\
 	modules/system.cpp	\
 	$(NULL)
 
+module_print_srcs =		\
+	modules/print.h             \
+	modules/print.cpp           \
+    $(NULL)
+
 module_cairo_srcs =				\
 	modules/cairo-private.h			\
 	modules/cairo-module.h			\

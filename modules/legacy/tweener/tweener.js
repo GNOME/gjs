@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil; -*- */
 /* eslint-disable block-scoped-var, eqeqeq, no-shadow, prefer-rest-params */
 

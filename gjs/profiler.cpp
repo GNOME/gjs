@@ -102,7 +102,7 @@ struct _GjsProfiler {
      * information while executing. We will look into this during our
      * SIGPROF handler.
      */
-    PseudoStack stack;
+    ProfilingStack stack;
 
     /* The context being profiled */
     JSContext *cx;
@@ -328,7 +328,7 @@ gjs_profiler_sigprof(int        signum,
         static_cast<SysprofCaptureAddress*>(alloca(sizeof *addrs * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {
-        js::ProfileEntry& entry = self->stack.entries[ix];
+        js::ProfilingStackFrame& entry = self->stack.frames[ix];
         const char *label = entry.label();
         const char *dynamic_string = entry.dynamicString();
         uint32_t flipped = depth - 1 - ix;

@@ -28,7 +28,8 @@
 #    error "Only <gjs/gjs.h> can be included directly."
 #endif
 
-#include <stdbool.h>    /* IWYU pragma: keep */
+#include <stdbool.h> /* IWYU pragma: keep */
+#include <stdint.h>
 #include <sys/signal.h> /* for siginfo_t */
 
 #include <glib-object.h>
@@ -96,6 +97,15 @@ GJS_EXPORT GJS_USE const char* gjs_get_js_version(void);
 
 GJS_EXPORT
 void gjs_context_setup_debugger_console(GjsContext* gjs);
+
+GJS_EXPORT
+gboolean gjs_context_register_module(GjsContext* context, const char* name,
+                                     const char* filename, const char* mod_text,
+                                     size_t mod_len, GError** error);
+
+GJS_EXPORT
+gboolean gjs_context_eval_module(GjsContext* context, const char* name,
+                                 uint8_t* exit_code, GError** error);
 
 G_END_DECLS
 
