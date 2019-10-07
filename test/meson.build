@@ -15,8 +15,7 @@ gjs_tests_sources = [
 
 gjs_tests = executable('gjs-tests', gjs_tests_sources, mock_js_resources_files,
     cpp_args: ['-DGJS_COMPILATION'] + directory_defines,
-    include_directories: top_include,
-    dependencies: [glib, gio, gi, spidermonkey], link_with: libgjs)
+    include_directories: top_include, dependencies: libgjs_dep)
 
 test('API tests', gjs_tests, args: ['--tap', '--keep-going', '--verbose'],
     depends: gjs_private_typelib, env: tests_environment, protocol: 'tap',

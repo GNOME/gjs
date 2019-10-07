@@ -4,14 +4,13 @@ jsunit_resources_files = gnome.compile_resources('jsunit-resources',
     'jsunit.gresources.xml', c_name: 'jsunit_resources')
 
 minijasmine = executable('minijasmine', '../minijasmine.cpp',
-    jsunit_resources_files, dependencies: [glib, gio, gi],
+    jsunit_resources_files, dependencies: libgjs_dep,
     cpp_args: [
         '-DINSTTESTDIR="@0@"'.format(get_option('prefix') / installed_tests_dir),
         '-DPKGLIBDIR="@0@"'.format(get_option('prefix') / pkglibdir)
     ],
     include_directories: top_include,
-    link_with: libgjs, install: get_option('installed_tests'),
-    install_dir: installed_tests_dir)
+    install: get_option('installed_tests'), install_dir: installed_tests_dir)
 
 gidatadir = gi.get_pkgconfig_variable('gidatadir')
 gi_tests = gidatadir / 'tests'

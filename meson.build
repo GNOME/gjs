@@ -466,8 +466,7 @@ gjs_private_typelib = gjs_private_gir[1]
 gjs_console_srcs = ['gjs/console.cpp']
 
 gjs_console = executable('gjs-console', gjs_console_srcs,
-    dependencies: [glib, gio], link_with: libgjs,
-    install: true)
+    dependencies: libgjs_dep, install: true)
 
 meson.add_install_script('sh', '-c',
     'ln -sf gjs-console ${DESTDIR}/${MESON_INSTALL_PREFIX}/@0@/gjs'.format(
