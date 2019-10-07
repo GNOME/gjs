@@ -223,8 +223,6 @@ class GjsContextPrivate : public JS::JobQueue {
     bool eval_module(const char* identifier, uint8_t* exit_code_p,
                      GError** error);
 
-    void execute_as_legacy(std::function<void(JSContext*)> fn);
-
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,

@@ -299,15 +299,6 @@ static void gjs_context_class_init(GjsContextClass* klass) {
         g_free(priv_typelib_dir);
     }
 
-    // iauto register_native_modules = [] (JSContext* m_cx) {
-
-    //};
-
-    // GjsContextPrivate *pcx = GjsContextPrivate::from_current_context();
-    // pcx->execute_as_legacy(register_native_modules);
-
-    // register_native_modules(nullptr);
-
     gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
     gjs_register_native_module("_gi", gjs_define_private_gi_stuff);
     gjs_register_native_module("gi", gjs_define_repo);
@@ -641,7 +632,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         JS::LeaveRealm(m_cx, realm);
     }
 
-    execute_as_legacy([&](JSContext* m_cx) {
+    {
+        auto realm = JS::EnterRealm(m_cx, legacy_global);
+
         JS::RootedObject importer(
             m_cx, gjs_create_root_importer(m_cx, m_search_path));
         if (!importer) {
@@ -663,7 +656,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
             gjs_log_exception(m_cx);
             g_warning("Failed to define properties on global object 2");
         }
-    });
+
+        JS::LeaveRealm(m_cx, realm);
+    }
 }
 
 static void gjs_context_get_property(GObject* object, guint prop_id,
@@ -1239,14 +1234,6 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     return true;
 }
 
-void GjsContextPrivate::execute_as_legacy(std::function<void(JSContext*)> fn) {
-    auto realm = JS::EnterRealm(m_cx, m_legacy_global);
-
-    fn(m_cx);
-
-    JS::LeaveRealm(m_cx, realm);
-}
-
 /*
  * GjsContextPrivate::call_function:
  * @this_obj: Object to use as the 'this' for the function call
@@ -1323,9 +1310,6 @@ void gjs_context_make_current(GjsContext* context) {
  */
 JSObject* gjs_get_import_global(JSContext* context) {
     // This is the easiest way to handle this.
-
-    auto private_context = GjsContextPrivate::from_cx(context);
-
     return JS::CurrentGlobalOrNull(context);
 }
 
