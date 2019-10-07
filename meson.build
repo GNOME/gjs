@@ -493,8 +493,8 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
-        'bindir=${exec_prefix}/bin',
-        'datarootdir=${prefix}/share',
+        'bindir=${exec_prefix}/' + get_option('bindir'),
+        'datarootdir=${prefix}/' + get_option('datadir'),
         'datadir=${datarootdir}',
         'gjs_console=${bindir}/gjs-console',
     ])
