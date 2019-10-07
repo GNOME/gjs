@@ -439,8 +439,3 @@ const struct JSClass GjsGlobal::klass = {
     JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST) | JSCLASS_HAS_PRIVATE,
     &class_ops,
 };
-// decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
-// decltype(GjsLegacyGlobal::static_funcs) constexpr
-// GjsLegacyGlobal::static_funcs;
-// MOVE: decltype(GjsModuleGlobal::internal_functions) constexpr
-// GjsModuleGlobal::internal_functions;
