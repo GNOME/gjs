@@ -14,8 +14,7 @@ texture.connect('button-press-event', () => {
     return Clutter.EVENT_STOP;
 });
 
-let color = new Clutter.Color();
-color.from_string('Black');
+let [,color] = Clutter.Color.from_string('black');
 
 stage.color = color;
 
