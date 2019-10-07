@@ -146,8 +146,6 @@ class GjsModuleGlobal : public GjsGlobal {
             JS_SetPrivate(global, new GjsModuleGlobal(global));
             JSRuntime* rt = JS_GetRuntime(cx);
 
-            // TODO
-            g_warning("Setting module resolve hook...");
             JS::SetModuleResolveHook(rt, gjs_module_resolve);
             JS::SetModuleMetadataHook(rt, gjs_populate_module_meta);
         }

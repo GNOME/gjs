@@ -114,7 +114,6 @@ class GjsContextPrivate : public JS::JobQueue {
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
 
-
     GjsProfiler* m_profiler;
 
     /* Environment preparer needed for debugger, taken from SpiderMonkey's
@@ -150,7 +149,6 @@ class GjsContextPrivate : public JS::JobQueue {
     bool m_should_profile : 1;
     bool m_exec_as_module: 1;
     bool m_should_listen_sigusr2 : 1;
-    bool m_exec_as_legacy = false;
 
     int64_t m_sweep_begin_time;
 
@@ -169,7 +167,6 @@ class GjsContextPrivate : public JS::JobQueue {
     }
 
  public:
- 
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
     GJS_USE static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
@@ -186,9 +183,6 @@ class GjsContextPrivate : public JS::JobQueue {
     /* Accessors */
     GJS_USE GjsContext* public_context(void) const { return m_public_context; }
     GJS_USE JSContext* context(void) const { return m_cx; }
-    GJS_USE JSObject* global(void) const {
-        g_error("This should not be used!");
-    }
     GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
     GJS_USE const GjsAtoms& atoms(void) const { return *m_atoms; }
     GJS_USE bool destroying(void) const { return m_destroying; }
@@ -228,8 +222,8 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION
     bool eval_module(const char* identifier, uint8_t* exit_code_p,
                      GError** error);
-   
-  void execute_as_legacy(std::function<void(JSContext *)> fn);
+
+    void execute_as_legacy(std::function<void(JSContext*)> fn);
 
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,

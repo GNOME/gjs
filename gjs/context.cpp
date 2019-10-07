@@ -324,9 +324,6 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
-    // gjs->m_id_to_module->trace(trc);
-    // gjs->m_id_to_native_module->trace(trc);
-    // gjs->m_id_to_internal_module->trace(trc);
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
@@ -1243,12 +1240,11 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
 }
 
 void GjsContextPrivate::execute_as_legacy(std::function<void(JSContext*)> fn) {
-    m_exec_as_legacy = true;
-    {
-        JSAutoRealm ac(m_cx, m_legacy_global);
-        fn(m_cx);
-    }
-    m_exec_as_legacy = false;
+    auto realm = JS::EnterRealm(m_cx, m_legacy_global);
+
+    fn(m_cx);
+
+    JS::LeaveRealm(m_cx, realm);
 }
 
 /*
@@ -1281,8 +1277,6 @@ bool gjs_context_define_string_array(GjsContext* js_context,
                                      GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
-    // TODO Remove global ref
-    // JSAutoRealm ar(gjs->context(), gjs->global());
     auto cx = gjs->context();
     auto global = JS::CurrentGlobalOrNull(cx);
     JS::RootedObject global_root(cx, global);
@@ -1332,8 +1326,7 @@ JSObject* gjs_get_import_global(JSContext* context) {
 
     auto private_context = GjsContextPrivate::from_cx(context);
 
-    // TODO Remove global ref
-    return JS::CurrentGlobalOrNull(context);  // private_context->global();
+    return JS::CurrentGlobalOrNull(context);
 }
 
 /**

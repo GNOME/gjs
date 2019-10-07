@@ -216,7 +216,6 @@ static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
 
     if (!g_file_load_contents(gfile, NULL, &module_text_raw, &module_len, NULL,
                               &err)) {
-        g_warning("false 2");
         return false;
     }
 
@@ -231,13 +230,10 @@ static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
     }
 
     JS::RootedObject bootstrap_module(cx);
-    g_warning("false 10");
     JS::CompileOptions options(cx);
     // UTF-8 = true?
     options.setFileAndLine(uri, 1).setSourceIsLazy(true);
-    g_warning("false 11");
     if (!JS::CompileModule(cx, options, buf, &bootstrap_module)) {
-        g_warning("Failed to compile internal module.");
         return false;
     }
 
@@ -247,12 +243,10 @@ static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
     JS::SetModulePrivate(bootstrap_module, JS::PrivateValue(mod));
 
     if (!JS::ModuleInstantiate(cx, bootstrap_module)) {
-        g_warning("Failed to instantiate module (2): %s", uri.get());
+        g_warning("Failed to instantiate module: %s", uri.get());
         gjs_log_exception(cx);
         return false;
     }
-
-    g_warning("false 12");
 
     if (!JS::ModuleEvaluate(cx, bootstrap_module)) {
         gjs_log_exception(cx);
@@ -312,7 +306,6 @@ bool GjsModuleGlobal::define_properties(JSContext* cx,
     if (!JS_DefineFunctions(cx, global, internal_functions))
         return false;
 
-    g_warning("bootstrapping esm...");
     if (bootstrap_script) {
         if (!run_module_bootstrap(cx, bootstrap_script, global))
             return false;
@@ -379,14 +372,6 @@ gjs_create_global_object(JSContext *cx, bool esm) {
     } else {
         return GjsLegacyGlobal::create(cx);
     }
-}
-
-static GjsGlobal* current_global(JSContext* cx) {
-    JSObject* glob = JS::CurrentGlobalOrNull(cx);
-
-    GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(glob);
-
-    return priv;
 }
 
 /**

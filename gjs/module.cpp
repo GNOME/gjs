@@ -396,13 +396,11 @@ bool GjsModuleLoader::load_gi_module(JSContext* m_cx, unsigned argc,
     }
 
     JS::RootedValue import_obj(m_cx);
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(m_cx);
     JS::RootedId ns_name(m_cx, gjs_intern_string_to_id(m_cx, ns.get()));
     if (ns_name == JSID_VOID)
         return false;
 
     if (!gjs_object_require_property(m_cx, v, "gi", ns_name, &import_obj)) {
-        g_warning("prop %s not found", ns.get());
         return false;
     }
     JS::RootedObject fin_obj(m_cx, &import_obj.get().toObject());
@@ -556,7 +554,6 @@ bool GjsModuleLoader::register_internal_module(JSContext* m_cx,
                                                const char* resource_path,
                                                GError** error) {
     auto it = m_id_to_internal_module->lookupForAdd(identifier);
-    bool ret = true;
 
     if (it.found()) {
         gjs_throw(m_cx, "Internal module '%s' is already registered",
@@ -625,15 +622,7 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
     JS::RootedString str(m_cx, specifier);
     JS::UniqueChars id = JS_EncodeStringToUTF8(m_cx, str);
     // The module from which the resolve request is coming
-    g_warning("Resolving module %s of type %i", id.get(), mod_val.type());
-
-    auto esm_lookup = m_id_to_esm_module->lookup(id.get());
-
-    auto internal_lookup = m_id_to_internal_module->lookup(id.get());
-
-    auto gi_lookup = m_id_to_gi_module->lookup(id.get());
-
-    auto native_lookup = m_id_to_native_module->lookup(id.get());
+    g_warning("Resolving module %s of type %i", id.get(), (int)mod_val.type());
 
     // The string identifier of the module we wish to import
 
@@ -657,7 +646,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
 
         if (esm_module.found()) {
             JS::RootedObject obj(m_cx, esm_module->value().get());
-            g_warning("Found %s as esm module!", full_path.get());
             return obj;
         }
 
@@ -670,7 +658,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
                       "Attempting to resolve relative import (%s) from "
                       "non-file module",
                       full_path.get());
-            g_warning("relative error %s", full_path.get());
             return nullptr;
         }
 
@@ -702,7 +689,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
         if (!ns) {
             gjs_throw(m_cx, "Attempted to load invalid module path %s",
                       id.get());
-            g_warning("invalid pat 5h %s", id.get());
             return nullptr;
         }
 
@@ -723,7 +709,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
         auto registered_lookup = m_id_to_gi_module->lookup(c_id);
 
         if (registered_lookup.found()) {
-            g_warning("esm gi int found %s", c_id);
             return registered_lookup->value().get();
         }
     }
@@ -739,14 +724,10 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
                 static_cast<GjsModule*>(mod_val.toPrivate());
             auto val = priv_module->module_uri();
             bool is_internal = false;
-            // if (val.isString()) {
-            // JS::RootedString str(m_cx, val.toString());
-            // JS::UniqueChars source(JS_EncodeStringToUTF8(m_cx, str));
-            // g_warning("value comp: %s.", source.get());
+
             std::string resource_start = "resource:///";
             is_internal = strncmp(val.c_str(), resource_start.c_str(),
                                   resource_start.length()) == 0;
-            //  }
 
             if (is_internal) {
                 // TODO Check len...
@@ -769,7 +750,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
     auto internal_module_2 = m_id_to_internal_module->lookup(id.get());
 
     if (internal_module_2.found()) {
-        g_warning("int found %s", id.get());
         return internal_module_2->value().get();
     }
 
@@ -788,7 +768,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
         if (!exists) {
             gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
                       id.get());
-            g_warning("unreg global r %s", id.get());
             return nullptr;
         }
 
@@ -800,7 +779,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
                                   &err)) {
             gjs_throw(m_cx, "Failed to read internal resource: %s \n%s",
                       full_path.get(), err->message);
-            g_warning("ufile load fail r %s", full_path.get());
             return nullptr;
         }
 
@@ -808,7 +786,6 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
 
         if (!register_esm_module(m_cx, id.get(), full_path.get(), mod_text,
                                  mod_len)) {
-            g_warning("failed inner reg %s", full_path.get());
             return nullptr;
         }
         auto new_val = m_id_to_esm_module->lookup(id.get());
