@@ -153,6 +153,7 @@ build_meson:
     BUILD_OPTS: >-
       -Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled
       -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
+      --werror
   when: on_success
   except:
     - schedules
@@ -168,7 +169,7 @@ build_meson:
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
     - meson _build $BUILD_OPTS
     - ninja -C _build
-    - xvfb-run -a meson test -C _build --verbose
+    - xvfb-run -a meson test -C _build --verbose --no-stdsplit --print-errorlogs
     - *CI_footer
 
 # Generates
