@@ -1,3 +1,13 @@
+Version 1.58.1
+--------------
+
+- Closed bugs and merge requests:
+  * Import wiki documentation [Sonny Piers, !341]
+  * Smaller CI, phase 1 [Philip Chimento, !339]
+  * Crashes after setting child property 'icon-name' on GtkStack then displaying
+    another GtkStack [Florian Müllner, #284, !347]
+  * GLib.strdelimit crashes [Philip Chimento, #283, !340]
+
 Version 1.58.0
 --------------
 
