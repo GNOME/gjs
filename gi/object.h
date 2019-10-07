@@ -335,7 +335,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
  private:
     void discard_wrapper(void) { m_wrapper.reset(); }
     void switch_to_rooted(JSContext* cx) { m_wrapper.switch_to_rooted(cx); }
-    void switch_to_unrooted(void) { m_wrapper.switch_to_unrooted(); }
+    void switch_to_unrooted(JSContext* cx) { m_wrapper.switch_to_unrooted(cx); }
     GJS_USE
     bool update_after_gc(void) { return m_wrapper.update_after_gc(); }
     GJS_USE

@@ -163,7 +163,7 @@ static void test_maybe_owned_switching_mode_keeps_same_value(
     g_assert_true(obj->rooted());
     g_assert_true(*obj == test_obj);
 
-    obj->switch_to_unrooted();
+    obj->switch_to_unrooted(PARENT(fx)->cx);
     g_assert_false(obj->rooted());
     g_assert_true(*obj == test_obj);
 
@@ -187,7 +187,7 @@ static void test_maybe_owned_switch_to_unrooted_allows_collection(
     auto obj = new GjsMaybeOwned<JSObject *>();
     obj->root(PARENT(fx)->cx, test_obj_new(fx));
 
-    obj->switch_to_unrooted();
+    obj->switch_to_unrooted(PARENT(fx)->cx);
     wait_for_gc(fx);
     g_assert_true(fx->finalized);
 
