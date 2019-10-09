@@ -17,7 +17,7 @@ function do_Install_Dependencies(){
         perl-devel 'pkgconfig(libffi)' 'pkgconfig(zlib)' python2-devel \
         readline-devel which /usr/bin/zip \
         \
-        autoconf-archive cairo-gobject-devel dbus-daemon dbus-x11 \
+        autoconf-archive cairo-gobject-devel diffutils dbus-daemon dbus-x11 \
         dbus-glib-devel glib2-devel gobject-introspection-devel gtk3-devel \
         sysprof-devel
 
@@ -40,6 +40,8 @@ function do_Set_Env(){
     if [[ -z "${DISPLAY}" ]]; then
         export DISPLAY=":0"
     fi
+
+    dbus-uuidgen > /var/lib/dbus/machine-id
 
     echo '-- Done --'
 }
