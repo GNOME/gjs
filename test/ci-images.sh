@@ -41,6 +41,8 @@ function do_Set_Env(){
         export DISPLAY=":0"
     fi
 
+    dbus-uuidgen > /var/lib/dbus/machine-id
+
     echo '-- Done --'
 }
 
