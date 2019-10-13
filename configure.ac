@@ -63,7 +63,7 @@ AX_VALGRIND_CHECK
 # Checks for libraries.
 m4_define(glib_required_version, 2.58.0)
 
-GOBJECT_INTROSPECTION_REQUIRE([1.41.4])
+GOBJECT_INTROSPECTION_REQUIRE([1.61.2])
 
 GLIB_REQUIREMENT="glib-2.0 >= glib_required_version"
 GOBJECT_REQUIREMENT="gobject-2.0 >= glib_required_version"
@@ -357,7 +357,6 @@ dnl automake 1.11/1.12 defines this but does not substitute it
 AC_SUBST([pkglibexecdir], ["${libexecdir}/${PACKAGE}"])
 
 AC_CONFIG_FILES([Makefile gjs-1.0.pc win32/config.h.win32])
-AC_CONFIG_FILES([tools/run_iwyu.sh], [chmod +x tools/run_iwyu.sh])
 dnl Symlink the files from gobject-introspection's test libraries into the tree;
 dnl Automake plans to drop support for compiling them in-place.
 AC_CONFIG_LINKS([
