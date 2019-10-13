@@ -1,3 +1,31 @@
+Version 1.63.1
+--------------
+
+- Note that the 1.59, 1.60, 1.61, and 1.62 releases are hereby skipped, because
+  we are calling the next stable series 1.64 to match gobject-introspection and
+  GLib.
+
+- GJS now includes a Meson build system. This is now the preferred way to build
+  it; however, the old Autotools build system is still available for a
+  transitional period.
+
+- Closed bugs and merge requests:
+  * GObject: Add convenience wrapper for signal_handler_(un)block() [Florian
+    Müllner, !326]
+  * GObject based class initialization checks [Marco Trevisan, Philip Chimento,
+    !336]
+  * Meson port [Philip Chimento, !338]
+  * add http client example [Sonny Piers, !342]
+  * Smaller CI, phase 2 [Philip Chimento, !343]
+  * add websocket client example [Sonny Piers, !344]
+  * Fix Docker images build [Philip Chimento, !345]
+  * CI: Use new Docker images [Philip Chimento, !346]
+  * docs: Update internal links [Andy Holmes, !348]
+  * Don't pass generic marshaller to g_signal_newv() [Niels De Graef, !349]
+  * tests: Fail debugger tests if command failed [Philip Chimento, !350]
+  * Minor CI image fixes [Philip Chimento, !351]
+  * Various fixes [Marco Trevisan, Philip Chimento]
+
 Version 1.58.1
 --------------
 
