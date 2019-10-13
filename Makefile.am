@@ -180,12 +180,25 @@ include Makefile-insttest.am
 EXTRA_DIST +=					\
 	autogen.sh				\
 	build/choose-tests-locale.sh		\
+	build/compile-gschemas.sh		\
 	COPYING.LGPL				\
 	doc/ByteArray.md			\
 	doc/cairo.md				\
 	doc/Hacking.md				\
 	doc/SpiderMonkey_Memory.md		\
 	doc/Style_Guide.md			\
+	installed-tests/js/meson.build		\
+	installed-tests/meson.build		\
+	libgjs.map				\
+	libgjs.symbols				\
+	meson.build				\
+	meson_options.txt			\
+	subprojects/glib.wrap			\
+	subprojects/gobject-introspection.wrap	\
+	subprojects/libffi.wrap			\
+	subprojects/proxy-libintl.wrap		\
+	subprojects/zlib.wrap			\
+	test/meson.build			\
 	win32/build-rules-msvc.mak		\
 	win32/config-msvc.mak			\
 	win32/config.h.win32			\
@@ -234,18 +247,5 @@ upload-release: $(DISTNAME) Makefile
 	git push --tags origin master:master
 	scp $(DISTNAME) master.gnome.org:
 	ssh master.gnome.org install-module $(DISTNAME)
-
-
-CPPCHECK=cppcheck
-### cppcheck static code analysis
-#
-cppcheck:
-	$(CPPCHECK) --inline-suppr \
-		--enable=warning,performance,portability,information,missingInclude \
-		--force -q $(top_srcdir) -I $(top_builddir)
-
-# Include What You Use: run 'make iwyu | tee iwyu.log'
-iwyu: tools/run_iwyu.sh
-	SRCDIR=$(abs_top_srcdir) BUILDDIR=$(abs_top_builddir) tools/run_iwyu.sh 2>&1
 
 -include $(top_srcdir)/git.mk
