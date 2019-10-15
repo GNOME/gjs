@@ -367,17 +367,9 @@ main(int argc, char **argv)
         tracefd = -1;
     }
 
-    // TODO Fix command line arguments (they depend on the global existing
-    // before eval)
-    // /* prepare command line arguments */
-    // if (!gjs_context_define_string_array(js_context, "ARGV",
-    //                                      script_argc, (const char **)
-    //                                      script_argv, &error)) {
-    //     code = 1;
-    //     g_printerr("Failed to defined ARGV: %s", error->message);
-    //     g_clear_error(&error);
-    //     goto out;
-    // }
+    /* store the script args in the current context */
+    std::vector<std::string> args(script_argv, script_argv + script_argc);
+    gjs_context_set_args(js_context, args);
 
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */

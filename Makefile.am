@@ -104,6 +104,7 @@ EXTRA_DIST += $(modules_resource_files) $(srcdir)/modules/modules.gresource.xml
 modules_source_files =		\
 	$(module_system_srcs)	\
 	$(module_print_srcs)	\
+	$(module_process_srcs)  \
 	$(module_console_srcs)	\
 	$(NULL)
 

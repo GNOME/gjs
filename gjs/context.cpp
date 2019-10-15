@@ -431,6 +431,13 @@ static void gjs_context_finalize(GObject* object) {
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
+void GjsContextPrivate::set_args(std::vector<std::string> args) {
+    std::vector<std::string> new_args(args);
+    m_args = new_args;
+}
+
+std::vector<std::string> GjsContextPrivate::get_args() { return m_args; }
+
 bool GjsContextPrivate::eval_module(const char* identifier,
                                     uint8_t* exit_status_p, GError** error) {
     bool ret = false;
@@ -1052,6 +1059,16 @@ gboolean gjs_context_eval_module(GjsContext* js_context, const char* identifier,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
     return gjs->eval_module(identifier, exit_status_p, error);
+}
+
+void gjs_context_set_args(GjsContext* js_context,
+                          std::vector<std::string> args) {
+    g_return_if_fail(GJS_IS_CONTEXT(js_context));
+
+    GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    gjs->set_args(args);
 }
 
 gboolean gjs_context_register_module(GjsContext* js_context,

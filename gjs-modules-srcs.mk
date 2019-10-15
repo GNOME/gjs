@@ -18,6 +18,11 @@ module_print_srcs =		\
 	modules/print.cpp           \
     $(NULL)
 
+module_process_srcs =		\
+	modules/process.h             \
+	modules/process.cpp           \
+    $(NULL)
+
 module_cairo_srcs =				\
 	modules/cairo-private.h			\
 	modules/cairo-module.h			\

@@ -184,10 +184,14 @@ static bool gjs_printerr(JSContext* context, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+static constexpr JSFunctionSpec funcs[] = {
+    JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS), JS_FS_END};
+
 bool gjs_define_print_stuff(JSContext* context,
                             JS::MutableHandleObject module) {
     module.set(JS_NewPlainObject(context));
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefineFunction(context, module, "print", gjs_print, 1,
-                             GJS_MODULE_PROP_FLAGS);
+    return JS_DefineFunctions(context, module, funcs);
 }

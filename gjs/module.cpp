@@ -74,14 +74,16 @@ static bool is_gir_uri(SoupURI* uri) {
 
 static char* gir_js_mod_ver(const char* ns, const char* version) {
     return g_strdup_printf(R"js(
-        export default require_introspected('%s', '%s');
+        import gi from "gi";
+        export default gi.require('%s', '%s');
         )js",
                            ns, version);
 }
 
 static char* gir_js_mod(const char* ns) {
     return g_strdup_printf(R"js(
-        export default require_introspected('%s');
+        import gi from "gi";
+        export default gi.require('%s');
         )js",
                            ns);
 }
