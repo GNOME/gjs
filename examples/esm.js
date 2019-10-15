@@ -35,6 +35,7 @@ export class Application {
         this._window.add(this.box);
 
         this.btn.connect('clicked', () => {
+            this.application.quit();
             exit(1);
         });
 
@@ -58,4 +59,6 @@ export class Application {
 //run the application
 let app = new Application();
 
-app.application.run([]);
+console.log(JSON.stringify(ARGV));
+
+app.application.run(ARGV);

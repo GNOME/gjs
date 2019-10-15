@@ -27,6 +27,7 @@
 #include "modules/console.h"
 #include "modules/modules.h"
 #include "modules/print.h"
+#include "modules/process.h"
 #include "modules/system.h"
 
 #ifdef ENABLE_CAIRO
@@ -42,4 +43,5 @@ gjs_register_static_modules (void)
     gjs_register_native_module("system", gjs_js_define_system_stuff);
     gjs_register_native_module("console", gjs_define_console_stuff);
     gjs_register_native_module("print", gjs_define_print_stuff);
+    gjs_register_native_module("process", gjs_define_process_stuff);
 }

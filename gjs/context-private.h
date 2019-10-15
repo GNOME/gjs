@@ -30,7 +30,8 @@
 #include <type_traits>  // for is_same
 #include <unordered_map>
 
-#include <functional>
+#include <string>
+#include <vector>
 
 #include <glib-object.h>
 #include <glib.h>
@@ -100,6 +101,8 @@ class GjsContextPrivate : public JS::JobQueue {
     JS::Heap<JSObject*> m_legacy_global;
     JS::Heap<JSObject*> m_module_global;
     GThread* m_owner_thread;
+
+    std::vector<std::string> m_args;
 
     char* m_program_name;
 
@@ -195,6 +198,8 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
+    void set_args(std::vector<std::string> args);
+    std::vector<std::string> get_args();
     GJS_USE bool is_owner_thread(void) const {
         return m_owner_thread == g_thread_self();
     }

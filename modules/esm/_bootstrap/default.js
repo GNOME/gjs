@@ -1,7 +1,14 @@
 import { Console } from "console";
 
-const { print } = require("print");
+const { log } = require("print");
+const process = require("process");
 
-const console = new Console(print);
+const console = new Console(log);
 
 window.console = console;
+
+Object.defineProperty(window, "ARGV", {
+    get() {
+        return process.argv;
+    }
+});
