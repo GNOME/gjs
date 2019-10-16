@@ -70,15 +70,6 @@ do_Create_Artifacts_Folder () {
     mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
 }
 
-do_Get_Commit_Message () {
-    # Allow CI to skip jobs. Its goal is to simplify housekeeping.
-    # Disable tasks using the commit message. Possibilities are (and/or):
-    # [skip eslint]		[skip cpplint]		[skip cppcheck]
-    #
-    # Just add the "code" anywhere inside the commit message.
-    log_message=$(git log -n 1)
-}
-
 do_Check_Warnings () {
     local total=0
     cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
@@ -128,7 +119,6 @@ echo "Build options: $BUILD_OPTS"
 echo "Doing: $1 $extra_opts"
 
 do_Create_Artifacts_Folder "$1"
-do_Get_Commit_Message
 
 if test "$1" = "GJS"; then
     do_Set_Env
