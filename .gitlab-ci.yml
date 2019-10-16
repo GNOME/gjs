@@ -8,14 +8,25 @@ stages:
 - manual
 - deploy
 
-.Coverage files: &cov_files [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
 .Regular files: &reg_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
 
 .coverage: &coverage
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  variables:
+    TASK_ID: "coverage"
+    coverage: '/^  lines.*(\d+\.\d+\%)/'
+  script:
+    - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    # This script runs the build inside its own build tree and generates the
+    # coverage report
+    - tools/run_coverage.sh
   artifacts:
     name: log_coverage
     when: always
-    paths: *cov_files
+    paths:
+      - _coverage/html
+      - _coverage_build/meson-logs/*log.txt
 
 # Regular build
 .build: &build
@@ -35,12 +46,6 @@ stages:
     # Run installed extra tests
     - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
          $(pwd)/test/test-ci.sh GJS_EXTRA;
-       fi
-    '
-
-    # Run code coverage tests
-    - 'if [[ $BUILD_OPTS == *"--enable-code-coverage"* ]]; then
-         $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi
     '
 
@@ -147,14 +152,9 @@ build_meson:
 # Generates
 # The Code Coverage Report
 coverage-automatic:
-  <<: *build
   <<: *coverage
+  when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
-  variables:
-    TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - schedules
   only:
@@ -168,7 +168,7 @@ pages:
   dependencies:
     - coverage-automatic
   script:
-    - mv $(pwd)/coverage/ public/ || true
+    - mv $(pwd)/_coverage/html/ public/ || true
   artifacts:
     paths:
       - public
@@ -259,14 +259,8 @@ codequality:
     - schedules
 
 coverage:
-  <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
-  variables:
-    TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   when: manual
   except:
     - schedules

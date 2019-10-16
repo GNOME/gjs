@@ -67,10 +67,6 @@ do_Compare_With_Upstream_Master () {
 do_Create_Artifacts_Folder () {
     # Create the artifacts folders
     save_dir="$(pwd)"
-
-    if test "$1" = "GJS_COVERAGE"; then
-         mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
-    fi
     mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
 }
 
@@ -194,19 +190,6 @@ elif test "$1" = "SH_CHECKS"; then
 
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
-
-elif test "$1" = "GJS_COVERAGE"; then
-    # It doesn't (re)build, just run the 'Coverage Tests'
-    do_Print_Labels 'Code Coverage Report'
-    do_Set_Env
-
-    make check-code-coverage
-    cp "$(pwd)"/gjs-?.*.*-coverage.info "$save_dir"/coverage/
-    cp -r "$(pwd)"/gjs-?.*.*-coverage/* "$save_dir"/coverage/
-
-    echo '-----------------------------------------'
-    sed -e 's/<[^>]*>//g' "$save_dir"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
-    echo '-----------------------------------------'
 
 elif test "$1" = "CPPLINT"; then
     do_Print_Labels 'C/C++ Linter report '
