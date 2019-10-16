@@ -120,7 +120,12 @@ echo "Doing: $1 $extra_opts"
 
 do_Create_Artifacts_Folder "$1"
 
-if test "$1" = "GJS"; then
+if test "$1" = "SETUP"; then
+    do_Show_Info
+    do_Print_Labels 'Show GJS git information'
+    git log --pretty=format:"%h %cd %s" -1
+
+elif test "$1" = "GJS"; then
     do_Set_Env
     do_Show_Info
 

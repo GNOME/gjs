@@ -129,7 +129,6 @@ build_meson:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-meson-check"
-    PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
     BUILD_OPTS: >-
       -Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled
       -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
@@ -144,7 +143,9 @@ build_meson:
       - _build/meson-logs/*log.txt
 
   script:
+    - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    - test/test-ci.sh SETUP
     - meson _build $BUILD_OPTS
     - ninja -C _build
     - xvfb-run -a meson test -C _build --verbose --no-stdsplit --print-errorlogs
