@@ -87,6 +87,7 @@ rules:
     - error
     - all
     - conditionalAssign: false
+      nestedBinaryExpressions: false
       returnAssign: false
   no-implicit-coercion:
     - error
