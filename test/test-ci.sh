@@ -8,7 +8,7 @@ do_Set_Env () {
 
     #SpiderMonkey and libgjs
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib
 
     #Macros
     export ACLOCAL_PATH=$ACLOCAL_PATH:/usr/local/share/aclocal
@@ -115,7 +115,7 @@ fi
 do_Print_Labels  'ENVIRONMENT'
 echo "Running on: $BASE $OS"
 echo "Job: $TASK_ID"
-echo "Build options: $BUILD_OPTS"
+echo "Configure options: ${CONFIG_OPTS-$BUILD_OPTS}"
 echo "Doing: $1 $extra_opts"
 
 do_Create_Artifacts_Folder "$1"
@@ -151,7 +151,14 @@ elif test "$1" = "GJS"; then
     elif test "$TEST" = "check"; then
         xvfb-run -a make -s check
     fi
-    make -sj install
+
+elif test "$1" = "BUILD"; then
+    do_Set_Env
+
+    DEFAULT_CONFIG_OPTS="-Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled \
+        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false"
+    meson _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS | tee compilation.log
+    ninja -C _build
 
     if test "$WARNINGS" = "count"; then
         do_Print_Labels 'Warnings Report '
@@ -159,19 +166,10 @@ elif test "$1" = "GJS"; then
         do_Print_Labels
     fi
 
-elif test "$1" = "GJS_EXTRA"; then
-    # It doesn't (re)build, just run the 'Installed Tests'
-    do_Print_Labels 'Run GJS installed tests'
-    do_Set_Env
-
-    xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
-
-elif test "$1" = "VALGRIND"; then
-    # It doesn't (re)build, just run the 'Valgrind Tests'
-    do_Print_Labels 'Valgrind Report'
-    do_Set_Env
-
-    make check-valgrind
+    if test "$TEST" != "skip"; then
+        xvfb-run -a meson test -C _build $TEST_OPTS \
+            --verbose --no-stdsplit --print-errorlogs
+    fi
 
 elif test "$1" = "SH_CHECKS"; then
     # It doesn't (re)build, just run the 'Tests'
@@ -183,6 +181,7 @@ elif test "$1" = "SH_CHECKS"; then
     export LANGUAGE=C.UTF-8
     export NO_AT_BRIDGE=1
 
+    ninja -C _build install
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
 

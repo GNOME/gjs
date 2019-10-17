@@ -8,7 +8,7 @@ stages:
 - manual
 - deploy
 
-.Regular files: &reg_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
+.Autotools files: &autotools_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
 
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
@@ -28,13 +28,13 @@ stages:
       - _coverage/html
       - _coverage_build/meson-logs/*log.txt
 
-# Regular build
-.build: &build
+# Autotools build
+.autotools: &autotools
   when: on_success
   artifacts:
     name: log
     when: always
-    paths: *reg_files
+    paths: &autotools_files
 
   script:
     # GitLab is keeping some files between jobs. Remove them.
@@ -61,6 +61,21 @@ stages:
        fi
     '
 
+# Meson build
+.build: &build
+  when: on_success
+  artifacts:
+    name: log
+    when: always
+    paths:
+      - _build/compile_commands.json
+      - _build/meson-logs/*log.txt
+      - compilation.log
+      - scripts.log
+  script:
+    - test/test-ci.sh SETUP
+    - test/test-ci.sh BUILD
+
 #############################################
 #               Regular tests               #
 #############################################
@@ -72,11 +87,7 @@ build_recommended:
   image: registry.gitlab.gnome.org/gnome/gjs:job-443296_fedora.mozjs60-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
-    TEST: "check"
     WARNINGS: "count"
-    BUILD_OPTS: >-
-      --with-cairo --enable-readline --enable-profiler
-      --disable-dtrace --disable-systemtap
   except:
     - schedules
 
@@ -86,8 +97,7 @@ sanitizer_gcc:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
-    TEST: "check"
+    CONFIG_OPTS: -Db_sanitize=address,undefined
   except:
     - schedules
 
@@ -97,19 +107,18 @@ sanitizer_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
-    BUILD_OPTS: >-
-      CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
-      --with-cairo --enable-readline --enable-profiler
-      --enable-dtrace --enable-systemtap
-    TEST: "check"
-    SCRIPTCHECK: "yes"
+    CONFIG_OPTS: -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
     ENABLE_GTK: "yes"
   except:
     - schedules
+  script:
+    - test/test-ci.sh SETUP
+    - test/test-ci.sh BUILD
+    - test/test-ci.sh SH_CHECKS
 
 build_minimal:
   <<: *build
@@ -117,38 +126,25 @@ build_minimal:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
-    TEST: "check"
-    BUILD_OPTS: >-
-      --without-cairo --disable-profiler --disable-readline
-      --disable-dtrace --disable-systemtap
+    CONFIG_OPTS: >-
+      -Dbuildtype=release
+      -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
   except:
     - schedules
 
-build_meson:
+build_autotools:
+  <<: *autotools
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
-    TASK_ID: "fedora-x86_64-gcc-meson-check"
+    TASK_ID: "fedora-x86_64-gcc-autotools-check"
     BUILD_OPTS: >-
-      -Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled
-      -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
-  when: on_success
+      CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+      --with-cairo --enable-readline --enable-profiler
+      --enable-dtrace --enable-systemtap
+    TEST: check
   except:
     - schedules
-  artifacts:
-    name: log
-    when: always
-    paths:
-      - _build/compile_commands.json
-      - _build/meson-logs/*log.txt
-
-  script:
-    - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-    - test/test-ci.sh SETUP
-    - meson _build $BUILD_OPTS
-    - ninja -C _build
-    - xvfb-run -a meson test -C _build --verbose --no-stdsplit --print-errorlogs
 
 # Generates
 # The Code Coverage Report
@@ -273,14 +269,13 @@ sanitizer_clang:
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
-    TEST: "check"
+    CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
   when: manual
   except:
     - schedules
 
 distcheck:
-  <<: *build
+  <<: *autotools
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
@@ -296,10 +291,17 @@ installed_tests:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
-    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
+    CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
+    TEST: skip
+    LD_LIBRARY_PATH: $LD_LIBRARY_PATH:/usr/local/lib  # for mozjs60
   when: manual
   except:
     - schedules
+  script:
+    - test/test-ci.sh SETUP
+    - test/test-ci.sh BUILD
+    - ninja -C _build install
+    - xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
 
 valgrind:
   <<: *build
@@ -307,8 +309,7 @@ valgrind:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
-    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
-    TEST: "check"
+    TEST_OPTS: --setup=valgrind
   allow_failure: true
   when: manual
   except:
@@ -321,8 +322,7 @@ zeal_2:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
-    TEST: "check"
-    JS_GC_ZEAL: 2
+    TEST_OPTS: --setup=extra_gc
   when: manual
   except:
     - schedules
@@ -333,8 +333,7 @@ zeal_4:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
-    TEST: "check"
-    JS_GC_ZEAL: 4
+    TEST_OPTS: --setup=pre_verify
   when: manual
   except:
     - schedules
@@ -345,8 +344,7 @@ zeal_11:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
-    TEST: "check"
-    JS_GC_ZEAL: 11
+    TEST_OPTS: --setup=post_verify
   when: manual
   except:
     - schedules
