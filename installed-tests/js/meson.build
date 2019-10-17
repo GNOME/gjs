@@ -17,25 +17,25 @@ gi_tests = gidatadir / 'tests'
 
 regress_dependencies = [glib, gobject, gio]
 regress_gir_includes = ['Gio-2.0']
-regress_gir_cpp_args = []
+regress_gir_c_args = []
 if build_cairo
     regress_gir_includes += 'cairo-1.0'
     regress_dependencies += [cairo, cairo_gobject]
 else
-    regress_gir_cpp_args = ['-D_GI_DISABLE_CAIRO']
+    regress_gir_c_args = ['-D_GI_DISABLE_CAIRO']
 endif
 
 regress_sources = [
     gi_tests / 'regress.c',
     gi_tests / 'regress.h',
 ]
-libregress = library('regress', regress_sources, cpp_args: regress_gir_cpp_args,
+libregress = library('regress', regress_sources, c_args: regress_gir_c_args,
     dependencies: regress_dependencies, install: get_option('installed_tests'),
     install_dir: pkglibdir)
 regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
     sources: regress_sources, namespace: 'Regress', nsversion: '1.0',
     identifier_prefix: 'Regress', symbol_prefix: 'regress_',
-    extra_args: ['--warn-all', '--warn-error'] + regress_gir_cpp_args,
+    extra_args: ['--warn-all', '--warn-error'] + regress_gir_c_args,
     install: get_option('installed_tests'), install_dir_gir: false,
     install_dir_typelib: installed_tests_dir)
 regress_typelib = regress_gir[1]
