@@ -81,5 +81,8 @@ foreach test : debugger_tests
 
     if get_option('installed_tests')
         install_data(test_file, install_dir: installed_tests_dir / 'debugger')
+        install_data('debugger' / '@0@.debugger.js'.format(test),
+            'debugger' / '@0@.debugger.output'.format(test),
+            install_dir: installed_tests_dir / 'debugger')
     endif
 endforeach
