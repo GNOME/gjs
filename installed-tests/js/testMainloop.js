@@ -3,7 +3,7 @@
 const Mainloop = imports.mainloop;
 
 describe('Mainloop.timeout_add()', function () {
-    let runTenTimes, runOnlyOnce, neverRun;
+    let runTenTimes, runOnlyOnce, neverRun, neverRunSource;
     beforeAll(function (done) {
         let count = 0;
         runTenTimes = jasmine.createSpy('runTenTimes').and.callFake(() => {
@@ -19,7 +19,7 @@ describe('Mainloop.timeout_add()', function () {
 
         Mainloop.timeout_add(10, runTenTimes);
         Mainloop.timeout_add(10, runOnlyOnce);
-        Mainloop.timeout_add(15000, neverRun);
+        neverRunSource = Mainloop.timeout_add(15000, neverRun);
     });
 
     it('runs a timeout function', function () {
@@ -32,6 +32,10 @@ describe('Mainloop.timeout_add()', function () {
 
     it('runs a timeout function after an initial timeout', function () {
         expect(neverRun).not.toHaveBeenCalled();
+    });
+
+    afterAll(function () {
+        Mainloop.source_remove(neverRunSource);
     });
 });
 
