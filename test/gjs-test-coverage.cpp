@@ -54,7 +54,8 @@ static bool
 skip_if_gc_zeal_mode(void)
 {
     const char *gc_zeal = g_getenv("JS_GC_ZEAL");
-    if (gc_zeal && (strcmp(gc_zeal, "1") == 0 || strcmp(gc_zeal, "2") == 0)) {
+    if (gc_zeal && (strcmp(gc_zeal, "1") == 0 || strcmp(gc_zeal, "2") == 0 ||
+                    g_str_has_prefix(gc_zeal, "2,"))) {
         g_test_skip("https://bugzilla.mozilla.org/show_bug.cgi?id=1447906");
         return true;
     }
