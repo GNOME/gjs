@@ -90,11 +90,8 @@ gjs_object_priv_quark (void)
     return val;
 }
 
-/* Plain g_type_query fails and leaves @query uninitialized for
-   dynamic types.
-   See https://bugzilla.gnome.org/show_bug.cgi?id=687184 and
-   https://bugzilla.gnome.org/show_bug.cgi?id=687211
-*/
+// Plain g_type_query fails and leaves @query uninitialized for dynamic types.
+// See https://gitlab.gnome.org/GNOME/glib/issues/623
 void ObjectBase::type_query_dynamic_safe(GTypeQuery* query) {
     GType type = gtype();
     while (g_type_get_qdata(type, ObjectBase::custom_type_quark()))
