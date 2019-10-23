@@ -1411,6 +1411,8 @@ void ObjectBase::invalidate_all_closures(void) {
     }
 }
 
+// Note: m_wrapper (the JS object) may already be null when this is called, if
+// it was finalized while the GObject was toggled down.
 void
 ObjectInstance::disassociate_js_gobject(void)
 {
