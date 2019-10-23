@@ -326,42 +326,6 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
 }
 
 static void
-gjstest_test_strip_shebang_no_advance_for_no_shebang(void)
-{
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"foo\nbar", &line_number);
-
-    g_assert_cmpuint(offset, ==, 0);
-    g_assert_cmpuint(line_number, ==, 1);
-}
-
-static void gjstest_test_strip_shebang_no_advance_for_too_short_string(void) {
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"Z", &line_number);
-
-    g_assert_cmpuint(offset, ==, 0);
-    g_assert_cmpuint(line_number, ==, 1);
-}
-
-static void
-gjstest_test_strip_shebang_advance_for_shebang(void)
-{
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"#!foo\nbar", &line_number);
-
-    g_assert_cmpuint(offset, ==, 6);
-    g_assert_cmpuint(line_number, ==, 2);
-}
-
-static void gjstest_test_strip_shebang_advance_to_end_for_just_shebang(void) {
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"#!foo", &line_number);
-
-    g_assert_cmpuint(offset, ==, 5);
-    g_assert_cmpuint(line_number, ==, 2);
-}
-
-static void
 gjstest_test_profiler_start_stop(void)
 {
     GjsAutoUnref<GjsContext> context =
@@ -403,12 +367,6 @@ main(int    argc,
                     gjstest_test_func_gjs_context_eval_non_zero_terminated);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
-    g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
-    g_test_add_func("/gjs/jsutil/strip_shebang/short_string",
-                    gjstest_test_strip_shebang_no_advance_for_too_short_string);
-    g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
-    g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang",
-                    gjstest_test_strip_shebang_advance_to_end_for_just_shebang);
     g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
     g_test_add_func("/util/misc/strv/concat/null",
                     gjstest_test_func_util_misc_strv_concat_null);

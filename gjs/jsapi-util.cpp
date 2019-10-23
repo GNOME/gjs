@@ -578,38 +578,6 @@ gjs_maybe_gc (JSContext *context)
 }
 
 /**
- * gjs_unix_shebang_len:
- *
- * @script: A JS script
- * @start_line_number: (out): the new start-line number to account for the
- * offset as a result of stripping the shebang; can be either 1 or 2.
- *
- * Returns the offset in @script where the actual script begins with Unix
- * shebangs removed. The outparam is useful to know what line of the
- * original script we're executing from, so that any relevant
- * offsets can be applied to the results of an execution pass.
- */
-size_t gjs_unix_shebang_len(const std::u16string& script,
-                            unsigned* start_line_number) {
-    g_assert(start_line_number);
-
-    if (script.compare(0, 2, u"#!") != 0) {
-        // No shebang, leave the script unchanged
-        *start_line_number = 1;
-        return 0;
-    }
-
-    *start_line_number = 2;
-
-    size_t newline_pos = script.find('\n', 2);
-    if (newline_pos == std::u16string::npos)
-        return script.size();  // Script consists only of a shebang line
-
-    // Point the offset after the newline
-    return newline_pos + 1;
-}
-
-/**
  * gjs_get_import_global:
  * @context: a #JSContext
  *

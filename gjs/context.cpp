@@ -975,11 +975,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
 
     std::u16string utf16_string = gjs_utf8_script_to_utf16(script, script_len);
 
-    unsigned start_line_number = 1;
-    size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
-
-    JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
-                               utf16_string.size() - offset,
+    JS::SourceBufferHolder buf(utf16_string.c_str(), utf16_string.size(),
                                JS::SourceBufferHolder::NoOwnership);
 
     JS::RootedObjectVector scope_chain(m_cx);
@@ -989,7 +985,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     }
 
     JS::CompileOptions options(m_cx);
-    options.setFileAndLine(filename, start_line_number);
+    options.setFileAndLine(filename, 1);
 
     if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
         return false;
