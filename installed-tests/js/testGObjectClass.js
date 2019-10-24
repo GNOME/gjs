@@ -2,6 +2,7 @@
 imports.gi.versions.Gtk = '3.0';
 
 const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
@@ -467,5 +468,77 @@ describe('GObject creation using base classes without registered GType', functio
         const BadInheritance = class extends GObject.Object {};
         expect(() => GObject.registerClass(class BadInheritanceDerived extends BadInheritance {}))
             .toThrowError(/Object 0x[a-f0-9]+ is not a subclass of GObject_Object, it's a Object/);
+    });
+});
+
+describe('Register GType name', function () {
+    beforeAll(function () {
+        expect(GObject.gtypeNameBasedOnJSPath).toBeFalsy();
+    });
+
+    afterEach(function () {
+        GObject.gtypeNameBasedOnJSPath = false;
+    });
+
+    it('uses the class name', function () {
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoName extends GObject.Object { });
+
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_GTypeTestAutoName');
+    });
+
+    it('uses the sanitized class name', function () {
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoCla$$Name extends GObject.Object { });
+
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_GTypeTestAutoCla__Name');
+    });
+
+    it('use the file path and class name', function () {
+        GObject.gtypeNameBasedOnJSPath = true;
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoName extends GObject.Object {});
+
+        /* Update this test if the file is moved */
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_js_testGObjectClass_GTypeTestAutoName');
+    });
+
+    it('use the file path and sanitized class name', function () {
+        GObject.gtypeNameBasedOnJSPath = true;
+        const GTypeTestAutoName = GObject.registerClass(
+            class GTypeTestAutoCla$$Name extends GObject.Object { });
+
+        /* Update this test if the file is moved */
+        expect(GTypeTestAutoName.$gtype.name).toEqual(
+            'Gjs_js_testGObjectClass_GTypeTestAutoCla__Name');
+    });
+
+    it('use provided class name', function () {
+        const GtypeClass = GObject.registerClass({
+            GTypeName: 'GTypeTestManualName',
+        }, class extends GObject.Object {});
+
+        expect(GtypeClass.$gtype.name).toEqual('GTypeTestManualName');
+    });
+
+    it('sanitizes user provided class name', function () {
+        let gtypeName = 'GType$Test/WithLòt\'s of*bad§chars!';
+        let expectedSanitized = 'GType_Test_WithL_t_s_of_bad_chars_';
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            `*RangeError: Provided GType name '${gtypeName}' is not valid; ` +
+            `automatically sanitized to '${expectedSanitized}'*`);
+
+        const GtypeClass = GObject.registerClass({
+            GTypeName: gtypeName,
+        }, class extends GObject.Object {});
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectClass.js', 0,
+            'testGObjectRegisterClassSanitize');
+
+        expect(GtypeClass.$gtype.name).toEqual(expectedSanitized);
     });
 });
