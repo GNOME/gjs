@@ -8,7 +8,7 @@ do_Set_Env () {
 
     #SpiderMonkey and libgjs
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib
 
     #Macros
     export ACLOCAL_PATH=$ACLOCAL_PATH:/usr/local/share/aclocal
@@ -67,20 +67,7 @@ do_Compare_With_Upstream_Master () {
 do_Create_Artifacts_Folder () {
     # Create the artifacts folders
     save_dir="$(pwd)"
-
-    if test "$1" = "GJS_COVERAGE"; then
-         mkdir -p "$save_dir"/coverage; touch "$save_dir"/coverage/doing-"$1"
-    fi
     mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
-}
-
-do_Get_Commit_Message () {
-    # Allow CI to skip jobs. Its goal is to simplify housekeeping.
-    # Disable tasks using the commit message. Possibilities are (and/or):
-    # [skip eslint]		[skip cpplint]		[skip cppcheck]
-    #
-    # Just add the "code" anywhere inside the commit message.
-    log_message=$(git log -n 1)
 }
 
 do_Check_Warnings () {
@@ -128,13 +115,17 @@ fi
 do_Print_Labels  'ENVIRONMENT'
 echo "Running on: $BASE $OS"
 echo "Job: $TASK_ID"
-echo "Build options: $BUILD_OPTS"
+echo "Configure options: ${CONFIG_OPTS-$BUILD_OPTS}"
 echo "Doing: $1 $extra_opts"
 
 do_Create_Artifacts_Folder "$1"
-do_Get_Commit_Message
 
-if test "$1" = "GJS"; then
+if test "$1" = "SETUP"; then
+    do_Show_Info
+    do_Print_Labels 'Show GJS git information'
+    git log --pretty=format:"%h %cd %s" -1
+
+elif test "$1" = "GJS"; then
     do_Set_Env
     do_Show_Info
 
@@ -160,7 +151,14 @@ if test "$1" = "GJS"; then
     elif test "$TEST" = "check"; then
         xvfb-run -a make -s check
     fi
-    make -sj install
+
+elif test "$1" = "BUILD"; then
+    do_Set_Env
+
+    DEFAULT_CONFIG_OPTS="-Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled \
+        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false"
+    meson _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS | tee compilation.log
+    ninja -C _build
 
     if test "$WARNINGS" = "count"; then
         do_Print_Labels 'Warnings Report '
@@ -168,19 +166,10 @@ if test "$1" = "GJS"; then
         do_Print_Labels
     fi
 
-elif test "$1" = "GJS_EXTRA"; then
-    # It doesn't (re)build, just run the 'Installed Tests'
-    do_Print_Labels 'Run GJS installed tests'
-    do_Set_Env
-
-    xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
-
-elif test "$1" = "VALGRIND"; then
-    # It doesn't (re)build, just run the 'Valgrind Tests'
-    do_Print_Labels 'Valgrind Report'
-    do_Set_Env
-
-    make check-valgrind
+    if test "$TEST" != "skip"; then
+        xvfb-run -a meson test -C _build $TEST_OPTS \
+            --verbose --no-stdsplit --print-errorlogs
+    fi
 
 elif test "$1" = "SH_CHECKS"; then
     # It doesn't (re)build, just run the 'Tests'
@@ -192,21 +181,9 @@ elif test "$1" = "SH_CHECKS"; then
     export LANGUAGE=C.UTF-8
     export NO_AT_BRIDGE=1
 
+    ninja -C _build install
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
-
-elif test "$1" = "GJS_COVERAGE"; then
-    # It doesn't (re)build, just run the 'Coverage Tests'
-    do_Print_Labels 'Code Coverage Report'
-    do_Set_Env
-
-    make check-code-coverage
-    cp "$(pwd)"/gjs-?.*.*-coverage.info "$save_dir"/coverage/
-    cp -r "$(pwd)"/gjs-?.*.*-coverage/* "$save_dir"/coverage/
-
-    echo '-----------------------------------------'
-    sed -e 's/<[^>]*>//g' "$save_dir"/coverage/index.html | tr -d ' \t' | grep -A3 -P '^Lines:$'  | tr '\n' ' '; echo
-    echo '-----------------------------------------'
 
 elif test "$1" = "CPPLINT"; then
     do_Print_Labels 'C/C++ Linter report '

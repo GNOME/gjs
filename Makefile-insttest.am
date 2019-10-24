@@ -32,7 +32,11 @@ installedtestmeta_DATA += 			\
 	$(NULL)
 jstests_DATA += $(jasmine_tests)
 jsscripttests_DATA += $(simple_tests)
-debuggertests_DATA += $(debugger_tests)
+debuggertests_DATA += 			\
+	$(debugger_tests)		\
+	$(debugger_tests:%=%.js)	\
+	$(debugger_tests:%=%.output)	\
+	$(NULL)
 pkglib_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
 
 %.test: %.js installed-tests/minijasmine.test.in Makefile
