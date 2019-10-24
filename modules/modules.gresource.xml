@@ -3,14 +3,7 @@
   <gresource prefix="/org/gnome/gjs">
     <file>modules/esm/_bootstrap/default.js</file>
 
-    <file>modules/esm/internal/signals.js</file>
-    <file>modules/esm/internal/template.js</file>
-
-    <file>modules/esm/overrides/cairo.js</file>
-    <file>modules/esm/overrides/GLib.js</file>
-    <file>modules/esm/overrides/Gio.js</file>
-    <file>modules/esm/overrides/GObject.js</file>
-    <file>modules/esm/overrides/Gtk.js</file>
+    <file>modules/shared/_signals.js</file>
 
     <file>modules/esm/cairo.js</file>
     <file>modules/esm/console.js</file>
@@ -23,11 +16,11 @@
     <file>modules/legacy/_bootstrap/default.js</file>
     <file>modules/legacy/_bootstrap/coverage.js</file>
 
-    <file>modules/legacy/overrides/cairo.js</file>
-    <file>modules/legacy/overrides/GLib.js</file>
-    <file>modules/legacy/overrides/Gio.js</file>
-    <file>modules/legacy/overrides/GObject.js</file>
-    <file>modules/legacy/overrides/Gtk.js</file>
+    <file>modules/shared/overrides/cairo.js</file>
+    <file>modules/shared/overrides/GLib.js</file>
+    <file>modules/shared/overrides/Gio.js</file>
+    <file>modules/shared/overrides/GObject.js</file>
+    <file>modules/shared/overrides/Gtk.js</file>
 
     <file>modules/legacy/tweener/equations.js</file>
     <file>modules/legacy/tweener/tweener.js</file>

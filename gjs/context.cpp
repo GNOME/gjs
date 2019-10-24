@@ -584,7 +584,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_atoms = new GjsAtoms();
 
-    JS::RootedObject legacy_global(m_cx, gjs_create_global_object(m_cx, false));
+    JS::RootedObject legacy_global(
+        m_cx, gjs_create_global_object(m_cx, GjsGlobalType::LEGACY));
 
     {
         if (!legacy_global) {
@@ -595,7 +596,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         m_legacy_global = legacy_global;
     }
 
-    JS::RootedObject module_global(m_cx, gjs_create_global_object(m_cx, true));
+    JS::RootedObject module_global(
+        m_cx, gjs_create_global_object(m_cx, GjsGlobalType::MODULE));
 
     if (!module_global) {
         gjs_log_exception(m_cx);
@@ -630,8 +632,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
                             GjsGlobalSlot::GJS_GLOBAL_SLOT_IMPORTS,
                             JS::ObjectValue(*importer));
 
-        if (!gjs_define_global_properties(m_cx, module_global, "default",
-                                          true)) {
+        if (!gjs_define_global_properties(m_cx, module_global, "default")) {
             gjs_log_exception(m_cx);
             g_warning("Failed to define properties on global object 1");
         }
@@ -658,8 +659,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
                             GjsGlobalSlot::GJS_GLOBAL_SLOT_IMPORTS,
                             JS::ObjectValue(*importer));
 
-        if (!gjs_define_global_properties(m_cx, legacy_global, "default",
-                                          false)) {
+        if (!gjs_define_global_properties(m_cx, legacy_global, "default")) {
             gjs_log_exception(m_cx);
             g_warning("Failed to define properties on global object 2");
         }

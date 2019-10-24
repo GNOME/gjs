@@ -20,9 +20,16 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const Gi = imports._gi;
-const GjsPrivate = imports.gi.GjsPrivate;
-const Legacy = imports._legacy;
+let is_legacy = window.imports && !window.require;
+
+function i(ns) {
+    return is_legacy ? imports[ns] : require(ns);
+}
+
+const Gi = i('_gi');
+
+// @ts-ignore
+const { GjsPrivate } = i('gi');
 
 let GObject;
 
@@ -360,10 +367,12 @@ function _init() {
         },
     });
 
-    let {GObjectMeta, GObjectInterface} = Legacy.defineGObjectLegacyObjects(GObject);
-    GObject.Class = GObjectMeta;
-    GObject.Interface = GObjectInterface;
-    GObject.Object.prototype.__metaclass__ = GObject.Class;
+    if (is_legacy) {
+        let {GObjectMeta, GObjectInterface} = imports._legacy.defineGObjectLegacyObjects(GObject);
+        GObject.Class = GObjectMeta;
+        GObject.Interface = GObjectInterface;
+        GObject.Object.prototype.__metaclass__ = GObject.Class;
+    }
 
     // For compatibility with Lang.Class... we need a _construct
     // or the Lang.Class constructor will fail.
@@ -431,6 +440,9 @@ function _init() {
         return newClass;
     };
 
+    // TODO: In module mode we need to fix/possibly relocate the GObject.Interface implementation
+    // if it is still needed (it is in _legacy?).
+    if (!GObject.Interface) GObject.Interface = {};
     GObject.Interface._classInit = function (klass) {
         let gtypename = _createGTypeName(klass);
         let gobjectInterfaces = klass.hasOwnProperty(requires) ? klass[requires] : [];

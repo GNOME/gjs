@@ -624,7 +624,8 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
     JS::RootedString str(m_cx, specifier);
     JS::UniqueChars id = JS_EncodeStringToUTF8(m_cx, str);
     // The module from which the resolve request is coming
-    g_warning("Resolving module %s of type %i", id.get(), (int)mod_val.type());
+    // g_warning("Resolving module %s of type %i", id.get(),
+    // (int)mod_val.type());
 
     // The string identifier of the module we wish to import
 
@@ -760,6 +761,9 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
     // 4) Handle global imports
     if (!module.found()) {
         const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
+        const char* shared_dirname =
+            "resource:///org/gnome/gjs/modules/shared/";
+
         GjsAutoChar filename = g_strdup_printf("%s.js", id.get());
         GjsAutoChar full_path =
             g_build_filename(dirname, filename.get(), nullptr);
@@ -768,9 +772,19 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
         bool exists = g_file_query_exists(gfile, NULL);
 
         if (!exists) {
-            gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
-                      id.get());
-            return nullptr;
+            filename = g_strdup_printf("%s.js", id.get());
+            full_path =
+                g_build_filename(shared_dirname, filename.get(), nullptr);
+            gfile = g_file_new_for_commandline_arg(full_path);
+
+            exists = g_file_query_exists(gfile, NULL);
+
+            if (!exists) {
+                gjs_throw(m_cx,
+                          "Attempted to load unregistered global module: %s",
+                          id.get());
+                return nullptr;
+            }
         }
 
         char* mod_text_raw;

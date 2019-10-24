@@ -130,7 +130,8 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
 
     JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
     // TODO Update for ESM
-    JS::RootedObject debugger_global(cx, gjs_create_global_object(cx, false));
+    JS::RootedObject debugger_global(
+        cx, gjs_create_global_object(cx, GjsGlobalType::LEGACY));
 
     // Enter realm of the debugger and initialize it with the debuggee
     JSAutoRealm ar(cx, debugger_global);
@@ -144,6 +145,6 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
     JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
     if (!JS_SetPropertyById(cx, debugger_global, atoms.debuggee(), v_wrapper) ||
         !JS_DefineFunctions(cx, debugger_global, debugger_funcs) ||
-        !gjs_define_global_properties(cx, debugger_global, "debugger", false))
+        !gjs_define_global_properties(cx, debugger_global, "debugger"))
         gjs_log_exception(cx);
 }

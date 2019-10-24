@@ -18,9 +18,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-var GLib = imports.gi.GLib;
-var GjsPrivate = imports.gi.GjsPrivate;
-var Signals = imports.signals;
+
+let is_legacy = window.imports && !window.require;
+
+function i(ns) {
+    return is_legacy ? imports[ns] : require(ns);
+}
+
+// @ts-ignore
+const { GjsPrivate, GLib } = i('gi');
+// TODO: Fix Signals issue: const Signals = i('signals');
+
 var Gio;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
@@ -489,8 +497,12 @@ function _init() {
     _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
-    Gio.DBusProxy.prototype.connectSignal = Signals._connect;
-    Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
+    
+    // TODO Figure out how to "neutralize the signals implementation"
+    if (typeof Signals !== 'undefined') {
+        Gio.DBusProxy.prototype.connectSignal = Signals._connect;
+        Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
+    }
 
     Gio.DBusProxy.makeProxyWrapper = _makeProxyWrapper;
 
@@ -498,7 +510,7 @@ function _init() {
     _wrapFunction(Gio.DBusNodeInfo, 'new_for_xml', _newNodeInfo);
     Gio.DBusInterfaceInfo.new_for_xml = _newInterfaceInfo;
 
-    Gio.DBusExportedObject = GjsPrivate.DBusImplementation;
+    Gio.DBusExportedObject = GjsPrivate.DBusImplementation || {}; // TODO This is broken in module mode for some reason
     Gio.DBusExportedObject.wrapJSObject = _wrapJSObject;
 
     // ListStore

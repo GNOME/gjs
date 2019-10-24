@@ -140,9 +140,8 @@ static bool resolve_namespace_object(JSContext* context,
 
     JS::RootedValue override(context);
 
-    // TODO Fixup overrides
-    // if (!lookup_override_function(context, ns_id, &override))
-    //     return false;
+    if (!lookup_override_function(context, ns_id, &override))
+        return false;
 
     JS::RootedValue result(context);
     if (!override.isUndefined() &&
@@ -583,63 +582,13 @@ out:
     return retval;
 }
 
-
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-lookup_override_module(JSContext             *cx,
-                         JS::HandleId           ns_name,
-                         JS::MutableHandleValue function)
-{
-    JS::AutoSaveExceptionState saved_exc(cx);
-JSObject* global = JS::CurrentGlobalOrNull(cx);
-    JS::RootedValue importer(cx, gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_IMPORTS));
-    g_assert(importer.isObject());
-
-    JS::RootedObject overridespkg(cx), module(cx);
-    JS::RootedObject importer_obj(cx, &importer.toObject());
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    if (!gjs_object_require_property(cx, importer_obj, "importer",
-                                     atoms.overrides(), &overridespkg))
-        goto fail;
-
-    if (!gjs_object_require_property(cx, overridespkg,
-                                     "GI repository object", ns_name,
-                                     &module)) {
-        JS::RootedValue exc(cx);
-        JS_GetPendingException(cx, &exc);
-
-        /* If the exception was an ImportError (i.e., module not found) then
-         * we simply didn't have an override, don't throw an exception */
-        if (error_has_name(cx, exc, JS_AtomizeAndPinString(cx, "ImportError"))) {
-            saved_exc.restore();
-            return true;
-        }
-
-        goto fail;
-    }
-
-    if (!gjs_object_require_property(cx, module, "override module",
-                                     atoms.init(), function) ||
-        !function.isObjectOrNull()) {
-        gjs_throw(cx, "Unexpected value for _init in overrides module");
-        goto fail;
-    }
-    return true;
-
- fail:
-    saved_exc.drop();
-    return false;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-lookup_override_function(JSContext             *cx,
-                         JS::HandleId           ns_name,
-                         JS::MutableHandleValue function)
-{
+static bool lookup_override_function(JSContext* cx, JS::HandleId ns_name,
+                                     JS::MutableHandleValue function) {
     JS::AutoSaveExceptionState saved_exc(cx);
     JSObject* global = JS::CurrentGlobalOrNull(cx);
-    JS::RootedValue importer(cx, gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_IMPORTS));
+    JS::RootedValue importer(
+        cx, gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());
 
     JS::RootedObject overridespkg(cx), module(cx);
@@ -649,15 +598,15 @@ lookup_override_function(JSContext             *cx,
                                      atoms.overrides(), &overridespkg))
         goto fail;
 
-    if (!gjs_object_require_property(cx, overridespkg,
-                                     "GI repository object", ns_name,
-                                     &module)) {
+    if (!gjs_object_require_property(cx, overridespkg, "GI repository object",
+                                     ns_name, &module)) {
         JS::RootedValue exc(cx);
         JS_GetPendingException(cx, &exc);
 
         /* If the exception was an ImportError (i.e., module not found) then
          * we simply didn't have an override, don't throw an exception */
-        if (error_has_name(cx, exc, JS_AtomizeAndPinString(cx, "ImportError"))) {
+        if (error_has_name(cx, exc,
+                           JS_AtomizeAndPinString(cx, "ImportError"))) {
             saved_exc.restore();
             return true;
         }
@@ -673,7 +622,7 @@ lookup_override_function(JSContext             *cx,
     }
     return true;
 
- fail:
+fail:
     saved_exc.drop();
     return false;
 }

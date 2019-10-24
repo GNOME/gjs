@@ -19,8 +19,10 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const Legacy = imports._legacy;
-const {Gio, GjsPrivate, GObject} = imports.gi;
+let is_legacy = window.imports && !window.require;
+
+// @ts-ignore
+const { Gio, GjsPrivate, GObject } = is_legacy ? imports.gi : require('gi');
 
 let Gtk;
 
@@ -33,8 +35,10 @@ function _init() {
     Gtk.internalChildren = GObject.__gtkInternalChildren__;
     Gtk.template = GObject.__gtkTemplate__;
 
-    let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
-    Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
+    if (is_legacy) {
+        let { GtkWidgetClass } = imports._legacy.defineGtkLegacyObjects(GObject, Gtk);
+        Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
+    }
 
     if (Gtk.Container.prototype.child_set_property) {
         Gtk.Container.prototype.child_set_property = function (child, property, value) {

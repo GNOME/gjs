@@ -18,7 +18,13 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const ByteArray = imports.byteArray;
+let is_legacy = window.imports && !window.require;
+
+function i(ns) {
+    return is_legacy ? imports[ns] : require(ns);
+}
+
+const ByteArray = i('_byteArrayNative');
 
 let GLib;
 

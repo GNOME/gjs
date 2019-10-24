@@ -203,7 +203,6 @@ bool GjsLegacyGlobal::define_properties(JSContext* cx,
     JSAutoRealm ac(cx, m_global);
     JS::RootedObject global(cx, m_global);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-
     if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
                                JSPROP_READONLY | JSPROP_PERMANENT))
         return false;
@@ -240,12 +239,14 @@ bool GjsLegacyGlobal::define_properties(JSContext* cx,
  * Returns: the created global object on success, nullptr otherwise, in which
  * case an exception is pending on @cx
  */
-JSObject *
-gjs_create_global_object(JSContext *cx, bool esm) {
-    if (esm) {
-        return GjsModuleGlobal::create(cx);
-    } else {
-        return GjsLegacyGlobal::create(cx);
+JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type) {
+    switch (global_type) {
+        case GjsGlobalType::LEGACY:
+            return GjsLegacyGlobal::create(cx);
+        case GjsGlobalType::MODULE:
+            return GjsModuleGlobal::create(cx);
+        default:
+            return nullptr;
     }
 }
 
@@ -275,8 +276,7 @@ gjs_create_global_object(JSContext *cx, bool esm) {
  * pending on @cx
  */
 bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* bootstrap_script,
-                                  bool use_esm = false) {
+                                  const char* bootstrap_script) {
     GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(global);
 
     JSAutoRealm ar(cx, global);
