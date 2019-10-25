@@ -23,7 +23,9 @@
 
 #include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
 
-#include <sys/signal.h>  // for siginfo_t, sigevent, ...
+#ifndef XP_WIN
+#	include <sys/signal.h>  // for siginfo_t, sigevent, ...
+#endif
 
 #include <glib-object.h>
 #include <glib.h>
