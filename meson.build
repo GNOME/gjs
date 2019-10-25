@@ -468,9 +468,7 @@ gjs_console_srcs = ['gjs/console.cpp']
 gjs_console = executable('gjs-console', gjs_console_srcs,
     dependencies: libgjs_dep, install: true)
 
-meson.add_install_script('sh', '-c',
-    'ln -sf gjs-console ${DESTDIR}/${MESON_INSTALL_PREFIX}/@0@/gjs'.format(
-        get_option('bindir')))
+meson.add_install_script('build/symlink-gjs.py', get_option('bindir'))
 
 ### Install data files #########################################################
 
