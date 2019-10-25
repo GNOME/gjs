@@ -302,6 +302,7 @@ if build_readline
 endif
 header_conf.set('HAVE_SYS_SYSCALL_H', cxx.check_header('sys/syscall.h'))
 header_conf.set('HAVE_UNISTD_H', cxx.check_header('unistd.h'))
+header_conf.set('HAVE_SYS_SIGNAL_H', cxx.check_header('sys/signal.h'))
 
 # enable GNU extensions on systems that have them
 header_conf.set('_GNU_SOURCE', 1)

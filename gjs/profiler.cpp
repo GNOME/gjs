@@ -21,9 +21,11 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
+#include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H, HAVE_SYS_SIGNAL_H
 
-#include <sys/signal.h>  // for siginfo_t, sigevent, ...
+#ifdef HAVE_SYS_SIGNAL_H
+#	include <sys/signal.h>  // for siginfo_t, sigevent, ...
+#endif
 
 #include <glib-object.h>
 #include <glib.h>
