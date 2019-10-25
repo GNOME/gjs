@@ -557,7 +557,12 @@ endif
 
 ### Tests and test setups ######################################################
 
-subdir('test')
+# Note: The test program in test/ needs to be ported
+#       to Windows before we can build it on Windows.
+if host_machine.system() != 'windows'
+    subdir('test')
+endif
+
 subdir('installed-tests')
 
 valgrind_environment = environment()
