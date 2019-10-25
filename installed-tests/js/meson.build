@@ -15,6 +15,13 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
 gidatadir = gi.get_pkgconfig_variable('gidatadir')
 gi_tests = gidatadir / 'tests'
 
+test_gir_extra_cpp_args = []
+
+# We need to ensure the symbols in the test DLLs export in MSVC builds
+if cxx.get_id() == 'msvc'
+  test_gir_extra_cpp_args += ['-D_GI_EXTERN=__declspec(dllexport)extern']
+endif
+
 regress_dependencies = [glib, gobject, gio]
 regress_gir_includes = ['Gio-2.0']
 regress_gir_cpp_args = []
@@ -29,7 +36,9 @@ regress_sources = [
     gi_tests / 'regress.c',
     gi_tests / 'regress.h',
 ]
-libregress = library('regress', regress_sources, cpp_args: regress_gir_cpp_args,
+libregress = library('regress', regress_sources,
+    c_args: test_gir_extra_cpp_args,
+    cpp_args: regress_gir_cpp_args,
     dependencies: regress_dependencies, install: get_option('installed_tests'),
     install_dir: pkglibdir)
 regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
@@ -45,6 +54,7 @@ warnlib_sources = [
     gi_tests / 'warnlib.h',
 ]
 libwarnlib = library('warnlib', warnlib_sources,
+    c_args:  test_gir_extra_cpp_args,
     dependencies: [glib, gobject, gio])
 # This should have --warn-all turned off, but there is currently no way to do so
 # in gnome.generate_gir(). See https://github.com/mesonbuild/meson/issues/5876
@@ -61,6 +71,7 @@ gimarshallingtests_sources = [
 ]
 libgimarshallingtests = library('gimarshallingtests',
     gimarshallingtests_sources, dependencies: [glib, gobject, gio],
+    c_args:  test_gir_extra_cpp_args,
     install: get_option('installed_tests'), install_dir: pkglibdir)
 gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
