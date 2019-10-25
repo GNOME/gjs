@@ -299,7 +299,12 @@ configure_file(input: 'win32/config.h.win32.in', output: 'config.h.win32',
 
 ### Check for environment ######################################################
 
-tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+if cxx.get_id() == 'msvc'
+    tests_locale = 'C.UTF-8'
+else
+    # Not applicable for cmd.exe shells that MSVC uses
+    tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+endif
 
 gjsjsdir = get_option('datadir') / api_name
 pkglibexecdir = get_option('libexecdir') / meson.project_name()
