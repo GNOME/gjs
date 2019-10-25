@@ -285,7 +285,7 @@ gjs_context_class_init(GjsContextClass *klass)
 #ifdef XP_WIN
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
-        char *priv_typelib_dir = g_build_filename (basedir, "lib", "girepository-1.0", NULL);
+        char *priv_typelib_dir = g_build_filename (basedir, "lib", "gjs", "girepository-1.0", NULL);
         g_free (basedir);
 #else
         char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
