@@ -486,21 +486,28 @@ if build_profiler
     libgjs_dependencies += profiler_deps
 endif
 
-symbol_map = files('libgjs.map')
-symbol_list = files('libgjs.symbols')
-link_args = cxx.get_supported_link_arguments([
-    '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_map[0]),
-    '-Wl,-exported_symbols_list,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_list[0]),  # macOS linker
-])
-
-if cxx.has_link_argument('-Wl,-no-undefined')
-    link_args += '-Wl,-no-undefined'
+if cxx.get_id() == 'msvc'
+    # We use __declspec(dllexport) on MSVC builds.
+    symbol_map = []
+    symbol_list = []
+    link_args = []
 else
-    # -undefined error is the equivalent of -no-undefined for the macOS linker,
-    # but -undefined would also be understood as a valid argument for GNU ld!
-    link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
+    symbol_map = files('libgjs.map')
+    symbol_list = files('libgjs.symbols')
+    link_args = cxx.get_supported_link_arguments([
+        '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(),
+            symbol_map[0]),
+        '-Wl,-exported_symbols_list,@0@/@1@'.format(meson.current_source_dir(),
+            symbol_list[0]),  # macOS linker
+    ])
+
+    if cxx.has_link_argument('-Wl,-no-undefined')
+        link_args += '-Wl,-no-undefined'
+    else
+        # -undefined error is the equivalent of -no-undefined for the macOS linker,
+        # but -undefined would also be understood as a valid argument for GNU ld!
+        link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
+    endif
 endif
 
 libgjs_cpp_args = ['-DGJS_COMPILATION']
