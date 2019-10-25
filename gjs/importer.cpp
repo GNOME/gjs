@@ -23,7 +23,7 @@
 
 #include <string.h>  // for size_t, strcmp, strlen
 
-#ifdef G_OS_WIN32
+#ifdef XP_WIN
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 #endif
@@ -907,7 +907,7 @@ static const char* const* gjs_get_search_path(void) {
         }
 
         /* ${datadir}/share/gjs-1.0 */
-#ifdef G_OS_WIN32
+#ifdef XP_WIN
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
         char *gjs_data_dir = g_build_filename (basedir, "share", "gjs-1.0", NULL);
