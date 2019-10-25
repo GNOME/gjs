@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#ifdef G_OS_WIN32
+#ifdef XP_WIN
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 #endif
@@ -248,7 +248,7 @@ class GjsSourceHook : public js::SourceHook {
     }
 };
 
-#ifdef G_OS_WIN32
+#ifdef XP_WIN
 HMODULE gjs_dll;
 static bool gjs_is_inited = false;
 

@@ -43,7 +43,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#ifdef G_OS_WIN32
+#ifdef XP_WIN
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
@@ -282,7 +282,7 @@ gjs_context_class_init(GjsContextClass *klass)
 
     /* For GjsPrivate */
     {
-#ifdef G_OS_WIN32
+#ifdef XP_WIN
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
         char *priv_typelib_dir = g_build_filename (basedir, "lib", "girepository-1.0", NULL);
