@@ -547,9 +547,11 @@ gjs_console = executable('gjs-console', gjs_console_srcs,
     cpp_args: extra_libgjs_cpp_args,
     dependencies: libgjs_dep, install: true)
 
-meson.add_install_script('sh', '-c',
-    'ln -sf gjs-console ${DESTDIR}/${MESON_INSTALL_PREFIX}/@0@/gjs'.format(
-        get_option('bindir')))
+if cxx.get_id() != 'msvc'
+    meson.add_install_script('sh', '-c',
+        'ln -sf gjs-console ${DESTDIR}/${MESON_INSTALL_PREFIX}/@0@/gjs'.format(
+            get_option('bindir')))
+endif
 
 ### Install data files #########################################################
 
