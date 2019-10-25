@@ -661,7 +661,7 @@ JSObject* gjs_get_import_global(JSContext* cx) {
     return GjsContextPrivate::from_cx(cx)->global();
 }
 
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
+#if defined(XP_WIN) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
 /* Unfortunately Visual Studio's C++ .lib somehow did not contain the right
  * codecvt stuff that we need to convert from utf8 to utf16 (char16_t), so we
  * need to work around this Visual Studio bug.  Use Windows API
@@ -686,7 +686,7 @@ static std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str,
 #endif
 
 std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len) {
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
+#if defined(XP_WIN) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
     std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script, len);
     return std::u16string(reinterpret_cast<const char16_t*>(wscript.c_str()));
 #else
