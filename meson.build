@@ -322,7 +322,10 @@ configure_file(input: 'win32/config.h.win32.in', output: 'config.h.win32',
 
 ### Check for environment ######################################################
 
-tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+# Not applicable for cmd.exe shells that MSVC uses
+if cxx.get_id() != 'msvc'
+    tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+endif
 
 gjsjsdir = get_option('datadir') / api_name
 pkglibexecdir = get_option('libexecdir') / meson.project_name()
@@ -585,7 +588,13 @@ tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 tests_environment.set('LSAN_OPTIONS', 'suppressions=@0@'.format(
     meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
-tests_environment.set('LC_ALL', tests_locale)
+
+if cc.get_id() == 'msvc'
+    tests_environment.set('LC_ALL', 'C.UTF-8')
+else
+    tests_environment.set('LC_ALL', tests_locale)
+endif
+
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
@@ -647,7 +656,7 @@ gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.''')
 endif
 
-if tests_locale == 'C'
+if cxx.get_id() != 'msvc' and tests_locale == 'C'
     warning('''Your libc does not have the C.UTF-8 locale and no other
 suitable UTF-8 fallback locale could be found. You can still build GJS, but
 some tests will fail.''')
