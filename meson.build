@@ -10,8 +10,6 @@ pkg = import('pkgconfig')
 
 top_include = include_directories('.')
 
-add_project_arguments('-DG_LOG_DOMAIN="Gjs"', language: ['c', 'cpp'])
-
 ### Check for conflicting build options ########################################
 
 if get_option('systemtap') and not get_option('dtrace')
@@ -509,7 +507,7 @@ else
     endif
 endif
 
-extra_libgjs_cpp_args = []
+extra_libgjs_cpp_args = ['-DG_LOG_DOMAIN="Gjs"']
 if host_machine.system() == 'windows'
     # We need these defines to build properly for Windows
     extra_libgjs_cpp_args += ['-DWIN32', '-DXP_WIN']
