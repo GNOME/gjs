@@ -27,21 +27,43 @@ endif
 cxx = meson.get_compiler('cpp')
 cc = meson.get_compiler('c')
 
-add_project_arguments(cxx.get_supported_arguments([
-    '-fno-strict-aliasing',
+if cxx.get_id() == 'msvc'
+    add_project_arguments(cxx.get_supported_arguments([
+        # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
+        # header files commonly do
+        '-FImsvc_recommended_pragmas.h',
+        '-wd4530',
+        '-wd4099',
+        '-wd4251',
+        '-wd4291',
+        '-wd4800',
 
-    # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
-    # header files commonly do
-    '-Wno-variadic-macros',  # GLib uses these in header files
-    '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
-]), language: 'cpp')
+        # Visual Studio do not come with ssize_t
+        '-Dssize_t=gssize',
 
-if get_option('bsymbolic_functions')
-    if not cxx.has_link_argument('-Bsymbolic-functions')
-        error('''-Bsymbolic-functions not supported, configure with
+        # Required for 'extern constexpr' on MSVC
+        '-Zc:externConstexpr',
+
+        # We don't want 'min' or 'max' to interfere
+        '-DNOMINMAX',
+    ]), language: ['cpp', 'c'])
+else
+    add_project_arguments(cxx.get_supported_arguments([
+        '-fno-strict-aliasing',
+
+        # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
+        # header files commonly do
+        '-Wno-variadic-macros',  # GLib uses these in header files
+        '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
+    ]), language: 'cpp')
+
+    if get_option('bsymbolic_functions')
+        if not cxx.has_link_argument('-Bsymbolic-functions')
+            error('''-Bsymbolic-functions not supported, configure with
 -Dbsymbolic_functions=false''')
+        endif
+        add_project_link_arguments('-Bsymbolic-functions', language: ['cpp', 'c'])
     endif
-    add_project_link_arguments('-Bsymbolic-functions', language: ['cpp', 'c'])
 endif
 
 # SpiderMonkey can be compiled with or without runtime type information, we must
@@ -437,10 +459,16 @@ else
     link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
 endif
 
+extra_libgjs_cpp_args = []
+if host_machine.system() == 'windows'
+    # We need these defines to build properly for Windows
+    extra_libgjs_cpp_args += ['-DWIN32', '-DXP_WIN']
+endif
+
 libgjs = shared_library(meson.project_name(),
     libgjs_sources, libgjs_private_sources, module_resource_srcs,
     probes_header, probes_objfile,
-    cpp_args: ['-DGJS_COMPILATION'] + directory_defines,
+    cpp_args: ['-DGJS_COMPILATION'] + extra_libgjs_cpp_args + directory_defines,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     dependencies: libgjs_dependencies,
     version: '0.0.0', soversion: '0',
@@ -466,6 +494,7 @@ gjs_private_typelib = gjs_private_gir[1]
 gjs_console_srcs = ['gjs/console.cpp']
 
 gjs_console = executable('gjs-console', gjs_console_srcs,
+    cpp_args: extra_libgjs_cpp_args,
     dependencies: libgjs_dep, install: true)
 
 meson.add_install_script('sh', '-c',
