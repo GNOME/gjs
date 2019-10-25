@@ -29,7 +29,10 @@
 #endif
 
 #include <stdbool.h>    /* IWYU pragma: keep */
-#include <sys/signal.h> /* for siginfo_t */
+
+#ifndef _WIN32
+#    include <sys/signal.h> /* for siginfo_t */
+#endif
 
 #include <glib-object.h>
 #include <glib.h>
