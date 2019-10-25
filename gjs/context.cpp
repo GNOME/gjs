@@ -31,6 +31,8 @@
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for getpid
+#elif defined (_WIN32)
+#    include <process.h>
 #endif
 
 #include <new>
