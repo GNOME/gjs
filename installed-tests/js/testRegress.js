@@ -1590,16 +1590,16 @@ describe('Life, the Universe and Everything', function () {
             expect(Regress.test_array_struct_out_caller_alloc()).toEqual([]);
         }).pend('Not supported');
 
-        xit('transfer-full in parameter', function () {
+        it('transfer-full in parameter', function () {
             const array = [201, 202].map(some_int =>
                 new Regress.TestStructA({some_int}));
             expect(() => Regress.test_array_struct_in_full(array)).not.toThrow();
-        }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/44');
+        });
 
-        xit('transfer-none in parameter', function () {
+        it('transfer-none in parameter', function () {
             const array = [301, 302, 303].map(some_int =>
                 new Regress.TestStructA({some_int}));
             expect(() => Regress.test_array_struct_in_none(array)).not.toThrow();
-        }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/44');
+        });
     });
 });
