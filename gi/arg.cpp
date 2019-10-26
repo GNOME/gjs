@@ -1121,6 +1121,21 @@ gjs_array_to_array(JSContext   *context,
 
     /* Everything else is a pointer type */
     case GI_TYPE_TAG_INTERFACE:
+        // Flat arrays of structures are not supported yet; see
+        // https://gitlab.gnome.org/GNOME/gjs/issues/44
+        if (!g_type_info_is_pointer(param_info)) {
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(param_info);
+            GIInfoType info_type = g_base_info_get_type(interface_info);
+            if (info_type == GI_INFO_TYPE_STRUCT ||
+                info_type == GI_INFO_TYPE_UNION) {
+                gjs_throw(context,
+                      "Flat array of type %s is not currently supported",
+                      interface_info.name());
+                return false;
+            }
+        }
+        /* fall through */
     case GI_TYPE_TAG_ARRAY:
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
