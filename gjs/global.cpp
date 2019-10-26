@@ -207,6 +207,13 @@ bool GjsLegacyGlobal::define_properties(JSContext* cx,
                                JSPROP_READONLY | JSPROP_PERMANENT))
         return false;
 
+    // This makes "legacy" mode compatible with most common module
+    // implementations without any implications for legacy code.
+    JS::RootedObject module_obj(cx, JS_NewPlainObject(cx));
+    if (!JS_DefineProperty(cx, global, "module", module_obj,
+                           GJS_MODULE_PROP_FLAGS))
+        return false;
+
     JS::Value v_importer =
         gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_IMPORTS);
     // TODO A temporary fix for the debugging global?

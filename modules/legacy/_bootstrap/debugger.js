@@ -1,3 +1,5 @@
+/// <reference path="./debugger.d.ts" />
+
 /* global debuggee, quit, readline, uneval */
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*-
  *
@@ -17,18 +19,42 @@
  */
 
 // Debugger state.
+
+/**
+ * @typedef {Object} Frame
+ * @property {(arg0: any, arg1: {}) => void} evalWithBindings
+ * @property {(arg0: any) => void} eval
+ * @property {Frame} older
+ * @property {Frame} younger
+ * @property {() => string} describeFull
+ * @property {Debugger.Script} script
+ * @property {number} line
+ * @property {number} num
+ * @property {boolean} reportedPop
+ */
+
+/**@type {Frame} */
 var focusedFrame = null;
+/** @type {Frame} */
 var topFrame = null;
+/** @type {Object.<string, any>} */
 var debuggeeValues = {};
 var nextDebuggeeValueIndex = 1;
+/** @type {any} */
 var lastExc = null;
+/** @type {StyleOptions & Object.<string, boolean | string>} */
 var options = {pretty: true};
+/** @type {BreakpointHandler[]} */
 var breakpoints = [undefined];  // Breakpoint numbers start at 1
 
 // Cleanup functions to run when we next re-enter the repl.
+/** @type {any[]} */
 var replCleanups = [];
 
 // Convert a debuggee value v to a string.
+/**
+ * @param {{ class: any; }} v
+ */
 function dvToString(v) {
     if (typeof v === 'undefined')
         return 'undefined';  // uneval(undefined) === '(void 0)', confusing
@@ -37,7 +63,12 @@ function dvToString(v) {
     return typeof v !== 'object' || v === null ? uneval(v) : `[object ${v.class}]`;
 }
 
+/**
+ * @param {object} dv
+ * @returns {Object.<string, string>}
+ */
 function summarizeObject(dv) {
+    /** @type {Object.<string, string>} */
     const obj = {};
     for (var name of dv.getOwnPropertyNames()) {
         var v = dv.getOwnPropertyDescriptor(name).value;
@@ -48,6 +79,18 @@ function summarizeObject(dv) {
     return obj;
 }
 
+/**
+ * @typedef {Object} StyleOptions
+ * @property {boolean} [pretty]
+ * @property {boolean} [noerror]
+ * @property {boolean} [brief]
+ */
+
+/**
+ * @param {object} dv
+ * @param {StyleOptions} style
+ * @returns {[string, string | undefined]}
+ */
 function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     const dvrepr = dvToString(dv);
     if (!style.pretty || dv === null || typeof dv !== 'object')
@@ -68,15 +111,22 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
         if (style.noerror)
             return [dvrepr, undefined];
 
+        /** @type {StyleOptions} */
         const substyle = {};
         Object.assign(substyle, style);
         substyle.noerror = true;
+        // TODO Figure out this circular reference
+        // @ts-ignore
         return [dvrepr, debuggeeValueToString(str.throw, substyle)];
     }
 
     return [dvrepr, str['return']];
 }
 
+/**
+ * @param {any} dv
+ * @param {StyleOptions} style
+ */
 function showDebuggeeValue(dv, style = {pretty: options.pretty}) {
     const i = nextDebuggeeValueIndex++;
     debuggeeValues[`$${i}`] = dv;
@@ -134,12 +184,19 @@ Object.defineProperty(Debugger.Frame.prototype, 'line', {
     },
 });
 
-Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
+Debugger.Script.prototype.describeOffset = /**
+ * @param {any} offset
+ */
+ function describeOffset(offset) {
     const {lineNumber, columnNumber} = this.getOffsetLocation(offset);
     const url = this.url || '<unknown>';
     return `${url}:${lineNumber}:${columnNumber}`;
 };
 
+/**
+ * @param {Frame} [f]
+ * @param {number} [n]
+ */
 function showFrame(f, n) {
     if (f === undefined || f === null) {
         f = focusedFrame;
@@ -157,6 +214,9 @@ function showFrame(f, n) {
     print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
 }
 
+/**
+ * @param {() => any} fn
+ */
 function saveExcursion(fn) {
     const tf = topFrame, ff = focusedFrame;
     try {
@@ -169,15 +229,23 @@ function saveExcursion(fn) {
 
 // Accept debugger commands starting with '#' so that scripting the debugger
 // can be annotated
+/**
+ * @param {string} comment
+ */
 function commentCommand(comment) {
     void comment;
 }
+commentCommand.summary = 'Handle a comment.';
 
 // Evaluate an expression in the Debugger global - used for debugging the
 // debugger
+/**
+ * @param {string} expr
+ */
 function evalCommand(expr) {
     eval(expr);
 }
+evalCommand.summary = 'Evaluate the expression.';
 
 function quitCommand() {
     dbg.enabled = false;
@@ -197,6 +265,10 @@ backtraceCommand.summary = 'Print backtrace of all stack frames';
 backtraceCommand.helpText = `USAGE
     bt`;
 
+
+/**
+ * @param {string} rest
+ */
 function setCommand(rest) {
     var space = rest.indexOf(' ');
     if (space === -1) {
@@ -225,6 +297,11 @@ PARAMETERS
         · pretty: set print mode to pretty or brief. Allowed value true or false
     · value: option value`;
 
+/**
+ * @param {string} s
+ * @param {StyleOptions} style
+ * @returns {[string, StyleOptions]}
+ */
 function splitPrintOptions(s, style) {
     const m = /^\/(\w+)/.exec(s);
     if (!m)
@@ -236,6 +313,10 @@ function splitPrintOptions(s, style) {
     return [s.substr(m[0].length).trimLeft(), style];
 }
 
+/**
+ * @param {string} expr
+ * @param {StyleOptions} [style]
+ */
 function doPrint(expr, style) {
     // This is the real deal.
     const cv = saveExcursion(
@@ -259,6 +340,9 @@ function doPrint(expr, style) {
     }
 }
 
+/**
+ * @param {string} rest
+ */
 function printCommand(rest) {
     var [expr, style] = splitPrintOptions(rest, {pretty: options.pretty});
     return doPrint(expr, style);
@@ -272,6 +356,9 @@ PARAMETER
     · pretty|p: prettify the output
     · brief|b: brief output`;
 
+/**
+ * @param {any} rest
+ */
 function keysCommand(rest) {
     return doPrint(`Object.keys(${rest})`);
 }
@@ -282,6 +369,9 @@ keysCommand.helpText = `USAGE
 PARAMETER
     · obj: object to get keys of`;
 
+/**
+ * @returns {[undefined]}
+ */
 function detachCommand() {
     dbg.enabled = false;
     return [undefined];
@@ -290,6 +380,9 @@ detachCommand.summary = 'Detach debugger from the script';
 detachCommand.helpText = `USAGE
     detach`;
 
+/**
+ * @returns {[undefined]}
+ */
 function continueCommand() {
     if (focusedFrame === null) {
         print('No stack.');
@@ -301,6 +394,11 @@ continueCommand.summary = 'Continue program execution';
 continueCommand.helpText = `USAGE
     cont`;
 
+/**
+ * @param {string} rest
+ * @param {string} action
+ * @param {{ throw?: any; return?: undefined; }} defaultCompletion
+ */
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
         print("To throw, you must select the newest frame (use 'frame 0').");
@@ -328,6 +426,9 @@ function throwOrReturn(rest, action, defaultCompletion) {
     showDebuggeeValue(cv.throw);
 }
 
+/**
+ * @param {string} rest
+ */
 function throwCommand(rest) {
     return throwOrReturn(rest, 'throw', {throw: lastExc});
 }
@@ -338,6 +439,9 @@ throwCommand.helpText = `USAGE
 PARAMETER
     · expr: expression to throw`;
 
+/**
+ * @param {string} rest
+ */
 function returnCommand(rest) {
     return throwOrReturn(rest, 'return', {return: undefined});
 }
@@ -348,6 +452,9 @@ returnCommand.helpText = `USAGE
 PARAMETER
     · expr: expression to return`;
 
+/**
+ * @param {string} rest
+ */
 function frameCommand(rest) {
     let n, f;
     if (rest.match(/[0-9]+/)) {
@@ -412,6 +519,9 @@ downCommand.summary = 'Jump to the younger frame';
 downCommand.helpText = `USAGE
     down`;
 
+/**
+ * @param {{ [x: string]: any; }} c
+ */
 function printPop(c) {
     if (c['return']) {
         print('Value returned is:');
@@ -428,6 +538,11 @@ function printPop(c) {
 
 // Set |prop| on |obj| to |value|, but then restore its current value
 // when we next enter the repl.
+/**
+ * @param {Object.<string, any>} obj
+ * @param {string} prop
+ * @param {any} value
+ */
 function setUntilRepl(obj, prop, value) {
     var saved = obj[prop];
     obj[prop] = value;
@@ -436,6 +551,10 @@ function setUntilRepl(obj, prop, value) {
     });
 }
 
+/**
+ * @param {{ step?: any; next?: boolean; finish?: any; until?: any; stopLine?: any; }} kind
+ * @returns {[undefined]}
+ */
 function doStepOrNext(kind) {
     if (topFrame === null) {
         print('Program not running.');
@@ -450,6 +569,9 @@ function doStepOrNext(kind) {
     else
         print(startFrame.describeFull());
 
+    /**
+     * @param {{ [x: string]: any; }} completion
+     */
     function stepPopped(completion) {
         // Note that we're popping this frame; we need to watch for
         // subsequent step events on its caller.
@@ -469,6 +591,9 @@ function doStepOrNext(kind) {
         return repl();
     }
 
+    /**
+     * @param {Frame} newFrame
+     */
     function stepEntered(newFrame) {
         print(`entered frame: ${newFrame.describeFull()}`);
         if (!kind.until || newFrame.line === kind.stopLine) {
@@ -546,6 +671,9 @@ finishCommand.summary = 'Run until the current frame is finished also prints the
 finishCommand.helpText = `USAGE
     finish`;
 
+/**
+ * @param {any} line
+ */
 function untilCommand(line) {
     return doStepOrNext({until: true, stopLine: Number(line)});
 }
@@ -556,6 +684,10 @@ untilCommand.helpText = `USAGE
 PARAMETER
     · line_num: line_num to continue until`;
 
+/**
+ * @param {number} line
+ * @param {Debugger.Script} currentScript
+ */
 function findBreakpointOffsets(line, currentScript) {
     const offsets = currentScript.getLineOffsets(line);
     if (offsets.length !== 0)
@@ -571,12 +703,20 @@ function findBreakpointOffsets(line, currentScript) {
 }
 
 class BreakpointHandler {
+    /**
+     * @param {number} num
+     * @param {any} script
+     * @param {any} offset
+     */
     constructor(num, script, offset) {
         this.num = num;
         this.script = script;
         this.offset = offset;
     }
 
+    /**
+     * @param {Frame} frame
+     */
     hit(frame) {
         return saveExcursion(() => {
             topFrame = focusedFrame = frame;
@@ -590,6 +730,9 @@ class BreakpointHandler {
     }
 }
 
+/**
+ * @param {any} where
+ */
 function breakpointCommand(where) {
     // Only handles line numbers of the current file
     // TODO: make it handle function names and other files
@@ -602,11 +745,14 @@ function breakpointCommand(where) {
     }
 
     possibleOffsets.forEach(({script, offsets}) => {
+        /**
+         * @param {any} offset
+         */
         offsets.forEach(offset => {
             const bp = new BreakpointHandler(breakpoints.length, script, offset);
             script.setBreakpoint(offset, bp);
             breakpoints.push(bp);
-            print(bp);
+            print(`${bp}`);
         });
     });
 }
@@ -617,6 +763,9 @@ breakpointCommand.helpText = `USAGE
 PARAMETERS
     · line_num: line number to place a breakpoint at.`;
 
+/**
+ * @param {number} breaknum
+ */
 function deleteCommand(breaknum) {
     const bp = breakpoints[breaknum];
 
@@ -638,8 +787,11 @@ PARAMETERS
     · breakpoint_num: breakpoint number to be removed.`;
 
 // Build the table of commands.
+/** @type {{ [key: string]: Command}} */
 var commands = {};
 // clang-format off
+
+/** @type {(string | Command)[]} */
 var commandArray = [
     backtraceCommand, 'bt', 'where',
     breakpointCommand, 'b', 'break',
@@ -663,7 +815,11 @@ var commandArray = [
     untilCommand, 'u', 'upto',
     upCommand,
 ];
+
+/** @typedef {(v?: any) => void | any[]} CommandHandler */
+
 // clang-format on
+/** @type {Command} */
 var currentCmd = null;
 for (var i = 0; i < commandArray.length; i++) {
     let cmd = commandArray[i];
@@ -673,9 +829,21 @@ for (var i = 0; i < commandArray.length; i++) {
         currentCmd = commands[cmd.name.replace(/Command$/, '')] = cmd;
 }
 
+/**
+ * @typedef {Object} CommandObject
+ * @property {string?} summary
+ * @property {string?} [helpText]
+ * @property {unknown[]} [aliases]
+ */
+
+ /** @typedef {CommandHandler & CommandObject} Command */
+
 function _printCommandsList() {
     print('Available commands:');
 
+    /**
+     * @param {CommandGroup} cmd
+     */
     function printcmd(cmd) {
         print(`  ${cmd.aliases.join(', ')} -- ${cmd.summary}`);
     }
@@ -686,13 +854,24 @@ function _printCommandsList() {
         printcmd(group);
 }
 
+/** 
+ * @typedef {Object} CommandGroup
+ * @property {string} summary
+ * @property {string} helpText
+ * @property {string[]} aliases 
+ */
+
+/**
+ * @returns {CommandGroup[]}
+ */
 function _groupCommands() {
+    /** @type {CommandGroup[]} */
     var groups = [];
 
     for (var cmd of commandArray) {
         // Don't print commands for debugging the debugger
-        if ([commentCommand, evalCommand].includes(cmd) ||
-            ['#', '!'].includes(cmd))
+        if ((typeof cmd === 'string' && ['#', '!'].includes(cmd))
+            || (typeof cmd === 'function' && [commentCommand, evalCommand].includes(cmd)))
             continue;
 
         if (typeof cmd === 'string') {
@@ -708,6 +887,9 @@ function _groupCommands() {
     return groups;
 }
 
+/**
+ * @param {CommandGroup} cmd
+ */
 function _printCommand(cmd) {
     print(`${cmd.summary}\n\n${cmd.helpText}`);
 
@@ -718,6 +900,9 @@ function _printCommand(cmd) {
     }
 }
 
+/**
+ * @param {string} cmd
+ */
 function helpCommand(cmd) {
     if (!cmd) {
         _printCommandsList();
@@ -725,7 +910,7 @@ function helpCommand(cmd) {
         var cmdGroups = _groupCommands();
         var command = cmdGroups.find(c => c.aliases.includes(cmd));
 
-        if (command && command.helpText)
+        if (command && typeof command !== 'string' && command.helpText)
             _printCommand(command);
         else
             print(`No help found for ${cmd} command`);
@@ -748,6 +933,9 @@ PARAMETERS
 //   ?!wtf!?         => ['?', '!wtf!?']
 //   print/b x       => ['print', '/b x']
 //
+/**
+ * @param {string} cmd
+ */
 function breakcmd(cmd) {
     cmd = cmd.trimLeft();
     if ("!@#$%^&*_+=/?.,<>:;'\"".includes(cmd.substr(0, 1)))
@@ -758,6 +946,9 @@ function breakcmd(cmd) {
     return [cmd.slice(0, m.index), cmd.slice(m.index + m[0].length)];
 }
 
+/**
+ * @param {string} cmd
+ */
 function runcmd(cmd) {
     var pieces = breakcmd(cmd);
     if (pieces[0] === '')
@@ -769,13 +960,13 @@ function runcmd(cmd) {
         return undefined;
     }
 
-    cmd = commands[first];
-    if (cmd.length === 0 && rest !== '') {
+    const command = commands[first];
+    if (command.length === 0 && rest !== '') {
         print('this command cannot take an argument');
         return undefined;
     }
 
-    return cmd(rest);
+    return command(rest);
 }
 
 function preReplCleanups() {
@@ -783,6 +974,7 @@ function preReplCleanups() {
         replCleanups.pop()();
 }
 
+/** @type {string} */
 var prevcmd;
 function repl() {
     preReplCleanups();
@@ -794,7 +986,6 @@ function repl() {
             return null;
         else if (cmd === '')
             cmd = prevcmd;
-
         try {
             prevcmd = cmd;
             var result = runcmd(cmd);
@@ -814,19 +1005,45 @@ function repl() {
     }
 }
 
+/**
+ * @param {Frame} frame
+ */
 function onInitialEnterFrame(frame) {
     print('GJS debugger. Type "help" for help');
     topFrame = focusedFrame = frame;
     return repl();
 }
 
+/** 
+ * @typedef {Object} DebugPromise
+ * @property {any} promiseID
+ * @property {string} promiseState
+ * @property {number} promiseTimeToResolution
+ * @property {any} promiseAllocationSite
+ * @property {any} promiseValue
+ * @property {any} promiseReason
+ * */
+
 var dbg = new Debugger();
-dbg.onNewPromise = function ({promiseID, promiseAllocationSite}) {
+
+dbg.onNewPromise =
+/** 
+ * @param {DebugPromise} promise 
+ * @returns {void}
+ */ 
+function (promise) {
+    const {promiseID, promiseAllocationSite} = promise;
     const site = promiseAllocationSite.toString().split('\n')[0];
     print(`Promise ${promiseID} started from ${site}`);
     return undefined;
 };
-dbg.onPromiseSettled = function (promise) {
+
+dbg.onPromiseSettled =
+/**
+ * @param {DebugPromise} promise
+ * @returns {void}
+ */
+function (promise) {
     let message = `Promise ${promise.promiseID} ${promise.promiseState} `;
     message += `after ${promise.promiseTimeToResolution.toFixed(3)} ms`;
     let brief, full;
@@ -843,14 +1060,21 @@ dbg.onPromiseSettled = function (promise) {
         print(full);
     return undefined;
 };
-dbg.onDebuggerStatement = function (frame) {
+dbg.onDebuggerStatement = /**
+ * @param {Frame} frame
+ */
+ function (frame) {
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print(`Debugger statement, ${frame.describeFull()}`);
         return repl();
     });
 };
-dbg.onExceptionUnwind = function (frame, value) {
+dbg.onExceptionUnwind = /**
+ * @param {Frame} frame
+ * @param {any} value
+ */
+ function (frame, value) {
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print("Unwinding due to exception. (Type 'c' to continue unwinding.)");
@@ -861,6 +1085,12 @@ dbg.onExceptionUnwind = function (frame, value) {
     });
 };
 
-var debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
+var debuggeeGlobalWrapper = dbg.addDebuggee(
+    // @ts-ignore
+    debuggee
+);
 
 setUntilRepl(dbg, 'onEnterFrame', onInitialEnterFrame);
+
+// @ts-ignore
+module.exports = {};
