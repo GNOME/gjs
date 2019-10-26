@@ -20,6 +20,9 @@
 
 // Debugger state.
 
+/** @type {any} */
+var module = {};
+
 /**
  * @typedef {Object} Frame
  * @property {(arg0: any, arg1: {}) => void} evalWithBindings
@@ -1092,5 +1095,4 @@ var debuggeeGlobalWrapper = dbg.addDebuggee(
 
 setUntilRepl(dbg, 'onEnterFrame', onInitialEnterFrame);
 
-// @ts-ignore
 module.exports = {};
