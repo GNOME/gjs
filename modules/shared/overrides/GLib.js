@@ -18,13 +18,16 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-let is_legacy = window.imports && !window.require;
+const is_legacy = typeof imports === 'object';
 
-function i(ns) {
+/**
+ * @param {string} ns
+ */
+function $import(ns) {
     return is_legacy ? imports[ns] : require(ns);
 }
 
-const ByteArray = i('_byteArrayNative');
+const ByteArray = $import('_byteArrayNative');
 
 let GLib;
 

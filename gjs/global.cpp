@@ -209,17 +209,21 @@ bool GjsLegacyGlobal::define_properties(JSContext* cx,
 
     JS::Value v_importer =
         gjs_get_global_slot(cx, global, GJS_GLOBAL_SLOT_IMPORTS);
-    g_assert(((void)"importer should be defined before passing null "
-                    "importer to GjsGlobal::define_properties",
-              v_importer.isObject()));
-    JS::RootedObject root_importer(cx, &v_importer.toObject());
+    // TODO A temporary fix for the debugging global?
+    // TODO Figure out if pre-ESM this code lived here
+    if (!v_importer.isNullOrUndefined()) {
+        g_assert(((void)"importer should be defined before passing null "
+                        "importer to GjsGlobal::define_properties",
+                  v_importer.isObject()));
+        JS::RootedObject root_importer(cx, &v_importer.toObject());
 
-    /* Wrapping is a no-op if the importer is already in the same
-     * compartment. */
-    if (!JS_WrapObject(cx, &root_importer) ||
-        !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
-                               GJS_MODULE_PROP_FLAGS))
-        return false;
+        /* Wrapping is a no-op if the importer is already in the same
+         * compartment. */
+        if (!JS_WrapObject(cx, &root_importer) ||
+            !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
+                                   GJS_MODULE_PROP_FLAGS))
+            return false;
+    }
 
     if (bootstrap_script) {
         JS::RootedObject obj(cx, global);

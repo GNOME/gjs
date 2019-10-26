@@ -206,8 +206,6 @@ main(int argc, char **argv)
     char * const *script_argv;
     const char *env_coverage_output_path;
     const char *env_coverage_prefixes;
-    const char *env_force_modules;
-    bool force_modules = false;
     bool interactive_mode = false;
 
     setlocale(LC_ALL, "");
@@ -333,17 +331,6 @@ main(int argc, char **argv)
         coverage_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
     }
 
-    // TODO: REMOVE BEFORE MERGE (development only)
-    env_force_modules = g_getenv("GJS_FORCE_MODULES");
-
-    if (env_force_modules) {
-        if (strcmp(env_force_modules, "1") == 0) {
-            force_modules = true;
-        } else {
-            force_modules = false;
-        }
-    }
-
     if (coverage_prefixes) {
         if (!coverage_output_path)
             g_error("--coverage-output is required when taking coverage statistics");
@@ -374,9 +361,9 @@ main(int argc, char **argv)
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */
     if (debugging)
-        gjs_context_setup_debugger_console(js_context);
+        gjs_context_setup_debugger_console(js_context, exec_as_module);
 
-    if (force_modules || exec_as_module) {
+    if (exec_as_module) {
         GFile *output = g_file_new_for_commandline_arg(filename);
         char *full_path = g_file_get_path(output);
         if (!gjs_context_register_module(js_context, full_path, full_path,

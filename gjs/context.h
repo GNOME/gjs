@@ -99,7 +99,7 @@ void            gjs_dumpstack                     (void);
 GJS_EXPORT GJS_USE const char* gjs_get_js_version(void);
 
 GJS_EXPORT
-void gjs_context_setup_debugger_console(GjsContext* gjs);
+void gjs_context_setup_debugger_console(GjsContext* gjs, bool esm = false);
 
 GJS_EXPORT
 gboolean gjs_context_register_module(GjsContext* context, const char* name,

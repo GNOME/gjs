@@ -198,6 +198,8 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
+    JSObject* legacy_global() { return m_legacy_global; }
+    JSObject* module_global() { return m_module_global; }
     void set_args(std::vector<std::string> args);
     std::vector<std::string> get_args();
     GJS_USE bool is_owner_thread(void) const {

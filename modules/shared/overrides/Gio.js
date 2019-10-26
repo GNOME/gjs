@@ -19,15 +19,18 @@
 // IN THE SOFTWARE.
 
 
-let is_legacy = window.imports && !window.require;
+const is_legacy = typeof imports === 'object';
 
-function i(ns) {
+/**
+ * @param {string} ns
+ */
+function $import(ns) {
     return is_legacy ? imports[ns] : require(ns);
 }
 
 // @ts-ignore
-const { GjsPrivate, GLib } = i('gi');
-// TODO: Fix Signals issue: const Signals = i('signals');
+const { GjsPrivate, GLib } = $import('gi');
+const Signals = $import('_signals');
 
 var Gio;
 

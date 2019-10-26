@@ -67,6 +67,18 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool do_print(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::UniqueChars text;
+    if (!gjs_parse_call_args(cx, "print", args, "|s", "text", &text))
+        return false;
+
+    printf("%s\n", text.get());
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
@@ -120,15 +132,19 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
 // clang-format off
 static JSFunctionSpec debugger_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("print", do_print, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
 // clang-format on
 
-void gjs_context_setup_debugger_console(GjsContext* gjs) {
+// add an esm bool for now
+void gjs_context_setup_debugger_console(GjsContext* gjs, bool esm) {
     auto cx = static_cast<JSContext*>(gjs_context_get_native_context(gjs));
-
-    JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
+    GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
+    JS::RootedObject debuggee(
+        cx, esm ? priv->module_global() : priv->legacy_global());
+    // JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
     // TODO Update for ESM
     JS::RootedObject debugger_global(
         cx, gjs_create_global_object(cx, GjsGlobalType::LEGACY));

@@ -20,16 +20,19 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-let is_legacy = window.imports && !window.require;
+const is_legacy = typeof imports === 'object';
 
-function i(ns) {
+/**
+ * @param {string} ns
+ */
+function $import(ns) {
     return is_legacy ? imports[ns] : require(ns);
 }
 
-const Gi = i('_gi');
+const Gi = $import('_gi');
 
 // @ts-ignore
-const { GjsPrivate } = i('gi');
+const { GjsPrivate } = $import('gi');
 
 let GObject;
 
