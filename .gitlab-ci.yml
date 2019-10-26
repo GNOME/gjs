@@ -8,61 +8,44 @@ stages:
 - manual
 - deploy
 
-.CI_header: &CI_header  'echo;
-       echo "*********************************************";
-       echo "***     JavaScript bindings for GNOME     ***";
-       echo "***        Continuous Integration         ***";
-       echo "*********************************************";
-       echo;
-    '
-.CI_footer: &CI_footer 'echo;
-       echo "*********************************************";
-       echo "***             See you soon              ***";
-       echo "*********************************************";
-    '
-
-.Coverage files: &cov_files [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs, coverage/]
-.Regular files: &reg_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
+.Autotools files: &autotools_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
 
 .coverage: &coverage
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  variables:
+    TASK_ID: "coverage"
+    coverage: '/^  lines.*(\d+\.\d+\%)/'
+  script:
+    - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    # This script runs the build inside its own build tree and generates the
+    # coverage report
+    - tools/run_coverage.sh
   artifacts:
     name: log_coverage
     when: always
-    paths: *cov_files
+    paths:
+      - _coverage/html
+      - _coverage_build/meson-logs/*log.txt
 
-# Regular build
-.build: &build
+# Autotools build
+.autotools: &autotools
   when: on_success
   artifacts:
     name: log
     when: always
-    paths: *reg_files
+    paths: &autotools_files
 
   script:
-    # CI starts here. Previous messages are from GitLab Runner setup.
-    - *CI_header
-
     # GitLab is keeping some files between jobs. Remove them.
     - rm -rf configure Makefile *.log analysis
 
-    # Run static code analysis	OR
     # Build GJS
-    - 'if [[ -n "${CODECHECK}" ]]; then
-         $(pwd)/test/test-ci.sh "$CODECHECK";
-       else
-         $(pwd)/test/test-ci.sh GJS;
-       fi
-    '
+    - test/test-ci.sh GJS
 
     # Run installed extra tests
     - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
          $(pwd)/test/test-ci.sh GJS_EXTRA;
-       fi
-    '
-
-    # Run code coverage tests
-    - 'if [[ $BUILD_OPTS == *"--enable-code-coverage"* ]]; then
-         $(pwd)/test/test-ci.sh GJS_COVERAGE;
        fi
     '
 
@@ -78,8 +61,20 @@ stages:
        fi
     '
 
-    # Done
-    - *CI_footer
+# Meson build
+.build: &build
+  when: on_success
+  artifacts:
+    name: log
+    when: always
+    paths:
+      - _build/compile_commands.json
+      - _build/meson-logs/*log.txt
+      - compilation.log
+      - scripts.log
+  script:
+    - test/test-ci.sh SETUP
+    - test/test-ci.sh BUILD
 
 #############################################
 #               Regular tests               #
@@ -92,11 +87,7 @@ build_recommended:
   image: registry.gitlab.gnome.org/gnome/gjs:job-443296_fedora.mozjs60-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
-    TEST: "check"
     WARNINGS: "count"
-    BUILD_OPTS: >-
-      --with-cairo --enable-readline --enable-profiler
-      --disable-dtrace --disable-systemtap
   except:
     - schedules
 
@@ -106,8 +97,7 @@ sanitizer_gcc:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
-    TEST: "check"
+    CONFIG_OPTS: -Db_sanitize=address,undefined
   except:
     - schedules
 
@@ -117,19 +107,18 @@ sanitizer_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
-    BUILD_OPTS: >-
-      CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
-      --with-cairo --enable-readline --enable-profiler
-      --enable-dtrace --enable-systemtap
-    TEST: "check"
-    SCRIPTCHECK: "yes"
+    CONFIG_OPTS: -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
     ENABLE_GTK: "yes"
   except:
     - schedules
+  script:
+    - test/test-ci.sh SETUP
+    - test/test-ci.sh BUILD
+    - test/test-ci.sh SH_CHECKS
 
 build_minimal:
   <<: *build
@@ -137,51 +126,32 @@ build_minimal:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
-    TEST: "check"
-    BUILD_OPTS: >-
-      --without-cairo --disable-profiler --disable-readline
-      --disable-dtrace --disable-systemtap
+    CONFIG_OPTS: >-
+      -Dbuildtype=release
+      -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
   except:
     - schedules
 
-build_meson:
+build_autotools:
+  <<: *autotools
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
-    TASK_ID: "fedora-x86_64-gcc-meson-check"
-    PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
+    TASK_ID: "fedora-x86_64-gcc-autotools-check"
     BUILD_OPTS: >-
-      -Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled
-      -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
-  when: on_success
+      CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
+      --with-cairo --enable-readline --enable-profiler
+      --enable-dtrace --enable-systemtap
+    TEST: check
   except:
     - schedules
-  artifacts:
-    name: log
-    when: always
-    paths:
-      - _build/compile_commands.json
-      - _build/meson-logs/*log.txt
-
-  script:
-    - *CI_header
-    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-    - meson _build $BUILD_OPTS
-    - ninja -C _build
-    - xvfb-run -a meson test -C _build --verbose --no-stdsplit --print-errorlogs
-    - *CI_footer
 
 # Generates
 # The Code Coverage Report
 coverage-automatic:
-  <<: *build
   <<: *coverage
+  when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
-  variables:
-    TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   except:
     - schedules
   only:
@@ -195,7 +165,7 @@ pages:
   dependencies:
     - coverage-automatic
   script:
-    - mv $(pwd)/coverage/ public/ || true
+    - mv $(pwd)/_coverage/html/ public/ || true
   artifacts:
     paths:
       - public
@@ -234,9 +204,7 @@ cpplint:
   variables:
     TASK_ID: "cpplint"
   script:
-    - *CI_header
     - test/test-ci.sh CPPLINT
-    - *CI_footer
   except:
     refs:
       - schedules
@@ -288,14 +256,8 @@ codequality:
     - schedules
 
 coverage:
-  <<: *build
   <<: *coverage
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
-  variables:
-    TASK_ID: "coverage"
-    BUILD_OPTS: "--enable-code-coverage"
-    coverage: '/^Lines:.\d+.\d+.(\d+\.\d+\%)/'
   when: manual
   except:
     - schedules
@@ -307,14 +269,13 @@ sanitizer_clang:
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
-    BUILD_OPTS: "--enable-asan --enable-ubsan"
-    TEST: "check"
+    CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
   when: manual
   except:
     - schedules
 
 distcheck:
-  <<: *build
+  <<: *autotools
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
@@ -330,10 +291,17 @@ installed_tests:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
-    BUILD_OPTS: "--enable-installed-tests --prefix=/usr"
+    CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
+    TEST: skip
+    LD_LIBRARY_PATH: $LD_LIBRARY_PATH:/usr/local/lib  # for mozjs60
   when: manual
   except:
     - schedules
+  script:
+    - test/test-ci.sh SETUP
+    - test/test-ci.sh BUILD
+    - ninja -C _build install
+    - xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
 
 valgrind:
   <<: *build
@@ -341,8 +309,7 @@ valgrind:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
-    BUILD_OPTS: "--enable-valgrind --disable-valgrind-helgrind --prefix=/usr"
-    TEST: "check"
+    TEST_OPTS: --setup=valgrind
   allow_failure: true
   when: manual
   except:
@@ -355,8 +322,7 @@ zeal_2:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
-    TEST: "check"
-    JS_GC_ZEAL: 2
+    TEST_OPTS: --setup=extra_gc
   when: manual
   except:
     - schedules
@@ -367,8 +333,7 @@ zeal_4:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
-    TEST: "check"
-    JS_GC_ZEAL: 4
+    TEST_OPTS: --setup=pre_verify
   when: manual
   except:
     - schedules
@@ -379,8 +344,7 @@ zeal_11:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
-    TEST: "check"
-    JS_GC_ZEAL: 11
+    TEST_OPTS: --setup=post_verify
   when: manual
   except:
     - schedules
@@ -398,9 +362,6 @@ zeal_11:
       - $CRON_TASK == "BUILD_CI_IMAGES"
 
   script:
-    # CI starts here. Previous messages are from GitLab Runner setup.
-    - *CI_header
-
     # Where the real magic happens
     - docker run --name "$NAME" -v "$(pwd):/on-host" -e OS="$IMAGE" -e BUILD_OPTS="$BUILD_OPTS" -e CC=gcc -e MOZJS_BRANCH="$MOZJS_BRANCH" "$IMAGE" bash -e -c "cd /on-host && test/ci-images.sh"
     - docker commit "$NAME" "$CI_REGISTRY_IMAGE:$NAME"
@@ -416,14 +377,10 @@ zeal_11:
         docker push "$CI_REGISTRY_IMAGE"
       fi
 
-    # Done
-    - *CI_footer
-
 alpine.cpplint:
   <<: *create_docker_image
   script:
     # Overrides the script from create_docker_image above
-    - *CI_header
     - docker build -f test/extra/Dockerfile.alpine.cpplint -t "$CI_REGISTRY_IMAGE:alpine.cpplint" .
     - docker tag "$CI_REGISTRY_IMAGE:alpine.cpplint" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_alpine.cpplint"
     - docker images
@@ -432,7 +389,6 @@ alpine.cpplint:
       if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
         docker push "$CI_REGISTRY_IMAGE"
       fi
-    - *CI_footer
   variables:
     DOCKER_DRIVER: overlay
     # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03

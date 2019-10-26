@@ -554,16 +554,16 @@ valgrind_args = [
     '--error-exitcode=1'
 ]
 
-add_test_setup('valgrind', timeout_multiplier: 10, env: valgrind_environment,
+add_test_setup('valgrind', timeout_multiplier: 40, env: valgrind_environment,
     exe_wrapper: ['valgrind'] + valgrind_args)
 
 zeal2_environment = environment()
 zeal2_environment.set('JS_GC_ZEAL', '2,10')
-add_test_setup('extra_gc', timeout_multiplier: 10, env: zeal2_environment)
+add_test_setup('extra_gc', timeout_multiplier: 40, env: zeal2_environment)
 
 zeal4_environment = environment()
 zeal4_environment.set('JS_GC_ZEAL', '4')
-add_test_setup('pre_verify', timeout_multiplier: 2, env: zeal4_environment)
+add_test_setup('pre_verify', timeout_multiplier: 40, env: zeal4_environment)
 
 zeal11_environment = environment()
 zeal11_environment.set('JS_GC_ZEAL', '11')
