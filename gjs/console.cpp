@@ -246,8 +246,13 @@ main(int argc, char **argv)
     debugging = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
-    if (!g_option_context_parse_strv(context, &gjs_argv, &error))
-        g_error("option parsing failed: %s", error->message);
+    if (!g_option_context_parse_strv(context, &gjs_argv, &error)) {
+        char* help_text = g_option_context_get_help(context, true, nullptr);
+        g_printerr("%s\n\n%s\n", error->message, help_text);
+        g_free(help_text);
+        g_option_context_free(context);
+        exit(1);
+    }
 
     g_option_context_free (context);
 
