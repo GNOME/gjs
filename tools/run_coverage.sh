@@ -15,7 +15,7 @@ VERSION=$(meson introspect "$BUILDDIR" --projectinfo | python -c 'import json, s
 
 ninja -C "$BUILDDIR"
 mkdir -p _coverage
-ninja -C "$BUILDDIR" test
+meson test -C "$BUILDDIR" --num-processes 1
 lcov --directory "$BUILDDIR" --capture --output-file _coverage/gjs.lcov.run --no-checksum $LCOV_ARGS
 lcov --extract _coverage/gjs.lcov.run "$SOURCEDIR/*" "$GIDATADIR/tests/*" $LCOV_ARGS -o _coverage/gjs.lcov.sources
 lcov --remove _coverage/gjs.lcov.sources $IGNORE $LCOV_ARGS -o _coverage/gjs.lcov
