@@ -268,7 +268,6 @@ _gjs_cairo_context_construct_internal(JSContext       *context,
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_context)
-    cairo_surface_t *surface;
     cairo_t *cr;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_context);
@@ -278,11 +277,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_context)
                              "surface", &surface_wrapper))
         return false;
 
-    surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
-    if (!surface) {
-        gjs_throw(context, "first argument to Context() should be a surface");
+    cairo_surface_t* surface =
+        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    if (!surface)
         return false;
-    }
 
     cr = cairo_create(surface);
 
@@ -415,18 +413,15 @@ appendPath_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject path_wrapper(context);
-    cairo_path_t *path;
     cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "path", argv, "o",
                              "path", &path_wrapper))
         return false;
 
-    path = gjs_cairo_path_get_path(context, path_wrapper);
-    if (!path) {
-        gjs_throw(context, "first argument to appendPath() should be a path");
+    cairo_path_t* path = gjs_cairo_path_get_path(context, path_wrapper);
+    if (!path)
         return false;
-    }
 
     cairo_append_path(cr, path);
     argv.rval().setUndefined();
@@ -477,18 +472,16 @@ mask_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject pattern_wrapper(context);
-    cairo_pattern_t *pattern;
     cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "mask", argv, "o",
                              "pattern", &pattern_wrapper))
         return false;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, pattern_wrapper);
-    if (!pattern) {
-        gjs_throw(context, "first argument to mask() should be a pattern");
+    cairo_pattern_t* pattern =
+        gjs_cairo_pattern_get_pattern(context, pattern_wrapper);
+    if (!pattern)
         return false;
-    }
 
     cairo_mask(cr, pattern);
 
@@ -508,7 +501,6 @@ maskSurface_func(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject surface_wrapper(context);
     double x, y;
-    cairo_surface_t *surface;
     cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "maskSurface", argv, "off",
@@ -517,11 +509,10 @@ maskSurface_func(JSContext *context,
                              "y", &y))
         return false;
 
-    surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
-    if (!surface) {
-        gjs_throw(context, "first argument to maskSurface() should be a surface");
+    cairo_surface_t* surface =
+        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    if (!surface)
         return false;
-    }
 
     cairo_mask_surface(cr, surface, x, y);
 
@@ -599,18 +590,16 @@ setSource_func(JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject pattern_wrapper(context);
-    cairo_pattern_t *pattern;
     cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "setSource", argv, "o",
                              "pattern", &pattern_wrapper))
         return false;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, pattern_wrapper);
-    if (!pattern) {
-        gjs_throw(context, "first argument to setSource() should be a pattern");
+    cairo_pattern_t* pattern =
+        gjs_cairo_pattern_get_pattern(context, pattern_wrapper);
+    if (!pattern)
         return false;
-    }
 
     cairo_set_source(cr, pattern);
 
@@ -631,7 +620,6 @@ setSourceSurface_func(JSContext *context,
     GJS_GET_PRIV(context, argc, vp, argv, obj, GjsCairoContext, priv);
     JS::RootedObject surface_wrapper(context);
     double x, y;
-    cairo_surface_t *surface;
     cairo_t* cr = priv ? priv->cr : nullptr;
 
     if (!gjs_parse_call_args(context, "setSourceSurface", argv, "off",
@@ -640,11 +628,10 @@ setSourceSurface_func(JSContext *context,
                              "y", &y))
         return false;
 
-    surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
-    if (!surface) {
-        gjs_throw(context, "first argument to setSourceSurface() should be a surface");
+    cairo_surface_t* surface =
+        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    if (!surface)
         return false;
-    }
 
     cairo_set_source_surface(cr, surface, x, y);
 

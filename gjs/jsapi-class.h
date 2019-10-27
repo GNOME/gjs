@@ -325,4 +325,9 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
 GJS_USE
 JS::Value gjs_dynamic_property_private_slot(JSObject *accessor_obj);
 
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,
+                                   JS::HandleObject check_obj,
+                                   bool* is_in_chain);
+
 #endif  // GJS_JSAPI_CLASS_H_

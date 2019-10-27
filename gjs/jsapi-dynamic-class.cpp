@@ -265,3 +265,38 @@ gjs_dynamic_property_private_slot(JSObject *accessor_obj)
     return js::GetFunctionNativeReserved(accessor_obj,
                                          DYNAMIC_PROPERTY_PRIVATE_SLOT);
 }
+
+/**
+ * gjs_object_in_prototype_chain:
+ * @cx:
+ * @proto: The prototype which we are checking if @check_obj has in its chain
+ * @check_obj: The object to check
+ * @is_in_chain: (out): Whether @check_obj has @proto in its prototype chain
+ *
+ * Similar to JS_HasInstance() but takes into account abstract classes defined
+ * with JS_InitClass(), which JS_HasInstance() does not. Abstract classes don't
+ * have constructors, and JS_HasInstance() requires a constructor.
+ *
+ * Returns: false if an exception was thrown, true otherwise.
+ */
+bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,
+                                   JS::HandleObject check_obj,
+                                   bool* is_in_chain) {
+    JS::RootedObject object_prototype(cx, JS_GetObjectPrototype(cx, check_obj));
+    if (!object_prototype)
+        return false;
+
+    JS::RootedObject proto_iter(cx);
+    if (!JS_GetPrototype(cx, check_obj, &proto_iter))
+        return false;
+    while (proto_iter != object_prototype) {
+        if (proto_iter == proto) {
+            *is_in_chain = true;
+            return true;
+        }
+        if (!JS_GetPrototype(cx, proto_iter, &proto_iter))
+            return false;
+    }
+    *is_in_chain = false;
+    return true;
+}

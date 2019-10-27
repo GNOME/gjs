@@ -177,6 +177,13 @@ describe('Cairo', function () {
         });
     });
 
+    describe('pattern', function () {
+        it('has typechecks', function () {
+            expect(() => cr.setSource({})).toThrow();
+            expect(() => cr.setSource(surface)).toThrow();
+        });
+    });
+
     describe('solid pattern', function () {
         it('can be created from RGB static method', function () {
             let p1 = Cairo.SolidPattern.createRGB(1, 2, 3);
@@ -217,6 +224,21 @@ describe('Cairo', function () {
             expect(_ts(p1)).toEqual('RadialGradient');
             cr.setSource(p1);
             expect(_ts(cr.getSource())).toEqual('RadialGradient');
+        });
+    });
+
+    describe('path', function () {
+        it('has typechecks', function () {
+            expect(() => cr.appendPath({})).toThrow();
+            expect(() => cr.appendPath(surface)).toThrow();
+        });
+    });
+
+    describe('surface', function () {
+        it('has typechecks', function () {
+            expect(() => new Cairo.Context({})).toThrow();
+            const pattern = new Cairo.SurfacePattern(surface);
+            expect(() => new Cairo.Context(pattern)).toThrow();
         });
     });
 

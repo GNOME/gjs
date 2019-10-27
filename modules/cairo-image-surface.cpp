@@ -117,7 +117,6 @@ getFormat_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
-    cairo_surface_t *surface;
     cairo_format_t format;
 
     if (argc > 1) {
@@ -125,7 +124,10 @@ getFormat_func(JSContext *context,
         return false;
     }
 
-    surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    if (!surface)
+        return false;
+
     format = cairo_image_surface_get_format(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
@@ -142,7 +144,6 @@ getWidth_func(JSContext *context,
               JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
-    cairo_surface_t *surface;
     int width;
 
     if (argc > 1) {
@@ -150,7 +151,10 @@ getWidth_func(JSContext *context,
         return false;
     }
 
-    surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    if (!surface)
+        return false;
+
     width = cairo_image_surface_get_width(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
@@ -167,7 +171,6 @@ getHeight_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
-    cairo_surface_t *surface;
     int height;
 
     if (argc > 1) {
@@ -175,7 +178,10 @@ getHeight_func(JSContext *context,
         return false;
     }
 
-    surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    if (!surface)
+        return false;
+
     height = cairo_image_surface_get_height(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
@@ -192,7 +198,6 @@ getStride_func(JSContext *context,
                JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
-    cairo_surface_t *surface;
     int stride;
 
     if (argc > 1) {
@@ -200,7 +205,10 @@ getStride_func(JSContext *context,
         return false;
     }
 
-    surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    if (!surface)
+        return false;
+
     stride = cairo_image_surface_get_stride(surface);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
