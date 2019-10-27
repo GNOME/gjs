@@ -40,7 +40,6 @@ GJS_DEFINE_PROTO_WITH_PARENT("SurfacePattern", cairo_surface_pattern,
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
 {
     GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_surface_pattern)
-    cairo_surface_t *surface;
     cairo_pattern_t *pattern;
 
     GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_surface_pattern);
@@ -50,11 +49,10 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
                              "surface", &surface_wrapper))
         return false;
 
-    surface = gjs_cairo_surface_get_surface(context, surface_wrapper);
-    if (!surface) {
-        gjs_throw(context, "first argument to SurfacePattern() should be a surface");
+    cairo_surface_t* surface =
+        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    if (!surface)
         return false;
-    }
 
     pattern = cairo_pattern_create_for_surface(surface);
 
@@ -89,13 +87,15 @@ setExtend_func(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, argv, obj);
     cairo_extend_t extend;
-    cairo_pattern_t *pattern;
 
     if (!gjs_parse_call_args(context, "setExtend", argv, "i",
                              "extend", &extend))
         return false;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
+
     cairo_pattern_set_extend(pattern, extend);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
@@ -113,14 +113,16 @@ getExtend_func(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_extend_t extend;
-    cairo_pattern_t *pattern;
 
     if (argc > 0) {
         gjs_throw(context, "SurfacePattern.getExtend() requires no arguments");
         return false;
     }
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
+
     extend = cairo_pattern_get_extend(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
@@ -139,13 +141,15 @@ setFilter_func(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, argv, obj);
     cairo_filter_t filter;
-    cairo_pattern_t *pattern;
 
     if (!gjs_parse_call_args(context, "setFilter", argv, "i",
                              "filter", &filter))
         return false;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
+
     cairo_pattern_set_filter(pattern, filter);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
@@ -163,14 +167,16 @@ getFilter_func(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_filter_t filter;
-    cairo_pattern_t *pattern;
 
     if (argc > 0) {
         gjs_throw(context, "SurfacePattern.getFilter() requires no arguments");
         return false;
     }
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
+
     filter = cairo_pattern_get_filter(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))

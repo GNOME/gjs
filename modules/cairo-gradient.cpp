@@ -56,7 +56,6 @@ addColorStopRGB_func(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, argv, obj);
     double offset, red, green, blue;
-    cairo_pattern_t *pattern;
 
     if (!gjs_parse_call_args(context, "addColorStopRGB", argv, "ffff",
                              "offset", &offset,
@@ -65,7 +64,9 @@ addColorStopRGB_func(JSContext *context,
                              "blue", &blue))
         return false;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
 
     cairo_pattern_add_color_stop_rgb(pattern, offset, red, green, blue);
 
@@ -84,7 +85,6 @@ addColorStopRGBA_func(JSContext *context,
 {
     GJS_GET_THIS(context, argc, vp, argv, obj);
     double offset, red, green, blue, alpha;
-    cairo_pattern_t *pattern;
 
     if (!gjs_parse_call_args(context, "addColorStopRGBA", argv, "fffff",
                              "offset", &offset,
@@ -94,7 +94,10 @@ addColorStopRGBA_func(JSContext *context,
                              "alpha", &alpha))
         return false;
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
+
     cairo_pattern_add_color_stop_rgba(pattern, offset, red, green, blue, alpha);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
