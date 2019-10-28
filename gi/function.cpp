@@ -565,7 +565,11 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
             interface_info = g_type_info_get_interface(&type_info);
             interface_type = g_base_info_get_type(interface_info);
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
-                gjs_throw(context, "Callback accepts another callback as a parameter. This is not supported");
+                gjs_throw(context,
+                          "%s %s accepts another callback as a parameter. This "
+                          "is not supported",
+                          is_vfunc ? "VFunc" : "Callback",
+                          g_base_info_get_name(callable_info));
                 g_base_info_unref(interface_info);
                 return NULL;
             }
@@ -579,7 +583,11 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 
                     g_callable_info_load_arg(trampoline->info, array_length_pos, &length_arg_info);
                     if (g_arg_info_get_direction(&length_arg_info) != direction) {
-                        gjs_throw(context, "Callback has an array with different-direction length arg, not supported");
+                        gjs_throw(context,
+                                  "%s %s has an array with different-direction "
+                                  "length argument. This is not supported",
+                                  is_vfunc ? "VFunc" : "Callback",
+                                  g_base_info_get_name(callable_info));
                         return NULL;
                     }
 
