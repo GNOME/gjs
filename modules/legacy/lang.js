@@ -23,6 +23,9 @@ getMetaClass, Interface */
 
 // Utilities that are "meta-language" things like manipulating object props
 
+/** @type {Object.<string, any>} */
+var module = {};
+
 var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
@@ -87,3 +90,5 @@ function bind(obj, callback, ...bindArguments) {
         return callback.apply(me, args);
     };
 }
+
+module.exports = {};

@@ -42,6 +42,7 @@
 #include "gjs/context-private.h"
 #include "gjs/error-types.h"
 #include "gjs/global.h"
+#include "gjs/importer.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "gjs/module.h"
@@ -287,12 +288,17 @@ decltype(GjsLegacyModule::class_ops) constexpr GjsLegacyModule::class_ops;
 bool GjsModuleLoader::populate_module_meta(
     JSContext* m_cx, JS::Handle<JS::Value> private_ref,
     JS::Handle<JSObject*> meta_object_handle) {
-    GjsModule* module = static_cast<GjsModule*>(private_ref.toPrivate());
     JS::RootedObject meta_object(m_cx, meta_object_handle);
+    std::string uri = "(unknown)";
+    bool allow_require = true;
 
-    g_assert(JS::GetModulePrivate(module->module_record()) == private_ref);
+    if (!private_ref.isUndefined()) {
+        GjsModule* module = static_cast<GjsModule*>(private_ref.toPrivate());
 
-    auto uri = module->module_uri();
+        uri = module->module_uri();
+        allow_require = module->is_internal();
+    }
+
     JS::Rooted<JSString*> uri_str(m_cx, JS_NewStringCopyZ(m_cx, uri.c_str()));
 
     if (!uri_str) {
@@ -300,8 +306,23 @@ bool GjsModuleLoader::populate_module_meta(
         return false;
     }
 
-    return JS_DefineProperty(m_cx, meta_object, "url", uri_str,
-                             JSPROP_ENUMERATE);
+    if (!JS_DefineProperty(m_cx, meta_object, "url", uri_str,
+                           JSPROP_ENUMERATE)) {
+        gjs_throw(m_cx, "Could not define url!");
+        return false;
+    }
+
+    if (allow_require) {
+        if (!JS_DefineFunction(m_cx, meta_object, "require",
+                               gjs_load_internal_module, 1,
+                               GJS_MODULE_PROP_FLAGS)) {
+            gjs_throw(m_cx, "Could not define require!");
+            return false;
+        }
+    }
+
+    // If we can't retrieve the metadata, return false;
+    return true;
 }
 
 bool gjs_populate_module_meta(JSContext* m_cx,
@@ -317,7 +338,7 @@ bool GjsModuleLoader::load_internal_module(JSContext* m_cx, unsigned argc,
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     if (argc != 1) {
-        gjs_throw(m_cx, "Must pass a single argument to log()");
+        gjs_throw(m_cx, "Must pass a single argument to require()");
         return false;
     }
 
@@ -333,20 +354,63 @@ bool GjsModuleLoader::load_internal_module(JSContext* m_cx, unsigned argc,
     }
 
     JS::UniqueChars id(JS_EncodeStringToUTF8(m_cx, jstr));
-    if (!id)
+    if (!id) {
+        gjs_throw(m_cx, "Invalid native id.");
         return false;
-
-    JS::RootedObject native_obj(m_cx);
-    if (!gjs_load_native_module(m_cx, id.get(), &native_obj))
-        return false;
+    }
 
     auto moduleAdd = m_id_to_native_module->lookupForAdd(id.get());
 
-    if (!moduleAdd.found() &&
-        !m_id_to_native_module->add(moduleAdd, id.get(), native_obj))
-        return false;
+    if (!moduleAdd.found()) {
+        JS::RootedObject native_obj(m_cx);
+        bool is_native = gjs_is_registered_native_module(id.get());
 
-    argv.rval().setObject(*native_obj);
+        if (is_native) {
+            if (!gjs_load_native_module(m_cx, id.get(), &native_obj)) {
+                gjs_throw(m_cx, "Failed to load native module: %s", id.get());
+                return false;
+            }
+
+            if (!m_id_to_native_module->add(moduleAdd, id.get(), native_obj)) {
+                JS_ReportOutOfMemory(m_cx);
+                return false;
+            }
+
+            argv.rval().setObject(*native_obj);
+            return true;
+        }
+
+        auto internalModuleAdd =
+            m_id_to_internal_module->lookupForAdd(id.get());
+
+        if (internalModuleAdd.found()) {
+            JS::RootedObject obj(m_cx, internalModuleAdd->value().get());
+
+            argv.rval().setObject(*obj);
+            return true;
+        } else {
+            if (!load_legacy_module(m_cx, id.get(), &native_obj)) {
+                gjs_throw(m_cx, "Failed to load native module: %s", id.get());
+                return false;
+            }
+
+            if (!m_id_to_internal_module->add(internalModuleAdd, id.get(),
+                                              native_obj)) {
+                JS_ReportOutOfMemory(m_cx);
+                return false;
+            }
+
+            argv.rval().setObject(*native_obj);
+            return true;
+        }
+
+        argv.rval().setUndefined();
+        return false;
+    }
+
+    JS::RootedObject obj(m_cx, moduleAdd->value().get());
+
+    argv.rval().setObject(*obj);
     return true;
 }
 
@@ -485,8 +549,7 @@ bool GjsModuleLoader::register_gi_module(JSContext* m_cx, const char* ns,
         return false;
     }
 
-    auto priv_mod = new GjsModule();
-    priv_mod->set_module_record(new_module);
+    auto priv_mod = new GjsModule(true);
 
     JS::SetModulePrivate(new_module, JS::PrivateValue(priv_mod));
 
@@ -499,11 +562,146 @@ bool GjsModuleLoader::register_gi_module(JSContext* m_cx, const char* ns,
     return true;
 }
 
+bool GjsModuleLoader::load_legacy_module(JSContext* m_cx,
+                                         const char* identifier,
+                                         JS::MutableHandleObject module_out) {
+    JS::RootedValue ret_val(m_cx);
+    const char* dirname = "resource:///org/gnome/gjs/modules/shared/";
+
+    GjsAutoChar filename = g_strdup_printf("%s.js", identifier);
+    GjsAutoChar full_path = g_build_filename(dirname, filename.get(), nullptr);
+    GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+
+    bool exists = g_file_query_exists(gfile, NULL);
+
+    if (!exists) {
+        gjs_throw(m_cx, "No file found: %s", full_path.get());
+        return false;
+    }
+
+    GError* err = NULL;
+
+    char* mod_text_raw;
+    gsize mod_len;
+
+    if (!g_file_load_contents(gfile, NULL, &mod_text_raw, &mod_len, NULL,
+                              &err)) {
+        gjs_throw(m_cx, "Failed to read internal resource: %s \n%s",
+                  full_path.get(), err->message);
+        return false;
+    }
+
+    GjsAutoChar mod_text(mod_text_raw);
+    auto gjs_cx = GjsContextPrivate::from_cx(m_cx);
+    JS::RootedObject module_object(m_cx, JS_NewPlainObject(m_cx));
+
+    JS_DefineFunction(m_cx, module_object, "require", gjs_load_internal_module,
+                      1, GJS_MODULE_PROP_FLAGS);
+
+    auto success = gjs_cx->eval_with_scope(module_object, mod_text, mod_len,
+                                           filename, &ret_val);
+    JS_DeleteProperty(m_cx, module_object, "require");
+    if (!success) {
+        gjs_log_exception(m_cx);
+        return false;
+    }
+
+    module_out.set(module_object);
+
+    return success;
+}
+
+bool GjsModuleLoader::wrap_legacy_module(JSContext* m_cx,
+                                         const char* identifier,
+                                         const char* filename,
+                                         const char* mod_text, size_t mod_len) {
+    auto gjs_cx = GjsContextPrivate::from_cx(m_cx);
+    JS::RootedValue ret_val(m_cx);
+
+    JS::RootedObject importer(
+        m_cx, JS_NewPlainObject(m_cx));  // TODO Remove eventually
+
+    const char* full_path =
+        "resource://org/gnome/gjs/modules/internal/wrapper.js";
+    GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+    jsid id = gjs_intern_string_to_id(m_cx, full_path);
+    JS::RootedId handle(m_cx, id);
+    auto scope_obj =
+        GjsLegacyModule::import(m_cx, importer, handle, "esm-wrapper", gfile);
+
+    JS::RootedObject module_object(m_cx, JS_NewPlainObject(m_cx));
+
+    auto success = true;
+
+    auto moduleAdd = m_id_to_internal_module->lookupForAdd(identifier);
+    auto found = moduleAdd.found();
+    if (!found) {
+        JS_DefineFunction(m_cx, module_object, "require",
+                          gjs_load_internal_module, 1, GJS_MODULE_PROP_FLAGS);
+
+        success = gjs_cx->eval_with_scope(module_object, mod_text, mod_len,
+                                          filename, &ret_val);
+
+        JS_DeleteProperty(m_cx, module_object, "require");
+
+        m_id_to_internal_module->add(moduleAdd, identifier, module_object);
+    }
+
+    JS::RootedObject mobj(m_cx,
+                          found ? moduleAdd->value().get() : module_object);
+
+    if (!success) {
+        gjs_log_exception(m_cx);
+        return false;
+    }
+
+    JS::RootedObject obj(m_cx, scope_obj);
+
+    JS::RootedObject arr(
+        m_cx, JS_NewArrayObject(m_cx, JS::HandleValueArray::empty()));
+
+    JS::RootedValue module_name_val(m_cx);
+
+    if (!gjs_string_from_utf8(m_cx, identifier, &module_name_val)) {
+        return false;
+    }
+    JS::RootedString module_name(m_cx, module_name_val.toString());
+
+    JS::RootedValue robj(m_cx);
+
+    robj.setObject(*mobj);
+
+    JS::RootedValue rname(m_cx);
+    rname.setString(module_name);
+
+    JS::AutoValueArray<2> js_values(m_cx);
+
+    js_values[0].set(rname);
+    js_values[1].set(robj);
+    JS::HandleValueArray varr(js_values);
+    JS::RootedValue ret_val2(m_cx);
+    JS_CallFunctionName(m_cx, obj, "wrap", varr, &ret_val2);
+
+    JS::RootedString str_val(m_cx, ret_val2.toString());
+    JS::UniqueChars mod_text_str = JS_EncodeStringToUTF8(m_cx, str_val);
+
+    success =
+        register_esm_module(m_cx, identifier, filename, mod_text_str.get(),
+                            strlen(mod_text_str.get()), true);
+
+    if (!success) {
+        gjs_log_exception(m_cx);
+        return false;
+    }
+
+    return true;
+}
+
 bool GjsModuleLoader::register_esm_module(JSContext* m_cx,
                                           const char* identifier,
                                           const char* filename,
-                                          const char* mod_text,
-                                          size_t mod_len) {
+                                          const char* mod_text, size_t mod_len,
+                                          bool internal) {
     auto it = m_id_to_esm_module->lookupForAdd(identifier);
 
     if (it.found()) {
@@ -534,11 +732,12 @@ bool GjsModuleLoader::register_esm_module(JSContext* m_cx,
         return false;
     }
 
-    auto priv_mod = new GjsModule();
-    priv_mod->set_module_record(new_module);
+    auto priv_mod = new GjsModule(internal);
+
     if (filename) {
         priv_mod->set_module_uri(filename);
     }
+
     JS::SetModulePrivate(new_module, JS::PrivateValue(priv_mod));
 
     GjsAutoChar iden = g_strdup(identifier);
@@ -548,7 +747,6 @@ bool GjsModuleLoader::register_esm_module(JSContext* m_cx,
     }
 
     return true;
-    // }
 }
 
 bool GjsModuleLoader::register_internal_module(JSContext* m_cx,
@@ -563,10 +761,7 @@ bool GjsModuleLoader::register_internal_module(JSContext* m_cx,
         return false;
     }
 
-    GjsAutoChar filename = g_strdup_printf("%s.js", resource_path);
-    GjsAutoChar full_path = g_build_filename(
-        "resource:///org/gnome/gjs/modules/esm/", filename.get(), nullptr);
-    GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+    GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(resource_path);
 
     bool exists = g_file_query_exists(gfile, NULL);
 
@@ -608,6 +803,10 @@ bool GjsModuleLoader::register_internal_module(JSContext* m_cx,
         return false;
     }
 
+    auto module = new GjsModule(true);
+    module->set_module_uri(resource_path);
+    JS::SetModulePrivate(new_module, JS::PrivateValue(module));
+
     GjsAutoChar iden = g_strdup(identifier);
     if (!m_id_to_internal_module->add(it, iden.get(), new_module)) {
         JS_ReportOutOfMemory(m_cx);
@@ -631,6 +830,12 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
 
     auto is_relative_path =
         id[0] == '.' && (id[1] == '/' || (id[1] == '.' && id[2] == '/'));
+
+    auto esm_module = m_id_to_esm_module->lookup(id.get());
+
+    if (esm_module.found()) {
+        return esm_module->value().get();
+    }
 
     // 1) Handle relative imports (file-based)
     if (!mod_val.isUndefined() && is_relative_path) {
@@ -718,78 +923,42 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
 
     auto internal_module = m_id_to_internal_module->lookup(id.get());
 
-    // 3) Handle internal imports.
-    std::string internal = "internal/";
-    if (strncmp(id.get(), internal.c_str(), strlen(internal.c_str())) == 0) {
-        g_warning("Importing internal: %s", id.get());
-        if (!mod_val.isUndefined() && !internal_module.found()) {
-            GjsModule* priv_module =
-                static_cast<GjsModule*>(mod_val.toPrivate());
-            auto val = priv_module->module_uri();
-            bool is_internal = false;
-
-            std::string resource_start = "resource:///";
-            is_internal = strncmp(val.c_str(), resource_start.c_str(),
-                                  resource_start.length()) == 0;
-
-            if (is_internal) {
-                // TODO Check len...
-                auto imp =
-                    std::string(id.get()).substr(strlen(internal.c_str()));
-
-                if (!register_internal_module(m_cx, id.get(), id.get(),
-                                              nullptr)) {
-                    g_warning("Failed to register internal module: %s",
-                              id.get());
-                    return nullptr;
-                }
-            } else {
-                gjs_throw(m_cx,
-                          "Attempted to load internal module from userspace!");
-            }
-        }
+    if (internal_module.found()) {
+        return internal_module->value().get();
     }
-
-    auto internal_module_2 = m_id_to_internal_module->lookup(id.get());
-
-    if (internal_module_2.found()) {
-        return internal_module_2->value().get();
-    }
-
-    auto module = m_id_to_esm_module->lookup(id.get());
 
     // 4) Handle global imports
-    if (!module.found()) {
-        const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
-        const char* shared_dirname =
-            "resource:///org/gnome/gjs/modules/shared/";
+    const char* dirname = "resource:///org/gnome/gjs/modules/esm/";
+    const char* shared_dirname = "resource:///org/gnome/gjs/modules/shared/";
 
-        GjsAutoChar filename = g_strdup_printf("%s.js", id.get());
-        GjsAutoChar full_path =
-            g_build_filename(dirname, filename.get(), nullptr);
-        GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+    GjsAutoChar filename = g_strdup_printf("%s.js", id.get());
+    GjsAutoChar full_path = g_build_filename(dirname, filename.get(), nullptr);
+    GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
 
-        bool exists = g_file_query_exists(gfile, NULL);
+    bool exists = g_file_query_exists(gfile, NULL);
+    bool is_script = false;
+
+    if (!exists) {
+        filename = g_strdup_printf("%s.js", id.get());
+        full_path = g_build_filename(shared_dirname, filename.get(), nullptr);
+        gfile = g_file_new_for_commandline_arg(full_path);
+
+        exists = g_file_query_exists(gfile, NULL);
 
         if (!exists) {
-            filename = g_strdup_printf("%s.js", id.get());
-            full_path =
-                g_build_filename(shared_dirname, filename.get(), nullptr);
-            gfile = g_file_new_for_commandline_arg(full_path);
-
-            exists = g_file_query_exists(gfile, NULL);
-
-            if (!exists) {
-                gjs_throw(m_cx,
-                          "Attempted to load unregistered global module: %s",
-                          id.get());
-                return nullptr;
-            }
+            gjs_throw(m_cx, "Attempted to load unregistered global module: %s",
+                      id.get());
+            return nullptr;
         }
 
+        is_script = true;
+    }
+
+    GError* err = NULL;
+
+    if (is_script) {
         char* mod_text_raw;
         gsize mod_len;
-        GError* err = NULL;
 
         if (!g_file_load_contents(gfile, NULL, &mod_text_raw, &mod_len, NULL,
                                   &err)) {
@@ -800,26 +969,26 @@ JSObject* GjsModuleLoader::module_resolve(JSContext* m_cx,
 
         GjsAutoChar mod_text(mod_text_raw);
 
-        if (!register_esm_module(m_cx, id.get(), full_path.get(), mod_text,
-                                 mod_len)) {
+        if (!wrap_legacy_module(m_cx, id.get(), full_path.get(), mod_text,
+                                mod_len)) {
             return nullptr;
         }
-        auto new_val = m_id_to_esm_module->lookup(id.get());
 
-        if (new_val.found())
-            return new_val->value().get();
-
+        return m_id_to_esm_module->lookup(id.get())->value().get();
+    } else if (!register_internal_module(m_cx, id.get(), full_path.get(),
+                                         &err)) {
+        g_warning("Could not register internal...");
         return nullptr;
     }
 
-    return module->value();
-}
+    auto new_val = m_id_to_internal_module->lookup(id.get());
 
-void GjsModule::set_module_record(JS::Handle<JSObject*> module_record) {
-    m_module_record = module_record;
-}
+    if (new_val.found()) {
+        return new_val->value().get();
+    }
 
-// TODO
+    return nullptr;
+}
 
 JSObject* GjsModuleLoader::lookup_module(const char* identifier) {
     auto entry = m_id_to_esm_module->lookup(identifier);
@@ -838,8 +1007,7 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue mod_val,
 
     GjsGlobal* priv = static_cast<GjsGlobal*>(JS_GetPrivate(glob));
 
-    g_assert_cmpstr(priv->global_type().c_str(), ==,
-                    GjsModuleGlobal::type().c_str());
+    g_assert_true(priv->global_type() == GjsModuleGlobal::type());
 
     GjsModuleGlobal* module_global = (GjsModuleGlobal*)priv;
 

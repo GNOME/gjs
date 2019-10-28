@@ -19,14 +19,38 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-let is_legacy = window.imports && !window.require;
+/** @type {Object.<string, any>} */
+var module = {};
 
-// @ts-ignore
-const { Gio, GjsPrivate, GObject } = is_legacy ? imports.gi : require('gi');
+/**
+ * @param {string} ns
+ */
+let $import = (ns) => imports[ns];
 
+/** @type {any} */
+let Gio;
+/** @type {any} */
+let GjsPrivate;
+/** @type {any} */
+let GObject;
+/** @type {any} */
 let Gtk;
 
-function _init() {
+let is_legacy = true;
+
+/**
+ * @param {(ns: string) => any} require
+ */
+function _init(require) {
+    if (require) {
+        $import = require;
+        is_legacy = false;
+    }
+
+    const gi = $import('gi');
+    GjsPrivate = gi.GjsPrivate;
+    GObject = gi.GObject;
+    Gio = gi.Gio;
 
     Gtk = this;
 
@@ -41,88 +65,118 @@ function _init() {
     }
 
     if (Gtk.Container.prototype.child_set_property) {
-        Gtk.Container.prototype.child_set_property = function (child, property, value) {
-            GjsPrivate.gtk_container_child_set_property(this, child, property, value);
-        };
+        Gtk.Container.prototype.child_set_property =
+            /**
+             * @param {any} child
+             * @param {any} property
+             * @param {any} value
+             */
+            function (child, property, value) {
+                GjsPrivate.gtk_container_child_set_property(this, child, property, value);
+            };
     }
 
-    Gtk.Widget.prototype._init = function (params) {
-        if (this.constructor[Gtk.template]) {
-            Gtk.Widget.set_connect_func.call(this.constructor, (builder, obj, signalName, handlerName, connectObj, flags) => {
-                if (connectObj !== null) {
-                    throw new Error('Unsupported template signal attribute "object"');
-                } else if (flags & GObject.ConnectFlags.SWAPPED) {
-                    throw new Error('Unsupported template signal flag "swapped"');
-                } else if (typeof this[handlerName] === 'undefined') {
-                    throw new Error(`A handler called ${handlerName} was not ` +
-                        `defined for signal ${signalName} on ${this}`);
-                } else if (flags & GObject.ConnectFlags.AFTER) {
-                    obj.connect_after(signalName, this[handlerName].bind(this));
+    Gtk.Widget.prototype._init =
+        /**
+         * @param {any} params
+         */
+        function (params) {
+            if (this.constructor[Gtk.template]) {
+
+                Gtk.Widget.set_connect_func.call(this.constructor,
+                    /**
+                     * @param {any} _builder
+                     * @param {any} obj
+                     * @param {string} signalName
+                     * @param {string} handlerName
+                     * @param {any} connectObj
+                     * @param {number} flags
+                     */
+                    (_builder, obj, signalName, handlerName, connectObj, flags) => {
+                        if (connectObj !== null) {
+                            throw new Error('Unsupported template signal attribute "object"');
+                        } else if (flags & GObject.ConnectFlags.SWAPPED) {
+                            throw new Error('Unsupported template signal flag "swapped"');
+                        } else if (typeof this[handlerName] === 'undefined') {
+                            throw new Error(`A handler called ${handlerName} was not ` +
+                                `defined for signal ${signalName} on ${this}`);
+                        } else if (flags & GObject.ConnectFlags.AFTER) {
+                            obj.connect_after(signalName, this[handlerName].bind(this));
+                        } else {
+                            obj.connect(signalName, this[handlerName].bind(this));
+                        }
+                    });
+            }
+
+            GObject.Object.prototype._init.call(this, params);
+
+            if (this.constructor[Gtk.template]) {
+                let children = this.constructor[Gtk.children] || [];
+                for (let child of children) {
+                    this[child.replace(/-/g, '_')] =
+                        this.get_template_child(this.constructor, child);
+                }
+
+                let internalChildren = this.constructor[Gtk.internalChildren] || [];
+                for (let child of internalChildren) {
+                    this[`_${child.replace(/-/g, '_')}`] =
+                        this.get_template_child(this.constructor, child);
+                }
+            }
+        };
+
+    Gtk.Widget._classInit =
+        /**
+         * @param {any} klass
+         */
+        function (klass) {
+            let template = klass[Gtk.template];
+            let cssName = klass[Gtk.cssName];
+            /** @type {any[] | undefined} */
+            let children = klass[Gtk.children];
+            /** @type {any[] | undefined} */
+            let internalChildren = klass[Gtk.internalChildren];
+
+            if (template) {
+                klass.prototype._instance_init = function () {
+                    this.init_template();
+                };
+            }
+
+            klass = GObject.Object._classInit(klass);
+
+            if (cssName)
+                Gtk.Widget.set_css_name.call(klass, cssName);
+
+            if (template) {
+                if (typeof template === 'string') {
+                    if (template.startsWith('resource:///')) {
+                        Gtk.Widget.set_template_from_resource.call(klass,
+                            template.slice(11));
+                    } else if (template.startsWith('file:///')) {
+                        let file = Gio.File.new_for_uri(template);
+                        let [, contents] = file.load_contents(null);
+                        Gtk.Widget.set_template.call(klass, contents);
+                    }
                 } else {
-                    obj.connect(signalName, this[handlerName].bind(this));
+                    Gtk.Widget.set_template.call(klass, template);
                 }
-            });
-        }
-
-        GObject.Object.prototype._init.call(this, params);
-
-        if (this.constructor[Gtk.template]) {
-            let children = this.constructor[Gtk.children] || [];
-            for (let child of children) {
-                this[child.replace(/-/g, '_')] =
-                    this.get_template_child(this.constructor, child);
             }
 
-            let internalChildren = this.constructor[Gtk.internalChildren] || [];
-            for (let child of internalChildren) {
-                this[`_${child.replace(/-/g, '_')}`] =
-                    this.get_template_child(this.constructor, child);
+            if (children) {
+                children.forEach(child =>
+                    Gtk.Widget.bind_template_child_full.call(klass, child, false, 0));
             }
-        }
-    };
 
-    Gtk.Widget._classInit = function (klass) {
-        let template = klass[Gtk.template];
-        let cssName = klass[Gtk.cssName];
-        let children = klass[Gtk.children];
-        let internalChildren = klass[Gtk.internalChildren];
-
-        if (template) {
-            klass.prototype._instance_init = function () {
-                this.init_template();
-            };
-        }
-
-        klass = GObject.Object._classInit(klass);
-
-        if (cssName)
-            Gtk.Widget.set_css_name.call(klass, cssName);
-
-        if (template) {
-            if (typeof template === 'string') {
-                if (template.startsWith('resource:///')) {
-                    Gtk.Widget.set_template_from_resource.call(klass,
-                        template.slice(11));
-                } else if (template.startsWith('file:///')) {
-                    let file = Gio.File.new_for_uri(template);
-                    let [, contents] = file.load_contents(null);
-                    Gtk.Widget.set_template.call(klass, contents);
-                }
-            } else {
-                Gtk.Widget.set_template.call(klass, template);
+            if (internalChildren) {
+                internalChildren.forEach(child =>
+                    Gtk.Widget.bind_template_child_full.call(klass, child, true, 0));
             }
-        }
 
-        if (children) {
-            children.forEach(child =>
-                Gtk.Widget.bind_template_child_full.call(klass, child, false, 0));
-        }
+            return klass;
+        };
+}
 
-        if (internalChildren) {
-            internalChildren.forEach(child =>
-                Gtk.Widget.bind_template_child_full.call(klass, child, true, 0));
-        }
-
-        return klass;
-    };
+module.exports = {
+    _init
 }

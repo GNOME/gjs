@@ -1,3 +1,5 @@
+/// <reference path="./default.d.ts" />
+
 // @ts-ignore
 const printer = imports.print;
 

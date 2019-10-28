@@ -6,7 +6,7 @@
  * @returns string
  */
 function stringify(args) {
-    return args.map(d => d.toString()).join(' ');
+    return args.map(d => `${d}`).join(' ');
 }
 
 export class Console {

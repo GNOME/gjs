@@ -24,6 +24,9 @@
 libdir, localedir, moduledir, name, pkgdatadir, pkglibdir, prefix, require,
 requireSymbol, run, start, version */
 
+/** @type {Object.<string, any>} */
+var module = {};
+
 /**
  * This module provides a set of convenience APIs for building packaged
  * applications.
@@ -342,3 +345,5 @@ function initSubmodule(moduleName) {
         // Running installed, submodule is in $(pkglibdir), nothing to do
     }
 }
+
+module.exports = {};

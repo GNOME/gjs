@@ -3,14 +3,18 @@
   <gresource prefix="/org/gnome/gjs">
     <file>modules/esm/_bootstrap/default.js</file>
 
+    <file>modules/internal/wrapper.js</file>
+
+    <file>modules/shared/system.js</file>
+    <file>modules/shared/iconsole.js</file>
     <file>modules/shared/_signals.js</file>
+    <file>modules/shared/_format.js</file>
+    <file>modules/shared/gettext.js</file>
 
     <file>modules/esm/cairo.js</file>
     <file>modules/esm/console.js</file>
     <file>modules/esm/format.js</file>
-    <file>modules/esm/gettext.js</file>
     <file>modules/esm/gi.js</file>
-    <file>modules/esm/system.js</file>
 
     <file>modules/legacy/_bootstrap/debugger.js</file>
     <file>modules/legacy/_bootstrap/default.js</file>
@@ -28,7 +32,6 @@
 
     <file>modules/legacy/byteArray.js</file>
     <file>modules/legacy/cairo.js</file>
-    <file>modules/legacy/gettext.js</file>
     <file>modules/legacy/lang.js</file>
     <file>modules/legacy/_legacy.js</file>
     <file>modules/legacy/mainloop.js</file>

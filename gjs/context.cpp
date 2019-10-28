@@ -453,6 +453,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
     GjsModuleGlobal* module_global =
         GjsModuleGlobal::from_global(m_module_global);
+
     auto it = module_global->lookup_module(identifier);
 
     if (!it) {
@@ -465,22 +466,17 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     JS::RootedObject obj(m_cx, it);
 
     if (!JS::ModuleInstantiate(m_cx, obj)) {
-        g_warning("Failed to instantiate module: %s", identifier);
         gjs_log_exception(m_cx);
         return false;
     }
 
     if (!JS::ModuleEvaluate(m_cx, obj)) {
-        g_warning("Failed to evaluate module! %s", identifier);
         ok = false;
     }
 
     schedule_gc_if_needed();
 
     if (JS_IsExceptionPending(m_cx)) {
-        g_warning(
-            "ModuleEvaluation returned true but exception was pending; "
-            "did somebody call gjs_throw() without returning false?");
         ok = false;
     }
 

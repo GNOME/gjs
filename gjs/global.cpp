@@ -66,11 +66,6 @@ bool gjs_load_gi_module(JSContext* js_context, unsigned argc, JS::Value* vp) {
     return gjs->loader()->load_gi_module(js_context, argc, vp);
 }
 
-static constexpr JSFunctionSpec internal_functions[] = {
-    JS_FN("require", gjs_load_internal_module, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END,
-};
-
 GJS_JSAPI_RETURN_CONVENTION
 static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
                                  JS::HandleObject global) {
@@ -108,13 +103,12 @@ static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
         return false;
     }
 
-    auto mod = new GjsModule();
+    auto mod = new GjsModule(true);
     mod->set_module_uri(uri.get());
-    mod->set_module_record(bootstrap_module);
     JS::SetModulePrivate(bootstrap_module, JS::PrivateValue(mod));
 
     if (!JS::ModuleInstantiate(cx, bootstrap_module)) {
-        g_warning("Failed to instantiate module: %s", uri.get());
+        g_warning("Failed to instantiate bootstrap module: %s", uri.get());
         gjs_log_exception(cx);
         return false;
     }
@@ -156,12 +150,7 @@ static bool run_legacy_bootstrap(JSContext* cx, const char* bootstrap_script,
     return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
 }
 
-
-
-
-std::string GjsModuleGlobal::global_type() {
-    return GjsModuleGlobal::type();
-}
+GjsGlobalType GjsModuleGlobal::global_type() { return GjsModuleGlobal::type(); }
 
 GJS_JSAPI_RETURN_CONVENTION
 bool GjsModuleGlobal::define_properties(JSContext* cx,
@@ -169,15 +158,11 @@ bool GjsModuleGlobal::define_properties(JSContext* cx,
                                                 const char* bootstrap_script) {
     JSAutoRealm ac(cx, m_global);
     JS::RootedObject global(cx, m_global);
-    // const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     GjsContextPrivate* gjs_cx = GjsContextPrivate::from_cx(cx);
     const GjsAtoms& atoms = gjs_cx->atoms();
 
     if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
                                JSPROP_READONLY | JSPROP_PERMANENT))
-        return false;
-
-    if (!JS_DefineFunctions(cx, global, internal_functions))
         return false;
 
     if (bootstrap_script) {
@@ -189,9 +174,7 @@ bool GjsModuleGlobal::define_properties(JSContext* cx,
     return true;
 }
 
-std::string GjsLegacyGlobal::global_type() {
-    return GjsLegacyGlobal::type();
-}
+GjsGlobalType GjsLegacyGlobal::global_type() { return GjsLegacyGlobal::type(); }
 
 JSObject* GjsModuleGlobal::lookup_module(const char* identifier) {
     return m_module_loader->lookup_module(identifier);

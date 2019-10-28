@@ -1,11 +1,11 @@
-const gi = window.require("gi");
+const gi = import.meta.require("gi");
 
-/**
- * 
- * @param {string} ns 
- * @param {string} version 
- */
 export default class GIRepository {
+    /**
+     * 
+     * @param {string} ns 
+     * @param {string} version 
+     */
     static require(ns, version) {
         if (version) {
             gi.versions[ns] = version;

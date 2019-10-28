@@ -143,11 +143,28 @@ static bool resolve_namespace_object(JSContext* context,
     if (!lookup_override_function(context, ns_id, &override))
         return false;
 
+    auto global = JS::CurrentGlobalOrNull(context);
+    GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(global);
+
+    JS::AutoValueArray<1> args(context);
+
+    if (priv->global_type() == GjsGlobalType::MODULE) {
+        JS::RootedFunction rfn(
+            context,
+            JS_NewFunction(context, gjs_load_internal_module, 1, 0, "require"));
+        JS::RootedObject rfn_obj(context, JS_GetFunctionObject(rfn));
+
+        JS::RootedValue val(context);
+        val.setObject(*rfn_obj);
+        args[0].set(val);
+    } else {
+        args[0].set(JS::UndefinedValue());
+    }
     JS::RootedValue result(context);
     if (!override.isUndefined() &&
-        !JS_CallFunctionValue (context, gi_namespace, /* thisp */
-                               override, /* callee */
-                               JS::HandleValueArray::empty(), &result))
+        !JS_CallFunctionValue(context, gi_namespace, /* thisp */
+                              override,              /* callee */
+                              args, &result))
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,

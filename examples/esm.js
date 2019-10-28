@@ -1,8 +1,7 @@
-#!/usr/bin/gjs
-
+#!/usr/bin/env -S gjs -m
 
 import Gtk from "gi://Gtk?v=3.0"
-import { exit } from "system"
+import system from "system"
 export class Application {
 
     message = "Hello World";
@@ -36,7 +35,8 @@ export class Application {
 
         this.btn.connect('clicked', () => {
             this.application.quit();
-            exit(1);
+            console.log(Object.getOwnPropertyNames(system));
+            system.exit(1);
         });
 
         this.hello_btn.connect('clicked', () => {

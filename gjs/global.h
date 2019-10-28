@@ -85,6 +85,7 @@ class GjsGlobal {
         JS::RootedObject global(
             cx, JS_NewGlobalObject(cx, &klass, nullptr, JS::FireOnNewGlobalHook,
                                    compartment_options));
+
         if (!global)
             return nullptr;
 
@@ -101,7 +102,7 @@ class GjsGlobal {
     virtual bool define_properties(JSContext* cx,
                                    const char* bootstrap_script) = 0;
 
-    virtual std::string global_type() = 0;
+    virtual GjsGlobalType global_type() = 0;
 };
 
 class GjsModuleGlobal : public GjsGlobal {
@@ -121,8 +122,7 @@ class GjsModuleGlobal : public GjsGlobal {
 
         GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(glob);
 
-        g_assert_cmpstr(priv->global_type().c_str(), ==,
-                        GjsModuleGlobal::type().c_str());
+        g_assert_true(priv->global_type() == GjsModuleGlobal::type());
 
         GjsModuleGlobal* module_global = (GjsModuleGlobal*)priv;
 
@@ -132,8 +132,7 @@ class GjsModuleGlobal : public GjsGlobal {
     static GjsModuleGlobal* from_global(JSObject* global) {
         GjsGlobal* priv = (GjsGlobal*)JS_GetPrivate(global);
 
-        g_assert_cmpstr(priv->global_type().c_str(), ==,
-                        GjsModuleGlobal::type().c_str());
+        g_assert_true(priv->global_type() == GjsModuleGlobal::type());
 
         GjsModuleGlobal* module_global = (GjsModuleGlobal*)priv;
 
@@ -161,9 +160,9 @@ class GjsModuleGlobal : public GjsGlobal {
 
     JSObject* lookup_module(const char* identifier);
 
-    static std::string type() { return "esm"; }
+    static GjsGlobalType type() { return GjsGlobalType::MODULE; }
 
-    virtual std::string global_type();
+    virtual GjsGlobalType global_type();
 
     GJS_JSAPI_RETURN_CONVENTION
     virtual bool define_properties(JSContext* cx, const char* bootstrap_script);
@@ -175,9 +174,9 @@ class GjsLegacyGlobal : public GjsGlobal {
  public:
     GjsLegacyGlobal(JSObject* global) : GjsGlobal() { m_global = global; }
 
-    static std::string type() { return "legacy"; }
+    static GjsGlobalType type() { return GjsGlobalType::LEGACY; }
 
-    virtual std::string global_type();
+    virtual GjsGlobalType global_type();
 
     GJS_USE
     static JSObject* create(JSContext* cx) {

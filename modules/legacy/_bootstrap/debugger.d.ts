@@ -1,4 +1,8 @@
+/// <reference path="./default.js" />
+
 declare class Debugger {
+    collectCoverageInfo: boolean;
+  constructor(...globals);
   onPromiseSettled: (promise: DebugPromise) => void;
   onNewPromise: (promise: DebugPromise) => void;
   addDebuggee(debuggee: any): Debugger.Object;
@@ -45,3 +49,10 @@ declare namespace Debugger {
 
 declare function uneval(a: any): string;
 declare function readline(): string;
+
+declare interface Window {
+  [key: string]: any;
+  debuggee: any;
+  debugger: Debugger;
+}
+

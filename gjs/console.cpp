@@ -274,7 +274,13 @@ main(int argc, char **argv)
         filename = "<command line>";
         program_name = gjs_argv[0];
     } else if (gjs_argc == 1) {
-        script = g_strdup("const Console = imports.console; Console.interact();");
+        if (exec_as_module) {
+            script =
+                g_strdup("import Console from 'iconsole'; Console.interact();");
+        } else {
+            script = g_strdup(
+                "const Console = imports.console; Console.interact();");
+        }
         len = strlen(script);
         filename = "<stdin>";
         program_name = gjs_argv[0];

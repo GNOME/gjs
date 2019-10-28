@@ -154,5 +154,5 @@ export default Object.assign({
     Operator,
     PatternType,
     SurfaceType
-}, require("cairoNative"));
+}, import.meta.require("cairoNative"));
 

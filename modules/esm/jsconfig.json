@@ -5,12 +5,11 @@
             "es2017"
         ],
         "target": "es2017",
+        "module": "esnext",
         "noImplicitAny": true
     },
     "include": [
         "./",
-        "esm/tweener",
-        "./overrides",
-        "./esm"
+        "./_bootstrap"
     ]
 }

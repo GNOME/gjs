@@ -20,20 +20,22 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-const is_legacy = typeof imports === 'object';
+/** @type {Object.<string, any>} */
+var module = {};
 
 /**
  * @param {string} ns
  */
-function $import(ns) {
-    return is_legacy ? imports[ns] : require(ns);
-}
+let $import = (ns) => imports[ns];
 
-const Gi = $import('_gi');
+let is_legacy = true;
 
-// @ts-ignore
-const { GjsPrivate } = $import('gi');
+/** @type {any} */
+let GjsPrivate;
+/** @type {any} */
+let Gi;
 
+/** @type {any} */
 let GObject;
 
 var GTypeName = Symbol('GType name');
@@ -49,8 +51,12 @@ var _gtkCssName = Symbol('GTK widget CSS name');
 var _gtkInternalChildren = Symbol('GTK widget template internal children');
 var _gtkTemplate = Symbol('GTK widget template');
 
+/**
+ * @param {[any, Object.<string, any>]} args
+ */
 function registerClass(...args) {
-    let klass = args[0];
+    let [klass] = args;
+
     if (args.length === 2) {
         // The two-argument form is the convenient syntax without ESnext
         // decorators and class data properties. The first argument is an
@@ -66,7 +72,7 @@ function registerClass(...args) {
         //
         // When decorators and class data properties become part of the JS
         // standard, this function can be used directly as a decorator.
-        let metaInfo = args[0];
+        let [metaInfo] = args;
         klass = args[1];
         if ('GTypeName' in metaInfo)
             klass[GTypeName] = metaInfo.GTypeName;
@@ -98,14 +104,22 @@ function registerClass(...args) {
 
     // Find the "least derived" class with a _classInit static function; there
     // definitely is one, since this class must inherit from GObject
+
     let initclass = klass;
-    while (typeof initclass._classInit === 'undefined')
+
+    while (typeof initclass._classInit === 'undefined') {
         initclass = Object.getPrototypeOf(initclass.prototype).constructor;
+    }
+
     return initclass._classInit(klass);
 }
 
 // Some common functions between GObject.Class and GObject.Interface
 
+/**
+ * @param {any} gtype
+ * @param {{ [x: string]: any; }} sigs
+ */
 function _createSignals(gtype, sigs) {
     for (let signalName in sigs) {
         let obj = sigs[signalName];
@@ -122,12 +136,18 @@ function _createSignals(gtype, sigs) {
     }
 }
 
+/**
+ * @param {any} klass
+ */
 function _createGTypeName(klass) {
     if (klass.hasOwnProperty(GTypeName))
         return klass[GTypeName];
     return `Gjs_${klass.name.replace(/[^a-z0-9+_-]/gi, '_')}`;
 }
 
+/**
+ * @param {any} klass
+ */
 function _propertiesAsArray(klass) {
     let propertiesArray = [];
     if (klass.hasOwnProperty(properties)) {
@@ -137,16 +157,27 @@ function _propertiesAsArray(klass) {
     return propertiesArray;
 }
 
+/**
+ * @param {any} target
+ * @param {any} source
+ * @param {string[] | ConcatArray<string>} [filter]
+ */
 function _copyAllDescriptors(target, source, filter) {
-    Object.getOwnPropertyNames(source)
-    .filter(key => !['prototype', 'constructor'].concat(filter).includes(key))
-    .concat(Object.getOwnPropertySymbols(source))
-    .forEach(key => {
-        let descriptor = Object.getOwnPropertyDescriptor(source, key);
-        Object.defineProperty(target, key, descriptor);
-    });
+    /** @type {Array<string | symbol>} */
+    (Object.getOwnPropertyNames(source)
+        .filter(key => !['prototype', 'constructor'].concat(filter).includes(key)))
+        .concat(Object.getOwnPropertySymbols(source))
+        .forEach(key => {
+            let descriptor = Object.getOwnPropertyDescriptor(source, key);
+            Object.defineProperty(target, key, descriptor);
+        });
 }
 
+/**
+ * @param {any} required
+ * @param {any} klass
+ * @returns {boolean}
+ */
 function _interfacePresent(required, klass) {
     if (!klass[interfaces])
         return false;
@@ -156,15 +187,22 @@ function _interfacePresent(required, klass) {
     return _interfacePresent(required, Object.getPrototypeOf(klass));
 }
 
+/**
+ * @param {any} iface
+ * @param {any} proto
+ */
 function _checkInterface(iface, proto) {
     // Check that proto implements all of this interface's required interfaces.
     // "proto" refers to the object's prototype (which implements the interface)
     // whereas "iface.prototype" is the interface's prototype (which may still
     // contain unimplemented methods.)
-    if (typeof iface[requires] === 'undefined')
-        return;
+    const reqs = iface[requires];
 
-    let unfulfilledReqs = iface[requires].filter(required => {
+    if (typeof reqs === 'undefined' || !Array.isArray(reqs)) {
+        return;
+    }
+
+    let unfulfilledReqs = reqs.filter(required => {
         // Either the interface is not present or it is not listed before the
         // interface that requires it or the class does not inherit it. This is
         // so that required interfaces don't copy over properties from other
@@ -184,20 +222,43 @@ function _checkInterface(iface, proto) {
     }
 }
 
-function _init() {
+/**
+ * @param {(ns: string) => any} require
+ */
+function _init(require) {
+    if (require) {
+        $import = require;
+        is_legacy = false;
+    }
+
+    const gi = $import('gi');
+    GjsPrivate = gi.GjsPrivate;
+
+    Gi = $import('_gi');
 
     GObject = this;
 
+    /**
+     * @param {any} obj
+     * @param {string} name
+     * @param {string} upperName
+     * @param {string} gtypeName
+     * @param {NumberConstructor | StringConstructor} [actual]
+     */
     function _makeDummyClass(obj, name, upperName, gtypeName, actual) {
         let gtype = GObject.type_from_name(gtypeName);
         obj[`TYPE_${upperName}`] = gtype;
-        obj[name] = function (v) {
-            return new actual(v);
-        };
+        obj[name] =
+            /**
+             * @param {any} v
+             */
+            function (v) {
+                return (actual && new actual(v)) || void 0;
+            };
         obj[name].$gtype = gtype;
     }
 
-    _makeDummyClass(GObject, 'VoidType', 'NONE', 'void', function () {});
+    _makeDummyClass(GObject, 'VoidType', 'NONE', 'void');
     _makeDummyClass(GObject, 'Char', 'CHAR', 'gchar', Number);
     _makeDummyClass(GObject, 'UChar', 'UCHAR', 'guchar', Number);
     _makeDummyClass(GObject, 'Unichar', 'UNICHAR', 'gint', String);
@@ -234,70 +295,211 @@ function _init() {
 
     _makeDummyClass(GObject, 'Type', 'GTYPE', 'GType', GObject.type_from_name);
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.char = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_char(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+     * @param {string} name
+     * @param {string} nick
+     * @param {string} blurb
+     * @param {number} flags
+     * @param {any} minimum
+     * @param {any} maximum
+     * @param {any} defaultValue
+     */
     GObject.ParamSpec.uchar = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_uchar(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.int = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_int(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.uint = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_uint(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.long = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_long(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.ulong = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_ulong(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.int64 = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_int64(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.uint64 = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_uint64(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.float = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_float(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.boolean = function (name, nick, blurb, flags, defaultValue) {
         return GObject.param_spec_boolean(name, nick, blurb, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} flagsType
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.flags = function (name, nick, blurb, flags, flagsType, defaultValue) {
         return GObject.param_spec_flags(name, nick, blurb, flagsType, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} enumType
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.enum = function (name, nick, blurb, flags, enumType, defaultValue) {
         return GObject.param_spec_enum(name, nick, blurb, enumType, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} minimum
+      * @param {any} maximum
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.double = function (name, nick, blurb, flags, minimum, maximum, defaultValue) {
         return GObject.param_spec_double(name, nick, blurb, minimum, maximum, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} defaultValue
+      */
     GObject.ParamSpec.string = function (name, nick, blurb, flags, defaultValue) {
         return GObject.param_spec_string(name, nick, blurb, defaultValue, flags);
     };
 
+    /**
+      * @param {string} name
+      * @param {string} nick
+      * @param {string} blurb
+      * @param {number} flags
+      * @param {any} boxedType
+      */
     GObject.ParamSpec.boxed = function (name, nick, blurb, flags, boxedType) {
         return GObject.param_spec_boxed(name, nick, blurb, boxedType, flags);
     };
 
+    /**
+  * @param {string} name
+  * @param {string} nick
+  * @param {string} blurb
+  * @param {number} flags
+  * @param {any} objectType
+  */
     GObject.ParamSpec.object = function (name, nick, blurb, flags, objectType) {
         return GObject.param_spec_object(name, nick, blurb, objectType, flags);
     };
 
+    /**
+  * @param {string} name
+  * @param {string} nick
+  * @param {string} blurb
+  * @param {number} flags
+  * @param {any} paramType
+  */
     GObject.ParamSpec.param = function (name, nick, blurb, flags, paramType) {
         return GObject.param_spec_param(name, nick, blurb, paramType, flags);
     };
@@ -371,7 +573,7 @@ function _init() {
     });
 
     if (is_legacy) {
-        let {GObjectMeta, GObjectInterface} = imports._legacy.defineGObjectLegacyObjects(GObject);
+        let { GObjectMeta, GObjectInterface } = imports._legacy.defineGObjectLegacyObjects(GObject);
         GObject.Class = GObjectMeta;
         GObject.Interface = GObjectInterface;
         GObject.Object.prototype.__metaclass__ = GObject.Class;
@@ -379,107 +581,129 @@ function _init() {
 
     // For compatibility with Lang.Class... we need a _construct
     // or the Lang.Class constructor will fail.
-    GObject.Object.prototype._construct = function (...args) {
-        this._init(...args);
-        return this;
-    };
+    GObject.Object.prototype._construct =
+        /**
+         * @param {any[]} args
+         */
+        function (...args) {
+            this._init(...args);
+            return this;
+        };
 
     GObject.registerClass = registerClass;
 
-    GObject.Object._classInit = function (klass) {
-        let gtypename = _createGTypeName(klass);
-        let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
-        let gobjectInterfaces = klass.hasOwnProperty(interfaces) ? klass[interfaces] : [];
-        let propertiesArray = _propertiesAsArray(klass);
-        let parent = Object.getPrototypeOf(klass);
-        let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
+    GObject.Object._classInit =
+        /**
+         * @param {any} klass
+         */
+        function (klass) {
+            let gtypename = _createGTypeName(klass);
+            /** @type {number} */
+            let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
+            /** @type {any[]} */
+            let gobjectInterfaces = klass.hasOwnProperty(interfaces) ? klass[interfaces] : [];
+            /** @type {any[]} */
+            let propertiesArray = _propertiesAsArray(klass);
+            let parent = Object.getPrototypeOf(klass);
+            /** @type {any[]} */
+            let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
 
-        let newClass = Gi.register_type(parent.prototype, gtypename, gflags,
-            gobjectInterfaces, propertiesArray);
-        Object.setPrototypeOf(newClass, parent);
+            let newClass = Gi.register_type(parent.prototype, gtypename, gflags,
+                gobjectInterfaces, propertiesArray);
+            Object.setPrototypeOf(newClass, parent);
 
-        _createSignals(newClass.$gtype, gobjectSignals);
+            _createSignals(newClass.$gtype, gobjectSignals);
 
-        _copyAllDescriptors(newClass, klass);
-        gobjectInterfaces.forEach(iface =>
-            _copyAllDescriptors(newClass.prototype, iface.prototype,
-                ['toString']));
-        _copyAllDescriptors(newClass.prototype, klass.prototype);
+            _copyAllDescriptors(newClass, klass);
+            gobjectInterfaces.forEach(iface =>
+                _copyAllDescriptors(newClass.prototype, iface.prototype,
+                    ['toString']));
+            _copyAllDescriptors(newClass.prototype, klass.prototype);
 
-        Object.getOwnPropertyNames(newClass.prototype)
-        .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
-        .forEach(name => {
-            let descr = Object.getOwnPropertyDescriptor(newClass.prototype, name);
-            if (typeof descr.value !== 'function')
-                return;
+            Object.getOwnPropertyNames(newClass.prototype)
+                .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
+                .forEach(name => {
+                    let descr = Object.getOwnPropertyDescriptor(newClass.prototype, name);
+                    if (typeof descr.value !== 'function')
+                        return;
 
-            let func = newClass.prototype[name];
+                    let func = newClass.prototype[name];
 
-            if (name.startsWith('vfunc_')) {
-                newClass.prototype[Gi.hook_up_vfunc_symbol](name.slice(6), func);
-            } else if (name.startsWith('on_')) {
-                let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
-                    newClass.$gtype);
-                if (id !== 0) {
-                    GObject.signal_override_class_closure(id, newClass.$gtype, function (...argArray) {
-                        let emitter = argArray.shift();
+                    if (name.startsWith('vfunc_')) {
+                        newClass.prototype[Gi.hook_up_vfunc_symbol](name.slice(6), func);
+                    } else if (name.startsWith('on_')) {
+                        let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
+                            newClass.$gtype);
+                        if (id !== 0) {
+                            GObject.signal_override_class_closure(id, newClass.$gtype, function (/** @type {any[]} */...argArray) {
+                                let emitter = argArray.shift();
 
-                        return func.apply(emitter, argArray);
-                    });
-                }
-            }
-        });
+                                return func.apply(emitter, argArray);
+                            });
+                        }
+                    }
+                });
 
-        gobjectInterfaces.forEach(iface =>
-            _checkInterface(iface, newClass.prototype));
+            gobjectInterfaces.forEach(iface =>
+                _checkInterface(iface, newClass.prototype));
 
-        // For backwards compatibility only. Use instanceof instead.
-        newClass.implements = function (iface) {
-            if (iface.$gtype)
-                return GObject.type_is_a(newClass.$gtype, iface.$gtype);
-            return false;
+            // For backwards compatibility only. Use instanceof instead.
+            newClass.implements =
+                /**
+                 * @param {any} iface
+                 */
+                function (iface) {
+                    if (iface.$gtype)
+                        return GObject.type_is_a(newClass.$gtype, iface.$gtype);
+                    return false;
+                };
+
+            return newClass;
         };
-
-        return newClass;
-    };
 
     // TODO: In module mode we need to fix/possibly relocate the GObject.Interface implementation
     // if it is still needed (it is in _legacy?).
     if (!GObject.Interface) GObject.Interface = {};
-    GObject.Interface._classInit = function (klass) {
-        let gtypename = _createGTypeName(klass);
-        let gobjectInterfaces = klass.hasOwnProperty(requires) ? klass[requires] : [];
-        let props = _propertiesAsArray(klass);
-        let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
+    GObject.Interface._classInit =
+        /**
+         * @param {any} klass
+         */
+        function (klass) {
+            let gtypename = _createGTypeName(klass);
+            let gobjectInterfaces = klass.hasOwnProperty(requires) ? klass[requires] : [];
+            let props = _propertiesAsArray(klass);
+            let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
 
-        let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
-            props);
+            let newInterface = Gi.register_interface(gtypename, gobjectInterfaces,
+                props);
 
-        _createSignals(newInterface.$gtype, gobjectSignals);
+            _createSignals(newInterface.$gtype, gobjectSignals);
 
-        _copyAllDescriptors(newInterface, klass);
+            _copyAllDescriptors(newInterface, klass);
 
-        Object.getOwnPropertyNames(klass.prototype)
-        .filter(key => key !== 'constructor')
-        .concat(Object.getOwnPropertySymbols(klass.prototype))
-        .forEach(key => {
-            let descr = Object.getOwnPropertyDescriptor(klass.prototype, key);
+            /** @type {Array<string | symbol>} */
+            (Object.getOwnPropertyNames(klass.prototype)
+                .filter(key => key !== 'constructor'))
+                .concat(Object.getOwnPropertySymbols(klass.prototype))
+                .forEach(key => {
+                    let descr = Object.getOwnPropertyDescriptor(klass.prototype, key);
 
-            // Create wrappers on the interface object so that generics work (e.g.
-            // SomeInterface.some_function(this, blah) instead of
-            // SomeInterface.prototype.some_function.call(this, blah)
-            if (typeof descr.value === 'function') {
-                let interfaceProto = klass.prototype;  // capture in closure
-                newInterface[key] = function (thisObj, ...args) {
-                    return interfaceProto[key].call(thisObj, ...args);
-                };
-            }
+                    // Create wrappers on the interface object so that generics work (e.g.
+                    // SomeInterface.some_function(this, blah) instead of
+                    // SomeInterface.prototype.some_function.call(this, blah)
+                    if (typeof descr.value === 'function') {
+                        let interfaceProto = klass.prototype;  // capture in closure
+                        // @ts-ignore
+                        newInterface[key] = function (thisObj, ...args) {
+                            return interfaceProto[key].call(thisObj, ...args);
+                        };
+                    }
 
-            Object.defineProperty(newInterface.prototype, key, descr);
-        });
+                    Object.defineProperty(newInterface.prototype, key, descr);
+                });
 
-        return newInterface;
-    };
+            return newInterface;
+        };
 
     /**
      * Use this to signify a function that must be overridden in an
@@ -508,6 +732,7 @@ function _init() {
     GObject.signals = signals;
 
     // Replacement for non-introspectable g_object_set()
+    // @ts-ignore
     GObject.Object.prototype.set = function (params) {
         Object.assign(this, params);
     };
@@ -519,6 +744,7 @@ function _init() {
         TRUE_HANDLED: 2,
     };
 
+    // @ts-ignore
     GObject.Object.prototype.disconnect = function (id) {
         return GObject.signal_handler_disconnect(this, id);
     };
@@ -527,13 +753,20 @@ function _init() {
     // methods (such as Gio.Socket.connect or NMClient.Device.disconnect)
     // The original g_signal_* functions are not introspectable anyway, because
     // we need our own handling of signal argument marshalling
+    // @ts-ignore
     GObject.signal_connect = function (object, name, handler) {
         return GObject.Object.prototype.connect.call(object, name, handler);
     };
+    // @ts-ignore
     GObject.signal_connect_after = function (object, name, handler) {
         return GObject.Object.prototype.connect_after.call(object, name, handler);
     };
+    // @ts-ignore
     GObject.signal_emit_by_name = function (object, ...nameAndArgs) {
         return GObject.Object.prototype.emit.apply(object, nameAndArgs);
     };
+}
+
+module.exports = {
+    _init
 }

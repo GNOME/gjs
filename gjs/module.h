@@ -31,17 +31,25 @@
 #include "gjs/macros.h"
 
 class GjsModule {
-    JS::Heap<JSObject*> m_module_record;
+    // This allow the module loader access to these private variables.
+    friend class GjsModuleLoader;
+
     std::string m_module_uri;
+    bool m_is_internal;
 
  public:
-    void set_module_record(JS::Handle<JSObject*> module_record);
+    GjsModule(bool is_internal) {
+        m_is_internal = is_internal;
+        m_module_uri = "[undefined]";
+    }
 
-    JSObject* module_record() const { return m_module_record; }
+    GjsModule() : GjsModule(false) {}
 
     void set_module_uri(std::string uri) { m_module_uri = uri; }
 
     std::string module_uri() { return m_module_uri; }
+
+    bool is_internal() { return m_is_internal; }
 };
 
 bool gjs_populate_module_meta(JSContext* m_cx,
@@ -55,6 +63,7 @@ bool gjs_load_gi_module(JSContext* js_context, unsigned argc, JS::Value* vp);
 
 class GjsModuleLoader {
     // For all external files (e.g. ../main.js).
+    // + any "wrappers" around internal modules.
     ModuleTable* m_id_to_esm_module;
     // For all internal files. (e.g. resource://.../main.js)
     ModuleTable* m_id_to_internal_module;
@@ -93,7 +102,14 @@ class GjsModuleLoader {
 
     bool register_esm_module(JSContext* m_cx, const char* identifier,
                              const char* filename, const char* mod_text,
-                             size_t mod_len);
+                             size_t mod_len, bool is_internal = false);
+
+    bool load_legacy_module(JSContext* m_cx, const char* identifier,
+                            JS::MutableHandleObject module_out);
+
+    bool wrap_legacy_module(JSContext* m_cx, const char* identifier,
+                            const char* filename, const char* mod_text,
+                            size_t mod_len);
 
     JSObject* module_resolve(JSContext* cx, JS::HandleValue mod_val,
                              JS::HandleString specifier);

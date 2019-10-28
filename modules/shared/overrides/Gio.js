@@ -18,72 +18,91 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-
-const is_legacy = typeof imports === 'object';
+/** @type {Object.<string, any>} */
+var module = {};
 
 /**
  * @param {string} ns
  */
-function $import(ns) {
-    return is_legacy ? imports[ns] : require(ns);
-}
+let $import = (ns) => imports[ns];
 
-// @ts-ignore
-const { GjsPrivate, GLib } = $import('gi');
-const Signals = $import('_signals');
+/** @type {any} */
+let GjsPrivate;
+/** @type {any} */
+let GLib;
+/** @type {any} */
+let Signals;
+/** @type {(s: String) => void} */
+let log;
+/** @type {(error: Error, s: String) => void} */
+let logError;
 
+/** @type {any} */
 var Gio;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
 // a parameter type that includes 'h' somewhere, actually has entries in it for
 // each of the indices being passed as an 'h' parameter.
+/**
+ * @param {any} variant
+ * @param {any} fdList
+ * @returns {void}
+ */
 function _validateFDVariant(variant, fdList) {
     switch (String.fromCharCode(variant.classify())) {
-    case 'b':
-    case 'y':
-    case 'n':
-    case 'q':
-    case 'i':
-    case 'u':
-    case 'x':
-    case 't':
-    case 'd':
-    case 'o':
-    case 'g':
-    case 's':
-        return;
-    case 'h': {
-        const val = variant.get_handle();
-        const numFds = fdList.get_length();
-        if (val >= numFds) {
-            throw new Error(`handle ${val} is out of range of Gio.UnixFDList ` +
-                `containing ${numFds} FDs`);
+        case 'b':
+        case 'y':
+        case 'n':
+        case 'q':
+        case 'i':
+        case 'u':
+        case 'x':
+        case 't':
+        case 'd':
+        case 'o':
+        case 'g':
+        case 's':
+            return;
+        case 'h': {
+            const val = variant.get_handle();
+            const numFds = fdList.get_length();
+            if (val >= numFds) {
+                throw new Error(`handle ${val} is out of range of Gio.UnixFDList ` +
+                    `containing ${numFds} FDs`);
+            }
+            return;
         }
-        return;
-    }
-    case 'v':
-        _validateFDVariant(variant.get_variant(), fdList);
-        return;
-    case 'm': {
-        let val = variant.get_maybe();
-        if (val)
-            _validateFDVariant(val, fdList);
-        return;
-    }
-    case 'a':
-    case '(':
-    case '{': {
-        let nElements = variant.n_children();
-        for (let ix = 0; ix < nElements; ix++)
-            _validateFDVariant(variant.get_child_value(ix), fdList);
-        return;
-    }
+        case 'v':
+            _validateFDVariant(variant.get_variant(), fdList);
+            return;
+        case 'm': {
+            let val = variant.get_maybe();
+            if (val)
+                _validateFDVariant(val, fdList);
+            return;
+        }
+        case 'a':
+        case '(':
+        case '{': {
+            let nElements = variant.n_children();
+            for (let ix = 0; ix < nElements; ix++)
+                _validateFDVariant(variant.get_child_value(ix), fdList);
+            return;
+        }
     }
 
     throw new Error('Assertion failure: this code should not be reached');
 }
 
+/**
+ * @param {any} methodName
+ * @param {any} sync
+ * @param {any} inSignature
+ * @param {any[]} argArray
+ */
 function _proxyInvoker(methodName, sync, inSignature, argArray) {
+    // TODO
+    /** @type {{ (result: any, exc: any): void; (arg0: any, arg1: any, arg2: any): void; (arg0: any[], arg1: any, arg2: any): void; }} */
     var replyFunc;
     var flags = 0;
     var cancellable = null;
@@ -136,6 +155,10 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
         _validateFDVariant(inVariant, fdList);
     }
 
+    /**
+     * @param {any} proxy
+     * @param {any} result
+     */
     var asyncCallback = (proxy, result) => {
         try {
             const [outVariant, outFdList] =
@@ -158,33 +181,58 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
         cancellable, asyncCallback);
 }
 
-function _logReply(result, exc) {
-    if (exc !== null)
+/**
+ * @param {any} _result
+ * @param {any} exc
+ */
+function _logReply(_result, exc) {
+    if (exc !== null) {
+        // TODO printing
         log(`Ignored exception from dbus method: ${exc}`);
+    }
 }
 
+/**
+ * @param {{ name: any; in_args: any; }} method
+ * @param {boolean} sync
+ */
 function _makeProxyMethod(method, sync) {
     var i;
     var name = method.name;
     var inArgs = method.in_args;
+    /** @type {any[]} */
     var inSignature = [];
     for (i = 0; i < inArgs.length; i++)
         inSignature.push(inArgs[i].signature);
 
-    return function (...args) {
+    return function (/** @type {any[]} */...args) {
         return _proxyInvoker.call(this, name, sync, inSignature, args);
     };
 }
 
+/**
+ * @param {any} proxy
+ * @param {any} senderName
+ * @param {any} signalName
+ * @param {{ deepUnpack: () => void; }} parameters
+ */
 function _convertToNativeSignal(proxy, senderName, signalName, parameters) {
     Signals._emit.call(proxy, signalName, senderName, parameters.deepUnpack());
 }
 
+/**
+ * @param {any} name
+ */
 function _propertyGetter(name) {
     let value = this.get_cached_property(name);
     return value ? value.deepUnpack() : null;
 }
 
+/**
+ * @param {any} name
+ * @param {any} signature
+ * @param {any} value
+ */
 function _propertySetter(name, signature, value) {
     let variant = new GLib.Variant(signature, value);
     this.set_cached_property(name, variant);
@@ -192,7 +240,8 @@ function _propertySetter(name, signature, value) {
     this.call('org.freedesktop.DBus.Properties.Set',
         new GLib.Variant('(ssv)', [this.g_interface_name, name, variant]),
         Gio.DBusCallFlags.NONE, -1, null,
-        (proxy, result) => {
+
+        (/** @type {any} */ _proxy, /** @type {any} */ result) => {
             try {
                 this.call_finish(result);
             } catch (e) {
@@ -244,11 +293,23 @@ function _addDBusConvenience() {
     }
 }
 
+
+
+/**
+ * @param {any} interfaceXml
+ */
 function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
-    return function (bus, name, object, asyncCallback, cancellable,
-        flags = Gio.DBusProxyFlags.NONE) {
+
+    /**
+     * @param {any} bus
+     * @param {any} name
+     * @param {any} object
+     * @param {any} asyncCallback
+     * @param {any} cancellable
+     */
+    const wrapper = function (bus, name, object, asyncCallback, cancellable, flags = Gio.DBusProxyFlags.NONE) {
         var obj = new Gio.DBusProxy({
             g_connection: bus,
             g_interface_name: iname,
@@ -261,66 +322,107 @@ function _makeProxyWrapper(interfaceXml) {
         if (!cancellable)
             cancellable = null;
         if (asyncCallback) {
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (initable, result) => {
-                let caughtErrorWhenInitting = null;
-                try {
-                    initable.init_finish(result);
-                } catch (e) {
-                    caughtErrorWhenInitting = e;
-                }
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable,
+                /**
+                 * @param {any} initable
+                 * @param {any} result
+                 */
+                (initable, result) => {
+                    let caughtErrorWhenInitting = null;
+                    try {
+                        initable.init_finish(result);
+                    } catch (e) {
+                        caughtErrorWhenInitting = e;
+                    }
 
-                if (caughtErrorWhenInitting === null)
-                    asyncCallback(initable, null);
-                else
-                    asyncCallback(null, caughtErrorWhenInitting);
-            });
+                    if (caughtErrorWhenInitting === null)
+                        asyncCallback(initable, null);
+                    else
+                        asyncCallback(null, caughtErrorWhenInitting);
+                });
         } else {
             obj.init(cancellable);
         }
         return obj;
     };
+
+    return wrapper;
 }
 
 
+/**
+ * @param {(arg0: string) => void} constructor
+ * @param {any} value
+ */
 function _newNodeInfo(constructor, value) {
     if (typeof value === 'string')
         return constructor(value);
     throw TypeError(`Invalid type ${Object.prototype.toString.call(value)}`);
 }
 
+/**
+ * @param {any} value
+ */
 function _newInterfaceInfo(value) {
     var nodeInfo = Gio.DBusNodeInfo.new_for_xml(value);
     return nodeInfo.interfaces[0];
 }
 
+/**
+ * @param {{ [x: string]: (...args: any[]) => any; }} klass
+ * @param {string} method
+ * @param {{ (): void; (): void; apply?: any; }} addition
+ */
 function _injectToMethod(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function (...args) {
-        addition.apply(this, args);
-        return previous.apply(this, args);
-    };
+    klass[method] = /**
+     * @param {any} args
+     */
+        function (...args) {
+            addition.apply(this, args);
+            return previous.apply(this, args);
+        };
 }
 
+/**
+ * @param {{ [x: string]: (...parameters: any[]) => any; }} klass
+ * @param {string} method
+ * @param {{ (): void; (): void; (): void; (): void; apply?: any; }} addition
+ */
 function _injectToStaticMethod(klass, method, addition) {
     var previous = klass[method];
 
-    klass[method] = function (...parameters) {
-        let obj = previous.apply(this, parameters);
-        addition.apply(obj, parameters);
-        return obj;
-    };
+    klass[method] = /**
+     * @param {any} parameters
+     */
+        function (...parameters) {
+            let obj = previous.apply(this, parameters);
+            addition.apply(obj, parameters);
+            return obj;
+        };
 }
 
+/**
+ * @param {{ [x: string]: (...args: any[]) => any; }} klass
+ * @param {string} method
+ * @param {{ (constructor: any, value: any): any; apply?: any; }} addition
+ */
 function _wrapFunction(klass, method, addition) {
     var previous = klass[method];
 
+    /**
+     * @param {any[]} args
+     */
     klass[method] = function (...args) {
         args.unshift(previous);
         return addition.apply(this, args);
     };
 }
 
+/**
+ * @param {{ signature: string; }[]} args
+ */
 function _makeOutSignature(args) {
     var ret = '(';
     for (var i = 0; i < args.length; i++)
@@ -329,7 +431,14 @@ function _makeOutSignature(args) {
     return `${ret})`;
 }
 
-function _handleMethodCall(info, impl, methodName, parameters, invocation) {
+/**
+ * @param {any} info
+ * @param {any} _impl
+ * @param {string | number} methodName
+ * @param {any} parameters
+ * @param {any} invocation
+ */
+function _handleMethodCall(info, _impl, methodName, parameters, invocation) {
     // prefer a sync version if available
     if (this[methodName]) {
         let retval;
@@ -389,7 +498,12 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
     }
 }
 
-function _handlePropertyGet(info, impl, propertyName) {
+/**
+ * @param {any} info
+ * @param {any} _impl
+ * @param {string | number} propertyName
+ */
+function _handlePropertyGet(info, _impl, propertyName) {
     let propInfo = info.lookup_property(propertyName);
     let jsval = this[propertyName];
     if (jsval !== undefined)
@@ -398,11 +512,22 @@ function _handlePropertyGet(info, impl, propertyName) {
         return null;
 }
 
-function _handlePropertySet(info, impl, propertyName, newValue) {
+/**
+ * @param {any} _info
+ * @param {any} _impl
+ * @param {string | number} propertyName
+ * @param {any} newValue
+ */
+function _handlePropertySet(_info, _impl, propertyName, newValue) {
     this[propertyName] = newValue.deepUnpack();
 }
 
+/**
+ * @param {any} interfaceInfo
+ * @param {any} jsObj
+ */
 function _wrapJSObject(interfaceInfo, jsObj) {
+    /** @type {{ cache_build: () => void; }} */
     var info;
     if (interfaceInfo instanceof Gio.DBusInterfaceInfo)
         info = interfaceInfo;
@@ -410,16 +535,31 @@ function _wrapJSObject(interfaceInfo, jsObj) {
         info = Gio.DBusInterfaceInfo.new_for_xml(interfaceInfo);
     info.cache_build();
 
-    var impl = new GjsPrivate.DBusImplementation({g_interface_info: info});
-    impl.connect('handle-method-call', function (self, methodName, parameters, invocation) {
-        return _handleMethodCall.call(jsObj, info, self, methodName, parameters, invocation);
-    });
-    impl.connect('handle-property-get', function (self, propertyName) {
-        return _handlePropertyGet.call(jsObj, info, self, propertyName);
-    });
-    impl.connect('handle-property-set', function (self, propertyName, value) {
-        return _handlePropertySet.call(jsObj, info, self, propertyName, value);
-    });
+    var impl = new GjsPrivate.DBusImplementation({ g_interface_info: info });
+    impl.connect('handle-method-call', /**
+         * @param {any} self
+         * @param {any} methodName
+         * @param {any} parameters
+         * @param {any} invocation
+         */
+        function (self, methodName, parameters, invocation) {
+            return _handleMethodCall.call(jsObj, info, self, methodName, parameters, invocation);
+        });
+    impl.connect('handle-property-get', /**
+         * @param {any} self
+         * @param {any} propertyName
+         */
+        function (self, propertyName) {
+            return _handlePropertyGet.call(jsObj, info, self, propertyName);
+        });
+    impl.connect('handle-property-set', /**
+         * @param {any} self
+         * @param {any} propertyName
+         * @param {any} value
+         */
+        function (self, propertyName, value) {
+            return _handlePropertySet.call(jsObj, info, self, propertyName, value);
+        });
 
     return impl;
 }
@@ -431,32 +571,62 @@ function* _listModelIterator() {
         yield this.get_item(_index++);
 }
 
+/**
+ * @param {{ [x: string]: (...args: any[]) => any; }} proto
+ * @param {string | number} asyncFunc
+ * @param {string | number} finishFunc
+ */
 function _promisify(proto, asyncFunc, finishFunc) {
     proto[`_original_${asyncFunc}`] = proto[asyncFunc];
+    /**
+     * @param {any[]} args
+     */
     proto[asyncFunc] = function (...args) {
         if (!args.every(arg => typeof arg !== 'function'))
             return this[`_original_${asyncFunc}`](...args);
         return new Promise((resolve, reject) => {
             const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
-            this[`_original_${asyncFunc}`](...args, function (source, res) {
-                try {
-                    const result = source[finishFunc](res);
-                    if (Array.isArray(result) && result.length > 1 && result[0] === true)
-                        result.shift();
-                    resolve(result);
-                } catch (error) {
-                    if (error.stack)
-                        error.stack += `### Promise created here: ###\n${callStack}`;
-                    else
-                        error.stack = callStack;
-                    reject(error);
-                }
-            });
+
+            this[`_original_${asyncFunc}`](...args,
+                /**
+                 * @param {any} source
+                 * @param {any} res
+                 */
+                function (source, res) {
+                    try {
+                        const result = source[finishFunc](res);
+                        if (Array.isArray(result) && result.length > 1 && result[0] === true)
+                            result.shift();
+                        resolve(result);
+                    } catch (error) {
+                        if (error.stack)
+                            error.stack += `### Promise created here: ###\n${callStack}`;
+                        else
+                            error.stack = callStack;
+                        reject(error);
+                    }
+                });
         });
     };
 }
 
-function _init() {
+/**
+ * @param {(ns: string) => any} require
+ */
+function _init(require) {
+    if (require) {
+        $import = require;
+    }
+
+    const gi = $import('gi');
+    GjsPrivate = gi.GjsPrivate, GLib = gi.GLib;
+
+    Signals = $import('_signals');
+
+    const print = $import('print');
+    logError = print.logError;
+    log = print.log;
+
     Gio = this;
 
     Gio.DBus = {
@@ -481,15 +651,33 @@ function _init() {
         unwatch_name: Gio.bus_unwatch_name,
     };
 
-    Gio.DBusConnection.prototype.watch_name = function (name, flags, appeared, vanished) {
-        return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
-    };
+    Gio.DBusConnection.prototype.watch_name = /**
+     * @param {any} name
+     * @param {any} flags
+     * @param {any} appeared
+     * @param {any} vanished
+     */
+        function (name, flags, appeared, vanished) {
+            return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
+        };
+    /**
+     * @param {any} id
+     */
     Gio.DBusConnection.prototype.unwatch_name = function (id) {
         return Gio.bus_unwatch_name(id);
     };
+    /**
+     * @param {any} name
+     * @param {any} flags
+     * @param {any} acquired
+     * @param {any} lost
+     */
     Gio.DBusConnection.prototype.own_name = function (name, flags, acquired, lost) {
         return Gio.bus_own_name_on_connection(this, name, flags, acquired, lost);
     };
+    /**
+     * @param {any} id
+     */
     Gio.DBusConnection.prototype.unown_name = function (id) {
         return Gio.bus_unown_name(id);
     };
@@ -500,7 +688,7 @@ function _init() {
     _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
-    
+
     // TODO Figure out how to "neutralize the signals implementation"
     if (typeof Signals !== 'undefined') {
         Gio.DBusProxy.prototype.connectSignal = Signals._connect;
@@ -530,6 +718,9 @@ function _init() {
     // shell-extension writers
 
     Gio.SettingsSchema.prototype._realGetKey = Gio.SettingsSchema.prototype.get_key;
+    /**
+     * @param {any} key
+     */
     Gio.SettingsSchema.prototype.get_key = function (key) {
         if (!this.has_key(key))
             throw new Error(`GSettings key ${key} not found in schema ${this.get_id()}`);
@@ -538,8 +729,14 @@ function _init() {
 
     Gio.Settings.prototype._realMethods = Object.assign({}, Gio.Settings.prototype);
 
+    /**
+     * @param {string} method
+     */
     function createCheckedMethod(method, checkMethod = '_checkKey') {
-        return function (id, ...args) {
+        return function (
+            /** @type {any} */ id,
+            /** @type {any[]} */ ...args
+        ) {
             this[checkMethod](id);
             return this._realMethods[method].call(this, id, ...args);
         };
@@ -547,6 +744,9 @@ function _init() {
 
     Object.assign(Gio.Settings.prototype, {
         _realInit: Gio.Settings.prototype._init,  // add manually, not enumerable
+        /**
+         * @param {Object.<string, any>} props 
+         */
         _init(props = {}) {
             // 'schema' is a deprecated alias for schema_id
             const requiredProps = ['schema', 'schema-id', 'schema_id', 'schemaId',
@@ -568,21 +768,35 @@ function _init() {
             return this._realInit(props);
         },
 
+        /**
+         * @param {any} key
+         */
         _checkKey(key) {
             // Avoid using has_key(); checking a JS array is faster than calling
             // through G-I.
+            // @ts-ignore TODO: Type definitions are a problem here.
             if (!this._keys)
+                // @ts-ignore TODO: Type definitions are a problem here.
                 this._keys = this.settings_schema.list_keys();
 
+            // @ts-ignore TODO: Type definitions are a problem here.
             if (!this._keys.includes(key))
+                // @ts-ignore TODO: Type definitions are a problem here.
                 throw new Error(`GSettings key ${key} not found in schema ${this.schema_id}`);
         },
 
+        /**
+         * @param {any} name
+         */
         _checkChild(name) {
+            // @ts-ignore TODO: Type definitions are a problem here.
             if (!this._children)
+                // @ts-ignore TODO: Type definitions are a problem here.
                 this._children = this.list_children();
 
+            // @ts-ignore TODO: Type definitions are a problem here.
             if (!this._children.includes(name))
+                // @ts-ignore TODO: Type definitions are a problem here.
                 throw new Error(`Child ${name} not found in GSettings schema ${this.schema_id}`);
         },
 
@@ -619,4 +833,8 @@ function _init() {
 
         get_child: createCheckedMethod('get_child', '_checkChild'),
     });
+}
+
+module.exports = {
+    _init
 }
