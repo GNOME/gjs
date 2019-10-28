@@ -26,7 +26,7 @@
 #include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
 #include <string.h>  // for strchr, strcmp
 
-#ifdef G_OS_WIN32
+#ifdef _WIN32
 # include <io.h>
 # include <process.h>
 # ifndef F_OK

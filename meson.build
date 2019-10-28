@@ -10,8 +10,6 @@ pkg = import('pkgconfig')
 
 top_include = include_directories('.')
 
-add_project_arguments('-DG_LOG_DOMAIN="Gjs"', language: ['c', 'cpp'])
-
 ### Check for conflicting build options ########################################
 
 if get_option('systemtap') and not get_option('dtrace')
@@ -27,21 +25,44 @@ endif
 cxx = meson.get_compiler('cpp')
 cc = meson.get_compiler('c')
 
-add_project_arguments(cxx.get_supported_arguments([
-    '-fno-strict-aliasing',
+if cxx.get_id() == 'msvc'
+    add_project_arguments(cxx.get_supported_arguments([
+        # Use UTF-8 mode
+        '-utf-8',
 
-    # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
-    # header files commonly do
-    '-Wno-variadic-macros',  # GLib uses these in header files
-    '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
-]), language: 'cpp')
+        # Ignore spurious compiler warnings for things that
+        # GLib and SpiderMonkey header files commonly do
+        '-FImsvc_recommended_pragmas.h',
+        '-EHsc',
+        '-wd4099',
+        '-wd4251',
+        '-wd4291',
+        '-wd4800',
 
-if get_option('bsymbolic_functions')
-    if not cxx.has_link_argument('-Bsymbolic-functions')
-        error('''-Bsymbolic-functions not supported, configure with
+        # Visual Studio do not come with ssize_t
+        '-Dssize_t=gssize',
+
+        # Required for 'extern constexpr' on MSVC
+        '-Zc:externConstexpr',
+
+        # We don't want 'min' or 'max' to interfere
+        '-DNOMINMAX',
+    ]), language: ['cpp', 'c'])
+else
+    add_project_arguments(cxx.get_supported_arguments([
+        '-fno-strict-aliasing',
+
+        # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
+        # header files commonly do
+    ]), language: 'cpp')
+
+    if get_option('bsymbolic_functions')
+        if not cxx.has_link_argument('-Bsymbolic-functions')
+            error('''-Bsymbolic-functions not supported, configure with
 -Dbsymbolic_functions=false''')
+        endif
+        add_project_link_arguments('-Bsymbolic-functions', language: ['cpp', 'c'])
     endif
-    add_project_link_arguments('-Bsymbolic-functions', language: ['cpp', 'c'])
 endif
 
 # SpiderMonkey can be compiled with or without runtime type information, we must
@@ -91,9 +112,24 @@ ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
     fallback: ['gobject-introspection', 'girepo_dep'])
 spidermonkey = dependency('mozjs-60')
-cairo = dependency('cairo', required: get_option('cairo'))
-cairo_gobject = dependency('cairo-gobject', required: cairo.found())
+
+# We might need to look for the headers and lib's for Cairo
+# manually on MSVC builds...
+cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_id() != 'msvc')
+cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_id() != 'msvc')
 cairo_xlib = dependency('cairo-xlib', required: false)
+
+if cxx.get_id() == 'msvc'
+    if not cairo.found()
+        assert(cc.has_header('cairo.h') or not get_option('cairo').enabled(), 'Cairo headers are required when enabling \'cairo\'')
+        cairo = cc.find_library('cairo', required: get_option('cairo'))
+    endif
+    if not cairo_gobject.found()
+        assert(cc.has_header('cairo-gobject.h') or not cairo.found(), 'Cairo-GObject headers are required when Cairo support is being built')
+        cairo_gobject = cc.find_library('cairo-gobject', required: cairo.found())
+    endif
+endif
+
 sysprof_capture = dependency('sysprof-capture-3', version: '>= 3.33.32',
     required: get_option('profiler'),
     fallback: ['sysprof', 'libsysprof_capture_dep'])
@@ -249,6 +285,7 @@ if build_readline
 endif
 header_conf.set('HAVE_SYS_SYSCALL_H', cxx.check_header('sys/syscall.h'))
 header_conf.set('HAVE_UNISTD_H', cxx.check_header('unistd.h'))
+header_conf.set('HAVE_SYS_SIGNAL_H', cxx.check_header('sys/signal.h'))
 
 # enable GNU extensions on systems that have them
 header_conf.set('_GNU_SOURCE', 1)
@@ -269,7 +306,10 @@ configure_file(input: 'win32/config.h.win32.in', output: 'config.h.win32',
 
 ### Check for environment ######################################################
 
-tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+# Not applicable for cmd.exe shells that MSVC uses
+if cxx.get_id() != 'msvc'
+    tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+endif
 
 gjsjsdir = get_option('datadir') / api_name
 pkglibexecdir = get_option('libexecdir') / meson.project_name()
@@ -405,11 +445,21 @@ module_resource_srcs = gnome.compile_resources('modules-resources',
 libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey,
     readline]
 pkg_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey]
+libraries_private = []
 
 if build_cairo
     libgjs_sources += module_cairo_srcs
     libgjs_dependencies += [cairo, cairo_gobject]
-    pkg_dependencies += [cairo, cairo_gobject]
+    if cairo.type_name() == 'pkgconfig'
+        pkg_dependencies += [cairo]
+    elif cairo.type_name() == 'library'
+        libraries_private += cairo
+    endif
+    if cairo_gobject.type_name() == 'pkgconfig'
+        pkg_dependencies += [cairo_gobject]
+    elif cairo_gobject.type_name() == 'library'
+        libraries_private += cairo_gobject
+    endif
     if cairo_xlib.found()
         libgjs_dependencies += cairo_xlib
         pkg_dependencies += cairo_xlib
@@ -437,10 +487,20 @@ else
     link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
 endif
 
+libgjs_cpp_args = ['-DGJS_COMPILATION']
+
+# Check G-I and/or Meson on this one.
+libgjs_cpp_args += ['-DG_LOG_DOMAIN="Gjs"']
+
+if host_machine.system() == 'windows'
+    # We need these defines to build properly for all Windows builds
+    libgjs_cpp_args += ['-DWIN32', '-DXP_WIN']
+endif
+
 libgjs = shared_library(meson.project_name(),
     libgjs_sources, libgjs_private_sources, module_resource_srcs,
     probes_header, probes_objfile,
-    cpp_args: ['-DGJS_COMPILATION'] + directory_defines,
+    cpp_args: libgjs_cpp_args + directory_defines,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     dependencies: libgjs_dependencies,
     version: '0.0.0', soversion: '0',
@@ -466,6 +526,7 @@ gjs_private_typelib = gjs_private_gir[1]
 gjs_console_srcs = ['gjs/console.cpp']
 
 gjs_console = executable('gjs-console', gjs_console_srcs,
+    cpp_args: libgjs_cpp_args,
     dependencies: libgjs_dep, install: true)
 
 meson.add_install_script('build/symlink-gjs.py', get_option('bindir'))
@@ -487,6 +548,7 @@ endif
 
 pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
     requires: [glib, gobject, gio], requires_private: pkg_dependencies,
+    libraries_private: libraries_private,
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
@@ -513,7 +575,13 @@ tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 tests_environment.set('LSAN_OPTIONS', 'suppressions=@0@'.format(
     meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
-tests_environment.set('LC_ALL', tests_locale)
+
+if cc.get_id() == 'msvc'
+    tests_environment.set('LC_ALL', 'C.UTF-8')
+else
+    tests_environment.set('LC_ALL', tests_locale)
+endif
+
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
@@ -529,7 +597,12 @@ endif
 
 ### Tests and test setups ######################################################
 
-subdir('test')
+# Note: The test program in test/ needs to be ported
+#       to Windows before we can build it on Windows.
+if host_machine.system() != 'windows'
+    subdir('test')
+endif
+
 subdir('installed-tests')
 
 valgrind_environment = environment()
@@ -575,7 +648,7 @@ gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.''')
 endif
 
-if tests_locale == 'C'
+if cxx.get_id() != 'msvc' and tests_locale == 'C'
     warning('''Your libc does not have the C.UTF-8 locale and no other
 suitable UTF-8 fallback locale could be found. You can still build GJS, but
 some tests will fail.''')

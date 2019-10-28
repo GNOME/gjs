@@ -6,10 +6,16 @@ test_descriptions_dir = (get_option('datadir') / 'installed-tests' /
 
 # Simple shell script tests #
 
-simple_tests = [
-    'CommandLine',
-    'Warnings',
-]
+simple_tests = []
+
+# The test scripts need to be ported from shell scripts
+# for MSVC builds, which do not use BASH-style shells
+if cxx.get_id() != 'msvc'
+    simple_tests += [
+        'CommandLine',
+        'Warnings',
+    ]
+endif
 
 foreach test : simple_tests
     test_file = files('scripts' / 'test@0@.sh'.format(test))

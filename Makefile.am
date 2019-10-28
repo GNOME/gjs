@@ -193,6 +193,7 @@ EXTRA_DIST +=					\
 	libgjs.symbols				\
 	meson.build				\
 	meson_options.txt			\
+	README.MSVC.md				\
 	subprojects/glib.wrap			\
 	subprojects/gobject-introspection.wrap	\
 	subprojects/libffi.wrap			\
@@ -211,7 +212,6 @@ EXTRA_DIST +=					\
 	win32/install.mak			\
 	win32/introspection-msvc.mak		\
 	win32/Makefile.vc			\
-	win32/README.txt			\
 	$(NULL)
 
 # Colin's handy Makefile bits for:
