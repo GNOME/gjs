@@ -452,6 +452,14 @@ describe('GObject virtual function', function () {
 
         expect(() => GObject.registerClass({GTypeName: 'SimpleTestClass3'}, _SimpleTestClass3)).toThrow();
     });
+
+    it('gracefully bails out when overriding an unsupported vfunc type', function () {
+        expect(() => GObject.registerClass({
+            Implements: [Gio.AsyncInitable],
+        }, class Foo extends GObject.Object {
+            vfunc_init_async() {}
+        })).toThrow();
+    });
 });
 
 describe('GObject creation using base classes without registered GType', function () {

@@ -2316,6 +2316,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         JS::RootedFunction func(cx, JS_GetObjectFunction(function));
         trampoline = gjs_callback_trampoline_new(
             cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
+        if (!trampoline)
+            return false;
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }
