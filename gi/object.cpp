@@ -951,20 +951,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
 bool ObjectPrototype::props_to_g_parameters(JSContext* context,
-                                            const JS::HandleValueArray& args,
+                                            JS::HandleObject props,
                                             std::vector<const char*>* names,
                                             AutoGValueVector* values) {
     size_t ix, length;
-
-    if (args.length() == 0 || args[0].isUndefined())
-        return true;
-
-    if (!args[0].isObject()) {
-        gjs_throw(context, "argument should be a hash with props to set");
-        return false;
-    }
-
-    JS::RootedObject props(context, &args[0].toObject());
     JS::RootedId prop_id(context);
     JS::RootedValue value(context);
     JS::Rooted<JS::IdVector> ids(context, context);
@@ -1449,8 +1439,20 @@ ObjectInstance::init_impl(JSContext              *context,
 
     std::vector<const char *> names;
     AutoGValueVector values;
-    if (!m_proto->props_to_g_parameters(context, args, &names, &values))
-        return false;
+
+    if (args.length() > 0 && !args[0].isUndefined()) {
+        if (!args[0].isObject()) {
+            gjs_throw(context,
+                      "Argument to the constructor of %s should be an object "
+                      "with properties to set",
+                      name());
+            return false;
+        }
+
+        JS::RootedObject props(context, &args[0].toObject());
+        if (!m_proto->props_to_g_parameters(context, props, &names, &values))
+            return false;
+    }
 
     if (G_TYPE_IS_ABSTRACT(gtype())) {
         gjs_throw(context,
