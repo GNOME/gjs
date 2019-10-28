@@ -71,15 +71,6 @@ gjs_srcs =				\
 	gjs/global.h			\
 	gjs/importer.cpp		\
 	gjs/importer.h			\
-	gjs/jsapi-class.h		\
-	gjs/jsapi-dynamic-class.cpp	\
-	gjs/jsapi-util.cpp		\
-	gjs/jsapi-util.h		\
-	gjs/jsapi-util-args.h		\
-	gjs/jsapi-util-error.cpp	\
-	gjs/jsapi-util-root.h		\
-	gjs/jsapi-util-string.cpp	\
-	gjs/jsapi-wrapper.h		\
 	gjs/mem.cpp			\
 	gjs/mem-private.h		\
 	gjs/module.h			\
@@ -91,6 +82,18 @@ gjs_srcs =				\
 	gjs/stack.cpp			\
 	modules/modules.cpp		\
 	modules/modules.h		\
+	$(NULL)
+
+gjs_jsapi_srcs =			\
+	gjs/jsapi-class.h		\
+	gjs/jsapi-dynamic-class.cpp	\
+	gjs/jsapi-util.cpp		\
+	gjs/jsapi-util.h		\
+	gjs/jsapi-util-args.h		\
+	gjs/jsapi-util-error.cpp	\
+	gjs/jsapi-util-root.h		\
+	gjs/jsapi-util-string.cpp	\
+	gjs/jsapi-wrapper.h		\
 	util/log.cpp			\
 	util/log.h			\
 	util/misc.cpp			\

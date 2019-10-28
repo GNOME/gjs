@@ -34,7 +34,7 @@
 # endif
 #    define siginfo_t void
 #else
-# define GJS_EXPORT
+#    define GJS_EXPORT __attribute__((visibility("default")))
 #endif
 
 /**
