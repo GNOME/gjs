@@ -18,9 +18,10 @@ stages:
   script:
     - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    - 'export DISPLAY="${DISPLAY:-:0}"'
     # This script runs the build inside its own build tree and generates the
     # coverage report
-    - tools/run_coverage.sh
+    - xvfb-run -a tools/run_coverage.sh
   artifacts:
     name: log_coverage
     when: always
