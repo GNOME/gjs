@@ -59,8 +59,6 @@ bool gjs_populate_module_meta(JSContext* m_cx,
 bool gjs_load_internal_module(JSContext* js_context, unsigned argc,
                               JS::Value* vp);
 
-bool gjs_load_gi_module(JSContext* js_context, unsigned argc, JS::Value* vp);
-
 class GjsModuleLoader {
     // For all external files (e.g. ../main.js).
     // + any "wrappers" around internal modules.
@@ -92,9 +90,6 @@ class GjsModuleLoader {
 
     GJS_JSAPI_RETURN_CONVENTION
     bool load_internal_module(JSContext* m_cx, unsigned argc, JS::Value* vp);
-
-    GJS_JSAPI_RETURN_CONVENTION
-    bool load_gi_module(JSContext* m_cx, unsigned argc, JS::Value* vp);
 
     bool register_module(JSContext* m_cx, const char* identifier,
                          const char* filename, const char* mod_text,

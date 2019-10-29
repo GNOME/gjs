@@ -107,11 +107,6 @@ static GObject* gjs_object_constructor(
      * that was associated in gjs_object_custom_init()
      */
 
-    JSObject* global = JS::CurrentGlobalOrNull(cx);
-
-    if(!global) g_warning("Failed to construct object as global is null.");
-    JSAutoRealm ar(cx, global);
-
     JS::RootedObject constructor(
         cx, gjs_lookup_object_constructor_from_info(cx, nullptr, type));
     if (!constructor)

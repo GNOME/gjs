@@ -61,11 +61,6 @@ bool gjs_load_internal_module(JSContext* js_context, unsigned argc,
     return gjs->loader()->load_internal_module(js_context, argc, vp);
 }
 
-bool gjs_load_gi_module(JSContext* js_context, unsigned argc, JS::Value* vp) {
-    GjsModuleGlobal* gjs = GjsModuleGlobal::from_cx(js_context);
-    return gjs->loader()->load_gi_module(js_context, argc, vp);
-}
-
 GJS_JSAPI_RETURN_CONVENTION
 static bool run_module_bootstrap(JSContext* cx, const char* bootstrap_script,
                                  JS::HandleObject global) {

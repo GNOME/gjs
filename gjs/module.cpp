@@ -414,67 +414,6 @@ bool GjsModuleLoader::load_internal_module(JSContext* m_cx, unsigned argc,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-bool GjsModuleLoader::load_gi_module(JSContext* m_cx, unsigned argc,
-                                     JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-
-    if (argc > 2) {
-        gjs_throw(m_cx, "Must pass a single argument to log()");
-        return false;
-    }
-
-    /* JS::ToString might throw, in which case we will only log that the
-     * value could not be converted to string */
-    JS::AutoSaveExceptionState exc_state(m_cx);
-    JS::RootedString jstr(m_cx, JS::ToString(m_cx, argv[0]));
-    exc_state.restore();
-
-    if (!jstr) {
-        g_message("JS LOG: <cannot convert value to string>");
-        return true;
-    }
-
-    JS::UniqueChars ns(JS_EncodeStringToUTF8(m_cx, jstr));
-    if (!ns)
-        return false;
-
-    JS::RootedObject v(m_cx);
-
-    if (!gjs_load_native_module(m_cx, "gi", &v)) {
-        return false;
-    }
-
-    if (argc == 2) {
-        JS::AutoSaveExceptionState exc_state2(m_cx);
-        JS::RootedString jstr2(m_cx, JS::ToString(m_cx, argv[1]));
-        exc_state2.restore();
-
-        if (!jstr2) {
-            g_message("JS LOG: <cannot convert value to string>");
-            return true;
-        }
-        JS::UniqueChars version(JS_EncodeStringToUTF8(m_cx, jstr2));
-        if (!version)
-            return false;
-        g_irepository_require(nullptr, ns.get(), version.get(),
-                              GIRepositoryLoadFlags(0), nullptr);
-    }
-
-    JS::RootedValue import_obj(m_cx);
-    JS::RootedId ns_name(m_cx, gjs_intern_string_to_id(m_cx, ns.get()));
-    if (ns_name == JSID_VOID)
-        return false;
-
-    if (!gjs_object_require_property(m_cx, v, "gi", ns_name, &import_obj)) {
-        return false;
-    }
-    JS::RootedObject fin_obj(m_cx, &import_obj.get().toObject());
-
-    argv.rval().setObject(*fin_obj);
-    return true;
-}
-
 bool GjsModuleLoader::register_module(JSContext* m_cx, const char* identifier,
                                       const char* filename,
                                       const char* mod_text, size_t mod_len,

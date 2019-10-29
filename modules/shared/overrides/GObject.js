@@ -577,6 +577,13 @@ function _init(require) {
         GObject.Class = GObjectMeta;
         GObject.Interface = GObjectInterface;
         GObject.Object.prototype.__metaclass__ = GObject.Class;
+    } else {
+        // TODO: In module mode we need to fix/possibly relocate the GObject.Interface implementation
+        // if it is still needed (it is in _legacy?).
+        
+        // TODO Avoid this temporary patch in the future.
+        GObject.Interface = function () {};
+        GObject.Class = function () {};
     }
 
     // For compatibility with Lang.Class... we need a _construct
@@ -661,9 +668,6 @@ function _init(require) {
             return newClass;
         };
 
-    // TODO: In module mode we need to fix/possibly relocate the GObject.Interface implementation
-    // if it is still needed (it is in _legacy?).
-    if (!GObject.Interface) GObject.Interface = {};
     GObject.Interface._classInit =
         /**
          * @param {any} klass
