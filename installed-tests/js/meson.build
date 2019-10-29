@@ -15,9 +15,16 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
 gidatadir = gi.get_pkgconfig_variable('gidatadir')
 gi_tests = gidatadir / 'tests'
 
+test_gir_extra_c_args = []
+
+# We need to ensure the symbols in the test DLLs export in MSVC builds
+if cc.get_id() == 'msvc'
+  test_gir_extra_c_args += ['-D_GI_EXTERN=__declspec(dllexport)extern']
+endif
+
 regress_dependencies = [glib, gobject, gio]
 regress_gir_includes = ['Gio-2.0']
-regress_gir_c_args = []
+regress_gir_c_args = test_gir_extra_c_args
 if build_cairo
     regress_gir_includes += 'cairo-1.0'
     regress_dependencies += [cairo, cairo_gobject]
@@ -46,7 +53,8 @@ warnlib_sources = [
 ]
 libwarnlib = library('warnlib', warnlib_sources,
     dependencies: [glib, gobject, gio], install: get_option('installed_tests'),
-    install_dir: pkglibdir)
+    install_dir: pkglibdir,
+    c_args:  test_gir_extra_c_args)
 # This should have --warn-all turned off, but there is currently no way to do so
 # in gnome.generate_gir(). See https://github.com/mesonbuild/meson/issues/5876
 warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
@@ -62,6 +70,7 @@ gimarshallingtests_sources = [
 ]
 libgimarshallingtests = library('gimarshallingtests',
     gimarshallingtests_sources, dependencies: [glib, gobject, gio],
+    c_args:  test_gir_extra_c_args,
     install: get_option('installed_tests'), install_dir: pkglibdir)
 gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,

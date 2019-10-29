@@ -107,9 +107,22 @@ ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
     fallback: ['gobject-introspection', 'girepo_dep'])
 spidermonkey = dependency('mozjs-60')
-cairo = dependency('cairo', required: get_option('cairo'))
-cairo_gobject = dependency('cairo-gobject', required: cairo.found())
+
+# We might need to look for the headers and lib's for Cairo
+# manually on MSVC builds...
+cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_id() != 'msvc')
+cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_id() != 'msvc')
 cairo_xlib = dependency('cairo-xlib', required: false)
+
+if cxx.get_id() == 'msvc'
+    if not cairo.found()
+        cairo = cc.find_library('cairo', has_headers: ['cairo.h'], required: get_option('cairo').enabled())
+    endif
+    if not cairo_gobject.found()
+        cairo_gobject = cc.find_library('cairo-gobject', has_headers: ['cairo-gobject.h'], required: cairo.found())
+    endif
+endif
+
 sysprof_capture = dependency('sysprof-capture-3', version: '>= 3.33.32',
     required: get_option('profiler'),
     fallback: ['sysprof', 'libsysprof_capture_dep'])
@@ -286,7 +299,12 @@ configure_file(input: 'win32/config.h.win32.in', output: 'config.h.win32',
 
 ### Check for environment ######################################################
 
-tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+if cxx.get_id() == 'msvc'
+    tests_locale = 'C.UTF-8'
+else
+    # Not applicable for cmd.exe shells that MSVC uses
+    tests_locale = run_command('build/choose-tests-locale.sh').stdout().strip()
+endif
 
 gjsjsdir = get_option('datadir') / api_name
 pkglibexecdir = get_option('libexecdir') / meson.project_name()
@@ -425,11 +443,21 @@ module_resource_srcs = gnome.compile_resources('modules-resources',
 libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey,
     readline]
 pkg_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey]
+libraries_private = []
 
 if build_cairo
     libgjs_sources += module_cairo_srcs
     libgjs_dependencies += [cairo, cairo_gobject]
-    pkg_dependencies += [cairo, cairo_gobject]
+    if cairo.type_name() == 'pkgconfig'
+        pkg_dependencies += [cairo]
+    elif cairo.type_name() == 'library'
+        libraries_private += cairo
+    endif
+    if cairo_gobject.type_name() == 'pkgconfig'
+        pkg_dependencies += [cairo_gobject]
+    elif cairo_gobject.type_name() == 'library'
+        libraries_private += cairo_gobject
+    endif
     if cairo_xlib.found()
         libgjs_dependencies += cairo_xlib
         pkg_dependencies += cairo_xlib
@@ -528,6 +556,7 @@ endif
 
 pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
     requires: [glib, gobject, gio], requires_private: pkg_dependencies,
+    libraries_private: libraries_private,
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
