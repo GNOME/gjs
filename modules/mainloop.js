@@ -24,6 +24,8 @@ timeout_add_seconds, timeout_seconds_source, timeout_source */
 
 // A layer of convenience and backwards-compatibility over GLib MainLoop facilities
 
+imports._internal.deprecateModule('mainloop');
+
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 

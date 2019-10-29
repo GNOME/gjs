@@ -23,6 +23,8 @@ getMetaClass, Interface */
 
 // Utilities that are "meta-language" things like manipulating object props
 
+imports._internal.deprecateModule('lang');
+
 var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
