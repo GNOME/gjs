@@ -130,6 +130,7 @@ using GjsAutoFunctionInfo = GjsAutoInfo<GI_INFO_TYPE_FUNCTION>;
 using GjsAutoInterfaceInfo = GjsAutoInfo<GI_INFO_TYPE_INTERFACE>;
 using GjsAutoObjectInfo = GjsAutoInfo<GI_INFO_TYPE_OBJECT>;
 using GjsAutoPropertyInfo = GjsAutoInfo<GI_INFO_TYPE_PROPERTY>;
+using GjsAutoSignalInfo = GjsAutoInfo<GI_INFO_TYPE_SIGNAL>;
 using GjsAutoStructInfo = GjsAutoInfo<GI_INFO_TYPE_STRUCT>;
 using GjsAutoTypeInfo = GjsAutoInfo<GI_INFO_TYPE_TYPE>;
 using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;

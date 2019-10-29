@@ -49,6 +49,7 @@ struct GjsCallbackTrampoline {
     ffi_cif cif;
     ffi_closure *closure;
     GIScopeType scope;
+    unsigned signal_id;
     bool is_vfunc;
     GjsParamType *param_types;
 };
@@ -56,7 +57,8 @@ struct GjsCallbackTrampoline {
 GJS_JSAPI_RETURN_CONVENTION
 GjsCallbackTrampoline* gjs_callback_trampoline_new(
     JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
-    GIScopeType scope, JS::HandleObject scope_object, bool is_vfunc);
+    GIScopeType scope, JS::HandleObject scope_object, bool is_vfunc,
+    unsigned signal_id = 0);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
@@ -80,5 +82,9 @@ bool gjs_invoke_constructor_from_c(JSContext                  *context,
                                    JS::HandleObject            obj,
                                    const JS::HandleValueArray& args,
                                    GIArgument                 *rvalue);
+
+GJS_JSAPI_RETURN_CONVENTION
+GClosure* gjs_signal_closure_new(JSContext* cx, JS::HandleFunction function,
+                                 GISignalInfo* signal_info, unsigned signal_id);
 
 #endif  // GI_FUNCTION_H_

@@ -193,7 +193,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
                                  void** ffi_args, void* data) {
     JSContext *context;
     GjsCallbackTrampoline *trampoline;
-    int i, n_args, n_jsargs, n_outargs, c_args_offset = 0;
+    int i, n_args, n_jsargs = 0, n_outargs, c_args_offset = 0;
     GITypeInfo ret_type;
     bool success = false;
     bool ret_type_is_void;
@@ -232,7 +232,10 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
     JSAutoCompartment ac(context, JS_GetFunctionObject(gjs_closure_get_callable(
                                       trampoline->js_function)));
 
+    /* If this callable is a signal, there is an extra arg for self */
+
     bool can_throw_gerror = g_callable_info_can_throw_gerror(trampoline->info);
+    bool is_signal = GI_IS_SIGNAL_INFO(trampoline->info);
     n_args = g_callable_info_get_n_args(trampoline->info);
 
     g_assert(n_args >= 0);
@@ -256,18 +259,40 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
     n_outargs = 0;
     JS::AutoValueVector jsargs(context);
 
-    if (!jsargs.reserve(n_args))
+    if (!jsargs.reserve(is_signal ? n_args + 1 : n_args))
         g_error("Unable to reserve space for vector");
+
+    GSignalQuery signal_query = {0};
+    if (is_signal) {
+        if (!jsargs.growBy(1))
+            g_error("Unable to grow vector");
+
+        auto* this_gobject = static_cast<GObject*>(args[0]->v_pointer);
+        JSObject* obj = ObjectInstance::wrapper_from_gobject(context,
+                                                             this_gobject);
+        jsargs[n_jsargs++].setObject(*obj);
+        args++;
+
+        /* Query more info about this signal */
+        g_assert(trampoline->signal_id != 0);
+        g_signal_query(trampoline->signal_id, &signal_query);
+        g_assert(signal_query.n_params == unsigned(n_args));
+    }
 
     JS::RootedValue rval(context);
 
-    for (i = 0, n_jsargs = 0; i < n_args; i++) {
+    for (i = 0; i < n_args; i++) {
         GIArgInfo arg_info;
         GITypeInfo type_info;
         GjsParamType param_type;
+        bool should_copy = false;
 
         g_callable_info_load_arg(trampoline->info, i, &arg_info);
         g_arg_info_load_type(&arg_info, &type_info);
+
+        if (is_signal)
+            should_copy =
+                (signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) == 0;
 
         /* Skip void * arguments */
         if (g_type_info_get_tag(&type_info) == GI_TYPE_TAG_VOID)
@@ -313,10 +338,9 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
                 if (!jsargs.growBy(1))
                     g_error("Unable to grow vector");
 
-                if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
-                                               &type_info,
-                                               args[i + c_args_offset],
-                                               false))
+                if (!gjs_value_from_g_argument(
+                        context, jsargs[n_jsargs++], &type_info,
+                        args[i + c_args_offset], should_copy))
                     goto out;
                 break;
             case PARAM_CALLBACK:
@@ -504,7 +528,7 @@ gjs_destroy_notify_callback(gpointer data)
 GjsCallbackTrampoline* gjs_callback_trampoline_new(
     JSContext* context, JS::HandleFunction function,
     GICallableInfo* callable_info, GIScopeType scope,
-    JS::HandleObject scope_object, bool is_vfunc) {
+    JS::HandleObject scope_object, bool is_vfunc, unsigned signal_id) {
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
@@ -594,9 +618,26 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                                                           gjs_callback_closure, trampoline);
 
     trampoline->scope = scope;
+    trampoline->signal_id = signal_id;
     trampoline->is_vfunc = is_vfunc;
 
     return trampoline;
+}
+
+GClosure* gjs_signal_closure_new(JSContext* cx, JS::HandleFunction function,
+                                 GISignalInfo* signal_info,
+                                 unsigned signal_id) {
+    GjsCallbackTrampoline* trampoline = gjs_callback_trampoline_new(
+        cx, function, signal_info, GI_SCOPE_TYPE_CALL, nullptr, false,
+        signal_id);
+    if (!trampoline)
+        return nullptr;
+
+    return g_cclosure_new(reinterpret_cast<GCallback>(&trampoline->closure),
+                          trampoline, [](void* data, GClosure*) {
+                              gjs_callback_trampoline_unref(
+                                  static_cast<GjsCallbackTrampoline*>(data));
+                          });
 }
 
 /* an helper function to retrieve array lengths from a GArgument
@@ -961,7 +1002,7 @@ gjs_invoke_c_function(JSContext                             *context,
                     callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
                     trampoline = gjs_callback_trampoline_new(
                         context, func, callable_info, scope,
-                        is_object_method ? obj : nullptr, false);
+                        is_object_method ? obj : nullptr, false, 0);
                     closure = trampoline->closure;
                     g_base_info_unref(callable_info);
                 }
