@@ -293,11 +293,8 @@ _gjs_profiler_is_running(GjsProfiler *self)
 
 #ifdef ENABLE_PROFILER
 
-static void
-gjs_profiler_sigprof(int        signum,
-                     siginfo_t *info,
-                     void      *unused)
-{
+static void gjs_profiler_sigprof(int signum G_GNUC_UNUSED, siginfo_t* info,
+                                 void*) {
     GjsProfiler *self = gjs_context_get_profiler(profiling_context);
 
     g_assert(((void) "SIGPROF handler called with invalid signal info", info));

@@ -90,11 +90,8 @@ gjs_object_priv_quark (void)
     return val;
 }
 
-/* Plain g_type_query fails and leaves @query uninitialized for
-   dynamic types.
-   See https://bugzilla.gnome.org/show_bug.cgi?id=687184 and
-   https://bugzilla.gnome.org/show_bug.cgi?id=687211
-*/
+// Plain g_type_query fails and leaves @query uninitialized for dynamic types.
+// See https://gitlab.gnome.org/GNOME/glib/issues/623
 void ObjectBase::type_query_dynamic_safe(GTypeQuery* query) {
     GType type = gtype();
     while (g_type_get_qdata(type, ObjectBase::custom_type_quark()))
@@ -954,20 +951,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
 bool ObjectPrototype::props_to_g_parameters(JSContext* context,
-                                            const JS::HandleValueArray& args,
+                                            JS::HandleObject props,
                                             std::vector<const char*>* names,
                                             AutoGValueVector* values) {
     size_t ix, length;
-
-    if (args.length() == 0 || args[0].isUndefined())
-        return true;
-
-    if (!args[0].isObject()) {
-        gjs_throw(context, "argument should be a hash with props to set");
-        return false;
-    }
-
-    JS::RootedObject props(context, &args[0].toObject());
     JS::RootedId prop_id(context);
     JS::RootedValue value(context);
     JS::Rooted<JS::IdVector> ids(context, context);
@@ -1411,6 +1398,8 @@ void ObjectBase::invalidate_all_closures(void) {
     }
 }
 
+// Note: m_wrapper (the JS object) may already be null when this is called, if
+// it was finalized while the GObject was toggled down.
 void
 ObjectInstance::disassociate_js_gobject(void)
 {
@@ -1450,8 +1439,20 @@ ObjectInstance::init_impl(JSContext              *context,
 
     std::vector<const char *> names;
     AutoGValueVector values;
-    if (!m_proto->props_to_g_parameters(context, args, &names, &values))
-        return false;
+
+    if (args.length() > 0 && !args[0].isUndefined()) {
+        if (!args[0].isObject()) {
+            gjs_throw(context,
+                      "Argument to the constructor of %s should be an object "
+                      "with properties to set",
+                      name());
+            return false;
+        }
+
+        JS::RootedObject props(context, &args[0].toObject());
+        if (!m_proto->props_to_g_parameters(context, props, &names, &values))
+            return false;
+    }
 
     if (G_TYPE_IS_ABSTRACT(gtype())) {
         gjs_throw(context,
@@ -2315,6 +2316,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         JS::RootedFunction func(cx, JS_GetObjectFunction(function));
         trampoline = gjs_callback_trampoline_new(
             cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
+        if (!trampoline)
+            return false;
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }

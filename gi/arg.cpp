@@ -1052,14 +1052,9 @@ is_gvalue_flat_array(GITypeInfo *param_info,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_to_array(JSContext   *context,
-                   JS::Value    array_value,
-                   gsize        length,
-                   GITransfer   transfer,
-                   GITypeInfo  *param_info,
-                   void       **arr_p)
-{
+static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
+                               size_t length, GITransfer transfer,
+                               GITypeInfo* param_info, void** arr_p) {
     enum { UNSIGNED=false, SIGNED=true };
     GITypeTag element_type;
 
