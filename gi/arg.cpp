@@ -1349,6 +1349,93 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
     return ret;
 }
 
+/* JS::Values are just doubles, so they cannot store full 64-bit pointers.
+ * What we do here depends on the arch:
+ *  - on x86, or other 32 bits archs, we don't need any magic, pointers are
+ *    just fine to store
+ *  - on x86_64, pointers are actually 48 bits, so they fit in the mantissa of
+ *    an appropriate double
+ *    in a regular user-space pointer, bits 48 to 63 are 0, which would make a
+ *    positive denormal double, but we convert it into 1.000...<pointer>e+0
+ *    similarly, when we convert from JS, we mask the exponent and part of the
+ *    mantissa; this ensures that round trips don't change the value
+ *  - on other 64 bits archs, we just expose gpointers as "private jsvals",
+ *    which only loses the least significant bit, but can expose NaNs or other
+ *    oddities to JS
+ *
+ * In general, JS code should treat pointers obtained from C as opaque tags,
+ * and should not attempt typeof, String() or arithmetic operations.
+ *
+ * As a special exception, nullptr is always converted to JS null, and
+ * vice versa.
+ */
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_to_gpointer(JSContext* cx, JS::HandleValue value,
+                                  GIArgument* arg) {
+    if (value.isNull()) {
+        arg->v_pointer = nullptr;
+        return true;
+    }
+
+    if (sizeof(void*) == 4) {
+        /* x86 arch, gpointer == int */
+        uint32_t i;
+
+        if (!JS::ToUint32(cx, value, &i))
+            return false;
+
+        arg->v_pointer = GINT_TO_POINTER(i);
+        return true;
+    }
+
+    /* Use an union to avoid strict-aliasing issues */
+    GIArgument tmp;
+
+    if (!JS::ToNumber(cx, value, &tmp.v_double))
+        return false;
+
+#ifdef __x86_64__
+    void* ptr = reinterpret_cast<void*>(tmp.v_uint64 & ((1ULL << 48) - 1));
+#else
+    void* ptr = reinterpret_cast<void*>(tmp.v_uint64);
+#endif
+
+    arg->v_pointer = ptr;
+    return true;
+}
+
+static void gjs_value_from_gpointer(JS::MutableHandleValue value,
+                                    GIArgument* arg) {
+    if (arg->v_pointer == NULL) {
+        value.setNull();
+        return;
+    }
+
+    if (sizeof(gpointer) == 4) {
+        /* x86 arch, gpointer == int */
+        value.setInt32(GPOINTER_TO_INT(arg->v_pointer));
+        return;
+    } else {
+#ifdef __x86_64__
+        uintptr_t int64 = uintptr_t(arg->v_pointer);
+        GIArgument tmp;
+
+        if ((int64 & ~(((1ULL << 48) - 1))) == 0) {
+            /* Regular user-space pointer, make into a
+               non-denormal double */
+
+            /* Place the bias in the exponent part, make it 0 */
+            tmp.v_uint64 = int64 | (1023ULL << 52);
+        } else {
+            tmp.v_int64 = int64;
+        }
+        value.setDouble(tmp.v_double);
+#else
+        value.setPrivate(arg->v_pointer);
+#endif
+    }
+}
+
 GJS_USE
 static bool
 is_gdk_atom(GIBaseInfo *info)
@@ -1622,7 +1709,7 @@ gjs_value_to_g_argument(JSContext      *context,
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
         nullable_type = true;
-        arg->v_pointer = NULL; /* just so it isn't uninitialized */
+        wrong = !gjs_value_to_gpointer(context, value, arg);
         break;
 
     case GI_TYPE_TAG_INT8: {
@@ -2656,8 +2743,8 @@ gjs_value_from_g_argument (JSContext             *context,
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        value_p.setUndefined(); /* or .setNull() ? */
-        break;
+        gjs_value_from_gpointer(value_p, arg);
+        return true;
 
     case GI_TYPE_TAG_BOOLEAN:
         value_p.setBoolean(!!arg->v_int);

@@ -774,7 +774,8 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
 
             g_base_info_unref((GIBaseInfo*)param_info);
         } else {
-            is_simple = false;
+            if (g_type_info_get_tag(type_info) != GI_TYPE_TAG_VOID)
+                is_simple = false;
         }
     } else {
         switch (g_type_info_get_tag(type_info)) {
@@ -819,6 +820,16 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
                 g_base_info_unref(interface);
                 break;
             }
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+            is_simple = false;
+            break;
         case GI_TYPE_TAG_BOOLEAN:
         case GI_TYPE_TAG_INT8:
         case GI_TYPE_TAG_UINT8:
@@ -832,14 +843,6 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
         case GI_TYPE_TAG_DOUBLE:
         case GI_TYPE_TAG_UNICHAR:
         case GI_TYPE_TAG_VOID:
-        case GI_TYPE_TAG_GTYPE:
-        case GI_TYPE_TAG_ERROR:
-        case GI_TYPE_TAG_UTF8:
-        case GI_TYPE_TAG_FILENAME:
-        case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_GHASH:
         default:
             break;
         }
