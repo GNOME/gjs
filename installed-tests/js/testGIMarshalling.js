@@ -1257,9 +1257,7 @@ describe('Virtual function', function () {
     testVfuncRefcount('return', 'none', 1);
     testVfuncRefcount('return', 'full', 2);
     testVfuncRefcount('out', 'none', 1);
-    testVfuncRefcount('out', 'full', 2, {
-        skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/275',
-    });
+    testVfuncRefcount('out', 'full', 2);
     testVfuncRefcount('in', 'none', 2, {}, GIMarshallingTests.Object);
     testVfuncRefcount('in', 'full', 1, {
         skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/275',
