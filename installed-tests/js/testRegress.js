@@ -505,6 +505,92 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    // Bare GObject pointer, not currently supported (and possibly not ever)
+    xdescribe('Struct with non-basic member', function () {
+        it('sets fields correctly', function () {
+            const struct = new Regress.TestStructC();
+            struct.another_int = 43;
+            struct.obj = new GObject.Object();
+
+            expect(struct.another_int).toEqual(43);
+            expect(struct.obj).toEqual(jasmine.any(GObject.Object));
+        });
+    });
+
+    describe('Struct with annotated fields', function () {
+        xit('sets fields correctly', function () {
+            const testObjList = [new Regress.TestObj(), new Regress.TestObj()];
+            const testStructList = [new Regress.TestStructA(), new Regress.TestStructA()];
+            const struct = new Regress.TestStructD();
+            struct.array1 = testStructList;
+            struct.array2 = testObjList;
+            struct.field = testObjList[0];
+            struct.list = testObjList;
+            struct.garray = testObjList;
+
+            expect(struct.array1).toEqual(testStructList);
+            expect(struct.array2).toEqual(testObjList);
+            expect(struct.field).toEqual(testObjList[0]);
+            expect(struct.list).toEqual(testObjList);
+            expect(struct.garray).toEqual(testObjList);
+        }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/83');
+    });
+
+    describe('Struct with array of anonymous unions', function () {
+        xit('sets fields correctly', function () {
+            const struct = new Regress.TestStructE();
+            struct.some_type = GObject.Object.$gtype;
+            for (let ix = 0; ix < 1; ix++) {
+                struct.some_union[ix].v_int = 42;
+                struct.some_union[ix].v_uint = 43;
+                struct.some_union[ix].v_long = 44;
+                struct.some_union[ix].v_ulong = 45;
+                struct.some_union[ix].v_int64 = 46;
+                struct.some_union[ix].v_uint64 = 47;
+                struct.some_union[ix].v_float = 48.5;
+                struct.some_union[ix].v_double = 49.5;
+                struct.some_union[ix].v_pointer = null;
+            }
+
+            expect(struct.some_type).toEqual(GObject.Object.$gtype);
+            for (let ix = 0; ix < 1; ix++) {
+                expect(struct.some_union[ix].v_int).toEqual(42);
+                expect(struct.some_union[ix].v_uint).toEqual(43);
+                expect(struct.some_union[ix].v_long).toEqual(44);
+                expect(struct.some_union[ix].v_ulong).toEqual(45);
+                expect(struct.some_union[ix].v_int64).toEqual(46);
+                expect(struct.some_union[ix].v_uint64).toEqual(47);
+                expect(struct.some_union[ix].v_float).toEqual(48.5);
+                expect(struct.some_union[ix].v_double).toEqual(49.5);
+                expect(struct.some_union[ix].v_pointer).toBeNull();
+            }
+        }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/273');
+    });
+
+    // Bare int pointers, not currently supported (and possibly not ever)
+    xdescribe('Struct with const/volatile members', function () {
+        it('sets fields correctly', function () {
+            const struct = new Regress.TestStructF();
+            struct.ref_count = 1;
+            struct.data1 = null;
+            struct.data2 = null;
+            struct.data3 = null;
+            struct.data4 = null;
+            struct.data5 = null;
+            struct.data6 = null;
+            struct.data7 = 42;
+
+            expect(struct.ref_count).toEqual(1);
+            expect(struct.data1).toBeNull();
+            expect(struct.data2).toBeNull();
+            expect(struct.data3).toBeNull();
+            expect(struct.data4).toBeNull();
+            expect(struct.data5).toBeNull();
+            expect(struct.data6).toBeNull();
+            expect(struct.data7).toEqual(42);
+        });
+    });
+
     describe('Introspected simple boxed struct', function () {
         let struct;
         beforeEach(function () {
