@@ -201,7 +201,7 @@ include Makefile-insttest.am
 EXTRA_DIST +=					\
 	autogen.sh				\
 	build/choose-tests-locale.sh		\
-	build/compile-gschemas.sh		\
+	build/compile-gschemas.py		\
 	COPYING.LGPL				\
 	doc/ByteArray.md			\
 	doc/cairo.md				\
