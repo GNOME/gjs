@@ -568,7 +568,7 @@ tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
     js_tests_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
-tests_environment.set('LSAN_OPTIONS', 'suppressions=@0@'.format(
+tests_environment.set('LSAN_OPTIONS', 'exitcode=23,suppressions=@0@'.format(
     meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('LC_ALL', tests_locale)
