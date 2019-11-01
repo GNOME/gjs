@@ -99,10 +99,10 @@ report "System.exit(42) should exit with the correct exit code"
 
 # FIXME: should check -eq 42 specifically, but in debug mode we will be
 # hitting an assertion. For this reason, skip when running under valgrind
-# since nothing will be freed.
+# since nothing will be freed. Also suppress LSan for the same reason.
 echo "# VALGRIND = $VALGRIND"
 if test -z $VALGRIND; then
-    $gjs exit.js
+    ASAN_OPTIONS=detect_leaks=0 $gjs exit.js
     test $? -ne 0
     report "System.exit() should still exit across an FFI boundary"
 else
