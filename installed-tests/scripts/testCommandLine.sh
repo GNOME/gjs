@@ -85,7 +85,7 @@ skip () {
     echo "ok $total - $1 # SKIP $2"
 }
 
-$gjs --invalid-option
+$gjs --invalid-option >/dev/null 2>/dev/null
 report_xfail "Invalid option should exit with failure"
 $gjs --invalid-option 2>&1 | grep -q invalid-option
 report "Invalid option should print a relevant message"
