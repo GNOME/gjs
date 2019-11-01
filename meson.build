@@ -149,8 +149,9 @@ if readline.found() and not cxx.links(readline_code, dependencies: readline)
         endif
     endforeach
     if not found
-        error('''Couldn't figure out how to link readline library. Configure
-with -Dreadline=disabled to skip the readline features.''')
+        error('''Couldn't figure out how to link
+readline library. Configure with -Dreadline=disabled to skip the readline
+features.''')
     endif
 endif
 
@@ -169,10 +170,10 @@ if build_profiler and not cxx.has_function('timer_settime')
     endforeach
     if not found or not cxx.has_header_symbol('signal.h', 'SIGEV_THREAD_ID')
         if get_option('profiler').enabled()
-            error('''The profiler is currently only supported on Linux.
-The standard library must support timer_settime() and SIGEV_THREAD_ID.
-Configure with -Dprofiler=auto or -Dprofiler=disabled to skip it on other
-platforms.''')
+            error('''The profiler is currently only
+supported on Linux. The standard library must support timer_settime() and
+SIGEV_THREAD_ID. Configure with -Dprofiler=auto or -Dprofiler=disabled to skip
+it on other platforms.''')
         endif
         build_profiler = false
     endif
@@ -202,10 +203,11 @@ if not nondebug_spidermonkey
 endif
 
 if get_option('buildtype').startswith('release') and not nondebug_spidermonkey
-    error('''You are trying to make a release build with a debug-enabled copy of
-SpiderMonkey. This is probably not what you want, since it will have bad
-performance and is not binary-compatible with release builds of SpiderMonkey.
-Try configuring SpiderMonkey with --disable-debug.''')
+    error('''You are trying to make a release
+build with a debug-enabled copy of SpiderMonkey. This is probably not what you
+want, since it will have bad performance and is not binary-compatible with
+release builds of SpiderMonkey. Try configuring SpiderMonkey with
+--disable-debug.''')
 endif
 
 # Check if a minimal SpiderMonkey program compiles, links, and runs. If not,
@@ -223,9 +225,9 @@ int main(void) {
     name: 'SpiderMonkey sanity check')
 
 if not minimal_program.compiled() or minimal_program.returncode() != 0
-    error('''A minimal SpiderMonkey program could not be compiled, linked, or
-run. Most likely you should build it with a different configuration. Check the
-recommended configuration:
+    error('''A minimal SpiderMonkey program
+could not be compiled, linked, or run. Most likely you should build it with a
+different configuration. Check the recommended configuration:
 https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr60/docs/Building%20SpiderMonkey.md''')
 endif
 
