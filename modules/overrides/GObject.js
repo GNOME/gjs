@@ -199,6 +199,15 @@ function _interfacePresent(required, klass) {
 }
 
 function _checkInterface(iface, proto) {
+    // Checks for specific interfaces
+
+    // Default vfunc_async_init() will run vfunc_init() in a thread and crash.
+    // Change error message when https://gitlab.gnome.org/GNOME/gjs/issues/72
+    // has been solved.
+    if (iface.$gtype.name === 'GAsyncInitable' &&
+        !Object.getOwnPropertyNames(proto).includes('vfunc_init_async'))
+        throw new Error("It's not currently possible to implement Gio.AsyncInitable.");
+
     // Check that proto implements all of this interface's required interfaces.
     // "proto" refers to the object's prototype (which implements the interface)
     // whereas "iface.prototype" is the interface's prototype (which may still
