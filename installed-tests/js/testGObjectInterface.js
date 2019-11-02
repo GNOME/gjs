@@ -300,3 +300,13 @@ describe('GObject interface', function () {
             /\[object instance wrapper GType:Gjs_GObjectImplementingGObjectInterface jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 });
+
+describe('Specific class and interface checks', function () {
+    it('Gio.AsyncInitable must implement vfunc_async_init', function () {
+        expect(() => GObject.registerClass({
+            Implements: [Gio.Initable, Gio.AsyncInitable],
+        }, class BadAsyncInitable extends GObject.Object {
+            vfunc_init() {}
+        })).toThrow();
+    });
+});
