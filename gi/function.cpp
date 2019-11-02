@@ -178,7 +178,6 @@ warn_about_illegal_js_callback(const GjsCallbackTrampoline *trampoline,
         g_critical("The offending callback was %s()%s.", name,
                    trampoline->is_vfunc ? ", a vfunc" : "");
     }
-    gjs_dumpstack();
     return;
 }
 
@@ -207,6 +206,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
         warn_about_illegal_js_callback(trampoline, "during shutdown",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
             "connected, or using the destroy(), dispose(), or remove() vfuncs");
+        gjs_dumpstack();
         gjs_callback_trampoline_unref(trampoline);
         return;
     }
@@ -217,6 +217,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
         warn_about_illegal_js_callback(trampoline, "during garbage collection",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
             "connected, or using the destroy(), dispose(), or remove() vfuncs");
+        gjs_dumpstack();
         gjs_callback_trampoline_unref(trampoline);
         return;
     }
