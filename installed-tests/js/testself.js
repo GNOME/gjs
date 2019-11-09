@@ -30,3 +30,9 @@ describe('Test harness internal consistency', function () {
         expect(() => true).not.toThrow();
     });
 });
+
+describe('SpiderMonkey features check', function () {
+    it('Intl API was compiled into SpiderMonkey', function () {
+        expect(Intl).toBeDefined();
+    });
+});
