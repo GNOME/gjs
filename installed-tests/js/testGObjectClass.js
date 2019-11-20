@@ -181,6 +181,24 @@ describe('GObject class with decorator', function () {
         expect(myInstance2.construct).toEqual('asdf');
     });
 
+    it('warns if more than one argument passed to the default constructor', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            '*Too many arguments*');
+
+        new MyObject({readwrite: 'baz'}, 'this is ignored', 123);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectClass.js', 0,
+            'testGObjectClassTooManyArguments');
+    });
+
+    it('throws an error if the first argument to the default constructor is not a property hash', function () {
+        expect(() => new MyObject('this is wrong')).toThrow();
+    });
+
+    it('accepts a property hash that is not a plain object', function () {
+        expect(() => new MyObject(new GObject.Object())).not.toThrow();
+    });
+
     const ui = `<interface>
                   <object class="Gjs_MyObject" id="MyObject">
                     <property name="readwrite">baz</property>
