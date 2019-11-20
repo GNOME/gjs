@@ -931,6 +931,50 @@ gjs_array_to_ptrarray(JSContext   *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_to_flat_struct_array(JSContext* cx,
+                                           JS::HandleValue array_value,
+                                           unsigned length,
+                                           GITypeInfo* param_info,
+                                           GIBaseInfo* interface_info,
+                                           GIInfoType info_type, void** arr_p) {
+    g_assert(
+        (info_type == GI_INFO_TYPE_STRUCT || info_type == GI_INFO_TYPE_UNION) &&
+        "Only flat arrays of unboxed structs or unions are supported");
+    size_t struct_size;
+    if (info_type == GI_INFO_TYPE_UNION)
+        struct_size = g_union_info_get_size(interface_info);
+    else
+        struct_size = g_struct_info_get_size(interface_info);
+
+    GjsAutoPointer<uint8_t, void, g_free> flat_array =
+        g_new0(uint8_t, struct_size * length);
+
+    JS::RootedObject array(cx, &array_value.toObject());
+    JS::RootedValue elem(cx);
+    for (unsigned i = 0; i < length; i++) {
+        elem = JS::UndefinedValue();
+
+        if (!JS_GetElement(cx, array, i, &elem)) {
+            gjs_throw(cx, "Missing array element %u", i);
+            return false;
+        }
+
+        GIArgument arg;
+        if (!gjs_value_to_g_argument(cx, elem, param_info,
+                                     /* arg_name = */ nullptr,
+                                     GJS_ARGUMENT_ARRAY_ELEMENT,
+                                     GI_TRANSFER_NOTHING,
+                                     /* may_be_null = */ false, &arg))
+            return false;
+
+        memcpy(&flat_array[struct_size * i], arg.v_pointer, struct_size);
+    }
+
+    *arr_p = flat_array.release();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_flat_gvalue_array(JSContext   *context,
                                JS::Value    array_value,
@@ -1116,6 +1160,20 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
 
     /* Everything else is a pointer type */
     case GI_TYPE_TAG_INTERFACE:
+        if (!g_type_info_is_pointer(param_info)) {
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(param_info);
+            GIInfoType info_type = g_base_info_get_type(interface_info);
+            if (info_type == GI_INFO_TYPE_STRUCT ||
+                info_type == GI_INFO_TYPE_UNION) {
+                // Ignore transfer in the case of a flat struct array. Structs
+                // are copied by value.
+                return gjs_array_to_flat_struct_array(
+                    context, array_value, length, param_info, interface_info,
+                    info_type, arr_p);
+            }
+        }
+        /* fall through */
     case GI_TYPE_TAG_ARRAY:
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
@@ -3337,6 +3395,17 @@ gjs_g_arg_release_internal(JSContext  *context,
                 break;
 
             case GI_TYPE_TAG_INTERFACE:
+                if (!g_type_info_is_pointer(param_info)) {
+                    GjsAutoBaseInfo interface_info =
+                        g_type_info_get_interface(param_info);
+                    GIInfoType info_type = g_base_info_get_type(interface_info);
+                    if (info_type == GI_INFO_TYPE_STRUCT ||
+                        info_type == GI_INFO_TYPE_UNION) {
+                        g_free(arg->v_pointer);
+                        break;
+                    }
+                }
+                /* fall through */
             case GI_TYPE_TAG_GLIST:
             case GI_TYPE_TAG_GSLIST:
             case GI_TYPE_TAG_ARRAY:
