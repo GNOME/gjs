@@ -67,6 +67,7 @@ const MyComplexGtkSubclassFromResource = new Lang.Class({
     },
 
     templateCallback() {},
+    boundCallback() {},
 });
 
 function validateTemplate(description, ClassName) {
