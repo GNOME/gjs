@@ -65,9 +65,9 @@ bool gjs_cairo_path_define_proto(JSContext              *cx,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *       gjs_cairo_path_from_path               (JSContext       *context,
                                                          cairo_path_t    *path);
-GJS_USE
-cairo_path_t *   gjs_cairo_path_get_path                (JSContext       *context,
-                                                         JSObject        *path_wrapper);
+GJS_JSAPI_RETURN_CONVENTION
+cairo_path_t* gjs_cairo_path_get_path(JSContext* cx,
+                                      JS::HandleObject path_wrapper);
 
 /* surface */
 GJS_USE
@@ -86,9 +86,9 @@ void             gjs_cairo_surface_finalize_surface     (JSFreeOp        *fop,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *       gjs_cairo_surface_from_surface         (JSContext       *context,
                                                          cairo_surface_t *surface);
-GJS_USE
-cairo_surface_t* gjs_cairo_surface_get_surface          (JSContext       *context,
-                                                         JSObject        *object);
+GJS_JSAPI_RETURN_CONVENTION
+cairo_surface_t* gjs_cairo_surface_get_surface(
+    JSContext* cx, JS::HandleObject surface_wrapper);
 
 /* image surface */
 GJS_JSAPI_RETURN_CONVENTION
@@ -153,9 +153,9 @@ void             gjs_cairo_pattern_finalize_pattern     (JSFreeOp        *fop,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject*        gjs_cairo_pattern_from_pattern         (JSContext       *context,
                                                          cairo_pattern_t *pattern);
-GJS_USE
-cairo_pattern_t* gjs_cairo_pattern_get_pattern          (JSContext       *context,
-                                                         JSObject        *object);
+GJS_JSAPI_RETURN_CONVENTION
+cairo_pattern_t* gjs_cairo_pattern_get_pattern(
+    JSContext* cx, JS::HandleObject pattern_wrapper);
 
 /* gradient */
 GJS_USE

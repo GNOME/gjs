@@ -66,7 +66,6 @@ getType_func(JSContext *context,
              JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, rec, obj);
-    cairo_pattern_t *pattern;
     cairo_pattern_type_t type;
 
     if (argc > 1) {
@@ -74,7 +73,10 @@ getType_func(JSContext *context,
         return false;
     }
 
-    pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    cairo_pattern_t* pattern = gjs_cairo_pattern_get_pattern(context, obj);
+    if (!pattern)
+        return false;
+
     type = cairo_pattern_get_type(pattern);
 
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
@@ -183,25 +185,32 @@ gjs_cairo_pattern_from_pattern(JSContext       *context,
 
 /**
  * gjs_cairo_pattern_get_pattern:
- * @context: the context
- * @object: pattern wrapper
+ * @cx: the context
+ * @pattern_wrapper: pattern wrapper
  *
- * Returns: the pattern attaches to the wrapper.
- *
+ * Returns: the pattern attached to the wrapper.
  */
-cairo_pattern_t *
-gjs_cairo_pattern_get_pattern(JSContext *context,
-                              JSObject  *object)
-{
-    GjsCairoPattern *priv;
+cairo_pattern_t* gjs_cairo_pattern_get_pattern(
+    JSContext* cx, JS::HandleObject pattern_wrapper) {
+    g_return_val_if_fail(cx, nullptr);
+    g_return_val_if_fail(pattern_wrapper, nullptr);
 
-    g_return_val_if_fail(context, nullptr);
-    g_return_val_if_fail(object, nullptr);
+    JS::RootedObject proto(cx, gjs_cairo_pattern_get_proto(cx));
 
-    priv = (GjsCairoPattern*) JS_GetPrivate(object);
+    bool is_pattern_subclass = false;
+    if (!gjs_object_in_prototype_chain(cx, proto, pattern_wrapper,
+                                       &is_pattern_subclass))
+        return nullptr;
+    if (!is_pattern_subclass) {
+        gjs_throw(cx, "Expected Cairo.Pattern but got %s",
+                  JS_GetClass(pattern_wrapper)->name);
+        return nullptr;
+    }
+
+    auto* priv = static_cast<GjsCairoPattern*>(JS_GetPrivate(pattern_wrapper));
     if (!priv)
         return nullptr;
 
+    g_assert(priv->pattern);
     return priv->pattern;
 }
-

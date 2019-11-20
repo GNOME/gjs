@@ -99,26 +99,26 @@ gjs_cairo_path_from_path(JSContext    *context,
     return object;
 }
 
-
 /**
  * gjs_cairo_path_get_path:
- * @context: the context
- * @object: path wrapper
+ * @cx: the context
+ * @path_wrapper: path wrapper
  *
  * Returns: the path attached to the wrapper.
- *
  */
-cairo_path_t *
-gjs_cairo_path_get_path(JSContext *context,
-                        JSObject  *object)
-{
-    GjsCairoPath *priv;
+cairo_path_t* gjs_cairo_path_get_path(JSContext* cx,
+                                      JS::HandleObject path_wrapper) {
+    g_return_val_if_fail(cx, nullptr);
+    g_return_val_if_fail(path_wrapper, nullptr);
 
-    g_return_val_if_fail(context, nullptr);
-    g_return_val_if_fail(object, nullptr);
-
-    priv = (GjsCairoPath*) JS_GetPrivate(object);
-    if (!priv)
+    auto* priv = static_cast<GjsCairoPath*>(JS_GetInstancePrivate(
+        cx, path_wrapper, &gjs_cairo_path_class, nullptr));
+    if (!priv) {
+        gjs_throw(cx, "Expected Cairo.Path but got %s",
+                  JS_GetClass(path_wrapper)->name);
         return nullptr;
+    }
+
+    g_assert(priv->path);
     return priv->path;
 }
