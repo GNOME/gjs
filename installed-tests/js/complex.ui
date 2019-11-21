@@ -17,6 +17,7 @@
       <object class="GtkLabel" id="label-child2">
         <property name="label">Complex as well!</property>
         <property name="visible">True</property>
+        <signal name="grab-focus" handler="boundCallback" object="label-child" swapped="no"/>
       </object>
     </child>
     <child>

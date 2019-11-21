@@ -25,6 +25,7 @@ function createTemplate(className) {
       <object class="GtkLabel" id="label-child2">
         <property name="label">Complex as well!</property>
         <property name="visible">True</property>
+        <signal name="grab-focus" handler="boundCallback" object="label-child" swapped="no"/>
       </object>
     </child>
     <child>
@@ -45,6 +46,10 @@ const MyComplexGtkSubclass = GObject.registerClass({
 }, class MyComplexGtkSubclass extends Gtk.Grid {
     templateCallback(widget) {
         this.callbackEmittedBy = widget;
+    }
+
+    boundCallback(widget) {
+        widget.callbackBoundTo = this;
     }
 });
 
@@ -73,6 +78,10 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
     templateCallback(widget) {
         this.callbackEmittedBy = widget;
     }
+
+    boundCallback(widget) {
+        widget.callbackBoundTo = this;
+    }
 });
 
 const [templateFile, stream] = Gio.File.new_tmp(null);
@@ -95,6 +104,10 @@ const MyComplexGtkSubclassFromFile = GObject.registerClass({
     templateCallback(widget) {
         this.callbackEmittedBy = widget;
     }
+
+    boundCallback(widget) {
+        widget.callbackBoundTo = this;
+    }
 });
 
 const SubclassSubclass = GObject.registerClass(
@@ -108,6 +121,7 @@ function validateTemplate(description, ClassName, pending = false) {
             win = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
             content = new ClassName();
             content.label_child.emit('grab-focus');
+            content.label_child2.emit('grab-focus');
             win.add(content);
         });
 
@@ -127,6 +141,10 @@ function validateTemplate(description, ClassName, pending = false) {
 
         it('connects template callbacks to the correct handler', function () {
             expect(content.callbackEmittedBy).toBe(content.label_child);
+        });
+
+        it('binds template callbacks to the correct object', function () {
+            expect(content.label_child2.callbackBoundTo).toBe(content.label_child);
         });
 
         afterEach(function () {
