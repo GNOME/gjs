@@ -31,28 +31,32 @@ typedef struct {
     const char* name;
 } GjsMemCounter;
 
+// clang-format off
+#define GJS_FOR_EACH_COUNTER(macro) \
+    macro(boxed_instance)           \
+    macro(boxed_prototype)          \
+    macro(closure)                  \
+    macro(function)                 \
+    macro(fundamental_instance)     \
+    macro(fundamental_prototype)    \
+    macro(gerror_instance)          \
+    macro(gerror_prototype)         \
+    macro(importer)                 \
+    macro(interface)                \
+    macro(module)                   \
+    macro(ns)                       \
+    macro(object_instance)          \
+    macro(object_prototype)         \
+    macro(param)                    \
+    macro(repo)                     \
+    macro(union_instance)           \
+    macro(union_prototype)
+// clang-format on
+
 #define GJS_DECLARE_COUNTER(name) extern GjsMemCounter gjs_counter_##name;
 
 GJS_DECLARE_COUNTER(everything)
-
-GJS_DECLARE_COUNTER(boxed_instance)
-GJS_DECLARE_COUNTER(boxed_prototype)
-GJS_DECLARE_COUNTER(closure)
-GJS_DECLARE_COUNTER(function)
-GJS_DECLARE_COUNTER(fundamental_instance)
-GJS_DECLARE_COUNTER(fundamental_prototype)
-GJS_DECLARE_COUNTER(gerror_instance)
-GJS_DECLARE_COUNTER(gerror_prototype)
-GJS_DECLARE_COUNTER(importer)
-GJS_DECLARE_COUNTER(interface)
-GJS_DECLARE_COUNTER(module)
-GJS_DECLARE_COUNTER(ns)
-GJS_DECLARE_COUNTER(object_instance)
-GJS_DECLARE_COUNTER(object_prototype)
-GJS_DECLARE_COUNTER(param)
-GJS_DECLARE_COUNTER(repo)
-GJS_DECLARE_COUNTER(union_instance)
-GJS_DECLARE_COUNTER(union_prototype)
+GJS_FOR_EACH_COUNTER(GJS_DECLARE_COUNTER)
 
 #define GJS_INC_COUNTER(name)                               \
     do {                                                    \
