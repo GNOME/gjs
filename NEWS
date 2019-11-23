@@ -1,3 +1,18 @@
+Version 1.58.2
+--------------
+
+- Closed bugs and merge requests:
+  * GObject based class initialization checks [Marco Trevisan, Philip Chimento,
+    !336]
+  * Silently leaked return value of callbacks [Xavier Claessens, Philip
+    Chimento, #86, !44]
+  * Crash when calling Gio.Initable.async_init with not vfunc_async_init
+    implementation [Philip Chimento, #287, !362]
+  * [cairo] insufficient checking [Philip Chimento, #49, !360]
+
+- Various crash fixes backported from the development branch that didn't close
+  a bug or merge request.
+
 Version 1.58.1
 --------------
 
