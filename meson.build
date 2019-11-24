@@ -285,18 +285,6 @@ header_conf.set('_GNU_SOURCE', 1)
 
 configure_file(output: 'config.h', configuration: header_conf)
 
-### Generate config.h for win32 ################################################
-
-win32_header_conf = configuration_data()
-win32_header_conf.set('GJS_VERSION', int_version)
-win32_header_conf.set('PACKAGE', meson.project_name())
-win32_header_conf.set('PACKAGE_BUGREPORT', 'https://gitlab.gnome.org/GNOME/gjs')
-win32_header_conf.set('PACKAGE_NAME', meson.project_name())
-win32_header_conf.set('PACKAGE_VERSION', meson.project_version())
-win32_header_conf.set('PACKAGE_TARNAME', meson.project_name())
-configure_file(input: 'win32/config.h.win32.in', output: 'config.h.win32',
-    configuration: win32_header_conf)
-
 ### Check for environment ######################################################
 
 if cxx.get_id() == 'msvc'
