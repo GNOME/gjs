@@ -11,6 +11,7 @@ AllowShortLoopsOnASingleLine: false
 CommentPragmas: '^ NOLINT'
 DerivePointerAlignment: false
 ForEachMacros: []
+IncludeBlocks: Preserve
 IndentPPDirectives: AfterHash
 IndentWidth: 4
 MacroBlockBegin: "^JSNATIVE_TEST_FUNC_BEGIN$"
