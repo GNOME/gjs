@@ -1,3 +1,55 @@
+Version 1.63.2
+--------------
+
+- There is an option for changing the generated GType name for GObject classes
+  created in GJS to a new scheme that is less likely to have collisions. This
+  scheme is not yet the default, but you can opt into it by setting
+  `GObject.gtypeNameBasedOnJSPath = true;` as early as possible in your
+  prograṁ. Doing this may require some changes in Glade files if you use
+  composite widget templates.
+
+  We recommend you make this change in your codebase as soon as possible, to
+  avoid any surprises in the future.
+
+- New JS API: GObject.Object has gained a stop_emission_by_name() method which
+  is a bit more idiomatic than calling GObject.signal_stop_emission_by_name().
+
+- It's now supported to use the "object" attribute in a signal connection in a
+  composite widget template in a Glade file.
+
+- Closed bugs and merge requests:
+  * CI: Tweak eslint rule for unneeded parentheses [Florian Müllner, !353]
+  * Smarter GType name computation [Marco Trevisan, !337]
+  * Meson CI [Philip Chimento, !354]
+  * Visual Studio builds using Meson [Chun-wei Fan, !355]
+  * Hide internal symbols from ABI [Marco Trevisan, #194, !352]
+  * Allow creating custom tree models [Giovanni Campagna, #71]
+  * build: Fix dist files [Florian Müllner, !357]
+  * GObject: Add convenience wrapper for signal_stop_emission_by_name() [Florian
+    Müllner, !358]
+  * Various maintenance [Philip Chimento, !356]
+  * object_instance_props_to_g_parameters should do more check on argv [Philip
+    Chimento, #63, !359]
+  * Support flat C arrays of structures [Philip Chimento, !361]
+  * Gtk Templates: support connectObj argument [Andy Holmes, !363]
+
+- Various build fixes [Philip Chimento]
+
+Version 1.58.2
+--------------
+
+- Closed bugs and merge requests:
+  * GObject based class initialization checks [Marco Trevisan, Philip Chimento,
+    !336]
+  * Silently leaked return value of callbacks [Xavier Claessens, Philip
+    Chimento, #86, !44]
+  * Crash when calling Gio.Initable.async_init with not vfunc_async_init
+    implementation [Philip Chimento, #287, !362]
+  * [cairo] insufficient checking [Philip Chimento, #49, !360]
+
+- Various crash fixes backported from the development branch that didn't close
+  a bug or merge request.
+
 Version 1.63.1
 --------------
 
