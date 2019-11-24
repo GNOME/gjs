@@ -71,7 +71,6 @@ stages:
     paths:
       - _build/compile_commands.json
       - _build/meson-logs/*log.txt
-      - compilation.log
       - scripts.log
   script:
     - test/test-ci.sh SETUP
@@ -88,7 +87,6 @@ build_recommended:
   image: registry.gitlab.gnome.org/gnome/gjs:job-443296_fedora.mozjs60-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
-    WARNINGS: "count"
   except:
     - schedules
 
