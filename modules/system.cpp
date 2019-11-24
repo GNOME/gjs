@@ -41,6 +41,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "modules/system.h"
+#include "util/log.h"
 
 /* Note that this cannot be relied on to test whether two objects are the same!
  * SpiderMonkey can move objects around in memory during garbage collection,

@@ -41,7 +41,6 @@
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
 #include "util/log.h"
 
 /* Implementations of locale-specific operations; these are used
