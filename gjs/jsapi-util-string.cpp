@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>     // for size_t, strlen
 #include <sys/types.h>  // for ssize_t
@@ -32,10 +34,23 @@
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/GCAPI.h>  // for AutoCheckCannotGC
+#include <js/Id.h>     // for JSID_IS_STRING, INTERNED_STRING_TO...
+#include <js/RootingAPI.h>
+#include <js/Symbol.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>        // for JSID_TO_FLAT_STRING, JS_GetTwoByte...
+#include <jsfriendapi.h>  // for FlatStringToLinearString, GetLatin...
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+class JSFlatString;
+class JSLinearString;
 
 char* gjs_hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);

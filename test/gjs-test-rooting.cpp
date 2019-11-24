@@ -1,6 +1,13 @@
+#include <config.h>
+
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/GCAPI.h>  // for JS_GC, JS_SetGCCallback, JSGCStatus
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>  // for JS_GetPrivate, JS_NewObject, JS_Set...
 
 #include "gjs/jsapi-util-root.h"
 #include "test/gjs-test-utils.h"

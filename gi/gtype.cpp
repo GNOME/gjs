@@ -22,11 +22,21 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"  // for WeakCache
+#include <js/AllocPolicy.h>  // for SystemAllocPolicy
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/GCHashTable.h>         // for WeakCache
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_GetPropertyById, JS_AtomizeString
+#include <mozilla/HashTable.h>
 
 #include "gi/gtype.h"
 #include "gjs/atoms.h"

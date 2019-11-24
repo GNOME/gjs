@@ -26,9 +26,8 @@
 
 #include <stddef.h>  // for size_t
 
-#include "gjs/jsapi-wrapper.h"
-
 class GjsContextPrivate;
+struct JSContext;
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 

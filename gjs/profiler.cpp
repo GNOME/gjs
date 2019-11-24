@@ -53,8 +53,8 @@
 #    include <sysprof-capture.h>
 #endif
 
-#include "gjs/jsapi-wrapper.h"  // IWYU pragma: keep
-#include "js/ProfilingStack.h"  // for EnableContextProfilingStack, ...
+#include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
+#include <js/TypeDecls.h>
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"

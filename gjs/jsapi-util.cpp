@@ -22,6 +22,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdio.h>   // for sscanf
 #include <string.h>  // for strlen
 
@@ -34,7 +36,17 @@
 #include <locale>   // for wstring_convert
 #include <utility>  // for move
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/Conversions.h>
+#include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
+#include <js/GCVector.h>  // for RootedVector
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>        // for JS_GetPropertyById, JS_ClearPendin...
+#include <jsfriendapi.h>  // for ProtoKeyToClass
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

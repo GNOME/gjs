@@ -22,11 +22,23 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for strlen
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>  // for JSNative
+#include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_RESOLVING, JSPROP_GETTER
+#include <js/PropertySpec.h>
+#include <js/Realm.h>  // for GetRealmObjectPrototype
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>        // for JS_DefineFunctions, JS_DefineProp...
+#include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
+#include <jspubtd.h>      // for JSProto_TypeError
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

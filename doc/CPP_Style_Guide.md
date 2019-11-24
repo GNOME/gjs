@@ -410,6 +410,12 @@ about later.
 The tool [IWYU][iwyu] can help with this, but it generates a lot of
 false positives, so we don't automate it.
 
+In many cases, header files with SpiderMonkey types will only need to
+include one SpiderMonkey header, `<js/TypeDecls.h>`, unless they have
+inline functions or SpiderMonkey member types.
+This header file contains a number of forward declarations and nothing
+else.
+
 [iwyu]: https://include-what-you-use.org/
 
 #### Header inclusion order ####
@@ -425,13 +431,10 @@ Headers should be included in the following order:
 
 Each of these groups must be separated by blank lines.
 Within each group, all the headers should be alphabetized.
-The first four groups should use angle brackets for the includes.
+The first five groups should use angle brackets for the includes.
 
-SpiderMonkey headers should in theory also all use angle brackets, but
-currently due to a bug in SpiderMonkey, the GJS header
-`"gjs/jsapi-wrapper.h"` must be included instead of `<jsapi.h>` and
-`<jsfriendapi.h>`, and before any other SpiderMonkey headers.
-So the SpiderMonkey headers should use quotes for the includes.
+Note that the header `<config.h>` must be included before any
+SpiderMonkey headers.
 
 GJS headers should use quotes, _except_ in public header files (any
 header file included from `<gjs/gjs.h>`.)
@@ -463,9 +466,9 @@ Here is an example of all of the above rules together:
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"  // for GCHashMap
-#include "mozilla/Unused.h"
+#include <js/GCHashTable.h>  // for GCHashMap
+#include <jsapi.h>           // for JS_New, JSAutoRealm, JS_GetProperty
+#include <mozilla/Unused.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

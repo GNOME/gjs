@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>  // for strlen
 
@@ -28,8 +30,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/Warnings.h"
+#include <js/Class.h>
+#include <js/Id.h>                  // for JSID_IS_STRING, JSID_VOID
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <js/Warnings.h>
+#include <jsapi.h>  // for JS_DefinePropertyById, JS_GetProp...
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -50,6 +59,9 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
+
+struct JSFunctionSpec;
+struct JSPropertySpec;
 
 typedef struct {
     void *dummy;

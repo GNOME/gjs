@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <stdlib.h>  // for exit
 #include <string.h>  // for strcmp, memset, size_t
@@ -33,9 +35,19 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/Warnings.h"
-#include "mozilla/Maybe.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/GCVector.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
+#include <js/PropertySpec.h>
+#include <js/Realm.h>  // for GetRealmFunctionPrototype
+#include <js/RootingAPI.h>
+#include <js/Value.h>
+#include <js/Warnings.h>
+#include <jsapi.h>        // for HandleValueArray, JS_GetElement
+#include <jsfriendapi.h>  // for JS_GetObjectFunction
+#include <jspubtd.h>      // for JSProto_TypeError, JSTYPE_FUNCTION
+#include <mozilla/Maybe.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"

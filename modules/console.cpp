@@ -51,17 +51,26 @@
 #include <glib.h>
 #include <glib/gprintf.h>  // for g_fprintf
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/CompilationAndEvaluation.h"
-#include "js/SourceText.h"
-#include "js/Warnings.h"
-#include "mozilla/UniquePtr.h"
-#include "mozilla/Unused.h"
+#include <js/CallArgs.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/ErrorReport.h>
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Warnings.h>
+#include <jsapi.h>  // for JS_IsExceptionPending, Exce...
+#include <mozilla/UniquePtr.h>
+#include <mozilla/Unused.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "modules/console.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 

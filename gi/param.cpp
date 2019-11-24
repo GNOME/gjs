@@ -21,10 +21,18 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_GetClass, JS_GetPropertyById
+#include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/function.h"
 #include "gi/param.h"

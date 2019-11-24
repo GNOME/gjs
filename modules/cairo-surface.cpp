@@ -20,12 +20,20 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <cairo-gobject.h>
 #include <cairo.h>
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
 
 #include "gi/arg.h"
 #include "gi/foreign.h"

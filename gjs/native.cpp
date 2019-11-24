@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string>
 #include <tuple>  // for tie
 #include <unordered_map>
@@ -28,7 +30,8 @@
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
 
 #include "gjs/jsapi-util.h"
 #include "gjs/native.h"

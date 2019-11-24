@@ -21,13 +21,18 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <unordered_map>
 #include <utility>  // for move, pair
 
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>  // for JS_New, JSAutoRealm, JS_GetProperty
 
 #include "gi/gobject.h"
 #include "gi/object.h"

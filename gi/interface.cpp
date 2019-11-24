@@ -22,9 +22,12 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/TypeDecls.h>
 
 #include "gi/function.h"
 #include "gi/interface.h"

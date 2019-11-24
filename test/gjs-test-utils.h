@@ -26,12 +26,11 @@
 #ifndef TEST_GJS_TEST_UTILS_H_
 #define TEST_GJS_TEST_UTILS_H_
 
+#include <config.h>
+
 #include "gjs/context.h"
 
-struct JSContext;
-namespace JS {
-class Realm;
-};
+#include <js/TypeDecls.h>
 
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 struct _GjsUnitTestFixture {

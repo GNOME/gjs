@@ -24,10 +24,12 @@
 #ifndef GJS_JSAPI_CLASS_H_
 #define GJS_JSAPI_CLASS_H_
 
+#include <config.h>
+
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"  // IWYU pragma: keep
 #include "gjs/global.h"       // IWYU pragma: keep

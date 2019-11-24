@@ -24,13 +24,15 @@
 #ifndef GI_ARG_H_
 #define GI_ARG_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
 

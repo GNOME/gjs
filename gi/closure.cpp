@@ -21,11 +21,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <glib.h>
 
 #include <new>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_IsExceptionPending, Call, JS_Get...
 
 #include "gi/closure.h"
 #include "gjs/context-private.h"

@@ -24,6 +24,8 @@
 #ifndef GJS_JSAPI_UTIL_H_
 #define GJS_JSAPI_UTIL_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <sys/types.h>  // for ssize_t
@@ -35,9 +37,17 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jspubtd.h>     // for JSProtoKey
 
 #include "gjs/macros.h"
+
+class JSErrorReport;
+namespace JS {
+class CallArgs;
+}
 
 struct GjsAutoTakeOwnership {};
 

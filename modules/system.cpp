@@ -32,8 +32,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/Date.h"  // for ResetTimeZone
+#include <js/CallArgs.h>
+#include <js/Date.h>                // for ResetTimeZone
+#include <js/GCAPI.h>               // for JS_GC
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>        // for JS_DefinePropertyById, JS_DefineF...
+#include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 
 #include "gi/object.h"
 #include "gjs/atoms.h"

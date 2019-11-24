@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for strcmp, strlen, memcpy
 
 #include <cmath>   // for std::abs
@@ -31,7 +33,17 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/Conversions.h>
+#include <js/GCVector.h>            // for RootedVector, MutableWrappedPtrOp...
+#include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>        // for JS_ReportOutOfMemory, JS_GetElement
+#include <jsfriendapi.h>  // for JS_IsUint8Array, JS_GetObjectFunc...
+#include <mozilla/Vector.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"

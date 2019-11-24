@@ -22,10 +22,14 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"

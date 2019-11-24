@@ -1,16 +1,28 @@
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>  // for strlen, strstr
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/CompilationAndEvaluation.h"
-#include "js/SourceText.h"
+#include <js/CallArgs.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_DefineFunctions
 
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 #define assert_match(str, pattern)                                            \
     G_STMT_START {                                                            \

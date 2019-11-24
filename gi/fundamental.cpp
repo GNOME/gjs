@@ -22,11 +22,18 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"  // for WeakCache
+#include <js/AllocPolicy.h>  // for SystemAllocPolicy
+#include <js/Class.h>
+#include <js/GCHashTable.h>  // for WeakCache
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for InformalValueTypeName, JS_GetClass
+#include <mozilla/HashTable.h>
 
 #include "gi/arg.h"
 #include "gi/function.h"
@@ -38,6 +45,10 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
+
+namespace JS {
+class CallArgs;
+}
 
 FundamentalInstance::FundamentalInstance(JSContext* cx, JS::HandleObject obj)
     : GIWrapperInstance(cx, obj) {

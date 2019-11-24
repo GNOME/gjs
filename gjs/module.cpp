@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stddef.h>     // for size_t
 #include <sys/types.h>  // for ssize_t
 
@@ -29,9 +31,15 @@
 #include <gio/gio.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/CompilationAndEvaluation.h"
-#include "js/SourceText.h"
+#include <js/Class.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/GCVector.h>  // for RootedVector
+#include <js/PropertyDescriptor.h>
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_DefinePropertyById, ...
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"

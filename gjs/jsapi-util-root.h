@@ -25,6 +25,8 @@
 #ifndef GJS_JSAPI_UTIL_ROOT_H_
 #define GJS_JSAPI_UTIL_ROOT_H_
 
+#include <config.h>
+
 #include <stdint.h>  // for uintptr_t
 
 #include <cstddef>  // for nullptr_t
@@ -35,7 +37,8 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
 
 #include "gjs/context-private.h"
 #include "gjs/context.h"

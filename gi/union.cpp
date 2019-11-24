@@ -21,10 +21,17 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/Warnings.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <js/Warnings.h>
+#include <jsapi.h>  // for HandleValueArray
 
 #include "gi/function.h"
 #include "gi/repo.h"

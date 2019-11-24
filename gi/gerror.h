@@ -24,11 +24,14 @@
 #ifndef GI_GERROR_H_
 #define GI_GERROR_H_
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/PropertySpec.h>
+#include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
@@ -36,6 +39,9 @@
 
 class ErrorPrototype;
 class ErrorInstance;
+namespace JS {
+class CallArgs;
+}
 
 /* To conserve memory, we have two different kinds of private data for GError
  * JS wrappers: ErrorInstance, and ErrorPrototype. Both inherit from ErrorBase

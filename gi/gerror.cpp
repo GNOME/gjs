@@ -21,13 +21,22 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/SavedFrameAPI.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
+#include <js/RootingAPI.h>
+#include <js/SavedFrameAPI.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>    // for JS_DefinePropertyById, JS_GetProp...
+#include <jspubtd.h>  // for JSProtoKey, JSProto_Error, JSProt...
 
 #include "gi/boxed.h"
 #include "gi/enumeration.h"

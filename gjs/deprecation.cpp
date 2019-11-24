@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <cstddef>        // for size_t
 #include <string>         // for string
 #include <unordered_set>  // for unordered_set
@@ -28,7 +30,14 @@
 
 #include <glib.h>  // for g_warning
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/Conversions.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>        // for MaxFrames, CaptureCurrentStack
+#include <jsfriendapi.h>  // for FormatStackDump
 
 #include "gjs/deprecation.h"
 #include "gjs/macros.h"

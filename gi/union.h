@@ -24,15 +24,21 @@
 #ifndef GI_UNION_H_
 #define GI_UNION_H_
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
+namespace JS {
+class CallArgs;
+}
+struct JSClassOps;
 class UnionPrototype;
 class UnionInstance;
 

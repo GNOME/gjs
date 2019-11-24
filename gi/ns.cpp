@@ -21,10 +21,19 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/Id.h>  // for JSID_IS_STRING
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_GetPrivate, JS_NewObjectWithGivenProto
 
 #include "gi/ns.h"
 #include "gi/repo.h"

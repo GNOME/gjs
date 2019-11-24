@@ -21,11 +21,19 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdarg.h>
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/ErrorReport.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_ReportErrorUTF8, BuildStackString
+#include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

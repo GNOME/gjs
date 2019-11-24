@@ -23,7 +23,9 @@
 #ifndef MODULES_CAIRO_MODULE_H_
 #define MODULES_CAIRO_MODULE_H_
 
-#include "gjs/jsapi-wrapper.h"
+#include <config.h>
+
+#include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
 

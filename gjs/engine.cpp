@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 
 #ifdef _WIN32
@@ -33,13 +35,16 @@
 #include <gio/gio.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/ContextOptions.h"
-#include "js/Initialization.h"  // for JS_Init, JS_ShutDown
-#include "js/Promise.h"
-#include "js/Warnings.h"
-#include "js/experimental/SourceHook.h"
-#include "mozilla/UniquePtr.h"
+#include <js/ContextOptions.h>
+#include <js/GCAPI.h>           // for JS_SetGCParameter, JS_AddFin...
+#include <js/Initialization.h>  // for JS_Init, JS_ShutDown
+#include <js/Promise.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Warnings.h>
+#include <js/experimental/SourceHook.h>
+#include <jsapi.h>  // for InitSelfHostedCode, JS_Destr...
+#include <mozilla/UniquePtr.h>
 
 #include "gi/object.h"
 #include "gjs/context-private.h"

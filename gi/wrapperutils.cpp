@@ -21,10 +21,14 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_DefinePropertyById
 
 #include "gi/function.h"
 #include "gi/gtype.h"

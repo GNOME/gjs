@@ -22,12 +22,19 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Id.h>  // for JSID_TO_SYMBOL
+#include <js/PropertySpec.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_GetArrayLength, JS_GetElement
 
 #include "gi/gobject.h"
 #include "gi/gtype.h"

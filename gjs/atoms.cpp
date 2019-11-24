@@ -24,7 +24,12 @@
 
 #define GJS_USE_ATOM_FOREACH
 
-#include "gjs/jsapi-wrapper.h"
+#include <config.h>
+
+#include <js/Symbol.h>
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_AtomizeAndPinString
 
 #include "gjs/atoms.h"
 

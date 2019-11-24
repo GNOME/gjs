@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <limits.h>  // for SCHAR_MAX, SCHAR_MIN, UCHAR_MAX
 #include <stdint.h>
 #include <string.h>  // for memset
@@ -29,8 +31,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "mozilla/Unused.h"
+#include <js/CharacterEncoding.h>
+#include <js/Conversions.h>
+#include <js/GCVector.h>  // for RootedVector
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>  // for InformalValueTypeName, JS_ClearPendingException
+#include <mozilla/Unused.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"

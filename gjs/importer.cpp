@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for size_t, strcmp, strlen
 
 #ifdef _WIN32
@@ -36,8 +38,22 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "mozilla/UniquePtr.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/GCVector.h>  // for MutableWrappedPtrOperations
+#include <js/Id.h>        // for PropertyKey, JSID_IS_STRING
+#include <js/PropertyDescriptor.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/Symbol.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>    // for JS_DefinePropertyById, JS_DefineP...
+#include <jspubtd.h>  // for JSProto_Error
+#include <mozilla/UniquePtr.h>
+#include <mozilla/Vector.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

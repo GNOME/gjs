@@ -23,19 +23,35 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/CompilationAndEvaluation.h"
-#include "js/SourceText.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/Conversions.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
+#include <js/PropertySpec.h>
+#include <js/RealmOptions.h>
+#include <js/SourceText.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for AutoSaveExceptionState, ...
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool

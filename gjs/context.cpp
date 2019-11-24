@@ -50,11 +50,26 @@
 #include <windows.h>
 #endif
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/CompilationAndEvaluation.h"
-#include "js/GCHashTable.h"  // for WeakCache
-#include "js/SourceText.h"
-#include "js/experimental/SourceHook.h"
+#include <js/AllocPolicy.h>  // for SystemAllocPolicy
+#include <js/CallArgs.h>     // for UndefinedHandleValue
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/GCAPI.h>               // for JS_GC, JS_AddExtraGCRootsTr...
+#include <js/GCHashTable.h>         // for WeakCache
+#include <js/GCVector.h>            // for RootedVector
+#include <js/Promise.h>             // for JobQueue::SavedJobQueue
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/UniquePtr.h>
+#include <js/Utility.h>  // for DeletePolicy
+#include <js/Value.h>
+#include <jsapi.h>        // for JS_IsExceptionPending, ...
+#include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
+#include <mozilla/UniquePtr.h>
+#include <mozilla/Vector.h>
 
 #include "gi/object.h"
 #include "gi/private.h"

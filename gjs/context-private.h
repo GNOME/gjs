@@ -24,6 +24,8 @@
 #ifndef GJS_CONTEXT_PRIVATE_H_
 #define GJS_CONTEXT_PRIVATE_H_
 
+#include <config.h>
+
 #include <stdint.h>
 #include <sys/types.h>  // for ssize_t
 
@@ -33,9 +35,12 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"
-#include "js/Promise.h"
+#include <js/GCHashTable.h>
+#include <js/GCVector.h>
+#include <js/Promise.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>        // for JS_GetContextPrivate
+#include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
 #include "gjs/atoms.h"
 #include "gjs/context.h"

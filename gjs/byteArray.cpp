@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>  // for strcmp, memchr, strlen
 
@@ -28,8 +30,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/ArrayBuffer.h"
+#include <js/ArrayBuffer.h>
+#include <js/CallArgs.h>
+#include <js/GCAPI.h>  // for AutoCheckCannotGC
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>   // for UniqueChars
+#include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
+#include <jsfriendapi.h>  // for JS_NewUint8ArrayWithBuffer, GetUint...
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"

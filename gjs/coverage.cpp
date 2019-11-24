@@ -23,6 +23,8 @@
  * Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
+#include <config.h>
+
 #include <stdlib.h>  // for free, size_t
 #include <string.h>  // for strcmp, strlen
 
@@ -31,7 +33,13 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer, JS_Remove...
+#include <js/RootingAPI.h>
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>        // for JSAutoRealm, JS_SetPropertyById
+#include <jsfriendapi.h>  // for GetCodeCoverageSummary
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

@@ -24,6 +24,8 @@
 #ifndef GI_OBJECT_H_
 #define GI_OBJECT_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 
 #include <forward_list>
@@ -34,8 +36,9 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"  // for GCHashMap
+#include <js/GCHashTable.h>  // for GCHashMap
+#include <js/PropertySpec.h>
+#include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
@@ -44,6 +47,16 @@
 #include "util/log.h"
 
 class GjsAtoms;
+namespace JS {
+class CallArgs;
+}
+namespace js {
+class SystemAllocPolicy;
+}
+namespace mozilla {
+template <class Key>
+struct DefaultHasher;
+}
 class ObjectInstance;
 class ObjectPrototype;
 

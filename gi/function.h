@@ -24,13 +24,19 @@
 #ifndef GI_FUNCTION_H_
 #define GI_FUNCTION_H_
 
+#include <config.h>
+
 #include <ffi.h>
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
+
+namespace JS {
+class HandleValueArray;
+}
 
 typedef enum {
     PARAM_NORMAL,
