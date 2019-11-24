@@ -41,7 +41,6 @@
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/global.h"
 #include "gjs/importer.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
