@@ -1052,14 +1052,32 @@ is_gvalue_flat_array(GITypeInfo *param_info,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_to_array(JSContext   *context,
-                   JS::Value    array_value,
-                   gsize        length,
-                   GITransfer   transfer,
-                   GITypeInfo  *param_info,
-                   void       **arr_p)
-{
+static bool is_empty(JSContext* cx, JS::HandleValue array_value, bool* empty) {
+    if (array_value.isNull()) {
+        *empty = true;
+        return true;
+    }
+
+    bool is_array;
+    if (!JS_IsArrayObject(cx, array_value, &is_array))
+        return false;
+    if (!is_array) {
+        *empty = false;
+        return true;
+    }
+
+    JS::RootedObject array_object(cx, &array_value.toObject());
+    uint32_t length;
+    if (!JS_GetArrayLength(cx, array_object, &length))
+        return false;
+    *empty = (length == 0);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
+                               size_t length, GITransfer transfer,
+                               GITypeInfo* param_info, void** arr_p) {
     enum { UNSIGNED=false, SIGNED=true };
     GITypeTag element_type;
 
@@ -1127,8 +1145,13 @@ gjs_array_to_array(JSContext   *context,
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(param_info);
             GIInfoType info_type = g_base_info_get_type(interface_info);
-            if (info_type == GI_INFO_TYPE_STRUCT ||
-                info_type == GI_INFO_TYPE_UNION) {
+
+            bool array_is_empty;
+            if (!is_empty(context, array_value, &array_is_empty))
+                return false;
+
+            if (!array_is_empty && (info_type == GI_INFO_TYPE_STRUCT ||
+                                    info_type == GI_INFO_TYPE_UNION)) {
                 gjs_throw(context,
                       "Flat array of type %s is not currently supported",
                       interface_info.name());
