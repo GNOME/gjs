@@ -1,3 +1,16 @@
+Version 1.58.3
+--------------
+
+- Emergency release, intended to correct two mistakes in 1.58.2, both coming
+  from crash fixes that had unexpected other effects on working code.
+  Distributors shipping 1.58.2 are urged to update to 1.58.3 as soon as
+  possible.
+
+- Closed bugs and merge requests:
+  * possible regression in gjs 1.58.2 [Philip Chimento, #288]
+  * JS ERROR: TypeError: this._rooms.get(...) is undefined [Philip Chimento,
+    #289, !366]
+
 Version 1.58.2
 --------------
 
