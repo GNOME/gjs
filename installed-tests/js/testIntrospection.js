@@ -28,6 +28,25 @@ describe('Unsafe integer marshalling', function () {
     });
 });
 
+describe('Marshalling empty flat arrays of structs', function () {
+    let widget;
+    beforeAll(function () {
+        Gtk.init(null);
+    });
+
+    beforeEach(function () {
+        widget = new Gtk.Label();
+    });
+
+    it('accepts null', function () {
+        widget.drag_dest_set(0, null, Gdk.DragAction.COPY);
+    });
+
+    it('accepts an empty array', function () {
+        widget.drag_dest_set(0, [], Gdk.DragAction.COPY);
+    });
+});
+
 describe('Constructor', function () {
     it('throws when constructor called without new', function () {
         expect(() => Gio.AppLaunchContext())
