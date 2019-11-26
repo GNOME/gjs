@@ -146,6 +146,7 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
     if (!JS_SetPropertyById(cx, debugger_compartment, atoms.debuggee(),
                             v_wrapper) ||
         !JS_DefineFunctions(cx, debugger_compartment, debugger_funcs) ||
-        !gjs_define_global_properties(cx, debugger_compartment, "debugger"))
+        !gjs_define_global_properties(cx, debugger_compartment, "GJS debugger",
+                                      "debugger"))
         gjs_log_exception(cx);
 }
