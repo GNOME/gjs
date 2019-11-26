@@ -27,14 +27,19 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
+struct GjsCairoSurface
+    : GjsAutoPointer<cairo_surface_t, cairo_surface_t, cairo_surface_destroy,
+                     cairo_surface_reference> {
+    explicit GjsCairoSurface(cairo_surface_t* surface)
+        : GjsAutoPointer(surface, GjsAutoTakeOwnership()) {}
+};
+
 GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Surface", cairo_surface,
                                      CAIRO_GOBJECT_TYPE_SURFACE,
                                      JSCLASS_BACKGROUND_FINALIZE)
 
 static void gjs_cairo_surface_finalize(JSFreeOp*, JSObject* obj) {
-    using AutoSurface =
-        GjsAutoPointer<cairo_surface_t, cairo_surface_t, cairo_surface_destroy>;
-    AutoSurface surface = static_cast<cairo_surface_t*>(JS_GetPrivate(obj));
+    delete static_cast<GjsCairoSurface*>(JS_GetPrivate(obj));
     JS_SetPrivate(obj, nullptr);
 }
 
@@ -134,7 +139,7 @@ void gjs_cairo_surface_construct(JSObject* object, cairo_surface_t* surface) {
     g_return_if_fail(surface);
 
     g_assert(!JS_GetPrivate(object));
-    JS_SetPrivate(object, cairo_surface_reference(surface));
+    JS_SetPrivate(object, new GjsCairoSurface(surface));
 }
 
 /**
@@ -219,7 +224,8 @@ cairo_surface_t* gjs_cairo_surface_get_surface(
         return nullptr;
     }
 
-    return static_cast<cairo_surface_t*>(JS_GetPrivate(surface_wrapper));
+    auto* priv = static_cast<GjsCairoSurface*>(JS_GetPrivate(surface_wrapper));
+    return priv ? priv->get() : nullptr;
 }
 
 [[nodiscard]] static bool surface_to_g_argument(

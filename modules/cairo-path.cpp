@@ -19,12 +19,16 @@
 
 [[nodiscard]] static JSObject* gjs_cairo_path_get_proto(JSContext*);
 
+struct GjsCairoPath
+    : GjsAutoPointer<cairo_path_t, cairo_path_t, cairo_path_destroy> {
+    explicit GjsCairoPath(cairo_path_t* path) : GjsAutoPointer(path) {}
+};
+
 GJS_DEFINE_PROTO_ABSTRACT("Path", cairo_path, JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PRIV_FROM_JS(GjsCairoPath, gjs_cairo_path_class);
 
 static void gjs_cairo_path_finalize(JSFreeOp*, JSObject* obj) {
-    using AutoCairoPath =
-        GjsAutoPointer<cairo_path_t, cairo_path_t, cairo_path_destroy>;
-    AutoCairoPath path = static_cast<cairo_path_t*>(JS_GetPrivate(obj));
+    delete static_cast<GjsCairoPath*>(JS_GetPrivate(obj));
     JS_SetPrivate(obj, nullptr);
 }
 
@@ -64,8 +68,8 @@ gjs_cairo_path_from_path(JSContext    *context,
         return nullptr;
     }
 
-    g_assert(!JS_GetPrivate(object));
-    JS_SetPrivate(object, path);
+    g_assert(!priv_from_js(context, object));
+    JS_SetPrivate(object, new GjsCairoPath(path));
 
     return object;
 }
@@ -82,13 +86,12 @@ cairo_path_t* gjs_cairo_path_get_path(JSContext* cx,
     g_return_val_if_fail(cx, nullptr);
     g_return_val_if_fail(path_wrapper, nullptr);
 
-    auto* path = static_cast<cairo_path_t*>(JS_GetInstancePrivate(
-        cx, path_wrapper, &gjs_cairo_path_class, nullptr));
-    if (!path) {
+    GjsCairoPath* priv;
+    if (!priv_from_js_with_typecheck(cx, path_wrapper, &priv)) {
         gjs_throw(cx, "Expected Cairo.Path but got %s",
                   JS_GetClass(path_wrapper)->name);
         return nullptr;
     }
 
-    return path;
+    return priv->get();
 }

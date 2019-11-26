@@ -28,7 +28,12 @@
 
 extern struct JSClass gjs_param_class;
 
-GJS_DEFINE_PRIV_FROM_JS(GParamSpec, gjs_param_class)
+struct Param : GjsAutoParam {
+    explicit Param(GParamSpec* param)
+        : GjsAutoParam(param, GjsAutoTakeOwnership()) {}
+};
+
+GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
 
 /*
  * The *resolved out parameter, on success, should be false to indicate that id
@@ -91,14 +96,15 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 }
 
 static void param_finalize(JSFreeOp*, JSObject* obj) {
-    GjsAutoParam param = static_cast<GParamSpec*>(JS_GetPrivate(obj));
+    Param* priv = static_cast<Param*>(JS_GetPrivate(obj));
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
-                        param.get());
-    if (!param)
+                        priv);
+    if (!priv)
         return; /* wrong class? */
 
     GJS_DEC_COUNTER(param);
     JS_SetPrivate(obj, nullptr);
+    delete priv;
 }
 
 
@@ -212,8 +218,8 @@ gjs_param_from_g_param(JSContext    *context,
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
     GJS_INC_COUNTER(param);
-    JS_SetPrivate(obj, gparam);
-    g_param_spec_ref (gparam);
+    auto* priv = new Param(gparam);
+    JS_SetPrivate(obj, priv);
 
     gjs_debug(GJS_DEBUG_GPARAM,
               "JSObject created with param instance %p type %s", gparam,
@@ -229,7 +235,8 @@ gjs_g_param_from_param(JSContext       *context,
     if (!obj)
         return nullptr;
 
-    return priv_from_js(context, obj);
+    auto* priv = priv_from_js(context, obj);
+    return priv ? priv->get() : nullptr;
 }
 
 bool
@@ -243,7 +250,7 @@ gjs_typecheck_param(JSContext       *context,
     if (!do_base_typecheck(context, object, throw_error))
         return false;
 
-    GParamSpec* param = priv_from_js(context, object);
+    GParamSpec* param = gjs_g_param_from_param(context, object);
 
     if (!param) {
         if (throw_error) {

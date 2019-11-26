@@ -26,9 +26,10 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-typedef struct {
-    char *gi_namespace;
-} Ns;
+struct Ns : GjsAutoChar {
+    explicit Ns(const char* ns_name)
+        : GjsAutoChar(const_cast<char*>(ns_name), GjsAutoTakeOwnership()) {}
+};
 
 extern struct JSClass gjs_ns_class;
 
@@ -77,7 +78,7 @@ ns_resolve(JSContext       *context,
     }
 
     GjsAutoBaseInfo info =
-        g_irepository_find_by_name(nullptr, priv->gi_namespace, name.get());
+        g_irepository_find_by_name(nullptr, priv->get(), name.get());
     if (!info) {
         *resolved = false; /* No property defined, but no error either */
         return true;
@@ -108,15 +109,14 @@ static bool ns_new_enumerate(JSContext* cx, JS::HandleObject obj,
         return true;
     }
 
-    int n = g_irepository_get_n_infos(nullptr, priv->gi_namespace);
+    int n = g_irepository_get_n_infos(nullptr, priv->get());
     if (!properties.reserve(properties.length() + n)) {
         JS_ReportOutOfMemory(cx);
         return false;
     }
 
     for (int k = 0; k < n; k++) {
-        GjsAutoBaseInfo info =
-            g_irepository_get_info(nullptr, priv->gi_namespace, k);
+        GjsAutoBaseInfo info = g_irepository_get_info(nullptr, priv->get(), k);
         const char* name = info.name();
 
         jsid id = gjs_intern_string_to_id(cx, name);
@@ -139,7 +139,7 @@ get_name (JSContext *context,
     if (!priv)
         return false;
 
-    return gjs_string_from_utf8(context, priv->gi_namespace, args.rval());
+    return gjs_string_from_utf8(context, priv->get(), args.rval());
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(ns)
@@ -153,11 +153,8 @@ static void ns_finalize(JSFreeOp*, JSObject* obj) {
     if (!priv)
         return; /* we are the prototype, not a real instance */
 
-    if (priv->gi_namespace)
-        g_free(priv->gi_namespace);
-
     GJS_DEC_COUNTER(ns);
-    g_free(priv);
+    delete priv;
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -197,8 +194,6 @@ static JSObject*
 ns_new(JSContext    *context,
        const char   *ns_name)
 {
-    Ns *priv;
-
     JS::RootedObject proto(context);
     if (!gjs_ns_define_proto(context, nullptr, &proto))
         return nullptr;
@@ -208,8 +203,7 @@ ns_new(JSContext    *context,
     if (!ns)
         return nullptr;
 
-    priv = g_new0(Ns, 1);
-
+    auto* priv = new Ns(ns_name);
     GJS_INC_COUNTER(ns);
 
     g_assert(!priv_from_js(context, ns));
@@ -218,8 +212,6 @@ ns_new(JSContext    *context,
     gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p",
                         ns.get(), priv);
 
-    priv = priv_from_js(context, ns);
-    priv->gi_namespace = g_strdup(ns_name);
     return ns;
 }
 

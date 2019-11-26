@@ -10,7 +10,6 @@
 
 #include <stdint.h>
 
-#include <new>
 #include <string>
 
 #include <girepository.h>
@@ -1027,7 +1026,7 @@ class GIWrapperInstance : public Base {
     Wrapped* m_ptr = nullptr;
 
     explicit GIWrapperInstance(JSContext* cx, JS::HandleObject obj)
-        : Base(Prototype::for_js_prototype(cx, obj)) {
+        : Base(Prototype::for_js_prototype(cx, obj)), m_ptr(nullptr) {
         Base::m_proto->acquire();
         Base::GIWrapperBase::debug_lifecycle(obj, "Instance constructor");
     }

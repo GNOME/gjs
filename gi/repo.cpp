@@ -44,12 +44,9 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-typedef struct {
-    void *dummy;
-
-} Repo;
-
 extern struct JSClass gjs_repo_class;
+
+struct Repo {};
 
 GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
@@ -209,7 +206,7 @@ static void repo_finalize(JSFreeOp*, JSObject* obj) {
         return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(repo);
-    g_free(priv);
+    delete priv;
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -246,8 +243,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 repo_new(JSContext *context)
 {
-    Repo *priv;
-
     JS::RootedObject proto(context);
     if (!gjs_repo_define_proto(context, nullptr, &proto))
         return nullptr;
@@ -257,8 +252,7 @@ repo_new(JSContext *context)
     if (repo == nullptr)
         return nullptr;
 
-    priv = g_new0(Repo, 1);
-
+    auto* priv = new Repo();
     GJS_INC_COUNTER(repo);
 
     g_assert(priv_from_js(context, repo) == NULL);
