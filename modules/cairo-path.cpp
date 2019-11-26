@@ -31,8 +31,6 @@
 #include "modules/cairo-private.h"  // IWYU pragma: keep
 
 typedef struct {
-    JSContext       *context;
-    JSObject        *object;
     cairo_path_t    *path;
 } GjsCairoPath;
 
@@ -92,8 +90,6 @@ gjs_cairo_path_from_path(JSContext    *context,
     g_assert(!priv_from_js(context, object));
     JS_SetPrivate(object, priv);
 
-    priv->context = context;
-    priv->object = object;
     priv->path = path;
 
     return object;

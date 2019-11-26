@@ -234,9 +234,6 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 typedef struct {
-    void *dummy;
-    JSContext  *context;
-    JSObject   *object;
     cairo_t * cr;
 } GjsCairoContext;
 
@@ -260,8 +257,6 @@ _gjs_cairo_context_construct_internal(JSContext       *context,
     g_assert(!priv_from_js(context, obj));
     JS_SetPrivate(obj, priv);
 
-    priv->context = context;
-    priv->object = obj;
     priv->cr = cairo_reference(cr);
 }
 

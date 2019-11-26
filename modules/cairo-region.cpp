@@ -38,8 +38,6 @@
 #include "modules/cairo-private.h"
 
 typedef struct {
-    JSContext *context;
-    JSObject *object;
     cairo_region_t *region;
 } GjsCairoRegion;
 
@@ -255,8 +253,6 @@ _gjs_cairo_region_construct_internal(JSContext       *context,
     g_assert(!priv_from_js(context, obj));
     JS_SetPrivate(obj, priv);
 
-    priv->context = context;
-    priv->object = obj;
     priv->region = cairo_region_reference(region);
 }
 
