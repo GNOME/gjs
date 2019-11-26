@@ -42,6 +42,7 @@
 // marked as system headers.
 // IWYU pragma: begin_exports
 #include <js/Conversions.h>
+#include <js/SweepingAPI.h>
 #include <jsapi.h>
 #include <jsfriendapi.h>
 // IWYU pragma: end_exports

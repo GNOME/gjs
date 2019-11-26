@@ -70,28 +70,6 @@ do_Create_Artifacts_Folder () {
     mkdir -p "$save_dir"/analysis; touch "$save_dir"/analysis/doing-"$1"
 }
 
-do_Check_Warnings () {
-    local total=0
-    cat compilation.log | grep "warning:" | awk '{total+=1}END{print "Total number of warnings: "total}'
-
-    # Discard warnings related to upstream dependencies.
-    cat compilation.log | grep "warning:" | \
-            awk "! /installed-tests\/gimarshallingtests/" | \
-            awk "! /installed-tests\/regress.c/" > \
-            warnings.log
-
-    total=$(awk '{total+=1}END{print total}' warnings.log)
-
-    if test "$total" -gt 0; then
-        echo '-----------------------------------------'
-        echo "### $total new warning(s) found by compiler ###"
-        echo '-----------------------------------------'
-        cat warnings.log || true
-        echo '-----------------------------------------'
-        exit 1
-    fi
-}
-
 do_Check_Script_Errors () {
     local total=0
     total=$(cat scripts.log | grep 'not ok ' | awk '{total+=1}END{print total}')
@@ -144,7 +122,7 @@ elif test "$1" = "GJS"; then
     echo "Autogen options: $ci_autogenargs"
     eval ./autogen.sh "$ci_autogenargs"
 
-    make -sj 2>&1 | tee compilation.log
+    make -sj 2>&1
 
     if test "$TEST" = "distcheck"; then
         xvfb-run -a make -s distcheck
@@ -156,15 +134,9 @@ elif test "$1" = "BUILD"; then
     do_Set_Env
 
     DEFAULT_CONFIG_OPTS="-Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled \
-        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false"
-    meson _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS | tee compilation.log
+        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false --werror"
+    meson _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS
     ninja -C _build
-
-    if test "$WARNINGS" = "count"; then
-        do_Print_Labels 'Warnings Report '
-        do_Check_Warnings
-        do_Print_Labels
-    fi
 
     if test "$TEST" != "skip"; then
         xvfb-run -a meson test -C _build $TEST_OPTS \
