@@ -1,6 +1,0 @@
-EXTRA_DIST +=                                   \
-	examples/clutter.js                     \
-	examples/gio-cat.js                     \
-	examples/gtk.js                         \
-	examples/http-server.js                 \
-	examples/test.jpg
