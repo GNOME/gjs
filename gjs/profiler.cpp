@@ -509,7 +509,7 @@ gjs_profiler_start(GjsProfiler *self)
 #else  /* !ENABLE_PROFILER */
 
     self->running = true;
-    g_message("Profiler is disabled. Recompile with --enable-profiler to use.");
+    g_message("Profiler is disabled. Recompile with it enabled to use.");
 
 #endif  /* ENABLE_PROFILER */
 }
