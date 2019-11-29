@@ -1,0 +1,354 @@
+EXTRA_DIST += 			\
+	test/test-bus.conf	\
+	test/run-test		\
+	$(NULL)
+
+### TEST RESOURCES #####################################################
+
+mock_js_resources_files := $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/test/mock-js-resources.gresource.xml)
+mock-js-resources.h: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
+mock-js-resources.c: $(srcdir)/test/mock-js-resources.gresource.xml $(modules_resource_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --sourcedir=$(builddir) --generate --c-name mock_js_resources $<
+
+jsunit_resources_files := $(shell glib-compile-resources --sourcedir=$(srcdir)/installed-tests/js --generate-dependencies $(srcdir)/installed-tests/js/jsunit.gresources.xml)
+jsunit-resources.h: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
+jsunit-resources.c: $(srcdir)/installed-tests/js/jsunit.gresources.xml $(jsunit_resources_files)
+	$(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir)/installed-tests/js --sourcedir=$(builddir) --generate --c-name jsunit_resources $<
+
+BUILT_SOURCES += 		\
+	mock-js-resources.c	\
+	mock-js-resources.h	\
+	jsunit-resources.c	\
+	jsunit-resources.h	\
+	$(NULL)
+
+EXTRA_DIST += 							\
+	$(mock_js_resources_files)				\
+	$(srcdir)/test/mock-js-resources.gresource.xml		\
+	$(jsunit_resources_files)				\
+	$(NULL)
+
+CLEANFILES +=						\
+	mock-js-resources.c				\
+	mock-js-resources.h				\
+	jsunit-resources.c				\
+	jsunit-resources.h				\
+	$(NULL)
+
+gsettings_SCHEMAS = installed-tests/js/org.gnome.GjsTest.gschema.xml
+EXTRA_DIST += $(gsettings_SCHEMAS)
+@GSETTINGS_RULES@
+
+### TEST PROGRAMS ######################################################
+
+# gjs-tests.gtester checks private APIs and is run only uninstalled,
+# on "make check".
+#
+# jsunit checks public APIs using JS test scripts, and is run on "make check",
+# as well as installed if --enable-installed-tests is given at configure time.
+# See Makefile-insttest.am for the build rules installing the tests.
+
+check_PROGRAMS += gjs-tests.gtester minijasmine
+
+gjs_tests_gtester_CPPFLAGS =			\
+	$(AM_CPPFLAGS)				\
+	-DGJS_COMPILATION			\
+	$(GJS_CFLAGS)				\
+	$(gjs_directory_defines)		\
+	-I$(top_srcdir)/test
+
+gjs_tests_gtester_LDADD =	\
+	libgjs.la		\
+	libgjs-jsapi.la		\
+	$(GJS_LIBS)
+
+gjs_tests_gtester_SOURCES =				\
+	test/gjs-tests.cpp				\
+	test/gjs-test-common.cpp			\
+	test/gjs-test-common.h				\
+	test/gjs-test-utils.cpp				\
+	test/gjs-test-utils.h				\
+	test/gjs-test-call-args.cpp			\
+	test/gjs-test-coverage.cpp			\
+	test/gjs-test-rooting.cpp			\
+	$(NULL)
+nodist_gjs_tests_gtester_SOURCES = mock-js-resources.c mock-js-resources.h
+
+minijasmine_SOURCES = installed-tests/minijasmine.cpp
+nodist_minijasmine_SOURCES = jsunit-resources.c jsunit-resources.h
+
+minijasmine_CPPFLAGS =				\
+	$(AM_CPPFLAGS)				\
+	$(GJS_CFLAGS)				\
+	-I$(top_srcdir)				\
+	-DINSTTESTDIR=\"$(gjsinsttestdir)\"	\
+	-DPKGLIBDIR=\"$(pkglibdir)\"		\
+	$(NULL)
+
+minijasmine_LDADD = $(GJS_LIBS) libgjs.la libgjs-jsapi.la
+
+### TEST GIRS ##########################################################
+
+TEST_INTROSPECTION_GIRS =
+common_test_ldflags = $(AM_LDFLAGS) -avoid-version
+common_test_libadd = $(GJS_LIBS)
+
+if !BUILDOPT_INSTALL_TESTS
+# This rpath /nowhere thing is the libtool upstream recommended way to
+# force generation of shared libraries, which we need in order for the
+# tests to work uninstalled.
+common_test_ldflags += -rpath /nowhere
+# In the installed tests case, these libraries are built for pkglibdir; sadly we
+# can only have one destination at a time
+check_LTLIBRARIES += libregress.la libwarnlib.la libgimarshallingtests.la
+endif
+
+# These sources are installed as part of gobject-introspection, and symlinked
+# into the build directory at configure time. They should not be distributed
+# with GJS.
+nodist_libregress_la_SOURCES =		\
+	installed-tests/regress.c	\
+	installed-tests/regress.h	\
+	$(NULL)
+libregress_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS) $(GJS_GDBUS_CFLAGS)
+libregress_la_LDFLAGS = $(common_test_ldflags) $(GJS_GDBUS_LIBS)
+libregress_la_LIBADD = $(common_test_libadd)
+libregress_scannerflags_includes = --include=Gio-2.0
+if ENABLE_CAIRO
+libregress_la_CPPFLAGS += $(GJS_CAIRO_CFLAGS)
+libregress_la_LDFLAGS +=  $(GJS_CAIRO_LIBS)
+libregress_scannerflags_includes += --include=cairo-1.0
+else
+libregress_la_CPPFLAGS += -D_GI_DISABLE_CAIRO
+endif
+Regress-1.0.gir: libregress.la
+Regress_1_0_gir_LIBS = libregress.la
+Regress_1_0_gir_FILES = $(nodist_libregress_la_SOURCES)
+Regress_1_0_gir_SCANNERFLAGS =			\
+	--warn-all --warn-error			\
+	$(libregress_scannerflags_includes)	\
+	$(WARN_SCANNERFLAGS)			\
+	$(NULL)
+if !ENABLE_CAIRO
+Regress_1_0_gir_CFLAGS = -D_GI_DISABLE_CAIRO
+endif
+TEST_INTROSPECTION_GIRS += Regress-1.0.gir
+
+nodist_libwarnlib_la_SOURCES =		\
+	installed-tests/warnlib.c	\
+	installed-tests/warnlib.h	\
+	$(NULL)
+libwarnlib_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
+libwarnlib_la_LDFLAGS = $(common_test_ldflags)
+libwarnlib_la_LIBADD = $(common_test_libadd)
+WarnLib-1.0.gir: libwarnlib.la
+WarnLib_1_0_gir_LIBS = libwarnlib.la
+WarnLib_1_0_gir_INCLUDES = Gio-2.0
+WarnLib_1_0_gir_FILES = $(nodist_libwarnlib_la_SOURCES)
+WarnLib_1_0_gir_SCANNERFLAGS =		\
+	--c-include="warnlib.h"		\
+	--symbol-prefix=warnlib_	\
+	$(NULL)
+TEST_INTROSPECTION_GIRS += WarnLib-1.0.gir
+
+nodist_libgimarshallingtests_la_SOURCES =	\
+	installed-tests/gimarshallingtests.c	\
+	installed-tests/gimarshallingtests.h	\
+	$(NULL)
+libgimarshallingtests_la_CPPFLAGS = $(AM_CPPFLAGS) $(GJS_CFLAGS)
+libgimarshallingtests_la_LDFLAGS = $(common_test_ldflags)
+libgimarshallingtests_la_LIBADD = $(common_test_libadd)
+GIMarshallingTests-1.0.gir: libgimarshallingtests.la
+GIMarshallingTests_1_0_gir_LIBS = libgimarshallingtests.la
+GIMarshallingTests_1_0_gir_INCLUDES = Gio-2.0
+GIMarshallingTests_1_0_gir_FILES = $(nodist_libgimarshallingtests_la_SOURCES)
+GIMarshallingTests_1_0_gir_SCANNERFLAGS =	\
+	--symbol-prefix=gi_marshalling_tests	\
+	--warn-all --warn-error			\
+	$(WARN_SCANNERFLAGS)			\
+	$(NULL)
+TEST_INTROSPECTION_GIRS += GIMarshallingTests-1.0.gir
+
+$(foreach gir,$(TEST_INTROSPECTION_GIRS),$(eval $(call introspection-scanner,$(gir))))
+TEST_INTROSPECTION_TYPELIBS = $(TEST_INTROSPECTION_GIRS:.gir=.typelib)
+noinst_DATA += $(TEST_INTROSPECTION_TYPELIBS)
+CLEANFILES += $(TEST_INTROSPECTION_GIRS) $(TEST_INTROSPECTION_TYPELIBS)
+
+### JAVASCRIPT TESTS ###################################################
+
+common_jstests_files =						\
+	installed-tests/js/testself.js				\
+	installed-tests/js/testByteArray.js			\
+	installed-tests/js/testExceptions.js			\
+	installed-tests/js/testFormat.js			\
+	installed-tests/js/testFundamental.js			\
+	installed-tests/js/testGettext.js			\
+	installed-tests/js/testGIMarshalling.js			\
+	installed-tests/js/testGLib.js				\
+	installed-tests/js/testGObject.js			\
+	installed-tests/js/testGObjectClass.js			\
+	installed-tests/js/testGObjectInterface.js		\
+	installed-tests/js/testGTypeClass.js			\
+	installed-tests/js/testGio.js				\
+	installed-tests/js/testImporter.js			\
+	installed-tests/js/testIntrospection.js			\
+	installed-tests/js/testLang.js				\
+	installed-tests/js/testLegacyByteArray.js		\
+	installed-tests/js/testLegacyClass.js			\
+	installed-tests/js/testLegacyGObject.js			\
+	installed-tests/js/testLocale.js			\
+	installed-tests/js/testMainloop.js			\
+	installed-tests/js/testNamespace.js			\
+	installed-tests/js/testPackage.js			\
+	installed-tests/js/testParamSpec.js			\
+	installed-tests/js/testRegress.js			\
+	installed-tests/js/testSignals.js			\
+	installed-tests/js/testSystem.js			\
+	installed-tests/js/testTweener.js			\
+	installed-tests/js/testWarnLib.js			\
+	$(NULL)
+
+jasmine_tests = $(common_jstests_files)
+
+if DBUS_TESTS
+jasmine_tests += installed-tests/js/testGDBus.js
+endif
+
+if ENABLE_GTK
+jasmine_tests += 				                \
+	installed-tests/js/testGtk.js		                \
+	installed-tests/js/testGObjectDestructionAccess.js	\
+	installed-tests/js/testLegacyGtk.js	                \
+	$(NULL)
+
+GTK_TESTS_ENVIRONMENT = export ENABLE_GTK=yes;
+else
+GTK_TESTS_ENVIRONMENT =
+endif
+
+if ENABLE_CAIRO
+jasmine_tests += installed-tests/js/testCairo.js
+endif
+
+EXTRA_DIST +=						        \
+	$(common_jstests_files)				        \
+	installed-tests/js/testCairo.js			        \
+	installed-tests/js/testGtk.js			        \
+	installed-tests/js/testGDBus.js			        \
+	installed-tests/js/testGObjectDestructionAccess.js	\
+	installed-tests/js/testLegacyGtk.js		        \
+	installed-tests/extra/gjs.supp			        \
+	installed-tests/extra/lsan.supp			        \
+	$(NULL)
+
+### TEST EXECUTION #####################################################
+
+@VALGRIND_CHECK_RULES@
+VALGRIND_SUPPRESSIONS_FILES = 				\
+	$(datadir)/glib-2.0/valgrind/glib.supp		\
+	$(top_srcdir)/installed-tests/extra/gjs.supp	\
+	$(NULL)
+
+if DBUS_TESTS
+DBUS_SESSION_COMMAND = $(DBUS_RUN_SESSION) --config-file=$(srcdir)/test/test-bus.conf --
+else
+DBUS_SESSION_COMMAND =
+endif
+
+if CODE_COVERAGE_ENABLED
+COVERAGE_TESTS_ENVIRONMENT = 						\
+	export GJS_UNIT_COVERAGE_OUTPUT=lcov;				\
+	export GJS_UNIT_COVERAGE_PREFIX=resource:///org/gnome/gjs/;	\
+	$(NULL)
+else
+COVERAGE_TESTS_ENVIRONMENT =
+endif
+
+installed-tests/js/testGio.log: gschemas.compiled
+
+gschemas.compiled: installed-tests/js/org.gnome.GjsTest.gschema.xml
+	$(AM_V_GEN)$(GLIB_COMPILE_SCHEMAS) --targetdir=. $(<D)
+CLEANFILES += gschemas.compiled
+
+# GJS_PATH is empty here since we want to force the use of our own
+# resources. G_FILENAME_ENCODING ensures filenames are not UTF-8.
+AM_TESTS_ENVIRONMENT =					\
+	export TOP_BUILDDIR="$(abs_top_builddir)";	\
+	export GJS_USE_UNINSTALLED_FILES=1;		\
+	export GJS_PATH=;				\
+	export GI_TYPELIB_PATH="$(builddir):$${GI_TYPELIB_PATH:+:$$GI_TYPELIB_PATH}"; \
+	export LD_LIBRARY_PATH="$(builddir)/.libs:$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}"; \
+	export G_FILENAME_ENCODING=latin1;		\
+	export LSAN_OPTIONS="suppressions=$(abs_top_srcdir)/installed-tests/extra/lsan.supp"; \
+	export NO_AT_BRIDGE=1;				\
+	export LC_ALL=$(TESTS_LOCALE);			\
+	export GSETTINGS_SCHEMA_DIR="$(builddir)";	\
+	$(COVERAGE_TESTS_ENVIRONMENT)			\
+	$(GTK_TESTS_ENVIRONMENT)			\
+	$(DBUS_SESSION_COMMAND)				\
+	$(NULL)
+
+simple_tests =						\
+	installed-tests/scripts/testCommandLine.sh	\
+	installed-tests/scripts/testWarnings.sh		\
+	$(NULL)
+EXTRA_DIST += $(simple_tests)
+
+debugger_tests =					\
+	installed-tests/debugger/backtrace.debugger	\
+	installed-tests/debugger/breakpoint.debugger	\
+	installed-tests/debugger/continue.debugger	\
+	installed-tests/debugger/delete.debugger	\
+	installed-tests/debugger/detach.debugger	\
+	installed-tests/debugger/down-up.debugger	\
+	installed-tests/debugger/finish.debugger	\
+	installed-tests/debugger/frame.debugger		\
+	installed-tests/debugger/keys.debugger		\
+	installed-tests/debugger/next.debugger		\
+	installed-tests/debugger/print.debugger		\
+	installed-tests/debugger/quit.debugger		\
+	installed-tests/debugger/return.debugger	\
+	installed-tests/debugger/set.debugger		\
+	installed-tests/debugger/step.debugger		\
+	installed-tests/debugger/throw.debugger		\
+	installed-tests/debugger/until.debugger		\
+	$(NULL)
+EXTRA_DIST +=				\
+	$(debugger_tests)		\
+	$(debugger_tests:%=%.js)	\
+	$(debugger_tests:%=%.output)	\
+	$(NULL)
+
+TESTS =				\
+	gjs-tests.gtester	\
+	$(simple_tests)		\
+	$(jasmine_tests)	\
+	$(debugger_tests)	\
+	$(NULL)
+
+TEST_EXTENSIONS = .gtester .sh .js .debugger
+
+LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/tap-driver.sh
+
+GTESTER_LOG_DRIVER = $(LOG_DRIVER)
+GTESTER_LOG_COMPILER = $(top_srcdir)/test/run-test
+
+SH_LOG_DRIVER = $(LOG_DRIVER)
+
+JS_LOG_DRIVER = $(LOG_DRIVER)
+JS_LOG_COMPILER = $$LOG_COMPILER $$LOG_FLAGS $(top_builddir)/minijasmine
+
+DEBUGGER_LOG_DRIVER = $(LOG_DRIVER)
+DEBUGGER_LOG_COMPILER = $(top_srcdir)/installed-tests/debugger-test.sh
+EXTRA_DIST += installed-tests/debugger-test.sh
+
+CODE_COVERAGE_IGNORE_PATTERN = */{include,mfbt,gjs/test}/* *-resources.c
+CODE_COVERAGE_GENHTML_OPTIONS = 			\
+	$(CODE_COVERAGE_GENHTML_OPTIONS_DEFAULT)	\
+	lcov/coverage.lcov 				\
+	--prefix $(abs_top_builddir)/lcov/org/gnome/gjs	\
+	--prefix $(abs_top_builddir) 			\
+	$(NULL)
+@CODE_COVERAGE_RULES@
