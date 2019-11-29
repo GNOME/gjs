@@ -1,0 +1,18 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+bindir=@bindir@
+includedir=@includedir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+
+gjs_console=${bindir}/gjs-console
+
+Cflags: -I${includedir}/gjs-1.0
+Requires: @AX_PACKAGE_REQUIRES@
+Requires.private: @AX_PACKAGE_REQUIRES_PRIVATE@
+Libs: -L${libdir} -lgjs
+
+Name: gjs-1.0
+Description: JS bindings for GObjects
+Version: @VERSION@

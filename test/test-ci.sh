@@ -103,6 +103,33 @@ if test "$1" = "SETUP"; then
     do_Print_Labels 'Show GJS git information'
     git log --pretty=format:"%h %cd %s" -1
 
+elif test "$1" = "GJS"; then
+    do_Set_Env
+    do_Show_Info
+
+    do_Configure_MainBuild
+
+    # Build and test the latest commit (merged or from a merge/pull request) of
+    # Javascript Bindings for GNOME (gjs)
+    do_Print_Labels 'Show GJS git information'
+    git log --pretty=format:"%h %cd %s" -1
+
+    do_Print_Labels 'Do the GJS build'
+
+    export AM_DISTCHECK_CONFIGURE_FLAGS="--enable-compile-warnings=yes"
+
+    # Regular (autotools only) build
+    echo "Autogen options: $ci_autogenargs"
+    eval ./autogen.sh "$ci_autogenargs"
+
+    make -sj 2>&1
+
+    if test "$TEST" = "distcheck"; then
+        xvfb-run -a make -s distcheck
+    elif test "$TEST" = "check"; then
+        xvfb-run -a make -s check
+    fi
+
 elif test "$1" = "BUILD"; then
     do_Set_Env
 
