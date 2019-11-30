@@ -12,7 +12,11 @@ destdir = os.environ.get('DESTDIR')
 install_prefix = os.environ.get('MESON_INSTALL_PREFIX')
 bindir = sys.argv[1]
 if destdir is not None:
-    installed_bin_dir = os.path.join(destdir, install_prefix, bindir)
+    # os.path.join() doesn't concat paths if one of them is absolute
+    if install_prefix[0] == '/' and os.name is not 'nt':
+        installed_bin_dir = os.path.join(destdir, install_prefix[1:], bindir)
+    else:
+        installed_bin_dir = os.path.join(destdir, install_prefix, bindir)
 else:
     installed_bin_dir = os.path.join(install_prefix, bindir)
 
