@@ -410,6 +410,8 @@ gjs_debug_flat_string(JSFlatString *fstr)
 std::string
 gjs_debug_string(JSString *str)
 {
+    if (!str)
+        return "<null string>";
     if (!JS_StringIsFlat(str)) {
         std::ostringstream out("<non-flat string of length ");
         out << JS_GetStringLength(str) << '>';
@@ -421,6 +423,9 @@ gjs_debug_string(JSString *str)
 std::string
 gjs_debug_symbol(JS::Symbol * const sym)
 {
+    if (!sym)
+        return "<null symbol>";
+
     /* This is OK because JS::GetSymbolCode() and JS::GetSymbolDescription()
      * can't cause a garbage collection */
     JS::HandleSymbol handle = JS::HandleSymbol::fromMarkedLocation(&sym);
@@ -455,6 +460,9 @@ gjs_debug_symbol(JS::Symbol * const sym)
 std::string
 gjs_debug_object(JSObject * const obj)
 {
+    if (!obj)
+        return "<null object>";
+
     std::ostringstream out;
     const JSClass* clasp = JS_GetClass(obj);
     out << "<object " << clasp->name << " at " << obj <<  '>';
