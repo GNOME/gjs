@@ -414,14 +414,23 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool hook_up_vfunc_symbol_getter(JSContext* cx, unsigned argc,
-                                        JS::Value* vp) {
-    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    args.rval().setSymbol(JSID_TO_SYMBOL(atoms.hook_up_vfunc()));
-    return true;
-}
+#define DEFINE_SYMBOL_ATOM_GETTER(symbol_name)                            \
+    GJS_JSAPI_RETURN_CONVENTION                                           \
+    static bool symbol_name##_symbol_getter(JSContext* cx, unsigned argc, \
+                                            JS::Value* vp) {              \
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);                 \
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);             \
+        args.rval().setSymbol(JSID_TO_SYMBOL(atoms.symbol_name()));       \
+        return true;                                                      \
+    }
+
+DEFINE_SYMBOL_ATOM_GETTER(hook_up_vfunc)
+DEFINE_SYMBOL_ATOM_GETTER(signal_find)
+DEFINE_SYMBOL_ATOM_GETTER(signals_block)
+DEFINE_SYMBOL_ATOM_GETTER(signals_unblock)
+DEFINE_SYMBOL_ATOM_GETTER(signals_disconnect)
+
+#undef DEFINE_SYMBOL_ATOM_GETTER
 
 static JSFunctionSpec module_funcs[] = {
     JS_FN("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
@@ -434,6 +443,14 @@ static JSFunctionSpec module_funcs[] = {
 
 static JSPropertySpec module_props[] = {
     JS_PSG("hook_up_vfunc_symbol", hook_up_vfunc_symbol_getter,
+           GJS_MODULE_PROP_FLAGS),
+    JS_PSG("signal_find_symbol", signal_find_symbol_getter,
+           GJS_MODULE_PROP_FLAGS),
+    JS_PSG("signals_block_symbol", signals_block_symbol_getter,
+           GJS_MODULE_PROP_FLAGS),
+    JS_PSG("signals_unblock_symbol", signals_unblock_symbol_getter,
+           GJS_MODULE_PROP_FLAGS),
+    JS_PSG("signals_disconnect_symbol", signals_disconnect_symbol_getter,
            GJS_MODULE_PROP_FLAGS),
     JS_PS_END};
 

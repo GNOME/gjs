@@ -40,9 +40,11 @@
     macro(connect_after, "connect_after") \
     macro(constructor, "constructor") \
     macro(debuggee, "debuggee") \
+    macro(detail, "detail") \
     macro(emit, "emit") \
     macro(file, "__file__") \
     macro(file_name, "fileName") \
+    macro(func, "func") \
     macro(gi, "gi") \
     macro(gio, "Gio") \
     macro(glib, "GLib") \
@@ -68,6 +70,7 @@
     macro(program_invocation_name, "programInvocationName") \
     macro(prototype, "prototype") \
     macro(search_path, "searchPath") \
+    macro(signal_id, "signalId") \
     macro(stack, "stack") \
     macro(to_string, "toString") \
     macro(value_of, "valueOf") \
@@ -80,7 +83,11 @@
 
 #define FOR_EACH_SYMBOL_ATOM(macro) \
     macro(hook_up_vfunc, "__GObject__hook_up_vfunc") \
-    macro(private_ns_marker, "__gjsPrivateNS")
+    macro(private_ns_marker, "__gjsPrivateNS") \
+    macro(signal_find, "__GObject__signal_find") \
+    macro(signals_block, "__GObject__signals_block") \
+    macro(signals_disconnect, "__GObject__signals_disconnect") \
+    macro(signals_unblock, "__GObject__signals_unblock")
 // clang-format on
 
 struct GjsAtom {

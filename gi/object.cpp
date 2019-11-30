@@ -1934,6 +1934,165 @@ ObjectInstance::emit_impl(JSContext          *context,
     return !failed;
 }
 
+bool ObjectInstance::signal_match_arguments_from_object(
+    JSContext* cx, JS::HandleObject match_obj, GSignalMatchType* mask_out,
+    unsigned* signal_id_out, GQuark* detail_out, void** func_ptr_out) {
+    g_assert(mask_out && signal_id_out && detail_out && func_ptr_out &&
+             "forgot out parameter");
+
+    int mask = 0;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+    bool has_id;
+    unsigned signal_id = 0;
+    if (!JS_HasOwnPropertyById(cx, match_obj, atoms.signal_id(), &has_id))
+        return false;
+    if (has_id) {
+        mask |= G_SIGNAL_MATCH_ID;
+
+        JS::RootedValue value(cx);
+        if (!JS_GetPropertyById(cx, match_obj, atoms.signal_id(), &value))
+            return false;
+
+        JS::UniqueChars signal_name = gjs_string_to_utf8(cx, value);
+        if (!signal_name)
+            return false;
+
+        signal_id = g_signal_lookup(signal_name.get(), gtype());
+    }
+
+    bool has_detail;
+    GQuark detail = 0;
+    if (!JS_HasOwnPropertyById(cx, match_obj, atoms.detail(), &has_detail))
+        return false;
+    if (has_detail) {
+        mask |= G_SIGNAL_MATCH_DETAIL;
+
+        JS::RootedValue value(cx);
+        if (!JS_GetPropertyById(cx, match_obj, atoms.detail(), &value))
+            return false;
+
+        JS::UniqueChars detail_string = gjs_string_to_utf8(cx, value);
+        if (!detail_string)
+            return false;
+
+        detail = g_quark_from_string(detail_string.get());
+    }
+
+    bool has_func;
+    void* func_ptr = nullptr;
+    if (!JS_HasOwnPropertyById(cx, match_obj, atoms.func(), &has_func))
+        return false;
+    if (has_func) {
+        mask |= G_SIGNAL_MATCH_DATA;
+
+        JS::RootedValue value(cx);
+        if (!JS_GetPropertyById(cx, match_obj, atoms.func(), &value))
+            return false;
+
+        if (!value.isObject() || !JS_ObjectIsFunction(&value.toObject())) {
+            gjs_throw(cx, "'func' property must be a function");
+            return false;
+        }
+
+        func_ptr = JS_GetObjectFunction(&value.toObject());
+    }
+
+    if (!has_id && !has_detail && !has_func) {
+        gjs_throw(cx, "Must specify at least one of signalId, detail, or func");
+        return false;
+    }
+
+    *mask_out = GSignalMatchType(mask);
+    if (has_id)
+        *signal_id_out = signal_id;
+    if (has_detail)
+        *detail_out = detail;
+    if (has_func)
+        *func_ptr_out = func_ptr;
+    return true;
+}
+
+bool ObjectBase::signal_find(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    if (!priv->check_is_instance(cx, "find signal"))
+        return false;
+
+    return priv->to_instance()->signal_find_impl(cx, args);
+}
+
+bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
+    gjs_debug_gsignal("[Gi.signal_find_symbol]() obj %p priv %p argc %d",
+                      m_wrapper.get(), this, args.length());
+
+    if (!check_gobject_disposed("find any signal on"))
+        return true;
+
+    JS::RootedObject match(cx);
+    if (!gjs_parse_call_args(cx, "[Gi.signal_find_symbol]", args, "o", "match",
+                             &match))
+        return false;
+
+    GSignalMatchType mask;
+    unsigned signal_id;
+    GQuark detail;
+    void* func_ptr;
+    if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id,
+                                            &detail, &func_ptr))
+        return false;
+
+    uint64_t handler = g_signal_handler_find(m_ptr, mask, signal_id, detail,
+                                             nullptr, nullptr, func_ptr);
+
+    args.rval().setNumber(static_cast<double>(handler));
+    return true;
+}
+
+#define DEFINE_SIGNAL_MATCH_METHOD(action)                                    \
+    bool ObjectBase::signals_##action(JSContext* cx, unsigned argc,           \
+                                      JS::Value* vp) {                        \
+        GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);      \
+        if (!priv->check_is_instance(cx, #action " signal")) {                \
+            return false;                                                     \
+        }                                                                     \
+        return priv->to_instance()->signals_##action##_impl(cx, args);        \
+    }                                                                         \
+                                                                              \
+    bool ObjectInstance::signals_##action##_impl(JSContext* cx,               \
+                                                 const JS::CallArgs& args) {  \
+        gjs_debug_gsignal("[Gi.signals_" #action                              \
+                          "_symbol]() obj %p priv %p argc %d",                \
+                          m_wrapper.get(), this, args.length());              \
+                                                                              \
+        if (!check_gobject_disposed(#action " any signal on")) {              \
+            return true;                                                      \
+        }                                                                     \
+        JS::RootedObject match(cx);                                           \
+        if (!gjs_parse_call_args(cx, "[Gi.signals_" #action "_symbol]", args, \
+                                 "o", "match", &match)) {                     \
+            return false;                                                     \
+        }                                                                     \
+        GSignalMatchType mask;                                                \
+        unsigned signal_id;                                                   \
+        GQuark detail;                                                        \
+        void* func_ptr;                                                       \
+        if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id, \
+                                                &detail, &func_ptr)) {        \
+            return false;                                                     \
+        }                                                                     \
+        unsigned n_matched = g_signal_handlers_##action##_matched(            \
+            m_ptr, mask, signal_id, detail, nullptr, nullptr, func_ptr);      \
+                                                                              \
+        args.rval().setNumber(n_matched);                                     \
+        return true;                                                          \
+    }
+
+DEFINE_SIGNAL_MATCH_METHOD(block)
+DEFINE_SIGNAL_MATCH_METHOD(unblock)
+DEFINE_SIGNAL_MATCH_METHOD(disconnect)
+
+#undef DEFINE_SIGNAL_MATCH_METHOD
+
 bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     return gjs_wrapper_to_string_func(
@@ -2041,11 +2200,23 @@ bool ObjectPrototype::define_class(JSContext* context,
                                        constructor, prototype))
         return false;
 
-    /* Hook_up_vfunc can't be included in gjs_object_instance_proto_funcs
-     * because it's a custom symbol. */
+    // hook_up_vfunc and the signal handler matcher functions can't be included
+    // in gjs_object_instance_proto_funcs because they are custom symbols.
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     return JS_DefineFunctionById(context, prototype, atoms.hook_up_vfunc(),
                                  &ObjectBase::hook_up_vfunc, 3,
+                                 GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(context, prototype, atoms.signal_find(),
+                                 &ObjectBase::signal_find, 1,
+                                 GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(context, prototype, atoms.signals_block(),
+                                 &ObjectBase::signals_block, 1,
+                                 GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(context, prototype, atoms.signals_unblock(),
+                                 &ObjectBase::signals_unblock, 1,
+                                 GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(context, prototype, atoms.signals_disconnect(),
+                                 &ObjectBase::signals_disconnect, 1,
                                  GJS_MODULE_PROP_FLAGS);
 }
 

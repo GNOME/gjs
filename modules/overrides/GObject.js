@@ -593,4 +593,157 @@ function _init() {
     GObject.signal_emit_by_name = function (object, ...nameAndArgs) {
         return GObject.Object.prototype.emit.apply(object, nameAndArgs);
     };
+
+    // Replacements for signal_handler_find() and similar functions, which can't
+    // work normally since we connect private closures
+    GObject._real_signal_handler_find = GObject.signal_handler_find;
+    GObject._real_signal_handlers_block_matched = GObject.signal_handlers_block_matched;
+    GObject._real_signal_handlers_unblock_matched = GObject.signal_handlers_unblock_matched;
+    GObject._real_signal_handlers_disconnect_matched = GObject.signal_handlers_disconnect_matched;
+
+    /**
+     * Finds the first signal handler that matches certain selection criteria.
+     * The criteria are passed as properties of a match object.
+     * The match object has to be non-empty for successful matches.
+     * If no handler was found, a falsy value is returned.
+     * @function
+     * @param {GObject.Object} instance - the instance owning the signal handler
+     *   to be found.
+     * @param {Object} match - a properties object indicating whether to match
+     *   by signal ID, detail, or callback function.
+     * @param {string} [match.signalId] - signal the handler has to be connected
+     *   to.
+     * @param {string} [match.detail] - signal detail the handler has to be
+     *   connected to.
+     * @param {Function} [match.func] - the callback function the handler will
+     *   invoke.
+     * @returns {number|BigInt|Object|null} A valid non-0 signal handler ID for
+     *   a successful match.
+     */
+    GObject.signal_handler_find = function (instance, match) {
+        // For backwards compatibility
+        if (arguments.length === 7)
+            // eslint-disable-next-line prefer-rest-params
+            return GObject._real_signal_handler_find(...arguments);
+        return instance[Gi.signal_find_symbol](match);
+    };
+    /**
+     * Blocks all handlers on an instance that match certain selection criteria.
+     * The criteria are passed as properties of a match object.
+     * The match object has to have at least `func` for successful matches.
+     * If no handlers were found, 0 is returned, the number of blocked handlers
+     * otherwise.
+     * @function
+     * @param {GObject.Object} instance - the instance owning the signal handler
+     *   to be found.
+     * @param {Object} match - a properties object indicating whether to match
+     *   by signal ID, detail, or callback function.
+     * @param {string} [match.signalId] - signal the handler has to be connected
+     *   to.
+     * @param {string} [match.detail] - signal detail the handler has to be
+     *   connected to.
+     * @param {Function} match.func - the callback function the handler will
+     *   invoke.
+     * @returns {number} The number of handlers that matched.
+     */
+    GObject.signal_handlers_block_matched = function (instance, match) {
+        // For backwards compatibility
+        if (arguments.length === 7)
+            // eslint-disable-next-line prefer-rest-params
+            return GObject._real_signal_handlers_block_matched(...arguments);
+        return instance[Gi.signals_block_symbol](match);
+    };
+    /**
+     * Unblocks all handlers on an instance that match certain selection
+     * criteria.
+     * The criteria are passed as properties of a match object.
+     * The match object has to have at least `func` for successful matches.
+     * If no handlers were found, 0 is returned, the number of unblocked
+     * handlers otherwise.
+     * The match criteria should not apply to any handlers that are not
+     * currently blocked.
+     * @function
+     * @param {GObject.Object} instance - the instance owning the signal handler
+     *   to be found.
+     * @param {Object} match - a properties object indicating whether to match
+     *   by signal ID, detail, or callback function.
+     * @param {string} [match.signalId] - signal the handler has to be connected
+     *   to.
+     * @param {string} [match.detail] - signal detail the handler has to be
+     *   connected to.
+     * @param {Function} match.func - the callback function the handler will
+     *   invoke.
+     * @returns {number} The number of handlers that matched.
+     */
+    GObject.signal_handlers_unblock_matched = function (instance, match) {
+        // For backwards compatibility
+        if (arguments.length === 7)
+            // eslint-disable-next-line prefer-rest-params
+            return GObject._real_signal_handlers_unblock_matched(...arguments);
+        return instance[Gi.signals_unblock_symbol](match);
+    };
+    /**
+     * Disconnects all handlers on an instance that match certain selection
+     * criteria.
+     * The criteria are passed as properties of a match object.
+     * The match object has to have at least `func` for successful matches.
+     * If no handlers were found, 0 is returned, the number of disconnected
+     * handlers otherwise.
+     * @function
+     * @param {GObject.Object} instance - the instance owning the signal handler
+     *   to be found.
+     * @param {Object} match - a properties object indicating whether to match
+     *   by signal ID, detail, or callback function.
+     * @param {string} [match.signalId] - signal the handler has to be connected
+     *   to.
+     * @param {string} [match.detail] - signal detail the handler has to be
+     *   connected to.
+     * @param {Function} match.func - the callback function the handler will
+     *   invoke.
+     * @returns {number} The number of handlers that matched.
+     */
+    GObject.signal_handlers_disconnect_matched = function (instance, match) {
+        // For backwards compatibility
+        if (arguments.length === 7)
+            // eslint-disable-next-line prefer-rest-params
+            return GObject._real_signal_handlers_disconnect_matched(...arguments);
+        return instance[Gi.signals_disconnect_symbol](match);
+    };
+
+    // Also match the macros used in C APIs, even though they're not introspected
+
+    /**
+     * Blocks all handlers on an instance that match `func`.
+     * @function
+     * @param {GObject.Object} instance - the instance to block handlers from.
+     * @param {Function} func - the callback function the handler will invoke.
+     * @returns {number} The number of handlers that matched.
+     */
+    GObject.signal_handlers_block_by_func = function (instance, func) {
+        return instance[Gi.signals_block_symbol]({func});
+    };
+    /**
+     * Unblocks all handlers on an instance that match `func`.
+     * @function
+     * @param {GObject.Object} instance - the instance to unblock handlers from.
+     * @param {Function} func - the callback function the handler will invoke.
+     * @returns {number} The number of handlers that matched.
+     */
+    GObject.signal_handlers_unblock_by_func = function (instance, func) {
+        return instance[Gi.signals_unblock_symbol]({func});
+    };
+    /**
+     * Disconnects all handlers on an instance that match `func`.
+     * @function
+     * @param {GObject.Object} instance - the instance to remove handlers from.
+     * @param {Function} func - the callback function the handler will invoke.
+     * @returns {number} The number of handlers that matched.
+     */
+    GObject.signal_handlers_disconnect_by_func = function (instance, func) {
+        return instance[Gi.signals_disconnect_symbol]({func});
+    };
+    GObject.signal_handlers_disconnect_by_data = function () {
+        throw new Error('GObject.signal_handlers_disconnect_by_data() is not \
+introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
+    };
 }

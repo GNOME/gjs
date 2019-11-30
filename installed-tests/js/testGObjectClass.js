@@ -568,3 +568,137 @@ describe('Register GType name', function () {
         expect(GtypeClass.$gtype.name).toEqual(expectedSanitized);
     });
 });
+
+describe('Signal handler matching', function () {
+    let o, handleEmpty, emptyId, handleDetailed, detailedId, handleDetailedOne,
+        detailedOneId, handleDetailedTwo, detailedTwoId, handleNotifyTwo,
+        notifyTwoId, handleMinimalOrFull, minimalId, fullId;
+
+    beforeEach(function () {
+        o = new MyObject();
+        handleEmpty = jasmine.createSpy('handleEmpty');
+        emptyId = o.connect('empty', handleEmpty);
+        handleDetailed = jasmine.createSpy('handleDetailed');
+        detailedId = o.connect('detailed', handleDetailed);
+        handleDetailedOne = jasmine.createSpy('handleDetailedOne');
+        detailedOneId = o.connect('detailed::one', handleDetailedOne);
+        handleDetailedTwo = jasmine.createSpy('handleDetailedTwo');
+        detailedTwoId = o.connect('detailed::two', handleDetailedTwo);
+        handleNotifyTwo = jasmine.createSpy('handleNotifyTwo');
+        notifyTwoId = o.connect('notify::two', handleNotifyTwo);
+        handleMinimalOrFull = jasmine.createSpy('handleMinimalOrFull');
+        minimalId = o.connect('minimal', handleMinimalOrFull);
+        fullId = o.connect('full', handleMinimalOrFull);
+    });
+
+    it('finds handlers by signal ID', function () {
+        expect(GObject.signal_handler_find(o, {signalId: 'empty'})).toEqual(emptyId);
+        // when more than one are connected, returns an arbitrary one
+        expect([detailedId, detailedOneId, detailedTwoId])
+            .toContain(GObject.signal_handler_find(o, {signalId: 'detailed'}));
+    });
+
+    it('finds handlers by signal detail', function () {
+        expect(GObject.signal_handler_find(o, {detail: 'one'})).toEqual(detailedOneId);
+        // when more than one are connected, returns an arbitrary one
+        expect([detailedTwoId, notifyTwoId])
+            .toContain(GObject.signal_handler_find(o, {detail: 'two'}));
+    });
+
+    it('finds handlers by callback', function () {
+        expect(GObject.signal_handler_find(o, {func: handleEmpty})).toEqual(emptyId);
+        expect(GObject.signal_handler_find(o, {func: handleDetailed})).toEqual(detailedId);
+        expect(GObject.signal_handler_find(o, {func: handleDetailedOne})).toEqual(detailedOneId);
+        expect(GObject.signal_handler_find(o, {func: handleDetailedTwo})).toEqual(detailedTwoId);
+        expect(GObject.signal_handler_find(o, {func: handleNotifyTwo})).toEqual(notifyTwoId);
+        // when more than one are connected, returns an arbitrary one
+        expect([minimalId, fullId])
+            .toContain(GObject.signal_handler_find(o, {func: handleMinimalOrFull}));
+    });
+
+    it('finds handlers by a combination of parameters', function () {
+        expect(GObject.signal_handler_find(o, {signalId: 'detailed', detail: 'two'}))
+            .toEqual(detailedTwoId);
+        expect(GObject.signal_handler_find(o, {signalId: 'detailed', func: handleDetailed}))
+            .toEqual(detailedId);
+    });
+
+    it('blocks a handler by callback', function () {
+        expect(GObject.signal_handlers_block_matched(o, {func: handleEmpty})).toEqual(1);
+        o.emitEmpty();
+        expect(handleEmpty).not.toHaveBeenCalled();
+
+        expect(GObject.signal_handlers_unblock_matched(o, {func: handleEmpty})).toEqual(1);
+        o.emitEmpty();
+        expect(handleEmpty).toHaveBeenCalled();
+    });
+
+    it('blocks multiple handlers by callback', function () {
+        expect(GObject.signal_handlers_block_matched(o, {func: handleMinimalOrFull})).toEqual(2);
+        o.emitMinimal();
+        o.emitFull();
+        expect(handleMinimalOrFull).not.toHaveBeenCalled();
+
+        expect(GObject.signal_handlers_unblock_matched(o, {func: handleMinimalOrFull})).toEqual(2);
+        o.emitMinimal();
+        o.emitFull();
+        expect(handleMinimalOrFull).toHaveBeenCalledTimes(2);
+    });
+
+    it('blocks handlers by a combination of parameters', function () {
+        expect(GObject.signal_handlers_block_matched(o, {signalId: 'detailed', func: handleDetailed}))
+            .toEqual(1);
+        o.emit('detailed', '');
+        o.emit('detailed::one', '');
+        expect(handleDetailed).not.toHaveBeenCalled();
+        expect(handleDetailedOne).toHaveBeenCalled();
+
+        expect(GObject.signal_handlers_unblock_matched(o, {signalId: 'detailed', func: handleDetailed}))
+            .toEqual(1);
+        o.emit('detailed', '');
+        o.emit('detailed::one', '');
+        expect(handleDetailed).toHaveBeenCalled();
+    });
+
+    it('disconnects a handler by callback', function () {
+        expect(GObject.signal_handlers_disconnect_matched(o, {func: handleEmpty})).toEqual(1);
+        o.emitEmpty();
+        expect(handleEmpty).not.toHaveBeenCalled();
+    });
+
+    it('blocks multiple handlers by callback', function () {
+        expect(GObject.signal_handlers_disconnect_matched(o, {func: handleMinimalOrFull})).toEqual(2);
+        o.emitMinimal();
+        o.emitFull();
+        expect(handleMinimalOrFull).not.toHaveBeenCalled();
+    });
+
+    it('blocks handlers by a combination of parameters', function () {
+        expect(GObject.signal_handlers_disconnect_matched(o, {signalId: 'detailed', func: handleDetailed}))
+            .toEqual(1);
+        o.emit('detailed', '');
+        o.emit('detailed::one', '');
+        expect(handleDetailed).not.toHaveBeenCalled();
+        expect(handleDetailedOne).toHaveBeenCalled();
+    });
+
+    it('blocks a handler by callback, convenience method', function () {
+        expect(GObject.signal_handlers_block_by_func(o, handleEmpty)).toEqual(1);
+        o.emitEmpty();
+        expect(handleEmpty).not.toHaveBeenCalled();
+
+        expect(GObject.signal_handlers_unblock_by_func(o, handleEmpty)).toEqual(1);
+        o.emitEmpty();
+        expect(handleEmpty).toHaveBeenCalled();
+    });
+
+    it('disconnects a handler by callback, convenience method', function () {
+        expect(GObject.signal_handlers_disconnect_by_func(o, handleEmpty)).toEqual(1);
+        o.emitEmpty();
+        expect(handleEmpty).not.toHaveBeenCalled();
+    });
+
+    it('does not support disconnecting a handler by callback data', function () {
+        expect(() => GObject.signal_handlers_disconnect_by_data(o, null)).toThrow();
+    });
+});
