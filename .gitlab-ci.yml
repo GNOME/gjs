@@ -8,8 +8,6 @@ stages:
 - manual
 - deploy
 
-.Autotools files: &autotools_files  [configure, Makefile, ./*.log, ./*.trs, ./installed-tests/scripts/*.log, ./installed-tests/scripts/*.trs]
-
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
   variables:
@@ -29,40 +27,6 @@ stages:
       - _coverage/html
       - _coverage_build/meson-logs/*log.txt
 
-# Autotools build
-.autotools: &autotools
-  when: on_success
-  artifacts:
-    name: log
-    when: always
-    paths: &autotools_files
-
-  script:
-    # GitLab is keeping some files between jobs. Remove them.
-    - rm -rf configure Makefile *.log analysis
-
-    # Build GJS
-    - test/test-ci.sh GJS
-
-    # Run installed extra tests
-    - 'if [[ $BUILD_OPTS == *"--enable-installed-tests"* ]]; then
-         $(pwd)/test/test-ci.sh GJS_EXTRA;
-       fi
-    '
-
-    # Run valgrind
-    - 'if [[ $BUILD_OPTS == *"--enable-valgrind"* ]]; then
-         $(pwd)/test/test-ci.sh VALGRIND;
-       fi
-    '
-
-    # Run the script tests again (to assure they are working)
-    - 'if [[ -n "${SCRIPTCHECK}" ]]; then
-         $(pwd)/test/test-ci.sh SH_CHECKS;
-       fi
-    '
-
-# Meson build
 .build: &build
   when: on_success
   artifacts:
@@ -128,20 +92,6 @@ build_minimal:
     CONFIG_OPTS: >-
       -Dbuildtype=release
       -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
-  except:
-    - schedules
-
-build_autotools:
-  <<: *autotools
-  stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
-  variables:
-    TASK_ID: "fedora-x86_64-gcc-autotools-check"
-    BUILD_OPTS: >-
-      CPPFLAGS='-DGJS_VERBOSE_ENABLE_PROPS=1 -DGJS_VERBOSE_ENABLE_MARSHAL=1 -DGJS_VERBOSE_ENABLE_LIFECYCLE=1 -DGJS_VERBOSE_ENABLE_GI_USAGE=1 -DGJS_VERBOSE_ENABLE_GCLOSURE=1 -DGJS_VERBOSE_ENABLE_GSIGNAL=1'
-      --with-cairo --enable-readline --enable-profiler
-      --enable-dtrace --enable-systemtap
-    TEST: check
   except:
     - schedules
 
@@ -269,17 +219,6 @@ sanitizer_clang:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
-  when: manual
-  except:
-    - schedules
-
-distcheck:
-  <<: *autotools
-  stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs60
-  variables:
-    TASK_ID: "fedora-x86_64-gcc-default-default-distcheck"
-    TEST: "distcheck"
   when: manual
   except:
     - schedules

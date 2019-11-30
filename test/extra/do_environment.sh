@@ -1,18 +1,5 @@
 #!/bin/sh -e
 
-do_Configure_MainBuild () {
-    do_Print_Labels 'Set Main Build Configuration'
-
-    autogenargs="--enable-compile-warnings=yes"
-
-    if test -n "$BUILD_OPTS"; then
-        autogenargs="$autogenargs $BUILD_OPTS"
-    fi
-    export ci_autogenargs="$autogenargs"
-
-    echo '-- Done --'
-}
-
 do_Print_Labels () {
     if test -n "$1"; then
         label_len=${#1}
