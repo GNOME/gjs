@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
     gjs="$TOP_BUILDDIR/gjs-console"
