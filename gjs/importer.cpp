@@ -308,16 +308,15 @@ import_module_init(JSContext       *context,
                    GFile           *file,
                    JS::HandleObject module_obj)
 {
-    bool ret = false;
-    char *script = NULL;
-    char *full_path = NULL;
     gsize script_len = 0;
     GError *error = NULL;
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedValue ignored(context);
 
-    if (!(g_file_load_contents(file, NULL, &script, &script_len, NULL, &error))) {
+    char* script_unowned;
+    if (!(g_file_load_contents(file, nullptr, &script_unowned, &script_len,
+                               nullptr, &error))) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
@@ -325,23 +324,16 @@ import_module_init(JSContext       *context,
         else
             g_error_free(error);
 
-        goto out;
+        return false;
     }
 
+    GjsAutoChar script = script_unowned;
     g_assert(script != NULL);
 
-    full_path = g_file_get_parse_name (file);
+    GjsAutoChar full_path = g_file_get_parse_name(file);
 
-    if (!gjs->eval_with_scope(module_obj, script, script_len, full_path,
-                              &ignored))
-        goto out;
-
-    ret = true;
-
- out:
-    g_free(script);
-    g_free(full_path);
-    return ret;
+    return gjs->eval_with_scope(module_obj, script, script_len, full_path,
+                                &ignored);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -443,6 +435,22 @@ import_symbol_from_init_js(JSContext       *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool attempt_import(JSContext* cx, JS::HandleObject obj,
+                           JS::HandleId module_id, const char* module_name,
+                           GFile* file) {
+    JS::RootedObject module_obj(
+        cx, gjs_module_import(cx, obj, module_id, module_name, file));
+    if (!module_obj)
+        return false;
+
+    GjsAutoChar full_path = g_file_get_parse_name(file);
+
+    return define_meta_properties(cx, module_obj, full_path, module_name,
+                                  obj) &&
+           seal_import(cx, obj, module_id, module_name);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 import_file_on_module(JSContext       *context,
                       JS::HandleObject obj,
@@ -450,29 +458,12 @@ import_file_on_module(JSContext       *context,
                       const char      *name,
                       GFile           *file)
 {
-    bool retval = false;
-    char *full_path = NULL;
-
-    JS::RootedObject module_obj(context,
-        gjs_module_import(context, obj, id, name, file));
-    if (!module_obj)
-        goto out;
-
-    full_path = g_file_get_parse_name (file);
-    if (!define_meta_properties(context, module_obj, full_path, name, obj))
-        goto out;
-
-    if (!seal_import(context, obj, id, name))
-        goto out;
-
-    retval = true;
-
- out:
-    if (!retval)
+    if (!attempt_import(context, obj, id, name, file)) {
         cancel_import(context, obj, name);
+        return false;
+    }
 
-    g_free (full_path);
-    return retval;
+    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION

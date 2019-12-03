@@ -600,30 +600,18 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
 bool BoxedInstance::field_setter_impl(JSContext* context,
                                       GIFieldInfo* field_info,
                                       JS::HandleValue value) {
-    GITypeInfo *type_info;
     GArgument arg;
-    bool success = false;
-    bool need_release = false;
-
-    type_info = g_field_info_get_type (field_info);
+    GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
 
     if (!g_type_info_is_pointer (type_info) &&
         g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
+        GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
 
-        GIBaseInfo *interface_info = g_type_info_get_interface(type_info);
-
-        if (g_base_info_get_type (interface_info) == GI_INFO_TYPE_STRUCT ||
-            g_base_info_get_type (interface_info) == GI_INFO_TYPE_BOXED) {
-            success = set_nested_interface_object(context, field_info,
-                                                  interface_info, value);
-
-            g_base_info_unref ((GIBaseInfo *)interface_info);
-
-            goto out;
+        if (interface_info.type() == GI_INFO_TYPE_STRUCT ||
+            interface_info.type() == GI_INFO_TYPE_BOXED) {
+            return set_nested_interface_object(context, field_info,
+                                               interface_info, value);
         }
-
-        g_base_info_unref ((GIBaseInfo *)interface_info);
-
     }
 
     if (!gjs_value_to_g_argument(context, value,
@@ -632,28 +620,19 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
                                  GJS_ARGUMENT_FIELD,
                                  GI_TRANSFER_NOTHING,
                                  true, &arg))
-        goto out;
+        return false;
 
-    need_release = true;
-
+    bool success = true;
     if (!g_field_info_set_field(field_info, m_ptr, &arg)) {
         gjs_throw(context, "Writing field %s.%s is not supported", name(),
                   g_base_info_get_name(field_info));
-        goto out;
+        success = false;
     }
 
-    success = true;
-
-out:
-    if (need_release) {
-        JS::AutoSaveExceptionState saved_exc(context);
-        if (!gjs_g_argument_release(context, GI_TRANSFER_NOTHING, type_info,
-                                    &arg))
-            gjs_log_exception(context);
-        saved_exc.restore();
-    }
-
-    g_base_info_unref ((GIBaseInfo *)type_info);
+    JS::AutoSaveExceptionState saved_exc(context);
+    if (!gjs_g_argument_release(context, GI_TRANSFER_NOTHING, type_info, &arg))
+        gjs_log_exception(context);
+    saved_exc.restore();
 
     return success;
 }

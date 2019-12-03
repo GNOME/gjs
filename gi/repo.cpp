@@ -308,34 +308,35 @@ gjs_define_repo(JSContext              *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_from_constant_info(JSContext* cx, GIConstantInfo* info,
+                                         JS::MutableHandleValue value) {
+    GIArgument garg;
+    g_constant_info_get_value(info, &garg);
+
+    GjsAutoTypeInfo type_info = g_constant_info_get_type(info);
+
+    bool ok = gjs_value_from_g_argument(cx, value, type_info, &garg, true);
+
+    g_constant_info_free_value(info, &garg);
+    return ok;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_define_constant(JSContext       *context,
                     JS::HandleObject in_object,
                     GIConstantInfo  *info)
 {
     JS::RootedValue value(context);
-    GArgument garg = { 0, };
-    GITypeInfo *type_info;
     const char *name;
-    bool ret = false;
 
-    type_info = g_constant_info_get_type(info);
-    g_constant_info_get_value(info, &garg);
-
-    if (!gjs_value_from_g_argument(context, &value, type_info, &garg, true))
-        goto out;
+    if (!gjs_value_from_constant_info(context, info, &value))
+        return false;
 
     name = g_base_info_get_name((GIBaseInfo*) info);
 
-    if (JS_DefineProperty(context, in_object,
-                          name, value,
-                          GJS_MODULE_PROP_FLAGS))
-        ret = true;
-
- out:
-    g_constant_info_free_value (info, &garg);
-    g_base_info_unref((GIBaseInfo*) type_info);
-    return ret;
+    return JS_DefineProperty(context, in_object, name, value,
+                             GJS_MODULE_PROP_FLAGS);
 }
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
