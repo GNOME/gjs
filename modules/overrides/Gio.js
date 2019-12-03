@@ -544,8 +544,24 @@ function _init() {
             }
 
             const source = Gio.SettingsSchemaSource.get_default();
-            if (schemaIdProp && !source.lookup(props[schemaIdProp], true))
+            const settingsSchema = settingsSchemaProp
+                ? props[settingsSchemaProp]
+                : source.lookup(props[schemaIdProp], true);
+
+            if (!settingsSchema)
                 throw new Error(`GSettings schema ${props[schemaIdProp]} not found`);
+
+            const settingsSchemaPath = settingsSchema.get_path();
+            if (props['path'] === undefined && !settingsSchemaPath) {
+                throw new Error('Attempting to create schema ' +
+                    `'${settingsSchema.get_id()}' without a path`);
+            }
+
+            if (props['path'] !== undefined && settingsSchemaPath &&
+                props['path'] !== settingsSchemaPath) {
+                throw new Error(`GSettings created for path '${props['path']}'` +
+                    `, but schema specifies '${settingsSchemaPath}'`);
+            }
 
             return this._realInit(props);
         },
