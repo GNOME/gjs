@@ -38,6 +38,18 @@ describe('Gio.Settings overrides', function () {
             .toThrowError(/schema/);
     });
 
+    it("doesn't crash when forgetting to specify a schema path", function () {
+        expect(() => new Gio.Settings({schema: 'org.gnome.GjsTest.Sub'}))
+            .toThrowError(/schema/);
+    });
+
+    it("doesn't crash when specifying conflicting schema paths", function () {
+        expect(() => new Gio.Settings({
+            schema: 'org.gnome.GjsTest',
+            path: '/conflicting/path/',
+        })).toThrowError(/schema/);
+    });
+
     describe('with existing schema', function () {
         const KINDS = ['boolean', 'double', 'enum', 'flags', 'int', 'int64',
             'string', 'strv', 'uint', 'uint64', 'value'];
