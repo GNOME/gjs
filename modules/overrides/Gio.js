@@ -534,20 +534,33 @@ function _init() {
         _realInit: Gio.Settings.prototype._init,  // add manually, not enumerable
         _init(props = {}) {
             // 'schema' is a deprecated alias for schema_id
-            const requiredProps = ['schema', 'schema-id', 'schema_id', 'schemaId',
-                'settings-schema', 'settings_schema', 'settingsSchema'];
-            if (requiredProps.every(prop => !(prop in props))) {
+            const schemaIdProp = ['schema', 'schema-id', 'schema_id',
+                'schemaId'].find(prop => prop in props);
+            const settingsSchemaProp = ['settings-schema', 'settings_schema',
+                'settingsSchema'].find(prop => prop in props);
+            if (!schemaIdProp && !settingsSchemaProp) {
                 throw new Error('One of property \'schema-id\' or ' +
                     '\'settings-schema\' are required for Gio.Settings');
             }
 
-            const checkSchemasProps = ['schema', 'schema-id', 'schema_id', 'schemaId'];
             const source = Gio.SettingsSchemaSource.get_default();
-            for (const prop of checkSchemasProps) {
-                if (!(prop in props))
-                    continue;
-                if (source.lookup(props[prop], true) === null)
-                    throw new Error(`GSettings schema ${props[prop]} not found`);
+            const settingsSchema = settingsSchemaProp
+                ? props[settingsSchemaProp]
+                : source.lookup(props[schemaIdProp], true);
+
+            if (!settingsSchema)
+                throw new Error(`GSettings schema ${props[schemaIdProp]} not found`);
+
+            const settingsSchemaPath = settingsSchema.get_path();
+            if (props['path'] === undefined && !settingsSchemaPath) {
+                throw new Error('Attempting to create schema ' +
+                    `'${settingsSchema.get_id()}' without a path`);
+            }
+
+            if (props['path'] !== undefined && settingsSchemaPath &&
+                props['path'] !== settingsSchemaPath) {
+                throw new Error(`GSettings created for path '${props['path']}'` +
+                    `, but schema specifies '${settingsSchemaPath}'`);
             }
 
             return this._realInit(props);
