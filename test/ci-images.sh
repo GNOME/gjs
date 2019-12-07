@@ -8,14 +8,14 @@ function do_Install_Dependencies(){
 
     # Base dependencies: CI scripts, mozjs, gjs
     # mozjs and gjs build dependencies adapted from the lists in:
-    # https://src.fedoraproject.org/rpms/mozjs60/blob/master/f/mozjs60.spec
+    # https://src.fedoraproject.org/rpms/mozjs68/blob/master/f/mozjs68.spec
     # https://src.fedoraproject.org/rpms/gjs/blob/master/f/gjs.spec
     dnf -y install @c-development @development-tools clang compiler-rt \
         gnome-desktop-testing lcov libasan libubsan libtsan meson ninja-build \
         systemtap-sdt-devel Xvfb xz \
         \
-        perl-devel 'pkgconfig(libffi)' 'pkgconfig(zlib)' python2-devel \
-        readline-devel which /usr/bin/zip \
+        cargo clang-devel llvm llvm-devel perl-devel 'pkgconfig(libffi)' \
+        'pkgconfig(zlib)' python2-devel readline-devel rust which zip \
         \
         autoconf-archive cairo-gobject-devel diffutils dbus-daemon dbus-x11 \
         dbus-glib-devel glib2-devel gobject-introspection-devel gtk3-devel \
