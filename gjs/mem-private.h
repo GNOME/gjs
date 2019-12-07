@@ -6,6 +6,8 @@
 #ifndef GJS_MEM_PRIVATE_H_
 #define GJS_MEM_PRIVATE_H_
 
+#include <stddef.h>  // for size_t
+
 #include <atomic>
 
 // clang-format off
@@ -58,6 +60,30 @@ constexpr void dec() {
 }  // namespace Counters
 }  // namespace Memory
 }  // namespace Gjs
+
+#define COUNT(name, ix) +1
+static constexpr size_t GJS_N_COUNTERS = 0 GJS_FOR_EACH_COUNTER(COUNT);
+#undef COUNT
+
+static constexpr const char GJS_COUNTER_DESCRIPTIONS[GJS_N_COUNTERS][52] = {
+    // max length of description string ---------------v
+    "Number of boxed type wrapper objects",
+    "Number of boxed type prototype objects",
+    "Number of signal handlers",
+    "Number of introspected functions",
+    "Number of fundamental type wrapper objects",
+    "Number of fundamental type prototype objects",
+    "Number of GError wrapper objects",
+    "Number of GError prototype objects",
+    "Number of GObject interface objects",
+    "Number of modules",
+    "Number of GI namespace objects",
+    "Number of GObject wrapper objects",
+    "Number of GObject prototype objects",
+    "Number of GParamSpec wrapper objects",
+    "Number of C union wrapper objects",
+    "Number of C union prototype objects",
+};
 
 #define GJS_INC_COUNTER(name) \
     (Gjs::Memory::Counters::inc<&Gjs::Memory::Counters::name>());

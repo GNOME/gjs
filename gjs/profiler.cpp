@@ -34,6 +34,7 @@
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/mem-private.h"
 #include "gjs/profiler.h"
 
 #define FLUSH_DELAY_SECONDS 3
@@ -104,6 +105,7 @@ struct _GjsProfiler {
 
     /* GLib signal handler ID for SIGUSR2 */
     unsigned sigusr2_id;
+    unsigned counter_base;  // index of first GObject memory counter
 #endif  /* ENABLE_PROFILER */
 
     /* If we are currently sampling */
@@ -164,6 +166,38 @@ static GjsContext *profiling_context;
 
     return true;
 }
+
+static void setup_counter_helper(SysprofCaptureCounter* counter,
+                                 const char* counter_name,
+                                 unsigned counter_base, size_t ix) {
+    g_snprintf(counter->category, sizeof counter->category, "GJS");
+    g_snprintf(counter->name, sizeof counter->name, "%s", counter_name);
+    g_snprintf(counter->description, sizeof counter->description, "%s",
+               GJS_COUNTER_DESCRIPTIONS[ix]);
+    counter->id = uint32_t(counter_base + ix);
+    counter->type = SYSPROF_CAPTURE_COUNTER_INT64;
+    counter->value.v64 = 0;
+}
+
+[[nodiscard]] static bool gjs_profiler_define_counters(GjsProfiler* self) {
+    int64_t now = g_get_monotonic_time() * 1000L;
+
+    g_assert(self && "Profiler must be set up before defining counters");
+
+    SysprofCaptureCounter counters[GJS_N_COUNTERS];
+    self->counter_base =
+        sysprof_capture_writer_request_counter(self->capture, GJS_N_COUNTERS);
+
+#    define SETUP_COUNTER(counter_name, ix)                                    \
+        setup_counter_helper(&counters[ix], #counter_name, self->counter_base, \
+                             ix);
+    GJS_FOR_EACH_COUNTER(SETUP_COUNTER);
+#    undef SETUP_COUNTER
+
+    return sysprof_capture_writer_define_counters(
+        self->capture, now, -1, self->pid, counters, GJS_N_COUNTERS);
+}
+
 #endif  /* ENABLE_PROFILER */
 
 /*
@@ -364,7 +398,22 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
     }
 
     if (!sysprof_capture_writer_add_sample(self->capture, now, -1, self->pid,
-                                           -1, addrs, depth))
+                                           -1, addrs, depth)) {
+        gjs_profiler_stop(self);
+        return;
+    }
+
+    unsigned ids[GJS_N_COUNTERS];
+    SysprofCaptureCounterValue values[GJS_N_COUNTERS];
+
+#    define FETCH_COUNTERS(name, ix)       \
+        ids[ix] = self->counter_base + ix; \
+        values[ix].v64 = GJS_GET_COUNTER(name);
+    GJS_FOR_EACH_COUNTER(FETCH_COUNTERS);
+#    undef FETCH_COUNTERS
+
+    if (!sysprof_capture_writer_set_counters(self->capture, now, -1, self->pid,
+                                             ids, values, GJS_N_COUNTERS))
         gjs_profiler_stop(self);
 }
 
@@ -446,6 +495,13 @@ gjs_profiler_start(GjsProfiler *self)
 
     if (!gjs_profiler_extract_maps(self)) {
         g_warning("Failed to extract proc maps");
+        g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+        g_clear_pointer(&self->periodic_flush, g_source_destroy);
+        return;
+    }
+
+    if (!gjs_profiler_define_counters(self)) {
+        g_warning("Failed to define sysprof counters");
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
