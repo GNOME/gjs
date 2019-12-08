@@ -16,6 +16,9 @@ gidatadir = gi.get_pkgconfig_variable('gidatadir')
 gi_tests = gidatadir / 'tests'
 
 test_gir_extra_c_args = []
+# These consist of external code (from gobject-introspection) so they should not
+# error out even when building with -Werror
+test_gir_warning_c_args = ['-Wno-error']
 
 # We need to ensure the symbols in the test DLLs export in MSVC builds
 if cc.get_id() == 'msvc'
@@ -36,7 +39,8 @@ regress_sources = [
     gi_tests / 'regress.c',
     gi_tests / 'regress.h',
 ]
-libregress = library('regress', regress_sources, c_args: regress_gir_c_args,
+libregress = library('regress', regress_sources,
+    c_args: regress_gir_c_args + test_gir_warning_c_args,
     dependencies: regress_dependencies, install: get_option('installed_tests'),
     install_dir: pkglibdir)
 regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
@@ -52,6 +56,7 @@ warnlib_sources = [
     gi_tests / 'warnlib.h',
 ]
 libwarnlib = library('warnlib', warnlib_sources,
+    c_args: test_gir_warning_c_args,
     dependencies: [glib, gobject, gio], install: get_option('installed_tests'),
     install_dir: pkglibdir,
     c_args:  test_gir_extra_c_args)
@@ -70,7 +75,7 @@ gimarshallingtests_sources = [
 ]
 libgimarshallingtests = library('gimarshallingtests',
     gimarshallingtests_sources, dependencies: [glib, gobject, gio],
-    c_args:  test_gir_extra_c_args,
+    c_args:  test_gir_extra_c_args + test_gir_warning_c_args,
     install: get_option('installed_tests'), install_dir: pkglibdir)
 gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
