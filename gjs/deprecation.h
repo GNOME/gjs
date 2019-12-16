@@ -29,6 +29,7 @@ struct JSContext;
 enum GjsDeprecationMessageId {
     None,
     ByteArrayInstanceToString,
+    DeprecatedGObjectProperty,
 };
 
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
