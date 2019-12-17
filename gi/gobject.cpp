@@ -67,6 +67,12 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
         return false;
 
     GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
+
+    if (pspec->flags & G_PARAM_CONSTRUCT_ONLY)
+        return JS_DefineProperty(
+            cx, object, underscore_name, jsvalue,
+            GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
+
     return JS_SetProperty(cx, object, underscore_name, jsvalue);
 }
 
