@@ -50,6 +50,7 @@
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
+#include "gjs/deprecation.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
@@ -467,6 +468,9 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
     if (!(param_spec->flags & G_PARAM_WRITABLE))
         /* prevent setting the prop even in JS */
         return gjs_wrapper_throw_readonly_field(cx, gtype(), param_spec->name);
+
+    if (param_spec->flags & G_PARAM_DEPRECATED)
+        _gjs_warn_deprecated_once_per_callsite(cx, DeprecatedGObjectProperty);
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
                      param_spec->name);

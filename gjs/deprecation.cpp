@@ -45,6 +45,9 @@ const char* messages[] = {
     "preserved, but please fix your code anyway to explicitly call ByteArray"
     ".toString(array).\n"
     "(Note that array.toString() may have been called implicitly.)",
+
+    // DeprecatedGObjectProperty:
+    "Some code tried to set a deprecated GObject property.",
 };
 
 struct DeprecationEntry {
