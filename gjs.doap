@@ -13,7 +13,7 @@
 
   <description xml:lang="en">GNOME JavaScript bindings</description>
 
-  <homepage rdf:resource="https://wiki.gnome.org/Projects/Gjs" />
+  <homepage rdf:resource="https://gitlab.gnome.org/GNOME/gjs" />
   <license rdf:resource="https://spdx.org/licenses/LGPL-2.0+.html"/>
   <license rdf:resource="https://spdx.org/licenses/MIT.html"/>
   <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/issues"/>
