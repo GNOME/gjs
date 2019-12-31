@@ -17,7 +17,7 @@
   <license rdf:resource="http://usefulinc.com/doap/licenses/gpl" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/lgpl" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/mpl" />
-  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/"/>
+  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/issues"/>
   <download-page rdf:resource="http://download.gnome.org/sources/gjs/" />
   <mailing-list rdf:resource="mailto:javascript-list@gnome.org" />
 
