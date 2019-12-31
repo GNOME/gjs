@@ -520,31 +520,30 @@ static void
 _linux_get_self_process_size (gulong *vm_size,
                               gulong *rss_size)
 {
-    char *contents;
     char *iter;
     gsize len;
     int i;
 
     *vm_size = *rss_size = 0;
 
-    if (!g_file_get_contents ("/proc/self/stat", &contents, &len, NULL))
+    char* contents_unowned;
+    if (!g_file_get_contents("/proc/self/stat", &contents_unowned, &len,
+                             nullptr))
         return;
 
+    GjsAutoChar contents = contents_unowned;
     iter = contents;
     /* See "man proc" for where this 22 comes from */
     for (i = 0; i < 22; i++) {
         iter = strchr (iter, ' ');
         if (!iter)
-            goto out;
+            return;
         iter++;
     }
     sscanf (iter, " %lu", vm_size);
     iter = strchr (iter, ' ');
     if (iter)
         sscanf (iter, " %lu", rss_size);
-
- out:
-    g_free (contents);
 }
 
 static gulong linux_rss_trigger;

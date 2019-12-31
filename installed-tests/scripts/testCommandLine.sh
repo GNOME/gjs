@@ -71,8 +71,10 @@ report () {
 report_xfail () {
     exit_code=$?
     total=$((total + 1))
-    if test $exit_code -ne 0; then
-        echo "ok $total - $1"
+    if test $exit_code -eq 23; then
+        echo "not ok $total - $1 (leaked memory)"
+    elif test $exit_code -ne 0; then
+        echo "ok $total - $1 (exit code $exit_code)"
     else
         echo "not ok $total - $1"
     fi
@@ -83,7 +85,7 @@ skip () {
     echo "ok $total - $1 # SKIP $2"
 }
 
-$gjs --invalid-option
+$gjs --invalid-option >/dev/null 2>/dev/null
 report_xfail "Invalid option should exit with failure"
 $gjs --invalid-option 2>&1 | grep -q invalid-option
 report "Invalid option should print a relevant message"
@@ -97,10 +99,10 @@ report "System.exit(42) should exit with the correct exit code"
 
 # FIXME: should check -eq 42 specifically, but in debug mode we will be
 # hitting an assertion. For this reason, skip when running under valgrind
-# since nothing will be freed.
+# since nothing will be freed. Also suppress LSan for the same reason.
 echo "# VALGRIND = $VALGRIND"
 if test -z $VALGRIND; then
-    $gjs exit.js
+    ASAN_OPTIONS=detect_leaks=0 $gjs exit.js
     test $? -ne 0
     report "System.exit() should still exit across an FFI boundary"
 else

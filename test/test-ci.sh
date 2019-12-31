@@ -55,7 +55,7 @@ do_Compare_With_Upstream_Master () {
         echo '-----------------------------------------'
         echo "### $NEW_WARNINGS new warning(s) found by $1 ###"
         echo '-----------------------------------------'
-        diff -u0 /cwd/master-report.txt /cwd/current-report.txt || true
+        diff -U0 /cwd/master-report.txt /cwd/current-report.txt || true
         echo '-----------------------------------------'
         exit 1
     else

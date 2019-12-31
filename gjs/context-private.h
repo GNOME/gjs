@@ -128,10 +128,17 @@ class GjsContextPrivate {
     static gboolean trigger_gc_if_needed(void* data);
     static gboolean drain_job_queue_idle_handler(void* data);
     void warn_about_unhandled_promise_rejections(void);
-    void reset_exit(void) {
-        m_should_exit = false;
-        m_exit_code = 0;
-    }
+
+    class AutoResetExit {
+        GjsContextPrivate* m_self;
+
+     public:
+        explicit AutoResetExit(GjsContextPrivate* self) { m_self = self; }
+        ~AutoResetExit() {
+            m_self->m_should_exit = false;
+            m_self->m_exit_code = 0;
+        }
+    };
 
  public:
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */

@@ -270,6 +270,8 @@ _gjs_profiler_free(GjsProfiler *self)
 
     if (self->fd != -1)
         close(self->fd);
+
+    self->stack.~PseudoStack();
 #endif
     g_free(self);
 }

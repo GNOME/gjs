@@ -36,9 +36,6 @@
 #include "modules/cairo-private.h"
 
 typedef struct {
-    void            *dummy;
-    JSContext       *context;
-    JSObject        *object;
     cairo_surface_t *surface;
 } GjsCairoSurface;
 
@@ -162,8 +159,6 @@ gjs_cairo_surface_construct(JSContext       *context,
     g_assert(!priv_from_js(context, object));
     JS_SetPrivate(object, priv);
 
-    priv->context = context;
-    priv->object = object;
     priv->surface = cairo_surface_reference(surface);
 }
 

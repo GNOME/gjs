@@ -24,6 +24,7 @@
 
 #include <locale.h>    /* for setlocale */
 #include <stddef.h>    /* for size_t */
+#include <string.h>    /* for strcmp */
 #include <sys/types.h> /* IWYU pragma: keep */
 
 #include <gio/gio.h>

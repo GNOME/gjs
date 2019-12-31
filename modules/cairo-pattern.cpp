@@ -32,9 +32,6 @@
 #include "modules/cairo-private.h"
 
 typedef struct {
-    void            *dummy;
-    JSContext       *context;
-    JSObject        *object;
     cairo_pattern_t *pattern;
 } GjsCairoPattern;
 
@@ -123,8 +120,6 @@ gjs_cairo_pattern_construct(JSContext       *context,
     g_assert(!priv_from_js(context, object));
     JS_SetPrivate(object, priv);
 
-    priv->context = context;
-    priv->object = object;
     priv->pattern = cairo_pattern_reference(pattern);
 }
 

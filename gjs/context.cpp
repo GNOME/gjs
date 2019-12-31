@@ -871,7 +871,7 @@ gjs_context_eval(GjsContext   *js_context,
 bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
                              const char* filename, int* exit_status_p,
                              GError** error) {
-    bool ret = false;
+    AutoResetExit reset(this);
 
     bool auto_profile = m_should_profile;
     if (auto_profile &&
@@ -906,7 +906,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
             *exit_status_p = code;
             g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
                         "Exit with code %d", code);
-            goto out;  /* Don't log anything */
+            return false;  // Don't log anything
         }
 
         if (!JS_IsExceptionPending(m_cx)) {
@@ -923,7 +923,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         gjs_log_exception(m_cx);
         /* No exit code from script, but we don't want to exit(0) */
         *exit_status_p = 1;
-        goto out;
+        return false;
     }
 
     if (exit_status_p) {
@@ -938,11 +938,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         }
     }
 
-    ret = true;
-
- out:
-    reset_exit();
-    return ret;
+    return true;
 }
 
 bool

@@ -491,7 +491,6 @@ gjs_object_to_g_hash(JSContext   *context,
                      GITransfer   transfer,
                      GHashTable **hash_p)
 {
-    GHashTable *result = NULL;
     size_t id_ix, id_len;
 
     g_assert(hash_value.isObjectOrNull());
@@ -516,7 +515,8 @@ gjs_object_to_g_hash(JSContext   *context,
     if (!JS_Enumerate(context, props, &ids))
         return false;
 
-    result = create_hash_table_for_key_type(key_param_info);
+    GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result =
+        create_hash_table_for_key_type(key_param_info);
 
     JS::RootedValue key_js(context), val_js(context);
     JS::RootedId cur_id(context);
@@ -525,23 +525,16 @@ gjs_object_to_g_hash(JSContext   *context,
         gpointer key_ptr, val_ptr;
         GIArgument val_arg = { 0 };
 
-        if (!JS_IdToValue(context, cur_id, &key_js))
-            goto free_hash_and_fail;
-
-        /* Type check key type. */
-        if (!value_to_ghashtable_key(context, key_js, key_param_info, &key_ptr))
-            goto free_hash_and_fail;
-
-        if (!JS_GetPropertyById(context, props, cur_id, &val_js))
-            goto free_hash_and_fail;
-
-        /* Type check and convert value to a c type */
-        if (!gjs_value_to_g_argument(context, val_js, val_param_info, NULL,
-                                     GJS_ARGUMENT_HASH_ELEMENT,
-                                     transfer,
-                                     true /* allow null */,
-                                     &val_arg))
-            goto free_hash_and_fail;
+        if (!JS_IdToValue(context, cur_id, &key_js) ||
+            // Type check key type.
+            !value_to_ghashtable_key(context, key_js, key_param_info,
+                                     &key_ptr) ||
+            !JS_GetPropertyById(context, props, cur_id, &val_js) ||
+            // Type check and convert value to a C type
+            !gjs_value_to_g_argument(context, val_js, val_param_info, nullptr,
+                                     GJS_ARGUMENT_HASH_ELEMENT, transfer,
+                                     true /* allow null */, &val_arg))
+            return false;
 
         GITypeTag val_type = g_type_info_get_tag(val_param_info);
         /* Use heap-allocated values for types that don't fit in a pointer */
@@ -569,12 +562,8 @@ gjs_object_to_g_hash(JSContext   *context,
         g_hash_table_insert(result, key_ptr, val_ptr);
     }
 
-    *hash_p = result;
+    *hash_p = result.release();
     return true;
-
- free_hash_and_fail:
-    g_hash_table_destroy(result);
-    return false;
 }
 
 bool
@@ -1336,8 +1325,6 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                      gpointer        *contents,
                                      gsize           *length_p)
 {
-    bool ret = false;
-    GITypeInfo *param_info;
     bool found_length;
 
     gjs_debug_marshal(
@@ -1345,12 +1332,11 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         "Converting argument '%s' JS value %s to C array, transfer %d",
         arg_name, gjs_debug_value(value).c_str(), transfer);
 
-    param_info = g_type_info_get_param_type(type_info, 0);
+    GjsAutoTypeInfo param_info = g_type_info_get_param_type(type_info, 0);
 
     if ((value.isNull() && !may_be_null) ||
         (!value.isString() && !value.isObjectOrNull())) {
         throw_invalid_argument(context, value, param_info, arg_name, arg_type);
-        g_base_info_unref((GIBaseInfo*) param_info);
         return false;
     }
 
@@ -1361,7 +1347,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
         /* Allow strings as int8/uint8/int16/uint16 arrays */
         JS::RootedString str(context, value.toString());
         if (!gjs_string_to_intarray(context, str, param_info, contents, length_p))
-            goto out;
+            return false;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
         const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
@@ -1377,7 +1363,7 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
 
             if (!gjs_object_require_converted_property(
                     context, array_obj, nullptr, atoms.length(), &length)) {
-                goto out;
+                return false;
             } else {
                 if (!gjs_array_to_array(context,
                                         value,
@@ -1385,21 +1371,17 @@ gjs_array_to_explicit_array_internal(JSContext       *context,
                                         transfer,
                                         param_info,
                                         contents))
-                    goto out;
+                    return false;
 
                 *length_p = length;
             }
         } else {
             throw_invalid_argument(context, value, param_info, arg_name, arg_type);
-            goto out;
+            return false;
         }
     }
 
-    ret = true;
- out:
-    g_base_info_unref((GIBaseInfo*) param_info);
-
-    return ret;
+    return true;
 }
 
 GJS_USE
@@ -2834,12 +2816,11 @@ gjs_value_from_g_argument (JSContext             *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            JS::RootedValue value(context);
-            GIBaseInfo* interface_info;
             GIInfoType interface_type;
             GType gtype;
 
-            interface_info = g_type_info_get_interface(type_info);
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
 
             interface_type = g_base_info_get_type(interface_info);
@@ -2848,7 +2829,7 @@ gjs_value_from_g_argument (JSContext             *context,
                 gjs_throw(context,
                           "Unable to resolve arg type '%s'",
                           g_base_info_get_name(interface_info));
-                goto out;
+                return false;
             }
 
             /* Enum/Flags are aren't pointer types, unlike the other interface subtypes */
@@ -2856,52 +2837,51 @@ gjs_value_from_g_argument (JSContext             *context,
                 int64_t value_int64 =
                     _gjs_enum_from_int(interface_info, arg->v_int);
 
-                if (_gjs_enum_value_is_valid(context, (GIEnumInfo *)interface_info, value_int64)) {
-                    value = JS::NumberValue(value_int64);
-                }
+                if (!_gjs_enum_value_is_valid(context, interface_info,
+                                              value_int64))
+                    return false;
 
-                goto out;
-            } else if (interface_type == GI_INFO_TYPE_FLAGS) {
+                value_p.setNumber(static_cast<double>(value_int64));
+                return true;
+            }
+
+            if (interface_type == GI_INFO_TYPE_FLAGS) {
                 int64_t value_int64 =
                     _gjs_enum_from_int(interface_info, arg->v_int);
 
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
-                if (_gjs_flags_value_is_valid(context, gtype, value_int64)) {
-                    value = JS::NumberValue(value_int64);
-                }
+                if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
+                    return false;
 
-                goto out;
-            } else if (interface_type == GI_INFO_TYPE_STRUCT &&
-                       g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
-                bool ret;
-                ret = gjs_struct_foreign_convert_from_g_argument(context, value_p, interface_info, arg);
-                g_base_info_unref(interface_info);
-                return ret;
+                value_p.setNumber(static_cast<double>(value_int64));
+                return true;
+            }
+
+            if (interface_type == GI_INFO_TYPE_STRUCT &&
+                g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
+                return gjs_struct_foreign_convert_from_g_argument(
+                    context, value_p, interface_info, arg);
             }
 
             /* Everything else is a pointer type, NULL is the easy case */
             if (arg->v_pointer == NULL) {
-                value = JS::NullValue();
-                goto out;
+                value_p.setNull();
+                return true;
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT &&
                 g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
-                bool ret;
-
                 /* XXX: here we make the implicit assumption that GTypeClass is the same
                    as GTypeInterface. This is true for the GType field, which is what we
                    use, but not for the rest of the structure!
                 */
                 gtype = G_TYPE_FROM_CLASS(arg->v_pointer);
 
-                if (g_type_is_a(gtype, G_TYPE_INTERFACE))
-                    ret = gjs_lookup_interface_constructor(context, gtype, value_p);
-                else
-                    ret = gjs_lookup_object_constructor(context, gtype, value_p);
-
-                g_base_info_unref(interface_info);
-                return ret;
+                if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+                    return gjs_lookup_interface_constructor(context, gtype,
+                                                            value_p);
+                }
+                return gjs_lookup_object_constructor(context, gtype, value_p);
             }
 
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
@@ -2915,20 +2895,18 @@ gjs_value_from_g_argument (JSContext             *context,
 
             /* Test GValue and GError before Struct, or it will be handled as the latter */
             if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-                if (!gjs_value_from_g_value(context, &value, (const GValue *) arg->v_pointer))
-                    value = JS::UndefinedValue(); /* Make sure error is flagged */
-
-                goto out;
+                return gjs_value_from_g_value(
+                    context, value_p,
+                    static_cast<const GValue*>(arg->v_pointer));
             }
+
             if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 JSObject* obj = ErrorInstance::object_for_c_ptr(
                     context, static_cast<GError*>(arg->v_pointer));
-                if (obj)
-                    value = JS::ObjectValue(*obj);
-                else
-                    value = JS::UndefinedValue();
-
-                goto out;
+                if (!obj)
+                    return false;
+                value_p.setObject(*obj);
+                return true;
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
@@ -2943,12 +2921,10 @@ gjs_value_from_g_argument (JSContext             *context,
                             nullptr);
 
                     g_base_info_unref(atom_name_fun);
-                    g_base_info_unref(interface_info);
 
                     if (strcmp("NONE", atom_name_ret.v_string) == 0) {
                         g_free(atom_name_ret.v_string);
-                        value = JS::NullValue();
-
+                        value_p.setNull();
                         return true;
                     }
 
@@ -2968,60 +2944,72 @@ gjs_value_from_g_argument (JSContext             *context,
                         context, interface_info, arg->v_pointer,
                         BoxedInstance::NoCopy());
 
-                if (obj)
-                    value = JS::ObjectValue(*obj);
+                if (!obj)
+                    return false;
 
-                goto out;
-            } else if (interface_type == GI_INFO_TYPE_UNION) {
+                value_p.setObject(*obj);
+                return true;
+            }
+
+            if (interface_type == GI_INFO_TYPE_UNION) {
                 JSObject *obj;
                 obj = gjs_union_from_c_union(context, (GIUnionInfo *)interface_info, arg->v_pointer);
-                if (obj)
-                        value = JS::ObjectValue(*obj);
+                if (!obj)
+                    return false;
 
-                goto out;
+                value_p.setObject(*obj);
+                return true;
             }
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
                 // arg->v_pointer == nullptr is already handled above
                 JSObject* obj = ObjectInstance::wrapper_from_gobject(
                     context, G_OBJECT(arg->v_pointer));
-                if (obj)
-                    value = JS::ObjectValue(*obj);
-            } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
-                       g_type_is_a(gtype, G_TYPE_ENUM) ||
-                       g_type_is_a(gtype, G_TYPE_FLAGS)) {
+                if (!obj)
+                    return false;
+                value_p.setObject(*obj);
+                return true;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_BOXED) ||
+                g_type_is_a(gtype, G_TYPE_ENUM) ||
+                g_type_is_a(gtype, G_TYPE_FLAGS)) {
                 /* Should have been handled above */
                 gjs_throw(context,
                           "Type %s registered for unexpected interface_type %d",
                           g_type_name(gtype),
                           interface_type);
                 return false;
-            } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                JSObject *obj;
-                obj = gjs_param_from_g_param(context, G_PARAM_SPEC(arg->v_pointer));
-                if (obj)
-                    value = JS::ObjectValue(*obj);
-            } else if (gtype == G_TYPE_NONE) {
-                gjs_throw(context, "Unexpected unregistered type packing GArgument into JS::Value");
-            } else if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
-                JSObject* obj = FundamentalInstance::object_for_c_ptr(
-                    context, arg->v_pointer);
-                if (obj)
-                    value = JS::ObjectValue(*obj);
-            } else {
-                gjs_throw(context, "Unhandled GType %s packing GArgument into JS::Value",
-                          g_type_name(gtype));
             }
 
-         out:
-            g_base_info_unref( (GIBaseInfo*) interface_info);
+            if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                JSObject *obj;
+                obj = gjs_param_from_g_param(context, G_PARAM_SPEC(arg->v_pointer));
+                if (!obj)
+                    return false;
+                value_p.setObject(*obj);
+                return true;
+            }
 
-            if (value.isUndefined())
+            if (gtype == G_TYPE_NONE) {
+                gjs_throw(context, "Unexpected unregistered type packing GArgument into JS::Value");
                 return false;
+            }
 
-            value_p.set(value);
+            if (G_TYPE_IS_INSTANTIATABLE(gtype) || G_TYPE_IS_INTERFACE(gtype)) {
+                JSObject* obj = FundamentalInstance::object_for_c_ptr(
+                    context, arg->v_pointer);
+                if (!obj)
+                    return false;
+                value_p.setObject(*obj);
+                return true;
+            }
+
+            gjs_throw(context,
+                      "Unhandled GType %s packing GArgument into JS::Value",
+                      g_type_name(gtype));
+            return false;
         }
-        break;
 
     case GI_TYPE_TAG_ARRAY:
         if (arg->v_pointer == NULL) {
@@ -3226,11 +3214,11 @@ gjs_g_arg_release_internal(JSContext  *context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIBaseInfo* interface_info;
             GIInfoType interface_type;
             GType gtype;
 
-            interface_info = g_type_info_get_interface(type_info);
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(type_info);
             g_assert(interface_info != NULL);
 
             interface_type = g_base_info_get_type(interface_info);
@@ -3241,11 +3229,11 @@ gjs_g_arg_release_internal(JSContext  *context,
                         transfer, interface_info, arg);
 
             if (interface_type == GI_INFO_TYPE_ENUM || interface_type == GI_INFO_TYPE_FLAGS)
-                goto out;
+                return true;
 
             /* Anything else is a pointer */
             if (arg->v_pointer == NULL)
-                goto out;
+                return true;
 
             gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
             if (G_TYPE_IS_INSTANTIATABLE(gtype) ||
@@ -3295,13 +3283,10 @@ gjs_g_arg_release_internal(JSContext  *context,
             } else {
                 gjs_throw(context, "Unhandled GType %s releasing GArgument",
                           g_type_name(gtype));
-                failed = true;
+                return false;
             }
-
-        out:
-            g_base_info_unref( (GIBaseInfo*) interface_info);
         }
-        break;
+            return true;
 
     case GI_TYPE_TAG_GLIST:
         if (transfer != GI_TRANSFER_CONTAINER) {

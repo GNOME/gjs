@@ -186,6 +186,29 @@ check_script_args_for_stray_gjs_args(int           argc,
     g_strfreev(argv_copy);
 }
 
+int define_argv_and_eval_script(GjsContext* js_context, int argc,
+                                char* const* argv, const char* script,
+                                size_t len, const char* filename) {
+    GError* error = nullptr;
+
+    /* prepare command line arguments */
+    if (!gjs_context_define_string_array(
+            js_context, "ARGV", argc, const_cast<const char**>(argv), &error)) {
+        g_critical("Failed to define ARGV: %s", error->message);
+        g_clear_error(&error);
+        return 1;
+    }
+
+    /* evaluate the script */
+    int code;
+    if (!gjs_context_eval(js_context, script, len, filename, &code, &error)) {
+        if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
+            g_critical("%s\n", error->message);
+        g_clear_error(&error);
+    }
+    return code;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -197,7 +220,7 @@ main(int argc, char **argv)
     const char *filename;
     const char *program_name;
     gsize len;
-    int code, gjs_argc = argc, script_argc, ix;
+    int gjs_argc = argc, script_argc, ix;
     char **argv_copy = g_strdupv(argv), **argv_copy_addr = argv_copy;
     char **gjs_argv, **gjs_argv_addr;
     char * const *script_argv;
@@ -354,31 +377,14 @@ main(int argc, char **argv)
         tracefd = -1;
     }
 
-    /* prepare command line arguments */
-    if (!gjs_context_define_string_array(js_context, "ARGV",
-                                         script_argc, (const char **) script_argv,
-                                         &error)) {
-        code = 1;
-        g_printerr("Failed to defined ARGV: %s", error->message);
-        g_clear_error(&error);
-        goto out;
-    }
-
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */
     if (debugging)
         gjs_context_setup_debugger_console(js_context);
 
-    /* evaluate the script */
-    if (!gjs_context_eval(js_context, script, len,
-                          filename, &code, &error)) {
-        if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
-            g_printerr("%s\n", error->message);
-        g_clear_error(&error);
-        goto out;
-    }
+    int code = define_argv_and_eval_script(js_context, script_argc, script_argv,
+                                           script, len, filename);
 
- out:
     g_strfreev(gjs_argv_addr);
 
     /* Probably doesn't make sense to write statistics on failure */

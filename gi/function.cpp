@@ -436,7 +436,10 @@ out:
                 exit(code);
 
             /* Some other uncatchable exception, e.g. out of memory */
-            g_error("Function %s terminated with uncatchable exception",
+            JSFunction* fn = gjs_closure_get_callable(trampoline->js_function);
+            g_error("Function %s (%s.%s) terminated with uncatchable exception",
+                    gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str(),
+                    g_base_info_get_namespace(trampoline->info),
                     g_base_info_get_name(trampoline->info));
         }
 
