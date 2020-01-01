@@ -517,7 +517,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     gjs_set_global_slot(m_cx, GJS_GLOBAL_SLOT_IMPORTS,
                         JS::ObjectValue(*importer));
 
-    if (!gjs_define_global_properties(m_cx, global, "default")) {
+    if (!gjs_define_global_properties(m_cx, global, "GJS", "default")) {
         gjs_log_exception(m_cx);
         g_error("Failed to define properties on global object");
     }

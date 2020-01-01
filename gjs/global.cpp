@@ -260,16 +260,19 @@ class GjsGlobal {
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool
-    define_properties(JSContext       *cx,
-                      JS::HandleObject global,
-                      const char      *bootstrap_script)
-    {
+    static bool define_properties(JSContext* cx, JS::HandleObject global,
+                                  const char* compartment_name,
+                                  const char* bootstrap_script) {
         const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
         if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
                                    JSPROP_READONLY | JSPROP_PERMANENT) ||
             !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
             return false;
+
+        JSCompartment* compartment = js::GetObjectCompartment(global);
+        // const_cast is allowed here if we never free the compartment data
+        JS_SetCompartmentPrivate(compartment,
+                                 const_cast<char*>(compartment_name));
 
         JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
         g_assert(((void) "importer should be defined before passing null "
@@ -312,6 +315,7 @@ gjs_create_global_object(JSContext *cx)
  * gjs_define_global_properties:
  * @cx: a #JSContext
  * @global: a JS global object that has not yet been passed to this function
+ * @compartment_name: (nullable): name of the compartment, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
  * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or %NULL for
  * none
@@ -333,12 +337,11 @@ gjs_create_global_object(JSContext *cx)
  * Returns: true on success, false otherwise, in which case an exception is
  * pending on @cx
  */
-bool
-gjs_define_global_properties(JSContext       *cx,
-                             JS::HandleObject global,
-                             const char      *bootstrap_script)
-{
-    return GjsGlobal::define_properties(cx, global, bootstrap_script);
+bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
+                                  const char* compartment_name,
+                                  const char* bootstrap_script) {
+    return GjsGlobal::define_properties(cx, global, compartment_name,
+                                        bootstrap_script);
 }
 
 void

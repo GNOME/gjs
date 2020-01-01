@@ -13,11 +13,10 @@
 
   <description xml:lang="en">GNOME JavaScript bindings</description>
 
-  <homepage rdf:resource="https://wiki.gnome.org/Projects/Gjs" />
-  <license rdf:resource="http://usefulinc.com/doap/licenses/gpl" />
-  <license rdf:resource="http://usefulinc.com/doap/licenses/lgpl" />
-  <license rdf:resource="http://usefulinc.com/doap/licenses/mpl" />
-  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/"/>
+  <homepage rdf:resource="https://gitlab.gnome.org/GNOME/gjs" />
+  <license rdf:resource="https://spdx.org/licenses/LGPL-2.0+.html"/>
+  <license rdf:resource="https://spdx.org/licenses/MIT.html"/>
+  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/issues"/>
   <download-page rdf:resource="http://download.gnome.org/sources/gjs/" />
   <mailing-list rdf:resource="mailto:javascript-list@gnome.org" />
 

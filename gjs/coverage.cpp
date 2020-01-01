@@ -357,7 +357,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         if (!JS_SetPropertyById(context, debugger_compartment, atoms.debuggee(),
                                 debuggeeWrapperValue) ||
             !gjs_define_global_properties(context, debugger_compartment,
-                                          "coverage"))
+                                          "GJS coverage", "coverage"))
             return false;
 
         /* Add a tracer, as suggested by jdm on #jsapi */
