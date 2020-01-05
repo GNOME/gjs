@@ -203,7 +203,7 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
     int code;
     if (!gjs_context_eval(js_context, script, len, filename, &code, &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
-            g_critical("%s\n", error->message);
+            g_critical("%s", error->message);
         g_clear_error(&error);
     }
     return code;
