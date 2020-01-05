@@ -50,6 +50,9 @@ else
         '-Wno-variadic-macros',  # GLib uses these in header files
         '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
     ]), language: 'cpp')
+    add_project_arguments(cc.get_supported_arguments([
+        '-Wno-typedef-redefinition',  # GLib does this in header files
+    ]), language: 'c')
 
     if get_option('bsymbolic_functions')
         if not cxx.has_link_argument('-Bsymbolic-functions')
