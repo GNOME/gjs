@@ -1,3 +1,24 @@
+Version 1.58.4
+--------------
+
+- Now prints a warning when constructing an unregistered object inheriting from
+  GObject (i.e. if you forgot to use GObject.registerClass.) In 1.58.2 this
+  would throw an exception, which broke some existing code, so that change was
+  reverted in 1.58.3. In this version the check is reinstated, but we log a
+  warning instead of throwing an exception, so that people know to fix their
+  code, but without breaking things.
+  NOTE: In 1.64 (the next stable release) the warning will be changed back into
+  an exception, because code with this problem can be subtly broken and cause
+  unexpected errors elsewhere. So make sure to fix your code if you get this
+  warning.
+
+- Closed bugs and merge requests:
+  * GSettings crash fixes [Andy Holmes, !373]
+
+- Memory savings for Cairo objects [Philip Chimento, !374]
+
+- Fix for crash in debug functions [Philip Chimento, !374]
+
 Version 1.58.3
 --------------
 
