@@ -1,3 +1,20 @@
+Version 1.63.3
+--------------
+
+- Closed bugs and merge requests:
+  * JS ERROR: TypeError: this._rooms.get(...) is undefined [Philip Chimento,
+    #289, !367]
+  * Run CI build with --werror [Philip Chimento, #286, !365]
+  * build: Remove Autotools build system [Philip Chimento, !364]
+  * gjs-symlink script is incompatible with distro builds [Michael Catanzaro,
+    Bastien Nocera, #291, !369, !370]
+  * installed-tests: Don't hardcode the path of bash [Ting-Wei Lan, !372]
+  * Update Visual Studio build instructions (after migrating to full Meson-based
+    builds) [Chun-wei Fan, !375]
+  * object: Warn when setting a deprecated property [Florian Müllner, !378]
+  * CI: Create mozjs68 CI images [Philip Chimento, !379]
+  * Various maintenance [Philip Chimento, !374, !380, !381]
+
 Version 1.58.4
 --------------
 
