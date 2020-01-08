@@ -21,10 +21,10 @@
  * IN THE SOFTWARE.
  */
 
-#include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H, HAVE_SYS_SIGNAL_H
+#include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
 
-#ifdef HAVE_SYS_SIGNAL_H
-#	include <sys/signal.h>  // for siginfo_t, sigevent, ...
+#ifndef HAVE_SIGNAL_H
+#    include <signal.h>  // for siginfo_t, sigevent, sigaction, SIGPROF, ...
 #endif
 
 #include <glib-object.h>
@@ -33,7 +33,6 @@
 #ifdef ENABLE_PROFILER
 #    include <alloca.h>
 #    include <errno.h>
-#    include <signal.h>  // for sigaction, SIGPROF, sigemptyset
 #    include <stddef.h>  // for size_t
 #    include <stdint.h>
 #    include <stdio.h>      // for sscanf

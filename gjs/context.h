@@ -31,7 +31,7 @@
 #include <stdbool.h>    /* IWYU pragma: keep */
 
 #ifndef _WIN32
-#    include <sys/signal.h> /* for siginfo_t */
+#    include <signal.h> /* for siginfo_t */
 #endif
 
 #include <glib-object.h>
