@@ -3,7 +3,7 @@
 
 m4_define(pkg_major_version, 1)
 m4_define(pkg_minor_version, 58)
-m4_define(pkg_micro_version, 4)
+m4_define(pkg_micro_version, 5)
 m4_define(pkg_version, pkg_major_version.pkg_minor_version.pkg_micro_version)
 m4_define(pkg_int_version, (pkg_major_version * 100 + pkg_minor_version) * 100 + pkg_micro_version)
 
