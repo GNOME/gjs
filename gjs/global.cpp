@@ -60,7 +60,8 @@ run_bootstrap(JSContext       *cx,
               JS::HandleObject global)
 {
     GjsAutoChar uri = g_strdup_printf(
-        "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
+        "resource:///org/gnome/gjs/modules/script/_bootstrap/%s.js",
+        bootstrap_script);
 
     JSAutoRealm ar(cx, global);
 
@@ -316,8 +317,8 @@ gjs_create_global_object(JSContext *cx)
  * @global: a JS global object that has not yet been passed to this function
  * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
- * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or %NULL for
- * none
+ * resource://org/gnome/gjs/modules/script/_bootstrap/@bootstrap_script) or
+ * %NULL for none
  *
  * Defines properties on the global object such as 'window' and 'imports', and
  * runs a bootstrap JS script on the global object to define any properties

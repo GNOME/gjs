@@ -143,6 +143,3 @@ var SurfaceType = {
     QUARTZ_IMAGE: 13,
 };
 
-// Merge stuff defined in native code
-Object.assign(this, imports.cairoNative);
-

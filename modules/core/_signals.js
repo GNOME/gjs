@@ -20,15 +20,13 @@
  * IN THE SOFTWARE.
  */
 
-/* exported addSignalMethods, WithSignals */
+/* exported addSignalMethods */
 
 // A couple principals of this simple signal system:
 // 1) should look just like our GObject signal binding
 // 2) memory and safety matter more than speed of connect/disconnect/emit
 // 3) the expectation is that a given object will have a very small number of
 //    connections, but they may be to different signal names
-
-const Lang = imports.lang;
 
 function _connect(name, callback) {
     // be paranoid about callback arg since we'd start to throw from emit()
@@ -162,12 +160,3 @@ function addSignalMethods(proto) {
     // this one is not in GObject, but useful
     _addSignalMethod(proto, 'disconnectAll', _disconnectAll);
 }
-
-var WithSignals = new Lang.Interface({
-    Name: 'WithSignals',
-    connect: _connect,
-    disconnect: _disconnect,
-    emit: _emit,
-    signalHandlerIsConnected: _signalHandlerIsConnected,
-    disconnectAll: _disconnectAll,
-});
