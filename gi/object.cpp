@@ -667,7 +667,28 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         canonicalize_key(canonical_name);
     }
 
-    GType *interfaces = g_type_interfaces(m_gtype, &n_interfaces);
+    GjsAutoFree<GType> interfaces = g_type_interfaces(m_gtype, &n_interfaces);
+
+    /* Fallback to GType system for non custom GObjects with no GI information
+     */
+    if (canonical_name && G_TYPE_IS_CLASSED(m_gtype) &&
+        !g_type_get_qdata(m_gtype, ObjectInstance::custom_type_quark())) {
+        GjsAutoTypeClass<GObjectClass> oclass(m_gtype);
+
+        if (g_object_class_find_property(oclass, canonical_name))
+            return lazy_define_gobject_property(cx, obj, id, resolved, name);
+
+        for (i = 0; i < n_interfaces; i++) {
+            if (!G_TYPE_IS_CLASSED(interfaces[i]))
+                continue;
+
+            GjsAutoTypeClass<GObjectClass> iclass(interfaces[i]);
+
+            if (g_object_class_find_property(iclass, canonical_name))
+                return lazy_define_gobject_property(cx, obj, id, resolved, name);
+        }
+    }
+
     for (i = 0; i < n_interfaces; i++) {
         GjsAutoInterfaceInfo iface_info =
             g_irepository_find_by_gtype(nullptr, interfaces[i]);
@@ -678,13 +699,10 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             g_interface_info_find_method(iface_info, name);
         if (method_info) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (!gjs_define_function(cx, obj, m_gtype, method_info)) {
-                    g_free(interfaces);
+                if (!gjs_define_function(cx, obj, m_gtype, method_info))
                     return false;
-                }
 
                 *resolved = true;
-                g_free(interfaces);
                 return true;
             }
         }
@@ -695,14 +713,11 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         /* If the name refers to a GObject property, lazily define the property
          * in JS as we do below in the real resolve hook. We ignore fields here
          * because I don't think interfaces can have fields */
-        if (is_ginterface_property_name(iface_info, canonical_name)) {
-            g_free(interfaces);
+        if (is_ginterface_property_name(iface_info, canonical_name))
             return lazy_define_gobject_property(cx, obj, id, resolved, name);
-        }
     }
 
     *resolved = false;
-    g_free(interfaces);
     return true;
 }
 
