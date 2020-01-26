@@ -122,8 +122,12 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
               gtype != 0));
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    auto p = gjs->gtype_table().lookupForAdd(gtype);
-    if (p)
+    // We cannot use gtype_table().lookupForAdd() here, because in between the
+    // lookup and the add, GCs may take place and mutate the hash table. A GC
+    // may only remove an element, not add one, so it's still safe to do this
+    // without locking.
+    auto p = gjs->gtype_table().lookup(gtype);
+    if (p.found())
         return p->value();
 
     JS::RootedObject proto(context);
@@ -137,7 +141,7 @@ gjs_gtype_create_gtype_wrapper (JSContext *context,
 
     JS_SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
 
-    gjs->gtype_table().add(p, gtype, gtype_wrapper);
+    gjs->gtype_table().put(gtype, gtype_wrapper);
 
     return gtype_wrapper;
 }
