@@ -6,7 +6,7 @@ via Meson.  Due to C++-14 usage, Visual Studio 2017 15.6.x or later is
 required, as the compiler flag /Zc:externConstexpr is needed.
 
 You will need the following items to build GJS using Visual Studio:
--SpiderMonkey 60 (mozjs-60).  Please see the below section carefully 
+-SpiderMonkey 68 (mozjs-68).  Please see the below section carefully 
  on this...
 -GObject-Introspection (G-I) 1.61.2 or later
 -GLib 2.58.x or later, (which includes GIO, GObject, and the associated tools)
@@ -43,7 +43,7 @@ JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --prefix=<
 
 Notice that "JS_STANDALONE=1" and "--disable-jemalloc" are absolutely required,
 otherwise GJS will not build/run correctly.  If your GJS build crashes upon
-launch, use Depedency Walker to ensure that mozjs-60.dll does not depend on
+launch, use Depedency Walker to ensure that mozjs-68.dll does not depend on
 mozglue.dll!  If it does, or if GJS fails to link with missing arena_malloc() and
 friends symbols, you have built SpiderMoney incorrectly and will need to rebuild
 SpiderMonkey (with the build options as noted above) and retry the build.
@@ -72,7 +72,7 @@ $(buildroot)/dist/include.  Note that for PDB files and .lib files,
 you will need to search for them in $(buildroot),
 where the PDB file names match the filenames for the DLLs/EXEs in
 $(buildroot)/dist/bin, and you will need to look for the following .lib files:
--mozjs-60.lib
+-mozjs-68.lib
 -js_static.lib (optional)
 -nspr4.lib (optional, recommended for future use, if --enable-nspr-build is used)
 -plc4.lib (optional, recommended for future use, if --enable-nspr-build is used)
@@ -80,16 +80,16 @@ $(buildroot)/dist/bin, and you will need to look for the following .lib files:
 
 You may want to put the .lib's and DLLs/EXEs into $(PREFIX)\lib and 
 $(PREFIX)\bin respectively, and put the headers into
-$(PREFIX)\include\mozjs-60 for convenience.
+$(PREFIX)\include\mozjs-68 for convenience.
 
-You will need to place the generated mozjs-60.pc pkg-config file into
+You will need to place the generated mozjs-68.pc pkg-config file into
 $(PREFIX)\lib\pkgconfig and ensure that pkg-config can find it by
 setting PKG_CONFIG_PATH.  Ensure that the 'includedir' and 'libdir'
 in there is correct, and remove the 'nspr' entry from the
 'Requires.private:' line and change
-'-include ${includedir}/mozjs-60/js/RequiredDefines.h' to
-'-FI${includedir}/mozjs-60/js/RequiredDefines.h', so that the
-mozjs-60.pc can be used correctly in Visual Studio builds.  You
+'-include ${includedir}/mozjs-68/js/RequiredDefines.h' to
+'-FI${includedir}/mozjs-68/js/RequiredDefines.h', so that the
+mozjs-68.pc can be used correctly in Visual Studio builds.  You
 will also need to ensure that the existing GObject-Introspection
 installation (if used) is on the same drive where the GJS sources
 are (and therefore where the GJS build is being carried out).

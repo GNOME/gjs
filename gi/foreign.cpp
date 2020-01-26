@@ -21,12 +21,14 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for strcmp
 
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gi/arg.h"
 #include "gi/foreign.h"

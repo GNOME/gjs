@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>     // for size_t, strlen
 #include <sys/types.h>  // for ssize_t
@@ -32,10 +34,23 @@
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/GCAPI.h>  // for AutoCheckCannotGC
+#include <js/Id.h>     // for JSID_IS_STRING, INTERNED_STRING_TO...
+#include <js/RootingAPI.h>
+#include <js/Symbol.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>        // for JSID_TO_FLAT_STRING, JS_GetTwoByte...
+#include <jsfriendapi.h>  // for FlatStringToLinearString, GetLatin...
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+class JSFlatString;
+class JSLinearString;
 
 char* gjs_hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);
@@ -51,7 +66,6 @@ char* gjs_hyphen_to_underscore(const char* str) {
  * gjs_string_to_utf8:
  * @cx: JSContext
  * @value: a JS::Value containing a string
- * @utf8_string_p: return location for a unique JS chars pointer
  *
  * Converts the JSString in @value to UTF-8 and puts it in @utf8_string_p.
  *
@@ -59,19 +73,17 @@ char* gjs_hyphen_to_underscore(const char* str) {
  * typechecks the JS::Value and throws an exception if it's the wrong type.
  * Don't use this function if you already have a JS::RootedString, or if you
  * know the value already holds a string; use JS_EncodeStringToUTF8() instead.
+ *
+ * Returns: Unique UTF8 chars, empty on exception throw.
  */
-bool gjs_string_to_utf8(JSContext* cx, const JS::Value value,
-                        JS::UniqueChars* utf8_string_p) {
-    JSAutoRequest ar(cx);
-
+JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
     if (!value.isString()) {
         gjs_throw(cx, "Value is not a string, cannot convert to UTF-8");
-        return false;
+        return nullptr;
     }
 
     JS::RootedString str(cx, value.toString());
-    utf8_string_p->reset(JS_EncodeStringToUTF8(cx, str));
-    return !!*utf8_string_p;
+    return JS_EncodeStringToUTF8(cx, str);
 }
 
 bool
@@ -79,14 +91,11 @@ gjs_string_from_utf8(JSContext             *context,
                      const char            *utf8_string,
                      JS::MutableHandleValue value_p)
 {
-    JS_BeginRequest(context);
-
     JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
     JS::RootedString str(context, JS_NewStringCopyUTF8Z(context, chars));
     if (str)
         value_p.setString(str);
 
-    JS_EndRequest(context);
     return str != nullptr;
 }
 
@@ -96,8 +105,6 @@ gjs_string_from_utf8_n(JSContext             *cx,
                        size_t                 len,
                        JS::MutableHandleValue out)
 {
-    JSAutoRequest ar(cx);
-
     JS::UTF8Chars chars(utf8_chars, len);
     JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
     if (str)
@@ -112,14 +119,12 @@ gjs_string_to_filename(JSContext      *context,
                        GjsAutoChar    *filename_string)
 {
     GError *error;
-    JS::UniqueChars tmp;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
-    if (!gjs_string_to_utf8(context, filename_val, &tmp)) {
-        /* exception already set */
+    JS::UniqueChars tmp = gjs_string_to_utf8(context, filename_val);
+    if (!tmp)
         return false;
-    }
 
     error = NULL;
     *filename_string =
@@ -197,8 +202,6 @@ gjs_string_get_char16_data(JSContext       *context,
                            char16_t       **data_p,
                            size_t          *len_p)
 {
-    JSAutoRequest ar(context);
-
     if (JS_StringHasLatin1Chars(str))
         return from_latin1(context, str, data_p, len_p);
 
@@ -235,7 +238,6 @@ gjs_string_to_ucs4(JSContext       *cx,
     if (ucs4_string_p == NULL)
         return true;
 
-    JSAutoRequest ar(cx);
     size_t len;
     GError *error = NULL;
 
@@ -295,9 +297,8 @@ gjs_string_from_ucs4(JSContext             *cx,
     long u16_string_length;
     GError *error = NULL;
 
-    char16_t *u16_string =
-        reinterpret_cast<char16_t *>(g_ucs4_to_utf16(ucs4_string, n_chars, NULL,
-                                                     &u16_string_length, &error));
+    gunichar2* u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, nullptr,
+                                            &u16_string_length, &error);
     if (!u16_string) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
                   error->message);
@@ -305,9 +306,13 @@ gjs_string_from_ucs4(JSContext             *cx,
         return false;
     }
 
-    JSAutoRequest ar(cx);
-    /* Avoid a copy - assumes that g_malloc == js_malloc == malloc */
-    JS::RootedString str(cx, JS_NewUCString(cx, u16_string, u16_string_length));
+    // Sadly, must copy, because js::UniquePtr forces that chars passed to
+    // JS_NewUCString() must have been allocated by the JS engine.
+    JS::RootedString str(
+        cx, JS_NewUCStringCopyN(cx, reinterpret_cast<char16_t*>(u16_string),
+                                u16_string_length));
+
+    g_free(u16_string);
 
     if (!str) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16");
@@ -336,7 +341,7 @@ bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
     }
 
     JS::RootedString s(cx, JS_FORGET_STRING_FLATNESS(JSID_TO_FLAT_STRING(id)));
-    name_p->reset(JS_EncodeStringToUTF8(cx, s));
+    *name_p = JS_EncodeStringToUTF8(cx, s);
     return !!*name_p;
 }
 
@@ -357,8 +362,8 @@ gjs_unichar_from_string (JSContext *context,
                          JS::Value  value,
                          gunichar  *result)
 {
-    JS::UniqueChars utf8_str;
-    if (gjs_string_to_utf8(context, value, &utf8_str)) {
+    JS::UniqueChars utf8_str = gjs_string_to_utf8(context, value);
+    if (utf8_str) {
         *result = g_utf8_get_char(utf8_str.get());
         return true;
     }
@@ -369,7 +374,6 @@ jsid
 gjs_intern_string_to_id(JSContext  *cx,
                         const char *string)
 {
-    JSAutoRequest ar(cx);
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     if (!str)
         return JSID_VOID;

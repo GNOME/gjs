@@ -32,8 +32,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/Date.h"  // for ResetTimeZone
+#include <js/CallArgs.h>
+#include <js/Date.h>                // for ResetTimeZone
+#include <js/GCAPI.h>               // for JS_GC
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>        // for JS_DefinePropertyById, JS_DefineF...
+#include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 
 #include "gi/object.h"
 #include "gjs/atoms.h"
@@ -180,20 +187,14 @@ gjs_exit(JSContext *context,
     return false;  /* without gjs_throw() == "throw uncatchable exception" */
 }
 
-static bool
-gjs_clear_date_caches(JSContext *context,
-                      unsigned   argc,
-                      JS::Value *vp)
-{
+static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {
     JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
-    JS_BeginRequest(context);
 
     // Workaround for a bug in SpiderMonkey where tzset is not called before
     // localtime_r, see https://bugzilla.mozilla.org/show_bug.cgi?id=1004706
     tzset();
 
     JS::ResetTimeZone();
-    JS_EndRequest(context);
 
     rec.rval().setUndefined();
     return true;

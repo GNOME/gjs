@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 
 #ifdef _WIN32
@@ -33,97 +35,22 @@
 #include <gio/gio.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/Initialization.h"  // for JS_Init, JS_ShutDown
-#include "mozilla/UniquePtr.h"
+#include <js/ContextOptions.h>
+#include <js/GCAPI.h>           // for JS_SetGCParameter, JS_AddFin...
+#include <js/Initialization.h>  // for JS_Init, JS_ShutDown
+#include <js/Promise.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Warnings.h>
+#include <js/experimental/SourceHook.h>
+#include <jsapi.h>  // for InitSelfHostedCode, JS_Destr...
+#include <mozilla/UniquePtr.h>
 
 #include "gi/object.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
-
-/* Implementations of locale-specific operations; these are used
- * in the implementation of String.localeCompare(), Date.toLocaleDateString(),
- * and so forth. We take the straight-forward approach of converting
- * to UTF-8, using the appropriate GLib functions, and converting
- * back if necessary.
- */
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_locale_to_upper_case (JSContext *context,
-                          JS::HandleString src,
-                          JS::MutableHandleValue retval)
-{
-    JS::UniqueChars utf8(JS_EncodeStringToUTF8(context, src));
-    if (!utf8)
-        return false;
-
-    GjsAutoChar upper_case_utf8 = g_utf8_strup(utf8.get(), -1);
-    return gjs_string_from_utf8(context, upper_case_utf8, retval);
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_locale_to_lower_case (JSContext *context,
-                          JS::HandleString src,
-                          JS::MutableHandleValue retval)
-{
-    JS::UniqueChars utf8(JS_EncodeStringToUTF8(context, src));
-    if (!utf8)
-        return false;
-
-    GjsAutoChar lower_case_utf8 = g_utf8_strdown(utf8.get(), -1);
-    return gjs_string_from_utf8(context, lower_case_utf8, retval);
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_locale_compare (JSContext *context,
-                    JS::HandleString src_1,
-                    JS::HandleString src_2,
-                    JS::MutableHandleValue retval)
-{
-    JS::UniqueChars utf8_1(JS_EncodeStringToUTF8(context, src_1));
-    if (!utf8_1)
-        return false;
-
-    JS::UniqueChars utf8_2(JS_EncodeStringToUTF8(context, src_2));
-    if (!utf8_2)
-        return false;
-
-    retval.setInt32(g_utf8_collate(utf8_1.get(), utf8_2.get()));
-
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_locale_to_unicode (JSContext  *context,
-                       const char *src,
-                       JS::MutableHandleValue retval)
-{
-    GError *error = NULL;
-
-    GjsAutoChar utf8 = g_locale_to_utf8(src, -1, NULL, NULL, &error);
-    if (!utf8) {
-        gjs_throw(context,
-                  "Failed to convert locale string to UTF8: %s",
-                  error->message);
-        g_error_free(error);
-        return false;
-    }
-
-    return gjs_string_from_utf8(context, utf8, retval);
-}
-
-static JSLocaleCallbacks gjs_locale_callbacks =
-{
-    gjs_locale_to_upper_case,
-    gjs_locale_to_lower_case,
-    gjs_locale_compare,
-    gjs_locale_to_unicode
-};
 
 static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
                                   void* data) {
@@ -188,15 +115,6 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool on_enqueue_promise_job(
-    JSContext*, JS::HandleObject callback,
-    JS::HandleObject allocation_site G_GNUC_UNUSED,
-    JS::HandleObject global G_GNUC_UNUSED, void* data) {
-    auto* gjs = static_cast<GjsContextPrivate*>(data);
-    return gjs->enqueue_job(callback);
-}
-
 static void on_promise_unhandled_rejection(
     JSContext* cx, JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
@@ -214,36 +132,25 @@ static void on_promise_unhandled_rejection(
     gjs->register_unhandled_promise_rejection(id, std::move(stack));
 }
 
-bool gjs_load_internal_source(JSContext* cx, const char* filename,
-                              JS::UniqueTwoByteChars* src, size_t* length) {
+bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
+                              size_t* length) {
     GError* error = nullptr;
     const char* path = filename + 11;  // len("resource://")
-    GjsAutoPointer<GBytes, GBytes, g_bytes_unref> script_bytes;
-    script_bytes =
+    GBytes* script_bytes =
         g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
     if (!script_bytes)
         return gjs_throw_gerror_message(cx, error);
 
-    size_t script_len;
-    const void* script_data = g_bytes_get_data(script_bytes, &script_len);
-    JS::ConstUTF8CharsZ script(static_cast<const char*>(script_data),
-                               script_len);
-    JS::TwoByteCharsZ chs = JS::UTF8CharsToNewTwoByteCharsZ(cx, script, length);
-    if (!chs)
-        return false;
-
-    src->reset(chs.get());
+    *src = static_cast<char*>(g_bytes_unref_to_data(script_bytes, length));
     return true;
 }
 
 class GjsSourceHook : public js::SourceHook {
-    bool load(JSContext* cx, const char* filename, char16_t** src,
+    bool load(JSContext* cx, const char* filename,
+              char16_t** two_byte_source G_GNUC_UNUSED, char** utf8_source,
               size_t* length) {
-        JS::UniqueTwoByteChars chars;
-        if (!gjs_load_internal_source(cx, filename, &chars, length))
-            return false;
-        *src = chars.release();  // caller owns, per documentation of SourceHook
-        return true;
+        // caller owns the source, per documentation of SourceHook
+        return gjs_load_internal_source(cx, filename, utf8_source, length);
     }
 };
 
@@ -328,19 +235,15 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
 
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, uninitialized_gjs);
     JS_SetGCCallback(cx, on_garbage_collect, uninitialized_gjs);
-    JS_SetLocaleCallbacks(JS_GetRuntime(cx), &gjs_locale_callbacks);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
-    JS::SetGetIncumbentGlobalCallback(cx, gjs_get_import_global);
-    JS::SetEnqueuePromiseJobCallback(cx, on_enqueue_promise_job,
-                                     uninitialized_gjs);
+    JS::SetJobQueue(cx, dynamic_cast<JS::JobQueue*>(uninitialized_gjs));
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
                                            uninitialized_gjs);
 
-    /* We use this to handle "lazy sources" that SpiderMonkey doesn't need to
-     * keep in memory. Most sources should be kept in memory, but we can skip
-     * doing that for the compartment bootstrap code, as it is already in memory
-     * in the form of a GResource. Instead we use the "source hook" to
-     * retrieve it. */
+    // We use this to handle "lazy sources" that SpiderMonkey doesn't need to
+    // keep in memory. Most sources should be kept in memory, but we can skip
+    // doing that for the realm bootstrap code, as it is already in memory in
+    // the form of a GResource. Instead we use the "source hook" to retrieve it.
     auto hook = mozilla::MakeUnique<GjsSourceHook>();
     js::SetSourceHook(cx, std::move(hook));
 

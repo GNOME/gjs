@@ -20,6 +20,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <vector>
 
 #include <cairo-gobject.h>
@@ -27,7 +29,15 @@
 #include <girepository.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/Conversions.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>  // for JS_SetElement, JS_NewArrayObject
 
 #include "gi/arg.h"
 #include "gi/foreign.h"

@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stddef.h>     // for size_t
 #include <sys/types.h>  // for ssize_t
 
@@ -29,7 +31,15 @@
 #include <gio/gio.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/GCVector.h>  // for RootedVector
+#include <js/PropertyDescriptor.h>
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_DefinePropertyById, ...
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -97,22 +107,22 @@ class GjsModule {
                          const char* filename) {
         std::u16string utf16_string =
             gjs_utf8_script_to_utf16(script, script_len);
+        // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
+        // but that messes up code coverage. See bug
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
+        JS::SourceText<char16_t> buf;
+        if (!buf.init(cx, utf16_string.c_str(), utf16_string.size(),
+                      JS::SourceOwnership::Borrowed))
+            return false;
 
-        unsigned start_line_number = 1;
-        size_t offset = gjs_unix_shebang_len(utf16_string, &start_line_number);
-
-        JS::SourceBufferHolder buf(utf16_string.c_str() + offset,
-                                   utf16_string.size() - offset,
-                                   JS::SourceBufferHolder::NoOwnership);
-
-        JS::AutoObjectVector scope_chain(cx);
+        JS::RootedObjectVector scope_chain(cx);
         if (!scope_chain.append(module)) {
             JS_ReportOutOfMemory(cx);
             return false;
         }
 
         JS::CompileOptions options(cx);
-        options.setFileAndLine(filename, start_line_number);
+        options.setFileAndLine(filename, 1);
 
         JS::RootedValue ignored_retval(cx);
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))

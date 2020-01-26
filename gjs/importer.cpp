@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for size_t, strcmp, strlen
 
 #ifdef _WIN32
@@ -36,8 +38,22 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "mozilla/UniquePtr.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/GCVector.h>  // for MutableWrappedPtrOperations
+#include <js/Id.h>        // for PropertyKey, JSID_IS_STRING
+#include <js/PropertyDescriptor.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/Symbol.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>    // for JS_DefinePropertyById, JS_DefineP...
+#include <jspubtd.h>  // for JSProto_Error
+#include <mozilla/UniquePtr.h>
+#include <mozilla/Vector.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -90,8 +106,8 @@ importer_to_string(JSContext *cx,
     if (module_path.isNull()) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
-        JS::UniqueChars path;
-        if (!gjs_string_to_utf8(cx, module_path, &path))
+        JS::UniqueChars path = gjs_string_to_utf8(cx, module_path);
+        if (!path)
             return false;
         output = g_strdup_printf("[%s %s]", klass->name, path.get());
     }
@@ -156,8 +172,9 @@ define_meta_properties(JSContext       *context,
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
-            JS::UniqueChars parent_path;
-            if (!gjs_string_to_utf8(context, parent_module_path, &parent_path))
+            JS::UniqueChars parent_path =
+                gjs_string_to_utf8(context, parent_module_path);
+            if (!parent_path)
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }
@@ -377,7 +394,7 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
-                                 JS::AutoIdVector& prop_ids,
+                                 JS::MutableHandleIdVector prop_ids,
                                  const char* init_path) {
     size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
@@ -622,7 +639,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
-                                   JS::AutoIdVector& properties,
+                                   JS::MutableHandleIdVector properties,
                                    bool enumerable_only G_GNUC_UNUSED) {
     Importer *priv;
     guint32 search_path_len;
@@ -769,8 +786,6 @@ importer_resolve(JSContext        *context,
         *resolved = false;
         return true;
     }
-
-    JSAutoRequest ar(context);
 
     if (!JSID_IS_STRING(id)) {
         *resolved = false;

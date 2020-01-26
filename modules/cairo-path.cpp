@@ -20,10 +20,16 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <cairo.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_GetClass, JS_GetInstancePrivate
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"

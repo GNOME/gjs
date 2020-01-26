@@ -22,6 +22,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for memset, strcmp
 
 #include <algorithm>   // for move, find
@@ -36,7 +38,21 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/GCAPI.h>               // for JS_AddWeakPointerCompartmentCallback
+#include <js/GCVector.h>            // for MutableWrappedPtrOperations
+#include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <js/Warnings.h>
+#include <jsapi.h>        // for JS_ReportOutOfMemory, IsCallable
+#include <jsfriendapi.h>  // for JS_GetObjectFunction, IsFunctionO...
+#include <mozilla/HashTable.h>
+#include <mozilla/Vector.h>
 
 #include "gi/arg.h"
 #include "gi/closure.h"
@@ -860,7 +876,7 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 }
 
 bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
-                                         JS::AutoIdVector& properties,
+                                         JS::MutableHandleIdVector properties,
                                          bool only_enumerable G_GNUC_UNUSED) {
     unsigned n_interfaces;
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
@@ -1124,8 +1140,8 @@ ObjectInstance::toggle_up(void)
      * in case the wrapper has data in it that the app cares about
      */
     if (!wrapper_is_rooted()) {
-        /* FIXME: thread the context through somehow. Maybe by looking up
-         * the compartment that obj belongs to. */
+        // FIXME: thread the context through somehow. Maybe by looking up the
+        // realm that obj belongs to.
         debug_lifecycle("Rooting wrapper");
         auto* cx = GjsContextPrivate::from_current_context()->context();
         switch_to_rooted(cx);
@@ -1169,8 +1185,8 @@ static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
      * of it is taken care by JS::Heap, which we use in GjsMaybeOwned,
      * so we're safe. As for sweeping, it is too late: the JS object
      * is dead, and attempting to keep it alive would soon crash
-     * the process. Plus, if we touch the JSAPI, libmozjs aborts in
-     * the first BeginRequest.
+     * the process. Plus, if we touch the JSAPI from another thread, libmozjs
+     * aborts in most cases when in debug mode.
      * Thus, we drain the toggle queue when GC starts, in order to
      * prevent this from happening.
      * In practice, a toggle up during JS finalize can only happen
@@ -1276,6 +1292,12 @@ void ObjectInstance::prepare_shutdown(void) {
 
 ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
     : GIWrapperInstance(cx, object) {
+    GTypeQuery query;
+    type_query_dynamic_safe(&query);
+    if (G_LIKELY(query.type))
+        JS::AddAssociatedMemory(object, query.instance_size,
+                                MemoryUse::GObjectInstanceStruct);
+
     GJS_INC_COUNTER(object_instance);
 }
 
@@ -1286,14 +1308,6 @@ ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
     GJS_INC_COUNTER(object_prototype);
 }
 
-bool ObjectPrototype::init(JSContext* cx) {
-    if (!m_property_cache.init() || !m_field_cache.init()) {
-        JS_ReportOutOfMemory(cx);
-        return false;
-    }
-    return true;
-}
-
 /*
  * ObjectInstance::update_heap_wrapper_weak_pointers:
  *
@@ -1301,7 +1315,8 @@ bool ObjectPrototype::init(JSContext* cx) {
  * notifies when weak pointers need to be either moved or swept.
  */
 void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
-                                                       JSCompartment*, void*) {
+                                                       JS::Compartment*,
+                                                       void*) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
                         "%zu wrapped GObject(s) to examine",
                         ObjectInstance::num_wrapped_gobjects());
@@ -1437,16 +1452,14 @@ ObjectInstance::init_impl(JSContext              *context,
                           const JS::CallArgs&     args,
                           JS::MutableHandleObject object)
 {
-    GTypeQuery query;
-
     g_assert(gtype() != G_TYPE_NONE);
 
-    if (args.length() > 1) {
-        JS_ReportWarningUTF8(context,
-                             "Too many arguments to the constructor of %s: "
-                             "expected 1, got %u",
-                             name(), args.length());
-    }
+    if (args.length() > 1 &&
+        !JS::WarnUTF8(context,
+                      "Too many arguments to the constructor of %s: expected "
+                      "1, got %u",
+                      name(), args.length()))
+        return false;
 
     std::vector<const char *> names;
     AutoGValueVector values;
@@ -1504,10 +1517,6 @@ ObjectInstance::init_impl(JSContext              *context,
         gobj = NULL;
         return true;
     }
-
-    type_query_dynamic_safe(&query);
-    if (G_LIKELY (query.type))
-        JS_updateMallocCounter(context, query.instance_size);
 
     if (G_IS_INITIALLY_UNOWNED(gobj) &&
         !g_object_is_floating(gobj)) {
@@ -1569,6 +1578,16 @@ void ObjectBase::trace_impl(JSTracer* tracer) {
 void ObjectPrototype::trace_impl(JSTracer* tracer) {
     m_property_cache.trace(tracer);
     m_field_cache.trace(tracer);
+}
+
+void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
+    GTypeQuery query;
+    type_query_dynamic_safe(&query);
+    if (G_LIKELY(query.type))
+        JS::RemoveAssociatedMemory(obj, query.instance_size,
+                                   MemoryUse::GObjectInstanceStruct);
+
+    GIWrapperInstance::finalize_impl(fop, obj);
 }
 
 ObjectInstance::~ObjectInstance() {
@@ -2320,7 +2339,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         offset = g_field_info_get_offset(field_info);
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
-        if (!JS_ObjectIsFunction(cx, function)) {
+        if (!js::IsFunctionObject(function)) {
             gjs_throw(cx, "Tried to deal with a vfunc that wasn't a function");
             return false;
         }

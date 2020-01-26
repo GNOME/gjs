@@ -13,7 +13,7 @@ you'll need to manually format your code before it gets merged.
 You can also skip this step if you are not writing any C++ code.)
 
 GJS requires four other libraries to be installed: GLib, libffi,
-gobject-introspection, and SpiderMonkey (also called "mozjs60" on some
+gobject-introspection, and SpiderMonkey (also called "mozjs68" on some
 systems.)
 The readline library is not required, but strongly recommended.
 We recommend installing your system's development packages for GLib,
@@ -93,7 +93,7 @@ more likely to show up.
 
 To see which GC zeal options are available:
 ```sh
-JS_GC_ZEAL=-1 js60
+JS_GC_ZEAL=-1 js68
 ```
 
 We include three test setups, `extra_gc`, `pre_verify`, and
@@ -157,4 +157,4 @@ This will build GJS into a separate build directory with code coverage
 instrumentation enabled, run the test suite to collect the coverage
 data, and open the generated HTML report.
 
-[embedder](https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr60/docs/Building%20SpiderMonkey.md)
+[embedder](https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr68/docs/Building%20SpiderMonkey.md)

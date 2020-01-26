@@ -21,11 +21,19 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdarg.h>
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/ErrorReport.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_ReportErrorUTF8, BuildStackString
+#include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -56,8 +64,6 @@ gjs_throw_valist(JSContext       *context,
 
     s = g_strdup_vprintf(format, args);
 
-    JS_BeginRequest(context);
-
     if (JS_IsExceptionPending(context)) {
         /* Often it's unclear whether a given jsapi.h function
          * will throw an exception, so we will throw ourselves
@@ -71,7 +77,6 @@ gjs_throw_valist(JSContext       *context,
                   "Ignoring second exception: '%s'",
                   s);
         g_free(s);
-        JS_EndRequest(context);
         return;
     }
 
@@ -117,8 +122,6 @@ gjs_throw_valist(JSContext       *context,
         JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s);
     }
     g_free(s);
-
-    JS_EndRequest(context);
 }
 
 /* Throws an exception, like "throw new Error(message)"
@@ -215,8 +218,8 @@ gjs_format_stack_trace(JSContext       *cx,
 
     JS::RootedString stack_trace(cx);
     JS::UniqueChars stack_utf8;
-    if (JS::BuildStackString(cx, saved_frame, &stack_trace, 2))
-        stack_utf8.reset(JS_EncodeStringToUTF8(cx, stack_trace));
+    if (JS::BuildStackString(cx, nullptr, saved_frame, &stack_trace, 2))
+        stack_utf8 = JS_EncodeStringToUTF8(cx, stack_trace);
 
     saved_exc.restore();
 

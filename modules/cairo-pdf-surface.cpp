@@ -20,16 +20,23 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE
 #include <cairo.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gjs/jsapi-util.h"
 
 #if CAIRO_HAS_PDF_SURFACE
 #    include <cairo-pdf.h>
 #    include <glib.h>
+
+#    include <js/Class.h>
+#    include <js/PropertySpec.h>
+#    include <js/RootingAPI.h>
+#    include <jsapi.h>  // for JS_NewObjectWithGivenProto
 
 #    include "gjs/jsapi-class.h"
 #    include "gjs/jsapi-util-args.h"

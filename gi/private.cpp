@@ -22,12 +22,19 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Id.h>  // for JSID_TO_SYMBOL
+#include <js/PropertySpec.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_GetArrayLength, JS_GetElement
 
 #include "gi/gobject.h"
 #include "gi/gtype.h"
@@ -253,8 +260,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
-    JSAutoRequest ar(cx);
-
     JS::UniqueChars name;
     GTypeFlags type_flags;
     JS::RootedObject parent(cx), interfaces(cx), properties(cx);
@@ -337,8 +342,6 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-
-    JSAutoRequest ar(cx);
 
     JS::UniqueChars signal_name;
     int32_t flags, accumulator_enum;

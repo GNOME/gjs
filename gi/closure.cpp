@@ -21,11 +21,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <glib.h>
 
 #include <new>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_IsExceptionPending, Call, JS_Get...
 
 #include "gi/closure.h"
 #include "gjs/context-private.h"
@@ -195,8 +199,7 @@ gjs_closure_invoke(GClosure                   *closure,
     }
 
     context = c->context;
-    JSAutoRequest ar(context);
-    JSAutoCompartment ac(context, JS_GetFunctionObject(c->func));
+    JSAutoRealm ar(context, JS_GetFunctionObject(c->func));
 
     if (JS_IsExceptionPending(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "
@@ -295,7 +298,6 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
      * the context that created it.
      */
     c->context = context;
-    JS_BeginRequest(context);
 
     GJS_INC_COUNTER(closure);
 
@@ -317,8 +319,6 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
 
     gjs_debug_closure("Create closure %p which calls function %p '%s'", gc,
                       c->func.debug_addr(), description);
-
-    JS_EndRequest(context);
 
     return &gc->base;
 }

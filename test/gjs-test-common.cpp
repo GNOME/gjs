@@ -21,9 +21,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/ErrorReport.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>
 
 #include "test/gjs-test-common.h"
 

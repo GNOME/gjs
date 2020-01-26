@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <stdlib.h>  // for exit
 #include <string.h>  // for strcmp, memset, size_t
@@ -33,8 +35,19 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "mozilla/Maybe.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/GCVector.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
+#include <js/PropertySpec.h>
+#include <js/Realm.h>  // for GetRealmFunctionPrototype
+#include <js/RootingAPI.h>
+#include <js/Value.h>
+#include <js/Warnings.h>
+#include <jsapi.h>        // for HandleValueArray, JS_GetElement
+#include <jsfriendapi.h>  // for JS_GetObjectFunction
+#include <jspubtd.h>      // for JSProto_TypeError, JSTYPE_FUNCTION
+#include <mozilla/Maybe.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -229,9 +242,8 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
         return;
     }
 
-    JS_BeginRequest(context);
-    JSAutoCompartment ac(context, JS_GetFunctionObject(gjs_closure_get_callable(
-                                      trampoline->js_function)));
+    JSAutoRealm ar(context, JS_GetFunctionObject(gjs_closure_get_callable(
+                                trampoline->js_function)));
 
     bool can_throw_gerror = g_callable_info_can_throw_gerror(trampoline->info);
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -255,7 +267,7 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
     }
 
     n_outargs = 0;
-    JS::AutoValueVector jsargs(context);
+    JS::RootedValueVector jsargs(context);
 
     if (!jsargs.reserve(n_args))
         g_error("Unable to reserve space for vector");
@@ -474,8 +486,6 @@ out:
 
     gjs_callback_trampoline_unref(trampoline);
     gjs->schedule_gc_if_needed();
-
-    JS_EndRequest(context);
 }
 
 /* The global entry point for any invocations of GDestroyNotify;
@@ -803,7 +813,7 @@ gjs_invoke_c_function(JSContext                             *context,
     bool is_object_method = false;
     GITypeInfo return_info;
     GITypeTag return_tag;
-    JS::AutoValueVector return_values(context);
+    JS::RootedValueVector return_values(context);
     guint8 next_rval = 0; /* index into return_values */
 
     /* Because we can't free a closure while we're in it, we defer
@@ -829,9 +839,12 @@ gjs_invoke_c_function(JSContext                             *context,
      */
     if (args.length() > function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
-        JS_ReportWarningUTF8(context, "Too many arguments to %s: expected %d, "
-                             "got %" G_GSIZE_FORMAT, name.get(),
-                             function->expected_js_argc, args.length());
+        if (!JS::WarnUTF8(context,
+                          "Too many arguments to %s: expected %d, "
+                          "got %" G_GSIZE_FORMAT,
+                          name.get(), function->expected_js_argc,
+                          args.length()))
+            return false;
     } else if (args.length() < function->expected_js_argc) {
         GjsAutoChar name = format_function_name(function, is_method);
         gjs_throw(context, "Too few arguments to %s: "
@@ -1754,8 +1767,7 @@ GJS_USE
 static inline JSObject *
 gjs_builtin_function_get_proto(JSContext *cx)
 {
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
-    return JS_GetFunctionPrototype(cx, global);
+    return JS::GetRealmFunctionPrototype(cx);
 }
 
 GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(function, builtin_function)
@@ -1808,8 +1820,6 @@ gjs_define_function(JSContext       *context,
     bool free_name;
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
-
-    JSAutoRequest ar(context);
 
     JS::RootedObject function(context, function_new(context, gtype, info));
     if (!function)

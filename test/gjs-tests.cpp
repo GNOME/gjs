@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for size_t, strlen
 
 #include <string>  // for u16string, u32string
@@ -28,7 +30,12 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>
 
 #include "gjs/context.h"
 #include "gjs/error-types.h"
@@ -136,8 +143,8 @@ static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
     g_assert(js_string.isString());
 
-    JS::UniqueChars utf8_result;
-    g_assert(gjs_string_to_utf8(fx->cx, js_string, &utf8_result));
+    JS::UniqueChars utf8_result = gjs_string_to_utf8(fx->cx, js_string);
+    g_assert_nonnull(utf8_result);
     g_assert_cmpstr(VALID_UTF8_STRING, ==, utf8_result.get());
 }
 
@@ -159,9 +166,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     g_assert(value.isString());
 
-    JS::UniqueChars s;
-    bool ok = gjs_string_to_utf8(fx->cx, value, &s);
-    g_assert_true(ok);
+    JS::UniqueChars s = gjs_string_to_utf8(fx->cx, value);
     g_assert_nonnull(s);
     g_assert_cmpstr(s.get(), ==, "This is an exception 42");
 
@@ -326,42 +331,6 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
 }
 
 static void
-gjstest_test_strip_shebang_no_advance_for_no_shebang(void)
-{
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"foo\nbar", &line_number);
-
-    g_assert_cmpuint(offset, ==, 0);
-    g_assert_cmpuint(line_number, ==, 1);
-}
-
-static void gjstest_test_strip_shebang_no_advance_for_too_short_string(void) {
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"Z", &line_number);
-
-    g_assert_cmpuint(offset, ==, 0);
-    g_assert_cmpuint(line_number, ==, 1);
-}
-
-static void
-gjstest_test_strip_shebang_advance_for_shebang(void)
-{
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"#!foo\nbar", &line_number);
-
-    g_assert_cmpuint(offset, ==, 6);
-    g_assert_cmpuint(line_number, ==, 2);
-}
-
-static void gjstest_test_strip_shebang_advance_to_end_for_just_shebang(void) {
-    unsigned line_number = 1;
-    size_t offset = gjs_unix_shebang_len(u"#!foo", &line_number);
-
-    g_assert_cmpuint(offset, ==, 5);
-    g_assert_cmpuint(line_number, ==, 2);
-}
-
-static void
 gjstest_test_profiler_start_stop(void)
 {
     GjsAutoUnref<GjsContext> context =
@@ -403,12 +372,6 @@ main(int    argc,
                     gjstest_test_func_gjs_context_eval_non_zero_terminated);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
-    g_test_add_func("/gjs/jsutil/strip_shebang/no_shebang", gjstest_test_strip_shebang_no_advance_for_no_shebang);
-    g_test_add_func("/gjs/jsutil/strip_shebang/short_string",
-                    gjstest_test_strip_shebang_no_advance_for_too_short_string);
-    g_test_add_func("/gjs/jsutil/strip_shebang/have_shebang", gjstest_test_strip_shebang_advance_for_shebang);
-    g_test_add_func("/gjs/jsutil/strip_shebang/only_shebang",
-                    gjstest_test_strip_shebang_advance_to_end_for_just_shebang);
     g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
     g_test_add_func("/util/misc/strv/concat/null",
                     gjstest_test_func_util_misc_strv_concat_null);

@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <cstddef>        // for size_t
 #include <string>         // for string
 #include <unordered_set>  // for unordered_set
@@ -28,7 +30,14 @@
 
 #include <glib.h>  // for g_warning
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CharacterEncoding.h>
+#include <js/Conversions.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>        // for MaxFrames, CaptureCurrentStack
+#include <jsfriendapi.h>  // for FormatStackDump
 
 #include "gjs/deprecation.h"
 #include "gjs/macros.h"
@@ -74,7 +83,7 @@ struct hash<DeprecationEntry> {
 static std::unordered_set<DeprecationEntry> logged_messages;
 
 GJS_JSAPI_RETURN_CONVENTION
-static char* get_callsite(JSContext* cx) {
+static JS::UniqueChars get_callsite(JSContext* cx) {
     JS::RootedObject stack_frame(cx);
     if (!JS::CaptureCurrentStack(cx, &stack_frame,
                                  JS::StackCapture(JS::MaxFrames(1))) ||
@@ -97,8 +106,8 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
     JS::UniqueChars callsite(get_callsite(cx));
     DeprecationEntry entry(id, callsite.get());
     if (!logged_messages.count(entry)) {
-        JS::UniqueChars stack_dump = JS::FormatStackDump(cx, nullptr, false,
-            false, false);
+        JS::UniqueChars stack_dump =
+            JS::FormatStackDump(cx, false, false, false);
         g_warning("%s\n%s", messages[id], stack_dump.get());
         logged_messages.insert(std::move(entry));
     }

@@ -21,12 +21,22 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
+#include <js/RootingAPI.h>
+#include <js/SavedFrameAPI.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>    // for JS_DefinePropertyById, JS_GetProp...
+#include <jspubtd.h>  // for JSProtoKey, JSProto_Error, JSProt...
 
 #include "gi/boxed.h"
 #include "gi/enumeration.h"
@@ -286,13 +296,13 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
     uint32_t line, column;
 
     if (!JS::CaptureCurrentStack(cx, &frame) ||
-        !JS::BuildStackString(cx, frame, &stack))
+        !JS::BuildStackString(cx, nullptr, frame, &stack))
         return false;
 
     auto ok = JS::SavedFrameResult::Ok;
-    if (JS::GetSavedFrameSource(cx, frame, &source) != ok ||
-        JS::GetSavedFrameLine(cx, frame, &line) != ok ||
-        JS::GetSavedFrameColumn(cx, frame, &column) != ok) {
+    if (JS::GetSavedFrameSource(cx, nullptr, frame, &source) != ok ||
+        JS::GetSavedFrameLine(cx, nullptr, frame, &line) != ok ||
+        JS::GetSavedFrameColumn(cx, nullptr, frame, &column) != ok) {
         gjs_throw(cx, "Error getting saved frame information");
         return false;
     }
@@ -463,16 +473,16 @@ gjs_gerror_make_from_error(JSContext       *cx,
     if (!JS_GetPropertyById(cx, obj, atoms.name(), &v_name))
         return nullptr;
 
-    JS::UniqueChars name;
-    if (!gjs_string_to_utf8(cx, v_name, &name))
+    JS::UniqueChars name = gjs_string_to_utf8(cx, v_name);
+    if (!name)
         return nullptr;
 
     JS::RootedValue v_message(cx);
     if (!JS_GetPropertyById(cx, obj, atoms.message(), &v_message))
         return nullptr;
 
-    JS::UniqueChars message;
-    if (!gjs_string_to_utf8(cx, v_message, &message))
+    JS::UniqueChars message = gjs_string_to_utf8(cx, v_message);
+    if (!message)
         return nullptr;
 
     GjsAutoTypeClass<GEnumClass> klass(GJS_TYPE_JS_ERROR);
@@ -499,8 +509,6 @@ bool gjs_throw_gerror(JSContext* cx, GError* error) {
     // return false even if the GError is null, as presumably something failed
     // in the calling code, and the caller expects to throw.
     g_return_val_if_fail(error, false);
-
-    JSAutoRequest ar(cx);
 
     JS::RootedObject err_obj(cx, ErrorInstance::object_for_c_ptr(cx, error));
     if (!err_obj || !gjs_define_error_properties(cx, err_obj))

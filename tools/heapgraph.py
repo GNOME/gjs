@@ -158,7 +158,7 @@ def parse_roots(fobj):
                                                    key=wme.group(2),
                                                    keyDelegate=wme.group(3),
                                                    value=wme.group(4)))
-            # Skip comments, arenas, compartments and zones
+            # Skip comments, arenas, realms and zones
             elif line[0] == '#':
                 continue
             # Marks the end of the roots section
@@ -222,7 +222,7 @@ def parse_graph(fobj):
                         break
                 else:
                     addNode(node_addr, node_label)
-            # Skip comments, arenas, compartments and zones
+            # Skip comments, arenas, realms and zones
             elif line[0] == '#':
                 continue
             else:

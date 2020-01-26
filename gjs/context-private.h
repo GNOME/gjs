@@ -24,6 +24,8 @@
 #ifndef GJS_CONTEXT_PRIVATE_H_
 #define GJS_CONTEXT_PRIVATE_H_
 
+#include <config.h>
+
 #include <stdint.h>
 #include <sys/types.h>  // for ssize_t
 
@@ -33,8 +35,12 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"
+#include <js/GCHashTable.h>
+#include <js/GCVector.h>
+#include <js/Promise.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>        // for JS_GetContextPrivate
+#include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
 #include "gjs/atoms.h"
 #include "gjs/context.h"
@@ -42,7 +48,8 @@
 #include "gjs/macros.h"
 #include "gjs/profiler.h"
 
-using JobQueue = JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
+using JobQueueStorage =
+    JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using ObjectInitList =
     JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
@@ -68,7 +75,7 @@ template <>
 struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
 }  // namespace JS
 
-class GjsContextPrivate {
+class GjsContextPrivate : public JS::JobQueue {
     GjsContext* m_public_context;
     JSContext* m_cx;
     JS::Heap<JSObject*> m_global;
@@ -82,7 +89,7 @@ class GjsContextPrivate {
 
     GjsAtoms* m_atoms;
 
-    JobQueue m_job_queue;
+    JobQueueStorage m_job_queue;
     unsigned m_idle_drain_handler;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
@@ -126,7 +133,12 @@ class GjsContextPrivate {
 
     void schedule_gc_internal(bool force_gc);
     static gboolean trigger_gc_if_needed(void* data);
+
+    class SavedQueue;
+    void start_draining_job_queue(void);
+    void stop_draining_job_queue(void);
     static gboolean drain_job_queue_idle_handler(void* data);
+
     void warn_about_unhandled_promise_rejections(void);
 
     class AutoResetExit {
@@ -202,8 +214,20 @@ class GjsContextPrivate {
     void exit(uint8_t exit_code);
     GJS_USE bool should_exit(uint8_t* exit_code_p) const;
 
-    GJS_JSAPI_RETURN_CONVENTION bool enqueue_job(JS::HandleObject job);
-    GJS_JSAPI_RETURN_CONVENTION bool run_jobs(void);
+    // Implementations of JS::JobQueue virtual functions
+    GJS_JSAPI_RETURN_CONVENTION
+    JSObject* getIncumbentGlobal(JSContext* cx) override;
+    GJS_JSAPI_RETURN_CONVENTION
+    bool enqueuePromiseJob(JSContext* cx, JS::HandleObject promise,
+                           JS::HandleObject job,
+                           JS::HandleObject allocation_site,
+                           JS::HandleObject incumbent_global) override;
+    void runJobs(JSContext* cx) override;
+    GJS_USE bool empty(void) const override { return m_job_queue.empty(); };
+    js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
+        JSContext* cx) override;
+
+    GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
 

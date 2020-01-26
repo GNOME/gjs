@@ -22,11 +22,23 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <string.h>  // for strlen
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>  // for JSNative
+#include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_RESOLVING, JSPROP_GETTER
+#include <js/PropertySpec.h>
+#include <js/Realm.h>  // for GetRealmObjectPrototype
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>        // for JS_DefineFunctions, JS_DefineProp...
+#include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
+#include <jspubtd.h>      // for JSProto_TypeError
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -54,8 +66,6 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
     /* gjs_init_class_dynamic only makes sense for instantiable classes,
        use JS_InitClass for static classes like Math */
     g_assert (constructor_native != NULL);
-
-    JSAutoRequest ar(context);
 
     /* Class initalization consists of five parts:
        - building a prototype
@@ -166,8 +176,6 @@ gjs_construct_object_dynamic(JSContext                  *context,
                              JS::HandleObject            proto,
                              const JS::HandleValueArray& args)
 {
-    JSAutoRequest ar(context);
-
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject constructor(context);
 
@@ -244,9 +252,8 @@ gjs_define_property_dynamic(JSContext       *cx,
 
     flags |= JSPROP_GETTER | JSPROP_SETTER;
 
-    return JS_DefineProperty(
-        cx, proto, prop_name, JS_DATA_TO_FUNC_PTR(JSNative, getter_obj.get()),
-        JS_DATA_TO_FUNC_PTR(JSNative, setter_obj.get()), flags);
+    return JS_DefineProperty(cx, proto, prop_name, getter_obj, setter_obj,
+                             flags);
 }
 
 /**
@@ -282,7 +289,7 @@ gjs_dynamic_property_private_slot(JSObject *accessor_obj)
 bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,
                                    JS::HandleObject check_obj,
                                    bool* is_in_chain) {
-    JS::RootedObject object_prototype(cx, JS_GetObjectPrototype(cx, check_obj));
+    JS::RootedObject object_prototype(cx, JS::GetRealmObjectPrototype(cx));
     if (!object_prototype)
         return false;
 

@@ -26,13 +26,12 @@
 
 #include <stddef.h>  // for size_t
 
-#include "gjs/jsapi-wrapper.h"
-
 class GjsContextPrivate;
+struct JSContext;
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 
-bool gjs_load_internal_source(JSContext* cx, const char* filename,
-                              JS::UniqueTwoByteChars* src, size_t* length);
+bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
+                              size_t* length);
 
 #endif  // GJS_ENGINE_H_

@@ -24,11 +24,17 @@
 #ifndef GI_CLOSURE_H_
 #define GI_CLOSURE_H_
 
+#include <config.h>
+
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
+
+namespace JS {
+class HandleValueArray;
+}
 
 GJS_USE
 GClosure* gjs_closure_new(JSContext* cx, JSFunction* callable,

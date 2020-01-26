@@ -43,7 +43,13 @@
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>  // for JS_DefineFunctions, JS_NewStringCopyZ
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -56,7 +62,7 @@
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSAutoRequest ar(cx);
+
     int32_t exitcode;
     if (!gjs_parse_call_args(cx, "quit", args, "i", "exitcode", &exitcode))
         return false;
@@ -69,7 +75,6 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    JSAutoRequest ar(cx);
 
     JS::UniqueChars prompt;
     if (!gjs_parse_call_args(cx, "readline", args, "|s", "prompt", &prompt))
@@ -128,13 +133,12 @@ static JSFunctionSpec debugger_funcs[] = {
 
 void gjs_context_setup_debugger_console(GjsContext* gjs) {
     auto cx = static_cast<JSContext*>(gjs_context_get_native_context(gjs));
-    JSAutoRequest ar(cx);
 
     JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
-    JS::RootedObject debugger_compartment(cx, gjs_create_global_object(cx));
+    JS::RootedObject debugger_global(cx, gjs_create_global_object(cx));
 
-    /* Enter compartment of the debugger and initialize it with the debuggee */
-    JSAutoCompartment compartment(cx, debugger_compartment);
+    // Enter realm of the debugger and initialize it with the debuggee
+    JSAutoRealm ar(cx, debugger_global);
     JS::RootedObject debuggee_wrapper(cx, debuggee);
     if (!JS_WrapObject(cx, &debuggee_wrapper)) {
         gjs_log_exception(cx);
@@ -143,10 +147,9 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
-    if (!JS_SetPropertyById(cx, debugger_compartment, atoms.debuggee(),
-                            v_wrapper) ||
-        !JS_DefineFunctions(cx, debugger_compartment, debugger_funcs) ||
-        !gjs_define_global_properties(cx, debugger_compartment, "GJS debugger",
+    if (!JS_SetPropertyById(cx, debugger_global, atoms.debuggee(), v_wrapper) ||
+        !JS_DefineFunctions(cx, debugger_global, debugger_funcs) ||
+        !gjs_define_global_properties(cx, debugger_global, "GJS debugger",
                                       "debugger"))
         gjs_log_exception(cx);
 }

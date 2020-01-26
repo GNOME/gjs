@@ -22,10 +22,14 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
@@ -36,10 +40,8 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
     fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
 
-    JS_BeginRequest(fx->cx);
-
     JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
-    fx->compartment = JS_EnterCompartment(fx->cx, global);
+    fx->realm = JS::EnterRealm(fx->cx, global);
 }
 
 void
@@ -49,8 +51,7 @@ gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
     if (message)
         g_printerr("**\n%s\n", message.get());
 
-    JS_LeaveCompartment(fx->cx, fx->compartment);
-    JS_EndRequest(fx->cx);
+    JS::LeaveRealm(fx->cx, fx->realm);
 
     g_object_unref(fx->gjs_context);
 }

@@ -25,6 +25,8 @@
 #ifndef GI_WRAPPERUTILS_H_
 #define GI_WRAPPERUTILS_H_
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <new>
@@ -34,7 +36,13 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/MemoryFunctions.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_GetPrivate, JS_SetPrivate, JS_Ge...
+#include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -42,6 +50,9 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
+
+struct JSFunctionSpec;
+struct JSPropertySpec;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
@@ -61,6 +72,10 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 
 namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct, Union };
+}
+
+namespace MemoryUse {
+constexpr JS::MemoryUse GObjectInstanceStruct = JS::MemoryUse::Embedding1;
 }
 
 struct GjsTypecheckNoThrow {};
@@ -157,7 +172,6 @@ class GIWrapperBase {
      * if not. */
     GJS_USE
     static Base* for_js(JSContext* cx, JS::HandleObject wrapper) {
-        JSAutoRequest ar(cx);
         return static_cast<Base*>(
             JS_GetInstancePrivate(cx, wrapper, &Base::klass, nullptr));
     }
@@ -186,7 +200,6 @@ class GIWrapperBase {
     static Base* for_js_typecheck(
         JSContext* cx, JS::HandleObject wrapper,
         JS::CallArgs& args) {  // NOLINT(runtime/references)
-        JSAutoRequest ar(cx);
         return static_cast<Base*>(
             JS_GetInstancePrivate(cx, wrapper, &Base::klass, &args));
     }
@@ -348,10 +361,9 @@ class GIWrapperBase {
      * Prototype::new_enumerate_impl() method.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    static bool new_enumerate(
-        JSContext* cx, JS::HandleObject obj,
-        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
-        bool only_enumerable) {
+    static bool new_enumerate(JSContext* cx, JS::HandleObject obj,
+                              JS::MutableHandleIdVector properties,
+                              bool only_enumerable) {
         Base* priv = Base::for_js(cx, obj);
 
         priv->debug_jsprop("Enumerate hook", "(all)", obj);

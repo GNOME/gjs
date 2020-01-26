@@ -105,7 +105,6 @@ jasmine_tests = [
     'LegacyByteArray',
     'LegacyClass',
     'LegacyGObject',
-    'Locale',
     'Mainloop',
     'Namespace',
     'Package',

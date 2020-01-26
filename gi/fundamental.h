@@ -25,10 +25,14 @@
 #ifndef GI_FUNDAMENTAL_H_
 #define GI_FUNDAMENTAL_H_
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Id.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
@@ -36,6 +40,10 @@
 
 class FundamentalPrototype;
 class FundamentalInstance;
+namespace JS {
+class CallArgs;
+class HandleValueArray;
+}  // namespace JS
 
 /* To conserve memory, we have two different kinds of private data for JS
  * wrappers for fundamental types: FundamentalInstance, and

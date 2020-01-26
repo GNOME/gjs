@@ -40,12 +40,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <config.h>
+
 #include <stdio.h>  // for stderr
 
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
+#include <jsfriendapi.h>  // for DumpBacktrace
 
 #include "gjs/context.h"
 

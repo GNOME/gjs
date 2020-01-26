@@ -109,7 +109,7 @@ gio = dependency('gio-2.0', version: glib_required_version,
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
     fallback: ['gobject-introspection', 'girepo_dep'])
-spidermonkey = dependency('mozjs-60')
+spidermonkey = dependency('mozjs-68')
 
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC builds...
@@ -201,8 +201,7 @@ nondebug_spidermonkey = cxx.compiles('''
     name: 'SpiderMonkey is a non-debug build')
 
 if not nondebug_spidermonkey
-    debug_arg = ['-DDEBUG=1']  # for compile tests
-    add_project_arguments('-DDEBUG=1', language: 'cpp')
+    debug_arg = ['-DDEBUG']  # for compile tests
 endif
 
 if get_option('buildtype').startswith('release') and not nondebug_spidermonkey
@@ -270,7 +269,9 @@ header_conf.set('ENABLE_CAIRO', build_cairo,
     description: 'Build with Cairo support')
 header_conf.set('ENABLE_PROFILER', build_profiler,
     description: 'Build the profiler')
-header_conf.set('HAVE_DEBUG_SPIDERMONKEY', not nondebug_spidermonkey,
+# COMPAT: SpiderMonkey headers in some places use DEBUG instead of JS_DEBUG
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1261161 */
+header_conf.set('DEBUG', not nondebug_spidermonkey,
     description: 'SpiderMonkey was compiled with --enable-debug')
 header_conf.set('HAVE_DTRACE', get_option('dtrace'),
     description: 'Using dtrace probes')
@@ -405,7 +406,6 @@ libgjs_jsapi_sources = [
     'gjs/jsapi-util-root.h',
     'gjs/jsapi-util-string.cpp',
     'gjs/jsapi-util.cpp', 'gjs/jsapi-util.h',
-    'gjs/jsapi-wrapper.h',
     'util/log.cpp', 'util/log.h',
     'util/misc.cpp', 'util/misc.h',
 ]

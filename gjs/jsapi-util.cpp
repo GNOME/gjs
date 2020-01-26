@@ -22,6 +22,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdio.h>   // for sscanf
 #include <string.h>  // for strlen
 
@@ -32,8 +34,19 @@
 
 #include <codecvt>  // for codecvt_utf8_utf16
 #include <locale>   // for wstring_convert
+#include <utility>  // for move
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/Conversions.h>
+#include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
+#include <js/GCVector.h>  // for RootedVector
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>        // for JS_GetPropertyById, JS_ClearPendin...
+#include <jsfriendapi.h>  // for ProtoKeyToClass
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -65,8 +78,6 @@ throw_property_lookup_error(JSContext       *cx,
  *
  * SpiderMonkey will emit a warning if the property is not present, so don't
  * use this if you expect the property not to be present some of the time.
- *
- * Requires request.
  */
 bool
 gjs_object_require_property(JSContext             *context,
@@ -126,15 +137,19 @@ gjs_object_require_property(JSContext       *cx,
     return false;
 }
 
-/* Converts JS string value to UTF-8 string. value must be freed with JS_free. */
+/* Converts JS string value to UTF-8 string. */
 bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
                                  const char* description,
                                  JS::HandleId property_name,
                                  JS::UniqueChars* value) {
     JS::RootedValue prop_value(cx);
-    if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
-        gjs_string_to_utf8(cx, prop_value, value))
-        return true;
+    if (JS_GetPropertyById(cx, obj, property_name, &prop_value)) {
+        JS::UniqueChars tmp = gjs_string_to_utf8(cx, prop_value);
+        if (tmp) {
+            *value = std::move(tmp);
+            return true;
+        }
+    }
 
     throw_property_lookup_error(cx, obj, description, property_name,
                                 "it was not a valid string");
@@ -213,7 +228,7 @@ gjs_build_string_array(JSContext   *context,
     if (array_length == -1)
         array_length = g_strv_length(array_values);
 
-    JS::AutoValueVector elems(context);
+    JS::RootedValueVector elems(context);
     if (!elems.reserve(array_length)) {
         JS_ReportOutOfMemory(context);
         return nullptr;
@@ -237,8 +252,6 @@ gjs_define_string_array(JSContext       *context,
                         const char     **array_values,
                         unsigned         attrs)
 {
-    JSAutoRequest ar(context);
-
     JS::RootedObject array(context,
         gjs_build_string_array(context, array_length, (char **) array_values));
 
@@ -267,8 +280,6 @@ gjs_string_readable(JSContext       *context,
 {
     GString *buf = g_string_new("");
 
-    JS_BeginRequest(context);
-
     g_string_append_c(buf, '"');
 
     JS::UniqueChars chars(JS_EncodeStringToUTF8(context, string));
@@ -290,8 +301,6 @@ gjs_string_readable(JSContext       *context,
     }
 
     g_string_append_c(buf, '"');
-
-    JS_EndRequest(context);
 
     return g_string_free(buf, false);
 }
@@ -347,16 +356,11 @@ char*
 gjs_value_debug_string(JSContext      *context,
                        JS::HandleValue value)
 {
-    char *bytes;
-    char *debugstr;
-
     /* Special case debug strings for strings */
     if (value.isString()) {
         JS::RootedString str(context, value.toString());
         return gjs_string_readable(context, str);
     }
-
-    JS_BeginRequest(context);
 
     JS::RootedString str(context, JS::ToString(context, value));
 
@@ -374,30 +378,21 @@ gjs_value_debug_string(JSContext      *context,
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
-                if (!str) {
-                    JS_EndRequest(context);
+                if (!str)
                     return g_strdup("[out of memory copying class name]");
-                }
             } else {
                 gjs_log_exception(context);
-                JS_EndRequest(context);
                 return g_strdup("[unknown object]");
             }
         } else {
-            JS_EndRequest(context);
             return g_strdup("[unknown non-object]");
         }
     }
 
     g_assert(str);
 
-    bytes = JS_EncodeStringToUTF8(context, str);
-    JS_EndRequest(context);
-
-    debugstr = _gjs_g_utf8_make_valid(bytes);
-    JS_free(context, bytes);
-
-    return debugstr;
+    JS::UniqueChars bytes = JS_EncodeStringToUTF8(context, str);
+    return _gjs_g_utf8_make_valid(bytes.get());
 }
 
 bool
@@ -408,12 +403,11 @@ gjs_log_exception_full(JSContext       *context,
     bool is_syntax;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
-    JS_BeginRequest(context);
     JS::RootedObject exc_obj(context);
     JS::RootedString exc_str(context, JS::ToString(context, exc));
     JS::UniqueChars utf8_exception;
     if (exc_str)
-        utf8_exception.reset(JS_EncodeStringToUTF8(context, exc_str));
+        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
     if (!utf8_exception)
         JS_ClearPendingException(context);
 
@@ -427,7 +421,7 @@ gjs_log_exception_full(JSContext       *context,
 
     JS::UniqueChars utf8_message;
     if (message)
-        utf8_message.reset(JS_EncodeStringToUTF8(context, message));
+        utf8_message = JS_EncodeStringToUTF8(context, message);
 
     /* We log syntax errors differently, because the stack for those includes
        only the referencing module, but we want to print out the filename and
@@ -445,19 +439,20 @@ gjs_log_exception_full(JSContext       *context,
         JS::UniqueChars utf8_filename;
         if (js_fileName.isString()) {
             JS::RootedString str(context, js_fileName.toString());
-            utf8_filename.reset(JS_EncodeStringToUTF8(context, str));
+            utf8_filename = JS_EncodeStringToUTF8(context, str);
         }
-        if (!utf8_filename)
-            utf8_filename.reset(JS_strdup(context, "unknown"));
 
         lineNumber = js_lineNumber.toInt32();
 
         if (message) {
             g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(),
-                       utf8_exception.get(), utf8_filename.get(), lineNumber);
+                       utf8_exception.get(),
+                       utf8_filename ? utf8_filename.get() : "unknown",
+                       lineNumber);
         } else {
             g_critical("JS ERROR: %s @ %s:%u", utf8_exception.get(),
-                       utf8_filename.get(), lineNumber);
+                       utf8_filename ? utf8_filename.get() : "unknown",
+                       lineNumber);
         }
 
     } else {
@@ -468,7 +463,7 @@ gjs_log_exception_full(JSContext       *context,
             JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack) &&
             stack.isString()) {
             JS::RootedString str(context, stack.toString());
-            utf8_stack.reset(JS_EncodeStringToUTF8(context, str));
+            utf8_stack = JS_EncodeStringToUTF8(context, str);
         }
 
         if (message) {
@@ -487,32 +482,20 @@ gjs_log_exception_full(JSContext       *context,
         }
     }
 
-    JS_EndRequest(context);
-
     return true;
 }
 
 bool
 gjs_log_exception(JSContext  *context)
 {
-    bool retval = false;
-
-    JS_BeginRequest(context);
-
     JS::RootedValue exc(context);
     if (!JS_GetPendingException(context, &exc))
-        goto out;
+        return false;
 
     JS_ClearPendingException(context);
 
     gjs_log_exception_full(context, exc, nullptr);
-
-    retval = true;
-
- out:
-    JS_EndRequest(context);
-
-    return retval;
+    return true;
 }
 
 #ifdef __linux__
@@ -582,7 +565,7 @@ gjs_gc_if_needed (JSContext *context)
          */
         if (rss_size > linux_rss_trigger) {
             linux_rss_trigger = (gulong) MIN(G_MAXULONG, rss_size * 1.25);
-            JS::GCForReason(context, GC_SHRINK, JS::gcreason::Reason::API);
+            JS::NonIncrementalGC(context, GC_SHRINK, JS::GCReason::API);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */
             linux_rss_trigger = (rss_size * 1.25);
@@ -603,38 +586,6 @@ gjs_maybe_gc (JSContext *context)
 {
     JS_MaybeGC(context);
     gjs_gc_if_needed(context);
-}
-
-/**
- * gjs_unix_shebang_len:
- *
- * @script: A JS script
- * @start_line_number: (out): the new start-line number to account for the
- * offset as a result of stripping the shebang; can be either 1 or 2.
- *
- * Returns the offset in @script where the actual script begins with Unix
- * shebangs removed. The outparam is useful to know what line of the
- * original script we're executing from, so that any relevant
- * offsets can be applied to the results of an execution pass.
- */
-size_t gjs_unix_shebang_len(const std::u16string& script,
-                            unsigned* start_line_number) {
-    g_assert(start_line_number);
-
-    if (script.compare(0, 2, u"#!") != 0) {
-        // No shebang, leave the script unchanged
-        *start_line_number = 1;
-        return 0;
-    }
-
-    *start_line_number = 2;
-
-    size_t newline_pos = script.find('\n', 2);
-    if (newline_pos == std::u16string::npos)
-        return script.size();  // Script consists only of a shebang line
-
-    // Point the offset after the newline
-    return newline_pos + 1;
 }
 
 /**

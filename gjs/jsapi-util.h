@@ -24,6 +24,8 @@
 #ifndef GJS_JSAPI_UTIL_H_
 #define GJS_JSAPI_UTIL_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <sys/types.h>  // for ssize_t
@@ -35,9 +37,17 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jspubtd.h>     // for JSProtoKey
 
 #include "gjs/macros.h"
+
+class JSErrorReport;
+namespace JS {
+class CallArgs;
+}
 
 struct GjsAutoTakeOwnership {};
 
@@ -188,9 +198,11 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
  * A convenience macro for getting the 'this' object a function was called with.
  * Use in any JSNative function.
  */
-#define GJS_GET_THIS(cx, argc, vp, args, to)                   \
-    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);          \
-    JS::RootedObject to(cx, &args.computeThis(cx).toObject())
+#define GJS_GET_THIS(cx, argc, vp, args, to)          \
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp); \
+    JS::RootedObject to(cx);                          \
+    if (!args.computeThis(cx, &to))                   \
+        return false;
 
 GJS_USE
 JSObject*   gjs_get_import_global            (JSContext       *context);
@@ -238,8 +250,7 @@ char *gjs_value_debug_string(JSContext      *context,
 void gjs_warning_reporter(JSContext*, JSErrorReport* report);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_to_utf8(JSContext* cx, const JS::Value string_val,
-                        JS::UniqueChars* utf8_string_p);
+JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value string_val);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
@@ -294,9 +305,6 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 void gjs_maybe_gc (JSContext *context);
 void gjs_gc_if_needed(JSContext *cx);
 
-GJS_USE
-size_t gjs_unix_shebang_len(const std::u16string& script,
-                            unsigned* start_line_number);
 GJS_USE
 std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len);
 

@@ -1,6 +1,13 @@
+#include <config.h>
+
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/GCAPI.h>  // for JS_GC, JS_SetGCCallback, JSGCStatus
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>  // for JS_GetPrivate, JS_NewObject, JS_Set...
 
 #include "gjs/jsapi-util-root.h"
 #include "test/gjs-test-utils.h"
@@ -128,13 +135,23 @@ static void test_maybe_owned_rooted_is_collected_after_reset(
     delete obj;
 }
 
+static void update_weak_pointer(JSContext*, JS::Compartment*, void* data) {
+    auto* obj = static_cast<GjsMaybeOwned<JSObject*>*>(data);
+    if (*obj)
+        obj->update_after_gc();
+}
+
 static void test_maybe_owned_weak_pointer_is_collected_by_gc(
     GjsRootingFixture* fx, const void*) {
     auto obj = new GjsMaybeOwned<JSObject *>();
     *obj = test_obj_new(fx);
 
+    JS_AddWeakPointerCompartmentCallback(PARENT(fx)->cx, &update_weak_pointer,
+                                         obj);
     wait_for_gc(fx);
     g_assert_true(fx->finalized);
+    JS_RemoveWeakPointerCompartmentCallback(PARENT(fx)->cx,
+                                            &update_weak_pointer);
     delete obj;
 }
 
@@ -188,8 +205,12 @@ static void test_maybe_owned_switch_to_unrooted_allows_collection(
     obj->root(PARENT(fx)->cx, test_obj_new(fx));
 
     obj->switch_to_unrooted(PARENT(fx)->cx);
+    JS_AddWeakPointerCompartmentCallback(PARENT(fx)->cx, &update_weak_pointer,
+                                         obj);
     wait_for_gc(fx);
     g_assert_true(fx->finalized);
+    JS_RemoveWeakPointerCompartmentCallback(PARENT(fx)->cx,
+                                            &update_weak_pointer);
 
     delete obj;
 }

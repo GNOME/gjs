@@ -24,9 +24,11 @@
 #ifndef GI_FOREIGN_H_
 #define GI_FOREIGN_H_
 
+#include <config.h>
+
 #include <girepository.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gi/arg.h"
 #include "gjs/macros.h"

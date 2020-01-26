@@ -25,6 +25,8 @@
 #ifndef GJS_JSAPI_UTIL_ROOT_H_
 #define GJS_JSAPI_UTIL_ROOT_H_
 
+#include <config.h>
+
 #include <stdint.h>  // for uintptr_t
 
 #include <cstddef>  // for nullptr_t
@@ -35,7 +37,8 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
 
 #include "gjs/context-private.h"
 #include "gjs/context.h"
@@ -93,7 +96,7 @@ struct GjsHeapOperation<JSObject *> {
         /* If the object has been swept already, then the zone is nullptr */
         if (!obj || !js::gc::detail::GetGCThingZone(uintptr_t(obj)))
             return;
-        if (!JS::CurrentThreadIsHeapCollecting())
+        if (!JS::RuntimeHeapIsCollecting())
             JS::ExposeObjectToActiveJS(obj);
     }
 };
@@ -104,7 +107,7 @@ struct GjsHeapOperation<JSFunction*> {
         JSFunction* func = thing.unbarrieredGet();
         if (!func || !js::gc::detail::GetGCThingZone(uintptr_t(func)))
             return;
-        if (!JS::CurrentThreadIsHeapCollecting())
+        if (!JS::RuntimeHeapIsCollecting())
             js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(func));
     }
 };
@@ -246,7 +249,7 @@ class GjsMaybeOwned {
     {
         debug("root()");
         g_assert(!m_root);
-        g_assert(m_heap.get() == JS::GCPolicy<T>::initial());
+        g_assert(m_heap.get() == JS::SafelyInitialized<T>());
         m_heap.~Heap();
         m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
 
@@ -275,7 +278,7 @@ class GjsMaybeOwned {
     void reset() {
         debug("reset()");
         if (!m_root) {
-            m_heap = JS::GCPolicy<T>::initial();
+            m_heap = JS::SafelyInitialized<T>();
             return;
         }
 
@@ -292,7 +295,6 @@ class GjsMaybeOwned {
 
         /* Prevent the thing from being garbage collected while it is in neither
          * m_heap nor m_root */
-        JSAutoRequest ar(cx);
         JS::Rooted<T> thing(cx, m_heap);
 
         reset();
@@ -306,7 +308,6 @@ class GjsMaybeOwned {
 
         /* Prevent the thing from being garbage collected while it is in neither
          * m_heap nor m_root */
-        JSAutoRequest ar(cx);
         JS::Rooted<T> thing(cx, *m_root);
 
         reset();
@@ -328,7 +329,7 @@ class GjsMaybeOwned {
     /* If not tracing, then you must call this method during GC in order to
      * update the object's location if it was moved, or null it out if it was
      * finalized. If the object was finalized, returns true. */
-    GJS_USE bool update_after_gc() {
+    bool update_after_gc() {
         debug("update_after_gc()");
         g_assert(!m_root);
         return GjsHeapOperation<T>::update_after_gc(&m_heap);

@@ -23,17 +23,35 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
+#include <js/Class.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/Conversions.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
+#include <js/PropertySpec.h>
+#include <js/RealmOptions.h>
+#include <js/SourceText.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for AutoSaveExceptionState, ...
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
@@ -44,20 +62,23 @@ run_bootstrap(JSContext       *cx,
     GjsAutoChar uri = g_strdup_printf(
         "resource:///org/gnome/gjs/modules/_bootstrap/%s.js", bootstrap_script);
 
-    JSAutoCompartment ac(cx, global);
+    JSAutoRealm ar(cx, global);
 
     JS::CompileOptions options(cx);
-    options.setUTF8(true)
-           .setFileAndLine(uri, 1)
-           .setSourceIsLazy(true);
+    options.setFileAndLine(uri, 1).setSourceIsLazy(true);
 
-    JS::UniqueTwoByteChars script;
+    char* script;
     size_t script_len;
-    if (!gjs_load_internal_source(cx, uri.get(), &script, &script_len))
+    if (!gjs_load_internal_source(cx, uri, &script, &script_len))
         return false;
 
-    JS::RootedScript compiled_script(cx);
-    if (!JS::Compile(cx, options, script.get(), script_len, &compiled_script))
+    JS::SourceText<mozilla::Utf8Unit> source;
+    if (!source.init(cx, script, script_len,
+                     JS::SourceOwnership::TakeOwnership))
+        return false;
+
+    JS::RootedScript compiled_script(cx, JS::Compile(cx, options, source));
+    if (!compiled_script)
         return false;
 
     JS::RootedValue ignored(cx);
@@ -76,8 +97,6 @@ gjs_log(JSContext *cx,
         gjs_throw(cx, "Must pass a single argument to log()");
         return false;
     }
-
-    JSAutoRequest ar(cx);
 
     /* JS::ToString might throw, in which case we will only log that the value
      * could not be converted to string */
@@ -113,8 +132,6 @@ gjs_log_error(JSContext *cx,
         return false;
     }
 
-    JSAutoRequest ar(cx);
-
     JS::RootedString jstr(cx);
 
     if (argc == 2) {
@@ -139,8 +156,6 @@ gjs_print_parse_args(JSContext              *cx,
 {
     GString *str;
     guint n;
-
-    JSAutoRequest ar(cx);
 
     str = g_string_new("");
     for (n = 0; n < argv.length(); ++n) {
@@ -210,25 +225,10 @@ gjs_printerr(JSContext *context,
 }
 
 class GjsGlobal {
-    // clang-format off
-    static constexpr JSClassOps class_ops = {
-        nullptr,  // addProperty
-        nullptr,  // deleteProperty
-        nullptr,  // enumerate
-        JS_NewEnumerateStandardClasses,
-        JS_ResolveStandardClass,
-        JS_MayResolveStandardClass,
-        nullptr,  // finalize
-        nullptr,  // call
-        nullptr,  // hasInstance
-        nullptr,  // construct
-        JS_GlobalObjectTraceHook};
-    // clang-format on
-
     static constexpr JSClass klass = {
         "GjsGlobal",
         JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
-        &GjsGlobal::class_ops,
+        &JS::DefaultGlobalClassOps,
     };
 
     static constexpr JSFunctionSpec static_funcs[] = {
@@ -243,14 +243,14 @@ class GjsGlobal {
     static JSObject *
     create(JSContext *cx)
     {
-        JS::CompartmentOptions compartment_options;
-        JS::RootedObject global(cx,
-            JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
-                               JS::FireOnNewGlobalHook, compartment_options));
+        JS::RealmOptions options;
+        JS::RootedObject global(
+            cx, JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
+                                   JS::FireOnNewGlobalHook, options));
         if (!global)
             return nullptr;
 
-        JSAutoCompartment ac(cx, global);
+        JSAutoRealm ar(cx, global);
 
         if (!JS_InitReflectParse(cx, global) ||
             !JS_DefineDebuggerObject(cx, global))
@@ -261,7 +261,7 @@ class GjsGlobal {
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* compartment_name,
+                                  const char* realm_name,
                                   const char* bootstrap_script) {
         const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
         if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
@@ -269,10 +269,10 @@ class GjsGlobal {
             !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
             return false;
 
-        JSCompartment* compartment = js::GetObjectCompartment(global);
-        // const_cast is allowed here if we never free the compartment data
-        JS_SetCompartmentPrivate(compartment,
-                                 const_cast<char*>(compartment_name));
+        JS::Realm* realm = JS::GetObjectRealmOrNull(global);
+        g_assert(realm && "Global object must be associated with a realm");
+        // const_cast is allowed here if we never free the realm data
+        JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
 
         JS::Value v_importer = gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS);
         g_assert(((void) "importer should be defined before passing null "
@@ -280,8 +280,7 @@ class GjsGlobal {
                   v_importer.isObject()));
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
-        /* Wrapping is a no-op if the importer is already in the same
-         * compartment. */
+        // Wrapping is a no-op if the importer is already in the same realm.
         if (!JS_WrapObject(cx, &root_importer) ||
             !JS_DefinePropertyById(cx, global, atoms.imports(), root_importer,
                                    GJS_MODULE_PROP_FLAGS))
@@ -315,7 +314,7 @@ gjs_create_global_object(JSContext *cx)
  * gjs_define_global_properties:
  * @cx: a #JSContext
  * @global: a JS global object that has not yet been passed to this function
- * @compartment_name: (nullable): name of the compartment, for debug output
+ * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
  * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or %NULL for
  * none
@@ -330,17 +329,17 @@ gjs_create_global_object(JSContext *cx)
  * root importer in between calling gjs_create_global_object() and
  * gjs_define_global_properties().
  *
- * The caller of this function should be in the compartment for @global.
- * If the root importer object belongs to a different compartment, this
- * function will create a cross-compartment wrapper for it.
+ * The caller of this function should be in the realm for @global.
+ * If the root importer object belongs to a different realm, this function will
+ * create a wrapper for it.
  *
  * Returns: true on success, false otherwise, in which case an exception is
  * pending on @cx
  */
 bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* compartment_name,
+                                  const char* realm_name,
                                   const char* bootstrap_script) {
-    return GjsGlobal::define_properties(cx, global, compartment_name,
+    return GjsGlobal::define_properties(cx, global, realm_name,
                                         bootstrap_script);
 }
 
@@ -361,6 +360,5 @@ gjs_get_global_slot(JSContext    *cx,
     return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
-decltype(GjsGlobal::class_ops) constexpr GjsGlobal::class_ops;
 decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
 decltype(GjsGlobal::static_funcs) constexpr GjsGlobal::static_funcs;

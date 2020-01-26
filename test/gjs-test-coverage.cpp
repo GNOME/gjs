@@ -710,10 +710,10 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    const char * expected_function_names[] = {
-        "top-level",
-        "f",
+    const char* expected_function_names[] = {
         "b",
+        "f",
+        "top-level",
     };
     const gsize expected_function_names_len = G_N_ELEMENTS(expected_function_names);
 
@@ -758,10 +758,10 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
                                           fixture->coverage,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
-    const char * const expected_function_lines[] = {
+    const char* const expected_function_lines[] = {
+        "3",
         "1",
         "1",
-        "3"
     };
     const gsize expected_function_lines_len = G_N_ELEMENTS(expected_function_lines);
 
@@ -844,9 +844,9 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
-        { "top-level", 1 },
-        { "f", 1 },
-        { "b", 1 },
+        {"b", 1},
+        {"f", 1},
+        {"top-level", 1},
     };
 
     const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
@@ -889,9 +889,9 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
-        { "top-level", 1 },
-        { "f", 1 },
-        { "b", 1 },
+        {"b", 1},
+        {"f", 1},
+        {"top-level", 1},
     };
 
     const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
@@ -929,9 +929,9 @@ static void test_function_hit_counts_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
-        { "top-level", 1 },
-        { "f", 1 },
-        { "b", 1 },
+        {"b", 1},
+        {"f", 1},
+        {"top-level", 1},
     };
 
     const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);

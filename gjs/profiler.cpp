@@ -53,8 +53,8 @@
 #    include <sysprof-capture.h>
 #endif
 
-#include "gjs/jsapi-wrapper.h"  // IWYU pragma: keep
-#include "js/ProfilingStack.h"  // for EnableContextProfilingStack, ...
+#include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
+#include <js/TypeDecls.h>
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
@@ -103,7 +103,7 @@ struct _GjsProfiler {
      * information while executing. We will look into this during our
      * SIGPROF handler.
      */
-    PseudoStack stack;
+    ProfilingStack stack;
 
     /* The context being profiled */
     JSContext *cx;
@@ -270,7 +270,7 @@ _gjs_profiler_free(GjsProfiler *self)
     if (self->fd != -1)
         close(self->fd);
 
-    self->stack.~PseudoStack();
+    self->stack.~ProfilingStack();
 #endif
     g_free(self);
 }
@@ -328,7 +328,7 @@ static void gjs_profiler_sigprof(int signum G_GNUC_UNUSED, siginfo_t* info,
         static_cast<SysprofCaptureAddress*>(alloca(sizeof *addrs * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {
-        js::ProfileEntry& entry = self->stack.entries[ix];
+        js::ProfilingStackFrame& entry = self->stack.frames[ix];
         const char *label = entry.label();
         const char *dynamic_string = entry.dynamicString();
         uint32_t flipped = depth - 1 - ix;

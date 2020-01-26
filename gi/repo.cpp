@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>  // for strlen
 
@@ -28,7 +30,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/Class.h>
+#include <js/Id.h>                  // for JSID_IS_STRING, JSID_VOID
+#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <js/Warnings.h>
+#include <jsapi.h>  // for JS_DefinePropertyById, JS_GetProp...
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -49,6 +59,9 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
+
+struct JSFunctionSpec;
+struct JSPropertySpec;
 
 typedef struct {
     void *dummy;
@@ -89,8 +102,6 @@ static bool resolve_namespace_object(JSContext* context,
                                      JS::HandleId ns_id) {
     GError *error;
 
-    JSAutoRequest ar(context);
-
     JS::UniqueChars version;
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
@@ -106,13 +117,12 @@ static bool resolve_namespace_object(JSContext* context,
     GList* versions = g_irepository_enumerate_versions(nullptr, ns_name.get());
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
-        !g_irepository_is_registered(nullptr, ns_name.get(), nullptr)) {
-        GjsAutoChar warn_text = g_strdup_printf(
-            "Requiring %s but it has %u versions available; use "
-            "imports.gi.versions to pick one",
-            ns_name.get(), nversions);
-        JS_ReportWarningUTF8(context, "%s", warn_text.get());
-    }
+        !g_irepository_is_registered(nullptr, ns_name.get(), nullptr) &&
+        !JS::WarnUTF8(context,
+                      "Requiring %s but it has %u versions available; use "
+                      "imports.gi.versions to pick one",
+                      ns_name.get(), nversions))
+        return false;
     g_list_free_full(versions, g_free);
 
     error = NULL;
@@ -552,7 +562,7 @@ gjs_lookup_namespace_object(JSContext  *context,
 }
 
 /* Check if an exception's 'name' property is equal to compare_name. Ignores
- * all errors that might arise. Requires request. */
+ * all errors that might arise. */
 GJS_USE
 static bool
 error_has_name(JSContext       *cx,
@@ -589,7 +599,6 @@ lookup_override_function(JSContext             *cx,
                          JS::HandleId           ns_name,
                          JS::MutableHandleValue function)
 {
-    JSAutoRequest ar(cx);
     JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
@@ -635,8 +644,6 @@ JSObject*
 gjs_lookup_namespace_object_by_name(JSContext      *context,
                                     JS::HandleId    ns_name)
 {
-    JSAutoRequest ar(context);
-
     JS::RootedValue importer(context,
         gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
     g_assert(importer.isObject());

@@ -26,13 +26,18 @@
 #ifndef GJS_JSAPI_UTIL_ARGS_H_
 #define GJS_JSAPI_UTIL_ARGS_H_
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <type_traits>  // for enable_if, is_enum, is_same
+#include <utility>      // for move
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/CallArgs.h>
+#include <js/Conversions.h>
+#include <js/TypeDecls.h>
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -88,8 +93,10 @@ static inline void assign(JSContext* cx, char c, bool nullable,
         ref->reset();
         return;
     }
-    if (!gjs_string_to_utf8(cx, value, ref))
+    JS::UniqueChars tmp = gjs_string_to_utf8(cx, value);
+    if (!tmp)
         throw g_strdup("Couldn't convert to string");
+    *ref = std::move(tmp);
 }
 
 GJS_ALWAYS_INLINE
@@ -292,7 +299,6 @@ G_GNUC_UNUSED GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
               *format == '\0'));
 
     if (!ignore_trailing_args && args.length() > 0) {
-        JSAutoRequest ar(cx);
         gjs_throw(cx, "Error invoking %s: Expected 0 arguments, got %d",
                   function_name, args.length());
         return false;
@@ -369,8 +375,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
 
     g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
               sizeof...(Args) / 2 == n_total));
-
-    JSAutoRequest ar(cx);
 
     /* COMPAT: In future, use args.requireAtLeast()
      * https://bugzilla.mozilla.org/show_bug.cgi?id=1334338 */

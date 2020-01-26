@@ -51,14 +51,26 @@
 #include <glib.h>
 #include <glib/gprintf.h>  // for g_fprintf
 
-#include "gjs/jsapi-wrapper.h"
-#include "mozilla/UniquePtr.h"
-#include "mozilla/Unused.h"
+#include <js/CallArgs.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
+#include <js/ErrorReport.h>
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Warnings.h>
+#include <jsapi.h>  // for JS_IsExceptionPending, Exce...
+#include <mozilla/UniquePtr.h>
+#include <mozilla/Unused.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "modules/console.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
 
@@ -270,12 +282,15 @@ gjs_console_eval_and_print(JSContext  *cx,
                            size_t      length,
                            int         lineno)
 {
+    JS::SourceText<mozilla::Utf8Unit> source;
+    if (!source.init(cx, bytes, length, JS::SourceOwnership::Borrowed))
+        return false;
+
     JS::CompileOptions options(cx);
-    options.setUTF8(true)
-           .setFileAndLine("typein", lineno);
+    options.setFileAndLine("typein", lineno);
 
     JS::RootedValue result(cx);
-    if (!JS::Evaluate(cx, options, bytes, length, &result)) {
+    if (!JS::Evaluate(cx, options, source, &result)) {
         if (!JS_IsExceptionPending(cx))
             return false;
     }
@@ -331,8 +346,8 @@ gjs_console_interact(JSContext *context,
             g_string_append(buffer, temp_buf);
             g_free(temp_buf);
             lineno++;
-        } while (!JS_BufferIsCompilableUnit(context, global,
-                                            buffer->str, buffer->len));
+        } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer->str,
+                                                buffer->len));
 
         bool ok;
         {
@@ -343,7 +358,7 @@ gjs_console_interact(JSContext *context,
         g_string_free(buffer, true);
 
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-        ok = gjs->run_jobs() && ok;
+        ok = gjs->run_jobs_fallible() && ok;
 
         if (!ok) {
             /* If this was an uncatchable exception, throw another uncatchable

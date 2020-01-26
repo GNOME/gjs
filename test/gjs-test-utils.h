@@ -26,16 +26,17 @@
 #ifndef TEST_GJS_TEST_UTILS_H_
 #define TEST_GJS_TEST_UTILS_H_
 
+#include <config.h>
+
 #include "gjs/context.h"
 
-struct JSCompartment;
-struct JSContext;
+#include <js/TypeDecls.h>
 
 typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
 struct _GjsUnitTestFixture {
     GjsContext *gjs_context;
     JSContext *cx;
-    JSCompartment *compartment;
+    JS::Realm* realm;
 };
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void* unused);

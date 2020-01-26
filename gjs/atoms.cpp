@@ -24,7 +24,12 @@
 
 #define GJS_USE_ATOM_FOREACH
 
-#include "gjs/jsapi-wrapper.h"
+#include <config.h>
+
+#include <js/Symbol.h>
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_AtomizeAndPinString
 
 #include "gjs/atoms.h"
 
@@ -47,7 +52,7 @@ bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
     return true;
 }
 
-/* Requires a current compartment. This can GC, so it needs to be done after the
+/* Requires a current realm. This can GC, so it needs to be done after the
  * tracing has been set up. */
 bool GjsAtoms::init_atoms(JSContext* cx) {
 #define INITIALIZE_ATOM(identifier, str) \

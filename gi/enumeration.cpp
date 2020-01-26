@@ -21,11 +21,15 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_DefineProperty, JS_NewPlainObject
 
 #include "gi/enumeration.h"
 #include "gi/wrapperutils.h"

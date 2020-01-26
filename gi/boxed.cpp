@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
@@ -31,8 +33,16 @@
 #include <girepository.h>
 #include <glib-object.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"  // for GCHashMap
+#include <js/CallArgs.h>
+#include <js/Class.h>
+#include <js/GCHashTable.h>  // for GCHashMap
+#include <js/GCVector.h>     // for MutableWrappedPtrOperations
+#include <js/TracingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Value.h>
+#include <jsapi.h>  // for IdVector, JS_AtomizeAndPinJSString
+#include <mozilla/HashTable.h>
+#include <mozilla/Vector.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -134,7 +144,7 @@ BoxedPrototype::FieldMap* BoxedPrototype::create_field_map(
 
     auto* result = new BoxedPrototype::FieldMap();
     n_fields = g_struct_info_get_n_fields(struct_info);
-    if (!result->init(n_fields)) {
+    if (!result->reserve(n_fields)) {
         JS_ReportOutOfMemory(cx);
         return nullptr;
     }

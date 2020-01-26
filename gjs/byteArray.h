@@ -24,11 +24,13 @@
 #ifndef GJS_BYTEARRAY_H_
 #define GJS_BYTEARRAY_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
+#include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
 

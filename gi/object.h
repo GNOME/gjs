@@ -24,6 +24,8 @@
 #ifndef GI_OBJECT_H_
 #define GI_OBJECT_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 
 #include <forward_list>
@@ -34,8 +36,9 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "js/GCHashTable.h"  // for GCHashMap
+#include <js/GCHashTable.h>  // for GCHashMap
+#include <js/PropertySpec.h>
+#include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
@@ -44,6 +47,16 @@
 #include "util/log.h"
 
 class GjsAtoms;
+namespace JS {
+class CallArgs;
+}
+namespace js {
+class SystemAllocPolicy;
+}
+namespace mozilla {
+template <class Key>
+struct DefaultHasher;
+}
 class ObjectInstance;
 class ObjectPrototype;
 
@@ -207,7 +220,6 @@ class ObjectPrototype
     FieldCache m_field_cache;
 
     ObjectPrototype(GIObjectInfo* info, GType gtype);
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
     ~ObjectPrototype();
 
     static constexpr InfoType::Tag info_type_tag = InfoType::Object;
@@ -269,10 +281,9 @@ class ObjectPrototype
                       const char* prop_name, bool* resolved);
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool new_enumerate_impl(
-        JSContext* cx, JS::HandleObject obj,
-        JS::AutoIdVector& properties,  // NOLINT(runtime/references)
-        bool only_enumerable);
+    bool new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+                            JS::MutableHandleIdVector properties,
+                            bool only_enumerable);
     void trace_impl(JSTracer* tracer);
 
     /* JS methods */
@@ -348,7 +359,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_USE bool weak_pointer_was_finalized(void);
     static void ensure_weak_pointer_callback(JSContext* cx);
     static void update_heap_wrapper_weak_pointers(JSContext* cx,
-                                                  JSCompartment* compartment,
+                                                  JS::Compartment* compartment,
                                                   void* data);
 
  public:
@@ -407,6 +418,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool add_property_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                            JS::HandleValue value);
+    void finalize_impl(JSFreeOp* fop, JSObject* obj);
 
     /* JS property getters/setters */
 

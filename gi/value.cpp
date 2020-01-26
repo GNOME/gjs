@@ -21,6 +21,8 @@
  * IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <limits.h>  // for SCHAR_MAX, SCHAR_MIN, UCHAR_MAX
 #include <stdint.h>
 #include <string.h>  // for memset
@@ -29,8 +31,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/jsapi-wrapper.h"
-#include "mozilla/Unused.h"
+#include <js/CharacterEncoding.h>
+#include <js/Conversions.h>
+#include <js/GCVector.h>  // for RootedVector
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <jsapi.h>  // for InformalValueTypeName, JS_ClearPendingException
+#include <mozilla/Unused.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -171,8 +180,7 @@ closure_marshal(GClosure        *closure,
     }
 
     JSFunction* func = gjs_closure_get_callable(closure);
-    JSAutoRequest ar(context);
-    JSAutoCompartment ac(context, JS_GetFunctionObject(func));
+    JSAutoRealm ar(context, JS_GetFunctionObject(func));
 
     if (marshal_data) {
         /* we are used for a signal handler */
@@ -228,7 +236,7 @@ closure_marshal(GClosure        *closure,
         g_base_info_unref((GIBaseInfo *)signal_info);
     }
 
-    JS::AutoValueVector argv(context);
+    JS::RootedValueVector argv(context);
     /* May end up being less */
     if (!argv.reserve(n_param_values))
         g_error("Unable to reserve space");
