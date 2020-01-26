@@ -281,6 +281,7 @@ gjs_closure_trace(GClosure *closure,
         return;
 
     c->func.trace(tracer, "signal connection");
+    closure->data = c->func.debug_addr();  // update in case GC moved it
 }
 
 GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
@@ -288,8 +289,16 @@ GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
                           bool root_function) {
     Closure *c;
 
+    // We store a bare pointer to the JSFunction in the GClosure's data field
+    // so that g_signal_handlers_block_matched() and friends can work. We are
+    // not supposed to store bare pointers to GC things, but in this particular
+    // case it will work because:
+    //   - we update the data field in gjs_closure_trace() so if the pointer is
+    //     moved or finalized, the data field will still be accurate
+    //   - signal handlers are always in trace mode, so it's not the case that
+    //     JS::PersistentRooted will move the pointer out from under us.
     auto* gc = reinterpret_cast<GjsClosure*>(
-        g_closure_new_simple(sizeof(GjsClosure), nullptr));
+        g_closure_new_simple(sizeof(GjsClosure), callable));
     c = new (&gc->priv) Closure();
 
     /* The saved context is used for lifetime management, so that the closure will

@@ -190,6 +190,14 @@ class ObjectBase
     GJS_JSAPI_RETURN_CONVENTION
     static bool emit(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
+    static bool signal_find(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool signals_block(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool signals_unblock(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool signals_disconnect(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_USE const char* to_string_kind(void) const;
     GJS_JSAPI_RETURN_CONVENTION
@@ -377,6 +385,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void check_js_object_finalized(void);
     void ensure_uses_toggle_ref(JSContext* cx);
     GJS_USE bool check_gobject_disposed(const char* for_what) const;
+    GJS_JSAPI_RETURN_CONVENTION
+    bool signal_match_arguments_from_object(
+        JSContext* cx, JS::HandleObject props_obj, GSignalMatchType* mask_out,
+        unsigned* signal_id_out, GQuark* detail_out, void** func_ptr_out);
 
  public:
     static GObject* copy_ptr(JSContext* G_GNUC_UNUSED, GType G_GNUC_UNUSED,
@@ -448,6 +460,14 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     bool connect_impl(JSContext* cx, const JS::CallArgs& args, bool after);
     GJS_JSAPI_RETURN_CONVENTION
     bool emit_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool signal_find_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool signals_block_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool signals_unblock_impl(JSContext* cx, const JS::CallArgs& args);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool signals_disconnect_impl(JSContext* cx, const JS::CallArgs& args);
     GJS_JSAPI_RETURN_CONVENTION
     bool init_impl(JSContext* cx, const JS::CallArgs& args,
                    JS::MutableHandleObject obj);
