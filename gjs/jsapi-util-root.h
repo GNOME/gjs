@@ -329,7 +329,7 @@ class GjsMaybeOwned {
     /* If not tracing, then you must call this method during GC in order to
      * update the object's location if it was moved, or null it out if it was
      * finalized. If the object was finalized, returns true. */
-    GJS_USE bool update_after_gc() {
+    bool update_after_gc() {
         debug("update_after_gc()");
         g_assert(!m_root);
         return GjsHeapOperation<T>::update_after_gc(&m_heap);
