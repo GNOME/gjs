@@ -1,5 +1,13 @@
-NEXT
-----
+Version 1.63.90
+---------------
+
+- New JS API: The GObject module has gained new overrides:
+  GObject.signal_handler_find(), GObject.signal_handlers_block_matched(),
+  GObject.signal_handlers_unblock_matched(), and
+  GObject.signal_handlers_disconnect_matched(). These overrides replace the
+  corresponding C API, which was not idiomatic for JavaScript and was not fully
+  functional because it used bare C pointers for some of its functionality.
+  See modules/overrides/GObject.js for API documentation.
 
 - New JavaScript features! This version of GJS is based on SpiderMonkey 68, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 60.
@@ -56,6 +64,12 @@ NEXT
       You can use `moz68tool` from mozjs-deprecation-tools
       (https://gitlab.gnome.org/ptomato/moz60tool) to scan your code for this
       nonstandard usage.
+
+- Closed bugs and merge requests:
+  * invalid import on signal.h [#295, !382, Philip Chimento]
+  * SpiderMonkey 68 [#270, !386, Philip Chimento]
+  * GObject: Add override for GObject.handler_block_by_func [#290, !371, Philip
+    Chimento]
 
 Version 1.63.3
 --------------

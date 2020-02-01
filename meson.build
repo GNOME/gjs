@@ -1,4 +1,4 @@
-project('gjs', 'cpp', 'c', version: '1.63.4', license: ['MIT', 'LGPL2+'],
+project('gjs', 'cpp', 'c', version: '1.63.90', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 0.50.0',
     default_options: ['cpp_std=c++14', 'c_std=c99', 'warning_level=2'])
 
