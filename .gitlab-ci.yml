@@ -181,6 +181,9 @@ eslint:
   only:
     changes:
       - '**/*.js'
+      - .eslintignore
+      - .eslintrc.yml
+      - '**/.eslintrc.yml'
 
 #############################################
 #                Manual Jobs                #
