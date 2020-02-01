@@ -20,7 +20,7 @@ var ExampleApplication = GObject.registerClass({
             'ExampleProperty',                  // nickname
             'An example read write property',   // description
             GObject.ParamFlags.READWRITE,       // read/write/construct...
-            ''                                  // implement defaults manually
+            '',                                 // implement defaults manually
         ),
     },
     Signals: {'examplesig': {param_types: [GObject.TYPE_INT]}},
@@ -98,7 +98,7 @@ var ExampleApplication = GObject.registerClass({
         notif.set_title('Example Notification');
         notif.set_body('Example Body');
         notif.set_icon(
-            new Gio.ThemedIcon({name: 'dialog-information-symbolic'})
+            new Gio.ThemedIcon({name: 'dialog-information-symbolic'}),
         );
 
         // A default action for when the body of the notification is clicked
@@ -107,7 +107,7 @@ var ExampleApplication = GObject.registerClass({
         // A button for the notification
         notif.add_button(
             'Button Text',
-            "app.exampleAction('exampleParameter')"
+            "app.exampleAction('exampleParameter')",
         );
 
         // This won't actually be shown, since an application needs a .desktop
