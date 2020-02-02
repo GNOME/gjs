@@ -282,7 +282,7 @@ describe('Tweener', function () {
             },
             function (obj, val) {
                 obj.x = -val;
-            }
+            },
         );
 
         var objectA = {
@@ -343,7 +343,7 @@ describe('Tweener', function () {
             function (val) {
                 return [{name: 'x', value: val},
                     {name: 'y', value: -val}];
-            }
+            },
         );
 
         var objectA = {
