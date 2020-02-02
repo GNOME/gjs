@@ -89,7 +89,7 @@ This `main()` function should initialize a GApplication whose id is **${entry-po
 
 ## Runtime support
 
-The following API will be available to applications, through the [`package.js`](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/package.js) module.
+The following API will be available to applications, through the [`package.js`](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/package.js) module.
 
 * `window.pkg` (ie `pkg` on the global object) will provide access to the package module
 * `pkg.name` and `pkg.version` will return the package name and version, as passed to `pkg.init()`
