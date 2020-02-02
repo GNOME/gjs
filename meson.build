@@ -430,9 +430,9 @@ module_cairo_srcs = [
     'modules/cairo.cpp',
 ]
 
-module_resource_srcs = gnome.compile_resources('modules-resources',
-    'modules/modules.gresource.xml',
-    c_name: 'modules_resources')
+module_resource_srcs = gnome.compile_resources('js-resources',
+    'js.gresource.xml',
+    c_name: 'js_resources')
 
 libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey,
     readline]

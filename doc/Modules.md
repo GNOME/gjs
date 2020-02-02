@@ -1,6 +1,6 @@
 GJS includes some built-in modules, as well as helpers for some core APIs like DBus like Variants. The headings below are links to the JavaScript source, which are decently documented and informative of usage.
 
-## [Gio](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/overrides/Gio.js)
+## [Gio](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/Gio.js)
 
 **Import with `const Gio = imports.gi.Gio;`**
 
@@ -30,7 +30,7 @@ The `Gio` override includes a number of utilities for DBus that will be document
 
 [old-dbus-example]: https://wiki.gnome.org/Gjs/Examples/DBusClient
 
-## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/overrides/GLib.js)
+## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/GLib.js)
 
 **Import with `const GLib = imports.gi.GLib;`**
 
@@ -41,13 +41,13 @@ Mostly GVariant and GBytes compatibility.
 * `GLib.Variant.unpack()`: Unpack a variant to a native type
 * `GLib.Variant.deep_unpack()`: Deep unpack a variant.
 
-## [GObject](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/overrides/GObject.js)
+## [GObject](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/GObject.js)
 
 **Import with `const GObject = imports.gi.GObject;`**
 
 Mostly GObject implementation (properties, signals, GType mapping). May be useful as a reference.
 
-## [Gtk](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/overrides/Gtk.js)
+## [Gtk](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/Gtk.js)
 
 **Import with `const Gtk = imports.gi.Gtk;`**
 
@@ -91,10 +91,10 @@ drawingArea.connect("draw", (widget, cr) => {
 });
 ```
 
-[cairo-const]: https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/cairo.js
+[cairo-const]: https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/cairo.js
 [cairo-func]: https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/cairo-context.cpp#L825
 
-## [Format](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/format.js)
+## [Format](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/format.js)
 
 **Import with `const Format = imports.format;`**
 
@@ -124,7 +124,7 @@ Gettext.ngettext("I have %d apple", "I have %d apples", num).format(num);
 [template-literals]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
 [bug-50920]: https://savannah.gnu.org/bugs/?50920
 
-## [Gettext](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/gettext.js)
+## [Gettext](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/gettext.js)
 
 **Import with `const Gettext = imports.gettext;`**
 
@@ -132,7 +132,7 @@ Helper functions for gettext. See also [examples/gettext.js][example-gettext] fo
 
 [example-gettext]: https://gitlab.gnome.org/GNOME/gjs/blob/master/examples/gettext.js
 
-## [jsUnit](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/jsUnit.js)
+## [jsUnit](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/jsUnit.js)
 
 **DEPRECATED**
 
@@ -141,7 +141,7 @@ Deprecated unit test functions. [Jasmine][jasmine-gjs] for GJS should now be pre
 [jasmine-gjs]: https://github.com/ptomato/jasmine-gjs
 [gjs-tests]: https://gitlab.gnome.org/GNOME/gjs/blob/master/installed-tests/js
 
-## [`Lang`](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/lang.js)
+## [`Lang`](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/lang.js)
 
 **DEPRECATED**
 
@@ -174,7 +174,7 @@ var MyNewClass = class {
 }
 ```
 
-## [Mainloop](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/mainloop.js)
+## [Mainloop](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/mainloop.js)
 
 **DEPRECATED**
 
@@ -183,11 +183,11 @@ Mainloop is simply a layer of convenience and backwards-compatibility over some 
 [c-timeoutaddfull]: https://developer.gnome.org/glib/stable/glib-The-Main-Event-Loop.html#g-timeout-add-full
 [gjs-timeoutadd]: http://devdocs.baznga.org/glib20~2.50.0/glib.timeout_add
 
-## [Package](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/package.js)
+## [Package](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/package.js)
 
 Infrastructure and utilities for [standalone applications](Home#standalone-applications).
 
-## [Signals](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/signals.js)
+## [Signals](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/signals.js)
 
 **Import with `const Signals = imports.signals;`**
 
@@ -274,7 +274,7 @@ The System module offers a number of useful functions and properties for debuggi
 
 [example-application]: https://gitlab.gnome.org/GNOME/gjs/blob/master/examples/gtk-application.js
 
-## [Tweener](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/tweener/)
+## [Tweener](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/tweener/)
 
 **Import with `const Tweener = imports.tweener.tweener;`**
 
