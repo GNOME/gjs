@@ -203,8 +203,8 @@ class GjsMaybeOwned {
 
     /* Use debug_addr() only for debug logging, because it is unbarriered. */
     template <typename U = T>
-    GJS_USE const T
-    debug_addr(std::enable_if_t<std::is_pointer<U>::value>* = nullptr) const {
+    GJS_USE const void* debug_addr(
+        std::enable_if_t<std::is_pointer<U>::value>* = nullptr) const {
         return m_root ? m_root->get() : m_heap.unbarrieredGet();
     }
 

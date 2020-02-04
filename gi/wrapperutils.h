@@ -316,7 +316,7 @@ class GIWrapperBase {
             Base::debug_topic, "[%p: %s pointer %p - %s.%s (%s)] %s", this,
             Base::debug_tag, ptr_addr(), ns(), name(), type_name(), message);
     }
-    void debug_lifecycle(const JSObject* obj GJS_USED_VERBOSE_LIFECYCLE,
+    void debug_lifecycle(const void* obj GJS_USED_VERBOSE_LIFECYCLE,
                          const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
             Base::debug_topic,
@@ -326,24 +326,23 @@ class GIWrapperBase {
     }
     void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
                       const char* id GJS_USED_VERBOSE_PROPS,
-                      const JSObject* obj GJS_USED_VERBOSE_PROPS) const {
+                      const void* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(
             Base::debug_topic,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s '%s'", this,
             Base::debug_tag, ptr_addr(), obj, ns(), name(), type_name(),
             message, id);
     }
-    void debug_jsprop(const char* message, jsid id, const JSObject* obj) const {
+    void debug_jsprop(const char* message, jsid id, const void* obj) const {
         debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
     }
     void debug_jsprop(const char* message, JSString* id,
-                      const JSObject* obj) const {
+                      const void* obj) const {
         debug_jsprop(message, gjs_debug_string(id).c_str(), obj);
     }
     static void debug_jsprop_static(const char* message GJS_USED_VERBOSE_PROPS,
                                     jsid id GJS_USED_VERBOSE_PROPS,
-                                    const JSObject* obj
-                                        GJS_USED_VERBOSE_PROPS) {
+                                    const void* obj GJS_USED_VERBOSE_PROPS) {
         gjs_debug_jsprop(Base::debug_topic,
                          "[%s JS wrapper %p] %s '%s', no instance associated",
                          Base::debug_tag, obj, message,

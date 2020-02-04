@@ -127,7 +127,7 @@ class ObjectBase
 
  private:
     // This is used in debug methods only.
-    GJS_USE const JSObject* jsobj_addr(void) const;
+    GJS_USE const void* jsobj_addr(void) const;
 
     /* Helper methods */
 
