@@ -345,7 +345,7 @@ import_module_init(JSContext       *context,
     }
 
     GjsAutoChar script = script_unowned;
-    g_assert(script != NULL);
+    g_assert(script);
 
     GjsAutoChar full_path = g_file_get_parse_name(file);
 
