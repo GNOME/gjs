@@ -16,13 +16,15 @@ gidatadir = gi.get_pkgconfig_variable('gidatadir')
 gi_tests = gidatadir / 'tests'
 
 test_gir_extra_c_args = []
-# These consist of external code (from gobject-introspection) so they should not
-# error out even when building with -Werror
-test_gir_warning_c_args = ['-Wno-error']
+test_gir_warning_c_args = []
 
-# We need to ensure the symbols in the test DLLs export in MSVC builds
 if cc.get_id() == 'msvc'
+  # We need to ensure the symbols in the test DLLs export in MSVC builds
   test_gir_extra_c_args += ['-D_GI_EXTERN=__declspec(dllexport)extern']
+else
+  # These consist of external code (from gobject-introspection) so they should not
+  # error out even when building with -Werror
+  test_gir_warning_c_args += ['-Wno-error']
 endif
 
 regress_dependencies = [glib, gobject, gio]

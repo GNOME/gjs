@@ -2833,7 +2833,7 @@ gjs_value_from_g_argument (JSContext             *context,
 
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
-            g_assert(interface_info != NULL);
+            g_assert(interface_info);
 
             interface_type = g_base_info_get_type(interface_info);
 
@@ -3231,7 +3231,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
-            g_assert(interface_info != NULL);
+            g_assert(interface_info);
 
             interface_type = g_base_info_get_type(interface_info);
 

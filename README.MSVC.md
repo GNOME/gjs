@@ -6,7 +6,7 @@ via Meson.  Due to C++-14 usage, Visual Studio 2017 15.6.x or later is
 required, as the compiler flag /Zc:externConstexpr is needed.
 
 You will need the following items to build GJS using Visual Studio:
--SpiderMonkey 68 (mozjs-68).  Please see the below section carefully 
+-SpiderMonkey 68.4.x (mozjs-68).  Please see the below section carefully 
  on this...
 -GObject-Introspection (G-I) 1.61.2 or later
 -GLib 2.58.x or later, (which includes GIO, GObject, and the associated tools)
@@ -28,6 +28,13 @@ for the suitable release series of SpiderMonkey that corresponds to
 the GJS version that is being built, as GJS depends on ESR (Extended 
 Service Release, a.k.a Long-term support) releases of SpiderMonkey.
 
+You may also be able to obtain the SpiderMonkey 68.4.x sources via the
+FireFox (ESR) or Thunderbird 68.4.x sources, in $(srcroot)/js.  Since
+this release of Firefox/Thunderbird/SpiderMonkey requires clang-cl
+from the LLVM project, you will need to install LLVM/CLang from the
+LLVM website and ensure that clang.exe can be found in your PATH in
+order to build SpiderMonkey 68.4.x.
+
 Please do note that the build must be done carefully, in addition to the
 official instructions that are posted on the Mozilla website:
 
@@ -36,10 +43,10 @@ https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/Build_Doc
 For the configuration step, you will need to run the following:
 
 (64-bit/x64 builds)
-JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=x86_64-pc-mingw32 --target=x86_64-pc-mingw32 --prefix=--prefix=<some_prefix> --disable-jemalloc
+JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=x86_64-pc-mingw32 --target=x86_64-pc-mingw32 --prefix=--prefix=<some_prefix> --disable-jemalloc --with-libclang-path=<full_path_to_directory_containing_x64_libclang_dll> --with-clang-path=<full_path_to_directory_containing_x64_clang_exe>
 
 (32-bit builds)
-JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --prefix=<some_prefix> --disable-jemalloc
+JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=i686-pc-mingw32 --target=i686-pc-mingw32 --prefix=<some_prefix> --disable-jemalloc --with-libclang-path=<full_path_to_directory_containing_x86_libclang_dll> --with-clang-path=<full_path_to_directory_containing_x86_clang_exe>
 
 Notice that "JS_STANDALONE=1" and "--disable-jemalloc" are absolutely required,
 otherwise GJS will not build/run correctly.  If your GJS build crashes upon
@@ -93,6 +100,52 @@ mozjs-68.pc can be used correctly in Visual Studio builds.  You
 will also need to ensure that the existing GObject-Introspection
 installation (if used) is on the same drive where the GJS sources
 are (and therefore where the GJS build is being carried out).
+
+Since Mozilla insisted that clang-cl is to be used to build SpiderMonkey,
+note that some SpideMonkey headers might need be updated as follows, before
+or after building SpiderMonkey, since there are some GCC-ish assumptions
+here:
+
+-Update $(includedir)/mozjs-68/mozilla/DbgMacro.h:
+
+// Change this... (ca. line 174)
+#ifndef MOZILLA_OFFICIAL
+#  define MOZ_DBG(expression_...) \
+    mozilla::detail::MozDbg(__FILE__, __LINE__, #expression_, expression_)
+#endif
+
+//To this...
+#ifndef MOZILLA_OFFICIAL
+#  define MOZ_DBG(...) \
+    mozilla::detail::MozDbg(__FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__)
+#endif
+
+// And change this... (ca. line 197)
+#define MOZ_DEFINE_DBG(type_, members_...)                                   \
+  friend std::ostream& operator<<(std::ostream& aOut, const type_& aValue) { \
+    return aOut << #type_                                                    \
+                << (MOZ_ARG_COUNT(members_) == 0 ? "" : " { ")               \
+                       MOZ_FOR_EACH_SEPARATED(MOZ_DBG_FIELD, (<< ", "), (),  \
+                                              (members_))                    \
+                << (MOZ_ARG_COUNT(members_) == 0 ? "" : " }");               \
+  }
+
+// To this...
+#define MOZ_DEFINE_DBG(type_, ...)                                   \
+  friend std::ostream& operator<<(std::ostream& aOut, const type_& aValue) { \
+    return aOut << #type_                                                    \
+                << (MOZ_ARG_COUNT(__VA_ARGS__) == 0 ? "" : " { ")               \
+                       MOZ_FOR_EACH_SEPARATED(MOZ_DBG_FIELD, (<< ", "), (),  \
+                                              (__VA_ARGS__))                    \
+                << (MOZ_ARG_COUNT(__VA_ARGS__) == 0 ? "" : " }");               \
+  }
+
+
+-Update $(includedir)/mozjs-68/js/AllocPolicy.h (after the build):
+
+Get rid of the 'JS_FRIEND_API' macro from the class
+'TempAllocPolicy : public AllocPolicyBase' (ca. line 110 and 175),
+for the member method definitions of onOutOfMemory() and reportAllocOverflow()
 
 ======================
 To carry out the build

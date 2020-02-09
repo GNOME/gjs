@@ -225,11 +225,13 @@ gjs_printerr(JSContext *context,
     return true;
 }
 
+const JSClassOps defaultclassops = JS::DefaultGlobalClassOps;
+
 class GjsGlobal {
     static constexpr JSClass klass = {
         "GjsGlobal",
         JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(GJS_GLOBAL_SLOT_LAST),
-        &JS::DefaultGlobalClassOps,
+        &defaultclassops,
     };
 
     static constexpr JSFunctionSpec static_funcs[] = {
