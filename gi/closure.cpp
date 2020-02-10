@@ -281,7 +281,8 @@ gjs_closure_trace(GClosure *closure,
         return;
 
     c->func.trace(tracer, "signal connection");
-    closure->data = c->func.debug_addr();  // update in case GC moved it
+    // update the saved address (for comparison only) in case GC moved it
+    closure->data = const_cast<void*>(c->func.debug_addr());
 }
 
 GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,

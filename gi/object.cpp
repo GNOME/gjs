@@ -174,10 +174,10 @@ void ObjectInstance::unlink(void) {
     m_instance_link.unlink();
 }
 
-const JSObject* ObjectBase::jsobj_addr(void) const {
+const void* ObjectBase::jsobj_addr(void) const {
     if (is_prototype())
         return nullptr;
-    return to_instance()->wrapper();
+    return to_instance()->m_wrapper.debug_addr();
 }
 
 // Overrides GIWrapperBase::typecheck(). We only override the overload that
