@@ -46,6 +46,7 @@ GJS_BASE_CFLAGS =			\
 	/Ivs$(VSVER)\$(CFG)\$(PLAT)\libgjs	\
 	/FImsvc_recommended_pragmas.h	\
 	/FIjs\RequiredDefines.h		\
+	/DNOMINMAX			\
 	/Dssize_t=gssize		\
 	/wd4530				\
 	/wd4099				\
