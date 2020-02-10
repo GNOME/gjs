@@ -25,7 +25,7 @@
 #include <stdio.h>   // for sscanf
 #include <string.h>  // for strlen
 
-#ifdef XP_WIN
+#ifdef _WIN32
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 #endif

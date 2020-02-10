@@ -34,7 +34,7 @@
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for isatty, STDIN_FILENO
-#elif defined(XP_WIN)
+#elif defined(_WIN32)
 #    include <io.h>
 #    ifndef STDIN_FILENO
 #        define STDIN_FILENO 0

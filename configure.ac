@@ -33,7 +33,7 @@ AC_LANG([C++])
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_14
-AC_CHECK_HEADERS([sys/syscall.h unistd.h])
+AC_CHECK_HEADERS([sys/signal.h sys/syscall.h unistd.h])
 
 LT_PREREQ([2.2.0])
 # no stupid static libraries

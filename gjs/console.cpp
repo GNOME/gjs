@@ -29,6 +29,8 @@
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for close
+#elif defined (_WIN32)
+#    include <io.h>
 #endif
 
 #include <gio/gio.h>
