@@ -60,6 +60,12 @@ else
 -Dbsymbolic_functions=false''')
         endif
         add_project_link_arguments('-Bsymbolic-functions', language: ['cpp', 'c'])
+        if cc.has_argument('-fno-semantic-interposition')
+            add_project_arguments('-fno-semantic-interposition', language: 'c')
+        endif
+        if cxx.has_argument('-fno-semantic-interposition')
+            add_project_arguments('-fno-semantic-interposition', language: 'cpp')
+        endif
     endif
 endif
 
