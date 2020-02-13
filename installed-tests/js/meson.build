@@ -138,7 +138,12 @@ foreach test : jasmine_tests
     test_file = files('test@0@.js'.format(test))
 
     test(test, minijasmine, args: test_file,
-        depends: [gschemas_compiled, regress_typelib, gimarshallingtests_typelib],
+        depends: [
+            gschemas_compiled,
+            gimarshallingtests_typelib,
+            regress_typelib,
+            warnlib_typelib,
+        ],
         env: tests_environment, protocol: 'tap', suite: 'JS')
 
     test_description_subst = {
