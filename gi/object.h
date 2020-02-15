@@ -211,6 +211,19 @@ class ObjectBase
     GJS_USE static GQuark custom_property_quark(void);
 };
 
+// See https://bugzilla.mozilla.org/show_bug.cgi?id=1614220
+struct IdHasher {
+    typedef jsid Lookup;
+    static mozilla::HashNumber hash(jsid id) {
+        if (MOZ_LIKELY(JSID_IS_ATOM(id)))
+            return js::DefaultHasher<JSAtom*>::hash(JSID_TO_ATOM(id));
+        if (JSID_IS_SYMBOL(id))
+            return js::DefaultHasher<JS::Symbol*>::hash(JSID_TO_SYMBOL(id));
+        return mozilla::HashGeneric(JSID_BITS(id));
+    }
+    static bool match(jsid id1, jsid id2) { return id1 == id2; }
+};
+
 class ObjectPrototype
     : public GIWrapperPrototype<ObjectBase, ObjectPrototype, ObjectInstance> {
     friend class GIWrapperPrototype<ObjectBase, ObjectPrototype,
@@ -223,9 +236,12 @@ class ObjectPrototype
     using FieldCache =
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GI_INFO_TYPE_FIELD>,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+    using NegativeLookupCache =
+        JS::GCHashSet<jsid, IdHasher, js::SystemAllocPolicy>;
 
     PropertyCache m_property_cache;
     FieldCache m_field_cache;
+    NegativeLookupCache m_unresolvable_cache;
 
     ObjectPrototype(GIObjectInfo* info, GType gtype);
     ~ObjectPrototype();
@@ -253,6 +269,9 @@ class ObjectPrototype
     bool resolve_no_info(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                          bool* resolved, const char* name,
                          ResolveWhat resolve_props);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool uncached_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                          const char* name, bool* resolved);
 
  public:
     void set_type_qdata(void);
