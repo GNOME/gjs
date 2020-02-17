@@ -752,6 +752,25 @@ bool ObjectBase::id_is_never_lazy(jsid name, const GjsAtoms& atoms) {
 bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                                    JS::HandleId id, const char* name,
                                    bool* resolved) {
+    if (m_unresolvable_cache.has(id)) {
+        *resolved = false;
+        return true;
+    }
+
+    if (!uncached_resolve(context, obj, id, name, resolved))
+        return false;
+
+    if (!*resolved && !m_unresolvable_cache.putNew(id)) {
+        JS_ReportOutOfMemory(context);
+        return false;
+    }
+
+    return true;
+}
+
+bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
+                                       JS::HandleId id, const char* name,
+                                       bool* resolved) {
     /* If we have no GIRepository information (we're a JS GObject subclass),
      * we need to look at exposing interfaces. Look up our interfaces through
      * GType data, and then hope that *those* are introspectable. */
@@ -1578,6 +1597,7 @@ void ObjectBase::trace_impl(JSTracer* tracer) {
 void ObjectPrototype::trace_impl(JSTracer* tracer) {
     m_property_cache.trace(tracer);
     m_field_cache.trace(tracer);
+    m_unresolvable_cache.trace(tracer);
 }
 
 void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
