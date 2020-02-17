@@ -11,6 +11,7 @@ gjs_tests_sources = [
     'gjs-test-call-args.cpp',
     'gjs-test-coverage.cpp',
     'gjs-test-rooting.cpp',
+    'gjs-test-no-introspection-object.cpp', 'gjs-test-no-introspection-object.h',
 ]
 
 gjs_tests = executable('gjs-tests', gjs_tests_sources, mock_js_resources_files,

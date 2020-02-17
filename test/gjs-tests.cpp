@@ -41,6 +41,7 @@
 #include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/profiler.h"
+#include "test/gjs-test-no-introspection-object.h"
 #include "test/gjs-test-utils.h"
 #include "util/misc.h"
 
@@ -135,6 +136,34 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
 
     g_object_unref(foo);
     g_object_unref(context);
+}
+
+static void gjstest_test_func_gjs_gobject_without_introspection(void) {
+    GjsAutoUnref<GjsContext> context = gjs_context_new();
+    GError* error = nullptr;
+    int status;
+
+    /* Ensure class */
+    g_type_class_ref(GJSTEST_TYPE_NO_INTROSPECTION_OBJECT);
+
+#define TESTJS                                                         \
+    "const {GObject} = imports.gi;"                                    \
+    "var obj = GObject.Object.newv("                                   \
+    "    GObject.type_from_name('GjsTestNoIntrospectionObject'), []);" \
+    "obj.a_int = 1234;"
+
+    bool ok = gjs_context_eval(context, TESTJS, -1, "<input>", &status, &error);
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    GjsTestNoIntrospectionObject* obj = gjstest_no_introspection_object_peek();
+    g_assert_nonnull(obj);
+
+    int val = 0;
+    g_object_get(obj, "a-int", &val, NULL);
+    g_assert_cmpint(val, ==, 1234);
+
+#undef TESTJS
 }
 
 static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
@@ -372,6 +401,8 @@ main(int    argc,
                     gjstest_test_func_gjs_context_eval_non_zero_terminated);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
+    g_test_add_func("/gjs/gobject/without_introspection",
+                    gjstest_test_func_gjs_gobject_without_introspection);
     g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
     g_test_add_func("/util/misc/strv/concat/null",
                     gjstest_test_func_util_misc_strv_concat_null);
