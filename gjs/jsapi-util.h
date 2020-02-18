@@ -74,6 +74,9 @@ struct GjsAutoPointer : std::unique_ptr<T, decltype(free_func)> {
     }
 };
 
+template <typename T>
+using GjsAutoFree = GjsAutoPointer<T, void, g_free>;
+
 struct GjsAutoCharFuncs {
     static char* dup(char* str) { return g_strdup(str); }
     static void free(char* str) { g_free(str); }
