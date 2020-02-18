@@ -1,3 +1,25 @@
+Version 1.63.91
+---------------
+
+- Closed bugs and merge requests:
+  * [mozjs68] Reorganize modules for ESM. [Evan Welsh, Philip Chimento, !383]
+  * Various maintenance [Philip Chimento, !388]
+  * Fix building GJS master with Visual Studio and update build instructions
+    [Chun-wei Fan, !389]
+  * Resolve "Gnome Shell crash on GC run with mozjs68" [Philip Chimento, !391]
+  * installed-tests/js: Add missing dep on warnlib_typelib [Jan Alexander
+    Steffens, !393]
+  * object: Cache known unresolvable properties [Daniel van Vugt, Philip
+    Chimento, !394, #302]
+
+Version 1.58.5
+--------------
+
+- Closed bugs and merge requests:
+  * Fix Visual Studio builds of gnome-3-34 (1.58.x) branch [Chun-wei Fan, !392]
+  * Can not access GObject properties of classes without GI information [Juan
+    Pablo Ugarte, !385, #299]
+
 Version 1.63.90
 ---------------
 
