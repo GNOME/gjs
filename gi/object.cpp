@@ -667,7 +667,9 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         canonicalize_key(canonical_name);
     }
 
-    GjsAutoFree<GType> interfaces = g_type_interfaces(m_gtype, &n_interfaces);
+    GIInterfaceInfo** interfaces;
+    g_irepository_get_object_gtype_interfaces(nullptr, m_gtype, &n_interfaces,
+        &interfaces);
 
     /* Fallback to GType system for non custom GObjects with no GI information
      */
@@ -679,10 +681,12 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             return lazy_define_gobject_property(cx, obj, id, resolved, name);
 
         for (i = 0; i < n_interfaces; i++) {
-            if (!G_TYPE_IS_CLASSED(interfaces[i]))
+            GType iface_gtype =
+                g_registered_type_info_get_g_type(interfaces[i]);
+            if (!G_TYPE_IS_CLASSED(iface_gtype))
                 continue;
 
-            GjsAutoTypeClass<GObjectClass> iclass(interfaces[i]);
+            GjsAutoTypeClass<GObjectClass> iclass(iface_gtype);
 
             if (g_object_class_find_property(iclass, canonical_name))
                 return lazy_define_gobject_property(cx, obj, id, resolved, name);
@@ -690,11 +694,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     }
 
     for (i = 0; i < n_interfaces; i++) {
-        GjsAutoInterfaceInfo iface_info =
-            g_irepository_find_by_gtype(nullptr, interfaces[i]);
-        if (!iface_info)
-            continue;
-
+        GIInterfaceInfo* iface_info = interfaces[i];
         GjsAutoFunctionInfo method_info =
             g_interface_info_find_method(iface_info, name);
         if (method_info) {
@@ -882,8 +882,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
     /**
      * Search through any interfaces implemented by the GType;
-     * this could be done better.  See
-     * https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * See https://bugzilla.gnome.org/show_bug.cgi?id=632922
+     * for background on why we need to do this.
      */
     if (!method_info)
         return resolve_no_info(context, obj, id, resolved, name,
