@@ -1,3 +1,11 @@
+Version 1.58.5
+--------------
+
+- Closed bugs and merge requests:
+  * Fix Visual Studio builds of gnome-3-34 (1.58.x) branch [Chun-wei Fan, !392]
+  * Can not access GObject properties of classes without GI information [Juan
+    Pablo Ugarte, !385, #299]
+
 Version 1.58.4
 --------------
 
