@@ -29,6 +29,7 @@
 
 #include <glib-object.h>
 #include <glib.h>
+#include <glib/gstdio.h>  // for g_unlink
 
 #include <js/CharacterEncoding.h>
 #include <js/RootingAPI.h>
@@ -368,6 +369,7 @@ gjstest_test_profiler_start_stop(void)
                                                nullptr));
     GjsProfiler *profiler = gjs_context_get_profiler(context);
 
+    gjs_profiler_set_filename(profiler, "dont-conflict-with-other-test.syscap");
     gjs_profiler_start(profiler);
 
     for (size_t ix = 0; ix < 100; ix++) {
@@ -383,6 +385,9 @@ gjstest_test_profiler_start_stop(void)
     }
 
     gjs_profiler_stop(profiler);
+
+    if (g_unlink("dont-conflict-with-other-test.syscap") != 0)
+        g_message("Temp profiler file not deleted");
 }
 
 int
