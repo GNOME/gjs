@@ -229,7 +229,7 @@ class GjsMaybeOwned {
     inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
     /* Likewise the truth value does not require a read barrier */
-    inline operator bool() const { return *this != nullptr; }
+    inline explicit operator bool() const { return *this != nullptr; }
 
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the

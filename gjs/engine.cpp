@@ -194,9 +194,7 @@ public:
         JS_ShutDown();
     }
 
-    operator bool() const {
-        return true;
-    }
+    explicit operator bool() const { return true; }
 };
 
 static GjsInit gjs_is_inited;
