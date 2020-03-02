@@ -1,3 +1,15 @@
+Version 1.63.92
+---------------
+
+- Closed bugs and merge requests:
+  * object: Use g_irepository_get_object_gtype_interfaces [Colin Walters, Philip
+    Chimento, #55, !52]
+  * Add -fno-semantic-interposition to -Bsymbolic-functions [Jan Alexander
+    Steffens (heftig), #303, !397]
+  * examples: add a dbus-client and dbus-service example [Andy Holmes, !398]
+  * Various GNOME Shell crashes during GC, mozjs68 regression [Jan Alexander
+    Steffens (heftig), Philip Chimento, #301, !396]
+
 Version 1.63.91
 ---------------
 
