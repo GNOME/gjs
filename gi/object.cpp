@@ -1071,7 +1071,6 @@ void
 ObjectInstance::gobj_dispose_notify(void)
 {
     m_gobj_disposed = true;
-    unlink();
 }
 
 void ObjectInstance::iterate_wrapped_gobjects(
