@@ -125,7 +125,7 @@ elif test "$1" = "SH_CHECKS"; then
     export LANGUAGE=C.UTF-8
     export NO_AT_BRIDGE=1
 
-    ninja -C _build install
+    sudo ninja -C _build install
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
 
