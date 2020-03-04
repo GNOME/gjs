@@ -1,9 +1,0 @@
-#!/bin/sh -e
-# Run a GTester binary with TAP output
-
-if test -z "$1"; then
-    echo "Need a test-binary filename!"
-    exit 1
-fi
-
-$LOG_COMPILER $LOG_FLAGS "$1" --tap --keep-going --verbose
