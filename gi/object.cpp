@@ -2507,12 +2507,11 @@ bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, prototype, ObjectBase, priv);
     /* Normally we wouldn't assert is_prototype(), but this method can only be
      * called internally so it's OK to crash if done wrongly */
-    return priv->to_prototype()->hook_up_vfunc_impl(cx, args, prototype);
+    return priv->to_prototype()->hook_up_vfunc_impl(cx, args);
 }
 
 bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
-                                         const JS::CallArgs& args,
-                                         JS::HandleObject prototype) {
+                                         const JS::CallArgs& args) {
     JS::UniqueChars name;
     JS::RootedObject function(cx);
     if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so",
@@ -2586,10 +2585,11 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         }
         JS::RootedFunction func(cx, JS_GetObjectFunction(function));
         trampoline = gjs_callback_trampoline_new(
-            cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
+            cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
         if (!trampoline)
             return false;
 
+        associate_closure(cx, trampoline->js_function);
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }
 

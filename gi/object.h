@@ -317,8 +317,7 @@ class ObjectPrototype
     /* JS methods */
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    bool hook_up_vfunc_impl(JSContext* cx, const JS::CallArgs& args,
-                            JS::HandleObject prototype);
+    bool hook_up_vfunc_impl(JSContext* cx, const JS::CallArgs& args);
 };
 
 class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
