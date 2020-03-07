@@ -78,13 +78,13 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 static void gjs_object_base_init(void* klass) {
     auto* priv = ObjectPrototype::for_gtype(G_OBJECT_CLASS_TYPE(klass));
     if (priv)
-        priv->ref_closures();
+        priv->ref_vfuncs();
 }
 
 static void gjs_object_base_finalize(void* klass) {
     auto* priv = ObjectPrototype::for_gtype(G_OBJECT_CLASS_TYPE(klass));
     if (priv)
-        priv->unref_closures();
+        priv->unref_vfuncs();
 }
 
 static GObject* gjs_object_constructor(

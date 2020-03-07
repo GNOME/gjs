@@ -971,7 +971,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
                         break;
                     }
                     if (scope == GI_SCOPE_TYPE_NOTIFIED && is_object_method) {
-                        ObjectBase* priv = ObjectBase::for_js(context, obj);
+                        auto* priv = ObjectInstance::for_js(context, obj);
                         if (!priv) {
                             gjs_throw(
                                 context,

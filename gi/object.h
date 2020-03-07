@@ -98,11 +98,6 @@ class ObjectBase
     friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
  protected:
-    /* a list of all GClosures installed on this object (from
-     * signals, trampolines, explicit GClosures, and vfuncs on prototypes),
-     * used when tracing */
-    std::forward_list<GClosure*> m_closures;
-
     explicit ObjectBase(ObjectPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
 
@@ -153,22 +148,10 @@ class ObjectBase
                                         no_throw);
     }
 
-    /* Methods to manipulate the list of closures */
-
- protected:
-    void invalidate_all_closures(void);
-
- public:
-    void associate_closure(JSContext* cx, GClosure* closure);
-    static void closure_invalidated_notify(void* data, GClosure* closure);
-
     /* JSClass operations */
 
     static bool add_property(JSContext* cx, JS::HandleObject obj,
                              JS::HandleId id, JS::HandleValue value);
-
- private:
-    void trace_impl(JSTracer* tracer);
 
     /* JS property getters/setters */
 
@@ -243,6 +226,8 @@ class ObjectPrototype
     PropertyCache m_property_cache;
     FieldCache m_field_cache;
     NegativeLookupCache m_unresolvable_cache;
+    // a list of vfunc GClosures installed on this prototype, used when tracing
+    std::forward_list<GClosure*> m_vfuncs;
 
     ObjectPrototype(GIObjectInfo* info, GType gtype);
     ~ObjectPrototype();
@@ -260,6 +245,8 @@ class ObjectPrototype
 
     GJS_USE
     bool is_vfunc_unchanged(GIVFuncInfo* info);
+    static void vfunc_invalidated_notify(void* data, GClosure* closure);
+
     GJS_JSAPI_RETURN_CONVENTION
     bool lazy_define_gobject_property(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
@@ -291,14 +278,12 @@ class ObjectPrototype
                              JS::MutableHandleObject constructor,
                              JS::MutableHandleObject prototype);
 
-    /* These are currently only needed in the GObject base init and finalize
-     * functions, for prototypes, even though m_closures is in ObjectBase. */
-    void ref_closures(void) {
-        for (GClosure* closure : m_closures)
+    void ref_vfuncs(void) {
+        for (GClosure* closure : m_vfuncs)
             g_closure_ref(closure);
     }
-    void unref_closures(void) {
-        for (GClosure* closure : m_closures)
+    void unref_vfuncs(void) {
+        for (GClosure* closure : m_vfuncs)
             g_closure_unref(closure);
     }
 
@@ -330,7 +315,9 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     // GIWrapperInstance::m_ptr may be null in ObjectInstance.
 
     GjsMaybeOwned<JSObject*> m_wrapper;
-
+    // a list of all GClosures installed on this object (from signal connections
+    // and scope-notify callbacks passed to methods), used when tracing
+    std::forward_list<GClosure*> m_closures;
     GjsListLink m_instance_link;
 
     bool m_wrapper_finalized : 1;
@@ -396,6 +383,14 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* wrapper_from_gobject(JSContext* cx, GObject* ptr);
 
+    /* Methods to manipulate the list of closures */
+
+ private:
+    static void closure_invalidated_notify(void* data, GClosure* closure);
+
+ public:
+    void associate_closure(JSContext* cx, GClosure* closure);
+
     /* Helper methods */
 
  private:
@@ -453,6 +448,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     bool add_property_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                            JS::HandleValue value);
     void finalize_impl(JSFreeOp* fop, JSObject* obj);
+    void trace_impl(JSTracer* trc);
 
     /* JS property getters/setters */
 
