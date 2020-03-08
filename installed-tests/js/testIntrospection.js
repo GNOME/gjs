@@ -122,3 +122,13 @@ describe('Gdk.Atom', function () {
         expect(Gdk.Atom.intern('NONE', false)).toBe(null);
     });
 });
+
+describe('Complete enumeration (boxed types)', function () {
+    it('enumerates all properties', function () {
+        // Note: this test breaks down if other code access all the methods of Rectangle
+        const rect = new Gdk.Rectangle();
+        const names = Object.getOwnPropertyNames(Object.getPrototypeOf(rect));
+        const expectAtLeast = ['equal', 'intersect', 'union', 'x', 'y', 'width', 'height'];
+        expect(names).toEqual(jasmine.arrayContaining(expectAtLeast));
+    });
+});

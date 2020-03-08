@@ -96,6 +96,30 @@ bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
+// See GIWrapperBase::new_enumerate().
+bool BoxedPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
+                                        JS::MutableHandleIdVector properties,
+                                        bool only_enumerable G_GNUC_UNUSED) {
+    int n_methods = g_struct_info_get_n_methods(info());
+    for (int i = 0; i < n_methods; i++) {
+        GjsAutoFunctionInfo meth_info = g_struct_info_get_method(info(), i);
+        GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
+
+        if (flags & GI_FUNCTION_IS_METHOD) {
+            const char* name = meth_info.name();
+            jsid id = gjs_intern_string_to_id(cx, name);
+            if (id == JSID_VOID)
+                return false;
+            if (!properties.append(id)) {
+                JS_ReportOutOfMemory(cx);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 /*
  * BoxedBase::get_copy_source():
  *
@@ -724,7 +748,7 @@ const struct JSClassOps BoxedBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    &BoxedBase::new_enumerate,
     &BoxedBase::resolve,
     nullptr,  // mayResolve
     &BoxedBase::finalize,
