@@ -119,6 +119,37 @@ ns_resolve(JSContext       *context,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
+ns_new_enumerate(JSContext* cx, JS::HandleObject obj,
+                 JS::MutableHandleIdVector properties,
+                 bool only_enumerable G_GNUC_UNUSED) {
+    Ns *priv = priv_from_js(cx, obj);
+
+    if (!priv) {
+        return true;
+    }
+
+    int n = g_irepository_get_n_infos(nullptr, priv->gi_namespace);
+    if (!properties.reserve(properties.length() + n)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+
+    for (int k = 0; k < n; k++) {
+        GjsAutoBaseInfo info =
+            g_irepository_get_info(nullptr, priv->gi_namespace, k);
+        const char *name = info.name();
+
+        jsid id = gjs_intern_string_to_id(cx, name);
+        if (id == JSID_VOID)
+            return false;
+        properties.infallibleAppend(id);
+    }
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool
 get_name (JSContext *context,
           unsigned   argc,
           JS::Value *vp)
@@ -157,7 +188,7 @@ static const struct JSClassOps gjs_ns_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    ns_new_enumerate,
     ns_resolve,
     nullptr,  // mayResolve
     ns_finalize};
