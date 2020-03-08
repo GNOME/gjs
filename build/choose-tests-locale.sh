@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if ! which locale > /dev/null; then
+  exit 1
+fi
+
 locales=$(locale -a | xargs -n1)
 
 case $locales in
