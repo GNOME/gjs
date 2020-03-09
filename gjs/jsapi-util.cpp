@@ -400,24 +400,35 @@ gjs_log_exception_full(JSContext       *context,
                        JS::HandleValue  exc,
                        JS::HandleString message)
 {
-    bool is_syntax;
+    JS::AutoSaveExceptionState saved_exc(context);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
     JS::RootedObject exc_obj(context);
-    JS::RootedString exc_str(context, JS::ToString(context, exc));
-    JS::UniqueChars utf8_exception;
-    if (exc_str)
-        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
-    if (!utf8_exception)
-        JS_ClearPendingException(context);
-
-    is_syntax = false;
+    JS::RootedString exc_str(context);
+    bool is_syntax = false, is_internal = false;
     if (exc.isObject()) {
         exc_obj = &exc.toObject();
         const JSClass* syntax_error =
             js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
         is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
+
+        const JSClass* internal_error =
+            js::Jsvalify(js::ProtoKeyToClass(JSProto_InternalError));
+        is_internal = JS_InstanceOf(context, exc_obj, internal_error, nullptr);
     }
+
+    if (is_internal) {
+        JSErrorReport* report = JS_ErrorFromException(context, exc_obj);
+        if (!report->message())
+            exc_str = JS_NewStringCopyZ(context, "(unknown internal error)");
+        else
+            exc_str = JS_NewStringCopyUTF8Z(context, report->message());
+    } else {
+        exc_str = JS::ToString(context, exc);
+    }
+    JS::UniqueChars utf8_exception;
+    if (exc_str)
+        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
 
     JS::UniqueChars utf8_message;
     if (message)
@@ -457,13 +468,23 @@ gjs_log_exception_full(JSContext       *context,
 
     } else {
         JS::UniqueChars utf8_stack;
-        JS::RootedValue stack(context);
-
-        if (exc.isObject() &&
-            JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack) &&
-            stack.isString()) {
-            JS::RootedString str(context, stack.toString());
-            utf8_stack = JS_EncodeStringToUTF8(context, str);
+        if (exc.isObject()) {
+            // Check both the internal SavedFrame object and the stack property.
+            // GErrors will not have the former, and internal errors will not
+            // have the latter.
+            JS::RootedObject saved_frame(context,
+                                         JS::ExceptionStackOrNull(exc_obj));
+            JS::RootedString str(context);
+            if (saved_frame) {
+                JS::BuildStackString(context, nullptr, saved_frame, &str, 0);
+            } else {
+                JS::RootedValue stack(context);
+                JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack);
+                if (stack.isString())
+                    str = stack.toString();
+            }
+            if (str)
+                utf8_stack = JS_EncodeStringToUTF8(context, str);
         }
 
         if (message) {
@@ -481,6 +502,8 @@ gjs_log_exception_full(JSContext       *context,
                 g_warning("JS ERROR: %s", utf8_exception.get());
         }
     }
+
+    saved_exc.restore();
 
     return true;
 }
