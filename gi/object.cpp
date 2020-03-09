@@ -352,7 +352,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
 
     /* Do not fetch JS overridden properties from GObject, to avoid
      * infinite recursion. */
-    if (g_param_spec_get_qdata(param, ObjectInstance::custom_property_quark()))
+    if (g_param_spec_get_qdata(param, ObjectBase::custom_property_quark()))
         return true;
 
     if ((param->flags & G_PARAM_READABLE) == 0) {
@@ -481,8 +481,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
 
     /* Do not set JS overridden properties through GObject, to avoid
      * infinite recursion (unless constructing) */
-    if (g_param_spec_get_qdata(param_spec,
-        ObjectInstance::custom_property_quark()))
+    if (g_param_spec_get_qdata(param_spec, ObjectBase::custom_property_quark()))
         return true;
 
     if (!(param_spec->flags & G_PARAM_WRITABLE))
