@@ -118,6 +118,36 @@ ns_resolve(JSContext       *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool ns_new_enumerate(JSContext* cx, JS::HandleObject obj,
+                             JS::MutableHandleIdVector properties,
+                             bool only_enumerable G_GNUC_UNUSED) {
+    Ns* priv = priv_from_js(cx, obj);
+
+    if (!priv) {
+        return true;
+    }
+
+    int n = g_irepository_get_n_infos(nullptr, priv->gi_namespace);
+    if (!properties.reserve(properties.length() + n)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+
+    for (int k = 0; k < n; k++) {
+        GjsAutoBaseInfo info =
+            g_irepository_get_info(nullptr, priv->gi_namespace, k);
+        const char* name = info.name();
+
+        jsid id = gjs_intern_string_to_id(cx, name);
+        if (id == JSID_VOID)
+            return false;
+        properties.infallibleAppend(id);
+    }
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 get_name (JSContext *context,
           unsigned   argc,
@@ -153,11 +183,12 @@ static void ns_finalize(JSFreeOp*, JSObject* obj) {
  * instances of the object, and to the prototype that instances of the
  * class have.
  */
+// clang-format off
 static const struct JSClassOps gjs_ns_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    ns_new_enumerate,
     ns_resolve,
     nullptr,  // mayResolve
     ns_finalize};
@@ -172,6 +203,7 @@ static JSPropertySpec gjs_ns_proto_props[] = {
     JS_PSG("__name__", get_name, GJS_MODULE_PROP_FLAGS),
     JS_PS_END
 };
+// clang-format on
 
 static JSFunctionSpec *gjs_ns_proto_funcs = nullptr;
 static JSFunctionSpec *gjs_ns_static_funcs = nullptr;

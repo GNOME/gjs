@@ -132,3 +132,12 @@ describe('Complete enumeration (boxed types)', function () {
         expect(names).toEqual(jasmine.arrayContaining(expectAtLeast));
     });
 });
+
+describe('Complete enumeration of GIRepositoryNamespace (new_enumerate)', function () {
+    it('enumerates all properties (sampled)', function () {
+        const names = Object.getOwnPropertyNames(Gdk);
+        // Note: properties which has been accessed are listed without new_enumerate hook
+        const expectAtLeast = ['KEY_ybelowdot', 'EventSequence', 'ByteOrder', 'Window'];
+        expect(names).toEqual(jasmine.arrayContaining(expectAtLeast));
+    });
+});
