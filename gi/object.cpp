@@ -739,29 +739,22 @@ is_gobject_property_name(GIObjectInfo *info,
     int n_props = g_object_info_get_n_properties(info);
     int n_ifaces = g_object_info_get_n_interfaces(info);
     int ix;
-    GjsAutoPropertyInfo prop_info;
 
     GjsAutoChar canonical_name = gjs_hyphen_from_camel(name);
     canonicalize_key(canonical_name);
 
     for (ix = 0; ix < n_props; ix++) {
-        prop_info = g_object_info_get_property(info, ix);
+        GjsAutoPropertyInfo prop_info = g_object_info_get_property(info, ix);
         if (strcmp(canonical_name, prop_info.name()) == 0)
-            break;
-        prop_info.reset();
+            return true;
     }
 
-    if (!prop_info) {
-        for (ix = 0; ix < n_ifaces; ix++) {
-            GjsAutoInterfaceInfo iface_info =
-                g_object_info_get_interface(info, ix);
-            if (is_ginterface_property_name(iface_info, canonical_name))
-                return true;
-        }
-        return false;
+    for (ix = 0; ix < n_ifaces; ix++) {
+        GjsAutoInterfaceInfo iface_info = g_object_info_get_interface(info, ix);
+        if (is_ginterface_property_name(iface_info, canonical_name))
+            return true;
     }
-
-    return true;
+    return false;
 }
 
 // Override of GIWrapperBase::id_is_never_lazy()
