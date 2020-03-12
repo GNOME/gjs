@@ -247,6 +247,7 @@ class GjsGlobal {
     create(JSContext *cx)
     {
         JS::RealmOptions options;
+        options.creationOptions().setBigIntEnabled(true);
         JS::RootedObject global(
             cx, JS_NewGlobalObject(cx, &GjsGlobal::klass, nullptr,
                                    JS::FireOnNewGlobalHook, options));
