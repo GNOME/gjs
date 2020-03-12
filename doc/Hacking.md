@@ -78,7 +78,7 @@ mozjs, but you can grab them from your built copy of mozjs.
 After reaching a breakpoint in your program, type this to activate the
 pretty-printers:
 ```sh
-source /path/to/spidermonkey/js/src/_build/shell/js-gdb.py
+source /path/to/spidermonkey/js/src/_build/js/src/shell/js-gdb.py
 ```
 
 (replace `/path/to/spidermonkey` with the path to your SpiderMonkey
