@@ -136,7 +136,7 @@ class ObjectBase
         GIWrapperBase::debug_lifecycle(jsobj_addr(), message);
     }
 
-    bool id_is_never_lazy(jsid name, const GjsAtoms& atoms);
+    GJS_USE bool id_is_never_lazy(jsid name, const GjsAtoms& atoms);
     GJS_USE bool is_custom_js_class();
 
  public:
