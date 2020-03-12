@@ -20,7 +20,7 @@ var ExampleApplication = GObject.registerClass({
             'ExampleProperty',                  // nickname
             'An example read write property',   // description
             GObject.ParamFlags.READWRITE,       // read/write/construct...
-            '',                                 // implement defaults manually
+            'a default value',
         ),
     },
     Signals: {'examplesig': {param_types: [GObject.TYPE_INT]}},
@@ -30,21 +30,6 @@ var ExampleApplication = GObject.registerClass({
             application_id: 'org.gnome.gjs.ExampleApplication',
             flags: Gio.ApplicationFlags.FLAGS_NONE,
         });
-    }
-
-    // Example property getter/setter
-    get exampleprop() {
-        if (typeof this._exampleprop === 'undefined')
-            return 'a default value';
-
-        return this._exampleprop;
-    }
-
-    set exampleprop(value) {
-        this._exampleprop = value;
-
-        // notify() has to be called, if you want it
-        this.notify('exampleprop');
     }
 
     // Example signal emission

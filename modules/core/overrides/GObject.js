@@ -22,6 +22,7 @@
 
 const Gi = imports._gi;
 const GjsPrivate = imports.gi.GjsPrivate;
+const {_checkAccessors} = imports._common;
 const Legacy = imports._legacy;
 
 let GObject;
@@ -444,6 +445,8 @@ function _init() {
         let propertiesArray = _propertiesAsArray(klass);
         let parent = Object.getPrototypeOf(klass);
         let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
+
+        propertiesArray.forEach(pspec => _checkAccessors(klass.prototype, pspec, GObject));
 
         let newClass = Gi.register_type(parent.prototype, gtypename, gflags,
             gobjectInterfaces, propertiesArray);

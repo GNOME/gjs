@@ -113,28 +113,30 @@ var MyLabel = GObject.registerClass({
             'ExampleProperty',                  // nickname
             'An example read write property',   // description
             GObject.ParamFlags.READWRITE,       // READABLE/READWRITE/CONSTRUCT/etc
-            ''                                  // implement defaults manually
+            'A default'  // default value if omitting getter/setter
         )
     }
 }, class MyLabel extends Gtk.Label {
-    _init(params) {
-        super._init(params);
-    }
-
     get example_prop() {
-        if (this._example_prop === undefined) {
+        if (!('_example_prop' in this)
             return 'A default';
-        }
-
         return this._example_prop;
     }
 
     set example_prop(value) {
-        this._example_prop = value;
-        this.notify('example-prop');
+        if (this._example_prop !== value) {
+            this._example_prop = value;
+            this.notify('example-prop');
+        }
     }
 });
 ```
+
+If you just want a simple property that you can get change notifications from, you can leave out the getter and setter and GJS will attempt to do the right thing.
+However, if you define one, you have to define both (unless the property is read-only or write-only).
+
+The 'default value' parameter passed to `GObject.ParamSpec` will be taken into account if you omit the getter and setter.
+If you write your own getter and setter, you have to implement the default value yourself, as in the above example.
 
 ## Signals
 

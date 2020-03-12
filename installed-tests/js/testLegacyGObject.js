@@ -381,6 +381,21 @@ describe('GObject class', function () {
             },
         })).toThrow();
     });
+
+    it('handles gracefully overriding a C property but forgetting the accessors', function () {
+        // This is a random interface in Gio with a read-write property
+        const ForgottenAccessors = new Lang.Class({
+            Name: 'ForgottenAccessors',
+            Extends: Gio.TlsDatabase,
+            Implements: [Gio.TlsFileDatabase],
+            Properties: {
+                'anchors': GObject.ParamSpec.override('anchors', Gio.TlsFileDatabase),
+            },
+        });
+        const obj = new ForgottenAccessors();
+        expect(obj.anchors).toBeNull();
+        obj.anchors = 'foo';
+    });
 });
 
 const AnInterface = new Lang.Interface({
