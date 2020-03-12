@@ -137,6 +137,7 @@ class ObjectBase
     }
 
     bool id_is_never_lazy(jsid name, const GjsAtoms& atoms);
+    GJS_USE bool is_custom_js_class();
 
  public:
     void type_query_dynamic_safe(GTypeQuery* query);

@@ -56,7 +56,7 @@ bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
-    if (is_custom_js_class()) {
+    if (!info()) {
         *resolved = false;
         return true;
     }

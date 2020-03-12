@@ -107,6 +107,10 @@ gjs_object_priv_quark (void)
     return val;
 }
 
+bool ObjectBase::is_custom_js_class() {
+    return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
+}
+
 // Plain g_type_query fails and leaves @query uninitialized for dynamic types.
 // See https://gitlab.gnome.org/GNOME/glib/issues/623
 void ObjectBase::type_query_dynamic_safe(GTypeQuery* query) {
@@ -673,8 +677,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
     /* Fallback to GType system for non custom GObjects with no GI information
      */
-    if (canonical_name && G_TYPE_IS_CLASSED(m_gtype) &&
-        !g_type_get_qdata(m_gtype, ObjectInstance::custom_type_quark())) {
+    if (canonical_name && G_TYPE_IS_CLASSED(m_gtype) && !is_custom_js_class()) {
         GjsAutoTypeClass<GObjectClass> oclass(m_gtype);
 
         if (g_object_class_find_property(oclass, canonical_name))
@@ -786,10 +789,11 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
                                        JS::HandleId id, const char* name,
                                        bool* resolved) {
-    /* If we have no GIRepository information (we're a JS GObject subclass),
-     * we need to look at exposing interfaces. Look up our interfaces through
-     * GType data, and then hope that *those* are introspectable. */
-    if (is_custom_js_class())
+    // If we have no GIRepository information (we're a JS GObject subclass or an
+    // internal non-introspected class such as GLocalFile), we need to look at
+    // exposing interfaces. Look up our interfaces through GType data, and then
+    // hope that *those* are introspectable.
+    if (!info())
         return resolve_no_info(context, obj, id, resolved, name,
                                ConsiderMethodsAndProperties);
 
@@ -962,7 +966,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
     g_free(interfaces);
 
-    if (!is_custom_js_class()) {
+    if (info()) {
         // Methods
         int n_methods = g_object_info_get_n_methods(info());
         for (int i = 0; i < n_methods; i++) {
@@ -1517,11 +1521,9 @@ ObjectInstance::init_impl(JSContext              *context,
         return false;
     }
 
-    /* Mark this object in the construction stack, it
-       will be popped in gjs_object_custom_init() later
-       down.
-    */
-    if (g_type_get_qdata(gtype(), ObjectInstance::custom_type_quark())) {
+    // Mark this object in the construction stack, it will be popped in
+    // gjs_object_custom_init() in gi/gobject.cpp.
+    if (is_custom_js_class()) {
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
         if (!gjs->object_init_list().append(object)) {
             JS_ReportOutOfMemory(context);
@@ -1763,9 +1765,10 @@ gjs_lookup_object_prototype(JSContext *context,
 // The caller does not own the return value, and it can never be null.
 GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
                                                        JS::HandleString key) {
-    if (is_custom_js_class()) {
-        // Custom JS classes can't have fields. We must be looking up a field on
-        // a GObject-introspected parent.
+    if (!info()) {
+        // Custom JS classes can't have fields, and fields on internal classes
+        // are not available. We must be looking up a field on a
+        // GObject-introspected parent.
         GType parent_gtype = g_type_parent(m_gtype);
         g_assert(parent_gtype != G_TYPE_INVALID &&
                  "Custom JS class must have parent");

@@ -287,18 +287,16 @@ class GIWrapperBase {
     GJS_USE GIBaseInfo* info(void) const { return get_prototype()->info(); }
     GJS_USE GType gtype(void) const { return get_prototype()->gtype(); }
 
-    // The next four methods are operations derived from the GIFooInfo.
+    // The next three methods are operations derived from the GIFooInfo.
 
-    GJS_USE bool is_custom_js_class(void) const { return !info(); }
     GJS_USE const char* type_name(void) const { return g_type_name(gtype()); }
     GJS_USE
     const char* ns(void) const {
-        return is_custom_js_class() ? "" : g_base_info_get_namespace(info());
+        return info() ? g_base_info_get_namespace(info()) : "";
     }
     GJS_USE
     const char* name(void) const {
-        return is_custom_js_class() ? type_name()
-                                    : g_base_info_get_name(info());
+        return info() ? g_base_info_get_name(info()) : type_name();
     }
 
  private:
@@ -739,9 +737,10 @@ template <class Base, class Prototype, class Instance,
           typename Info = GIObjectInfo>
 class GIWrapperPrototype : public Base {
  protected:
-    // m_info may be null in the case of JS-defined types, although not all
-    // subclasses will allow this. Object and Interface allow it in any case.
-    // Use the method Base::is_custom_js_class() for clarity.
+    // m_info may be null in the case of JS-defined types, or internal types
+    // not exposed through introspection, such as GLocalFile. Not all subclasses
+    // of GIWrapperPrototype support this. Object and Interface support it in
+    // any case.
     Info* m_info;
     GType m_gtype;
 
@@ -856,10 +855,10 @@ class GIWrapperPrototype : public Base {
                         JS::MutableHandleObject prototype) {
         // The GI namespace is only used to set the JSClass->name field (exposed
         // by Object.prototype.toString, for example). We can safely set
-        // "unknown" if this is a custom JS class with no GI namespace, as in
-        // that case the name is already globally unique (it's a GType name).
-        const char* gi_namespace =
-            Base::is_custom_js_class() ? "unknown" : Base::ns();
+        // "unknown" if this is a custom or internal JS class with no GI
+        // namespace, as in that case the name is already globally unique (it's
+        // a GType name).
+        const char* gi_namespace = Base::info() ? Base::ns() : "unknown";
 
         unsigned nargs = static_cast<Prototype*>(this)->constructor_nargs();
 
@@ -892,6 +891,8 @@ class GIWrapperPrototype : public Base {
      */
     GJS_JSAPI_RETURN_CONVENTION
     bool define_static_methods(JSContext* cx, JS::HandleObject constructor) {
+        if (!info())
+            return true;  // no introspection means no methods to define
         return gjs_define_static_methods<Prototype::info_type_tag>(
             cx, constructor, m_gtype, m_info);
     }
@@ -963,10 +964,8 @@ class GIWrapperPrototype : public Base {
                 return nullptr;
         }
 
-        if (!priv->is_custom_js_class()) {
-            if (!priv->define_static_methods(cx, constructor))
-                return nullptr;
-        }
+        if (!priv->define_static_methods(cx, constructor))
+            return nullptr;
 
         return priv;
     }
