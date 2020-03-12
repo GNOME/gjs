@@ -667,8 +667,11 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
     GjsAutoChar canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
-        canonical_name = gjs_hyphen_from_camel(name);
-        canonicalize_key(canonical_name);
+        // Optimization: GObject property names must start with a letter
+        if (g_ascii_isalpha(name[0])) {
+            canonical_name = gjs_hyphen_from_camel(name);
+            canonicalize_key(canonical_name);
+        }
     }
 
     GIInterfaceInfo** interfaces;
@@ -710,7 +713,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             }
         }
 
-        if (resolve_props == ConsiderOnlyMethods)
+        if (!canonical_name)
             continue;
 
         /* If the name refers to a GObject property, lazily define the property
@@ -729,6 +732,10 @@ static bool
 is_gobject_property_name(GIObjectInfo *info,
                          const char   *name)
 {
+    // Optimization: GObject property names must start with a letter
+    if (!g_ascii_isalpha(name[0]))
+        return false;
+
     int n_props = g_object_info_get_n_properties(info);
     int n_ifaces = g_object_info_get_n_interfaces(info);
     int ix;
