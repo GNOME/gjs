@@ -24,7 +24,7 @@ foreach test : simple_tests
 
     test_description_subst = {
         'name': 'test@0@.sh'.format(test),
-        'pkglibexecdir': abs_pkglibexecdir,
+        'installed_tests_execdir': installed_tests_execdir,
     }
     test_description = configure_file(configuration: test_description_subst,
         input: 'script.test.in', output: 'test@0@.sh.test'.format(test),
@@ -76,7 +76,7 @@ foreach test : debugger_tests
 
     test_description_subst = {
         'name': '@0@.debugger'.format(test),
-        'pkglibexecdir': abs_pkglibexecdir,
+        'installed_tests_execdir': installed_tests_execdir,
     }
     test_description = configure_file(configuration: test_description_subst,
         input: 'debugger.test.in',

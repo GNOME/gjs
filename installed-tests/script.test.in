@@ -1,4 +1,4 @@
 [Test]
 Type=session
-Exec=sh @pkglibexecdir@/installed-tests/scripts/@name@
+Exec=sh @installed_tests_execdir@/scripts/@name@
 Output=TAP

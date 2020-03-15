@@ -302,7 +302,6 @@ configure_file(output: 'config.h', configuration: header_conf)
 
 gjsjsdir = get_option('datadir') / api_name
 pkglibexecdir = get_option('libexecdir') / meson.project_name()
-abs_pkglibexecdir = get_option('prefix') / pkglibexecdir
 abs_datadir = get_option('prefix') / get_option('datadir')
 pkglibdir = get_option('libdir') / meson.project_name()
 
