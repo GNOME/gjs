@@ -148,7 +148,7 @@ foreach test : jasmine_tests
 
     test_description_subst = {
         'name': 'test@0@.js'.format(test),
-        'pkglibexecdir': abs_pkglibexecdir,
+        'installed_tests_execdir': installed_tests_execdir,
     }
     test_description = configure_file(configuration: test_description_subst,
         input: '../minijasmine.test.in',
@@ -174,7 +174,7 @@ endif
 
 gdbus_test_description_subst = {
     'name': 'testGDBus.js',
-    'pkglibexecdir': abs_pkglibexecdir,
+    'installed_tests_execdir': installed_tests_execdir,
 }
 gdbus_test_description = configure_file(
     configuration: gdbus_test_description_subst,
