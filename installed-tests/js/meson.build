@@ -7,7 +7,6 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
     jsunit_resources_files, dependencies: libgjs_dep,
     cpp_args: [
         '-DINSTTESTDIR="@0@"'.format(installed_tests_execdir),
-        '-DPKGLIBDIR="@0@"'.format(get_option('prefix') / pkglibdir)
     ],
     include_directories: top_include,
     install: get_option('installed_tests'), install_dir: installed_tests_execdir)
@@ -44,7 +43,7 @@ regress_sources = [
 libregress = library('regress', regress_sources,
     c_args: regress_gir_c_args + test_gir_warning_c_args,
     dependencies: regress_dependencies, install: get_option('installed_tests'),
-    install_dir: pkglibdir)
+    install_dir: installed_tests_execdir)
 regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
     sources: regress_sources, namespace: 'Regress', nsversion: '1.0',
     identifier_prefix: 'Regress', symbol_prefix: 'regress_',
@@ -60,7 +59,7 @@ warnlib_sources = [
 libwarnlib = library('warnlib', warnlib_sources,
     c_args: test_gir_warning_c_args + test_gir_extra_c_args,
     dependencies: [glib, gobject, gio], install: get_option('installed_tests'),
-    install_dir: pkglibdir)
+    install_dir: installed_tests_execdir)
 # This should have --warn-all turned off, but there is currently no way to do so
 # in gnome.generate_gir(). See https://github.com/mesonbuild/meson/issues/5876
 warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
@@ -77,7 +76,7 @@ gimarshallingtests_sources = [
 libgimarshallingtests = library('gimarshallingtests',
     gimarshallingtests_sources, dependencies: [glib, gobject, gio],
     c_args:  test_gir_extra_c_args + test_gir_warning_c_args,
-    install: get_option('installed_tests'), install_dir: pkglibdir)
+    install: get_option('installed_tests'), install_dir: installed_tests_execdir)
 gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
     namespace: 'GIMarshallingTests', nsversion: '1.0',
