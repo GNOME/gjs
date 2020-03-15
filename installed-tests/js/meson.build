@@ -6,7 +6,7 @@ jsunit_resources_files = gnome.compile_resources('jsunit-resources',
 minijasmine = executable('minijasmine', '../minijasmine.cpp',
     jsunit_resources_files, dependencies: libgjs_dep,
     cpp_args: [
-        '-DINSTTESTDIR="@0@"'.format(get_option('prefix') / installed_tests_execdir),
+        '-DINSTTESTDIR="@0@"'.format(installed_tests_execdir),
         '-DPKGLIBDIR="@0@"'.format(get_option('prefix') / pkglibdir)
     ],
     include_directories: top_include,
