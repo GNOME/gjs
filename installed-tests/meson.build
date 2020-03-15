@@ -1,8 +1,7 @@
 ### Installed tests ############################################################
 
-installed_tests_execdir = pkglibexecdir / 'installed-tests'
-installed_tests_metadir = (get_option('datadir') / 'installed-tests' /
-    meson.project_name())
+installed_tests_execdir = get_option('prefix') / pkglibexecdir / 'installed-tests'
+installed_tests_metadir = abs_datadir / 'installed-tests' / meson.project_name()
 
 # Simple shell script tests #
 
