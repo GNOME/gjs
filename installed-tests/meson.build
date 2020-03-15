@@ -1,7 +1,7 @@
 ### Installed tests ############################################################
 
-installed_tests_dir = pkglibexecdir / 'installed-tests'
-test_descriptions_dir = (get_option('datadir') / 'installed-tests' /
+installed_tests_execdir = pkglibexecdir / 'installed-tests'
+installed_tests_metadir = (get_option('datadir') / 'installed-tests' /
     meson.project_name())
 
 # Simple shell script tests #
@@ -30,10 +30,10 @@ foreach test : simple_tests
     test_description = configure_file(configuration: test_description_subst,
         input: 'script.test.in', output: 'test@0@.sh.test'.format(test),
         install: get_option('installed_tests'),
-        install_dir: test_descriptions_dir)
+        install_dir: installed_tests_metadir)
 
     if get_option('installed_tests')
-        install_data(test_file, install_dir: installed_tests_dir / 'scripts')
+        install_data(test_file, install_dir: installed_tests_execdir / 'scripts')
     endif
 endforeach
 
@@ -65,7 +65,7 @@ debugger_tests = [
 
 debugger_test_driver = find_program(files('debugger-test.sh'))
 if get_option('installed_tests')
-    install_data('debugger-test.sh', install_dir: installed_tests_dir)
+    install_data('debugger-test.sh', install_dir: installed_tests_execdir)
 endif
 
 foreach test : debugger_tests
@@ -83,12 +83,12 @@ foreach test : debugger_tests
         input: 'debugger.test.in',
         output: '@0@.test'.format(test),
         install: get_option('installed_tests'),
-        install_dir: test_descriptions_dir)
+        install_dir: installed_tests_metadir)
 
     if get_option('installed_tests')
-        install_data(test_file, install_dir: installed_tests_dir / 'debugger')
+        install_data(test_file, install_dir: installed_tests_execdir / 'debugger')
         install_data('debugger' / '@0@.debugger.js'.format(test),
             'debugger' / '@0@.debugger.output'.format(test),
-            install_dir: installed_tests_dir / 'debugger')
+            install_dir: installed_tests_execdir / 'debugger')
     endif
 endforeach
