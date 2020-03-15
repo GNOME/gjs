@@ -2,9 +2,12 @@
 
 import os
 import subprocess
+import sys
 
-prefix = os.environ.get('MESON_INSTALL_PREFIX')
-schemadir = os.path.join(prefix, 'share', 'glib-2.0', 'schemas')
+if len(sys.argv) < 2:
+    sys.exit("usage: compile-gschemas.py <schemadir>")
+
+schemadir = sys.argv[1]
 
 if os.environ.get('DESTDIR') is None:
     print('Compiling GSettings schemas...')
