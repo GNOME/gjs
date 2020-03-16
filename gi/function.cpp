@@ -310,16 +310,19 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
                     goto out;
                 break;
             }
-            case PARAM_NORMAL:
+            case PARAM_NORMAL: {
                 if (!jsargs.growBy(1))
                     g_error("Unable to grow vector");
 
+                GIArgument* arg = args[i + c_args_offset];
+                if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT)
+                    arg = *reinterpret_cast<GIArgument**>(arg);
+
                 if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
-                                               &type_info,
-                                               args[i + c_args_offset],
-                                               false))
+                                               &type_info, arg, false))
                     goto out;
                 break;
+            }
             case PARAM_CALLBACK:
                 /* Callbacks that accept another callback as a parameter are not
                  * supported, see gjs_callback_trampoline_new() */
