@@ -390,6 +390,21 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
             break;
         }
     } else {
+        bool is_array = rval.isObject();
+        if (!JS_IsArrayObject(context, rval, &is_array))
+            goto out;
+
+        if (!is_array) {
+            JSFunction* fn = gjs_closure_get_callable(trampoline->js_function);
+            gjs_throw(context,
+                      "Function %s (%s.%s) returned unexpected value, "
+                      "expecting an Array",
+                      gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str(),
+                      g_base_info_get_namespace(trampoline->info),
+                      g_base_info_get_name(trampoline->info));
+            goto out;
+        }
+
         JS::RootedValue elem(context);
         JS::RootedObject out_array(context, rval.toObjectOrNull());
         gsize elem_idx = 0;
