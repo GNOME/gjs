@@ -1972,9 +1972,9 @@ ObjectInstance::emit_impl(JSContext          *context,
 
 bool ObjectInstance::signal_match_arguments_from_object(
     JSContext* cx, JS::HandleObject match_obj, GSignalMatchType* mask_out,
-    unsigned* signal_id_out, GQuark* detail_out, void** func_ptr_out) {
-    g_assert(mask_out && signal_id_out && detail_out && func_ptr_out &&
-             "forgot out parameter");
+    unsigned* signal_id_out, GQuark* detail_out,
+    JS::MutableHandleFunction func_out) {
+    g_assert(mask_out && signal_id_out && detail_out && "forgot out parameter");
 
     int mask = 0;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -2016,11 +2016,11 @@ bool ObjectInstance::signal_match_arguments_from_object(
     }
 
     bool has_func;
-    void* func_ptr = nullptr;
+    JS::RootedFunction func(cx);
     if (!JS_HasOwnPropertyById(cx, match_obj, atoms.func(), &has_func))
         return false;
     if (has_func) {
-        mask |= G_SIGNAL_MATCH_DATA;
+        mask |= G_SIGNAL_MATCH_CLOSURE;
 
         JS::RootedValue value(cx);
         if (!JS_GetPropertyById(cx, match_obj, atoms.func(), &value))
@@ -2031,7 +2031,7 @@ bool ObjectInstance::signal_match_arguments_from_object(
             return false;
         }
 
-        func_ptr = JS_GetObjectFunction(&value.toObject());
+        func = JS_GetObjectFunction(&value.toObject());
     }
 
     if (!has_id && !has_detail && !has_func) {
@@ -2045,7 +2045,7 @@ bool ObjectInstance::signal_match_arguments_from_object(
     if (has_detail)
         *detail_out = detail;
     if (has_func)
-        *func_ptr_out = func_ptr;
+        func_out.set(func);
     return true;
 }
 
@@ -2072,13 +2072,25 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
     GSignalMatchType mask;
     unsigned signal_id;
     GQuark detail;
-    void* func_ptr;
+    JS::RootedFunction func(cx);
     if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id,
-                                            &detail, &func_ptr))
+                                            &detail, &func))
         return false;
 
-    uint64_t handler = g_signal_handler_find(m_ptr, mask, signal_id, detail,
-                                             nullptr, nullptr, func_ptr);
+    uint64_t handler = 0;
+    if (!func) {
+        handler = g_signal_handler_find(m_ptr, mask, signal_id, detail, nullptr,
+                                        nullptr, nullptr);
+    } else {
+        for (GClosure* candidate : m_closures) {
+            if (gjs_closure_get_callable(candidate) == func) {
+                handler = g_signal_handler_find(m_ptr, mask, signal_id, detail,
+                                                candidate, nullptr, nullptr);
+                if (handler != 0)
+                    break;
+            }
+        }
+    }
 
     args.rval().setNumber(static_cast<double>(handler));
     return true;
@@ -2111,13 +2123,27 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
         GSignalMatchType mask;                                                \
         unsigned signal_id;                                                   \
         GQuark detail;                                                        \
-        void* func_ptr;                                                       \
+        JS::RootedFunction func(cx);                                          \
         if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id, \
-                                                &detail, &func_ptr)) {        \
+                                                &detail, &func)) {            \
             return false;                                                     \
         }                                                                     \
-        unsigned n_matched = g_signal_handlers_##action##_matched(            \
-            m_ptr, mask, signal_id, detail, nullptr, nullptr, func_ptr);      \
+        unsigned n_matched = 0;                                               \
+        if (!func) {                                                          \
+            n_matched = g_signal_handlers_##action##_matched(                 \
+                m_ptr, mask, signal_id, detail, nullptr, nullptr, nullptr);   \
+        } else {                                                              \
+            std::vector<GClosure*> candidates;                                \
+            for (GClosure* candidate : m_closures) {                          \
+                if (gjs_closure_get_callable(candidate) == func)              \
+                    candidates.push_back(candidate);                          \
+            }                                                                 \
+            for (GClosure* candidate : candidates) {                          \
+                n_matched += g_signal_handlers_##action##_matched(            \
+                    m_ptr, mask, signal_id, detail, candidate, nullptr,       \
+                    nullptr);                                                 \
+            }                                                                 \
+        }                                                                     \
                                                                               \
         args.rval().setNumber(n_matched);                                     \
         return true;                                                          \
