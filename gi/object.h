@@ -405,9 +405,12 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void ensure_uses_toggle_ref(JSContext* cx);
     GJS_USE bool check_gobject_disposed(const char* for_what) const;
     GJS_JSAPI_RETURN_CONVENTION
-    bool signal_match_arguments_from_object(
-        JSContext* cx, JS::HandleObject props_obj, GSignalMatchType* mask_out,
-        unsigned* signal_id_out, GQuark* detail_out, void** func_ptr_out);
+    bool signal_match_arguments_from_object(JSContext* cx,
+                                            JS::HandleObject props_obj,
+                                            GSignalMatchType* mask_out,
+                                            unsigned* signal_id_out,
+                                            GQuark* detail_out,
+                                            JS::MutableHandleFunction func_out);
 
  public:
     static GObject* copy_ptr(JSContext* G_GNUC_UNUSED, GType G_GNUC_UNUSED,
