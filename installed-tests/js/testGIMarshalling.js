@@ -1264,6 +1264,125 @@ describe('Virtual function', function () {
     }, GIMarshallingTests.Object);
 });
 
+const WrongVFuncTester = GObject.registerClass(class WrongVFuncTester extends GIMarshallingTests.Object {
+    vfunc_vfunc_return_value_only() {
+    }
+
+    vfunc_vfunc_one_out_parameter() {
+    }
+
+    vfunc_vfunc_multiple_out_parameters() {
+    }
+
+    vfunc_vfunc_return_value_and_one_out_parameter() {
+    }
+
+    vfunc_vfunc_return_value_and_multiple_out_parameters() {
+    }
+
+    vfunc_vfunc_array_out_parameter() {
+    }
+
+    vfunc_vfunc_caller_allocated_out_parameter() {
+    }
+
+    vfunc_vfunc_return_enum() {
+    }
+
+    vfunc_vfunc_out_enum() {
+    }
+
+    vfunc_vfunc_return_object_transfer_none() {
+    }
+
+    vfunc_vfunc_return_object_transfer_full() {
+    }
+
+    vfunc_vfunc_out_object_transfer_none() {
+    }
+
+    vfunc_vfunc_out_object_transfer_full() {
+    }
+
+    vfunc_vfunc_in_object_transfer_none() {
+    }
+});
+
+describe('Wrong virtual functions', function () {
+    let tester;
+    beforeEach(function () {
+        tester = new WrongVFuncTester();
+    });
+
+    it('marshals a return value', function () {
+        expect(tester.vfunc_return_value_only()).toBeUndefined();
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/311');
+
+    it('marshals one out parameter', function () {
+        expect(tester.vfunc_one_out_parameter()).toBeUndefined();
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/311');
+
+    it('marshals multiple out parameters', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: Function *vfunc_vfunc_multiple_out_parameters*Array*');
+
+        expect(tester.vfunc_multiple_out_parameters()).toEqual([0, 0]);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals a return value and one out parameter', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: Function *vfunc_return_value_and_one_out_parameter*Array*');
+
+        expect(tester.vfunc_return_value_and_one_out_parameter()).toEqual([0, 0]);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals a return value and multiple out parameters', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: Function *vfunc_return_value_and_multiple_out_parameters*Array*');
+
+        expect(tester.vfunc_return_value_and_multiple_out_parameters()).toEqual([0, 0, 0]);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals an array out parameter', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: Expected type gfloat for Argument*undefined*');
+
+        expect(tester.vfunc_array_out_parameter()).toEqual(null);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals an enum return value', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: Expected type enum for Return*undefined*');
+
+        expect(tester.vfunc_return_enum()).toEqual(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals an enum out parameter', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: Expected type enum for Argument*undefined*');
+
+        expect(tester.vfunc_out_enum()).toEqual(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+});
+
 describe('Inherited GObject', function () {
     ['SubObject', 'SubSubObject'].forEach(klass => {
         describe(klass, function () {
