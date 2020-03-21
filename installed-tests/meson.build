@@ -1,8 +1,7 @@
 ### Installed tests ############################################################
 
-installed_tests_dir = pkglibexecdir / 'installed-tests'
-test_descriptions_dir = (get_option('datadir') / 'installed-tests' /
-    meson.project_name())
+installed_tests_execdir = get_option('prefix') / pkglibexecdir / 'installed-tests'
+installed_tests_metadir = abs_datadir / 'installed-tests' / meson.project_name()
 
 # Simple shell script tests #
 
@@ -25,15 +24,15 @@ foreach test : simple_tests
 
     test_description_subst = {
         'name': 'test@0@.sh'.format(test),
-        'pkglibexecdir': abs_pkglibexecdir,
+        'installed_tests_execdir': installed_tests_execdir,
     }
     test_description = configure_file(configuration: test_description_subst,
         input: 'script.test.in', output: 'test@0@.sh.test'.format(test),
         install: get_option('installed_tests'),
-        install_dir: test_descriptions_dir)
+        install_dir: installed_tests_metadir)
 
     if get_option('installed_tests')
-        install_data(test_file, install_dir: installed_tests_dir / 'scripts')
+        install_data(test_file, install_dir: installed_tests_execdir / 'scripts')
     endif
 endforeach
 
@@ -65,7 +64,7 @@ debugger_tests = [
 
 debugger_test_driver = find_program(files('debugger-test.sh'))
 if get_option('installed_tests')
-    install_data('debugger-test.sh', install_dir: installed_tests_dir)
+    install_data('debugger-test.sh', install_dir: installed_tests_execdir)
 endif
 
 foreach test : debugger_tests
@@ -77,18 +76,18 @@ foreach test : debugger_tests
 
     test_description_subst = {
         'name': '@0@.debugger'.format(test),
-        'pkglibexecdir': abs_pkglibexecdir,
+        'installed_tests_execdir': installed_tests_execdir,
     }
     test_description = configure_file(configuration: test_description_subst,
         input: 'debugger.test.in',
         output: '@0@.test'.format(test),
         install: get_option('installed_tests'),
-        install_dir: test_descriptions_dir)
+        install_dir: installed_tests_metadir)
 
     if get_option('installed_tests')
-        install_data(test_file, install_dir: installed_tests_dir / 'debugger')
+        install_data(test_file, install_dir: installed_tests_execdir / 'debugger')
         install_data('debugger' / '@0@.debugger.js'.format(test),
             'debugger' / '@0@.debugger.output'.format(test),
-            install_dir: installed_tests_dir / 'debugger')
+            install_dir: installed_tests_execdir / 'debugger')
     endif
 endforeach

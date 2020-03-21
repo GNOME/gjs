@@ -6,11 +6,10 @@ jsunit_resources_files = gnome.compile_resources('jsunit-resources',
 minijasmine = executable('minijasmine', '../minijasmine.cpp',
     jsunit_resources_files, dependencies: libgjs_dep,
     cpp_args: [
-        '-DINSTTESTDIR="@0@"'.format(get_option('prefix') / installed_tests_dir),
-        '-DPKGLIBDIR="@0@"'.format(get_option('prefix') / pkglibdir)
+        '-DINSTTESTDIR="@0@"'.format(installed_tests_execdir),
     ],
     include_directories: top_include,
-    install: get_option('installed_tests'), install_dir: installed_tests_dir)
+    install: get_option('installed_tests'), install_dir: installed_tests_execdir)
 
 gidatadir = gi.get_pkgconfig_variable('gidatadir')
 gi_tests = gidatadir / 'tests'
@@ -44,13 +43,13 @@ regress_sources = [
 libregress = library('regress', regress_sources,
     c_args: regress_gir_c_args + test_gir_warning_c_args,
     dependencies: regress_dependencies, install: get_option('installed_tests'),
-    install_dir: pkglibdir)
+    install_dir: installed_tests_execdir)
 regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
     sources: regress_sources, namespace: 'Regress', nsversion: '1.0',
     identifier_prefix: 'Regress', symbol_prefix: 'regress_',
     extra_args: ['--warn-all', '--warn-error'] + regress_gir_c_args,
     install: get_option('installed_tests'), install_dir_gir: false,
-    install_dir_typelib: installed_tests_dir)
+    install_dir_typelib: installed_tests_execdir)
 regress_typelib = regress_gir[1]
 
 warnlib_sources = [
@@ -60,14 +59,14 @@ warnlib_sources = [
 libwarnlib = library('warnlib', warnlib_sources,
     c_args: test_gir_warning_c_args + test_gir_extra_c_args,
     dependencies: [glib, gobject, gio], install: get_option('installed_tests'),
-    install_dir: pkglibdir)
+    install_dir: installed_tests_execdir)
 # This should have --warn-all turned off, but there is currently no way to do so
 # in gnome.generate_gir(). See https://github.com/mesonbuild/meson/issues/5876
 warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
     sources: warnlib_sources, namespace: 'WarnLib', nsversion: '1.0',
     symbol_prefix: 'warnlib_', header: 'warnlib.h',
     install: get_option('installed_tests'), install_dir_gir: false,
-    install_dir_typelib: installed_tests_dir)
+    install_dir_typelib: installed_tests_execdir)
 warnlib_typelib = warnlib_gir[1]
 
 gimarshallingtests_sources = [
@@ -77,13 +76,13 @@ gimarshallingtests_sources = [
 libgimarshallingtests = library('gimarshallingtests',
     gimarshallingtests_sources, dependencies: [glib, gobject, gio],
     c_args:  test_gir_extra_c_args + test_gir_warning_c_args,
-    install: get_option('installed_tests'), install_dir: pkglibdir)
+    install: get_option('installed_tests'), install_dir: installed_tests_execdir)
 gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
     namespace: 'GIMarshallingTests', nsversion: '1.0',
     symbol_prefix: 'gi_marshalling_tests_', extra_args: '--warn-error',
     install: get_option('installed_tests'), install_dir_gir: false,
-    install_dir_typelib: installed_tests_dir)
+    install_dir_typelib: installed_tests_execdir)
 gimarshallingtests_typelib = gimarshallingtests_gir[1]
 
 jasmine_tests = [
@@ -129,7 +128,7 @@ if not get_option('skip_gtk_tests')
     ]
 endif
 
-installed_js_tests_dir = installed_tests_dir / 'js'
+installed_js_tests_dir = installed_tests_execdir / 'js'
 
 gschemas_compiled = gnome.compile_schemas(
     depend_files: 'org.gnome.GjsTest.gschema.xml')
@@ -148,13 +147,13 @@ foreach test : jasmine_tests
 
     test_description_subst = {
         'name': 'test@0@.js'.format(test),
-        'pkglibexecdir': abs_pkglibexecdir,
+        'installed_tests_execdir': installed_tests_execdir,
     }
     test_description = configure_file(configuration: test_description_subst,
         input: '../minijasmine.test.in',
         output: 'test@0@.test'.format(test),
         install: get_option('installed_tests'),
-        install_dir: test_descriptions_dir)
+        install_dir: installed_tests_metadir)
 
     if get_option('installed_tests')
         install_data(test_file, install_dir: installed_js_tests_dir)
@@ -174,13 +173,13 @@ endif
 
 gdbus_test_description_subst = {
     'name': 'testGDBus.js',
-    'pkglibexecdir': abs_pkglibexecdir,
+    'installed_tests_execdir': installed_tests_execdir,
 }
 gdbus_test_description = configure_file(
     configuration: gdbus_test_description_subst,
     input: '../minijasmine.test.in', output: 'testGDBus.test',
     install: get_option('installed_tests'),
-    install_dir: test_descriptions_dir)
+    install_dir: installed_tests_metadir)
 
 if get_option('installed_tests')
     install_data('testGDBus.js', install_dir: installed_js_tests_dir)

@@ -302,7 +302,7 @@ configure_file(output: 'config.h', configuration: header_conf)
 
 gjsjsdir = get_option('datadir') / api_name
 pkglibexecdir = get_option('libexecdir') / meson.project_name()
-abs_pkglibexecdir = get_option('prefix') / pkglibexecdir
+abs_datadir = get_option('prefix') / get_option('datadir')
 pkglibdir = get_option('libdir') / meson.project_name()
 
 ### Build dtrace probes ########################################################
@@ -540,9 +540,9 @@ install_data('installed-tests/extra/lsan.supp',
     install_dir: get_option('datadir') / api_name / 'lsan')
 
 if get_option('installed_tests')
-    install_data('installed-tests/js/org.gnome.GjsTest.gschema.xml',
-        install_dir: get_option('datadir') / 'glib-2.0/schemas')
-    meson.add_install_script('build/compile-gschemas.py')
+    schemadir = abs_datadir / 'glib-2.0' / 'schemas'
+    install_data('installed-tests/js/org.gnome.GjsTest.gschema.xml', install_dir: schemadir)
+    meson.add_install_script('build/compile-gschemas.py', schemadir)
 endif
 
 ### Generate pkg-config file ###################################################
