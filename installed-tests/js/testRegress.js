@@ -1038,7 +1038,7 @@ describe('Life, the Universe and Everything', function () {
                     done();
                 });
                 o.emit_sig_with_error();
-            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/169');
+            });
 
             it('GError signal with no GError set', function (done) {
                 o.connect('sig-with-gerror', (obj, e) => {
@@ -1046,7 +1046,7 @@ describe('Life, the Universe and Everything', function () {
                     done();
                 });
                 o.emit_sig_with_null_error();
-            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/169');
+            });
         });
 
         it('can call an instance method', function () {

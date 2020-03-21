@@ -1079,7 +1079,7 @@ describe('GObject', function () {
     });
 });
 
-const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
+let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
     vfunc_vfunc_return_value_only() {
         return 42;
     }
@@ -1164,6 +1164,26 @@ const VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallin
     }
 });
 
+try {
+    VFuncTester = GObject.registerClass(class VFuncTesterInOut extends VFuncTester {
+        vfunc_vfunc_one_inout_parameter(input) {
+            return input * 5;
+        }
+
+        vfunc_vfunc_multiple_inout_parameters(inputA, inputB) {
+            return [inputA * 5, inputB * -1];
+        }
+
+        vfunc_vfunc_return_value_and_one_inout_parameter(input) {
+            return [49, input * 5];
+        }
+
+        vfunc_vfunc_return_value_and_multiple_inout_parameters(inputA, inputB) {
+            return [49, inputA * 5, inputB * -1];
+        }
+    });
+} catch {}
+
 describe('Virtual function', function () {
     let tester;
     beforeEach(function () {
@@ -1190,6 +1210,32 @@ describe('Virtual function', function () {
     it('marshals a return value and multiple out parameters', function () {
         expect(tester.vfunc_return_value_and_multiple_out_parameters())
             .toEqual([48, 49, 50]);
+    });
+
+    it('marshals one inout parameter', function () {
+        if (typeof VFuncTester.prototype.vfunc_one_inout_parameter === 'undefined')
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
+        expect(tester.vfunc_one_inout_parameter(10)).toEqual(50);
+    });
+
+    it('marshals multiple inout parameters', function () {
+        if (typeof VFuncTester.prototype.vfunc_multiple_inout_parameters === 'undefined')
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
+        expect(tester.vfunc_multiple_inout_parameters(10, 5)).toEqual([50, -5]);
+    });
+
+    it('marshals a return value and one inout parameter', function () {
+        if (typeof VFuncTester.prototype.vfunc_return_value_and_one_inout_parameter === 'undefined')
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
+        expect(tester.vfunc_return_value_and_one_inout_parameter(10))
+            .toEqual([49, 50]);
+    });
+
+    it('marshals a return value and multiple inout parameters', function () {
+        if (typeof VFuncTester.prototype.vfunc_return_value_and_multiple_inout_parameters === 'undefined')
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
+        expect(tester.vfunc_return_value_and_multiple_inout_parameters(10, -51))
+            .toEqual([49, 50, 51]);
     });
 
     it('marshals an array out parameter', function () {
