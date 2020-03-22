@@ -718,8 +718,16 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         /* If the name refers to a GObject property, lazily define the property
          * in JS as we do below in the real resolve hook. We ignore fields here
          * because I don't think interfaces can have fields */
-        if (is_ginterface_property_name(iface_info, canonical_name))
-            return lazy_define_gobject_property(cx, obj, id, resolved, name);
+        if (is_ginterface_property_name(iface_info, canonical_name)) {
+            GjsAutoTypeClass<GObjectClass> oclass(m_gtype);
+            // unowned
+            GParamSpec* pspec = g_object_class_find_property(
+                oclass, canonical_name);  // unowned
+            if (pspec && pspec->owner_type == m_gtype) {
+                return lazy_define_gobject_property(cx, obj, id, resolved,
+                                                    name);
+            }
+        }
     }
 
     *resolved = false;
