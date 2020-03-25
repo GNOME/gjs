@@ -421,6 +421,8 @@ function* _listModelIterator() {
 }
 
 function _promisify(proto, asyncFunc, finishFunc) {
+    if (proto[`_original_${asyncFunc}`] !== undefined)
+        return;
     proto[`_original_${asyncFunc}`] = proto[asyncFunc];
     proto[asyncFunc] = function (...args) {
         if (!args.every(arg => typeof arg !== 'function'))
