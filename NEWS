@@ -1,3 +1,11 @@
+Version 1.58.6
+--------------
+
+- Various backports:
+  * Correctly handle vfunc inout parameters [Marco Trevisan]
+  * Fix failed redirect of output in CommandLine tests [Liban Parker]
+  * Avoid filename conflict when tests run in parallel [Philip Chimento]
+
 Version 1.58.5
 --------------
 
