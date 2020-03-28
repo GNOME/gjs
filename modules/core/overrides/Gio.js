@@ -429,7 +429,9 @@ function _promisify(proto, asyncFunc, finishFunc) {
             const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
             this[`_original_${asyncFunc}`](...args, function (source, res) {
                 try {
-                    const result = source[finishFunc](res);
+                    const result = source !== null && source[finishFunc] !== undefined
+                        ? source[finishFunc](res)
+                        : proto[finishFunc](res);
                     if (Array.isArray(result) && result.length > 1 && result[0] === true)
                         result.shift();
                     resolve(result);
