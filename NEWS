@@ -1,3 +1,36 @@
+Version 1.65.1
+--------------
+
+- Closed bugs and merge requests:
+  * boxed: Implement newEnumerate hook for boxed objects [Ole Jørgen Brønner,
+    !400]
+  * ns: Implement newEnumerate hook for namespaces [Ole Jørgen Brønner, !401]
+  * CI: Tag sanitizer jobs as "privileged" [Philip Chimento, !407]
+  * overrides/Gio: Allow promisifying static methods [Florian Müllner, !410]
+  * overrides/Gio: Guard against repeated _promisify() calls [Florian Müllner,
+    !411]
+
+Version 1.64.1
+--------------
+
+- The BigInt type is now _actually_ available, as it wasn't enabled in the
+  1.64.0 release even though it was mentioned in the release notes.
+
+- Closed bugs and merge requests:
+  * testCommandLine's Unicode tests failing on Alpine Linux [Philip Chimento,
+    #296, !399]
+  * build: Various clean-ups [Jan Tojnar, !403]
+  * Correctly handle vfunc inout parameters [Marco Trevisan, !404]
+  * Fix failed redirect of output in CommandLine tests [Liban Parker, !409]
+
+Version 1.58.6
+--------------
+
+- Various backports:
+  * Correctly handle vfunc inout parameters [Marco Trevisan]
+  * Fix failed redirect of output in CommandLine tests [Liban Parker]
+  * Avoid filename conflict when tests run in parallel [Philip Chimento]
+
 Version 1.64.0
 --------------
 
