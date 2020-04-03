@@ -47,17 +47,15 @@
 #include "gjs/module.h"
 #include "util/log.h"
 
-class GjsModule {
+class GjsScriptModule {
     char *m_name;
 
-    GjsModule(const char *name)
-    {
+    GjsScriptModule(const char* name) {
         m_name = g_strdup(name);
         GJS_INC_COUNTER(module);
     }
 
-    ~GjsModule()
-    {
+    ~GjsScriptModule() {
         g_free(m_name);
         GJS_DEC_COUNTER(module);
     }
@@ -65,10 +63,8 @@ class GjsModule {
     /* Private data accessors */
 
     GJS_USE
-    static inline GjsModule *
-    priv(JSObject *module)
-    {
-        return static_cast<GjsModule *>(JS_GetPrivate(module));
+    static inline GjsScriptModule* priv(JSObject* module) {
+        return static_cast<GjsScriptModule*>(JS_GetPrivate(module));
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
@@ -77,8 +73,8 @@ class GjsModule {
     create(JSContext  *cx,
            const char *name)
     {
-        JSObject *module = JS_NewObject(cx, &GjsModule::klass);
-        JS_SetPrivate(module, new GjsModule(name));
+        JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
+        JS_SetPrivate(module, new GjsScriptModule(name));
         return module;
     }
 
@@ -213,15 +209,15 @@ class GjsModule {
         nullptr,  // deleteProperty
         nullptr,  // enumerate
         nullptr,  // newEnumerate
-        &GjsModule::resolve,
+        &GjsScriptModule::resolve,
         nullptr,  // mayResolve
-        &GjsModule::finalize,
+        &GjsScriptModule::finalize,
     };
 
     static constexpr JSClass klass = {
-        "GjsModule",
+        "GjsScriptModule",
         JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
-        &GjsModule::class_ops,
+        &GjsScriptModule::class_ops,
     };
 
  public:
@@ -234,7 +230,7 @@ class GjsModule {
            const char      *name,
            GFile           *file)
     {
-        JS::RootedObject module(cx, GjsModule::create(cx, name));
+        JS::RootedObject module(cx, GjsScriptModule::create(cx, name));
         if (!module ||
             !priv(module)->define_import(cx, module, importer, id) ||
             !priv(module)->import_file(cx, module, file))
@@ -267,8 +263,8 @@ gjs_module_import(JSContext       *cx,
                   const char      *name,
                   GFile           *file)
 {
-    return GjsModule::import(cx, importer, id, name, file);
+    return GjsScriptModule::import(cx, importer, id, name, file);
 }
 
-decltype(GjsModule::klass) constexpr GjsModule::klass;
-decltype(GjsModule::class_ops) constexpr GjsModule::class_ops;
+decltype(GjsScriptModule::klass) constexpr GjsScriptModule::klass;
+decltype(GjsScriptModule::class_ops) constexpr GjsScriptModule::class_ops;
