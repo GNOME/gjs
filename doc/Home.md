@@ -22,7 +22,6 @@ There are also a growing number of [examples][gjs-examples] and thorough tests o
 [gjs-tests]: https://gitlab.gnome.org/GNOME/gjs/blob/master/installed-tests/js
 
 
-
 ## Standalone Applications
 
 It's possible to write standalone applications with GJS for the GNOME Desktop, and infrastructure for Gettext, GSettings and GResources via the `package` import. There is a package specification, template repository available and plans for an in depth tutorial.
@@ -37,6 +36,7 @@ GNOME Applications written in GJS:
 * [GNOME Maps](https://gitlab.gnome.org/GNOME/gnome-maps)
 * [GNOME Sound Recorder](https://gitlab.gnome.org/GNOME/gnome-sound-recorder)
 * [GNOME Weather](https://gitlab.gnome.org/GNOME/gnome-weather)
+* [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
 * [Polari](https://gitlab.gnome.org/GNOME/polari) IRC Client
 
 ## Getting Help
