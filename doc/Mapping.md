@@ -10,7 +10,7 @@ For more information on JavaScript's prototypal inheritance, this [blog post][un
 
 ```js
 let label = new Gtk.Label({
-    label: '<a href="https://www.gnome.org">Gnome.org</a>',
+    label: '<a href="https://www.gnome.org">gnome.org</a>',
     halign: Gtk.Align.CENTER,
     hexpand: true,
     use_markup: true,
@@ -177,7 +177,7 @@ var MyLabel = GObject.registerClass({
 
 ## Enumerations and Flags
 
-Both enumerations and flags appear as entries under the namespace, with associated member properties. These are available in the official GJS [Gnome API documentation][gjs-docs].
+Both enumerations and flags appear as entries under the namespace, with associated member properties. These are available in the official GJS [GNOME API documentation][gjs-docs].
 
 ```js
 // enum GtkAlign, member GTK_ALIGN_CENTER
@@ -205,7 +205,7 @@ if (myApp.flags & Gio.ApplicationFlags.HANDLES_OPEN) {
 
 ## Structs and Unions
 
-C structures and unions are documented in the [Gnome API documentation][gjs-docs] (e.g. [Gdk.Event][gdk-event]) and generally have either JavaScript properties or getter methods for each member. Results may vary when trying to modify structs or unions.
+C structures and unions are documented in the [GNOME API documentation][gjs-docs] (e.g. [Gdk.Event][gdk-event]) and generally have either JavaScript properties or getter methods for each member. Results may vary when trying to modify structs or unions.
 
 ```js
 widget.connect("key-press-event", (widget, event) => {

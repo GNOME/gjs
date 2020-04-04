@@ -32,8 +32,7 @@ These debugging features reduce performance by quite a lot, but they
 will help catch mistakes in the API that could otherwise go unnoticed
 and cause crashes in gnome-shell later on.
 
-To build SpiderMonkey, follow the instructions on [this page][embedder]
-to download the source code and build the library.
+To build SpiderMonkey, follow the instructions on [this page](https://github.com/mozilla-spidermonkey/spidermonkey-embedding-examples/blob/esr68/docs/Building%20SpiderMonkey.md) to download the source code and build the library.
 If you are using `-Dprefix` to build GJS into a different path, then
 make sure to use the same build prefix for SpiderMonkey with `--prefix`.
 

@@ -14,8 +14,6 @@ GJS powers GNOME Shell, Polari, GNOME Documents, and many other apps.
 Under the hood it uses SpiderMonkey, Mozilla's JavaScript engine
 originally developed for Firefox.
 
-Wiki: https://gitlab.gnome.org/GNOME/gjs/wikis/Home
-
 ## Installation
 
 Available as part of your GNOME distribution by default.
@@ -62,6 +60,11 @@ Endless OS's [framework for offline content][eos-knowledge-lib] and, as
 a forked version, [Cinnamon].
 
 ## Reading material
+
+### Documentation
+
+* [Get started](https://gitlab.gnome.org/GNOME/gjs/-/blob/master/doc/Home.md)
+* [API documentation](https://gjs-docs.gnome.org/)
 
 ### JavaScript & SpiderMonkey
 
