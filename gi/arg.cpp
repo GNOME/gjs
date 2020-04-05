@@ -251,6 +251,21 @@ type_needs_out_release(GITypeInfo *type_info,
     return false;
 }
 
+/* FIXME: This should be added to gobject-introspection */
+GJS_USE
+static GITypeTag _g_type_info_get_storage_type(GITypeInfo* info) {
+    GITypeTag type_tag = g_type_info_get_tag(info);
+
+    if (type_tag == GI_TYPE_TAG_INTERFACE) {
+        GjsAutoBaseInfo interface = g_type_info_get_interface(info);
+        GIInfoType info_type = g_base_info_get_type(interface);
+        if (info_type == GI_INFO_TYPE_ENUM || info_type == GI_INFO_TYPE_FLAGS)
+            return g_enum_info_get_storage_type(interface);
+    }
+
+    return type_tag;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_g_list(JSContext   *context,
@@ -1079,21 +1094,12 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                                size_t length, GITransfer transfer,
                                GITypeInfo* param_info, void** arr_p) {
     enum { UNSIGNED=false, SIGNED=true };
-    GITypeTag element_type;
 
-    element_type = g_type_info_get_tag(param_info);
+    GITypeTag element_type = _g_type_info_get_storage_type(param_info);
 
     /* Special case for GValue "flat arrays" */
     if (is_gvalue_flat_array(param_info, element_type))
         return gjs_array_to_flat_gvalue_array(context, array_value, length, arr_p);
-
-    if (element_type == GI_TYPE_TAG_INTERFACE) {
-        GIBaseInfo *interface_info = g_type_info_get_interface(param_info);
-        GIInfoType info_type = g_base_info_get_type(interface_info);
-        if (info_type == GI_INFO_TYPE_ENUM || info_type == GI_INFO_TYPE_FLAGS)
-            element_type = g_enum_info_get_storage_type ((GIEnumInfo*) interface_info);
-        g_base_info_unref(interface_info);
-    }
 
     switch (element_type) {
     case GI_TYPE_TAG_UTF8:
@@ -1185,21 +1191,8 @@ gjs_g_array_new_for_type(JSContext    *context,
                          unsigned int  length,
                          GITypeInfo   *param_info)
 {
-    GITypeTag element_type;
     guint element_size;
-
-    element_type = g_type_info_get_tag(param_info);
-
-    if (element_type == GI_TYPE_TAG_INTERFACE) {
-        GIInterfaceInfo *interface_info = g_type_info_get_interface(param_info);
-        GIInfoType interface_type = g_base_info_get_type(interface_info);
-
-        if (interface_type == GI_INFO_TYPE_ENUM
-            || interface_type == GI_INFO_TYPE_FLAGS)
-            element_type = g_enum_info_get_storage_type((GIEnumInfo*) interface_info);
-
-        g_base_info_unref((GIBaseInfo*) interface_info);
-    }
+    GITypeTag element_type = _g_type_info_get_storage_type(param_info);
 
     switch (element_type) {
     case GI_TYPE_TAG_BOOLEAN:
