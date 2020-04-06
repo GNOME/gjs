@@ -39,16 +39,8 @@
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
-#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/mem-private.h"
 #include "util/log.h"
-
-extern struct JSClass gjs_repo_class;
-
-struct Repo {};
-
-GJS_DEFINE_PRIV_FROM_JS(Repo, gjs_repo_class)
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool lookup_override_function(JSContext *, JS::HandleId,
@@ -160,8 +152,6 @@ repo_resolve(JSContext       *context,
              JS::HandleId     id,
              bool            *resolved)
 {
-    Repo *priv;
-
     if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true; /* not resolved, but no error */
@@ -174,20 +164,8 @@ repo_resolve(JSContext       *context,
         return true;
     }
 
-    priv = priv_from_js(context, obj);
-    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook, obj %s, priv %p",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
-
-    if (priv == NULL) {
-        /* we are the prototype, or have the wrong class */
-        *resolved = false;
-        return true;
-    }
-
-    if (!JSID_IS_STRING(id)) {
-        *resolved = false;
-        return true;
-    }
+    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook, obj %s",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
 
     if (!resolve_namespace_object(context, obj, id))
         return false;
@@ -196,72 +174,30 @@ repo_resolve(JSContext       *context,
     return true;
 }
 
-GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(repo)
-
-static void repo_finalize(JSFreeOp*, JSObject* obj) {
-    Repo *priv;
-
-    priv = (Repo*) JS_GetPrivate(obj);
-    gjs_debug_lifecycle(GJS_DEBUG_GREPO,
-                        "finalize, obj %p priv %p", obj, priv);
-    if (priv == NULL)
-        return; /* we are the prototype, not a real instance */
-
-    GJS_DEC_COUNTER(repo);
-    delete priv;
-}
-
-/* The bizarre thing about this vtable is that it applies to both
- * instances of the object, and to the prototype that instances of the
- * class have.
- */
 static const struct JSClassOps gjs_repo_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     repo_resolve,
-    nullptr,  // mayResolve
-    repo_finalize};
-
-struct JSClass gjs_repo_class = {
-    "GIRepository", /* means "new GIRepository()" works */
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
-    &gjs_repo_class_ops,
 };
 
-// clang-format off
-static const JSPropertySpec gjs_repo_proto_props[] = {
-    JS_STRING_SYM_PS(toStringTag, "GIRepository", JSPROP_READONLY),
-    JS_PS_END};
-// clang-format on
-
-static JSFunctionSpec *gjs_repo_proto_funcs = nullptr;
-static JSFunctionSpec *gjs_repo_static_funcs = nullptr;
-
-GJS_DEFINE_PROTO_FUNCS(repo)
+struct JSClass gjs_repo_class = {
+    "GIRepository",
+    0,
+    &gjs_repo_class_ops,
+};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
 repo_new(JSContext *context)
 {
-    JS::RootedObject proto(context);
-    if (!gjs_repo_define_proto(context, nullptr, &proto))
-        return nullptr;
-
-    JS::RootedObject repo(context,
-        JS_NewObjectWithGivenProto(context, &gjs_repo_class, proto));
+    JS::RootedObject repo(context, JS_NewObject(context, &gjs_repo_class));
     if (repo == nullptr)
         return nullptr;
 
-    auto* priv = new Repo();
-    GJS_INC_COUNTER(repo);
-
-    g_assert(priv_from_js(context, repo) == NULL);
-    JS_SetPrivate(repo, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GREPO,
-                        "repo constructor, obj %p priv %p", repo.get(), priv);
+    gjs_debug_lifecycle(GJS_DEBUG_GREPO, "repo constructor, obj %p",
+                        repo.get());
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     JS::RootedObject versions(context, JS_NewPlainObject(context));

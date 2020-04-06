@@ -29,7 +29,6 @@ typedef struct {
     macro(object_instance)          \
     macro(object_prototype)         \
     macro(param)                    \
-    macro(repo)                     \
     macro(union_instance)           \
     macro(union_prototype)
 // clang-format on
