@@ -495,7 +495,7 @@ out:
         } else if (!rval.isUndefined()) {
             JS_SetPendingException(context, rval);
         }
-        gjs_log_exception(context);
+        gjs_log_exception_uncaught(context);
     }
 
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {

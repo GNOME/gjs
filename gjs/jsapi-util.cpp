@@ -395,11 +395,20 @@ gjs_value_debug_string(JSContext      *context,
     return _gjs_g_utf8_make_valid(bytes.get());
 }
 
-bool
-gjs_log_exception_full(JSContext       *context,
-                       JS::HandleValue  exc,
-                       JS::HandleString message)
-{
+/**
+ * gjs_log_exception_full:
+ * @cx: the #JSContext
+ * @exc: the exception value to be logged
+ * @message: a string to prepend to the log message
+ * @level: the severity level at which to log the exception
+ *
+ * Currently, uses %G_LOG_LEVEL_WARNING if the exception is being printed after
+ * being caught, and %G_LOG_LEVEL_CRITICAL if it was not caught by user code.
+ *
+ * Returns: %true if an exception was logged, %false if there was none pending.
+ */
+bool gjs_log_exception_full(JSContext* context, JS::HandleValue exc,
+                            JS::HandleString message, GLogLevelFlags level) {
     bool is_syntax;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
 
@@ -445,14 +454,13 @@ gjs_log_exception_full(JSContext       *context,
         lineNumber = js_lineNumber.toInt32();
 
         if (message) {
-            g_critical("JS ERROR: %s: %s @ %s:%u", utf8_message.get(),
-                       utf8_exception.get(),
-                       utf8_filename ? utf8_filename.get() : "unknown",
-                       lineNumber);
+            g_log(G_LOG_DOMAIN, level, "JS ERROR: %s: %s @ %s:%u",
+                  utf8_message.get(), utf8_exception.get(),
+                  utf8_filename ? utf8_filename.get() : "unknown", lineNumber);
         } else {
-            g_critical("JS ERROR: %s @ %s:%u", utf8_exception.get(),
-                       utf8_filename ? utf8_filename.get() : "unknown",
-                       lineNumber);
+            g_log(G_LOG_DOMAIN, level, "JS ERROR: %s @ %s:%u",
+                  utf8_exception.get(),
+                  utf8_filename ? utf8_filename.get() : "unknown", lineNumber);
         }
 
     } else {
@@ -468,17 +476,19 @@ gjs_log_exception_full(JSContext       *context,
 
         if (message) {
             if (utf8_stack)
-                g_warning("JS ERROR: %s: %s\n%s", utf8_message.get(),
-                          utf8_exception.get(), utf8_stack.get());
+                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s: %s\n%s",
+                      utf8_message.get(), utf8_exception.get(),
+                      utf8_stack.get());
             else
-                g_warning("JS ERROR: %s: %s", utf8_message.get(),
-                          utf8_exception.get());
+                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s: %s",
+                      utf8_message.get(), utf8_exception.get());
         } else {
             if (utf8_stack)
-                g_warning("JS ERROR: %s\n%s", utf8_exception.get(),
-                          utf8_stack.get());
+                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s\n%s",
+                      utf8_exception.get(), utf8_stack.get());
             else
-                g_warning("JS ERROR: %s", utf8_exception.get());
+                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s",
+                      utf8_exception.get());
         }
     }
 
@@ -494,7 +504,30 @@ gjs_log_exception(JSContext  *context)
 
     JS_ClearPendingException(context);
 
-    gjs_log_exception_full(context, exc, nullptr);
+    gjs_log_exception_full(context, exc, nullptr, G_LOG_LEVEL_WARNING);
+    return true;
+}
+
+/**
+ * gjs_log_exception_uncaught:
+ * @cx: the #JSContext
+ *
+ * Logs the exception pending on @cx, if any, indicating an uncaught exception
+ * in the running JS program.
+ * (Currently, due to main loop boundaries, uncaught exceptions may not bubble
+ * all the way back up to the top level, so this doesn't necessarily mean the
+ * program exits with an error.)
+ *
+ * Returns: %true if an exception was logged, %false if there was none pending.
+ */
+bool gjs_log_exception_uncaught(JSContext* cx) {
+    JS::RootedValue exc(cx);
+    if (!JS_GetPendingException(cx, &exc))
+        return false;
+
+    JS_ClearPendingException(cx);
+
+    gjs_log_exception_full(cx, exc, nullptr, G_LOG_LEVEL_CRITICAL);
     return true;
 }
 

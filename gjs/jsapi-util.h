@@ -242,9 +242,10 @@ bool gjs_throw_gerror_message(JSContext* cx, GError* error);
 
 bool        gjs_log_exception                (JSContext       *context);
 
-bool gjs_log_exception_full(JSContext       *context,
-                            JS::HandleValue  exc,
-                            JS::HandleString message);
+bool gjs_log_exception_uncaught(JSContext* cx);
+
+bool gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
+                            JS::HandleString message, GLogLevelFlags level);
 
 GJS_USE
 char *gjs_value_debug_string(JSContext      *context,

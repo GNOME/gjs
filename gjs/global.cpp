@@ -143,7 +143,7 @@ gjs_log_error(JSContext *cx,
         exc_state.restore();
     }
 
-    gjs_log_exception_full(cx, argv[0], jstr);
+    gjs_log_exception_full(cx, argv[0], jstr, G_LOG_LEVEL_WARNING);
 
     argv.rval().setUndefined();
     return true;

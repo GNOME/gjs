@@ -222,7 +222,7 @@ test -z "$($gjs awaitcatch.js)"
 report "catching an await expression should not cause unhandled rejection"
 # https://gitlab.gnome.org/GNOME/gjs/issues/18
 G_DEBUG=$(echo "$G_DEBUG" | sed -e 's/fatal-warnings,\{0,1\}//')
-$gjs -c "(async () => await true)(); void foobar;" 2>&1 | grep -q 'Script .* threw an exception'
+$gjs -c "(async () => await true)(); void foobar;" 2>&1 | grep -q 'ReferenceError: foobar is not defined'
 report "main program exceptions are not swallowed by queued promise jobs"
 G_DEBUG="$OLD_G_DEBUG"
 
