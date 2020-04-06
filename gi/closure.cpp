@@ -201,10 +201,9 @@ gjs_closure_invoke(GClosure                   *closure,
     context = c->context;
     JSAutoRealm ar(context, JS_GetFunctionObject(c->func));
 
-    if (JS_IsExceptionPending(context)) {
+    if (gjs_log_exception(context)) {
         gjs_debug_closure("Exception was pending before invoking callback??? "
                           "Not expected - closure %p", closure);
-        gjs_log_exception(context);
     }
 
     JS::RootedFunction func(context, c->func);
