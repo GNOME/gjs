@@ -419,17 +419,13 @@ function _init() {
     };
 
     this.strchug = function (string) {
-        // COMPAT: replace with trimStart() in mozjs68
-        _warnNotIntrospectable('GLib.strchug()',
-            'String.trimLeft() until SpiderMonkey 68, then String.trimStart()');
-        return string.trimLeft();
+        _warnNotIntrospectable('GLib.strchug()', 'String.trimStart()');
+        return string.trimStart();
     };
 
     this.strchomp = function (string) {
-        // COMPAT: replace with trimEnd() in mozjs68
-        _warnNotIntrospectable('GLib.strchomp()',
-            'String.trimRight() until SpiderMonkey 68, then String.trimEnd()');
-        return string.trimRight();
+        _warnNotIntrospectable('GLib.strchomp()', 'String.trimEnd()');
+        return string.trimEnd();
     };
 
     // g_strstrip() is a macro and therefore doesn't even appear in the GIR
