@@ -376,10 +376,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
               sizeof...(Args) / 2 == n_total));
 
-    /* COMPAT: In future, use args.requireAtLeast()
-     * https://bugzilla.mozilla.org/show_bug.cgi?id=1334338 */
-    if (args.length() < n_required ||
-        (args.length() > n_total && !ignore_trailing_args)) {
+    if (!args.requireAtLeast(cx, function_name, n_required))
+        return false;
+    if (!ignore_trailing_args && args.length() > n_total) {
         if (n_required == n_total) {
             gjs_throw(cx, "Error invoking %s: Expected %d arguments, got %d",
                       function_name, n_required, args.length());
