@@ -2742,8 +2742,11 @@ gjs_object_from_g_hash (JSContext             *context,
     JS::RootedString keystr(context);
 
     g_hash_table_iter_init(&iter, hash);
+    void* key_pointer;
     void* val_pointer;
-    while (g_hash_table_iter_next(&iter, &keyarg.v_pointer, &val_pointer)) {
+    while (g_hash_table_iter_next(&iter, &key_pointer, &val_pointer)) {
+        _g_type_info_argument_from_hash_pointer(key_param_info, key_pointer,
+                                                &keyarg);
         if (!gjs_value_from_g_argument(context, &keyjs,
                                        key_param_info, &keyarg,
                                        true))
