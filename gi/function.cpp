@@ -153,7 +153,7 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
                 interface_type == GI_INFO_TYPE_FLAGS)
-                *(ffi_sarg *) result = return_value->v_long;
+                *(ffi_sarg *) result = return_value->v_int;
             else
                 *(ffi_arg *) result = (ffi_arg) return_value->v_pointer;
 
