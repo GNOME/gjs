@@ -45,13 +45,9 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-typedef struct {
-    GParamSpec* gparam;  // nullptr if we are the prototype and not an instance
-} Param;
-
 extern struct JSClass gjs_param_class;
 
-GJS_DEFINE_PRIV_FROM_JS(Param, gjs_param_class)
+GJS_DEFINE_PRIV_FROM_JS(GParamSpec, gjs_param_class)
 
 /*
  * The *resolved out parameter, on success, should be false to indicate that id
@@ -64,8 +60,7 @@ param_resolve(JSContext       *context,
               JS::HandleId     id,
               bool            *resolved)
 {
-    Param* priv = priv_from_js(context, obj);
-    if (!priv) {
+    if (!priv_from_js(context, obj)) {
         /* instance, not prototype */
         *resolved = false;
         return true;
@@ -115,18 +110,14 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(param)
 }
 
 static void param_finalize(JSFreeOp*, JSObject* obj) {
-    Param *priv;
-
-    priv = (Param*) JS_GetPrivate(obj);
-    gjs_debug_lifecycle(GJS_DEBUG_GPARAM,
-                        "finalize, obj %p priv %p", obj, priv);
-    if (!priv)
+    GjsAutoParam param = static_cast<GParamSpec*>(JS_GetPrivate(obj));
+    gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
+                        param.get());
+    if (!param)
         return; /* wrong class? */
 
-    g_clear_pointer(&priv->gparam, g_param_spec_unref);
-
     GJS_DEC_COUNTER(param);
-    g_slice_free(Param, priv);
+    JS_SetPrivate(obj, nullptr);
 }
 
 
@@ -225,7 +216,6 @@ gjs_param_from_g_param(JSContext    *context,
                        GParamSpec   *gparam)
 {
     JSObject *obj;
-    Param *priv;
 
     if (!gparam)
         return nullptr;
@@ -241,14 +231,12 @@ gjs_param_from_g_param(JSContext    *context,
     obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
 
     GJS_INC_COUNTER(param);
-    priv = g_slice_new0(Param);
-    JS_SetPrivate(obj, priv);
-    priv->gparam = gparam;
+    JS_SetPrivate(obj, gparam);
     g_param_spec_ref (gparam);
 
     gjs_debug(GJS_DEBUG_GPARAM,
-              "JSObject created with param instance %p type %s",
-              priv->gparam, g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) priv->gparam)));
+              "JSObject created with param instance %p type %s", gparam,
+              g_type_name(G_TYPE_FROM_INSTANCE(gparam)));
 
     return obj;
 }
@@ -257,14 +245,10 @@ GParamSpec*
 gjs_g_param_from_param(JSContext       *context,
                        JS::HandleObject obj)
 {
-    Param *priv;
-
     if (!obj)
         return nullptr;
 
-    priv = priv_from_js(context, obj);
-
-    return priv->gparam;
+    return priv_from_js(context, obj);
 }
 
 bool
@@ -273,15 +257,14 @@ gjs_typecheck_param(JSContext       *context,
                     GType            expected_type,
                     bool             throw_error)
 {
-    Param *priv;
     bool result;
 
     if (!do_base_typecheck(context, object, throw_error))
         return false;
 
-    priv = priv_from_js(context, object);
+    GParamSpec* param = priv_from_js(context, object);
 
-    if (!priv->gparam) {
+    if (!param) {
         if (throw_error) {
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object is GObject.ParamSpec.prototype, not an object instance - "
@@ -292,14 +275,14 @@ gjs_typecheck_param(JSContext       *context,
     }
 
     if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a (G_TYPE_FROM_INSTANCE (priv->gparam), expected_type);
+        result = g_type_is_a(G_TYPE_FROM_INSTANCE(param), expected_type);
     else
         result = true;
 
     if (!result && throw_error) {
         gjs_throw_custom(context, JSProto_TypeError, nullptr,
                          "Object is of type %s - cannot convert to %s",
-                         g_type_name(G_TYPE_FROM_INSTANCE (priv->gparam)),
+                         g_type_name(G_TYPE_FROM_INSTANCE(param)),
                          g_type_name(expected_type));
     }
 
