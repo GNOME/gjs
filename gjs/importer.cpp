@@ -211,18 +211,13 @@ import_directory(JSContext          *context,
                  const char         *name,
                  const char * const *full_paths)
 {
-    JSObject *importer;
-
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing directory '%s'",
               name);
 
-    /* We define a sub-importer that has only the given directories on
-     * its search path. gjs_define_importer() exits if it fails, so
-     * this always succeeds.
-     */
-    importer = gjs_define_importer(context, obj, name, full_paths, false);
-    return importer != nullptr;
+    // We define a sub-importer that has only the given directories on its
+    // search path.
+    return !!gjs_define_importer(context, obj, name, full_paths, false);
 }
 
 /* Make the property we set in gjs_module_import() permanent;
