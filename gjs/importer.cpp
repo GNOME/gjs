@@ -37,10 +37,9 @@
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/global.h"
 #include "gjs/importer.h"
-#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/mem-private.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
 #include "util/log.h"
@@ -49,16 +48,9 @@
 
 extern const JSClass gjs_importer_class;
 
-struct Importer {
-    explicit Importer(bool root) : is_root(root) {}
-
-    bool is_root : 1;
-};
-
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_define_importer(JSContext*, JS::HandleObject, const char*,
                                      const std::vector<std::string>&, bool);
-GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
@@ -66,22 +58,20 @@ importer_to_string(JSContext *cx,
                    unsigned   argc,
                    JS::Value *vp)
 {
-    GJS_GET_PRIV(cx, argc, vp, args, importer, Importer, priv);
+    GJS_GET_THIS(cx, argc, vp, args, importer);
 
     GjsAutoChar output;
 
     const JSClass* klass = JS_GetClass(importer);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedValue module_path(cx);
+    if (!JS_GetPropertyById(cx, importer, atoms.module_path(), &module_path))
+        return false;
 
-    if (!priv) {
-        output = g_strdup_printf("[%s prototype]", klass->name);
-    } else if (priv->is_root) {
+    if (module_path.isNull()) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-        JS::RootedValue module_path(cx);
-        if (!JS_GetPropertyById(cx, importer, atoms.module_path(),
-                                &module_path))
-            return false;
+        g_assert(module_path.isString() && "Bad importer.__modulePath__");
         JS::UniqueChars path = gjs_string_to_utf8(cx, module_path);
         if (!path)
             return false;
@@ -450,7 +440,7 @@ import_file_on_module(JSContext       *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
+static bool do_import(JSContext* context, JS::HandleObject obj,
                       JS::HandleId id) {
     JS::RootedObject search_path(context);
     guint32 search_path_len;
@@ -482,8 +472,13 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
         return false;
     }
 
+    // null if this is the root importer
+    JS::RootedValue parent(context);
+    if (!JS_GetPropertyById(context, obj, atoms.parent_module(), &parent))
+        return false;
+
     /* First try importing an internal module like gi */
-    if (priv->is_root && gjs_is_registered_native_module(name.get())) {
+    if (parent.isNull() && gjs_is_registered_native_module(name.get())) {
         if (!gjs_import_native_module(context, obj, name.get()))
             return false;
 
@@ -593,24 +588,14 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     return false;
 }
 
-/* Note that in a for ... in loop, this will be called first on the object,
- * then on its prototype.
- */
 GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                                    JS::MutableHandleIdVector properties,
                                    bool enumerable_only [[maybe_unused]]) {
-    Importer *priv;
     guint32 search_path_len;
     guint32 i;
     bool is_array;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-
-    priv = priv_from_js(context, object);
-
-    if (!priv)
-        /* we are enumerating the prototype properties */
-        return true;
 
     JS::RootedObject search_path(context);
     if (!gjs_object_require_property(context, object, "importer",
@@ -721,8 +706,6 @@ importer_resolve(JSContext        *context,
                  JS::HandleId      id,
                  bool             *resolved)
 {
-    Importer *priv;
-
     if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;
@@ -735,61 +718,32 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    priv = priv_from_js(context, obj);
-
-    gjs_debug_jsprop(GJS_DEBUG_IMPORTER,
-                     "Resolve prop '%s' hook, obj %s, priv %p",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str(), priv);
-    if (!priv) {
-        /* we are the prototype, or have the wrong class */
-        *resolved = false;
-        return true;
-    }
+    gjs_debug_jsprop(GJS_DEBUG_IMPORTER, "Resolve prop '%s' hook, obj %s",
+                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
 
     if (!JSID_IS_STRING(id)) {
         *resolved = false;
         return true;
     }
 
-    if (!do_import(context, obj, priv, id))
+    if (!do_import(context, obj, id))
         return false;
 
     *resolved = true;
     return true;
 }
 
-GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(importer)
-
-static void importer_finalize(JSFreeOp*, JSObject* obj) {
-    Importer *priv;
-
-    priv = (Importer*) JS_GetPrivate(obj);
-    gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
-                        "finalize, obj %p priv %p", obj, priv);
-    if (!priv)
-        return; /* we are the prototype, not a real instance */
-
-    GJS_DEC_COUNTER(importer);
-    delete priv;
-}
-
-/* The bizarre thing about this vtable is that it applies to both
- * instances of the object, and to the prototype that instances of the
- * class have.
- */
 static const JSClassOps gjs_importer_class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     importer_new_enumerate,
     importer_resolve,
-    nullptr,  // mayResolve
-    importer_finalize
 };
 
 const JSClass gjs_importer_class = {
     "GjsFileImporter",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
+    0,
     &gjs_importer_class_ops,
 };
 
@@ -797,40 +751,9 @@ static const JSPropertySpec gjs_importer_proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "GjsFileImporter", JSPROP_READONLY),
     JS_PS_END};
 
-static JSFunctionSpec *gjs_importer_static_funcs = nullptr;
-
 JSFunctionSpec gjs_importer_proto_funcs[] = {
     JS_FN("toString", importer_to_string, 0, 0),
     JS_FS_END};
-
-GJS_DEFINE_PROTO_FUNCS(importer)
-
-GJS_JSAPI_RETURN_CONVENTION
-static JSObject*
-importer_new(JSContext *context,
-             bool       is_root)
-{
-    JS::RootedObject proto(context);
-    if (!gjs_importer_define_proto(context, nullptr, &proto))
-        return nullptr;
-
-    JS::RootedObject importer(context,
-        JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
-    if (!importer)
-        return nullptr;
-
-    auto* priv = new Importer(is_root);
-    GJS_INC_COUNTER(importer);
-
-    g_assert(priv_from_js(context, importer) == NULL);
-    JS_SetPrivate(importer, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_IMPORTER,
-                        "importer constructor, obj %p priv %p", importer.get(),
-                        priv);
-
-    return importer;
-}
 
 [[nodiscard]] static const std::vector<std::string>& gjs_get_search_path() {
     static std::vector<std::string> gjs_search_path;
@@ -884,10 +807,36 @@ importer_new(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static JSObject* gjs_importer_define_proto(JSContext* cx) {
+    JSObject* global = JS::CurrentGlobalOrNull(cx);
+    g_assert(global && "Must enter a realm before defining importer");
+
+    // If we've been here more than once, we already have the proto
+    JS::Value v_proto =
+        gjs_get_global_slot(global, GjsGlobalSlot::PROTOTYPE_importer);
+    if (!v_proto.isUndefined()) {
+        g_assert(v_proto.isObject() &&
+                 "Someone stored some weird value in a global slot");
+        return &v_proto.toObject();
+    }
+
+    JS::RootedObject proto(cx, JS_NewPlainObject(cx));
+    if (!proto || !JS_DefineFunctions(cx, proto, gjs_importer_proto_funcs) ||
+        !JS_DefineProperties(cx, proto, gjs_importer_proto_props))
+        return nullptr;
+    gjs_set_global_slot(global, GjsGlobalSlot::PROTOTYPE_importer,
+                        JS::ObjectValue(*proto));
+
+    gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",
+              gjs_importer_class.name, proto.get());
+    return proto;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_create_importer(
     JSContext* context, const char* importer_name,
     const std::vector<std::string>& initial_search_path,
-    bool add_standard_search_path, bool is_root, JS::HandleObject in_object) {
+    bool add_standard_search_path, JS::HandleObject in_object) {
     std::vector<std::string> search_paths = initial_search_path;
     if (add_standard_search_path) {
         /* Stick the "standard" shared search path after the provided one. */
@@ -896,7 +845,18 @@ static JSObject* gjs_create_importer(
                             gjs_search_path.end());
     }
 
-    JS::RootedObject importer(context, importer_new(context, is_root));
+    JS::RootedObject proto(context, gjs_importer_define_proto(context));
+    if (!proto)
+        return nullptr;
+
+    JS::RootedObject importer(
+        context,
+        JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
+    if (!importer)
+        return nullptr;
+
+    gjs_debug_lifecycle(GJS_DEBUG_IMPORTER, "importer constructor, obj %p",
+                        importer.get());
 
     /* API users can replace this property from JS, is the idea */
     if (!gjs_define_string_array(
@@ -916,9 +876,10 @@ static JSObject* gjs_define_importer(
     JSContext* context, JS::HandleObject in_object, const char* importer_name,
     const std::vector<std::string>& initial_search_path,
     bool add_standard_search_path) {
-    JS::RootedObject importer(context,
+    JS::RootedObject importer(
+        context,
         gjs_create_importer(context, importer_name, initial_search_path,
-                            add_standard_search_path, false, in_object));
+                            add_standard_search_path, in_object));
 
     if (!JS_DefineProperty(context, in_object, importer_name, importer,
                            GJS_MODULE_PROP_FLAGS))
@@ -933,5 +894,5 @@ static JSObject* gjs_define_importer(
 
 JSObject* gjs_create_root_importer(
     JSContext* cx, const std::vector<std::string>& search_path) {
-    return gjs_create_importer(cx, "imports", search_path, true, true, nullptr);
+    return gjs_create_importer(cx, "imports", search_path, true, nullptr);
 }
