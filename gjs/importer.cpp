@@ -72,11 +72,6 @@ typedef struct {
     bool is_root;
 } Importer;
 
-typedef struct {
-    GPtrArray *elements;
-    unsigned int index;
-} ImporterIterator;
-
 extern const JSClass gjs_importer_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
