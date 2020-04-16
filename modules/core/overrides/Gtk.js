@@ -23,6 +23,7 @@ const Legacy = imports._legacy;
 const {Gio, GjsPrivate, GObject} = imports.gi;
 
 let Gtk;
+let BuilderScope;
 
 function _init() {
 
@@ -44,20 +45,22 @@ function _init() {
 
     Gtk.Widget.prototype._init = function (params) {
         if (this.constructor[Gtk.template]) {
-            Gtk.Widget.set_connect_func.call(this.constructor, (builder, obj, signalName, handlerName, connectObj, flags) => {
-                connectObj = connectObj || this;
+            if (BuilderScope) {
+                Gtk.Widget.set_template_scope.call(this.constructor,
+                    new BuilderScope(this));
+            } else {
+                Gtk.Widget.set_connect_func.call(this.constructor,
+                    (builder, obj, signalName, handlerName, connectObj, flags) => {
+                        const swapped = flags & GObject.ConnectFlags.SWAPPED;
+                        const closure = _createClosure(
+                            builder, this, handlerName, swapped, connectObj);
 
-                if (flags & GObject.ConnectFlags.SWAPPED) {
-                    throw new Error('Unsupported template signal flag "swapped"');
-                } else if (typeof this[handlerName] === 'undefined') {
-                    throw new Error(`A handler called ${handlerName} was not ` +
-                        `defined for signal ${signalName} on ${this}`);
-                } else if (flags & GObject.ConnectFlags.AFTER) {
-                    obj.connect_after(signalName, this[handlerName].bind(connectObj));
-                } else {
-                    obj.connect(signalName, this[handlerName].bind(connectObj));
-                }
-            });
+                        if (flags & GObject.ConnectFlags.AFTER)
+                            obj.connect_after(signalName, closure);
+                        else
+                            obj.connect(signalName, closure);
+                    });
+            }
         }
 
         GObject.Object.prototype._init.call(this, params);
@@ -121,4 +124,34 @@ function _init() {
 
         return klass;
     };
+
+    if (Gtk.BuilderScope) {
+        BuilderScope = GObject.registerClass({
+            Implements: [Gtk.BuilderScope],
+        }, class extends GObject.Object {
+            _init(thisArg) {
+                super._init();
+                this._this = thisArg;
+            }
+
+            vfunc_create_closure(builder, handlerName, flags, connectObject) {
+                const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
+                return _createClosure(
+                    builder, this._this, handlerName, swapped, connectObject);
+            }
+        });
+    }
+}
+
+function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {
+    connectObject = connectObject || thisArg;
+
+    if (swapped) {
+        throw new Error('Unsupported template signal flag "swapped"');
+    } else if (typeof thisArg[handlerName] === 'undefined') {
+        throw new Error(`A handler called ${handlerName} was not ` +
+            `defined on ${thisArg}`);
+    }
+
+    return thisArg[handlerName].bind(connectObject);
 }
