@@ -122,10 +122,14 @@ endif
 
 if not get_option('skip_gtk_tests')
     jasmine_tests += [
-        'Gtk',
+        'Gtk3',
         'GObjectDestructionAccess',
         'LegacyGtk',
     ]
+
+    if have_gtk4
+        jasmine_tests += 'Gtk4'
+    endif
 endif
 
 installed_js_tests_dir = installed_tests_execdir / 'js'

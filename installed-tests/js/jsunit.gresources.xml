@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gjs/jsunit">
-    <file preprocess="xml-stripblanks">complex.ui</file>
+    <file preprocess="xml-stripblanks">complex3.ui</file>
+    <file preprocess="xml-stripblanks">complex4.ui</file>
     <file>jasmine.js</file>
     <file>minijasmine.js</file>
     <file>modules/alwaysThrows.js</file>
