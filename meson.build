@@ -606,6 +606,10 @@ if host_machine.system() != 'windows'
     subdir('test')
 endif
 
+if not get_option('skip_gtk_tests')
+    have_gtk4 = dependency('gtk4', required: false).found()
+endif
+
 subdir('installed-tests')
 
 valgrind_environment = environment()
