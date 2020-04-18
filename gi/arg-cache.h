@@ -39,22 +39,22 @@
 
 struct GjsFunctionCallState;
 
-typedef struct _GjsArgumentCache {
-    bool (*marshal_in)(JSContext* cx, struct _GjsArgumentCache* cache,
+struct GjsArgumentCache {
+    bool (*marshal_in)(JSContext* cx, GjsArgumentCache* cache,
                        GjsFunctionCallState* state, GIArgument* in_argument,
                        JS::HandleValue value);
-    bool (*marshal_out)(JSContext* cx, struct _GjsArgumentCache* cache,
+    bool (*marshal_out)(JSContext* cx, GjsArgumentCache* cache,
                         GjsFunctionCallState* state, GIArgument* out_argument,
                         JS::MutableHandleValue value);
-    bool (*release)(JSContext* cx, struct _GjsArgumentCache* cache,
+    bool (*release)(JSContext* cx, GjsArgumentCache* cache,
                     GjsFunctionCallState* state, GIArgument* in_argument,
                     GIArgument* out_argument);
-    void (*free)(struct _GjsArgumentCache* cache);
+    void (*free)(GjsArgumentCache* cache);
 
     const char* arg_name;
-    int arg_pos;
     GITypeInfo type_info;
 
+    int arg_pos;
     bool skip_in : 1;
     bool skip_out : 1;
     GITransfer transfer : 2;
@@ -65,17 +65,17 @@ typedef struct _GjsArgumentCache {
         // for explicit array only
         struct {
             int length_pos;
-            GITypeTag length_tag;
+            GITypeTag length_tag : 5;
         } array;
 
         struct {
-            GIScopeType scope;
             int closure_pos;
             int destroy_pos;
+            GIScopeType scope : 2;
         } callback;
 
         struct {
-            GITypeTag number_tag;
+            GITypeTag number_tag : 5;
             bool is_unsigned : 1;
         } number;
 
@@ -101,7 +101,21 @@ typedef struct _GjsArgumentCache {
         // out caller allocates (FIXME: should be in object)
         size_t caller_allocates_size;
     } contents;
-} GjsArgumentCache;
+};
+
+// This is a trick to print out the sizes of the structs at compile time, in
+// an error message:
+// template <int s> struct Measure;
+// Measure<sizeof(GjsArgumentCache)> arg_cache_size;
+
+#if defined(__x86_64__) && defined(__clang__)
+// This isn't meant to be comprehensive, but should trip on at least one CI job
+// if sizeof(GjsArgumentCache) is increased. */
+static_assert(sizeof(GjsArgumentCache) <= 136,
+              "Think very hard before increasing the size of GjsArgumentCache. "
+              "One is allocated for every argument to every introspected "
+              "function.");
+#endif  // x86-64 clang
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
