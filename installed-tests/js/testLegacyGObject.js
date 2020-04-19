@@ -381,6 +381,49 @@ describe('GObject class', function () {
             },
         })).toThrow();
     });
+
+    it('handles gracefully forgetting to override a C property', function () {
+        GLib.test_expect_message('GLib-GObject', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            "*Object class Gjs_ForgottenOverride doesn't implement property " +
+            "'anchors' from interface 'GTlsFileDatabase'*");
+
+        // This is a random interface in Gio with a read-write property
+        const ForgottenOverride = new Lang.Class({
+            Name: 'ForgottenOverride',
+            Extends: Gio.TlsDatabase,
+            Implements: [Gio.TlsFileDatabase],
+        });
+        const obj = new ForgottenOverride();
+        expect(obj.anchors).not.toBeDefined();
+        expect(() => (obj.anchors = 'foo')).not.toThrow();
+        expect(obj.anchors).toEqual('foo');
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectClass.js', 0,
+            'testGObjectClassForgottenOverride');
+    });
+
+    it('handles gracefully overriding a C property but forgetting the accessors', function () {
+        // This is a random interface in Gio with a read-write property
+        const ForgottenAccessors = new Lang.Class({
+            Name: 'ForgottenAccessors',
+            Extends: Gio.TlsDatabase,
+            Implements: [Gio.TlsFileDatabase],
+            Properties: {
+                'anchors': GObject.ParamSpec.override('anchors', Gio.TlsFileDatabase),
+            },
+        });
+        const obj = new ForgottenAccessors();
+        expect(obj.anchors).toBeNull();
+        obj.anchors = 'foo';
+
+        const ForgottenAccessors2 = new Lang.Class({
+            Name: 'ForgottenAccessors2',
+            Extends: ForgottenAccessors,
+        });
+        const obj2 = new ForgottenAccessors2();
+        expect(obj2.anchors).toBeNull();
+        obj2.anchors = 'foo';
+    });
 });
 
 const AnInterface = new Lang.Interface({

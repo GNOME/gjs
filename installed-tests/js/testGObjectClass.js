@@ -377,6 +377,45 @@ describe('GObject class with decorator', function () {
         }, class BadOverride extends GObject.Object {})).toThrow();
     });
 
+    it('handles gracefully forgetting to override a C property', function () {
+        GLib.test_expect_message('GLib-GObject', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            "*Object class Gjs_ForgottenOverride doesn't implement property " +
+            "'anchors' from interface 'GTlsFileDatabase'*");
+
+        // This is a random interface in Gio with a read-write property
+        const ForgottenOverride = GObject.registerClass({
+            Implements: [Gio.TlsFileDatabase],
+        }, class ForgottenOverride extends Gio.TlsDatabase {});
+        const obj = new ForgottenOverride();
+        expect(obj.anchors).not.toBeDefined();
+        expect(() => (obj.anchors = 'foo')).not.toThrow();
+        expect(obj.anchors).toEqual('foo');
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectClass.js', 0,
+            'testGObjectClassForgottenOverride');
+    });
+
+    it('handles gracefully overriding a C property but forgetting the accessors', function () {
+        // This is a random interface in Gio with a read-write property
+        const ForgottenAccessors = GObject.registerClass({
+            Implements: [Gio.TlsFileDatabase],
+            Properties: {
+                'anchors': GObject.ParamSpec.override('anchors', Gio.TlsFileDatabase),
+            },
+        }, class ForgottenAccessors extends Gio.TlsDatabase {});
+        const obj = new ForgottenAccessors();
+        expect(obj.anchors).toBeNull();  // the property's default value
+        obj.anchors = 'foo';
+        expect(obj.anchors).toEqual('foo');
+
+        const ForgottenAccessors2 =
+            GObject.registerClass(class ForgottenAccessors2 extends ForgottenAccessors {});
+        const obj2 = new ForgottenAccessors2();
+        expect(obj2.anchors).toBeNull();
+        obj2.anchors = 'foo';
+        expect(obj2.anchors).toEqual('foo');
+    });
+
     it('does not pollute the wrong prototype with GObject properties', function () {
         const MyCustomCharset = GObject.registerClass(class MyCustomCharset extends Gio.CharsetConverter {
             _init() {
@@ -700,5 +739,150 @@ describe('Signal handler matching', function () {
 
     it('does not support disconnecting a handler by callback data', function () {
         expect(() => GObject.signal_handlers_disconnect_by_data(o, null)).toThrow();
+    });
+});
+
+describe('Auto accessor generation', function () {
+    const AutoAccessors = GObject.registerClass({
+        Properties: {
+            'simple': GObject.ParamSpec.int('simple', 'Simple', 'Short-named property',
+                GObject.ParamFlags.READWRITE, 0, 100, 24),
+            'long-long-name': GObject.ParamSpec.int('long-long-name', 'Long long name',
+                'Long-named property', GObject.ParamFlags.READWRITE, 0, 100, 48),
+            'construct': GObject.ParamSpec.int('construct', 'Construct', 'Construct',
+                GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT, 0, 100, 96),
+            'snake-name': GObject.ParamSpec.int('snake-name', 'Snake name',
+                'Snake-cased property', GObject.ParamFlags.READWRITE, 0, 100, 36),
+            'camel-name': GObject.ParamSpec.int('camel-name', 'Camel name',
+                'Camel-cased property', GObject.ParamFlags.READWRITE, 0, 100, 72),
+            'kebab-name': GObject.ParamSpec.int('kebab-name', 'Kebab name',
+                'Kebab-cased property', GObject.ParamFlags.READWRITE, 0, 100, 12),
+            'readonly': GObject.ParamSpec.int('readonly', 'Readonly', 'Readonly property',
+                GObject.ParamFlags.READABLE, 0, 100, 54),
+            'writeonly': GObject.ParamSpec.int('writeonly', 'Writeonly',
+                'Writeonly property', GObject.ParamFlags.WRITABLE, 0, 100, 60),
+            'missing-getter': GObject.ParamSpec.int('missing-getter', 'Missing getter',
+                'Missing a getter', GObject.ParamFlags.READWRITE, 0, 100, 18),
+            'missing-setter': GObject.ParamSpec.int('missing-setter', 'Missing setter',
+                'Missing a setter', GObject.ParamFlags.READWRITE, 0, 100, 42),
+        },
+    }, class AutoAccessors extends GObject.Object {
+        _init(props = {}) {
+            super._init(props);
+            this._snakeNameGetterCalled = 0;
+            this._snakeNameSetterCalled = 0;
+            this._camelNameGetterCalled = 0;
+            this._camelNameSetterCalled = 0;
+            this._kebabNameGetterCalled = 0;
+            this._kebabNameSetterCalled = 0;
+        }
+
+        get snake_name() {
+            this._snakeNameGetterCalled++;
+            return 42;
+        }
+
+        set snake_name(value) {
+            this._snakeNameSetterCalled++;
+        }
+
+        get camelName() {
+            this._camelNameGetterCalled++;
+            return 42;
+        }
+
+        set camelName(value) {
+            this._camelNameSetterCalled++;
+        }
+
+        get ['kebab-name']() {
+            this._kebabNameGetterCalled++;
+            return 42;
+        }
+
+        set ['kebab-name'](value) {
+            this._kebabNameSetterCalled++;
+        }
+
+        set missing_getter(value) {
+            this._missingGetter = value;
+        }
+
+        get missing_setter() {
+            return 42;
+        }
+    });
+
+    let a;
+    beforeEach(function () {
+        a = new AutoAccessors();
+    });
+
+    it('get and set the property', function () {
+        a.simple = 1;
+        expect(a.simple).toEqual(1);
+        a['long-long-name'] = 1;
+        expect(a['long-long-name']).toEqual(1);
+        a.construct = 1;
+        expect(a.construct).toEqual(1);
+    });
+
+    it("initial value is the param spec's default value", function () {
+        expect(a.simple).toEqual(24);
+        expect(a['long-long-name']).toEqual(48);
+        expect(a.construct).toEqual(96);
+    });
+
+    it('notify when the property changes', function () {
+        const notify = jasmine.createSpy('notify');
+        a.connect('notify::simple', notify);
+        a.simple = 1;
+        expect(notify).toHaveBeenCalledTimes(1);
+        notify.calls.reset();
+        a.simple = 1;
+        expect(notify).not.toHaveBeenCalled();
+    });
+
+    it('copies accessors for camel and kebab if snake accessors given', function () {
+        a.snakeName = 42;
+        expect(a.snakeName).toEqual(42);
+        a['snake-name'] = 42;
+        expect(a['snake-name']).toEqual(42);
+        expect(a._snakeNameGetterCalled).toEqual(2);
+        expect(a._snakeNameSetterCalled).toEqual(2);
+    });
+
+    it('copies accessors for snake and kebab if camel accessors given', function () {
+        a.camel_name = 42;
+        expect(a.camel_name).toEqual(42);
+        a['camel-name'] = 42;
+        expect(a['camel-name']).toEqual(42);
+        expect(a._camelNameGetterCalled).toEqual(2);
+        expect(a._camelNameSetterCalled).toEqual(2);
+    });
+
+    it('copies accessors for snake and camel if kebab accessors given', function () {
+        a.kebabName = 42;
+        expect(a.kebabName).toEqual(42);
+        a.kebab_name = 42;
+        expect(a.kebab_name).toEqual(42);
+        expect(a._kebabNameGetterCalled).toEqual(2);
+        expect(a._kebabNameSetterCalled).toEqual(2);
+    });
+
+    it('readonly getter throws', function () {
+        expect(() => a.readonly).toThrowError(/getter/);
+    });
+
+    it('writeonly setter throws', function () {
+        expect(() => (a.writeonly = 1)).toThrowError(/setter/);
+    });
+
+    it('getter throws when setter defined', function () {
+        expect(() => a.missingGetter).toThrowError(/getter/);
+    });
+
+    it('setter throws when getter defined', function () {
+        expect(() => (a.missingSetter = 1)).toThrowError(/setter/);
     });
 });

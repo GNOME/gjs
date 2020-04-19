@@ -411,6 +411,7 @@ Interface.prototype._init = function (params) {
 
 function defineGObjectLegacyObjects(GObject) {
     const Gi = imports._gi;
+    const {_checkAccessors} = imports._common;
 
     // Some common functions between GObject.Class and GObject.Interface
 
@@ -527,6 +528,8 @@ function defineGObjectLegacyObjects(GObject) {
 
             let propertiesArray = _propertiesAsArray(params);
             delete params.Properties;
+
+            propertiesArray.forEach(pspec => _checkAccessors(params, pspec, GObject));
 
             let newClass = Gi.register_type(parent.prototype, gtypename,
                 gflags, gobjectInterfaces, propertiesArray);
