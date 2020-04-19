@@ -263,6 +263,118 @@ type_needs_out_release(GITypeInfo *type_info,
     return false;
 }
 
+/* FIXME: This should be added to gobject-introspection */
+GJS_USE
+static GITypeTag _g_type_info_get_storage_type(GITypeInfo* info) {
+    GITypeTag type_tag = g_type_info_get_tag(info);
+
+    if (type_tag == GI_TYPE_TAG_INTERFACE) {
+        GjsAutoBaseInfo interface = g_type_info_get_interface(info);
+        GIInfoType info_type = g_base_info_get_type(interface);
+        if (info_type == GI_INFO_TYPE_ENUM || info_type == GI_INFO_TYPE_FLAGS)
+            return g_enum_info_get_storage_type(interface);
+    }
+
+    return type_tag;
+}
+
+/* FIXME: This should be added to gobject-introspection */
+static void _g_type_info_argument_from_hash_pointer(GITypeInfo* info,
+                                                    void* hash_pointer,
+                                                    GIArgument* arg) {
+    GITypeTag type_tag = _g_type_info_get_storage_type(info);
+
+    switch (type_tag) {
+        case GI_TYPE_TAG_BOOLEAN:
+            arg->v_boolean = !!GPOINTER_TO_INT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_INT8:
+            arg->v_int8 = (gint8)GPOINTER_TO_INT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_UINT8:
+            arg->v_uint8 = (guint8)GPOINTER_TO_UINT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_INT16:
+            arg->v_int16 = (gint16)GPOINTER_TO_INT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_UINT16:
+            arg->v_uint16 = (guint16)GPOINTER_TO_UINT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_INT32:
+            arg->v_int32 = (gint32)GPOINTER_TO_INT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_UNICHAR:
+            arg->v_uint32 = (guint32)GPOINTER_TO_UINT(hash_pointer);
+            break;
+        case GI_TYPE_TAG_GTYPE:
+            arg->v_size = GPOINTER_TO_SIZE(hash_pointer);
+            break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+            arg->v_pointer = hash_pointer;
+            break;
+        case GI_TYPE_TAG_INT64:
+        case GI_TYPE_TAG_UINT64:
+        case GI_TYPE_TAG_FLOAT:
+        case GI_TYPE_TAG_DOUBLE:
+        default:
+            g_critical("Unsupported type for pointer-stuffing: %s",
+                       g_type_tag_to_string(type_tag));
+            arg->v_pointer = hash_pointer;
+    }
+}
+
+/* FIXME: This should be added to gobject-introspection */
+GJS_USE
+static void* _g_type_info_hash_pointer_from_argument(GITypeInfo* info,
+                                                     GIArgument* arg) {
+    GITypeTag type_tag = _g_type_info_get_storage_type(info);
+
+    switch (type_tag) {
+        case GI_TYPE_TAG_BOOLEAN:
+            return GINT_TO_POINTER(arg->v_boolean);
+        case GI_TYPE_TAG_INT8:
+            return GINT_TO_POINTER(arg->v_int8);
+        case GI_TYPE_TAG_UINT8:
+            return GUINT_TO_POINTER(arg->v_uint8);
+        case GI_TYPE_TAG_INT16:
+            return GINT_TO_POINTER(arg->v_int16);
+        case GI_TYPE_TAG_UINT16:
+            return GUINT_TO_POINTER(arg->v_uint16);
+        case GI_TYPE_TAG_INT32:
+            return GINT_TO_POINTER(arg->v_int32);
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_UNICHAR:
+            return GUINT_TO_POINTER(arg->v_uint32);
+        case GI_TYPE_TAG_GTYPE:
+            return GSIZE_TO_POINTER(arg->v_size);
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+            return arg->v_pointer;
+        case GI_TYPE_TAG_INT64:
+        case GI_TYPE_TAG_UINT64:
+        case GI_TYPE_TAG_FLOAT:
+        case GI_TYPE_TAG_DOUBLE:
+        default:
+            g_critical("Unsupported type for pointer-stuffing: %s",
+                       g_type_tag_to_string(type_tag));
+            return arg->v_pointer;
+    }
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_g_list(JSContext   *context,
@@ -323,12 +435,15 @@ gjs_array_to_g_list(JSContext   *context,
             return false;
         }
 
+        void* hash_pointer =
+            _g_type_info_hash_pointer_from_argument(param_info, &elem_arg);
+
         if (list_type == GI_TYPE_TAG_GLIST) {
             /* GList */
-            list = g_list_prepend(list, elem_arg.v_pointer);
+            list = g_list_prepend(list, hash_pointer);
         } else {
             /* GSList */
-            slist = g_slist_prepend(slist, elem_arg.v_pointer);
+            slist = g_slist_prepend(slist, hash_pointer);
         }
     }
 
@@ -567,8 +682,9 @@ gjs_object_to_g_hash(JSContext   *context,
             *heap_val = val_arg.v_double;
             val_ptr = heap_val;
         } else {
-            /* Other types are simply stuffed inside v_pointer */
-            val_ptr = val_arg.v_pointer;
+            // Other types are simply stuffed inside the pointer
+            val_ptr = _g_type_info_hash_pointer_from_argument(val_param_info,
+                                                              &val_arg);
         }
 
         g_hash_table_insert(result, key_ptr, val_ptr);
@@ -1101,21 +1217,12 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                                size_t length, GITransfer transfer,
                                GITypeInfo* param_info, void** arr_p) {
     enum { UNSIGNED=false, SIGNED=true };
-    GITypeTag element_type;
 
-    element_type = g_type_info_get_tag(param_info);
+    GITypeTag element_type = _g_type_info_get_storage_type(param_info);
 
     /* Special case for GValue "flat arrays" */
     if (is_gvalue_flat_array(param_info, element_type))
         return gjs_array_to_flat_gvalue_array(context, array_value, length, arr_p);
-
-    if (element_type == GI_TYPE_TAG_INTERFACE) {
-        GIBaseInfo *interface_info = g_type_info_get_interface(param_info);
-        GIInfoType info_type = g_base_info_get_type(interface_info);
-        if (info_type == GI_INFO_TYPE_ENUM || info_type == GI_INFO_TYPE_FLAGS)
-            element_type = g_enum_info_get_storage_type ((GIEnumInfo*) interface_info);
-        g_base_info_unref(interface_info);
-    }
 
     switch (element_type) {
     case GI_TYPE_TAG_UTF8:
@@ -1201,21 +1308,8 @@ gjs_g_array_new_for_type(JSContext    *context,
                          unsigned int  length,
                          GITypeInfo   *param_info)
 {
-    GITypeTag element_type;
     guint element_size;
-
-    element_type = g_type_info_get_tag(param_info);
-
-    if (element_type == GI_TYPE_TAG_INTERFACE) {
-        GIInterfaceInfo *interface_info = g_type_info_get_interface(param_info);
-        GIInfoType interface_type = g_base_info_get_type(interface_info);
-
-        if (interface_type == GI_INFO_TYPE_ENUM
-            || interface_type == GI_INFO_TYPE_FLAGS)
-            element_type = g_enum_info_get_storage_type((GIEnumInfo*) interface_info);
-
-        g_base_info_unref((GIBaseInfo*) interface_info);
-    }
+    GITypeTag element_type = _g_type_info_get_storage_type(param_info);
 
     switch (element_type) {
     case GI_TYPE_TAG_BOOLEAN:
@@ -2249,7 +2343,8 @@ gjs_array_from_g_list (JSContext             *context,
     i = 0;
     if (list_tag == GI_TYPE_TAG_GLIST) {
         for ( ; list != NULL; list = list->next) {
-            arg.v_pointer = list->data;
+            _g_type_info_argument_from_hash_pointer(param_info, list->data,
+                                                    &arg);
             if (!elems.growBy(1)) {
                 JS_ReportOutOfMemory(context);
                 return false;
@@ -2262,7 +2357,8 @@ gjs_array_from_g_list (JSContext             *context,
         }
     } else {
         for ( ; slist != NULL; slist = slist->next) {
-            arg.v_pointer = slist->data;
+            _g_type_info_argument_from_hash_pointer(param_info, slist->data,
+                                                    &arg);
             if (!elems.growBy(1)) {
                 JS_ReportOutOfMemory(context);
                 return false;
@@ -2653,8 +2749,11 @@ gjs_object_from_g_hash (JSContext             *context,
     JS::RootedString keystr(context);
 
     g_hash_table_iter_init(&iter, hash);
-    while (g_hash_table_iter_next
-           (&iter, &keyarg.v_pointer, &valarg.v_pointer)) {
+    void* key_pointer;
+    void* val_pointer;
+    while (g_hash_table_iter_next(&iter, &key_pointer, &val_pointer)) {
+        _g_type_info_argument_from_hash_pointer(key_param_info, key_pointer,
+                                                &keyarg);
         if (!gjs_value_from_g_argument(context, &keyjs,
                                        key_param_info, &keyarg,
                                        true))
@@ -2668,6 +2767,8 @@ gjs_object_from_g_hash (JSContext             *context,
         if (!keyutf8)
             return false;
 
+        _g_type_info_argument_from_hash_pointer(val_param_info, val_pointer,
+                                                &valarg);
         if (!gjs_value_from_g_argument(context, &valjs,
                                        val_param_info, &valarg,
                                        true))
