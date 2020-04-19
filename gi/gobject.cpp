@@ -158,7 +158,7 @@ static void gjs_object_set_gproperty(GObject* object,
     JSAutoRealm ar(cx, js_obj);
 
     if (!jsobj_set_gproperty(cx, js_obj, value, pspec))
-        gjs_log_exception(cx);
+        gjs_log_exception_uncaught(cx);
 }
 
 static void gjs_object_get_gproperty(GObject* object,
@@ -172,8 +172,11 @@ static void gjs_object_get_gproperty(GObject* object,
     JSAutoRealm ar(cx, js_obj);
 
     GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
-    if (!JS_GetProperty(cx, js_obj, underscore_name, &jsvalue) ||
-        !gjs_value_to_g_value(cx, jsvalue, value))
+    if (!JS_GetProperty(cx, js_obj, underscore_name, &jsvalue)) {
+        gjs_log_exception_uncaught(cx);
+        return;
+    }
+    if (!gjs_value_to_g_value(cx, jsvalue, value))
         gjs_log_exception(cx);
 }
 
@@ -220,7 +223,7 @@ static void gjs_object_custom_init(GTypeInstance* instance,
     gjs->object_init_list().popBack();
 
     if (!priv->init_custom_class_from_gobject(cx, object, G_OBJECT(instance)))
-        gjs_log_exception(cx);
+        gjs_log_exception_uncaught(cx);
 }
 
 static void gjs_interface_init(void* g_iface, void*) {

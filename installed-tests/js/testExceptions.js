@@ -35,7 +35,7 @@ describe('Exceptions', function () {
     // FIXME: In the next cases the errors aren't thrown but logged
 
     it('are logged from constructor', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: set*');
 
         new Foo({prop: 'bar'});
@@ -51,7 +51,7 @@ describe('Exceptions', function () {
         bar.bind_property('prop',
             foo, 'prop',
             GObject.BindingFlags.DEFAULT);
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: set*');
 
         // wake up the binding so that g_object_set() is called on foo
@@ -68,7 +68,7 @@ describe('Exceptions', function () {
         foo.bind_property('prop',
             bar, 'prop',
             GObject.BindingFlags.DEFAULT);
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: get*');
 
         // wake up the binding so that g_object_get() is called on foo
@@ -150,6 +150,16 @@ describe('logError', function () {
             throw new Gio.IOErrorEnum({message: 'a message', code: 0});
         } catch (e) {
             logError(e, 'prefix');
+        }
+    });
+
+    it('logs a SyntaxError', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: SyntaxError:*');
+        try {
+            Reflect.parse('!@#$%^&');
+        } catch (e) {
+            logError(e);
         }
     });
 });

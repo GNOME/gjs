@@ -783,7 +783,7 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
                 }
 
                 /* There's nowhere for the exception to go at this point */
-                gjs_log_exception(m_cx);
+                gjs_log_exception_uncaught(m_cx);
             }
         }
     }
@@ -985,7 +985,7 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
                         "Script %s threw an exception", filename);
         }
 
-        gjs_log_exception(m_cx);
+        gjs_log_exception_uncaught(m_cx);
         /* No exit code from script, but we don't want to exit(0) */
         *exit_status_p = 1;
         return false;

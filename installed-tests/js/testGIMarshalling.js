@@ -1369,7 +1369,7 @@ describe('Wrong virtual functions', function () {
     }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/311');
 
     it('marshals multiple out parameters', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: Function *vfunc_vfunc_multiple_out_parameters*Array*');
 
         expect(tester.vfunc_multiple_out_parameters()).toEqual([0, 0]);
@@ -1379,7 +1379,7 @@ describe('Wrong virtual functions', function () {
     });
 
     it('marshals a return value and one out parameter', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: Function *vfunc_return_value_and_one_out_parameter*Array*');
 
         expect(tester.vfunc_return_value_and_one_out_parameter()).toEqual([0, 0]);
@@ -1389,7 +1389,7 @@ describe('Wrong virtual functions', function () {
     });
 
     it('marshals a return value and multiple out parameters', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: Function *vfunc_return_value_and_multiple_out_parameters*Array*');
 
         expect(tester.vfunc_return_value_and_multiple_out_parameters()).toEqual([0, 0, 0]);
@@ -1399,7 +1399,7 @@ describe('Wrong virtual functions', function () {
     });
 
     it('marshals an array out parameter', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: Expected type gfloat for Argument*undefined*');
 
         expect(tester.vfunc_array_out_parameter()).toEqual(null);
@@ -1409,7 +1409,7 @@ describe('Wrong virtual functions', function () {
     });
 
     it('marshals an enum return value', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: Expected type enum for Return*undefined*');
 
         expect(tester.vfunc_return_enum()).toEqual(0);
@@ -1419,7 +1419,7 @@ describe('Wrong virtual functions', function () {
     });
 
     it('marshals an enum out parameter', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'JS ERROR: Error: Expected type enum for Argument*undefined*');
 
         expect(tester.vfunc_out_enum()).toEqual(0);

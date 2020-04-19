@@ -222,7 +222,7 @@ gjs_closure_invoke(GClosure                   *closure,
             if (return_exception)
                 JS_GetPendingException(context, retval);
             else
-                gjs_log_exception(context);
+                gjs_log_exception_uncaught(context);
         } else {
             retval.setUndefined();
             gjs_debug_closure("Closure invocation failed but no exception was set?"
@@ -231,7 +231,7 @@ gjs_closure_invoke(GClosure                   *closure,
         return false;
     }
 
-    if (gjs_log_exception(context)) {
+    if (gjs_log_exception_uncaught(context)) {
         gjs_debug_closure("Closure invocation succeeded but an exception was set"
                           " - closure %p", closure);
     }
