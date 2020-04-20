@@ -480,11 +480,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
-        bool found_length;
-
         if (value.isNull()) {
             /* do nothing */
-        } else {
+        } else if (value.isObject()) {
+            bool found_length;
+
             const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
             JS::RootedObject array_obj(context, &value.toObject());
             if (JS_HasPropertyById(context, array_obj, atoms.length(),
@@ -511,6 +511,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
             } else {
                 return throw_expect_type(context, value, "strv");
             }
+        } else {
+            return throw_expect_type(context, value, "strv");
         }
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         void *gboxed;
