@@ -2,17 +2,13 @@ imports.gi.versions.Gdk = '3.0';
 imports.gi.versions.Gtk = '3.0';
 
 const Cairo = imports.cairo;
-const {Gdk, GIMarshallingTests, Gtk, Regress} = imports.gi;
+const {Gdk, GIMarshallingTests, GLib, Gtk, Regress} = imports.gi;
 
 function _ts(obj) {
     return obj.toString().slice(8, -1);
 }
 
 describe('Cairo', function () {
-    beforeAll(function () {
-        Gtk.init(null);
-    });
-
     let cr, surface;
     beforeEach(function () {
         surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 10, 10);
@@ -166,6 +162,11 @@ describe('Cairo', function () {
         });
 
         it('has methods when created from a C function', function () {
+            if (GLib.getenv('ENABLE_GTK') !== 'yes') {
+                pending('GTK disabled');
+                return;
+            }
+            Gtk.init(null);
             let win = new Gtk.OffscreenWindow();
             let da = new Gtk.DrawingArea();
             win.add(da);
