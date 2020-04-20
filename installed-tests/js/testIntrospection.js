@@ -31,6 +31,10 @@ describe('Unsafe integer marshalling', function () {
 describe('Marshalling empty flat arrays of structs', function () {
     let widget;
     beforeAll(function () {
+        if (GLib.getenv('ENABLE_GTK') !== 'yes') {
+            pending('GTK disabled');
+            return;
+        }
         Gtk.init(null);
     });
 
@@ -73,6 +77,10 @@ describe('GError domains', function () {
 describe('Object properties on GtkBuilder-constructed objects', function () {
     let o1;
     beforeAll(function () {
+        if (GLib.getenv('ENABLE_GTK') !== 'yes') {
+            pending('GTK disabled');
+            return;
+        }
         Gtk.init(null);
     });
 
