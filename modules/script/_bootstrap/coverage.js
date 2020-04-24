@@ -3,4 +3,4 @@
 
     exports.debugger = new Debugger(exports.debuggee);
     exports.debugger.collectCoverageInfo = true;
-})(window);
+})(globalThis);

@@ -30,20 +30,20 @@ function _clearTimeoutInternal(id) {
 }
 
 // Install the browser setTimeout/setInterval API on the global object
-window.setTimeout = _setTimeoutInternal.bind(undefined, GLib.SOURCE_REMOVE);
-window.setInterval = _setTimeoutInternal.bind(undefined, GLib.SOURCE_CONTINUE);
-window.clearTimeout = window.clearInterval = _clearTimeoutInternal;
+globalThis.setTimeout = _setTimeoutInternal.bind(undefined, GLib.SOURCE_REMOVE);
+globalThis.setInterval = _setTimeoutInternal.bind(undefined, GLib.SOURCE_CONTINUE);
+globalThis.clearTimeout = globalThis.clearInterval = _clearTimeoutInternal;
 
 let jasmineRequire = imports.jasmine.getJasmineRequireObj();
 let jasmineCore = jasmineRequire.core(jasmineRequire);
-window._jasmineEnv = jasmineCore.getEnv();
+globalThis._jasmineEnv = jasmineCore.getEnv();
 
-window._jasmineMain = GLib.MainLoop.new(null, false);
-window._jasmineRetval = 0;
+globalThis._jasmineMain = GLib.MainLoop.new(null, false);
+globalThis._jasmineRetval = 0;
 
 // Install Jasmine API on the global object
-let jasmineInterface = jasmineRequire.interface(jasmineCore, window._jasmineEnv);
-Object.assign(window, jasmineInterface);
+let jasmineInterface = jasmineRequire.interface(jasmineCore, globalThis._jasmineEnv);
+Object.assign(globalThis, jasmineInterface);
 
 // Reporter that outputs according to the Test Anything Protocol
 // See http://testanything.org/tap-specification.html
@@ -65,12 +65,12 @@ class TapReporter {
             });
         });
 
-        window._jasmineMain.quit();
+        globalThis._jasmineMain.quit();
     }
 
     suiteDone(result) {
         if (result.failedExpectations && result.failedExpectations.length > 0) {
-            window._jasmineRetval = 1;
+            globalThis._jasmineRetval = 1;
             this._failedSuites.push(result);
         }
 
@@ -85,7 +85,7 @@ class TapReporter {
     specDone(result) {
         let tapReport;
         if (result.status === 'failed') {
-            window._jasmineRetval = 1;
+            globalThis._jasmineRetval = 1;
             tapReport = 'not ok';
         } else {
             tapReport = 'ok';
@@ -109,7 +109,7 @@ class TapReporter {
     }
 }
 
-window._jasmineEnv.addReporter(new TapReporter());
+globalThis._jasmineEnv.addReporter(new TapReporter());
 
 // If we're running the tests in certain JS_GC_ZEAL modes, then some will time
 // out if the CI machine is under a certain load. In that case increase the

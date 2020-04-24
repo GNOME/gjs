@@ -166,7 +166,7 @@ describe('Importer', function () {
         let LexicalScope;
 
         beforeAll(function () {
-            window.expectMe = true;
+            globalThis.expectMe = true;
             LexicalScope = imports.lexicalScope;
         });
 
@@ -195,7 +195,7 @@ describe('Importer', function () {
         });
 
         it('does not leak module properties into the global scope', function () {
-            expect(window.d).not.toBeDefined();
+            expect(globalThis.d).not.toBeDefined();
         });
     });
 

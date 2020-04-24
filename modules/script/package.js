@@ -117,7 +117,7 @@ function _makeNamePath(n) {
  * @param {object} params package parameters
  */
 function init(params) {
-    window.pkg = imports.package;
+    globalThis.pkg = imports.package;
     _pkgname = params.name;
     name = _findEffectiveEntryPointName();
     version = params.version;
@@ -312,9 +312,9 @@ function initGettext() {
     Gettext.textdomain(_pkgname);
 
     let gettext = imports.gettext;
-    window._ = gettext.gettext;
-    window.C_ = gettext.pgettext;
-    window.N_ = function (x) {
+    globalThis._ = gettext.gettext;
+    globalThis.C_ = gettext.pgettext;
+    globalThis.N_ = function (x) {
         return x;
     };
 }
