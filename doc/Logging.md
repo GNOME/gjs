@@ -23,7 +23,7 @@ log(new Object());
 
 ### logError()
 
-`logError()` is a more useful function for debugging tha logs the stack trace of
+`logError()` is a more useful function for debugging that logs the stack trace of
 a JavaScript `Error()` object, with an optional prefix.
 
 It is commonly used in conjunction with `try...catch` blocks to log errors while
