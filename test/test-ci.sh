@@ -112,8 +112,7 @@ elif test "$1" = "BUILD"; then
     ninja -C _build
 
     if test "$TEST" != "skip"; then
-        xvfb-run -a meson test -C _build $TEST_OPTS \
-            --verbose --no-stdsplit --print-errorlogs
+        xvfb-run -a meson test -C _build $TEST_OPTS
     fi
 
 elif test "$1" = "SH_CHECKS"; then
