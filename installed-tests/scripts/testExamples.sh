@@ -3,7 +3,7 @@ DIR="$( cd "$( dirname "${0}" )" && pwd )"
 source "${DIR}"/common.sh
 
 # Run the examples
-$gjs examples/gio-cat.js Makefile
+$gjs examples/gio-cat.js meson.build
 report "run the gio-cat.js example"
 
 if [[ -n "${ENABLE_GTK}" ]]; then
