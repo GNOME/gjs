@@ -1,3 +1,30 @@
+Version 1.64.2
+--------------
+
+- Closed bugs and merge requests:
+  * GList of int not correctly demarshalled on 64-bit big-endian [Philip
+    Chimento, Simon McVittie, #309, !417, !419]
+  * Fix template use in GTK4 [Florian Müllner, !420]
+  * Don't crash if a callback doesn't return an expected array of values [Marco
+    Trevisan, !405]
+  * Crash passing integer to strv in constructor [Evan Welsh, #315, !422]
+  * Skip some tests if GTK can't be initialised [Ross Burton, !421]
+
+- Various backports:
+  * Fix gjs_log_exception() for InternalError [Philip Chimento]
+  * Fix signal match mechanism [Philip Chimento]
+
+Version 1.58.7
+--------------
+
+- Various backports:
+  * Don't crash if a callback doesn't return an expected array of values [Marco
+    Trevisan]
+  * GList of int not correctly demarshalled on 64-bit big-endian [Philip
+    Chimento, Simon McVittie]
+  * Crash passing integer to strv in constructor [Evan Welsh]
+  * Ignore format-nonliteral warning [Marco Trevisan]
+
 Version 1.64.1
 --------------
 
