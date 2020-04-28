@@ -1,3 +1,55 @@
+Version 1.65.2
+--------------
+
+- It's now possible to omit the getter and setter for a GObject property on your
+  class, if you only need the default behaviour (reading and writing the
+  property, respecting the default value if not set, and implementing property
+  notifications if the setter changes the value.) This should cut down on
+  boilerplate code and any mistakes made in it.
+
+- The log level of exception messages has changed. Previously, some exceptions
+  would be logged as critical-level messages even when they were logged
+  intentionally with logError(). Now, critical-level messages are only logged
+  when an exception goes uncaught (programmer error) and in all other cases a
+  warning-level message is logged.
+
+- Closed bugs and merge requests:
+  * build: Use '!=' instead of 'is not' to compare string [Robert Mader, !414]
+  * Various maintenance [Philip Chimento, !413, !425]
+  * doc fixes [Sonny Piers, !415, !416]
+  * jsapi-util: Make log levels of exceptions consistent [Philip Chimento, !418]
+  * Too much recursion error accessing overrided gobject interface property from
+    a subclass [Philip Chimento, #306, !408]
+  * JS: migrate from the global `window` to `globalThis` [Andy Holmes, !423]
+  * doc: Fix a typo [Matthew Leeds, !424]
+
+Version 1.64.2
+--------------
+
+- Closed bugs and merge requests:
+  * GList of int not correctly demarshalled on 64-bit big-endian [Philip
+    Chimento, Simon McVittie, #309, !417, !419]
+  * Fix template use in GTK4 [Florian Müllner, !420]
+  * Don't crash if a callback doesn't return an expected array of values [Marco
+    Trevisan, !405]
+  * Crash passing integer to strv in constructor [Evan Welsh, #315, !422]
+  * Skip some tests if GTK can't be initialised [Ross Burton, !421]
+
+- Various backports:
+  * Fix gjs_log_exception() for InternalError [Philip Chimento]
+  * Fix signal match mechanism [Philip Chimento]
+
+Version 1.58.7
+--------------
+
+- Various backports:
+  * Don't crash if a callback doesn't return an expected array of values [Marco
+    Trevisan]
+  * GList of int not correctly demarshalled on 64-bit big-endian [Philip
+    Chimento, Simon McVittie]
+  * Crash passing integer to strv in constructor [Evan Welsh]
+  * Ignore format-nonliteral warning [Marco Trevisan]
+
 Version 1.65.1
 --------------
 
