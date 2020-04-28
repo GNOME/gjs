@@ -1,3 +1,13 @@
+Version 1.58.7
+--------------
+
+- Various backports:
+  * Don't crash if a callback doesn't return an expected array of values [Marco
+    Trevisan]
+  * GList of int not correctly demarshalled on 64-bit big-endian [Philip
+    Chimento, Simon McVittie]
+  * Crash passing integer to strv in constructor [Evan Welsh]
+
 Version 1.58.6
 --------------
 
