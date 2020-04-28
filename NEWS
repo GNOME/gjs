@@ -7,6 +7,7 @@ Version 1.58.7
   * GList of int not correctly demarshalled on 64-bit big-endian [Philip
     Chimento, Simon McVittie]
   * Crash passing integer to strv in constructor [Evan Welsh]
+  * Ignore format-nonliteral warning [Marco Trevisan]
 
 Version 1.58.6
 --------------
