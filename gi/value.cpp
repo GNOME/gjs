@@ -280,8 +280,7 @@ closure_marshal(GClosure        *closure,
             return;
         }
 
-        if (!argv.append(argv_to_append))
-            g_error("Unable to append to vector");
+        argv.infallibleAppend(argv_to_append);
     }
 
     for (i = 1; i < n_param_values; i++)

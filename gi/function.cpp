@@ -1142,9 +1142,8 @@ gjs_invoke_c_function(JSContext                             *context,
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
-        for (size_t i = 0; i < function->js_out_argc; i++)
-            if (!return_values.append(JS::UndefinedValue()))
-                g_error("Unable to append to vector");
+        if (!return_values.growBy(function->js_out_argc))
+            g_error("Unable to reserve space for vector");
 
         if (return_tag != GI_TYPE_TAG_VOID) {
             GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);

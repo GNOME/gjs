@@ -934,8 +934,15 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             continue;
         }
 
-        // Methods
         int n_methods = g_interface_info_get_n_methods(iface_info);
+        int n_properties = g_interface_info_get_n_properties(iface_info);
+        if (!properties.reserve(properties.length() + n_methods +
+                                n_properties)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        // Methods
         for (int i = 0; i < n_methods; i++) {
             GjsAutoFunctionInfo meth_info =
                 g_interface_info_get_method(iface_info, i);
@@ -946,15 +953,11 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                 jsid id = gjs_intern_string_to_id(cx, name);
                 if (id == JSID_VOID)
                     return false;
-                if (!properties.append(id)) {
-                    JS_ReportOutOfMemory(cx);
-                    return false;
-                }
+                properties.infallibleAppend(id);
             }
         }
 
         // Properties
-        int n_properties = g_interface_info_get_n_properties(iface_info);
         for (int i = 0; i < n_properties; i++) {
             GjsAutoPropertyInfo prop_info =
                 g_interface_info_get_property(iface_info, i);
@@ -964,18 +967,22 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id == JSID_VOID)
                 return false;
-            if (!properties.append(id)) {
-                JS_ReportOutOfMemory(cx);
-                return false;
-            }
+            properties.infallibleAppend(id);
         }
     }
 
     g_free(interfaces);
 
     if (info()) {
-        // Methods
         int n_methods = g_object_info_get_n_methods(info());
+        int n_properties = g_object_info_get_n_properties(info());
+        if (!properties.reserve(properties.length() + n_methods +
+                                n_properties)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        // Methods
         for (int i = 0; i < n_methods; i++) {
             GjsAutoFunctionInfo meth_info = g_object_info_get_method(info(), i);
             GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
@@ -985,15 +992,11 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                 jsid id = gjs_intern_string_to_id(cx, name);
                 if (id == JSID_VOID)
                     return false;
-                if (!properties.append(id)) {
-                    JS_ReportOutOfMemory(cx);
-                    return false;
-                }
+                properties.infallibleAppend(id);
             }
         }
 
         // Properties
-        int n_properties = g_object_info_get_n_properties(info());
         for (int i = 0; i < n_properties; i++) {
             GjsAutoPropertyInfo prop_info =
                 g_object_info_get_property(info(), i);
@@ -1002,10 +1005,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id == JSID_VOID)
                 return false;
-            if (!properties.append(id)) {
-                JS_ReportOutOfMemory(cx);
-                return false;
-            }
+            properties.infallibleAppend(id);
         }
     }
 

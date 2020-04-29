@@ -40,7 +40,6 @@
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
-#include <js/GCVector.h>  // for MutableWrappedPtrOperations
 #include <js/Id.h>        // for PropertyKey, JSID_IS_STRING
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
@@ -398,7 +397,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
                                  JS::MutableHandleIdVector prop_ids,
                                  const char* init_path) {
-    size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
     if (!module_obj)
         return false;
@@ -407,11 +405,10 @@ static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
     if (!JS_Enumerate(cx, module_obj, &ids))
         return false;
 
-    for (ix = 0, length = ids.length(); ix < length; ix++)
-        if (!prop_ids.append(ids[ix])) {
-            JS_ReportOutOfMemory(cx);
-            return false;
-        }
+    if (!prop_ids.appendAll(ids)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
 
     return true;
 }
