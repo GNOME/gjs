@@ -35,7 +35,6 @@
 #include <vector>   // for vector
 
 #include <gio/gio.h>
-#include <glib-object.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>
@@ -93,19 +92,22 @@ importer_to_string(JSContext *cx,
                    unsigned   argc,
                    JS::Value *vp)
 {
-    GJS_GET_THIS(cx, argc, vp, args, importer);
-    const JSClass *klass = JS_GetClass(importer);
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedValue module_path(cx);
-    if (!JS_GetPropertyById(cx, importer, atoms.module_path(), &module_path))
-        return false;
+    GJS_GET_PRIV(cx, argc, vp, args, importer, Importer, priv);
 
     GjsAutoChar output;
 
-    if (module_path.isNull()) {
+    const JSClass* klass = JS_GetClass(importer);
+
+    if (!priv) {
+        output = g_strdup_printf("[%s prototype]", klass->name);
+    } else if (priv->is_root) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        JS::RootedValue module_path(cx);
+        if (!JS_GetPropertyById(cx, importer, atoms.module_path(),
+                                &module_path))
+            return false;
         JS::UniqueChars path = gjs_string_to_utf8(cx, module_path);
         if (!path)
             return false;
