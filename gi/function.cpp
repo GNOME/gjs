@@ -786,14 +786,15 @@ complete_async_calls(void)
  * providing a @r_value argument.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_invoke_c_function(JSContext                             *context,
-                      Function                              *function,
-                      JS::HandleObject                       obj, /* "this" object */
-                      const JS::HandleValueArray&            args,
-                      mozilla::Maybe<JS::MutableHandleValue> js_rval,
-                      GIArgument                            *r_value)
-{
+static bool gjs_invoke_c_function(
+    JSContext* context, Function* function,
+    JS::HandleObject obj, /* "this" object */
+    const JS::HandleValueArray& args,
+    mozilla::Maybe<JS::MutableHandleValue> js_rval,
+    GIArgument* r_value = nullptr) {
+    g_assert(!r_value != js_rval.isNothing() &&
+             "Pass one of js_rval or r_value, not both or neither");
+
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
      * @out_arg_cvalues: C values which are returned as arguments (out or inout)
@@ -1137,8 +1138,8 @@ gjs_invoke_c_function(JSContext                             *context,
         did_throw_gerror = false;
     }
 
-    if (js_rval)
-        js_rval.ref().setUndefined();
+    if (!r_value)
+        js_rval->setUndefined();
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
@@ -1167,35 +1168,30 @@ gjs_invoke_c_function(JSContext                             *context,
                                                         &arg_type_info,
                                                         &out_arg_cvalues[array_length_pos],
                                                         true);
-                if (!arg_failed && js_rval) {
-                    arg_failed = !gjs_value_from_explicit_array(context,
-                                                                return_values[next_rval],
-                                                                &return_info,
-                                                                &return_gargument,
-                                                                length.toInt32());
+                if (!r_value) {
+                    if (!arg_failed) {
+                        arg_failed = !gjs_value_from_explicit_array(
+                            context, return_values[next_rval], &return_info,
+                            &return_gargument, length.toInt32());
+                    }
+                    if (!arg_failed && !gjs_g_argument_release_out_array(
+                                           context, transfer, &return_info,
+                                           length.toInt32(), &return_gargument))
+                        failed = true;
                 }
-                if (!arg_failed &&
-                    !r_value &&
-                    !gjs_g_argument_release_out_array(context,
-                                                      transfer,
-                                                      &return_info,
-                                                      length.toInt32(),
-                                                      &return_gargument))
-                    failed = true;
             } else {
-                if (js_rval)
+                if (!r_value) {
                     arg_failed = !gjs_value_from_g_argument(context,
                                                             return_values[next_rval],
                                                             &return_info, &return_gargument,
                                                             true);
-                /* Free GArgument, the JS::Value should have ref'd or copied it */
-                if (!arg_failed &&
-                    !r_value &&
-                    !gjs_g_argument_release(context,
-                                            transfer,
-                                            &return_info,
-                                            &return_gargument))
-                    failed = true;
+                    // Free GArgument, the JS::Value should have ref'd or copied
+                    // it
+                    if (!arg_failed &&
+                        !gjs_g_argument_release(context, transfer, &return_info,
+                                                &return_gargument))
+                        failed = true;
+                }
             }
             if (arg_failed)
                 failed = true;
@@ -1316,7 +1312,7 @@ release:
 
             array_length_pos = g_type_info_get_array_length(&arg_type_info);
 
-            if (js_rval) {
+            if (!r_value) {
                 if (array_length_pos >= 0) {
                     GIArgInfo array_length_arg;
                     GITypeInfo array_length_type_info;
@@ -1404,26 +1400,23 @@ release:
     g_assert_cmpuint(c_arg_pos, ==, processed_c_args);
 
     if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
-        /* if we have 1 return value or out arg, return that item
-         * on its own, otherwise return a JavaScript array with
-         * [return value, out arg 1, out arg 2, ...]
-         */
-        if (js_rval) {
+        if (r_value) {
+            *r_value = return_gargument;
+        } else {
+            // If we have one return value or out arg, return that item on its
+            // own, otherwise return a JavaScript array with [return value,
+            // out arg 1, out arg 2, ...]
             if (function->js_out_argc == 1) {
-                js_rval.ref().set(return_values[0]);
+                js_rval->set(return_values[0]);
             } else {
                 JSObject *array;
                 array = JS_NewArrayObject(context, return_values);
                 if (array == NULL) {
                     failed = true;
                 } else {
-                    js_rval.ref().setObject(*array);
+                    js_rval->setObject(*array);
                 }
             }
-        }
-
-        if (r_value) {
-            *r_value = return_gargument;
         }
     }
 
@@ -1458,8 +1451,7 @@ function_call(JSContext *context,
         return true; /* we are the prototype, or have the wrong class */
 
     success = gjs_invoke_c_function(context, priv, object, js_argv,
-                                    mozilla::Some<JS::MutableHandleValue>(&retval),
-                                    NULL);
+                                    mozilla::Some(&retval));
     if (success)
         js_argv.rval().set(retval);
 
@@ -1874,8 +1866,8 @@ gjs_invoke_c_function_uncached(JSContext                  *context,
   if (!init_cached_function_data (context, &function, 0, info))
       return false;
 
-  result = gjs_invoke_c_function(context, &function, obj, args,
-                                 mozilla::Some(rval), NULL);
+  result =
+      gjs_invoke_c_function(context, &function, obj, args, mozilla::Some(rval));
   uninit_cached_function_data (&function);
   return result;
 }
@@ -1891,6 +1883,6 @@ gjs_invoke_constructor_from_c(JSContext                  *context,
 
     priv = priv_from_js(context, constructor);
 
-    mozilla::Maybe<JS::MutableHandleValue> m_jsrval;
-    return gjs_invoke_c_function(context, priv, obj, args, m_jsrval, rvalue);
+    return gjs_invoke_c_function(context, priv, obj, args, mozilla::Nothing(),
+                                 rvalue);
 }
