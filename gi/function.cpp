@@ -1851,38 +1851,18 @@ gjs_define_function(JSContext       *context,
     return function;
 }
 
+bool gjs_invoke_constructor_from_c(JSContext* context, GIFunctionInfo* info,
+                                   JS::HandleObject obj,
+                                   const JS::HandleValueArray& args,
+                                   GIArgument* rvalue) {
+    Function function;
 
-bool
-gjs_invoke_c_function_uncached(JSContext                  *context,
-                               GIFunctionInfo             *info,
-                               JS::HandleObject            obj,
-                               const JS::HandleValueArray& args,
-                               JS::MutableHandleValue      rval)
-{
-  Function function;
-  bool result;
+    memset(&function, 0, sizeof(Function));
+    if (!init_cached_function_data(context, &function, 0, info))
+        return false;
 
-  memset (&function, 0, sizeof (Function));
-  if (!init_cached_function_data (context, &function, 0, info))
-      return false;
-
-  result =
-      gjs_invoke_c_function(context, &function, obj, args, mozilla::Some(rval));
-  uninit_cached_function_data (&function);
-  return result;
-}
-
-bool
-gjs_invoke_constructor_from_c(JSContext                  *context,
-                              JS::HandleObject            constructor,
-                              JS::HandleObject            obj,
-                              const JS::HandleValueArray& args,
-                              GIArgument                 *rvalue)
-{
-    Function *priv;
-
-    priv = priv_from_js(context, constructor);
-
-    return gjs_invoke_c_function(context, priv, obj, args, mozilla::Nothing(),
-                                 rvalue);
+    bool result = gjs_invoke_c_function(context, &function, obj, args,
+                                        mozilla::Nothing(), rvalue);
+    uninit_cached_function_data(&function);
+    return result;
 }

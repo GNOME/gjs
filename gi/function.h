@@ -74,17 +74,9 @@ JSObject *gjs_define_function(JSContext       *context,
                               GICallableInfo  *info);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_invoke_c_function_uncached(JSContext                  *context,
-                                    GIFunctionInfo             *info,
-                                    JS::HandleObject            obj,
-                                    const JS::HandleValueArray& args,
-                                    JS::MutableHandleValue      rval);
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_invoke_constructor_from_c(JSContext                  *context,
-                                   JS::HandleObject            constructor,
-                                   JS::HandleObject            obj,
+bool gjs_invoke_constructor_from_c(JSContext* cx, GIFunctionInfo* info,
+                                   JS::HandleObject this_obj,
                                    const JS::HandleValueArray& args,
-                                   GIArgument                 *rvalue);
+                                   GIArgument* rvalue);
 
 #endif  // GI_FUNCTION_H_

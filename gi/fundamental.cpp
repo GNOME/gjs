@@ -82,10 +82,7 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
 
 /* Find the first constructor */
 GJS_USE
-static bool find_fundamental_constructor(
-    JSContext* context, GIObjectInfo* info,
-    JS::MutableHandleId constructor_name,
-    GjsAutoFunctionInfo* constructor_info) {
+static GIFunctionInfo* find_fundamental_constructor(GIObjectInfo* info) {
     int i, n_methods;
 
     n_methods = g_object_info_get_n_methods(info);
@@ -97,22 +94,13 @@ static bool find_fundamental_constructor(
         func_info = g_object_info_get_method(info, i);
 
         flags = g_function_info_get_flags(func_info);
-        if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0) {
-            const char *name;
-
-            name = g_base_info_get_name((GIBaseInfo *) func_info);
-            constructor_name.set(gjs_intern_string_to_id(context, name));
-            if (constructor_name == JSID_VOID)
-                return false;
-
-            constructor_info->reset(func_info);
-            return true;
-        }
+        if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0)
+            return func_info;
 
         g_base_info_unref((GIBaseInfo *) func_info);
     }
 
-    return true;
+    return nullptr;
 }
 
 /**/
@@ -194,34 +182,22 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
  * FundamentalInstance::invoke_constructor:
  *
  * Finds the type's static constructor method (the static method given by
- * FundamentalPrototype::constructor_name()) and invokes it with the given
+ * FundamentalPrototype::constructor_info()) and invokes it with the given
  * arguments.
  */
 bool FundamentalInstance::invoke_constructor(JSContext* context,
                                              JS::HandleObject obj,
                                              const JS::HandleValueArray& args,
                                              GIArgument* rvalue) {
-    JS::RootedObject js_constructor(context);
-    JS::RootedId constructor_name(context, get_prototype()->constructor_name());
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gjs_object_require_property(context, obj, nullptr, atoms.constructor(),
-                                     &js_constructor) ||
-        constructor_name == JSID_VOID) {
+    GIFunctionInfo* constructor_info = get_prototype()->constructor_info();
+    if (!constructor_info) {
         gjs_throw(context, "Couldn't find a constructor for type %s.%s", ns(),
                   name());
         return false;
     }
 
-    JS::RootedObject constructor(context);
-    if (!gjs_object_require_property(context, js_constructor, nullptr,
-                                     constructor_name, &constructor)) {
-        gjs_throw(context, "Couldn't find a constructor for type %s.%s", ns(),
-                  name());
-        return false;
-    }
-
-    return gjs_invoke_constructor_from_c(context, constructor, obj, args, rvalue);
+    return gjs_invoke_constructor_from_c(context, constructor_info, obj, args,
+                                         rvalue);
 }
 
 // See GIWrapperBase::constructor().
@@ -257,35 +233,16 @@ FundamentalPrototype::FundamentalPrototype(GIObjectInfo* info, GType gtype)
       m_unref_function(g_object_info_get_unref_function_pointer(info)),
       m_get_value_function(g_object_info_get_get_value_function_pointer(info)),
       m_set_value_function(g_object_info_get_set_value_function_pointer(info)),
-      m_constructor_info(nullptr) {
+      m_constructor_info(find_fundamental_constructor(info)) {
     g_assert(m_ref_function);
     g_assert(m_unref_function);
     g_assert(m_set_value_function);
     g_assert(m_get_value_function);
 }
 
-// Overrides GIWrapperPrototype::init().
-bool FundamentalPrototype::init(JSContext* cx) {
-    JS::RootedId constructor_name(cx);
-    GjsAutoFunctionInfo constructor_info;
-    if (!find_fundamental_constructor(cx, info(), &constructor_name,
-                                      &constructor_info))
-        return false;
-
-    m_constructor_name = constructor_name;
-    m_constructor_info = constructor_info.release();
-    return true;
-}
-
 FundamentalPrototype::~FundamentalPrototype(void) {
     g_clear_pointer(&m_constructor_info, g_base_info_unref);
     GJS_DEC_COUNTER(fundamental_prototype);
-}
-
-// Overrides GIWrapperPrototype::trace_impl().
-void FundamentalPrototype::trace_impl(JSTracer* trc) {
-    JS::TraceEdge<jsid>(trc, &m_constructor_name,
-                        "Fundamental::constructor_name");
 }
 
 // clang-format off

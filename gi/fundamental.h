@@ -91,14 +91,10 @@ class FundamentalPrototype
     GIObjectInfoUnrefFunction m_unref_function;
     GIObjectInfoGetValueFunction m_get_value_function;
     GIObjectInfoSetValueFunction m_set_value_function;
-
-    JS::Heap<jsid> m_constructor_name;
     GICallableInfo* m_constructor_info;
 
     explicit FundamentalPrototype(GIObjectInfo* info, GType gtype);
     ~FundamentalPrototype(void);
-
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
 
     static constexpr InfoType::Tag info_type_tag = InfoType::Object;
 
@@ -108,8 +104,6 @@ class FundamentalPrototype
 
     // Accessors
 
-    GJS_USE
-    jsid constructor_name(void) const { return m_constructor_name.get(); }
     GJS_USE
     GICallableInfo* constructor_info(void) const { return m_constructor_info; }
 
@@ -139,7 +133,6 @@ class FundamentalPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       const char* prop_name, bool* resolved);
-    void trace_impl(JSTracer* trc);
 
     // Public API
  public:
