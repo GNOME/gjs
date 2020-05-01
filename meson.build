@@ -576,6 +576,7 @@ tests_environment.set('LSAN_OPTIONS', 'exitcode=23,suppressions=@0@'.format(
     meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
+tests_environment.set('GSETTINGS_BACKEND', 'memory')
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
 tests_locale = 'N/A'
