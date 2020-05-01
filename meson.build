@@ -628,7 +628,7 @@ valgrind_args = [
     '--leak-check=full',
     '--num-callers=15',
     '--trace-children=yes',
-    '--trace-children-skip=*basename,*cat,*diff,*echo,*grep,*rm,*sed,*true',
+    '--trace-children-skip=*basename,*cat,*diff,*echo,*grep,*rm,*sed,*stat,*true',
     '--error-exitcode=1'
 ]
 
