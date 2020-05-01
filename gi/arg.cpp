@@ -3813,6 +3813,7 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
         type_needs_out_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
             elem.v_pointer = array[i];
+            JS::AutoSaveExceptionState saved_exc(context);
             if (!gjs_g_arg_release_internal(context,
                                             GI_TRANSFER_EVERYTHING,
                                             param_type,
