@@ -71,7 +71,7 @@
 #define GJS_ARG_INDEX_INVALID G_MAXUINT8
 
 typedef struct {
-    GIFunctionInfo *info;
+    GICallableInfo* info;
 
     GjsParamType *param_types;
 
@@ -750,19 +750,15 @@ gjs_fill_method_instance(JSContext       *context,
 
 /* Intended for error messages. Return value must be freed */
 GJS_USE
-static char *
-format_function_name(Function *function,
-                     bool      is_method)
-{
-    auto baseinfo = static_cast<GIBaseInfo *>(function->info);
-    if (is_method)
-        return g_strdup_printf("method %s.%s.%s",
-                               g_base_info_get_namespace(baseinfo),
-                               g_base_info_get_name(g_base_info_get_container(baseinfo)),
-                               g_base_info_get_name(baseinfo));
+static char* format_function_name(Function* function) {
+    if (g_callable_info_is_method(function->info))
+        return g_strdup_printf(
+            "method %s.%s.%s", g_base_info_get_namespace(function->info),
+            g_base_info_get_name(g_base_info_get_container(function->info)),
+            g_base_info_get_name(function->info));
     return g_strdup_printf("function %s.%s",
-                           g_base_info_get_namespace(baseinfo),
-                           g_base_info_get_name(baseinfo));
+                           g_base_info_get_namespace(function->info),
+                           g_base_info_get_name(function->info));
 }
 
 static void
@@ -846,7 +842,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
      *
      * @args.length() is the number of arguments that were actually passed.
      */
-    GjsAutoChar name = format_function_name(function, is_method);
+    GjsAutoChar name = format_function_name(function);
     if (args.length() > function->expected_js_argc) {
         if (!JS::WarnUTF8(
                 context, "Too many arguments to %s: expected %d, got %u",
