@@ -251,6 +251,7 @@ FundamentalPrototype::FundamentalPrototype(GIObjectInfo* info, GType gtype)
     g_assert(m_unref_function);
     g_assert(m_set_value_function);
     g_assert(m_get_value_function);
+    GJS_INC_COUNTER(fundamental_prototype);
 }
 
 // Overrides GIWrapperPrototype::init().
