@@ -35,7 +35,7 @@
 #include "gjs/macros.h"
 
 namespace JS {
-class HandleValueArray;
+class CallArgs;
 }
 
 typedef enum {
@@ -76,7 +76,7 @@ JSObject *gjs_define_function(JSContext       *context,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_constructor_from_c(JSContext* cx, GIFunctionInfo* info,
                                    JS::HandleObject this_obj,
-                                   const JS::HandleValueArray& args,
+                                   const JS::CallArgs& args,
                                    GIArgument* rvalue);
 
 #endif  // GI_FUNCTION_H_

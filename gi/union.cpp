@@ -29,9 +29,7 @@
 #include <js/Class.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <js/Value.h>
 #include <js/Warnings.h>
-#include <jsapi.h>  // for HandleValueArray
 
 #include "gi/function.h"
 #include "gi/repo.h"
@@ -95,11 +93,8 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static void*
-union_new(JSContext       *context,
-          JS::HandleObject obj, /* "this" for constructor */
-          GIUnionInfo     *info)
-{
+static void* union_new(JSContext* context, JS::HandleObject this_obj,
+                       const JS::CallArgs& args, GIUnionInfo* info) {
     int n_methods;
     int i;
 
@@ -116,9 +111,8 @@ union_new(JSContext       *context,
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
             g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
             GIArgument rval;
-            if (!gjs_invoke_constructor_from_c(context, func_info, obj,
-                                               JS::HandleValueArray::empty(),
-                                               &rval))
+            if (!gjs_invoke_constructor_from_c(context, func_info, this_obj,
+                                               args, &rval))
                 return nullptr;
 
             if (!rval.v_pointer) {
@@ -148,7 +142,7 @@ bool UnionInstance::constructor_impl(JSContext* context,
                       name()))
         return false;
 
-    m_ptr = union_new(context, object, info());
+    m_ptr = union_new(context, object, args, info());
     return !!m_ptr;
 }
 

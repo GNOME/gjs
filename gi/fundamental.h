@@ -30,8 +30,6 @@
 #include <girepository.h>
 #include <glib-object.h>
 
-#include <js/Id.h>
-#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
@@ -40,10 +38,7 @@
 
 class FundamentalPrototype;
 class FundamentalInstance;
-namespace JS {
-class CallArgs;
-class HandleValueArray;
-}  // namespace JS
+namespace JS { class CallArgs; }
 
 /* To conserve memory, we have two different kinds of private data for JS
  * wrappers for fundamental types: FundamentalInstance, and
@@ -158,8 +153,7 @@ class FundamentalInstance
 
     GJS_JSAPI_RETURN_CONVENTION
     bool invoke_constructor(JSContext* cx, JS::HandleObject obj,
-                            const JS::HandleValueArray& args,
-                            GIArgument* rvalue);
+                            const JS::CallArgs& args, GIArgument* rvalue);
 
     void ref(void) { get_prototype()->call_ref_function(m_ptr); }
     void unref(void) { get_prototype()->call_unref_function(m_ptr); }

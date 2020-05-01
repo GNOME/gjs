@@ -30,7 +30,7 @@
 #include <js/AllocPolicy.h>  // for SystemAllocPolicy
 #include <js/Class.h>
 #include <js/GCHashTable.h>  // for WeakCache
-#include <js/TracingAPI.h>
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for InformalValueTypeName, JS_GetClass
 #include <mozilla/HashTable.h>
@@ -187,7 +187,7 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
  */
 bool FundamentalInstance::invoke_constructor(JSContext* context,
                                              JS::HandleObject obj,
-                                             const JS::HandleValueArray& args,
+                                             const JS::CallArgs& args,
                                              GIArgument* rvalue) {
     GIFunctionInfo* constructor_info = get_prototype()->constructor_info();
     if (!constructor_info) {
