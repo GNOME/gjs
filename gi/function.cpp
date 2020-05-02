@@ -418,14 +418,9 @@ static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
             if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 goto out;
 
-            if (!gjs_value_to_g_argument(context,
-                                         elem,
-                                         &ret_type,
-                                         "callback",
-                                         GJS_ARGUMENT_ARGUMENT,
-                                         transfer,
-                                         true,
-                                         &argument))
+            if (!gjs_value_to_g_argument(context, elem, &ret_type, "callback",
+                                         GJS_ARGUMENT_RETURN_VALUE, transfer,
+                                         true, &argument))
                 goto out;
 
             set_return_ffi_arg_from_giargument(&ret_type,

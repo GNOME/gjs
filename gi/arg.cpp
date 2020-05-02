@@ -1520,12 +1520,10 @@ intern_gdk_atom(const char *name,
                            nullptr);
 }
 
-static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
-                                           GIBaseInfo* interface_info,
-                                           GIInfoType interface_type,
-                                           GITransfer transfer,
-                                           bool expect_object, GIArgument* arg,
-                                           bool* report_type_mismatch) {
+static bool value_to_interface_gi_argument(
+    JSContext* cx, JS::HandleValue value, GIBaseInfo* interface_info,
+    GIInfoType interface_type, GITransfer transfer, bool expect_object,
+    GIArgument* arg, GjsArgumentType arg_type, bool* report_type_mismatch) {
     g_assert(report_type_mismatch);
     GType gtype = G_TYPE_NONE;
 
@@ -1649,8 +1647,14 @@ static bool value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
                     GClosure* closure = gjs_closure_new_marshaled(
                         cx, JS_GetObjectFunction(obj), "boxed");
-                    g_closure_ref(closure);
-                    g_closure_sink(closure);
+                    // GI doesn't know about floating GClosure references. We
+                    // guess that if this is a return value going from JS::Value
+                    // to GArgument, it's intended to be passed to a C API that
+                    // will consume the floating reference.
+                    if (arg_type != GJS_ARGUMENT_RETURN_VALUE) {
+                        g_closure_ref(closure);
+                        g_closure_sink(closure);
+                    }
                     arg->v_pointer = closure;
                     return true;
                 }
@@ -1960,7 +1964,7 @@ gjs_value_to_g_argument(JSContext      *context,
 
             if (!value_to_interface_gi_argument(
                     context, value, interface_info, interface_type, transfer,
-                    expect_object, arg, &report_type_mismatch))
+                    expect_object, arg, arg_type, &report_type_mismatch))
                 wrong = true;
         }
         break;
