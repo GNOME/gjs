@@ -43,22 +43,15 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-typedef struct {
-    cairo_surface_t *surface;
-} GjsCairoSurface;
-
 GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Surface", cairo_surface,
                                      CAIRO_GOBJECT_TYPE_SURFACE,
                                      JSCLASS_BACKGROUND_FINALIZE)
-GJS_DEFINE_PRIV_FROM_JS(GjsCairoSurface, gjs_cairo_surface_class)
 
 static void gjs_cairo_surface_finalize(JSFreeOp*, JSObject* obj) {
-    GjsCairoSurface *priv;
-    priv = (GjsCairoSurface*) JS_GetPrivate(obj);
-    if (!priv)
-        return;
-    cairo_surface_destroy(priv->surface);
-    g_slice_free(GjsCairoSurface, priv);
+    using AutoSurface =
+        GjsAutoPointer<cairo_surface_t, cairo_surface_t, cairo_surface_destroy>;
+    AutoSurface surface = static_cast<cairo_surface_t*>(JS_GetPrivate(obj));
+    JS_SetPrivate(obj, nullptr);
 }
 
 /* Properties */
@@ -142,7 +135,6 @@ JSFunctionSpec gjs_cairo_surface_static_funcs[] = { JS_FS_END };
 
 /**
  * gjs_cairo_surface_construct:
- * @context: the context
  * @object: object to construct
  * @surface: cairo_surface to attach to the object
  *
@@ -151,23 +143,12 @@ JSFunctionSpec gjs_cairo_surface_static_funcs[] = { JS_FS_END };
  *
  * This is mainly used for subclasses where object is already created.
  */
-void
-gjs_cairo_surface_construct(JSContext       *context,
-                            JS::HandleObject object,
-                            cairo_surface_t *surface)
-{
-    GjsCairoSurface *priv;
-
-    g_return_if_fail(context);
+void gjs_cairo_surface_construct(JSObject* object, cairo_surface_t* surface) {
     g_return_if_fail(object);
     g_return_if_fail(surface);
 
-    priv = g_slice_new0(GjsCairoSurface);
-
-    g_assert(!priv_from_js(context, object));
-    JS_SetPrivate(object, priv);
-
-    priv->surface = cairo_surface_reference(surface);
+    g_assert(!JS_GetPrivate(object));
+    JS_SetPrivate(object, cairo_surface_reference(surface));
 }
 
 /**
@@ -223,7 +204,7 @@ gjs_cairo_surface_from_surface(JSContext       *context,
         return nullptr;
     }
 
-    gjs_cairo_surface_construct(context, object, surface);
+    gjs_cairo_surface_construct(object, surface);
 
     return object;
 }
@@ -252,12 +233,7 @@ cairo_surface_t* gjs_cairo_surface_get_surface(
         return nullptr;
     }
 
-    auto* priv = static_cast<GjsCairoSurface*>(JS_GetPrivate(surface_wrapper));
-    if (!priv)
-        return nullptr;
-
-    g_assert(priv->surface);
-    return priv->surface;
+    return static_cast<cairo_surface_t*>(JS_GetPrivate(surface_wrapper));
 }
 
 GJS_USE
