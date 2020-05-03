@@ -36,23 +36,16 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"  // IWYU pragma: keep
 
-typedef struct {
-    cairo_path_t    *path;
-} GjsCairoPath;
-
 GJS_USE
 static JSObject *gjs_cairo_path_get_proto(JSContext *);
 
 GJS_DEFINE_PROTO_ABSTRACT("Path", cairo_path, JSCLASS_BACKGROUND_FINALIZE)
-GJS_DEFINE_PRIV_FROM_JS(GjsCairoPath, gjs_cairo_path_class)
 
 static void gjs_cairo_path_finalize(JSFreeOp*, JSObject* obj) {
-    GjsCairoPath *priv;
-    priv = (GjsCairoPath*) JS_GetPrivate(obj);
-    if (!priv)
-        return;
-    cairo_path_destroy(priv->path);
-    g_slice_free(GjsCairoPath, priv);
+    using AutoCairoPath =
+        GjsAutoPointer<cairo_path_t, cairo_path_t, cairo_path_destroy>;
+    AutoCairoPath path = static_cast<cairo_path_t*>(JS_GetPrivate(obj));
+    JS_SetPrivate(obj, nullptr);
 }
 
 /* Properties */
@@ -78,8 +71,6 @@ JSObject *
 gjs_cairo_path_from_path(JSContext    *context,
                          cairo_path_t *path)
 {
-    GjsCairoPath *priv;
-
     g_return_val_if_fail(context, nullptr);
     g_return_val_if_fail(path, nullptr);
 
@@ -91,12 +82,8 @@ gjs_cairo_path_from_path(JSContext    *context,
         return nullptr;
     }
 
-    priv = g_slice_new0(GjsCairoPath);
-
-    g_assert(!priv_from_js(context, object));
-    JS_SetPrivate(object, priv);
-
-    priv->path = path;
+    g_assert(!JS_GetPrivate(object));
+    JS_SetPrivate(object, path);
 
     return object;
 }
@@ -113,14 +100,13 @@ cairo_path_t* gjs_cairo_path_get_path(JSContext* cx,
     g_return_val_if_fail(cx, nullptr);
     g_return_val_if_fail(path_wrapper, nullptr);
 
-    auto* priv = static_cast<GjsCairoPath*>(JS_GetInstancePrivate(
+    auto* path = static_cast<cairo_path_t*>(JS_GetInstancePrivate(
         cx, path_wrapper, &gjs_cairo_path_class, nullptr));
-    if (!priv) {
+    if (!path) {
         gjs_throw(cx, "Expected Cairo.Path but got %s",
                   JS_GetClass(path_wrapper)->name);
         return nullptr;
     }
 
-    g_assert(priv->path);
-    return priv->path;
+    return path;
 }
