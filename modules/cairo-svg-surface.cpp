@@ -70,7 +70,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_svg_surface)
                                 "surface"))
         return false;
 
-    gjs_cairo_surface_construct(context, object, surface);
+    gjs_cairo_surface_construct(object, surface);
     cairo_surface_destroy(surface);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_svg_surface);
@@ -113,7 +113,7 @@ gjs_cairo_svg_surface_from_surface(JSContext       *context,
         return nullptr;
     }
 
-    gjs_cairo_surface_construct(context, object, surface);
+    gjs_cairo_surface_construct(object, surface);
 
     return object;
 }
