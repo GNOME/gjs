@@ -66,7 +66,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_surface_pattern)
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return false;
 
-    gjs_cairo_pattern_construct(context, object, pattern);
+    gjs_cairo_pattern_construct(object, pattern);
     cairo_pattern_destroy(pattern);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_surface_pattern);
@@ -222,7 +222,7 @@ gjs_cairo_surface_pattern_from_pattern(JSContext       *context,
         return nullptr;
     }
 
-    gjs_cairo_pattern_construct(context, object, pattern);
+    gjs_cairo_pattern_construct(object, pattern);
 
     return object;
 }

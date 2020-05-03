@@ -140,7 +140,7 @@ gjs_cairo_solid_pattern_from_pattern(JSContext       *context,
         return nullptr;
     }
 
-    gjs_cairo_pattern_construct(context, object, pattern);
+    gjs_cairo_pattern_construct(object, pattern);
 
     return object;
 }

@@ -65,7 +65,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_radial_gradient)
     if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
         return false;
 
-    gjs_cairo_pattern_construct(context, object, pattern);
+    gjs_cairo_pattern_construct(object, pattern);
     cairo_pattern_destroy(pattern);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_radial_gradient);
@@ -110,7 +110,7 @@ gjs_cairo_radial_gradient_from_pattern(JSContext       *context,
         return nullptr;
     }
 
-    gjs_cairo_pattern_construct(context, object, pattern);
+    gjs_cairo_pattern_construct(object, pattern);
 
     return object;
 }
