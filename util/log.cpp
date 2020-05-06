@@ -166,6 +166,9 @@ _Pragma("GCC diagnostic pop")
     case GJS_DEBUG_NATIVE:
         prefix = "JS NATIVE";
         break;
+    case GJS_DEBUG_CAIRO:
+        prefix = "JS CAIRO";
+        break;
     case GJS_DEBUG_KEEP_ALIVE:
         prefix = "JS KP ALV";
         break;

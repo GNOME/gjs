@@ -61,7 +61,7 @@ gjs_js_define_cairo_stuff(JSContext              *context,
         return false;
     gjs_cairo_region_init();
 
-    if (!gjs_cairo_context_define_proto(context, module, &proto))
+    if (!CairoContext::create_prototype(context, module))
         return false;
     gjs_cairo_context_init();
 

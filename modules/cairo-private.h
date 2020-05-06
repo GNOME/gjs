@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2010 litl, LLC.
+// SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
 #ifndef MODULES_CAIRO_PRIVATE_H_
 #define MODULES_CAIRO_PRIVATE_H_
@@ -8,11 +9,26 @@
 #include <config.h>
 
 #include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE, CAIRO_HAS_PS_SURFACE
+#include <cairo-gobject.h>
 #include <cairo.h>
+#include <glib-object.h>
 
+#include <js/PropertySpec.h>
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
+#include "gi/wrapperutils.h"
+#include "gjs/global.h"
 #include "gjs/macros.h"
+#include "util/log.h"
+
+namespace JS {
+class CallArgs;
+}
+namespace js {
+struct ClassSpec;
+}
+struct JSClass;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool             gjs_cairo_check_status                 (JSContext       *context,
@@ -26,16 +42,44 @@ bool gjs_cairo_region_define_proto(JSContext              *cx,
 
 void gjs_cairo_region_init(void);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_cairo_context_define_proto(JSContext              *cx,
-                                    JS::HandleObject        module,
-                                    JS::MutableHandleObject proto);
+class CairoContext : public CWrapper<CairoContext, cairo_t> {
+    friend CWrapperPointerOps<CairoContext, cairo_t>;
+    friend CWrapper<CairoContext, cairo_t>;
 
-[[nodiscard]] cairo_t* gjs_cairo_context_get_context(JSContext* cx,
-                                                     JS::HandleObject object);
-GJS_JSAPI_RETURN_CONVENTION
-JSObject *       gjs_cairo_context_from_context         (JSContext       *context,
-                                                         cairo_t         *cr);
+    CairoContext() = delete;
+    CairoContext(CairoContext&) = delete;
+    CairoContext(CairoContext&&) = delete;
+
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_cairo_context;
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_CAIRO;
+    static constexpr unsigned constructor_nargs = 1;
+
+    static GType gtype() { return CAIRO_GOBJECT_TYPE_CONTEXT; }
+
+    static cairo_t* copy_ptr(cairo_t* cr) { return cairo_reference(cr); }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static cairo_t* constructor_impl(JSContext* cx, const JS::CallArgs& args);
+
+    static void finalize_impl(JSFreeOp* fop, cairo_t* cr);
+
+    static const JSFunctionSpec proto_funcs[];
+    static const JSPropertySpec proto_props[];
+    static constexpr js::ClassSpec class_spec = {
+        nullptr,  // createConstructor
+        nullptr,  // createPrototype
+        nullptr,  // constructorFunctions
+        nullptr,  // constructorProperties
+        CairoContext::proto_funcs,
+        CairoContext::proto_props,
+        CairoContext::define_gtype_prop,
+    };
+    static constexpr JSClass klass = {
+        "Context", JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+        &CairoContext::class_ops, &CairoContext::class_spec};
+};
+
 void gjs_cairo_context_init(void);
 void gjs_cairo_surface_init(void);
 
