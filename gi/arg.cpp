@@ -673,7 +673,7 @@ value_to_ghashtable_key(JSContext      *cx,
 template <typename T>
 GJS_USE static T* heap_value_new_from_arg(GIArgument* val_arg) {
     T* heap_val = g_new(T, 1);
-    *heap_val = gjs_g_argument_value<T>(val_arg);
+    *heap_val = gjs_g_argument_value_get<T>(val_arg);
 
     return heap_val;
 }
@@ -2450,7 +2450,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     GITypeInfo* param_info, GIArgument* arg, void* array, size_t length) {
     for (size_t i = 0; i < length; i++) {
-        gjs_g_argument_value<T>(arg) = *(static_cast<T*>(array) + i);
+        gjs_g_argument_value_set(arg, *(static_cast<T*>(array) + i));
 
         if (!gjs_value_from_g_argument(cx, elems[i], param_info, arg, true))
             return false;
@@ -2696,7 +2696,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     T* array = static_cast<T*>(c_array);
 
     for (size_t i = 0; array[i]; i++) {
-        gjs_g_argument_value<T>(arg) = array[i];
+        gjs_g_argument_value_set(arg, array[i]);
 
         if (!elems.growBy(1)) {
             JS_ReportOutOfMemory(cx);

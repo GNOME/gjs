@@ -110,3 +110,13 @@ template <>
 GJS_USE inline decltype(auto) gjs_g_argument_value<void*>(GIArgument* arg) {
     return gjs_g_argument_value(arg, &GIArgument::v_pointer);
 }
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+inline void gjs_g_argument_value_set(GIArgument* arg, T v) {
+    gjs_g_argument_value<T, TAG>(arg) = v;
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+GJS_USE inline T gjs_g_argument_value_get(GIArgument* arg) {
+    return gjs_g_argument_value<T, TAG>(arg);
+}
