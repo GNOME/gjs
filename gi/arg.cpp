@@ -28,6 +28,7 @@
 #include <cmath>   // for std::abs
 #include <limits>  // for numeric_limits
 #include <string>
+#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -471,6 +472,67 @@ create_hash_table_for_key_type(GITypeInfo  *key_param_info)
     return g_hash_table_new(NULL, NULL);
 }
 
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
+    std::is_integral<T>::value && std::is_signed<T>::value, bool>
+js_value_convert(JSContext* cx, const JS::HandleValue& value, T* out) {
+    return JS::ToInt32(cx, value, out);
+}
+
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
+    std::is_integral<T>::value && std::is_unsigned<T>::value, bool>
+js_value_convert(JSContext* cx, const JS::HandleValue& value, T* out) {
+    return JS::ToUint32(cx, value, out);
+}
+
+template <typename IntType, typename Container>
+GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
+    JSContext* cx, const JS::HandleValue& value, bool* out_of_range,
+    void** pointer_out) {
+    Container i;
+
+    static_assert(std::is_integral<IntType>::value, "Need an integer");
+    static_assert(std::numeric_limits<Container>::max() >=
+                  std::numeric_limits<IntType>::max());
+    static_assert(std::numeric_limits<Container>::min() <=
+                  std::numeric_limits<IntType>::min());
+
+    if (!js_value_convert<Container>(cx, value, &i))
+        return false;
+
+    if (out_of_range &&
+        (i > static_cast<Container>(std::numeric_limits<IntType>::max()) ||
+         i < static_cast<Container>(std::numeric_limits<IntType>::min())))
+        *out_of_range = true;
+
+    /* Use if constexpr with c++17 */
+    if (std::is_signed<IntType>())
+        *pointer_out = GINT_TO_POINTER(i);
+    else
+        *pointer_out = GUINT_TO_POINTER(i);
+
+    return true;
+}
+
+template <typename IntType>
+GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
+    std::is_signed<IntType>::value, bool>
+hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
+                  bool* out_of_range, void** pointer_out) {
+    return hashtable_int_key<IntType, int32_t>(cx, value, out_of_range,
+                                               pointer_out);
+}
+
+template <typename IntType>
+GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
+    std::is_unsigned<IntType>::value, bool>
+hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
+                  bool* out_of_range, void** pointer_out) {
+    return hashtable_int_key<IntType, uint32_t>(cx, value, out_of_range,
+                                                pointer_out);
+}
+
 /* Converts a JS::Value to a GHashTable key, stuffing it into @pointer_out if
  * possible, otherwise giving the location of an allocated key in @pointer_out.
  */
@@ -508,39 +570,35 @@ value_to_ghashtable_key(JSContext      *cx,
         }
         break;
 
-#define HANDLE_SIGNED_INT(bits)                        \
-    case GI_TYPE_TAG_INT##bits: {                      \
-        int32_t i;                                     \
-        if (!JS::ToInt32(cx, value, &i))               \
-            return false;                              \
-        if (i > G_MAXINT##bits || i < G_MININT##bits)  \
-            out_of_range = true;                       \
-        *pointer_out = GINT_TO_POINTER(i);             \
-        break;                                         \
-    }
+    case GI_TYPE_TAG_INT8:
+        if (!hashtable_int_key<int8_t>(cx, value, &out_of_range, pointer_out))
+            return false;
+        break;
 
-    HANDLE_SIGNED_INT(8);
-    HANDLE_SIGNED_INT(16);
-    HANDLE_SIGNED_INT(32);
+    case GI_TYPE_TAG_INT16:
+        if (!hashtable_int_key<int16_t>(cx, value, &out_of_range, pointer_out))
+            return false;
+        break;
 
-#undef HANDLE_SIGNED_INT
+    case GI_TYPE_TAG_INT32:
+        if (!hashtable_int_key<int32_t>(cx, value, &out_of_range, pointer_out))
+            return false;
+        break;
 
-#define HANDLE_UNSIGNED_INT(bits)                      \
-    case GI_TYPE_TAG_UINT##bits: {                     \
-        uint32_t i;                                    \
-        if (!JS::ToUint32(cx, value, &i))              \
-            return false;                              \
-        if (i > G_MAXUINT##bits)                       \
-            out_of_range = true;                       \
-        *pointer_out = GUINT_TO_POINTER(i);            \
-        break;                                         \
-    }
+    case GI_TYPE_TAG_UINT8:
+        if (!hashtable_int_key<uint8_t>(cx, value, &out_of_range, pointer_out))
+            return false;
+        break;
 
-    HANDLE_UNSIGNED_INT(8);
-    HANDLE_UNSIGNED_INT(16);
-    HANDLE_UNSIGNED_INT(32);
+    case GI_TYPE_TAG_UINT16:
+        if (!hashtable_int_key<uint16_t>(cx, value, &out_of_range, pointer_out))
+            return false;
+        break;
 
-#undef HANDLE_UNSIGNED_INT
+    case GI_TYPE_TAG_UINT32:
+        if (!hashtable_int_key<uint32_t>(cx, value, &out_of_range, pointer_out))
+            return false;
+        break;
 
     case GI_TYPE_TAG_FILENAME: {
         GjsAutoChar cstr;
