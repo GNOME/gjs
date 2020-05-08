@@ -2686,6 +2686,27 @@ gjs_array_from_boxed_array (JSContext             *context,
                                           param_info, length, data);
 }
 
+template <typename T, T GIArgument::*member>
+GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
+    JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
+    GITypeInfo* param_info, GIArgument* arg, void* c_array) {
+    T* array = static_cast<T*>(c_array);
+
+    for (size_t i = 0; array[i]; i++) {
+        arg->*member = array[i];
+
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        if (!gjs_value_from_g_argument(cx, elems[i], param_info, arg, true))
+            return false;
+    }
+
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_zero_terminated_c_array (JSContext             *context,
@@ -2695,7 +2716,6 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
 {
     GArgument arg;
     GITypeTag element_type;
-    guint i;
 
     element_type = g_type_info_get_tag(param_info);
 
@@ -2715,20 +2735,11 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
 
     JS::RootedValueVector elems(context);
 
-#define ITERATE(type) \
-    do { \
-        g##type *array = (g##type *) c_array; \
-        for (i = 0; array[i]; i++) { \
-            arg.v_##type = array[i]; \
-            if (!elems.growBy(1)) {                                     \
-                JS_ReportOutOfMemory(context);                          \
-                return false;                                           \
-            }                                                           \
-            if (!gjs_value_from_g_argument(context, elems[i],           \
-                                           param_info, &arg, true))     \
-                return false; \
-        } \
-    } while(0);
+#define ITERATE(type)                                                    \
+    if (!fill_vector_from_zero_terminated_carray<g##type,                \
+                                                 &GIArgument::v_##type>( \
+            context, elems, param_info, &arg, c_array))                  \
+        return false;
 
     switch (element_type) {
         /* Special cases handled above. */
