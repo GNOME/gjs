@@ -2442,6 +2442,20 @@ gjs_array_from_g_list (JSContext             *context,
     return true;
 }
 
+template <typename T, T GIArgument::*member>
+GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
+    JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
+    GITypeInfo* param_info, GIArgument* arg, void* array, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        arg->*member = *(static_cast<T*>(array) + i);
+
+        if (!gjs_value_from_g_argument(cx, elems[i], param_info, arg, true))
+            return false;
+    }
+
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_from_carray_internal (JSContext             *context,
@@ -2488,13 +2502,10 @@ gjs_array_from_carray_internal (JSContext             *context,
         return false;
     }
 
-#define ITERATE(type) \
-    for (i = 0; i < length; i++) { \
-        arg.v_##type = *(((g##type*)array) + i);                         \
-        if (!gjs_value_from_g_argument(context, elems[i], param_info,    \
-                                       &arg, true))                      \
-            return false; \
-    }
+#define ITERATE(type)                                             \
+    if (!fill_vector_from_carray<g##type, &GIArgument::v_##type>( \
+            context, elems, param_info, &arg, array, length))     \
+        return false;
 
     switch (element_type) {
         /* Special cases handled above */
