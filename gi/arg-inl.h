@@ -116,7 +116,29 @@ inline void gjs_g_argument_value_set(GIArgument* arg, T v) {
     gjs_g_argument_value<T, TAG>(arg) = v;
 }
 
+template <>
+inline void gjs_g_argument_value_set<bool>(GIArgument* arg, bool v) {
+    gjs_g_argument_value<bool>(arg) = !!v;
+}
+
+template <>
+inline void gjs_g_argument_value_set<gboolean, GI_TYPE_TAG_BOOLEAN>(
+    GIArgument* arg, gboolean v) {
+    gjs_g_argument_value<bool>(arg) = !!v;
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_USE inline T gjs_g_argument_value_get(GIArgument* arg) {
     return gjs_g_argument_value<T, TAG>(arg);
+}
+
+template <>
+GJS_USE inline bool gjs_g_argument_value_get<bool>(GIArgument* arg) {
+    return !!gjs_g_argument_value<bool>(arg);
+}
+
+template <>
+GJS_USE inline gboolean gjs_g_argument_value_get<gboolean, GI_TYPE_TAG_BOOLEAN>(
+    GIArgument* arg) {
+    return !!gjs_g_argument_value<bool>(arg);
 }
