@@ -133,7 +133,7 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
     g_assert_cmpuint(foo_type, !=, G_TYPE_INVALID);
 
     gpointer foo = g_object_new(foo_type, NULL);
-    g_assert(G_IS_OBJECT(foo));
+    g_assert_true(G_IS_OBJECT(foo));
 
     g_object_unref(foo);
     g_object_unref(context);
@@ -171,7 +171,7 @@ static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
     GjsUnitTestFixture* fx, const void*) {
     JS::RootedValue js_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &js_string));
-    g_assert(js_string.isString());
+    g_assert_true(js_string.isString());
 
     JS::UniqueChars utf8_result = gjs_string_to_utf8(fx->cx, js_string);
     g_assert_nonnull(utf8_result);
@@ -186,15 +186,15 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     gjs_throw(fx->cx, "This is an exception %d", 42);
 
-    g_assert(JS_IsExceptionPending(fx->cx));
+    g_assert_true(JS_IsExceptionPending(fx->cx));
 
     JS_GetPendingException(fx->cx, &exc);
-    g_assert(!exc.isUndefined());
+    g_assert_false(exc.isUndefined());
 
     JS::RootedObject exc_obj(fx->cx, &exc.toObject());
     JS_GetProperty(fx->cx, exc_obj, "message", &value);
 
-    g_assert(value.isString());
+    g_assert_true(value.isString());
 
     JS::UniqueChars s = gjs_string_to_utf8(fx->cx, value);
     g_assert_nonnull(s);
@@ -205,21 +205,21 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     JS_ClearPendingException(fx->cx);
 
-    g_assert(!JS_IsExceptionPending(fx->cx));
+    g_assert_false(JS_IsExceptionPending(fx->cx));
 
     /* Check that we don't overwrite a pending exception */
     JS_SetPendingException(fx->cx, previous);
 
-    g_assert(JS_IsExceptionPending(fx->cx));
+    g_assert_true(JS_IsExceptionPending(fx->cx));
 
     gjs_throw(fx->cx, "Second different exception %s", "foo");
 
-    g_assert(JS_IsExceptionPending(fx->cx));
+    g_assert_true(JS_IsExceptionPending(fx->cx));
 
     exc = JS::UndefinedValue();
     JS_GetPendingException(fx->cx, &exc);
-    g_assert(!exc.isUndefined());
-    g_assert(&exc.toObject() == &previous.toObject());
+    g_assert_false(exc.isUndefined());
+    g_assert_true(&exc.toObject() == &previous.toObject());
 }
 
 static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
@@ -328,8 +328,8 @@ gjstest_test_func_util_misc_strv_concat_null(void)
     char **ret;
 
     ret = gjs_g_strv_concat(NULL, 0);
-    g_assert(ret != NULL);
-    g_assert(ret[0] == NULL);
+    g_assert_nonnull(ret);
+    g_assert_null(ret[0]);
 
     g_strfreev(ret);
 }
@@ -350,12 +350,12 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
     stuff[3] = strv3;
 
     ret = gjs_g_strv_concat(stuff, 4);
-    g_assert(ret != NULL);
+    g_assert_nonnull(ret);
     g_assert_cmpstr(ret[0], ==, strv0[0]);  /* same string */
-    g_assert(ret[0] != strv0[0]);           /* different pointer */
+    g_assert_true(ret[0] != strv0[0]);      // different pointer
     g_assert_cmpstr(ret[1], ==, strv3[0]);
-    g_assert(ret[1] != strv3[0]);
-    g_assert(ret[2] == NULL);
+    g_assert_true(ret[1] != strv3[0]);
+    g_assert_null(ret[2]);
 
     g_strfreev(ret);
 }
