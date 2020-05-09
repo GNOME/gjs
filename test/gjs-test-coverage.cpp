@@ -360,7 +360,7 @@ static void test_previous_contents_preserved(void* fixture_data, const void*) {
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    g_assert(strstr(coverage_data_contents, existing_contents) != NULL);
+    g_assert_nonnull(strstr(coverage_data_contents, existing_contents));
     g_free(coverage_data_contents);
 }
 
@@ -379,7 +379,7 @@ static void test_new_contents_written(void* fixture_data, const void*) {
                                           fixture->lcov_output);
 
     /* We have new content in the coverage data */
-    g_assert(strlen(existing_contents) != strlen(coverage_data_contents));
+    g_assert_cmpstr(existing_contents, !=, coverage_data_contents);
     g_free(coverage_data_contents);
 }
 
@@ -482,7 +482,7 @@ branch_at_line_should_be_taken(const char *line,
         g_assert_cmpint(hit_count_num, >, 0);
         break;
     default:
-        g_assert_not_reached();
+        g_assert_true(false && "Invalid branch state");
     };
 }
 
@@ -643,7 +643,7 @@ any_line_matches_not_executed_branch(const char *data)
         line = line_starting_with(line + 1, "BRDA:");
     }
 
-    g_assert_not_reached();
+    g_assert_true(false && "BRDA line with line 3 not found");
 }
 
 static void test_branch_not_hit_written_to_coverage_data(void* fixture_data,
@@ -991,14 +991,13 @@ line_hit_count_is_more_than(const char *line,
 
     unsigned int lineno = strtol(coverage_line, &comma_ptr, 10);
 
-    g_assert(comma_ptr[0] == ',');
+    g_assert_cmpint(comma_ptr[0], ==, ',');
 
     char *end_ptr = NULL;
 
     unsigned int value = strtol(&comma_ptr[1], &end_ptr, 10);
 
-    g_assert(end_ptr[0] == '\0' ||
-             end_ptr[0] == '\n');
+    g_assert_true(end_ptr[0] == '\0' || end_ptr[0] == '\n');
 
     g_assert_cmpuint(lineno, ==, data->expected_lineno);
     g_assert_cmpuint(value, >, data->expected_to_be_more_than);
@@ -1105,7 +1104,7 @@ static void test_end_of_record_section_written_to_coverage_data(
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    g_assert(strstr(coverage_data_contents, "end_of_record") != NULL);
+    g_assert_nonnull(strstr(coverage_data_contents, "end_of_record"));
     g_free(coverage_data_contents);
 }
 
@@ -1192,10 +1191,10 @@ static void test_multiple_source_file_records_written_to_coverage_data(
                                           fixture->base_fixture.lcov_output);
 
     const char *first_sf_record = line_starting_with(coverage_data_contents, "SF:");
-    g_assert(first_sf_record != NULL);
+    g_assert_nonnull(first_sf_record);
 
     const char *second_sf_record = line_starting_with(first_sf_record + 1, "SF:");
-    g_assert(second_sf_record != NULL);
+    g_assert_nonnull(second_sf_record);
 
     g_free(coverage_data_contents);
 }
@@ -1232,7 +1231,7 @@ assert_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
         }
     }
 
-    g_assert_not_reached();
+    g_assert_true(false && "Expected source file path to be found in section");
 }
 
 static void
