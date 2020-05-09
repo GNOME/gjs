@@ -10,14 +10,16 @@
 #include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
 
-#define assert_match(str, pattern)                                            \
-    G_STMT_START {                                                            \
-        const char *__s1 = (str), *__s2 = (pattern);                          \
-        if (!g_pattern_match_simple(__s2, __s1)) {                            \
-            g_printerr("**\nExpected \"%s\" to match \"%s\"\n", __s1, __s2);  \
-            g_assert_not_reached();                                           \
-        }                                                                     \
-    } G_STMT_END
+#define assert_match(str, pattern)                                           \
+    G_STMT_START {                                                           \
+        const char *__s1 = (str), *__s2 = (pattern);                         \
+        if (!g_pattern_match_simple(__s2, __s1)) {                           \
+            g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
+                                "assertion failed (\"" #str                  \
+                                "\" matches \"" #pattern "\")");             \
+        }                                                                    \
+    }                                                                        \
+    G_STMT_END
 
 typedef enum _test_enum {
     ZERO,
