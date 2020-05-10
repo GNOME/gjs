@@ -103,7 +103,7 @@ GJS_USE inline decltype(auto) gjs_g_argument_value<double>(GIArgument* arg) {
 
 template <>
 GJS_USE inline decltype(auto) gjs_g_argument_value<char*>(GIArgument* arg) {
-    return gjs_g_argument_value(arg, &GIArgument::v_pointer);
+    return gjs_g_argument_value(arg, &GIArgument::v_string);
 }
 
 template <>
@@ -125,6 +125,11 @@ template <>
 inline void gjs_g_argument_value_set<gboolean, GI_TYPE_TAG_BOOLEAN>(
     GIArgument* arg, gboolean v) {
     gjs_g_argument_value<bool>(arg) = !!v;
+}
+
+template <>
+inline void gjs_g_argument_value_set(GIArgument* arg, const char* v) {
+    gjs_g_argument_value<char*>(arg) = const_cast<char*>(v);
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
