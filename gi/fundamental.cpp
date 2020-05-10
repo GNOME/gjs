@@ -37,6 +37,7 @@
 #include <jsapi.h>  // for InformalValueTypeName, JS_GetClass
 #include <mozilla/HashTable.h>
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/function.h"
 #include "gi/fundamental.h"
@@ -210,7 +211,7 @@ bool FundamentalInstance::constructor_impl(JSContext* cx,
     GITypeInfo return_info;
 
     if (!invoke_constructor(cx, object, argv, &ret_value) ||
-        !associate_js_instance(cx, object, ret_value.v_pointer))
+        !associate_js_instance(cx, object, gjs_arg_get<void*>(&ret_value)))
         return false;
 
     GICallableInfo* constructor_info = get_prototype()->constructor_info();

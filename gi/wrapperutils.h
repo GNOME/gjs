@@ -45,6 +45,7 @@
 #include <jsapi.h>       // for JS_GetPrivate, JS_SetPrivate, JS_Ge...
 #include <jspubtd.h>     // for JSProto_TypeError
 
+#include "gi/arg-inl.h"
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"  // IWYU pragma: keep
@@ -623,14 +624,14 @@ class GIWrapperBase {
      * @expected_info: Introspection info to perform a typecheck with
      *
      * Prepares @arg for passing the value from @obj into C code. It will get a
-     * C pointer from @obj and assign it to @arg->v_pointer, taking a reference
-     * with GIWrapperInstance::copy_ptr() if @transfer_direction and
+     * C pointer from @obj and assign it to @arg's pointer field, taking a
+     * reference with GIWrapperInstance::copy_ptr() if @transfer_direction and
      * @transfer_ownership indicate that it should.
      *
      * Includes a typecheck using GIWrapperBase::typecheck(), to which
      * @expected_gtype and @expected_info are passed.
      *
-     * If returning false, then @arg->v_pointer is null.
+     * If returning false, then @arg's pointer field is null.
      */
     GJS_JSAPI_RETURN_CONVENTION
     static bool transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
@@ -643,21 +644,21 @@ class GIWrapperBase {
                  "transfer_to_gi_argument() must choose between in or out");
 
         if (!Base::typecheck(cx, obj, expected_info, expected_gtype)) {
-            arg->v_pointer = nullptr;
+            gjs_arg_unset<void*>(arg);
             return false;
         }
 
-        arg->v_pointer = Base::to_c_ptr(cx, obj);
-        if (!arg->v_pointer)
+        gjs_arg_set(arg, Base::to_c_ptr(cx, obj));
+        if (!gjs_arg_get<void*>(arg))
             return false;
 
         if ((transfer_direction == GI_DIRECTION_IN &&
              transfer_ownership != GI_TRANSFER_NOTHING) ||
             (transfer_direction == GI_DIRECTION_OUT &&
              transfer_ownership == GI_TRANSFER_EVERYTHING)) {
-            arg->v_pointer =
-                Instance::copy_ptr(cx, expected_gtype, arg->v_pointer);
-            if (!arg->v_pointer)
+            gjs_arg_set(arg, Instance::copy_ptr(cx, expected_gtype,
+                                                gjs_arg_get<void*>(arg)));
+            if (!gjs_arg_get<void*>(arg))
                 return false;
         }
 

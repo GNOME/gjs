@@ -41,6 +41,7 @@
 #include <jsapi.h>  // for InformalValueTypeName, JS_ClearPendingException
 #include <mozilla/Unused.h>
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/closure.h"
@@ -125,7 +126,7 @@ gjs_value_from_array_and_length_values(JSContext             *context,
                                          signal_query, array_length_arg_n))
         return false;
 
-    array_arg.v_pointer = g_value_get_pointer(array_value);
+    gjs_arg_set(&array_arg, g_value_get_pointer(array_value));
 
     return gjs_value_from_explicit_array(context, value_p, array_type_info,
                                          &array_arg, array_length.toInt32());
@@ -584,7 +585,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                                                                        true, &arg))
                             return false;
 
-                        gboxed = arg.v_pointer;
+                        gboxed = gjs_arg_get<void*>(&arg);
                     }
                 }
 
@@ -910,7 +911,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
         if (info.type() == GI_INFO_TYPE_STRUCT &&
             g_struct_info_is_foreign(info)) {
             GIArgument arg;
-            arg.v_pointer = gboxed;
+            gjs_arg_set(&arg, gboxed);
             return gjs_struct_foreign_convert_from_g_argument(context, value_p,
                                                               info, &arg);
         }
@@ -961,7 +962,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
                   " calling gjs_value_from_g_value_internal()",
                   g_type_info_get_array_length(&type_info) == -1));
 
-        arg.v_pointer = g_value_get_pointer(gvalue);
+        gjs_arg_set(&arg, g_value_get_pointer(gvalue));
 
         res = gjs_value_from_g_argument(context, value_p, &type_info, &arg, true);
 

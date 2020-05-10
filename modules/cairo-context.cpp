@@ -40,6 +40,7 @@
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_SetElement, JS_NewArrayObject
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/jsapi-class.h"
@@ -984,7 +985,7 @@ context_to_g_argument(JSContext      *context,
             return false;
         }
 
-        arg->v_pointer = nullptr;
+        gjs_arg_unset<void*>(arg);
         return true;
     }
 
@@ -997,7 +998,7 @@ context_to_g_argument(JSContext      *context,
     if (transfer == GI_TRANSFER_EVERYTHING)
         cairo_reference(cr);
 
-    arg->v_pointer = cr;
+    gjs_arg_set(arg, cr);
     return true;
 }
 
@@ -1007,9 +1008,8 @@ context_from_g_argument(JSContext             *context,
                         JS::MutableHandleValue value_p,
                         GIArgument            *arg)
 {
-    JSObject *obj;
-
-    obj = gjs_cairo_context_from_context(context, (cairo_t*)arg->v_pointer);
+    JSObject* obj =
+        gjs_cairo_context_from_context(context, gjs_arg_get<cairo_t*>(arg));
     if (!obj) {
         gjs_throw(context, "Could not create Cairo context");
         return false;
@@ -1022,7 +1022,7 @@ context_from_g_argument(JSContext             *context,
 static bool context_release_argument(JSContext*, GITransfer transfer,
                                      GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
-        cairo_destroy(static_cast<cairo_t*>(arg->v_pointer));
+        cairo_destroy(gjs_arg_get<cairo_t*>(arg));
     return true;
 }
 

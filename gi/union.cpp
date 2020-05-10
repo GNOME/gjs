@@ -31,6 +31,7 @@
 #include <js/TypeDecls.h>
 #include <js/Warnings.h>
 
+#include "gi/arg-inl.h"
 #include "gi/function.h"
 #include "gi/repo.h"
 #include "gi/union.h"
@@ -115,7 +116,7 @@ static void* union_new(JSContext* context, JS::HandleObject this_obj,
                                                args, &rval))
                 return nullptr;
 
-            if (!rval.v_pointer) {
+            if (!gjs_arg_get<void*>(&rval)) {
                 gjs_throw(context,
                           "Unable to construct union type %s as its"
                           "constructor function returned null",
@@ -123,7 +124,7 @@ static void* union_new(JSContext* context, JS::HandleObject this_obj,
                 return nullptr;
             }
 
-            return rval.v_pointer;
+            return gjs_arg_get<void*>(&rval);
         }
     }
 
