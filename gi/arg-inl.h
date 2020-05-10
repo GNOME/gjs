@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include <cstddef>  // for nullptr_t
 #include <type_traits>
 
 #include <girepository.h>
@@ -30,7 +31,9 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_USE inline decltype(auto) gjs_g_argument_value(GIArgument* arg) {
     static_assert(!std::is_arithmetic<T>(), "Missing declaration for type");
 
-    return reinterpret_cast<T>(
+    using NonconstPtrT =
+        std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
+    return reinterpret_cast<NonconstPtrT&>(
         gjs_g_argument_value(arg, &GIArgument::v_pointer));
 }
 
@@ -111,11 +114,22 @@ GJS_USE inline decltype(auto) gjs_g_argument_value<void*>(GIArgument* arg) {
     return gjs_g_argument_value(arg, &GIArgument::v_pointer);
 }
 
+template <>
+GJS_USE inline decltype(auto) gjs_g_argument_value<std::nullptr_t>(
+    GIArgument* arg) {
+    return gjs_g_argument_value(arg, &GIArgument::v_pointer);
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 inline void gjs_g_argument_value_set(GIArgument* arg, T v) {
     gjs_g_argument_value<T, TAG>(arg) = v;
 }
 
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+inline void gjs_g_argument_value_set(GIArgument* arg, T* v) {
+    using NonconstT = std::remove_const_t<T>;
+    gjs_g_argument_value<NonconstT*, TAG>(arg) = const_cast<NonconstT*>(v);
+}
 template <>
 inline void gjs_g_argument_value_set<bool>(GIArgument* arg, bool v) {
     gjs_g_argument_value<bool>(arg) = !!v;
@@ -125,11 +139,6 @@ template <>
 inline void gjs_g_argument_value_set<gboolean, GI_TYPE_TAG_BOOLEAN>(
     GIArgument* arg, gboolean v) {
     gjs_g_argument_value<bool>(arg) = !!v;
-}
-
-template <>
-inline void gjs_g_argument_value_set(GIArgument* arg, const char* v) {
-    gjs_g_argument_value<char*>(arg) = const_cast<char*>(v);
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
