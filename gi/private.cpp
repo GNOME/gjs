@@ -414,23 +414,15 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-#define DEFINE_SYMBOL_ATOM_GETTER(symbol_name)                            \
-    GJS_JSAPI_RETURN_CONVENTION                                           \
-    static bool symbol_name##_symbol_getter(JSContext* cx, unsigned argc, \
-                                            JS::Value* vp) {              \
-        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);                 \
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);             \
-        args.rval().setSymbol(JSID_TO_SYMBOL(atoms.symbol_name()));       \
-        return true;                                                      \
-    }
-
-DEFINE_SYMBOL_ATOM_GETTER(hook_up_vfunc)
-DEFINE_SYMBOL_ATOM_GETTER(signal_find)
-DEFINE_SYMBOL_ATOM_GETTER(signals_block)
-DEFINE_SYMBOL_ATOM_GETTER(signals_unblock)
-DEFINE_SYMBOL_ATOM_GETTER(signals_disconnect)
-
-#undef DEFINE_SYMBOL_ATOM_GETTER
+template <GjsSymbolAtom GjsAtoms::*member>
+GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
+                                                      unsigned argc,
+                                                      JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    args.rval().setSymbol(JSID_TO_SYMBOL((atoms.*member)()));
+    return true;
+}
 
 static JSFunctionSpec module_funcs[] = {
     JS_FN("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
@@ -442,16 +434,16 @@ static JSFunctionSpec module_funcs[] = {
 };
 
 static JSPropertySpec module_props[] = {
-    JS_PSG("hook_up_vfunc_symbol", hook_up_vfunc_symbol_getter,
+    JS_PSG("hook_up_vfunc_symbol", symbol_getter<&GjsAtoms::hook_up_vfunc>,
            GJS_MODULE_PROP_FLAGS),
-    JS_PSG("signal_find_symbol", signal_find_symbol_getter,
+    JS_PSG("signal_find_symbol", symbol_getter<&GjsAtoms::signal_find>,
            GJS_MODULE_PROP_FLAGS),
-    JS_PSG("signals_block_symbol", signals_block_symbol_getter,
+    JS_PSG("signals_block_symbol", symbol_getter<&GjsAtoms::signals_block>,
            GJS_MODULE_PROP_FLAGS),
-    JS_PSG("signals_unblock_symbol", signals_unblock_symbol_getter,
+    JS_PSG("signals_unblock_symbol", symbol_getter<&GjsAtoms::signals_unblock>,
            GJS_MODULE_PROP_FLAGS),
-    JS_PSG("signals_disconnect_symbol", signals_disconnect_symbol_getter,
-           GJS_MODULE_PROP_FLAGS),
+    JS_PSG("signals_disconnect_symbol",
+           symbol_getter<&GjsAtoms::signals_disconnect>, GJS_MODULE_PROP_FLAGS),
     JS_PS_END};
 
 bool gjs_define_private_gi_stuff(JSContext* cx,
