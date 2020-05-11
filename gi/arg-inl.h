@@ -170,3 +170,15 @@ GJS_USE inline gboolean gjs_g_argument_value_get<gboolean, GI_TYPE_TAG_BOOLEAN>(
     GIArgument* arg) {
     return !!gjs_g_argument_value<bool>(arg);
 }
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+inline std::enable_if_t<!std::is_pointer<T>::value> gjs_g_argument_value_unset(
+    GIArgument* arg) {
+    gjs_g_argument_value_set<T, TAG>(arg, static_cast<T>(0));
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+inline std::enable_if_t<std::is_pointer<T>::value> gjs_g_argument_value_unset(
+    GIArgument* arg) {
+    gjs_g_argument_value_set<T, TAG>(arg, nullptr);
+}
