@@ -81,10 +81,10 @@ gjs_js_define_cairo_stuff(JSContext              *context,
 #if CAIRO_HAS_SVG_SURFACE
         gjs_cairo_svg_surface_define_proto(context, module, &proto) &&
 #endif
-        gjs_cairo_pattern_define_proto(context, module, &proto) &&
-        gjs_cairo_gradient_define_proto(context, module, &proto) &&
-        gjs_cairo_linear_gradient_define_proto(context, module, &proto) &&
-        gjs_cairo_radial_gradient_define_proto(context, module, &proto) &&
-        gjs_cairo_surface_pattern_define_proto(context, module, &proto) &&
-        gjs_cairo_solid_pattern_define_proto(context, module, &proto);
+        CairoPattern::create_prototype(context, module) &&
+        CairoGradient::create_prototype(context, module) &&
+        CairoLinearGradient::create_prototype(context, module) &&
+        CairoRadialGradient::create_prototype(context, module) &&
+        CairoSurfacePattern::create_prototype(context, module) &&
+        CairoSolidPattern::create_prototype(context, module);
 }
