@@ -26,7 +26,6 @@
 
 #include <string.h>  // for strcmp, strlen, memcpy
 
-#include <cmath>   // for std::abs
 #include <limits>  // for numeric_limits
 #include <string>
 #include <type_traits>
@@ -2836,9 +2835,6 @@ gjs_object_from_g_hash (JSContext             *context,
     return true;
 }
 
-static const int64_t MAX_SAFE_INT64 =
-    int64_t(1) << std::numeric_limits<double>::digits;
-
 bool
 gjs_value_from_g_argument (JSContext             *context,
                            JS::MutableHandleValue value_p,
@@ -2874,22 +2870,11 @@ gjs_value_from_g_argument (JSContext             *context,
         break;
 
     case GI_TYPE_TAG_INT64:
-        if (gjs_arg_get<int64_t>(arg) == G_MININT64 ||
-            std::abs(gjs_arg_get<int64_t>(arg)) > MAX_SAFE_INT64)
-            g_warning("Value %" G_GINT64_FORMAT
-                      " cannot be safely stored in a JS Number and may be "
-                      "rounded",
-                      gjs_arg_get<int64_t>(arg));
-        value_p.setNumber(static_cast<double>(gjs_arg_get<int64_t>(arg)));
+        value_p.setNumber(gjs_arg_get_maybe_rounded<int64_t>(arg));
         break;
 
     case GI_TYPE_TAG_UINT64:
-        if (gjs_arg_get<uint64_t>(arg) > MAX_SAFE_INT64)
-            g_warning("Value %" G_GUINT64_FORMAT
-                      " cannot be safely stored in a JS Number and may be "
-                      "rounded",
-                      gjs_arg_get<uint64_t>(arg));
-        value_p.setNumber(static_cast<double>(gjs_arg_get<uint64_t>(arg)));
+        value_p.setNumber(gjs_arg_get_maybe_rounded<uint64_t>(arg));
         break;
 
     case GI_TYPE_TAG_UINT16:

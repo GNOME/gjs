@@ -10,6 +10,8 @@
 #include <stdint.h>
 
 #include <cstddef>  // for nullptr_t
+#include <limits>
+#include <string>  // for to_string
 #include <type_traits>
 
 #include <girepository.h>
@@ -219,4 +221,42 @@ inline std::enable_if_t<!std::is_pointer_v<T>> gjs_arg_unset(GIArgument* arg) {
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 inline std::enable_if_t<std::is_pointer_v<T>> gjs_arg_unset(GIArgument* arg) {
     gjs_arg_set<T, TAG>(arg, nullptr);
+}
+
+// Implementation to store rounded (u)int64_t numbers into double
+
+template <typename BigT>
+[[nodiscard]] inline BigT max_safe_big_number() {
+    return BigT(1) << std::numeric_limits<double>::digits;
+}
+
+template <typename BigT>
+[[nodiscard]] inline std::enable_if_t<std::is_signed_v<BigT>, BigT>
+min_safe_big_number() {
+    return -(max_safe_big_number<BigT>()) + 1;
+}
+
+template <typename BigT>
+[[nodiscard]] inline std::enable_if_t<std::is_unsigned_v<BigT>, BigT>
+min_safe_big_number() {
+    return std::numeric_limits<BigT>::lowest();
+}
+
+template <typename BigT>
+[[nodiscard]] inline std::enable_if_t<std::is_integral_v<BigT> &&
+                                          (std::numeric_limits<BigT>::max() >
+                                           std::numeric_limits<int32_t>::max()),
+                                      double>
+gjs_arg_get_maybe_rounded(GIArgument* arg) {
+    BigT val = gjs_arg_get<BigT>(arg);
+
+    if (val < min_safe_big_number<BigT>() ||
+        val > max_safe_big_number<BigT>()) {
+        g_warning(
+            "Value %s cannot be safely stored in a JS Number "
+            "and may be rounded",
+            std::to_string(val).c_str());
+    }
+
+    return static_cast<double>(val);
 }
