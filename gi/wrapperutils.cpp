@@ -110,28 +110,45 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 // structs are all typedefs of GIBaseInfo. It's also not possible to use the
 // GIInfoType enum value as the template parameter, because GI_INFO_TYPE_BOXED
 // could be either a GIStructInfo or GIUnionInfo.
-template <InfoType::Tag TAG>
-struct InfoMethodsPolicy {};
+template <typename InfoT>
+static inline GIStructInfo* no_type_struct(InfoT*) {
+    return nullptr;
+}
 
-static GIStructInfo* no_type_struct(GIBaseInfo*) { return nullptr; }
+template <InfoType::Tag TAG, typename InfoT = void,
+          int (*NMethods)(InfoT*) = nullptr,
+          GIFunctionInfo* (*Method)(InfoT*, int) = nullptr,
+          GIStructInfo* (*TypeStruct)(InfoT*) = &no_type_struct<InfoT>>
+struct InfoMethodsPolicy {
+    static constexpr decltype(NMethods) n_methods = NMethods;
+    static constexpr decltype(Method) method = Method;
+    static constexpr decltype(TypeStruct) type_struct = TypeStruct;
+};
 
-#define DECLARE_POLICY(tag, type, type_struct_func)                            \
-    template <>                                                                \
-    struct InfoMethodsPolicy<InfoType::tag> {                                  \
-        using T = GI##tag##Info;                                               \
-        static constexpr int (*n_methods)(T*) = g_##type##_info_get_n_methods; \
-        static constexpr GIFunctionInfo* (*method)(T*, int) = g_##type         \
-            ##_info_get_method;                                                \
-        static constexpr GIStructInfo* (*type_struct)(T*) = type_struct_func;  \
-    };
-
-DECLARE_POLICY(Enum, enum, no_type_struct)
-DECLARE_POLICY(Interface, interface, g_interface_info_get_iface_struct)
-DECLARE_POLICY(Object, object, g_object_info_get_class_struct)
-DECLARE_POLICY(Struct, struct, no_type_struct)
-DECLARE_POLICY(Union, union, no_type_struct)
-
-#undef DECLARE_POLICY
+template <>
+struct InfoMethodsPolicy<InfoType::Enum>
+    : InfoMethodsPolicy<InfoType::Enum, GIEnumInfo, &g_enum_info_get_n_methods,
+                        &g_enum_info_get_method> {};
+template <>
+struct InfoMethodsPolicy<InfoType::Interface>
+    : InfoMethodsPolicy<
+          InfoType::Interface, GIInterfaceInfo, &g_interface_info_get_n_methods,
+          &g_interface_info_get_method, &g_interface_info_get_iface_struct> {};
+template <>
+struct InfoMethodsPolicy<InfoType::Object>
+    : InfoMethodsPolicy<InfoType::Object, GIObjectInfo,
+                        &g_object_info_get_n_methods, &g_object_info_get_method,
+                        &g_object_info_get_class_struct> {};
+template <>
+struct InfoMethodsPolicy<InfoType::Struct>
+    : InfoMethodsPolicy<InfoType::Struct, GIStructInfo,
+                        &g_struct_info_get_n_methods,
+                        &g_struct_info_get_method> {};
+template <>
+struct InfoMethodsPolicy<InfoType::Union>
+    : InfoMethodsPolicy<InfoType::Union, GIUnionInfo,
+                        &g_union_info_get_n_methods, &g_union_info_get_method> {
+};
 
 template <InfoType::Tag TAG>
 bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
