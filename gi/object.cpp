@@ -2103,64 +2103,80 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
     return true;
 }
 
-#define DEFINE_SIGNAL_MATCH_METHOD(action)                                    \
-    bool ObjectBase::signals_##action(JSContext* cx, unsigned argc,           \
-                                      JS::Value* vp) {                        \
-        GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);      \
-        if (!priv->check_is_instance(cx, #action " signal")) {                \
-            return false;                                                     \
-        }                                                                     \
-        return priv->to_instance()->signals_##action##_impl(cx, args);        \
-    }                                                                         \
-                                                                              \
-    bool ObjectInstance::signals_##action##_impl(JSContext* cx,               \
-                                                 const JS::CallArgs& args) {  \
-        gjs_debug_gsignal("[Gi.signals_" #action                              \
-                          "_symbol]() obj %p priv %p argc %d",                \
-                          m_wrapper.get(), this, args.length());              \
-                                                                              \
-        if (!check_gobject_disposed(#action " any signal on")) {              \
-            return true;                                                      \
-        }                                                                     \
-        JS::RootedObject match(cx);                                           \
-        if (!gjs_parse_call_args(cx, "[Gi.signals_" #action "_symbol]", args, \
-                                 "o", "match", &match)) {                     \
-            return false;                                                     \
-        }                                                                     \
-        GSignalMatchType mask;                                                \
-        unsigned signal_id;                                                   \
-        GQuark detail;                                                        \
-        JS::RootedFunction func(cx);                                          \
-        if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id, \
-                                                &detail, &func)) {            \
-            return false;                                                     \
-        }                                                                     \
-        unsigned n_matched = 0;                                               \
-        if (!func) {                                                          \
-            n_matched = g_signal_handlers_##action##_matched(                 \
-                m_ptr, mask, signal_id, detail, nullptr, nullptr, nullptr);   \
-        } else {                                                              \
-            std::vector<GClosure*> candidates;                                \
-            for (GClosure* candidate : m_closures) {                          \
-                if (gjs_closure_get_callable(candidate) == func)              \
-                    candidates.push_back(candidate);                          \
-            }                                                                 \
-            for (GClosure* candidate : candidates) {                          \
-                n_matched += g_signal_handlers_##action##_matched(            \
-                    m_ptr, mask, signal_id, detail, candidate, nullptr,       \
-                    nullptr);                                                 \
-            }                                                                 \
-        }                                                                     \
-                                                                              \
-        args.rval().setNumber(n_matched);                                     \
-        return true;                                                          \
+template <ObjectBase::SignalMatchFunc(*MatchFunc)>
+static inline const char* signal_match_to_action_name();
+
+template <>
+inline const char*
+signal_match_to_action_name<&g_signal_handlers_block_matched>() {
+    return "block";
+}
+
+template <>
+inline const char*
+signal_match_to_action_name<&g_signal_handlers_unblock_matched>() {
+    return "unblock";
+}
+
+template <>
+inline const char*
+signal_match_to_action_name<&g_signal_handlers_disconnect_matched>() {
+    return "disconnect";
+}
+
+template <ObjectBase::SignalMatchFunc(*MatchFunc)>
+bool ObjectBase::signals_action(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    const std::string action_name = signal_match_to_action_name<MatchFunc>();
+    if (!priv->check_is_instance(cx, (action_name + " signal").c_str()))
+        return false;
+
+    return priv->to_instance()->signals_action_impl<MatchFunc>(cx, args);
+}
+
+template <ObjectBase::SignalMatchFunc(*MatchFunc)>
+bool ObjectInstance::signals_action_impl(JSContext* cx,
+                                         const JS::CallArgs& args) {
+    const std::string action_name = signal_match_to_action_name<MatchFunc>();
+    const std::string action_tag = "[Gi.signals_" + action_name + "_symbol]";
+    gjs_debug_gsignal("[%s]() obj %p priv %p argc %d", action_tag.c_str(),
+                      m_wrapper.get(), this, args.length());
+
+    if (!check_gobject_disposed((action_name + " any signal on").c_str())) {
+        return true;
+    }
+    JS::RootedObject match(cx);
+    if (!gjs_parse_call_args(cx, action_tag.c_str(), args, "o", "match",
+                             &match)) {
+        return false;
+    }
+    GSignalMatchType mask;
+    unsigned signal_id;
+    GQuark detail;
+    JS::RootedFunction func(cx);
+    if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id,
+                                            &detail, &func)) {
+        return false;
+    }
+    unsigned n_matched = 0;
+    if (!func) {
+        n_matched = MatchFunc(m_ptr, mask, signal_id, detail, nullptr, nullptr,
+                              nullptr);
+    } else {
+        std::vector<GClosure*> candidates;
+        for (GClosure* candidate : m_closures) {
+            if (gjs_closure_get_callable(candidate) == func)
+                candidates.push_back(candidate);
+        }
+        for (GClosure* candidate : candidates) {
+            n_matched += MatchFunc(m_ptr, mask, signal_id, detail, candidate,
+                                   nullptr, nullptr);
+        }
     }
 
-DEFINE_SIGNAL_MATCH_METHOD(block)
-DEFINE_SIGNAL_MATCH_METHOD(unblock)
-DEFINE_SIGNAL_MATCH_METHOD(disconnect)
-
-#undef DEFINE_SIGNAL_MATCH_METHOD
+    args.rval().setNumber(n_matched);
+    return true;
+}
 
 bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
@@ -2282,15 +2298,18 @@ bool ObjectPrototype::define_class(JSContext* context,
            JS_DefineFunctionById(context, prototype, atoms.signal_find(),
                                  &ObjectBase::signal_find, 1,
                                  GJS_MODULE_PROP_FLAGS) &&
-           JS_DefineFunctionById(context, prototype, atoms.signals_block(),
-                                 &ObjectBase::signals_block, 1,
-                                 GJS_MODULE_PROP_FLAGS) &&
-           JS_DefineFunctionById(context, prototype, atoms.signals_unblock(),
-                                 &ObjectBase::signals_unblock, 1,
-                                 GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(
+               context, prototype, atoms.signals_block(),
+               &ObjectBase::signals_action<&g_signal_handlers_block_matched>, 1,
+               GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(
+               context, prototype, atoms.signals_unblock(),
+               &ObjectBase::signals_action<&g_signal_handlers_unblock_matched>,
+               1, GJS_MODULE_PROP_FLAGS) &&
            JS_DefineFunctionById(context, prototype, atoms.signals_disconnect(),
-                                 &ObjectBase::signals_disconnect, 1,
-                                 GJS_MODULE_PROP_FLAGS);
+                                 &ObjectBase::signals_action<
+                                     &g_signal_handlers_disconnect_matched>,
+                                 1, GJS_MODULE_PROP_FLAGS);
 }
 
 /*
