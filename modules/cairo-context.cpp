@@ -389,8 +389,8 @@ appendPath_func(JSContext *context,
                              "path", &path_wrapper))
         return false;
 
-    cairo_path_t* path = gjs_cairo_path_get_path(context, path_wrapper);
-    if (!path)
+    cairo_path_t* path;
+    if (!CairoPath::for_js_typecheck(context, path_wrapper, &path, &argv))
         return false;
 
     cairo_append_path(cr, path);
@@ -412,7 +412,11 @@ copyPath_func(JSContext *context,
         return false;
 
     path = cairo_copy_path(cr);
-    argv.rval().setObjectOrNull(gjs_cairo_path_from_path(context, path));
+    JSObject* retval = CairoPath::take_c_ptr(context, path);
+    if (!retval)
+        return false;
+
+    argv.rval().setObject(*retval);
     return true;
 }
 
@@ -430,7 +434,11 @@ copyPathFlat_func(JSContext *context,
         return false;
 
     path = cairo_copy_path_flat(cr);
-    argv.rval().setObjectOrNull(gjs_cairo_path_from_path(context, path));
+    JSObject* retval = CairoPath::take_c_ptr(context, path);
+    if (!retval)
+        return false;
+
+    argv.rval().setObject(*retval);
     return true;
 }
 

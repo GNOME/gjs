@@ -71,7 +71,7 @@ gjs_js_define_cairo_stuff(JSContext              *context,
 
     return
         gjs_cairo_image_surface_define_proto(context, module, &proto) &&
-        gjs_cairo_path_define_proto(context, module, &proto) &&
+        CairoPath::create_prototype(context, module) &&
 #if CAIRO_HAS_PS_SURFACE
         gjs_cairo_ps_surface_define_proto(context, module, &proto) &&
 #endif

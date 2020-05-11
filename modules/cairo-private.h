@@ -81,17 +81,39 @@ void gjs_cairo_context_init(void);
 void gjs_cairo_surface_init(void);
 
 /* path */
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_cairo_path_define_proto(JSContext              *cx,
-                                 JS::HandleObject        module,
-                                 JS::MutableHandleObject proto);
 
-GJS_JSAPI_RETURN_CONVENTION
-JSObject *       gjs_cairo_path_from_path               (JSContext       *context,
-                                                         cairo_path_t    *path);
-GJS_JSAPI_RETURN_CONVENTION
-cairo_path_t* gjs_cairo_path_get_path(JSContext* cx,
-                                      JS::HandleObject path_wrapper);
+class CairoPath : public CWrapper<CairoPath, cairo_path_t> {
+    friend CWrapperPointerOps<CairoPath, cairo_path_t>;
+    friend CWrapper<CairoPath, cairo_path_t>;
+
+    CairoPath() = delete;
+    CairoPath(CairoPath&) = delete;
+    CairoPath(CairoPath&&) = delete;
+
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_cairo_path;
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_CAIRO;
+
+    static void finalize_impl(JSFreeOp* fop, cairo_path_t* path);
+
+    static const JSPropertySpec proto_props[];
+    static constexpr js::ClassSpec class_spec = {
+        CairoPath::create_abstract_constructor,
+        nullptr,  // createPrototype
+        nullptr,  // constructorFunctions
+        nullptr,  // constructorProperties
+        nullptr,  // prototypeFunctions
+        CairoPath::proto_props,
+        nullptr,  // finishInit
+    };
+    static constexpr JSClass klass = {
+        "Path", JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+        &CairoPath::class_ops, &CairoPath::class_spec};
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* take_c_ptr(JSContext* cx, cairo_path_t* ptr);
+};
 
 /* surface */
 [[nodiscard]] JSObject* gjs_cairo_surface_get_proto(JSContext* cx);
