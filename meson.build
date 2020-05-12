@@ -377,6 +377,7 @@ libgjs_sources = [
     'gi/repo.cpp', 'gi/repo.h',
     'gi/toggle.cpp', 'gi/toggle.h',
     'gi/union.cpp', 'gi/union.h',
+    'gi/utils-inl.h',
     'gi/value.cpp', 'gi/value.h',
     'gi/wrapperutils.cpp', 'gi/wrapperutils.h',
     'gjs/atoms.cpp', 'gjs/atoms.h',
