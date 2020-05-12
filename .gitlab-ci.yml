@@ -221,14 +221,13 @@ installed_tests:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
     TEST: skip
-    LD_LIBRARY_PATH: $LD_LIBRARY_PATH:/usr/local/lib  # for mozjs60
   when: manual
   except:
     - schedules
   script:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
-    - ninja -C _build install
+    - sudo ninja -C _build install
     - xvfb-run -a dbus-run-session -- gnome-desktop-testing-runner gjs
 
 valgrind:
@@ -281,71 +280,54 @@ zeal_11:
 #          Create CI Docker Images          #
 #############################################
 .Docker image template: &create_docker_image
-  image: docker:19.03.0
+  image: registry.fedoraproject.org/fedora:32
   stage: deploy
-  services:
-    - docker:19.03.0-dind
   only:
     variables:
       - $CRON_TASK == "BUILD_CI_IMAGES"
 
   script:
+    - dnf install -y buildah runc
+
+    # Newer versions of podman/buildah try to set overlayfs mount options when
+    # using the vfs driver, and this causes errors.
+    - sed -i '/^mountopt =.*/d' /etc/containers/storage.conf
+
     # Where the real magic happens
-    - docker run --name "$NAME" -v "$(pwd):/on-host" -e OS="$IMAGE" -e BUILD_OPTS="$BUILD_OPTS" -e CC=gcc -e MOZJS_BRANCH="$MOZJS_BRANCH" "$IMAGE" bash -e -c "cd /on-host && test/ci-images.sh"
-    - docker commit "$NAME" "$CI_REGISTRY_IMAGE:$NAME"
+    - buildah bud -f $DOCKERFILE -t "$CI_REGISTRY_IMAGE:$CI_JOB_NAME" $ARGS
 
     # Prepare to publish
-    - docker tag "$CI_REGISTRY_IMAGE:$NAME" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$NAME"
-    - docker images
-    - docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - buildah tag "$CI_REGISTRY_IMAGE:$CI_JOB_NAME" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
+    - buildah images
+    - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
     # Publish (if running on a schedule)
     - |
       if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
-        docker push "$CI_REGISTRY_IMAGE"
+        buildah push "$CI_REGISTRY_IMAGE:$CI_JOB_NAME"
+        buildah push "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
       fi
+
+.Docker variables: &docker_variables
+  STORAGE_DRIVER: vfs
+  BUILDAH_FORMAT: docker
+  BUILDAH_ISOLATION: chroot
 
 alpine.cpplint:
   <<: *create_docker_image
-  script:
-    # Overrides the script from create_docker_image above
-    - docker build -f test/extra/Dockerfile.alpine.cpplint -t "$CI_REGISTRY_IMAGE:alpine.cpplint" .
-    - docker tag "$CI_REGISTRY_IMAGE:alpine.cpplint" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_alpine.cpplint"
-    - docker images
-    - docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
-    - |
-      if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
-        docker push "$CI_REGISTRY_IMAGE"
-      fi
   variables:
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-  except:
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /alpine.cpplint/
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile.alpine.cpplint
 
 fedora.mozjs68:
   <<: *create_docker_image
   variables:
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    IMAGE: "fedora:rawhide"
-    NAME: "fedora.mozjs68"
-  except:
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs68/
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile
 
 fedora.mozjs68-debug:
   <<: *create_docker_image
   variables:
-    BUILD_OPTS: "--enable-debug"
-    DOCKER_DRIVER: overlay
-    # https://about.gitlab.com/2019/07/31/docker-in-docker-with-docker-19-dot-03
-    DOCKER_TLS_CERTDIR: ""
-    IMAGE: "fedora:rawhide"
-    NAME: "fedora.mozjs68-debug"
-  except:
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip images\]/ && $CI_COMMIT_MESSAGE =~ /fedora.mozjs68-debug/
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile
+    ARGS: "--build-arg BUILD_OPTS=--enable-debug"
