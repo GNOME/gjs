@@ -5,64 +5,47 @@
 #include <config.h>
 
 #include <cairo.h>
-#include <glib.h>
 
 #include <js/CallArgs.h>
-#include <js/Class.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for JS_NewObjectWithGivenProto
+#include <jspubtd.h>  // for JSProtoKey
 
-#include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-[[nodiscard]] static JSObject* gjs_cairo_image_surface_get_proto(JSContext*);
+JSObject* CairoImageSurface::new_proto(JSContext* cx, JSProtoKey) {
+    JS::RootedObject parent_proto(cx, CairoSurface::prototype(cx));
+    return JS_NewObjectWithGivenProto(cx, nullptr, parent_proto);
+}
 
-GJS_DEFINE_PROTO_WITH_PARENT("ImageSurface", cairo_image_surface,
-                             cairo_surface, JSCLASS_BACKGROUND_FINALIZE)
-
-GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
-{
-    GJS_NATIVE_CONSTRUCTOR_VARIABLES(cairo_image_surface)
+cairo_surface_t* CairoImageSurface::constructor_impl(JSContext* context,
+                                                     const JS::CallArgs& argv) {
     int format, width, height;
     cairo_surface_t *surface;
-
-    GJS_NATIVE_CONSTRUCTOR_PRELUDE(cairo_image_surface);
 
     // create_for_data optional parameter
     if (!gjs_parse_call_args(context, "ImageSurface", argv, "iii",
                              "format", &format,
                              "width", &width,
                              "height", &height))
-        return false;
+        return nullptr;
 
     surface = cairo_image_surface_create((cairo_format_t) format, width, height);
 
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
-        return false;
+        return nullptr;
 
-    gjs_cairo_surface_construct(object, surface);
-    cairo_surface_destroy(surface);
-
-    GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_image_surface);
-
-    return true;
-}
-
-static void
-gjs_cairo_image_surface_finalize(JSFreeOp *fop,
-                                 JSObject *obj)
-{
-    gjs_cairo_surface_finalize_surface(fop, obj);
+    return surface;
 }
 
 // clang-format off
-JSPropertySpec gjs_cairo_image_surface_proto_props[] = {
+const JSPropertySpec CairoImageSurface::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "ImageSurface", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
@@ -86,15 +69,10 @@ createFromPNG_func(JSContext *context,
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return false;
 
-    JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
-    JS::RootedObject surface_wrapper(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
-                                   proto));
-    if (!surface_wrapper) {
-        gjs_throw(context, "failed to create surface");
+    JSObject* surface_wrapper = CairoImageSurface::from_c_ptr(context, surface);
+    if (!surface_wrapper)
         return false;
-    }
-    gjs_cairo_surface_construct(surface_wrapper, surface);
+
     cairo_surface_destroy(surface);
 
     argv.rval().setObject(*surface_wrapper);
@@ -115,7 +93,7 @@ getFormat_func(JSContext *context,
         return false;
     }
 
-    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
     if (!surface)
         return false;
 
@@ -142,7 +120,7 @@ getWidth_func(JSContext *context,
         return false;
     }
 
-    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
     if (!surface)
         return false;
 
@@ -169,7 +147,7 @@ getHeight_func(JSContext *context,
         return false;
     }
 
-    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
     if (!surface)
         return false;
 
@@ -196,7 +174,7 @@ getStride_func(JSContext *context,
         return false;
     }
 
-    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
     if (!surface)
         return false;
 
@@ -209,39 +187,14 @@ getStride_func(JSContext *context,
     return true;
 }
 
-JSFunctionSpec gjs_cairo_image_surface_proto_funcs[] = {
+const JSFunctionSpec CairoImageSurface::proto_funcs[] = {
     JS_FN("createFromPNG", createFromPNG_func, 0, 0),
     // getData
     JS_FN("getFormat", getFormat_func, 0, 0),
     JS_FN("getWidth", getWidth_func, 0, 0),
     JS_FN("getHeight", getHeight_func, 0, 0),
-    JS_FN("getStride", getStride_func, 0, 0),
-    JS_FS_END};
+    JS_FN("getStride", getStride_func, 0, 0), JS_FS_END};
 
-JSFunctionSpec gjs_cairo_image_surface_static_funcs[] = {
+const JSFunctionSpec CairoImageSurface::static_funcs[] = {
     JS_FN("createFromPNG", createFromPNG_func, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
-
-JSObject *
-gjs_cairo_image_surface_from_surface(JSContext       *context,
-                                     cairo_surface_t *surface)
-{
-    g_return_val_if_fail(context, nullptr);
-    g_return_val_if_fail(surface, nullptr);
-    g_return_val_if_fail(
-        cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_IMAGE, nullptr);
-
-    JS::RootedObject proto(context, gjs_cairo_image_surface_get_proto(context));
-    JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_image_surface_class,
-                                   proto));
-    if (!object) {
-        gjs_throw(context, "failed to create image surface");
-        return nullptr;
-    }
-
-    gjs_cairo_surface_construct(object, surface);
-
-    return object;
-}
-

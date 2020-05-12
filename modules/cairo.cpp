@@ -65,26 +65,25 @@ gjs_js_define_cairo_stuff(JSContext              *context,
         return false;
     gjs_cairo_context_init();
 
-    if (!gjs_cairo_surface_define_proto(context, module, &proto))
+    if (!CairoSurface::create_prototype(context, module))
         return false;
     gjs_cairo_surface_init();
 
-    return
-        gjs_cairo_image_surface_define_proto(context, module, &proto) &&
-        CairoPath::create_prototype(context, module) &&
+    return CairoImageSurface::create_prototype(context, module) &&
+           CairoPath::create_prototype(context, module) &&
 #if CAIRO_HAS_PS_SURFACE
-        gjs_cairo_ps_surface_define_proto(context, module, &proto) &&
+           CairoPSSurface::create_prototype(context, module) &&
 #endif
 #if CAIRO_HAS_PDF_SURFACE
-        gjs_cairo_pdf_surface_define_proto(context, module, &proto) &&
+           CairoPDFSurface::create_prototype(context, module) &&
 #endif
 #if CAIRO_HAS_SVG_SURFACE
-        gjs_cairo_svg_surface_define_proto(context, module, &proto) &&
+           CairoSVGSurface::create_prototype(context, module) &&
 #endif
-        CairoPattern::create_prototype(context, module) &&
-        CairoGradient::create_prototype(context, module) &&
-        CairoLinearGradient::create_prototype(context, module) &&
-        CairoRadialGradient::create_prototype(context, module) &&
-        CairoSurfacePattern::create_prototype(context, module) &&
-        CairoSolidPattern::create_prototype(context, module);
+           CairoPattern::create_prototype(context, module) &&
+           CairoGradient::create_prototype(context, module) &&
+           CairoLinearGradient::create_prototype(context, module) &&
+           CairoRadialGradient::create_prototype(context, module) &&
+           CairoSurfacePattern::create_prototype(context, module) &&
+           CairoSolidPattern::create_prototype(context, module);
 }

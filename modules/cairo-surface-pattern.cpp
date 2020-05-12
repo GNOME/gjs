@@ -32,8 +32,7 @@ cairo_pattern_t* CairoSurfacePattern::constructor_impl(
                              "surface", &surface_wrapper))
         return nullptr;
 
-    cairo_surface_t* surface =
-        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    cairo_surface_t* surface = CairoSurface::for_js(context, surface_wrapper);
     if (!surface)
         return nullptr;
 

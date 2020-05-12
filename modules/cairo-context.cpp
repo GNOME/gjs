@@ -255,8 +255,7 @@ cairo_t* CairoContext::constructor_impl(JSContext* context,
                              "surface", &surface_wrapper))
         return nullptr;
 
-    cairo_surface_t* surface =
-        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    cairo_surface_t* surface = CairoSurface::for_js(context, surface_wrapper);
     if (!surface)
         return nullptr;
 
@@ -486,8 +485,7 @@ maskSurface_func(JSContext *context,
                              "y", &y))
         return false;
 
-    cairo_surface_t* surface =
-        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    cairo_surface_t* surface = CairoSurface::for_js(context, surface_wrapper);
     if (!surface)
         return false;
 
@@ -604,8 +602,7 @@ setSourceSurface_func(JSContext *context,
                              "y", &y))
         return false;
 
-    cairo_surface_t* surface =
-        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    cairo_surface_t* surface = CairoSurface::for_js(context, surface_wrapper);
     if (!surface)
         return false;
 
@@ -742,7 +739,6 @@ getTarget_func(JSContext *context,
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(context, argc, vp, rec, obj);
 
     cairo_surface_t *surface;
-    JSObject *surface_wrapper;
 
     if (argc > 0) {
         gjs_throw(context, "Context.getTarget() takes no arguments");
@@ -754,7 +750,7 @@ getTarget_func(JSContext *context,
         return false;
 
     /* surface belongs to the context, so keep the reference */
-    surface_wrapper = gjs_cairo_surface_from_surface(context, surface);
+    JSObject* surface_wrapper = CairoSurface::from_c_ptr(context, surface);
     if (!surface_wrapper) {
         /* exception already set */
         return false;
@@ -774,7 +770,6 @@ getGroupTarget_func(JSContext *context,
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(context, argc, vp, rec, obj);
 
     cairo_surface_t *surface;
-    JSObject *surface_wrapper;
 
     if (argc > 0) {
         gjs_throw(context, "Context.getGroupTarget() takes no arguments");
@@ -786,7 +781,7 @@ getGroupTarget_func(JSContext *context,
         return false;
 
     /* surface belongs to the context, so keep the reference */
-    surface_wrapper = gjs_cairo_surface_from_surface(context, surface);
+    JSObject* surface_wrapper = CairoSurface::from_c_ptr(context, surface);
     if (!surface_wrapper) {
         /* exception already set */
         return false;
