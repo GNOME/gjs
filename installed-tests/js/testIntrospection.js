@@ -20,6 +20,9 @@ describe('Unsafe integer marshalling', function () {
             '*cannot be safely stored*');
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*cannot be safely stored*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*cannot be safely stored*');
+        void GLib.MININT64;
         void GLib.MAXINT64;
         void GLib.MAXUINT64;
         GLib.test_assert_expected_messages_internal('Gjs',
