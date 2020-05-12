@@ -497,10 +497,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
          i < static_cast<Container>(std::numeric_limits<IntType>::min())))
         *out_of_range = true;
 
-    if constexpr (std::is_signed_v<IntType>)
-        *pointer_out = GINT_TO_POINTER(i);
-    else
-        *pointer_out = GUINT_TO_POINTER(i);
+    *pointer_out = gjs_int_to_pointer<IntType>(i);
 
     return true;
 }
@@ -546,17 +543,17 @@ value_to_ghashtable_key(JSContext      *cx,
     switch (type_tag) {
     case GI_TYPE_TAG_BOOLEAN:
         /* This doesn't seem particularly useful, but it's easy */
-        *pointer_out = GUINT_TO_POINTER(JS::ToBoolean(value));
+        *pointer_out = gjs_int_to_pointer(JS::ToBoolean(value));
         break;
 
     case GI_TYPE_TAG_UNICHAR:
         if (value.isInt32()) {
-            *pointer_out = GINT_TO_POINTER(value.toInt32());
+            *pointer_out = gjs_int_to_pointer(value.toInt32());
         } else {
             uint32_t ch;
             if (!gjs_unichar_from_string(cx, value, &ch))
                 return false;
-            *pointer_out = GUINT_TO_POINTER(ch);
+            *pointer_out = gjs_int_to_pointer(ch);
         }
         break;
 
