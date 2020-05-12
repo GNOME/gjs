@@ -26,10 +26,8 @@
 
 #include <string.h>  // for strcmp, strlen, memcpy
 
-#include <limits>  // for numeric_limits
 #include <memory>  // for operator!=, unique_ptr
 #include <string>
-#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -56,6 +54,7 @@
 #include "gi/gerror.h"
 #include "gi/gtype.h"
 #include "gi/interface.h"
+#include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
@@ -462,63 +461,19 @@ gjs_array_to_g_list(JSContext   *context,
     return g_hash_table_new(NULL, NULL);
 }
 
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_integral_v<T> && std::is_signed_v<T>, bool>
-js_value_convert(JSContext* cx, const JS::HandleValue& value, T* out) {
-    return JS::ToInt32(cx, value, out);
-}
-
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_integral_v<T> && std::is_unsigned_v<T>, bool>
-js_value_convert(JSContext* cx, const JS::HandleValue& value, T* out) {
-    return JS::ToUint32(cx, value, out);
-}
-
-template <typename IntType, typename Container>
+template <typename IntType>
 GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
     JSContext* cx, const JS::HandleValue& value, bool* out_of_range,
     void** pointer_out) {
-    Container i;
-
     static_assert(std::is_integral_v<IntType>, "Need an integer");
-    static_assert(std::numeric_limits<Container>::max() >=
-                  std::numeric_limits<IntType>::max(),
-                  "Max possible Container value must be at least the max possible IntType value");
-    static_assert(std::numeric_limits<Container>::min() <=
-                  std::numeric_limits<IntType>::min(),
-                  "Min possible Container value must be at most the min possible IntType value");
 
-    if (!js_value_convert<Container>(cx, value, &i))
+    Gjs::JsValueHolder::Strict<IntType> i;
+    if (!Gjs::js_value_to_c_checked<IntType>(cx, value, &i, out_of_range))
         return false;
-
-    if (out_of_range &&
-        (i > static_cast<Container>(std::numeric_limits<IntType>::max()) ||
-         i < static_cast<Container>(std::numeric_limits<IntType>::min())))
-        *out_of_range = true;
 
     *pointer_out = gjs_int_to_pointer<IntType>(i);
 
     return true;
-}
-
-template <typename IntType>
-GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_signed_v<IntType>, bool>
-hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
-                  bool* out_of_range, void** pointer_out) {
-    return hashtable_int_key<IntType, int32_t>(cx, value, out_of_range,
-                                               pointer_out);
-}
-
-template <typename IntType>
-GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_unsigned_v<IntType>, bool>
-hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
-                  bool* out_of_range, void** pointer_out) {
-    return hashtable_int_key<IntType, uint32_t>(cx, value, out_of_range,
-                                                pointer_out);
 }
 
 /* Converts a JS::Value to a GHashTable key, stuffing it into @pointer_out if
