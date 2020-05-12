@@ -748,7 +748,16 @@ gjs_object_to_g_hash(JSContext   *context,
                                                               &val_arg);
         }
 
+#if __GNUC__ >= 8  // clang-format off
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+#endif
+        // The compiler isn't smart enough to figure out that key_ptr will
+        // always be initialized if value_to_ghashtable_key() returns true.
         g_hash_table_insert(result, key_ptr, val_ptr);
+#if __GNUC__ >= 8
+_Pragma("GCC diagnostic pop")
+#endif  // clang-format on
     }
 
     *hash_p = result.release();
