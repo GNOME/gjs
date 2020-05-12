@@ -18,6 +18,8 @@
 #include <glib-object.h>  // for GType
 #include <glib.h>         // for gboolean
 
+#include "gi/utils-inl.h"
+
 // GIArgument accessor templates
 //
 // These are intended to make access to the GIArgument union more type-safe and
@@ -186,6 +188,12 @@ inline void gjs_arg_set(GIArgument* arg, ReturnT (*v)(Args...)) {
     gjs_arg_member<void*>(arg) = reinterpret_cast<void*>(v);
 }
 
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+inline std::enable_if_t<std::is_integral_v<T>> gjs_arg_set(GIArgument* arg,
+                                                           void *v) {
+    gjs_arg_set<T, TAG>(arg, gjs_pointer_to_int<T>(v));
+}
+
 template <>
 inline void gjs_arg_set<bool>(GIArgument* arg, bool v) {
     gjs_arg_member<bool>(arg) = !!v;
@@ -211,6 +219,12 @@ template <>
 [[nodiscard]] inline gboolean gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(
     GIArgument* arg) {
     return !!gjs_arg_member<bool>(arg);
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+[[nodiscard]] inline std::enable_if_t<std::is_integral_v<T>, void*>
+gjs_arg_get_as_pointer(GIArgument* arg) {
+    return gjs_int_to_pointer(gjs_arg_get<T, TAG>(arg));
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>

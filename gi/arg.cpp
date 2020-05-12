@@ -276,33 +276,31 @@ static void _g_type_info_argument_from_hash_pointer(GITypeInfo* info,
 
     switch (type_tag) {
         case GI_TYPE_TAG_BOOLEAN:
-            gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(
-                arg, GPOINTER_TO_INT(hash_pointer));
+            gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_INT8:
-            gjs_arg_set<int8_t>(arg, GPOINTER_TO_INT(hash_pointer));
+            gjs_arg_set<int8_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_UINT8:
-            gjs_arg_set<uint8_t>(arg, GPOINTER_TO_UINT(hash_pointer));
+            gjs_arg_set<uint8_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_INT16:
-            gjs_arg_set<int16_t>(arg, GPOINTER_TO_INT(hash_pointer));
+            gjs_arg_set<int16_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_UINT16:
-            gjs_arg_set<uint16_t>(arg, GPOINTER_TO_UINT(hash_pointer));
+            gjs_arg_set<uint16_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_INT32:
-            gjs_arg_set<int32_t>(arg, GPOINTER_TO_INT(hash_pointer));
+            gjs_arg_set<int32_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_UINT32:
-            gjs_arg_set<uint32_t>(arg, GPOINTER_TO_UINT(hash_pointer));
+            gjs_arg_set<uint32_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_UNICHAR:
-            gjs_arg_set<char32_t>(arg, GPOINTER_TO_UINT(hash_pointer));
+            gjs_arg_set<char32_t>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_GTYPE:
-            gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(
-                arg, GPOINTER_TO_SIZE(hash_pointer));
+            gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(arg, hash_pointer);
             break;
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
@@ -332,24 +330,23 @@ static void _g_type_info_argument_from_hash_pointer(GITypeInfo* info,
 
     switch (type_tag) {
         case GI_TYPE_TAG_BOOLEAN:
-            return GINT_TO_POINTER(gjs_arg_get<bool>(arg));
+            return gjs_arg_get_as_pointer<bool>(arg);
         case GI_TYPE_TAG_INT8:
-            return GINT_TO_POINTER(gjs_arg_get<int8_t>(arg));
+            return gjs_arg_get_as_pointer<int8_t>(arg);
         case GI_TYPE_TAG_UINT8:
-            return GUINT_TO_POINTER(gjs_arg_get<uint8_t>(arg));
+            return gjs_arg_get_as_pointer<uint8_t>(arg);
         case GI_TYPE_TAG_INT16:
-            return GINT_TO_POINTER(gjs_arg_get<int16_t>(arg));
+            return gjs_arg_get_as_pointer<int16_t>(arg);
         case GI_TYPE_TAG_UINT16:
-            return GUINT_TO_POINTER(gjs_arg_get<uint16_t>(arg));
+            return gjs_arg_get_as_pointer<uint16_t>(arg);
         case GI_TYPE_TAG_INT32:
-            return GINT_TO_POINTER(gjs_arg_get<int32_t>(arg));
+            return gjs_arg_get_as_pointer<int32_t>(arg);
         case GI_TYPE_TAG_UINT32:
-            return GUINT_TO_POINTER(gjs_arg_get<uint32_t>(arg));
+            return gjs_arg_get_as_pointer<uint32_t>(arg);
         case GI_TYPE_TAG_UNICHAR:
-            return GUINT_TO_POINTER(gjs_arg_get<char32_t>(arg));
+            return gjs_arg_get_as_pointer<char32_t>(arg);
         case GI_TYPE_TAG_GTYPE:
-            return GSIZE_TO_POINTER(
-                (gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(arg)));
+            return gjs_arg_get_as_pointer<GType, GI_TYPE_TAG_GTYPE>(arg);
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_INTERFACE:
