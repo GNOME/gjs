@@ -114,6 +114,7 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                                     void        *result,
                                     GIArgument  *return_value)
 {
+    // Be consistent with gjs_value_to_g_argument()
     switch (g_type_info_get_tag(ret_type)) {
     case GI_TYPE_TAG_VOID:
         g_assert_not_reached();
@@ -165,12 +166,24 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
         }
         break;
     case GI_TYPE_TAG_UINT64:
-    /* Other primitive and pointer types need to squeeze into 64-bit ffi_arg too */
+        // Other primitive types need to squeeze into 64-bit ffi_arg too
+        *static_cast<ffi_arg*>(result) = gjs_arg_get<uint64_t>(return_value);
+        break;
     case GI_TYPE_TAG_FLOAT:
+        *static_cast<ffi_arg*>(result) = gjs_arg_get<float>(return_value);
+        break;
     case GI_TYPE_TAG_DOUBLE:
+        *static_cast<ffi_arg*>(result) = gjs_arg_get<double>(return_value);
+        break;
     case GI_TYPE_TAG_GTYPE:
+        *static_cast<ffi_arg*>(result) =
+            gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(return_value);
+        break;
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_FILENAME:
+        *static_cast<ffi_arg*>(result) =
+            reinterpret_cast<ffi_arg>(gjs_arg_get<char*>(return_value));
+        break;
     case GI_TYPE_TAG_ARRAY:
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
