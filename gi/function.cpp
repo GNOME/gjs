@@ -109,6 +109,26 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
     }
 }
 
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+static inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>
+set_ffi_arg(void* result, GIArgument* value) {
+    *static_cast<ffi_sarg*>(result) = gjs_arg_get<T, TAG>(value);
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+static inline std::enable_if_t<std::is_floating_point_v<T> ||
+                               std::is_unsigned_v<T>>
+set_ffi_arg(void* result, GIArgument* value) {
+    *static_cast<ffi_arg*>(result) = gjs_arg_get<T, TAG>(value);
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+static inline std::enable_if_t<std::is_pointer_v<T>> set_ffi_arg(
+    void* result, GIArgument* value) {
+    *static_cast<ffi_arg*>(result) =
+        gjs_pointer_to_int<ffi_arg>(gjs_arg_get<T, TAG>(value));
+}
+
 static void
 set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                                     void        *result,
@@ -119,32 +139,31 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
     case GI_TYPE_TAG_VOID:
         g_assert_not_reached();
     case GI_TYPE_TAG_INT8:
-        *static_cast<ffi_sarg*>(result) = gjs_arg_get<int8_t>(return_value);
+        set_ffi_arg<int8_t>(result, return_value);
         break;
     case GI_TYPE_TAG_UINT8:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<uint8_t>(return_value);
+        set_ffi_arg<uint8_t>(result, return_value);
         break;
     case GI_TYPE_TAG_INT16:
-        *static_cast<ffi_sarg*>(result) = gjs_arg_get<int16_t>(return_value);
+        set_ffi_arg<int16_t>(result, return_value);
         break;
     case GI_TYPE_TAG_UINT16:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<uint16_t>(return_value);
+        set_ffi_arg<uint16_t>(result, return_value);
         break;
     case GI_TYPE_TAG_INT32:
-        *static_cast<ffi_sarg*>(result) = gjs_arg_get<int32_t>(return_value);
+        set_ffi_arg<int32_t>(result, return_value);
         break;
     case GI_TYPE_TAG_UINT32:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<uint32_t>(return_value);
+        set_ffi_arg<uint32_t>(result, return_value);
         break;
     case GI_TYPE_TAG_BOOLEAN:
-        *static_cast<ffi_arg*>(result) =
-            gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(return_value);
+        set_ffi_arg<gboolean, GI_TYPE_TAG_BOOLEAN>(result, return_value);
         break;
     case GI_TYPE_TAG_UNICHAR:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<char32_t>(return_value);
+        set_ffi_arg<char32_t>(result, return_value);
         break;
     case GI_TYPE_TAG_INT64:
-        *static_cast<ffi_sarg*>(result) = gjs_arg_get<int64_t>(return_value);
+        set_ffi_arg<int64_t>(result, return_value);
         break;
     case GI_TYPE_TAG_INTERFACE:
         {
@@ -156,33 +175,29 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
                 interface_type == GI_INFO_TYPE_FLAGS)
-                *static_cast<ffi_sarg*>(result) =
-                    gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(return_value);
+                set_ffi_arg<int, GI_TYPE_TAG_INTERFACE>(result, return_value);
             else
-                *static_cast<ffi_arg*>(result) = gjs_pointer_to_int<ffi_arg>(
-                    gjs_arg_get<void*>(return_value));
+                set_ffi_arg<void*>(result, return_value);
 
             g_base_info_unref(interface_info);
         }
         break;
     case GI_TYPE_TAG_UINT64:
         // Other primitive types need to squeeze into 64-bit ffi_arg too
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<uint64_t>(return_value);
+        set_ffi_arg<uint64_t>(result, return_value);
         break;
     case GI_TYPE_TAG_FLOAT:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<float>(return_value);
+        set_ffi_arg<float>(result, return_value);
         break;
     case GI_TYPE_TAG_DOUBLE:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<double>(return_value);
+        set_ffi_arg<double>(result, return_value);
         break;
     case GI_TYPE_TAG_GTYPE:
-        *static_cast<ffi_arg*>(result) =
-            gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(return_value);
+        set_ffi_arg<GType, GI_TYPE_TAG_GTYPE>(result, return_value);
         break;
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_FILENAME:
-        *static_cast<ffi_arg*>(result) =
-            reinterpret_cast<ffi_arg>(gjs_arg_get<char*>(return_value));
+        set_ffi_arg<char*>(result, return_value);
         break;
     case GI_TYPE_TAG_ARRAY:
     case GI_TYPE_TAG_GLIST:
@@ -190,8 +205,7 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
     case GI_TYPE_TAG_GHASH:
     case GI_TYPE_TAG_ERROR:
     default:
-        *static_cast<ffi_arg*>(result) =
-            gjs_pointer_to_int<ffi_arg>(gjs_arg_get<void*>(return_value));
+        set_ffi_arg<void*>(result, return_value);
         break;
     }
 }
