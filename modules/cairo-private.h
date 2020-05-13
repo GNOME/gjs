@@ -32,10 +32,46 @@ bool             gjs_cairo_check_status                 (JSContext       *contex
                                                          cairo_status_t   status,
                                                          const char      *name);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_cairo_region_define_proto(JSContext              *cx,
-                                   JS::HandleObject        module,
-                                   JS::MutableHandleObject proto);
+class CairoRegion : public CWrapper<CairoRegion, cairo_region_t> {
+    friend CWrapperPointerOps<CairoRegion, cairo_region_t>;
+    friend CWrapper<CairoRegion, cairo_region_t>;
+
+    CairoRegion() = delete;
+    CairoRegion(CairoRegion&) = delete;
+    CairoRegion(CairoRegion&&) = delete;
+
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_cairo_region;
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_CAIRO;
+    static constexpr unsigned constructor_nargs = 0;
+
+    static GType gtype() { return CAIRO_GOBJECT_TYPE_REGION; }
+
+    static cairo_region_t* copy_ptr(cairo_region_t* region) {
+        return cairo_region_reference(region);
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static cairo_region_t* constructor_impl(JSContext* cx,
+                                            const JS::CallArgs& args);
+
+    static void finalize_impl(JSFreeOp* fop, cairo_region_t* cr);
+
+    static const JSFunctionSpec proto_funcs[];
+    static const JSPropertySpec proto_props[];
+    static constexpr js::ClassSpec class_spec = {
+        nullptr,  // createConstructor
+        nullptr,  // createPrototype
+        nullptr,  // constructorFunctions
+        nullptr,  // constructorProperties
+        CairoRegion::proto_funcs,
+        CairoRegion::proto_props,
+        CairoRegion::define_gtype_prop,
+    };
+    static constexpr JSClass klass = {
+        "Region", JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+        &CairoRegion::class_ops, &CairoRegion::class_spec};
+};
 
 void gjs_cairo_region_init(void);
 
