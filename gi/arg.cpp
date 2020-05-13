@@ -1364,30 +1364,30 @@ gjs_g_array_new_for_type(JSContext    *context,
         element_size = sizeof(gboolean);
         break;
     case GI_TYPE_TAG_UNICHAR:
-        element_size = sizeof(gunichar);
+        element_size = sizeof(char32_t);
         break;
     case GI_TYPE_TAG_UINT8:
     case GI_TYPE_TAG_INT8:
-      element_size = sizeof(guint8);
-      break;
+        element_size = sizeof(uint8_t);
+        break;
     case GI_TYPE_TAG_UINT16:
     case GI_TYPE_TAG_INT16:
-      element_size = sizeof(guint16);
-      break;
+        element_size = sizeof(uint16_t);
+        break;
     case GI_TYPE_TAG_UINT32:
     case GI_TYPE_TAG_INT32:
-      element_size = sizeof(guint32);
-      break;
+        element_size = sizeof(uint32_t);
+        break;
     case GI_TYPE_TAG_UINT64:
     case GI_TYPE_TAG_INT64:
-      element_size = sizeof(guint64);
-      break;
+        element_size = sizeof(uint64_t);
+        break;
     case GI_TYPE_TAG_FLOAT:
-      element_size = sizeof(gfloat);
-      break;
+        element_size = sizeof(float);
+        break;
     case GI_TYPE_TAG_DOUBLE:
-      element_size = sizeof(gdouble);
-      break;
+        element_size = sizeof(double);
+        break;
     case GI_TYPE_TAG_GTYPE:
       element_size = sizeof(GType);
       break;
@@ -1399,8 +1399,8 @@ gjs_g_array_new_for_type(JSContext    *context,
     case GI_TYPE_TAG_GSLIST:
     case GI_TYPE_TAG_GHASH:
     case GI_TYPE_TAG_ERROR:
-      element_size = sizeof(gpointer);
-      break;
+        element_size = sizeof(void*);
+        break;
     case GI_TYPE_TAG_VOID:
     default:
         gjs_throw(context,
