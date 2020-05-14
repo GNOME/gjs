@@ -54,7 +54,6 @@
 #include "gi/gerror.h"
 #include "gi/gtype.h"
 #include "gi/interface.h"
-#include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
@@ -1751,6 +1750,26 @@ static bool value_to_interface_gi_argument(
     return false;
 }
 
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
+    JSContext* cx, const JS::HandleValue& value, GArgument* arg,
+    GITypeTag type_tag, const char* arg_name, GjsArgumentType arg_type) {
+    bool out_of_range = false;
+
+    if (!gjs_arg_set_from_js_value<T>(cx, value, arg, &out_of_range)) {
+        if (out_of_range) {
+            GjsAutoChar display_name =
+                gjs_argument_display_name(arg_name, arg_type);
+            gjs_throw(cx, "value is out of range for %s (type %s)",
+                      display_name.get(), g_type_tag_to_string(type_tag));
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
 bool
 gjs_value_to_g_argument(JSContext      *context,
                         JS::HandleValue value,
@@ -1770,7 +1789,6 @@ gjs_value_to_g_argument(JSContext      *context,
 
     bool nullable_type = false;
     bool wrong = false;  // return false
-    bool out_of_range = false;
     bool report_type_mismatch = false;  // wrong=true, and still need to
                                         // gjs_throw a type problem
 
@@ -1781,97 +1799,66 @@ gjs_value_to_g_argument(JSContext      *context,
         gjs_arg_unset<void*>(arg);
         break;
 
-    case GI_TYPE_TAG_INT8: {
-        gint32 i;
-        if (!JS::ToInt32(context, value, &i))
-            wrong = true;
-        if (i > G_MAXINT8 || i < G_MININT8)
-            out_of_range = true;
-        gjs_arg_set<int8_t>(arg, i);
+    case GI_TYPE_TAG_INT8:
+        if (!gjs_arg_set_from_js_value<int8_t>(context, value, arg, type_tag,
+                                               arg_name, arg_type))
+            return false;
         break;
-    }
-    case GI_TYPE_TAG_UINT8: {
-        guint32 i;
-        if (!JS::ToUint32(context, value, &i))
-            wrong = true;
-        if (i > G_MAXUINT8)
-            out_of_range = true;
-        gjs_arg_set<uint8_t>(arg, i);
+    case GI_TYPE_TAG_UINT8:
+        if (!gjs_arg_set_from_js_value<uint8_t>(context, value, arg, type_tag,
+                                                arg_name, arg_type))
+            return false;
         break;
-    }
-    case GI_TYPE_TAG_INT16: {
-        gint32 i;
-        if (!JS::ToInt32(context, value, &i))
-            wrong = true;
-        if (i > G_MAXINT16 || i < G_MININT16)
-            out_of_range = true;
-        gjs_arg_set<int16_t>(arg, i);
+    case GI_TYPE_TAG_INT16:
+        if (!gjs_arg_set_from_js_value<int16_t>(context, value, arg, type_tag,
+                                                arg_name, arg_type))
+            return false;
         break;
-    }
 
-    case GI_TYPE_TAG_UINT16: {
-        guint32 i;
-        if (!JS::ToUint32(context, value, &i))
-            wrong = true;
-        if (i > G_MAXUINT16)
-            out_of_range = true;
-        gjs_arg_set<uint16_t>(arg, i);
+    case GI_TYPE_TAG_UINT16:
+        if (!gjs_arg_set_from_js_value<uint16_t>(context, value, arg, type_tag,
+                                                 arg_name, arg_type))
+            return false;
         break;
-    }
 
     case GI_TYPE_TAG_INT32:
-        if (!JS::ToInt32(context, value, &gjs_arg_member<int32_t>(arg)))
-            wrong = true;
+        if (!gjs_arg_set_from_js_value<int32_t>(context, value, arg, type_tag,
+                                                arg_name, arg_type))
+            return false;
         break;
 
-    case GI_TYPE_TAG_UINT32: {
-        gdouble i;
-        if (!JS::ToNumber(context, value, &i))
-            wrong = true;
-        if (i > G_MAXUINT32 || i < 0)
-            out_of_range = true;
-        gjs_arg_set<uint32_t>(arg, CLAMP(i, 0, G_MAXUINT32));
-        break;
-    }
-
-    case GI_TYPE_TAG_INT64: {
-        double v;
-        if (!JS::ToNumber(context, value, &v))
-            wrong = true;
-        if (v > G_MAXINT64 || v < G_MININT64)
-            out_of_range = true;
-        gjs_arg_set<int64_t>(arg, v);
-    }
+    case GI_TYPE_TAG_UINT32:
+        if (!gjs_arg_set_from_js_value<uint32_t>(context, value, arg, type_tag,
+                                                 arg_name, arg_type))
+            return false;
         break;
 
-    case GI_TYPE_TAG_UINT64: {
-        double v;
-        if (!JS::ToNumber(context, value, &v))
-            wrong = true;
-        if (v < 0)
-            out_of_range = true;
-        /* XXX we fail with values close to G_MAXUINT64 */
-        gjs_arg_set<uint64_t>(arg, MAX(v, 0));
-    }
+    case GI_TYPE_TAG_INT64:
+        if (!gjs_arg_set_from_js_value<int64_t>(context, value, arg, type_tag,
+                                                arg_name, arg_type))
+            return false;
+        break;
+
+    case GI_TYPE_TAG_UINT64:
+        if (!gjs_arg_set_from_js_value<uint64_t>(context, value, arg, type_tag,
+                                                 arg_name, arg_type))
+            return false;
         break;
 
     case GI_TYPE_TAG_BOOLEAN:
         gjs_arg_set(arg, JS::ToBoolean(value));
         break;
 
-    case GI_TYPE_TAG_FLOAT: {
-        double v;
-        if (!JS::ToNumber(context, value, &v))
-            wrong = true;
-        if (v > G_MAXFLOAT || v < - G_MAXFLOAT)
-            out_of_range = true;
-        gjs_arg_set<float>(arg, v);
-    }
+    case GI_TYPE_TAG_FLOAT:
+        if (!gjs_arg_set_from_js_value<float>(context, value, arg, type_tag,
+                                              arg_name, arg_type))
+            return false;
         break;
 
     case GI_TYPE_TAG_DOUBLE:
-        if (!JS::ToNumber(context, value, &gjs_arg_member<double>(arg)))
-            wrong = true;
+        if (!gjs_arg_set_from_js_value<double>(context, value, arg, type_tag,
+                                               arg_name, arg_type))
+            return false;
         break;
 
     case GI_TYPE_TAG_UNICHAR:
@@ -2161,12 +2148,6 @@ _Pragma("GCC diagnostic pop")
         if (report_type_mismatch) {
             throw_invalid_argument(context, value, type_info, arg_name, arg_type);
         }
-        return false;
-    } else if (G_UNLIKELY(out_of_range)) {
-        GjsAutoChar display_name =
-            gjs_argument_display_name(arg_name, arg_type);
-        gjs_throw(context, "value is out of range for %s (type %s)",
-                  display_name.get(), g_type_tag_to_string(type_tag));
         return false;
     } else if (nullable_type && !gjs_arg_get<void*>(arg) && !may_be_null) {
         GjsAutoChar display_name =

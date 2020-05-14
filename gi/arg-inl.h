@@ -17,8 +17,11 @@
 #include <girepository.h>
 #include <glib-object.h>  // for GType
 #include <glib.h>         // for gboolean
+#include <js/TypeDecls.h>  // for HandleValue
 
+#include "gi/js-value-inl.h"
 #include "gi/utils-inl.h"
+#include "gjs/macros.h"
 
 // GIArgument accessor templates
 //
@@ -204,4 +207,24 @@ gjs_arg_get_maybe_rounded(GIArgument* arg) {
     }
 
     return static_cast<double>(val);
+}
+
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
+    JSContext* cx, const JS::HandleValue& value, GArgument* arg,
+    bool* out_of_range) {
+    if constexpr (Gjs::type_has_js_getter<T>())
+        return Gjs::js_value_to_c(cx, value, &gjs_arg_member<T>(arg));
+
+    Gjs::JsValueHolder::Relaxed<T> val;
+
+    if (!Gjs::js_value_to_c_checked<T>(cx, value, &val, out_of_range))
+        return false;
+
+    if (*out_of_range)
+        return false;
+
+    gjs_arg_set<T>(arg, val);
+
+    return true;
 }

@@ -41,6 +41,20 @@ constexpr auto get_strict() {
         return int32_t{};
     else if constexpr (type_fits<T, uint32_t>())
         return uint32_t{};
+    else if constexpr (type_fits<T, double>())
+        return double{};
+    else
+        return T{};
+}
+
+template <typename T>
+constexpr auto get_relaxed() {
+    if constexpr (type_fits<T, int32_t>())
+        return int32_t{};
+    else if constexpr (type_fits<T, uint16_t>())
+        return uint32_t{};
+    else if constexpr (std::is_arithmetic_v<T>)
+        return double{};
     else
         return T{};
 }
@@ -48,7 +62,17 @@ constexpr auto get_strict() {
 template <typename T>
 using Strict = decltype(JsValueHolder::get_strict<T>());
 
+
+template <typename T>
+using Relaxed = decltype(JsValueHolder::get_relaxed<T>());
+
 }  // namespace JsValueHolder
+
+
+template <typename T, typename MODE = JsValueHolder::Relaxed<T>>
+constexpr bool type_has_js_getter() {
+    return std::is_same_v<T, MODE>;
+}
 
 /* Avoid implicit conversions */
 template <typename T>
@@ -66,6 +90,12 @@ GJS_JSAPI_RETURN_CONVENTION
 inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
                           uint32_t* out) {
     return JS::ToUint32(cx, value, out);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
+                          double* out) {
+    return JS::ToNumber(cx, value, out);
 }
 
 template <typename WantedType, typename T>
