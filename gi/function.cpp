@@ -50,6 +50,7 @@
 #include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSProto_TypeError, JSTYPE_FUNCTION
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/closure.h"
@@ -766,6 +767,47 @@ complete_async_calls(void)
     }
 }
 
+static void* get_return_ffi_pointer_from_giargument(
+    GITypeInfo* return_info, GIFFIReturnValue* return_value) {
+    // This should be the inverse of gi_type_info_extract_ffi_return_value().
+    // FIXME: Note that v_long and v_ulong don't have type-safe template
+    // overloads yet, and I don't understand why they won't compile
+    switch (g_type_info_get_tag(return_info)) {
+        case GI_TYPE_TAG_INT8:
+        case GI_TYPE_TAG_INT16:
+        case GI_TYPE_TAG_INT32:
+            return &return_value->v_long;
+        case GI_TYPE_TAG_UINT8:
+        case GI_TYPE_TAG_UINT16:
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_BOOLEAN:
+        case GI_TYPE_TAG_UNICHAR:
+            return &return_value->v_ulong;
+        case GI_TYPE_TAG_INT64:
+            return &gjs_arg_member<int64_t>(return_value);
+        case GI_TYPE_TAG_UINT64:
+            return &gjs_arg_member<uint64_t>(return_value);
+        case GI_TYPE_TAG_FLOAT:
+            return &gjs_arg_member<float>(return_value);
+        case GI_TYPE_TAG_DOUBLE:
+            return &gjs_arg_member<double>(return_value);
+        case GI_TYPE_TAG_INTERFACE: {
+            GjsAutoBaseInfo info = g_type_info_get_interface(return_info);
+
+            switch (g_base_info_get_type(info)) {
+                case GI_INFO_TYPE_ENUM:
+                case GI_INFO_TYPE_FLAGS:
+                    return &return_value->v_long;
+                default:
+                    return &gjs_arg_member<void*>(return_value);
+            }
+            break;
+        }
+        default:
+            return &gjs_arg_member<void*>(return_value);
+    }
+}
+
 // This function can be called in two different ways. You can either use it to
 // create JavaScript objects by calling it without @r_value, or you can decide
 // to keep the return values in #GArgument format by providing a @r_value
@@ -794,7 +836,6 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     GArgument *inout_original_arg_cvalues;
     gpointer *ffi_arg_pointers;
     GIFFIReturnValue return_value;
-    gpointer return_value_p; /* Will point inside the union return_value */
     GArgument return_gargument;
 
     guint8 processed_c_args = 0;
@@ -1121,16 +1162,10 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     g_assert_cmpuint(c_arg_pos, ==, c_argc);
     g_assert_cmpuint(gi_arg_pos, ==, gi_argc);
 
-    /* See comment for GjsFFIReturnValue above */
-    if (return_tag == GI_TYPE_TAG_FLOAT)
-        return_value_p = &return_value.v_float;
-    else if (return_tag == GI_TYPE_TAG_DOUBLE)
-        return_value_p = &return_value.v_double;
-    else if (return_tag == GI_TYPE_TAG_INT64 || return_tag == GI_TYPE_TAG_UINT64)
-        return_value_p = &return_value.v_uint64;
-    else
-        return_value_p = &return_value.v_long;
-    ffi_call(&(function->invoker.cif), FFI_FN(function->invoker.native_address), return_value_p, ffi_arg_pointers);
+    ffi_call(
+        &(function->invoker.cif), FFI_FN(function->invoker.native_address),
+        get_return_ffi_pointer_from_giargument(&return_info, &return_value),
+        ffi_arg_pointers);
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
