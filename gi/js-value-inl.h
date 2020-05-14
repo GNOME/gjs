@@ -12,6 +12,7 @@
 #include <js/Conversions.h>
 
 #include "gi/gtype.h"
+#include "gi/value.h"
 #include "gjs/macros.h"
 
 namespace Gjs {
@@ -162,6 +163,13 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GI_TYPE_TAG_GTYPE>(
         return false;
 
     return true;
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, GValue* out) {
+    *out = G_VALUE_INIT;
+    return gjs_value_to_g_value(cx, value, out);
 }
 
 template <typename WantedType, typename T>

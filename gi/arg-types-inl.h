@@ -92,4 +92,9 @@ constexpr inline const char* static_type_name<gboolean, GI_TYPE_TAG_BOOLEAN>() {
     return "boolean";
 }
 
+template <>
+constexpr inline const char* static_type_name<GValue>() {
+    return "GValue";
+}
+
 }  // namespace Gjs

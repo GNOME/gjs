@@ -937,42 +937,6 @@ static bool gjs_array_to_flat_struct_array(JSContext* cx,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
-gjs_array_to_flat_gvalue_array(JSContext   *context,
-                               JS::Value    array_value,
-                               unsigned int length,
-                               void       **arr_p)
-{
-    GValue *values = g_new0(GValue, length);
-    unsigned int i;
-    bool result = true;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    for (i = 0; i < length; i ++) {
-        elem = JS::UndefinedValue();
-
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(values);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        result = gjs_value_to_g_value(context, elem, &values[i]);
-
-        if (!result)
-            break;
-    }
-
-    if (result)
-        *arr_p = values;
-
-    return result;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
 gjs_array_from_flat_gvalue_array(JSContext             *context,
                                  gpointer               array,
                                  unsigned               length,
@@ -1060,7 +1024,8 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
 
     /* Special case for GValue "flat arrays" */
     if (is_gvalue_flat_array(param_info, element_type))
-        return gjs_array_to_flat_gvalue_array(context, array_value, length, arr_p);
+        return gjs_array_to_auto_array<GValue>(context, array_value, length,
+                                               arr_p);
 
     switch (element_type) {
     case GI_TYPE_TAG_UTF8:
