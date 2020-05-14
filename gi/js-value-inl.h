@@ -8,6 +8,7 @@
 #include <limits>
 #include <type_traits>
 
+#include <girepository.h>
 #include <js/Conversions.h>
 
 #include "gjs/macros.h"
@@ -35,12 +36,26 @@ constexpr bool type_fits() {
     return false;
 }
 
-template <typename T>
+/* The tag is needed to disambiguate types such as gboolean and GType
+ * which are in fact typedef's of other generic types.
+ * Setting a tag for a type allows to perform proper specialization. */
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 constexpr auto get_strict() {
+    if constexpr (TAG != GI_TYPE_TAG_VOID) {
+        if constexpr (std::is_same_v<T, GType> && TAG == GI_TYPE_TAG_GTYPE)
+            return GType{};
+        else
+            return;
+    }
+
     if constexpr (type_fits<T, int32_t>())
         return int32_t{};
     else if constexpr (type_fits<T, uint32_t>())
         return uint32_t{};
+    else if constexpr (type_fits<T, int64_t>())
+        return int64_t{};
+    else if constexpr (type_fits<T, uint64_t>())
+        return uint64_t{};
     else if constexpr (type_fits<T, double>())
         return double{};
     else
@@ -90,6 +105,18 @@ GJS_JSAPI_RETURN_CONVENTION
 inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
                           uint32_t* out) {
     return JS::ToUint32(cx, value, out);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
+                          int64_t* out) {
+    return JS::ToInt64(cx, value, out);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
+                          uint64_t* out) {
+    return JS::ToUint64(cx, value, out);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
