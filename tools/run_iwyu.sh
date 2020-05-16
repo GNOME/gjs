@@ -3,7 +3,10 @@
 SRCDIR=$(pwd)
 
 cd ${BUILDDIR:-_build}
-ninja
+if ! ninja; then
+    echo 'Build failed.'
+    exit 1
+fi
 
 IWYU="iwyu_tool -p ."
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"
