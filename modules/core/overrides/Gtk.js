@@ -37,7 +37,7 @@ function _init() {
     let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
 
-    if (Gtk.Container.prototype.child_set_property) {
+    if (Gtk.Container && Gtk.Container.prototype.child_set_property) {
         Gtk.Container.prototype.child_set_property = function (child, property, value) {
             GjsPrivate.gtk_container_child_set_property(this, child, property, value);
         };
