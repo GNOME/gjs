@@ -1,5 +1,5 @@
 project('gjs', 'cpp', 'c', version: '1.65.3', license: ['MIT', 'LGPL2+'],
-    meson_version: '>= 0.50.0',
+    meson_version: '>= 0.52.0',
     default_options: ['cpp_std=c++14', 'c_std=c99', 'warning_level=2'])
 
 api_version = '1.0'
@@ -133,7 +133,7 @@ if cxx.get_id() == 'msvc'
 endif
 
 sysprof_capture = dependency('sysprof-capture-3', version: '>= 3.33.32',
-    required: get_option('profiler'),
+    required: get_option('profiler'), include_type: 'system',
     fallback: ['sysprof', 'libsysprof_capture_dep'])
 
 readline = cxx.find_library('readline', required: get_option('readline'))
@@ -576,6 +576,7 @@ tests_environment.set('LSAN_OPTIONS', 'exitcode=23,suppressions=@0@'.format(
     meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
+tests_environment.set('GSETTINGS_BACKEND', 'memory')
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
 tests_locale = 'N/A'
