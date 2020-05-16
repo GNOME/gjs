@@ -26,19 +26,19 @@ do
     $IWYU $FILE -- $PRIVATE_MAPPING | $POSTPROCESS
 done
 $IWYU $SRCDIR/gjs/context.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=$SRCDIR/gjs/context-private.h | $POSTPROCESS
+    -Xiwyu --check_also=*/gjs/context-private.h | $POSTPROCESS
 $IWYU $SRCDIR/gjs/jsapi-dynamic-class.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=$SRCDIR/gjs/jsapi-class.h | $POSTPROCESS
+    -Xiwyu --check_also=*/gjs/jsapi-class.h | $POSTPROCESS
 $IWYU $SRCDIR/gjs/jsapi-util.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=$SRCDIR/gjs/jsapi-util-args.h \
-    -Xiwyu --check_also=$SRCDIR/gjs/jsapi-util-root.h | $POSTPROCESS
+    -Xiwyu --check_also=*/gjs/jsapi-util-args.h \
+    -Xiwyu --check_also=*/gjs/jsapi-util-root.h | $POSTPROCESS
 $IWYU $SRCDIR/gjs/mem.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=$SRCDIR/gjs/mem-private.h | $POSTPROCESS
+    -Xiwyu --check_also=*/gjs/mem-private.h | $POSTPROCESS
 $IWYU $SRCDIR/gjs/profiler.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=$SRCDIR/gjs/profiler-private.h | $POSTPROCESS
+    -Xiwyu --check_also=*/gjs/profiler-private.h | $POSTPROCESS
 $IWYU $SRCDIR/modules/cairo.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=$SRCDIR/modules/cairo-module.h \
-    -Xiwyu --check_also=$SRCDIR/modules/cairo-private.h | $POSTPROCESS
+    -Xiwyu --check_also=*/modules/cairo-module.h \
+    -Xiwyu --check_also=*/modules/cairo-private.h | $POSTPROCESS
 
 for FILE in $SRCDIR/gjs/console.cpp $SRCDIR/installed-tests/minijasmine.cpp
 do
