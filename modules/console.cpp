@@ -57,6 +57,7 @@
 #include <js/ErrorReport.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
+#include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
 #include <jsapi.h>  // for JS_IsExceptionPending, Exce...

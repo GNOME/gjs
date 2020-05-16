@@ -35,18 +35,26 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/AllocPolicy.h>
 #include <js/GCHashTable.h>
 #include <js/GCVector.h>
 #include <js/Promise.h>
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
+#include <mozilla/UniquePtr.h>
 
-#include "gjs/atoms.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/profiler.h"
+
+namespace mozilla {
+template <class Key>
+struct DefaultHasher;
+}
+class GjsAtoms;
 
 using JobQueueStorage =
     JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
@@ -65,6 +73,12 @@ using GTypeNotUint64 =
 
 // The GC sweep method should ignore FundamentalTable and GTypeTable's key types
 namespace JS {
+// Forward declarations
+template <typename T>
+class WeakCache;
+template <typename T>
+struct GCPolicy;
+
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 // We need GCPolicy<GType> for GTypeTable. SpiderMonkey already defines

@@ -24,6 +24,8 @@
 
 #include <config.h>
 
+#include <utility>  // for (implicit) move
+
 #include <glib-object.h>
 #include <glib.h>
 

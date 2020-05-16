@@ -28,6 +28,7 @@
 #include <string.h>  // for strcmp, memset, size_t
 
 #include <new>
+#include <string>
 
 #include <ffi.h>
 #include <girepository.h>
@@ -42,6 +43,7 @@
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetRealmFunctionPrototype
 #include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for HandleValueArray, JS_GetElement

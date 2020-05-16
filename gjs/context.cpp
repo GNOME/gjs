@@ -24,10 +24,8 @@
 #include <config.h>
 
 #include <signal.h>  // for sigaction, SIGUSR1, sa_handler
-#include <stdint.h>
 #include <stdio.h>      // for FILE, fclose, size_t
 #include <string.h>     // for memset
-#include <sys/types.h>  // IWYU pragma: keep
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for getpid

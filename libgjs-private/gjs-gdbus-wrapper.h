@@ -31,8 +31,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GjsDBusImplementation        GjsDBusImplementation;
-typedef struct _GjsDBusImplementationClass   GjsDBusImplementationClass;
 typedef struct _GjsDBusImplementationPrivate GjsDBusImplementationPrivate;
 
 #define GJS_TYPE_DBUS_IMPLEMENTATION              (gjs_dbus_implementation_get_type ())
@@ -47,10 +45,12 @@ struct _GjsDBusImplementation {
 
     GjsDBusImplementationPrivate *priv;
 };
+typedef struct _GjsDBusImplementation GjsDBusImplementation;
 
 struct _GjsDBusImplementationClass {
     GDBusInterfaceSkeletonClass parent_class;
 };
+typedef struct _GjsDBusImplementationClass GjsDBusImplementationClass;
 
 GJS_EXPORT
 GType                  gjs_dbus_implementation_get_type (void);

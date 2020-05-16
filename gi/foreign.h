@@ -28,7 +28,9 @@
 
 #include <girepository.h>
 
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 
 #include "gi/arg.h"
 #include "gjs/macros.h"

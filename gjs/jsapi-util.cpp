@@ -40,6 +40,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/Conversions.h>
+#include <js/ErrorReport.h>
 #include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
 #include <js/GCVector.h>  // for RootedVector
 #include <js/RootingAPI.h>

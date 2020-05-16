@@ -37,6 +37,7 @@
 #include <glib.h>
 
 #include <js/CallArgs.h>
+#include <js/Id.h>
 #include <js/MemoryFunctions.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -46,7 +47,7 @@
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/jsapi-class.h"
+#include "gjs/jsapi-class.h"  // IWYU pragma: keep
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"

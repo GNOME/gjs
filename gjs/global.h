@@ -27,6 +27,7 @@
 #include <config.h>
 
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 
 #include "gjs/macros.h"
 
