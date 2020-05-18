@@ -46,6 +46,7 @@
 #include <jsfriendapi.h>  // for JS_IsUint8Array, JS_GetObjectFunc...
 #include <mozilla/Vector.h>
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/foreign.h"
@@ -2444,12 +2445,12 @@ gjs_array_from_g_list (JSContext             *context,
     return true;
 }
 
-template <typename T, T GIArgument::*member>
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     GITypeInfo* param_info, GIArgument* arg, void* array, size_t length) {
     for (size_t i = 0; i < length; i++) {
-        arg->*member = *(static_cast<T*>(array) + i);
+        gjs_g_argument_value<T>(arg) = *(static_cast<T*>(array) + i);
 
         if (!gjs_value_from_g_argument(cx, elems[i], param_info, arg, true))
             return false;
@@ -2504,9 +2505,9 @@ gjs_array_from_carray_internal (JSContext             *context,
         return false;
     }
 
-#define ITERATE(type)                                             \
-    if (!fill_vector_from_carray<g##type, &GIArgument::v_##type>( \
-            context, elems, param_info, &arg, array, length))     \
+#define ITERATE(type)                                                       \
+    if (!fill_vector_from_carray<g##type>(context, elems, param_info, &arg, \
+                                          array, length))                   \
         return false;
 
     switch (element_type) {
@@ -2688,14 +2689,14 @@ gjs_array_from_boxed_array (JSContext             *context,
                                           param_info, length, data);
 }
 
-template <typename T, T GIArgument::*member>
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     GITypeInfo* param_info, GIArgument* arg, void* c_array) {
     T* array = static_cast<T*>(c_array);
 
     for (size_t i = 0; array[i]; i++) {
-        arg->*member = array[i];
+        gjs_g_argument_value<T>(arg) = array[i];
 
         if (!elems.growBy(1)) {
             JS_ReportOutOfMemory(cx);
@@ -2737,10 +2738,9 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
 
     JS::RootedValueVector elems(context);
 
-#define ITERATE(type)                                                    \
-    if (!fill_vector_from_zero_terminated_carray<g##type,                \
-                                                 &GIArgument::v_##type>( \
-            context, elems, param_info, &arg, c_array))                  \
+#define ITERATE(type)                                      \
+    if (!fill_vector_from_zero_terminated_carray<g##type>( \
+            context, elems, param_info, &arg, c_array))    \
         return false;
 
     switch (element_type) {
