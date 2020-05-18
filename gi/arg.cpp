@@ -670,6 +670,14 @@ value_to_ghashtable_key(JSContext      *cx,
     return true;
 }
 
+template <typename T>
+GJS_USE static T* heap_value_new_from_arg(GIArgument* val_arg) {
+    T* heap_val = g_new(T, 1);
+    *heap_val = gjs_g_argument_value<T>(val_arg);
+
+    return heap_val;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_object_to_g_hash(JSContext   *context,
@@ -727,21 +735,13 @@ gjs_object_to_g_hash(JSContext   *context,
         GITypeTag val_type = g_type_info_get_tag(val_param_info);
         /* Use heap-allocated values for types that don't fit in a pointer */
         if (val_type == GI_TYPE_TAG_INT64) {
-            int64_t *heap_val = g_new(int64_t, 1);
-            *heap_val = val_arg.v_int64;
-            val_ptr = heap_val;
+            val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
         } else if (val_type == GI_TYPE_TAG_UINT64) {
-            uint64_t *heap_val = g_new(uint64_t, 1);
-            *heap_val = val_arg.v_uint64;
-            val_ptr = heap_val;
+            val_ptr = heap_value_new_from_arg<uint64_t>(&val_arg);
         } else if (val_type == GI_TYPE_TAG_FLOAT) {
-            float *heap_val = g_new(float, 1);
-            *heap_val = val_arg.v_float;
-            val_ptr = heap_val;
+            val_ptr = heap_value_new_from_arg<float>(&val_arg);
         } else if (val_type == GI_TYPE_TAG_DOUBLE) {
-            double *heap_val = g_new(double, 1);
-            *heap_val = val_arg.v_double;
-            val_ptr = heap_val;
+            val_ptr = heap_value_new_from_arg<double>(&val_arg);
         } else {
             // Other types are simply stuffed inside the pointer
             val_ptr = _g_type_info_hash_pointer_from_argument(val_param_info,
