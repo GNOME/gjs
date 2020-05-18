@@ -97,4 +97,9 @@ constexpr inline const char* static_type_name<GValue>() {
     return "GValue";
 }
 
+template <>
+inline const char* static_type_name<char*>() {
+    return "string";
+}
+
 }  // namespace Gjs

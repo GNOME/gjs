@@ -685,6 +685,24 @@ _Pragma("GCC diagnostic pop")
     return true;
 }
 
+template <typename T>
+[[nodiscard]] constexpr T* array_allocate(size_t length) {
+    if constexpr (std::is_same_v<T, char*>)
+        return g_new0(char*, length);
+
+    auto* array = g_new(T, length);
+    array[length - 1] = {0};
+    return array;
+}
+
+template <typename T>
+constexpr void array_free_func(T* array) {
+    if constexpr (std::is_same_v<T, char*>)
+        g_strfreev(array);
+    else
+        g_free(array);
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
     JSContext* cx, JS::Value array_value, size_t length, void** arr_p) {
@@ -692,8 +710,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
     JS::RootedValue elem(cx);
 
     // Add one so we're always zero terminated
-    GjsAutoPointer<T, void, g_free> result = g_new(T, length + 1);
-    result[length] = {0};
+    GjsAutoPointer<T, T, array_free_func<T>> result =
+        array_allocate<T>(length + 1);
 
     for (size_t i = 0; i < length; ++i) {
         elem = JS::UndefinedValue();
@@ -757,34 +775,7 @@ gjs_array_to_strv(JSContext   *context,
                   unsigned int length,
                   void       **arr_p)
 {
-    char **result;
-    guint32 i;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    result = g_new0(char *, length+1);
-
-    for (i = 0; i < length; ++i) {
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        JS::UniqueChars tmp_result = gjs_string_to_utf8(context, elem);
-        if (!tmp_result) {
-            g_strfreev(result);
-            return false;
-        }
-        result[i] = g_strdup(tmp_result.get());
-    }
-
-    *arr_p = result;
-
-    return true;
+    return gjs_array_to_auto_array<char*>(context, array_value, length, arr_p);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
