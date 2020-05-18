@@ -141,6 +141,12 @@ GJS_USE inline decltype(auto) gjs_arg_member<std::nullptr_t>(GIArgument* arg) {
     return gjs_arg_member(arg, &GIArgument::v_pointer);
 }
 
+template <>
+GJS_USE inline decltype(auto) gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
+    GIArgument* arg) {
+    return gjs_arg_member(arg, &GIArgument::v_int);
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 inline void gjs_arg_set(GIArgument* arg, T v) {
     gjs_arg_member<T, TAG>(arg) = v;
