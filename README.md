@@ -91,4 +91,4 @@ the Greater Than Code podcast.
 [treitter]: https://treitter.livejournal.com/14871.html
 [eos-knowledge-lib]: http://endlessm.github.io/eos-knowledge-lib/
 [Cinnamon]: https://en.wikipedia.org/wiki/Cinnamon_(software)
-[hospitable]: http://www.greaterthancode.com/2017/11/08/054-code-hospitality-with-nadia-odunayo/
+[hospitable]: https://www.greaterthancode.com/code-hospitality
