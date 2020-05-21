@@ -35,13 +35,11 @@
 #include <vector>   // for vector
 
 #include <gio/gio.h>
-#include <glib-object.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
-#include <js/GCVector.h>  // for MutableWrappedPtrOperations
 #include <js/Id.h>        // for PropertyKey, JSID_IS_STRING
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
@@ -74,11 +72,6 @@ typedef struct {
     bool is_root;
 } Importer;
 
-typedef struct {
-    GPtrArray *elements;
-    unsigned int index;
-} ImporterIterator;
-
 extern const JSClass gjs_importer_class;
 
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
@@ -93,19 +86,22 @@ importer_to_string(JSContext *cx,
                    unsigned   argc,
                    JS::Value *vp)
 {
-    GJS_GET_THIS(cx, argc, vp, args, importer);
-    const JSClass *klass = JS_GetClass(importer);
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedValue module_path(cx);
-    if (!JS_GetPropertyById(cx, importer, atoms.module_path(), &module_path))
-        return false;
+    GJS_GET_PRIV(cx, argc, vp, args, importer, Importer, priv);
 
     GjsAutoChar output;
 
-    if (module_path.isNull()) {
+    const JSClass* klass = JS_GetClass(importer);
+
+    if (!priv) {
+        output = g_strdup_printf("[%s prototype]", klass->name);
+    } else if (priv->is_root) {
         output = g_strdup_printf("[%s root]", klass->name);
     } else {
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        JS::RootedValue module_path(cx);
+        if (!JS_GetPropertyById(cx, importer, atoms.module_path(),
+                                &module_path))
+            return false;
         JS::UniqueChars path = gjs_string_to_utf8(cx, module_path);
         if (!path)
             return false;
@@ -215,18 +211,13 @@ import_directory(JSContext          *context,
                  const char         *name,
                  const char * const *full_paths)
 {
-    JSObject *importer;
-
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing directory '%s'",
               name);
 
-    /* We define a sub-importer that has only the given directories on
-     * its search path. gjs_define_importer() exits if it fails, so
-     * this always succeeds.
-     */
-    importer = gjs_define_importer(context, obj, name, full_paths, false);
-    return importer != nullptr;
+    // We define a sub-importer that has only the given directories on its
+    // search path.
+    return !!gjs_define_importer(context, obj, name, full_paths, false);
 }
 
 /* Make the property we set in gjs_module_import() permanent;
@@ -396,7 +387,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
                                  JS::MutableHandleIdVector prop_ids,
                                  const char* init_path) {
-    size_t ix, length;
     JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
     if (!module_obj)
         return false;
@@ -405,11 +395,10 @@ static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
     if (!JS_Enumerate(cx, module_obj, &ids))
         return false;
 
-    for (ix = 0, length = ids.length(); ix < length; ix++)
-        if (!prop_ids.append(ids[ix])) {
-            JS_ReportOutOfMemory(cx);
-            return false;
-        }
+    if (!prop_ids.appendAll(ids)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
 
     return true;
 }

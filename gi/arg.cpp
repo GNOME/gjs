@@ -2083,7 +2083,7 @@ _Pragma("GCC diagnostic pop")
          * of Uint8Array and it needs to be marshalled to GByteArray.
          */
         if (value.isObject()) {
-            JS::RootedObject bytearray_obj(context, value.toObjectOrNull());
+            JSObject* bytearray_obj = &value.toObject();
             if (JS_IsUint8Array(bytearray_obj) &&
                 array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
                 arg->v_pointer = gjs_byte_array_get_byte_array(bytearray_obj);
@@ -3838,6 +3838,7 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
         type_needs_out_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
             elem.v_pointer = array[i];
+            JS::AutoSaveExceptionState saved_exc(context);
             if (!gjs_g_arg_release_internal(context,
                                             GI_TRANSFER_EVERYTHING,
                                             param_type,

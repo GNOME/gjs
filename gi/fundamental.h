@@ -30,8 +30,6 @@
 #include <girepository.h>
 #include <glib-object.h>
 
-#include <js/Id.h>
-#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
@@ -40,10 +38,7 @@
 
 class FundamentalPrototype;
 class FundamentalInstance;
-namespace JS {
-class CallArgs;
-class HandleValueArray;
-}  // namespace JS
+namespace JS { class CallArgs; }
 
 /* To conserve memory, we have two different kinds of private data for JS
  * wrappers for fundamental types: FundamentalInstance, and
@@ -91,14 +86,10 @@ class FundamentalPrototype
     GIObjectInfoUnrefFunction m_unref_function;
     GIObjectInfoGetValueFunction m_get_value_function;
     GIObjectInfoSetValueFunction m_set_value_function;
-
-    JS::Heap<jsid> m_constructor_name;
     GICallableInfo* m_constructor_info;
 
     explicit FundamentalPrototype(GIObjectInfo* info, GType gtype);
     ~FundamentalPrototype(void);
-
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
 
     static constexpr InfoType::Tag info_type_tag = InfoType::Object;
 
@@ -108,8 +99,6 @@ class FundamentalPrototype
 
     // Accessors
 
-    GJS_USE
-    jsid constructor_name(void) const { return m_constructor_name.get(); }
     GJS_USE
     GICallableInfo* constructor_info(void) const { return m_constructor_info; }
 
@@ -139,7 +128,6 @@ class FundamentalPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       const char* prop_name, bool* resolved);
-    void trace_impl(JSTracer* trc);
 
     // Public API
  public:
@@ -165,8 +153,7 @@ class FundamentalInstance
 
     GJS_JSAPI_RETURN_CONVENTION
     bool invoke_constructor(JSContext* cx, JS::HandleObject obj,
-                            const JS::HandleValueArray& args,
-                            GIArgument* rvalue);
+                            const JS::CallArgs& args, GIArgument* rvalue);
 
     void ref(void) { get_prototype()->call_ref_function(m_ptr); }
     void unref(void) { get_prototype()->call_unref_function(m_ptr); }

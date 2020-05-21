@@ -371,7 +371,7 @@ JSObject* gjs_byte_array_from_byte_array(JSContext* cx, GByteArray* array) {
     return gjs_byte_array_from_data(cx, array->len, array->data);
 }
 
-GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj) {
+GBytes* gjs_byte_array_get_bytes(JSObject* obj) {
     bool is_shared_memory;
     uint32_t len;
     uint8_t* data;
@@ -380,7 +380,7 @@ GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj) {
     return g_bytes_new(data, len);
 }
 
-GByteArray* gjs_byte_array_get_byte_array(JS::HandleObject obj) {
+GByteArray* gjs_byte_array_get_byte_array(JSObject* obj) {
     return g_bytes_unref_to_array(gjs_byte_array_get_bytes(obj));
 }
 

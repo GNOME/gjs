@@ -46,9 +46,9 @@ JSObject *    gjs_byte_array_from_byte_array (JSContext  *context,
                                               GByteArray *array);
 
 GJS_USE
-GByteArray* gjs_byte_array_get_byte_array(JS::HandleObject obj);
+GByteArray* gjs_byte_array_get_byte_array(JSObject* obj);
 
 GJS_USE
-GBytes* gjs_byte_array_get_bytes(JS::HandleObject obj);
+GBytes* gjs_byte_array_get_bytes(JSObject* obj);
 
 #endif  // GJS_BYTEARRAY_H_

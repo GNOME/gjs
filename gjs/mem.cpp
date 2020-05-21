@@ -68,7 +68,7 @@ gjs_memory_report(const char *where,
               "  %d objects currently alive",
               GJS_GET_COUNTER(everything));
 
-    if (GJS_GET_COUNTER(everything) > 0) {
+    if (GJS_GET_COUNTER(everything) != 0) {
         for (i = 0; i < n_counters; ++i) {
             gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %d", counters[i]->name,
                       counters[i]->value);

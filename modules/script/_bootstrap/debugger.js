@@ -233,7 +233,7 @@ function splitPrintOptions(s, style) {
         style.pretty = true;
     if (m[1].startsWith('b'))
         style.brief = true;
-    return [s.substr(m[0].length).trimLeft(), style];
+    return [s.substr(m[0].length).trimStart(), style];
 }
 
 function doPrint(expr, style) {
@@ -749,9 +749,9 @@ PARAMETERS
 //   print/b x       => ['print', '/b x']
 //
 function breakcmd(cmd) {
-    cmd = cmd.trimLeft();
+    cmd = cmd.trimStart();
     if ("!@#$%^&*_+=/?.,<>:;'\"".includes(cmd.substr(0, 1)))
-        return [cmd.substr(0, 1), cmd.substr(1).trimLeft()];
+        return [cmd.substr(0, 1), cmd.substr(1).trimStart()];
     var m = /\s+|(?=\/)/.exec(cmd);
     if (m === null)
         return [cmd, ''];

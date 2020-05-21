@@ -36,7 +36,6 @@ typedef enum {
     GJS_GLOBAL_SLOT_PROTOTYPE_function,
     GJS_GLOBAL_SLOT_PROTOTYPE_ns,
     GJS_GLOBAL_SLOT_PROTOTYPE_repo,
-    GJS_GLOBAL_SLOT_PROTOTYPE_byte_array,
     GJS_GLOBAL_SLOT_PROTOTYPE_importer,
     GJS_GLOBAL_SLOT_PROTOTYPE_cairo_context,
     GJS_GLOBAL_SLOT_PROTOTYPE_cairo_gradient,

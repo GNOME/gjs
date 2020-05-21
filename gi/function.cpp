@@ -47,7 +47,6 @@
 #include <jsapi.h>        // for HandleValueArray, JS_GetElement
 #include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSProto_TypeError, JSTYPE_FUNCTION
-#include <mozilla/Maybe.h>
 
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -72,7 +71,7 @@
 #define GJS_ARG_INDEX_INVALID G_MAXUINT8
 
 typedef struct {
-    GIFunctionInfo *info;
+    GICallableInfo* info;
 
     GjsParamType *param_types;
 
@@ -751,19 +750,15 @@ gjs_fill_method_instance(JSContext       *context,
 
 /* Intended for error messages. Return value must be freed */
 GJS_USE
-static char *
-format_function_name(Function *function,
-                     bool      is_method)
-{
-    auto baseinfo = static_cast<GIBaseInfo *>(function->info);
-    if (is_method)
-        return g_strdup_printf("method %s.%s.%s",
-                               g_base_info_get_namespace(baseinfo),
-                               g_base_info_get_name(g_base_info_get_container(baseinfo)),
-                               g_base_info_get_name(baseinfo));
+static char* format_function_name(Function* function) {
+    if (g_callable_info_is_method(function->info))
+        return g_strdup_printf(
+            "method %s.%s.%s", g_base_info_get_namespace(function->info),
+            g_base_info_get_name(g_base_info_get_container(function->info)),
+            g_base_info_get_name(function->info));
     return g_strdup_printf("function %s.%s",
-                           g_base_info_get_namespace(baseinfo),
-                           g_base_info_get_name(baseinfo));
+                           g_base_info_get_namespace(function->info),
+                           g_base_info_get_name(function->info));
 }
 
 static void
@@ -779,21 +774,18 @@ complete_async_calls(void)
     }
 }
 
-/*
- * This function can be called in 2 different ways. You can either use
- * it to create javascript objects by providing a @js_rval argument or
- * you can decide to keep the return values in #GArgument format by
- * providing a @r_value argument.
- */
+// This function can be called in two different ways. You can either use it to
+// create JavaScript objects by calling it without @r_value, or you can decide
+// to keep the return values in #GArgument format by providing a @r_value
+// argument.
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_invoke_c_function(JSContext                             *context,
-                      Function                              *function,
-                      JS::HandleObject                       obj, /* "this" object */
-                      const JS::HandleValueArray&            args,
-                      mozilla::Maybe<JS::MutableHandleValue> js_rval,
-                      GIArgument                            *r_value)
-{
+static bool gjs_invoke_c_function(JSContext* context, Function* function,
+                                  const JS::CallArgs& args,
+                                  JS::HandleObject this_obj = nullptr,
+                                  GIArgument* r_value = nullptr) {
+    g_assert((args.isConstructing() || !this_obj) &&
+             "If not a constructor, then pass the 'this' object via CallArgs");
+
     /* These first four are arrays which hold argument pointers.
      * @in_arg_cvalues: C values which are passed on input (in or inout)
      * @out_arg_cvalues: C values which are returned as arguments (out or inout)
@@ -850,19 +842,14 @@ gjs_invoke_c_function(JSContext                             *context,
      *
      * @args.length() is the number of arguments that were actually passed.
      */
+    GjsAutoChar name = format_function_name(function);
     if (args.length() > function->expected_js_argc) {
-        GjsAutoChar name = format_function_name(function, is_method);
-        if (!JS::WarnUTF8(context,
-                          "Too many arguments to %s: expected %d, "
-                          "got %" G_GSIZE_FORMAT,
-                          name.get(), function->expected_js_argc,
-                          args.length()))
+        if (!JS::WarnUTF8(
+                context, "Too many arguments to %s: expected %d, got %u",
+                name.get(), function->expected_js_argc, args.length()))
             return false;
-    } else if (args.length() < function->expected_js_argc) {
-        GjsAutoChar name = format_function_name(function, is_method);
-        gjs_throw(context, "Too few arguments to %s: "
-                  "expected %d, got %" G_GSIZE_FORMAT,
-                  name.get(), function->expected_js_argc, args.length());
+    } else if (!args.requireAtLeast(context, name,
+                                    function->expected_js_argc)) {
         return false;
     }
 
@@ -877,6 +864,10 @@ gjs_invoke_c_function(JSContext                             *context,
     failed = false;
     c_arg_pos = 0; /* index into in_arg_cvalues, etc */
     js_arg_pos = 0; /* index into argv */
+
+    JS::RootedObject obj(context, this_obj);
+    if (!args.isConstructing() && !args.computeThis(context, &obj))
+        return false;
 
     if (is_method) {
         if (!gjs_fill_method_instance(context, obj, function,
@@ -898,7 +889,7 @@ gjs_invoke_c_function(JSContext                             *context,
         gjs_debug_marshal(
             GJS_DEBUG_GFUNCTION,
             "Processing argument '%s' (direction %d), %d/%d GI args, "
-            "%d/%d C args, %d/%zu JS args",
+            "%d/%d C args, %d/%u JS args",
             g_base_info_get_name(&arg_info), direction, gi_arg_pos, gi_argc,
             c_arg_pos, c_argc, js_arg_pos, args.length());
 
@@ -984,7 +975,8 @@ gjs_invoke_c_function(JSContext                             *context,
                     callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
                     trampoline = gjs_callback_trampoline_new(
                         context, func, callable_info, scope,
-                        is_object_method ? obj : nullptr, false);
+                        is_object_method ? JS::HandleObject(obj) : nullptr,
+                        false);
                     closure = trampoline->closure;
                     g_base_info_unref(callable_info);
                 }
@@ -1137,14 +1129,13 @@ gjs_invoke_c_function(JSContext                             *context,
         did_throw_gerror = false;
     }
 
-    if (js_rval)
-        js_rval.ref().setUndefined();
+    if (!r_value)
+        args.rval().setUndefined();
 
     /* Only process return values if the function didn't throw */
     if (function->js_out_argc > 0 && !did_throw_gerror) {
-        for (size_t i = 0; i < function->js_out_argc; i++)
-            if (!return_values.append(JS::UndefinedValue()))
-                g_error("Unable to append to vector");
+        if (!return_values.growBy(function->js_out_argc))
+            g_error("Unable to reserve space for vector");
 
         if (return_tag != GI_TYPE_TAG_VOID) {
             GITransfer transfer = g_callable_info_get_caller_owns((GICallableInfo*) function->info);
@@ -1168,35 +1159,30 @@ gjs_invoke_c_function(JSContext                             *context,
                                                         &arg_type_info,
                                                         &out_arg_cvalues[array_length_pos],
                                                         true);
-                if (!arg_failed && js_rval) {
-                    arg_failed = !gjs_value_from_explicit_array(context,
-                                                                return_values[next_rval],
-                                                                &return_info,
-                                                                &return_gargument,
-                                                                length.toInt32());
+                if (!r_value) {
+                    if (!arg_failed) {
+                        arg_failed = !gjs_value_from_explicit_array(
+                            context, return_values[next_rval], &return_info,
+                            &return_gargument, length.toInt32());
+                    }
+                    if (!arg_failed && !gjs_g_argument_release_out_array(
+                                           context, transfer, &return_info,
+                                           length.toInt32(), &return_gargument))
+                        failed = true;
                 }
-                if (!arg_failed &&
-                    !r_value &&
-                    !gjs_g_argument_release_out_array(context,
-                                                      transfer,
-                                                      &return_info,
-                                                      length.toInt32(),
-                                                      &return_gargument))
-                    failed = true;
             } else {
-                if (js_rval)
+                if (!r_value) {
                     arg_failed = !gjs_value_from_g_argument(context,
                                                             return_values[next_rval],
                                                             &return_info, &return_gargument,
                                                             true);
-                /* Free GArgument, the JS::Value should have ref'd or copied it */
-                if (!arg_failed &&
-                    !r_value &&
-                    !gjs_g_argument_release(context,
-                                            transfer,
-                                            &return_info,
-                                            &return_gargument))
-                    failed = true;
+                    // Free GArgument, the JS::Value should have ref'd or copied
+                    // it
+                    if (!arg_failed &&
+                        !gjs_g_argument_release(context, transfer, &return_info,
+                                                &return_gargument))
+                        failed = true;
+                }
             }
             if (arg_failed)
                 failed = true;
@@ -1317,7 +1303,7 @@ release:
 
             array_length_pos = g_type_info_get_array_length(&arg_type_info);
 
-            if (js_rval) {
+            if (!r_value) {
                 if (array_length_pos >= 0) {
                     GIArgInfo array_length_arg;
                     GITypeInfo array_length_type_info;
@@ -1405,26 +1391,23 @@ release:
     g_assert_cmpuint(c_arg_pos, ==, processed_c_args);
 
     if (function->js_out_argc > 0 && (!failed && !did_throw_gerror)) {
-        /* if we have 1 return value or out arg, return that item
-         * on its own, otherwise return a JavaScript array with
-         * [return value, out arg 1, out arg 2, ...]
-         */
-        if (js_rval) {
+        if (r_value) {
+            *r_value = return_gargument;
+        } else {
+            // If we have one return value or out arg, return that item on its
+            // own, otherwise return a JavaScript array with [return value,
+            // out arg 1, out arg 2, ...]
             if (function->js_out_argc == 1) {
-                js_rval.ref().set(return_values[0]);
+                args.rval().set(return_values[0]);
             } else {
                 JSObject *array;
                 array = JS_NewArrayObject(context, return_values);
                 if (array == NULL) {
                     failed = true;
                 } else {
-                    js_rval.ref().setObject(*array);
+                    args.rval().setObject(*array);
                 }
             }
-        }
-
-        if (r_value) {
-            *r_value = return_gargument;
         }
     }
 
@@ -1443,28 +1426,19 @@ function_call(JSContext *context,
               unsigned   js_argc,
               JS::Value *vp)
 {
-    GJS_GET_THIS(context, js_argc, vp, js_argv, object);
+    JS::CallArgs js_argv = JS::CallArgsFromVp(js_argc, vp);
     JS::RootedObject callee(context, &js_argv.callee());
 
-    bool success;
     Function *priv;
-    JS::RootedValue retval(context);
 
     priv = priv_from_js(context, callee);
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Call callee %p priv %p this obj %p", callee.get(),
-                      priv, object.get());
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p",
+                      callee.get(), priv);
 
     if (priv == NULL)
         return true; /* we are the prototype, or have the wrong class */
 
-    success = gjs_invoke_c_function(context, priv, object, js_argv,
-                                    mozilla::Some<JS::MutableHandleValue>(&retval),
-                                    NULL);
-    if (success)
-        js_argv.rval().set(retval);
-
-    return success;
+    return gjs_invoke_c_function(context, priv, js_argv);
 }
 
 GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(function)
@@ -1860,38 +1834,17 @@ gjs_define_function(JSContext       *context,
     return function;
 }
 
+bool gjs_invoke_constructor_from_c(JSContext* context, GIFunctionInfo* info,
+                                   JS::HandleObject obj,
+                                   const JS::CallArgs& args,
+                                   GIArgument* rvalue) {
+    Function function;
 
-bool
-gjs_invoke_c_function_uncached(JSContext                  *context,
-                               GIFunctionInfo             *info,
-                               JS::HandleObject            obj,
-                               const JS::HandleValueArray& args,
-                               JS::MutableHandleValue      rval)
-{
-  Function function;
-  bool result;
+    memset(&function, 0, sizeof(Function));
+    if (!init_cached_function_data(context, &function, 0, info))
+        return false;
 
-  memset (&function, 0, sizeof (Function));
-  if (!init_cached_function_data (context, &function, 0, info))
-      return false;
-
-  result = gjs_invoke_c_function(context, &function, obj, args,
-                                 mozilla::Some(rval), NULL);
-  uninit_cached_function_data (&function);
-  return result;
-}
-
-bool
-gjs_invoke_constructor_from_c(JSContext                  *context,
-                              JS::HandleObject            constructor,
-                              JS::HandleObject            obj,
-                              const JS::HandleValueArray& args,
-                              GIArgument                 *rvalue)
-{
-    Function *priv;
-
-    priv = priv_from_js(context, constructor);
-
-    mozilla::Maybe<JS::MutableHandleValue> m_jsrval;
-    return gjs_invoke_c_function(context, priv, obj, args, m_jsrval, rvalue);
+    bool result = gjs_invoke_c_function(context, &function, args, obj, rvalue);
+    uninit_cached_function_data(&function);
+    return result;
 }

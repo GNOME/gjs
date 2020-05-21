@@ -25,7 +25,7 @@ stages:
     when: always
     paths:
       - _coverage/html
-      - _coverage_build/meson-logs/*log.txt
+      - _coverage_build/meson-logs/*log*.txt
 
 .build: &build
   when: on_success
@@ -34,7 +34,7 @@ stages:
     when: always
     paths:
       - _build/compile_commands.json
-      - _build/meson-logs/*log.txt
+      - _build/meson-logs/*log*.txt
       - scripts.log
   script:
     - test/test-ci.sh SETUP

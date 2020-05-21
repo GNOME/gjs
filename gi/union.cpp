@@ -29,9 +29,7 @@
 #include <js/Class.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <js/Value.h>
 #include <js/Warnings.h>
-#include <jsapi.h>  // for HandleValueArray
 
 #include "gi/function.h"
 #include "gi/repo.h"
@@ -95,11 +93,8 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static void*
-union_new(JSContext       *context,
-          JS::HandleObject obj, /* "this" for constructor */
-          GIUnionInfo     *info)
-{
+static void* union_new(JSContext* context, JS::HandleObject this_obj,
+                       const JS::CallArgs& args, GIUnionInfo* info) {
     int n_methods;
     int i;
 
@@ -115,28 +110,20 @@ union_new(JSContext       *context,
         flags = g_function_info_get_flags(func_info);
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
             g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
-
-            JS::RootedValue rval(context, JS::NullValue());
-
-            if (!gjs_invoke_c_function_uncached(context, func_info, obj,
-                                                JS::HandleValueArray::empty(),
-                                                &rval))
+            GIArgument rval;
+            if (!gjs_invoke_constructor_from_c(context, func_info, this_obj,
+                                               args, &rval))
                 return nullptr;
 
-            /* We are somewhat wasteful here; invoke_c_function() above
-             * creates a JSObject wrapper for the union that we immediately
-             * discard.
-             */
-            if (rval.isNull()) {
+            if (!rval.v_pointer) {
                 gjs_throw(context,
                           "Unable to construct union type %s as its"
                           "constructor function returned null",
                           g_base_info_get_name(info));
                 return nullptr;
-            } else {
-                JS::RootedObject rval_obj(context, &rval.toObject());
-                return UnionBase::to_c_ptr(context, rval_obj);
             }
+
+            return rval.v_pointer;
         }
     }
 
@@ -155,23 +142,8 @@ bool UnionInstance::constructor_impl(JSContext* context,
                       name()))
         return false;
 
-    /* union_new happens to be implemented by calling
-     * gjs_invoke_c_function(), which returns a JS::Value.
-     * The returned "gboxed" here is owned by that JS::Value,
-     * not by us.
-     */
-    void* gboxed = union_new(context, object, info());
-
-    if (!gboxed)
-        return false;
-
-    /* Because "gboxed" is owned by a JS::Value and will
-     * be garbage collected, we make a copy here to be
-     * owned by us.
-     */
-    copy_union(gboxed);
-
-    return true;
+    m_ptr = union_new(context, object, args, info());
+    return !!m_ptr;
 }
 
 // clang-format off

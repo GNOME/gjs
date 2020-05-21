@@ -353,10 +353,11 @@ gjs_test_add_tests_for_parse_call_args(void)
                              "optionalIntArgsNoAssert(1, 2, 3)"
                              "//*Expected minimum 1 arguments (and 1 optional), got 3");
     ADD_CALL_ARGS_TEST_XFAIL("too-few-args-fails",
-                             "intArgNoAssert()//*Expected 1 arguments, got 0");
+                             "intArgNoAssert()//*requires at least 1 argument, "
+                             "but only 0 were passed");
     ADD_CALL_ARGS_TEST_XFAIL("too-few-args-fails-with-optional",
-                             "optionalIntArgsNoAssert()"
-                             "//*Expected minimum 1 arguments (and 1 optional), got 0");
+                             "optionalIntArgsNoAssert()//*requires at least 1 "
+                             "argument, but only 0 were passed");
     ADD_CALL_ARGS_TEST("args-ignores-trailing", "argsIgnoreTrailing(1, 2, 3)");
     ADD_CALL_ARGS_TEST("one-of-each-type-works",
                        "oneOfEachType(true, 'foo', 'foo', 1, 1, 1, 1, {})");

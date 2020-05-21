@@ -13,86 +13,12 @@
    fun:allocate_stack
    fun:pthread_create@@GLIBC_2.2.5
    fun:_ZN7mozilla9TimeStamp20ComputeProcessUptimeEv
-   fun:_ZN7mozilla9TimeStamp15ProcessCreationERb
+   fun:_ZN7mozilla9TimeStamp15ProcessCreationEPb
    fun:_ZN2JS6detail25InitWithFailureDiagnosticEb
-   fun:JS_Init
-}
-
-{
-   mozjs-thread-stack-new-context
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:calloc
-   fun:allocate_dtv
-   fun:_dl_allocate_tls
-   fun:allocate_stack
-   fun:pthread_create@@GLIBC_2.2.5
-   fun:_ZN2js6Thread6createEPFPvS1_ES1_
-   fun:init<void (&)(void*), js::HelperThread*>
-   fun:_ZN2js23GlobalHelperThreadState17ensureInitializedEv
-   fun:_ZN9JSRuntime4initEjj
-   fun:init
-   fun:NewContext
-   fun:_Z13JS_NewContextjjP9JSContext
-}
-
-{
-   mozjs-gc-helper-thread-mutex-guard
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:js_malloc
-   fun:js_new<mozilla::Vector<const js::Mutex*> >
-   fun:_ZN2js5Mutex14heldMutexStackEv.part.*
-   fun:heldMutexStack
-   fun:_ZN2js5Mutex4lockEv
-   fun:LockGuard
-   fun:_ZN2js25AutoLockHelperThreadStateC1EON7mozilla6detail19GuardObjectNotifierE
-   fun:_ZN2js12HelperThread10threadLoopEv
-   fun:callMain<0*>
-   fun:_ZN2js6detail16ThreadTrampolineIRFvPvEJPNS_12HelperThreadEEE5StartES2_
-   fun:start_thread
-   fun:clone
-}
-
-# https://bugzilla.mozilla.org/show_bug.cgi?id=1478679
-{
-   mozjs-bmo-1478679-1
-   Memcheck:Leak
-   match-leak-kinds: all
-   ...
-   fun:createTable
-   fun:init
-   fun:init
-   fun:_ZN2js8coverage10LCovSource11writeScriptEP8JSScript
-}
-
-{
-   mozjs-bmo-1478679-2
-   Memcheck:Leak
-   match-leak-kinds: all
-   ...
-   fun:_Z9js_strdupPKc
-   fun:_ZN2js8coverage15LCovCompartment11lookupOrAddEP13JSCompartmentPKc
+   fun:_Z7JS_Initv
 }
 
 # Various things that I don't believe are related to GJS
-
-{
-   gl-dispatch-init
-   Memcheck:Leak
-   match-leak-kinds: possible
-   ...
-   fun:__glDispatchInit
-}
-
-{
-   gl-dispatch-register-stub-callbacks
-   Memcheck:Leak
-   match-leak-kinds: possible
-   ...
-   fun:__glDispatchRegisterStubCallbacks
-}
 
 {
    gtk-style-context
@@ -151,10 +77,12 @@
    fun:_cairo_toy_font_face_create_impl_face
    fun:_cairo_toy_font_face_init
    fun:cairo_toy_font_face_create
+   ...
    fun:_cairo_gstate_ensure_font_face
    fun:_cairo_gstate_ensure_scaled_font
    fun:_cairo_gstate_get_scaled_font
    fun:_cairo_default_context_get_scaled_font
+   ...
    fun:cairo_show_text
 }
 
@@ -181,59 +109,21 @@
    fun:main
 }
 
-# SpiderMonkey data races
-
-# These are in SpiderMonkey's atomics / thread barrier stuff so presumably
-# locking is working correctly and helgrind just can't detect it?
-
+# https://gitlab.gnome.org/GNOME/glib/-/issues/1911
 {
-   mozjs-helgrind-atomic-load-1
-   Helgrind:Race
-   fun:load
-   fun:load
-   fun:operator unsigned int
-}
-
-{
-   mozjs-helgrind-atomic-load-2
-   Helgrind:Race
-   fun:load
-   fun:load
-   fun:operator bool
-}
-
-{
-   mozjs-helgrind-atomic-store
-   Helgrind:Race
-   fun:store
-   fun:store
-   fun:operator=
-}
-
-# Presumably this one is OK since the function is called "thread safe"?!
-{
-   mozjs-helgrind-thread-safe-lookup
-   Helgrind:Race
+   g-type-register-static
+   Memcheck:Leak
+   match-leak-kinds:possible
+   fun:malloc
    ...
-   fun:lookup
-   fun:readonlyThreadsafeLookup
-   fun:readonlyThreadsafeLookup
+   fun:g_type_register_static
 }
 
 {
-   mozjs-helgrind-jit-code
-   Helgrind:Race
-   obj:*
+   g-type-register-static-calloc
+   Memcheck:Leak
+   match-leak-kinds:possible
+   fun:calloc
    ...
-   fun:_ZL13EnterBaselineP9JSContextRN2js3jit12EnterJitDataE
-}
-
-{
-   mozjs-helgrind-probably-jit-code
-   Helgrind:Race
-   obj:*
-   obj:*
-   obj:*
-   obj:*
-   obj:*
+   fun:g_type_register_static
 }
