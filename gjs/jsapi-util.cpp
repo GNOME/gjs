@@ -34,7 +34,9 @@
 
 #include <codecvt>  // for codecvt_utf8_utf16
 #include <locale>   // for wstring_convert
+#include <string>
 #include <utility>  // for move
+#include <vector>
 
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
@@ -219,24 +221,16 @@ gjs_throw_abstract_constructor_error(JSContext    *context,
     gjs_throw(context, "You cannot construct new instances of '%s'", name);
 }
 
-JSObject *
-gjs_build_string_array(JSContext   *context,
-                       gssize       array_length,
-                       char       **array_values)
-{
-    int i;
-
-    if (array_length == -1)
-        array_length = g_strv_length(array_values);
-
+JSObject* gjs_build_string_array(JSContext* context,
+                                 const std::vector<std::string>& strings) {
     JS::RootedValueVector elems(context);
-    if (!elems.reserve(array_length)) {
+    if (!elems.reserve(strings.size())) {
         JS_ReportOutOfMemory(context);
         return nullptr;
     }
 
-    for (i = 0; i < array_length; ++i) {
-        JS::ConstUTF8CharsZ chars(array_values[i], strlen(array_values[i]));
+    for (const std::string& string : strings) {
+        JS::ConstUTF8CharsZ chars(string.c_str(), string.size());
         JS::RootedValue element(context,
             JS::StringValue(JS_NewStringCopyUTF8Z(context, chars)));
         elems.infallibleAppend(element);
@@ -245,17 +239,12 @@ gjs_build_string_array(JSContext   *context,
     return JS_NewArrayObject(context, elems);
 }
 
-JSObject*
-gjs_define_string_array(JSContext       *context,
-                        JS::HandleObject in_object,
-                        const char      *array_name,
-                        ssize_t          array_length,
-                        const char     **array_values,
-                        unsigned         attrs)
-{
-    JS::RootedObject array(context,
-        gjs_build_string_array(context, array_length, (char **) array_values));
-
+JSObject* gjs_define_string_array(JSContext* context,
+                                  JS::HandleObject in_object,
+                                  const char* array_name,
+                                  const std::vector<std::string>& strings,
+                                  unsigned attrs) {
+    JS::RootedObject array(context, gjs_build_string_array(context, strings));
     if (!array)
         return nullptr;
 

@@ -32,6 +32,7 @@
 
 #include <memory>  // for unique_ptr
 #include <string>  // for string, u16string
+#include <vector>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -217,17 +218,14 @@ void gjs_throw_abstract_constructor_error(JSContext    *context,
                                           JS::CallArgs& args);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject*   gjs_build_string_array           (JSContext       *context,
-                                              gssize           array_length,
-                                              char           **array_values);
+JSObject* gjs_build_string_array(JSContext* cx,
+                                 const std::vector<std::string>& strings);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_define_string_array(JSContext       *context,
-                                  JS::HandleObject obj,
-                                  const char      *array_name,
-                                  ssize_t          array_length,
-                                  const char     **array_values,
-                                  unsigned         attrs);
+JSObject* gjs_define_string_array(JSContext* cx, JS::HandleObject obj,
+                                  const char* array_name,
+                                  const std::vector<std::string>& strings,
+                                  unsigned attrs);
 
 void        gjs_throw                        (JSContext       *context,
                                               const char      *format,

@@ -26,13 +26,16 @@
 
 #include <config.h>
 
+#include <string>
+#include <vector>
+
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_create_root_importer(JSContext          *cx,
-                                   const char * const *search_path);
+JSObject* gjs_create_root_importer(JSContext* cx,
+                                   const std::vector<std::string>& search_path);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_import_native_module(JSContext       *cx,
