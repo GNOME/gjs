@@ -125,6 +125,13 @@ function _init() {
         return klass;
     };
 
+    if (Gtk.Widget.prototype.get_first_child) {
+        Gtk.Widget.prototype[Symbol.iterator] = function* () {
+            for (let c = this.get_first_child(); c; c = c.get_next_sibling())
+                yield c;
+        };
+    }
+
     if (Gtk.BuilderScope) {
         BuilderScope = GObject.registerClass({
             Implements: [Gtk.BuilderScope],
