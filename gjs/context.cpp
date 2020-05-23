@@ -692,7 +692,8 @@ gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
 }
 
 JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
-    return gjs_get_import_global(cx);
+    // This is equivalent to SpiderMonkey's behavior.
+    return JS::CurrentGlobalOrNull(cx);
 }
 
 /* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
