@@ -1,3 +1,47 @@
+Version 1.65.3
+--------------
+
+- In GTK 4, Gtk.Widget is now an iterable object which iterates through its
+  child widgets. (`for (let child of widget) { ... }`)
+
+- Closed bugs and merge requests:
+  * Installed tests are not in preferred directories [#318, !427, Ross Burton]
+  * Build new test CI images with Buildah [!429, Philip Chimento]
+  * CI fixes for new test images [!433, Philip Chimento]
+  * Various maintenance [!428, Philip Chimento]
+  * Fix dead link [!436, prnsml]
+  * overrides/Gtk: Make GTK4 widgets iteratable [!437, Florian Müllner]
+  * arg.cpp: Fix building on Visual Studio [!439, Chun-wei Fan]
+  * Separate closures and vfuncs [!438, Philip Chimento]
+  * Improvements to IWYU script [!435, Philip Chimento]
+  * Various refactors in preparation for ES modules [!440, Evan Welsh, Philip
+    Chimento]
+
+- Various refactors for type safety [Marco Trevisan]
+
+Version 1.64.3
+--------------
+
+- Closed bugs and merge requests:
+  * arg: Don't sink GClosure ref if it's a return value [!426, Philip Chimento]
+  * overrides/Gtk: Adjust gtk_container_child_set_property() check [!431,
+    Florian Müllner]
+  * 1.63.3: test suite is failing [#298, !430, Philip Chimento]
+  * Simplify private pointers [!434, Philip Chimento]
+
+- Various backports:
+  * Use memory GSettings backend in tests [Philip Chimento]
+  * Update debug message from trimLeft/trimRight to trimStart/trimEnd [Philip
+    Chimento]
+  * Various fixes for potential crash and memory issues [Philip Chimento]
+
+Version 1.58.8
+--------------
+
+- Various backports
+  * 1.63.3: test suite is failing [Philip Chimento]
+  * Various fixes for potential crash and memory issues [Philip Chimento]
+
 Version 1.65.2
 --------------
 
