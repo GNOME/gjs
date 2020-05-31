@@ -24,13 +24,15 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for memset, strcmp
 
-#include <algorithm>   // for move, find
+#include <algorithm>  // for find
 #include <functional>  // for mem_fn
 #include <string>
 #include <tuple>        // for tie
 #include <type_traits>  // for remove_reference<>::type
+#include <utility>      // for move
 #include <vector>
 
 #include <ffi.h>

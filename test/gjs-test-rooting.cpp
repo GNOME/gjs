@@ -17,8 +17,7 @@ static GCond gc_finished;
 static volatile int gc_counter;
 
 #define PARENT(fx) ((GjsUnitTestFixture *)fx)
-typedef struct _GjsRootingFixture GjsRootingFixture;
-struct _GjsRootingFixture {
+struct GjsRootingFixture {
     GjsUnitTestFixture parent;
 
     bool finalized;

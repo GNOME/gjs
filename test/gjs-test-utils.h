@@ -32,8 +32,7 @@
 
 #include <js/TypeDecls.h>
 
-typedef struct _GjsUnitTestFixture GjsUnitTestFixture;
-struct _GjsUnitTestFixture {
+struct GjsUnitTestFixture {
     GjsContext *gjs_context;
     JSContext *cx;
     JS::Realm* realm;

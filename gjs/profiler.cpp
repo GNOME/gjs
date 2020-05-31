@@ -41,9 +41,6 @@
 #    include <sys/types.h>  // for timer_t
 #    include <syscall.h>    // for __NR_gettid
 #    include <time.h>       // for itimerspec, timer_delete, ...
-#    ifdef HAVE_SYS_SYSCALL_H
-#        include <sys/syscall.h>  // IWYU pragma: keep
-#    endif
 #    ifdef HAVE_UNISTD_H
 #        include <unistd.h>  // for getpid, syscall
 #    endif
@@ -54,12 +51,10 @@
 #endif
 
 #include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
-#include <js/TypeDecls.h>
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-#include "gjs/profiler-private.h"  // IWYU pragma: keep
 #include "gjs/profiler.h"
 
 #define FLUSH_DELAY_SECONDS 3

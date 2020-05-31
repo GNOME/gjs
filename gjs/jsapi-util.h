@@ -38,6 +38,7 @@
 #include <glib.h>
 
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
+#include <js/Id.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <jspubtd.h>     // for JSProtoKey

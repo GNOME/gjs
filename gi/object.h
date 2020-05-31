@@ -37,8 +37,14 @@
 #include <glib.h>
 
 #include <js/GCHashTable.h>  // for GCHashMap
+#include <js/Id.h>
 #include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <jsfriendapi.h>            // for JSID_IS_ATOM, JSID_TO_ATOM
+#include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
+#include <mozilla/HashTable.h>      // for DefaultHasher
+#include <mozilla/Likely.h>         // for MOZ_LIKELY
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
@@ -52,10 +58,6 @@ class CallArgs;
 }
 namespace js {
 class SystemAllocPolicy;
-}
-namespace mozilla {
-template <class Key>
-struct DefaultHasher;
 }
 class ObjectInstance;
 class ObjectPrototype;

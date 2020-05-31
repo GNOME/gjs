@@ -33,6 +33,7 @@
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>
+#include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <jsapi.h>    // for JS_DefinePropertyById, JS_GetProp...

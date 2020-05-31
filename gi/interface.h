@@ -33,6 +33,7 @@
 
 #include <js/CallArgs.h>
 #include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"

@@ -34,7 +34,6 @@
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-#include "modules/cairo-private.h"  // IWYU pragma: keep
 
 typedef struct {
     cairo_path_t    *path;

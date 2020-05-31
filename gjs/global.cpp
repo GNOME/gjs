@@ -37,7 +37,9 @@
 #include <js/Conversions.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/PropertySpec.h>
+#include <js/Realm.h>  // for GetObjectRealmOrNull, SetRealmPrivate
 #include <js/RealmOptions.h>
+#include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars

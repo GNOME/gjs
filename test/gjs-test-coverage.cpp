@@ -35,7 +35,6 @@
 #include "gjs/context.h"
 #include "gjs/coverage.h"
 #include "gjs/jsapi-util.h"
-#include "test/gjs-test-utils.h"  // IWYU pragma: keep
 
 typedef struct _GjsCoverageFixture {
     GjsContext    *context;

@@ -38,6 +38,7 @@
 namespace JS {
 class CallArgs;
 }
+struct JSClass;
 struct JSClassOps;
 class UnionPrototype;
 class UnionInstance;

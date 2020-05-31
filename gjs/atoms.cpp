@@ -26,6 +26,8 @@
 
 #include <config.h>
 
+#include <js/Id.h>
+#include <js/RootingAPI.h>
 #include <js/Symbol.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
@@ -37,7 +39,7 @@ bool GjsAtom::init(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);
     if (!s)
         return false;
-    m_jsid = INTERNED_STRING_TO_JSID(cx, s);
+    m_jsid = JS::Heap<jsid>{INTERNED_STRING_TO_JSID(cx, s)};
     return true;
 }
 
@@ -48,7 +50,7 @@ bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
     JS::Symbol* symbol = JS::NewSymbol(cx, descr);
     if (!symbol)
         return false;
-    m_jsid = SYMBOL_TO_JSID(symbol);
+    m_jsid = JS::Heap<jsid>{SYMBOL_TO_JSID(symbol)};
     return true;
 }
 
