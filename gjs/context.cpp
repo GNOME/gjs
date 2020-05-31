@@ -37,6 +37,7 @@
 #include <string>  // for u16string
 #include <unordered_map>
 #include <utility>  // for move
+#include <vector>
 
 #include <gio/gio.h>
 #include <girepository.h>
@@ -509,8 +510,10 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to initialize global strings");
     }
 
-    JS::RootedObject importer(m_cx,
-                              gjs_create_root_importer(m_cx, m_search_path));
+    std::vector<std::string> paths;
+    if (m_search_path)
+        paths = {m_search_path, m_search_path + g_strv_length(m_search_path)};
+    JS::RootedObject importer(m_cx, gjs_create_root_importer(m_cx, paths));
     if (!importer) {
         gjs_log_exception(cx);
         g_error("Failed to create root importer");
@@ -689,7 +692,8 @@ gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
 }
 
 JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
-    return gjs_get_import_global(cx);
+    // This is equivalent to SpiderMonkey's behavior.
+    return JS::CurrentGlobalOrNull(cx);
 }
 
 /* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
@@ -1121,10 +1125,16 @@ gjs_context_define_string_array(GjsContext  *js_context,
 
     JSAutoRealm ar(gjs->context(), gjs->global());
 
+    std::vector<std::string> strings;
+    if (array_values) {
+        if (array_length < 0)
+            array_length = g_strv_length(const_cast<char**>(array_values));
+        strings = {array_values, array_values + array_length};
+    }
+
     JS::RootedObject global_root(gjs->context(), gjs->global());
     if (!gjs_define_string_array(gjs->context(), global_root, array_name,
-                                 array_length, array_values,
-                                 JSPROP_READONLY | JSPROP_PERMANENT)) {
+                                 strings, JSPROP_READONLY | JSPROP_PERMANENT)) {
         gjs_log_exception(gjs->context());
         g_set_error(error,
                     GJS_ERROR,

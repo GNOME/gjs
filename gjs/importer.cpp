@@ -31,6 +31,7 @@
 #endif
 
 #include <memory>   // for allocator_traits<>::value_type
+#include <string>
 #include <utility>  // for move
 #include <vector>   // for vector
 
@@ -66,8 +67,6 @@
 
 #define MODULE_INIT_FILENAME "__init__.js"
 
-static char **gjs_search_path = NULL;
-
 typedef struct {
     bool is_root;
 } Importer;
@@ -77,8 +76,8 @@ extern const JSClass gjs_importer_class;
 GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *gjs_define_importer(JSContext *, JS::HandleObject,
-    const char *, const char * const *, bool);
+static JSObject* gjs_define_importer(JSContext*, JS::HandleObject, const char*,
+                                     const std::vector<std::string>&, bool);
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
@@ -205,12 +204,9 @@ define_meta_properties(JSContext       *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-import_directory(JSContext          *context,
-                 JS::HandleObject    obj,
-                 const char         *name,
-                 const char * const *full_paths)
-{
+static bool import_directory(JSContext* context, JS::HandleObject obj,
+                             const char* name,
+                             const std::vector<std::string>& full_paths) {
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Importing directory '%s'",
               name);
@@ -516,7 +512,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     }
 
     GjsAutoChar filename = g_strdup_printf("%s.js", name.get());
-    std::vector<GjsAutoChar> directories;
+    std::vector<std::string> directories;
     JS::RootedValue elem(context);
     JS::RootedString str(context);
 
@@ -563,7 +559,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path.get(), name.get());
-            directories.push_back(std::move(full_path));
+            directories.push_back(full_path.get());
         }
 
         /* If we just added to directories, we know we don't need to
@@ -600,14 +596,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
     }
 
     if (!directories.empty()) {
-        /* NULL-terminate the char** */
-        const char **full_paths = g_new0(const char *, directories.size() + 1);
-        for (size_t ix = 0; ix < directories.size(); ix++)
-            full_paths[ix] = directories[ix].get();
-
-        bool result = import_directory(context, obj, name.get(), full_paths);
-        g_free(full_paths);
-        if (!result)
+        if (!import_directory(context, obj, name.get(), directories))
             return false;
 
         gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported directory '%s'",
@@ -864,18 +853,16 @@ importer_new(JSContext *context,
 }
 
 GJS_USE
-static const char* const* gjs_get_search_path(void) {
-    char **search_path;
+static const std::vector<std::string>& gjs_get_search_path(void) {
+    static std::vector<std::string> gjs_search_path;
+    static bool search_path_initialized = false;
 
     /* not thread safe */
 
-    if (!gjs_search_path) {
+    if (!search_path_initialized) {
         const char* const* system_data_dirs;
         const char *envstr;
-        GPtrArray *path;
         gsize i;
-
-        path = g_ptr_array_new();
 
         /* in order of priority */
 
@@ -885,74 +872,58 @@ static const char* const* gjs_get_search_path(void) {
             char **dirs, **d;
             dirs = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
             for (d = dirs; *d != NULL; d++)
-                g_ptr_array_add(path, *d);
+                gjs_search_path.push_back(*d);
             /* we assume the array and strings are allocated separately */
             g_free(dirs);
         }
 
-        g_ptr_array_add(path,
-                        g_strdup("resource:///org/gnome/gjs/modules/script/"));
-        g_ptr_array_add(path,
-                        g_strdup("resource:///org/gnome/gjs/modules/core/"));
+        gjs_search_path.push_back("resource:///org/gnome/gjs/modules/script/");
+        gjs_search_path.push_back("resource:///org/gnome/gjs/modules/core/");
 
         /* $XDG_DATA_DIRS /gjs-1.0 */
         system_data_dirs = g_get_system_data_dirs();
         for (i = 0; system_data_dirs[i] != NULL; ++i) {
-            char *s;
-            s = g_build_filename(system_data_dirs[i], "gjs-1.0", NULL);
-            g_ptr_array_add(path, s);
+            GjsAutoChar s =
+                g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr);
+            gjs_search_path.push_back(s.get());
         }
 
         /* ${datadir}/share/gjs-1.0 */
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
-        char *gjs_data_dir = g_build_filename (basedir, "share", "gjs-1.0", NULL);
-        g_ptr_array_add(path, g_strdup(gjs_data_dir));
-        g_free (gjs_data_dir);
+        GjsAutoChar gjs_data_dir =
+            g_build_filename(basedir, "share", "gjs-1.0", nullptr);
+        gjs_search_path.push_back(gjs_data_dir.get());
         g_free (basedir);
 #else
-        g_ptr_array_add(path, g_strdup(GJS_JS_DIR));
+        gjs_search_path.push_back(GJS_JS_DIR);
 #endif
-
-        g_ptr_array_add(path, NULL);
-
-        search_path = (char**)g_ptr_array_free(path, false);
-
-        gjs_search_path = search_path;
-    } else {
-        search_path = gjs_search_path;
     }
 
-    return const_cast<const char* const*>(search_path);
+    return gjs_search_path;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject*
-gjs_create_importer(JSContext          *context,
-                    const char         *importer_name,
-                    const char * const *initial_search_path,
-                    bool                add_standard_search_path,
-                    bool                is_root,
-                    JS::HandleObject    in_object)
-{
-    char **paths[2] = {0};
-
-    paths[0] = (char**)initial_search_path;
+static JSObject* gjs_create_importer(
+    JSContext* context, const char* importer_name,
+    const std::vector<std::string>& initial_search_path,
+    bool add_standard_search_path, bool is_root, JS::HandleObject in_object) {
+    std::vector<std::string> search_paths = initial_search_path;
     if (add_standard_search_path) {
         /* Stick the "standard" shared search path after the provided one. */
-        paths[1] = (char**)gjs_get_search_path();
+        const std::vector<std::string>& gjs_search_path = gjs_get_search_path();
+        search_paths.insert(search_paths.end(), gjs_search_path.begin(),
+                            gjs_search_path.end());
     }
-
-    GjsAutoStrv search_path = gjs_g_strv_concat(paths, 2);
 
     JS::RootedObject importer(context, importer_new(context, is_root));
 
     /* API users can replace this property from JS, is the idea */
-    if (!gjs_define_string_array(context, importer,
-                                 "searchPath", -1, search_path.as<const char *>(),
-                                 /* settable (no READONLY) but not deleteable (PERMANENT) */
-                                 JSPROP_PERMANENT | JSPROP_RESOLVING))
+    if (!gjs_define_string_array(
+            context, importer, "searchPath", search_paths,
+            /* settable (no READONLY) but not deleteable (PERMANENT) */
+            JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 
     if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
@@ -962,14 +933,10 @@ gjs_create_importer(JSContext          *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-gjs_define_importer(JSContext          *context,
-                    JS::HandleObject    in_object,
-                    const char         *importer_name,
-                    const char * const *initial_search_path,
-                    bool                add_standard_search_path)
-
-{
+static JSObject* gjs_define_importer(
+    JSContext* context, JS::HandleObject in_object, const char* importer_name,
+    const std::vector<std::string>& initial_search_path,
+    bool add_standard_search_path) {
     JS::RootedObject importer(context,
         gjs_create_importer(context, importer_name, initial_search_path,
                             add_standard_search_path, false, in_object));
@@ -985,9 +952,7 @@ gjs_define_importer(JSContext          *context,
     return importer;
 }
 
-JSObject *
-gjs_create_root_importer(JSContext          *cx,
-                         const char * const *search_path)
-{
+JSObject* gjs_create_root_importer(
+    JSContext* cx, const std::vector<std::string>& search_path) {
     return gjs_create_importer(cx, "imports", search_path, true, true, nullptr);
 }

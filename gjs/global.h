@@ -60,7 +60,7 @@ JSObject *gjs_create_global_object(JSContext *cx);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* compartment_name,
+                                  const char* realm_name,
                                   const char* bootstrap_script);
 
 void gjs_set_global_slot(JSContext    *context,
