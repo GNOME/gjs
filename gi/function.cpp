@@ -514,8 +514,8 @@ gjs_destroy_notify_callback(gpointer data)
 
 GjsCallbackTrampoline* gjs_callback_trampoline_new(
     JSContext* context, JS::HandleFunction function,
-    GICallableInfo* callable_info, GIScopeType scope,
-    JS::HandleObject scope_object, bool is_vfunc) {
+    GICallableInfo* callable_info, GIScopeType scope, bool has_scope_object,
+    bool is_vfunc) {
     GjsCallbackTrampoline *trampoline;
     int n_args, i;
 
@@ -526,24 +526,6 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
     trampoline->ref_count = 1;
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
-
-    /* The rule is:
-     * - async and call callbacks are rooted
-     * - callbacks in GObjects methods are traced from the object
-     *   (and same for vfuncs, which are associated with a GObject prototype)
-     */
-    bool should_root = scope != GI_SCOPE_TYPE_NOTIFIED || !scope_object;
-    trampoline->js_function = gjs_closure_new(
-        context, function, g_base_info_get_name(callable_info), should_root);
-    if (!should_root && scope_object) {
-        ObjectBase* scope_priv = ObjectBase::for_js(context, scope_object);
-        if (!scope_priv) {
-            gjs_throw(context, "Signal connected to wrong type of object");
-            return nullptr;
-        }
-
-        scope_priv->associate_closure(context, trampoline->js_function);
-    }
 
     /* Analyze param types and directions, similarly to init_cached_function_data */
     n_args = g_callable_info_get_n_args(trampoline->info);
@@ -611,6 +593,14 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 
     trampoline->closure = g_callable_info_prepare_closure(callable_info, &trampoline->cif,
                                                           gjs_callback_closure, trampoline);
+
+    // The rule is:
+    // - notify callbacks in GObject methods are traced from the scope object
+    // - async and call callbacks, and other notify callbacks, are rooted
+    // - vfuncs are traced from the GObject prototype
+    bool should_root = scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object;
+    trampoline->js_function = gjs_closure_new(
+        context, function, g_base_info_get_name(callable_info), should_root);
 
     trampoline->scope = scope;
     trampoline->is_vfunc = is_vfunc;
@@ -974,9 +964,25 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
                         context, JS_GetObjectFunction(&current_arg.toObject()));
                     callable_info = (GICallableInfo*) g_type_info_get_interface(&ainfo);
                     trampoline = gjs_callback_trampoline_new(
-                        context, func, callable_info, scope,
-                        is_object_method ? JS::HandleObject(obj) : nullptr,
+                        context, func, callable_info, scope, is_object_method,
                         false);
+                    if (!trampoline) {
+                        failed = true;
+                        break;
+                    }
+                    if (scope == GI_SCOPE_TYPE_NOTIFIED && is_object_method) {
+                        auto* priv = ObjectInstance::for_js(context, obj);
+                        if (!priv) {
+                            gjs_throw(
+                                context,
+                                "Signal connected to wrong type of object");
+                            failed = true;
+                            break;
+                        }
+
+                        priv->associate_closure(context,
+                                                trampoline->js_function);
+                    }
                     closure = trampoline->closure;
                     g_base_info_unref(callable_info);
                 }

@@ -1448,16 +1448,18 @@ ObjectInstance::ensure_uses_toggle_ref(JSContext *cx)
     g_object_unref(m_ptr);
 }
 
-void ObjectBase::invalidate_all_closures(void) {
-    /* Can't loop directly through the items, since invalidating an item's
-     * closure might have the effect of removing the item from the set in the
-     * invalidate notifier */
-    while (!m_closures.empty()) {
-        /* This will also free cd, through the closure invalidation mechanism */
-        GClosure *closure = *m_closures.begin();
+static void invalidate_closure_list(std::forward_list<GClosure*>* closures) {
+    g_assert(closures);
+    // Can't loop directly through the items, since invalidating an item's
+    // closure might have the effect of removing the item from the list in the
+    // invalidate notifier
+    while (!closures->empty()) {
+        // This will also free the closure data, through the closure
+        // invalidation mechanism
+        GClosure* closure = *closures->begin();
         g_closure_invalidate(closure);
         /* Erase element if not already erased */
-        m_closures.remove(closure);
+        closures->remove(closure);
     }
 }
 
@@ -1484,7 +1486,7 @@ ObjectInstance::disassociate_js_gobject(void)
     unset_object_qdata();
 
     /* Now release all the resources the current wrapper has */
-    invalidate_all_closures();
+    invalidate_closure_list(&m_closures);
     release_native_object();
 
     /* Mark that a JS object once existed, but it doesn't any more */
@@ -1612,7 +1614,7 @@ bool ObjectInstance::constructor_impl(JSContext* context,
            gjs->call_function(object, initer, argv, argv.rval());
 }
 
-void ObjectBase::trace_impl(JSTracer* tracer) {
+void ObjectInstance::trace_impl(JSTracer* tracer) {
     for (GClosure *closure : m_closures)
         gjs_closure_trace(closure, tracer);
 }
@@ -1621,6 +1623,8 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
     m_property_cache.trace(tracer);
     m_field_cache.trace(tracer);
     m_unresolvable_cache.trace(tracer);
+    for (GClosure* closure : m_vfuncs)
+        gjs_closure_trace(closure, tracer);
 }
 
 void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
@@ -1636,7 +1640,7 @@ void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
 ObjectInstance::~ObjectInstance() {
     TRACE(GJS_OBJECT_WRAPPER_FINALIZE(this, m_ptr, ns(), name()));
 
-    invalidate_all_closures();
+    invalidate_closure_list(&m_closures);
 
     /* GObject is not already freed */
     if (m_ptr) {
@@ -1683,7 +1687,7 @@ ObjectInstance::~ObjectInstance() {
 }
 
 ObjectPrototype::~ObjectPrototype() {
-    invalidate_all_closures();
+    invalidate_closure_list(&m_vfuncs);
 
     g_clear_pointer(&m_info, g_base_info_unref);
     g_type_class_unref(g_type_class_peek(m_gtype));
@@ -1802,7 +1806,7 @@ GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
     return parent->lookup_cached_field_info(cx, key);
 }
 
-void ObjectBase::associate_closure(JSContext* cx, GClosure* closure) {
+void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
@@ -1812,12 +1816,12 @@ void ObjectBase::associate_closure(JSContext* cx, GClosure* closure) {
     g_assert(already_has == m_closures.end() &&
              "This closure was already associated with this object");
     m_closures.push_front(closure);
-    g_closure_add_invalidate_notifier(closure, this,
-                                      &ObjectBase::closure_invalidated_notify);
+    g_closure_add_invalidate_notifier(
+        closure, this, &ObjectInstance::closure_invalidated_notify);
 }
 
-void ObjectBase::closure_invalidated_notify(void* data, GClosure* closure) {
-    auto* priv = static_cast<ObjectBase*>(data);
+void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
+    auto* priv = static_cast<ObjectInstance*>(data);
     priv->m_closures.remove(closure);
 }
 
@@ -2507,12 +2511,11 @@ bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, prototype, ObjectBase, priv);
     /* Normally we wouldn't assert is_prototype(), but this method can only be
      * called internally so it's OK to crash if done wrongly */
-    return priv->to_prototype()->hook_up_vfunc_impl(cx, args, prototype);
+    return priv->to_prototype()->hook_up_vfunc_impl(cx, args);
 }
 
 bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
-                                         const JS::CallArgs& args,
-                                         JS::HandleObject prototype) {
+                                         const JS::CallArgs& args) {
     JS::UniqueChars name;
     JS::RootedObject function(cx);
     if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so",
@@ -2586,14 +2589,29 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         }
         JS::RootedFunction func(cx, JS_GetObjectFunction(function));
         trampoline = gjs_callback_trampoline_new(
-            cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, prototype, true);
+            cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
         if (!trampoline)
             return false;
+
+        // This is traced, and will be cleared from the list when the closure is
+        // invalidated
+        g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(),
+                           trampoline->js_function) == m_vfuncs.end() &&
+                 "This vfunc was already associated with this class");
+        m_vfuncs.push_front(trampoline->js_function);
+        g_closure_add_invalidate_notifier(
+            trampoline->js_function, this,
+            &ObjectPrototype::vfunc_invalidated_notify);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }
 
     return true;
+}
+
+void ObjectPrototype::vfunc_invalidated_notify(void* data, GClosure* closure) {
+    auto* priv = static_cast<ObjectPrototype*>(data);
+    priv->m_vfuncs.remove(closure);
 }
 
 bool
