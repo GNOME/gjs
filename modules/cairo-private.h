@@ -80,9 +80,7 @@ bool gjs_cairo_surface_define_proto(JSContext              *cx,
                                     JS::HandleObject        module,
                                     JS::MutableHandleObject proto);
 
-void             gjs_cairo_surface_construct            (JSContext       *context,
-                                                         JS::HandleObject object,
-                                                         cairo_surface_t *surface);
+void gjs_cairo_surface_construct(JSObject* object, cairo_surface_t* surface);
 void             gjs_cairo_surface_finalize_surface     (JSFreeOp        *fop,
                                                          JSObject        *object);
 GJS_JSAPI_RETURN_CONVENTION
@@ -147,9 +145,7 @@ bool gjs_cairo_pattern_define_proto(JSContext              *cx,
                                     JS::HandleObject        module,
                                     JS::MutableHandleObject proto);
 
-void             gjs_cairo_pattern_construct            (JSContext       *context,
-                                                         JS::HandleObject object,
-                                                         cairo_pattern_t *pattern);
+void gjs_cairo_pattern_construct(JSObject* object, cairo_pattern_t* pattern);
 void             gjs_cairo_pattern_finalize_pattern     (JSFreeOp        *fop,
                                                          JSObject        *object);
 GJS_JSAPI_RETURN_CONVENTION

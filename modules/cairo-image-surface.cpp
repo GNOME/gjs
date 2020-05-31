@@ -64,7 +64,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_image_surface)
     if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
         return false;
 
-    gjs_cairo_surface_construct(context, object, surface);
+    gjs_cairo_surface_construct(object, surface);
     cairo_surface_destroy(surface);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_image_surface);
@@ -110,7 +110,7 @@ createFromPNG_func(JSContext *context,
         gjs_throw(context, "failed to create surface");
         return false;
     }
-    gjs_cairo_surface_construct(context, surface_wrapper, surface);
+    gjs_cairo_surface_construct(surface_wrapper, surface);
     cairo_surface_destroy(surface);
 
     argv.rval().setObject(*surface_wrapper);
@@ -256,7 +256,7 @@ gjs_cairo_image_surface_from_surface(JSContext       *context,
         return nullptr;
     }
 
-    gjs_cairo_surface_construct(context, object, surface);
+    gjs_cairo_surface_construct(object, surface);
 
     return object;
 }
