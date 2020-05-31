@@ -1,3 +1,10 @@
+Version 1.58.8
+--------------
+
+- Various backports
+  * 1.63.3: test suite is failing [Philip Chimento]
+  * Various fixes for potential crash and memory issues [Philip Chimento]
+
 Version 1.58.7
 --------------
 
