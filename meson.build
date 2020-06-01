@@ -502,7 +502,6 @@ libgjs = shared_library(meson.project_name(),
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     link_with: libgjs_jsapi,
     dependencies: libgjs_dependencies,
-    override_options: cxx.get_id() == 'msvc' ? ['cpp_std=c++17'] : [],
     version: '0.0.0', soversion: '0',
     gnu_symbol_visibility: 'hidden',
     install: true)
