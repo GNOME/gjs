@@ -494,9 +494,11 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
 
     static_assert(std::is_integral<IntType>::value, "Need an integer");
     static_assert(std::numeric_limits<Container>::max() >=
-                  std::numeric_limits<IntType>::max());
+                  std::numeric_limits<IntType>::max(),
+                  "Max possible Container value must be at least the max possible IntType value");
     static_assert(std::numeric_limits<Container>::min() <=
-                  std::numeric_limits<IntType>::min());
+                  std::numeric_limits<IntType>::min(),
+                  "Min possible Container value must be at most the min possible IntType value");
 
     if (!js_value_convert<Container>(cx, value, &i))
         return false;
