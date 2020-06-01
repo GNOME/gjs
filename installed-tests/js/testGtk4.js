@@ -1,8 +1,7 @@
 imports.gi.versions.Gtk = '4.0';
 
 const ByteArray = imports.byteArray;
-const {GLib, Gio, GObject, Gtk} = imports.gi;
-const System = imports.system;
+const {Gio, GObject, Gtk} = imports.gi;
 
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
@@ -118,7 +117,7 @@ function validateTemplate(description, ClassName, pending = false) {
             content = new ClassName();
             content.label_child.emit('copy-clipboard');
             content.label_child2.emit('copy-clipboard');
-            win.add(content);
+            win.set_child(content);
         });
 
         it('sets up internal and public template children', function () {
@@ -165,26 +164,6 @@ describe('Gtk overrides', function () {
 
     it('sets CSS names on classes', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
-    });
-
-    it('avoid crashing when GTK vfuncs are called in garbage collection', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during garbage collection*');
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*destroy*');
-
-        let BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
-            vfunc_destroy() {}
-        });
-
-        let w = new Gtk.Window();
-        w.add(new BadLabel());
-
-        w.destroy();
-        System.gc();
-
-        GLib.test_assert_expected_messages_internal('Gjs', 'testGtk4.js', 0,
-            'Gtk overrides avoid crashing and print a stack trace');
     });
 
     it('can create a Gtk.TreeIter with accessible stamp field', function () {
