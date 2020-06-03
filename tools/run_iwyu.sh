@@ -14,6 +14,9 @@ fi
 if [ $# -eq 0 ]; then
     files=all
 else
+    # make stat changes not show up as modifications
+    git update-index -q --really-refresh
+
     files="$(git diff-tree --name-only -r $1..) $(git diff-index --name-only HEAD)"
 fi
 
