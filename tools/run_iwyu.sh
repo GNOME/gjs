@@ -37,7 +37,7 @@ cd ${BUILDDIR:-_build}
 
 echo "files: $files"
 
-IWYU="iwyu_tool -p ."
+IWYU="python3 $(which iwyu_tool) -p ."
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"
 PUBLIC_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-public-iwyu.imp"
 POSTPROCESS="python3 $SRCDIR/tools/process_iwyu.py"
