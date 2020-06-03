@@ -329,5 +329,4 @@ fedora.mozjs68-debug:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile
-    ARGS: "--build-arg BUILD_OPTS=--enable-debug"
+    DOCKERFILE: test/extra/Dockerfile.debug
