@@ -17,8 +17,6 @@ else
     files="$(git diff-tree --name-only -r $1..) $(git diff-index --name-only HEAD)"
 fi
 
-echo "files: $files"
-
 should_analyze () {
     file=$(realpath --relative-to=$SRCDIR $1)
     case "$files" in
@@ -31,11 +29,13 @@ should_analyze () {
     esac
 }
 
-cd ${BUILDDIR:-_build}
-if ! ninja; then
-    echo 'Build failed.'
+if ! meson setup _build; then
+    echo 'Meson failed.'
     exit 1
 fi
+cd ${BUILDDIR:-_build}
+
+echo "files: $files"
 
 IWYU="iwyu_tool -p ."
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"
