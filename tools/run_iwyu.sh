@@ -14,10 +14,11 @@ fi
 if [ $# -eq 0 ]; then
     files=all
 else
+    # make stat changes not show up as modifications
+    git update-index -q --really-refresh
+
     files="$(git diff-tree --name-only -r $1..) $(git diff-index --name-only HEAD)"
 fi
-
-echo "files: $files"
 
 should_analyze () {
     file=$(realpath --relative-to=$SRCDIR $1)
@@ -31,16 +32,19 @@ should_analyze () {
     esac
 }
 
-cd ${BUILDDIR:-_build}
-if ! ninja; then
-    echo 'Build failed.'
+if ! meson setup _build; then
+    echo 'Meson failed.'
     exit 1
 fi
+cd ${BUILDDIR:-_build}
 
-IWYU="iwyu_tool -p ."
+echo "files: $files"
+
+IWYU="python3 $(which iwyu_tool) -p ."
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"
 PUBLIC_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-public-iwyu.imp"
 POSTPROCESS="python3 $SRCDIR/tools/process_iwyu.py"
+EXIT=0
 
 for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
     $SRCDIR/gjs/coverage.cpp $SRCDIR/gjs/debugger.cpp \
@@ -52,40 +56,69 @@ for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
     $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp $SRCDIR/util/*.cpp \
     $SRCDIR/libgjs-private/*.c
 do
-    should_analyze $FILE && $IWYU $FILE -- $PRIVATE_MAPPING | $POSTPROCESS
+    if should_analyze $FILE; then
+        if ! $IWYU $FILE -- $PRIVATE_MAPPING | $POSTPROCESS; then
+            EXIT=1
+        fi
+    fi
 done
 
-should_analyze $SRCDIR/gjs/context.cpp && \
-$IWYU $SRCDIR/gjs/context.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=*/gjs/context-private.h | $POSTPROCESS
+if should_analyze $SRCDIR/gjs/context.cpp; then
+    if ! $IWYU $SRCDIR/gjs/context.cpp -- $PRIVATE_MAPPING \
+        -Xiwyu --check_also=*/gjs/context-private.h | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
-( should_analyze $SRCDIR/gjs/jsapi-dynamic-class.cpp || \
-    should_analyze $SRCDIR/gjs/jsapi-class.h ) && \
-$IWYU $SRCDIR/gjs/jsapi-dynamic-class.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=*/gjs/jsapi-class.h | $POSTPROCESS
+if ( should_analyze $SRCDIR/gjs/jsapi-dynamic-class.cpp || \
+    should_analyze $SRCDIR/gjs/jsapi-class.h ); then
+    if ! $IWYU $SRCDIR/gjs/jsapi-dynamic-class.cpp -- $PRIVATE_MAPPING \
+        -Xiwyu --check_also=*/gjs/jsapi-class.h | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
-( should_analyze $SRCDIR/gjs/jsapi-util.cpp ||
+if ( should_analyze $SRCDIR/gjs/jsapi-util.cpp ||
     should_analyze $SRCDIR/gjs/jsapi-util-args.h || \
-    should_analyze $SRCDIR/gjs/jsapi-util-root.h ) && \
-$IWYU $SRCDIR/gjs/jsapi-util.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=*/gjs/jsapi-util-args.h \
-    -Xiwyu --check_also=*/gjs/jsapi-util-root.h | $POSTPROCESS
+    should_analyze $SRCDIR/gjs/jsapi-util-root.h ); then
+    if ! $IWYU $SRCDIR/gjs/jsapi-util.cpp -- $PRIVATE_MAPPING \
+        -Xiwyu --check_also=*/gjs/jsapi-util-args.h \
+        -Xiwyu --check_also=*/gjs/jsapi-util-root.h | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
-should_analyze $SRCDIR/gjs/mem.cpp && \
-$IWYU $SRCDIR/gjs/mem.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=*/gjs/mem-private.h | $POSTPROCESS
+if should_analyze $SRCDIR/gjs/mem.cpp; then
+    if ! $IWYU $SRCDIR/gjs/mem.cpp -- $PRIVATE_MAPPING \
+        -Xiwyu --check_also=*/gjs/mem-private.h | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
-should_analyze $SRCDIR/gjs/profiler.cpp && \
-$IWYU $SRCDIR/gjs/profiler.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=*/gjs/profiler-private.h | $POSTPROCESS
+if should_analyze $SRCDIR/gjs/profiler.cpp; then
+    if ! $IWYU $SRCDIR/gjs/profiler.cpp -- $PRIVATE_MAPPING \
+        -Xiwyu --check_also=*/gjs/profiler-private.h | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
-( should_analyze $SRCDIR/modules/cairo.cpp ||
-    should_analyze $SRCDIR/modules/cairo-module.h ) && \
-$IWYU $SRCDIR/modules/cairo.cpp -- $PRIVATE_MAPPING \
-    -Xiwyu --check_also=*/modules/cairo-module.h \
-    -Xiwyu --check_also=*/modules/cairo-private.h | $POSTPROCESS
+if ( should_analyze $SRCDIR/modules/cairo.cpp ||
+    should_analyze $SRCDIR/modules/cairo-module.h ); then
+    if ! $IWYU $SRCDIR/modules/cairo.cpp -- $PRIVATE_MAPPING \
+        -Xiwyu --check_also=*/modules/cairo-module.h \
+        -Xiwyu --check_also=*/modules/cairo-private.h | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
 for FILE in $SRCDIR/gjs/console.cpp $SRCDIR/installed-tests/minijasmine.cpp
 do
-    should_analyze $FILE && $IWYU $FILE -- $PUBLIC_MAPPING | $POSTPROCESS
+    if should_analyze $FILE; then
+        if ! $IWYU $FILE -- $PUBLIC_MAPPING | $POSTPROCESS; then
+            EXIT=1
+        fi
+    fi
 done
+
+if test $EXIT -eq 0; then echo "No changes needed."; fi
+exit $EXIT

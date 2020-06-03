@@ -188,6 +188,17 @@ eslint:
       - .eslintrc.yml
       - '**/.eslintrc.yml'
 
+iwyu:
+  when: on_success
+  stage: source_check
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  script:
+    - ./tools/run_iwyu.sh origin/master
+  only:
+    - branches
+  except:
+    - /^gnome-\d+-\d+$/
+
 #############################################
 #                Manual Jobs                #
 #############################################
@@ -198,6 +209,13 @@ coverage:
   when: manual
   except:
     - schedules
+
+iwyu-full:
+  when: manual
+  stage: manual
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  script:
+    - ./tools/run_iwyu.sh
 
 sanitizer_clang:
   <<: *build

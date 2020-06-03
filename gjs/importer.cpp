@@ -30,9 +30,7 @@
 #    include <windows.h>
 #endif
 
-#include <memory>   // for allocator_traits<>::value_type
 #include <string>
-#include <utility>  // for move
 #include <vector>   // for vector
 
 #include <gio/gio.h>
@@ -63,7 +61,6 @@
 #include "gjs/module.h"
 #include "gjs/native.h"
 #include "util/log.h"
-#include "util/misc.h"
 
 #define MODULE_INIT_FILENAME "__init__.js"
 

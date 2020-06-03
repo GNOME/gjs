@@ -22,6 +22,7 @@ file = None
 add = {}
 remove = {}
 all_includes = {}
+there_were_errors = False
 
 # When encountering one of these lines, move to a different state
 MATCHERS = {
@@ -69,7 +70,7 @@ FALSE_POSITIVES = (
 
 
 def output():
-    global file, state, add_fwd_header
+    global file, state, add_fwd_header, there_were_errors
 
     if add_fwd_header:
         if FWD_HEADER not in all_includes:
@@ -88,6 +89,7 @@ def output():
             if why:
                 why = '  // ' + why
             print(f'{Colors.RED}-{line}{Colors.NORMAL}{why}')
+        there_were_errors = True
 
     state = None
     file = None
@@ -143,3 +145,6 @@ for line in sys.stdin:
         remove[line] = why
     elif state == FULL:
         all_includes[line] = why
+
+if there_were_errors:
+    sys.exit(1)
