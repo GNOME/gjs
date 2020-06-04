@@ -1,0 +1,7 @@
+---
+extends: "../../../.eslintrc.yml"
+globals:
+  log: "off"
+  logError: "off"
+  print: "off"
+  printerr: "off"

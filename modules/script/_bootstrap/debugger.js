@@ -16,6 +16,8 @@
  * the first frame is executed.
  */
 
+const {print, logError} = imports._print;
+
 // Debugger state.
 var focusedFrame = null;
 var topFrame = null;
