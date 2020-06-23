@@ -24,7 +24,9 @@ rules:
   #     allow: [^vfunc_, ^on_, _instance_init]
   comma-dangle:
     - error
-    - always-multiline
+    - arrays: always-multiline
+      objects: always-multiline
+      functions: never
   comma-spacing:
     - error
     - before: false
