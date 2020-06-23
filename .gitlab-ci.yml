@@ -171,7 +171,7 @@ cpplint:
 
 eslint:
   when: on_success
-  image: singapore/lint-condo
+  image: ewlsh/lint-condo
   stage: source_check
   script:
     - node /usr/src/lint-condo
