@@ -834,14 +834,18 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
      *
      * @args.length() is the number of arguments that were actually passed.
      */
-    GjsAutoChar name = format_function_name(function);
     if (args.length() > function->expected_js_argc) {
+        GjsAutoChar name = format_function_name(function);
+
         if (!JS::WarnUTF8(
                 context, "Too many arguments to %s: expected %d, got %u",
                 name.get(), function->expected_js_argc, args.length()))
             return false;
-    } else if (!args.requireAtLeast(context, name,
-                                    function->expected_js_argc)) {
+    } else if (args.length() < function->expected_js_argc) {
+        GjsAutoChar name = format_function_name(function);
+
+        args.reportMoreArgsNeeded(context, name,
+                                  function->expected_js_argc, args.length());
         return false;
     }
 
