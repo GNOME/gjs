@@ -132,7 +132,7 @@ if cxx.get_id() == 'msvc'
     endif
 endif
 
-sysprof_capture = dependency('sysprof-capture-3', version: '>= 3.33.32',
+sysprof_capture = dependency('sysprof-capture-4',
     required: get_option('profiler'), include_type: 'system',
     fallback: ['sysprof', 'libsysprof_capture_dep'])
 
