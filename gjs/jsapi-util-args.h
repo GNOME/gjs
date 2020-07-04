@@ -38,6 +38,7 @@
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
 #include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_ClearPendingException
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
