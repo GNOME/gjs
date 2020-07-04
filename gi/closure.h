@@ -32,6 +32,7 @@
 
 #include "gjs/macros.h"
 
+class JSTracer;
 namespace JS {
 class HandleValueArray;
 }
