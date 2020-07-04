@@ -24,6 +24,12 @@ namespace mozilla {
 union Utf8Unit;
 }
 
+// COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
+#ifdef __clang_analyzer__
+void g_assertion_message(const char*, const char*, int, const char*,
+                         const char*) __attribute__((analyzer_noreturn));
+#endif
+
 #define assert_match(str, pattern)                                           \
     G_STMT_START {                                                           \
         const char *__s1 = (str), *__s2 = (pattern);                         \

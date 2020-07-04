@@ -46,6 +46,12 @@
 #include "test/gjs-test-utils.h"
 #include "util/misc.h"
 
+// COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
+#ifdef __clang_analyzer__
+void g_assertion_message(const char*, const char*, int, const char*,
+                         const char*) __attribute__((analyzer_noreturn));
+#endif
+
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
 
 static void
