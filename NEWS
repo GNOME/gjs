@@ -1,3 +1,9 @@
+Version 1.64.4
+--------------
+
+- Closed bugs and merge requests:
+  * Fix CI failure caused by GTK4 update [!447, Philip Chimento]
+
 Version 1.64.3
 --------------
 
