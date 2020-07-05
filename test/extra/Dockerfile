@@ -42,8 +42,8 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     gobject-introspection-debuginfo gobject-introspection-debugsource \
     gobject-introspection-devel gtk3-debuginfo gtk3-debugsource gtk3-devel \
     gtk4-debuginfo gtk4-debugsource gtk4-devel lcov libasan libubsan libtsan \
-    meson ninja-build pkgconf readline-devel sysprof-devel systemtap-sdt-devel \
-    valgrind which Xvfb xz && \
+    meson ninja-build pkgconf readline-devel systemtap-sdt-devel valgrind \
+    which Xvfb xz && \
     dnf clean all && rm -rf /var/cache/dnf
 
 COPY --from=mozjs-build /root/mozjs-install/usr /usr

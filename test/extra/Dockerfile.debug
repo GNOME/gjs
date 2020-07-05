@@ -8,7 +8,7 @@ ENV SHELL=/bin/bash
 
 RUN dnf -y install 'dnf-command(builddep)' clang-devel cmake git llvm-devel \
     make ninja-build which
-RUN dnf -y builddep mozjs68
+RUN dnf -y builddep mozjs68 sysprof
 
 WORKDIR /root
 
@@ -21,6 +21,18 @@ WORKDIR /root/include-what-you-use/_build
 RUN cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr ..
 RUN ninja
 RUN DESTDIR=/root/iwyu-install ninja install
+
+WORKDIR /root
+
+RUN git clone --depth 1 https://gitlab.gnome.org/GNOME/sysprof.git
+
+WORKDIR /root/sysprof
+
+RUN meson _build -Dprefix=/usr -Dlibdir=lib64 -Denable_examples=false \
+    -Denable_gtk=false -Denable_tests=false -Denable_tools=false -Dhelp=false \
+    -Dlibsysprof=false -Dwith_sysprofd=none
+RUN ninja -C _build
+RUN DESTDIR=/root/sysprof-install ninja -C _build install
 
 WORKDIR /root
 
@@ -56,11 +68,12 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     gobject-introspection-debuginfo gobject-introspection-debugsource \
     gobject-introspection-devel gtk3-debuginfo gtk3-debugsource gtk3-devel \
     gtk4-debuginfo gtk4-debugsource gtk4-devel lcov libasan libubsan libtsan \
-    meson ninja-build pkgconf readline-devel sysprof-devel systemtap-sdt-devel \
-    valgrind which Xvfb xz && \
+    meson ninja-build pkgconf readline-devel systemtap-sdt-devel valgrind \
+    which Xvfb xz && \
     dnf clean all && rm -rf /var/cache/dnf
 
 COPY --from=build /root/mozjs-install/usr /usr
+COPY --from=build /root/sysprof-install/usr /usr
 COPY --from=build /root/iwyu-install/usr /usr
 RUN ln -s /usr/bin/iwyu_tool.py /usr/bin/iwyu_tool
 
