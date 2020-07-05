@@ -12,6 +12,12 @@
 #include "gjs/jsapi-util-root.h"
 #include "test/gjs-test-utils.h"
 
+// COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
+#ifdef __clang_analyzer__
+void g_assertion_message(const char*, const char*, int, const char*,
+                         const char*) __attribute__((analyzer_noreturn));
+#endif
+
 static GMutex gc_lock;
 static GCond gc_finished;
 static volatile int gc_counter;

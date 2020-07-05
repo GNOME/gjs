@@ -6,7 +6,7 @@ ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-RUN dnf -y install 'dnf-command(builddep)' git make which
+RUN dnf -y install 'dnf-command(builddep)' git make which llvm-devel
 RUN dnf -y builddep mozjs68
 
 WORKDIR /root

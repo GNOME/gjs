@@ -41,7 +41,6 @@ FWD_DECLS_IN_HEADER = (
     'struct JSRuntime;',
     'class JSScript;',
     'class JSString;',
-    'class JSTracer;',
     'struct JSFreeOp;',
     'namespace js { class TempAllocPolicy; }'
     'namespace JS { struct PropertyKey; }',
