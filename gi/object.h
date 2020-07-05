@@ -111,6 +111,7 @@ class ObjectBase
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
     static JSFunctionSpec proto_methods[];
+    static JSPropertySpec proto_properties[];
 
     static GObject* to_c_ptr(JSContext* cx, JS::HandleObject obj) = delete;
     GJS_JSAPI_RETURN_CONVENTION

@@ -160,6 +160,7 @@ class GIWrapperBase {
 
     // These three can be overridden in subclasses. See define_jsclass().
     static constexpr JSPropertySpec* proto_properties = nullptr;
+    static constexpr JSPropertySpec* static_properties = nullptr;
     static constexpr JSFunctionSpec* proto_methods = nullptr;
     static constexpr JSFunctionSpec* static_methods = nullptr;
 
@@ -868,8 +869,8 @@ class GIWrapperPrototype : public Base {
                 cx, in_object, parent_proto, gi_namespace, Base::name(),
                 &Base::klass, &Base::constructor, nargs, Base::proto_properties,
                 parent_proto ? nullptr : Base::proto_methods,
-                nullptr,  // static properties, MyClass.myprop; not yet needed
-                Base::static_methods, prototype, constructor))
+                Base::static_properties, Base::static_methods, prototype,
+                constructor))
             return false;
 
         gjs_debug(Base::debug_topic,

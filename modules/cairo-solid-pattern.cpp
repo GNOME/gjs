@@ -27,6 +27,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -52,9 +53,11 @@ gjs_cairo_solid_pattern_finalize(JSFreeOp *fop,
     gjs_cairo_pattern_finalize_pattern(fop, obj);
 }
 
+// clang-format off
 JSPropertySpec gjs_cairo_solid_pattern_proto_props[] = {
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "SolidPattern", JSPROP_READONLY),
+    JS_PS_END};
+// clang-format on
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool

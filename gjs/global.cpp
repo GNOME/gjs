@@ -170,6 +170,12 @@ class GjsGlobal : GjsBaseGlobal {
         &defaultclassops,
     };
 
+    // clang-format off
+    static constexpr JSPropertySpec static_props[] = {
+        JS_STRING_SYM_PS(toStringTag, "GjsGlobal", JSPROP_READONLY),
+        JS_PS_END};
+    // clang-format on
+
     static constexpr JSFunctionSpec static_funcs[] = {
         JS_FS_END};
 
@@ -192,7 +198,8 @@ class GjsGlobal : GjsBaseGlobal {
         const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
         if (!JS_DefinePropertyById(cx, global, atoms.window(), global,
                                    JSPROP_READONLY | JSPROP_PERMANENT) ||
-            !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs))
+            !JS_DefineFunctions(cx, global, GjsGlobal::static_funcs) ||
+            !JS_DefineProperties(cx, global, GjsGlobal::static_props))
             return false;
 
         JS::Realm* realm = JS::GetObjectRealmOrNull(global);
@@ -379,6 +386,7 @@ JS::Value detail::get_global_slot(JSObject* global, uint32_t slot) {
 
 decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
 decltype(GjsGlobal::static_funcs) constexpr GjsGlobal::static_funcs;
+decltype(GjsGlobal::static_props) constexpr GjsGlobal::static_props;
 
 decltype(GjsDebuggerGlobal::klass) constexpr GjsDebuggerGlobal::klass;
 decltype(

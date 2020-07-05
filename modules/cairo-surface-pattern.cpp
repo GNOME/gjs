@@ -27,6 +27,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -83,8 +84,8 @@ gjs_cairo_surface_pattern_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_surface_pattern_proto_props[] = {
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "SurfacePattern", JSPROP_READONLY),
+    JS_PS_END};
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool

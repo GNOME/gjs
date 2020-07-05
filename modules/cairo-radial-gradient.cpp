@@ -26,6 +26,7 @@
 #include <glib.h>
 
 #include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -81,8 +82,8 @@ gjs_cairo_radial_gradient_finalize(JSFreeOp *fop,
 }
 
 JSPropertySpec gjs_cairo_radial_gradient_proto_props[] = {
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "RadialGradient", JSPROP_READONLY),
+    JS_PS_END};
 
 JSFunctionSpec gjs_cairo_radial_gradient_proto_funcs[] = {
     // getRadialCircles
