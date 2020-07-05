@@ -53,8 +53,8 @@ for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
     $SRCDIR/gjs/jsapi-util-error.cpp $SRCDIR/gjs/jsapi-util-string.cpp \
     $SRCDIR/gjs/module.cpp $SRCDIR/gjs/native.cpp $SRCDIR/gjs/stack.cpp \
     $SRCDIR/modules/cairo-*.cpp $SRCDIR/modules/console.cpp \
-    $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp $SRCDIR/util/*.cpp \
-    $SRCDIR/libgjs-private/*.c
+    $SRCDIR/modules/print.cpp $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp \
+    $SRCDIR/util/*.cpp $SRCDIR/libgjs-private/*.c
 do
     if should_analyze $FILE; then
         if ! $IWYU $FILE -- $PRIVATE_MAPPING | $POSTPROCESS; then

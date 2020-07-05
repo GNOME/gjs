@@ -29,12 +29,9 @@
 
 #include <glib.h>
 
-#include <js/CallArgs.h>
-#include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
-#include <js/Conversions.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetObjectRealmOrNull, SetRealmPrivate
@@ -42,7 +39,6 @@
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
-#include <js/Utility.h>  // for UniqueChars
 #include <jsapi.h>       // for AutoSaveExceptionState, ...
 
 #include "gjs/atoms.h"
@@ -88,145 +84,6 @@ run_bootstrap(JSContext       *cx,
     return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_log(JSContext *cx,
-        unsigned   argc,
-        JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-
-    if (argc != 1) {
-        gjs_throw(cx, "Must pass a single argument to log()");
-        return false;
-    }
-
-    /* JS::ToString might throw, in which case we will only log that the value
-     * could not be converted to string */
-    JS::AutoSaveExceptionState exc_state(cx);
-    JS::RootedString jstr(cx, JS::ToString(cx, argv[0]));
-    exc_state.restore();
-
-    if (!jstr) {
-        g_message("JS LOG: <cannot convert value to string>");
-        return true;
-    }
-
-    JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
-    if (!s)
-        return false;
-
-    g_message("JS LOG: %s", s.get());
-
-    argv.rval().setUndefined();
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_log_error(JSContext *cx,
-              unsigned   argc,
-              JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-
-    if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
-        gjs_throw(cx, "Must pass an exception and optionally a message to logError()");
-        return false;
-    }
-
-    JS::RootedString jstr(cx);
-
-    if (argc == 2) {
-        /* JS::ToString might throw, in which case we will only log that the
-         * value could not be converted to string */
-        JS::AutoSaveExceptionState exc_state(cx);
-        jstr = JS::ToString(cx, argv[1]);
-        exc_state.restore();
-    }
-
-    gjs_log_exception_full(cx, argv[0], jstr, G_LOG_LEVEL_WARNING);
-
-    argv.rval().setUndefined();
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_print_parse_args(JSContext              *cx,
-                     const JS::CallArgs&    argv,
-                     GjsAutoChar            *buffer)
-{
-    GString *str;
-    guint n;
-
-    str = g_string_new("");
-    for (n = 0; n < argv.length(); ++n) {
-        /* JS::ToString might throw, in which case we will only log that the
-         * value could not be converted to string */
-        JS::AutoSaveExceptionState exc_state(cx);
-        JS::RootedString jstr(cx, JS::ToString(cx, argv[n]));
-        exc_state.restore();
-
-        if (jstr) {
-            JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
-            if (!s) {
-                g_string_free(str, true);
-                return false;
-            }
-
-            g_string_append(str, s.get());
-            if (n < (argv.length()-1))
-                g_string_append_c(str, ' ');
-        } else {
-            *buffer = g_string_free(str, true);
-            if (!*buffer)
-                *buffer = g_strdup("<invalid string>");
-            return true;
-        }
-
-    }
-    *buffer = g_string_free(str, false);
-
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_print(JSContext *context,
-          unsigned   argc,
-          JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-
-    GjsAutoChar buffer;
-    if (!gjs_print_parse_args(context, argv, &buffer))
-        return false;
-
-    g_print("%s\n", buffer.get());
-
-    argv.rval().setUndefined();
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_printerr(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-
-    GjsAutoChar buffer;
-    if (!gjs_print_parse_args(context, argv, &buffer))
-        return false;
-
-    g_printerr("%s\n", buffer.get());
-
-    argv.rval().setUndefined();
-    return true;
-}
-
 const JSClassOps defaultclassops = JS::DefaultGlobalClassOps;
 
 class GjsGlobal {
@@ -237,10 +94,6 @@ class GjsGlobal {
     };
 
     static constexpr JSFunctionSpec static_funcs[] = {
-        JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
-        JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
-        JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
-        JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
         JS_FS_END};
 
  public:
