@@ -102,7 +102,8 @@ static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
         gjs->set_sweeping(false);
 }
 
-static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
+static void on_garbage_collect(JSContext*, JSGCStatus status, JS::GCReason,
+                               void*) {
     /* We finalize any pending toggle refs before doing any garbage collection,
      * so that we can collect the JS wrapper objects, and in order to minimize
      * the chances of objects having a pending toggle up queued when they are
@@ -116,7 +117,7 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
 }
 
 static void on_promise_unhandled_rejection(
-    JSContext* cx, JS::HandleObject promise,
+    JSContext* cx, bool mutedErrors [[maybe_unused]], JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
     auto gjs = static_cast<GjsContextPrivate*>(data);
     uint64_t id = JS::GetPromiseID(promise);
