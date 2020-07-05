@@ -59,9 +59,6 @@ union Utf8Unit;
 class GjsBaseGlobal {
     static JSObject* base(JSContext* cx, const JSClass* clasp,
                           JS::RealmCreationOptions options) {
-        options.setBigIntEnabled(true);
-        options.setFieldsEnabled(true);
-
         JS::RealmBehaviors behaviors;
         JS::RealmOptions compartment_options(options, behaviors);
 

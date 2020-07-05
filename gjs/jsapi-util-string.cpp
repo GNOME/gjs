@@ -37,7 +37,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
-#include <js/Id.h>     // for JSID_IS_STRING, INTERNED_STRING_TO...
+#include <js/Id.h>     // for JSID_IS_STRING...
 #include <js/RootingAPI.h>
 #include <js/Symbol.h>
 #include <js/TypeDecls.h>
@@ -377,7 +377,7 @@ gjs_intern_string_to_id(JSContext  *cx,
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     if (!str)
         return JSID_VOID;
-    return INTERNED_STRING_TO_JSID(cx, str);
+    return JS::PropertyKey::fromPinnedString(str);
 }
 
 [[nodiscard]] static std::string gjs_debug_linear_string(JSLinearString* str) {

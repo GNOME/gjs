@@ -208,8 +208,7 @@ write_line(GOutputStream *out,
     GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     size_t lcov_length;
-    GjsAutoPointer<char, void, free> lcov(
-        js::GetCodeCoverageSummary(cx, &lcov_length));
+    JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
 
     GjsAutoUnref<GOutputStream> ostream =
         G_OUTPUT_STREAM(g_file_append_to(output_file,
@@ -219,7 +218,7 @@ write_line(GOutputStream *out,
     if (!ostream)
         return nullptr;
 
-    GjsAutoStrv lcov_lines = g_strsplit(lcov, "\n", -1);
+    GjsAutoStrv lcov_lines = g_strsplit(lcov.get(), "\n", -1);
     const char* test_name = NULL;
     bool ignoring_file = false;
 
