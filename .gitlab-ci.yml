@@ -197,6 +197,7 @@ iwyu:
   only:
     - branches
   except:
+    - schedules
     - /^gnome-\d+-\d+$/
 
 #############################################
@@ -216,6 +217,8 @@ iwyu-full:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   script:
     - ./tools/run_iwyu.sh
+  except:
+    - schedules
 
 sanitizer_clang:
   <<: *build
