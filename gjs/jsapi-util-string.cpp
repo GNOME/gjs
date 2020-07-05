@@ -49,7 +49,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-class JSFlatString;
 class JSLinearString;
 
 char* gjs_hyphen_to_underscore(const char* str) {
@@ -340,7 +339,8 @@ bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
         return true;
     }
 
-    JS::RootedString s(cx, JS_FORGET_STRING_FLATNESS(JSID_TO_FLAT_STRING(id)));
+    JSLinearString* lstr = JSID_TO_LINEAR_STRING(id);
+    JS::RootedString s(cx, JS_FORGET_STRING_LINEARNESS(lstr));
     *name_p = JS_EncodeStringToUTF8(cx, s);
     return !!*name_p;
 }
@@ -380,8 +380,7 @@ gjs_intern_string_to_id(JSContext  *cx,
     return INTERNED_STRING_TO_JSID(cx, str);
 }
 
-[[nodiscard]] static std::string gjs_debug_flat_string(JSFlatString* fstr) {
-    JSLinearString *str = js::FlatStringToLinearString(fstr);
+[[nodiscard]] static std::string gjs_debug_linear_string(JSLinearString* str) {
     size_t len = js::GetLinearStringLength(str);
 
     JS::AutoCheckCannotGC nogc;
@@ -413,12 +412,12 @@ gjs_debug_string(JSString *str)
 {
     if (!str)
         return "<null string>";
-    if (!JS_StringIsFlat(str)) {
+    if (!JS_StringIsLinear(str)) {
         std::ostringstream out("<non-flat string of length ");
         out << JS_GetStringLength(str) << '>';
         return out.str();
     }
-    return gjs_debug_flat_string(JS_ASSERT_STRING_IS_FLAT(str));
+    return gjs_debug_linear_string(JS_ASSERT_STRING_IS_LINEAR(str));
 }
 
 std::string
@@ -519,6 +518,6 @@ std::string
 gjs_debug_id(jsid id)
 {
     if (JSID_IS_STRING(id))
-        return gjs_debug_flat_string(JSID_TO_FLAT_STRING(id));
+        return gjs_debug_linear_string(JSID_TO_LINEAR_STRING(id));
     return gjs_debug_value(js::IdToValue(id));
 }
