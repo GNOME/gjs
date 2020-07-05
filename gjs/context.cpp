@@ -65,10 +65,10 @@
 #include <js/UniquePtr.h>
 #include <js/Utility.h>  // for DeletePolicy
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_IsExceptionPending, ...
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 #include <mozilla/UniquePtr.h>
-#include <mozilla/Vector.h>
 
 #include "gi/object.h"
 #include "gi/private.h"

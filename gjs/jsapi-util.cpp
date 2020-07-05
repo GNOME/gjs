@@ -38,6 +38,7 @@
 #include <utility>  // for move
 #include <vector>
 
+#include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
@@ -48,6 +49,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_GetPropertyById, JS_ClearPendin...
 #include <jsfriendapi.h>  // for ProtoKeyToClass
 
@@ -236,7 +238,7 @@ JSObject* gjs_build_string_array(JSContext* context,
         elems.infallibleAppend(element);
     }
 
-    return JS_NewArrayObject(context, elems);
+    return JS::NewArrayObject(context, elems);
 }
 
 JSObject* gjs_define_string_array(JSContext* context,

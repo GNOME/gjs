@@ -40,6 +40,7 @@
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 #include <mozilla/UniquePtr.h>

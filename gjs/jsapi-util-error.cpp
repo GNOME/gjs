@@ -32,6 +32,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/ValueArray.h>
 #include <jsapi.h>       // for JS_ReportErrorUTF8, BuildStackString
 #include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
 
@@ -83,7 +84,7 @@ gjs_throw_valist(JSContext       *context,
     JS::RootedObject constructor(context);
     JS::RootedValue v_constructor(context), exc_val(context);
     JS::RootedObject new_exc(context);
-    JS::AutoValueArray<1> error_args(context);
+    JS::RootedValueArray<1> error_args(context);
     result = false;
 
     if (!gjs_string_from_utf8(context, s, error_args[0])) {

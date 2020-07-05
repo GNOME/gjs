@@ -36,6 +36,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/GCVector.h>
@@ -423,7 +424,7 @@ static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
         }
     } else {
         bool is_array = rval.isObject();
-        if (!JS_IsArrayObject(context, rval, &is_array))
+        if (!JS::IsArrayObject(context, rval, &is_array))
             goto out;
 
         if (!is_array) {
@@ -1007,7 +1008,7 @@ release:
         if (function->js_out_argc == 1) {
             args.rval().set(return_values[0]);
         } else {
-            JSObject* array = JS_NewArrayObject(context, return_values);
+            JSObject* array = JS::NewArrayObject(context, return_values);
             if (!array) {
                 failed = true;
             } else {

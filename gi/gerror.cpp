@@ -36,6 +36,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>    // for JS_DefinePropertyById, JS_GetProp...
 #include <jspubtd.h>  // for JSProtoKey, JSProto_Error, JSProt...
 
@@ -344,7 +345,7 @@ static JSObject *
 gjs_error_from_js_gerror(JSContext *cx,
                          GError    *gerror)
 {
-    JS::AutoValueArray<1> error_args(cx);
+    JS::RootedValueArray<1> error_args(cx);
     if (!gjs_string_from_utf8(cx, gerror->message, error_args[0]))
         return nullptr;
 

@@ -35,6 +35,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_DefineFunctions, JS_DefineProp...
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
 #include <jspubtd.h>      // for JSProto_TypeError

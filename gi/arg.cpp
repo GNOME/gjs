@@ -34,6 +34,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
 #include <js/GCVector.h>            // for RootedVector, MutableWrappedPtrOp...
@@ -42,9 +43,9 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_ReportOutOfMemory, JS_GetElement
 #include <jsfriendapi.h>  // for JS_IsUint8Array, JS_GetObjectFunc...
-#include <mozilla/Vector.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -772,7 +773,7 @@ gjs_array_from_strv(JSContext             *context,
             return false;
     }
 
-    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
     if (!obj)
         return false;
 
@@ -1193,7 +1194,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
 
     // a null array pointer takes precedence over whatever `length` says
     if (!values) {
-        JSObject* jsarray = JS_NewArrayObject(context, 0);
+        JSObject* jsarray = JS::NewArrayObject(context, 0);
         if (!jsarray)
             return false;
         value.setObject(*jsarray);
@@ -1218,7 +1219,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
 
     if (result) {
         JSObject *jsarray;
-        jsarray = JS_NewArrayObject(context, elems);
+        jsarray = JS::NewArrayObject(context, elems);
         value.setObjectOrNull(jsarray);
     }
 
@@ -2369,7 +2370,7 @@ gjs_array_from_g_list (JSContext             *context,
         }
     }
 
-    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
     if (!obj)
         return false;
 
@@ -2425,7 +2426,7 @@ gjs_array_from_carray_internal (JSContext             *context,
 
     // a null array pointer takes precedence over whatever `length` says
     if (!array) {
-        JSObject* jsarray = JS_NewArrayObject(context, 0);
+        JSObject* jsarray = JS::NewArrayObject(context, 0);
         if (!jsarray)
             return false;
         value_p.setObject(*jsarray);
@@ -2542,7 +2543,7 @@ gjs_array_from_carray_internal (JSContext             *context,
           return false;
     }
 
-    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
     if (!obj)
         return false;
 
@@ -2760,7 +2761,7 @@ gjs_array_from_zero_terminated_c_array (JSContext             *context,
           return false;
     }
 
-    JS::RootedObject obj(context, JS_NewArrayObject(context, elems));
+    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
     if (!obj)
         return false;
 

@@ -29,13 +29,14 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Array.h>  // for JS::GetArrayLength,
 #include <js/CallArgs.h>
 #include <js/Id.h>  // for JSID_TO_SYMBOL
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for JS_GetArrayLength, JS_GetElement
+#include <jsapi.h>       // for JS_GetElement
 
 #include "gi/gobject.h"
 #include "gi/gtype.h"
@@ -106,7 +107,7 @@ static bool validate_interfaces_and_properties_args(JSContext* cx,
                                                     uint32_t* n_interfaces,
                                                     uint32_t* n_properties) {
     bool is_array;
-    if (!JS_IsArrayObject(cx, interfaces, &is_array))
+    if (!JS::IsArrayObject(cx, interfaces, &is_array))
         return false;
     if (!is_array) {
         gjs_throw(cx, "Invalid parameter interfaces (expected Array)");
@@ -114,10 +115,10 @@ static bool validate_interfaces_and_properties_args(JSContext* cx,
     }
 
     uint32_t n_int;
-    if (!JS_GetArrayLength(cx, interfaces, &n_int))
+    if (!JS::GetArrayLength(cx, interfaces, &n_int))
         return false;
 
-    if (!JS_IsArrayObject(cx, properties, &is_array))
+    if (!JS::IsArrayObject(cx, properties, &is_array))
         return false;
     if (!is_array) {
         gjs_throw(cx, "Invalid parameter properties (expected Array)");
@@ -125,7 +126,7 @@ static bool validate_interfaces_and_properties_args(JSContext* cx,
     }
 
     uint32_t n_prop;
-    if (!JS_GetArrayLength(cx, properties, &n_prop))
+    if (!JS::GetArrayLength(cx, properties, &n_prop))
         return false;
 
     if (n_interfaces)
@@ -384,7 +385,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     }
 
     uint32_t n_parameters;
-    if (!JS_GetArrayLength(cx, params_obj, &n_parameters))
+    if (!JS::GetArrayLength(cx, params_obj, &n_parameters))
         return false;
 
     GType* params = g_newa(GType, n_parameters);
