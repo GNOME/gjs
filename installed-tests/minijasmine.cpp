@@ -45,8 +45,6 @@ main(int argc, char **argv)
 
     /* The fact that this isn't the default is kind of lame... */
     g_setenv("GJS_DEBUG_OUTPUT", "stderr", false);
-    /* Jasmine library has some code style nits that trip this */
-    g_setenv("GJS_DISABLE_EXTRA_WARNINGS", "1", false);
 
     setlocale(LC_ALL, "");
 

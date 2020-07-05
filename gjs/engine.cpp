@@ -245,10 +245,10 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     auto hook = mozilla::MakeUnique<GjsSourceHook>();
     js::SetSourceHook(cx, std::move(hook));
 
-    /* setExtraWarnings: Be extra strict about code that might hide a bug */
-    if (!g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Enabling extra warnings");
-        JS::ContextOptionsRef(cx).setExtraWarnings(true);
+    if (g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
+        g_warning(
+            "GJS_DISABLE_EXTRA_WARNINGS has been removed, GJS no longer logs "
+            "extra warnings.");
     }
 
     bool enable_jit = !(g_getenv("GJS_DISABLE_JIT"));
