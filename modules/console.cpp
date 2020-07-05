@@ -226,7 +226,7 @@ public:
 
         JSErrorReport* report = error_from_exception_value(v_exn);
         if (report) {
-            g_assert(!JSREPORT_IS_WARNING(report->flags));
+            g_assert(!report->isWarning());
             gjs_console_print_error(report);
         } else {
             GjsAutoChar display_str = gjs_value_debug_string(m_cx, v_exn);

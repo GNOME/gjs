@@ -238,15 +238,14 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
     g_assert(report);
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
-        report->flags == JSREPORT_ERROR &&
-        report->errorNumber == 137) {
+        !report->isWarning() && report->errorNumber == 137) {
         /* 137, JSMSG_OUT_OF_MEMORY */
         g_error("GJS ran out of memory at %s: %i.",
                 report->filename,
                 report->lineno);
     }
 
-    if ((report->flags & JSREPORT_WARNING) != 0) {
+    if (report->isWarning()) {
         warning = "WARNING";
         level = G_LOG_LEVEL_MESSAGE;
 
