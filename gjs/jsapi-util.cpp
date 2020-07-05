@@ -403,12 +403,11 @@ bool gjs_log_exception_full(JSContext* context, JS::HandleValue exc,
     bool is_syntax = false, is_internal = false;
     if (exc.isObject()) {
         exc_obj = &exc.toObject();
-        const JSClass* syntax_error =
-            js::Jsvalify(js::ProtoKeyToClass(JSProto_SyntaxError));
+        const JSClass* syntax_error = js::ProtoKeyToClass(JSProto_SyntaxError);
         is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
 
         const JSClass* internal_error =
-            js::Jsvalify(js::ProtoKeyToClass(JSProto_InternalError));
+            js::ProtoKeyToClass(JSProto_InternalError);
         is_internal = JS_InstanceOf(context, exc_obj, internal_error, nullptr);
     }
 
