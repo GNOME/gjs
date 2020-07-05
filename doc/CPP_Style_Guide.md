@@ -46,12 +46,12 @@ portable C++ code as the implementation language of choice.
 
 ### C++ Standard Versions ###
 
-GJS is currently written using C++14 conforming code, although we
+GJS is currently written using C++17 conforming code, although we
 restrict ourselves to features which are available in the major
 toolchains.
 
 Regardless of the supported features, code is expected to (when
-reasonable) be standard, portable, and modern C++14 code.
+reasonable) be standard, portable, and modern C++17 code.
 We avoid unnecessary vendor-specific extensions, etc., including
 `g_autoptr()` and friends.
 
@@ -65,9 +65,9 @@ and friends, for their type safety and memory management.
 There are some exceptions such as the standard I/O streams library which
 is avoided, and use in space-constrained situations.
 
-### Supported C++14 Language and Library Features ###
+### Supported C++17 Language and Library Features ###
 
-While GJS and SpiderMonkey use C++14, not all features are available in
+While GJS and SpiderMonkey use C++17, not all features are available in
 all of the toolchains which we support.
 A good rule of thumb is to check whether SpiderMonkey uses the feature.
 If so, it's okay to use in GJS.
