@@ -134,7 +134,16 @@ endif
 
 sysprof_capture = dependency('sysprof-capture-4',
     required: get_option('profiler'), include_type: 'system',
-    fallback: ['sysprof', 'libsysprof_capture_dep'])
+    fallback: ['sysprof', 'libsysprof_capture_dep'],
+    default_options: [
+        'enable_examples=false',
+        'enable_gtk=false',
+        'enable_tests=false',
+        'enable_tools=false',
+        'libsysprof=false',
+        'with_sysprofd=none',
+        'help=false',
+    ])
 
 readline = cxx.find_library('readline', required: get_option('readline'))
 # On some systems we need to link readline to a termcap compatible library
