@@ -1,3 +1,29 @@
+Version 1.65.4
+--------------
+
+- New language features! Public class fields are now supported. See for more
+  information:
+  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields
+
+- Closed bugs and merge requests:
+  * arg.cpp: Add required messages for static_assert (fix building on pre-C++17)
+    [!441, Chun-wei Fan]
+  * Add include-what-you-use CI job [!448, !449, Philip Chimento]
+  * Let's enable class fields! [!445, Evan Welsh]
+  * examples: add GListModel implementation [!452, Andy Holmes]
+  * Update ESLint CI image. [!451, Evan Welsh]
+  * function: Only get function name if we actually warn [!454, Jonas Dreßler]
+  * Split print into native library. [!444, Evan Welsh]
+  * Various maintenance [!459, Philip Chimento]
+
+- Various refactors for type safety [Marco Trevisan]
+
+Version 1.64.4
+--------------
+
+- Closed bugs and merge requests:
+  * Fix CI failure caused by GTK4 update [!447, Philip Chimento]
+
 Version 1.65.3
 --------------
 
