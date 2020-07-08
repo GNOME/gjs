@@ -48,7 +48,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-745493_fedora.mozjs68-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-801643_fedora.mozjs68-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
@@ -60,7 +60,7 @@ sanitizer_gcc:
   stage: test
   tags:
     - privileged  # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
@@ -225,7 +225,7 @@ sanitizer_clang:
   stage: manual
   tags:
     - privileged  # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -237,7 +237,7 @@ sanitizer_clang:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
@@ -254,7 +254,7 @@ installed_tests:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     TEST_OPTS: --setup=valgrind

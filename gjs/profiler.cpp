@@ -105,6 +105,7 @@ struct _GjsProfiler {
 
     /* Buffers and writes our sampled stacks */
     SysprofCaptureWriter* capture;
+    GSource* periodic_flush;
 #endif  /* ENABLE_PROFILER */
 
     /* The filename to write to */
@@ -261,6 +262,7 @@ _gjs_profiler_free(GjsProfiler *self)
     g_clear_pointer(&self->filename, g_free);
 #ifdef ENABLE_PROFILER
     g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+    g_clear_pointer(&self->periodic_flush, g_source_destroy);
 
     if (self->fd != -1)
         close(self->fd);
@@ -387,6 +389,17 @@ static void gjs_profiler_sigprof(int signum G_GNUC_UNUSED, siginfo_t* info,
         gjs_profiler_stop(self);
 }
 
+static gboolean profiler_auto_flush_cb(void* user_data) {
+    auto* self = static_cast<GjsProfiler*>(user_data);
+
+    if (!self->running)
+        return G_SOURCE_REMOVE;
+
+    sysprof_capture_writer_flush(self->capture);
+
+    return G_SOURCE_CONTINUE;
+}
+
 #endif  /* ENABLE_PROFILER */
 
 /**
@@ -437,13 +450,23 @@ gjs_profiler_start(GjsProfiler *self)
     }
 
     /* Automatically flush to be resilient against SIGINT, etc */
-    sysprof_capture_writer_set_flush_delay(self->capture,
-                                           g_main_context_get_thread_default(),
-                                           FLUSH_DELAY_SECONDS);
+    if (!self->periodic_flush) {
+        self->periodic_flush =
+            g_timeout_source_new_seconds(FLUSH_DELAY_SECONDS);
+        g_source_set_name(self->periodic_flush,
+                          "[sysprof-capture-writer-flush]");
+        g_source_set_priority(self->periodic_flush, G_PRIORITY_LOW + 100);
+        g_source_set_callback(self->periodic_flush,
+                              (GSourceFunc)profiler_auto_flush_cb, self,
+                              nullptr);
+        g_source_attach(self->periodic_flush,
+                        g_main_context_get_thread_default());
+    }
 
     if (!gjs_profiler_extract_maps(self)) {
         g_warning("Failed to extract proc maps");
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+        g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
     }
 
@@ -455,6 +478,7 @@ gjs_profiler_start(GjsProfiler *self)
     if (sigaction(SIGPROF, &sa, nullptr) == -1) {
         g_warning("Failed to register sigaction handler: %s", g_strerror(errno));
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+        g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
     }
 
@@ -475,6 +499,7 @@ gjs_profiler_start(GjsProfiler *self)
     if (timer_create(CLOCK_MONOTONIC, &sev, &self->timer) == -1) {
         g_warning("Failed to create profiler timer: %s", g_strerror(errno));
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+        g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
     }
 
@@ -489,6 +514,7 @@ gjs_profiler_start(GjsProfiler *self)
         g_warning("Failed to enable profiler timer: %s", g_strerror(errno));
         timer_delete(self->timer);
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+        g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
     }
 
@@ -546,6 +572,7 @@ gjs_profiler_stop(GjsProfiler *self)
     sysprof_capture_writer_flush(self->capture);
 
     g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
+    g_clear_pointer(&self->periodic_flush, g_source_destroy);
 
     g_message("Profiler stopped");
 
