@@ -2,4 +2,5 @@ glib
 gobject-introspection
 libffi
 proxy-libintl
+sysprof
 zlib
