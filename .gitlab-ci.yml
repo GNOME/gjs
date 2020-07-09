@@ -9,7 +9,7 @@ stages:
 - deploy
 
 .coverage: &coverage
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "coverage"
     coverage: '/^  lines.*(\d+\.\d+\%)/'
