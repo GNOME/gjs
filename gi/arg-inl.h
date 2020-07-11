@@ -136,6 +136,14 @@ inline void gjs_g_argument_value_set(GIArgument* arg, T* v) {
     using NonconstT = std::remove_const_t<T>;
     gjs_g_argument_value<NonconstT*, TAG>(arg) = const_cast<NonconstT*>(v);
 }
+
+// Store function pointers as void*. It is a requirement of GLib that your
+// compiler can do this
+template <typename ReturnT, typename... Args>
+inline void gjs_g_argument_value_set(GIArgument* arg, ReturnT (*v)(Args...)) {
+    gjs_g_argument_value<void*>(arg) = reinterpret_cast<void*>(v);
+}
+
 template <>
 inline void gjs_g_argument_value_set<bool>(GIArgument* arg, bool v) {
     gjs_g_argument_value<bool>(arg) = !!v;
