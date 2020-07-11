@@ -88,6 +88,12 @@ GJS_USE inline decltype(auto) gjs_g_argument_value<uint64_t>(GIArgument* arg) {
     return gjs_g_argument_value(arg, &GIArgument::v_uint64);
 }
 
+// gunichar is stored in v_uint32
+template <>
+GJS_USE inline decltype(auto) gjs_g_argument_value<char32_t>(GIArgument* arg) {
+    return gjs_g_argument_value(arg, &GIArgument::v_uint32);
+}
+
 template <>
 GJS_USE inline decltype(auto) gjs_g_argument_value<GType, GI_TYPE_TAG_GTYPE>(
     GIArgument* arg) {
