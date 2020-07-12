@@ -26,6 +26,7 @@ should_analyze () {
         all) return 0 ;;
         *$file*) return 0 ;;
         *${file%.cpp}.h*) return 0 ;;
+        *${file%.cpp}-inl.h*) return 0 ;;
         *${file%.cpp}-private.h*) return 0 ;;
         *${file%.c}.h*) return 0 ;;
         *) return 1 ;;
