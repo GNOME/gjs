@@ -54,6 +54,7 @@
 
 struct JSFunctionSpec;
 struct JSPropertySpec;
+class JSTracer;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,

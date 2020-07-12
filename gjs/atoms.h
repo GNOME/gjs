@@ -33,6 +33,8 @@
 
 #include "gjs/macros.h"
 
+class JSTracer;
+
 // clang-format off
 #define FOR_EACH_ATOM(macro) \
     macro(code, "code") \

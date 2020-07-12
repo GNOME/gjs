@@ -53,6 +53,7 @@
 #include "util/log.h"
 
 class GjsAtoms;
+class JSTracer;
 namespace JS {
 class CallArgs;
 }

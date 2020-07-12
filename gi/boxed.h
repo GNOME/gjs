@@ -44,6 +44,7 @@
 
 class BoxedPrototype;
 class BoxedInstance;
+class JSTracer;
 namespace JS {
 class CallArgs;
 }

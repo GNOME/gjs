@@ -75,6 +75,8 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
+class JSTracer;
+
 /* This is a trick to print out the sizes of the structs at compile time, in
  * an error message. */
 // template <int s> struct Measure;

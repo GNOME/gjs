@@ -34,6 +34,7 @@
 #include <vector>   // for vector
 
 #include <gio/gio.h>
+#include <glib-object.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>
