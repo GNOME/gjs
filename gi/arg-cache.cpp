@@ -476,17 +476,20 @@ static bool gjs_marshal_gtype_in_in(JSContext* cx, GjsArgumentCache* self,
         cx, gtype_obj, &gjs_arg_member<GType, GI_TYPE_TAG_GTYPE>(arg));
 }
 
+// Common code for most types that are pointers on the C side
+bool GjsArgumentCache::handle_nullable(JSContext* cx, GIArgument* arg) {
+    if (!nullable)
+        return report_invalid_null(cx, arg_name);
+    gjs_arg_unset<void*>(arg);
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_string_in_in(JSContext* cx, GjsArgumentCache* self,
                                      GjsFunctionCallState*, GIArgument* arg,
                                      JS::HandleValue value) {
-    if (value.isNull()) {
-        if (!self->nullable)
-            return report_invalid_null(cx, self->arg_name);
-
-        gjs_arg_unset<void*>(arg);
-        return true;
-    }
+    if (value.isNull())
+        return self->handle_nullable(cx, arg);
 
     if (!value.isString())
         return report_typeof_mismatch(cx, self->arg_name, value,
@@ -584,13 +587,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_boxed_in_in(JSContext* cx, GjsArgumentCache* self,
                                     GjsFunctionCallState*, GIArgument* arg,
                                     JS::HandleValue value) {
-    if (value.isNull()) {
-        if (!self->nullable)
-            return report_invalid_null(cx, self->arg_name);
-
-        gjs_arg_unset<void*>(arg);
-        return true;
-    }
+    if (value.isNull())
+        return self->handle_nullable(cx, arg);
 
     GType gtype = self->contents.object.gtype;
 
@@ -615,13 +613,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_union_in_in(JSContext* cx, GjsArgumentCache* self,
                                     GjsFunctionCallState*, GIArgument* arg,
                                     JS::HandleValue value) {
-    if (value.isNull()) {
-        if (!self->nullable)
-            return report_invalid_null(cx, self->arg_name);
-
-        gjs_arg_unset<void*>(arg);
-        return true;
-    }
+    if (value.isNull())
+        return self->handle_nullable(cx, arg);
 
     GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
@@ -639,13 +632,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_gclosure_in_in(JSContext* cx, GjsArgumentCache* self,
                                        GjsFunctionCallState*, GIArgument* arg,
                                        JS::HandleValue value) {
-    if (value.isNull()) {
-        if (!self->nullable)
-            return report_invalid_null(cx, self->arg_name);
-
-        gjs_arg_unset<void*>(arg);
-        return true;
-    }
+    if (value.isNull())
+        return self->handle_nullable(cx, arg);
 
     if (!(JS_TypeOfValue(cx, value) == JSTYPE_FUNCTION))
         return report_typeof_mismatch(cx, self->arg_name, value,
@@ -664,13 +652,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_gbytes_in_in(JSContext* cx, GjsArgumentCache* self,
                                      GjsFunctionCallState*, GIArgument* arg,
                                      JS::HandleValue value) {
-    if (value.isNull()) {
-        if (!self->nullable)
-            return report_invalid_null(cx, self->arg_name);
-
-        gjs_arg_unset<void*>(arg);
-        return true;
-    }
+    if (value.isNull())
+        return self->handle_nullable(cx, arg);
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, self->arg_name, value, G_TYPE_BYTES);
@@ -692,13 +675,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_object_in_in(JSContext* cx, GjsArgumentCache* self,
                                      GjsFunctionCallState*, GIArgument* arg,
                                      JS::HandleValue value) {
-    if (value.isNull()) {
-        if (!self->nullable)
-            return report_invalid_null(cx, self->arg_name);
-
-        gjs_arg_unset<void*>(arg);
-        return true;
-    }
+    if (value.isNull())
+        return self->handle_nullable(cx, arg);
 
     GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);

@@ -101,6 +101,9 @@ struct GjsArgumentCache {
         // out caller allocates (FIXME: should be in object)
         size_t caller_allocates_size;
     } contents;
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool handle_nullable(JSContext* cx, GIArgument* arg);
 };
 
 // This is a trick to print out the sizes of the structs at compile time, in
