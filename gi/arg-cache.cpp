@@ -395,7 +395,7 @@ static bool gjs_marshal_integer_in_in(JSContext* cx, GjsArgumentCache* self,
                                       JS::HandleValue value) {
     GITypeTag tag = self->contents.number.number_tag;
 
-    if (self->contents.number.is_unsigned) {
+    if (self->is_unsigned) {
         uint32_t number;
         if (!JS::ToUint32(cx, value, &number))
             return false;
@@ -520,19 +520,27 @@ static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
     if (!JS::ToInt64(cx, value, &number))
         return false;
 
-    if (number > self->contents.enum_type.enum_max ||
-        number < self->contents.enum_type.enum_min) {
+    // Unpack the values from their uint32_t bitfield. See note in
+    // gjs_arg_cache_build_enum_bounds().
+    int64_t min, max;
+    if (self->is_unsigned) {
+        min = self->contents.enum_type.enum_min;
+        max = self->contents.enum_type.enum_max;
+    } else {
+        min = static_cast<int32_t>(self->contents.enum_type.enum_min);
+        max = static_cast<int32_t>(self->contents.enum_type.enum_max);
+    }
+
+    if (number > max || number < min) {
         gjs_throw(cx, "%" PRId64 " is not a valid value for enum argument %s",
                   number, self->arg_name);
         return false;
     }
 
-    if (self->contents.enum_type.enum_max <= G_MAXINT32)
-        gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, number);
-    else if (self->contents.enum_type.enum_max <= G_MAXUINT32)
+    if (self->is_unsigned)
         gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
     else
-        gjs_arg_set(arg, number);
+        gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, number);
 
     return true;
 }
@@ -1026,8 +1034,14 @@ static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
             min = value;
     }
 
-    self->contents.enum_type.enum_min = min;
-    self->contents.enum_type.enum_max = max;
+    // From the docs for g_value_info_get_value(): "This will always be
+    // representable as a 32-bit signed or unsigned value. The use of gint64 as
+    // the return type is to allow both."
+    // We stuff them both into unsigned 32-bit fields, and use a flag to tell
+    // whether we have to compare them as signed.
+    self->contents.enum_type.enum_min = static_cast<uint32_t>(min);
+    self->contents.enum_type.enum_max = static_cast<uint32_t>(max);
+    self->is_unsigned = min >= 0 && max > G_MAXINT32;
 }
 
 static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
@@ -1211,14 +1225,14 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
         case GI_TYPE_TAG_INT32:
             self->marshal_in = gjs_marshal_integer_in_in;
             self->contents.number.number_tag = tag;
-            self->contents.number.is_unsigned = false;
+            self->is_unsigned = false;
             break;
 
         case GI_TYPE_TAG_UINT8:
         case GI_TYPE_TAG_UINT16:
             self->marshal_in = gjs_marshal_integer_in_in;
             self->contents.number.number_tag = tag;
-            self->contents.number.is_unsigned = true;
+            self->is_unsigned = true;
             break;
 
         case GI_TYPE_TAG_UINT32:

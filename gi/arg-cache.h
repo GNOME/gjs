@@ -60,6 +60,7 @@ struct GjsArgumentCache {
     bool skip_out : 1;
     GITransfer transfer : 2;
     bool nullable : 1;
+    bool is_unsigned : 1;  // number and enum only
 
     union {
         // for explicit array only
@@ -76,7 +77,6 @@ struct GjsArgumentCache {
 
         struct {
             GITypeTag number_tag : 5;
-            bool is_unsigned : 1;
         } number;
 
         // boxed / union / GObject
@@ -90,8 +90,8 @@ struct GjsArgumentCache {
 
         // enum / flags
         struct {
-            int64_t enum_min;
-            int64_t enum_max;
+            uint32_t enum_min;
+            uint32_t enum_max;
         } enum_type;
         uint64_t flags_mask;
 
