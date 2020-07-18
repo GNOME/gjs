@@ -601,7 +601,9 @@ lookup_override_function(JSContext             *cx,
 {
     JS::AutoSaveExceptionState saved_exc(cx);
 
-    JS::RootedValue importer(cx, gjs_get_global_slot(cx, GJS_GLOBAL_SLOT_IMPORTS));
+    JS::RootedObject global(cx, gjs_get_import_global(cx));
+    JS::RootedValue importer(
+        cx, gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS));
     g_assert(importer.isObject());
 
     JS::RootedObject overridespkg(cx), module(cx);
@@ -644,8 +646,9 @@ JSObject*
 gjs_lookup_namespace_object_by_name(JSContext      *context,
                                     JS::HandleId    ns_name)
 {
-    JS::RootedValue importer(context,
-        gjs_get_global_slot(context, GJS_GLOBAL_SLOT_IMPORTS));
+    JS::RootedObject global(context, gjs_get_import_global(context));
+    JS::RootedValue importer(
+        context, gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS));
     g_assert(importer.isObject());
 
     JS::RootedObject repo(context), importer_obj(context, &importer.toObject());

@@ -350,8 +350,8 @@ bootstrap_coverage(GjsCoverage *coverage)
     JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
 
     JSObject *debuggee = gjs_get_import_global(context);
-    JS::RootedObject debugger_global(context,
-                                     gjs_create_global_object(context));
+    JS::RootedObject debugger_global(
+        context, gjs_create_global_object(context, GjsGlobalType::DEBUGGER));
     {
         JSAutoRealm ar(context, debugger_global);
         JS::RootedObject debuggeeWrapper(context, debuggee);
@@ -363,6 +363,7 @@ bootstrap_coverage(GjsCoverage *coverage)
         if (!JS_SetPropertyById(context, debugger_global, atoms.debuggee(),
                                 debuggeeWrapperValue) ||
             !gjs_define_global_properties(context, debugger_global,
+                                          GjsGlobalType::DEBUGGER,
                                           "GJS coverage", "coverage"))
             return false;
 

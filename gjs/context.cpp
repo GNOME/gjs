@@ -494,7 +494,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_atoms = new GjsAtoms();
 
-    JS::RootedObject global(m_cx, gjs_create_global_object(m_cx));
+    JS::RootedObject global(
+        m_cx, gjs_create_global_object(cx, GjsGlobalType::DEFAULT));
+
     if (!global) {
         gjs_log_exception(m_cx);
         g_error("Failed to initialize global object");
@@ -519,14 +521,15 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to create root importer");
     }
 
-    JS::Value v_importer = gjs_get_global_slot(m_cx, GJS_GLOBAL_SLOT_IMPORTS);
+    JS::Value v_importer = gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
     g_assert(((void) "Someone else already created root importer",
               v_importer.isUndefined()));
 
-    gjs_set_global_slot(m_cx, GJS_GLOBAL_SLOT_IMPORTS,
+    gjs_set_global_slot(global, GjsGlobalSlot::IMPORTS,
                         JS::ObjectValue(*importer));
 
-    if (!gjs_define_global_properties(m_cx, global, "GJS", "default")) {
+    if (!gjs_define_global_properties(m_cx, global, GjsGlobalType::DEFAULT,
+                                      "GJS", "default")) {
         gjs_log_exception(m_cx);
         g_error("Failed to define properties on global object");
     }
