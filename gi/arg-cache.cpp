@@ -216,10 +216,11 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_generic_in_in(JSContext* cx, GjsArgumentCache* self,
                                       GjsFunctionCallState*, GIArgument* arg,
                                       JS::HandleValue value) {
-    return gjs_value_to_g_argument(
-        cx, value, &self->type_info, self->arg_name,
-        self->is_return ? GJS_ARGUMENT_RETURN_VALUE : GJS_ARGUMENT_ARGUMENT,
-        self->transfer, self->nullable, arg);
+    return gjs_value_to_g_argument(cx, value, &self->type_info, self->arg_name,
+                                   self->is_return_value()
+                                       ? GJS_ARGUMENT_RETURN_VALUE
+                                       : GJS_ARGUMENT_ARGUMENT,
+                                   self->transfer, self->nullable, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -250,7 +251,7 @@ static bool gjs_marshal_explicit_array_in_in(JSContext* cx,
             self->transfer, self->nullable, &data, &length))
         return false;
 
-    int length_pos = self->contents.array.length_pos;
+    uint8_t length_pos = self->contents.array.length_pos;
     gjs_g_argument_set_array_length(self->contents.array.length_tag,
                                     &state->in_cvalues[length_pos], length);
     gjs_arg_set(arg, data);
@@ -266,8 +267,8 @@ static bool gjs_marshal_explicit_array_inout_in(JSContext* cx,
     if (!gjs_marshal_explicit_array_in_in(cx, self, state, arg, value))
         return false;
 
-    int length_pos = self->contents.array.length_pos;
-    int ix = self->arg_pos;
+    uint8_t length_pos = self->contents.array.length_pos;
+    uint8_t ix = self->arg_pos;
 
     if (!gjs_arg_get<void*>(arg)) {
         // Special case where we were given JS null to also pass null for
@@ -318,14 +319,15 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
         closure = trampoline->closure;
     }
 
-    int destroy_pos = self->contents.callback.destroy_pos;
-    if (destroy_pos >= 0) {
+    if (self->has_callback_destroy()) {
+        uint8_t destroy_pos = self->contents.callback.destroy_pos;
         gjs_arg_set(&state->in_cvalues[destroy_pos],
                     trampoline ? gjs_destroy_notify_callback : nullptr);
     }
-    int closure_pos = self->contents.callback.closure_pos;
-    if (closure_pos >= 0)
+    if (self->has_callback_closure()) {
+        uint8_t closure_pos = self->contents.callback.closure_pos;
         gjs_arg_set(&state->in_cvalues[closure_pos], trampoline);
+    }
 
     if (trampoline && self->contents.callback.scope != GI_SCOPE_TYPE_CALL) {
         // Add an extra reference that will be cleared when collecting async
@@ -763,7 +765,7 @@ static bool gjs_marshal_explicit_array_out_out(JSContext* cx,
                                                GjsFunctionCallState* state,
                                                GIArgument* arg,
                                                JS::MutableHandleValue value) {
-    int length_pos = self->contents.array.length_pos;
+    uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->out_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
@@ -825,7 +827,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_explicit_array_out_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg G_GNUC_UNUSED, GIArgument* out_arg) {
-    int length_pos = self->contents.array.length_pos;
+    uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->out_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
@@ -838,7 +840,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_explicit_array_in_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg, GIArgument* out_arg G_GNUC_UNUSED) {
-    int length_pos = self->contents.array.length_pos;
+    uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->in_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
@@ -854,7 +856,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_explicit_array_inout_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg G_GNUC_UNUSED, GIArgument* out_arg) {
-    int length_pos = self->contents.array.length_pos;
+    uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->in_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
@@ -971,11 +973,8 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
     }
 
     *inc_counter_out = true;
-    self->arg_pos = -1;
-    self->arg_name = "return value";
+    self->set_return_value();
     self->transfer = g_callable_info_get_caller_owns(callable);
-    self->nullable = false;  // We don't really care for return values
-    self->is_return = true;
 
     if (g_type_info_get_tag(&self->type_info) == GI_TYPE_TAG_ARRAY) {
         int length_pos = g_type_info_get_array_length(&self->type_info);
@@ -984,14 +983,14 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
             // Even if we skip the length argument most of the time, we need to
             // do some basic initialization here.
-            arguments[length_pos].arg_pos = length_pos;
+            arguments[length_pos].set_arg_pos(length_pos);
             arguments[length_pos].marshal_in = gjs_marshal_generic_out_in;
 
             self->marshal_in = gjs_marshal_generic_out_in;
             self->marshal_out = gjs_marshal_explicit_array_out_out;
             self->release = gjs_marshal_explicit_array_out_release;
 
-            self->contents.array.length_pos = length_pos;
+            self->set_array_length_pos(length_pos);
 
             GIArgInfo length_arg;
             g_callable_info_load_arg(callable, length_pos, &length_arg);
@@ -1278,13 +1277,8 @@ bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
                                   GICallableInfo* callable) {
     GIBaseInfo* interface_info = g_base_info_get_container(callable);  // !owned
 
-    self->arg_pos = -2;
-    self->arg_name = "instance parameter";
+    self->set_instance_parameter();
     self->transfer = g_callable_info_get_instance_ownership_transfer(callable);
-    // Some calls accept null for the instance, but generally in an object
-    // oriented language it's wrong to call a method on null
-    self->nullable = false;
-    self->skip_out = true;
 
     // These cases could be covered by the generic marshaller, except that
     // there's no way to get GITypeInfo for a method's instance parameter.
@@ -1317,17 +1311,16 @@ bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
 }
 
 bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
-                             GjsArgumentCache* arguments, int gi_index,
+                             GjsArgumentCache* arguments, uint8_t gi_index,
                              GIDirection direction, GIArgInfo* arg,
                              GICallableInfo* callable, bool* inc_counter_out) {
     g_assert(inc_counter_out && "forgot out parameter");
 
-    self->arg_pos = gi_index;
+    self->set_arg_pos(gi_index);
     self->arg_name = g_base_info_get_name(arg);
     g_arg_info_load_type(arg, &self->type_info);
     self->transfer = g_arg_info_get_ownership_transfer(arg);
     self->nullable = g_arg_info_may_be_null(arg);
-    self->is_return = false;
 
     if (direction == GI_DIRECTION_IN)
         self->skip_out = true;
@@ -1414,8 +1407,8 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                 }
 
                 self->contents.callback.scope = g_arg_info_get_scope(arg);
-                self->contents.callback.destroy_pos = destroy_pos;
-                self->contents.callback.closure_pos = closure_pos;
+                self->set_callback_destroy_pos(destroy_pos);
+                self->set_callback_closure_pos(closure_pos);
             }
 
             return true;
@@ -1440,7 +1433,7 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
             } else {
                 // Even if we skip the length argument most of time, we need to
                 // do some basic initialization here.
-                arguments[length_pos].arg_pos = length_pos;
+                arguments[length_pos].set_arg_pos(length_pos);
                 arguments[length_pos].marshal_in = gjs_marshal_generic_out_in;
 
                 self->marshal_in = gjs_marshal_generic_out_in;
@@ -1448,7 +1441,7 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                 self->release = gjs_marshal_explicit_array_out_release;
             }
 
-            self->contents.array.length_pos = length_pos;
+            self->set_array_length_pos(length_pos);
 
             GIArgInfo length_arg;
             g_callable_info_load_arg(callable, length_pos, &length_arg);

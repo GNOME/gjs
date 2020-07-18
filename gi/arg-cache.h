@@ -31,6 +31,7 @@
 
 #include <girepository.h>
 #include <glib-object.h>
+#include <glib.h>  // for g_assert
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -54,23 +55,22 @@ struct GjsArgumentCache {
     const char* arg_name;
     GITypeInfo type_info;
 
-    int arg_pos;
+    uint8_t arg_pos;
     bool skip_in : 1;
     bool skip_out : 1;
     GITransfer transfer : 2;
     bool nullable : 1;
-    bool is_return : 1;
 
     union {
         // for explicit array only
         struct {
-            int length_pos;
+            uint8_t length_pos;
             GITypeTag length_tag : 5;
         } array;
 
         struct {
-            int closure_pos;
-            int destroy_pos;
+            uint8_t closure_pos;
+            uint8_t destroy_pos;
             GIScopeType scope : 2;
         } callback;
 
@@ -104,6 +104,53 @@ struct GjsArgumentCache {
 
     GJS_JSAPI_RETURN_CONVENTION
     bool handle_nullable(JSContext* cx, GIArgument* arg);
+
+    // Introspected functions can have up to 253 arguments. 255 is a placeholder
+    // for the return value and 254 for the instance parameter. The callback
+    // closure or destroy notify parameter may have a value of 255 to indicate
+    // that it is absent.
+    static constexpr uint8_t MAX_ARGS = 253;
+    static constexpr uint8_t INSTANCE_PARAM = 254;
+    static constexpr uint8_t RETURN_VALUE = 255;
+    static constexpr uint8_t ABSENT = 255;
+    void set_arg_pos(int pos) {
+        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
+        arg_pos = pos;
+    }
+    void set_array_length_pos(int pos) {
+        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
+        contents.array.length_pos = pos;
+    }
+    void set_callback_destroy_pos(int pos) {
+        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
+        contents.callback.destroy_pos = pos < 0 ? ABSENT : pos;
+    }
+    GJS_USE bool has_callback_destroy() {
+        return contents.callback.destroy_pos != ABSENT;
+    }
+    void set_callback_closure_pos(int pos) {
+        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
+        contents.callback.closure_pos = pos < 0 ? ABSENT : pos;
+    }
+    GJS_USE bool has_callback_closure() {
+        return contents.callback.closure_pos != ABSENT;
+    }
+
+    void set_instance_parameter() {
+        arg_pos = INSTANCE_PARAM;
+        arg_name = "instance parameter";
+        // Some calls accept null for the instance, but generally in an object
+        // oriented language it's wrong to call a method on null
+        nullable = false;
+        skip_out = true;
+    }
+
+    void set_return_value() {
+        arg_pos = RETURN_VALUE;
+        arg_name = "return value";
+        nullable = false;  // We don't really care for return values
+    }
+    GJS_USE bool is_return_value() { return arg_pos == RETURN_VALUE; }
 };
 
 // This is a trick to print out the sizes of the structs at compile time, in
@@ -122,7 +169,7 @@ static_assert(sizeof(GjsArgumentCache) <= 136,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
-                             GjsArgumentCache* arguments, int gi_index,
+                             GjsArgumentCache* arguments, uint8_t gi_index,
                              GIDirection direction, GIArgInfo* arg,
                              GICallableInfo* callable, bool* inc_counter_out);
 

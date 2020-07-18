@@ -708,6 +708,11 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
 
     unsigned ffi_argc = function->invoker.cif.nargs;
     gi_argc = g_callable_info_get_n_args( (GICallableInfo*) function->info);
+    if (gi_argc > GjsArgumentCache::MAX_ARGS) {
+        GjsAutoChar name = format_function_name(function);
+        gjs_throw(context, "Function %s has too many arguments", name.get());
+        return false;
+    }
 
     // ffi_argc is the number of arguments that the underlying C function takes.
     // gi_argc is the number of arguments the GICallableInfo describes (which
