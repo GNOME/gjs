@@ -55,6 +55,7 @@ template <class Key>
 struct DefaultHasher;
 }
 class GjsAtoms;
+class JSTracer;
 
 using JobQueueStorage =
     JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
