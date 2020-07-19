@@ -960,10 +960,242 @@ static void gjs_arg_cache_interface_free(GjsArgumentCache* self) {
     g_clear_pointer(&self->contents.info, g_base_info_unref);
 }
 
+static const GjsArgumentMarshallers skip_all_marshallers = {
+    .in = gjs_marshal_skipped_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+// .in is ignored for the return value
+static const GjsArgumentMarshallers return_value_marshallers = {
+    .out = gjs_marshal_generic_out_out,
+    .release = gjs_marshal_generic_out_release,
+};
+
+static const GjsArgumentMarshallers return_array_marshallers = {
+    .in = gjs_marshal_generic_out_in,
+    .out = gjs_marshal_explicit_array_out_out,
+    .release = gjs_marshal_explicit_array_out_release,
+};
+
+static const GjsArgumentMarshallers array_length_out_marshallers = {
+    .in = gjs_marshal_generic_out_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers fallback_in_marshallers = {
+    .in = gjs_marshal_generic_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_generic_in_release,
+};
+
+static const GjsArgumentMarshallers fallback_interface_in_marshallers = {
+    .in = gjs_marshal_generic_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_generic_in_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers fallback_inout_marshallers = {
+    .in = gjs_marshal_generic_inout_in,
+    .out = gjs_marshal_generic_out_out,
+    .release = gjs_marshal_generic_inout_release,
+};
+
+static const GjsArgumentMarshallers fallback_out_marshallers = {
+    .in = gjs_marshal_generic_out_in,
+    .out = gjs_marshal_generic_out_out,
+    .release = gjs_marshal_generic_out_release,
+};
+
+static const GjsArgumentMarshallers invalid_in_marshallers = {
+    .in = nullptr,  // will cause the function invocation code to throw
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers enum_in_marshallers = {
+    .in = gjs_marshal_enum_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers flags_in_marshallers = {
+    .in = gjs_marshal_flags_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers foreign_struct_in_marshallers = {
+    .in = gjs_marshal_foreign_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_foreign_in_release,
+};
+
+static const GjsArgumentMarshallers foreign_struct_instance_in_marshallers = {
+    .in = gjs_marshal_foreign_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers gvalue_in_marshallers = {
+    .in = gjs_marshal_gvalue_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers gvalue_in_transfer_none_marshallers = {
+    .in = gjs_marshal_gvalue_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_boxed_in_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers gclosure_in_marshallers = {
+    .in = gjs_marshal_gclosure_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers gclosure_in_transfer_none_marshallers = {
+    .in = gjs_marshal_gclosure_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_boxed_in_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers gbytes_in_marshallers = {
+    .in = gjs_marshal_gbytes_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers gbytes_in_transfer_none_marshallers = {
+    .in = gjs_marshal_gbytes_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_boxed_in_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers object_in_marshallers = {
+    .in = gjs_marshal_object_in_in,
+    .out = gjs_marshal_skipped_out,
+    // This is a smart marshaller, no release needed
+    .release = gjs_marshal_skipped_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers union_in_marshallers = {
+    .in = gjs_marshal_union_in_in,
+    .out = gjs_marshal_skipped_out,
+    // This is a smart marshaller, no release needed
+    .release = gjs_marshal_skipped_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers boxed_in_marshallers = {
+    .in = gjs_marshal_boxed_in_in,
+    .out = gjs_marshal_skipped_out,
+    // This is a smart marshaller, no release needed
+    .release = gjs_marshal_skipped_release,
+    .free = gjs_arg_cache_interface_free,
+};
+
+static const GjsArgumentMarshallers null_in_marshallers = {
+    .in = gjs_marshal_null_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers boolean_in_marshallers = {
+    .in = gjs_marshal_boolean_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers integer_in_marshallers = {
+    .in = gjs_marshal_integer_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers number_in_marshallers = {
+    .in = gjs_marshal_number_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers unichar_in_marshallers = {
+    .in = gjs_marshal_unichar_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers gtype_in_marshallers = {
+    .in = gjs_marshal_gtype_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers string_in_marshallers = {
+    .in = gjs_marshal_string_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers string_in_transfer_none_marshallers = {
+    .in = gjs_marshal_string_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_string_in_release,
+};
+
+// .out is ignored for the instance parameter
+static const GjsArgumentMarshallers gtype_struct_instance_in_marshallers = {
+    .in = gjs_marshal_gtype_struct_instance_in,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers param_instance_in_marshallers = {
+    .in = gjs_marshal_param_instance_in,
+    .release = gjs_marshal_skipped_release,
+};
+
+static const GjsArgumentMarshallers callback_in_marshallers = {
+    .in = gjs_marshal_callback_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_callback_release,
+};
+
+static const GjsArgumentMarshallers c_array_in_marshallers = {
+    .in = gjs_marshal_explicit_array_in_in,
+    .out = gjs_marshal_skipped_out,
+    .release = gjs_marshal_explicit_array_in_release,
+};
+
+static const GjsArgumentMarshallers c_array_inout_marshallers = {
+    .in = gjs_marshal_explicit_array_inout_in,
+    .out = gjs_marshal_explicit_array_out_out,
+    .release = gjs_marshal_explicit_array_inout_release,
+};
+
+static const GjsArgumentMarshallers c_array_out_marshallers = {
+    .in = gjs_marshal_generic_out_in,
+    .out = gjs_marshal_explicit_array_out_out,
+    .release = gjs_marshal_explicit_array_out_release,
+};
+
+static const GjsArgumentMarshallers caller_allocates_out_marshallers = {
+    .in = gjs_marshal_caller_allocates_in,
+    .out = gjs_marshal_generic_out_out,
+    .release = gjs_marshal_caller_allocates_release,
+};
+
 static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
-    self->marshal_in = gjs_marshal_skipped_in;
-    self->marshal_out = gjs_marshal_skipped_out;
-    self->release = gjs_marshal_skipped_release;
+    self->marshallers = &skip_all_marshallers;
     self->skip_in = self->skip_out = true;
 }
 
@@ -993,11 +1225,9 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
             // Even if we skip the length argument most of the time, we need to
             // do some basic initialization here.
             arguments[length_pos].set_arg_pos(length_pos);
-            arguments[length_pos].marshal_in = gjs_marshal_generic_out_in;
+            arguments[length_pos].marshallers = &array_length_out_marshallers;
 
-            self->marshal_in = gjs_marshal_generic_out_in;
-            self->marshal_out = gjs_marshal_explicit_array_out_out;
-            self->release = gjs_marshal_explicit_array_out_release;
+            self->marshallers = &return_array_marshallers;
 
             self->set_array_length_pos(length_pos);
 
@@ -1014,8 +1244,7 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
     // marshal_in is ignored for the return value, but skip_in is not (it is
     // used in the failure release path)
     self->skip_in = true;
-    self->marshal_out = gjs_marshal_generic_out_out;
-    self->release = gjs_marshal_generic_out_release;
+    self->marshallers = &return_value_marshallers;
 
     return true;
 }
@@ -1067,7 +1296,8 @@ static inline bool is_gdk_atom(GIBaseInfo* info) {
 static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                                                  GjsArgumentCache* self,
                                                  GICallableInfo* callable,
-                                                 GIBaseInfo* interface_info) {
+                                                 GIBaseInfo* interface_info,
+                                                 bool is_instance_param) {
     GIInfoType interface_type = g_base_info_get_type(interface_info);
 
     // We do some transfer magic later, so let's ensure we don't mess up.
@@ -1078,18 +1308,20 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
     switch (interface_type) {
         case GI_INFO_TYPE_ENUM:
             gjs_arg_cache_build_enum_bounds(self, interface_info);
-            self->marshal_in = gjs_marshal_enum_in_in;
+            self->marshallers = &enum_in_marshallers;
             return true;
 
         case GI_INFO_TYPE_FLAGS:
             gjs_arg_cache_build_flags_mask(self, interface_info);
-            self->marshal_in = gjs_marshal_flags_in_in;
+            self->marshallers = &flags_in_marshallers;
             return true;
 
         case GI_INFO_TYPE_STRUCT:
             if (g_struct_info_is_foreign(interface_info)) {
-                self->marshal_in = gjs_marshal_foreign_in_in;
-                self->release = gjs_marshal_foreign_in_release;
+                if (is_instance_param)
+                    self->marshallers = &foreign_struct_instance_in_marshallers;
+                else
+                    self->marshallers = &foreign_struct_in_marshallers;
                 return true;
             }
             // fall through
@@ -1099,50 +1331,49 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
         case GI_INFO_TYPE_UNION: {
             GType gtype = g_registered_type_info_get_g_type(interface_info);
             self->contents.info = g_base_info_ref(interface_info);
-            self->free = gjs_arg_cache_interface_free;
 
             // Transfer handling is a bit complex here, because some of our _in
             // marshallers know not to copy stuff if we don't need to.
 
             if (gtype == G_TYPE_VALUE) {
-                self->marshal_in = gjs_marshal_gvalue_in_in;
-                if (self->transfer == GI_TRANSFER_NOTHING)
-                    self->release = gjs_marshal_boxed_in_release;
+                if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
+                    self->marshallers = &gvalue_in_transfer_none_marshallers;
+                else
+                    self->marshallers = &gvalue_in_marshallers;
                 return true;
             }
 
             if (is_gdk_atom(interface_info)) {
                 // Fall back to the generic marshaller
-                self->marshal_in = gjs_marshal_generic_in_in;
-                self->release = gjs_marshal_generic_in_release;
+                self->marshallers = &fallback_interface_in_marshallers;
                 return true;
             }
 
             if (gtype == G_TYPE_CLOSURE) {
-                self->marshal_in = gjs_marshal_gclosure_in_in;
-                if (self->transfer == GI_TRANSFER_NOTHING)
-                    self->release = gjs_marshal_boxed_in_release;
+                if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
+                    self->marshallers = &gclosure_in_transfer_none_marshallers;
+                else
+                    self->marshallers = &gclosure_in_marshallers;
                 return true;
             }
 
             if (gtype == G_TYPE_BYTES) {
-                self->marshal_in = gjs_marshal_gbytes_in_in;
-                if (self->transfer == GI_TRANSFER_NOTHING)
-                    self->release = gjs_marshal_boxed_in_release;
+                if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
+                    self->marshallers = &gbytes_in_transfer_none_marshallers;
+                else
+                    self->marshallers = &gbytes_in_marshallers;
                 return true;
             }
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
                 g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                self->marshal_in = gjs_marshal_object_in_in;
-                // This is a smart marshaller, no release needed
+                self->marshallers = &object_in_marshallers;
                 return true;
             }
 
             if (g_type_is_a(gtype, G_TYPE_PARAM)) {
                 // Fall back to the generic marshaller
-                self->marshal_in = gjs_marshal_generic_in_in;
-                self->release = gjs_marshal_generic_in_release;
+                self->marshallers = &fallback_interface_in_marshallers;
                 return true;
             }
 
@@ -1153,8 +1384,7 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                         cx, callable, self->arg_name);
                 }
 
-                self->marshal_in = gjs_marshal_union_in_in;
-                // This is a smart marshaller, no release needed
+                self->marshallers = &union_in_marshallers;
                 return true;
             }
 
@@ -1166,8 +1396,7 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                                                              self->arg_name);
             }
 
-            self->marshal_in = gjs_marshal_boxed_in_in;
-            // This is a smart marshaller, no release needed
+            self->marshallers = &boxed_in_marshallers;
             return true;
         } break;
 
@@ -1209,28 +1438,26 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
     // - hashes
     // - sequences (null-terminated arrays, lists, etc.)
 
-    self->release = gjs_marshal_skipped_release;
-
     switch (tag) {
         case GI_TYPE_TAG_VOID:
-            self->marshal_in = gjs_marshal_null_in_in;
+            self->marshallers = &null_in_marshallers;
             break;
 
         case GI_TYPE_TAG_BOOLEAN:
-            self->marshal_in = gjs_marshal_boolean_in_in;
+            self->marshallers = &boolean_in_marshallers;
             break;
 
         case GI_TYPE_TAG_INT8:
         case GI_TYPE_TAG_INT16:
         case GI_TYPE_TAG_INT32:
-            self->marshal_in = gjs_marshal_integer_in_in;
+            self->marshallers = &integer_in_marshallers;
             self->contents.number.number_tag = tag;
             self->is_unsigned = false;
             break;
 
         case GI_TYPE_TAG_UINT8:
         case GI_TYPE_TAG_UINT16:
-            self->marshal_in = gjs_marshal_integer_in_in;
+            self->marshallers = &integer_in_marshallers;
             self->contents.number.number_tag = tag;
             self->is_unsigned = true;
             break;
@@ -1240,37 +1467,40 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
         case GI_TYPE_TAG_UINT64:
         case GI_TYPE_TAG_FLOAT:
         case GI_TYPE_TAG_DOUBLE:
-            self->marshal_in = gjs_marshal_number_in_in;
+            self->marshallers = &number_in_marshallers;
             self->contents.number.number_tag = tag;
             break;
 
         case GI_TYPE_TAG_UNICHAR:
-            self->marshal_in = gjs_marshal_unichar_in_in;
+            self->marshallers = &unichar_in_marshallers;
             break;
 
         case GI_TYPE_TAG_GTYPE:
-            self->marshal_in = gjs_marshal_gtype_in_in;
+            self->marshallers = &gtype_in_marshallers;
             break;
 
         case GI_TYPE_TAG_FILENAME:
-            self->marshal_in = gjs_marshal_string_in_in;
             if (self->transfer == GI_TRANSFER_NOTHING)
-                self->release = gjs_marshal_string_in_release;
+                self->marshallers = &string_in_transfer_none_marshallers;
+            else
+                self->marshallers = &string_in_marshallers;
             self->contents.string_is_filename = true;
             break;
 
         case GI_TYPE_TAG_UTF8:
-            self->marshal_in = gjs_marshal_string_in_in;
             if (self->transfer == GI_TRANSFER_NOTHING)
-                self->release = gjs_marshal_string_in_release;
+                self->marshallers = &string_in_transfer_none_marshallers;
+            else
+                self->marshallers = &string_in_marshallers;
             self->contents.string_is_filename = false;
             break;
 
         case GI_TYPE_TAG_INTERFACE: {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(&self->type_info);
-            return gjs_arg_cache_build_interface_in_arg(cx, self, callable,
-                                                        interface_info);
+            return gjs_arg_cache_build_interface_in_arg(
+                cx, self, callable, interface_info,
+                /* is_instance_param = */ false);
         }
 
         case GI_TYPE_TAG_ARRAY:
@@ -1280,8 +1510,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
         case GI_TYPE_TAG_ERROR:
         default:
             // FIXME: Falling back to the generic marshaller
-            self->marshal_in = gjs_marshal_generic_in_in;
-            self->release = gjs_marshal_generic_in_release;
+            self->marshallers = &fallback_in_marshallers;
     }
 
     return true;
@@ -1302,26 +1531,21 @@ bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
     GIInfoType info_type = g_base_info_get_type(interface_info);
     if (info_type == GI_INFO_TYPE_STRUCT &&
         g_struct_info_is_gtype_struct(interface_info)) {
-        self->marshal_in = gjs_marshal_gtype_struct_instance_in;
-        self->release = gjs_marshal_skipped_release;
+        self->marshallers = &gtype_struct_instance_in_marshallers;
         return true;
     }
     if (info_type == GI_INFO_TYPE_OBJECT) {
         GType gtype = g_registered_type_info_get_g_type(interface_info);
 
         if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-            self->marshal_in = gjs_marshal_param_instance_in;
-            self->release = gjs_marshal_skipped_release;
+            self->marshallers = &param_instance_in_marshallers;
             return true;
         }
     }
 
-    bool ok = gjs_arg_cache_build_interface_in_arg(cx, self, callable,
-                                                   interface_info);
-    // Don't set marshal_out, it should not be called for the instance
-    // parameter
-    self->release = gjs_marshal_skipped_release;
-    return ok;
+    return gjs_arg_cache_build_interface_in_arg(cx, self, callable,
+                                                interface_info,
+                                                /* is_instance_param = */ true);
 }
 
 bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
@@ -1362,9 +1586,7 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
             return false;
         }
 
-        self->marshal_in = gjs_marshal_caller_allocates_in;
-        self->marshal_out = gjs_marshal_generic_out_out;
-        self->release = gjs_marshal_caller_allocates_release;
+        self->marshallers = &caller_allocates_out_marshallers;
         self->contents.caller_allocates_size = size;
 
         return true;
@@ -1389,18 +1611,14 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                 strcmp(interface_info.ns(), "GLib") == 0) {
                 // We don't know (yet) what to do with GDestroyNotify appearing
                 // before a callback. If the callback comes later in the
-                // argument list, then the null marshaller will be
+                // argument list, then the invalid marshallers will be
                 // overwritten with the 'skipped' one. If no callback follows,
                 // then this is probably an unsupported function, so the
                 // function invocation code will check this and throw.
-                self->marshal_in = nullptr;
-                self->marshal_out = gjs_marshal_skipped_out;
-                self->release = gjs_marshal_skipped_release;
+                self->marshallers = &invalid_in_marshallers;
                 *inc_counter_out = false;
             } else {
-                self->marshal_in = gjs_marshal_callback_in;
-                self->marshal_out = gjs_marshal_skipped_out;
-                self->release = gjs_marshal_callback_release;
+                self->marshallers = &callback_in_marshallers;
 
                 int destroy_pos = g_arg_info_get_destroy(arg);
                 int closure_pos = g_arg_info_get_closure(arg);
@@ -1437,22 +1655,17 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
             gjs_arg_cache_set_skip_all(&arguments[length_pos]);
 
             if (direction == GI_DIRECTION_IN) {
-                self->marshal_in = gjs_marshal_explicit_array_in_in;
-                self->marshal_out = gjs_marshal_skipped_out;
-                self->release = gjs_marshal_explicit_array_in_release;
+                self->marshallers = &c_array_in_marshallers;
             } else if (direction == GI_DIRECTION_INOUT) {
-                self->marshal_in = gjs_marshal_explicit_array_inout_in;
-                self->marshal_out = gjs_marshal_explicit_array_out_out;
-                self->release = gjs_marshal_explicit_array_inout_release;
+                self->marshallers = &c_array_inout_marshallers;
             } else {
                 // Even if we skip the length argument most of time, we need to
                 // do some basic initialization here.
                 arguments[length_pos].set_arg_pos(length_pos);
-                arguments[length_pos].marshal_in = gjs_marshal_generic_out_in;
+                arguments[length_pos].marshallers =
+                    &array_length_out_marshallers;
 
-                self->marshal_in = gjs_marshal_generic_out_in;
-                self->marshal_out = gjs_marshal_explicit_array_out_out;
-                self->release = gjs_marshal_explicit_array_out_release;
+                self->marshallers = &c_array_out_marshallers;
             }
 
             self->set_array_length_pos(length_pos);
@@ -1472,22 +1685,13 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         }
     }
 
-    if (direction == GI_DIRECTION_IN) {
-        bool ok =
-            gjs_arg_cache_build_normal_in_arg(cx, self, callable, type_tag);
-        self->marshal_out = gjs_marshal_skipped_out;
-        return ok;
-    }
+    if (direction == GI_DIRECTION_IN)
+        return gjs_arg_cache_build_normal_in_arg(cx, self, callable, type_tag);
 
-    if (direction == GI_DIRECTION_INOUT) {
-        self->marshal_in = gjs_marshal_generic_inout_in;
-        self->marshal_out = gjs_marshal_generic_out_out;
-        self->release = gjs_marshal_generic_inout_release;
-    } else {
-        self->marshal_in = gjs_marshal_generic_out_in;
-        self->marshal_out = gjs_marshal_generic_out_out;
-        self->release = gjs_marshal_generic_out_release;
-    }
+    if (direction == GI_DIRECTION_INOUT)
+        self->marshallers = &fallback_inout_marshallers;
+    else
+        self->marshallers = &fallback_out_marshallers;
 
     return true;
 }

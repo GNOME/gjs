@@ -784,7 +784,8 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
         GIArgument* in_value = &state.in_cvalues[-2];
         JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
 
-        if (!cache->marshal_in(context, cache, &state, in_value, in_js_value))
+        if (!cache->marshallers->in(context, cache, &state, in_value,
+                                    in_js_value))
             return false;
 
         ffi_arg_pointers[ffi_arg_pos] = in_value;
@@ -814,7 +815,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
 
         ffi_arg_pointers[ffi_arg_pos] = in_value;
 
-        if (!cache->marshal_in) {
+        if (!cache->marshallers->in) {
             gjs_throw(context,
                       "Error invoking %s.%s: impossible to determine what "
                       "to pass to the '%s' argument. It may be that the "
@@ -830,7 +831,8 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
         if (js_arg_pos < args.length())
             js_in_arg = args[js_arg_pos];
 
-        if (!cache->marshal_in(context, cache, &state, in_value, js_in_arg)) {
+        if (!cache->marshallers->in(context, cache, &state, in_value,
+                                    js_in_arg)) {
             failed = true;
             break;
         }
@@ -899,8 +901,8 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
 
         JS::RootedValue js_out_arg(context);
         if (!r_value) {
-            if (!cache->marshal_out(context, cache, &state, out_value,
-                                    &js_out_arg)) {
+            if (!cache->marshallers->out(context, cache, &state, out_value,
+                                         &js_out_arg)) {
                 failed = true;
                 break;
             }
@@ -959,7 +961,8 @@ release:
             continue;
         }
 
-        if (!cache->release(context, cache, &state, in_value, out_value)) {
+        if (!cache->marshallers->release(context, cache, &state, in_value,
+                                         out_value)) {
             postinvoke_release_failed = true;
             // continue with the release even if we fail, to avoid leaks
         }
@@ -1033,8 +1036,9 @@ uninit_cached_function_data (Function *function)
         int start_index = g_callable_info_is_method(function->info) ? -2 : -1;
         int gi_argc = g_callable_info_get_n_args(function->info);
         for (int ix = start_index; ix < gi_argc; ix++) {
-            if (function->arguments[ix].free)
-                function->arguments[ix].free(&function->arguments[ix]);
+            if (function->arguments[ix].marshallers->free)
+                function->arguments[ix].marshallers->free(
+                    &function->arguments[ix]);
         }
 
         g_free(&function->arguments[start_index]);

@@ -38,19 +38,23 @@
 #include "gjs/macros.h"
 
 struct GjsFunctionCallState;
+struct GjsArgumentCache;
 
-struct GjsArgumentCache {
-    bool (*marshal_in)(JSContext* cx, GjsArgumentCache* cache,
-                       GjsFunctionCallState* state, GIArgument* in_argument,
-                       JS::HandleValue value);
-    bool (*marshal_out)(JSContext* cx, GjsArgumentCache* cache,
-                        GjsFunctionCallState* state, GIArgument* out_argument,
-                        JS::MutableHandleValue value);
+struct GjsArgumentMarshallers {
+    bool (*in)(JSContext* cx, GjsArgumentCache* cache,
+               GjsFunctionCallState* state, GIArgument* in_argument,
+               JS::HandleValue value);
+    bool (*out)(JSContext* cx, GjsArgumentCache* cache,
+                GjsFunctionCallState* state, GIArgument* out_argument,
+                JS::MutableHandleValue value);
     bool (*release)(JSContext* cx, GjsArgumentCache* cache,
                     GjsFunctionCallState* state, GIArgument* in_argument,
                     GIArgument* out_argument);
     void (*free)(GjsArgumentCache* cache);
+};
 
+struct GjsArgumentCache {
+    const GjsArgumentMarshallers* marshallers;
     const char* arg_name;
     GITypeInfo type_info;
 
@@ -157,7 +161,7 @@ struct GjsArgumentCache {
 #if defined(__x86_64__) && defined(__clang__)
 // This isn't meant to be comprehensive, but should trip on at least one CI job
 // if sizeof(GjsArgumentCache) is increased. */
-static_assert(sizeof(GjsArgumentCache) <= 128,
+static_assert(sizeof(GjsArgumentCache) <= 104,
               "Think very hard before increasing the size of GjsArgumentCache. "
               "One is allocated for every argument to every introspected "
               "function.");
