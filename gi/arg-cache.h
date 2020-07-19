@@ -30,7 +30,6 @@
 #include <stdint.h>
 
 #include <girepository.h>
-#include <glib-object.h>
 #include <glib.h>  // for g_assert
 
 #include <js/RootingAPI.h>
@@ -80,10 +79,7 @@ struct GjsArgumentCache {
         } number;
 
         // boxed / union / GObject
-        struct {
-            GType gtype;
-            GIBaseInfo* info;
-        } object;
+        GIRegisteredTypeInfo* info;
 
         // foreign structures
         GIStructInfo* tmp_foreign_info;
@@ -161,7 +157,7 @@ struct GjsArgumentCache {
 #if defined(__x86_64__) && defined(__clang__)
 // This isn't meant to be comprehensive, but should trip on at least one CI job
 // if sizeof(GjsArgumentCache) is increased. */
-static_assert(sizeof(GjsArgumentCache) <= 136,
+static_assert(sizeof(GjsArgumentCache) <= 128,
               "Think very hard before increasing the size of GjsArgumentCache. "
               "One is allocated for every argument to every introspected "
               "function.");
