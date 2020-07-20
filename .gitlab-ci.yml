@@ -59,7 +59,7 @@ sanitizer_gcc:
   <<: *build
   stage: test
   tags:
-    - privileged  # LSAN needs CAP_SYS_PTRACE
+    - asan # LSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
@@ -224,7 +224,7 @@ sanitizer_clang:
   <<: *build
   stage: manual
   tags:
-    - privileged  # LSAN needs CAP_SYS_PTRACE
+    - asan # LSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
