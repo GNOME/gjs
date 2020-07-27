@@ -256,9 +256,14 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
     }
     JS::ContextOptionsRef(cx)
-        .setIon(enable_jit)
-        .setBaseline(enable_jit)
         .setAsmJS(enable_jit);
+
+    uint32_t value = enable_jit ? 1 : 0;
+
+    JS_SetGlobalJitCompilerOption(
+        cx, JSJitCompilerOption::JSJITCOMPILER_ION_ENABLE, value);
+    JS_SetGlobalJitCompilerOption(
+        cx, JSJitCompilerOption::JSJITCOMPILER_BASELINE_ENABLE, value);
 
     return cx;
 }
