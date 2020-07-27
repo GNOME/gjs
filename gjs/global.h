@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 /*
  * Copyright (c) 2017  Philip Chimento <philip.chimento@gmail.com>
+ * Copyright (c) 2020  Evan Welsh <contact@evanwelsh.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -26,47 +27,88 @@
 
 #include <config.h>
 
+#include <js/RootingAPI.h>  // for Handle
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 
+#include <stdint.h>
+
+#include <type_traits>  // for is_same
+
 #include "gjs/macros.h"
 
-typedef enum {
-    GJS_GLOBAL_SLOT_IMPORTS,
-    GJS_GLOBAL_SLOT_PROTOTYPE_gtype,
-    GJS_GLOBAL_SLOT_PROTOTYPE_function,
-    GJS_GLOBAL_SLOT_PROTOTYPE_ns,
-    GJS_GLOBAL_SLOT_PROTOTYPE_repo,
-    GJS_GLOBAL_SLOT_PROTOTYPE_importer,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_context,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_gradient,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_image_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_linear_gradient,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_path,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_pattern,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_pdf_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_ps_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_radial_gradient,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_region,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_solid_pattern,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_surface,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_surface_pattern,
-    GJS_GLOBAL_SLOT_PROTOTYPE_cairo_svg_surface,
-    GJS_GLOBAL_SLOT_LAST,
-} GjsGlobalSlot;
+enum class GjsGlobalType {
+    DEFAULT,
+    DEBUGGER,
+};
+
+enum class GjsBaseGlobalSlot : uint32_t {
+    GLOBAL_TYPE = 0,
+    LAST,
+};
+
+enum class GjsDebuggerGlobalSlot : uint32_t {
+    LAST = static_cast<uint32_t>(GjsBaseGlobalSlot::LAST),
+};
+
+enum class GjsGlobalSlot : uint32_t {
+    IMPORTS = static_cast<uint32_t>(GjsBaseGlobalSlot::LAST),
+    PROTOTYPE_gtype,
+    PROTOTYPE_importer,
+    PROTOTYPE_function,
+    PROTOTYPE_ns,
+    PROTOTYPE_repo,
+    PROTOTYPE_cairo_context,
+    PROTOTYPE_cairo_gradient,
+    PROTOTYPE_cairo_image_surface,
+    PROTOTYPE_cairo_linear_gradient,
+    PROTOTYPE_cairo_path,
+    PROTOTYPE_cairo_pattern,
+    PROTOTYPE_cairo_pdf_surface,
+    PROTOTYPE_cairo_ps_surface,
+    PROTOTYPE_cairo_radial_gradient,
+    PROTOTYPE_cairo_region,
+    PROTOTYPE_cairo_solid_pattern,
+    PROTOTYPE_cairo_surface,
+    PROTOTYPE_cairo_surface_pattern,
+    PROTOTYPE_cairo_svg_surface,
+    LAST,
+};
+
+GjsGlobalType gjs_global_get_type(JSContext* cx);
+GjsGlobalType gjs_global_get_type(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_create_global_object(JSContext *cx);
+JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
+                                   JS::HandleObject existing_global = nullptr);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
+                                  GjsGlobalType global_type,
                                   const char* realm_name,
                                   const char* bootstrap_script);
 
-void gjs_set_global_slot(JSContext    *context,
-                         GjsGlobalSlot slot,
-                         JS::Value     value);
+namespace detail {
+void set_global_slot(JSObject* global, uint32_t slot, JS::Value value);
+JS::Value get_global_slot(JSObject* global, uint32_t slot);
+}  // namespace detail
 
-JS::Value gjs_get_global_slot(JSContext* cx, GjsGlobalSlot slot);
+template <typename Slot>
+inline void gjs_set_global_slot(JSObject* global, Slot slot, JS::Value value) {
+    static_assert(std::is_same<GjsBaseGlobalSlot, Slot>::value ||
+                      std::is_same<GjsGlobalSlot, Slot>::value ||
+                      std::is_same<GjsDebuggerGlobalSlot, Slot>::value,
+                  "Must use a GJS global slot enum");
+    detail::set_global_slot(global, static_cast<uint32_t>(slot), value);
+}
+
+template <typename Slot>
+inline JS::Value gjs_get_global_slot(JSObject* global, Slot slot) {
+    static_assert(std::is_same<GjsBaseGlobalSlot, Slot>::value ||
+                      std::is_same<GjsGlobalSlot, Slot>::value ||
+                      std::is_same<GjsDebuggerGlobalSlot, Slot>::value,
+                  "Must use a GJS global slot enum");
+    return detail::get_global_slot(global, static_cast<uint32_t>(slot));
+}
 
 #endif  // GJS_GLOBAL_H_

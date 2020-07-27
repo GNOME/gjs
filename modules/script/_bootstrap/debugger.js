@@ -1,4 +1,4 @@
-/* global debuggee, quit, readline, uneval */
+/* global debuggee, quit, loadNative, readline, uneval */
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*-
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,7 +16,7 @@
  * the first frame is executed.
  */
 
-const {print, logError} = imports._print;
+const {print, logError} = loadNative('_print');
 
 // Debugger state.
 var focusedFrame = null;
