@@ -30,8 +30,7 @@
 
 #include <js/CallArgs.h>  // for JSNative
 #include <js/Class.h>
-#include <js/PropertyDescriptor.h>  // for JSPROP_RESOLVING, JSPROP_GETTER
-#include <js/PropertySpec.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_GETTER
 #include <js/Realm.h>  // for GetRealmObjectPrototype
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -44,6 +43,9 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+struct JSFunctionSpec;
+struct JSPropertySpec;
 
 /* Reserved slots of JSNative accessor wrappers */
 enum {
@@ -86,16 +88,6 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
     if (!prototype)
         return false;
 
-    /* Bypass resolve hooks when defining the initial properties */
-    if (clasp->cOps->resolve) {
-        JSPropertySpec *ps_iter;
-        JSFunctionSpec *fs_iter;
-        for (ps_iter = proto_ps; ps_iter && ps_iter->name; ps_iter++)
-            ps_iter->flags |= JSPROP_RESOLVING;
-        for (fs_iter = proto_fs; fs_iter && fs_iter->name; fs_iter++)
-            fs_iter->flags |= JSPROP_RESOLVING;
-    }
-
     if (proto_ps && !JS_DefineProperties(context, prototype, proto_ps))
         return false;
     if (proto_fs && !JS_DefineFunctions(context, prototype, proto_fs))
@@ -116,21 +108,8 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
     if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
         return false;
 
-    if (!clasp->cOps->resolve) {
-        if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
-            return false;
-    } else {
-        /* Have to fake it with JSPROP_RESOLVING, otherwise it will trigger
-         * the resolve hook */
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-        if (!JS_DefinePropertyById(
-                context, constructor, atoms.prototype(), prototype,
-                JSPROP_PERMANENT | JSPROP_READONLY | JSPROP_RESOLVING))
-            return false;
-        if (!JS_DefinePropertyById(context, prototype, atoms.constructor(),
-                                   constructor, JSPROP_RESOLVING))
-            return false;
-    }
+    if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
+        return false;
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
