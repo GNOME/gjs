@@ -42,10 +42,20 @@ cd ${BUILDDIR:-_build}
 echo "files: $files"
 
 IWYU="python3 $(which iwyu_tool) -p ."
+IWYU_RAW="include-what-you-use -xc++ -std=c++17"
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"
 PUBLIC_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-public-iwyu.imp"
 POSTPROCESS="python3 $SRCDIR/tools/process_iwyu.py"
 EXIT=0
+
+# inline-only files with no implementation file don't appear in the compilation
+# database, so iwyu_tool cannot process them
+if should_analyze $SRCDIR/gi/utils-inl.h; then
+    if ! $IWYU_RAW $(realpath --relative-to=. $SRCDIR/gi/utils-inl.h) 2>&1 \
+        | $POSTPROCESS; then
+        EXIT=1
+    fi
+fi
 
 for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
     $SRCDIR/gjs/coverage.cpp $SRCDIR/gjs/debugger.cpp \
