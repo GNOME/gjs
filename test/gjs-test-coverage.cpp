@@ -716,9 +716,9 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
                                           fixture->lcov_output);
 
     const char* expected_function_names[] = {
-        "b",
-        "f",
         "top-level",
+        "f",
+        "b",
     };
     const gsize expected_function_names_len = G_N_ELEMENTS(expected_function_names);
 
@@ -764,9 +764,9 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
     const char* const expected_function_lines[] = {
+        "1",
+        "1",
         "3",
-        "1",
-        "1",
     };
     const gsize expected_function_lines_len = G_N_ELEMENTS(expected_function_lines);
 

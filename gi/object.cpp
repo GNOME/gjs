@@ -2242,6 +2242,10 @@ JSFunctionSpec ObjectBase::proto_methods[] = {
     JS_FN("emit", &ObjectBase::emit, 0, 0),
     JS_FS_END
 };
+
+JSPropertySpec ObjectBase::proto_properties[] = {
+    JS_STRING_SYM_PS(toStringTag, "GObject_Object", JSPROP_READONLY),
+    JS_PS_END};
 // clang-format on
 
 // Override of GIWrapperPrototype::get_parent_proto()

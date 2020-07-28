@@ -810,7 +810,10 @@ const JSClass gjs_importer_class = {
     &gjs_importer_class_ops,
 };
 
-static JSPropertySpec *gjs_importer_proto_props = nullptr;
+static const JSPropertySpec gjs_importer_proto_props[] = {
+    JS_STRING_SYM_PS(toStringTag, "GjsFileImporter", JSPROP_READONLY),
+    JS_PS_END};
+
 static JSFunctionSpec *gjs_importer_static_funcs = nullptr;
 
 JSFunctionSpec gjs_importer_proto_funcs[] = {

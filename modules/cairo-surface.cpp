@@ -29,6 +29,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -55,9 +56,11 @@ static void gjs_cairo_surface_finalize(JSFreeOp*, JSObject* obj) {
 }
 
 /* Properties */
+// clang-format off
 JSPropertySpec gjs_cairo_surface_proto_props[] = {
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "Surface", JSPROP_READONLY),
+    JS_PS_END};
+// clang-format on
 
 /* Methods */
 GJS_JSAPI_RETURN_CONVENTION

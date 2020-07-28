@@ -1,6 +1,6 @@
 project('gjs', 'cpp', 'c', version: '1.65.90', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 0.52.0',
-    default_options: ['cpp_std=c++14', 'c_std=c99', 'warning_level=2'])
+    default_options: ['cpp_std=c++17', 'c_std=c99', 'warning_level=2'])
 
 api_version = '1.0'
 api_name = '@0@-@1@'.format(meson.project_name(), api_version)

@@ -1596,8 +1596,8 @@ struct JSClass gjs_function_class = {
 
 static JSPropertySpec gjs_function_proto_props[] = {
     JS_PSG("length", get_num_arguments, JSPROP_PERMANENT),
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "GIRepositoryFunction", JSPROP_READONLY),
+    JS_PS_END};
 
 /* The original Function.prototype.toString complains when
    given a GIRepository function as an argument */

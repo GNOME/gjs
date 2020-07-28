@@ -106,6 +106,7 @@ get_name_func (JSContext *context,
 /* Properties */
 JSPropertySpec gjs_gtype_proto_props[] = {
     JS_PSG("name", get_name_func, JSPROP_PERMANENT),
+    JS_STRING_SYM_PS(toStringTag, "GIRepositoryGType", JSPROP_READONLY),
     JS_PS_END,
 };
 

@@ -111,6 +111,7 @@ class ObjectBase
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
     static JSFunctionSpec proto_methods[];
+    static JSPropertySpec proto_properties[];
 
     static GObject* to_c_ptr(JSContext* cx, JS::HandleObject obj) = delete;
     GJS_JSAPI_RETURN_CONVENTION
@@ -224,7 +225,7 @@ class ObjectPrototype
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GI_INFO_TYPE_FIELD>,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using NegativeLookupCache =
-        JS::GCHashSet<jsid, IdHasher, js::SystemAllocPolicy>;
+        JS::GCHashSet<JS::Heap<jsid>, IdHasher, js::SystemAllocPolicy>;
 
     PropertyCache m_property_cache;
     FieldCache m_field_cache;

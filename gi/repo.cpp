@@ -33,6 +33,7 @@
 #include <js/Class.h>
 #include <js/Id.h>                  // for JSID_IS_STRING, JSID_VOID
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
+#include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -59,9 +60,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
-
-struct JSFunctionSpec;
-struct JSPropertySpec;
 
 typedef struct {
     void *dummy;
@@ -250,7 +248,12 @@ struct JSClass gjs_repo_class = {
     &gjs_repo_class_ops,
 };
 
-static JSPropertySpec *gjs_repo_proto_props = nullptr;
+// clang-format off
+static const JSPropertySpec gjs_repo_proto_props[] = {
+    JS_STRING_SYM_PS(toStringTag, "GIRepository", JSPROP_READONLY),
+    JS_PS_END};
+// clang-format on
+
 static JSFunctionSpec *gjs_repo_proto_funcs = nullptr;
 static JSFunctionSpec *gjs_repo_static_funcs = nullptr;
 

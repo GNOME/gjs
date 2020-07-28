@@ -200,6 +200,7 @@ struct JSClass gjs_ns_class = {
 };
 
 static JSPropertySpec gjs_ns_proto_props[] = {
+    JS_STRING_SYM_PS(toStringTag, "GIRepositoryNamespace", JSPROP_READONLY),
     JS_PSG("__name__", get_name, GJS_MODULE_PROP_FLAGS),
     JS_PS_END
 };

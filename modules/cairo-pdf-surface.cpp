@@ -34,6 +34,7 @@
 #    include <glib.h>
 
 #    include <js/Class.h>
+#    include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #    include <js/PropertySpec.h>
 #    include <js/RootingAPI.h>
 #    include <jsapi.h>  // for JS_NewObjectWithGivenProto
@@ -85,9 +86,11 @@ gjs_cairo_pdf_surface_finalize(JSFreeOp *fop,
     gjs_cairo_surface_finalize_surface(fop, obj);
 }
 
+// clang-format off
 JSPropertySpec gjs_cairo_pdf_surface_proto_props[] = {
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "PDFSurface", JSPROP_READONLY),
+    JS_PS_END};
+// clang-format on
 
 JSFunctionSpec gjs_cairo_pdf_surface_proto_funcs[] = {
     JS_FS_END

@@ -32,6 +32,7 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/Conversions.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -294,9 +295,11 @@ static void gjs_cairo_context_finalize(JSFreeOp*, JSObject* obj) {
 }
 
 /* Properties */
+// clang-format off
 JSPropertySpec gjs_cairo_context_proto_props[] = {
-    JS_PS_END
-};
+    JS_STRING_SYM_PS(toStringTag, "Context", JSPROP_READONLY),
+    JS_PS_END};
+// clang-format on
 
 /* Methods */
 
