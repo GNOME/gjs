@@ -39,6 +39,7 @@
 #include <jsapi.h>    // for JS_DefinePropertyById, JS_GetProp...
 #include <jspubtd.h>  // for JSProtoKey, JSProto_Error, JSProt...
 
+#include "gi/arg-inl.h"
 #include "gi/boxed.h"
 #include "gi/enumeration.h"
 #include "gi/gerror.h"
@@ -419,21 +420,21 @@ bool ErrorBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
              "transfer_to_gi_argument() must choose between in or out");
 
     if (!ErrorBase::typecheck(cx, obj)) {
-        arg->v_pointer = nullptr;
+        gjs_arg_unset<void*>(arg);
         return false;
     }
 
-    arg->v_pointer = ErrorBase::to_c_ptr(cx, obj);
-    if (!arg->v_pointer)
+    gjs_arg_set(arg, ErrorBase::to_c_ptr(cx, obj));
+    if (!gjs_arg_get<void*>(arg))
         return false;
 
     if ((transfer_direction == GI_DIRECTION_IN &&
          transfer_ownership != GI_TRANSFER_NOTHING) ||
         (transfer_direction == GI_DIRECTION_OUT &&
          transfer_ownership == GI_TRANSFER_EVERYTHING)) {
-        arg->v_pointer =
-            ErrorInstance::copy_ptr(cx, G_TYPE_ERROR, arg->v_pointer);
-        if (!arg->v_pointer)
+        gjs_arg_set(arg, ErrorInstance::copy_ptr(cx, G_TYPE_ERROR,
+                                                 gjs_arg_get<void*>(arg)));
+        if (!gjs_arg_get<void*>(arg))
             return false;
     }
 

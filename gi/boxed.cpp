@@ -44,6 +44,7 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Vector.h>
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/function.h"
@@ -374,7 +375,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
             return false;
         }
 
-        own_ptr(rval_arg.v_pointer);
+        own_ptr(g_steal_pointer(&gjs_arg_member<void*>(&rval_arg)));
 
         debug_lifecycle("Boxed pointer created from zero-args constructor");
 

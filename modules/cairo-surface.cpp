@@ -36,6 +36,7 @@
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/jsapi-class.h"
@@ -257,7 +258,7 @@ surface_to_g_argument(JSContext      *context,
             return false;
         }
 
-        arg->v_pointer = nullptr;
+        gjs_arg_unset<void*>(arg);
         return true;
     }
 
@@ -276,7 +277,7 @@ surface_to_g_argument(JSContext      *context,
     if (transfer == GI_TRANSFER_EVERYTHING)
         cairo_surface_destroy(s);
 
-    arg->v_pointer = s;
+    gjs_arg_set(arg, s);
     return true;
 }
 
@@ -286,9 +287,8 @@ surface_from_g_argument(JSContext             *context,
                         JS::MutableHandleValue value_p,
                         GIArgument            *arg)
 {
-    JSObject *obj;
-
-    obj = gjs_cairo_surface_from_surface(context, (cairo_surface_t*)arg->v_pointer);
+    JSObject* obj = gjs_cairo_surface_from_surface(
+        context, gjs_arg_get<cairo_surface_t*>(arg));
     if (!obj)
         return false;
 
@@ -299,7 +299,7 @@ surface_from_g_argument(JSContext             *context,
 static bool surface_release_argument(JSContext*, GITransfer transfer,
                                      GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
-        cairo_surface_destroy(static_cast<cairo_surface_t*>(arg->v_pointer));
+        cairo_surface_destroy(gjs_arg_get<cairo_surface_t*>(arg));
     return true;
 }
 

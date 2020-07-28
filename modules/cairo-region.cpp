@@ -37,6 +37,7 @@
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_GetPropertyById, JS_SetPropert...
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/atoms.h"
@@ -313,7 +314,7 @@ region_to_g_argument(JSContext      *context,
             return false;
         }
 
-        arg->v_pointer = nullptr;
+        gjs_arg_unset<void*>(arg);
         return true;
     }
 
@@ -326,7 +327,7 @@ region_to_g_argument(JSContext      *context,
     if (transfer == GI_TRANSFER_EVERYTHING)
         cairo_region_destroy(region);
 
-    arg->v_pointer = region;
+    gjs_arg_set(arg, region);
     return true;
 }
 
@@ -336,9 +337,8 @@ region_from_g_argument(JSContext             *context,
                        JS::MutableHandleValue value_p,
                        GIArgument            *arg)
 {
-    JSObject *obj;
-
-    obj = gjs_cairo_region_from_region(context, (cairo_region_t*)arg->v_pointer);
+    JSObject* obj = gjs_cairo_region_from_region(
+        context, gjs_arg_get<cairo_region_t*>(arg));
     if (!obj)
         return false;
 
@@ -349,7 +349,7 @@ region_from_g_argument(JSContext             *context,
 static bool region_release_argument(JSContext*, GITransfer transfer,
                                     GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
-        cairo_region_destroy(static_cast<cairo_region_t*>(arg->v_pointer));
+        cairo_region_destroy(gjs_arg_get<cairo_region_t*>(arg));
     return true;
 }
 

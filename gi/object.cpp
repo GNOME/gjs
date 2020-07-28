@@ -56,6 +56,7 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Vector.h>
 
+#include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/closure.h"
 #include "gi/function.h"
@@ -2421,7 +2422,7 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
              "transfer_to_gi_argument() must choose between in or out");
 
     if (!ObjectBase::typecheck(cx, obj, expected_info, expected_gtype)) {
-        arg->v_pointer = nullptr;
+        gjs_arg_unset<void*>(arg);
         return false;
     }
 
@@ -2429,21 +2430,19 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
     if (!ObjectBase::to_c_ptr(cx, obj, &ptr))
         return false;
 
-    // Pointer can be null if object was already disposed by C code
-    if (!ptr) {
-        arg->v_pointer = nullptr;
-        return true;
-    }
+    gjs_arg_set(arg, ptr);
 
-    arg->v_pointer = ptr;
+    // Pointer can be null if object was already disposed by C code
+    if (!ptr)
+        return true;
 
     if ((transfer_direction == GI_DIRECTION_IN &&
          transfer_ownership != GI_TRANSFER_NOTHING) ||
         (transfer_direction == GI_DIRECTION_OUT &&
          transfer_ownership == GI_TRANSFER_EVERYTHING)) {
-        arg->v_pointer =
-            ObjectInstance::copy_ptr(cx, expected_gtype, arg->v_pointer);
-        if (!arg->v_pointer)
+        gjs_arg_set(arg, ObjectInstance::copy_ptr(cx, expected_gtype,
+                                                  gjs_arg_get<void*>(arg)));
+        if (!gjs_arg_get<void*>(arg))
             return false;
     }
 
