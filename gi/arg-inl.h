@@ -148,14 +148,17 @@ GJS_USE inline decltype(auto) gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline void gjs_arg_set(GIArgument* arg, T v) {
+inline std::enable_if_t<!std::is_pointer_v<T>> gjs_arg_set(GIArgument* arg,
+                                                           T v) {
     gjs_arg_member<T, TAG>(arg) = v;
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline void gjs_arg_set(GIArgument* arg, T* v) {
-    using NonconstT = std::remove_const_t<T>;
-    gjs_arg_member<NonconstT*, TAG>(arg) = const_cast<NonconstT*>(v);
+inline std::enable_if_t<std::is_pointer_v<T>> gjs_arg_set(GIArgument* arg,
+                                                          T v) {
+    using NonconstPtrT =
+        std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
+    gjs_arg_member<NonconstPtrT, TAG>(arg) = const_cast<NonconstPtrT>(v);
 }
 
 // Store function pointers as void*. It is a requirement of GLib that your
