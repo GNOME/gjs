@@ -113,7 +113,7 @@ GJS_USE inline decltype(auto) gjs_arg_member<char32_t>(GIArgument* arg) {
 template <>
 GJS_USE inline decltype(auto) gjs_arg_member<GType, GI_TYPE_TAG_GTYPE>(
     GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_ssize);
+    return gjs_arg_member(arg, &GIArgument::v_size);
 }
 
 template <>
