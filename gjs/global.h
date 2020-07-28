@@ -33,8 +33,6 @@
 
 #include <stdint.h>
 
-#include <type_traits>  // for is_same
-
 #include "gjs/macros.h"
 
 enum class GjsGlobalType {
@@ -95,18 +93,18 @@ JS::Value get_global_slot(JSObject* global, uint32_t slot);
 
 template <typename Slot>
 inline void gjs_set_global_slot(JSObject* global, Slot slot, JS::Value value) {
-    static_assert(std::is_same<GjsBaseGlobalSlot, Slot>::value ||
-                      std::is_same<GjsGlobalSlot, Slot>::value ||
-                      std::is_same<GjsDebuggerGlobalSlot, Slot>::value,
+    static_assert(std::is_same_v<GjsBaseGlobalSlot, Slot> ||
+                      std::is_same_v<GjsGlobalSlot, Slot> ||
+                      std::is_same_v<GjsDebuggerGlobalSlot, Slot>,
                   "Must use a GJS global slot enum");
     detail::set_global_slot(global, static_cast<uint32_t>(slot), value);
 }
 
 template <typename Slot>
 inline JS::Value gjs_get_global_slot(JSObject* global, Slot slot) {
-    static_assert(std::is_same<GjsBaseGlobalSlot, Slot>::value ||
-                      std::is_same<GjsGlobalSlot, Slot>::value ||
-                      std::is_same<GjsDebuggerGlobalSlot, Slot>::value,
+    static_assert(std::is_same_v<GjsBaseGlobalSlot, Slot> ||
+                      std::is_same_v<GjsGlobalSlot, Slot> ||
+                      std::is_same_v<GjsDebuggerGlobalSlot, Slot>,
                   "Must use a GJS global slot enum");
     return detail::get_global_slot(global, static_cast<uint32_t>(slot));
 }

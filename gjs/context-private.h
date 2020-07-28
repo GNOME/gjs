@@ -35,7 +35,6 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/AllocPolicy.h>
 #include <js/GCHashTable.h>
 #include <js/GCVector.h>
 #include <js/Promise.h>
@@ -54,6 +53,9 @@ namespace mozilla {
 template <class Key>
 struct DefaultHasher;
 }
+namespace js {
+class SystemAllocPolicy;
+}
 class GjsAtoms;
 class JSTracer;
 
@@ -70,7 +72,7 @@ using GTypeTable =
 
 struct Dummy {};
 using GTypeNotUint64 =
-    std::conditional_t<!std::is_same<GType, uint64_t>::value, GType, Dummy>;
+    std::conditional_t<!std::is_same_v<GType, uint64_t>, GType, Dummy>;
 
 // The GC sweep method should ignore FundamentalTable and GTypeTable's key types
 namespace JS {

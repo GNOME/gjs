@@ -480,14 +480,14 @@ create_hash_table_for_key_type(GITypeInfo  *key_param_info)
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_integral<T>::value && std::is_signed<T>::value, bool>
+    std::is_integral_v<T> && std::is_signed_v<T>, bool>
 js_value_convert(JSContext* cx, const JS::HandleValue& value, T* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_integral<T>::value && std::is_unsigned<T>::value, bool>
+    std::is_integral_v<T> && std::is_unsigned_v<T>, bool>
 js_value_convert(JSContext* cx, const JS::HandleValue& value, T* out) {
     return JS::ToUint32(cx, value, out);
 }
@@ -498,7 +498,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
     void** pointer_out) {
     Container i;
 
-    static_assert(std::is_integral<IntType>::value, "Need an integer");
+    static_assert(std::is_integral_v<IntType>, "Need an integer");
     static_assert(std::numeric_limits<Container>::max() >=
                   std::numeric_limits<IntType>::max(),
                   "Max possible Container value must be at least the max possible IntType value");
@@ -525,7 +525,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
 
 template <typename IntType>
 GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_signed<IntType>::value, bool>
+    std::is_signed_v<IntType>, bool>
 hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
                   bool* out_of_range, void** pointer_out) {
     return hashtable_int_key<IntType, int32_t>(cx, value, out_of_range,
@@ -534,7 +534,7 @@ hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
 
 template <typename IntType>
 GJS_JSAPI_RETURN_CONVENTION static inline std::enable_if_t<
-    std::is_unsigned<IntType>::value, bool>
+    std::is_unsigned_v<IntType>, bool>
 hashtable_int_key(JSContext* cx, const JS::HandleValue& value,
                   bool* out_of_range, void** pointer_out) {
     return hashtable_int_key<IntType, uint32_t>(cx, value, out_of_range,

@@ -193,13 +193,11 @@ GJS_USE inline gboolean gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<!std::is_pointer<T>::value> gjs_arg_unset(
-    GIArgument* arg) {
+inline std::enable_if_t<!std::is_pointer_v<T>> gjs_arg_unset(GIArgument* arg) {
     gjs_arg_set<T, TAG>(arg, static_cast<T>(0));
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<std::is_pointer<T>::value> gjs_arg_unset(
-    GIArgument* arg) {
+inline std::enable_if_t<std::is_pointer_v<T>> gjs_arg_unset(GIArgument* arg) {
     gjs_arg_set<T, TAG>(arg, nullptr);
 }

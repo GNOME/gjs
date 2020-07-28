@@ -189,16 +189,10 @@ assign(JSContext      *cx,
 
 /* Special case: treat pointer-to-enum as pointer-to-int, but use enable_if to
  * prevent instantiation for any other types besides pointer-to-enum */
-template<typename T,
-         typename std::enable_if<std::is_enum<T>::value, int>::type = 0>
-GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       T              *ref)
-{
+template <typename T, typename std::enable_if_t<std::is_enum_v<T>, int> = 0>
+GJS_ALWAYS_INLINE static inline void assign(JSContext* cx, char c,
+                                            bool nullable,
+                                            JS::HandleValue value, T* ref) {
     /* Sadly, we cannot use std::underlying_type<T> here; the underlying type of
      * an enum is implementation-defined, so it would not be clear what letter
      * to use in the format string. For the same reason, we can only support
@@ -212,9 +206,8 @@ assign(JSContext      *cx,
 
 /* Force JS::RootedObject * to be converted to JS::MutableHandleObject,
  * see overload in jsapi-util-args.cpp */
-template <typename T,
-          typename std::enable_if<!std::is_same<T, JS::RootedObject*>::value,
-                                  int>::type = 0>
+template <typename T, typename std::enable_if_t<
+                          !std::is_same_v<T, JS::RootedObject*>, int> = 0>
 static inline void free_if_necessary(T param_ref G_GNUC_UNUSED) {}
 
 GJS_ALWAYS_INLINE
