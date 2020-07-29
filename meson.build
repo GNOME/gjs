@@ -358,7 +358,7 @@ gjs_public_headers = [
 # Some headers in the following list were formerly public
 
 libgjs_sources = [
-    'gi/arg.cpp', 'gi/arg.h',
+    'gi/arg.cpp', 'gi/arg.h', 'gi/arg-inl.h',
     'gi/boxed.cpp', 'gi/boxed.h',
     'gi/closure.cpp', 'gi/closure.h',
     'gi/enumeration.cpp', 'gi/enumeration.h',
@@ -377,6 +377,7 @@ libgjs_sources = [
     'gi/repo.cpp', 'gi/repo.h',
     'gi/toggle.cpp', 'gi/toggle.h',
     'gi/union.cpp', 'gi/union.h',
+    'gi/utils-inl.h',
     'gi/value.cpp', 'gi/value.h',
     'gi/wrapperutils.cpp', 'gi/wrapperutils.h',
     'gjs/atoms.cpp', 'gjs/atoms.h',

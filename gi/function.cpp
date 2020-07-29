@@ -61,6 +61,7 @@
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
+#include "gi/utils-inl.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-class.h"
@@ -163,8 +164,8 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                 *static_cast<ffi_sarg*>(result) =
                     gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(return_value);
             else
-                *static_cast<ffi_arg*>(result) =
-                    gjs_arg_get<ffi_arg>(return_value);
+                *static_cast<ffi_arg*>(result) = gjs_pointer_to_int<ffi_arg>(
+                    gjs_arg_get<void*>(return_value));
 
             g_base_info_unref(interface_info);
         }
@@ -182,7 +183,8 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
     case GI_TYPE_TAG_GHASH:
     case GI_TYPE_TAG_ERROR:
     default:
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<ffi_arg>(return_value);
+        *static_cast<ffi_arg*>(result) =
+            gjs_pointer_to_int<ffi_arg>(gjs_arg_get<void*>(return_value));
         break;
     }
 }
