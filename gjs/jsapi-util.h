@@ -60,7 +60,11 @@ struct GjsAutoPointer : std::unique_ptr<T, decltype(free_func)> {
         : GjsAutoPointer::unique_ptr(ptr, *free_func) {}
     GjsAutoPointer(T* ptr, const GjsAutoTakeOwnership&)
         : GjsAutoPointer(nullptr) {
-        auto ref = ref_func;  // use if constexpr ... once we're on C++17
+        // FIXME: should use if constexpr (...), but that doesn't work with
+        // ubsan, which generates a null pointer check making it not a constexpr
+        // anymore: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962 - Also a
+        // bogus warning, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94554
+        auto ref = ref_func;
         this->reset(ptr && ref ? reinterpret_cast<T*>(ref(ptr)) : ptr);
     }
 

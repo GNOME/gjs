@@ -514,8 +514,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
          i < static_cast<Container>(std::numeric_limits<IntType>::min())))
         *out_of_range = true;
 
-    /* Use if constexpr with c++17 */
-    if (std::is_signed<IntType>())
+    if constexpr (std::is_signed_v<IntType>)
         *pointer_out = GINT_TO_POINTER(i);
     else
         *pointer_out = GUINT_TO_POINTER(i);
