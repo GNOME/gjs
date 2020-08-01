@@ -61,16 +61,9 @@ typedef struct {
     GFile *output_dir;
 } GjsCoveragePrivate;
 
-#if __GNUC__ >= 8
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
-#endif
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            gjs_coverage,
                            G_TYPE_OBJECT)
-#if __GNUC__ >= 8
-_Pragma("GCC diagnostic pop")
-#endif
 
 enum {
     PROP_0,

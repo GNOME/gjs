@@ -118,15 +118,7 @@ struct _GjsContextClass {
     GObjectClass parent;
 };
 
-/* Temporary workaround for https://bugzilla.gnome.org/show_bug.cgi?id=793175 */
-#if __GNUC__ >= 8
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
-#endif
 G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
-#if __GNUC__ >= 8
-_Pragma("GCC diagnostic pop")
-#endif
 
 GjsContextPrivate* GjsContextPrivate::from_object(GObject* js_context) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
