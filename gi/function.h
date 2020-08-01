@@ -30,6 +30,7 @@
 #include <girepository.h>
 #include <glib-object.h>
 
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
@@ -66,6 +67,18 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
+
+// Stack allocation only!
+struct GjsFunctionCallState {
+    GIArgument* in_cvalues;
+    GIArgument* out_cvalues;
+    GIArgument* inout_original_cvalues;
+    JS::RootedObject instance_object;
+    bool call_completed;
+
+    explicit GjsFunctionCallState(JSContext* cx)
+        : instance_object(cx), call_completed(false) {}
+};
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_define_function(JSContext       *context,

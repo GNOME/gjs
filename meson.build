@@ -359,6 +359,7 @@ gjs_public_headers = [
 
 libgjs_sources = [
     'gi/arg.cpp', 'gi/arg.h', 'gi/arg-inl.h',
+    'gi/arg-cache.cpp', 'gi/arg-cache.h',
     'gi/boxed.cpp', 'gi/boxed.h',
     'gi/closure.cpp', 'gi/closure.h',
     'gi/enumeration.cpp', 'gi/enumeration.h',

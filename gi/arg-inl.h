@@ -147,6 +147,13 @@ GJS_USE inline decltype(auto) gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
     return gjs_arg_member(arg, &GIArgument::v_int);
 }
 
+// Unsigned enums
+template <>
+GJS_USE inline decltype(auto) gjs_arg_member<unsigned, GI_TYPE_TAG_INTERFACE>(
+    GIArgument* arg) {
+    return gjs_arg_member(arg, &GIArgument::v_uint);
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 inline std::enable_if_t<!std::is_pointer_v<T>> gjs_arg_set(GIArgument* arg,
                                                            T v) {

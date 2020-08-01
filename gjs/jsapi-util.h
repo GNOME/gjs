@@ -147,6 +147,7 @@ using GjsAutoObjectInfo = GjsAutoInfo<GI_INFO_TYPE_OBJECT>;
 using GjsAutoPropertyInfo = GjsAutoInfo<GI_INFO_TYPE_PROPERTY>;
 using GjsAutoStructInfo = GjsAutoInfo<GI_INFO_TYPE_STRUCT>;
 using GjsAutoTypeInfo = GjsAutoInfo<GI_INFO_TYPE_TYPE>;
+using GjsAutoValueInfo = GjsAutoInfo<GI_INFO_TYPE_VALUE>;
 using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;
 
 // GICallableInfo can be one of several tags, so we have to have a separate
