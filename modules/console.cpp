@@ -247,9 +247,9 @@ public:
     }
 };
 
-#ifdef HAVE_READLINE_READLINE_H
 GJS_USE
 static bool gjs_console_readline(char** bufp, const char* prompt) {
+#ifdef HAVE_READLINE_READLINE_H
     char *line;
     line = readline(prompt);
     if (!line)
@@ -257,20 +257,16 @@ static bool gjs_console_readline(char** bufp, const char* prompt) {
     if (line[0] != '\0')
         add_history(line);
     *bufp = line;
-    return true;
-}
-#else
-GJS_USE
-static bool gjs_console_readline(char** bufp, const char* prompt) {
+#else   // !HAVE_READLINE_READLINE_H
     char line[256];
     fprintf(stdout, "%s", prompt);
     fflush(stdout);
     if (!fgets(line, sizeof line, stdin))
         return false;
     *bufp = g_strdup(line);
+#endif  // !HAVE_READLINE_READLINE_H
     return true;
 }
-#endif
 
 /* Return value of false indicates an uncatchable exception, rather than any
  * exception. (This is because the exception should be auto-printed around the
