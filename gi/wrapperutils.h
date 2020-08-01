@@ -460,7 +460,8 @@ class GIWrapperBase {
      */
     static void finalize(JSFreeOp* fop, JSObject* obj) {
         Base* priv = Base::for_js_nocheck(obj);
-        g_assert(priv);
+        if (!priv)
+            return;  // construction didn't finish
 
         // Call only GIWrapperBase's original method here, not any overrides;
         // e.g., we don't want to deal with a read barrier in ObjectInstance.
@@ -528,6 +529,14 @@ class GIWrapperBase {
             cx, JS_NewObjectForConstructor(cx, &Base::klass, args));
         if (!obj)
             return false;
+
+        JS::RootedObject proto(cx);
+        if (!JS_GetPrototype(cx, obj, &proto))
+            return false;
+        if (JS_GetClass(proto) != &Base::klass) {
+            gjs_throw(cx, "Tried to construct an object without a GType");
+            return false;
+        }
 
         args.rval().setUndefined();
 
