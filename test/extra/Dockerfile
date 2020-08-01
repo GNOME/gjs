@@ -2,7 +2,7 @@
 
 FROM fedora:32 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs68
-ARG BUILD_OPTS=
+ARG BUILD_OPTS="--enable-posix-nspr-emulation --enable-unaligned-private-values"
 
 ENV SHELL=/bin/bash
 
@@ -17,7 +17,6 @@ RUN mkdir -p mozjs/_build
 WORKDIR /root/mozjs/_build
 
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
-    --enable-posix-nspr-emulation --enable-unaligned-private-values \
     --with-system-zlib --with-intl-api AUTOCONF=autoconf ${BUILD_OPTS}
 RUN make -j$(nproc)
 RUN DESTDIR=/root/mozjs-install make install
