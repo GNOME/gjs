@@ -48,8 +48,7 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-GJS_USE
-static JSObject *gjs_cairo_region_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_region_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_WITH_GTYPE("Region", cairo_region,
                             CAIRO_GOBJECT_TYPE_REGION,
@@ -296,16 +295,10 @@ gjs_cairo_region_from_region(JSContext *context,
     return object;
 }
 
-GJS_USE
-static bool
-region_to_g_argument(JSContext      *context,
-                     JS::Value       value,
-                     const char     *arg_name,
-                     GjsArgumentType argument_type,
-                     GITransfer      transfer,
-                     bool            may_be_null,
-                     GArgument      *arg)
-{
+[[nodiscard]] static bool region_to_g_argument(
+    JSContext* context, JS::Value value, const char* arg_name,
+    GjsArgumentType argument_type, GITransfer transfer, bool may_be_null,
+    GIArgument* arg) {
     if (value.isNull()) {
         if (!may_be_null) {
             GjsAutoChar display_name =

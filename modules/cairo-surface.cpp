@@ -240,16 +240,10 @@ cairo_surface_t* gjs_cairo_surface_get_surface(
     return static_cast<cairo_surface_t*>(JS_GetPrivate(surface_wrapper));
 }
 
-GJS_USE
-static bool
-surface_to_g_argument(JSContext      *context,
-                      JS::Value       value,
-                      const char     *arg_name,
-                      GjsArgumentType argument_type,
-                      GITransfer      transfer,
-                      bool            may_be_null,
-                      GArgument      *arg)
-{
+[[nodiscard]] static bool surface_to_g_argument(
+    JSContext* context, JS::Value value, const char* arg_name,
+    GjsArgumentType argument_type, GITransfer transfer, bool may_be_null,
+    GIArgument* arg) {
     if (value.isNull()) {
         if (!may_be_null) {
             GjsAutoChar display_name =

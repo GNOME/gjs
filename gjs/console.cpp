@@ -69,11 +69,7 @@ static GOptionEntry entries[] = {
 };
 // clang-format on
 
-GJS_USE
-static char **
-strndupv(int           n,
-         char * const *strv)
-{
+[[nodiscard]] static char** strndupv(int n, char* const* strv) {
     int ix;
     if (n == 0)
         return NULL;
@@ -84,11 +80,7 @@ strndupv(int           n,
     return retval;
 }
 
-GJS_USE
-static char **
-strcatv(char **strv1,
-        char **strv2)
-{
+[[nodiscard]] static char** strcatv(char** strv1, char** strv2) {
     if (strv1 == NULL && strv2 == NULL)
         return NULL;
     if (strv1 == NULL)
@@ -110,9 +102,8 @@ strcatv(char **strv1,
     return retval;
 }
 
-static gboolean parse_profile_arg(const char* option_name G_GNUC_UNUSED,
-                                  const char* value, void*,
-                                  GError** error_out G_GNUC_UNUSED) {
+static gboolean parse_profile_arg(const char* option_name [[maybe_unused]],
+                                  const char* value, void*, GError**) {
     enable_profiler = true;
     g_free(profile_output_path);
     profile_output_path = g_strdup(value);

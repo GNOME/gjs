@@ -46,7 +46,7 @@
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 
-GJS_USE static JSObject* gjs_gtype_get_proto(JSContext* cx) G_GNUC_UNUSED;
+[[nodiscard]] [[maybe_unused]] static JSObject* gjs_gtype_get_proto(JSContext*);
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_gtype_define_proto(JSContext *, JS::HandleObject,
                                    JS::MutableHandleObject);

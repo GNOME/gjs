@@ -43,7 +43,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-GJS_ALWAYS_INLINE GJS_USE static inline bool check_nullable(
+GJS_ALWAYS_INLINE [[nodiscard]] static inline bool check_nullable(
     const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
         return false;
@@ -208,7 +208,7 @@ GJS_ALWAYS_INLINE static inline void assign(JSContext* cx, char c,
  * see overload in jsapi-util-args.cpp */
 template <typename T, typename std::enable_if_t<
                           !std::is_same_v<T, JS::RootedObject*>, int> = 0>
-static inline void free_if_necessary(T param_ref G_GNUC_UNUSED) {}
+static inline void free_if_necessary(T param_ref [[maybe_unused]]) {}
 
 GJS_ALWAYS_INLINE
 static inline void
@@ -279,7 +279,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
 }
 
 /* Empty-args version of the template */
-G_GNUC_UNUSED GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
+GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
     JSContext* cx, const char* function_name, const JS::CallArgs& args,
     const char* format) {
     bool ignore_trailing_args = false;

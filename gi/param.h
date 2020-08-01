@@ -44,10 +44,7 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject*   gjs_param_from_g_param     (JSContext  *context,
                                         GParamSpec *param);
 
-GJS_USE
-bool        gjs_typecheck_param(JSContext       *context,
-                                JS::HandleObject obj,
-                                GType            expected_type,
-                                bool             throw_error);
+[[nodiscard]] bool gjs_typecheck_param(JSContext* cx, JS::HandleObject obj,
+                                       GType expected_type, bool throw_error);
 
 #endif  // GI_PARAM_H_

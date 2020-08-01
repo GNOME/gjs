@@ -171,45 +171,48 @@ class GjsContextPrivate : public JS::JobQueue {
 
  public:
     /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
-    GJS_USE GJS_ALWAYS_INLINE static GjsContextPrivate* from_cx(JSContext* cx) {
+    [[nodiscard]] static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
     }
-    GJS_USE static GjsContextPrivate* from_object(GObject* public_context);
-    GJS_USE static GjsContextPrivate* from_object(GjsContext* public_context);
-    GJS_USE static GjsContextPrivate* from_current_context();
+    [[nodiscard]] static GjsContextPrivate* from_object(
+        GObject* public_context);
+    [[nodiscard]] static GjsContextPrivate* from_object(
+        GjsContext* public_context);
+    [[nodiscard]] static GjsContextPrivate* from_current_context();
 
     GjsContextPrivate(JSContext* cx, GjsContext* public_context);
     ~GjsContextPrivate(void);
 
     /* Accessors */
-    GJS_USE GjsContext* public_context(void) const { return m_public_context; }
-    GJS_USE JSContext* context(void) const { return m_cx; }
-    GJS_USE JSObject* global(void) const { return m_global.get(); }
-    GJS_USE GjsProfiler* profiler(void) const { return m_profiler; }
-    GJS_USE const GjsAtoms& atoms(void) const { return *m_atoms; }
-    GJS_USE bool destroying(void) const { return m_destroying; }
-    GJS_USE bool sweeping(void) const { return m_in_gc_sweep; }
-    GJS_USE const char* program_name(void) const { return m_program_name; }
+    [[nodiscard]] GjsContext* public_context() const {
+        return m_public_context;
+    }
+    [[nodiscard]] JSContext* context() const { return m_cx; }
+    [[nodiscard]] JSObject* global() const { return m_global.get(); }
+    [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
+    [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
+    [[nodiscard]] bool destroying() const { return m_destroying; }
+    [[nodiscard]] bool sweeping() const { return m_in_gc_sweep; }
+    [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
     void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
-    GJS_USE bool is_owner_thread(void) const {
+    [[nodiscard]] bool is_owner_thread() const {
         return m_owner_thread == g_thread_self();
     }
-    GJS_USE JS::WeakCache<FundamentalTable>& fundamental_table(void) {
+    [[nodiscard]] JS::WeakCache<FundamentalTable>& fundamental_table() {
         return *m_fundamental_table;
     }
-    GJS_USE JS::WeakCache<GTypeTable>& gtype_table(void) {
+    [[nodiscard]] JS::WeakCache<GTypeTable>& gtype_table() {
         return *m_gtype_table;
     }
-    GJS_USE ObjectInitList& object_init_list(void) {
+    [[nodiscard]] ObjectInitList& object_init_list() {
         return m_object_init_list;
     }
-    GJS_USE
-    static const GjsAtoms& atoms(JSContext* cx) {
+    [[nodiscard]] static const GjsAtoms& atoms(JSContext* cx) {
         return *(from_cx(cx)->m_atoms);
     }
 
@@ -229,7 +232,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void schedule_gc_if_needed(void);
 
     void exit(uint8_t exit_code);
-    GJS_USE bool should_exit(uint8_t* exit_code_p) const;
+    [[nodiscard]] bool should_exit(uint8_t* exit_code_p) const;
 
     // Implementations of JS::JobQueue virtual functions
     GJS_JSAPI_RETURN_CONVENTION
@@ -240,7 +243,7 @@ class GjsContextPrivate : public JS::JobQueue {
                            JS::HandleObject allocation_site,
                            JS::HandleObject incumbent_global) override;
     void runJobs(JSContext* cx) override;
-    GJS_USE bool empty(void) const override { return m_job_queue.empty(); };
+    [[nodiscard]] bool empty() const override { return m_job_queue.empty(); }
     js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
         JSContext* cx) override;
 

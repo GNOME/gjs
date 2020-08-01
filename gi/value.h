@@ -46,12 +46,12 @@ bool gjs_value_from_g_value(JSContext             *context,
                             JS::MutableHandleValue value_p,
                             const GValue          *gvalue);
 
-GJS_USE
-GClosure* gjs_closure_new_marshaled(JSContext* cx, JSFunction* callable,
-                                    const char* description);
-GJS_USE
-GClosure* gjs_closure_new_for_signal(JSContext* cx, JSFunction* callable,
-                                     const char* description,
-                                     unsigned signal_id);
+[[nodiscard]] GClosure* gjs_closure_new_marshaled(JSContext* cx,
+                                                  JSFunction* callable,
+                                                  const char* description);
+[[nodiscard]] GClosure* gjs_closure_new_for_signal(JSContext* cx,
+                                                   JSFunction* callable,
+                                                   const char* description,
+                                                   unsigned signal_id);
 
 #endif  // GI_VALUE_H_

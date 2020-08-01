@@ -39,8 +39,7 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-GJS_USE
-static JSObject *gjs_cairo_solid_pattern_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_solid_pattern_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_ABSTRACT_WITH_PARENT("SolidPattern", cairo_solid_pattern,
                                       cairo_pattern,

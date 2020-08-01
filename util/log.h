@@ -107,7 +107,7 @@ typedef enum {
             gjs_debug(topic, __VA_ARGS__); \
         } while (0)
 #else
-#    define GJS_USED_VERBOSE_PROPS G_GNUC_UNUSED
+#    define GJS_USED_VERBOSE_PROPS [[maybe_unused]]
 #    define gjs_debug_jsprop(topic, ...) ((void)0)
 #endif
 
@@ -118,7 +118,7 @@ typedef enum {
             gjs_debug(topic, __VA_ARGS__); \
         } while (0)
 #else
-#    define GJS_USED_VERBOSE_MARSHAL G_GNUC_UNUSED
+#    define GJS_USED_VERBOSE_MARSHAL [[maybe_unused]]
 #    define gjs_debug_marshal(topic, ...) ((void)0)
 #endif
 
@@ -129,7 +129,7 @@ typedef enum {
             gjs_debug(topic, __VA_ARGS__);  \
         } while (0)
 #else
-#    define GJS_USED_VERBOSE_LIFECYCLE G_GNUC_UNUSED
+#    define GJS_USED_VERBOSE_LIFECYCLE [[maybe_unused]]
 #    define gjs_debug_lifecycle(topic, ...) ((void)0)
 #endif
 
@@ -140,7 +140,7 @@ typedef enum {
             gjs_debug(GJS_DEBUG_GI_USAGE, __VA_ARGS__); \
         } while (0)
 #else
-#    define GJS_USED_VERBOSE_GI_USAGE G_GNUC_UNUSED
+#    define GJS_USED_VERBOSE_GI_USAGE [[maybe_unused]]
 #    define gjs_debug_gi_usage(...) ((void)0)
 #endif
 
@@ -151,7 +151,7 @@ typedef enum {
             gjs_debug(GJS_DEBUG_GCLOSURE, __VA_ARGS__); \
         } while (0)
 #else
-#    define GJS_USED_VERBOSE_GCLOSURE G_GNUC_UNUSED
+#    define GJS_USED_VERBOSE_GCLOSURE [[maybe_unused]]
 #    define gjs_debug_closure(...) ((void)0)
 #endif
 
@@ -162,7 +162,7 @@ typedef enum {
             gjs_debug(GJS_DEBUG_GOBJECT, __VA_ARGS__); \
         } while (0)
 #else
-#    define GJS_USED_VERBOSE_GSIGNAL G_GNUC_UNUSED
+#    define GJS_USED_VERBOSE_GSIGNAL [[maybe_unused]]
 #    define gjs_debug_gsignal(...) ((void)0)
 #endif
 

@@ -39,8 +39,7 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-GJS_USE
-static JSObject *gjs_cairo_surface_pattern_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_surface_pattern_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_WITH_PARENT("SurfacePattern", cairo_surface_pattern,
                              cairo_pattern, JSCLASS_BACKGROUND_FINALIZE)

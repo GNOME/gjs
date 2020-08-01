@@ -132,10 +132,7 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
     return found;
 }
 
-GJS_USE
-static bool
-_gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
-{
+[[nodiscard]] static bool _gjs_enum_uses_signed_type(GIEnumInfo* enum_info) {
     GITypeTag storage = g_enum_info_get_storage_type(enum_info);
     return (storage == GI_TYPE_TAG_INT8 ||
         storage == GI_TYPE_TAG_INT16 ||
@@ -148,8 +145,7 @@ _gjs_enum_uses_signed_type (GIEnumInfo *enum_info)
 // enumerations being passed on the stack in a 32-bit field. See FIXME comment
 // in g_field_info_get_field(). The same assumption of enums cast to 32-bit
 // signed integers is found in g_value_set_enum()/g_value_set_flags().
-GJS_USE
-int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value) {
+[[nodiscard]] int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value) {
     if (_gjs_enum_uses_signed_type (enum_info))
         return int64_t(int_value);
     else
@@ -157,17 +153,15 @@ int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value) {
 }
 
 /* Here for symmetry, but result is the same for the two cases */
-GJS_USE
-static int _gjs_enum_to_int(int64_t value) { return static_cast<int>(value); }
+[[nodiscard]] static int _gjs_enum_to_int(int64_t value) {
+    return static_cast<int>(value);
+}
 
 /* Check if an argument of the given needs to be released if we created it
  * from a JS value to pass it into a function and aren't transfering ownership.
  */
-GJS_USE
-static bool
-type_needs_release (GITypeInfo *type_info,
-                    GITypeTag   type_tag)
-{
+[[nodiscard]] static bool type_needs_release(GITypeInfo* type_info,
+                                             GITypeTag type_tag) {
     if (type_tag == GI_TYPE_TAG_UTF8 ||
         type_tag == GI_TYPE_TAG_FILENAME ||
         type_tag == GI_TYPE_TAG_ARRAY ||
@@ -225,11 +219,8 @@ type_needs_release (GITypeInfo *type_info,
 /* Check if an argument of the given needs to be released if we obtained it
  * from out argument (or the return value), and we're transferring ownership
  */
-GJS_USE
-static bool
-type_needs_out_release(GITypeInfo *type_info,
-                       GITypeTag   type_tag)
-{
+[[nodiscard]] static bool type_needs_out_release(GITypeInfo* type_info,
+                                                 GITypeTag type_tag) {
     if (type_tag == GI_TYPE_TAG_UTF8 ||
         type_tag == GI_TYPE_TAG_FILENAME ||
         type_tag == GI_TYPE_TAG_ARRAY ||
@@ -265,8 +256,7 @@ type_needs_out_release(GITypeInfo *type_info,
 }
 
 /* FIXME: This should be added to gobject-introspection */
-GJS_USE
-static GITypeTag _g_type_info_get_storage_type(GITypeInfo* info) {
+[[nodiscard]] static GITypeTag _g_type_info_get_storage_type(GITypeInfo* info) {
     GITypeTag type_tag = g_type_info_get_tag(info);
 
     if (type_tag == GI_TYPE_TAG_INTERFACE) {
@@ -337,9 +327,8 @@ static void _g_type_info_argument_from_hash_pointer(GITypeInfo* info,
 }
 
 /* FIXME: This should be added to gobject-introspection */
-GJS_USE
-static void* _g_type_info_hash_pointer_from_argument(GITypeInfo* info,
-                                                     GIArgument* arg) {
+[[nodiscard]] static void* _g_type_info_hash_pointer_from_argument(
+    GITypeInfo* info, GIArgument* arg) {
     GITypeTag type_tag = _g_type_info_get_storage_type(info);
 
     switch (type_tag) {
@@ -463,10 +452,8 @@ gjs_array_to_g_list(JSContext   *context,
     return true;
 }
 
-GJS_USE
-static GHashTable *
-create_hash_table_for_key_type(GITypeInfo  *key_param_info)
-{
+[[nodiscard]] static GHashTable* create_hash_table_for_key_type(
+    GITypeInfo* key_param_info) {
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
      * Rely on the type-aware g_argument_release functions. */
@@ -675,7 +662,7 @@ value_to_ghashtable_key(JSContext      *cx,
 }
 
 template <typename T>
-GJS_USE static T* heap_value_new_from_arg(GIArgument* val_arg) {
+[[nodiscard]] static T* heap_value_new_from_arg(GIArgument* val_arg) {
     T* heap_val = g_new(T, 1);
     *heap_val = gjs_arg_get<T>(val_arg);
 
@@ -1245,11 +1232,7 @@ gjs_array_from_flat_gvalue_array(JSContext             *context,
     return result;
 }
 
-GJS_USE
-static bool
-is_gvalue(GIBaseInfo *info,
-          GIInfoType  info_type)
-{
+[[nodiscard]] static bool is_gvalue(GIBaseInfo* info, GIInfoType info_type) {
     if (info_type == GI_INFO_TYPE_VALUE)
         return true;
 
@@ -1264,11 +1247,8 @@ is_gvalue(GIBaseInfo *info,
     return false;
 }
 
-GJS_USE
-static bool
-is_gvalue_flat_array(GITypeInfo *param_info,
-                     GITypeTag   element_type)
-{
+[[nodiscard]] static bool is_gvalue_flat_array(GITypeInfo* param_info,
+                                               GITypeTag element_type) {
     GIBaseInfo *interface_info;
     GIInfoType info_type;
     bool result;
@@ -1356,7 +1336,7 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                     info_type, arr_p);
             }
         }
-        /* fall through */
+        [[fallthrough]];
     case GI_TYPE_TAG_ARRAY:
     case GI_TYPE_TAG_GLIST:
     case GI_TYPE_TAG_GSLIST:
@@ -1458,10 +1438,8 @@ char* gjs_argument_display_name(const char* arg_name,
     }
 }
 
-GJS_USE
-static const char *
-type_tag_to_human_string(GITypeInfo *type_info)
-{
+[[nodiscard]] static const char* type_tag_to_human_string(
+    GITypeInfo* type_info) {
     GITypeTag tag;
 
     tag = g_type_info_get_tag(type_info);
@@ -1559,10 +1537,7 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
     return true;
 }
 
-GJS_USE
-static bool
-is_gdk_atom(GIBaseInfo *info)
-{
+[[nodiscard]] static bool is_gdk_atom(GIBaseInfo* info) {
     return (strcmp("Atom", g_base_info_get_name(info)) == 0 &&
             strcmp("Gdk", g_base_info_get_namespace(info)) == 0);
 }
@@ -3566,7 +3541,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                         break;
                     }
                 }
-                /* fall through */
+                [[fallthrough]];
             case GI_TYPE_TAG_GLIST:
             case GI_TYPE_TAG_GSLIST:
             case GI_TYPE_TAG_ARRAY:

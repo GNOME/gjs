@@ -44,11 +44,9 @@ bool gjs_init_class_dynamic(
     JSFunctionSpec* fs, JSPropertySpec* static_ps, JSFunctionSpec* static_fs,
     JS::MutableHandleObject prototype, JS::MutableHandleObject constructor);
 
-GJS_USE
-bool gjs_typecheck_instance(JSContext       *cx,
-                            JS::HandleObject obj,
-                            const JSClass   *static_clasp,
-                            bool             throw_error);
+[[nodiscard]] bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,
+                                          const JSClass* static_clasp,
+                                          bool throw_error);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
@@ -79,16 +77,16 @@ bool gjs_define_property_dynamic(JSContext       *cx,
  *                              do_base_typecheck and priv_from_js
  */
 #define GJS_DEFINE_PRIV_FROM_JS(type, klass)                                   \
-    GJS_ALWAYS_INLINE GJS_USE G_GNUC_UNUSED static inline bool                 \
+    GJS_ALWAYS_INLINE [[nodiscard]] [[maybe_unused]] static inline bool        \
     do_base_typecheck(JSContext* cx, JS::HandleObject obj, bool throw_error) { \
         return gjs_typecheck_instance(cx, obj, &klass, throw_error);           \
     }                                                                          \
-    GJS_ALWAYS_INLINE GJS_USE static inline type* priv_from_js(                \
+    GJS_ALWAYS_INLINE [[nodiscard]] static inline type* priv_from_js(          \
         JSContext* cx, JS::HandleObject obj) {                                 \
         return static_cast<type*>(                                             \
             JS_GetInstancePrivate(cx, obj, &klass, nullptr));                  \
     }                                                                          \
-    G_GNUC_UNUSED GJS_USE static bool priv_from_js_with_typecheck(             \
+    [[nodiscard]] [[maybe_unused]] static bool priv_from_js_with_typecheck(    \
         JSContext* cx, JS::HandleObject obj, type** out) {                     \
         if (!do_base_typecheck(cx, obj, false))                                \
             return false;                                                      \
@@ -182,22 +180,20 @@ _GJS_DEFINE_PROTO_FULL(tn, cn, parent_cn, nullptr, G_TYPE_NONE, flags)
         JSCLASS_HAS_PRIVATE | jsclass_flags,                                \
         &gjs_##cname##_class_ops                                            \
     };                                                                      \
-    _GJS_DEFINE_GET_PROTO(cname)                                            \
-    _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)
+    [[maybe_unused]] [[nodiscard]] _GJS_DEFINE_GET_PROTO(cname)                                            \
+    [[maybe_unused]] GJS_JSAPI_RETURN_CONVENTION _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, gtype)
 // clang-format on
 
-#define GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, parent_cname)  \
-G_GNUC_UNUSED static                                             \
-_GJS_DEFINE_GET_PROTO(cname)                                     \
-G_GNUC_UNUSED static                                             \
-_GJS_DEFINE_DEFINE_PROTO(cname, parent_cname,                    \
-                         gjs_##cname##_constructor, G_TYPE_NONE)
+#define GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, parent_cname)                   \
+    [[maybe_unused]] [[nodiscard]] static _GJS_DEFINE_GET_PROTO(cname);           \
+    [[maybe_unused]] GJS_JSAPI_RETURN_CONVENTION static _GJS_DEFINE_DEFINE_PROTO( \
+        cname, parent_cname, gjs_##cname##_constructor, G_TYPE_NONE);
 
 #define GJS_DEFINE_PROTO_FUNCS(cname)  \
 GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
 
 #define _GJS_DEFINE_GET_PROTO(cname)                                           \
-    GJS_USE JSObject* gjs_##cname##_get_proto(JSContext* cx) {                 \
+    JSObject* gjs_##cname##_get_proto(JSContext* cx) {                         \
         JSObject* global = JS::CurrentGlobalOrNull(cx);                        \
         g_assert(global);                                                      \
                                                                                \
@@ -214,7 +210,6 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
     }
 
 #define _GJS_DEFINE_DEFINE_PROTO(cname, parent_cname, ctor, type)              \
-    GJS_JSAPI_RETURN_CONVENTION                                                \
     bool gjs_##cname##_define_proto(JSContext* cx, JS::HandleObject module,    \
                                     JS::MutableHandleObject proto) {           \
         /* If we've been here more than once, we already have the proto */     \
@@ -293,9 +288,9 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
  * Declare variables necessary for the constructor; should
  * be at the very top.
  */
-#define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name)                      \
-    JS::RootedObject object(context);                               \
-    JS::CallArgs argv G_GNUC_UNUSED = JS::CallArgsFromVp(argc, vp);
+#define GJS_NATIVE_CONSTRUCTOR_VARIABLES(name) \
+    JS::RootedObject object(context);          \
+    [[maybe_unused]] JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
 /**
  * GJS_NATIVE_CONSTRUCTOR_PRELUDE:
@@ -334,8 +329,8 @@ GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(cname, no_parent)
         return false;                                           \
     }
 
-GJS_USE
-JS::Value gjs_dynamic_property_private_slot(JSObject *accessor_obj);
+[[nodiscard]] JS::Value gjs_dynamic_property_private_slot(
+    JSObject* accessor_obj);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,

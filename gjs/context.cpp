@@ -184,7 +184,7 @@ static gboolean dump_heap_idle(void*) {
     return false;
 }
 
-static void dump_heap_signal_handler(int signum G_GNUC_UNUSED) {
+static void dump_heap_signal_handler(int signum [[maybe_unused]]) {
     if (dump_heap_idle_id == 0)
         dump_heap_idle_id = g_idle_add_full(G_PRIORITY_HIGH_IDLE,
                                             dump_heap_idle, nullptr, nullptr);
@@ -693,9 +693,9 @@ JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
 
 /* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
 bool GjsContextPrivate::enqueuePromiseJob(
-    JSContext* cx, JS::HandleObject promise G_GNUC_UNUSED, JS::HandleObject job,
-    JS::HandleObject allocation_site G_GNUC_UNUSED,
-    JS::HandleObject incumbent_global G_GNUC_UNUSED) {
+    JSContext* cx, JS::HandleObject promise [[maybe_unused]],
+    JS::HandleObject job, JS::HandleObject allocation_site [[maybe_unused]],
+    JS::HandleObject incumbent_global [[maybe_unused]]) {
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
 

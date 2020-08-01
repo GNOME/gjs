@@ -98,11 +98,11 @@ struct GjsAtom {
     /* It's OK to return JS::HandleId here, to avoid an extra root, with the
      * caveat that you should not use this value after the GjsContext has been
      * destroyed.*/
-    GJS_USE JS::HandleId operator()() const {
+    [[nodiscard]] JS::HandleId operator()() const {
         return JS::HandleId::fromMarkedLocation(&m_jsid.get());
     }
 
-    GJS_USE JS::Heap<jsid>* id() { return &m_jsid; }
+    [[nodiscard]] JS::Heap<jsid>* id() { return &m_jsid; }
 
  protected:
     JS::Heap<jsid> m_jsid;

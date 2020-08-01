@@ -65,7 +65,7 @@ class FundamentalBase
 
     // Helper methods
 
-    GJS_USE const char* to_string_kind(void) const { return "fundamental"; }
+    [[nodiscard]] const char* to_string_kind() const { return "fundamental"; }
 
     // Public API
 
@@ -99,12 +99,13 @@ class FundamentalPrototype
 
     // Accessors
 
-    GJS_USE
-    GICallableInfo* constructor_info(void) const { return m_constructor_info; }
+    [[nodiscard]] GICallableInfo* constructor_info() const {
+        return m_constructor_info;
+    }
 
     void* call_ref_function(void* ptr) const { return m_ref_function(ptr); }
     void call_unref_function(void* ptr) const { m_unref_function(ptr); }
-    GJS_USE void* call_get_value_function(const GValue* value) const {
+    [[nodiscard]] void* call_get_value_function(const GValue* value) const {
         return m_get_value_function(value);
     }
     void call_set_value_function(GValue* value, void* object) const {
@@ -117,7 +118,7 @@ class FundamentalPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const;
 
-    GJS_USE unsigned constructor_nargs(void) const;
+    [[nodiscard]] unsigned constructor_nargs() const;
 
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_interface(JSContext* cx, JS::HandleObject obj, bool* resolved,

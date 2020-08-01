@@ -86,14 +86,14 @@ class BoxedBase
 
     // Helper methods that work on either instances or prototypes
 
-    GJS_USE const char* to_string_kind(void) const { return "boxed"; }
+    [[nodiscard]] const char* to_string_kind() const { return "boxed"; }
 
     GJS_JSAPI_RETURN_CONVENTION
     GIFieldInfo* get_field_info(JSContext* cx, uint32_t id) const;
 
  public:
-    GJS_USE
-    BoxedBase* get_copy_source(JSContext* cx, JS::Value value) const;
+    [[nodiscard]] BoxedBase* get_copy_source(JSContext* cx,
+                                             JS::Value value) const;
 };
 
 class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
@@ -122,23 +122,20 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     // Accessors
 
  public:
-    GJS_USE
-    bool can_allocate_directly(void) const { return m_can_allocate_directly; }
-    GJS_USE
-    bool has_zero_args_constructor(void) const {
+    [[nodiscard]] bool can_allocate_directly() const {
+        return m_can_allocate_directly;
+    }
+    [[nodiscard]] bool has_zero_args_constructor() const {
         return m_zero_args_constructor >= 0;
     }
-    GJS_USE
-    bool has_default_constructor(void) const {
+    [[nodiscard]] bool has_default_constructor() const {
         return m_default_constructor >= 0;
     }
-    GJS_USE
-    GIFunctionInfo* zero_args_constructor_info(void) const {
+    [[nodiscard]] GIFunctionInfo* zero_args_constructor_info() const {
         return g_struct_info_get_method(info(), m_zero_args_constructor);
     }
     // The ID is traced from the object, so it's OK to create a handle from it.
-    GJS_USE
-    JS::HandleId default_constructor_name(void) const {
+    [[nodiscard]] JS::HandleId default_constructor_name() const {
         return JS::HandleId::fromMarkedLocation(
             m_default_constructor_name.address());
     }

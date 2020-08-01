@@ -380,10 +380,7 @@ gjs_intern_string_to_id(JSContext  *cx,
     return INTERNED_STRING_TO_JSID(cx, str);
 }
 
-GJS_USE
-static std::string
-gjs_debug_flat_string(JSFlatString *fstr)
-{
+[[nodiscard]] static std::string gjs_debug_flat_string(JSFlatString* fstr) {
     JSLinearString *str = js::FlatStringToLinearString(fstr);
     size_t len = js::GetLinearStringLength(str);
 

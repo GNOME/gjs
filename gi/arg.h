@@ -47,8 +47,8 @@ typedef enum {
     GJS_ARGUMENT_ARRAY_ELEMENT
 } GjsArgumentType;
 
-GJS_USE
-char* gjs_argument_display_name(const char* arg_name, GjsArgumentType arg_type);
+[[nodiscard]] char* gjs_argument_display_name(const char* arg_name,
+                                              GjsArgumentType arg_type);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_arg(JSContext      *context,
@@ -111,8 +111,7 @@ bool gjs_g_argument_release_in_arg (JSContext  *context,
 GJS_JSAPI_RETURN_CONVENTION
 bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value);
 
-GJS_USE
-int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value);
+[[nodiscard]] int64_t _gjs_enum_from_int(GIEnumInfo* enum_info, int int_value);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_strv(JSContext             *context,

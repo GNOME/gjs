@@ -63,8 +63,7 @@ BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
     GJS_INC_COUNTER(boxed_instance);
 }
 
-GJS_USE
-static bool struct_is_simple(GIStructInfo *info);
+[[nodiscard]] static bool struct_is_simple(GIStructInfo* info);
 
 // See GIWrapperBase::resolve().
 bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
@@ -100,7 +99,7 @@ bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
 // See GIWrapperBase::new_enumerate().
 bool BoxedPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                         JS::MutableHandleIdVector properties,
-                                        bool only_enumerable G_GNUC_UNUSED) {
+                                        bool only_enumerable [[maybe_unused]]) {
     int n_methods = g_struct_info_get_n_methods(info());
     for (int i = 0; i < n_methods; i++) {
         GjsAutoFunctionInfo meth_info = g_struct_info_get_method(info(), i);
@@ -772,10 +771,8 @@ const struct JSClass BoxedBase::klass = {
 };
 // clang-format on
 
-GJS_USE
-static bool
-type_can_be_allocated_directly(GITypeInfo *type_info)
-{
+[[nodiscard]] static bool type_can_be_allocated_directly(
+    GITypeInfo* type_info) {
     bool is_simple = true;
 
     if (g_type_info_is_pointer(type_info)) {
@@ -867,10 +864,7 @@ type_can_be_allocated_directly(GITypeInfo *type_info)
  * type that we know how to assign to. If so, then we can allocate and free
  * instances without needing a constructor.
  */
-GJS_USE
-static bool
-struct_is_simple(GIStructInfo *info)
-{
+[[nodiscard]] static bool struct_is_simple(GIStructInfo* info) {
     int n_fields = g_struct_info_get_n_fields(info);
     bool is_simple = true;
     int i;

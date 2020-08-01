@@ -39,8 +39,7 @@ void   gjs_register_native_module (const char            *module_id,
                                    GjsDefineModuleFunc  func);
 
 /* called by importer.c to to check for already loaded modules */
-GJS_USE
-bool gjs_is_registered_native_module(const char* name);
+[[nodiscard]] bool gjs_is_registered_native_module(const char* name);
 
 /* called by importer.cpp to load a statically linked native module */
 GJS_JSAPI_RETURN_CONVENTION

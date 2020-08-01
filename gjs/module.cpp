@@ -62,17 +62,12 @@ class GjsScriptModule {
 
     /* Private data accessors */
 
-    GJS_USE
-    static inline GjsScriptModule* priv(JSObject* module) {
+    [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
         return static_cast<GjsScriptModule*>(JS_GetPrivate(module));
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
-    GJS_USE
-    static JSObject *
-    create(JSContext  *cx,
-           const char *name)
-    {
+    [[nodiscard]] static JSObject* create(JSContext* cx, const char* name) {
         JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
         JS_SetPrivate(module, new GjsScriptModule(name));
         return module;

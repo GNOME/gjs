@@ -491,7 +491,7 @@ gjs_define_info(JSContext       *context,
                 return false;
             break;
         }
-        /* fall through */
+        [[fallthrough]];
 
     case GI_INFO_TYPE_FLAGS:
         if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info))
@@ -566,12 +566,9 @@ gjs_lookup_namespace_object(JSContext  *context,
 
 /* Check if an exception's 'name' property is equal to compare_name. Ignores
  * all errors that might arise. */
-GJS_USE
-static bool
-error_has_name(JSContext       *cx,
-               JS::HandleValue  thrown_value,
-               JSString        *compare_name)
-{
+[[nodiscard]] static bool error_has_name(JSContext* cx,
+                                         JS::HandleValue thrown_value,
+                                         JSString* compare_name) {
     if (!thrown_value.isObject())
         return false;
 

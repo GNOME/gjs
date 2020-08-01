@@ -71,11 +71,12 @@ struct GjsAutoPointer : std::unique_ptr<T, decltype(free_func)> {
     operator T*() const { return this->get(); }
     T& operator[](size_t i) const { return static_cast<T*>(*this)[i]; }
 
-    GJS_USE
-    T* copy() const { return reinterpret_cast<T*>(ref_func(this->get())); }
+    [[nodiscard]] T* copy() const {
+        return reinterpret_cast<T*>(ref_func(this->get()));
+    }
 
     template <typename C>
-    GJS_USE C* as() const {
+    [[nodiscard]] C* as() const {
         return const_cast<C*>(reinterpret_cast<const C*>(this->get()));
     }
 };
@@ -112,9 +113,15 @@ struct GjsAutoBaseInfo : GjsAutoPointer<GIBaseInfo, GIBaseInfo,
     GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
         : GjsAutoPointer(ptr) {}
 
-    GJS_USE const char* name() const { return g_base_info_get_name(*this); }
-    GJS_USE const char* ns() const { return g_base_info_get_namespace(*this); }
-    GJS_USE GIInfoType type() const { return g_base_info_get_type(*this); }
+    [[nodiscard]] const char* name() const {
+        return g_base_info_get_name(*this);
+    }
+    [[nodiscard]] const char* ns() const {
+        return g_base_info_get_namespace(*this);
+    }
+    [[nodiscard]] GIInfoType type() const {
+        return g_base_info_get_type(*this);
+    }
 };
 
 // Use GjsAutoInfo, preferably its typedefs below, when you know for sure that
@@ -214,8 +221,7 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
     if (!args.computeThis(cx, &to))                   \
         return false;
 
-GJS_USE
-JSObject*   gjs_get_import_global            (JSContext       *context);
+[[nodiscard]] JSObject* gjs_get_import_global(JSContext* cx);
 
 void gjs_throw_constructor_error             (JSContext       *context);
 
@@ -251,9 +257,8 @@ bool gjs_log_exception_uncaught(JSContext* cx);
 bool gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
                             JS::HandleString message, GLogLevelFlags level);
 
-GJS_USE
-char *gjs_value_debug_string(JSContext      *context,
-                             JS::HandleValue value);
+[[nodiscard]] char* gjs_value_debug_string(JSContext* cx,
+                                           JS::HandleValue value);
 
 void gjs_warning_reporter(JSContext*, JSErrorReport* report);
 
@@ -313,8 +318,8 @@ bool        gjs_unichar_from_string          (JSContext       *context,
 void gjs_maybe_gc (JSContext *context);
 void gjs_gc_if_needed(JSContext *cx);
 
-GJS_USE
-std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len);
+[[nodiscard]] std::u16string gjs_utf8_script_to_utf16(const char* script,
+                                                      ssize_t len);
 
 GJS_JSAPI_RETURN_CONVENTION
 GjsAutoChar gjs_format_stack_trace(JSContext       *cx,
@@ -364,17 +369,16 @@ bool gjs_object_require_converted_property(JSContext       *context,
                                            JS::HandleId     property_name,
                                            uint32_t        *value);
 
-GJS_USE std::string gjs_debug_string(JSString* str);
-GJS_USE std::string gjs_debug_symbol(JS::Symbol* const sym);
-GJS_USE std::string gjs_debug_object(JSObject* obj);
-GJS_USE std::string gjs_debug_value(JS::Value v);
-GJS_USE std::string gjs_debug_id(jsid id);
+[[nodiscard]] std::string gjs_debug_string(JSString* str);
+[[nodiscard]] std::string gjs_debug_symbol(JS::Symbol* const sym);
+[[nodiscard]] std::string gjs_debug_object(JSObject* obj);
+[[nodiscard]] std::string gjs_debug_value(JS::Value v);
+[[nodiscard]] std::string gjs_debug_id(jsid id);
 
-GJS_USE
-char* gjs_hyphen_to_underscore(const char* str);
+[[nodiscard]] char* gjs_hyphen_to_underscore(const char* str);
 
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
-GJS_USE std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str);
+[[nodiscard]] std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str);
 #endif
 
 #endif  // GJS_JSAPI_UTIL_H_

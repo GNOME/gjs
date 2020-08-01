@@ -37,8 +37,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,
                      JS::MutableHandleObject repo);
 
-GJS_USE
-const char* gjs_info_type_name                  (GIInfoType      type);
+[[nodiscard]] const char* gjs_info_type_name(GIInfoType type);
 GJS_JSAPI_RETURN_CONVENTION
 JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
 GJS_JSAPI_RETURN_CONVENTION
@@ -65,9 +64,7 @@ bool gjs_define_info(JSContext       *context,
                      GIBaseInfo      *info,
                      bool            *defined);
 
-GJS_USE
-char*       gjs_hyphen_from_camel               (const char     *camel_name);
-
+[[nodiscard]] char* gjs_hyphen_from_camel(const char* camel_name);
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
 void _gjs_log_info_usage(GIBaseInfo *info);

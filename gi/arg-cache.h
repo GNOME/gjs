@@ -125,14 +125,14 @@ struct GjsArgumentCache {
         g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
         contents.callback.destroy_pos = pos < 0 ? ABSENT : pos;
     }
-    GJS_USE bool has_callback_destroy() {
+    [[nodiscard]] bool has_callback_destroy() {
         return contents.callback.destroy_pos != ABSENT;
     }
     void set_callback_closure_pos(int pos) {
         g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
         contents.callback.closure_pos = pos < 0 ? ABSENT : pos;
     }
-    GJS_USE bool has_callback_closure() {
+    [[nodiscard]] bool has_callback_closure() {
         return contents.callback.closure_pos != ABSENT;
     }
 
@@ -150,7 +150,7 @@ struct GjsArgumentCache {
         arg_name = "return value";
         nullable = false;  // We don't really care for return values
     }
-    GJS_USE bool is_return_value() { return arg_pos == RETURN_VALUE; }
+    [[nodiscard]] bool is_return_value() { return arg_pos == RETURN_VALUE; }
 };
 
 // This is a trick to print out the sizes of the structs at compile time, in

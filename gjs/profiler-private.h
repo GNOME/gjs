@@ -37,8 +37,7 @@ void _gjs_profiler_add_mark(GjsProfiler* self, int64_t time, int64_t duration,
                             const char* group, const char* name,
                             const char* message);
 
-GJS_USE
-bool _gjs_profiler_is_running(GjsProfiler *self);
+[[nodiscard]] bool _gjs_profiler_is_running(GjsProfiler* self);
 
 void _gjs_profiler_setup_signals(GjsProfiler *self, GjsContext *context);
 

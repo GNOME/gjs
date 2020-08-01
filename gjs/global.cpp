@@ -82,18 +82,15 @@ class GjsBaseGlobal {
     }
 
  protected:
-    GJS_USE
-    static JSObject* create(JSContext* cx, const JSClass* clasp) {
+    [[nodiscard]] static JSObject* create(JSContext* cx, const JSClass* clasp) {
         JS::RealmCreationOptions creation;
         creation.setNewCompartmentAndZone();
 
         return base(cx, clasp, creation);
     }
 
-    GJS_USE
-    static JSObject* create_with_compartment(JSContext* cx,
-                                             JS::HandleObject existing,
-                                             const JSClass* clasp) {
+    [[nodiscard]] static JSObject* create_with_compartment(
+        JSContext* cx, JS::HandleObject existing, const JSClass* clasp) {
         JS::RealmCreationOptions creation;
         creation.setExistingCompartment(existing);
 
@@ -180,14 +177,12 @@ class GjsGlobal : GjsBaseGlobal {
         JS_FS_END};
 
  public:
-    GJS_USE
-    static JSObject* create(JSContext* cx) {
+    [[nodiscard]] static JSObject* create(JSContext* cx) {
         return GjsBaseGlobal::create(cx, &klass);
     }
 
-    GJS_USE
-    static JSObject* create_with_compartment(JSContext* cx,
-                                             JS::HandleObject cmp_global) {
+    [[nodiscard]] static JSObject* create_with_compartment(
+        JSContext* cx, JS::HandleObject cmp_global) {
         return GjsBaseGlobal::create_with_compartment(cx, cmp_global, &klass);
     }
 
@@ -241,14 +236,12 @@ class GjsDebuggerGlobal : GjsBaseGlobal {
         JS_FN("loadNative", &load_native_module, 1, 0), JS_FS_END};
 
  public:
-    GJS_USE
-    static JSObject* create(JSContext* cx) {
+    [[nodiscard]] static JSObject* create(JSContext* cx) {
         return GjsBaseGlobal::create(cx, &klass);
     }
 
-    GJS_USE
-    static JSObject* create_with_compartment(JSContext* cx,
-                                             JS::HandleObject cmp_global) {
+    [[nodiscard]] static JSObject* create_with_compartment(
+        JSContext* cx, JS::HandleObject cmp_global) {
         return GjsBaseGlobal::create_with_compartment(cx, cmp_global, &klass);
     }
 

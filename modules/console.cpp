@@ -247,8 +247,8 @@ public:
     }
 };
 
-GJS_USE
-static bool gjs_console_readline(char** bufp, const char* prompt) {
+[[nodiscard]] static bool gjs_console_readline(char** bufp,
+                                               const char* prompt) {
 #ifdef HAVE_READLINE_READLINE_H
     char *line;
     line = readline(prompt);
@@ -272,13 +272,10 @@ static bool gjs_console_readline(char** bufp, const char* prompt) {
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
-GJS_USE
-static bool
-gjs_console_eval_and_print(JSContext  *cx,
-                           const char *bytes,
-                           size_t      length,
-                           int         lineno)
-{
+[[nodiscard]] static bool gjs_console_eval_and_print(JSContext* cx,
+                                                     const char* bytes,
+                                                     size_t length,
+                                                     int lineno) {
     JS::SourceText<mozilla::Utf8Unit> source;
     if (!source.init(cx, bytes, length, JS::SourceOwnership::Borrowed))
         return false;

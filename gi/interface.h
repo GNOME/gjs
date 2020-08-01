@@ -73,7 +73,7 @@ class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
     static const struct JSClass klass;
     static JSFunctionSpec static_methods[];
 
-    GJS_USE const char* to_string_kind(void) const { return "interface"; }
+    [[nodiscard]] const char* to_string_kind(void) const { return "interface"; }
 
     // JSNative methods
 

@@ -77,7 +77,7 @@ class ErrorBase
     // Accessors
 
  public:
-    GJS_USE GQuark domain(void) const;
+    [[nodiscard]] GQuark domain(void) const;
 
     // Property getters
 
@@ -111,9 +111,8 @@ class ErrorBase
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool typecheck(JSContext* cx, JS::HandleObject obj);
-    GJS_USE
-    static bool typecheck(JSContext* cx, JS::HandleObject obj,
-                          GjsTypecheckNoThrow);
+    [[nodiscard]] static bool typecheck(JSContext* cx, JS::HandleObject obj,
+                                        GjsTypecheckNoThrow);
 };
 
 class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
@@ -133,7 +132,7 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
     bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const;
 
  public:
-    GJS_USE GQuark domain(void) const { return m_domain; }
+    [[nodiscard]] GQuark domain(void) const { return m_domain; }
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext* cx, JS::HandleObject in_object,
@@ -152,15 +151,14 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
  public:
     void copy_gerror(GError* other) { m_ptr = g_error_copy(other); }
     GJS_JSAPI_RETURN_CONVENTION
-    static GError* copy_ptr(JSContext* cx G_GNUC_UNUSED,
-                            GType gtype G_GNUC_UNUSED, void* ptr) {
+    static GError* copy_ptr(JSContext*, GType, void* ptr) {
         return g_error_copy(static_cast<GError*>(ptr));
     }
 
     // Accessors
 
-    GJS_USE const char* message(void) const { return m_ptr->message; }
-    GJS_USE int code(void) const { return m_ptr->code; }
+    [[nodiscard]] const char* message(void) const { return m_ptr->message; }
+    [[nodiscard]] int code(void) const { return m_ptr->code; }
 
     // JS constructor
 
