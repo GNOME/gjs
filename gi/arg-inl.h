@@ -113,7 +113,17 @@ GJS_USE inline decltype(auto) gjs_arg_member<char32_t>(GIArgument* arg) {
 template <>
 GJS_USE inline decltype(auto) gjs_arg_member<GType, GI_TYPE_TAG_GTYPE>(
     GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_size);
+    // GType is defined differently on 32-bit vs. 64-bit architectures. From gtype.h:
+    //
+    // #if     GLIB_SIZEOF_SIZE_T != GLIB_SIZEOF_LONG || !defined __cplusplus
+    // typedef gsize                           GType;
+    // #else   /* for historic reasons, C++ links against gulong GTypes */
+    // typedef gulong                          GType;
+    // #endif
+    if constexpr (sizeof(gsize) != sizeof(gulong))
+        return gjs_arg_member(arg, &GIArgument::v_size);
+    else
+        return gjs_arg_member(arg, &GIArgument::v_ulong);
 }
 
 template <>
