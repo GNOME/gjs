@@ -120,9 +120,9 @@ GJS_USE inline decltype(auto) gjs_arg_member<GType, GI_TYPE_TAG_GTYPE>(
     // #else   /* for historic reasons, C++ links against gulong GTypes */
     // typedef gulong                          GType;
     // #endif
-    if constexpr (sizeof(gsize) != sizeof(gulong))
+    if constexpr (std::is_same_v<GType, gsize>)
         return gjs_arg_member(arg, &GIArgument::v_size);
-    else
+    else if constexpr (std::is_same_v<GType, gulong>)
         return gjs_arg_member(arg, &GIArgument::v_ulong);
 }
 
