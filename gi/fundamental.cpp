@@ -84,8 +84,8 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
 /**/
 
 /* Find the first constructor */
-GJS_USE
-static GIFunctionInfo* find_fundamental_constructor(GIObjectInfo* info) {
+[[nodiscard]] static GIFunctionInfo* find_fundamental_constructor(
+    GIObjectInfo* info) {
     int i, n_methods;
 
     n_methods = g_object_info_get_n_methods(info);

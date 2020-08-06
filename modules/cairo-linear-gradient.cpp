@@ -38,8 +38,7 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-GJS_USE
-static JSObject *gjs_cairo_linear_gradient_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_linear_gradient_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_WITH_PARENT("LinearGradient", cairo_linear_gradient,
                              cairo_gradient, JSCLASS_BACKGROUND_FINALIZE)

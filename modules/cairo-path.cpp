@@ -34,10 +34,8 @@
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
 
-GJS_USE
-static JSObject *gjs_cairo_path_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_path_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_ABSTRACT("Path", cairo_path, JSCLASS_BACKGROUND_FINALIZE)
 

@@ -147,7 +147,7 @@ bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
 
 class GjsSourceHook : public js::SourceHook {
     bool load(JSContext* cx, const char* filename,
-              char16_t** two_byte_source G_GNUC_UNUSED, char** utf8_source,
+              char16_t** two_byte_source [[maybe_unused]], char** utf8_source,
               size_t* length) {
         // caller owns the source, per documentation of SourceHook
         return gjs_load_internal_source(cx, filename, utf8_source, length);

@@ -193,7 +193,9 @@ iwyu:
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
   script:
-    - ./tools/run_iwyu.sh origin/master
+    - git remote add upstream https://gitlab.gnome.org/GNOME/gjs
+    - git fetch upstream
+    - ./tools/run_iwyu.sh upstream/master
   only:
     - branches
   except:
@@ -351,3 +353,17 @@ fedora.mozjs68-debug:
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile.debug
+
+fedora.mozjs78:
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile
+    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg BUILD_OPTS=
+
+fedora.mozjs78-debug:
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile.debug
+    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg BUILD_OPTS=

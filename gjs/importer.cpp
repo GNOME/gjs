@@ -616,7 +616,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
 GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                                    JS::MutableHandleIdVector properties,
-                                   bool enumerable_only G_GNUC_UNUSED) {
+                                   bool enumerable_only [[maybe_unused]]) {
     Importer *priv;
     guint32 search_path_len;
     guint32 i;
@@ -853,8 +853,7 @@ importer_new(JSContext *context,
     return importer;
 }
 
-GJS_USE
-static const std::vector<std::string>& gjs_get_search_path(void) {
+[[nodiscard]] static const std::vector<std::string>& gjs_get_search_path() {
     static std::vector<std::string> gjs_search_path;
     static bool search_path_initialized = false;
 

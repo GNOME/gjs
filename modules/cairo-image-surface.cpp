@@ -39,8 +39,7 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-GJS_USE
-static JSObject *gjs_cairo_image_surface_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_image_surface_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_WITH_PARENT("ImageSurface", cairo_image_surface,
                              cairo_surface, JSCLASS_BACKGROUND_FINALIZE)

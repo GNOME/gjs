@@ -54,7 +54,7 @@ static void gfree_arraybuffer_contents(void* contents, void*) {
     g_free(contents);
 }
 
-static void bytes_unref_arraybuffer(void* contents G_GNUC_UNUSED,
+static void bytes_unref_arraybuffer(void* contents [[maybe_unused]],
                                     void* user_data) {
     auto* gbytes = static_cast<GBytes*>(user_data);
     g_bytes_unref(gbytes);

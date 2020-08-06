@@ -34,7 +34,6 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include "gjs/macros.h"
 #include "util/log.h"
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
@@ -69,16 +68,14 @@ private:
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p", did, what);
     }
 
-    GJS_USE
-    std::deque<Item>::iterator find_operation_locked(const GObject  *gobj,
-                                                     Direction direction);
+    [[nodiscard]] std::deque<Item>::iterator find_operation_locked(
+        const GObject* gobj, Direction direction);
 
-    GJS_USE
-    std::deque<Item>::const_iterator find_operation_locked(const GObject *gobj,
-                                                           Direction direction) const;
+    [[nodiscard]] std::deque<Item>::const_iterator find_operation_locked(
+        const GObject* gobj, Direction direction) const;
 
-    GJS_USE
-    bool find_and_erase_operation_locked(const GObject *gobj, Direction direction);
+    [[nodiscard]] bool find_and_erase_operation_locked(const GObject* gobj,
+                                                       Direction direction);
 
     static gboolean idle_handle_toggle(void *data);
     static void idle_destroy_notify(void *data);
@@ -86,8 +83,7 @@ private:
  public:
     /* These two functions return a pair DOWN, UP signifying whether toggles
      * are / were queued. is_queued() just checks and does not modify. */
-    GJS_USE
-    std::pair<bool, bool> is_queued(GObject *gobj) const;
+    [[nodiscard]] std::pair<bool, bool> is_queued(GObject* gobj) const;
     /* Cancels pending toggles and returns whether any were queued. */
     std::pair<bool, bool> cancel(GObject *gobj);
 
@@ -106,9 +102,7 @@ private:
                  Direction direction,
                  Handler   handler);
 
-    GJS_USE
-    static ToggleQueue&
-    get_default(void) {
+    [[nodiscard]] static ToggleQueue& get_default() {
         static ToggleQueue the_singleton;
         return the_singleton;
     }

@@ -80,13 +80,13 @@
  */
 template<typename T>
 struct GjsHeapOperation {
-    GJS_USE static bool update_after_gc(JS::Heap<T>* location);
+    [[nodiscard]] static bool update_after_gc(JS::Heap<T>* location);
     static void expose_to_js(JS::Heap<T>& thing);
 };
 
 template<>
 struct GjsHeapOperation<JSObject *> {
-    GJS_USE static bool update_after_gc(JS::Heap<JSObject*>* location) {
+    [[nodiscard]] static bool update_after_gc(JS::Heap<JSObject*>* location) {
         JS_UpdateWeakPointerAfterGC(location);
         return (location->unbarrieredGet() == nullptr);
     }
@@ -141,7 +141,7 @@ class GjsMaybeOwned {
         ~Notifier() { disconnect(); }
 
         static void on_context_destroy(void* data,
-                                       GObject* ex_context G_GNUC_UNUSED) {
+                                       GObject* ex_context [[maybe_unused]]) {
             auto self = static_cast<Notifier*>(data);
             auto *parent = self->m_parent;
             self->m_parent = nullptr;
@@ -196,14 +196,14 @@ class GjsMaybeOwned {
      * GjsMaybeOwned wrapper in place of the GC thing itself due to the implicit
      * cast operator. But if you want to call methods on the GC thing, for
      * example if it's a JS::Value, you have to use get(). */
-    GJS_USE const T get() const {
+    [[nodiscard]] const T get() const {
         return m_root ? m_root->get() : m_heap.get();
     }
     operator const T() const { return get(); }
 
     /* Use debug_addr() only for debug logging, because it is unbarriered. */
     template <typename U = T>
-    GJS_USE const void* debug_addr(
+    [[nodiscard]] const void* debug_addr(
         std::enable_if_t<std::is_pointer_v<U>>* = nullptr) const {
         return m_root ? m_root->get() : m_heap.unbarrieredGet();
     }
@@ -234,7 +234,7 @@ class GjsMaybeOwned {
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
-    GJS_USE JS::Handle<T> handle() {
+    [[nodiscard]] JS::Handle<T> handle() {
         g_assert(m_root);
         return *m_root;
     }
@@ -335,7 +335,7 @@ class GjsMaybeOwned {
         return GjsHeapOperation<T>::update_after_gc(&m_heap);
     }
 
-    GJS_USE bool rooted() const { return m_root != nullptr; }
+    [[nodiscard]] bool rooted() const { return m_root != nullptr; }
 };
 
 #endif  // GJS_JSAPI_UTIL_ROOT_H_

@@ -120,7 +120,7 @@ ns_resolve(JSContext       *context,
 GJS_JSAPI_RETURN_CONVENTION
 static bool ns_new_enumerate(JSContext* cx, JS::HandleObject obj,
                              JS::MutableHandleIdVector properties,
-                             bool only_enumerable G_GNUC_UNUSED) {
+                             bool only_enumerable [[maybe_unused]]) {
     Ns* priv = priv_from_js(cx, obj);
 
     if (!priv) {

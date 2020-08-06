@@ -256,10 +256,7 @@ bool ErrorPrototype::define_class(JSContext* context,
            gjs_define_enum_values(context, constructor, info);
 }
 
-GJS_USE
-static GIEnumInfo *
-find_error_domain_info(GQuark domain)
-{
+[[nodiscard]] static GIEnumInfo* find_error_domain_info(GQuark domain) {
     GIEnumInfo *info;
 
     /* first an attempt without loading extra libraries */
@@ -320,10 +317,7 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
                                  JSPROP_ENUMERATE);
 }
 
-GJS_USE
-static JSProtoKey
-proto_key_from_error_enum(int val)
-{
+[[nodiscard]] static JSProtoKey proto_key_from_error_enum(int val) {
     switch (val) {
     case GJS_JS_ERROR_EVAL_ERROR:
         return JSProto_EvalError;

@@ -206,7 +206,7 @@ warn_about_illegal_js_callback(const GjsCallbackTrampoline *trampoline,
  * In other words, everything we need to call the JS function and
  * getting the return value back.
  */
-static void gjs_callback_closure(ffi_cif* cif G_GNUC_UNUSED, void* result,
+static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
                                  void** ffi_args, void* data) {
     JSContext *context;
     GjsCallbackTrampoline *trampoline;
@@ -603,8 +603,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 }
 
 /* Intended for error messages. Return value must be freed */
-GJS_USE
-static char* format_function_name(Function* function) {
+[[nodiscard]] static char* format_function_name(Function* function) {
     if (g_callable_info_is_method(function->info))
         return g_strdup_printf(
             "method %s.%s.%s", g_base_info_get_namespace(function->info),
@@ -1263,10 +1262,8 @@ init_cached_function_data (JSContext      *context,
     return true;
 }
 
-GJS_USE
-static inline JSObject *
-gjs_builtin_function_get_proto(JSContext *cx)
-{
+[[nodiscard]] static inline JSObject* gjs_builtin_function_get_proto(
+    JSContext* cx) {
     return JS::GetRealmFunctionPrototype(cx);
 }
 

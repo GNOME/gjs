@@ -73,10 +73,8 @@ static bool gjs_value_from_g_value_internal(JSContext             *context,
  * only works for signals on introspected GObjects, not signals on GJS-defined
  * GObjects nor standalone closures. The return value must be unreffed.
  */
-GJS_USE
-static GISignalInfo *
-get_signal_info_if_available(GSignalQuery *signal_query)
-{
+[[nodiscard]] static GISignalInfo* get_signal_info_if_available(
+    GSignalQuery* signal_query) {
     GIBaseInfo *obj;
     GIInfoType info_type;
     GISignalInfo *signal_info = NULL;
@@ -761,11 +759,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
     return gjs_value_to_g_value_internal(context, value, gvalue, true);
 }
 
-GJS_USE
-static JS::Value
-convert_int_to_enum (GType  gtype,
-                     int    v)
-{
+[[nodiscard]] static JS::Value convert_int_to_enum(GType gtype, int v) {
     double v_double;
 
     if (v > 0 && v < G_MAXINT) {

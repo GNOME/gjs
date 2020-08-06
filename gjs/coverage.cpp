@@ -61,16 +61,9 @@ typedef struct {
     GFile *output_dir;
 } GjsCoveragePrivate;
 
-#if __GNUC__ >= 8
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
-#endif
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            gjs_coverage,
                            G_TYPE_OBJECT)
-#if __GNUC__ >= 8
-_Pragma("GCC diagnostic pop")
-#endif
 
 enum {
     PROP_0,
@@ -83,31 +76,22 @@ enum {
 
 static GParamSpec *properties[PROP_N] = { NULL, };
 
-GJS_USE
-static char *
-get_file_identifier(GFile *source_file) {
+[[nodiscard]] static char* get_file_identifier(GFile* source_file) {
     char *path = g_file_get_path(source_file);
     if (!path)
         path = g_file_get_uri(source_file);
     return path;
 }
 
-GJS_USE
-static bool
-write_source_file_header(GOutputStream *stream,
-                         GFile         *source_file,
-                         GError       **error)
-{
+[[nodiscard]] static bool write_source_file_header(GOutputStream* stream,
+                                                   GFile* source_file,
+                                                   GError** error) {
     GjsAutoChar path = get_file_identifier(source_file);
     return g_output_stream_printf(stream, NULL, NULL, error, "SF:%s\n", path.get());
 }
 
-GJS_USE
-static bool
-copy_source_file_to_coverage_output(GFile   *source_file,
-                                    GFile   *destination_file,
-                                    GError **error)
-{
+[[nodiscard]] static bool copy_source_file_to_coverage_output(
+    GFile* source_file, GFile* destination_file, GError** error) {
     /* We need to recursively make the directory we
      * want to copy to, as g_file_copy doesn't do that */
     GjsAutoUnref<GFile> destination_dir = g_file_get_parent(destination_file);
@@ -125,10 +109,7 @@ copy_source_file_to_coverage_output(GFile   *source_file,
  * the string with the URI scheme stripped or NULL
  * if the path was not a valid URI
  */
-GJS_USE
-static char *
-strip_uri_scheme(const char *potential_uri)
-{
+[[nodiscard]] static char* strip_uri_scheme(const char* potential_uri) {
     char *uri_header = g_uri_parse_scheme(potential_uri);
 
     if (uri_header) {
@@ -161,11 +142,8 @@ strip_uri_scheme(const char *potential_uri)
  * automatically return the full URI path with
  * the URI scheme and leading slash stripped out.
  */
-GJS_USE
-static char *
-find_diverging_child_components(GFile *child,
-                                GFile *parent)
-{
+[[nodiscard]] static char* find_diverging_child_components(GFile* child,
+                                                           GFile* parent) {
     g_object_ref(parent);
     GFile *ancestor = parent;
     while (ancestor != NULL) {
@@ -194,10 +172,8 @@ find_diverging_child_components(GFile *child,
     return stripped_uri;
 }
 
-GJS_USE
-static bool
-filename_has_coverage_prefixes(GjsCoverage *self, const char *filename)
-{
+[[nodiscard]] static bool filename_has_coverage_prefixes(GjsCoverage* self,
+                                                         const char* filename) {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(self));
 
     for (const char * const *prefix = priv->prefixes; *prefix; prefix++) {
@@ -215,12 +191,8 @@ write_line(GOutputStream *out,
     return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
 }
 
-GJS_USE
-static GjsAutoUnref<GFile>
-write_statistics_internal(GjsCoverage *coverage,
-                          JSContext   *cx,
-                          GError     **error)
-{
+[[nodiscard]] static GjsAutoUnref<GFile> write_statistics_internal(
+    GjsCoverage* coverage, JSContext* cx, GError** error) {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     /* Create output directory if it doesn't exist */

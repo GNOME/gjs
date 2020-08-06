@@ -247,9 +247,9 @@ public:
     }
 };
 
+[[nodiscard]] static bool gjs_console_readline(char** bufp,
+                                               const char* prompt) {
 #ifdef HAVE_READLINE_READLINE_H
-GJS_USE
-static bool gjs_console_readline(char** bufp, const char* prompt) {
     char *line;
     line = readline(prompt);
     if (!line)
@@ -257,32 +257,25 @@ static bool gjs_console_readline(char** bufp, const char* prompt) {
     if (line[0] != '\0')
         add_history(line);
     *bufp = line;
-    return true;
-}
-#else
-GJS_USE
-static bool gjs_console_readline(char** bufp, const char* prompt) {
+#else   // !HAVE_READLINE_READLINE_H
     char line[256];
     fprintf(stdout, "%s", prompt);
     fflush(stdout);
     if (!fgets(line, sizeof line, stdin))
         return false;
     *bufp = g_strdup(line);
+#endif  // !HAVE_READLINE_READLINE_H
     return true;
 }
-#endif
 
 /* Return value of false indicates an uncatchable exception, rather than any
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
-GJS_USE
-static bool
-gjs_console_eval_and_print(JSContext  *cx,
-                           const char *bytes,
-                           size_t      length,
-                           int         lineno)
-{
+[[nodiscard]] static bool gjs_console_eval_and_print(JSContext* cx,
+                                                     const char* bytes,
+                                                     size_t length,
+                                                     int lineno) {
     JS::SourceText<mozilla::Utf8Unit> source;
     if (!source.init(cx, bytes, length, JS::SourceOwnership::Borrowed))
         return false;

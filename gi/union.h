@@ -58,7 +58,7 @@ class UnionBase
     static const JSClassOps class_ops;
     static const JSClass klass;
 
-    GJS_USE static const char* to_string_kind(void) { return "union"; }
+    [[nodiscard]] static const char* to_string_kind(void) { return "union"; }
 };
 
 class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
@@ -77,7 +77,7 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
                       const char* prop_name, bool* resolved);
 
     // Overrides GIWrapperPrototype::constructor_nargs().
-    GJS_USE unsigned constructor_nargs(void) const { return 0; }
+    [[nodiscard]] unsigned constructor_nargs(void) const { return 0; }
 };
 
 class UnionInstance

@@ -101,10 +101,7 @@ G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
 // clang-format on
 
-GJS_USE
-static GQuark
-gjs_object_priv_quark (void)
-{
+[[nodiscard]] static GQuark gjs_object_priv_quark() {
     static GQuark val = 0;
     if (G_UNLIKELY (!val))
         val = g_quark_from_static_string ("gjs::private");
@@ -379,9 +376,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
     return true;
 }
 
-GJS_USE
-static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
-                                          const char* name) {
+[[nodiscard]] static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
+                                                        const char* name) {
     int n_fields = g_object_info_get_n_fields(info);
     int ix;
     GjsAutoFieldInfo retval;
@@ -574,10 +570,8 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
     return addr1 == addr2;
 }
 
-GJS_USE
-static GjsAutoVFuncInfo find_vfunc_on_parents(GIObjectInfo* info,
-                                              const char* name,
-                                              bool* out_defined_by_parent) {
+[[nodiscard]] static GjsAutoVFuncInfo find_vfunc_on_parents(
+    GIObjectInfo* info, const char* name, bool* out_defined_by_parent) {
     bool defined_by_parent = false;
 
     /* ref the first info so that we don't destroy
@@ -615,9 +609,8 @@ static void canonicalize_key(const GjsAutoChar& key) {
 }
 
 /* @name must already be canonicalized */
-GJS_USE
-static bool is_ginterface_property_name(GIInterfaceInfo* info,
-                                        const char* name) {
+[[nodiscard]] static bool is_ginterface_property_name(GIInterfaceInfo* info,
+                                                      const char* name) {
     int n_props = g_interface_info_get_n_properties(info);
     GjsAutoPropertyInfo prop_info;
 
@@ -739,11 +732,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
-GJS_USE
-static bool
-is_gobject_property_name(GIObjectInfo *info,
-                         const char   *name)
-{
+[[nodiscard]] static bool is_gobject_property_name(GIObjectInfo* info,
+                                                   const char* name) {
     // Optimization: GObject property names must start with a letter
     if (!g_ascii_isalpha(name[0]))
         return false;
@@ -927,7 +917,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
 bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                          JS::MutableHandleIdVector properties,
-                                         bool only_enumerable G_GNUC_UNUSED) {
+                                         bool only_enumerable
+                                         [[maybe_unused]]) {
     unsigned n_interfaces;
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
 
@@ -1016,7 +1007,6 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
     return true;
 }
-
 
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
@@ -1120,8 +1110,8 @@ void ObjectInstance::remove_wrapped_gobjects_if(
  * Callback called when the #GjsContext is disposed. It just calls
  * handle_context_dispose() on every ObjectInstance.
  */
-void ObjectInstance::context_dispose_notify(
-    void*, GObject* where_the_object_was G_GNUC_UNUSED) {
+void ObjectInstance::context_dispose_notify(void*, GObject* where_the_object_was
+                                            [[maybe_unused]]) {
     ObjectInstance::iterate_wrapped_gobjects(
         std::mem_fn(&ObjectInstance::handle_context_dispose));
 }

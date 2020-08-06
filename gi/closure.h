@@ -30,30 +30,24 @@
 
 #include <js/TypeDecls.h>
 
-#include "gjs/macros.h"
-
 class JSTracer;
 namespace JS {
 class HandleValueArray;
 }
 
-GJS_USE
-GClosure* gjs_closure_new(JSContext* cx, JSFunction* callable,
-                          const char* description, bool root_function);
+[[nodiscard]] GClosure* gjs_closure_new(JSContext* cx, JSFunction* callable,
+                                        const char* description,
+                                        bool root_function);
 
-GJS_USE
-bool gjs_closure_invoke(GClosure                   *closure,
-                        JS::HandleObject            this_obj,
-                        const JS::HandleValueArray& args,
-                        JS::MutableHandleValue      retval,
-                        bool                        return_exception);
+[[nodiscard]] bool gjs_closure_invoke(GClosure* closure,
+                                      JS::HandleObject this_obj,
+                                      const JS::HandleValueArray& args,
+                                      JS::MutableHandleValue retval,
+                                      bool return_exception);
 
-GJS_USE
-JSContext* gjs_closure_get_context   (GClosure     *closure);
-GJS_USE
-bool       gjs_closure_is_valid      (GClosure     *closure);
-GJS_USE
-JSFunction* gjs_closure_get_callable(GClosure* closure);
+[[nodiscard]] JSContext* gjs_closure_get_context(GClosure* closure);
+[[nodiscard]] bool gjs_closure_is_valid(GClosure* closure);
+[[nodiscard]] JSFunction* gjs_closure_get_callable(GClosure* closure);
 
 void       gjs_closure_trace         (GClosure     *closure,
                                       JSTracer     *tracer);

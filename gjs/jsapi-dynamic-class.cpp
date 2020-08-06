@@ -117,10 +117,7 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
                              GJS_MODULE_PROP_FLAGS);
 }
 
-GJS_USE
-static const char*
-format_dynamic_class_name (const char *name)
-{
+[[nodiscard]] static const char* format_dynamic_class_name(const char* name) {
     if (g_str_has_prefix(name, "_private_"))
         return name + strlen("_private_");
     else

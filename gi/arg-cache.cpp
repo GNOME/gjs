@@ -78,8 +78,8 @@ static void gjs_destroy_notify_callback(void* data) {
 
 // A helper function to retrieve array lengths from a GIArgument (letting the
 // compiler generate good instructions in case of big endian machines)
-GJS_USE
-static size_t gjs_g_argument_get_array_length(GITypeTag tag, GIArgument* arg) {
+[[nodiscard]] static size_t gjs_g_argument_get_array_length(GITypeTag tag,
+                                                            GIArgument* arg) {
     if (tag == GI_TYPE_TAG_INT8)
         return gjs_arg_get<int8_t>(arg);
     if (tag == GI_TYPE_TAG_UINT8)
@@ -384,8 +384,7 @@ static int32_t min_max_ints[5][2] = {{G_MININT8, G_MAXINT8},
                                      {0, G_MAXUINT16},
                                      {G_MININT32, G_MAXINT32}};
 
-GJS_USE
-static inline bool value_in_range(int32_t number, GITypeTag tag) {
+[[nodiscard]] static inline bool value_in_range(int32_t number, GITypeTag tag) {
     return (number >= min_max_ints[tag - GI_TYPE_TAG_INT8][0] &&
             number <= min_max_ints[tag - GI_TYPE_TAG_INT8][1]);
 }
@@ -786,17 +785,15 @@ static bool gjs_marshal_explicit_array_out_out(JSContext* cx,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_skipped_release(JSContext*, GjsArgumentCache*,
                                         GjsFunctionCallState*,
-                                        GIArgument* in_arg G_GNUC_UNUSED,
-                                        GIArgument* out_arg G_GNUC_UNUSED) {
+                                        GIArgument* in_arg [[maybe_unused]],
+                                        GIArgument* out_arg [[maybe_unused]]) {
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_generic_in_release(JSContext* cx,
-                                           GjsArgumentCache* self,
-                                           GjsFunctionCallState* state,
-                                           GIArgument* in_arg,
-                                           GIArgument* out_arg G_GNUC_UNUSED) {
+static bool gjs_marshal_generic_in_release(
+    JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
+    GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
     GITransfer transfer =
         state->call_completed ? self->transfer : GI_TRANSFER_NOTHING;
     return gjs_g_argument_release_in_arg(cx, transfer, &self->type_info,
@@ -807,7 +804,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_generic_out_release(JSContext* cx,
                                             GjsArgumentCache* self,
                                             GjsFunctionCallState*,
-                                            GIArgument* in_arg G_GNUC_UNUSED,
+                                            GIArgument* in_arg [[maybe_unused]],
                                             GIArgument* out_arg) {
     return gjs_g_argument_release(cx, self->transfer, &self->type_info,
                                   out_arg);
@@ -835,7 +832,7 @@ static bool gjs_marshal_generic_inout_release(JSContext* cx,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_explicit_array_out_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
-    GIArgument* in_arg G_GNUC_UNUSED, GIArgument* out_arg) {
+    GIArgument* in_arg [[maybe_unused]], GIArgument* out_arg) {
     uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->out_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
@@ -848,7 +845,7 @@ static bool gjs_marshal_explicit_array_out_release(
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_explicit_array_in_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
-    GIArgument* in_arg, GIArgument* out_arg G_GNUC_UNUSED) {
+    GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
     uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->in_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
@@ -864,7 +861,7 @@ static bool gjs_marshal_explicit_array_in_release(
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_explicit_array_inout_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
-    GIArgument* in_arg G_GNUC_UNUSED, GIArgument* out_arg) {
+    GIArgument* in_arg [[maybe_unused]], GIArgument* out_arg) {
     uint8_t length_pos = self->contents.array.length_pos;
     GIArgument* length_arg = &(state->in_cvalues[length_pos]);
     GITypeTag length_tag = self->contents.array.length_tag;
@@ -889,7 +886,7 @@ static bool gjs_marshal_explicit_array_inout_release(
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_caller_allocates_release(
     JSContext*, GjsArgumentCache* self, GjsFunctionCallState*,
-    GIArgument* in_arg, GIArgument* out_arg G_GNUC_UNUSED) {
+    GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
     g_slice_free1(self->contents.caller_allocates_size,
                   gjs_arg_get<void*>(in_arg));
     return true;
@@ -899,7 +896,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_callback_release(JSContext*, GjsArgumentCache*,
                                          GjsFunctionCallState*,
                                          GIArgument* in_arg,
-                                         GIArgument* out_arg G_GNUC_UNUSED) {
+                                         GIArgument* out_arg [[maybe_unused]]) {
     auto* closure = gjs_arg_get<ffi_closure*>(in_arg);
     if (!closure)
         return true;
@@ -917,17 +914,16 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_string_in_release(JSContext*, GjsArgumentCache*,
                                           GjsFunctionCallState*,
                                           GIArgument* in_arg,
-                                          GIArgument* out_arg G_GNUC_UNUSED) {
+                                          GIArgument* out_arg
+                                          [[maybe_unused]]) {
     g_free(gjs_arg_get<void*>(in_arg));
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_foreign_in_release(JSContext* cx,
-                                           GjsArgumentCache* self,
-                                           GjsFunctionCallState* state,
-                                           GIArgument* in_arg,
-                                           GIArgument* out_arg G_GNUC_UNUSED) {
+static bool gjs_marshal_foreign_in_release(
+    JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
+    GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
     bool ok = true;
 
     GITransfer transfer =
@@ -945,7 +941,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_boxed_in_release(JSContext*, GjsArgumentCache* self,
                                          GjsFunctionCallState*,
                                          GIArgument* in_arg,
-                                         GIArgument* out_arg G_GNUC_UNUSED) {
+                                         GIArgument* out_arg [[maybe_unused]]) {
     GType gtype = g_registered_type_info_get_g_type(self->contents.info);
     g_assert(g_type_is_a(gtype, G_TYPE_BOXED));
 
@@ -1287,8 +1283,7 @@ static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
     self->contents.flags_mask = mask;
 }
 
-GJS_USE
-static inline bool is_gdk_atom(GIBaseInfo* info) {
+[[nodiscard]] static inline bool is_gdk_atom(GIBaseInfo* info) {
     return strcmp("Atom", g_base_info_get_name(info)) == 0 &&
            strcmp("Gdk", g_base_info_get_namespace(info)) == 0;
 }
@@ -1324,7 +1319,7 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                     self->marshallers = &foreign_struct_in_marshallers;
                 return true;
             }
-            // fall through
+            [[fallthrough]];
         case GI_INFO_TYPE_BOXED:
         case GI_INFO_TYPE_OBJECT:
         case GI_INFO_TYPE_INTERFACE:

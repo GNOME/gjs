@@ -53,7 +53,7 @@ UnionInstance::UnionInstance(JSContext* cx, JS::HandleObject obj)
 
 UnionInstance::~UnionInstance(void) {
     if (m_ptr) {
-        g_boxed_free(g_registered_type_info_get_g_type(info()), m_ptr);
+        g_boxed_free(gtype(), m_ptr);
         m_ptr = nullptr;
     }
     GJS_DEC_COUNTER(union_instance);
@@ -77,9 +77,7 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
                       method_info.name(), ns(), name());
 
             /* obj is union proto */
-            if (!gjs_define_function(context, obj,
-                                     g_registered_type_info_get_g_type(info()),
-                                     method_info))
+            if (!gjs_define_function(context, obj, gtype(), method_info))
                 return false;
 
             *resolved = true; /* we defined the prop in object_proto */

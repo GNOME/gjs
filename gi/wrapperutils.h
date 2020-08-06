@@ -174,8 +174,7 @@ class GIWrapperBase {
      * Gets the Base belonging to a particular JS object wrapper. Checks that
      * the wrapper object has the right JSClass (Base::klass) and returns null
      * if not. */
-    GJS_USE
-    static Base* for_js(JSContext* cx, JS::HandleObject wrapper) {
+    [[nodiscard]] static Base* for_js(JSContext* cx, JS::HandleObject wrapper) {
         return static_cast<Base*>(
             JS_GetInstancePrivate(cx, wrapper, &Base::klass, nullptr));
     }
@@ -185,8 +184,8 @@ class GIWrapperBase {
      *
      * Checks if the given wrapper object has the right JSClass (Base::klass).
      */
-    GJS_USE
-    static bool check_jsclass(JSContext* cx, JS::HandleObject wrapper) {
+    [[nodiscard]] static bool check_jsclass(JSContext* cx,
+                                            JS::HandleObject wrapper) {
         return !!for_js(cx, wrapper);
     }
 
@@ -221,8 +220,7 @@ class GIWrapperBase {
      * and cannot trigger a GC, so it's safe to use from finalize() and trace().
      * (It can return null if no private data has been set yet on the wrapper.)
      */
-    GJS_USE
-    static Base* for_js_nocheck(JSObject* wrapper) {
+    [[nodiscard]] static Base* for_js_nocheck(JSObject* wrapper) {
         return static_cast<Base*>(JS_GetPrivate(wrapper));
     }
 
@@ -236,7 +234,7 @@ class GIWrapperBase {
      * Returns whether this Base is actually a Prototype (true) or an Instance
      * (false).
      */
-    GJS_USE bool is_prototype(void) const { return !m_proto; }
+    [[nodiscard]] bool is_prototype() const { return !m_proto; }
 
     /*
      * GIWrapperBase::to_prototype:
@@ -246,23 +244,19 @@ class GIWrapperBase {
      * don't want to assert, then either check beforehand with is_prototype(),
      * or use get_prototype().
      */
-    GJS_USE
-    Prototype* to_prototype(void) {
+    [[nodiscard]] Prototype* to_prototype() {
         g_assert(is_prototype());
         return reinterpret_cast<Prototype*>(this);
     }
-    GJS_USE
-    const Prototype* to_prototype(void) const {
+    [[nodiscard]] const Prototype* to_prototype() const {
         g_assert(is_prototype());
         return reinterpret_cast<const Prototype*>(this);
     }
-    GJS_USE
-    Instance* to_instance(void) {
+    [[nodiscard]] Instance* to_instance() {
         g_assert(!is_prototype());
         return reinterpret_cast<Instance*>(this);
     }
-    GJS_USE
-    const Instance* to_instance(void) const {
+    [[nodiscard]] const Instance* to_instance() const {
         g_assert(!is_prototype());
         return reinterpret_cast<const Instance*>(this);
     }
@@ -275,12 +269,10 @@ class GIWrapperBase {
      * Instance, it returns you the Prototype belonging to the corresponding JS
      * prototype.
      */
-    GJS_USE
-    Prototype* get_prototype(void) {
+    [[nodiscard]] Prototype* get_prototype() {
         return is_prototype() ? to_prototype() : m_proto;
     }
-    GJS_USE
-    const Prototype* get_prototype(void) const {
+    [[nodiscard]] const Prototype* get_prototype() const {
         return is_prototype() ? to_prototype() : m_proto;
     }
 
@@ -288,25 +280,22 @@ class GIWrapperBase {
     // should be able to access the GIFooInfo and the GType, but for space
     // reasons we store them only on Prototype.
 
-    GJS_USE GIBaseInfo* info(void) const { return get_prototype()->info(); }
-    GJS_USE GType gtype(void) const { return get_prototype()->gtype(); }
+    [[nodiscard]] GIBaseInfo* info() const { return get_prototype()->info(); }
+    [[nodiscard]] GType gtype() const { return get_prototype()->gtype(); }
 
     // The next three methods are operations derived from the GIFooInfo.
 
-    GJS_USE const char* type_name(void) const { return g_type_name(gtype()); }
-    GJS_USE
-    const char* ns(void) const {
+    [[nodiscard]] const char* type_name() const { return g_type_name(gtype()); }
+    [[nodiscard]] const char* ns() const {
         return info() ? g_base_info_get_namespace(info()) : "";
     }
-    GJS_USE
-    const char* name(void) const {
+    [[nodiscard]] const char* name() const {
         return info() ? g_base_info_get_name(info()) : type_name();
     }
 
  private:
     // Accessor for Instance member. Used only in debug methods and toString().
-    GJS_USE
-    const void* ptr_addr(void) const {
+    [[nodiscard]] const void* ptr_addr() const {
         return is_prototype() ? nullptr : to_instance()->ptr();
     }
 
@@ -393,8 +382,7 @@ class GIWrapperBase {
      * Base::proto_methods. You should add any identifiers in the override that
      * you have added to the prototype object.
      */
-    GJS_USE
-    static bool id_is_never_lazy(jsid id, const GjsAtoms& atoms) {
+    [[nodiscard]] static bool id_is_never_lazy(jsid id, const GjsAtoms& atoms) {
         // toString() is always defined somewhere on the prototype chain, so it
         // is never a lazy property.
         return id == atoms.to_string();
@@ -706,10 +694,10 @@ class GIWrapperBase {
 
         return false;
     }
-    GJS_USE
-    static bool typecheck(JSContext* cx, JS::HandleObject object,
-                          GIBaseInfo* expected_info, GType expected_gtype,
-                          GjsTypecheckNoThrow) {
+    [[nodiscard]] static bool typecheck(JSContext* cx, JS::HandleObject object,
+                                        GIBaseInfo* expected_info,
+                                        GType expected_gtype,
+                                        GjsTypecheckNoThrow) {
         Base* priv = Base::for_js(cx, object);
         if (!priv || priv->is_prototype())
             return false;
@@ -795,7 +783,7 @@ class GIWrapperPrototype : public Base {
      *
      * Override this if the type's constructor takes other than 1 argument.
      */
-    GJS_USE unsigned constructor_nargs(void) const { return 1; }
+    [[nodiscard]] unsigned constructor_nargs() const { return 1; }
 
     /*
      * GIWrapperPrototype::define_jsclass:
@@ -982,7 +970,8 @@ class GIWrapperPrototype : public Base {
      * Like Base::for_js(), but asserts that the returned private struct is a
      * Prototype and not an Instance.
      */
-    GJS_USE static Prototype* for_js(JSContext* cx, JS::HandleObject wrapper) {
+    [[nodiscard]] static Prototype* for_js(JSContext* cx,
+                                           JS::HandleObject wrapper) {
         return Base::for_js(cx, wrapper)->to_prototype();
     }
 
@@ -992,9 +981,8 @@ class GIWrapperPrototype : public Base {
      * Gets the Prototype private data from to @wrapper.prototype. Cannot return
      * null, and asserts so.
      */
-    GJS_USE
-    static Prototype* for_js_prototype(JSContext* cx,
-                                       JS::HandleObject wrapper) {
+    [[nodiscard]] static Prototype* for_js_prototype(JSContext* cx,
+                                                     JS::HandleObject wrapper) {
         JS::RootedObject proto(cx);
         JS_GetPrototype(cx, wrapper, &proto);
         Base* retval = Base::for_js(cx, proto);
@@ -1004,8 +992,8 @@ class GIWrapperPrototype : public Base {
 
     // Accessors
 
-    GJS_USE Info* info(void) const { return m_info; }
-    GJS_USE GType gtype(void) const { return m_gtype; }
+    [[nodiscard]] Info* info() const { return m_info; }
+    [[nodiscard]] GType gtype() const { return m_gtype; }
 
     // Helper methods
 
@@ -1061,8 +1049,8 @@ class GIWrapperInstance : public Base {
      * Creates a GIWrapperInstance and associates it with @obj as its private
      * data. This is called by the JS constructor. Uses the slice allocator.
      */
-    GJS_USE
-    static Instance* new_for_js_object(JSContext* cx, JS::HandleObject obj) {
+    [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
+                                                     JS::HandleObject obj) {
         g_assert(!JS_GetPrivate(obj));
         auto* priv = g_slice_new0(Instance);
         new (priv) Instance(cx, obj);
@@ -1083,19 +1071,20 @@ class GIWrapperInstance : public Base {
      * Like Base::for_js(), but asserts that the returned private struct is an
      * Instance and not a Prototype.
      */
-    GJS_USE static Instance* for_js(JSContext* cx, JS::HandleObject wrapper) {
+    [[nodiscard]] static Instance* for_js(JSContext* cx,
+                                          JS::HandleObject wrapper) {
         return Base::for_js(cx, wrapper)->to_instance();
     }
 
     // Accessors
 
-    GJS_USE Wrapped* ptr(void) const { return m_ptr; }
+    [[nodiscard]] Wrapped* ptr() const { return m_ptr; }
     /*
      * GIWrapperInstance::raw_ptr:
      *
      * Like ptr(), but returns a byte pointer for use in byte arithmetic.
      */
-    GJS_USE uint8_t* raw_ptr(void) const {
+    [[nodiscard]] uint8_t* raw_ptr() const {
         return reinterpret_cast<uint8_t*>(m_ptr);
     }
 
@@ -1122,9 +1111,8 @@ class GIWrapperInstance : public Base {
      * It's possible to override typecheck_impl() if you need an extra step in
      * the check.
      */
-    GJS_USE
-    bool typecheck_impl(JSContext*, GIBaseInfo* expected_info,
-                        GType expected_gtype) const {
+    [[nodiscard]] bool typecheck_impl(JSContext*, GIBaseInfo* expected_info,
+                                      GType expected_gtype) const {
         if (expected_gtype != G_TYPE_NONE)
             return g_type_is_a(Base::gtype(), expected_gtype);
         else if (expected_info)

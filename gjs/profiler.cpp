@@ -54,7 +54,6 @@
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
 #include "gjs/profiler.h"
 
 #define FLUSH_DELAY_SECONDS 3
@@ -142,10 +141,7 @@ static GjsContext *profiling_context;
  * Returns: %TRUE if successful; otherwise %FALSE and the profile
  *   should abort.
  */
-GJS_USE
-static bool
-gjs_profiler_extract_maps(GjsProfiler *self)
-{
+[[nodiscard]] static bool gjs_profiler_extract_maps(GjsProfiler* self) {
     int64_t now = g_get_monotonic_time() * 1000L;
 
     g_assert(((void) "Profiler must be set up before extracting maps", self));
@@ -291,7 +287,7 @@ _gjs_profiler_is_running(GjsProfiler *self)
 
 #ifdef ENABLE_PROFILER
 
-static void gjs_profiler_sigprof(int signum G_GNUC_UNUSED, siginfo_t* info,
+static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
                                  void*) {
     GjsProfiler *self = gjs_context_get_profiler(profiling_context);
 

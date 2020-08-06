@@ -246,8 +246,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     argv.rval().setUndefined();                                            \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-GJS_USE
-static JSObject *gjs_cairo_context_get_proto(JSContext *);
+[[nodiscard]] static JSObject* gjs_cairo_context_get_proto(JSContext*);
 
 GJS_DEFINE_PROTO_WITH_GTYPE("Context", cairo_context,
                             CAIRO_GOBJECT_TYPE_CONTEXT,
@@ -967,16 +966,10 @@ gjs_cairo_context_get_context(JSContext       *context,
     return priv_from_js(context, object);
 }
 
-GJS_USE
-static bool
-context_to_g_argument(JSContext      *context,
-                      JS::Value       value,
-                      const char     *arg_name,
-                      GjsArgumentType argument_type,
-                      GITransfer      transfer,
-                      bool            may_be_null,
-                      GArgument      *arg)
-{
+[[nodiscard]] static bool context_to_g_argument(
+    JSContext* context, JS::Value value, const char* arg_name,
+    GjsArgumentType argument_type, GITransfer transfer, bool may_be_null,
+    GIArgument* arg) {
     if (value.isNull()) {
         if (!may_be_null) {
             GjsAutoChar display_name =
