@@ -37,6 +37,7 @@
 #include <glib.h>
 
 #include <js/CallArgs.h>
+#include <js/ComparisonOperators.h>
 #include <js/Id.h>
 #include <js/MemoryFunctions.h>
 #include <js/RootingAPI.h>

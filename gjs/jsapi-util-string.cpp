@@ -36,6 +36,7 @@
 
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ComparisonOperators.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/Id.h>     // for JSID_IS_STRING...
 #include <js/RootingAPI.h>

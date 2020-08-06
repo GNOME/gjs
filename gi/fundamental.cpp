@@ -24,8 +24,6 @@
 
 #include <config.h>
 
-#include <utility>  // for (implicit) move
-
 #include <girepository.h>
 #include <glib.h>
 

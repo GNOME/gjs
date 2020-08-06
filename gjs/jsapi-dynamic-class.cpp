@@ -30,6 +30,7 @@
 
 #include <js/CallArgs.h>  // for JSNative
 #include <js/Class.h>
+#include <js/ComparisonOperators.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_GETTER
 #include <js/Realm.h>  // for GetRealmObjectPrototype
 #include <js/RootingAPI.h>
