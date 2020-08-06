@@ -1,3 +1,55 @@
+NEXT
+----
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 78, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 68.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New language features
+    + A new regular expression engine, supporting lookbehind and named capture
+      groups, among other things
+
+  * New syntax
+    + The ?? operator ("nullish coalescing operator") is now supported
+    + The ?. operator ("optional chaining operator") is now supported
+    + Public static class fields are now supported
+    + Separators in numeric literals are now supported: for example, 1_000_000
+
+  * New APIs
+    + String.replaceAll() for replacing all instances of a string inside another
+      string
+    + Promise.allSettled() for awaiting until all Promises in an array have
+      either fulfilled or rejected
+    + Intl.Locale
+    + Intl.ListFormat
+    + Intl.RelativeTimeFormat.formatToParts()
+
+  * New behaviour
+    + There are a lot of minor behaviour changes as SpiderMonkey's JS
+      implementation conforms ever closer to existing ECMAScript standards and
+      adopts new ones. For complete information, read the Firefox developer
+      release notes:
+      https://developer.mozilla.org/en-US/Firefox/Releases/69#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/70#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/71#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/72#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/73#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/74#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/75#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/76#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/77#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/78#JavaScript
+
+  * Backwards-incompatible changes
+    + The Object.toSource() method has been removed
+    + The uneval() global function has been removed
+    + A leading zero is now never allowed for BigInt literals, making 08n and
+      09n invalid similar to the existing error when legacy octal numbers like
+      07n are used
+    + The Function.caller property now has the value of null if the caller is a
+      strict, async, or generator function, instead of throwing a TypeError
+
 Version 1.65.4
 --------------
 

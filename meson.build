@@ -245,7 +245,7 @@ if not minimal_program.compiled() or minimal_program.returncode() != 0
     error('''A minimal SpiderMonkey program
 could not be compiled, linked, or run. Most likely you should build it with a
 different configuration. Check the recommended configuration:
-https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr60/docs/Building%20SpiderMonkey.md''')
+https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md''')
 endif
 
 have_printf_alternative_int = cc.compiles('''
