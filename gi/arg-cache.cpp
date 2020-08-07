@@ -957,237 +957,240 @@ static void gjs_arg_cache_interface_free(GjsArgumentCache* self) {
 }
 
 static const GjsArgumentMarshallers skip_all_marshallers = {
-    .in = gjs_marshal_skipped_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_skipped_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 // .in is ignored for the return value
 static const GjsArgumentMarshallers return_value_marshallers = {
-    .out = gjs_marshal_generic_out_out,
-    .release = gjs_marshal_generic_out_release,
+    nullptr,  // no in
+    gjs_marshal_generic_out_out,  // out
+    gjs_marshal_generic_out_release,  // release
 };
 
 static const GjsArgumentMarshallers return_array_marshallers = {
-    .in = gjs_marshal_generic_out_in,
-    .out = gjs_marshal_explicit_array_out_out,
-    .release = gjs_marshal_explicit_array_out_release,
+    gjs_marshal_generic_out_in,  // in
+    gjs_marshal_explicit_array_out_out,  // out
+    gjs_marshal_explicit_array_out_release,  // release
 };
 
 static const GjsArgumentMarshallers array_length_out_marshallers = {
-    .in = gjs_marshal_generic_out_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_generic_out_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers fallback_in_marshallers = {
-    .in = gjs_marshal_generic_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_generic_in_release,
+    gjs_marshal_generic_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_generic_in_release,  // release
 };
 
 static const GjsArgumentMarshallers fallback_interface_in_marshallers = {
-    .in = gjs_marshal_generic_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_generic_in_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_generic_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_generic_in_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers fallback_inout_marshallers = {
-    .in = gjs_marshal_generic_inout_in,
-    .out = gjs_marshal_generic_out_out,
-    .release = gjs_marshal_generic_inout_release,
+    gjs_marshal_generic_inout_in,  // in
+    gjs_marshal_generic_out_out,  // out
+    gjs_marshal_generic_inout_release,  // release
 };
 
 static const GjsArgumentMarshallers fallback_out_marshallers = {
-    .in = gjs_marshal_generic_out_in,
-    .out = gjs_marshal_generic_out_out,
-    .release = gjs_marshal_generic_out_release,
+    gjs_marshal_generic_out_in,  // in
+    gjs_marshal_generic_out_out,  // out
+    gjs_marshal_generic_out_release,  // release
 };
 
 static const GjsArgumentMarshallers invalid_in_marshallers = {
-    .in = nullptr,  // will cause the function invocation code to throw
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    nullptr,  // no in, will cause the function invocation code to throw
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers enum_in_marshallers = {
-    .in = gjs_marshal_enum_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_enum_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers flags_in_marshallers = {
-    .in = gjs_marshal_flags_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_flags_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers foreign_struct_in_marshallers = {
-    .in = gjs_marshal_foreign_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_foreign_in_release,
+    gjs_marshal_foreign_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_foreign_in_release,  // release
 };
 
 static const GjsArgumentMarshallers foreign_struct_instance_in_marshallers = {
-    .in = gjs_marshal_foreign_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_foreign_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers gvalue_in_marshallers = {
-    .in = gjs_marshal_gvalue_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_gvalue_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers gvalue_in_transfer_none_marshallers = {
-    .in = gjs_marshal_gvalue_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_boxed_in_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_gvalue_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_boxed_in_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers gclosure_in_marshallers = {
-    .in = gjs_marshal_gclosure_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_gclosure_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers gclosure_in_transfer_none_marshallers = {
-    .in = gjs_marshal_gclosure_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_boxed_in_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_gclosure_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_boxed_in_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers gbytes_in_marshallers = {
-    .in = gjs_marshal_gbytes_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_gbytes_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers gbytes_in_transfer_none_marshallers = {
-    .in = gjs_marshal_gbytes_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_boxed_in_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_gbytes_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_boxed_in_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers object_in_marshallers = {
-    .in = gjs_marshal_object_in_in,
-    .out = gjs_marshal_skipped_out,
+    gjs_marshal_object_in_in,  // in
+    gjs_marshal_skipped_out,  // out
     // This is a smart marshaller, no release needed
-    .release = gjs_marshal_skipped_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_skipped_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers union_in_marshallers = {
-    .in = gjs_marshal_union_in_in,
-    .out = gjs_marshal_skipped_out,
+    gjs_marshal_union_in_in,  // in
+    gjs_marshal_skipped_out,  // out
     // This is a smart marshaller, no release needed
-    .release = gjs_marshal_skipped_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_skipped_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers boxed_in_marshallers = {
-    .in = gjs_marshal_boxed_in_in,
-    .out = gjs_marshal_skipped_out,
+    gjs_marshal_boxed_in_in,  // in
+    gjs_marshal_skipped_out,  // out
     // This is a smart marshaller, no release needed
-    .release = gjs_marshal_skipped_release,
-    .free = gjs_arg_cache_interface_free,
+    gjs_marshal_skipped_release,  // release
+    gjs_arg_cache_interface_free,  // free
 };
 
 static const GjsArgumentMarshallers null_in_marshallers = {
-    .in = gjs_marshal_null_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_null_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers boolean_in_marshallers = {
-    .in = gjs_marshal_boolean_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_boolean_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers integer_in_marshallers = {
-    .in = gjs_marshal_integer_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_integer_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers number_in_marshallers = {
-    .in = gjs_marshal_number_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_number_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers unichar_in_marshallers = {
-    .in = gjs_marshal_unichar_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_unichar_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers gtype_in_marshallers = {
-    .in = gjs_marshal_gtype_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_gtype_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers string_in_marshallers = {
-    .in = gjs_marshal_string_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_string_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers string_in_transfer_none_marshallers = {
-    .in = gjs_marshal_string_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_string_in_release,
+    gjs_marshal_string_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_string_in_release,  // release
 };
 
 // .out is ignored for the instance parameter
 static const GjsArgumentMarshallers gtype_struct_instance_in_marshallers = {
-    .in = gjs_marshal_gtype_struct_instance_in,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_gtype_struct_instance_in,  // in
+    nullptr,  // no out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers param_instance_in_marshallers = {
-    .in = gjs_marshal_param_instance_in,
-    .release = gjs_marshal_skipped_release,
+    gjs_marshal_param_instance_in,  // in
+    nullptr,  // no out
+    gjs_marshal_skipped_release,  // release
 };
 
 static const GjsArgumentMarshallers callback_in_marshallers = {
-    .in = gjs_marshal_callback_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_callback_release,
+    gjs_marshal_callback_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_callback_release,  // release
 };
 
 static const GjsArgumentMarshallers c_array_in_marshallers = {
-    .in = gjs_marshal_explicit_array_in_in,
-    .out = gjs_marshal_skipped_out,
-    .release = gjs_marshal_explicit_array_in_release,
+    gjs_marshal_explicit_array_in_in,  // in
+    gjs_marshal_skipped_out,  // out
+    gjs_marshal_explicit_array_in_release,  // release
 };
 
 static const GjsArgumentMarshallers c_array_inout_marshallers = {
-    .in = gjs_marshal_explicit_array_inout_in,
-    .out = gjs_marshal_explicit_array_out_out,
-    .release = gjs_marshal_explicit_array_inout_release,
+    gjs_marshal_explicit_array_inout_in,  // in
+    gjs_marshal_explicit_array_out_out,  // out
+    gjs_marshal_explicit_array_inout_release,  // release
 };
 
 static const GjsArgumentMarshallers c_array_out_marshallers = {
-    .in = gjs_marshal_generic_out_in,
-    .out = gjs_marshal_explicit_array_out_out,
-    .release = gjs_marshal_explicit_array_out_release,
+    gjs_marshal_generic_out_in,  // in
+    gjs_marshal_explicit_array_out_out,  // out
+    gjs_marshal_explicit_array_out_release,  // release
 };
 
 static const GjsArgumentMarshallers caller_allocates_out_marshallers = {
-    .in = gjs_marshal_caller_allocates_in,
-    .out = gjs_marshal_generic_out_out,
-    .release = gjs_marshal_caller_allocates_release,
+    gjs_marshal_caller_allocates_in,  // in
+    gjs_marshal_generic_out_out,  // out
+    gjs_marshal_caller_allocates_release,  // release
 };
 
 static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
