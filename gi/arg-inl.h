@@ -168,17 +168,14 @@ gjs_arg_member<unsigned, GI_TYPE_TAG_INTERFACE>(GIArgument* arg) {
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<!std::is_pointer_v<T>> gjs_arg_set(GIArgument* arg,
-                                                           T v) {
-    gjs_arg_member<T, TAG>(arg) = v;
-}
-
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<std::is_pointer_v<T>> gjs_arg_set(GIArgument* arg,
-                                                          T v) {
-    using NonconstPtrT =
-        std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
-    gjs_arg_member<NonconstPtrT, TAG>(arg) = const_cast<NonconstPtrT>(v);
+inline void gjs_arg_set(GIArgument* arg, T v) {
+    if constexpr (std::is_pointer_v<T>) {
+        using NonconstPtrT =
+            std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
+        gjs_arg_member<NonconstPtrT, TAG>(arg) = const_cast<NonconstPtrT>(v);
+    } else {
+        gjs_arg_member<T, TAG>(arg) = v;
+    }
 }
 
 // Store function pointers as void*. It is a requirement of GLib that your
@@ -222,19 +219,16 @@ template <>
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] inline std::enable_if_t<std::is_integral_v<T>, void*>
-gjs_arg_get_as_pointer(GIArgument* arg) {
+[[nodiscard]] inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
     return gjs_int_to_pointer(gjs_arg_get<T, TAG>(arg));
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<!std::is_pointer_v<T>> gjs_arg_unset(GIArgument* arg) {
-    gjs_arg_set<T, TAG>(arg, static_cast<T>(0));
-}
-
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<std::is_pointer_v<T>> gjs_arg_unset(GIArgument* arg) {
-    gjs_arg_set<T, TAG>(arg, nullptr);
+inline void gjs_arg_unset(GIArgument* arg) {
+    if constexpr (std::is_pointer_v<T>)
+        gjs_arg_set<T, TAG>(arg, nullptr);
+    else
+        gjs_arg_set<T, TAG>(arg, static_cast<T>(0));
 }
 
 // Implementation to store rounded (u)int64_t numbers into double
