@@ -9,30 +9,26 @@
 
 #include <stdint.h>
 
-#include <type_traits>
+#include <type_traits>  // IWYU pragma: keep
 
 template <typename T>
-inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>, void*>
-gjs_int_to_pointer(T v) {
-    return reinterpret_cast<void*>(static_cast<intptr_t>(v));
+constexpr void* gjs_int_to_pointer(T v) {
+    static_assert(std::is_integral_v<T>, "Need integer value");
+
+    if constexpr (std::is_signed_v<T>)
+        return reinterpret_cast<void*>(static_cast<intptr_t>(v));
+    else
+        return reinterpret_cast<void*>(static_cast<uintptr_t>(v));
 }
 
 template <typename T>
-inline std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, void*>
-gjs_int_to_pointer(T v) {
-    return reinterpret_cast<void*>(static_cast<uintptr_t>(v));
-}
+constexpr T gjs_pointer_to_int(void* p) {
+    static_assert(std::is_integral_v<T>, "Need integer value");
 
-template <typename T>
-inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>, T>
-gjs_pointer_to_int(void* p) {
-    return static_cast<T>(reinterpret_cast<intptr_t>(p));
-}
-
-template <typename T>
-inline std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>, T>
-gjs_pointer_to_int(void* p) {
-    return static_cast<T>(reinterpret_cast<uintptr_t>(p));
+    if constexpr (std::is_signed_v<T>)
+        return static_cast<T>(reinterpret_cast<intptr_t>(p));
+    else
+        return static_cast<T>(reinterpret_cast<uintptr_t>(p));
 }
 
 template <>
