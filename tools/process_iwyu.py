@@ -65,6 +65,10 @@ FALSE_POSITIVES = (
     ('gi/private.cpp', '#include <algorithm>', 'for max'),
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
+
+    # Weird false positive on some versions of IWYU
+    ('gi/arg.cpp', 'struct _GHashTable;', ''),
+    ('gi/arg.cpp', 'struct _GVariant;', ''),
 )
 
 

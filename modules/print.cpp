@@ -17,7 +17,6 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <js/Value.h>
 #include <jsapi.h>
 
 #include "gjs/jsapi-util.h"
