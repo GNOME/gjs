@@ -4,7 +4,6 @@
 
 #include <config.h>
 
-#include <limits.h>  // for SCHAR_MAX, SCHAR_MIN, UCHAR_MAX
 #include <stdint.h>
 #include <string.h>  // for memset
 
@@ -31,6 +30,7 @@
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
 #include "gi/gtype.h"
+#include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
@@ -364,6 +364,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                               bool            no_copy)
 {
     GType gtype;
+    bool out_of_range = false;
 
     gtype = G_VALUE_TYPE(gvalue);
 
@@ -406,42 +407,48 @@ gjs_value_to_g_value_internal(JSContext      *context,
         }
     } else if (gtype == G_TYPE_CHAR) {
         gint32 i;
-        if (JS::ToInt32(context, value, &i) && i >= SCHAR_MIN && i <= SCHAR_MAX) {
+        if (Gjs::js_value_to_c_checked<signed char>(context, value, &i,
+                                                    &out_of_range) &&
+            !out_of_range) {
             g_value_set_schar(gvalue, (signed char)i);
         } else {
             return throw_expect_type(context, value, "char");
         }
     } else if (gtype == G_TYPE_UCHAR) {
-        guint16 i;
-        if (JS::ToUint16(context, value, &i) && i <= UCHAR_MAX) {
+        uint32_t i;
+        if (Gjs::js_value_to_c_checked<unsigned char>(context, value, &i,
+                                                      &out_of_range) &&
+            !out_of_range) {
             g_value_set_uchar(gvalue, (unsigned char)i);
         } else {
             return throw_expect_type(context, value, "unsigned char");
         }
     } else if (gtype == G_TYPE_INT) {
         gint32 i;
-        if (JS::ToInt32(context, value, &i)) {
+        if (Gjs::js_value_to_c(context, value, &i)) {
             g_value_set_int(gvalue, i);
         } else {
             return throw_expect_type(context, value, "integer");
         }
     } else if (gtype == G_TYPE_DOUBLE) {
         gdouble d;
-        if (JS::ToNumber(context, value, &d)) {
+        if (Gjs::js_value_to_c(context, value, &d)) {
             g_value_set_double(gvalue, d);
         } else {
             return throw_expect_type(context, value, "double");
         }
     } else if (gtype == G_TYPE_FLOAT) {
         gdouble d;
-        if (JS::ToNumber(context, value, &d)) {
+        if (Gjs::js_value_to_c_checked<float>(context, value, &d,
+                                              &out_of_range) &&
+            !out_of_range) {
             g_value_set_float(gvalue, d);
         } else {
             return throw_expect_type(context, value, "float");
         }
     } else if (gtype == G_TYPE_UINT) {
         guint32 i;
-        if (JS::ToUint32(context, value, &i)) {
+        if (Gjs::js_value_to_c(context, value, &i)) {
             g_value_set_uint(gvalue, i);
         } else {
             return throw_expect_type(context, value, "unsigned integer");
@@ -620,7 +627,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         int64_t value_int64;
 
-        if (JS::ToInt64(context, value, &value_int64)) {
+        if (Gjs::js_value_to_c(context, value, &value_int64)) {
             GEnumValue *v;
             GjsAutoTypeClass<GEnumClass> enum_class(gtype);
 
@@ -640,7 +647,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
     } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
         int64_t value_int64;
 
-        if (JS::ToInt64(context, value, &value_int64)) {
+        if (Gjs::js_value_to_c(context, value, &value_int64)) {
             if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                 return false;
 
@@ -692,7 +699,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
          * e.g. ClutterUnit.
          */
         gint32 i;
-        if (JS::ToInt32(context, value, &i)) {
+        if (Gjs::js_value_to_c(context, value, &i)) {
             GValue int_value = { 0, };
             g_value_init(&int_value, G_TYPE_INT);
             g_value_set_int(&int_value, i);
