@@ -120,6 +120,10 @@ inline void gjs_arg_set(GIArgument* arg, T v) {
             std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
         gjs_arg_member<NonconstPtrT, TAG>(arg) = const_cast<NonconstPtrT>(v);
     } else {
+        if constexpr (std::is_same_v<T, bool> || (std::is_same_v<T, gboolean> &&
+                                                  TAG == GI_TYPE_TAG_BOOLEAN))
+            v = !!v;
+
         gjs_arg_member<T, TAG>(arg) = v;
     }
 }
@@ -137,31 +141,13 @@ inline std::enable_if_t<std::is_integral_v<T>> gjs_arg_set(GIArgument* arg,
     gjs_arg_set<T, TAG>(arg, gjs_pointer_to_int<T>(v));
 }
 
-template <>
-inline void gjs_arg_set<bool>(GIArgument* arg, bool v) {
-    gjs_arg_member<bool>(arg) = !!v;
-}
-
-template <>
-inline void gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(GIArgument* arg,
-                                                       gboolean v) {
-    gjs_arg_member<bool>(arg) = !!v;
-}
-
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 [[nodiscard]] inline T gjs_arg_get(GIArgument* arg) {
+    if constexpr (std::is_same_v<T, bool> ||
+                  (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN))
+        return !!gjs_arg_member<T, TAG>(arg);
+
     return gjs_arg_member<T, TAG>(arg);
-}
-
-template <>
-[[nodiscard]] inline bool gjs_arg_get<bool>(GIArgument* arg) {
-    return !!gjs_arg_member<bool>(arg);
-}
-
-template <>
-[[nodiscard]] inline gboolean gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(
-    GIArgument* arg) {
-    return !!gjs_arg_member<bool>(arg);
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
