@@ -47,124 +47,70 @@ template <typename T>
  * Setting a tag for a type allows to perform proper specialization. */
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 [[nodiscard]] inline decltype(auto) gjs_arg_member(GIArgument* arg) {
-    static_assert(!std::is_arithmetic<T>(), "Missing declaration for type");
+    if constexpr (TAG == GI_TYPE_TAG_VOID) {
+        if constexpr (std::is_same_v<T, bool>)
+            return gjs_arg_member(arg, &GIArgument::v_boolean);
+        if constexpr (std::is_same_v<T, int8_t>)
+            return gjs_arg_member(arg, &GIArgument::v_int8);
+        if constexpr (std::is_same_v<T, uint8_t>)
+            return gjs_arg_member(arg, &GIArgument::v_uint8);
+        if constexpr (std::is_same_v<T, int16_t>)
+            return gjs_arg_member(arg, &GIArgument::v_int16);
+        if constexpr (std::is_same_v<T, uint16_t>)
+            return gjs_arg_member(arg, &GIArgument::v_uint16);
+        if constexpr (std::is_same_v<T, int32_t>)
+            return gjs_arg_member(arg, &GIArgument::v_int32);
+        if constexpr (std::is_same_v<T, uint32_t>)
+            return gjs_arg_member(arg, &GIArgument::v_uint32);
+        if constexpr (std::is_same_v<T, int64_t>)
+            return gjs_arg_member(arg, &GIArgument::v_int64);
+        if constexpr (std::is_same_v<T, uint64_t>)
+            return gjs_arg_member(arg, &GIArgument::v_uint64);
 
-    using NonconstPtrT =
-        std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
-    return reinterpret_cast<NonconstPtrT&>(
-        gjs_arg_member(arg, &GIArgument::v_pointer));
-}
+        // gunichar is stored in v_uint32
+        if constexpr (std::is_same_v<T, char32_t>)
+            return gjs_arg_member(arg, &GIArgument::v_uint32);
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<bool>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_boolean);
-}
+        if constexpr (std::is_same_v<T, float>)
+            return gjs_arg_member(arg, &GIArgument::v_float);
 
-template <>
-[[nodiscard]] inline decltype(auto)
-gjs_arg_member<gboolean, GI_TYPE_TAG_BOOLEAN>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_boolean);
-}
+        if constexpr (std::is_same_v<T, double>)
+            return gjs_arg_member(arg, &GIArgument::v_double);
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<int8_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_int8);
-}
+        if constexpr (std::is_same_v<T, char*>)
+            return gjs_arg_member(arg, &GIArgument::v_string);
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<uint8_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_uint8);
-}
+        if constexpr (std::is_same_v<T, void*>)
+            return gjs_arg_member(arg, &GIArgument::v_pointer);
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<int16_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_int16);
-}
+        if constexpr (std::is_same_v<T, std::nullptr_t>)
+            return gjs_arg_member(arg, &GIArgument::v_pointer);
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<uint16_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_uint16);
-}
+        if constexpr (std::is_pointer<T>()) {
+            using NonconstPtrT = std::add_pointer_t<
+                std::remove_const_t<std::remove_pointer_t<T>>>;
+            return reinterpret_cast<NonconstPtrT&>(
+                gjs_arg_member(arg, &GIArgument::v_pointer));
+        }
+    }
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<int32_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_int32);
-}
+    if constexpr (TAG == GI_TYPE_TAG_BOOLEAN && std::is_same_v<T, gboolean>)
+        return gjs_arg_member(arg, &GIArgument::v_boolean);
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<uint32_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_uint32);
-}
+    if constexpr (TAG == GI_TYPE_TAG_GTYPE && std::is_same_v<T, GType>) {
+        // GType is defined differently on 32-bit vs. 64-bit architectures.
+        if constexpr (std::is_same_v<GType, gsize>)
+            return gjs_arg_member(arg, &GIArgument::v_size);
+        else if constexpr (std::is_same_v<GType, gulong>)
+            return gjs_arg_member(arg, &GIArgument::v_ulong);
+    }
 
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<int64_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_int64);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<uint64_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_uint64);
-}
-
-// gunichar is stored in v_uint32
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<char32_t>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_uint32);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<GType, GI_TYPE_TAG_GTYPE>(
-    GIArgument* arg) {
-    // GType is defined differently on 32-bit vs. 64-bit architectures. From gtype.h:
-    //
-    // #if     GLIB_SIZEOF_SIZE_T != GLIB_SIZEOF_LONG || !defined __cplusplus
-    // typedef gsize                           GType;
-    // #else   /* for historic reasons, C++ links against gulong GTypes */
-    // typedef gulong                          GType;
-    // #endif
-    if constexpr (std::is_same_v<GType, gsize>)
-        return gjs_arg_member(arg, &GIArgument::v_size);
-    else if constexpr (std::is_same_v<GType, gulong>)
-        return gjs_arg_member(arg, &GIArgument::v_ulong);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<float>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_float);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<double>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_double);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<char*>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_string);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<void*>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_pointer);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<std::nullptr_t>(
-    GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_pointer);
-}
-
-template <>
-[[nodiscard]] inline decltype(auto) gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
-    GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_int);
-}
-
-// Unsigned enums
-template <>
-[[nodiscard]] inline decltype(auto)
-gjs_arg_member<unsigned, GI_TYPE_TAG_INTERFACE>(GIArgument* arg) {
-    return gjs_arg_member(arg, &GIArgument::v_uint);
+    if constexpr (TAG == GI_TYPE_TAG_INTERFACE && std::is_integral_v<T>) {
+        if constexpr (std::is_signed_v<T>)
+            return gjs_arg_member(arg, &GIArgument::v_int);
+        else
+            return gjs_arg_member(arg, &GIArgument::v_uint);
+    }
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
