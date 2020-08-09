@@ -618,6 +618,11 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
                                               nullptr);
 }
 
+void GjsContextPrivate::schedule_gc() {
+    gjs_object_clear_toggles();
+    schedule_gc_internal(true);
+}
+
 /*
  * GjsContextPrivate::schedule_gc_if_needed:
  *
@@ -625,6 +630,8 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
  * schedules a full GC in the next idle time.
  */
 void GjsContextPrivate::schedule_gc_if_needed(void) {
+    gjs_object_clear_toggles();
+
     // We call JS_MaybeGC immediately, but defer a check for a full GC cycle
     // to an idle handler.
     JS_MaybeGC(m_cx);

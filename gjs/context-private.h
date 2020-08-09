@@ -226,7 +226,7 @@ class GjsContextPrivate : public JS::JobQueue {
                        const JS::HandleValueArray& args,
                        JS::MutableHandleValue rval);
 
-    void schedule_gc(void) { schedule_gc_internal(true); }
+    void schedule_gc();
     void schedule_gc_if_needed(void);
 
     void exit(uint8_t exit_code);
