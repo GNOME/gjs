@@ -43,12 +43,14 @@
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
+#include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/foreign.h"
 #include "gi/function.h"
 #include "gi/gerror.h"
 #include "gi/gtype.h"
+#include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
@@ -165,14 +167,6 @@ static bool report_gtype_mismatch(JSContext* cx, const char* arg_name,
     gjs_throw(
         cx, "Expected an object of type %s for argument '%s' but got type %s",
         g_type_name(expected), arg_name, JS::InformalValueTypeName(value));
-    return false;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool report_out_of_range(JSContext* cx, const char* arg_name,
-                                GITypeTag tag) {
-    gjs_throw(cx, "Argument %s: value is out of range for %s", arg_name,
-              g_type_tag_to_string(tag));
     return false;
 }
 
@@ -387,79 +381,63 @@ static bool gjs_marshal_boolean_in_in(JSContext*, GjsArgumentCache*,
     return true;
 }
 
-// Type tags are alternated, signed / unsigned
-static int32_t min_max_ints[5][2] = {{G_MININT8, G_MAXINT8},
-                                     {0, G_MAXUINT8},
-                                     {G_MININT16, G_MAXINT16},
-                                     {0, G_MAXUINT16},
-                                     {G_MININT32, G_MAXINT32}};
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
+    JSContext* cx, const JS::HandleValue& value, GArgument* arg,
+    GjsArgumentCache* self) {
+    bool out_of_range = false;
 
-[[nodiscard]] static inline bool value_in_range(int32_t number, GITypeTag tag) {
-    return (number >= min_max_ints[tag - GI_TYPE_TAG_INT8][0] &&
-            number <= min_max_ints[tag - GI_TYPE_TAG_INT8][1]);
+    if (!gjs_arg_set_from_js_value<T>(cx, value, arg, &out_of_range)) {
+        if (out_of_range) {
+            gjs_throw(cx, "Argument %s: value is out of range for %s",
+                      self->arg_name, Gjs::static_type_name<T>());
+        }
+
+        return false;
+    }
+
+    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_integer_in_in(JSContext* cx, GjsArgumentCache* self,
                                       GjsFunctionCallState*, GIArgument* arg,
                                       JS::HandleValue value) {
-    GITypeTag tag = self->contents.number.number_tag;
+    switch (self->contents.number.number_tag) {
+        case GI_TYPE_TAG_INT8:
+            return gjs_arg_set_from_js_value<int8_t>(cx, value, arg, self);
+        case GI_TYPE_TAG_UINT8:
+            return gjs_arg_set_from_js_value<uint8_t>(cx, value, arg, self);
+        case GI_TYPE_TAG_INT16:
+            return gjs_arg_set_from_js_value<int16_t>(cx, value, arg, self);
+        case GI_TYPE_TAG_UINT16:
+            return gjs_arg_set_from_js_value<uint16_t>(cx, value, arg, self);
+        case GI_TYPE_TAG_INT32:
+            return gjs_arg_set_from_js_value<int32_t>(cx, value, arg, self);
 
-    if (self->is_unsigned) {
-        uint32_t number;
-        if (!JS::ToUint32(cx, value, &number))
-            return false;
-
-        if (!value_in_range(number, tag))
-            return report_out_of_range(cx, self->arg_name, tag);
-
-        gjs_g_argument_set_array_length(tag, arg, number);
-    } else {
-        int32_t number;
-        if (!JS::ToInt32(cx, value, &number))
-            return false;
-
-        if (!value_in_range(number, tag))
-            return report_out_of_range(cx, self->arg_name, tag);
-
-        gjs_g_argument_set_array_length(tag, arg, number);
+        default:
+            g_assert_not_reached();
     }
-
-    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_number_in_in(JSContext* cx, GjsArgumentCache* self,
                                      GjsFunctionCallState*, GIArgument* arg,
                                      JS::HandleValue value) {
-    double v;
-    if (!JS::ToNumber(cx, value, &v))
-        return false;
-
-    GITypeTag tag = self->contents.number.number_tag;
-    if (tag == GI_TYPE_TAG_DOUBLE) {
-        gjs_arg_set(arg, v);
-    } else if (tag == GI_TYPE_TAG_FLOAT) {
-        if (v < -G_MAXFLOAT || v > G_MAXFLOAT)
-            return report_out_of_range(cx, self->arg_name, GI_TYPE_TAG_FLOAT);
-        gjs_arg_set<float>(arg, v);
-    } else if (tag == GI_TYPE_TAG_INT64) {
-        if (v < G_MININT64 || v > G_MAXINT64)
-            return report_out_of_range(cx, self->arg_name, GI_TYPE_TAG_INT64);
-        gjs_arg_set<int64_t>(arg, v);
-    } else if (tag == GI_TYPE_TAG_UINT64) {
-        if (v < 0 || v > G_MAXUINT64)
-            return report_out_of_range(cx, self->arg_name, GI_TYPE_TAG_UINT64);
-        gjs_arg_set<uint64_t>(arg, v);
-    } else if (tag == GI_TYPE_TAG_UINT32) {
-        if (v < 0 || v > G_MAXUINT32)
-            return report_out_of_range(cx, self->arg_name, GI_TYPE_TAG_UINT32);
-        gjs_arg_set<uint32_t>(arg, v);
-    } else {
-        g_assert_not_reached();
+    switch (self->contents.number.number_tag) {
+        case GI_TYPE_TAG_DOUBLE:
+            return gjs_arg_set_from_js_value<double>(cx, value, arg, self);
+        case GI_TYPE_TAG_FLOAT:
+            return gjs_arg_set_from_js_value<float>(cx, value, arg, self);
+        case GI_TYPE_TAG_INT64:
+            return gjs_arg_set_from_js_value<int64_t>(cx, value, arg, self);
+        case GI_TYPE_TAG_UINT64:
+            return gjs_arg_set_from_js_value<uint64_t>(cx, value, arg, self);
+        case GI_TYPE_TAG_UINT32:
+            return gjs_arg_set_from_js_value<uint32_t>(cx, value, arg, self);
+        default:
+            g_assert_not_reached();
     }
-
-    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -527,7 +505,7 @@ static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
                                    GjsFunctionCallState*, GIArgument* arg,
                                    JS::HandleValue value) {
     int64_t number;
-    if (!JS::ToInt64(cx, value, &number))
+    if (!Gjs::js_value_to_c(cx, value, &number))
         return false;
 
     // Unpack the values from their uint32_t bitfield. See note in
@@ -560,7 +538,7 @@ static bool gjs_marshal_flags_in_in(JSContext* cx, GjsArgumentCache* self,
                                     GjsFunctionCallState*, GIArgument* arg,
                                     JS::HandleValue value) {
     int64_t number;
-    if (!JS::ToInt64(cx, value, &number))
+    if (!Gjs::js_value_to_c(cx, value, &number))
         return false;
 
     if ((uint64_t(number) & self->contents.flags_mask) != uint64_t(number)) {
@@ -1465,14 +1443,12 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
         case GI_TYPE_TAG_INT32:
             self->marshallers = &integer_in_marshallers;
             self->contents.number.number_tag = tag;
-            self->is_unsigned = false;
             break;
 
         case GI_TYPE_TAG_UINT8:
         case GI_TYPE_TAG_UINT16:
             self->marshallers = &integer_in_marshallers;
             self->contents.number.number_tag = tag;
-            self->is_unsigned = true;
             break;
 
         case GI_TYPE_TAG_UINT32:
