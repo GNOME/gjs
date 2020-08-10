@@ -831,34 +831,39 @@ gjs_string_to_intarray(JSContext       *context,
 
     element_type = g_type_info_get_tag(param_info);
 
-    if (element_type == GI_TYPE_TAG_INT8 || element_type == GI_TYPE_TAG_UINT8) {
-        JS::UniqueChars result(JS_EncodeStringToUTF8(context, str));
-        if (!result)
-            return false;
-        *length = strlen(result.get());
-        *arr_p = g_strdup(result.get());
-        return true;
-    }
+    switch (element_type) {
+        case GI_TYPE_TAG_INT8:
+        case GI_TYPE_TAG_UINT8: {
+            JS::UniqueChars result(JS_EncodeStringToUTF8(context, str));
+            if (!result)
+                return false;
+            *length = strlen(result.get());
+            *arr_p = g_strdup(result.get());
+            return true;
+        }
 
-    if (element_type == GI_TYPE_TAG_INT16 || element_type == GI_TYPE_TAG_UINT16) {
-        if (!gjs_string_get_char16_data(context, str, &result16, length))
-            return false;
-        *arr_p = result16;
-        return true;
-    }
+        case GI_TYPE_TAG_INT16:
+        case GI_TYPE_TAG_UINT16: {
+            if (!gjs_string_get_char16_data(context, str, &result16, length))
+                return false;
+            *arr_p = result16;
+            return true;
+        }
 
-    if (element_type == GI_TYPE_TAG_UNICHAR) {
-        gunichar *result_ucs4;
-        if (!gjs_string_to_ucs4(context, str, &result_ucs4, length))
-            return false;
-        *arr_p = result_ucs4;
-        return true;
-    }
+        case GI_TYPE_TAG_UNICHAR: {
+            gunichar* result_ucs4;
+            if (!gjs_string_to_ucs4(context, str, &result_ucs4, length))
+                return false;
+            *arr_p = result_ucs4;
+            return true;
+        }
 
-    /* can't convert a string to this type */
-    gjs_throw(context, "Cannot convert string to array of '%s'",
-              g_type_tag_to_string (element_type));
-    return false;
+        default:
+            /* can't convert a string to this type */
+            gjs_throw(context, "Cannot convert string to array of '%s'",
+                      g_type_tag_to_string(element_type));
+            return false;
+    }
 }
 
 GJS_JSAPI_RETURN_CONVENTION
