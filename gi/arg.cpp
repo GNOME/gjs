@@ -2072,51 +2072,30 @@ gjs_value_to_arg(JSContext      *context,
                                    arg);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_from_g_list (JSContext             *context,
-                       JS::MutableHandleValue value_p,
-                       GITypeTag              list_tag,
-                       GITypeInfo            *param_info,
-                       GList                 *list,
-                       GSList                *slist)
-{
-    unsigned int i;
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
+    JSContext* cx, JS::MutableHandleValue value_p, GITypeInfo* type_info,
+    T* list) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     GArgument arg;
-    JS::RootedValueVector elems(context);
+    JS::RootedValueVector elems(cx);
+    GjsAutoTypeInfo param_info = g_type_info_get_param_type(type_info, 0);
 
-    i = 0;
-    if (list_tag == GI_TYPE_TAG_GLIST) {
-        for ( ; list != NULL; list = list->next) {
-            _g_type_info_argument_from_hash_pointer(param_info, list->data,
-                                                    &arg);
-            if (!elems.growBy(1)) {
-                JS_ReportOutOfMemory(context);
-                return false;
-            }
+    g_assert(param_info);
 
-            if (!gjs_value_from_g_argument(context, elems[i], param_info, &arg,
-                                           true))
-                return false;
-            ++i;
+    for (size_t i = 0; list; list = list->next, ++i) {
+        _g_type_info_argument_from_hash_pointer(param_info, list->data, &arg);
+
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
         }
-    } else {
-        for ( ; slist != NULL; slist = slist->next) {
-            _g_type_info_argument_from_hash_pointer(param_info, slist->data,
-                                                    &arg);
-            if (!elems.growBy(1)) {
-                JS_ReportOutOfMemory(context);
-                return false;
-            }
 
-            if (!gjs_value_from_g_argument(context, elems[i], param_info, &arg,
-                                           true))
-                return false;
-            ++i;
-        }
+        if (!gjs_value_from_g_argument(cx, elems[i], param_info, &arg, true))
+            return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JS::RootedObject obj(cx, JS::NewArrayObject(cx, elems));
     if (!obj)
         return false;
 
@@ -2955,25 +2934,11 @@ gjs_value_from_g_argument (JSContext             *context,
         break;
 
     case GI_TYPE_TAG_GLIST:
+        return gjs_array_from_g_list(context, value_p, type_info,
+                                     gjs_arg_get<GList*>(arg));
     case GI_TYPE_TAG_GSLIST:
-        {
-            GITypeInfo *param_info;
-
-            param_info = g_type_info_get_param_type(type_info, 0);
-            g_assert(param_info != NULL);
-
-            bool result = gjs_array_from_g_list(
-                context, value_p, type_tag, param_info,
-                type_tag == GI_TYPE_TAG_GLIST ? gjs_arg_get<GList*>(arg)
-                                              : nullptr,
-                type_tag == GI_TYPE_TAG_GSLIST ? gjs_arg_get<GSList*>(arg)
-                                               : nullptr);
-
-            g_base_info_unref((GIBaseInfo*) param_info);
-
-            return result;
-        }
-        break;
+        return gjs_array_from_g_list(context, value_p, type_info,
+                                     gjs_arg_get<GSList*>(arg));
 
     case GI_TYPE_TAG_GHASH:
         {
