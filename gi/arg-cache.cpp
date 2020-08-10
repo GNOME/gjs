@@ -381,7 +381,7 @@ GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_integer_in_in(JSContext* cx, GjsArgumentCache* self,
+static bool gjs_marshal_numeric_in_in(JSContext* cx, GjsArgumentCache* self,
                                       GjsFunctionCallState*, GIArgument* arg,
                                       JS::HandleValue value) {
     switch (self->contents.number.number_tag) {
@@ -395,17 +395,6 @@ static bool gjs_marshal_integer_in_in(JSContext* cx, GjsArgumentCache* self,
             return gjs_arg_set_from_js_value<uint16_t>(cx, value, arg, self);
         case GI_TYPE_TAG_INT32:
             return gjs_arg_set_from_js_value<int32_t>(cx, value, arg, self);
-
-        default:
-            g_assert_not_reached();
-    }
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_number_in_in(JSContext* cx, GjsArgumentCache* self,
-                                     GjsFunctionCallState*, GIArgument* arg,
-                                     JS::HandleValue value) {
-    switch (self->contents.number.number_tag) {
         case GI_TYPE_TAG_DOUBLE:
             return gjs_arg_set_from_js_value<double>(cx, value, arg, self);
         case GI_TYPE_TAG_FLOAT:
@@ -1147,15 +1136,9 @@ static const GjsArgumentMarshallers boolean_in_marshallers = {
     gjs_marshal_skipped_release,  // release
 };
 
-static const GjsArgumentMarshallers integer_in_marshallers = {
-    gjs_marshal_integer_in_in,  // in
-    gjs_marshal_skipped_out,  // out
-    gjs_marshal_skipped_release,  // release
-};
-
-static const GjsArgumentMarshallers number_in_marshallers = {
-    gjs_marshal_number_in_in,  // in
-    gjs_marshal_skipped_out,  // out
+static const GjsArgumentMarshallers numeric_in_marshallers = {
+    gjs_marshal_numeric_in_in,    // in
+    gjs_marshal_skipped_out,      // out
     gjs_marshal_skipped_release,  // release
 };
 
@@ -1495,22 +1478,14 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
         case GI_TYPE_TAG_INT8:
         case GI_TYPE_TAG_INT16:
         case GI_TYPE_TAG_INT32:
-            self->marshallers = &integer_in_marshallers;
-            self->contents.number.number_tag = tag;
-            break;
-
         case GI_TYPE_TAG_UINT8:
         case GI_TYPE_TAG_UINT16:
-            self->marshallers = &integer_in_marshallers;
-            self->contents.number.number_tag = tag;
-            break;
-
         case GI_TYPE_TAG_UINT32:
         case GI_TYPE_TAG_INT64:
         case GI_TYPE_TAG_UINT64:
         case GI_TYPE_TAG_FLOAT:
         case GI_TYPE_TAG_DOUBLE:
-            self->marshallers = &number_in_marshallers;
+            self->marshallers = &numeric_in_marshallers;
             self->contents.number.number_tag = tag;
             break;
 
