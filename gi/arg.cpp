@@ -445,13 +445,18 @@ gjs_array_to_g_list(JSContext   *context,
 
 template <typename IntType>
 GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
-    JSContext* cx, const JS::HandleValue& value, bool* out_of_range,
-    void** pointer_out) {
+    JSContext* cx, const JS::HandleValue& value, void** pointer_out) {
     static_assert(std::is_integral_v<IntType>, "Need an integer");
+    bool out_of_range = false;
 
     Gjs::JsValueHolder::Strict<IntType> i;
-    if (!Gjs::js_value_to_c_checked<IntType>(cx, value, &i, out_of_range))
+    if (!Gjs::js_value_to_c_checked<IntType>(cx, value, &i, &out_of_range))
         return false;
+
+    if (out_of_range) {
+        gjs_throw(cx, "value is out of range for hash table key of type %s",
+                  Gjs::static_type_name<IntType>());
+    }
 
     *pointer_out = gjs_int_to_pointer<IntType>(i);
 
@@ -469,7 +474,6 @@ value_to_ghashtable_key(JSContext      *cx,
                         gpointer       *pointer_out)
 {
     GITypeTag type_tag = g_type_info_get_tag((GITypeInfo*) type_info);
-    bool out_of_range = false;
     bool unsupported = false;
 
     g_return_val_if_fail(value.isString() || value.isInt32(), false);
@@ -496,32 +500,32 @@ value_to_ghashtable_key(JSContext      *cx,
         break;
 
     case GI_TYPE_TAG_INT8:
-        if (!hashtable_int_key<int8_t>(cx, value, &out_of_range, pointer_out))
+        if (!hashtable_int_key<int8_t>(cx, value, pointer_out))
             return false;
         break;
 
     case GI_TYPE_TAG_INT16:
-        if (!hashtable_int_key<int16_t>(cx, value, &out_of_range, pointer_out))
+        if (!hashtable_int_key<int16_t>(cx, value, pointer_out))
             return false;
         break;
 
     case GI_TYPE_TAG_INT32:
-        if (!hashtable_int_key<int32_t>(cx, value, &out_of_range, pointer_out))
+        if (!hashtable_int_key<int32_t>(cx, value, pointer_out))
             return false;
         break;
 
     case GI_TYPE_TAG_UINT8:
-        if (!hashtable_int_key<uint8_t>(cx, value, &out_of_range, pointer_out))
+        if (!hashtable_int_key<uint8_t>(cx, value, pointer_out))
             return false;
         break;
 
     case GI_TYPE_TAG_UINT16:
-        if (!hashtable_int_key<uint16_t>(cx, value, &out_of_range, pointer_out))
+        if (!hashtable_int_key<uint16_t>(cx, value, pointer_out))
             return false;
         break;
 
     case GI_TYPE_TAG_UINT32:
-        if (!hashtable_int_key<uint32_t>(cx, value, &out_of_range, pointer_out))
+        if (!hashtable_int_key<uint32_t>(cx, value, pointer_out))
             return false;
         break;
 
@@ -579,12 +583,6 @@ value_to_ghashtable_key(JSContext      *cx,
 
     if (G_UNLIKELY(unsupported)) {
         gjs_throw(cx, "Type %s not supported for hash table keys",
-                  g_type_tag_to_string(type_tag));
-        return false;
-    }
-
-    if (G_UNLIKELY(out_of_range)) {
-        gjs_throw(cx, "value is out of range for hash table key of type %s",
                   g_type_tag_to_string(type_tag));
         return false;
     }
