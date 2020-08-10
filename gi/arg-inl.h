@@ -166,19 +166,15 @@ inline void gjs_arg_unset(GIArgument* arg) {
 // Implementation to store rounded (u)int64_t numbers into double
 
 template <typename BigT>
-[[nodiscard]] inline BigT max_safe_big_number() {
+[[nodiscard]] inline constexpr BigT max_safe_big_number() {
     return BigT(1) << std::numeric_limits<double>::digits;
 }
 
 template <typename BigT>
-[[nodiscard]] inline std::enable_if_t<std::is_signed_v<BigT>, BigT>
-min_safe_big_number() {
-    return -(max_safe_big_number<BigT>()) + 1;
-}
+[[nodiscard]] inline constexpr BigT min_safe_big_number() {
+    if constexpr (std::is_signed_v<BigT>)
+        return -(max_safe_big_number<BigT>()) + 1;
 
-template <typename BigT>
-[[nodiscard]] inline std::enable_if_t<std::is_unsigned_v<BigT>, BigT>
-min_safe_big_number() {
     return std::numeric_limits<BigT>::lowest();
 }
 
