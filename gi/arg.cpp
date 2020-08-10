@@ -1549,7 +1549,7 @@ static bool value_to_interface_gi_argument(
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
     JSContext* cx, const JS::HandleValue& value, GArgument* arg,
-    GITypeTag type_tag, const char* arg_name, GjsArgumentType arg_type) {
+    const char* arg_name, GjsArgumentType arg_type) {
     bool out_of_range = false;
 
     if (!gjs_arg_set_from_js_value<T>(cx, value, arg, &out_of_range)) {
@@ -1557,7 +1557,7 @@ GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
             GjsAutoChar display_name =
                 gjs_argument_display_name(arg_name, arg_type);
             gjs_throw(cx, "value is out of range for %s (type %s)",
-                      display_name.get(), g_type_tag_to_string(type_tag));
+                      display_name.get(), Gjs::static_type_name<T>());
         }
 
         return false;
@@ -1596,48 +1596,48 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_INT8:
-        if (!gjs_arg_set_from_js_value<int8_t>(context, value, arg, type_tag,
-                                               arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<int8_t>(context, value, arg, arg_name,
+                                               arg_type))
             return false;
         break;
     case GI_TYPE_TAG_UINT8:
-        if (!gjs_arg_set_from_js_value<uint8_t>(context, value, arg, type_tag,
-                                                arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<uint8_t>(context, value, arg, arg_name,
+                                                arg_type))
             return false;
         break;
     case GI_TYPE_TAG_INT16:
-        if (!gjs_arg_set_from_js_value<int16_t>(context, value, arg, type_tag,
-                                                arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<int16_t>(context, value, arg, arg_name,
+                                                arg_type))
             return false;
         break;
 
     case GI_TYPE_TAG_UINT16:
-        if (!gjs_arg_set_from_js_value<uint16_t>(context, value, arg, type_tag,
-                                                 arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<uint16_t>(context, value, arg, arg_name,
+                                                 arg_type))
             return false;
         break;
 
     case GI_TYPE_TAG_INT32:
-        if (!gjs_arg_set_from_js_value<int32_t>(context, value, arg, type_tag,
-                                                arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<int32_t>(context, value, arg, arg_name,
+                                                arg_type))
             return false;
         break;
 
     case GI_TYPE_TAG_UINT32:
-        if (!gjs_arg_set_from_js_value<uint32_t>(context, value, arg, type_tag,
-                                                 arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<uint32_t>(context, value, arg, arg_name,
+                                                 arg_type))
             return false;
         break;
 
     case GI_TYPE_TAG_INT64:
-        if (!gjs_arg_set_from_js_value<int64_t>(context, value, arg, type_tag,
-                                                arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<int64_t>(context, value, arg, arg_name,
+                                                arg_type))
             return false;
         break;
 
     case GI_TYPE_TAG_UINT64:
-        if (!gjs_arg_set_from_js_value<uint64_t>(context, value, arg, type_tag,
-                                                 arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<uint64_t>(context, value, arg, arg_name,
+                                                 arg_type))
             return false;
         break;
 
@@ -1646,14 +1646,14 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_FLOAT:
-        if (!gjs_arg_set_from_js_value<float>(context, value, arg, type_tag,
-                                              arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<float>(context, value, arg, arg_name,
+                                              arg_type))
             return false;
         break;
 
     case GI_TYPE_TAG_DOUBLE:
-        if (!gjs_arg_set_from_js_value<double>(context, value, arg, type_tag,
-                                               arg_name, arg_type))
+        if (!gjs_arg_set_from_js_value<double>(context, value, arg, arg_name,
+                                               arg_type))
             return false;
         break;
 
