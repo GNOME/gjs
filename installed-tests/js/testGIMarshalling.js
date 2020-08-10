@@ -1154,6 +1154,10 @@ let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingT
     vfunc_vfunc_in_object_transfer_none(object) {
         void object;
     }
+
+    vfunc_vfunc_in_object_transfer_full(object) {
+        this._inObject = object;
+    }
 });
 
 try {
