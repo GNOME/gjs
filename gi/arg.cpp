@@ -51,6 +51,9 @@
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
     JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
     GITypeTag type_tag, GArgument* arg);
+static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
+                                   GITypeInfo* arginfo, const char* arg_name,
+                                   GjsArgumentType arg_type);
 
 bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
     GFlagsValue *v;
@@ -353,23 +356,41 @@ static void _g_type_info_argument_from_hash_pointer(GITypeInfo* info,
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_to_g_list(JSContext   *context,
-                    JS::Value    array_value,
-                    unsigned int length,
-                    GITypeInfo  *param_info,
-                    GITransfer   transfer,
-                    GITypeTag    list_type,
-                    GList      **list_p,
-                    GSList     **slist_p)
-{
-    guint32 i;
-    GList *list;
-    GSList *slist;
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
+    JSContext* cx, const JS::HandleValue& value, GITypeInfo* type_info,
+    GITransfer transfer, const char* arg_name, GjsArgumentType arg_type,
+    T** list_p) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
 
-    list = NULL;
-    slist = NULL;
+    // While a list can be NULL in C, that means empty array in JavaScript, it
+    // doesn't mean null in JavaScript.
+    if (!value.isObject())
+        return false;
+
+    bool found_length;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject array_obj(cx, &value.toObject());
+
+    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length)) {
+        throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
+        return false;
+    }
+
+    if (!found_length) {
+        throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
+        return false;
+    }
+
+    uint32_t length;
+    if (!gjs_object_require_converted_property(cx, array_obj, nullptr,
+                                               atoms.length(), &length)) {
+        throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
+        return false;
+    }
+
+    GjsAutoTypeInfo param_info = g_type_info_get_param_type(type_info, 0);
+    g_assert(param_info);
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (param_info, g_type_info_get_tag(param_info))) {
@@ -377,24 +398,23 @@ gjs_array_to_g_list(JSContext   *context,
              * GArguments for the function call so we could free them after
              * the surrounding container had been freed by the callee.
              */
-            gjs_throw(context,
-                      "Container transfer for in parameters not supported");
+            gjs_throw(cx, "Container transfer for in parameters not supported");
             return false;
         }
 
         transfer = GI_TRANSFER_NOTHING;
     }
 
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-    for (i = 0; i < length; ++i) {
+    JS::RootedObject array(cx, value.toObjectOrNull());
+    JS::RootedValue elem(cx);
+    T* list = nullptr;
+
+    for (size_t i = 0; i < length; ++i) {
         GArgument elem_arg = { 0 };
 
         elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
+        if (!JS_GetElement(cx, array, i, &elem)) {
+            gjs_throw(cx, "Missing array element %zu", i);
             return false;
         }
 
@@ -402,13 +422,8 @@ gjs_array_to_g_list(JSContext   *context,
          * gobject-introspection needs to tell us this.
          * Always say they can't for now.
          */
-        if (!gjs_value_to_g_argument(context,
-                                     elem,
-                                     param_info,
-                                     NULL,
-                                     GJS_ARGUMENT_LIST_ELEMENT,
-                                     transfer,
-                                     false,
+        if (!gjs_value_to_g_argument(cx, elem, param_info, NULL,
+                                     GJS_ARGUMENT_LIST_ELEMENT, transfer, false,
                                      &elem_arg)) {
             return false;
         }
@@ -416,20 +431,18 @@ gjs_array_to_g_list(JSContext   *context,
         void* hash_pointer =
             _g_type_info_hash_pointer_from_argument(param_info, &elem_arg);
 
-        if (list_type == GI_TYPE_TAG_GLIST) {
-            /* GList */
+        if constexpr (std::is_same_v<T, GList>)
             list = g_list_prepend(list, hash_pointer);
-        } else {
-            /* GSList */
-            slist = g_slist_prepend(slist, hash_pointer);
-        }
+        else if constexpr (std::is_same_v<T, GSList>)
+            list = g_slist_prepend(list, hash_pointer);
     }
 
-    list = g_list_reverse(list);
-    slist = g_slist_reverse(slist);
+    if constexpr (std::is_same_v<T, GList>)
+        list = g_list_reverse(list);
+    else if constexpr (std::is_same_v<T, GSList>)
+        list = g_slist_reverse(list);
 
     *list_p = list;
-    *slist_p = slist;
 
     return true;
 }
@@ -1767,63 +1780,13 @@ gjs_value_to_g_argument(JSContext      *context,
         break;
 
     case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST: {
-        /* nullable_type=false; while a list can be NULL in C, that
-         * means empty array in JavaScript, it doesn't mean null in
-         * JavaScript.
-         */
-        if (value.isObject()) {
-            bool found_length;
-            const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-            JS::RootedObject array_obj(context, &value.toObject());
-
-            if (JS_HasPropertyById(context, array_obj, atoms.length(),
-                                   &found_length) &&
-                found_length) {
-                guint32 length;
-
-                if (!gjs_object_require_converted_property(
-                        context, array_obj, nullptr, atoms.length(), &length)) {
-                    wrong = true;
-                } else {
-                    GList *list;
-                    GSList *slist;
-                    GITypeInfo *param_info;
-
-                    param_info = g_type_info_get_param_type(type_info, 0);
-                    g_assert(param_info != NULL);
-
-                    list = NULL;
-                    slist = NULL;
-
-                    if (!gjs_array_to_g_list(context,
-                                             value,
-                                             length,
-                                             param_info,
-                                             transfer,
-                                             type_tag,
-                                             &list, &slist)) {
-                        wrong = true;
-                    }
-
-                    if (type_tag == GI_TYPE_TAG_GLIST) {
-                        gjs_arg_set(arg, list);
-                    } else {
-                        gjs_arg_set(arg, slist);
-                    }
-
-                    g_base_info_unref((GIBaseInfo*) param_info);
-                }
-                break;
-            }
-        }
-
-        /* At this point we should have broken out already if the value was an
-         * object and had a length property */
-        wrong = true;
-        report_type_mismatch = true;
-        break;
-    }
+        return gjs_array_to_g_list(context, value, type_info, transfer,
+                                   arg_name, arg_type,
+                                   &gjs_arg_member<GList*>(arg));
+    case GI_TYPE_TAG_GSLIST:
+        return gjs_array_to_g_list(context, value, type_info, transfer,
+                                   arg_name, arg_type,
+                                   &gjs_arg_member<GSList*>(arg));
 
     case GI_TYPE_TAG_GHASH:
         if (value.isNull()) {
