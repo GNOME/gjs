@@ -247,6 +247,12 @@ else
     skip "avoid crashing when GTK vfuncs are called on context destroy" "GTK disabled"
 fi
 
+# https://gitlab.gnome.org/GNOME/gjs/-/issues/322
+$gjs --coverage-prefix=$(pwd) --coverage-output=$(pwd) awaitcatch.js
+grep -q TN: coverage.lcov
+report "coverage prefix is treated as an absolute path"
+rm -f coverage.lcov
+
 rm -f exit.js help.js promise.js awaitcatch.js
 
 echo "1..$total"
