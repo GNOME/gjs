@@ -48,6 +48,10 @@
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
 
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
+    JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
+    GITypeTag type_tag, GArgument* arg);
+
 bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
     GFlagsValue *v;
     guint32 tmpval;
@@ -2104,6 +2108,38 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
     return true;
 }
 
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
+    JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
+    GIArgument* arg) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    using GjsAutoList =
+        std::conditional_t<std::is_same_v<T, GList>,
+                           GjsAutoPointer<GList, GList, g_list_free>,
+                           GjsAutoPointer<GSList, GSList, g_slist_free>>;
+
+    GjsAutoList list = gjs_arg_steal<T*>(arg);
+
+    if (transfer == GI_TRANSFER_CONTAINER)
+        return true;
+
+    GIArgument elem;
+    GjsAutoTypeInfo param_info = g_type_info_get_param_type(type_info, 0);
+    g_assert(param_info);
+    GITypeTag type_tag = g_type_info_get_tag(param_info);
+
+    for (T* l = list; l; l = l->next) {
+        gjs_arg_set(&elem, l->data);
+
+        if (!gjs_g_arg_release_internal(cx, transfer, param_info, type_tag,
+                                        &elem)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
@@ -3139,35 +3175,8 @@ gjs_g_arg_release_internal(JSContext  *context,
                           g_type_name(gtype));
                 return false;
             }
-        }
             return true;
-
-    case GI_TYPE_TAG_GLIST:
-        if (transfer != GI_TRANSFER_CONTAINER) {
-            GITypeInfo *param_info;
-            GList *list;
-
-            param_info = g_type_info_get_param_type(type_info, 0);
-            g_assert(param_info != NULL);
-
-            for (list = gjs_arg_get<GList*>(arg); list; list = list->next) {
-                GArgument elem;
-                gjs_arg_set(&elem, list->data);
-
-                if (!gjs_g_arg_release_internal(context,
-                                                transfer,
-                                                param_info,
-                                                g_type_info_get_tag(param_info),
-                                                &elem)) {
-                    failed = true;
-                }
-            }
-
-            g_base_info_unref((GIBaseInfo*) param_info);
         }
-
-        g_clear_pointer(&gjs_arg_member<GList*>(arg), g_list_free);
-        break;
 
     case GI_TYPE_TAG_ARRAY:
     {
@@ -3392,33 +3401,13 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
     }
 
+    case GI_TYPE_TAG_GLIST:
+        return gjs_g_arg_release_g_list<GList>(context, transfer, type_info,
+                                               arg);
+
     case GI_TYPE_TAG_GSLIST:
-        if (transfer != GI_TRANSFER_CONTAINER) {
-            GITypeInfo *param_info;
-            GSList *slist;
-
-            param_info = g_type_info_get_param_type(type_info, 0);
-            g_assert(param_info != NULL);
-
-            for (slist = gjs_arg_get<GSList*>(arg); slist;
-                 slist = slist->next) {
-                GArgument elem;
-                gjs_arg_set(&elem, slist->data);
-
-                if (!gjs_g_arg_release_internal(context,
-                                                transfer,
-                                                param_info,
-                                                g_type_info_get_tag(param_info),
-                                                &elem)) {
-                    failed = true;
-                }
-            }
-
-            g_base_info_unref((GIBaseInfo*) param_info);
-        }
-
-        g_clear_pointer(&gjs_arg_member<GSList*>(arg), g_slist_free);
-        break;
+        return gjs_g_arg_release_g_list<GSList>(context, transfer, type_info,
+                                                arg);
 
     case GI_TYPE_TAG_GHASH:
         if (gjs_arg_get<GHashTable*>(arg)) {
