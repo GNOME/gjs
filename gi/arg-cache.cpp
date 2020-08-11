@@ -314,9 +314,22 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
         JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
         GjsAutoCallableInfo callable_info =
             g_type_info_get_interface(&self->type_info);
+        bool is_object_method = !!state->instance_object;
         trampoline = gjs_callback_trampoline_new(cx, func, callable_info,
                                                  self->contents.callback.scope,
-                                                 state->instance_object, false);
+                                                 is_object_method, false);
+        if (!trampoline)
+            return false;
+        if (self->contents.callback.scope == GI_SCOPE_TYPE_NOTIFIED &&
+            is_object_method) {
+            auto* priv = ObjectInstance::for_js(cx, state->instance_object);
+            if (!priv) {
+                gjs_throw(cx, "Signal connected to wrong type of object");
+                return false;
+            }
+
+            priv->associate_closure(cx, trampoline->js_function);
+        }
         closure = trampoline->closure;
     }
 
