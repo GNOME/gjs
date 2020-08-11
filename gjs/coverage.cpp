@@ -175,9 +175,12 @@ static GParamSpec *properties[PROP_N] = { NULL, };
 [[nodiscard]] static bool filename_has_coverage_prefixes(GjsCoverage* self,
                                                          const char* filename) {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(self));
+    GjsAutoChar workdir = g_get_current_dir();
+    GjsAutoChar abs_filename = g_canonicalize_filename(filename, workdir);
 
     for (const char * const *prefix = priv->prefixes; *prefix; prefix++) {
-        if (g_str_has_prefix(filename, *prefix))
+        GjsAutoChar abs_prefix = g_canonicalize_filename(*prefix, workdir);
+        if (g_str_has_prefix(abs_filename, abs_prefix))
             return true;
     }
     return false;
