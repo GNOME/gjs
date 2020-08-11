@@ -43,6 +43,8 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE(GjsCoverage, gjs_coverage, GJS, COVERAGE, GObject);
 
+GJS_EXPORT void gjs_coverage_enable(void);
+
 GJS_EXPORT
 void gjs_coverage_write_statistics(GjsCoverage *self);
 

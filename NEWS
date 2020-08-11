@@ -1,6 +1,12 @@
 NEXT
 ----
 
+- New API: gjs_coverage_enable() allows the collection of code coverage metrics.
+  If you are using GjsCoverage, it is now required to call gjs_coverage_enable()
+  before you create the first GjsContext. Previously this was not necessary, but
+  due to changes in SpiderMonkey 78 you must now indicate in advance if you want
+  to collect code coverage metrics.
+
 - New JavaScript features! This version of GJS is based on SpiderMonkey 78, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 68.
   Here are the highlights of the new JavaScript features.

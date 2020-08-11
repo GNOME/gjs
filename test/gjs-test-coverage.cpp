@@ -133,6 +133,7 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
         NULL
     };
 
+    gjs_coverage_enable();
     fixture->context = gjs_context_new_with_search_path((char **) search_paths);
     fixture->coverage = gjs_coverage_new(coverage_paths, fixture->context,
                                          fixture->lcov_output_dir);

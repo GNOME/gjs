@@ -38,6 +38,7 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/experimental/CodeCoverage.h>  // for EnableCodeCoverage
 #include <jsapi.h>        // for JSAutoRealm, JS_SetPropertyById
 #include <jsfriendapi.h>  // for GetCodeCoverageSummary
 
@@ -48,6 +49,8 @@
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+static bool s_coverage_enabled = false;
 
 struct _GjsCoverage {
     GObject parent;
@@ -196,6 +199,13 @@ write_line(GOutputStream *out,
 
 [[nodiscard]] static GjsAutoUnref<GFile> write_statistics_internal(
     GjsCoverage* coverage, JSContext* cx, GError** error) {
+    if (!s_coverage_enabled) {
+        g_critical(
+            "Code coverage requested, but gjs_coverage_enable() was not called."
+            " You must call this function before creating any GjsContext.");
+        return nullptr;
+    }
+
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     /* Create output directory if it doesn't exist */
@@ -304,7 +314,12 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
     g_message("Wrote coverage statistics to %s", output_file_path.get());
 }
 
-static void gjs_coverage_init(GjsCoverage*) {}
+static void gjs_coverage_init(GjsCoverage*) {
+    if (!s_coverage_enabled)
+        g_critical(
+            "Code coverage requested, but gjs_coverage_enable() was not called."
+            " You must call this function before creating any GjsContext.");
+}
 
 static void
 coverage_tracer(JSTracer *trc, void *data)
@@ -489,4 +504,17 @@ gjs_coverage_new (const char * const *prefixes,
                                   NULL));
 
     return coverage;
+}
+
+/**
+ * gjs_coverage_enable:
+ *
+ * This function must be called before creating any #GjsContext, if you intend
+ * to use any #GjsCoverage APIs.
+ *
+ * Since: 1.66
+ */
+void gjs_coverage_enable() {
+    js::EnableCodeCoverage();
+    s_coverage_enabled = true;
 }
