@@ -102,7 +102,8 @@ static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
         gjs->set_sweeping(false);
 }
 
-static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
+static void on_garbage_collect(JSContext*, JSGCStatus status, JS::GCReason,
+                               void*) {
     /* We finalize any pending toggle refs before doing any garbage collection,
      * so that we can collect the JS wrapper objects, and in order to minimize
      * the chances of objects having a pending toggle up queued when they are
@@ -116,7 +117,7 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, void*) {
 }
 
 static void on_promise_unhandled_rejection(
-    JSContext* cx, JS::HandleObject promise,
+    JSContext* cx, bool mutedErrors [[maybe_unused]], JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
     auto gjs = static_cast<GjsContextPrivate*>(data);
     uint64_t id = JS::GetPromiseID(promise);
@@ -213,13 +214,10 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
 
     // commented are defaults in moz-24
     JS_SetNativeStackQuota(cx, 1024 * 1024);
-    JS_SetGCParameter(cx, JSGC_MAX_MALLOC_BYTES, 128 * 1024 * 1024);
     JS_SetGCParameter(cx, JSGC_MAX_BYTES, -1);
     JS_SetGCParameter(cx, JSGC_MODE, JSGC_MODE_INCREMENTAL);
-    JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET, 10); /* ms */
+    JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET_MS, 10); /* ms */
     // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_TIME_LIMIT, 1000); /* ms */
-    JS_SetGCParameter(cx, JSGC_DYNAMIC_MARK_SLICE, true);
-    JS_SetGCParameter(cx, JSGC_DYNAMIC_HEAP_GROWTH, true);
     // JS_SetGCParameter(cx, JSGC_LOW_FREQUENCY_HEAP_GROWTH, 150);
     // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MIN, 150);
     // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MAX, 300);

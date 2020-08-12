@@ -31,11 +31,13 @@
 #include <glib.h>
 #include <glib/gstdio.h>  // for g_unlink
 
+#include <js/Array.h>
 #include <js/CharacterEncoding.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>
 
 #include "gjs/context.h"
@@ -315,10 +317,10 @@ static void test_jsapi_util_debug_string_object_with_complicated_to_string(
         0xd83c, 0xdf6a,  /* cookie */
         0xd83c, 0xdf69,  /* doughnut */
     };
-    JS::AutoValueArray<2> contents(fx->cx);
+    JS::RootedValueArray<2> contents(fx->cx);
     contents[0].setString(JS_NewUCStringCopyN(fx->cx, desserts, 2));
     contents[1].setString(JS_NewUCStringCopyN(fx->cx, desserts + 2, 2));
-    JS::RootedObject array(fx->cx, JS_NewArrayObject(fx->cx, contents));
+    JS::RootedObject array(fx->cx, JS::NewArrayObject(fx->cx, contents));
     JS::RootedValue v_array(fx->cx, JS::ObjectValue(*array));
     char *debug_output = gjs_value_debug_string(fx->cx, v_array);
 

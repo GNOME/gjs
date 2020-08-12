@@ -40,8 +40,10 @@
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
+#include <mozilla/HashTable.h>  // for DefaultHasher
 #include <mozilla/UniquePtr.h>
 
 #include "gjs/context.h"
@@ -49,10 +51,6 @@
 #include "gjs/macros.h"
 #include "gjs/profiler.h"
 
-namespace mozilla {
-template <class Key>
-struct DefaultHasher;
-}
 namespace js {
 class SystemAllocPolicy;
 }

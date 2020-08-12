@@ -133,6 +133,7 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
         NULL
     };
 
+    gjs_coverage_enable();
     fixture->context = gjs_context_new_with_search_path((char **) search_paths);
     fixture->coverage = gjs_coverage_new(coverage_paths, fixture->context,
                                          fixture->lcov_output_dir);
@@ -564,9 +565,8 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const BranchLineData expected_branches[] = {
-        { 3, 0, TAKEN },
-        { 3, 1, TAKEN },
-        { 3, 2, TAKEN }
+        {2, 0, TAKEN}, {2, 1, TAKEN}, {3, 0, TAKEN},
+        {3, 1, TAKEN}, {3, 2, TAKEN}, {3, 3, NOT_TAKEN},
     };
     const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
 
@@ -613,7 +613,9 @@ static void test_branches_for_multiple_case_statements_fallthrough(
                                           fixture->lcov_output);
 
     const BranchLineData expected_branches[] = {
-        {3, 0, TAKEN}, {3, 1, TAKEN}, {3, 2, NOT_TAKEN}};
+        {2, 0, TAKEN}, {2, 1, TAKEN},     {3, 0, TAKEN},
+        {3, 1, TAKEN}, {3, 2, NOT_TAKEN}, {3, 3, NOT_TAKEN},
+    };
     const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
@@ -849,9 +851,9 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
-        {"b", 1},
-        {"f", 1},
         {"top-level", 1},
+        {"f", 1},
+        {"b", 1},
     };
 
     const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
@@ -894,9 +896,9 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
-        {"b", 1},
-        {"f", 1},
         {"top-level", 1},
+        {"f", 1},
+        {"b", 1},
     };
 
     const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
@@ -934,9 +936,9 @@ static void test_function_hit_counts_written_to_coverage_data(
                                           fixture->lcov_output);
 
     const FunctionHitCountData expected_hit_counts[] = {
-        {"b", 1},
-        {"f", 1},
         {"top-level", 1},
+        {"f", 1},
+        {"b", 1},
     };
 
     const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);

@@ -29,6 +29,7 @@
 #include <girepository.h>
 #include <glib.h>
 
+#include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/Conversions.h>
@@ -38,7 +39,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_SetElement, JS_NewArrayObject
+#include <jsapi.h>  // for JS_SetElement
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -89,65 +90,76 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     argv.rval().setBoolean(ret);                                           \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(method, cfunc, n1, n2)        \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    double arg1, arg2;                                                     \
-    if (!gjs_parse_call_args(context, #method, argv, "ff",                 \
-                             #n1, &arg1, #n2, &arg2))                      \
-        return false;                                                      \
-    cfunc(cr, &arg1, &arg2);                                               \
-    if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
-      JS::RootedObject array(context,                                      \
-          JS_NewArrayObject(context, JS::HandleValueArray::empty()));      \
-      if (!array)                                                          \
-        return false;                                                      \
-      JS::RootedValue r(context, JS::NumberValue(arg1));                   \
-      if (!JS_SetElement(context, array, 0, r)) return false;              \
-      r.setNumber(arg2);                                                   \
-      if (!JS_SetElement(context, array, 1, r)) return false;              \
-      argv.rval().setObject(*array);                                       \
-    }                                                                      \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(method, cfunc, n1, n2)         \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                            \
+    double arg1, arg2;                                                      \
+    if (!gjs_parse_call_args(context, #method, argv, "ff", #n1, &arg1, #n2, \
+                             &arg2))                                        \
+        return false;                                                       \
+    cfunc(cr, &arg1, &arg2);                                                \
+    if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                         \
+        JS::RootedObject array(                                             \
+            context,                                                        \
+            JS::NewArrayObject(context, JS::HandleValueArray::empty()));    \
+        if (!array)                                                         \
+            return false;                                                   \
+        JS::RootedValue r(context, JS::NumberValue(arg1));                  \
+        if (!JS_SetElement(context, array, 0, r))                           \
+            return false;                                                   \
+        r.setNumber(arg2);                                                  \
+        if (!JS_SetElement(context, array, 1, r))                           \
+            return false;                                                   \
+        argv.rval().setObject(*array);                                      \
+    }                                                                       \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(method, cfunc)                  \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    double arg1, arg2;                                                     \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    cfunc(cr, &arg1, &arg2);                                               \
-    if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                        \
-      JS::RootedObject array(context,                                      \
-          JS_NewArrayObject(context, JS::HandleValueArray::empty()));      \
-      if (!array)                                                          \
-        return false;                                                      \
-      JS::RootedValue r(context, JS::NumberValue(arg1));                   \
-      if (!JS_SetElement(context, array, 0, r)) return false;              \
-      r.setNumber(arg2);                                                   \
-      if (!JS_SetElement(context, array, 1, r)) return false;              \
-      argv.rval().setObject(*array);                                       \
-    }                                                                      \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFF(method, cfunc)                \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                         \
+    double arg1, arg2;                                                   \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                             \
+    cfunc(cr, &arg1, &arg2);                                             \
+    if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                      \
+        JS::RootedObject array(                                          \
+            context,                                                     \
+            JS::NewArrayObject(context, JS::HandleValueArray::empty())); \
+        if (!array)                                                      \
+            return false;                                                \
+        JS::RootedValue r(context, JS::NumberValue(arg1));               \
+        if (!JS_SetElement(context, array, 0, r))                        \
+            return false;                                                \
+        r.setNumber(arg2);                                               \
+        if (!JS_SetElement(context, array, 1, r))                        \
+            return false;                                                \
+        argv.rval().setObject(*array);                                   \
+    }                                                                    \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(method, cfunc)                \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    double arg1, arg2, arg3, arg4;                                         \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    cfunc(cr, &arg1, &arg2, &arg3, &arg4);                                 \
-    {                                                                      \
-      JS::RootedObject array(context,                                      \
-          JS_NewArrayObject(context, JS::HandleValueArray::empty()));      \
-      if (!array)                                                          \
-        return false;                                                      \
-      JS::RootedValue r(context, JS::NumberValue(arg1));                   \
-      if (!JS_SetElement(context, array, 0, r)) return false;              \
-      r.setNumber(arg2);                                                   \
-      if (!JS_SetElement(context, array, 1, r)) return false;              \
-      r.setNumber(arg3);                                                   \
-      if (!JS_SetElement(context, array, 2, r)) return false;              \
-      r.setNumber(arg4);                                                   \
-      if (!JS_SetElement(context, array, 3, r)) return false;              \
-      argv.rval().setObject(*array);                                       \
-    }                                                                      \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(method, cfunc)              \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                         \
+    double arg1, arg2, arg3, arg4;                                       \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                             \
+    cfunc(cr, &arg1, &arg2, &arg3, &arg4);                               \
+    {                                                                    \
+        JS::RootedObject array(                                          \
+            context,                                                     \
+            JS::NewArrayObject(context, JS::HandleValueArray::empty())); \
+        if (!array)                                                      \
+            return false;                                                \
+        JS::RootedValue r(context, JS::NumberValue(arg1));               \
+        if (!JS_SetElement(context, array, 0, r))                        \
+            return false;                                                \
+        r.setNumber(arg2);                                               \
+        if (!JS_SetElement(context, array, 1, r))                        \
+            return false;                                                \
+        r.setNumber(arg3);                                               \
+        if (!JS_SetElement(context, array, 2, r))                        \
+            return false;                                                \
+        r.setNumber(arg4);                                               \
+        if (!JS_SetElement(context, array, 3, r))                        \
+            return false;                                                \
+        argv.rval().setObject(*array);                                   \
+    }                                                                    \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc)                    \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
@@ -546,14 +558,14 @@ setDash_func(JSContext *context,
                              "offset", &offset))
         return false;
 
-    if (!JS_IsArrayObject(context, dashes, &is_array))
+    if (!JS::IsArrayObject(context, dashes, &is_array))
         return false;
     if (!is_array) {
         gjs_throw(context, "dashes must be an array");
         return false;
     }
 
-    if (!JS_GetArrayLength(context, dashes, &len)) {
+    if (!JS::GetArrayLength(context, dashes, &len)) {
         gjs_throw(context, "Can't get length of dashes");
         return false;
     }

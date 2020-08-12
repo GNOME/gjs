@@ -9,7 +9,7 @@ stages:
 - deploy
 
 .coverage: &coverage
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "coverage"
     coverage: '/^  lines.*(\d+\.\d+\%)/'
@@ -48,7 +48,7 @@ stages:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-801643_fedora.mozjs68-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-852132_fedora.mozjs78-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
@@ -60,7 +60,7 @@ sanitizer_gcc:
   stage: test
   tags:
     - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
@@ -73,7 +73,7 @@ sanitizer_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
@@ -89,7 +89,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     CONFIG_OPTS: >-
@@ -191,7 +191,7 @@ eslint:
 iwyu:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   script:
     - git remote add upstream https://gitlab.gnome.org/GNOME/gjs
     - git fetch upstream
@@ -216,7 +216,7 @@ coverage:
 iwyu-full:
   when: manual
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   script:
     - ./tools/run_iwyu.sh
   except:
@@ -227,7 +227,7 @@ sanitizer_clang:
   stage: manual
   tags:
     - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -239,7 +239,7 @@ sanitizer_clang:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
@@ -256,7 +256,7 @@ installed_tests:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     TEST_OPTS: --setup=valgrind
@@ -269,7 +269,7 @@ valgrind:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST_OPTS: --setup=extra_gc
@@ -280,7 +280,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST_OPTS: --setup=pre_verify
@@ -291,7 +291,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs68-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST_OPTS: --setup=post_verify

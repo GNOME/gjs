@@ -61,7 +61,7 @@ test_obj_new(GjsRootingFixture *fx)
     return retval;
 }
 
-static void on_gc(JSContext*, JSGCStatus status, void*) {
+static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {
     if (status != JSGC_END)
         return;
 

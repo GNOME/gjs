@@ -37,6 +37,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
@@ -479,14 +480,14 @@ static bool do_import(JSContext* context, JS::HandleObject obj, Importer* priv,
                                      atoms.search_path(), &search_path))
         return false;
 
-    if (!JS_IsArrayObject(context, search_path, &is_array))
+    if (!JS::IsArrayObject(context, search_path, &is_array))
         return false;
     if (!is_array) {
         gjs_throw(context, "searchPath property on importer is not an array");
         return false;
     }
 
-    if (!JS_GetArrayLength(context, search_path, &search_path_len)) {
+    if (!JS::GetArrayLength(context, search_path, &search_path_len)) {
         gjs_throw(context, "searchPath array has no length");
         return false;
     }
@@ -634,14 +635,14 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                                      atoms.search_path(), &search_path))
         return false;
 
-    if (!JS_IsArrayObject(context, search_path, &is_array))
+    if (!JS::IsArrayObject(context, search_path, &is_array))
         return false;
     if (!is_array) {
         gjs_throw(context, "searchPath property on importer is not an array");
         return false;
     }
 
-    if (!JS_GetArrayLength(context, search_path, &search_path_len)) {
+    if (!JS::GetArrayLength(context, search_path, &search_path_len)) {
         gjs_throw(context, "searchPath array has no length");
         return false;
     }

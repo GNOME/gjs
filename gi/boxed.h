@@ -36,6 +36,7 @@
 #include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <mozilla/HashTable.h>  // for DefaultHasher
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
@@ -50,10 +51,6 @@ class CallArgs;
 }
 namespace js {
 class SystemAllocPolicy;
-}
-namespace mozilla {
-template <class Key>
-struct DefaultHasher;
 }
 
 /* To conserve memory, we have two different kinds of private data for GBoxed

@@ -115,7 +115,7 @@ gio = dependency('gio-2.0', version: glib_required_version,
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
     fallback: ['gobject-introspection', 'girepo_dep'])
-spidermonkey = dependency('mozjs-68')
+spidermonkey = dependency('mozjs-78')
 
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC builds...
@@ -245,7 +245,7 @@ if not minimal_program.compiled() or minimal_program.returncode() != 0
     error('''A minimal SpiderMonkey program
 could not be compiled, linked, or run. Most likely you should build it with a
 different configuration. Check the recommended configuration:
-https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr60/docs/Building%20SpiderMonkey.md''')
+https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md''')
 endif
 
 have_printf_alternative_int = cc.compiles('''

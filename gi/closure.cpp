@@ -29,6 +29,7 @@
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_IsExceptionPending, Call, JS_Get...
 
 #include "gi/closure.h"

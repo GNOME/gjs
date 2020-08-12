@@ -32,6 +32,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/ValueArray.h>
 #include <jsapi.h>       // for JS_ReportErrorUTF8, BuildStackString
 #include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
 
@@ -83,7 +84,7 @@ gjs_throw_valist(JSContext       *context,
     JS::RootedObject constructor(context);
     JS::RootedValue v_constructor(context), exc_val(context);
     JS::RootedObject new_exc(context);
-    JS::AutoValueArray<1> error_args(context);
+    JS::RootedValueArray<1> error_args(context);
     result = false;
 
     if (!gjs_string_from_utf8(context, s, error_args[0])) {
@@ -237,15 +238,14 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
     g_assert(report);
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
-        report->flags == JSREPORT_ERROR &&
-        report->errorNumber == 137) {
+        !report->isWarning() && report->errorNumber == 137) {
         /* 137, JSMSG_OUT_OF_MEMORY */
         g_error("GJS ran out of memory at %s: %i.",
                 report->filename,
                 report->lineno);
     }
 
-    if ((report->flags & JSREPORT_WARNING) != 0) {
+    if (report->isWarning()) {
         warning = "WARNING";
         level = G_LOG_LEVEL_MESSAGE;
 

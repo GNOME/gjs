@@ -59,9 +59,6 @@ union Utf8Unit;
 class GjsBaseGlobal {
     static JSObject* base(JSContext* cx, const JSClass* clasp,
                           JS::RealmCreationOptions options) {
-        options.setBigIntEnabled(true);
-        options.setFieldsEnabled(true);
-
         JS::RealmBehaviors behaviors;
         JS::RealmOptions compartment_options(options, behaviors);
 
@@ -82,19 +79,18 @@ class GjsBaseGlobal {
     }
 
  protected:
-    [[nodiscard]] static JSObject* create(JSContext* cx, const JSClass* clasp) {
-        JS::RealmCreationOptions creation;
-        creation.setNewCompartmentAndZone();
-
-        return base(cx, clasp, creation);
+    [[nodiscard]] static JSObject* create(
+        JSContext* cx, const JSClass* clasp,
+        JS::RealmCreationOptions options = JS::RealmCreationOptions()) {
+        options.setNewCompartmentAndZone();
+        return base(cx, clasp, options);
     }
 
     [[nodiscard]] static JSObject* create_with_compartment(
-        JSContext* cx, JS::HandleObject existing, const JSClass* clasp) {
-        JS::RealmCreationOptions creation;
-        creation.setExistingCompartment(existing);
-
-        return base(cx, clasp, creation);
+        JSContext* cx, JS::HandleObject existing, const JSClass* clasp,
+        JS::RealmCreationOptions options = JS::RealmCreationOptions()) {
+        options.setExistingCompartment(existing);
+        return base(cx, clasp, options);
     }
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -237,7 +233,9 @@ class GjsDebuggerGlobal : GjsBaseGlobal {
 
  public:
     [[nodiscard]] static JSObject* create(JSContext* cx) {
-        return GjsBaseGlobal::create(cx, &klass);
+        JS::RealmCreationOptions options;
+        options.setToSourceEnabled(true);  // debugger uses uneval()
+        return GjsBaseGlobal::create(cx, &klass, options);
     }
 
     [[nodiscard]] static JSObject* create_with_compartment(

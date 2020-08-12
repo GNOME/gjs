@@ -216,7 +216,6 @@ main(int argc, char **argv)
     char **gjs_argv, **gjs_argv_addr;
     char * const *script_argv;
     const char *env_coverage_output_path;
-    const char *env_coverage_prefixes;
     bool interactive_mode = false;
 
     setlocale(LC_ALL, "");
@@ -326,6 +325,15 @@ main(int argc, char **argv)
         g_unsetenv("GJS_TRACE_FD");         /* ignore env var in eval() */
     }
 
+    const char* env_coverage_prefixes = g_getenv("GJS_COVERAGE_PREFIXES");
+    if (env_coverage_prefixes) {
+        if (coverage_prefixes)
+            g_strfreev(coverage_prefixes);
+        coverage_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
+    }
+    if (coverage_prefixes)
+        gjs_coverage_enable();
+
     js_context = (GjsContext*) g_object_new(GJS_TYPE_CONTEXT,
                                             "search-path", include_path,
                                             "program-name", program_name,
@@ -336,13 +344,6 @@ main(int argc, char **argv)
     if (env_coverage_output_path != NULL) {
         g_free(coverage_output_path);
         coverage_output_path = g_strdup(env_coverage_output_path);
-    }
-
-    env_coverage_prefixes = g_getenv("GJS_COVERAGE_PREFIXES");
-    if (env_coverage_prefixes != NULL) {
-        if (coverage_prefixes != NULL)
-            g_strfreev(coverage_prefixes);
-        coverage_prefixes = g_strsplit(env_coverage_prefixes, ":", -1);
     }
 
     if (coverage_prefixes) {

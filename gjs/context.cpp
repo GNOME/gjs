@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <signal.h>  // for sigaction, SIGUSR1, sa_handler
+#include <stdint.h>
 #include <stdio.h>      // for FILE, fclose, size_t
 #include <string.h>     // for memset
 
@@ -34,7 +35,8 @@
 #endif
 
 #include <new>
-#include <string>  // for u16string
+#include <string>       // for u16string
+#include <type_traits>  // for remove_reference<>::type
 #include <unordered_map>
 #include <utility>  // for move
 #include <vector>
@@ -65,10 +67,10 @@
 #include <js/UniquePtr.h>
 #include <js/Utility.h>  // for DeletePolicy
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_IsExceptionPending, ...
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 #include <mozilla/UniquePtr.h>
-#include <mozilla/Vector.h>
 
 #include "gi/object.h"
 #include "gi/private.h"

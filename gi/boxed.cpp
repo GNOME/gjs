@@ -40,9 +40,9 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for IdVector, JS_AtomizeAndPinJSString
 #include <mozilla/HashTable.h>
-#include <mozilla/Vector.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -608,7 +608,7 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
      */
     BoxedBase* source_priv = get_copy_source(context, value);
     if (!source_priv) {
-        JS::AutoValueArray<1> args(context);
+        JS::RootedValueArray<1> args(context);
         args[0].set(value);
         JS::RootedObject tmp_object(context,
             gjs_construct_object_dynamic(context, proto, args));

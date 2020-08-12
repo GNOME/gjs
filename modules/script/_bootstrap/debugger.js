@@ -182,7 +182,7 @@ function evalCommand(expr) {
 }
 
 function quitCommand() {
-    dbg.enabled = false;
+    dbg.removeAllDebuggees();
     quit(0);
 }
 quitCommand.summary = 'Quit the debugger';
@@ -245,16 +245,10 @@ function doPrint(expr, style) {
             ? debuggeeGlobalWrapper.executeInGlobalWithBindings(expr, debuggeeValues)
             : focusedFrame.evalWithBindings(expr, debuggeeValues));
     if (cv === null) {
-        if (!dbg.enabled)
-            return [cv];
         print('Debuggee died.');
     } else if ('return' in cv) {
-        if (!dbg.enabled)
-            return [undefined];
         showDebuggeeValue(cv['return'], style);
     } else {
-        if (!dbg.enabled)
-            return [cv];
         print("Exception caught. (To rethrow it, type 'throw'.)");
         lastExc = cv.throw;
         showDebuggeeValue(lastExc, style);
@@ -285,7 +279,7 @@ PARAMETER
     · obj: object to get keys of`;
 
 function detachCommand() {
-    dbg.enabled = false;
+    dbg.removeAllDebuggees();
     return [undefined];
 }
 detachCommand.summary = 'Detach debugger from the script';
@@ -317,15 +311,11 @@ function throwOrReturn(rest, action, defaultCompletion) {
 
     const cv = saveExcursion(() => focusedFrame.eval(rest));
     if (cv === null) {
-        if (!dbg.enabled)
-            return [cv];
         print(`Debuggee died while determining what to ${action}. Stopped.`);
         return;
     }
     if ('return' in cv)
         return [{[action]: cv['return']}];
-    if (!dbg.enabled)
-        return [cv];
     print(`Exception determining what to ${action}. Stopped.`);
     showDebuggeeValue(cv.throw);
 }

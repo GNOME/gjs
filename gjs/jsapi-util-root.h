@@ -94,7 +94,7 @@ struct GjsHeapOperation<JSObject *> {
     static void expose_to_js(JS::Heap<JSObject *>& thing) {
         JSObject *obj = thing.unbarrieredGet();
         /* If the object has been swept already, then the zone is nullptr */
-        if (!obj || !js::gc::detail::GetGCThingZone(uintptr_t(obj)))
+        if (!obj || !JS::GetGCThingZone(JS::GCCellPtr(obj)))
             return;
         if (!JS::RuntimeHeapIsCollecting())
             JS::ExposeObjectToActiveJS(obj);
@@ -105,7 +105,7 @@ template <>
 struct GjsHeapOperation<JSFunction*> {
     static void expose_to_js(const JS::Heap<JSFunction*>& thing) {
         JSFunction* func = thing.unbarrieredGet();
-        if (!func || !js::gc::detail::GetGCThingZone(uintptr_t(func)))
+        if (!func || !JS::GetGCThingZone(JS::GCCellPtr(func)))
             return;
         if (!JS::RuntimeHeapIsCollecting())
             js::gc::ExposeGCThingToActiveJS(JS::GCCellPtr(func));

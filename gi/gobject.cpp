@@ -127,7 +127,7 @@ static GObject* gjs_object_constructor(
                                      construct_properties[i].pspec))
                 return nullptr;
 
-        JS::AutoValueArray<1> args(cx);
+        JS::RootedValueArray<1> args(cx);
         args[0].set(JS::ObjectValue(*props_hash));
         object = JS_New(cx, constructor, args);
     } else {

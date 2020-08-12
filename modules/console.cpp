@@ -40,12 +40,11 @@
 
 #include <config.h>  // for HAVE_READLINE_READLINE_H
 
-#include <stdio.h>   // for fputc, fputs, stderr, size_t, fflush
-#include <string.h>  // for strchr
-
 #ifdef HAVE_READLINE_READLINE_H
-#include <readline/readline.h>
-#include <readline/history.h>
+#    include <stdio.h>  // include before readline/readline.h
+
+#    include <readline/history.h>
+#    include <readline/readline.h>
 #endif
 
 #include <glib.h>
@@ -55,14 +54,12 @@
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>
+#include <js/Exception.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
-#include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
 #include <jsapi.h>  // for JS_IsExceptionPending, Exce...
-#include <mozilla/UniquePtr.h>
-#include <mozilla/Unused.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -73,145 +70,13 @@ namespace mozilla {
 union Utf8Unit;
 }
 
-enum class PrintErrorKind { Error, Warning, StrictWarning, Note };
-
-template <typename T>
-static void print_single_error(T* report, PrintErrorKind kind);
-static void print_error_line(const char* prefix, JSErrorReport* report);
-static void print_error_line(const char*, JSErrorNotes::Note*) {}
-
-static void
-gjs_console_print_error(JSErrorReport *report)
-{
-    // Code modified from SpiderMonkey js/src/vm/JSContext.cpp, js::PrintError()
-
-    g_assert(report);
-
-    PrintErrorKind kind = PrintErrorKind::Error;
-    if (JSREPORT_IS_WARNING(report->flags)) {
-        if (JSREPORT_IS_STRICT(report->flags))
-            kind = PrintErrorKind::StrictWarning;
-        else
-            kind = PrintErrorKind::Warning;
-    }
-    print_single_error(report, kind);
-
-    if (report->notes) {
-        for (auto&& note : *report->notes)
-            print_single_error(note.get(), PrintErrorKind::Note);
-    }
-
-    return;
-}
-
-template <typename T>
-static void print_single_error(T* report, PrintErrorKind kind) {
-    JS::UniqueChars prefix;
-    if (report->filename)
-        prefix.reset(g_strdup_printf("%s:", report->filename));
-
-    if (report->lineno) {
-        prefix.reset(g_strdup_printf("%s%u:%u ", prefix ? prefix.get() : "",
-                                     report->lineno, report->column));
-    }
-
-    if (kind != PrintErrorKind::Error) {
-        const char* kindPrefix = nullptr;
-        switch (kind) {
-            case PrintErrorKind::Warning:
-                kindPrefix = "warning";
-                break;
-            case PrintErrorKind::StrictWarning:
-                kindPrefix = "strict warning";
-                break;
-            case PrintErrorKind::Note:
-                kindPrefix = "note";
-                break;
-            case PrintErrorKind::Error:
-            default:
-                g_assert_not_reached();
-        }
-
-        prefix.reset(
-            g_strdup_printf("%s%s: ", prefix ? prefix.get() : "", kindPrefix));
-    }
-
-    const char* message = report->message().c_str();
-
-    /* embedded newlines -- argh! */
-    const char *ctmp;
-    while ((ctmp = strchr(message, '\n')) != 0) {
-        ctmp++;
-        if (prefix)
-            fputs(prefix.get(), stderr);
-        mozilla::Unused << fwrite(message, 1, ctmp - message, stderr);
-        message = ctmp;
-    }
-
-    /* If there were no filename or lineno, the prefix might be empty */
-    if (prefix)
-        fputs(prefix.get(), stderr);
-    fputs(message, stderr);
-
-    print_error_line(prefix.get(), report);
-    fputc('\n', stderr);
-
-    fflush(stderr);
-}
-
-static void print_error_line(const char* prefix, JSErrorReport* report) {
-    if (const char16_t* linebuf = report->linebuf()) {
-        size_t n = report->linebufLength();
-
-        fputs(":\n", stderr);
-        if (prefix)
-            fputs(prefix, stderr);
-
-        for (size_t i = 0; i < n; i++)
-            fputc(static_cast<char>(linebuf[i]), stderr);
-
-        // linebuf usually ends with a newline. If not, add one here.
-        if (n == 0 || linebuf[n - 1] != '\n')
-            fputc('\n', stderr);
-
-        if (prefix)
-            fputs(prefix, stderr);
-
-        n = report->tokenOffset();
-        for (size_t i = 0, j = 0; i < n; i++) {
-            if (linebuf[i] == '\t') {
-                for (size_t k = (j + 8) & ~7; j < k; j++)
-                    fputc('.', stderr);
-                continue;
-            }
-            fputc('.', stderr);
-            j++;
-        }
-        fputc('^', stderr);
-    }
-}
-
-static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
-    gjs_console_print_error(report);
+static void gjs_console_warning_reporter(JSContext* cx, JSErrorReport* report) {
+    JS::PrintError(cx, stderr, report, /* reportWarnings = */ true);
 }
 
 /* Based on js::shell::AutoReportException from SpiderMonkey. */
 class AutoReportException {
     JSContext *m_cx;
-
-    JSErrorReport* error_from_exception_value(JS::HandleValue v_exn) const {
-        if (!v_exn.isObject())
-            return nullptr;
-        JS::RootedObject exn(m_cx, &v_exn.toObject());
-        return JS_ErrorFromException(m_cx, exn);
-    }
-
-    JSObject* stack_from_exception_value(JS::HandleValue v_exn) const {
-        if (!v_exn.isObject())
-            return nullptr;
-        JS::RootedObject exn(m_cx, &v_exn.toObject());
-        return ExceptionStackOrNull(exn);
-    }
 
 public:
     explicit AutoReportException(JSContext *cx) : m_cx(cx) {}
@@ -221,22 +86,23 @@ public:
             return;
 
         /* Get exception object before printing and clearing exception. */
-        JS::RootedValue v_exn(m_cx);
-        (void) JS_GetPendingException(m_cx, &v_exn);
-
-        JSErrorReport* report = error_from_exception_value(v_exn);
-        if (report) {
-            g_assert(!JSREPORT_IS_WARNING(report->flags));
-            gjs_console_print_error(report);
-        } else {
-            GjsAutoChar display_str = gjs_value_debug_string(m_cx, v_exn);
-            g_printerr("error: %s\n", display_str.get());
+        JS::ExceptionStack exnStack(m_cx);
+        JS::ErrorReportBuilder report(m_cx);
+        if (!JS::StealPendingExceptionStack(m_cx, &exnStack) ||
+            !report.init(m_cx, exnStack,
+                         JS::ErrorReportBuilder::NoSideEffects)) {
+            g_printerr("(Unable to print exception)\n");
+            JS_ClearPendingException(m_cx);
             return;
         }
 
-        JS::RootedObject stack(m_cx, stack_from_exception_value(v_exn));
-        if (stack) {
-            GjsAutoChar stack_str = gjs_format_stack_trace(m_cx, stack);
+        g_assert(!report.report()->isWarning());
+
+        JS::PrintError(m_cx, stderr, report, /* reportWarnings = */ false);
+
+        if (exnStack.stack()) {
+            GjsAutoChar stack_str =
+                gjs_format_stack_trace(m_cx, exnStack.stack());
             if (!stack_str)
                 g_printerr("(Unable to print stack trace)\n");
             else

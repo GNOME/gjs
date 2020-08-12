@@ -39,7 +39,7 @@ bool GjsAtom::init(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);
     if (!s)
         return false;
-    m_jsid = JS::Heap<jsid>{INTERNED_STRING_TO_JSID(cx, s)};
+    m_jsid = JS::Heap<jsid>{JS::PropertyKey::fromPinnedString(s)};
     return true;
 }
 
