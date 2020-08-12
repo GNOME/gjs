@@ -1,5 +1,8 @@
-NEXT
-----
+Version 1.65.90
+---------------
+
+- GJS now has an optional, Linux-only, dependency on libsysprof-capture-4
+  instead of libsysprof-capture-3 for the profiler functionality.
 
 - New API: gjs_coverage_enable() allows the collection of code coverage metrics.
   If you are using GjsCoverage, it is now required to call gjs_coverage_enable()
@@ -55,6 +58,35 @@ NEXT
       07n are used
     + The Function.caller property now has the value of null if the caller is a
       strict, async, or generator function, instead of throwing a TypeError
+
+- Backwards-incompatible change: Paths specified on the command line with
+  the --coverage-prefix argument, are now always interpreted as paths. If they
+  are relative paths, they will be resolved relative to the current working
+  directory. In previous versions, they would be treated as string prefixes,
+  which led to unexpected behaviour when the path of the script was absolute
+  and the coverage prefix relative, or vice versa.
+
+- Closed bugs and merge requests:
+  * Port to libsysprof-capture-4.a [!457, Philip Withnall, Philip Chimento]
+  * CI: Switch ASAN jobs to runners tagged so [!461, Bartłomiej Piotrowski]
+  * Rework global code to support multiple global "types". (Part 1) [!453, Evan
+    Welsh]
+  * SpiderMonkey 78 [#329, !462, !458, Evan Welsh, Philip Chimento]
+  * GIArgument inlines [!460, Marco Trevisan, Philip Chimento]
+  * gjs stopped building on 32 bits [#335, !463, Marco Trevisan, Philip
+    Chimento]
+  * Improve performance of argument marshalling [#70, !48, Giovanni Campagna,
+    Philip Chimento]
+  * Build failure on 32-bit [#336, !465, Michael Catanzaro]
+  * Various maintenance [!464, Philip Chimento]
+  * arg-cache.cpp: Fix build on Visual Studio [!466, Chun-wei Fan]
+  * [regression] Super+A crashes gnome-shell [#338, !467, Philip Chimento]
+  * Generating coverage information seems to be broken [#322, !470, Philip
+    Chimento]
+
+- Various refactors for type safety [Marco Trevisan]
+
+- Various maintenance [Philip Chimento]
 
 Version 1.65.4
 --------------
