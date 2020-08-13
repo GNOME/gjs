@@ -231,7 +231,7 @@ gjs_dbus_implementation_get_properties (GDBusInterfaceSkeleton *skeleton) {
 
 static void
 gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
+    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
     GVariantBuilder changed_props;
     GVariantBuilder invalidated_props;
@@ -250,16 +250,27 @@ gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
             g_variant_builder_add(&invalidated_props, "s", prop_name);
     }
 
-    g_dbus_connection_emit_signal(g_dbus_interface_skeleton_get_connection(skeleton),
-                                  NULL, /* bus name */
-                                  g_dbus_interface_skeleton_get_object_path(skeleton),
-                                  "org.freedesktop.DBus.Properties",
-                                  "PropertiesChanged",
-                                  g_variant_new("(s@a{sv}@as)",
-                                                self->priv->ifaceinfo->name,
-                                                g_variant_builder_end(&changed_props),
-                                                g_variant_builder_end(&invalidated_props)),
-                                   NULL /* error */);
+    GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
+    const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);
+    GVariant *properties = g_variant_new("(s@a{sv}@as)",
+                                         self->priv->ifaceinfo->name,
+                                         g_variant_builder_end(&changed_props),
+                                         g_variant_builder_end(&invalidated_props));
+    g_variant_ref_sink(properties);
+
+    for (const GList *iter = connections; iter; iter = iter->next) {
+        g_dbus_connection_emit_signal(G_DBUS_CONNECTION(iter->data),
+                                      NULL, /* bus name */
+                                      object_path,
+                                      "org.freedesktop.DBus.Properties",
+                                      "PropertiesChanged",
+                                      properties,
+                                      NULL /* error */);
+
+        g_object_unref(iter->data);
+    }
+    g_variant_unref(properties);
+    g_list_free(connections);
 
     g_hash_table_remove_all(self->priv->outstanding_properties);
     g_clear_handle_id(&self->priv->idle_id, g_source_remove);
@@ -366,13 +377,69 @@ gjs_dbus_implementation_emit_signal (GjsDBusImplementation *self,
                                      gchar                 *signal_name,
                                      GVariant              *parameters)
 {
-    GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (self);
+    GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
+    GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
+    const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);
 
-    g_dbus_connection_emit_signal(g_dbus_interface_skeleton_get_connection(skeleton),
-                                  NULL,
-                                  g_dbus_interface_skeleton_get_object_path(skeleton),
-                                  self->priv->ifaceinfo->name,
-                                  signal_name,
-                                  parameters,
-                                  NULL);
+    if (parameters != NULL)
+        g_variant_ref_sink(parameters);
+
+    for (const GList *iter = connections; iter; iter = iter->next) {
+        g_dbus_connection_emit_signal(G_DBUS_CONNECTION(iter->data),
+                                      NULL,
+                                      object_path,
+                                      self->priv->ifaceinfo->name,
+                                      signal_name,
+                                      parameters,
+                                      NULL);
+
+        g_object_unref(iter->data);
+    }
+    g_variant_unref(parameters);
+    g_list_free(connections);
+}
+
+/**
+ * gjs_dbus_implementation_unexport:
+ * @self: a #GjsDBusImplementation
+ *
+ * Stops exporting @self on all connections it is exported on.
+ *
+ * To unexport @self from only a single connection, use
+ * gjs_dbus_implementation_skeleton_unexport_from_connection()
+ */
+void
+gjs_dbus_implementation_unexport(GjsDBusImplementation *self) {
+    GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
+
+    g_hash_table_remove_all(self->priv->outstanding_properties);
+    g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+
+    g_dbus_interface_skeleton_unexport(skeleton);
+}
+
+/**
+ * gjs_dbus_implementation_unexport_from_connection:
+ * @self: a #GjsDBusImplementation
+ * @connection: a #GDBusConnection
+ *
+ * Stops exporting @self on @connection.
+ *
+ * To stop exporting on all connections the interface is exported on,
+ * use gjs_dbus_implementation_unexport().
+ */
+void
+gjs_dbus_implementation_unexport_from_connection(GjsDBusImplementation *self,
+                                                 GDBusConnection       *connection) {
+    GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
+    GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
+
+    if (g_list_length(connections) <= 1) {
+        g_hash_table_remove_all(self->priv->outstanding_properties);
+        g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+    }
+
+    g_list_free_full(connections, g_object_unref);
+
+    g_dbus_interface_skeleton_unexport_from_connection(skeleton, connection);
 }
