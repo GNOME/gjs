@@ -484,7 +484,7 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
         return false;
 
     var scopes; // List of objects to tween
-    if (target instanceof Array) {
+    if (Array.isArray(target)) {
         // The first argument is an array
         scopes = target.concat(); // XXX: To copy the array I guess
     } else {
@@ -770,7 +770,7 @@ function _affectTweensWithFunction(func, args) {
     var affected = false;
     var scopes;
 
-    if (scope instanceof Array)
+    if (Array.isArray(scope))
         scopes = scope.concat();
     else
         scopes = new Array(scope);
