@@ -25,35 +25,28 @@ endif
 cxx = meson.get_compiler('cpp')
 cc = meson.get_compiler('c')
 
-if cxx.get_id() == 'msvc'
+add_project_arguments(cxx.get_supported_arguments([
+    '-fno-strict-aliasing',
+
+    # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
+    # header files commonly do
+    '-Wno-variadic-macros',  # GLib uses these in header files
+    '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
+]), language: 'cpp')
+
+add_project_arguments(cc.get_supported_arguments([
+    '-Wno-typedef-redefinition',  # GLib does this in header files
+]), language: 'c')
+
+if cc.get_argument_syntax() == 'msvc'
+    if cc.get_id() == 'msvc'
+        error('Buliding GJS with Visual Studio compilers is no longer supported.  Please use `clang-cl`.')
+    endif
     add_project_arguments(cxx.get_supported_arguments([
-        '-utf-8',  # Use UTF-8 mode
-        '-Dssize_t=gssize',  # Visual Studio do not come with ssize_t
-        '-Zc:externConstexpr',  # Required for 'extern constexpr' on MSVC
+        '-Dssize_t=gssize',  # Windows SDK/MSVC headers do not come with ssize_t
         '-DNOMINMAX',  # We don't want 'min' or 'max' to interfere
-
-        # Ignore spurious compiler warnings for things that
-        # GLib and SpiderMonkey header files commonly do
-        '-FImsvc_recommended_pragmas.h',
-        '-EHsc',
-        '-wd4099',
-        '-wd4251',
-        '-wd4291',
-        '-wd4800',
-    ]), language: ['cpp', 'c'])
+        ]), language: ['cpp', 'c'])
 else
-    add_project_arguments(cxx.get_supported_arguments([
-        '-fno-strict-aliasing',
-
-        # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
-        # header files commonly do
-        '-Wno-variadic-macros',  # GLib uses these in header files
-        '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
-    ]), language: 'cpp')
-    add_project_arguments(cc.get_supported_arguments([
-        '-Wno-typedef-redefinition',  # GLib does this in header files
-    ]), language: 'c')
-
     if get_option('bsymbolic_functions')
         if not cxx.has_link_argument('-Bsymbolic-functions')
             error('''-Bsymbolic-functions not supported, configure with
@@ -73,7 +66,7 @@ endif
 # match that option because we need to derive from SpiderMonkey classes
 if get_option('spidermonkey_rtti')
     if cxx.has_argument('-GR-')
-        add_project_arguments('-GR-', language: 'cpp')  # MSVC option
+        add_project_arguments('-GR-', language: 'cpp')  # MSVC/clang-cl option
     endif
 else
     if cxx.has_argument('-fno-rtti')
@@ -118,12 +111,12 @@ gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
 spidermonkey = dependency('mozjs-78')
 
 # We might need to look for the headers and lib's for Cairo
-# manually on MSVC builds...
-cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_id() != 'msvc')
-cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_id() != 'msvc')
+# manually on MSVC/clang-cl builds...
+cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_argument_syntax() != 'msvc')
+cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_argument_syntax() != 'msvc')
 cairo_xlib = dependency('cairo-xlib', required: false)
 
-if cxx.get_id() == 'msvc'
+if cxx.get_argument_syntax() == 'msvc'
     if not cairo.found()
         cairo = cc.find_library('cairo', has_headers: ['cairo.h'], required: get_option('cairo').enabled())
     endif
@@ -592,7 +585,7 @@ tests_environment.set('GSETTINGS_BACKEND', 'memory')
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
 tests_locale = 'N/A'
-if cxx.get_id() != 'msvc'
+if cxx.get_argument_syntax() != 'msvc'
     result = run_command('build/choose-tests-locale.sh')
     if result.returncode() == 0
         tests_locale = result.stdout().strip()
