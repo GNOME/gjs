@@ -126,6 +126,8 @@ static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
         case GI_TYPE_TAG_UINT64:
             gjs_arg_set<uint64_t>(arg, value);
             break;
+        default:
+            g_assert_not_reached();
     }
 }
 
