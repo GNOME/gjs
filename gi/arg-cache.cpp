@@ -101,13 +101,6 @@ static void gjs_destroy_notify_callback(void* data) {
 
 static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
                                             size_t value) {
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-    // In a little endian system, the first bytes of an unsigned long value are
-    // the same value, downcasted, and no code is needed. Also, we ignore the
-    // sign, as we're just moving bits here.
-    (void)tag;
-    arg->v_ulong = value;
-#else
     switch (tag) {
         case GI_TYPE_TAG_INT8:
             gjs_arg_set<int8_t>(arg, value);
@@ -133,8 +126,9 @@ static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
         case GI_TYPE_TAG_UINT64:
             gjs_arg_set<uint64_t>(arg, value);
             break;
+        default:
+            g_assert_not_reached();
     }
-#endif
 }
 
 GJS_JSAPI_RETURN_CONVENTION
