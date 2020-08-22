@@ -93,7 +93,7 @@ struct GjsArgumentCache {
             uint32_t enum_min;
             uint32_t enum_max;
         } enum_type;
-        uint64_t flags_mask;
+        unsigned flags_mask;
 
         // string / filename
         bool string_is_filename : 1;

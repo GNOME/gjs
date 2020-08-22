@@ -572,11 +572,10 @@ static bool gjs_marshal_flags_in_in(JSContext* cx, GjsArgumentCache* self,
         return false;
     }
 
-    if (self->contents.flags_mask <= G_MAXUINT32)
-        gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
-    else
-        gjs_arg_set(arg, uint64_t(number));
-
+    // We cast to unsigned because that's what makes sense, but then we
+    // put it in the v_int slot because that's what we use to unmarshal
+    // flags types at the moment.
+    gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, static_cast<unsigned>(number));
     return true;
 }
 
@@ -1292,8 +1291,13 @@ static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
     int n = g_enum_info_get_n_values(enum_info);
     for (int i = 0; i < n; i++) {
         GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
-        uint64_t value = uint64_t(g_value_info_get_value(value_info));
-        mask |= value;
+        int64_t value = g_value_info_get_value(value_info);
+        // From the docs for g_value_info_get_value(): "This will always be
+        // representable as a 32-bit signed or unsigned value. The use of
+        // gint64 as the return type is to allow both."
+        // We stuff both into an unsigned, int-sized field, matching the
+        // internal representation of flags in GLib (which uses guint).
+        mask |= static_cast<unsigned>(value);
     }
 
     self->contents.flags_mask = mask;
