@@ -1,3 +1,21 @@
+Version 1.65.91
+---------------
+
+- Closed bugs and merge requests:
+
+  * Crash in gjs_dbus_implementation_flush() [#332, !471, Andy Holmes]
+  * eslint: Bump ecmaScript version [!473, Florian Müllner]
+  * Documentation: add documentation for ENV variables [!474, Andy Holmes]
+  * Fix build for master on Windows (due to SpiderMonkey-78.x upgrade) [!475,
+    Chun-wei Fan]
+  * Argument cache causes test failure in armhf [#342, !476, Marco Trevisan]
+  * Argument cache causes test regressions in s390x [#341, !477, Simon McVittie]
+  * ByteArray.toString use-after-free [#339, !472, Evan Welsh]
+  * Crash accessing `vfunc_` methods of `Clutter.Actor`s [#313, !478, Evan
+    Welsh]
+
+- Various refactors for type safety [Marco Trevisan]
+
 Version 1.65.90
 ---------------
 
