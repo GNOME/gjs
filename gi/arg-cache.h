@@ -158,9 +158,11 @@ struct GjsArgumentCache {
 // template <int s> struct Measure;
 // Measure<sizeof(GjsArgumentCache)> arg_cache_size;
 
-#if defined(__x86_64__) && defined(__clang__)
+#if defined(__x86_64__) && defined(__clang__) && !defined (_MSC_VER)
 // This isn't meant to be comprehensive, but should trip on at least one CI job
-// if sizeof(GjsArgumentCache) is increased. */
+// if sizeof(GjsArgumentCache) is increased.
+// Note that this check is not applicable for clang-cl builds, as Windows is
+// an LLP64 system
 static_assert(sizeof(GjsArgumentCache) <= 104,
               "Think very hard before increasing the size of GjsArgumentCache. "
               "One is allocated for every argument to every introspected "

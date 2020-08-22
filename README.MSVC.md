@@ -1,23 +1,36 @@
-Instructions for building GJS on Visual Studio
-==============================================
+Instructions for building GJS on Visual Studio with clang-cl
+============================================================
 Building the GJS on Windows is now supported using Visual Studio
-versions 2017 15.6.x or later in both 32-bit and 64-bit (x64) flavors,
-via Meson.  Due to C++-14 usage, Visual Studio 2017 15.6.x or later is
-required, as the compiler flag /Zc:externConstexpr is needed.
+versions 2017 or later with clang-cl in both 32-bit and 64-bit (x64)
+flavors, via Meson.  Using the Visual Studio compiler by itself is no
+longer supported, as the SpiderMonkey headers do not work with the
+Visual Studio compilers.  It should be noted that a recent-enough
+Windows SDK from Microsoft is required, at least the ones that are
+known to be working with clang-cl, as we will still use items from
+the Windows SDK.
 
-You will need the following items to build GJS using Visual Studio:
--SpiderMonkey 78.x (mozjs-78).  Please see the below section carefully
- on this...
+Recent official binary installers of CLang (which contains clang-cl)
+from the LLVM website are known to work to build SpiderMonkey 78 and
+GJS.
+
+You will need the following items to build GJS using Visual Studio
+with clang-cl (they can be built with Visual Studio 2015 or later,
+unless otherwise noted):
+-SpiderMonkey 78.x (mozjs-78). This must be built with clang-cl as
+ the Visual Studio  compiler is no longer supported for building this.
+ Please see the below section carefully on this...
 -GObject-Introspection (G-I) 1.61.2 or later
--GLib 2.58.x or later, (which includes GIO, GObject, and the associated tools)
+-GLib 2.58.x or later, (which includes GIO, GObject, and the
+ associated tools)
 -Cairo including Cairo-GObject support (Optional)
 -GTK+-3.20.x or later (Optional)
--and anything that the above items depends on.
+-and anything that the above items depend on.
 
-Note that SpiderMonkey must be built with Visual Studio, and the rest
-should preferably be built with Visual Studio as well.  The Visual 
-Studio version used should preferably be the one that is used here
-to build GJS.
+Note again that SpiderMonkey must be built using Visual Studio with
+clang-cl, and the rest should preferably be built with Visual Studio
+or clang-cl as well.  The Visual Studio version used for building the
+other dependencies should preferably be the same across the board, or,
+if using Visual Studio 2015 or later, Visual Studio 2015 through 2019.
 
 Be aware that it is often hard to find a suitable source release for
 SpiderMonkey nowadays, so it may be helpful to look in
@@ -29,11 +42,7 @@ the GJS version that is being built, as GJS depends on ESR (Extended
 Service Release, a.k.a Long-term support) releases of SpiderMonkey.
 
 You may also be able to obtain the SpiderMonkey 78.x sources via the
-FireFox (ESR) or Thunderbird 78.x sources, in $(srcroot)/js. Since
-this release of Firefox/Thunderbird/SpiderMonkey requires clang-cl
-from the LLVM project, you will need to install LLVM/CLang from the
-LLVM website and ensure that clang.exe can be found in your PATH in
-order to build SpiderMonkey 78.x.
+FireFox (ESR) or Thunderbird 78.x sources, in $(srcroot)/js.
 
 Please do note that the build must be done carefully, in addition to the
 official instructions that are posted on the Mozilla website:
@@ -43,10 +52,10 @@ https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/Build_Doc
 For the configuration step, you will need to run the following:
 
 (64-bit/x64 builds)
-JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=x86_64-pc-mingw32 --target=x86_64-pc-mingw32 --prefix=--prefix=<some_prefix> --disable-jemalloc --with-libclang-path=<full_path_to_directory_containing_x64_libclang_dll> --with-clang-path=<full_path_to_directory_containing_x64_clang_exe>
+JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=x86_64-pc-mingw32 --target=x86_64-pc-mingw32 --prefix=<some_prefix> --disable-jemalloc --with-libclang-path=<full_path_to_directory_containing_libclang_dll> --with-clang-path=<full_path_to_directory_containing_clang_exe>
 
 (32-bit builds)
-JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=i686-pc-mingw32 --target=i686-pc-mingw32 --prefix=<some_prefix> --disable-jemalloc --with-libclang-path=<full_path_to_directory_containing_x86_libclang_dll> --with-clang-path=<full_path_to_directory_containing_x86_clang_exe>
+JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=i686-pc-mingw32 --target=i686-pc-mingw32 --prefix=<some_prefix> --disable-jemalloc --with-libclang-path=<full_path_to_directory_containing_libclang_dll> --with-clang-path=<full_path_to_directory_containing_clang_exe>
 
 Notice that "JS_STANDALONE=1" and "--disable-jemalloc" are absolutely required,
 otherwise GJS will not build/run correctly.  If your GJS build crashes upon
@@ -57,8 +66,8 @@ SpiderMonkey (with the build options as noted above) and retry the build.
 Note in particular that a mozglue.dll should *not* be in $(builddir)/dist/bin,
 although there will be a mozglue.lib somewhere in the build tree (which, you can
 safely delete after building SpiderMonkey).  The --host=... and --target=...
-are absolutely required for x64 builds, as per the Mozilla's SpiderMonkey build
-instructions.
+are absolutely required for all builds, as per the Mozilla's SpiderMonkey build
+instructions, as Rust is being involved here.
 
 You may want to pass in --disable-js-shell to not build the JS
 shell that comes with SpiderMonkey to save time, and perhaps
@@ -96,69 +105,26 @@ in there is correct, and remove the 'nspr' entry from the
 'Requires.private:' line and change
 '-include ${includedir}/mozjs-78/js/RequiredDefines.h' to
 '-FI${includedir}/mozjs-78/js/RequiredDefines.h', so that the
-mozjs-78.pc can be used correctly in Visual Studio builds.  You
+mozjs-78.pc can be used correctly in Visual Studio/clang-cl builds.  You
 will also need to ensure that the existing GObject-Introspection
 installation (if used) is on the same drive where the GJS sources
 are (and therefore where the GJS build is being carried out).
 
-Since Mozilla insisted that clang-cl is to be used to build SpiderMonkey,
-note that some SpideMonkey headers might need be updated as follows, before
-or after building SpiderMonkey, since there are some GCC-ish assumptions
-here:
-
--Update $(includedir)/mozjs-78/mozilla/DbgMacro.h:
-
-// Change this... (ca. line 174)
-#ifndef MOZILLA_OFFICIAL
-#  define MOZ_DBG(expression_...) \
-    mozilla::detail::MozDbg(__FILE__, __LINE__, #expression_, expression_)
-#endif
-
-//To this...
-#ifndef MOZILLA_OFFICIAL
-#  define MOZ_DBG(...) \
-    mozilla::detail::MozDbg(__FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__)
-#endif
-
-// And change this... (ca. line 197)
-#define MOZ_DEFINE_DBG(type_, members_...)                                   \
-  friend std::ostream& operator<<(std::ostream& aOut, const type_& aValue) { \
-    return aOut << #type_                                                    \
-                << (MOZ_ARG_COUNT(members_) == 0 ? "" : " { ")               \
-                       MOZ_FOR_EACH_SEPARATED(MOZ_DBG_FIELD, (<< ", "), (),  \
-                                              (members_))                    \
-                << (MOZ_ARG_COUNT(members_) == 0 ? "" : " }");               \
-  }
-
-// To this...
-#define MOZ_DEFINE_DBG(type_, ...)                                   \
-  friend std::ostream& operator<<(std::ostream& aOut, const type_& aValue) { \
-    return aOut << #type_                                                    \
-                << (MOZ_ARG_COUNT(__VA_ARGS__) == 0 ? "" : " { ")               \
-                       MOZ_FOR_EACH_SEPARATED(MOZ_DBG_FIELD, (<< ", "), (),  \
-                                              (__VA_ARGS__))                    \
-                << (MOZ_ARG_COUNT(__VA_ARGS__) == 0 ? "" : " }");               \
-  }
-
-
--Update $(includedir)/mozjs-78/js/AllocPolicy.h (after the build):
-
-Get rid of the 'JS_FRIEND_API' macro from the class
-'TempAllocPolicy : public AllocPolicyBase' (ca. line 110 and 175),
-for the member method definitions of onOutOfMemory() and reportAllocOverflow()
-
 ======================
 To carry out the build
 ======================
+You will need to set *both* the environment variables CC and CXX to:
+'clang-cl [--target=<target_triplet>]' (without the quotes); please see
+https://clang.llvm.org/docs/CrossCompilation.html on how the target triplet can be
+defined, which is used if using the cross-compilation capabilities of CLang.
 You need to install Python 3.5.x or later, as well as the
-pkg-config tool, Meson (via pip) and Ninja (unless using
---backend=vs[2017|2019]).  Perform a build by doing the
+pkg-config tool, Meson (via pip) and Ninja.  Perform a build by doing the
 following, in an appropriate Visual Studio command prompt
 in an empty build directory:
 
-meson <path_to_gjs_sources> --buildtype=... --prefix=<some_prefix> -Dskip_dbus_tests=true <--backend=vs[2017|2019]>
+meson <path_to_gjs_sources> --buildtype=... --prefix=<some_prefix> -Dskip_dbus_tests=true
 
-(Note that -Dskip_dbus_tests=true is required for MSVC builds; please
+(Note that -Dskip_dbus_tests=true is required for MSVC/clang-cl builds; please
 see the Meson documentation for the values accepted by buildtype)
 
 You may want to view the build options after the configuration succeeds
@@ -166,8 +132,6 @@ by using 'meson configure'
 
 When the configuration succeeds, run:
 ninja
-(to build the sources, or open the generated .sln file using
-Visual Studio 2017 or 2019 if --backend=vs[2017|2019] is used)
 
 You may choose to install the build results using 'ninja install'
 or running the 'install' project when the build succeeds.

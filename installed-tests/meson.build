@@ -8,8 +8,8 @@ installed_tests_metadir = abs_datadir / 'installed-tests' / meson.project_name()
 simple_tests = []
 
 # The test scripts need to be ported from shell scripts
-# for MSVC builds, which do not use BASH-style shells
-if cxx.get_id() != 'msvc'
+# for clang-cl builds, which do not use BASH-style shells
+if cxx.get_argument_syntax() != 'msvc'
     simple_tests += [
         'CommandLine',
         'Warnings',

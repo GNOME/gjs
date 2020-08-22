@@ -17,8 +17,8 @@ gi_tests = gidatadir / 'tests'
 test_gir_extra_c_args = []
 test_gir_warning_c_args = []
 
-if cc.get_id() == 'msvc'
-  # We need to ensure the symbols in the test DLLs export in MSVC builds
+if cc.get_argument_syntax() == 'msvc'
+  # We need to ensure the symbols in the test DLLs export in clang-cl builds
   test_gir_extra_c_args += ['-D_GI_EXTERN=__declspec(dllexport)extern']
 else
   # These consist of external code (from gobject-introspection) so they should not
@@ -33,7 +33,7 @@ if build_cairo
     regress_gir_includes += 'cairo-1.0'
     regress_dependencies += [cairo, cairo_gobject]
 else
-    regress_gir_c_args = ['-D_GI_DISABLE_CAIRO']
+    regress_gir_c_args += ['-D_GI_DISABLE_CAIRO']
 endif
 
 regress_sources = [
