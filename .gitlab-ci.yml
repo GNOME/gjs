@@ -193,7 +193,7 @@ iwyu:
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   script:
-    - git remote add upstream https://gitlab.gnome.org/GNOME/gjs
+    - git remote add upstream https://gitlab.gnome.org/GNOME/gjs || git remote set-url upstream https://gitlab.gnome.org/GNOME/gjs
     - git fetch upstream
     - ./tools/run_iwyu.sh upstream/master
   only:
