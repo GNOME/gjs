@@ -1215,7 +1215,8 @@ init_cached_function_data (JSContext      *context,
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
                 return gjs_throw_gerror(context, error);
 
-            g_clear_error(&error);
+            gjs_throw(context, "Virtual function not implemented: %s",
+                      error->message);
             return false;
         }
 
