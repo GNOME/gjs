@@ -60,6 +60,39 @@ static void bytes_unref_arraybuffer(void* contents [[maybe_unused]],
     g_bytes_unref(gbytes);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+bool to_string_impl_slow(JSContext* cx, uint8_t* data, uint32_t len,
+                         const char* encoding, JS::MutableHandleValue rval) {
+    size_t bytes_written;
+    GError* error = nullptr;
+    GjsAutoChar u16_str = g_convert(reinterpret_cast<char*>(data), len,
+    // Make sure the bytes of the UTF-16 string are laid out in memory
+    // such that we can simply reinterpret_cast<char16_t> them.
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+                                    "UTF-16LE",
+#else
+                                    "UTF-16BE",
+#endif
+                                    encoding, nullptr, /* bytes read */
+                                    &bytes_written, &error);
+    if (!u16_str)
+        return gjs_throw_gerror_message(cx, error);  // frees GError
+
+    // bytes_written should be bytes in a UTF-16 string so should be a multiple
+    // of 2
+    g_assert((bytes_written % 2) == 0);
+
+    // g_convert 0-terminates the string, although the 0 isn't included in
+    // bytes_written
+    JSString* s =
+        JS_NewUCStringCopyZ(cx, reinterpret_cast<char16_t*>(u16_str.get()));
+    if (!s)
+        return false;
+
+    rval.setString(s);
+    return true;
+}
+
 /* implement toString() with an optional encoding arg */
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
@@ -92,52 +125,45 @@ static bool to_string_impl(JSContext* context, JS::HandleObject byte_array,
         return true;
     }
 
-    if (encoding_is_utf8) {
-        /* optimization, avoids iconv overhead and runs
-         * libmozjs hardwired utf8-to-utf16
-         */
+    if (!encoding_is_utf8)
+        return to_string_impl_slow(context, data, len, encoding, rval);
 
-        // If there are any 0 bytes, including the terminating byte, stop at
-        // the first one
-        if (data[len - 1] == 0 || memchr(data, 0, len))
-            return gjs_string_from_utf8(context, reinterpret_cast<char*>(data),
-                                        rval);
+    // optimization, avoids iconv overhead and runs libmozjs hardwired
+    // utf8-to-utf16
 
-        return gjs_string_from_utf8_n(context, reinterpret_cast<char*>(data),
-                                      len, rval);
-    } else {
-        gsize bytes_written;
-        GError *error;
-
-        error = NULL;
-        GjsAutoChar u16_str = g_convert(reinterpret_cast<char*>(data), len,
-        // Make sure the bytes of the UTF-16 string are laid out in memory
-        // such that we can simply reinterpret_cast<char16_t> them.
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-                                        "UTF-16LE",
-#else
-                                        "UTF-16BE",
-#endif
-                                        encoding, nullptr, /* bytes read */
-                                        &bytes_written, &error);
-        if (!u16_str)
-            return gjs_throw_gerror_message(context, error);  // frees GError
-
-        /* bytes_written should be bytes in a UTF-16 string so
-         * should be a multiple of 2
-         */
-        g_assert((bytes_written % 2) == 0);
-
-        // g_convert 0-terminates the string, although the 0 isn't included in
-        // bytes_written
-        JSString* s = JS_NewUCStringCopyZ(
-            context, reinterpret_cast<char16_t*>(u16_str.get()));
-        if (!s)
+    // If there are any 0 bytes, including the terminating byte, stop at the
+    // first one
+    if (data[len - 1] == 0 || memchr(data, 0, len)) {
+        if (!gjs_string_from_utf8(context, reinterpret_cast<char*>(data), rval))
             return false;
-
-        rval.setString(s);
-        return true;
+    } else {
+        if (!gjs_string_from_utf8_n(context, reinterpret_cast<char*>(data), len,
+                                    rval))
+            return false;
     }
+
+    uint8_t* current_data;
+    uint32_t current_len;
+    bool ignore_val;
+
+    // If a garbage collection occurs between when we call
+    // js::GetUint8ArrayLengthAndData and return from gjs_string_from_utf8, a
+    // use-after-free corruption can occur if the garbage collector shifts the
+    // location of the Uint8Array's private data. To mitigate this we call
+    // js::GetUint8ArrayLengthAndData again and then compare if the length and
+    // pointer are still the same. If the pointers differ, we use the slow path
+    // to ensure no data corruption occurred. The shared-ness of an array cannot
+    // change between calls, so we ignore it.
+    js::GetUint8ArrayLengthAndData(byte_array, &current_len, &ignore_val,
+                                   &current_data);
+
+    // Ensure the private data hasn't changed
+    if (current_len == len && current_data == data)
+        return true;
+
+    // This was the UTF-8 optimized path, so we explicitly pass the encoding
+    return to_string_impl_slow(context, current_data, current_len, "UTF-8",
+                               rval);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
