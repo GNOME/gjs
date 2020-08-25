@@ -22,6 +22,14 @@
 #include "gjs/jsapi-util.h"
 #include "modules/print.h"
 
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <typename T> struct GCPolicy;
+
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);

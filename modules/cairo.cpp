@@ -32,6 +32,14 @@
 #include "gjs/jsapi-util.h"
 #include "modules/cairo-private.h"
 
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <typename T> struct GCPolicy;
+
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
+
 #ifdef CAIRO_HAS_XLIB_SURFACE
 #    include <cairo-xlib.h>
 

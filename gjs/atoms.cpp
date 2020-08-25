@@ -35,6 +35,14 @@
 
 #include "gjs/atoms.h"
 
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <typename T> struct GCPolicy;
+
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
+
 bool GjsAtom::init(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);
     if (!s)
