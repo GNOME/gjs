@@ -241,7 +241,6 @@ static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
     int i, n_args, n_jsargs, n_outargs, c_args_offset = 0;
     GITypeInfo ret_type;
     bool success = false;
-    bool ret_type_is_void;
     auto args = reinterpret_cast<GIArgument **>(ffi_args);
 
     trampoline = (GjsCallbackTrampoline *) data;
@@ -306,6 +305,9 @@ static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
         g_error("Unable to reserve space for vector");
 
     JS::RootedValue rval(context);
+
+    g_callable_info_load_return_type(trampoline->info, &ret_type);
+    bool ret_type_is_void = g_type_info_get_tag (&ret_type) == GI_TYPE_TAG_VOID;
 
     for (i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -381,9 +383,6 @@ static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
     if (!gjs_closure_invoke(trampoline->js_function, this_object, jsargs, &rval,
                             true))
         goto out;
-
-    g_callable_info_load_return_type(trampoline->info, &ret_type);
-    ret_type_is_void = g_type_info_get_tag (&ret_type) == GI_TYPE_TAG_VOID;
 
     if (n_outargs == 0 && ret_type_is_void) {
         /* void return value, no out args, nothing to do */
@@ -502,9 +501,12 @@ out:
         }
 
         /* Fill in the result with some hopefully neutral value */
-        g_callable_info_load_return_type(trampoline->info, &ret_type);
-        gjs_gi_argument_init_default(&ret_type,
-                                     static_cast<GIArgument*>(result));
+        if (!ret_type_is_void) {
+            GIArgument argument = {};
+            g_callable_info_load_return_type(trampoline->info, &ret_type);
+            gjs_gi_argument_init_default(&ret_type, &argument);
+            set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
+        }
 
         /* If the callback has a GError** argument and invoking the closure
          * returned an error, try to make a GError from it */
