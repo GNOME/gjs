@@ -25,23 +25,36 @@ endif
 cxx = meson.get_compiler('cpp')
 cc = meson.get_compiler('c')
 
-add_project_arguments(cxx.get_supported_arguments([
-    '-fno-strict-aliasing',
+if cc.get_id() == 'msvc'
+    add_project_arguments(cxx.get_supported_arguments([
+        '-utf-8',  # Use UTF-8 mode
+        '/Zc:externConstexpr',  # Required for 'extern constexpr' on MSVC
 
+        # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
+        # header files commonly do
+        '-FImsvc_recommended_pragmas.h',
+        '-EHsc',
+        '-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS', # Don't worry about the C++17 deprecations
+        '-wd4099',
+        '-wd4251',
+        '-wd4291',
+        '-wd4800',
+    ]), language: ['cpp', 'c'])
+else
     # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
-    # header files commonly do
-    '-Wno-variadic-macros',  # GLib uses these in header files
-    '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
-]), language: 'cpp')
+    # header files commonly do	
+    add_project_arguments(cxx.get_supported_arguments([
+        '-fno-strict-aliasing',
+        '-Wno-variadic-macros',  # GLib uses these in header files
+        '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
+    ]), language: 'cpp')
 
-add_project_arguments(cc.get_supported_arguments([
-    '-Wno-typedef-redefinition',  # GLib does this in header files
-]), language: 'c')
+    add_project_arguments(cc.get_supported_arguments([
+        '-Wno-typedef-redefinition',  # GLib does this in header files
+    ]), language: 'c')
+endif
 
 if cc.get_argument_syntax() == 'msvc'
-    if cc.get_id() == 'msvc'
-        error('Buliding GJS with Visual Studio compilers is no longer supported.  Please use `clang-cl`.')
-    endif
     add_project_arguments(cxx.get_supported_arguments([
         '-Dssize_t=gssize',  # Windows SDK/MSVC headers do not come with ssize_t
         '-DNOMINMAX',  # We don't want 'min' or 'max' to interfere
