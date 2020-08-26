@@ -42,6 +42,14 @@
 #include "gjs/deprecation.h"
 #include "gjs/macros.h"
 
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <typename T> struct GCPolicy;
+
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
+
 const char* messages[] = {
     // None:
     "(invalid message)",

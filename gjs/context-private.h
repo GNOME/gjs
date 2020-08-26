@@ -256,5 +256,4 @@ class GjsContextPrivate : public JS::JobQueue {
     void free_profiler(void);
     void dispose(void);
 };
-
 #endif  // GJS_CONTEXT_PRIVATE_H_

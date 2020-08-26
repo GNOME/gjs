@@ -50,6 +50,14 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <typename T> struct GCPolicy;
+
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
+
 class JSLinearString;
 
 char* gjs_hyphen_to_underscore(const char* str) {

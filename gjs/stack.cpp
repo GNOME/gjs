@@ -52,6 +52,14 @@
 
 #include "gjs/context.h"
 
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <typename T> struct GCPolicy;
+
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
+
 void
 gjs_context_print_stack_stderr(GjsContext *context)
 {

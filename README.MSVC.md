@@ -1,20 +1,21 @@
-Instructions for building GJS on Visual Studio with clang-cl
-============================================================
+Instructions for building GJS on Visual Studio or clang-cl
+==========================================================
 Building the GJS on Windows is now supported using Visual Studio
-versions 2017 or later with clang-cl in both 32-bit and 64-bit (x64)
-flavors, via Meson.  Using the Visual Studio compiler by itself is no
-longer supported, as the SpiderMonkey headers do not work with the
-Visual Studio compilers.  It should be noted that a recent-enough
-Windows SDK from Microsoft is required, at least the ones that are
-known to be working with clang-cl, as we will still use items from
-the Windows SDK.
+versions 2017 or later with or without clang-cl in both 32-bit and
+64-bit (x64) flavors, via Meson.  It should be noted that a
+recent-enough Windows SDK from Microsoft is still required if using
+clang-cl, as we will still use items from the Windows SDK.  If using
+Visual Studio, Visual Studio 2017 15.9.x or later are known to work;
+earlier versions at after Visual Studio 2017 15.6 may or may not work,
+please let us know how things went if Visual Studio 15.6, 15.7 or 15.8
+is used.
 
 Recent official binary installers of CLang (which contains clang-cl)
 from the LLVM website are known to work to build SpiderMonkey 78 and
 GJS.
 
 You will need the following items to build GJS using Visual Studio
-with clang-cl (they can be built with Visual Studio 2015 or later,
+or clang-cl (they can be built with Visual Studio 2015 or later,
 unless otherwise noted):
 -SpiderMonkey 78.x (mozjs-78). This must be built with clang-cl as
  the Visual Studio  compiler is no longer supported for building this.
@@ -31,6 +32,12 @@ clang-cl, and the rest should preferably be built with Visual Studio
 or clang-cl as well.  The Visual Studio version used for building the
 other dependencies should preferably be the same across the board, or,
 if using Visual Studio 2015 or later, Visual Studio 2015 through 2019.
+
+Please also be aware that the Rust MSVC toolchains that correspond to
+the platform you are building for must also be present to build
+SpiderMonkey.  Please refer to the Rust website on how to install the
+Rust compilers and toolchains for MSVC.  This applies to clang-cl
+builds as well.
 
 Be aware that it is often hard to find a suitable source release for
 SpiderMonkey nowadays, so it may be helpful to look in
@@ -110,13 +117,26 @@ will also need to ensure that the existing GObject-Introspection
 installation (if used) is on the same drive where the GJS sources
 are (and therefore where the GJS build is being carried out).
 
+Since Mozilla insisted that clang-cl is to be used to build SpiderMonkey,
+note that some SpideMonkey headers might need be updated as follows, if intending
+to build without clang-cl, since there are some GCC-ish assumptions here:
+
+-Update $(includedir)/mozjs-78/js/AllocPolicy.h (after the build):
+
+Get rid of the 'JS_FRIEND_API' macro from the class
+'TempAllocPolicy : public AllocPolicyBase' (ca. lines 112 and 178),
+for the member method definitions of onOutOfMemory() and reportAllocOverflow()
+
 ======================
 To carry out the build
 ======================
-You will need to set *both* the environment variables CC and CXX to:
-'clang-cl [--target=<target_triplet>]' (without the quotes); please see
-https://clang.llvm.org/docs/CrossCompilation.html on how the target triplet can be
-defined, which is used if using the cross-compilation capabilities of CLang.
+If using clang-cl, you will need to set *both* the environment variables CC
+and CXX to: 'clang-cl [--target=<target_triplet>]' (without the quotes); please
+see https://clang.llvm.org/docs/CrossCompilation.html on how the target triplet
+can be defined, which is used if using the cross-compilation capabilities of CLang.
+In this case, you need to ensure that 'clang-cl.exe' and 'lld-link.exe' (i.e. your
+LLVM bindir) are present in your PATH.
+
 You need to install Python 3.5.x or later, as well as the
 pkg-config tool, Meson (via pip) and Ninja.  Perform a build by doing the
 following, in an appropriate Visual Studio command prompt
