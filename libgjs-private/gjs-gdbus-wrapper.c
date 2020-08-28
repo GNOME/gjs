@@ -395,7 +395,9 @@ gjs_dbus_implementation_emit_signal (GjsDBusImplementation *self,
 
         g_object_unref(iter->data);
     }
-    g_variant_unref(parameters);
+    if (parameters != NULL)
+        g_variant_unref(parameters);
+
     g_list_free(connections);
 }
 
