@@ -109,6 +109,7 @@ jasmine_tests = [
     'Namespace',
     'Package',
     'ParamSpec',
+    'Print',
     'Regress',
     'Signals',
     'System',
