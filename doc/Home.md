@@ -39,6 +39,14 @@ GNOME Applications written in GJS:
 * [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
 * [Polari](https://gitlab.gnome.org/GNOME/polari) IRC Client
 
+Third party applications written in GJS:
+
+* [Tangram](https://github.com/sonnyp/Tangram)
+* [Quick Lookup](https://github.com/johnfactotum/quick-lookup)
+* [Foliate](https://github.com/johnfactotum/foliate)
+* [Marker](https://github.com/fabiocolacio/Marker)
+* [Gnomit](https://github.com/small-tech/gnomit)
+
 ## Getting Help
 
 * Mailing List: http://mail.gnome.org/mailman/listinfo/javascript-list
