@@ -24,4 +24,3 @@ THE SOFTWARE.
 The following files contain code from Mozilla which
 is triple licensed under MPL1.1/LGPLv2+/GPLv2+:
 The console module (modules/console.c)
-Stack printer (gjs/stack.c)
