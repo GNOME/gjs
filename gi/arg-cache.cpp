@@ -1575,7 +1575,9 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         self->skip_in = true;
     *inc_counter_out = true;
 
-    if (direction == GI_DIRECTION_OUT && g_arg_info_is_caller_allocates(arg)) {
+    GITypeTag type_tag = g_type_info_get_tag(&self->type_info);
+    if (direction == GI_DIRECTION_OUT && type_tag == GI_TYPE_TAG_INTERFACE &&
+        g_arg_info_is_caller_allocates(arg)) {
         GjsAutoBaseInfo interface_info =
             g_type_info_get_interface(&self->type_info);
         g_assert(interface_info);
@@ -1601,7 +1603,6 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         return true;
     }
 
-    GITypeTag type_tag = g_type_info_get_tag(&self->type_info);
     if (type_tag == GI_TYPE_TAG_INTERFACE) {
         GjsAutoBaseInfo interface_info =
             g_type_info_get_interface(&self->type_info);
