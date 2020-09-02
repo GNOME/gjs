@@ -102,9 +102,10 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 
     trampoline->ref_count--;
     if (trampoline->ref_count == 0) {
-        g_closure_unref(trampoline->js_function);
-        g_callable_info_free_closure(trampoline->info, trampoline->closure);
-        g_base_info_unref( (GIBaseInfo*) trampoline->info);
+        g_clear_pointer(&trampoline->js_function, g_closure_unref);
+        if (trampoline->info && trampoline->closure)
+            g_callable_info_free_closure(trampoline->info, trampoline->closure);
+        g_clear_pointer(&trampoline->info, g_base_info_unref);
         g_free (trampoline->param_types);
         g_slice_free(GjsCallbackTrampoline, trampoline);
     }
@@ -588,6 +589,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                           is_vfunc ? "VFunc" : "Callback",
                           g_base_info_get_name(callable_info));
                 g_base_info_unref(interface_info);
+                gjs_callback_trampoline_unref(trampoline);
                 return NULL;
             }
             g_base_info_unref(interface_info);
@@ -605,6 +607,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                                   "length argument. This is not supported",
                                   is_vfunc ? "VFunc" : "Callback",
                                   g_base_info_get_name(callable_info));
+                        gjs_callback_trampoline_unref(trampoline);
                         return NULL;
                     }
 
