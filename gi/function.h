@@ -66,7 +66,8 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
     GIScopeType scope, bool has_scope_object, bool is_vfunc);
 
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
-void gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline);
+GjsCallbackTrampoline* gjs_callback_trampoline_ref(
+    GjsCallbackTrampoline* trampoline);
 
 // Stack allocation only!
 struct GjsFunctionCallState {

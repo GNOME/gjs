@@ -91,10 +91,10 @@ static GSList *completed_trampolines = NULL;  /* GjsCallbackTrampoline */
 
 GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
-void
-gjs_callback_trampoline_ref(GjsCallbackTrampoline *trampoline)
-{
+GjsCallbackTrampoline* gjs_callback_trampoline_ref(
+    GjsCallbackTrampoline* trampoline) {
     trampoline->ref_count++;
+    return trampoline;
 }
 
 void
