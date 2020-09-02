@@ -1450,8 +1450,12 @@ static void invalidate_closure_list(std::forward_list<GClosure*>* closures) {
     // invalidate notifier
     while (!closures->empty()) {
         // This will also free the closure data, through the closure
-        // invalidation mechanism
-        GClosure* closure = *closures->begin();
+        // invalidation mechanism, but adding a temporary reference to
+        // ensure that the closure is still valid when calling invalidation
+        // notify callbacks
+        using GjsAutoGClosure =
+            GjsAutoPointer<GClosure, GClosure, g_closure_unref, g_closure_ref>;
+        GjsAutoGClosure closure(closures->front(), GjsAutoTakeOwnership());
         g_closure_invalidate(closure);
         /* Erase element if not already erased */
         closures->remove(closure);
@@ -2618,6 +2622,11 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         g_closure_add_invalidate_notifier(
             trampoline->js_function, this,
             &ObjectPrototype::vfunc_invalidated_notify);
+        g_closure_add_invalidate_notifier(
+            trampoline->js_function, trampoline, [](void* data, GClosure*) {
+                auto* trampoline = static_cast<GjsCallbackTrampoline*>(data);
+                gjs_callback_trampoline_unref(trampoline);
+            });
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
     }
