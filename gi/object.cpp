@@ -1319,7 +1319,10 @@ void ObjectInstance::prepare_shutdown(void) {
 }
 
 ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
-    : GIWrapperInstance(cx, object) {
+    : GIWrapperInstance(cx, object),
+      m_wrapper_finalized(false),
+      m_gobj_disposed(false),
+      m_uses_toggle_ref(false) {
     GTypeQuery query;
     type_query_dynamic_safe(&query);
     if (G_LIKELY(query.type))

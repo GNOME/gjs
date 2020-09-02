@@ -1024,7 +1024,7 @@ class GIWrapperPrototype : public Base {
 template <class Base, class Prototype, class Instance, typename Wrapped = void>
 class GIWrapperInstance : public Base {
  protected:
-    Wrapped* m_ptr;
+    Wrapped* m_ptr = nullptr;
 
     explicit GIWrapperInstance(JSContext* cx, JS::HandleObject obj)
         : Base(Prototype::for_js_prototype(cx, obj)) {
@@ -1043,8 +1043,7 @@ class GIWrapperInstance : public Base {
     [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
                                                      JS::HandleObject obj) {
         g_assert(!JS_GetPrivate(obj));
-        auto* priv = g_new0(Instance, 1);
-        new (priv) Instance(cx, obj);
+        auto* priv = new Instance(cx, obj);
 
         // Init the private variable before we do anything else. If a garbage
         // collection happens when calling the constructor, then this object
@@ -1083,8 +1082,7 @@ class GIWrapperInstance : public Base {
 
  protected:
     void finalize_impl(JSFreeOp*, JSObject*) {
-        static_cast<Instance*>(this)->~Instance();
-        g_free(this);
+        delete static_cast<Instance*>(this);
     }
 
     // Override if necessary

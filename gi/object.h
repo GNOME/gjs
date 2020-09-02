@@ -46,8 +46,8 @@ class ObjectPrototype;
 
 class GjsListLink {
  private:
-    ObjectInstance* m_prev;
-    ObjectInstance* m_next;
+    ObjectInstance* m_prev = nullptr;
+    ObjectInstance* m_next = nullptr;
 
  public:
     [[nodiscard]] ObjectInstance* prev() const { return m_prev; }
