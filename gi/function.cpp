@@ -27,6 +27,7 @@
 #include <stdlib.h>  // for exit
 #include <string.h>  // for strcmp, memset, size_t
 
+#include <memory>  // for unique_ptr
 #include <new>
 #include <string>
 #include <type_traits>
@@ -237,22 +238,20 @@ warn_about_illegal_js_callback(const GjsCallbackTrampoline *trampoline,
 static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
                                  void** ffi_args, void* data) {
     JSContext *context;
-    GjsCallbackTrampoline *trampoline;
     int i, n_args, n_jsargs, n_outargs, c_args_offset = 0;
     GITypeInfo ret_type;
     bool success = false;
     auto args = reinterpret_cast<GIArgument **>(ffi_args);
 
-    trampoline = (GjsCallbackTrampoline *) data;
-    g_assert(trampoline);
-    gjs_callback_trampoline_ref(trampoline);
+    g_assert(data && "Trampoline data is not set");
+    GjsAutoCallbackTrampoline trampoline(
+        static_cast<GjsCallbackTrampoline*>(data), GjsAutoTakeOwnership());
 
     if (G_UNLIKELY(!gjs_closure_is_valid(trampoline->js_function))) {
         warn_about_illegal_js_callback(trampoline, "during shutdown",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
             "connected, or using the destroy(), dispose(), or remove() vfuncs");
         gjs_dumpstack();
-        gjs_callback_trampoline_unref(trampoline);
         return;
     }
 
@@ -263,14 +262,12 @@ static void gjs_callback_closure(ffi_cif* cif [[maybe_unused]], void* result,
             "destroying a Clutter actor or GTK widget with ::destroy signal "
             "connected, or using the destroy(), dispose(), or remove() vfuncs");
         gjs_dumpstack();
-        gjs_callback_trampoline_unref(trampoline);
         return;
     }
 
     if (G_UNLIKELY(!gjs->is_owner_thread())) {
         warn_about_illegal_js_callback(trampoline, "on a different thread",
             "an API not intended to be used in JS");
-        gjs_callback_trampoline_unref(trampoline);
         return;
     }
 
@@ -532,7 +529,6 @@ out:
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
     }
 
-    gjs_callback_trampoline_unref(trampoline);
     gjs->schedule_gc_if_needed();
 }
 
@@ -540,7 +536,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
     JSContext* context, JS::HandleFunction function,
     GICallableInfo* callable_info, GIScopeType scope, bool has_scope_object,
     bool is_vfunc) {
-    GjsCallbackTrampoline *trampoline;
+    GjsAutoCallbackTrampoline trampoline;
     int n_args, i;
 
     g_assert(function);
@@ -588,7 +584,6 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                           is_vfunc ? "VFunc" : "Callback",
                           g_base_info_get_name(callable_info));
                 g_base_info_unref(interface_info);
-                gjs_callback_trampoline_unref(trampoline);
                 return NULL;
             }
             g_base_info_unref(interface_info);
@@ -606,7 +601,6 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                                   "length argument. This is not supported",
                                   is_vfunc ? "VFunc" : "Callback",
                                   g_base_info_get_name(callable_info));
-                        gjs_callback_trampoline_unref(trampoline);
                         return NULL;
                     }
 
@@ -631,7 +625,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
     trampoline->scope = scope;
     trampoline->is_vfunc = is_vfunc;
 
-    return trampoline;
+    return trampoline.release();
 }
 
 /* Intended for error messages. Return value must be freed */

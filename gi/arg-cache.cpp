@@ -911,11 +911,11 @@ static bool gjs_marshal_callback_release(JSContext*, GjsArgumentCache*,
     if (!closure)
         return true;
 
-    auto trampoline = static_cast<GjsCallbackTrampoline*>(closure->user_data);
+    GjsAutoCallbackTrampoline trampoline =
+        static_cast<GjsCallbackTrampoline*>(closure->user_data);
     // CallbackTrampolines are refcounted because for notified/async closures
     // it is possible to destroy it while in call, and therefore we cannot
     // check its scope at this point
-    gjs_callback_trampoline_unref(trampoline);
     gjs_arg_unset<void*>(in_arg);
     return true;
 }

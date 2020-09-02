@@ -34,6 +34,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 namespace JS {
@@ -69,6 +70,10 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
 GjsCallbackTrampoline* gjs_callback_trampoline_ref(
     GjsCallbackTrampoline* trampoline);
+
+using GjsAutoCallbackTrampoline =
+    GjsAutoPointer<GjsCallbackTrampoline, GjsCallbackTrampoline,
+                   gjs_callback_trampoline_unref, gjs_callback_trampoline_ref>;
 
 // Stack allocation only!
 struct GjsFunctionCallState {
