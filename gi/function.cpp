@@ -93,17 +93,14 @@ GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
 GjsCallbackTrampoline* gjs_callback_trampoline_ref(
     GjsCallbackTrampoline* trampoline) {
-    trampoline->ref_count++;
+    g_atomic_ref_count_inc(&trampoline->ref_count);
     return trampoline;
 }
 
 void
 gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
 {
-    /* Not MT-safe, like all the rest of GJS */
-
-    trampoline->ref_count--;
-    if (trampoline->ref_count == 0) {
+    if (g_atomic_ref_count_dec(&trampoline->ref_count)) {
         g_clear_pointer(&trampoline->js_function, g_closure_unref);
         if (trampoline->info && trampoline->closure)
             g_callable_info_free_closure(trampoline->info, trampoline->closure);
@@ -550,7 +547,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 
     trampoline = g_new(GjsCallbackTrampoline, 1);
     new (trampoline) GjsCallbackTrampoline();
-    trampoline->ref_count = 1;
+    g_atomic_ref_count_init(&trampoline->ref_count);
     trampoline->info = callable_info;
     g_base_info_ref((GIBaseInfo*)trampoline->info);
 

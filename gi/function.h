@@ -29,6 +29,7 @@
 #include <ffi.h>
 #include <girepository.h>
 #include <glib-object.h>
+#include <glib.h>
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -48,7 +49,7 @@ typedef enum {
 } GjsParamType;
 
 struct GjsCallbackTrampoline {
-    int ref_count;
+    gatomicrefcount ref_count;
     GICallableInfo *info;
 
     GClosure *js_function;
