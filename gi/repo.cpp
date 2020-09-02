@@ -226,7 +226,7 @@ static void repo_finalize(JSFreeOp*, JSObject* obj) {
         return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(repo);
-    g_slice_free(Repo, priv);
+    g_free(priv);
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -274,7 +274,7 @@ repo_new(JSContext *context)
     if (repo == nullptr)
         return nullptr;
 
-    priv = g_slice_new0(Repo);
+    priv = g_new0(Repo, 1);
 
     GJS_INC_COUNTER(repo);
 

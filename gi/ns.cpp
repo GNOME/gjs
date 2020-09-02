@@ -176,7 +176,7 @@ static void ns_finalize(JSFreeOp*, JSObject* obj) {
         g_free(priv->gi_namespace);
 
     GJS_DEC_COUNTER(ns);
-    g_slice_free(Ns, priv);
+    g_free(priv);
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -227,7 +227,7 @@ ns_new(JSContext    *context,
     if (!ns)
         return nullptr;
 
-    priv = g_slice_new0(Ns);
+    priv = g_new0(Ns, 1);
 
     GJS_INC_COUNTER(ns);
 
