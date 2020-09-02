@@ -68,15 +68,17 @@ struct GjsAutoPointer : std::unique_ptr<T, decltype(free_func)> {
         this->reset(ptr && ref ? reinterpret_cast<T*>(ref(ptr)) : ptr);
     }
 
-    operator T*() const { return this->get(); }
-    T& operator[](size_t i) const { return static_cast<T*>(*this)[i]; }
+    constexpr operator T*() const { return this->get(); }
+    constexpr T& operator[](size_t i) const {
+        return static_cast<T*>(*this)[i];
+    }
 
-    [[nodiscard]] T* copy() const {
+    [[nodiscard]] constexpr T* copy() const {
         return reinterpret_cast<T*>(ref_func(this->get()));
     }
 
     template <typename C>
-    [[nodiscard]] C* as() const {
+    [[nodiscard]] constexpr C* as() const {
         return const_cast<C*>(reinterpret_cast<const C*>(this->get()));
     }
 };
