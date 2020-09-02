@@ -643,14 +643,9 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 static void
 complete_async_calls(void)
 {
-    if (completed_trampolines) {
-        for (GSList *iter = completed_trampolines; iter; iter = iter->next) {
-            auto trampoline = static_cast<GjsCallbackTrampoline *>(iter->data);
-            gjs_callback_trampoline_unref(trampoline);
-        }
-        g_slist_free(completed_trampolines);
-        completed_trampolines = nullptr;
-    }
+    g_slist_free_full(
+        static_cast<GSList*>(g_steal_pointer(&completed_trampolines)),
+        (GDestroyNotify)gjs_callback_trampoline_unref);
 }
 
 static void* get_return_ffi_pointer_from_giargument(
