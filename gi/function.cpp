@@ -169,10 +169,9 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
         break;
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIBaseInfo* interface_info;
             GIInfoType interface_type;
 
-            interface_info = g_type_info_get_interface(ret_type);
+            GjsAutoBaseInfo interface_info(g_type_info_get_interface(ret_type));
             interface_type = g_base_info_get_type(interface_info);
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
@@ -180,8 +179,6 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                 set_ffi_arg<int, GI_TYPE_TAG_INTERFACE>(result, return_value);
             else
                 set_ffi_arg<void*>(result, return_value);
-
-            g_base_info_unref(interface_info);
         }
         break;
     case GI_TYPE_TAG_UINT64:
@@ -572,10 +569,10 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
         }
 
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
-            GIBaseInfo* interface_info;
             GIInfoType interface_type;
 
-            interface_info = g_type_info_get_interface(&type_info);
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(&type_info);
             interface_type = g_base_info_get_type(interface_info);
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
                 gjs_throw(context,
@@ -583,10 +580,8 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                           "is not supported",
                           is_vfunc ? "VFunc" : "Callback",
                           g_base_info_get_name(callable_info));
-                g_base_info_unref(interface_info);
                 return NULL;
             }
-            g_base_info_unref(interface_info);
         } else if (type_tag == GI_TYPE_TAG_ARRAY) {
             if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
                 int array_length_pos = g_type_info_get_array_length(&type_info);
