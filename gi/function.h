@@ -26,6 +26,8 @@
 
 #include <config.h>
 
+#include <vector>
+
 #include <ffi.h>
 #include <girepository.h>
 #include <glib-object.h>
@@ -49,17 +51,35 @@ typedef enum {
     PARAM_UNKNOWN,
 } GjsParamType;
 
+using GjsAutoGClosure =
+    GjsAutoPointer<GClosure, GClosure, g_closure_unref, g_closure_ref>;
+
 struct GjsCallbackTrampoline {
+    GjsCallbackTrampoline(GICallableInfo* callable_info, GIScopeType scope,
+                          bool is_vfunc);
+    ~GjsCallbackTrampoline();
+
+    constexpr GClosure* js_function() { return m_js_function; }
+    constexpr ffi_closure* closure() { return m_closure; }
+
     gatomicrefcount ref_count;
-    GICallableInfo *info;
 
-    GClosure *js_function;
+    bool initialize(JSContext* cx, JS::HandleFunction function,
+                    bool has_scope_object);
 
-    ffi_cif cif;
-    ffi_closure *closure;
-    GIScopeType scope;
-    bool is_vfunc;
-    GjsParamType *param_types;
+ private:
+    void callback_closure(GIArgument** args, void* result);
+    void warn_about_illegal_js_callback(const char* when, const char* reason);
+
+    GjsAutoCallableInfo m_info;
+    GjsAutoGClosure m_js_function;
+
+    ffi_closure* m_closure = nullptr;
+    GIScopeType m_scope;
+    std::vector<GjsParamType> m_param_types;
+
+    bool m_is_vfunc;
+    ffi_cif m_cif;
 };
 
 GJS_JSAPI_RETURN_CONVENTION

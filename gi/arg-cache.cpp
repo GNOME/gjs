@@ -316,9 +316,9 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
                 return false;
             }
 
-            priv->associate_closure(cx, trampoline->js_function);
+            priv->associate_closure(cx, trampoline->js_function());
         }
-        closure = trampoline->closure;
+        closure = trampoline->closure();
     }
 
     if (self->has_callback_destroy()) {
