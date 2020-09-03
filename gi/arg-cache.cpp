@@ -67,15 +67,6 @@ static const char* expected_type_names[] = {"object", "function", "string"};
 static_assert(G_N_ELEMENTS(expected_type_names) == ExpectedType::LAST,
               "Names must match the values in ExpectedType");
 
-// The global entry point for any invocations of GDestroyNotify; look up the
-// callback through the user_data and then free it.
-static void gjs_destroy_notify_callback(void* data) {
-    auto* trampoline = static_cast<GjsCallbackTrampoline*>(data);
-
-    g_assert(trampoline);
-    gjs_callback_trampoline_unref(trampoline);
-}
-
 // A helper function to retrieve array lengths from a GIArgument (letting the
 // compiler generate good instructions in case of big endian machines)
 [[nodiscard]] static size_t gjs_g_argument_get_array_length(GITypeTag tag,
@@ -332,17 +323,26 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
 
     if (self->has_callback_destroy()) {
         uint8_t destroy_pos = self->contents.callback.destroy_pos;
-        gjs_arg_set(&state->in_cvalues[destroy_pos],
-                    trampoline ? gjs_destroy_notify_callback : nullptr);
+        GDestroyNotify destroy_notify = nullptr;
+        if (trampoline) {
+            /* Adding another reference and a DestroyNotify that unsets it */
+            gjs_callback_trampoline_ref(trampoline);
+            destroy_notify = [](void* data) {
+                g_assert(data);
+                gjs_callback_trampoline_unref(
+                    static_cast<GjsCallbackTrampoline*>(data));
+            };
+        }
+        gjs_arg_set(&state->in_cvalues[destroy_pos], destroy_notify);
     }
     if (self->has_callback_closure()) {
         uint8_t closure_pos = self->contents.callback.closure_pos;
         gjs_arg_set(&state->in_cvalues[closure_pos], trampoline);
     }
 
-    if (trampoline && self->contents.callback.scope != GI_SCOPE_TYPE_CALL) {
-        // Add an extra reference that will be cleared when collecting async
-        // calls, or when GDestroyNotify is called
+    if (trampoline && self->contents.callback.scope == GI_SCOPE_TYPE_ASYNC) {
+        // Add an extra reference that will be cleared when garbage collecting
+        // async calls
         gjs_callback_trampoline_ref(trampoline);
     }
     gjs_arg_set(arg, closure);

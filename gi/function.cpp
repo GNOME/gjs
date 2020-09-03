@@ -523,6 +523,8 @@ out:
     }
 
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
+        // We don't release the trampoline here as we've an extra ref that has
+        // been set in gjs_marshal_callback_in()
         completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
     }
 
