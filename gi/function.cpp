@@ -31,6 +31,7 @@
 #include <new>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include <ffi.h>
 #include <girepository.h>
@@ -88,7 +89,7 @@ extern struct JSClass gjs_function_class;
  * while it's in use, this list keeps track of ones that
  * will be freed the next time we invoke a C function.
  */
-static GSList *completed_trampolines = NULL;  /* GjsCallbackTrampoline */
+static std::vector<GjsAutoCallbackTrampoline> completed_trampolines;
 
 GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
@@ -525,7 +526,7 @@ out:
     if (trampoline->scope == GI_SCOPE_TYPE_ASYNC) {
         // We don't release the trampoline here as we've an extra ref that has
         // been set in gjs_marshal_callback_in()
-        completed_trampolines = g_slist_prepend(completed_trampolines, trampoline);
+        completed_trampolines.emplace_back(trampoline.get());
     }
 
     gjs->schedule_gc_if_needed();
@@ -637,11 +638,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                            g_base_info_get_name(function->info));
 }
 
-void gjs_function_clear_async_closures() {
-    g_slist_free_full(
-        static_cast<GSList*>(g_steal_pointer(&completed_trampolines)),
-        (GDestroyNotify)gjs_callback_trampoline_unref);
-}
+void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
 
 static void* get_return_ffi_pointer_from_giargument(
     GjsArgumentCache* return_arg, GIFFIReturnValue* return_value) {
