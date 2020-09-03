@@ -109,14 +109,14 @@ rules:
   no-restricted-properties:
     - error
     - object: Lang
+      property: copyProperties
+      message: Use Object.assign()
+    - object: Lang
       property: bind
       message: Use arrow notation or Function.prototype.bind()
     - object: Lang
       property: Class
       message: Use ES6 classes
-    - object: imports
-      property: mainloop
-      message: Use GLib main loops and timeouts
   no-restricted-syntax:
     - error
     - selector: >-
@@ -132,6 +132,8 @@ rules:
         BlockStatement[body.length=1]
         CallExpression[arguments.length=0][callee.object.type="Super"][callee.property.name="_init"]
       message: _init() that only calls super._init() is unnecessary
+    - selector: BinaryExpression[operator="instanceof"][right.name="Array"]
+      message: Use Array.isArray()
   no-return-assign: error
   no-return-await: error
   no-self-compare: error

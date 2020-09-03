@@ -7,21 +7,25 @@
         print: {
             configurable: false,
             enumerable: true,
+            writable: true,
             value: print,
         },
         printerr: {
             configurable: false,
             enumerable: true,
+            writable: true,
             value: printerr,
         },
         log: {
             configurable: false,
             enumerable: true,
+            writable: true,
             value: log,
         },
         logError: {
             configurable: false,
             enumerable: true,
+            writable: true,
             value: logError,
         },
     });
