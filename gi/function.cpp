@@ -635,9 +635,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
                            g_base_info_get_name(function->info));
 }
 
-static void
-complete_async_calls(void)
-{
+void gjs_function_clear_async_closures() {
     g_slist_free_full(
         static_cast<GSList*>(g_steal_pointer(&completed_trampolines)),
         (GDestroyNotify)gjs_callback_trampoline_unref);
@@ -711,12 +709,6 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
 
     bool is_method;
     JS::RootedValueVector return_values(context);
-
-    /* Because we can't free a closure while we're in it, we defer
-     * freeing until the next time a C function is invoked.  What
-     * we should really do instead is queue it for a GC thread.
-     */
-    complete_async_calls();
 
     is_method = g_callable_info_is_method(function->info);
     can_throw_gerror = g_callable_info_can_throw_gerror(function->info);
