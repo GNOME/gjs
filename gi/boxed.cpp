@@ -376,7 +376,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
             return false;
         }
 
-        own_ptr(g_steal_pointer(&gjs_arg_member<void*>(&rval_arg)));
+        own_ptr(gjs_arg_steal<void*>(&rval_arg));
 
         debug_lifecycle("Boxed pointer created from zero-args constructor");
 
