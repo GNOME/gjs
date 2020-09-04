@@ -917,7 +917,8 @@ class GIWrapperPrototype : public Base {
         // how many bytes to free if it is allocated directly. Storing a
         // refcount on the prototype is cheaper than storing pointers to m_info
         // and m_gtype on each instance.
-        auto* priv = g_atomic_rc_box_new0(Prototype);
+        GjsAutoPointer<Prototype, void, g_atomic_rc_box_release> priv =
+            g_atomic_rc_box_new0(Prototype);
         new (priv) Prototype(info, gtype);
         if (!priv->init(cx))
             return nullptr;
@@ -931,7 +932,8 @@ class GIWrapperPrototype : public Base {
         // Init the private variable of @private before we do anything else. If
         // a garbage collection or error happens subsequently, then this object
         // might be traced and we would end up dereferencing a null pointer.
-        JS_SetPrivate(prototype, priv);
+        Prototype* proto = priv.release();
+        JS_SetPrivate(prototype, proto);
 
         if (!gjs_wrapper_define_gtype_prop(cx, constructor, gtype))
             return nullptr;
@@ -946,10 +948,10 @@ class GIWrapperPrototype : public Base {
                 return nullptr;
         }
 
-        if (!priv->define_static_methods(cx, constructor))
+        if (!proto->define_static_methods(cx, constructor))
             return nullptr;
 
-        return priv;
+        return proto;
     }
 
     // Methods to get an existing Prototype
