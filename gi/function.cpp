@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>  // for exit
-#include <string.h>  // for strcmp, memset, size_t
+#include <string.h>  // for memset
 
 #include <memory>  // for unique_ptr
 #include <string>
@@ -1096,8 +1096,6 @@ function_to_string (JSContext *context,
 {
     GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
     int i, n_args, n_jsargs;
-    GString *arg_names_str;
-    gchar *arg_names;
 
     if (priv == NULL) {
         JSString* retval = JS_NewStringCopyZ(context, "function () {\n}");
@@ -1109,32 +1107,29 @@ function_to_string (JSContext *context,
 
     n_args = g_callable_info_get_n_args(priv->info);
     n_jsargs = 0;
-    arg_names_str = g_string_new("");
+    std::string arg_names;
     for (i = 0; i < n_args; i++) {
         if (priv->arguments[i].skip_in())
             continue;
 
         if (n_jsargs > 0)
-            g_string_append(arg_names_str, ", ");
+            arg_names += ", ";
 
         n_jsargs++;
-        g_string_append(arg_names_str, priv->arguments[i].arg_name);
+        arg_names += priv->arguments[i].arg_name;
     }
-    arg_names = g_string_free(arg_names_str, false);
 
     GjsAutoChar descr;
     if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
         descr = g_strdup_printf(
             "function %s(%s) {\n\t/* wrapper for native symbol %s(); */\n}",
-            g_base_info_get_name(priv->info), arg_names,
+            g_base_info_get_name(priv->info), arg_names.c_str(),
             g_function_info_get_symbol(priv->info));
     } else {
         descr = g_strdup_printf(
             "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
-            g_base_info_get_name(priv->info), arg_names);
+            g_base_info_get_name(priv->info), arg_names.c_str());
     }
-
-    g_free(arg_names);
 
     return gjs_string_from_utf8(context, descr, rec.rval());
 }
