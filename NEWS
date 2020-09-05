@@ -1,3 +1,20 @@
+Version 1.65.92
+---------------
+
+- Closed bugs and merge requests:
+
+  * CI: Make iwyu idempotent [!481, Simon McVittie]
+  * Enum and flags test failing in s390x [#319, !480, Simon McVittie]
+  * Bring back Visual Studio build support for GJS master [!482, Chun-wei Fan]
+  * gjs_dbus_implementation_emit_signal: don't try to unref NULL [!482, Adam
+    Williamson]
+  * doc: add third party applications [!484, Sonny Piers]
+  * boxed: Initialize all the private BoxedInstance members [!487, Marco
+    Trevisan]
+  * object: Fix GjsCallBackTrampoline's leaks [!490, Marco Trevisan]
+  * Various maintenance [!485, Philip Chimento]
+  * Crash using shell's looking glass [#344, !486, Marco Trevisan]
+
 Version 1.65.91
 ---------------
 
