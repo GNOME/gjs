@@ -1,9 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
- *
- * Copyright (c) 2020 Marco Trevisan <marco.trevisan@canonical.com>
- */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
 #pragma once
 

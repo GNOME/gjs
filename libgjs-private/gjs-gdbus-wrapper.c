@@ -1,5 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/* Copyright 2011 Giovanni Campagna. All Rights Reserved. */
+/*
+ * SPDX-FileCopyrightText: 2011 Giovanni Campagna
+ */
 
 #include <string.h>  // for strcmp
 

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2018 Claudio André
+
 FROM alpine:latest
 MAINTAINER Claudio André (c) 2018 V1.0
 

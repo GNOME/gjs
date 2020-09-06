@@ -1,10 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
- *
- * Copyright (c) 2008  litl, LLC
- * Copyright (c) 2009 Red Hat, Inc.
- */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2009 Red Hat, Inc.
 
 #include <config.h>
 
