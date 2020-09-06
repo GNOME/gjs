@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # IWYU mapping file for files that use the API of libgjs
 [
   {"ref": "gjs-private-iwyu.imp"},

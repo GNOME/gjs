@@ -1,4 +1,5 @@
 /* exported a, b, c */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 // Tests bindings in the global scope (var) and lexical environment (let, const)
 

@@ -1,4 +1,5 @@
 /* exported GjsListStore */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 'use strict';
 

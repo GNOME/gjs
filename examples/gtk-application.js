@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // See the note about Application.run() at the bottom of the script
 const System = imports.system;
 

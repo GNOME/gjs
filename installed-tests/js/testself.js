@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 describe('Test harness internal consistency', function () {
     it('', function () {
         var someUndefined;

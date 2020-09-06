@@ -1,4 +1,5 @@
 # coding: utf8
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 # IWYU is missing the feature to designate a certain header as a "forward-decls
 # header". In the case of SpiderMonkey, there are certain commonly used forward

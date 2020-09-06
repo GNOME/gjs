@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // This is a simple example of a HTTP client in Gjs using libsoup
 // https://developer.gnome.org/libsoup/stable/libsoup-client-howto.html
 

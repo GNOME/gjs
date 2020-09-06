@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 ### Jasmine tests ##############################################################
 
 jsunit_resources_files = gnome.compile_resources('jsunit-resources',

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // This is a simple example of a HTTP server in Gjs using libsoup
 
 const Soup = imports.gi.Soup;

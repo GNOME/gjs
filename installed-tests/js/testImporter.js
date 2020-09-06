@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 describe('GI importer', function () {
     it('can import GI modules', function () {
         var GLib = imports.gi.GLib;

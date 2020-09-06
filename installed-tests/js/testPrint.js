@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 describe('print', function () {
     it('can be spied upon', function () {
         spyOn(globalThis, 'print');

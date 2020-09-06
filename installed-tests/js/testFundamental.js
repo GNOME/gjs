@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 const {GObject, Regress} = imports.gi;
 
 describe('Fundamental type support', function () {

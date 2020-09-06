@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // Various tests having to do with how introspection is implemented in GJS
 
 imports.gi.versions.Gdk = '3.0';

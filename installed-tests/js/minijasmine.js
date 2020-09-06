@@ -1,4 +1,5 @@
 #!/usr/bin/env gjs
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 const GLib = imports.gi.GLib;
 

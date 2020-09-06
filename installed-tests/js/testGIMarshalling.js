@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // Load overrides for GIMarshallingTests
 imports.overrides.searchPath.unshift('resource:///org/gjs/jsunit/modules/overrides');
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 const Pkg = imports.package;
 
 describe('Package module', function () {

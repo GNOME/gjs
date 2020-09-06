@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // simple test module (used by testImporter.js)
 
 /* eslint no-redeclare: ["error", { "builtinGlobals": false }] */ // for toString

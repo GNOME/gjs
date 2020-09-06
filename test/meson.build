@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 ### Unit tests #################################################################
 
 mock_js_resources_files = gnome.compile_resources('mock-js-resources',

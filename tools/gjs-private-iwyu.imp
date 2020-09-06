@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # IWYU mapping file for files that are part of libgjs
 [
   {"include": ["<bits/std_abs.h>", "private", "<stdlib.h>", "public"]},
