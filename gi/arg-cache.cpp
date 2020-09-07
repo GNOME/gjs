@@ -1576,8 +1576,15 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     *inc_counter_out = true;
 
     GITypeTag type_tag = g_type_info_get_tag(&self->type_info);
-    if (direction == GI_DIRECTION_OUT && type_tag == GI_TYPE_TAG_INTERFACE &&
-        g_arg_info_is_caller_allocates(arg)) {
+    if (direction == GI_DIRECTION_OUT && g_arg_info_is_caller_allocates(arg)) {
+        if (type_tag != GI_TYPE_TAG_INTERFACE) {
+            gjs_throw(cx,
+                      "Unsupported type %s for argument %s with (out "
+                      "caller-allocates)",
+                      g_type_tag_to_string(type_tag), self->arg_name);
+            return false;
+        }
+
         GjsAutoBaseInfo interface_info =
             g_type_info_get_interface(&self->type_info);
         g_assert(interface_info);
