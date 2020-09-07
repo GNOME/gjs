@@ -525,6 +525,14 @@ describe('GArray', function () {
             expect(GIMarshallingTests.garray_utf8_full_out_caller_allocated())
                 .toEqual(['0', '1', '2']);
         }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/106');
+
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/344
+        // the test should be replaced with the one above when issue
+        // https://gitlab.gnome.org/GNOME/gjs/issues/106 is fixed.
+        it('marshals as a transfer-full caller-allocated out parameter throws errors', function () {
+            expect(() => GIMarshallingTests.garray_utf8_full_out_caller_allocated())
+                .toThrowError(/Unsupported type array.*\(out caller-allocates\)/);
+        });
     });
 
     it('marshals boxed structs as a transfer-full return value', function () {
