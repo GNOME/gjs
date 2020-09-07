@@ -1060,9 +1060,10 @@ GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(function)
 static void
 uninit_cached_function_data (Function *function)
 {
-    g_assert(function->info && "Don't know how to free cache without GI info");
-
     if (function->arguments) {
+        g_assert(function->info &&
+                 "Don't know how to free cache without GI info");
+
         // Careful! function->arguments is offset by one or two elements inside
         // the allocated space, so we have to free index -1 or -2.
         int start_index = g_callable_info_is_method(function->info) ? -2 : -1;
@@ -1084,8 +1085,7 @@ uninit_cached_function_data (Function *function)
         function->arguments = nullptr;
     }
 
-    g_base_info_unref(function->info);
-
+    g_clear_pointer(&function->info, g_base_info_unref);
     g_function_invoker_destroy(&function->invoker);
 }
 
