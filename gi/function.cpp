@@ -1066,8 +1066,15 @@ uninit_cached_function_data (Function *function)
         // Careful! function->arguments is offset by one or two elements inside
         // the allocated space, so we have to free index -1 or -2.
         int start_index = g_callable_info_is_method(function->info) ? -2 : -1;
-        int gi_argc = g_callable_info_get_n_args(function->info);
-        for (int ix = start_index; ix < gi_argc; ix++) {
+        int gi_argc = MIN(g_callable_info_get_n_args(function->info),
+                          function->js_in_argc + function->js_out_argc);
+
+        for (int i = 0; i < gi_argc; i++) {
+            int ix = start_index + i;
+
+            if (!function->arguments[ix].marshallers)
+                break;
+
             if (function->arguments[ix].marshallers->free)
                 function->arguments[ix].marshallers->free(
                     &function->arguments[ix]);
@@ -1242,6 +1249,11 @@ init_cached_function_data (JSContext      *context,
     GjsArgumentCache* arguments =
         g_new0(GjsArgumentCache, n_args + offset) + offset;
 
+    function->arguments = arguments;
+    function->info = g_base_info_ref(info);
+    function->js_in_argc = 0;
+    function->js_out_argc = 0;
+
     if (is_method &&
         !gjs_arg_cache_build_instance(context, &arguments[-2], info))
         return false;
@@ -1251,8 +1263,7 @@ init_cached_function_data (JSContext      *context,
                                     &inc_counter))
         return false;
 
-    int out_argc = inc_counter ? 1 : 0;
-    int in_argc = 0;
+    function->js_out_argc = inc_counter ? 1 : 0;
 
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
@@ -1271,27 +1282,19 @@ init_cached_function_data (JSContext      *context,
         if (inc_counter) {
             switch (direction) {
                 case GI_DIRECTION_INOUT:
-                    out_argc++;
+                    function->js_out_argc++;
                     [[fallthrough]];
                 case GI_DIRECTION_IN:
-                    in_argc++;
+                    function->js_in_argc++;
                     break;
                 case GI_DIRECTION_OUT:
-                    out_argc++;
+                    function->js_out_argc++;
                     break;
                 default:
                     g_assert_not_reached();
             }
         }
     }
-
-    function->arguments = arguments;
-
-    function->js_in_argc = in_argc;
-    function->js_out_argc = out_argc;
-    function->info = info;
-
-    g_base_info_ref((GIBaseInfo*) function->info);
 
     return true;
 }
