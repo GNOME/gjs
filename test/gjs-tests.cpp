@@ -23,6 +23,7 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for size_t, strlen
 
 #include <string>  // for u16string, u32string
@@ -39,7 +40,9 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>
+#include <jspubtd.h>  // for JSProto_Number
 
+#include "gi/arg-inl.h"
 #include "gjs/context.h"
 #include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
@@ -398,6 +401,30 @@ gjstest_test_profiler_start_stop(void)
         g_message("Temp profiler file not deleted");
 }
 
+static void gjstest_test_safe_integer_max(GjsUnitTestFixture* fx, const void*) {
+    JS::RootedObject number_class_object(fx->cx);
+    JS::RootedValue safe_value(fx->cx);
+
+    g_assert_true(
+        JS_GetClassObject(fx->cx, JSProto_Number, &number_class_object));
+    g_assert_true(JS_GetProperty(fx->cx, number_class_object,
+                                 "MAX_SAFE_INTEGER", &safe_value));
+
+    g_assert_cmpint(safe_value.toNumber(), ==, max_safe_big_number<int64_t>());
+}
+
+static void gjstest_test_safe_integer_min(GjsUnitTestFixture* fx, const void*) {
+    JS::RootedObject number_class_object(fx->cx);
+    JS::RootedValue safe_value(fx->cx);
+
+    g_assert_true(
+        JS_GetClassObject(fx->cx, JSProto_Number, &number_class_object));
+    g_assert_true(JS_GetProperty(fx->cx, number_class_object,
+                                 "MIN_SAFE_INTEGER", &safe_value));
+
+    g_assert_cmpint(safe_value.toNumber(), ==, min_safe_big_number<int64_t>());
+}
+
 int
 main(int    argc,
      char **argv)
@@ -443,6 +470,11 @@ main(int    argc,
                         test_jsapi_util_debug_string_invalid_utf8);
     ADD_JSAPI_UTIL_TEST("debug_string/object-with-complicated-to-string",
                         test_jsapi_util_debug_string_object_with_complicated_to_string);
+
+    ADD_JSAPI_UTIL_TEST("gi/args/safe-integer/max",
+                        gjstest_test_safe_integer_max);
+    ADD_JSAPI_UTIL_TEST("gi/args/safe-integer/min",
+                        gjstest_test_safe_integer_min);
 
 #undef ADD_JSAPI_UTIL_TEST
 
