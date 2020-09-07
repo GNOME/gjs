@@ -582,6 +582,37 @@ static void gjstest_test_args_set_get_unset() {
                  random_unsigned_iface);
 }
 
+static void gjstest_test_args_rounded_values() {
+    GIArgument arg = {0};
+
+    gjs_arg_set<int64_t>(&arg, std::numeric_limits<int64_t>::max());
+    g_test_expect_message(
+        G_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
+        "*cannot be safely stored in a JS Number and may be rounded");
+    assert_equal(gjs_arg_get_maybe_rounded<int64_t>(&arg),
+                 static_cast<double>(gjs_arg_get<int64_t>(&arg)));
+    g_test_assert_expected_messages();
+
+    gjs_arg_set<int64_t>(&arg, std::numeric_limits<int64_t>::min());
+    g_test_expect_message(
+        G_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
+        "*cannot be safely stored in a JS Number and may be rounded");
+    assert_equal(gjs_arg_get_maybe_rounded<int64_t>(&arg),
+                 static_cast<double>(gjs_arg_get<int64_t>(&arg)));
+    g_test_assert_expected_messages();
+
+    gjs_arg_set<uint64_t>(&arg, std::numeric_limits<uint64_t>::max());
+    g_test_expect_message(
+        G_LOG_DOMAIN, G_LOG_LEVEL_WARNING,
+        "*cannot be safely stored in a JS Number and may be rounded");
+    assert_equal(gjs_arg_get_maybe_rounded<uint64_t>(&arg),
+                 static_cast<double>(gjs_arg_get<uint64_t>(&arg)));
+    g_test_assert_expected_messages();
+
+    gjs_arg_set<uint64_t>(&arg, std::numeric_limits<uint64_t>::min());
+    assert_equal(gjs_arg_get_maybe_rounded<uint64_t>(&arg), 0.0);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -624,6 +655,8 @@ main(int    argc,
                     gjstest_test_func_util_misc_strv_concat_pointers);
 
     g_test_add_func("/gi/args/set-get-unset", gjstest_test_args_set_get_unset);
+    g_test_add_func("/gi/args/rounded_values",
+                    gjstest_test_args_rounded_values);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
