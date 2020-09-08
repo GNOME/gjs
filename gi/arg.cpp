@@ -1571,12 +1571,19 @@ GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
         if (out_of_range) {
             GjsAutoChar display_name =
                 gjs_argument_display_name(arg_name, arg_type);
-            gjs_throw(cx, "value is out of range for %s (type %s)",
+            gjs_throw(cx, "value %s is out of range for %s (type %s)",
+                      std::to_string(gjs_arg_get<T>(arg)).c_str(),
                       display_name.get(), Gjs::static_type_name<T>());
         }
 
         return false;
     }
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
+        GjsAutoChar(gjs_argument_display_name(arg_name, arg_type)).get(),
+        std::to_string(gjs_arg_get<T>(arg)).c_str(),
+        Gjs::static_type_name<T>());
 
     return true;
 }

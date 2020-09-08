@@ -39,6 +39,7 @@
 #include "gi/value.h"
 #include "gjs/byteArray.h"
 #include "gjs/jsapi-util.h"
+#include "util/log.h"
 
 enum ExpectedType {
     OBJECT,
@@ -376,6 +377,13 @@ GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
 
         return false;
     }
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
+                      GjsAutoChar(gjs_argument_display_name(
+                                      self->arg_name, GJS_ARGUMENT_ARGUMENT))
+                          .get(),
+                      std::to_string(gjs_arg_get<T>(arg)).c_str(),
+                      Gjs::static_type_name<T>());
 
     return true;
 }
