@@ -33,6 +33,10 @@ enum class GjsArgumentFlags : uint8_t {
     NONE = 0,
     MAY_BE_NULL = 1 << 0,
     CALLER_ALLOCATES = 1 << 1,
+    SKIP_IN = 1 << 2,
+    SKIP_OUT = 1 << 3,
+    SKIP_ALL = SKIP_IN | SKIP_OUT,
+    FILENAME = 1 << 4,
 };
 
 [[nodiscard]] char* gjs_argument_display_name(const char* arg_name,

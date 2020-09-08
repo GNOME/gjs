@@ -266,7 +266,7 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
     GjsCallbackTrampoline* trampoline;
     ffi_closure* closure;
 
-    if (value.isNull() && !!(self->flags & GjsArgumentFlags::MAY_BE_NULL)) {
+    if (value.isNull() && (self->flags & GjsArgumentFlags::MAY_BE_NULL)) {
         closure = nullptr;
         trampoline = nullptr;
     } else {
@@ -463,7 +463,7 @@ static bool gjs_marshal_string_in_in(JSContext* cx, GjsArgumentCache* self,
         return report_typeof_mismatch(cx, self->arg_name, value,
                                       ExpectedType::STRING);
 
-    if (self->contents.string_is_filename) {
+    if (self->flags & GjsArgumentFlags::FILENAME) {
         GjsAutoChar str;
         if (!gjs_string_to_filename(cx, value, &str))
             return false;
@@ -1245,7 +1245,7 @@ static const GjsArgumentMarshallers caller_allocates_out_marshallers = {
 
 static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
     self->marshallers = &skip_all_marshallers;
-    self->skip_in = self->skip_out = true;
+    self->flags = (GjsArgumentFlags::SKIP_IN | GjsArgumentFlags::SKIP_OUT);
 }
 
 bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
@@ -1292,7 +1292,7 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
     // marshal_in is ignored for the return value, but skip_in is not (it is
     // used in the failure release path)
-    self->skip_in = true;
+    self->flags = (self->flags | GjsArgumentFlags::SKIP_IN);
     self->marshallers = &return_value_marshallers;
 
     return true;
@@ -1538,7 +1538,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                 self->marshallers = &string_in_transfer_none_marshallers;
             else
                 self->marshallers = &string_in_marshallers;
-            self->contents.string_is_filename = true;
+            self->flags = (self->flags | GjsArgumentFlags::FILENAME);
             break;
 
         case GI_TYPE_TAG_UTF8:
@@ -1546,7 +1546,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                 self->marshallers = &string_in_transfer_none_marshallers;
             else
                 self->marshallers = &string_in_marshallers;
-            self->contents.string_is_filename = false;
+            self->flags = (self->flags & ~GjsArgumentFlags::FILENAME);
             break;
 
         case GI_TYPE_TAG_INTERFACE: {
@@ -1618,13 +1618,14 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         flags |= GjsArgumentFlags::MAY_BE_NULL;
     if (g_arg_info_is_caller_allocates(arg))
         flags |= GjsArgumentFlags::CALLER_ALLOCATES;
-    self->flags = flags;
 
     if (direction == GI_DIRECTION_IN)
-        self->skip_out = true;
+        flags |= GjsArgumentFlags::SKIP_OUT;
     else if (direction == GI_DIRECTION_OUT)
-        self->skip_in = true;
+        flags |= GjsArgumentFlags::SKIP_IN;
     *inc_counter_out = true;
+
+    self->flags = flags;
 
     GITypeTag type_tag = g_type_info_get_tag(&self->type_info);
     if (direction == GI_DIRECTION_OUT &&
