@@ -176,13 +176,13 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 
 template <typename BigT>
 [[nodiscard]] inline constexpr BigT max_safe_big_number() {
-    return BigT(1) << std::numeric_limits<double>::digits;
+    return (BigT(1) << std::numeric_limits<double>::digits) - 1;
 }
 
 template <typename BigT>
 [[nodiscard]] inline constexpr BigT min_safe_big_number() {
     if constexpr (std::is_signed_v<BigT>)
-        return -(max_safe_big_number<BigT>()) + 1;
+        return -(max_safe_big_number<BigT>());
 
     return std::numeric_limits<BigT>::lowest();
 }
