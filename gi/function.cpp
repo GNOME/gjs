@@ -1229,6 +1229,7 @@ init_cached_function_data (JSContext      *context,
 
             gjs_throw(context, "Virtual function not implemented: %s",
                       error->message);
+            g_clear_error(&error);
             return false;
         }
 
