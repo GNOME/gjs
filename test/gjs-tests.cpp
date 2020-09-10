@@ -26,7 +26,10 @@
 #include <stdint.h>
 #include <string.h>  // for size_t, strlen
 
+#include <limits>
+#include <random>
 #include <string>  // for u16string, u32string
+#include <type_traits>
 
 #include <glib-object.h>
 #include <glib.h>
@@ -58,6 +61,46 @@ void g_assertion_message(const char*, const char*, int, const char*,
 #endif
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
+
+static unsigned cpp_random_seed = 0;
+
+template <typename T>
+constexpr T get_random_number() {
+    std::mt19937_64 gen(cpp_random_seed);
+
+    if constexpr (std::is_same_v<T, bool>) {
+        return g_random_boolean();
+    } else if constexpr (std::is_integral_v<T>) {
+        T lowest_value = std::numeric_limits<T>::lowest();
+
+        if constexpr (std::is_unsigned_v<T>)
+            lowest_value = 1;
+
+        return std::uniform_int_distribution<T>(lowest_value)(gen);
+    } else if constexpr (std::is_arithmetic_v<T>) {
+        T lowest_value = std::numeric_limits<T>::epsilon();
+        return std::uniform_real_distribution<T>(lowest_value)(gen);
+    } else if constexpr (std::is_pointer_v<T>) {
+        return reinterpret_cast<T>(get_random_number<uintptr_t>());
+    }
+}
+
+template <typename T>
+constexpr void assert_equal(T a, T b) {
+    if constexpr (std::is_integral_v<T>) {
+        if constexpr (std::is_unsigned_v<T>)
+            g_assert_cmpuint(a, ==, b);
+        else
+            g_assert_cmpint(a, ==, b);
+    } else if constexpr (std::is_arithmetic_v<T>) {
+        g_assert_cmpfloat_with_epsilon(a, b, std::numeric_limits<T>::epsilon());
+    } else if constexpr (std::is_same_v<T, char*>) {
+        g_assert_cmpstr(a, ==, b);
+    } else if constexpr (std::is_pointer_v<T>) {
+        assert_equal(reinterpret_cast<uintptr_t>(a),
+                     reinterpret_cast<uintptr_t>(b));
+    }
+}
 
 static void
 gjstest_test_func_gjs_context_construct_destroy(void)
@@ -425,6 +468,120 @@ static void gjstest_test_safe_integer_min(GjsUnitTestFixture* fx, const void*) {
     g_assert_cmpint(safe_value.toNumber(), ==, min_safe_big_number<int64_t>());
 }
 
+static void gjstest_test_args_set_get_unset() {
+    GIArgument arg = {0};
+
+    gjs_arg_set(&arg, true);
+    g_assert_true(arg.v_boolean);
+
+    gjs_arg_set(&arg, false);
+    g_assert_false(arg.v_boolean);
+
+    gjs_arg_set(&arg, true);
+    g_assert_true(arg.v_boolean);
+    gjs_arg_unset<bool>(&arg);
+    g_assert_false(arg.v_boolean);
+
+    int8_t random_int8 = get_random_number<int8_t>();
+    gjs_arg_set(&arg, random_int8);
+    assert_equal(arg.v_int8, random_int8);
+    assert_equal(gjs_arg_get<int8_t>(&arg), random_int8);
+
+    uint8_t random_uint8 = get_random_number<uint8_t>();
+    gjs_arg_set(&arg, random_uint8);
+    assert_equal(arg.v_uint8, random_uint8);
+    assert_equal(gjs_arg_get<uint8_t>(&arg), random_uint8);
+
+    int16_t random_int16 = get_random_number<int16_t>();
+    gjs_arg_set(&arg, random_int16);
+    assert_equal(arg.v_int16, random_int16);
+    assert_equal(gjs_arg_get<int16_t>(&arg), random_int16);
+
+    uint16_t random_uint16 = get_random_number<uint16_t>();
+    gjs_arg_set(&arg, random_uint16);
+    assert_equal(arg.v_uint16, random_uint16);
+    assert_equal(gjs_arg_get<uint16_t>(&arg), random_uint16);
+
+    int32_t random_int32 = get_random_number<int32_t>();
+    gjs_arg_set(&arg, random_int32);
+    assert_equal(arg.v_int32, random_int32);
+    assert_equal(gjs_arg_get<int32_t>(&arg), random_int32);
+
+    uint32_t random_uint32 = get_random_number<uint32_t>();
+    gjs_arg_set(&arg, random_uint32);
+    assert_equal(arg.v_uint32, random_uint32);
+    assert_equal(gjs_arg_get<uint32_t>(&arg), random_uint32);
+
+    int64_t random_int64 = get_random_number<int64_t>();
+    gjs_arg_set(&arg, random_int64);
+    assert_equal(arg.v_int64, random_int64);
+    assert_equal(gjs_arg_get<int64_t>(&arg), random_int64);
+
+    uint64_t random_uint64 = get_random_number<uint64_t>();
+    gjs_arg_set(&arg, random_uint64);
+    assert_equal(arg.v_uint64, random_uint64);
+    assert_equal(gjs_arg_get<uint64_t>(&arg), random_uint64);
+
+    char32_t random_char32 = get_random_number<char32_t>();
+    gjs_arg_set(&arg, random_char32);
+    assert_equal(static_cast<char32_t>(arg.v_uint32), random_char32);
+    assert_equal(gjs_arg_get<char32_t>(&arg), random_char32);
+
+    float random_float = get_random_number<float>();
+    gjs_arg_set(&arg, random_float);
+    assert_equal(arg.v_float, random_float);
+    assert_equal(gjs_arg_get<float>(&arg), random_float);
+
+    double random_double = get_random_number<double>();
+    gjs_arg_set(&arg, random_double);
+    assert_equal(arg.v_double, random_double);
+    assert_equal(gjs_arg_get<double>(&arg), random_double);
+
+    void* random_ptr = get_random_number<void*>();
+    gjs_arg_set(&arg, random_ptr);
+    assert_equal(arg.v_pointer, random_ptr);
+    assert_equal(gjs_arg_get<void*>(&arg), random_ptr);
+
+    GjsAutoChar cstr = g_strdup("Gjs argument string");
+    gjs_arg_set(&arg, cstr.get());
+    assert_equal(arg.v_string, const_cast<char*>("Gjs argument string"));
+    assert_equal(static_cast<void*>(arg.v_string),
+                 static_cast<void*>(cstr.get()));
+
+    gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, TRUE);
+    g_assert_true(arg.v_boolean);
+    g_assert_true((gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg)));
+
+    gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, FALSE);
+    g_assert_false(arg.v_boolean);
+    g_assert_false((gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg)));
+
+    gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, TRUE);
+    g_assert_true(arg.v_boolean);
+    gjs_arg_unset<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg);
+    g_assert_false(arg.v_boolean);
+
+    GType random_gtype = get_random_number<GType>();
+    gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(&arg, random_gtype);
+    if constexpr (std::is_same_v<GType, gsize>)
+        assert_equal(static_cast<GType>(arg.v_size), random_gtype);
+    else if constexpr (std::is_same_v<GType, gulong>)
+        assert_equal(static_cast<GType>(arg.v_ulong), random_gtype);
+    assert_equal(gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(&arg), random_gtype);
+
+    int random_signed_iface = get_random_number<int>();
+    gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(&arg, random_signed_iface);
+    assert_equal(arg.v_int, random_signed_iface);
+    assert_equal(gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(&arg),
+                 random_signed_iface);
+
+    unsigned random_unsigned_iface = get_random_number<unsigned>();
+    gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(&arg, random_unsigned_iface);
+    assert_equal(arg.v_uint, random_unsigned_iface);
+    assert_equal(gjs_arg_get<unsigned, GI_TYPE_TAG_INTERFACE>(&arg),
+                 random_unsigned_iface);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -433,7 +590,24 @@ main(int    argc,
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
 
-    g_test_init(&argc, &argv, NULL);
+    for (int i = 0; i < argc; i++) {
+        const char* seed = nullptr;
+
+        if (g_str_has_prefix(argv[i], "--cpp-seed=") && strlen(argv[i]) > 11)
+            seed = argv[i] + 11;
+        else if (i < argc - 1 && g_str_equal(argv[i], "--cpp-seed"))
+            seed = argv[i + 1];
+
+        if (seed)
+            cpp_random_seed = std::stoi(seed);
+    }
+
+    g_test_init(&argc, &argv, nullptr);
+
+    if (!cpp_random_seed)
+        cpp_random_seed = g_test_rand_int();
+
+    g_message("Using C++ random seed %u\n", cpp_random_seed);
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
@@ -448,6 +622,8 @@ main(int    argc,
                     gjstest_test_func_util_misc_strv_concat_null);
     g_test_add_func("/util/misc/strv/concat/pointers",
                     gjstest_test_func_util_misc_strv_concat_pointers);
+
+    g_test_add_func("/gi/args/set-get-unset", gjstest_test_args_set_get_unset);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
