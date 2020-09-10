@@ -35,6 +35,8 @@
 // gjs_arg_set(GIArgument*, T) - sets the appropriate union member for type T.
 // gjs_arg_unset<T>(GIArgument*) - sets the appropriate zero value in the
 //   appropriate union member for type T.
+// gjs_arg_steal<T>(GIArgument*) - sets the appropriate zero value in the
+//   appropriate union member for type T and returns the replaced value.
 
 template <typename T>
 [[nodiscard]] inline decltype(auto) gjs_arg_member(GIArgument* arg,
@@ -161,6 +163,13 @@ inline void gjs_arg_unset(GIArgument* arg) {
         gjs_arg_set<T, TAG>(arg, nullptr);
     else
         gjs_arg_set<T, TAG>(arg, static_cast<T>(0));
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+[[nodiscard]] inline T gjs_arg_steal(GIArgument* arg) {
+    auto val = gjs_arg_get<T, TAG>(arg);
+    gjs_arg_unset<T, TAG>(arg);
+    return val;
 }
 
 // Implementation to store rounded (u)int64_t numbers into double

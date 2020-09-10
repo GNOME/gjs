@@ -362,7 +362,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_caller_allocates_in(JSContext*, GjsArgumentCache* self,
                                             GjsFunctionCallState* state,
                                             GIArgument* arg, JS::HandleValue) {
-    void* blob = g_slice_alloc0(self->contents.caller_allocates_size);
+    void* blob = g_malloc0(self->contents.caller_allocates_size);
     gjs_arg_set(arg, blob);
     gjs_arg_set(&state->out_cvalues[self->arg_pos], blob);
     return true;
@@ -890,11 +890,12 @@ static bool gjs_marshal_explicit_array_inout_release(
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_caller_allocates_release(
-    JSContext*, GjsArgumentCache* self, GjsFunctionCallState*,
-    GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
-    g_slice_free1(self->contents.caller_allocates_size,
-                  gjs_arg_get<void*>(in_arg));
+static bool gjs_marshal_caller_allocates_release(JSContext*, GjsArgumentCache*,
+                                                 GjsFunctionCallState*,
+                                                 GIArgument* in_arg,
+                                                 GIArgument* out_arg
+                                                 [[maybe_unused]]) {
+    g_free(gjs_arg_steal<void*>(in_arg));
     return true;
 }
 

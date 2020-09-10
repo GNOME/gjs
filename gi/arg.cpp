@@ -3395,17 +3395,13 @@ gjs_g_arg_release_internal(JSContext  *context,
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 /* G_TYPE_VALUE is-a G_TYPE_BOXED, but we special case it */
                 if (g_type_info_is_pointer (type_info))
-                    g_boxed_free(
-                        gtype,
-                        g_steal_pointer(&gjs_arg_member<void*>(arg)));
+                    g_boxed_free(gtype, gjs_arg_steal<void*>(arg));
                 else
                     g_clear_pointer(&gjs_arg_member<GValue*>(arg),
                                     g_value_unset);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (transfer != TRANSFER_IN_NOTHING)
-                    g_boxed_free(
-                        gtype,
-                        g_steal_pointer(&gjs_arg_member<void*>(arg)));
+                    g_boxed_free(gtype, gjs_arg_steal<void*>(arg));
             } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
                 if (transfer != TRANSFER_IN_NOTHING)
                     g_clear_pointer(&gjs_arg_member<GVariant*>(arg),
@@ -3419,8 +3415,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                 if (transfer != TRANSFER_IN_NOTHING) {
                     auto* priv =
                         FundamentalPrototype::for_gtype(context, gtype);
-                    priv->call_unref_function(
-                        g_steal_pointer(&gjs_arg_member<void*>(arg)));
+                    priv->call_unref_function(gjs_arg_steal<void*>(arg));
                 }
             } else {
                 gjs_throw(context, "Unhandled GType %s releasing GArgument",

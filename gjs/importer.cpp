@@ -788,7 +788,7 @@ static void importer_finalize(JSFreeOp*, JSObject* obj) {
         return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(importer);
-    g_slice_free(Importer, priv);
+    g_free(priv);
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -839,7 +839,7 @@ importer_new(JSContext *context,
     if (!importer)
         return nullptr;
 
-    priv = g_slice_new0(Importer);
+    priv = g_new0(Importer, 1);
     priv->is_root = is_root;
 
     GJS_INC_COUNTER(importer);

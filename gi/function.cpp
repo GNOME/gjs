@@ -107,7 +107,7 @@ gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
             g_callable_info_free_closure(trampoline->info, trampoline->closure);
         g_clear_pointer(&trampoline->info, g_base_info_unref);
         g_free (trampoline->param_types);
-        g_slice_free(GjsCallbackTrampoline, trampoline);
+        g_free(trampoline);
     }
 }
 
@@ -546,7 +546,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 
     g_assert(function);
 
-    trampoline = g_slice_new(GjsCallbackTrampoline);
+    trampoline = g_new(GjsCallbackTrampoline, 1);
     new (trampoline) GjsCallbackTrampoline();
     trampoline->ref_count = 1;
     trampoline->info = callable_info;
@@ -1101,7 +1101,7 @@ static void function_finalize(JSFreeOp*, JSObject* obj) {
     uninit_cached_function_data(priv);
 
     GJS_DEC_COUNTER(function);
-    g_slice_free(Function, priv);
+    g_free(priv);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1325,7 +1325,7 @@ function_new(JSContext      *context,
         return NULL;
     }
 
-    priv = g_slice_new0(Function);
+    priv = g_new0(Function, 1);
 
     GJS_INC_COUNTER(function);
 

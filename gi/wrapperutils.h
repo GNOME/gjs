@@ -1062,7 +1062,7 @@ class GIWrapperInstance : public Base {
     [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
                                                      JS::HandleObject obj) {
         g_assert(!JS_GetPrivate(obj));
-        auto* priv = g_slice_new0(Instance);
+        auto* priv = g_new0(Instance, 1);
         new (priv) Instance(cx, obj);
 
         // Init the private variable before we do anything else. If a garbage
@@ -1103,7 +1103,7 @@ class GIWrapperInstance : public Base {
  protected:
     void finalize_impl(JSFreeOp*, JSObject*) {
         static_cast<Instance*>(this)->~Instance();
-        g_slice_free(Instance, this);
+        g_free(this);
     }
 
     // Override if necessary

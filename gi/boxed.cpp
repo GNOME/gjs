@@ -153,7 +153,7 @@ BoxedBase* BoxedBase::get_copy_source(JSContext* context,
 void BoxedInstance::allocate_directly(void) {
     g_assert(get_prototype()->can_allocate_directly());
 
-    own_ptr(g_slice_alloc0(g_struct_info_get_size(info())));
+    own_ptr(g_malloc0(g_struct_info_get_size(info())));
     m_allocated_directly = true;
 
     debug_lifecycle("Boxed pointer directly allocated");
@@ -376,7 +376,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
             return false;
         }
 
-        own_ptr(g_steal_pointer(&gjs_arg_member<void*>(&rval_arg)));
+        own_ptr(gjs_arg_steal<void*>(&rval_arg));
 
         debug_lifecycle("Boxed pointer created from zero-args constructor");
 
@@ -431,7 +431,7 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
 BoxedInstance::~BoxedInstance() {
     if (m_owning_ptr) {
         if (m_allocated_directly) {
-            g_slice_free1(g_struct_info_get_size(info()), m_ptr);
+            g_free(m_ptr);
         } else {
             if (g_type_is_a(gtype(), G_TYPE_BOXED))
                 g_boxed_free(gtype(), m_ptr);
