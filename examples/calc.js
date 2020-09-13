@@ -1,4 +1,6 @@
 #!/usr/bin/env gjs
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2008 Robert Carr <carrr@rpi.edu>
 
 imports.gi.versions.Gtk = '3.0';
 const {Gtk} = imports.gi;
