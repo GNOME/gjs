@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: .gitlab/issue_templates/*
+    doc/* CONTRIBUTING.md NEWS *README* tools/heapgraph.md tools/yarn.lock
+Copyright: No rights reserved
+License: CC0-1.0
+
+Files: tools/package.json
+Copyright: 2020 Evan Welsh <contact@evanwelsh.com>
+License: MIT OR LGPL-2.0-or-later
