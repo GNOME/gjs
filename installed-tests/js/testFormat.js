@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2013 Red Hat, Inc.
 
 const Format = imports.format;
 String.prototype.format = Format.format;

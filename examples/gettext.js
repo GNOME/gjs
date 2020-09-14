@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2009 Red Hat, Inc.
 
 imports.gi.versions.Gtk = '3.0';
 const Gettext = imports.gettext;

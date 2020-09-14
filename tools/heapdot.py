@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 # SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2013-2018 Andrew McCreight <continuation@gmail.com>
+# SPDX-FileCopyrightText: 2018 Andy Holmes <andrew.g.r.holmes@gmail.com>
 #
 # heapdot.py - DOT Graph output
 

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2008 Red Hat, Inc.
 
 const Regress = imports.gi.Regress;
 

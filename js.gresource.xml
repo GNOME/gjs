@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: MIT OR LGPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2014 Red Hat, Inc. -->
 <gresources>
   <gresource prefix="/org/gnome/gjs">
     <!-- Script-based Modules -->

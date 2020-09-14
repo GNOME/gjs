@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2010 litl, LLC
+// SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 
 const ByteArray = imports.byteArray;
 const {GIMarshallingTests, GLib} = imports.gi;

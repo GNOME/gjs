@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2012 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 
 // File with tests from the WarnLib-1.0.gir test suite from GI
 

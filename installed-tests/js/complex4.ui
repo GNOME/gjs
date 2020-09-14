@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: MIT OR LGPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2014 Jonas Danielsson <jonas@threetimestwo.org> -->
 <interface>
   <template class="Gjs_MyComplexGtkSubclassFromResource" parent="GtkGrid">
     <property name="margin_top">10</property>

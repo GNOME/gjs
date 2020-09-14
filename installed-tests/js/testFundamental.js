@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2013 Lionel Landwerlin <llandwerlin@gmail.com>
 
 const {GObject, Regress} = imports.gi;
 

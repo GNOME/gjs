@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2018 Endless Mobile, Inc.
 
 # lcov and genhtml configuration
 # See http://ltp.sourceforge.net/coverage/lcov/lcovrc.5.php

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2010 litl, LLC
 
 imports.gi.versions.Gdk = '3.0';
 imports.gi.versions.Gtk = '3.0';

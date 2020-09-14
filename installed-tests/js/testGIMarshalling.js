@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2010 Collabora, Ltd.
+// SPDX-FileCopyrightText: 2010 litl, LLC
+// SPDX-FileCopyrightText: 2010 Giovanni Campagna <gcampagna@src.gnome.org>
+// SPDX-FileCopyrightText: 2011 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
+// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 
 // Load overrides for GIMarshallingTests
 imports.overrides.searchPath.unshift('resource:///org/gjs/jsunit/modules/overrides');

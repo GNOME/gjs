@@ -1,5 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2019 Endless Mobile, Inc.
 
 if ! which locale > /dev/null; then
   exit 1

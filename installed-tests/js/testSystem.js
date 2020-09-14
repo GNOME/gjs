@@ -1,4 +1,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2013 Pavel Vasin <rat4vier@gmail.com>
+// SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
+// SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
+// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
+// SPDX-FileCopyrightText: 2019 Canonical, Ltd.
 
 const System = imports.system;
 const GObject = imports.gi.GObject;

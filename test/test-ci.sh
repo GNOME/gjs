@@ -1,5 +1,6 @@
 #!/bin/sh -e
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 
 do_Set_Env () {
     #Save cache on $pwd (required by artifacts)

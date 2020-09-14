@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
+// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 
 const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
