@@ -43,7 +43,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-GJS_ALWAYS_INLINE [[nodiscard]] static inline bool check_nullable(
+[[nodiscard]] GJS_ALWAYS_INLINE static inline bool check_nullable(
     const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
         return false;
