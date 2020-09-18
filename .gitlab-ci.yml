@@ -78,6 +78,7 @@ build_maximal:
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
+    CXX: clang++
     CONFIG_OPTS: -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
     ENABLE_GTK: "yes"
   except:
@@ -232,6 +233,7 @@ sanitizer_clang:
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
+    CXX: clang++
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
   when: manual
   except:
