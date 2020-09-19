@@ -105,6 +105,8 @@ struct _GjsProfiler {
     /* Buffers and writes our sampled stacks */
     SysprofCaptureWriter* capture;
     GSource* periodic_flush;
+
+    SysprofCaptureWriter* target_capture;
 #endif  /* ENABLE_PROFILER */
 
     /* The filename to write to */
@@ -259,6 +261,7 @@ _gjs_profiler_free(GjsProfiler *self)
 #ifdef ENABLE_PROFILER
     g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
     g_clear_pointer(&self->periodic_flush, g_source_destroy);
+    g_clear_pointer(&self->target_capture, sysprof_capture_writer_unref);
 
     if (self->fd != -1)
         close(self->fd);
@@ -429,7 +432,9 @@ gjs_profiler_start(GjsProfiler *self)
     struct itimerspec its = { 0 };
     struct itimerspec old_its;
 
-    if (self->fd != -1) {
+    if (self->target_capture) {
+        self->capture = sysprof_capture_writer_ref(self->target_capture);
+    } else if (self->fd != -1) {
         self->capture = sysprof_capture_writer_new_from_fd(self->fd, 0);
         self->fd = -1;
     } else {
@@ -670,6 +675,30 @@ gjs_profiler_chain_signal(GjsContext *context,
 #endif  /* ENABLE_PROFILER */
 
     return false;
+}
+
+/**
+ * gjs_profiler_set_capture_writer:
+ * @self: A #GjsProfiler
+ * @capture: (nullable): A #SysprofCaptureWriter
+ *
+ * Set the capture writer to which profiling data is written when the @self
+ * is stopped.
+ */
+void gjs_profiler_set_capture_writer(GjsProfiler* self, gpointer capture) {
+    g_return_if_fail(self);
+    g_return_if_fail(!self->running);
+
+#ifdef ENABLE_PROFILER
+    g_clear_pointer(&self->target_capture, sysprof_capture_writer_unref);
+    self->target_capture =
+        capture ? sysprof_capture_writer_ref(
+                      reinterpret_cast<SysprofCaptureWriter*>(capture))
+                : NULL;
+#else
+    // Unused in the no-profiler case
+    (void)capture;
+#endif
 }
 
 /**

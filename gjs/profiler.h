@@ -43,6 +43,9 @@ GJS_EXPORT
 GType gjs_profiler_get_type(void);
 
 GJS_EXPORT
+void gjs_profiler_set_capture_writer(GjsProfiler* self, void* capture);
+
+GJS_EXPORT
 void gjs_profiler_set_filename(GjsProfiler *self,
                                const char  *filename);
 GJS_EXPORT
