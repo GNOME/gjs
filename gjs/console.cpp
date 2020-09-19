@@ -58,7 +58,7 @@ static GOptionEntry entries[] = {
         "Print version of the JS engine and exit" },
     { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, &coverage_prefixes, "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
-    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-path", "DIR", },
+    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-prefix", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, &include_path, "Add the directory DIR to the list of directories to search for js files.", "DIR" },
     { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
