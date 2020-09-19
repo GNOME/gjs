@@ -426,16 +426,23 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
 
     GjsAutoTypeInfo type = g_field_info_get_type(field);
     tag = g_type_info_get_tag(type);
-    if (tag == GI_TYPE_TAG_ARRAY ||
-        tag == GI_TYPE_TAG_INTERFACE ||
-        tag == GI_TYPE_TAG_GLIST ||
-        tag == GI_TYPE_TAG_GSLIST ||
-        tag == GI_TYPE_TAG_GHASH ||
-        tag == GI_TYPE_TAG_ERROR) {
-        gjs_throw(cx, "Can't get field %s; GObject introspection supports only "
-                  "fields with simple types, not %s",
-                  gjs_debug_string(name).c_str(), g_type_tag_to_string(tag));
-        return false;
+
+    switch (tag) {
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_INTERFACE:
+            gjs_throw(cx,
+                      "Can't get field %s; GObject introspection supports only "
+                      "fields with simple types, not %s",
+                      gjs_debug_string(name).c_str(),
+                      g_type_tag_to_string(tag));
+            return false;
+
+        default:
+            break;
     }
 
     if (!g_field_info_get_field(field, m_ptr, &arg)) {

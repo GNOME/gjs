@@ -80,23 +80,26 @@ static void gjs_destroy_notify_callback(void* data) {
 // compiler generate good instructions in case of big endian machines)
 [[nodiscard]] static size_t gjs_g_argument_get_array_length(GITypeTag tag,
                                                             GIArgument* arg) {
-    if (tag == GI_TYPE_TAG_INT8)
-        return gjs_arg_get<int8_t>(arg);
-    if (tag == GI_TYPE_TAG_UINT8)
-        return gjs_arg_get<uint8_t>(arg);
-    if (tag == GI_TYPE_TAG_INT16)
-        return gjs_arg_get<int16_t>(arg);
-    if (tag == GI_TYPE_TAG_UINT16)
-        return gjs_arg_get<uint16_t>(arg);
-    if (tag == GI_TYPE_TAG_INT32)
-        return gjs_arg_get<int32_t>(arg);
-    if (tag == GI_TYPE_TAG_UINT32)
-        return gjs_arg_get<uint32_t>(arg);
-    if (tag == GI_TYPE_TAG_INT64)
-        return gjs_arg_get<int64_t>(arg);
-    if (tag == GI_TYPE_TAG_UINT64)
-        return gjs_arg_get<uint64_t>(arg);
-    g_assert_not_reached();
+    switch (tag) {
+        case GI_TYPE_TAG_INT8:
+            return gjs_arg_get<int8_t>(arg);
+        case GI_TYPE_TAG_UINT8:
+            return gjs_arg_get<uint8_t>(arg);
+        case GI_TYPE_TAG_INT16:
+            return gjs_arg_get<int16_t>(arg);
+        case GI_TYPE_TAG_UINT16:
+            return gjs_arg_get<uint16_t>(arg);
+        case GI_TYPE_TAG_INT32:
+            return gjs_arg_get<int32_t>(arg);
+        case GI_TYPE_TAG_UINT32:
+            return gjs_arg_get<uint32_t>(arg);
+        case GI_TYPE_TAG_INT64:
+            return gjs_arg_get<int64_t>(arg);
+        case GI_TYPE_TAG_UINT64:
+            return gjs_arg_get<uint64_t>(arg);
+        default:
+            g_assert_not_reached();
+    }
 }
 
 static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
