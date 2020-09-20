@@ -46,6 +46,7 @@
 #include <jsapi.h>  // for InitSelfHostedCode, JS_Destr...
 #include <mozilla/UniquePtr.h>
 
+#include "gi/function.h"
 #include "gi/object.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
@@ -111,6 +112,7 @@ static void on_garbage_collect(JSContext*, JSGCStatus status, JS::GCReason,
     if (status == JSGC_BEGIN) {
         gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Begin garbage collection");
         gjs_object_clear_toggles();
+        gjs_function_clear_async_closures();
     } else if (status == JSGC_END) {
         gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
     }

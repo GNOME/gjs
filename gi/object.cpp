@@ -1461,8 +1461,6 @@ static void invalidate_closure_list(std::forward_list<GClosure*>* closures) {
         // invalidation mechanism, but adding a temporary reference to
         // ensure that the closure is still valid when calling invalidation
         // notify callbacks
-        using GjsAutoGClosure =
-            GjsAutoPointer<GClosure, GClosure, g_closure_unref, g_closure_ref>;
         GjsAutoGClosure closure(closures->front(), GjsAutoTakeOwnership());
         g_closure_invalidate(closure);
         /* Erase element if not already erased */
@@ -2624,19 +2622,19 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         // This is traced, and will be cleared from the list when the closure is
         // invalidated
         g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(),
-                           trampoline->js_function) == m_vfuncs.end() &&
+                           trampoline->js_function()) == m_vfuncs.end() &&
                  "This vfunc was already associated with this class");
-        m_vfuncs.push_front(trampoline->js_function);
+        m_vfuncs.push_front(trampoline->js_function());
         g_closure_add_invalidate_notifier(
-            trampoline->js_function, this,
+            trampoline->js_function(), this,
             &ObjectPrototype::vfunc_invalidated_notify);
         g_closure_add_invalidate_notifier(
-            trampoline->js_function, trampoline, [](void* data, GClosure*) {
+            trampoline->js_function(), trampoline, [](void* data, GClosure*) {
                 auto* trampoline = static_cast<GjsCallbackTrampoline*>(data);
                 gjs_callback_trampoline_unref(trampoline);
             });
 
-        *((ffi_closure **)method_ptr) = trampoline->closure;
+        *reinterpret_cast<ffi_closure**>(method_ptr) = trampoline->closure();
     }
 
     return true;

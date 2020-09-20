@@ -63,6 +63,7 @@ FALSE_POSITIVES = (
 
     # IWYU weird false positive when using std::vector::emplace_back() or
     # std::vector::push_back()
+    ('gi/function.cpp', '#include <algorithm>', 'for max'),
     ('gi/private.cpp', '#include <algorithm>', 'for max'),
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
