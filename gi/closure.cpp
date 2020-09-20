@@ -86,7 +86,8 @@ invalidate_js_pointers(GjsClosure *gc)
     g_closure_invalidate(&gc->base);
 }
 
-static void global_context_finalized(JS::HandleFunction func, void* data) {
+static void global_context_finalized(JS::HandleFunction func [[maybe_unused]],
+                                     void* data) {
     GjsClosure *gc = (GjsClosure*) data;
     Closure *c = &gc->priv;
 

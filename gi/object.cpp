@@ -1796,11 +1796,12 @@ void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
+    g_assert(std::find(m_closures.begin(), m_closures.end(), closure) ==
+                 m_closures.end() &&
+             "This closure was already associated with this object");
+
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
-    auto already_has = std::find(m_closures.begin(), m_closures.end(), closure);
-    g_assert(already_has == m_closures.end() &&
-             "This closure was already associated with this object");
     m_closures.push_front(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);

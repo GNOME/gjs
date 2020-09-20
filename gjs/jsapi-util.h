@@ -159,8 +159,8 @@ struct GjsAutoCallableInfo : GjsAutoBaseInfo {
 
  private:
     void validate() const {
-        if (GIBaseInfo* base = *this)
-            g_assert(GI_IS_CALLABLE_INFO(base));
+        if (*this)
+            g_assert(GI_IS_CALLABLE_INFO(get()));
     }
 };
 

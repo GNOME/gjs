@@ -496,9 +496,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to create root importer");
     }
 
-    JS::Value v_importer = gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
-    g_assert(((void) "Someone else already created root importer",
-              v_importer.isUndefined()));
+    g_assert(
+        gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS).isUndefined() &&
+        "Someone else already created root importer");
 
     gjs_set_global_slot(global, GjsGlobalSlot::IMPORTS,
                         JS::ObjectValue(*importer));
@@ -676,7 +676,7 @@ JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
 
 /* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
 bool GjsContextPrivate::enqueuePromiseJob(
-    JSContext* cx, JS::HandleObject promise [[maybe_unused]],
+    JSContext* cx [[maybe_unused]], JS::HandleObject promise [[maybe_unused]],
     JS::HandleObject job, JS::HandleObject allocation_site [[maybe_unused]],
     JS::HandleObject incumbent_global [[maybe_unused]]) {
     g_assert(cx == m_cx);
@@ -815,7 +815,8 @@ void GjsContextPrivate::register_unhandled_promise_rejection(
 }
 
 void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
-    size_t erased = m_unhandled_rejection_stacks.erase(id);
+    // Return value unused in G_DISABLE_ASSERT case
+    [[maybe_unused]] size_t erased = m_unhandled_rejection_stacks.erase(id);
     g_assert(((void)"Handler attached to rejected promise that wasn't "
               "previously marked as unhandled", erased == 1));
 }
