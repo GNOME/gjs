@@ -43,6 +43,7 @@
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ComparisonOperators.h>
 #include <js/GCAPI.h>               // for JS_AddWeakPointerCompartmentCallback
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
@@ -50,11 +51,11 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for JS_ReportOutOfMemory, IsCallable
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, IsFunctionO...
 #include <mozilla/HashTable.h>
-#include <mozilla/Vector.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"

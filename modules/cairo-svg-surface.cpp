@@ -41,7 +41,6 @@
 
 #    include "gjs/jsapi-class.h"
 #    include "gjs/jsapi-util-args.h"
-#    include "gjs/macros.h"
 #    include "modules/cairo-private.h"
 
 [[nodiscard]] static JSObject* gjs_cairo_svg_surface_get_proto(JSContext*);
