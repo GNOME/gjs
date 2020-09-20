@@ -39,6 +39,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_SetElement
 
 #include "gi/arg-inl.h"

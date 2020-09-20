@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <js/Class.h>
+#include <js/ComparisonOperators.h>
 #include <js/Id.h>                  // for JSID_IS_STRING, JSID_VOID
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
 #include <js/PropertySpec.h>
@@ -38,6 +39,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>  // for JS_DefinePropertyById, JS_GetProp...
 

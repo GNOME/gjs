@@ -29,6 +29,7 @@
 
 #include <new>
 #include <string>
+#include <type_traits>
 
 #include <ffi.h>
 #include <girepository.h>
@@ -46,6 +47,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for HandleValueArray, JS_GetElement
 
