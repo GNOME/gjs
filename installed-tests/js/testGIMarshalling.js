@@ -1250,7 +1250,7 @@ describe('Virtual function', function () {
 
     it('marshals a caller-allocated GValue out parameter', function () {
         expect(tester.vfunc_caller_allocated_out_parameter()).toEqual(52);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/74');
+    });
 
     it('marshals an error out parameter when no error', function () {
         expect(tester.vfunc_meth_with_error(-1)).toBeTruthy();

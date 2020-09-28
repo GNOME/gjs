@@ -44,7 +44,7 @@ struct GjsArgumentCache {
     bool skip_in : 1;
     bool skip_out : 1;
     GITransfer transfer : 2;
-    GjsArgumentFlags flags : 1;
+    GjsArgumentFlags flags : 2;
     bool is_unsigned : 1;  // number and enum only
 
     union {

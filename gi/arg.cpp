@@ -1329,7 +1329,8 @@ intern_gdk_atom(const char *name,
 static bool value_to_interface_gi_argument(
     JSContext* cx, JS::HandleValue value, GIBaseInfo* interface_info,
     GIInfoType interface_type, GITransfer transfer, bool expect_object,
-    GIArgument* arg, GjsArgumentType arg_type, bool* report_type_mismatch) {
+    GIArgument* arg, GjsArgumentType arg_type, GjsArgumentFlags flags,
+    bool* report_type_mismatch) {
     g_assert(report_type_mismatch);
     GType gtype;
 
@@ -1360,8 +1361,15 @@ static bool value_to_interface_gi_argument(
                           g_type_name(gtype));
 
     if (gtype == G_TYPE_VALUE) {
-        GValue gvalue = G_VALUE_INIT;
+        if (flags & GjsArgumentFlags::CALLER_ALLOCATES) {
+            if (!gjs_value_to_g_value_no_copy(cx, value,
+                                              gjs_arg_get<GValue*>(arg)))
+                return false;
 
+            return true;
+        }
+
+        GValue gvalue = G_VALUE_INIT;
         if (!gjs_value_to_g_value(cx, value, &gvalue)) {
             gjs_arg_unset<void*>(arg);
             return false;
@@ -1771,7 +1779,7 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
 
             if (!value_to_interface_gi_argument(
                     context, value, interface_info, interface_type, transfer,
-                    expect_object, arg, arg_type, &report_type_mismatch))
+                    expect_object, arg, arg_type, flags, &report_type_mismatch))
                 wrong = true;
         }
         break;
@@ -2030,6 +2038,8 @@ gjs_value_to_arg(JSContext      *context,
 
     if (g_arg_info_may_be_null(arg_info))
         flags |= GjsArgumentFlags::MAY_BE_NULL;
+    if (g_arg_info_is_caller_allocates(arg_info))
+        flags |= GjsArgumentFlags::CALLER_ALLOCATES;
 
     return gjs_value_to_g_argument(
         context, value, &type_info, g_base_info_get_name(arg_info),

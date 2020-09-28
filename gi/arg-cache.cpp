@@ -1616,6 +1616,8 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     GjsArgumentFlags flags = GjsArgumentFlags::NONE;
     if (g_arg_info_may_be_null(arg))
         flags |= GjsArgumentFlags::MAY_BE_NULL;
+    if (g_arg_info_is_caller_allocates(arg))
+        flags |= GjsArgumentFlags::CALLER_ALLOCATES;
     self->flags = flags;
 
     if (direction == GI_DIRECTION_IN)
@@ -1625,7 +1627,8 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     *inc_counter_out = true;
 
     GITypeTag type_tag = g_type_info_get_tag(&self->type_info);
-    if (direction == GI_DIRECTION_OUT && g_arg_info_is_caller_allocates(arg)) {
+    if (direction == GI_DIRECTION_OUT &&
+        (flags & GjsArgumentFlags::CALLER_ALLOCATES)) {
         if (type_tag != GI_TYPE_TAG_INTERFACE) {
             gjs_throw(cx,
                       "Unsupported type %s for argument %s with (out "

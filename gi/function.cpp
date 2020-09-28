@@ -327,6 +327,14 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     }
 }
 
+inline GIArgument* get_argument_for_arg_info(GIArgInfo* arg_info,
+                                             GIArgument** args, int index) {
+    if (!g_arg_info_is_caller_allocates(arg_info))
+        return *reinterpret_cast<GIArgument**>(args[index]);
+    else
+        return args[index];
+}
+
 bool GjsCallbackTrampoline::callback_closure_inner(
     JSContext* context, JS::HandleObject this_object,
     JS::MutableHandleValue rval, GIArgument** args, GITypeInfo* ret_type,
@@ -393,7 +401,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                     g_error("Unable to grow vector");
 
                 GIArgument* arg = args[i + c_args_offset];
-                if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT)
+                if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT &&
+                    !g_arg_info_is_caller_allocates(&arg_info))
                     arg = *reinterpret_cast<GIArgument**>(arg);
 
                 if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
@@ -439,7 +448,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 continue;
 
             if (!gjs_value_to_arg(context, rval, &arg_info,
-                                  *reinterpret_cast<GIArgument **>(args[i + c_args_offset])))
+                                  get_argument_for_arg_info(&arg_info, args,
+                                                            i + c_args_offset)))
                 return false;
 
             break;
@@ -493,7 +503,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 return false;
 
             if (!gjs_value_to_arg(context, elem, &arg_info,
-                                  *(GIArgument **)args[i + c_args_offset]))
+                                  get_argument_for_arg_info(&arg_info, args,
+                                                            i + c_args_offset)))
                 return false;
 
             elem_idx++;
