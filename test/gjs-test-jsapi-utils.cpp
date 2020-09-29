@@ -92,6 +92,58 @@ static void test_gjs_autopointer_dtor() {
     g_object_unref(ptr);
 }
 
+static void test_gjs_autopointer_dtor_cpp() {
+    bool deleted = false;
+    auto dtor_callback = [&deleted] { deleted = true; };
+
+    struct TestStruct {
+        explicit TestStruct(decltype(dtor_callback) cb) : _delete_cb(cb) {}
+        ~TestStruct() { _delete_cb(); }
+
+        decltype(dtor_callback) _delete_cb;
+    };
+
+    g_assert_false(deleted);
+
+    {
+        auto* ptr = new TestStruct(dtor_callback);
+        GjsAutoCppPointer<TestStruct> autoptr(ptr);
+        g_assert(ptr == autoptr);
+    }
+
+    g_assert_true(deleted);
+}
+
+static void test_gjs_autopointer_dtor_cpp_array() {
+    unsigned deleted = 0;
+    auto dtor_callback = [&deleted] { deleted++; };
+
+    struct TestStruct {
+        TestStruct(decltype(dtor_callback) cb)  // NOLINT(runtime/explicit)
+            : _delete_cb(cb) {}
+        ~TestStruct() { _delete_cb(); }
+
+        int val = 5;
+        decltype(dtor_callback) _delete_cb;
+    };
+
+    g_assert_cmpint(deleted, ==, 0);
+
+    {
+        // using GjsAutoCppPointer1 = GjsAutoPointer<TestStruct[], TestStruct[],
+        // GjsAutoPointerDeleter<TestStruct[]>>;
+
+        TestStruct* ptrs =
+            new TestStruct[3]{dtor_callback, dtor_callback, dtor_callback};
+        GjsAutoCppPointer<TestStruct[]> autoptr(ptrs);
+        g_assert_cmpint(autoptr[0].val, ==, 5);
+        g_assert_cmpint(autoptr[1].val, ==, 5);
+        g_assert_cmpint(autoptr[2].val, ==, 5);
+    }
+
+    g_assert_cmpuint(deleted, ==, 3);
+}
+
 static void test_gjs_autopointer_dtor_take_ownership() {
     auto* ptr = gjs_test_object_new();
     g_assert_nonnull(ptr);
@@ -406,7 +458,10 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
     g_test_add_func(
         "/gjs/jsapi-utils/gjs-autopointer/destructor/take_ownership",
         test_gjs_autopointer_dtor_take_ownership);
-
+    g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/c++",
+                    test_gjs_autopointer_dtor_cpp);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/c++-array",
+                    test_gjs_autopointer_dtor_cpp_array);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/operator/assign",
                     test_gjs_autopointer_assign_operator);
     g_test_add_func(

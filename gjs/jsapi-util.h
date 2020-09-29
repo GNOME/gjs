@@ -39,11 +39,16 @@ struct GjsAutoTakeOwnership {};
 template <typename T, typename F = void, void (*free_func)(F*) = free,
           F* (*ref_func)(F*) = nullptr>
 struct GjsAutoPointer {
-    using Ptr = std::add_pointer_t<T>;
-    using ConstPtr = std::add_pointer_t<std::add_const_t<T>>;
+    using Tp =
+        std::conditional_t<std::is_array_v<T>, std::remove_extent_t<T>, T>;
+    using Ptr = std::add_pointer_t<Tp>;
+    using ConstPtr = std::add_pointer_t<std::add_const_t<Tp>>;
 
     constexpr GjsAutoPointer(Ptr ptr = nullptr)  // NOLINT(runtime/explicit)
         : m_ptr(ptr) {}
+    template <typename U = T,
+              typename std::enable_if_t<std::is_array_v<U>, int> = 0>
+    explicit constexpr GjsAutoPointer(Tp ptr[]) : m_ptr(ptr) {}
     constexpr GjsAutoPointer(Ptr ptr, const GjsAutoTakeOwnership&)
         : GjsAutoPointer(ptr) {
         // FIXME: should use if constexpr (...), but that doesn't work with
@@ -68,9 +73,18 @@ struct GjsAutoPointer {
         return *this;
     }
 
-    constexpr T operator*() const { return *m_ptr; }
-    constexpr Ptr operator->() { return m_ptr; }
-    constexpr ConstPtr operator->() const { return m_ptr; }
+    template <typename U = T>
+    constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> operator->() {
+        return m_ptr;
+    }
+
+    template <typename U = T>
+    constexpr std::enable_if_t<!std::is_array_v<U>, ConstPtr> operator->()
+        const {
+        return m_ptr;
+    }
+
+    constexpr Tp operator*() const { return *m_ptr; }
     constexpr operator Ptr() { return m_ptr; }
     constexpr operator Ptr() const { return m_ptr; }
     constexpr operator ConstPtr() const { return m_ptr; }
@@ -90,8 +104,12 @@ struct GjsAutoPointer {
         auto ffunc = free_func;
         Ptr old_ptr = m_ptr;
         m_ptr = ptr;
-        if (old_ptr && ffunc)
-            ffunc(old_ptr);
+        if (old_ptr && ffunc) {
+            if constexpr (std::is_array_v<T>)
+                ffunc(reinterpret_cast<T*>(old_ptr));
+            else
+                ffunc(old_ptr);
+        }
     }
 
     constexpr void swap(GjsAutoPointer& other) {
@@ -102,7 +120,9 @@ struct GjsAutoPointer {
         reset();
     }
 
-    [[nodiscard]] constexpr Ptr copy() const {
+    template <typename U = T>
+    [[nodiscard]] constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> copy()
+        const {
         // FIXME: Should use std::enable_if_t<ref_func != nullptr, Ptr>
         if (!m_ptr)
             return nullptr;
@@ -135,6 +155,17 @@ using GjsAutoStrv = GjsAutoPointer<char*, char*, g_strfreev>;
 
 template <typename T>
 using GjsAutoUnref = GjsAutoPointer<T, void, g_object_unref, g_object_ref>;
+
+template <typename V, typename T>
+constexpr void GjsAutoPointerDeleter(T v) {
+    if constexpr (std::is_array_v<V>)
+        delete[] v;
+    else
+        delete v;
+}
+
+template <typename T>
+using GjsAutoCppPointer = GjsAutoPointer<T, T, GjsAutoPointerDeleter<T>>;
 
 template <typename T = GTypeClass>
 struct GjsAutoTypeClass : GjsAutoPointer<T, void, &g_type_class_unref> {
