@@ -1,18 +1,20 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2018-2020  Canonical, Ltd
 
 #ifndef GJS_JSAPI_UTIL_H_
 #define GJS_JSAPI_UTIL_H_
 
 #include <config.h>
 
-#include <stddef.h>  // for size_t
 #include <stdint.h>
+#include <stdlib.h>     // for free
 #include <sys/types.h>  // for ssize_t
 
-#include <memory>  // for unique_ptr
 #include <string>  // for string, u16string
+#include <type_traits>  // for enable_if_t, add_pointer_t, add_const_t
+#include <utility>      // IWYU pragma: keep
 #include <vector>
 
 #include <girepository.h>
@@ -34,38 +36,93 @@ class CallArgs;
 
 struct GjsAutoTakeOwnership {};
 
-template <typename T, typename F,
-          void (*free_func)(F*) = nullptr, F* (*ref_func)(F*) = nullptr>
-struct GjsAutoPointer : std::unique_ptr<T, decltype(free_func)> {
-    GjsAutoPointer(T* ptr = nullptr)  // NOLINT(runtime/explicit)
-        : GjsAutoPointer::unique_ptr(ptr, *free_func) {}
-    GjsAutoPointer(T* ptr, const GjsAutoTakeOwnership&)
-        : GjsAutoPointer(nullptr) {
+template <typename T, typename F = void, void (*free_func)(F*) = free,
+          F* (*ref_func)(F*) = nullptr>
+struct GjsAutoPointer {
+    using Ptr = std::add_pointer_t<T>;
+    using ConstPtr = std::add_pointer_t<std::add_const_t<T>>;
+
+    constexpr GjsAutoPointer(Ptr ptr = nullptr)  // NOLINT(runtime/explicit)
+        : m_ptr(ptr) {}
+    constexpr GjsAutoPointer(Ptr ptr, const GjsAutoTakeOwnership&)
+        : GjsAutoPointer(ptr) {
         // FIXME: should use if constexpr (...), but that doesn't work with
         // ubsan, which generates a null pointer check making it not a constexpr
         // anymore: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962 - Also a
         // bogus warning, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94554
-        auto ref = ref_func;
-        this->reset(ptr && ref ? reinterpret_cast<T*>(ref(ptr)) : ptr);
+        m_ptr = copy();
+    }
+    constexpr GjsAutoPointer(ConstPtr ptr, const GjsAutoTakeOwnership& o)
+        : GjsAutoPointer(const_cast<Ptr>(ptr), o) {}
+    constexpr GjsAutoPointer(GjsAutoPointer&& other) : GjsAutoPointer() {
+        this->swap(other);
     }
 
-    constexpr operator T*() const { return this->get(); }
-    constexpr T& operator[](size_t i) const {
-        return static_cast<T*>(*this)[i];
+    constexpr GjsAutoPointer& operator=(Ptr ptr) {
+        reset(ptr);
+        return *this;
     }
 
-    [[nodiscard]] constexpr T* copy() const {
-        return reinterpret_cast<T*>(ref_func(this->get()));
+    GjsAutoPointer& operator=(GjsAutoPointer&& other) {
+        this->swap(other);
+        return *this;
+    }
+
+    constexpr T operator*() const { return *m_ptr; }
+    constexpr Ptr operator->() { return m_ptr; }
+    constexpr ConstPtr operator->() const { return m_ptr; }
+    constexpr operator Ptr() { return m_ptr; }
+    constexpr operator Ptr() const { return m_ptr; }
+    constexpr operator ConstPtr() const { return m_ptr; }
+    constexpr operator bool() const { return m_ptr != nullptr; }
+
+    constexpr Ptr get() { return m_ptr; }
+    constexpr ConstPtr get() const { return m_ptr; }
+
+    constexpr Ptr release() {
+        auto* ptr = m_ptr;
+        m_ptr = nullptr;
+        return ptr;
+    }
+
+    constexpr void reset(Ptr ptr = nullptr) {
+        // FIXME: Should use if constexpr (...) as above
+        auto ffunc = free_func;
+        Ptr old_ptr = m_ptr;
+        m_ptr = ptr;
+        if (old_ptr && ffunc)
+            ffunc(old_ptr);
+    }
+
+    constexpr void swap(GjsAutoPointer& other) {
+        std::swap(this->m_ptr, other.m_ptr);
+    }
+
+    /* constexpr */ ~GjsAutoPointer() {  // one day, with -std=c++2a
+        reset();
+    }
+
+    [[nodiscard]] constexpr Ptr copy() const {
+        // FIXME: Should use std::enable_if_t<ref_func != nullptr, Ptr>
+        if (!m_ptr)
+            return nullptr;
+
+        auto rf = ref_func;
+        g_assert(rf);
+        return reinterpret_cast<Ptr>(ref_func(m_ptr));
     }
 
     template <typename C>
     [[nodiscard]] constexpr C* as() const {
-        return const_cast<C*>(reinterpret_cast<const C*>(this->get()));
+        return const_cast<C*>(reinterpret_cast<const C*>(m_ptr));
     }
+
+ private:
+    Ptr m_ptr;
 };
 
 template <typename T>
-using GjsAutoFree = GjsAutoPointer<T, void, g_free>;
+using GjsAutoFree = GjsAutoPointer<T>;
 
 struct GjsAutoCharFuncs {
     static char* dup(char* str) { return g_strdup(str); }

@@ -588,7 +588,7 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
 
 /* Taken from GLib */
 static void canonicalize_key(const GjsAutoChar& key) {
-    for (char* p = key.get(); *p != 0; p++) {
+    for (char* p = key; *p != 0; p++) {
         char c = *p;
 
         if (c != '-' && (c < '0' || c > '9') && (c < 'A' || c > 'Z') &&

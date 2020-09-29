@@ -30,4 +30,6 @@ void gjs_test_add_tests_for_parse_call_args(void);
 
 void gjs_test_add_tests_for_rooting(void);
 
+void gjs_test_add_tests_for_jsapi_utils();
+
 #endif  // TEST_GJS_TEST_UTILS_H_
