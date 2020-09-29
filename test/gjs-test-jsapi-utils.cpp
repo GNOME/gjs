@@ -433,6 +433,27 @@ static void test_gjs_autostrv_init() {
         g_assert_cmpstr(autoptr[i], ==, strv[i]);
 }
 
+static void test_gjs_autostrv_init_take_ownership() {
+    const char* strv[] = {"FOO", "Bar", "BAZ", nullptr};
+    GjsAutoStrv autoptr(const_cast<char* const*>(strv), GjsAutoTakeOwnership());
+
+    for (int i = g_strv_length(const_cast<char**>(strv)); i >= 0; i--)
+        g_assert_cmpstr(autoptr[i], ==, strv[i]);
+    g_assert(autoptr != strv);
+}
+
+static void test_gjs_autostrv_copy() {
+    const char* strv[] = {"FOO", "Bar", "BAZ", nullptr};
+    GjsAutoStrv autoptr = g_strdupv(const_cast<char**>(strv));
+
+    char** copy = autoptr.copy();
+    for (int i = g_strv_length(const_cast<char**>(strv)); i >= 0; i--)
+        g_assert_cmpstr(copy[i], ==, strv[i]);
+    g_assert(autoptr != copy);
+
+    g_strfreev(copy);
+}
+
 static void test_gjs_autotypeclass_init() {
     GjsAutoTypeClass<GObjectClass> autoclass(gjs_test_object_get_type());
 
@@ -512,6 +533,10 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
 
     g_test_add_func("/gjs/jsapi-utils/gjs-autostrv/init",
                     test_gjs_autostrv_init);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autostrv/init/take_ownership",
+                    test_gjs_autostrv_init_take_ownership);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autostrv/copy",
+                    test_gjs_autostrv_copy);
 
     g_test_add_func("/gjs/jsapi-utils/gjs-autotypeclass/init",
                     test_gjs_autotypeclass_init);
