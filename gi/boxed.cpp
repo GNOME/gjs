@@ -437,8 +437,6 @@ BoxedInstance::~BoxedInstance() {
 }
 
 BoxedPrototype::~BoxedPrototype(void) {
-    g_clear_pointer(&m_info, g_base_info_unref);
-
     GJS_DEC_COUNTER(boxed_prototype);
 }
 
@@ -764,12 +762,9 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
             g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
-            GITypeInfo *param_info;
-
-            param_info = g_type_info_get_param_type(type_info, 0);
+            GjsAutoBaseInfo param_info =
+                g_type_info_get_param_type(type_info, 0);
             is_simple = type_can_be_allocated_directly(param_info);
-
-            g_base_info_unref((GIBaseInfo*)param_info);
         } else if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_VOID) {
             return true;
         } else {
@@ -779,8 +774,8 @@ const struct JSClass BoxedBase::klass = {
         switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_INTERFACE:
             {
-                GIBaseInfo *interface = g_type_info_get_interface(type_info);
-                switch (g_base_info_get_type(interface)) {
+            GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
+            switch (g_base_info_get_type(interface)) {
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
                     if (!struct_is_simple((GIStructInfo *)interface))
@@ -813,9 +808,7 @@ const struct JSClass BoxedBase::klass = {
                 case GI_INFO_TYPE_FLAGS:
                 default:
                     break;
-                }
-
-                g_base_info_unref(interface);
+            }
                 break;
             }
         case GI_TYPE_TAG_BOOLEAN:
@@ -860,13 +853,10 @@ const struct JSClass BoxedBase::klass = {
         return false;
 
     for (i = 0; i < n_fields && is_simple; i++) {
-        GIFieldInfo *field_info = g_struct_info_get_field(info, i);
-        GITypeInfo *type_info = g_field_info_get_type(field_info);
+        GjsAutoBaseInfo field_info = g_struct_info_get_field(info, i);
+        GjsAutoBaseInfo type_info = g_field_info_get_type(field_info);
 
         is_simple = type_can_be_allocated_directly(type_info);
-
-        g_base_info_unref((GIBaseInfo *)field_info);
-        g_base_info_unref((GIBaseInfo *)type_info);
     }
 
     return is_simple;

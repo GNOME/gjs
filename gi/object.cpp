@@ -1685,7 +1685,6 @@ ObjectInstance::~ObjectInstance() {
 ObjectPrototype::~ObjectPrototype() {
     invalidate_closure_list(&m_vfuncs);
 
-    g_clear_pointer(&m_info, g_base_info_unref);
     g_type_class_unref(g_type_class_peek(m_gtype));
 
     GJS_DEC_COUNTER(object_prototype);

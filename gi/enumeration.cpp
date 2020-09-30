@@ -72,16 +72,10 @@ gjs_define_enum_values(JSContext       *context,
      */
     n_values = g_enum_info_get_n_values(info);
     for (i = 0; i < n_values; ++i) {
-        GIValueInfo *value_info = g_enum_info_get_value(info, i);
-        bool failed;
+        GjsAutoBaseInfo value_info = g_enum_info_get_value(info, i);
 
-        failed = !gjs_define_enum_value(context, in_object, value_info);
-
-        g_base_info_unref( (GIBaseInfo*) value_info);
-
-        if (failed) {
+        if (!gjs_define_enum_value(context, in_object, value_info))
             return false;
-        }
     }
     return true;
 }

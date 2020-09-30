@@ -712,15 +712,13 @@ class GIWrapperPrototype : public Base {
     // not exposed through introspection, such as GLocalFile. Not all subclasses
     // of GIWrapperPrototype support this. Object and Interface support it in
     // any case.
-    Info* m_info;
+    GjsAutoBaseInfo m_info;
     GType m_gtype;
 
     explicit GIWrapperPrototype(Info* info, GType gtype)
         : Base(), m_info(info, GjsAutoTakeOwnership()), m_gtype(gtype) {
         Base::debug_lifecycle("Prototype constructor");
     }
-
-    ~GIWrapperPrototype(void) { g_clear_pointer(&m_info, g_base_info_unref); }
 
     /*
      * GIWrapperPrototype::init:

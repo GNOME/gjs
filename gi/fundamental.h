@@ -14,6 +14,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
+#include "gjs/jsapi-util.h"  // for GjsAutoCallableInfo
 #include "gjs/macros.h"
 #include "util/log.h"
 
@@ -67,7 +68,7 @@ class FundamentalPrototype
     GIObjectInfoUnrefFunction m_unref_function;
     GIObjectInfoGetValueFunction m_get_value_function;
     GIObjectInfoSetValueFunction m_set_value_function;
-    GICallableInfo* m_constructor_info;
+    GjsAutoCallableInfo m_constructor_info;
 
     explicit FundamentalPrototype(GIObjectInfo* info, GType gtype);
     ~FundamentalPrototype(void);
