@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include <memory>  // for unique_ptr
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -87,7 +89,7 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     int m_zero_args_constructor;  // -1 if none
     int m_default_constructor;  // -1 if none
     JS::Heap<jsid> m_default_constructor_name;
-    FieldMap* m_field_map;
+    std::unique_ptr<FieldMap> m_field_map;
     bool m_can_allocate_directly : 1;
 
     explicit BoxedPrototype(GIStructInfo* info, GType gtype);
@@ -134,7 +136,8 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     // Helper methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    static FieldMap* create_field_map(JSContext* cx, GIStructInfo* struct_info);
+    static std::unique_ptr<FieldMap> create_field_map(
+        JSContext* cx, GIStructInfo* struct_info);
     GJS_JSAPI_RETURN_CONVENTION
     bool ensure_field_map(JSContext* cx);
     GJS_JSAPI_RETURN_CONVENTION

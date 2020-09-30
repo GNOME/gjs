@@ -150,12 +150,12 @@ void BoxedInstance::allocate_directly(void) {
  * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
  * for fast lookup. 
  */
-BoxedPrototype::FieldMap* BoxedPrototype::create_field_map(
+std::unique_ptr<BoxedPrototype::FieldMap> BoxedPrototype::create_field_map(
     JSContext* cx, GIStructInfo* struct_info) {
     int n_fields;
     int i;
 
-    auto* result = new BoxedPrototype::FieldMap();
+    auto result = std::make_unique<BoxedPrototype::FieldMap>();
     n_fields = g_struct_info_get_n_fields(struct_info);
     if (!result->reserve(n_fields)) {
         JS_ReportOutOfMemory(cx);
@@ -438,9 +438,6 @@ BoxedInstance::~BoxedInstance() {
 
 BoxedPrototype::~BoxedPrototype(void) {
     g_clear_pointer(&m_info, g_base_info_unref);
-
-    if (m_field_map)
-        delete m_field_map;
 
     GJS_DEC_COUNTER(boxed_prototype);
 }
@@ -880,7 +877,6 @@ BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
       m_zero_args_constructor(-1),
       m_default_constructor(-1),
       m_default_constructor_name(JSID_VOID),
-      m_field_map(nullptr),
       m_can_allocate_directly(struct_is_simple(info)) {
     GJS_INC_COUNTER(boxed_prototype);
 }
