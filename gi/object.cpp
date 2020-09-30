@@ -565,7 +565,7 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
-    GjsAutoObjectInfo parent = g_base_info_ref(info);
+    GjsAutoObjectInfo parent(info, GjsAutoTakeOwnership());
 
     /* Since it isn't possible to override a vfunc on
      * an interface without reimplementing it, we don't need

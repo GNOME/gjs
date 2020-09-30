@@ -531,7 +531,7 @@ GjsCallbackTrampoline* gjs_callback_trampoline_new(
 
 GjsCallbackTrampoline::GjsCallbackTrampoline(GICallableInfo* callable_info,
                                              GIScopeType scope, bool is_vfunc)
-    : m_info(g_base_info_ref(callable_info)),
+    : m_info(callable_info, GjsAutoTakeOwnership()),
       m_scope(scope),
       m_param_types(g_callable_info_get_n_args(callable_info), {}),
       m_is_vfunc(is_vfunc) {

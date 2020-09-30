@@ -716,9 +716,7 @@ class GIWrapperPrototype : public Base {
     GType m_gtype;
 
     explicit GIWrapperPrototype(Info* info, GType gtype)
-        : Base(),
-          m_info(info ? g_base_info_ref(info) : nullptr),
-          m_gtype(gtype) {
+        : Base(), m_info(info, GjsAutoTakeOwnership()), m_gtype(gtype) {
         Base::debug_lifecycle("Prototype constructor");
     }
 

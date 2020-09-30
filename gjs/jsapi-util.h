@@ -181,8 +181,7 @@ struct GjsAutoTypeClass : GjsAutoPointer<T, void, &g_type_class_unref> {
 // returns GIFunctionInfo*,) use one of the derived classes below.
 struct GjsAutoBaseInfo : GjsAutoPointer<GIBaseInfo, GIBaseInfo,
                                         g_base_info_unref, g_base_info_ref> {
-    GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
-        : GjsAutoPointer(ptr) {}
+    using GjsAutoPointer::GjsAutoPointer;
 
     [[nodiscard]] const char* name() const {
         return g_base_info_get_name(*this);
@@ -199,6 +198,8 @@ struct GjsAutoBaseInfo : GjsAutoPointer<GIBaseInfo, GIBaseInfo,
 // the info is either of a certain type or null.
 template <GIInfoType TAG>
 struct GjsAutoInfo : GjsAutoBaseInfo {
+    using GjsAutoBaseInfo::GjsAutoBaseInfo;
+
     // Normally one-argument constructors should be explicit, but we are trying
     // to conform to the interface of std::unique_ptr here.
     GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
@@ -235,6 +236,8 @@ using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;
 // GICallableInfo can be one of several tags, so we have to have a separate
 // class, and use GI_IS_CALLABLE_INFO() to validate.
 struct GjsAutoCallableInfo : GjsAutoBaseInfo {
+    using GjsAutoBaseInfo::GjsAutoBaseInfo;
+
     GjsAutoCallableInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
         : GjsAutoBaseInfo(ptr) {
         validate();
