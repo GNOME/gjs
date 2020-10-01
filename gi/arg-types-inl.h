@@ -53,6 +53,11 @@ constexpr inline const char* static_type_name<uint32_t>() {
 }
 
 template <>
+constexpr inline const char* static_type_name<char32_t>() {
+    return "char32_t";
+}
+
+template <>
 constexpr inline const char* static_type_name<int64_t>() {
     return "int64";
 }

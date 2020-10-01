@@ -28,6 +28,7 @@
 #include <jsfriendapi.h>  // for JS_IsUint8Array, JS_GetObjectFunc...
 
 #include "gi/arg-inl.h"
+#include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
 #include "gi/foreign.h"
@@ -684,6 +685,39 @@ _Pragma("GCC diagnostic pop")
     return true;
 }
 
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
+    JSContext* cx, JS::Value array_value, size_t length, void** arr_p) {
+    JS::RootedObject array(cx, array_value.toObjectOrNull());
+    JS::RootedValue elem(cx);
+
+    // Add one so we're always zero terminated
+    GjsAutoPointer<T, void, g_free> result = g_new(T, length + 1);
+    result[length] = {0};
+
+    for (size_t i = 0; i < length; ++i) {
+        elem = JS::UndefinedValue();
+        Gjs::JsValueHolder::Strict<T, TAG> value;
+
+        if (!JS_GetElement(cx, array, i, &elem)) {
+            gjs_throw(cx, "Missing array element %" G_GSIZE_FORMAT, i);
+            return false;
+        }
+
+        if (!Gjs::js_value_to_c<TAG>(cx, elem, &value)) {
+            gjs_throw(cx, "Invalid element in %s array",
+                      Gjs::static_type_name<T, TAG>());
+            return false;
+        }
+
+        result[i] = value;
+    }
+
+    *arr_p = result.release();
+
+    return true;
+}
+
 bool
 gjs_array_from_strv(JSContext             *context,
                     JS::MutableHandleValue value_p,
@@ -799,192 +833,6 @@ gjs_string_to_intarray(JSContext       *context,
                       g_type_tag_to_string(element_type));
             return false;
     }
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_to_gboolean_array(JSContext      *cx,
-                            JS::Value       array_value,
-                            unsigned        length,
-                            void          **arr_p)
-{
-    unsigned i;
-    JS::RootedObject array(cx, array_value.toObjectOrNull());
-    JS::RootedValue elem(cx);
-
-    gboolean *result = g_new0(gboolean, length);
-
-    for (i = 0; i < length; i++) {
-        if (!JS_GetElement(cx, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(cx, "Missing array element %u", i);
-            return false;
-        }
-        bool val = JS::ToBoolean(elem);
-        result[i] = val;
-    }
-
-    *arr_p = result;
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_to_intarray(JSContext   *context,
-                      JS::Value    array_value,
-                      unsigned int length,
-                      void       **arr_p,
-                      unsigned     intsize,
-                      bool         is_signed)
-{
-    /* nasty union types in an attempt to unify the various int types */
-    union { uint64_t u; int64_t i; } intval;
-    void *result;
-    unsigned i;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    /* add one so we're always zero terminated */
-    result = g_malloc0((length+1) * intsize);
-
-    for (i = 0; i < length; ++i) {
-        bool success;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        /* do whatever sign extension is appropriate */
-        success = (is_signed) ?
-            JS::ToInt64(context, elem, &(intval.i)) :
-            JS::ToUint64(context, elem, &(intval.u));
-
-        if (!success) {
-            g_free(result);
-            gjs_throw(context,
-                      "Invalid element in int array");
-            return false;
-        }
-        /* Note that this is truncating assignment. */
-        switch (intsize) {
-        case 1:
-            ((guint8*)result)[i] = (gint8) intval.u; break;
-        case 2:
-            ((guint16*)result)[i] = (gint16) intval.u; break;
-        case 4:
-            ((guint32*)result)[i] = (gint32) intval.u; break;
-        case 8:
-            ((uint64_t *)result)[i] = (int64_t) intval.u; break;
-        default:
-            g_assert_not_reached();
-        }
-    }
-
-    *arr_p = result;
-
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_gtypearray_to_array(JSContext   *context,
-                        JS::Value    array_value,
-                        unsigned int length,
-                        void       **arr_p)
-{
-    unsigned i;
-
-    /* add one so we're always zero terminated */
-    GjsAutoPointer<GType, void, g_free> result =
-        static_cast<GType*>(g_malloc0((length + 1) * sizeof(GType)));
-
-    JS::RootedObject elem_obj(context), array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-    for (i = 0; i < length; ++i) {
-        GType gtype;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem))
-            return false;
-
-        if (!elem.isObject()) {
-            gjs_throw(context, "Invalid element in GType array");
-            return false;
-        }
-
-        elem_obj = &elem.toObject();
-        if (!gjs_gtype_get_actual_gtype(context, elem_obj, &gtype))
-            return false;
-        if (gtype == G_TYPE_INVALID) {
-            gjs_throw(context, "Invalid element in GType array");
-            return false;
-        }
-
-        result[i] = gtype;
-    }
-
-    *arr_p = result.release();
-
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_to_floatarray(JSContext   *context,
-                        JS::Value    array_value,
-                        unsigned int length,
-                        void       **arr_p,
-                        bool         is_double)
-{
-    unsigned int i;
-    void *result;
-    JS::RootedObject array(context, array_value.toObjectOrNull());
-    JS::RootedValue elem(context);
-
-    /* add one so we're always zero terminated */
-    result = g_malloc0((length+1) * (is_double ? sizeof(double) : sizeof(float)));
-
-    for (i = 0; i < length; ++i) {
-        double val;
-        bool success;
-
-        elem = JS::UndefinedValue();
-        if (!JS_GetElement(context, array, i, &elem)) {
-            g_free(result);
-            gjs_throw(context,
-                      "Missing array element %u",
-                      i);
-            return false;
-        }
-
-        /* do whatever sign extension is appropriate */
-        success = JS::ToNumber(context, elem, &val);
-
-        if (!success) {
-            g_free(result);
-            gjs_throw(context,
-                      "Invalid element in array");
-            return false;
-        }
-
-        /* Note that this is truncating assignment. */
-        if (is_double) {
-            double *darray = (double*)result;
-            darray[i] = val;
-        } else {
-            float *farray = (float*)result;
-            farray[i] = val;
-        }
-    }
-
-    *arr_p = result;
-
-    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1208,8 +1056,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                                size_t length, GITransfer transfer,
                                GITypeInfo* param_info, void** arr_p) {
-    enum { UNSIGNED=false, SIGNED=true };
-
     GITypeTag element_type = _g_type_info_get_storage_type(param_info);
 
     /* Special case for GValue "flat arrays" */
@@ -1220,43 +1066,44 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
     case GI_TYPE_TAG_UTF8:
         return gjs_array_to_strv (context, array_value, length, arr_p);
     case GI_TYPE_TAG_BOOLEAN:
-        return gjs_array_to_gboolean_array(context, array_value, length, arr_p);
+        return gjs_array_to_auto_array<gboolean, GI_TYPE_TAG_BOOLEAN>(
+            context, array_value, length, arr_p);
     case GI_TYPE_TAG_UNICHAR:
-        return gjs_array_to_intarray(context, array_value, length, arr_p,
-            sizeof(gunichar), UNSIGNED);
+        return gjs_array_to_auto_array<char32_t>(context, array_value, length,
+                                                 arr_p);
     case GI_TYPE_TAG_UINT8:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 1, UNSIGNED);
+        return gjs_array_to_auto_array<uint8_t>(context, array_value, length,
+                                                arr_p);
     case GI_TYPE_TAG_INT8:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 1, SIGNED);
+        return gjs_array_to_auto_array<int8_t>(context, array_value, length,
+                                               arr_p);
     case GI_TYPE_TAG_UINT16:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 2, UNSIGNED);
+        return gjs_array_to_auto_array<uint16_t>(context, array_value, length,
+                                                 arr_p);
     case GI_TYPE_TAG_INT16:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 2, SIGNED);
+        return gjs_array_to_auto_array<int16_t>(context, array_value, length,
+                                                arr_p);
     case GI_TYPE_TAG_UINT32:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 4, UNSIGNED);
+        return gjs_array_to_auto_array<uint32_t>(context, array_value, length,
+                                                 arr_p);
     case GI_TYPE_TAG_INT32:
-        return gjs_array_to_intarray
-            (context, array_value, length, arr_p, 4, SIGNED);
+        return gjs_array_to_auto_array<int32_t>(context, array_value, length,
+                                                arr_p);
     case GI_TYPE_TAG_INT64:
-        return gjs_array_to_intarray(context, array_value, length, arr_p, 8,
-            SIGNED);
+        return gjs_array_to_auto_array<int64_t>(context, array_value, length,
+                                                arr_p);
     case GI_TYPE_TAG_UINT64:
-        return gjs_array_to_intarray(context, array_value, length, arr_p, 8,
-            UNSIGNED);
+        return gjs_array_to_auto_array<uint64_t>(context, array_value, length,
+                                                 arr_p);
     case GI_TYPE_TAG_FLOAT:
-        return gjs_array_to_floatarray
-            (context, array_value, length, arr_p, false);
+        return gjs_array_to_auto_array<float>(context, array_value, length,
+                                              arr_p);
     case GI_TYPE_TAG_DOUBLE:
-        return gjs_array_to_floatarray
-            (context, array_value, length, arr_p, true);
+        return gjs_array_to_auto_array<double>(context, array_value, length,
+                                               arr_p);
     case GI_TYPE_TAG_GTYPE:
-        return gjs_gtypearray_to_array
-            (context, array_value, length, arr_p);
+        return gjs_array_to_auto_array<GType, GI_TYPE_TAG_GTYPE>(
+            context, array_value, length, arr_p);
 
     /* Everything else is a pointer type */
     case GI_TYPE_TAG_INTERFACE:

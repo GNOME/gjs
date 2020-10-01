@@ -11,6 +11,7 @@
 #include <girepository.h>
 #include <js/Conversions.h>
 
+#include "gi/gtype.h"
 #include "gjs/macros.h"
 
 namespace Gjs {
@@ -39,16 +40,21 @@ constexpr bool type_fits() {
 /* The tag is needed to disambiguate types such as gboolean and GType
  * which are in fact typedef's of other generic types.
  * Setting a tag for a type allows to perform proper specialization. */
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename T, GITypeTag TAG>
 constexpr auto get_strict() {
     if constexpr (TAG != GI_TYPE_TAG_VOID) {
         if constexpr (std::is_same_v<T, GType> && TAG == GI_TYPE_TAG_GTYPE)
             return GType{};
+        else if constexpr (std::is_same_v<T, gboolean> &&
+                           TAG == GI_TYPE_TAG_BOOLEAN)
+            return gboolean{};
         else
             return;
     }
 
-    if constexpr (type_fits<T, int32_t>())
+    if constexpr (std::is_same_v<T, char32_t>)
+        return char32_t{};
+    else if constexpr (type_fits<T, int32_t>())
         return int32_t{};
     else if constexpr (type_fits<T, uint32_t>())
         return uint32_t{};
@@ -74,9 +80,8 @@ constexpr auto get_relaxed() {
         return T{};
 }
 
-template <typename T>
-using Strict = decltype(JsValueHolder::get_strict<T>());
-
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+using Strict = decltype(JsValueHolder::get_strict<T, TAG>());
 
 template <typename T>
 using Relaxed = decltype(JsValueHolder::get_relaxed<T>());
@@ -90,39 +95,73 @@ constexpr bool type_has_js_getter() {
 }
 
 /* Avoid implicit conversions */
-template <typename T>
+template <GITypeTag TAG = GI_TYPE_TAG_VOID, typename T>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(JSContext*,
                                                       const JS::HandleValue&,
                                                       T*) = delete;
 
-GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
-                          int32_t* out) {
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
-                          uint32_t* out) {
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, uint32_t* out) {
     return JS::ToUint32(cx, value, out);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
-                          int64_t* out) {
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, char32_t* out) {
+    uint32_t tmp;
+    bool retval = JS::ToUint32(cx, value, &tmp);
+    *out = tmp;
+    return retval;
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, int64_t* out) {
     return JS::ToInt64(cx, value, out);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
-                          uint64_t* out) {
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, uint64_t* out) {
     return JS::ToUint64(cx, value, out);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c(JSContext* cx, const JS::HandleValue& value,
-                          double* out) {
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+    JSContext* cx, const JS::HandleValue& value, double* out) {
     return JS::ToNumber(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GI_TYPE_TAG_BOOLEAN>(
+    JSContext*, const JS::HandleValue& value, gboolean* out) {
+    *out = !!JS::ToBoolean(value);
+    return true;
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GI_TYPE_TAG_GTYPE>(
+    JSContext* cx, const JS::HandleValue& value, GType* out) {
+    if (!value.isObject())
+        return false;
+
+    JS::RootedObject elem_obj(cx);
+    elem_obj = &value.toObject();
+
+    if (!gjs_gtype_get_actual_gtype(cx, elem_obj, out))
+        return false;
+
+    if (*out == G_TYPE_INVALID)
+        return false;
+
+    return true;
 }
 
 template <typename WantedType, typename T>
