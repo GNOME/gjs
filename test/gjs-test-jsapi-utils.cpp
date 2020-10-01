@@ -75,6 +75,21 @@ static void test_gjs_autopointer_ctor_assign() {
     g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 1);
 }
 
+static void test_gjs_autopointer_ctor_assign_other() {
+    auto* ptr = gjs_test_object_new();
+    g_assert_nonnull(ptr);
+
+    GjsAutoTestObject autoptr1 = ptr;
+    GjsAutoTestObject autoptr2 = autoptr1;
+
+    g_assert(autoptr1 == ptr);
+    g_assert(autoptr1.get() == ptr);
+    g_assert(autoptr2 == ptr);
+    g_assert(autoptr2.get() == ptr);
+
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 2);
+}
+
 static void test_gjs_autopointer_dtor() {
     auto* ptr = gjs_test_object_new();
     g_assert_nonnull(ptr);
@@ -195,6 +210,64 @@ static void test_gjs_autopointer_assign_operator_self_ptr() {
 
     autoptr = ptr;
 
+    g_assert(autoptr == ptr);
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 1);
+}
+
+static void test_gjs_autopointer_assign_operator_object() {
+    GjsAutoTestObject autoptr1;
+    GjsAutoTestObject autoptr2;
+    auto* ptr = gjs_test_object_new();
+
+    autoptr1 = ptr;
+    autoptr2 = autoptr1;
+
+    g_assert(autoptr1 == autoptr2);
+    g_assert(autoptr2.get() == ptr);
+
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 2);
+}
+
+static void test_gjs_autopointer_assign_operator_other_object() {
+    auto* ptr1 = gjs_test_object_new();
+    auto* ptr2 = gjs_test_object_new();
+
+    GjsAutoTestObject autoptr1(ptr1);
+    GjsAutoTestObject autoptr2(ptr2);
+
+    g_object_ref(ptr1);
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr1), ==, 2);
+
+    autoptr1 = autoptr2;
+
+    g_assert(autoptr1 == ptr2);
+    g_assert(autoptr2 == ptr2);
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr1), ==, 1);
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr2), ==, 2);
+    g_object_unref(ptr1);
+}
+
+static void test_gjs_autopointer_assign_operator_self_object() {
+    auto* ptr = gjs_test_object_new();
+
+    GjsAutoTestObject autoptr(ptr);
+
+    autoptr = autoptr;
+
+    g_assert(autoptr == ptr);
+    g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 1);
+}
+
+static void test_gjs_autopointer_assign_operator_copy_and_swap() {
+    auto* ptr = gjs_test_object_new();
+    GjsAutoTestObject autoptr(ptr);
+
+    auto test_copy_fun = [ptr](GjsAutoTestObject data) {
+        g_assert(data == ptr);
+        g_assert_cmpuint(test_gjs_autopointer_refcount(data), ==, 2);
+    };
+
+    test_copy_fun(autoptr);
     g_assert(autoptr == ptr);
     g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 1);
 }
@@ -474,6 +547,9 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
         test_gjs_autopointer_ctor_take_ownership);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/constructor/assignment",
                     test_gjs_autopointer_ctor_assign);
+    g_test_add_func(
+        "/gjs/jsapi-utils/gjs-autopointer/constructor/assignment/other",
+        test_gjs_autopointer_ctor_assign_other);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor",
                     test_gjs_autopointer_dtor);
     g_test_add_func(
@@ -490,6 +566,17 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
         test_gjs_autopointer_assign_operator_other_ptr);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/operator/assign/self_ptr",
                     test_gjs_autopointer_assign_operator_self_ptr);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/operator/assign/object",
+                    test_gjs_autopointer_assign_operator_object);
+    g_test_add_func(
+        "/gjs/jsapi-utils/gjs-autopointer/operator/assign/other_object",
+        test_gjs_autopointer_assign_operator_other_object);
+    g_test_add_func(
+        "/gjs/jsapi-utils/gjs-autopointer/operator/assign/self_object",
+        test_gjs_autopointer_assign_operator_self_object);
+    g_test_add_func(
+        "/gjs/jsapi-utils/gjs-autopointer/operator/assign/copy_and_swap",
+        test_gjs_autopointer_assign_operator_copy_and_swap);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/operator/move",
                     test_gjs_autopointer_operator_move);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/operator/swap",

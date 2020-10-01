@@ -62,6 +62,9 @@ struct GjsAutoPointer {
     constexpr GjsAutoPointer(GjsAutoPointer&& other) : GjsAutoPointer() {
         this->swap(other);
     }
+    constexpr GjsAutoPointer(GjsAutoPointer const& other) : GjsAutoPointer() {
+        *this = other;
+    }
 
     constexpr GjsAutoPointer& operator=(Ptr ptr) {
         reset(ptr);
@@ -70,6 +73,12 @@ struct GjsAutoPointer {
 
     GjsAutoPointer& operator=(GjsAutoPointer&& other) {
         this->swap(other);
+        return *this;
+    }
+
+    GjsAutoPointer& operator=(GjsAutoPointer const& other) {
+        GjsAutoPointer dup(other.get(), GjsAutoTakeOwnership());
+        this->swap(dup);
         return *this;
     }
 
@@ -140,6 +149,14 @@ struct GjsAutoPointer {
  private:
     Ptr m_ptr;
 };
+
+template <typename T, typename F = void, void (*free_func)(F*) = free,
+          F* (*ref_func)(F*) = nullptr>
+constexpr bool operator==(
+    GjsAutoPointer<T, F, free_func, ref_func> const& lhs,
+    GjsAutoPointer<T, F, free_func, ref_func> const& rhs) {
+    return lhs.get() == rhs.get();
+}
 
 template <typename T>
 using GjsAutoFree = GjsAutoPointer<T>;
