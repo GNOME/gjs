@@ -8,6 +8,7 @@
 #include <glib-object.h>
 #include <glib.h>
 #include <stddef.h>  // for NULL
+#include <type_traits>  // for remove_reference<>::type
 #include <utility>   // for move, swap
 
 #include "gjs/jsapi-util.h"
@@ -172,6 +173,17 @@ static void test_gjs_autopointer_dtor_take_ownership() {
 
     g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 1);
     g_object_unref(ptr);
+}
+
+static void test_gjs_autopointer_dtor_default_free() {
+    GjsAutoPointer<char, void> autoptr(g_strdup("Please, FREE ME!"));
+    g_assert_cmpstr(autoptr, ==, "Please, FREE ME!");
+}
+
+static void test_gjs_autopointer_dtor_no_free_pointer() {
+    const char* str = "DO NOT FREE ME";
+    GjsAutoPointer<char, void, nullptr> autoptr(const_cast<char*>(str));
+    g_assert_cmpstr(autoptr, ==, "DO NOT FREE ME");
 }
 
 static void test_gjs_autopointer_assign_operator() {
@@ -555,6 +567,11 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
     g_test_add_func(
         "/gjs/jsapi-utils/gjs-autopointer/destructor/take_ownership",
         test_gjs_autopointer_dtor_take_ownership);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/default_free",
+                    test_gjs_autopointer_dtor_default_free);
+    g_test_add_func(
+        "/gjs/jsapi-utils/gjs-autopointer/destructor/no_free_pointer",
+        test_gjs_autopointer_dtor_no_free_pointer);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/c++",
                     test_gjs_autopointer_dtor_cpp);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/c++-array",

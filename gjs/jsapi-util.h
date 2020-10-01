@@ -36,13 +36,38 @@ class CallArgs;
 
 struct GjsAutoTakeOwnership {};
 
-template <typename T, typename F = void, void (*free_func)(F*) = free,
-          F* (*ref_func)(F*) = nullptr>
+template <typename F = void>
+using GjsAutoPointerRefFunction = F* (*)(F*);
+
+template <typename F = void>
+using GjsAutoPointerFreeFunction = void (*)(F*);
+
+template <typename T, typename F = void,
+          GjsAutoPointerFreeFunction<F> free_func = free,
+          GjsAutoPointerRefFunction<F> ref_func = nullptr>
 struct GjsAutoPointer {
     using Tp =
         std::conditional_t<std::is_array_v<T>, std::remove_extent_t<T>, T>;
     using Ptr = std::add_pointer_t<Tp>;
     using ConstPtr = std::add_pointer_t<std::add_const_t<Tp>>;
+
+ private:
+    template <typename FunctionType, FunctionType function>
+    static constexpr bool has_function() {
+        using NullType = std::integral_constant<FunctionType, nullptr>;
+        using ActualType = std::integral_constant<FunctionType, function>;
+
+        return !std::is_same_v<ActualType, NullType>;
+    }
+
+ public:
+    static constexpr bool has_free_function() {
+        return has_function<GjsAutoPointerFreeFunction<F>, free_func>();
+    }
+
+    static constexpr bool has_ref_function() {
+        return has_function<GjsAutoPointerRefFunction<F>, ref_func>();
+    }
 
     constexpr GjsAutoPointer(Ptr ptr = nullptr)  // NOLINT(runtime/explicit)
         : m_ptr(ptr) {}
@@ -51,10 +76,6 @@ struct GjsAutoPointer {
     explicit constexpr GjsAutoPointer(Tp ptr[]) : m_ptr(ptr) {}
     constexpr GjsAutoPointer(Ptr ptr, const GjsAutoTakeOwnership&)
         : GjsAutoPointer(ptr) {
-        // FIXME: should use if constexpr (...), but that doesn't work with
-        // ubsan, which generates a null pointer check making it not a constexpr
-        // anymore: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962 - Also a
-        // bogus warning, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94554
         m_ptr = copy();
     }
     constexpr GjsAutoPointer(ConstPtr ptr, const GjsAutoTakeOwnership& o)
@@ -109,15 +130,16 @@ struct GjsAutoPointer {
     }
 
     constexpr void reset(Ptr ptr = nullptr) {
-        // FIXME: Should use if constexpr (...) as above
-        auto ffunc = free_func;
         Ptr old_ptr = m_ptr;
         m_ptr = ptr;
-        if (old_ptr && ffunc) {
-            if constexpr (std::is_array_v<T>)
-                ffunc(reinterpret_cast<T*>(old_ptr));
-            else
-                ffunc(old_ptr);
+
+        if constexpr (has_free_function()) {
+            if (old_ptr) {
+                if constexpr (std::is_array_v<T>)
+                    free_func(reinterpret_cast<T*>(old_ptr));
+                else
+                    free_func(old_ptr);
+            }
         }
     }
 
@@ -132,13 +154,8 @@ struct GjsAutoPointer {
     template <typename U = T>
     [[nodiscard]] constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> copy()
         const {
-        // FIXME: Should use std::enable_if_t<ref_func != nullptr, Ptr>
-        if (!m_ptr)
-            return nullptr;
-
-        auto rf = ref_func;
-        g_assert(rf);
-        return reinterpret_cast<Ptr>(ref_func(m_ptr));
+        static_assert(has_ref_function(), "No ref function provided");
+        return m_ptr ? reinterpret_cast<Ptr>(ref_func(m_ptr)) : nullptr;
     }
 
     template <typename C>
@@ -150,8 +167,9 @@ struct GjsAutoPointer {
     Ptr m_ptr;
 };
 
-template <typename T, typename F = void, void (*free_func)(F*) = free,
-          F* (*ref_func)(F*) = nullptr>
+template <typename T, typename F = void,
+          GjsAutoPointerFreeFunction<F> free_func,
+          GjsAutoPointerRefFunction<F> ref_func>
 constexpr bool operator==(
     GjsAutoPointer<T, F, free_func, ref_func> const& lhs,
     GjsAutoPointer<T, F, free_func, ref_func> const& rhs) {
