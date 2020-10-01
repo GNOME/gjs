@@ -521,15 +521,16 @@ bool gjs_log_exception_uncaught(JSContext* cx) {
 }
 
 #ifdef __linux__
-static void
-_linux_get_self_process_size (gulong *vm_size,
-                              gulong *rss_size)
+// This type has to be long and not int32_t or int64_t, because of the %ld
+// sscanf specifier mandated in "man proc". The NOLINT comment is because
+// cpplint will ask you to avoid long in favour of defined bit width types.
+static void _linux_get_self_process_size(long* rss_size)  // NOLINT(runtime/int)
 {
     char *iter;
     gsize len;
     int i;
 
-    *vm_size = *rss_size = 0;
+    *rss_size = 0;
 
     char* contents_unowned;
     if (!g_file_get_contents("/proc/self/stat", &contents_unowned, &len,
@@ -538,20 +539,18 @@ _linux_get_self_process_size (gulong *vm_size,
 
     GjsAutoChar contents = contents_unowned;
     iter = contents;
-    /* See "man proc" for where this 22 comes from */
-    for (i = 0; i < 22; i++) {
+    // See "man proc" for where this 23 comes from
+    for (i = 0; i < 23; i++) {
         iter = strchr (iter, ' ');
         if (!iter)
             return;
         iter++;
     }
-    sscanf (iter, " %lu", vm_size);
-    iter = strchr (iter, ' ');
-    if (iter)
-        sscanf (iter, " %lu", rss_size);
+    sscanf(iter, " %ld", rss_size);
 }
 
-static gulong linux_rss_trigger;
+// We initiate a GC if RSS has grown by this much
+static uint64_t linux_rss_trigger;
 static int64_t last_gc_check_time;
 #endif
 
@@ -560,9 +559,7 @@ gjs_gc_if_needed (JSContext *context)
 {
 #ifdef __linux__
     {
-        /* We initiate a GC if VM or RSS has grown by this much */
-        gulong vmsize;
-        gulong rss_size;
+        long rss_size;  // NOLINT(runtime/int)
         gint64 now;
 
         /* We rate limit GCs to at most one per 5 frames.
@@ -573,7 +570,7 @@ gjs_gc_if_needed (JSContext *context)
 
         last_gc_check_time = now;
 
-        _linux_get_self_process_size (&vmsize, &rss_size);
+        _linux_get_self_process_size(&rss_size);
 
         /* linux_rss_trigger is initialized to 0, so currently
          * we always do a full GC early.
@@ -585,12 +582,15 @@ gjs_gc_if_needed (JSContext *context)
          * other hand, if swapping is going on, better
          * to GC.
          */
-        if (rss_size > linux_rss_trigger) {
-            linux_rss_trigger = (gulong) MIN(G_MAXULONG, rss_size * 1.25);
+        if (rss_size < 0)
+            return;  // doesn't make sense
+        uint64_t rss_usize = rss_size;
+        if (rss_usize > linux_rss_trigger) {
+            linux_rss_trigger = MIN(G_MAXULONG, rss_usize * 1.25);
             JS::NonIncrementalGC(context, GC_SHRINK, JS::GCReason::API);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */
-            linux_rss_trigger = (rss_size * 1.25);
+            linux_rss_trigger = rss_usize * 1.25;
         }
     }
 #else  // !__linux__
