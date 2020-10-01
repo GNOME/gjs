@@ -12,6 +12,7 @@
 #include <string>  // for u16string, u32string
 #include <type_traits>
 
+#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 #include <glib/gstdio.h>  // for g_unlink
@@ -46,7 +47,7 @@ void g_assertion_message(const char*, const char*, int, const char*,
 static unsigned cpp_random_seed = 0;
 
 template <typename T>
-constexpr T get_random_number() {
+T get_random_number() {
     std::mt19937_64 gen(cpp_random_seed);
 
     if constexpr (std::is_same_v<T, bool>) {
