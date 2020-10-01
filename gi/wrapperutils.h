@@ -996,6 +996,13 @@ class GIWrapperPrototype : public Base {
     void trace_impl(JSTracer*) {}
 };
 
+using GIWrappedUnowned = void;
+template <>
+struct GjsSmartPointer<GIWrappedUnowned>
+    : GjsAutoPointer<GIWrappedUnowned, void, nullptr> {
+    using GjsAutoPointer::GjsAutoPointer;
+};
+
 /*
  * GIWrapperInstance:
  *
@@ -1007,10 +1014,11 @@ class GIWrapperPrototype : public Base {
  * GIWrapperInstance", because of the unusual polymorphism scheme, in order for
  * Base to call methods such as trace_impl().
  */
-template <class Base, class Prototype, class Instance, typename Wrapped = void>
+template <class Base, class Prototype, class Instance,
+          typename Wrapped = GIWrappedUnowned>
 class GIWrapperInstance : public Base {
  protected:
-    Wrapped* m_ptr = nullptr;
+    GjsSmartPointer<Wrapped> m_ptr;
 
     explicit GIWrapperInstance(JSContext* cx, JS::HandleObject obj)
         : Base(Prototype::for_js_prototype(cx, obj)), m_ptr(nullptr) {
@@ -1061,7 +1069,7 @@ class GIWrapperInstance : public Base {
      * Like ptr(), but returns a byte pointer for use in byte arithmetic.
      */
     [[nodiscard]] uint8_t* raw_ptr() const {
-        return reinterpret_cast<uint8_t*>(m_ptr);
+        return reinterpret_cast<uint8_t*>(ptr());
     }
 
     // JSClass operations

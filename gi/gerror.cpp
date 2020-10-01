@@ -47,7 +47,6 @@ ErrorInstance::ErrorInstance(JSContext* cx, JS::HandleObject obj)
 }
 
 ErrorInstance::~ErrorInstance(void) {
-    g_clear_error(&m_ptr);
     GJS_DEC_COUNTER(gerror_instance);
 }
 

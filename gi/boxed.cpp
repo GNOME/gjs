@@ -419,18 +419,16 @@ BoxedInstance::~BoxedInstance() {
     if (m_owning_ptr) {
         if (m_allocated_directly) {
             if (gtype() == G_TYPE_VALUE)
-                g_value_unset(static_cast<GValue*>(m_ptr));
-            g_free(m_ptr);
+                g_value_unset(m_ptr.as<GValue>());
+            g_free(m_ptr.release());
         } else {
             if (g_type_is_a(gtype(), G_TYPE_BOXED))
-                g_boxed_free(gtype(), m_ptr);
+                g_boxed_free(gtype(), m_ptr.release());
             else if (g_type_is_a(gtype(), G_TYPE_VARIANT))
-                g_variant_unref(static_cast<GVariant*>(m_ptr));
+                g_variant_unref(static_cast<GVariant*>(m_ptr.release()));
             else
                 g_assert_not_reached ();
         }
-
-        m_ptr = nullptr;
     }
 
     GJS_DEC_COUNTER(boxed_instance);

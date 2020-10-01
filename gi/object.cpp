@@ -191,7 +191,7 @@ bool ObjectInstance::check_gobject_disposed(const char* for_what) const {
         "it. This might be caused by the object having been destroyed from C "
         "code using something such as destroy(), dispose(), or remove() "
         "vfuncs.",
-        ns(), name(), m_ptr, for_what);
+        ns(), name(), m_ptr.get(), for_what);
     gjs_dumpstack();
     return false;
 }
@@ -218,7 +218,7 @@ ObjectInstance::check_js_object_finalized(void)
             "Object %p (a %s) resurfaced after the JS wrapper was finalized. "
             "This is some library doing dubious memory management inside "
             "dispose()",
-            m_ptr, type_name());
+            m_ptr.get(), type_name());
         m_wrapper_finalized = false;
         g_assert(!m_wrapper);  /* should associate again with a new wrapper */
     }
@@ -1285,10 +1285,10 @@ ObjectInstance::release_native_object(void)
 {
     discard_wrapper();
     if (m_uses_toggle_ref)
-        g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, nullptr);
+        g_object_remove_toggle_ref(m_ptr.release(), wrapped_gobj_toggle_notify,
+                                   nullptr);
     else
-        g_object_unref(m_ptr);
-    m_ptr = nullptr;
+        m_ptr = nullptr;
 }
 
 /* At shutdown, we need to ensure we've cleared the context of any
@@ -1467,15 +1467,15 @@ ObjectInstance::disassociate_js_gobject(void)
     bool had_toggle_down, had_toggle_up;
 
     if (!m_gobj_disposed)
-        g_object_weak_unref(m_ptr, wrapped_gobj_dispose_notify, this);
+        g_object_weak_unref(m_ptr.get(), wrapped_gobj_dispose_notify, this);
 
     auto& toggle_queue = ToggleQueue::get_default();
-    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr);
+    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr.get());
     if (had_toggle_down != had_toggle_up) {
         g_error(
             "JS object wrapper for GObject %p (%s) is being released while "
             "toggle references are still pending.",
-            m_ptr, type_name());
+            m_ptr.get(), type_name());
     }
 
     /* Fist, remove the wrapper pointer from the wrapped GObject */
@@ -2462,7 +2462,7 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
 // Overrides GIWrapperInstance::typecheck_impl()
 bool ObjectInstance::typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
                                     GType expected_type) const {
-    g_assert(m_gobj_disposed || gtype() == G_OBJECT_TYPE(m_ptr));
+    g_assert(m_gobj_disposed || gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
     return GIWrapperInstance::typecheck_impl(cx, expected_info, expected_type);
 }
 
