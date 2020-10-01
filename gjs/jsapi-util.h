@@ -187,10 +187,19 @@ struct GjsAutoCharFuncs {
 using GjsAutoChar =
     GjsAutoPointer<char, char, GjsAutoCharFuncs::free, GjsAutoCharFuncs::dup>;
 
+struct GjsAutoErrorFuncs {
+    static GError* error_copy(GError* error) { return g_error_copy(error); }
+};
+using GjsAutoError =
+    GjsAutoPointer<GError, GError, g_error_free, GjsAutoErrorFuncs::error_copy>;
+
 using GjsAutoStrv = GjsAutoPointer<char*, char*, g_strfreev, g_strdupv>;
 
 template <typename T>
 using GjsAutoUnref = GjsAutoPointer<T, void, g_object_unref, g_object_ref>;
+
+using GjsAutoGVariant =
+    GjsAutoPointer<GVariant, GVariant, g_variant_unref, g_variant_ref>;
 
 template <typename V, typename T>
 constexpr void GjsAutoPointerDeleter(T v) {
@@ -289,6 +298,31 @@ struct GjsAutoCallableInfo : GjsAutoBaseInfo {
         if (*this)
             g_assert(GI_IS_CALLABLE_INFO(get()));
     }
+};
+
+template <typename T>
+struct GjsSmartPointer : GjsAutoPointer<T> {
+    using GjsAutoPointer<T>::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GObject> : GjsAutoUnref<GObject> {
+    using GjsAutoUnref<GObject>::GjsAutoUnref;
+};
+
+template <>
+struct GjsSmartPointer<GIBaseInfo> : GjsAutoBaseInfo {
+    using GjsAutoBaseInfo::GjsAutoBaseInfo;
+};
+
+template <>
+struct GjsSmartPointer<GError> : GjsAutoError {
+    using GjsAutoError::GjsAutoError;
+};
+
+template <>
+struct GjsSmartPointer<GVariant> : GjsAutoGVariant {
+    using GjsAutoGVariant::GjsAutoPointer;
 };
 
 /* For use of GjsAutoInfo<TAG> in GC hash maps */
