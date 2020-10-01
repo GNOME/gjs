@@ -407,9 +407,9 @@ gjs_profiler_start(GjsProfiler *self)
 
     g_return_if_fail(!self->capture);
 
-    struct sigaction sa = { 0 };
-    struct sigevent sev = { 0 };
-    struct itimerspec its = { 0 };
+    struct sigaction sa = {{0}};
+    struct sigevent sev = {{0}};
+    struct itimerspec its = {{0}};
     struct itimerspec old_its;
 
     if (self->target_capture) {
@@ -543,7 +543,7 @@ gjs_profiler_stop(GjsProfiler *self)
 
 #ifdef ENABLE_PROFILER
 
-    struct itimerspec its = { 0 };
+    struct itimerspec its = {{0}};
     timer_settime(self->timer, 0, &its, nullptr);
     timer_delete(self->timer);
 
