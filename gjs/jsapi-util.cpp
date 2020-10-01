@@ -586,7 +586,7 @@ gjs_gc_if_needed (JSContext *context)
             return;  // doesn't make sense
         uint64_t rss_usize = rss_size;
         if (rss_usize > linux_rss_trigger) {
-            linux_rss_trigger = MIN(G_MAXULONG, rss_usize * 1.25);
+            linux_rss_trigger = MIN(G_MAXUINT32, rss_usize * 1.25);
             JS::NonIncrementalGC(context, GC_SHRINK, JS::GCReason::API);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */
