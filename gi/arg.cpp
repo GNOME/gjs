@@ -36,6 +36,7 @@
 #include "gi/gerror.h"
 #include "gi/gtype.h"
 #include "gi/interface.h"
+#include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
@@ -703,6 +704,20 @@ constexpr void array_free_func(T* array) {
         g_free(array);
 }
 
+template <GITypeTag TAG, typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
+    JSContext* cx, const JS::HandleValue& value, T* out) {
+    using ValueHolderT = Gjs::JsValueHolder::Strict<T, TAG>;
+    if constexpr (Gjs::type_has_js_getter<T, ValueHolderT>())
+        return Gjs::js_value_to_c<TAG>(cx, value, out);
+
+    ValueHolderT v;
+    bool ret = Gjs::js_value_to_c<TAG>(cx, value, &v);
+    *out = v;
+
+    return ret;
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
     JSContext* cx, JS::Value array_value, size_t length, void** arr_p) {
@@ -715,20 +730,17 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
 
     for (size_t i = 0; i < length; ++i) {
         elem = JS::UndefinedValue();
-        Gjs::JsValueHolder::Strict<T, TAG> value;
 
         if (!JS_GetElement(cx, array, i, &elem)) {
             gjs_throw(cx, "Missing array element %" G_GSIZE_FORMAT, i);
             return false;
         }
 
-        if (!Gjs::js_value_to_c<TAG>(cx, elem, &value)) {
+        if (!js_value_to_c_strict<TAG>(cx, elem, &result[i])) {
             gjs_throw(cx, "Invalid element in %s array",
                       Gjs::static_type_name<T, TAG>());
             return false;
         }
-
-        result[i] = value;
     }
 
     *arr_p = result.release();
