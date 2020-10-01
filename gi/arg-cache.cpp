@@ -369,11 +369,10 @@ static bool gjs_marshal_caller_allocates_in(JSContext*, GjsArgumentCache* self,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_null_in_in(JSContext*, GjsArgumentCache*,
+static bool gjs_marshal_null_in_in(JSContext* cx, GjsArgumentCache* self,
                                    GjsFunctionCallState*, GIArgument* arg,
                                    JS::HandleValue) {
-    gjs_arg_unset<void*>(arg);
-    return true;
+    return self->handle_nullable(cx, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
