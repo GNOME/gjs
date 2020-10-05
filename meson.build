@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 project('gjs', 'cpp', 'c', version: '1.67.1', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 0.52.0',
     default_options: ['cpp_std=c++17', 'c_std=c99', 'warning_level=2'])

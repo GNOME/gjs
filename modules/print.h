@@ -1,9 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
- *
- * Copyright (c) 2020 Evan Welsh <noreply@evanwelsh.com>
- */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2020 Evan Welsh <noreply@evanwelsh.com>
 
 #ifndef MODULES_PRINT_H_
 #define MODULES_PRINT_H_

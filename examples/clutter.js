@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 const Clutter = imports.gi.Clutter;
 
 Clutter.init(null);
 
-let stage = new Clutter.Stage();
+const stage = new Clutter.Stage({visible: true});
 
 let texture = new Clutter.Texture({
     filename: 'test.jpg',
@@ -14,12 +16,9 @@ texture.connect('button-press-event', () => {
     return Clutter.EVENT_STOP;
 });
 
-let color = new Clutter.Color();
-color.from_string('Black');
+const [, color] = Clutter.Color.from_string('Black');
+stage.background_color = color;
 
-stage.color = color;
-
-stage.add_actor(texture);
-stage.show();
+stage.add_child(texture);
 
 Clutter.main();

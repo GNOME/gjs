@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 SOURCEDIR=$(pwd)
 GIDATADIR=$(pkg-config --variable=gidatadir gobject-introspection-1.0)

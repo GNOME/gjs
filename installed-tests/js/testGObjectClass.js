@@ -1,4 +1,6 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 imports.gi.versions.Gtk = '3.0';
 
 const Gio = imports.gi.Gio;

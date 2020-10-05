@@ -1,4 +1,5 @@
 /* exported ByteArray, fromArray, fromGBytes, fromString, toGBytes, toString */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 /* eslint no-redeclare: ["error", { "builtinGlobals": false }] */  // for toString
 var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;

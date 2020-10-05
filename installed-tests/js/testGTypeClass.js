@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // We use Gio to have some objects that we know exist
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;

@@ -1,11 +1,12 @@
 /* -*- mode: js; indent-tabs-mode: nil; -*- */
 /* exported Class, Interface, defineGObjectLegacyObjects,
 defineGtkLegacyObjects */
-// Copyright 2008  litl, LLC
-// Copyright 2011  Jasper St. Pierre
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2011 Jasper St. Pierre
 
 // Class magic
-// Adapted from MooTools, MIT license
+// Adapted from MooTools
 // https://github.com/mootools/mootools-core
 
 function _Base() {

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 # Workaround for https://github.com/mesonbuild/meson/issues/3047
 # Linker scripts are not understood by the macOS linker, we need to use a
 # symbol export file instead.

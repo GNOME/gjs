@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;

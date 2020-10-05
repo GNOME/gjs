@@ -1,4 +1,5 @@
 // -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 /* exported format, printf, vprintf */
 

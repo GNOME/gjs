@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
     gjs="$TOP_BUILDDIR/gjs-console"

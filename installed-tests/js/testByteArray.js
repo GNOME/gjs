@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 const ByteArray = imports.byteArray;
 const {GIMarshallingTests, GLib} = imports.gi;
 

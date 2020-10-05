@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 # === Build Spidermonkey stage ===
 
 FROM fedora:32 AS mozjs-build

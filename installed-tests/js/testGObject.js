@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // This is where overrides in modules/core/overrides/GObject.js are tested,
 // except for the class machinery, interface machinery, and GObject.ParamSpec,
 // which are big enough to get their own files.

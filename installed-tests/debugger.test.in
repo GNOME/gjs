@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 [Test]
 Type=session
 Exec=@installed_tests_execdir@/debugger-test.sh @installed_tests_execdir@/debugger/@name@

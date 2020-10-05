@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2018 The Meson development team
+
 [wrap-file]
 directory = zlib-1.2.11
 

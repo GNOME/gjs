@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 const Regress = imports.gi.Regress;
 
 // We use Gio to have some objects that we know exist

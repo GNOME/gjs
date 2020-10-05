@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # IWYU mapping file for files that are part of libgjs
 [
   {"include": ["<bits/std_abs.h>", "private", "<stdlib.h>", "public"]},
@@ -20,4 +21,7 @@
   {"include": ["@\"sysprof-capture-.*\"", "private", "<sysprof-capture.h>", "public"]},
   {"include": ["@<sysprof-capture-.*>", "private", "<sysprof-capture.h>", "public"]},
   {"include": ["<X11/Xlib.h>", "private", "<cairo-xlib.h>", "public"]},
+
+  # Workaround for https://github.com/include-what-you-use/include-what-you-use/issues/226
+  {"include": ["<cstdint>", "private", "<stdint.h>", "public"]},
 ]

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 ### Installed tests ############################################################
 
 installed_tests_execdir = get_option('prefix') / get_option('libexecdir') / 'installed-tests' / meson.project_name()

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // Include this in case both GTK3 and GTK4 installed, otherwise an exception
 // will be thrown
 imports.gi.versions.Gtk = '3.0';

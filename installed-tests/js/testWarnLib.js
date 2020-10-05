@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+
 // File with tests from the WarnLib-1.0.gir test suite from GI
 
 const {Gio, GObject, WarnLib} = imports.gi;

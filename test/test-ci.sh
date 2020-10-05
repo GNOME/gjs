@@ -1,4 +1,5 @@
 #!/bin/sh -e
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 
 do_Set_Env () {
     #Save cache on $pwd (required by artifacts)
