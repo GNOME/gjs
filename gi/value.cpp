@@ -564,12 +564,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
                         g_struct_info_is_foreign ((GIStructInfo*)registered)) {
                         GArgument arg;
 
-                        if (!gjs_struct_foreign_convert_to_g_argument (context, value,
-                                                                       registered,
-                                                                       NULL,
-                                                                       GJS_ARGUMENT_ARGUMENT,
-                                                                       GI_TRANSFER_NOTHING,
-                                                                       true, &arg))
+                        if (!gjs_struct_foreign_convert_to_g_argument(
+                                context, value, registered, nullptr,
+                                GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
+                                GjsArgumentFlags::MAY_BE_NULL, &arg))
                             return false;
 
                         gboxed = gjs_arg_get<void*>(&arg);

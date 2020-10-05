@@ -16,6 +16,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gi/arg.h"
 #include "gjs/macros.h"
 
 struct GjsFunctionCallState;
@@ -43,7 +44,7 @@ struct GjsArgumentCache {
     bool skip_in : 1;
     bool skip_out : 1;
     GITransfer transfer : 2;
-    bool nullable : 1;
+    GjsArgumentFlags flags : 1;
     bool is_unsigned : 1;  // number and enum only
 
     union {
@@ -122,14 +123,15 @@ struct GjsArgumentCache {
         arg_name = "instance parameter";
         // Some calls accept null for the instance, but generally in an object
         // oriented language it's wrong to call a method on null
-        nullable = false;
+        flags = GjsArgumentFlags::NONE;
         skip_out = true;
     }
 
     void set_return_value() {
         arg_pos = RETURN_VALUE;
         arg_name = "return value";
-        nullable = false;  // We don't really care for return values
+        flags =
+            GjsArgumentFlags::NONE;  // We don't really care for return values
     }
     [[nodiscard]] bool is_return_value() { return arg_pos == RETURN_VALUE; }
 };

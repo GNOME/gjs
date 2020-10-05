@@ -186,7 +186,7 @@ static bool gjs_marshal_generic_in_in(JSContext* cx, GjsArgumentCache* self,
                                    self->is_return_value()
                                        ? GJS_ARGUMENT_RETURN_VALUE
                                        : GJS_ARGUMENT_ARGUMENT,
-                                   self->transfer, self->nullable, arg);
+                                   self->transfer, self->flags, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -214,7 +214,7 @@ static bool gjs_marshal_explicit_array_in_in(JSContext* cx,
 
     if (!gjs_array_to_explicit_array(
             cx, value, &self->type_info, self->arg_name, GJS_ARGUMENT_ARGUMENT,
-            self->transfer, self->nullable, &data, &length))
+            self->transfer, self->flags, &data, &length))
         return false;
 
     uint8_t length_pos = self->contents.array.length_pos;
@@ -266,7 +266,7 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
     GjsCallbackTrampoline* trampoline;
     ffi_closure* closure;
 
-    if (value.isNull() && self->nullable) {
+    if (value.isNull() && !!(self->flags & GjsArgumentFlags::MAY_BE_NULL)) {
         closure = nullptr;
         trampoline = nullptr;
     } else {
@@ -446,7 +446,7 @@ static bool gjs_marshal_gtype_in_in(JSContext* cx, GjsArgumentCache* self,
 
 // Common code for most types that are pointers on the C side
 bool GjsArgumentCache::handle_nullable(JSContext* cx, GIArgument* arg) {
-    if (!nullable)
+    if (!(flags & GjsArgumentFlags::MAY_BE_NULL))
         return report_invalid_null(cx, arg_name);
     gjs_arg_unset<void*>(arg);
     return true;
@@ -540,7 +540,7 @@ static bool gjs_marshal_foreign_in_in(JSContext* cx, GjsArgumentCache* self,
     self->contents.tmp_foreign_info = foreign_info;
     return gjs_struct_foreign_convert_to_g_argument(
         cx, value, foreign_info, self->arg_name, GJS_ARGUMENT_ARGUMENT,
-        self->transfer, self->nullable, arg);
+        self->transfer, self->flags, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1612,7 +1612,11 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     self->arg_name = g_base_info_get_name(arg);
     g_arg_info_load_type(arg, &self->type_info);
     self->transfer = g_arg_info_get_ownership_transfer(arg);
-    self->nullable = g_arg_info_may_be_null(arg);
+
+    GjsArgumentFlags flags = GjsArgumentFlags::NONE;
+    if (g_arg_info_may_be_null(arg))
+        flags |= GjsArgumentFlags::MAY_BE_NULL;
+    self->flags = flags;
 
     if (direction == GI_DIRECTION_IN)
         self->skip_out = true;

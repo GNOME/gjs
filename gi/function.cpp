@@ -424,8 +424,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         /* non-void return value, no out args. Should
          * be a single return value. */
         if (!gjs_value_to_g_argument(context, rval, ret_type, "callback",
-                                     GJS_ARGUMENT_RETURN_VALUE, transfer, true,
-                                     &argument))
+                                     GJS_ARGUMENT_RETURN_VALUE, transfer,
+                                     GjsArgumentFlags::MAY_BE_NULL, &argument))
             return false;
 
         set_return_ffi_arg_from_giargument(ret_type, result, &argument);
@@ -474,7 +474,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
             if (!gjs_value_to_g_argument(context, elem, ret_type, "callback",
                                          GJS_ARGUMENT_RETURN_VALUE, transfer,
-                                         true, &argument))
+                                         GjsArgumentFlags::MAY_BE_NULL,
+                                         &argument))
                 return false;
 
             set_return_ffi_arg_from_giargument(ret_type, result, &argument);
