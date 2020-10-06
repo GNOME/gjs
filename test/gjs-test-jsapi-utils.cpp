@@ -264,7 +264,14 @@ static void test_gjs_autopointer_assign_operator_self_object() {
 
     GjsAutoTestObject autoptr(ptr);
 
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wself-assign"
+#endif
     autoptr = autoptr;
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#endif
 
     g_assert(autoptr == ptr);
     g_assert_cmpuint(test_gjs_autopointer_refcount(ptr), ==, 1);

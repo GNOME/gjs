@@ -71,9 +71,10 @@ struct GjsAutoPointer {
 
     constexpr GjsAutoPointer(Ptr ptr = nullptr)  // NOLINT(runtime/explicit)
         : m_ptr(ptr) {}
-    template <typename U = T,
-              typename std::enable_if_t<std::is_array_v<U>, int> = 0>
-    explicit constexpr GjsAutoPointer(Tp ptr[]) : m_ptr(ptr) {}
+    template <typename U, typename = std::enable_if_t<std::is_same_v<U, Tp> &&
+                                                      std::is_array_v<T>>>
+    explicit constexpr GjsAutoPointer(U ptr[]) : m_ptr(ptr) {}
+
     constexpr GjsAutoPointer(Ptr ptr, const GjsAutoTakeOwnership&)
         : GjsAutoPointer(ptr) {
         m_ptr = copy();
@@ -194,7 +195,7 @@ using GjsAutoUnref = GjsAutoPointer<T, void, g_object_unref, g_object_ref>;
 template <typename V, typename T>
 constexpr void GjsAutoPointerDeleter(T v) {
     if constexpr (std::is_array_v<V>)
-        delete[] v;
+        delete[] reinterpret_cast<std::remove_extent_t<V>*>(v);
     else
         delete v;
 }
