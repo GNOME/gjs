@@ -174,4 +174,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
                                   GICallableInfo* callable);
 
+[[nodiscard]] size_t gjs_g_argument_get_array_length(GITypeTag tag,
+                                                     GIArgument* arg);
+
 #endif  // GI_ARG_CACHE_H_

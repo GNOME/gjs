@@ -57,8 +57,8 @@ static_assert(G_N_ELEMENTS(expected_type_names) == ExpectedType::LAST,
 
 // A helper function to retrieve array lengths from a GIArgument (letting the
 // compiler generate good instructions in case of big endian machines)
-[[nodiscard]] static size_t gjs_g_argument_get_array_length(GITypeTag tag,
-                                                            GIArgument* arg) {
+[[nodiscard]] size_t gjs_g_argument_get_array_length(GITypeTag tag,
+                                                     GIArgument* arg) {
     switch (tag) {
         case GI_TYPE_TAG_INT8:
             return gjs_arg_get<int8_t>(arg);

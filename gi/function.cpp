@@ -478,23 +478,20 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 gint array_length_pos = g_type_info_get_array_length(&type_info);
                 GIArgInfo array_length_arg;
                 GITypeInfo arg_type_info;
-                JS::RootedValue length(context);
 
                 g_callable_info_load_arg(m_info, array_length_pos,
                                          &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
-                if (!gjs_value_from_g_argument(context, &length, &arg_type_info,
-                                               args[array_length_pos + c_args_offset],
-                                               true))
-                    return false;
+                size_t length = gjs_g_argument_get_array_length(
+                    g_type_info_get_tag(&arg_type_info),
+                    args[array_length_pos + c_args_offset]);
 
                 if (!jsargs.growBy(1))
                     g_error("Unable to grow vector");
 
-                if (!gjs_value_from_explicit_array(context, jsargs[n_jsargs++],
-                                                   &type_info,
-                                                   args[i + c_args_offset],
-                                                   length.toInt32()))
+                if (!gjs_value_from_explicit_array(
+                        context, jsargs[n_jsargs++], &type_info,
+                        args[i + c_args_offset], length))
                     return false;
                 break;
             }
