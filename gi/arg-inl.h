@@ -174,19 +174,6 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 // Implementation to store rounded (u)int64_t numbers into double
 
 template <typename BigT>
-[[nodiscard]] inline constexpr BigT max_safe_big_number() {
-    return (BigT(1) << std::numeric_limits<double>::digits) - 1;
-}
-
-template <typename BigT>
-[[nodiscard]] inline constexpr BigT min_safe_big_number() {
-    if constexpr (std::is_signed_v<BigT>)
-        return -(max_safe_big_number<BigT>());
-
-    return std::numeric_limits<BigT>::lowest();
-}
-
-template <typename BigT>
 [[nodiscard]] inline std::enable_if_t<std::is_integral_v<BigT> &&
                                           (std::numeric_limits<BigT>::max() >
                                            std::numeric_limits<int32_t>::max()),
@@ -194,8 +181,8 @@ template <typename BigT>
 gjs_arg_get_maybe_rounded(GIArgument* arg) {
     BigT val = gjs_arg_get<BigT>(arg);
 
-    if (val < min_safe_big_number<BigT>() ||
-        val > max_safe_big_number<BigT>()) {
+    if (val < Gjs::min_safe_big_number<BigT>() ||
+        val > Gjs::max_safe_big_number<BigT>()) {
         g_warning(
             "Value %s cannot be safely stored in a JS Number "
             "and may be rounded",

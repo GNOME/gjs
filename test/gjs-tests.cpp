@@ -33,6 +33,7 @@
 #include <mozilla/Span.h>  // for MakeStringSpan
 
 #include "gi/arg-inl.h"
+#include "gi/js-value-inl.h"
 #include "gjs/context.h"
 #include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
@@ -837,7 +838,8 @@ static void gjstest_test_safe_integer_max(GjsUnitTestFixture* fx, const void*) {
     g_assert_true(JS_GetProperty(fx->cx, number_class_object,
                                  "MAX_SAFE_INTEGER", &safe_value));
 
-    g_assert_cmpint(safe_value.toNumber(), ==, max_safe_big_number<int64_t>());
+    g_assert_cmpint(safe_value.toNumber(), ==,
+                    Gjs::max_safe_big_number<int64_t>());
 }
 
 static void gjstest_test_safe_integer_min(GjsUnitTestFixture* fx, const void*) {
@@ -849,7 +851,8 @@ static void gjstest_test_safe_integer_min(GjsUnitTestFixture* fx, const void*) {
     g_assert_true(JS_GetProperty(fx->cx, number_class_object,
                                  "MIN_SAFE_INTEGER", &safe_value));
 
-    g_assert_cmpint(safe_value.toNumber(), ==, min_safe_big_number<int64_t>());
+    g_assert_cmpint(safe_value.toNumber(), ==,
+                    Gjs::min_safe_big_number<int64_t>());
 }
 
 static void gjstest_test_args_set_get_unset() {
