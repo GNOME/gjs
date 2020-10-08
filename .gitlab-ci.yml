@@ -223,6 +223,7 @@ iwyu:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   script:
     - test/test-ci.sh UPSTREAM_BASE
+    - meson setup _build
     - ./tools/run_iwyu.sh ci-upstream-base
   only:
     - branches
@@ -262,6 +263,7 @@ iwyu-full:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   script:
+    - meson setup _build
     - ./tools/run_iwyu.sh
   except:
     - schedules

@@ -35,11 +35,11 @@ should_analyze () {
     esac
 }
 
-if ! meson setup _build; then
-    echo 'Meson failed.'
+cd ${BUILDDIR:-_build}
+if ! ninja -t compdb > compile_commands.json; then
+    echo 'Generating compile_commands.json failed.'
     exit 1
 fi
-cd ${BUILDDIR:-_build}
 
 echo "files: $files"
 
