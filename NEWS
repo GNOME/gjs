@@ -1,3 +1,19 @@
+Version 1.66.1
+--------------
+
+- Closed bugs and merge requests:
+
+  * Throws on Unsupported caller allocates [!495, Marco Trevisan]
+  * arg: Fix MIN/MAX safe big integer limits [!492, Marco Trevisan]
+  * Fix leak when virtual function is unimplemented [!498, Evan Welsh]
+  * Cannot compile GJS 1.66.0 on macOS with llvm/clang 10.0.1 [#347, !499,
+    Marc-Antoine Perennou]
+  * console: fix typo in command-line option [!500, Andy Holmes]
+  * Prevent passing null pointers when not nullable [!503, Evan Welsh]
+  * Passing fundamentals to functions no longer works [#353, !506, Evan Welsh]
+
+- Fixed examples/clutter.js to work with more recent Clutter [Philip Chimento]
+
 Version 1.66.0
 --------------
 
