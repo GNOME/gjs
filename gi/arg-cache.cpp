@@ -1363,7 +1363,9 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
             // marshallers know not to copy stuff if we don't need to.
 
             if (gtype == G_TYPE_VALUE) {
-                if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
+                if (self->arg_pos == GjsArgumentCache::INSTANCE_PARAM)
+                    self->marshallers = &boxed_in_marshallers;
+                else if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
                     self->marshallers = &gvalue_in_transfer_none_marshallers;
                 else
                     self->marshallers = &gvalue_in_marshallers;
