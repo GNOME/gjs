@@ -68,6 +68,15 @@ describe('GObject value (GValue)', function () {
                 v[`set_${type}`](randomContent);
                 expect(v[`get_${type}`]()).toEqual(randomContent);
             });
+
+            it(`copies ${type}`, function () {
+                v[`set_${type}`](randomContent);
+
+                const other = new GObject.Value();
+                other.init(gtype);
+                v.copy(other);
+                expect(other[`get_${type}`]()).toEqual(randomContent);
+            });
         });
     });
 

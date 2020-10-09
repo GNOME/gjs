@@ -241,4 +241,26 @@ describe('Gtk overrides', function () {
         iter.stamp = 42;
         expect(iter.stamp).toEqual(42);
     });
+
+    it('can get style properties using GObject.Value', function () {
+        let win = new Gtk.ScrolledWindow();
+        let value = new GObject.Value();
+        value.init(GObject.TYPE_BOOLEAN);
+        win.style_get_property('scrollbars-within-bevel', value);
+        expect(value.get_boolean()).toBeDefined();
+
+        value.unset();
+        value.init(GObject.TYPE_INT);
+        let preVal = Math.max(512521, Math.random() * Number.MAX_SAFE_INTEGER);
+        value.set_int(preVal);
+        win.style_get_property('scrollbar-spacing', value);
+        expect(value.get_int()).not.toEqual(preVal);
+
+        win = new Gtk.Window();
+        value.unset();
+        value.init(GObject.TYPE_STRING);
+        value.set_string('EMPTY');
+        win.style_get_property('decoration-button-layout', value);
+        expect(value.get_string()).not.toEqual('EMPTY');
+    });
 });
