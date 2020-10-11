@@ -39,7 +39,7 @@ RUN DESTDIR=/root/sysprof-install ninja -C _build install
 
 WORKDIR /root
 
-RUN git clone --depth 1 https://github.com/ptomato/mozjs.git -b ${MOZJS_BRANCH}
+RUN git clone --depth 1 https://github.com/3v1n0/mozjs.git -b ${MOZJS_BRANCH}
 RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
