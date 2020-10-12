@@ -320,21 +320,23 @@ zeal_11:
     - sed -i '/^mountopt =.*/d' /etc/containers/storage.conf
 
     # Where the real magic happens
-    - buildah bud -f $DOCKERFILE -t "$CI_REGISTRY_IMAGE:$CI_JOB_NAME" $ARGS
+    - buildah bud -f $DOCKERFILE -t "$IMAGE_NAME" $ARGS
 
     # Prepare to publish
-    - buildah tag "$CI_REGISTRY_IMAGE:$CI_JOB_NAME" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
+    - buildah tag "$IMAGE_NAME" "$IMAGE_JOB_NAME"
     - buildah images
     - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
     # Publish (if running on a schedule)
     - |
       if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
-        buildah push "$CI_REGISTRY_IMAGE:$CI_JOB_NAME"
-        buildah push "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
+        buildah push "$IMAGE_NAME"
+        buildah push "$IMAGE_JOB_NAME"
       fi
 
 .Docker variables: &docker_variables
+  IMAGE_NAME: $CI_REGISTRY_IMAGE:$CI_JOB_NAME
+  IMAGE_JOB_NAME: $CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME
   STORAGE_DRIVER: vfs
   BUILDAH_FORMAT: docker
   BUILDAH_ISOLATION: chroot
