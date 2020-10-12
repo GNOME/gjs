@@ -4,12 +4,13 @@
 
 FROM fedora:32 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs68
+ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS="--enable-posix-nspr-emulation --enable-unaligned-private-values"
 
 ENV SHELL=/bin/bash
 
 RUN dnf -y install 'dnf-command(builddep)' git make which llvm-devel
-RUN dnf -y builddep mozjs68
+RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root
 
