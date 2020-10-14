@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
+#include <limits>
 
 #include <ffi.h>
 #include <girepository.h>
@@ -489,7 +490,7 @@ static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
     // Unpack the values from their uint32_t bitfield. See note in
     // gjs_arg_cache_build_enum_bounds().
     int64_t min, max;
-    if (self->is_unsigned) {
+    if (self->flags & GjsArgumentFlags::UNSIGNED) {
         min = self->contents.enum_type.enum_min;
         max = self->contents.enum_type.enum_max;
     } else {
@@ -503,7 +504,7 @@ static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
         return false;
     }
 
-    if (self->is_unsigned)
+    if (self->flags & GjsArgumentFlags::UNSIGNED)
         gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
     else
         gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, number);
@@ -1300,8 +1301,8 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
 static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
                                             GIEnumInfo* enum_info) {
-    int64_t min = G_MAXINT64;
-    int64_t max = G_MININT64;
+    int64_t min = std::numeric_limits<int64_t>::max();
+    int64_t max = std::numeric_limits<int64_t>::min();
     int n = g_enum_info_get_n_values(enum_info);
     for (int i = 0; i < n; i++) {
         GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
@@ -1320,7 +1321,11 @@ static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
     // whether we have to compare them as signed.
     self->contents.enum_type.enum_min = static_cast<uint32_t>(min);
     self->contents.enum_type.enum_max = static_cast<uint32_t>(max);
-    self->is_unsigned = min >= 0 && max > G_MAXINT32;
+
+    if (min >= 0 && max > std::numeric_limits<int32_t>::max())
+        self->flags = (self->flags | GjsArgumentFlags::UNSIGNED);
+    else
+        self->flags = (self->flags & ~GjsArgumentFlags::UNSIGNED);
 }
 
 static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,

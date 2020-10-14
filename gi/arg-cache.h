@@ -43,7 +43,6 @@ struct GjsArgumentCache {
     uint8_t arg_pos;
     GITransfer transfer : 2;
     GjsArgumentFlags flags : 5;
-    bool is_unsigned : 1;  // number and enum only
 
     union {
         // for explicit array only
