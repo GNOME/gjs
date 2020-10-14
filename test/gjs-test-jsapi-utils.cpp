@@ -369,6 +369,13 @@ static void test_gjs_autopointer_get() {
     g_assert(ptr == autoptr.get());
 }
 
+static void test_gjs_autopointer_out() {
+    auto* ptr = gjs_test_object_new();
+    GjsAutoTestObject autoptr(ptr);
+
+    g_assert(ptr == *(autoptr.out()));
+}
+
 static void test_gjs_autopointer_release() {
     auto* ptr = gjs_test_object_new();
     GjsAutoTestObject autoptr(ptr);
@@ -615,6 +622,8 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
                     test_gjs_autopointer_assign_operator_array);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/method/get",
                     test_gjs_autopointer_get);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/method/out",
+                    test_gjs_autopointer_out);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/method/release",
                     test_gjs_autopointer_release);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/method/reset/nullptr",
