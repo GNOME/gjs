@@ -50,3 +50,14 @@ describe('GObject overrides', function () {
         });
     });
 });
+
+describe('GObject should', function () {
+    const types = ['gpointer', 'GBoxed', 'GParam', 'GInterface', 'GObject', 'GVariant'];
+
+    types.forEach(type => {
+        it(`be able to create a GType object for ${type}`, function () {
+            const gtype = GObject.Type(type);
+            expect(gtype.name).toEqual(type);
+        });
+    });
+});
