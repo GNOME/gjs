@@ -545,8 +545,22 @@ static bool gjs_marshal_foreign_in_in(JSContext* cx, GjsArgumentCache* self,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_gvalue_in_in(JSContext* cx, GjsArgumentCache*,
-                                     GjsFunctionCallState*, GIArgument* arg,
-                                     JS::HandleValue value) {
+                                     GjsFunctionCallState* state,
+                                     GIArgument* arg, JS::HandleValue value) {
+    if (value.isObject()) {
+        JS::RootedObject obj(cx, &value.toObject());
+        GType gtype;
+
+        if (!gjs_gtype_get_actual_gtype(cx, obj, &gtype))
+            return false;
+
+        if (gtype == G_TYPE_VALUE) {
+            gjs_arg_set(arg, BoxedBase::to_c_ptr<GValue>(cx, obj));
+            state->ignore_release.insert(arg);
+            return true;
+        }
+    }
+
     GValue gvalue = G_VALUE_INIT;
 
     if (!gjs_value_to_g_value(cx, value, &gvalue))
@@ -966,6 +980,18 @@ static bool gjs_marshal_boxed_in_release(JSContext*, GjsArgumentCache* self,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_gvalue_in_maybe_release(JSContext* cx,
+                                                GjsArgumentCache* self,
+                                                GjsFunctionCallState* state,
+                                                GIArgument* in_arg,
+                                                GIArgument* out_arg) {
+    if (state->ignore_release.erase(in_arg))
+        return true;
+
+    return gjs_marshal_boxed_in_release(cx, self, state, in_arg, out_arg);
+}
+
 static void gjs_arg_cache_interface_free(GjsArgumentCache* self) {
     g_clear_pointer(&self->contents.info, g_base_info_unref);
 }
@@ -1058,10 +1084,10 @@ static const GjsArgumentMarshallers gvalue_in_marshallers = {
 };
 
 static const GjsArgumentMarshallers gvalue_in_transfer_none_marshallers = {
-    gjs_marshal_gvalue_in_in,  // in
-    gjs_marshal_skipped_out,  // out
-    gjs_marshal_boxed_in_release,  // release
-    gjs_arg_cache_interface_free,  // free
+    gjs_marshal_gvalue_in_in,             // in
+    gjs_marshal_skipped_out,              // out
+    gjs_marshal_gvalue_in_maybe_release,  // release
+    gjs_arg_cache_interface_free,         // free
 };
 
 static const GjsArgumentMarshallers gclosure_in_marshallers = {
@@ -1363,7 +1389,9 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
             // marshallers know not to copy stuff if we don't need to.
 
             if (gtype == G_TYPE_VALUE) {
-                if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
+                if (self->arg_pos == GjsArgumentCache::INSTANCE_PARAM)
+                    self->marshallers = &boxed_in_marshallers;
+                else if (self->transfer == GI_TRANSFER_NOTHING && !is_instance_param)
                     self->marshallers = &gvalue_in_transfer_none_marshallers;
                 else
                     self->marshallers = &gvalue_in_marshallers;

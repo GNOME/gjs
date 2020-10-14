@@ -100,6 +100,7 @@ jasmine_tests = [
     'GObject',
     'GObjectClass',
     'GObjectInterface',
+    'GObjectValue',
     'GTypeClass',
     'Importer',
     'Introspection',

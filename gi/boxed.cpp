@@ -412,6 +412,8 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
 BoxedInstance::~BoxedInstance() {
     if (m_owning_ptr) {
         if (m_allocated_directly) {
+            if (gtype() == G_TYPE_VALUE)
+                g_value_unset(static_cast<GValue*>(m_ptr));
             g_free(m_ptr);
         } else {
             if (g_type_is_a(gtype(), G_TYPE_BOXED))

@@ -7,6 +7,7 @@
 
 #include <config.h>
 
+#include <unordered_set>
 #include <vector>
 
 #include <ffi.h>
@@ -86,6 +87,7 @@ struct GjsFunctionCallState {
     GIArgument* in_cvalues;
     GIArgument* out_cvalues;
     GIArgument* inout_original_cvalues;
+    std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
     bool call_completed;
 

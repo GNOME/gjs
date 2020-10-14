@@ -22,4 +22,4 @@ gjs_tests = executable('gjs-tests', gjs_tests_sources, mock_js_resources_files,
 
 test('API tests', gjs_tests, args: ['--tap', '--keep-going', '--verbose'],
     depends: gjs_private_typelib, env: tests_environment, protocol: 'tap',
-    suite: 'C')
+    suite: 'C', timeout: 60)
