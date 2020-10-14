@@ -244,7 +244,7 @@ function _init() {
         let gtype = GObject.type_from_name(gtypeName);
         obj[`TYPE_${upperName}`] = gtype;
         obj[name] = function (v) {
-            return new actual(v);
+            return actual(v);
         };
         obj[name].$gtype = gtype;
     }
