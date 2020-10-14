@@ -711,14 +711,6 @@ template <typename T>
     return array;
 }
 
-template <typename T>
-constexpr void array_free_func(T* array) {
-    if constexpr (std::is_same_v<T, char*>)
-        g_strfreev(array);
-    else
-        g_free(array);
-}
-
 template <GITypeTag TAG, typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
     JSContext* cx, const JS::HandleValue& value, T* out) {
@@ -740,8 +732,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
     JS::RootedValue elem(cx);
 
     // Add one so we're always zero terminated
-    GjsAutoPointer<T, T, array_free_func<T>> result =
-        array_allocate<T>(length + 1);
+    GjsSmartPointer<T> result = array_allocate<T>(length + 1);
 
     for (size_t i = 0; i < length; ++i) {
         elem = JS::UndefinedValue();

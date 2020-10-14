@@ -307,6 +307,16 @@ struct GjsSmartPointer : GjsAutoPointer<T> {
 };
 
 template <>
+struct GjsSmartPointer<char*> : GjsAutoStrv {
+    using GjsAutoStrv::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GStrv> : GjsAutoStrv {
+    using GjsAutoStrv::GjsAutoPointer;
+};
+
+template <>
 struct GjsSmartPointer<GObject> : GjsAutoUnref<GObject> {
     using GjsAutoUnref<GObject>::GjsAutoUnref;
 };
