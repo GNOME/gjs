@@ -74,6 +74,8 @@ static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
     return gjs_object_require_property(context, versions, NULL, ns_id, version);
 }
 
+static void strlist_free(GList* l) { g_list_free_full(l, g_free); }
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool resolve_namespace_object(JSContext* context,
                                      JS::HandleObject repo_obj,
@@ -92,7 +94,8 @@ static bool resolve_namespace_object(JSContext* context,
         return false;
     }
 
-    GList* versions = g_irepository_enumerate_versions(nullptr, ns_name.get());
+    GjsAutoPointer<GList, GList, strlist_free> versions =
+        g_irepository_enumerate_versions(nullptr, ns_name.get());
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
         !g_irepository_is_registered(nullptr, ns_name.get(), nullptr) &&
@@ -101,7 +104,6 @@ static bool resolve_namespace_object(JSContext* context,
                       "imports.gi.versions to pick one",
                       ns_name.get(), nversions))
         return false;
-    g_list_free_full(versions, g_free);
 
     error = NULL;
     g_irepository_require(nullptr, ns_name.get(), version.get(),
