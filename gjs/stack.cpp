@@ -12,6 +12,7 @@
 #include <jsfriendapi.h>  // for DumpBacktrace
 
 #include "gjs/context.h"
+#include "gjs/jsapi-util.h"
 
 // Avoid static_assert in MSVC builds
 namespace JS {
@@ -33,7 +34,7 @@ gjs_context_print_stack_stderr(GjsContext *context)
 void
 gjs_dumpstack(void)
 {
-    GList *contexts = gjs_context_get_all();
+    GjsSmartPointer<GList> contexts = gjs_context_get_all();
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
@@ -41,5 +42,4 @@ gjs_dumpstack(void)
         gjs_context_print_stack_stderr(context);
         g_object_unref(context);
     }
-    g_list_free(contexts);
 }

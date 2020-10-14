@@ -2052,12 +2052,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
     JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
     GIArgument* arg) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
-    using GjsAutoList =
-        std::conditional_t<std::is_same_v<T, GList>,
-                           GjsAutoPointer<GList, GList, g_list_free>,
-                           GjsAutoPointer<GSList, GSList, g_slist_free>>;
-
-    GjsAutoList list = gjs_arg_steal<T*>(arg);
+    GjsSmartPointer<T> list = gjs_arg_steal<T*>(arg);
 
     if (transfer == GI_TRANSFER_CONTAINER)
         return true;

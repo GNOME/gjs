@@ -326,6 +326,16 @@ struct GjsSmartPointer<GVariant> : GjsAutoGVariant {
     using GjsAutoGVariant::GjsAutoPointer;
 };
 
+template <>
+struct GjsSmartPointer<GList> : GjsAutoPointer<GList, GList, g_list_free> {
+    using GjsAutoPointer::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GSList> : GjsAutoPointer<GSList, GSList, g_slist_free> {
+    using GjsAutoPointer::GjsAutoPointer;
+};
+
 /* For use of GjsAutoInfo<TAG> in GC hash maps */
 namespace JS {
 template <GIInfoType TAG>
