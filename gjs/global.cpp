@@ -286,7 +286,7 @@ GjsGlobalType gjs_global_get_type(JSContext* cx) {
     g_assert(global &&
              "gjs_global_get_type called before a realm was entered.");
 
-    auto global_type =
+    JS::Value global_type =
         gjs_get_global_slot(global, GjsBaseGlobalSlot::GLOBAL_TYPE);
 
     g_assert(global_type.isInt32());
@@ -295,7 +295,7 @@ GjsGlobalType gjs_global_get_type(JSContext* cx) {
 }
 
 GjsGlobalType gjs_global_get_type(JSObject* global) {
-    auto global_type =
+    JS::Value global_type =
         gjs_get_global_slot(global, GjsBaseGlobalSlot::GLOBAL_TYPE);
 
     g_assert(global_type.isInt32());
