@@ -343,9 +343,10 @@ bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
         case GjsGlobalType::DEBUGGER:
             return GjsDebuggerGlobal::define_properties(cx, global, realm_name,
                                                         bootstrap_script);
-        default:
-            return true;
     }
+
+    // Global type does not handle define_properties
+    g_assert_not_reached();
 }
 
 void detail::set_global_slot(JSObject* global, uint32_t slot, JS::Value value) {
