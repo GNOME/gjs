@@ -39,6 +39,7 @@
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/module.h"
 #include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -556,30 +557,36 @@ fail:
     return false;
 }
 
-JSObject*
-gjs_lookup_namespace_object_by_name(JSContext      *context,
-                                    JS::HandleId    ns_name)
-{
-    JS::RootedObject global(context, gjs_get_import_global(context));
-    JS::RootedValue importer(
-        context, gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS));
-    g_assert(importer.isObject());
+GJS_JSAPI_RETURN_CONVENTION
+static JSObject* lookup_namespace(JSContext* cx, JSObject* global,
+                                  JS::HandleId ns_name) {
+    JS::RootedObject native_registry(cx, gjs_get_native_registry(global));
+    auto priv = GjsContextPrivate::from_cx(cx);
+    const GjsAtoms& atoms = priv->atoms();
+    JS::RootedObject gi(cx);
 
-    JS::RootedObject repo(context), importer_obj(context, &importer.toObject());
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!gjs_object_require_property(context, importer_obj, "importer",
-                                     atoms.gi(), &repo)) {
-        gjs_log_exception(context);
-        gjs_throw(context, "No gi property in importer");
-        return NULL;
+    if (!gjs_global_registry_get(cx, native_registry, atoms.gi(), &gi))
+        return nullptr;
+
+    if (!gi) {
+        gjs_throw(cx, "No gi property in native registry");
+        return nullptr;
     }
 
-    JS::RootedObject retval(context);
-    if (!gjs_object_require_property(context, repo, "GI repository object",
-                                     ns_name, &retval))
+    JS::RootedObject retval(cx);
+    if (!gjs_object_require_property(cx, gi, "GI repository object", ns_name,
+                                     &retval))
         return NULL;
 
     return retval;
+}
+
+JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
+                                              JS::HandleId ns_name) {
+    JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
+
+    g_assert(gjs_global_get_type(global) == GjsGlobalType::DEFAULT);
+    return lookup_namespace(cx, global, ns_name);
 }
 
 const char*

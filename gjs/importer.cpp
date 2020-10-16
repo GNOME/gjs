@@ -12,6 +12,7 @@
 #endif
 
 #include <string>
+#include <utility>  // for move
 #include <vector>   // for vector
 
 #include <gio/gio.h>
@@ -37,6 +38,7 @@
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/global.h"
 #include "gjs/importer.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -281,10 +283,24 @@ gjs_import_native_module(JSContext       *cx,
 {
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", parse_name);
 
+    JS::RootedObject native_registry(
+        cx, gjs_get_native_registry(gjs_get_import_global(cx)));
+
+    JS::RootedId id(cx, gjs_intern_string_to_id(cx, parse_name));
+    if (id == JSID_VOID)
+        return false;
+
     JS::RootedObject module(cx);
-    return gjs_load_native_module(cx, parse_name, &module) &&
-           define_meta_properties(cx, module, nullptr, parse_name, importer) &&
-           JS_DefineProperty(cx, importer, parse_name, module, GJS_MODULE_PROP_FLAGS);
+    if (!gjs_global_registry_get(cx, native_registry, id, &module))
+        return false;
+
+    if (!module && (!gjs_load_native_module(cx, parse_name, &module) ||
+                    !gjs_global_registry_set(cx, native_registry, id, module)))
+        return false;
+
+    return define_meta_properties(cx, module, nullptr, parse_name, importer) &&
+           JS_DefineProperty(cx, importer, parse_name, module,
+                             GJS_MODULE_PROP_FLAGS);
 }
 
 GJS_JSAPI_RETURN_CONVENTION

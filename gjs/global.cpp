@@ -16,6 +16,7 @@
 #include <js/Class.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/Id.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetObjectRealmOrNull, SetRealmPrivate
@@ -179,6 +180,13 @@ class GjsGlobal : GjsBaseGlobal {
         // const_cast is allowed here if we never free the realm data
         JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
 
+        JS::RootedObject native_registry(cx, JS::NewMapObject(cx));
+        if (!native_registry)
+            return false;
+
+        gjs_set_global_slot(global, GjsGlobalSlot::NATIVE_REGISTRY,
+                            JS::ObjectValue(*native_registry));
+
         JS::Value v_importer =
             gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
         g_assert(((void) "importer should be defined before passing null "
@@ -280,6 +288,27 @@ JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
     }
 }
 
+/**
+ * gjs_global_is_type:
+ *
+ * @param cx the current #JSContext
+ * @param type the global type to test for
+ *
+ * @returns whether the current global is the same type as #type
+ */
+bool gjs_global_is_type(JSContext* cx, GjsGlobalType type) {
+    JSObject* global = JS::CurrentGlobalOrNull(cx);
+
+    g_assert(global && "gjs_global_is_type called before a realm was entered.");
+
+    JS::Value global_type =
+        gjs_get_global_slot(global, GjsBaseGlobalSlot::GLOBAL_TYPE);
+
+    g_assert(global_type.isInt32());
+
+    return static_cast<GjsGlobalType>(global_type.toInt32()) == type;
+}
+
 GjsGlobalType gjs_global_get_type(JSContext* cx) {
     auto global = JS::CurrentGlobalOrNull(cx);
 
@@ -301,6 +330,69 @@ GjsGlobalType gjs_global_get_type(JSObject* global) {
     g_assert(global_type.isInt32());
 
     return static_cast<GjsGlobalType>(global_type.toInt32());
+}
+
+/**
+ * gjs_global_registry_set:
+ *
+ * @brief This function inserts a module object into a global registry.
+ * Global registries are JS Map objects for easy reuse and access
+ * within internal JS. This function will assert if a module has
+ * already been inserted at the given key.
+
+ * @param cx the current #JSContext
+ * @param registry a JS Map object
+ * @param key a module identifier, typically a string or symbol
+ * @param module a module object
+ */
+bool gjs_global_registry_set(JSContext* cx, JS::HandleObject registry,
+                             JS::PropertyKey key, JS::HandleObject module) {
+    JS::RootedValue v_key(cx);
+    if (!JS_IdToValue(cx, key, &v_key))
+        return false;
+
+    bool has_key;
+    if (!JS::MapHas(cx, registry, v_key, &has_key))
+        return false;
+
+    g_assert(!has_key && "Module key already exists in the registry");
+
+    JS::RootedValue v_value(cx, JS::ObjectValue(*module));
+
+    return JS::MapSet(cx, registry, v_key, v_value);
+}
+
+/**
+ * gjs_global_registry_get:
+ *
+ * @brief This function inserts a module object into a global registry.
+ * Global registries are JS Map objects for easy reuse and access
+ * within internal JS. This function will assert if a module has
+ * already been inserted at the given key.
+
+ * @param cx the current #JSContext
+ * @param registry a JS Map object
+ * @param key a module identifier, typically a string or symbol
+ * @param module a module object
+ */
+bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
+                             JS::PropertyKey key,
+                             JS::MutableHandleObject module_out) {
+    JS::RootedValue v_key(cx), v_value(cx);
+    if (!JS_IdToValue(cx, key, &v_key) ||
+        !JS::MapGet(cx, registry, v_key, &v_value))
+        return false;
+
+    g_assert((v_value.isUndefined() || v_value.isObject()) &&
+             "Invalid value in module registry");
+
+    if (v_value.isObject()) {
+        module_out.set(&v_value.toObject());
+        return true;
+    }
+
+    module_out.set(nullptr);
+    return true;
 }
 
 /**

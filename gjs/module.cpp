@@ -20,9 +20,11 @@
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 #include <jsapi.h>  // for JS_DefinePropertyById, ...
 
 #include "gjs/context-private.h"
+#include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "gjs/module.h"
@@ -247,3 +249,23 @@ gjs_module_import(JSContext       *cx,
 
 decltype(GjsScriptModule::klass) constexpr GjsScriptModule::klass;
 decltype(GjsScriptModule::class_ops) constexpr GjsScriptModule::class_ops;
+
+/**
+ * gjs_get_native_registry:
+ *
+ * @brief Retrieves a global's native registry from the NATIVE_REGISTRY slot.
+ * Registries are JS Map objects created with JS::NewMapObject instead
+ * of GCHashMaps (used elsewhere in GJS) because the objects need to be
+ * exposed to internal JS code and accessed from native C++ code.
+ *
+ * @param global a global #JSObject
+ *
+ * @returns the registry map as a #JSObject
+ */
+JSObject* gjs_get_native_registry(JSObject* global) {
+    JS::Value native_registry =
+        gjs_get_global_slot(global, GjsGlobalSlot::NATIVE_REGISTRY);
+
+    g_assert(native_registry.isObject());
+    return &native_registry.toObject();
+}
