@@ -770,14 +770,21 @@ bool ObjectBase::id_is_never_lazy(jsid name, const GjsAtoms& atoms) {
 }
 
 bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
-                                   JS::HandleId id, const char* name,
-                                   bool* resolved) {
+                                   JS::HandleId id, bool* resolved) {
     if (m_unresolvable_cache.has(id)) {
         *resolved = false;
         return true;
     }
 
-    if (!uncached_resolve(context, obj, id, name, resolved))
+    JS::UniqueChars prop_name;
+    if (!gjs_get_string_id(context, id, &prop_name))
+        return false;
+    if (!prop_name) {
+        *resolved = false;
+        return true;  // not resolved, but no error
+    }
+
+    if (!uncached_resolve(context, obj, id, prop_name.get(), resolved))
         return false;
 
     if (!*resolved && !m_unresolvable_cache.putNew(id)) {

@@ -436,18 +436,7 @@ class GIWrapperBase {
             return true;
         }
 
-        // A GObject-introspection lazy property will always be a string, so
-        // also bail out if trying to resolve an integer or symbol property.
-        JS::UniqueChars prop_name;
-        if (!gjs_get_string_id(cx, id, &prop_name))
-            return false;
-        if (!prop_name) {
-            *resolved = false;
-            return true;  // not resolved, but no error
-        }
-
-        return priv->to_prototype()->resolve_impl(cx, obj, id, prop_name.get(),
-                                                  resolved);
+        return priv->to_prototype()->resolve_impl(cx, obj, id, resolved);
     }
 
     /*

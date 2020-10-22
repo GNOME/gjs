@@ -142,7 +142,7 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
  private:
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      const char* prop_name, bool* resolved);
+                      bool* resolved);
 
     GJS_JSAPI_RETURN_CONVENTION
     bool new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
