@@ -138,7 +138,7 @@ class FundamentalPrototype
 
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      const char* prop_name, bool* resolved);
+                      bool* resolved);
     void trace_impl(JSTracer* trc);
 
     // Public API

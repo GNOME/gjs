@@ -109,7 +109,7 @@ class InterfacePrototype
 
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      const char* name, bool* resolved);
+                      bool* resolved);
 
     // JS methods
 

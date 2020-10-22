@@ -67,11 +67,18 @@ static bool struct_is_simple(GIStructInfo *info);
 
 // See GIWrapperBase::resolve().
 bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
-                                  JS::HandleId, const char* prop_name,
-                                  bool* resolved) {
+                                  JS::HandleId id, bool* resolved) {
+    JS::UniqueChars prop_name;
+    if (!gjs_get_string_id(cx, id, &prop_name))
+        return false;
+    if (!prop_name) {
+        *resolved = false;
+        return true;  // not resolved, but no error
+    }
+
     // Look for methods and other class properties
     GjsAutoFunctionInfo method_info =
-        g_struct_info_find_method(info(), prop_name);
+        g_struct_info_find_method(info(), prop_name.get());
     if (!method_info) {
         *resolved = false;
         return true;

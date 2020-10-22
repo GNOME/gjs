@@ -153,11 +153,18 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
 
 // See GIWrapperBase::resolve().
 bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
-                                        JS::HandleId, const char* prop_name,
-                                        bool* resolved) {
+                                        JS::HandleId id, bool* resolved) {
+    JS::UniqueChars prop_name;
+    if (!gjs_get_string_id(cx, id, &prop_name))
+        return false;
+    if (!prop_name) {
+        *resolved = false;
+        return true;  // not resolved, but no error
+    }
+
     /* We are the prototype, so look for methods and other class properties */
     GjsAutoFunctionInfo method_info =
-        g_object_info_find_method(info(), prop_name);
+        g_object_info_find_method(info(), prop_name.get());
 
     if (method_info) {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -187,7 +194,7 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
         *resolved = false;
     }
 
-    return resolve_interface(cx, obj, resolved, prop_name);
+    return resolve_interface(cx, obj, resolved, prop_name.get());
 }
 
 /*

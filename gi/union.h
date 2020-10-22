@@ -73,7 +73,7 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
 
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      const char* prop_name, bool* resolved);
+                      bool* resolved);
 
     // Overrides GIWrapperPrototype::constructor_nargs().
     GJS_USE unsigned constructor_nargs(void) const { return 0; }
