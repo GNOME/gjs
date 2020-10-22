@@ -825,13 +825,9 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
 
         // Callback lifetimes will be attached to the instance object if it is
         // a GObject or GInterface
-        if (cache->contents.info) {
-            GType gtype =
-                g_registered_type_info_get_g_type(cache->contents.info);
-            if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
-                g_type_is_a(gtype, G_TYPE_INTERFACE))
-                state.instance_object = obj;
-        }
+        if (g_type_is_a(cache->contents.object.gtype, G_TYPE_OBJECT) ||
+            g_type_is_a(cache->contents.object.gtype, G_TYPE_INTERFACE))
+            state.instance_object = obj;
     }
 
     unsigned processed_c_args = ffi_arg_pos;
