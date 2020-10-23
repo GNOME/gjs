@@ -1258,14 +1258,12 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
             return gjs_throw_gerror(context, error);
     }
 
-    bool is_method = g_callable_info_is_method(m_info);
     uint8_t n_args = g_callable_info_get_n_args(m_info);
 
     if (!m_arguments.initialize(context, m_info))
         return false;
 
-    if (is_method)
-        m_arguments.build_instance(m_info);
+    m_arguments.build_instance(m_info);
 
     bool inc_counter;
     m_arguments.build_return(m_info, &inc_counter);

@@ -323,6 +323,8 @@ struct GenericOut : GenericInOut {
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
+
+    const ReturnValue* as_return_value() const override { return this; }
 };
 
 struct GenericReturn : ReturnValue {
@@ -438,6 +440,8 @@ struct Instance : NullableIn {
                  GIArgument*) override {
         return skip();
     }
+
+    const Instance* as_instance() const override { return this; }
 
     //  The instance GType can be useful only in few cases such as GObjects and
     //  GInterfaces, so we don't store it by default, unless needed.
@@ -1525,7 +1529,16 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
         return false;
     }
 
+    GITypeInfo type_info;
+    g_callable_info_load_return_type(callable, &type_info);
+
+    m_has_return = g_type_info_get_tag(&type_info) != GI_TYPE_TAG_VOID ||
+                   g_type_info_is_pointer(&type_info);
+    m_is_method = !!g_callable_info_is_method(callable);
+
     int size = g_callable_info_get_n_args(callable);
+    size += (m_is_method ? 1 : 0);
+    size += (m_has_return ? 1 : 0);
 
     if (size > Argument::MAX_ARGS) {
         gjs_throw(cx,
@@ -1540,8 +1553,6 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
 }
 
 void ArgsCache::clear() {
-    m_return.reset();
-    m_instance.reset();
     m_args.reset();
 }
 
@@ -1551,15 +1562,8 @@ T* ArgsCache::set_argument(uint8_t index, const char* name,
                            GjsArgumentFlags flags, Args&&... args) {
     std::unique_ptr<T> arg = Argument::make<T, ArgKind>(
         index, name, type_info, transfer, flags, args...);
-    T* arg_ptr = arg.get();
-    if constexpr (ArgKind == Arg::Kind::RETURN_VALUE) {
-        m_return.reset(static_cast<Arg::ReturnValue*>(arg.release()));
-    } else if constexpr (ArgKind == Arg::Kind::INSTANCE) {
-        m_instance.reset(static_cast<Arg::Instance*>(arg.release()));
-    } else {
-        m_args[index] = std::move(arg);
-    }
-    return arg_ptr;
+    arg_get<ArgKind>(index) = std::move(arg);
+    return static_cast<T*>(arg_get<ArgKind>(index).get());
 }
 
 template <typename T, Arg::Kind ArgKind, typename... Args>
@@ -1600,25 +1604,32 @@ T* ArgsCache::set_instance(GITransfer transfer, GjsArgumentFlags flags) {
 }
 
 Argument* ArgsCache::instance() const {
-    return static_cast<Argument*>(m_instance.get());
+    if (!m_is_method)
+        return nullptr;
+
+    return arg_get<Arg::Kind::INSTANCE>().get();
 }
 
 GType ArgsCache::instance_type() const {
-    if (!m_instance)
+    if (!m_is_method)
         return G_TYPE_NONE;
 
-    return m_instance->gtype();
+    return instance()->as_instance()->gtype();
 }
 
 Argument* ArgsCache::return_value() const {
-    return static_cast<Argument*>(m_return.get());
+    if (!m_has_return)
+        return nullptr;
+
+    return arg_get<Arg::Kind::RETURN_VALUE>().get();
 }
 
 GITypeInfo* ArgsCache::return_type() const {
-    if (!m_return || m_return->skip_out())
+    Argument* rval = return_value();
+    if (!rval)
         return nullptr;
 
-    return &m_return->m_type_info;
+    return const_cast<GITypeInfo*>(rval->as_return_value()->type_info());
 }
 
 void ArgsCache::set_skip_all(uint8_t index, const char* name) {
@@ -1672,16 +1683,15 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
 void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
     g_assert(inc_counter_out && "forgot out parameter");
 
+    if (!m_has_return) {
+        *inc_counter_out = false;
+        return;
+    }
+
     GITypeInfo type_info;
     g_callable_info_load_return_type(callable, &type_info);
     GITransfer transfer = g_callable_info_get_caller_owns(callable);
     GITypeTag tag = g_type_info_get_tag(&type_info);
-
-    if (tag == GI_TYPE_TAG_VOID && !g_type_info_is_pointer(&type_info)) {
-        *inc_counter_out = false;
-        m_return.reset();
-        return;
-    }
 
     *inc_counter_out = true;
     GjsArgumentFlags flags = GjsArgumentFlags::SKIP_IN;
@@ -2009,6 +2019,9 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 }
 
 void ArgsCache::build_instance(GICallableInfo* callable) {
+    if (!m_is_method)
+        return;
+
     GIBaseInfo* interface_info = g_base_info_get_container(callable);  // !owned
 
     GITransfer transfer =

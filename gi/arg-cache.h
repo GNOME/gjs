@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <limits>
 #include <memory>
 
 #include <girepository.h>
@@ -80,14 +81,11 @@ struct Argument {
         return flags;
     }
 
-    // Introspected functions can have up to 253 arguments. 255 is a placeholder
-    // for the return value and 254 for the instance parameter. The callback
+    // Introspected functions can have up to 253 arguments. The callback
     // closure or destroy notify parameter may have a value of 255 to indicate
     // that it is absent.
-    static constexpr uint8_t MAX_ARGS = 253;
-    static constexpr uint8_t INSTANCE_PARAM = 254;
-    static constexpr uint8_t RETURN_VALUE = 255;
-    static constexpr uint8_t ABSENT = 255;
+    static constexpr uint8_t MAX_ARGS = std::numeric_limits<uint8_t>::max() - 2;
+    static constexpr uint8_t ABSENT = std::numeric_limits<uint8_t>::max();
 
     constexpr const char* arg_name() const { return m_arg_name; }
 
@@ -97,6 +95,9 @@ struct Argument {
 
  protected:
     Argument() : m_skip_in(false), m_skip_out(false) {}
+
+    virtual const Arg::ReturnValue* as_return_value() const { return nullptr; }
+    virtual const Arg::Instance* as_instance() const { return nullptr; }
 
     void set_instance_parameter() {
         m_arg_name = "instance parameter";
@@ -156,7 +157,7 @@ struct ArgsCache {
 
     void build_instance(GICallableInfo* callable);
 
-    Argument* argument(uint8_t index) const { return m_args[index].get(); }
+    Argument* argument(uint8_t index) const { return arg_get(index).get(); }
 
     Argument* instance() const;
     GType instance_type() const;
@@ -204,10 +205,28 @@ struct ArgsCache {
 
     void set_skip_all(uint8_t index, const char* name = nullptr);
 
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    constexpr uint8_t arg_index(uint8_t index
+                                [[maybe_unused]] = Argument::MAX_ARGS) const {
+        if constexpr (ArgKind == Arg::Kind::RETURN_VALUE)
+            return 0;
+        else if constexpr (ArgKind == Arg::Kind::INSTANCE)
+            return (m_has_return ? 1 : 0);
+        else if constexpr (ArgKind == Arg::Kind::NORMAL)
+            return (m_has_return ? 1 : 0) + (m_is_method ? 1 : 0) + index;
+    }
+
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    inline Argument::UniquePtr& arg_get(
+        uint8_t index = Argument::MAX_ARGS) const {
+        return m_args[arg_index<ArgKind>(index)];
+    }
+
  private:
     std::unique_ptr<Argument::UniquePtr[]> m_args;
-    std::unique_ptr<Arg::ReturnValue> m_return;
-    std::unique_ptr<Arg::Instance> m_instance;
+
+    bool m_is_method : 1;
+    bool m_has_return : 1;
 };
 
 }  // namespace Gjs
