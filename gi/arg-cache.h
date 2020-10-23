@@ -1,6 +1,7 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <scampa.giovanni@gmail.com>
+// SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
 #ifndef GI_ARG_CACHE_H_
 #define GI_ARG_CACHE_H_
@@ -10,11 +11,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <memory>
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>  // for g_assert
 
-#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/arg.h"
@@ -22,7 +24,6 @@
 #include "gjs/macros.h"
 
 class GjsFunctionCallState;
-struct GjsArgumentCache;
 
 enum NotIntrospectableReason : uint8_t {
     CALLBACK_OUT,
@@ -36,70 +37,44 @@ enum NotIntrospectableReason : uint8_t {
     LAST_REASON
 };
 
-struct GjsArgumentMarshallers {
-    bool (*in)(JSContext* cx, GjsArgumentCache* cache,
-               GjsFunctionCallState* state, GIArgument* in_argument,
-               JS::HandleValue value);
-    bool (*out)(JSContext* cx, GjsArgumentCache* cache,
-                GjsFunctionCallState* state, GIArgument* out_argument,
-                JS::MutableHandleValue value);
-    bool (*release)(JSContext* cx, GjsArgumentCache* cache,
-                    GjsFunctionCallState* state, GIArgument* in_argument,
-                    GIArgument* out_argument);
-    void (*free)(GjsArgumentCache* cache);
+namespace Gjs {
+namespace Arg {
+
+using ReturnValue = struct GenericOut;
+struct Instance;
+
+enum class Kind {
+    NORMAL,
+    INSTANCE,
+    RETURN_VALUE,
 };
 
-struct GjsArgumentCache {
-    const GjsArgumentMarshallers* marshallers;
-    const char* arg_name;
-    GITypeInfo type_info;
+}  // namespace Arg
 
-    uint8_t arg_pos;
-    GITransfer transfer : 2;
-    GjsArgumentFlags flags : 5;
-
-    union {
-        // for explicit array only
-        struct {
-            uint8_t length_pos;
-            GITypeTag length_tag : 5;
-        } array;
-
-        struct {
-            uint8_t closure_pos;
-            uint8_t destroy_pos;
-            GIScopeType scope : 2;
-        } callback;
-
-        struct {
-            GITypeTag number_tag : 5;
-        } number;
-
-        // boxed / union / GObject
-        struct {
-            GType gtype;
-            GIBaseInfo* info;
-        } object;
-
-        // foreign structures
-        GIStructInfo* tmp_foreign_info;
-
-        // enum / flags
-        struct {
-            uint32_t enum_min;
-            uint32_t enum_max;
-        } enum_type;
-        unsigned flags_mask;
-
-        // out caller allocates (FIXME: should be in object)
-        size_t caller_allocates_size;
-
-        // not introspectable
-        NotIntrospectableReason reason;
-    } contents;
+struct Argument {
+    using UniquePtr = std::unique_ptr<Argument>;
+    virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool handle_nullable(JSContext* cx, GIArgument* arg);
+    virtual bool in(JSContext* cx, GjsFunctionCallState*,
+                    GIArgument* in_argument, JS::HandleValue value);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    virtual bool out(JSContext* cx, GjsFunctionCallState*,
+                     GIArgument* out_argument, JS::MutableHandleValue value);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    virtual bool release(JSContext* cx, GjsFunctionCallState*,
+                         GIArgument* in_argument, GIArgument* out_argument);
+
+    virtual GjsArgumentFlags flags() const {
+        GjsArgumentFlags flags = GjsArgumentFlags::NONE;
+        if (m_skip_in)
+            flags |= GjsArgumentFlags::SKIP_IN;
+        if (m_skip_out)
+            flags |= GjsArgumentFlags::SKIP_OUT;
+        return flags;
+    }
 
     // Introspected functions can have up to 253 arguments. 255 is a placeholder
     // for the return value and 254 for the instance parameter. The callback
@@ -109,81 +84,137 @@ struct GjsArgumentCache {
     static constexpr uint8_t INSTANCE_PARAM = 254;
     static constexpr uint8_t RETURN_VALUE = 255;
     static constexpr uint8_t ABSENT = 255;
+
+    constexpr const char* arg_name() const { return m_arg_name; }
+
+    constexpr bool skip_in() const { return m_skip_in; }
+
+    constexpr bool skip_out() const { return m_skip_out; }
+
+ protected:
+    Argument() : m_skip_in(false), m_skip_out(false) {}
+
     void set_arg_pos(int pos) {
         g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
-        arg_pos = pos;
-    }
-    void set_array_length_pos(int pos) {
-        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
-        contents.array.length_pos = pos;
-    }
-    void set_callback_destroy_pos(int pos) {
-        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
-        contents.callback.destroy_pos = pos < 0 ? ABSENT : pos;
-    }
-    [[nodiscard]] bool has_callback_destroy() {
-        return contents.callback.destroy_pos != ABSENT;
-    }
-    void set_callback_closure_pos(int pos) {
-        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
-        contents.callback.closure_pos = pos < 0 ? ABSENT : pos;
-    }
-    [[nodiscard]] bool has_callback_closure() {
-        return contents.callback.closure_pos != ABSENT;
+        m_arg_pos = pos;
     }
 
     void set_instance_parameter() {
-        arg_pos = INSTANCE_PARAM;
-        arg_name = "instance parameter";
-        // Some calls accept null for the instance, but generally in an object
-        // oriented language it's wrong to call a method on null
-        flags = static_cast<GjsArgumentFlags>(GjsArgumentFlags::NONE | GjsArgumentFlags::SKIP_OUT);
+        m_arg_pos = INSTANCE_PARAM;
+        m_arg_name = "instance parameter";
+        m_skip_out = true;
     }
 
     void set_return_value() {
-        arg_pos = RETURN_VALUE;
-        arg_name = "return value";
-        flags =
-            GjsArgumentFlags::NONE;  // We don't really care for return values
+        m_arg_pos = RETURN_VALUE;
+        m_arg_name = "return value";
     }
 
-    constexpr bool skip_in() const {
-        return (flags & GjsArgumentFlags::SKIP_IN);
-    }
+    bool invalid(JSContext*, const char* func = nullptr) const;
 
-    constexpr bool skip_out() const {
-        return (flags & GjsArgumentFlags::SKIP_OUT);
-    }
+    const char* m_arg_name = nullptr;
+    uint8_t m_arg_pos = 0;
+    bool m_skip_in : 1;
+    bool m_skip_out : 1;
+
+ private:
+    friend struct ArgsCache;
+
+    template <typename T, Arg::Kind ArgKind, typename... Args>
+    static std::unique_ptr<T> make(uint8_t index, const char* name,
+                                   GITypeInfo* type_info, GITransfer transfer,
+                                   GjsArgumentFlags flags, Args&&... args);
 };
 
 // This is a trick to print out the sizes of the structs at compile time, in
 // an error message:
 // template <int s> struct Measure;
-// Measure<sizeof(GjsArgumentCache)> arg_cache_size;
+// Measure<sizeof(Argument)> arg_cache_size;
 
-#if defined(__x86_64__) && defined(__clang__) && !defined (_MSC_VER)
+#if defined(__x86_64__) && defined(__clang__) && !defined(_MSC_VER)
+#    define GJS_DO_ARGUMENTS_SIZE_CHECK 1
 // This isn't meant to be comprehensive, but should trip on at least one CI job
-// if sizeof(GjsArgumentCache) is increased.
+// if sizeof(Gjs::Argument) is increased.
 // Note that this check is not applicable for clang-cl builds, as Windows is
 // an LLP64 system
-static_assert(sizeof(GjsArgumentCache) <= 112,
-              "Think very hard before increasing the size of GjsArgumentCache. "
+static_assert(sizeof(Argument) <= 24,
+              "Think very hard before increasing the size of Gjs::Argument. "
               "One is allocated for every argument to every introspected "
               "function.");
 #endif  // x86-64 clang
 
-void gjs_arg_cache_build_arg(GjsArgumentCache* self,
-                             GjsArgumentCache* arguments, uint8_t gi_index,
-                             GIDirection direction, GIArgInfo* arg,
-                             GICallableInfo* callable, bool* inc_counter_out);
+struct ArgsCache {
+    GJS_JSAPI_RETURN_CONVENTION
+    bool initialize(JSContext* cx, GICallableInfo* callable);
 
-void gjs_arg_cache_build_return(GjsArgumentCache* self,
-                                GjsArgumentCache* arguments,
-                                GICallableInfo* callable,
-                                bool* inc_counter_out);
+    ArgsCache();
+    ~ArgsCache();
 
-void gjs_arg_cache_build_instance(GjsArgumentCache* self,
-                                  GICallableInfo* callable);
+    void clear();
+    bool initialized() { return m_args != nullptr; }
+
+    void build_arg(uint8_t gi_index, GIDirection, GIArgInfo*, GICallableInfo*,
+                   bool* inc_counter_out);
+
+    void build_return(GICallableInfo* callable, bool* inc_counter_out);
+
+    void build_instance(GICallableInfo* callable);
+
+    Argument* argument(uint8_t index) const { return m_args[index].get(); }
+
+    Argument* instance() const;
+    GType instance_type() const;
+
+    GITypeInfo* return_type() const;
+    Argument* return_value() const;
+
+ private:
+    void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
+                             GjsArgumentFlags);
+
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    void build_interface_in_arg(uint8_t gi_index, GITypeInfo*, GIBaseInfo*,
+                                GITransfer, const char* name, GjsArgumentFlags);
+
+    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
+              typename... Args>
+    T* set_argument(uint8_t index, const char* name, GITypeInfo*, GITransfer,
+                    GjsArgumentFlags flags, Args&&... args);
+
+    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
+              typename... Args>
+    T* set_argument(uint8_t index, const char* name, GITransfer,
+                    GjsArgumentFlags flags, Args&&... args);
+
+    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
+              typename... Args>
+    T* set_argument_auto(Args&&... args);
+
+    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL, typename Tuple,
+              typename... Args>
+    T* set_argument_auto(Tuple&& tuple, Args&&... args);
+
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
+                            GITypeInfo*, GIDirection, GIArgInfo*,
+                            GjsArgumentFlags flags, int length_pos);
+
+    template <typename T>
+    T* set_return(GITypeInfo*, GITransfer, GjsArgumentFlags);
+
+    template <typename T>
+    T* set_instance(GITransfer,
+                    GjsArgumentFlags flags = GjsArgumentFlags::NONE);
+
+    void set_skip_all(uint8_t index, const char* name = nullptr);
+
+ private:
+    std::unique_ptr<Argument::UniquePtr[]> m_args;
+    std::unique_ptr<Arg::ReturnValue> m_return;
+    std::unique_ptr<Arg::Instance> m_instance;
+};
+
+}  // namespace Gjs
 
 [[nodiscard]] size_t gjs_g_argument_get_array_length(GITypeTag tag,
                                                      GIArgument* arg);
