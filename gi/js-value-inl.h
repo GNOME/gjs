@@ -52,22 +52,22 @@ constexpr auto get_strict() {
             return gboolean{};
         else
             return;
+    } else {
+        if constexpr (std::is_same_v<T, char32_t>)
+            return char32_t{};
+        else if constexpr (type_fits<T, int32_t>())
+            return int32_t{};
+        else if constexpr (type_fits<T, uint32_t>())
+            return uint32_t{};
+        else if constexpr (type_fits<T, int64_t>())
+            return int64_t{};
+        else if constexpr (type_fits<T, uint64_t>())
+            return uint64_t{};
+        else if constexpr (type_fits<T, double>())
+            return double{};
+        else
+            return T{};
     }
-
-    if constexpr (std::is_same_v<T, char32_t>)
-        return char32_t{};
-    else if constexpr (type_fits<T, int32_t>())
-        return int32_t{};
-    else if constexpr (type_fits<T, uint32_t>())
-        return uint32_t{};
-    else if constexpr (type_fits<T, int64_t>())
-        return int64_t{};
-    else if constexpr (type_fits<T, uint64_t>())
-        return uint64_t{};
-    else if constexpr (type_fits<T, double>())
-        return double{};
-    else
-        return T{};
 }
 
 template <typename T>
