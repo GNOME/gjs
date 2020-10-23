@@ -146,7 +146,6 @@ struct GjsArgumentCache {
         flags =
             GjsArgumentFlags::NONE;  // We don't really care for return values
     }
-    [[nodiscard]] bool is_return_value() { return arg_pos == RETURN_VALUE; }
 
     constexpr bool skip_in() const {
         return (flags & GjsArgumentFlags::SKIP_IN);

@@ -191,10 +191,8 @@ static bool gjs_marshal_generic_in_in(JSContext* cx, GjsArgumentCache* self,
                                       GjsFunctionCallState*, GIArgument* arg,
                                       JS::HandleValue value) {
     return gjs_value_to_g_argument(cx, value, &self->type_info, self->arg_name,
-                                   self->is_return_value()
-                                       ? GJS_ARGUMENT_RETURN_VALUE
-                                       : GJS_ARGUMENT_ARGUMENT,
-                                   self->transfer, self->flags, arg);
+                                   GJS_ARGUMENT_ARGUMENT, self->transfer,
+                                   self->flags, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
