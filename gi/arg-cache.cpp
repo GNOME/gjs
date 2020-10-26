@@ -487,17 +487,6 @@ struct FallbackInterfaceIn : FallbackIn, RegisteredType {
     using RegisteredType::RegisteredType;
 };
 
-struct FallbackInterfaceInstanceIn : RegisteredIn, TypeInfo {
-    using RegisteredIn::RegisteredIn;
-
-    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
-            JS::HandleValue value) override {
-        return gjs_value_to_g_argument(cx, value, &m_type_info, m_arg_name,
-                                       GJS_ARGUMENT_ARGUMENT, m_transfer,
-                                       flags(), arg);
-    }
-};
-
 struct BoxedInTransferNone : RegisteredIn {
     using RegisteredIn::RegisteredIn;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -1838,12 +1827,8 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 
             if (arg_cache::is_gdk_atom(interface_info)) {
                 // Fall back to the generic marshaller
-                if constexpr (ArgKind == Arg::Kind::INSTANCE)
-                    set_argument_auto<Arg::FallbackInterfaceInstanceIn,
-                                      ArgKind>(common_args);
-                else
-                    set_argument_auto<Arg::FallbackInterfaceIn, ArgKind>(
-                        common_args);
+                set_argument_auto<Arg::FallbackInterfaceIn, ArgKind>(
+                    common_args);
                 return;
             }
 
@@ -1873,12 +1858,8 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             }
 
             if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                if constexpr (ArgKind == Arg::Kind::INSTANCE)
-                    set_argument_auto<Arg::FallbackInterfaceInstanceIn,
-                                      ArgKind>(common_args);
-                else
-                    set_argument_auto<Arg::FallbackInterfaceIn, ArgKind>(
-                        common_args);
+                set_argument_auto<Arg::FallbackInterfaceIn, ArgKind>(
+                    common_args);
                 return;
             }
 
