@@ -15,8 +15,10 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/GCVector.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>  // IWYU pragma: keep
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -89,14 +91,20 @@ struct GjsFunctionCallState {
     GIArgument* inout_original_cvalues;
     std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
-    int gi_argc;
-    bool call_completed : 1;
+    JS::RootedValueVector return_values;
+    GError* local_error = nullptr;
+    int gi_argc = 0;
+    unsigned processed_c_args = 0;
+    bool failed : 1;
+    bool can_throw_gerror : 1;
     bool is_method : 1;
 
-    GjsFunctionCallState(JSContext* cx, GICallableInfo* callable, int args)
+    GjsFunctionCallState(JSContext* cx, GICallableInfo* callable)
         : instance_object(cx),
-          gi_argc(args),
-          call_completed(false),
+          return_values(cx),
+          gi_argc(g_callable_info_get_n_args(callable)),
+          failed(false),
+          can_throw_gerror(g_callable_info_can_throw_gerror(callable)),
           is_method(g_callable_info_is_method(callable)) {
         int size = gi_argc + first_arg_offset();
         in_cvalues = new GIArgument[size] + first_arg_offset();
@@ -111,6 +119,12 @@ struct GjsFunctionCallState {
     }
 
     constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
+
+    constexpr bool did_throw_gerror() const {
+        return can_throw_gerror && local_error != nullptr;
+    }
+
+    constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
 };
 
 GJS_JSAPI_RETURN_CONVENTION

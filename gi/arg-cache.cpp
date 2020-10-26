@@ -825,7 +825,7 @@ static bool gjs_marshal_generic_in_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
     GITransfer transfer =
-        state->call_completed ? self->transfer : GI_TRANSFER_NOTHING;
+        state->call_completed() ? self->transfer : GI_TRANSFER_NOTHING;
     return gjs_g_argument_release_in_arg(cx, transfer, &self->type_info,
                                          in_arg);
 }
@@ -882,7 +882,7 @@ static bool gjs_marshal_explicit_array_in_release(
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
 
     GITransfer transfer =
-        state->call_completed ? self->transfer : GI_TRANSFER_NOTHING;
+        state->call_completed() ? self->transfer : GI_TRANSFER_NOTHING;
 
     return gjs_g_argument_release_in_array(cx, transfer, &self->type_info,
                                            length, in_arg);
@@ -958,7 +958,7 @@ static bool gjs_marshal_foreign_in_release(
     bool ok = true;
 
     GITransfer transfer =
-        state->call_completed ? self->transfer : GI_TRANSFER_NOTHING;
+        state->call_completed() ? self->transfer : GI_TRANSFER_NOTHING;
 
     if (transfer == GI_TRANSFER_NOTHING)
         ok = gjs_struct_foreign_release_g_argument(
