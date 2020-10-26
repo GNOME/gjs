@@ -92,7 +92,7 @@ struct GjsFunctionCallState {
     std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
     JS::RootedValueVector return_values;
-    GError* local_error = nullptr;
+    GjsAutoError local_error;
     int gi_argc = 0;
     unsigned processed_c_args = 0;
     bool failed : 1;
@@ -121,7 +121,7 @@ struct GjsFunctionCallState {
     constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
 
     constexpr bool did_throw_gerror() const {
-        return can_throw_gerror && local_error != nullptr;
+        return can_throw_gerror && local_error;
     }
 
     constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
