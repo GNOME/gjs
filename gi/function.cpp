@@ -746,19 +746,23 @@ static void* get_return_ffi_pointer_from_giargument(
     if (return_arg->skip_out())
         return nullptr;
 
-    // FIXME: Note that v_long and v_ulong don't have type-safe template
-    // overloads yet, and I don't understand why they won't compile
     switch (g_type_info_get_tag(&return_arg->type_info)) {
         case GI_TYPE_TAG_INT8:
+            return &gjs_arg_member<int8_t>(return_value);
         case GI_TYPE_TAG_INT16:
+            return &gjs_arg_member<int16_t>(return_value);
         case GI_TYPE_TAG_INT32:
-            return &return_value->v_long;
+            return &gjs_arg_member<int32_t>(return_value);
         case GI_TYPE_TAG_UINT8:
+            return &gjs_arg_member<uint8_t>(return_value);
         case GI_TYPE_TAG_UINT16:
+            return &gjs_arg_member<uint16_t>(return_value);
         case GI_TYPE_TAG_UINT32:
+            return &gjs_arg_member<uint32_t>(return_value);
         case GI_TYPE_TAG_BOOLEAN:
+            return &gjs_arg_member<gboolean, GI_TYPE_TAG_BOOLEAN>(return_value);
         case GI_TYPE_TAG_UNICHAR:
-            return &return_value->v_ulong;
+            return &gjs_arg_member<uint32_t>(return_value);
         case GI_TYPE_TAG_INT64:
             return &gjs_arg_member<int64_t>(return_value);
         case GI_TYPE_TAG_UINT64:
@@ -774,7 +778,8 @@ static void* get_return_ffi_pointer_from_giargument(
             switch (g_base_info_get_type(info)) {
                 case GI_INFO_TYPE_ENUM:
                 case GI_INFO_TYPE_FLAGS:
-                    return &return_value->v_long;
+                    return &gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
+                        return_value);
                 default:
                     return &gjs_arg_member<void*>(return_value);
             }
