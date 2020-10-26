@@ -48,7 +48,8 @@ Your responsibilities as a contributor:
   an issue in the [bugtracker], discuss things transparently, and get
   community feedback.
 - Ensure all jobs are green on GitLab CI for your merge requests.
-- Your code must pass the tests.
+- Your code must pass the tests. Sometimes you can experience a runner
+  system failure which can be fixed by re-running the job.
 - Your code must pass the linters; code should not introduce any new
   linting errors.
 - Your code should not cause any compiler warnings.
