@@ -196,6 +196,12 @@ struct Positioned {
         m_arg_pos = pos;
     }
 
+    bool set_out_parameter(GjsFunctionCallState* state, GIArgument* arg) {
+        gjs_arg_unset<void*>(&state->out_cvalue(m_arg_pos));
+        gjs_arg_set(arg, &gjs_arg_member<void*>(&state->out_cvalue(m_arg_pos)));
+        return true;
+    }
+
     uint8_t m_arg_pos = 0;
 };
 
@@ -335,6 +341,13 @@ struct GenericReturn : ReturnValue {
     }
 };
 
+struct SimpleOut : SkipAll, Positioned {
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
+    };
+};
+
 struct ExplicitArray : GenericOut, Array, Nullable {
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
@@ -377,16 +390,7 @@ struct ReturnArray : ExplicitArrayOut {
     };
 };
 
-struct ArrayLengthOut : GenericOut {
-    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
-             JS::MutableHandleValue) override {
-        return skip();
-    }
-    bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
-                 GIArgument*) override {
-        return skip();
-    }
-};
+using ArrayLengthOut = SimpleOut;
 
 struct FallbackIn : GenericIn, Nullable {
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -847,9 +851,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool GenericOut::in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
                     JS::HandleValue) {
     // Default value in case a broken C function doesn't fill in the pointer
-    gjs_arg_unset<void*>(&state->out_cvalue(m_arg_pos));
-    gjs_arg_set(arg, &gjs_arg_member<void*>(&state->out_cvalue(m_arg_pos)));
-    return true;
+    return set_out_parameter(state, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
