@@ -776,16 +776,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     //
     // Use gi_arg_pos to index inside the GIArgument array. Use ffi_arg_pos to
     // index inside ffi_arg_pointers.
-    GjsFunctionCallState state(context);
-    if (is_method) {
-        state.in_cvalues = g_newa(GIArgument, gi_argc + 2) + 2;
-        state.out_cvalues = g_newa(GIArgument, gi_argc + 2) + 2;
-        state.inout_original_cvalues = g_newa(GIArgument, gi_argc + 2) + 2;
-    } else {
-        state.in_cvalues = g_newa(GIArgument, gi_argc + 1) + 1;
-        state.out_cvalues = g_newa(GIArgument, gi_argc + 1) + 1;
-        state.inout_original_cvalues = g_newa(GIArgument, gi_argc + 1) + 1;
-    }
+    GjsFunctionCallState state(context, function->info, gi_argc);
 
     void** ffi_arg_pointers = g_newa(void*, ffi_argc);
 
