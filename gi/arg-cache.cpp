@@ -10,7 +10,6 @@
 
 #include <ffi.h>
 #include <girepository.h>
-#include <glib-object.h>
 #include <glib.h>
 
 #include <js/Conversions.h>
@@ -579,7 +578,7 @@ static bool gjs_marshal_boxed_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
-    GType gtype = g_registered_type_info_get_g_type(self->contents.info);
+    GType gtype = self->contents.object.gtype;
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, self->arg_name, value, gtype);
@@ -592,7 +591,7 @@ static bool gjs_marshal_boxed_in_in(JSContext* cx, GjsArgumentCache* self,
 
     return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
                                               self->transfer, gtype,
-                                              self->contents.info);
+                                              self->contents.object.info);
 }
 
 // Unions include ClutterEvent and GdkEvent, which occur fairly often in an
@@ -605,7 +604,7 @@ static bool gjs_marshal_union_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
-    GType gtype = g_registered_type_info_get_g_type(self->contents.info);
+    GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
@@ -614,7 +613,7 @@ static bool gjs_marshal_union_in_in(JSContext* cx, GjsArgumentCache* self,
     JS::RootedObject object(cx, &value.toObject());
     return UnionBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
                                               self->transfer, gtype,
-                                              self->contents.info);
+                                              self->contents.object.info);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -657,7 +656,7 @@ static bool gjs_marshal_gbytes_in_in(JSContext* cx, GjsArgumentCache* self,
     // ownership, so we need to do the same here.
     return BoxedBase::transfer_to_gi_argument(
         cx, object, arg, GI_DIRECTION_IN, GI_TRANSFER_EVERYTHING, G_TYPE_BYTES,
-        self->contents.info);
+        self->contents.object.info);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -667,7 +666,7 @@ static bool gjs_marshal_interface_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
-    GType gtype = g_registered_type_info_get_g_type(self->contents.info);
+    GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
@@ -696,7 +695,7 @@ static bool gjs_marshal_object_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
-    GType gtype = g_registered_type_info_get_g_type(self->contents.info);
+    GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
@@ -715,7 +714,7 @@ static bool gjs_marshal_fundamental_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
-    GType gtype = g_registered_type_info_get_g_type(self->contents.info);
+    GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
@@ -970,7 +969,8 @@ static bool gjs_marshal_boxed_in_release(JSContext*, GjsArgumentCache* self,
                                          GjsFunctionCallState*,
                                          GIArgument* in_arg,
                                          GIArgument* out_arg [[maybe_unused]]) {
-    GType gtype = g_registered_type_info_get_g_type(self->contents.info);
+    GType gtype = self->contents.object.gtype;
+
     g_assert(g_type_is_a(gtype, G_TYPE_BOXED));
 
     if (!gjs_arg_get<void*>(in_arg))
@@ -993,7 +993,7 @@ static bool gjs_marshal_gvalue_in_maybe_release(JSContext* cx,
 }
 
 static void gjs_arg_cache_interface_free(GjsArgumentCache* self) {
-    g_clear_pointer(&self->contents.info, g_base_info_unref);
+    g_clear_pointer(&self->contents.object.info, g_base_info_unref);
 }
 
 static const GjsArgumentMarshallers skip_all_marshallers = {
@@ -1383,7 +1383,8 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
         case GI_INFO_TYPE_INTERFACE:
         case GI_INFO_TYPE_UNION: {
             GType gtype = g_registered_type_info_get_g_type(interface_info);
-            self->contents.info = g_base_info_ref(interface_info);
+            self->contents.object.gtype = gtype;
+            self->contents.object.info = g_base_info_ref(interface_info);
 
             // Transfer handling is a bit complex here, because some of our _in
             // marshallers know not to copy stuff if we don't need to.
