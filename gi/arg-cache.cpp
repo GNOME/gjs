@@ -224,8 +224,24 @@ struct BaseInfo {
 };
 
 // boxed / union / GObject
-struct RegisteredType : BaseInfo {
+struct RegisteredType {
+    constexpr RegisteredType(GType gtype, GIInfoType info_type)
+        : m_gtype(gtype), m_info_type(info_type) {}
     explicit RegisteredType(GIBaseInfo* info)
+        : m_gtype(g_registered_type_info_get_g_type(info)),
+          m_info_type(g_base_info_get_type(info)) {
+        g_assert(m_gtype != G_TYPE_NONE &&
+                 "Use RegisteredInterface for this type");
+    }
+
+    constexpr GType gtype() const { return m_gtype; }
+
+    GType m_gtype;
+    GIInfoType m_info_type : 5;
+};
+
+struct RegisteredInterface : BaseInfo {
+    explicit RegisteredInterface(GIBaseInfo* info)
         : BaseInfo(info), m_gtype(g_registered_type_info_get_g_type(m_info)) {}
 
     constexpr GType gtype() const { return m_gtype; }
@@ -478,8 +494,14 @@ struct RegisteredIn : Instance, RegisteredType, Transferable {
     GType gtype() const override { return RegisteredType::gtype(); }
 };
 
-struct ForeignStructInstanceIn : RegisteredIn {
-    using RegisteredIn::RegisteredIn;
+struct RegisteredInterfaceIn : Instance, RegisteredInterface, Transferable {
+    using RegisteredInterface::RegisteredInterface;
+
+    GType gtype() const override { return RegisteredInterface::gtype(); }
+};
+
+struct ForeignStructInstanceIn : RegisteredInterfaceIn {
+    using RegisteredInterfaceIn::RegisteredInterfaceIn;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
 };
@@ -490,8 +512,15 @@ struct ForeignStructIn : ForeignStructInstanceIn {
                  GIArgument*) override;
 };
 
-struct FallbackInterfaceIn : FallbackIn, RegisteredType {
-    using RegisteredType::RegisteredType;
+struct FallbackInterfaceIn : RegisteredInterfaceIn, TypeInfo {
+    using RegisteredInterfaceIn::RegisteredInterfaceIn;
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_g_argument(cx, value, &m_type_info, m_arg_name,
+                                       GJS_ARGUMENT_ARGUMENT, m_transfer,
+                                       flags(), arg);
+    }
 };
 
 struct BoxedInTransferNone : RegisteredIn {
@@ -500,6 +529,8 @@ struct BoxedInTransferNone : RegisteredIn {
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
+
+    virtual GIBaseInfo* info() const { return nullptr; }
 };
 
 struct BoxedIn : BoxedInTransferNone {
@@ -509,6 +540,15 @@ struct BoxedIn : BoxedInTransferNone {
                  GIArgument*) override {
         return skip();
     }
+};
+
+struct UnregisteredBoxedIn : BoxedIn, BaseInfo {
+    explicit UnregisteredBoxedIn(GIInterfaceInfo* info)
+        : BoxedIn(g_registered_type_info_get_g_type(info),
+                  g_base_info_get_type(info)),
+          BaseInfo(info) {}
+    // This is a smart argument, no release needed
+    GIBaseInfo* info() const override { return m_info; }
 };
 
 struct GValueIn : BoxedIn {
@@ -1090,7 +1130,7 @@ bool BoxedInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
     }
 
     return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
-                                              m_transfer, gtype, m_info);
+                                              m_transfer, gtype, info());
 }
 
 // Unions include ClutterEvent and GdkEvent, which occur fairly often in an
@@ -1103,14 +1143,13 @@ bool UnionIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
         return NullableIn::in(cx, state, arg, value);
 
     GType gtype = RegisteredType::gtype();
-    g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, m_arg_name, value, gtype);
 
     JS::RootedObject object(cx, &value.toObject());
     return UnionBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
-                                              m_transfer, gtype, m_info);
+                                              m_transfer, gtype);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1149,9 +1188,8 @@ bool GBytesIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
     // The bytearray path is taking an extra ref irrespective of transfer
     // ownership, so we need to do the same here.
-    return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
-                                              GI_TRANSFER_EVERYTHING,
-                                              G_TYPE_BYTES, m_info);
+    return BoxedBase::transfer_to_gi_argument(
+        cx, object, arg, GI_DIRECTION_IN, GI_TRANSFER_EVERYTHING, G_TYPE_BYTES);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1161,7 +1199,6 @@ bool InterfaceIn::in(JSContext* cx, GjsFunctionCallState* state,
         return NullableIn::in(cx, state, arg, value);
 
     GType gtype = RegisteredType::gtype();
-    g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, m_arg_name, value, gtype);
@@ -1189,7 +1226,6 @@ bool ObjectIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
         return NullableIn::in(cx, state, arg, value);
 
     GType gtype = RegisteredType::gtype();
-    g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, m_arg_name, value, gtype);
@@ -1206,7 +1242,6 @@ bool FundamentalIn::in(JSContext* cx, GjsFunctionCallState* state,
         return NullableIn::in(cx, state, arg, value);
 
     GType gtype = RegisteredType::gtype();
-    g_assert(gtype != G_TYPE_NONE);
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, m_arg_name, value, gtype);
@@ -1460,7 +1495,7 @@ constexpr size_t argument_maximum_size() {
     // https://trac.cppcheck.net/ticket/10015
     if constexpr (std::is_same<T, Arg::ObjectIn>{} ||
                   std::is_same_v<T, Arg::BoxedIn>)
-        return 48;
+        return 40;
     else
         return 120;
 }
@@ -1893,12 +1928,18 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             }
 
             // generic boxed type
-            if (gtype == G_TYPE_NONE && transfer != GI_TRANSFER_NOTHING) {
-                // Can't transfer ownership of a structure type not
-                // registered as a boxed
-                set_argument_auto<Arg::NotIntrospectable>(std::tuple_cat(
-                    base_args,
-                    std::make_tuple(UNREGISTERED_BOXED_WITH_TRANSFER)));
+            if (gtype == G_TYPE_NONE) {
+                if (transfer != GI_TRANSFER_NOTHING) {
+                    // Can't transfer ownership of a structure type not
+                    // registered as a boxed
+                    set_argument_auto<Arg::NotIntrospectable>(
+                        base_args, UNREGISTERED_BOXED_WITH_TRANSFER);
+                    return;
+                }
+
+                set_argument_auto<Arg::UnregisteredBoxedIn, ArgKind>(
+                    common_args);
+                return;
             }
             set_argument_auto<Arg::BoxedIn, ArgKind>(common_args);
             return;
