@@ -7,6 +7,8 @@
 
 #include <config.h>
 
+#include <stdint.h>
+
 #include <unordered_set>
 #include <vector>
 
@@ -132,6 +134,10 @@ class GjsFunctionCallState {
     }
 
     constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
+
+    constexpr uint8_t last_processed_index() {
+        return first_arg_offset() + processed_c_args;
+    }
 
     [[nodiscard]] GjsAutoChar display_name() {
         GIBaseInfo* container = g_base_info_get_container(info);  // !owned

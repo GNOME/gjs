@@ -1017,7 +1017,7 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
     // state.processed_c_args.
     // If we start from -2 (the instance parameter), we need to process 2 more
     unsigned ffi_arg_pos = state->first_arg_offset() - 1;
-    unsigned ffi_arg_max = state->processed_c_args + state->first_arg_offset();
+    unsigned ffi_arg_max = state->last_processed_index();
     bool postinvoke_release_failed = false;
     for (int gi_arg_pos = -(state->first_arg_offset());
          gi_arg_pos < state->gi_argc && ffi_arg_pos < ffi_arg_max;
@@ -1052,8 +1052,7 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
     if (postinvoke_release_failed)
         state->failed = true;
 
-    g_assert(ffi_arg_pos ==
-             state->processed_c_args + state->first_arg_offset());
+    g_assert(ffi_arg_pos == state->last_processed_index());
 
     if (!r_value && m_js_out_argc > 0 && state->call_completed()) {
         // If we have one return value or out arg, return that item on its
