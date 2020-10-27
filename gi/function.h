@@ -86,7 +86,7 @@ class GjsFunctionCallState {
     JS::RootedValueVector return_values;
     GjsAutoError local_error;
     GICallableInfo* info;
-    int gi_argc = 0;
+    uint8_t gi_argc = 0;
     unsigned processed_c_args = 0;
     bool failed : 1;
     bool can_throw_gerror : 1;
@@ -116,6 +116,13 @@ class GjsFunctionCallState {
     GjsFunctionCallState& operator=(const GjsFunctionCallState&) = delete;
 
     constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
+
+    // The list always contains the return value, and the arguments
+    constexpr GIArgument* instance() {
+        return is_method ? &m_in_cvalues[1] : nullptr;
+    }
+
+    constexpr GIArgument* return_value() { return &m_out_cvalues[0]; }
 
     constexpr GIArgument& in_cvalue(int index) const {
         return m_in_cvalues[index + first_arg_offset()];

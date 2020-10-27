@@ -842,11 +842,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     // - return_value: The actual return value of the C function, i.e. not an
     //   (out) param
     //
-    // The 3 GIArgument arrays are indexed by the GI argument index, with the
-    // following exceptions:
-    // - [-1] is the return value (which can be nothing/garbage if the function
-    //   function returns void)
-    // - [-2] is the instance parameter, if present
+    // The 3 GIArgument arrays are indexed by the GI argument index.
     // ffi_arg_pointers, on the other hand, represents the actual C arguments,
     // in the way ffi expects them.
 
@@ -864,7 +860,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
     if (state.is_method) {
         GjsArgumentCache* cache = &m_arguments[-state.first_arg_offset()];
-        GIArgument* in_value = &state.in_cvalue(-state.first_arg_offset());
+        GIArgument* in_value = state.instance();
         JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
 
         if (!cache->marshallers->in(context, cache, &state, in_value,
@@ -963,7 +959,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
     if (!m_arguments[-1].skip_out()) {
         gi_type_info_extract_ffi_return_value(
-            &m_arguments[-1].type_info, &return_value, &state.out_cvalue(-1));
+            &m_arguments[-1].type_info, &return_value, state.return_value());
     }
 
     // Process out arguments and return values. This loop is skipped if we fail
@@ -971,7 +967,12 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     js_arg_pos = 0;
     for (gi_arg_pos = -1; gi_arg_pos < state.gi_argc; gi_arg_pos++) {
         GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
-        GIArgument* out_value = &state.out_cvalue(gi_arg_pos);
+        GIArgument* out_value;
+
+        if (gi_arg_pos == -1)
+            out_value = state.return_value();
+        else
+            out_value = &state.out_cvalue(gi_arg_pos);
 
         gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                           "Marshalling argument '%s' out, %d/%d GI args",
@@ -1023,8 +1024,17 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
          gi_arg_pos < state->gi_argc && ffi_arg_pos < ffi_arg_max;
          gi_arg_pos++, ffi_arg_pos++) {
         GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
-        GIArgument* in_value = &state->in_cvalue(gi_arg_pos);
-        GIArgument* out_value = &state->out_cvalue(gi_arg_pos);
+        GIArgument* in_value = nullptr;
+        GIArgument* out_value = nullptr;
+
+        if (gi_arg_pos == -2) {
+            in_value = state->instance();
+        } else if (gi_arg_pos == -1) {
+            out_value = state->return_value();
+        } else {
+            in_value = &state->in_cvalue(gi_arg_pos);
+            out_value = &state->out_cvalue(gi_arg_pos);
+        }
 
         gjs_debug_marshal(
             GJS_DEBUG_GFUNCTION,
