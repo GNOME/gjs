@@ -21,14 +21,19 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
+struct GjsCairoPattern
+    : GjsAutoPointer<cairo_pattern_t, cairo_pattern_t, cairo_pattern_destroy,
+                     cairo_pattern_reference> {
+    explicit GjsCairoPattern(cairo_pattern_t* pattern)
+        : GjsAutoPointer(pattern, GjsAutoTakeOwnership()) {}
+};
+
 GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Pattern", cairo_pattern,
                                      CAIRO_GOBJECT_TYPE_PATTERN,
                                      JSCLASS_BACKGROUND_FINALIZE)
 
 static void gjs_cairo_pattern_finalize(JSFreeOp*, JSObject* obj) {
-    using AutoPattern =
-        GjsAutoPointer<cairo_pattern_t, cairo_pattern_t, cairo_pattern_destroy>;
-    AutoPattern pattern = static_cast<cairo_pattern_t*>(JS_GetPrivate(obj));
+    delete static_cast<GjsCairoPattern*>(JS_GetPrivate(obj));
     JS_SetPrivate(obj, nullptr);
 }
 
@@ -90,7 +95,7 @@ void gjs_cairo_pattern_construct(JSObject* object, cairo_pattern_t* pattern) {
     g_return_if_fail(pattern);
 
     g_assert(!JS_GetPrivate(object));
-    JS_SetPrivate(object, cairo_pattern_reference(pattern));
+    JS_SetPrivate(object, new GjsCairoPattern(pattern));
 }
 
 /**
@@ -172,5 +177,6 @@ cairo_pattern_t* gjs_cairo_pattern_get_pattern(
         return nullptr;
     }
 
-    return static_cast<cairo_pattern_t*>(JS_GetPrivate(pattern_wrapper));
+    auto* priv = static_cast<GjsCairoPattern*>(JS_GetPrivate(pattern_wrapper));
+    return priv ? priv->get() : nullptr;
 }

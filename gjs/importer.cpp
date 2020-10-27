@@ -47,17 +47,18 @@
 
 #define MODULE_INIT_FILENAME "__init__.js"
 
-typedef struct {
-    bool is_root;
-} Importer;
-
 extern const JSClass gjs_importer_class;
 
-GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
+struct Importer {
+    explicit Importer(bool root) : is_root(root) {}
+
+    bool is_root : 1;
+};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_define_importer(JSContext*, JS::HandleObject, const char*,
                                      const std::vector<std::string>&, bool);
+GJS_DEFINE_PRIV_FROM_JS(Importer, gjs_importer_class)
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool
@@ -769,7 +770,7 @@ static void importer_finalize(JSFreeOp*, JSObject* obj) {
         return; /* we are the prototype, not a real instance */
 
     GJS_DEC_COUNTER(importer);
-    g_free(priv);
+    delete priv;
 }
 
 /* The bizarre thing about this vtable is that it applies to both
@@ -809,8 +810,6 @@ static JSObject*
 importer_new(JSContext *context,
              bool       is_root)
 {
-    Importer *priv;
-
     JS::RootedObject proto(context);
     if (!gjs_importer_define_proto(context, nullptr, &proto))
         return nullptr;
@@ -820,9 +819,7 @@ importer_new(JSContext *context,
     if (!importer)
         return nullptr;
 
-    priv = g_new0(Importer, 1);
-    priv->is_root = is_root;
-
+    auto* priv = new Importer(is_root);
     GJS_INC_COUNTER(importer);
 
     g_assert(priv_from_js(context, importer) == NULL);

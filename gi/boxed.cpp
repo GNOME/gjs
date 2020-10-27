@@ -42,7 +42,6 @@ BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
     : GIWrapperInstance(cx, obj),
       m_allocated_directly(false),
       m_owning_ptr(false) {
-    m_ptr = nullptr;
     GJS_INC_COUNTER(boxed_instance);
 }
 

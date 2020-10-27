@@ -10,7 +10,6 @@
 
 #include <stdint.h>
 
-#include <new>
 #include <string>
 
 #include <girepository.h>
@@ -918,7 +917,8 @@ class GIWrapperPrototype : public Base {
         // how many bytes to free if it is allocated directly. Storing a
         // refcount on the prototype is cheaper than storing pointers to m_info
         // and m_gtype on each instance.
-        auto* priv = g_atomic_rc_box_new0(Prototype);
+        GjsAutoPointer<Prototype, void, g_atomic_rc_box_release> priv =
+            g_atomic_rc_box_new0(Prototype);
         new (priv) Prototype(info, gtype);
         if (!priv->init(cx))
             return nullptr;
@@ -932,7 +932,8 @@ class GIWrapperPrototype : public Base {
         // Init the private variable of @private before we do anything else. If
         // a garbage collection or error happens subsequently, then this object
         // might be traced and we would end up dereferencing a null pointer.
-        JS_SetPrivate(prototype, priv);
+        Prototype* proto = priv.release();
+        JS_SetPrivate(prototype, proto);
 
         if (!gjs_wrapper_define_gtype_prop(cx, constructor, gtype))
             return nullptr;
@@ -947,10 +948,10 @@ class GIWrapperPrototype : public Base {
                 return nullptr;
         }
 
-        if (!priv->define_static_methods(cx, constructor))
+        if (!proto->define_static_methods(cx, constructor))
             return nullptr;
 
-        return priv;
+        return proto;
     }
 
     // Methods to get an existing Prototype
@@ -1024,10 +1025,10 @@ class GIWrapperPrototype : public Base {
 template <class Base, class Prototype, class Instance, typename Wrapped = void>
 class GIWrapperInstance : public Base {
  protected:
-    Wrapped* m_ptr;
+    Wrapped* m_ptr = nullptr;
 
     explicit GIWrapperInstance(JSContext* cx, JS::HandleObject obj)
-        : Base(Prototype::for_js_prototype(cx, obj)) {
+        : Base(Prototype::for_js_prototype(cx, obj)), m_ptr(nullptr) {
         Base::m_proto->acquire();
         Base::GIWrapperBase::debug_lifecycle(obj, "Instance constructor");
     }
@@ -1043,8 +1044,7 @@ class GIWrapperInstance : public Base {
     [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
                                                      JS::HandleObject obj) {
         g_assert(!JS_GetPrivate(obj));
-        auto* priv = g_new0(Instance, 1);
-        new (priv) Instance(cx, obj);
+        auto* priv = new Instance(cx, obj);
 
         // Init the private variable before we do anything else. If a garbage
         // collection happens when calling the constructor, then this object
@@ -1083,8 +1083,7 @@ class GIWrapperInstance : public Base {
 
  protected:
     void finalize_impl(JSFreeOp*, JSObject*) {
-        static_cast<Instance*>(this)->~Instance();
-        g_free(this);
+        delete static_cast<Instance*>(this);
     }
 
     // Override if necessary

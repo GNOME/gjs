@@ -32,16 +32,24 @@
 
 [[nodiscard]] static JSObject* gjs_cairo_region_get_proto(JSContext*);
 
+struct GjsCairoRegion
+    : GjsAutoPointer<cairo_region_t, cairo_region_t, cairo_region_destroy,
+                     cairo_region_reference> {
+    explicit GjsCairoRegion(cairo_region_t* region)
+        : GjsAutoPointer(region, GjsAutoTakeOwnership()) {}
+};
+
 GJS_DEFINE_PROTO_WITH_GTYPE("Region", cairo_region,
                             CAIRO_GOBJECT_TYPE_REGION,
                             JSCLASS_BACKGROUND_FINALIZE)
+GJS_DEFINE_PRIV_FROM_JS(GjsCairoRegion, gjs_cairo_region_class);
 
 static cairo_region_t *
 get_region(JSContext       *context,
            JS::HandleObject obj)
 {
-    return static_cast<cairo_region_t*>(
-        JS_GetInstancePrivate(context, obj, &gjs_cairo_region_class, nullptr));
+    auto* priv = priv_from_js(context, obj);
+    return priv ? priv->get() : nullptr;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -50,10 +58,9 @@ fill_rectangle(JSContext             *context,
                JS::HandleObject       obj,
                cairo_rectangle_int_t *rect);
 
-#define PRELUDE                                                             \
-    GJS_GET_THIS(context, argc, vp, argv, obj);                             \
-    auto* this_region = static_cast<cairo_region_t*>(JS_GetInstancePrivate( \
-        context, obj, &gjs_cairo_region_class, nullptr));
+#define PRELUDE                                 \
+    GJS_GET_THIS(context, argc, vp, argv, obj); \
+    auto* this_region = get_region(context, obj);
 
 #define RETURN_STATUS                                           \
     return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
@@ -228,10 +235,11 @@ JSFunctionSpec gjs_cairo_region_proto_funcs[] = {
 
 JSFunctionSpec gjs_cairo_region_static_funcs[] = { JS_FS_END };
 
-static void _gjs_cairo_region_construct_internal(JSObject* obj,
+static void _gjs_cairo_region_construct_internal(JSContext* context,
+                                                 JS::HandleObject obj,
                                                  cairo_region_t* region) {
-    g_assert(!JS_GetPrivate(obj));
-    JS_SetPrivate(obj, cairo_region_reference(region));
+    g_assert(!priv_from_js(context, obj));
+    JS_SetPrivate(obj, new GjsCairoRegion(region));
 }
 
 GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
@@ -246,7 +254,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
 
     region = cairo_region_create();
 
-    _gjs_cairo_region_construct_internal(object, region);
+    _gjs_cairo_region_construct_internal(context, object, region);
     cairo_region_destroy(region);
 
     GJS_NATIVE_CONSTRUCTOR_FINISH(cairo_region);
@@ -255,9 +263,7 @@ GJS_NATIVE_CONSTRUCTOR_DECLARE(cairo_region)
 }
 
 static void gjs_cairo_region_finalize(JSFreeOp*, JSObject* obj) {
-    using AutoCairoRegion =
-        GjsAutoPointer<cairo_region_t, cairo_region_t, cairo_region_destroy>;
-    AutoCairoRegion region = static_cast<cairo_region_t*>(JS_GetPrivate(obj));
+    delete static_cast<GjsCairoRegion*>(JS_GetPrivate(obj));
     JS_SetPrivate(obj, nullptr);
 }
 
@@ -272,7 +278,7 @@ gjs_cairo_region_from_region(JSContext *context,
     if (!object)
         return nullptr;
 
-    _gjs_cairo_region_construct_internal(object, region);
+    _gjs_cairo_region_construct_internal(context, object, region);
 
     return object;
 }
