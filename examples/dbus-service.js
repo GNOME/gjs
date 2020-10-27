@@ -29,7 +29,6 @@ const ifaceXml = `
 
 // An example of the service-side implementation of the above interface.
 class Service {
-
     constructor() {
         this.dbus = Gio.DBusExportedObject.wrapJSObject(ifaceXml, this);
     }

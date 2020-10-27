@@ -220,7 +220,6 @@ function _checkInterface(iface, proto) {
 }
 
 function _init() {
-
     GObject = this;
 
     function _makeDummyClass(obj, name, upperName, gtypeName, actual) {

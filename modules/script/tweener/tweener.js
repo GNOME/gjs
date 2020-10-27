@@ -311,7 +311,6 @@ function _updateTweenByIndex(i) {
 
             _callOnFunction(tweening.onUpdate, 'onUpdate', tweening.onUpdateScope,
                 scope, tweening.onUpdateParams);
-
         } else {
             tweening.updatesSkipped++;
         }
@@ -624,7 +623,6 @@ function removeTweensByTime(scope, properties, timeStart, timeComplete) {
             scope == _tweenList[i].scope &&
             timeComplete > _tweenList[i].timeStart &&
             timeStart < _tweenList[i].timeComplete) {
-
             for (name in _tweenList[i].properties) {
                 if (properties[name]) {
                     if (!removedLocally) {

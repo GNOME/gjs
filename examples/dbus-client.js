@@ -93,7 +93,6 @@ function onNameAppeared(connection, name, _owner) {
     }
 
     proxy.ComplexMethodRemote('input string', (value, error, fdList) => {
-
         // If @error is not `null`, then an error occurred
         if (error !== null) {
             logError(error);

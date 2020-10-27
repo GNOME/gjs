@@ -9,7 +9,6 @@ let Gtk;
 let BuilderScope;
 
 function _init() {
-
     Gtk = this;
 
     Gtk.children = GObject.__gtkChildren__;

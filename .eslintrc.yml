@@ -171,6 +171,9 @@ rules:
   object-shorthand: error
   operator-assignment: error
   operator-linebreak: error
+  padded-blocks:
+    - error
+    - never
   # These may be a bit controversial, we can try them out and enable them later
   # prefer-const: error
   # prefer-destructuring: error
