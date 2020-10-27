@@ -216,19 +216,26 @@ struct Array : BasicType {
     }
 };
 
-// boxed / union / GObject
-struct RegisteredType {
-    explicit RegisteredType(GIRegisteredTypeInfo* info)
+struct BaseInfo {
+    explicit BaseInfo(GIBaseInfo* info)
         : m_info(info ? g_base_info_ref(info) : nullptr) {}
-
-    GType gtype() const { return g_registered_type_info_get_g_type(m_info); }
 
     GjsAutoBaseInfo m_info;
 };
 
-struct Callback : Nullable, RegisteredType {
+// boxed / union / GObject
+struct RegisteredType : BaseInfo {
+    explicit RegisteredType(GIBaseInfo* info)
+        : BaseInfo(info), m_gtype(g_registered_type_info_get_g_type(m_info)) {}
+
+    constexpr GType gtype() const { return m_gtype; }
+
+    GType m_gtype;
+};
+
+struct Callback : Nullable, BaseInfo {
     explicit Callback(GITypeInfo* type_info)
-        : RegisteredType(g_type_info_get_interface(type_info)),
+        : BaseInfo(g_type_info_get_interface(type_info)),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
     inline void set_callback_destroy_pos(int pos) {
@@ -1455,7 +1462,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BoxedIn>)
         return 48;
     else
-        return 112;
+        return 120;
 }
 #endif
 
