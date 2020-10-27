@@ -32,8 +32,7 @@ InterfacePrototype::~InterfacePrototype(void) {
 
 // See GIWrapperBase::resolve().
 bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
-                                      JS::HandleId, const char* name,
-                                      bool* resolved) {
+                                      JS::HandleId id, bool* resolved) {
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be
      * resolved from within C code, as interfaces cannot inherit. */
@@ -42,8 +41,16 @@ bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
         return true;
     }
 
+    JS::UniqueChars prop_name;
+    if (!gjs_get_string_id(context, id, &prop_name))
+        return false;
+    if (!prop_name) {
+        *resolved = false;
+        return true;  // not resolved, but no error
+    }
+
     GjsAutoFunctionInfo method_info =
-        g_interface_info_find_method(m_info, name);
+        g_interface_info_find_method(m_info, prop_name.get());
 
     if (method_info) {
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
