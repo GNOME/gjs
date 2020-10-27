@@ -422,8 +422,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
          * gobject-introspection needs to tell us this.
          * Always say they can't for now.
          */
-        if (!gjs_value_to_g_argument(cx, elem, param_info, NULL,
-                                     GJS_ARGUMENT_LIST_ELEMENT, transfer, false,
+        if (!gjs_value_to_g_argument(cx, elem, param_info,
+                                     GJS_ARGUMENT_LIST_ELEMENT, transfer,
                                      &elem_arg)) {
             return false;
         }
@@ -666,7 +666,7 @@ gjs_object_to_g_hash(JSContext   *context,
             // Type check and convert value to a C type
             !gjs_value_to_g_argument(context, val_js, val_param_info, nullptr,
                                      GJS_ARGUMENT_HASH_ELEMENT, transfer,
-                                     true /* allow null */, &val_arg))
+                                     GjsArgumentFlags::MAY_BE_NULL, &val_arg))
             return false;
 
         GITypeTag val_type = g_type_info_get_tag(val_param_info);
@@ -888,10 +888,8 @@ gjs_array_to_ptrarray(JSContext   *context,
         success = gjs_value_to_g_argument (context,
                                            elem,
                                            param_info,
-                                           NULL, /* arg name */
                                            GJS_ARGUMENT_ARRAY_ELEMENT,
                                            transfer,
-                                           false, /* absent better information, false for now */
                                            &arg);
 
         if (!success) {
@@ -939,10 +937,8 @@ static bool gjs_array_to_flat_struct_array(JSContext* cx,
 
         GIArgument arg;
         if (!gjs_value_to_g_argument(cx, elem, param_info,
-                                     /* arg_name = */ nullptr,
                                      GJS_ARGUMENT_ARRAY_ELEMENT,
-                                     GI_TRANSFER_NOTHING,
-                                     /* may_be_null = */ false, &arg))
+                                     GI_TRANSFER_NOTHING, &arg))
             return false;
 
         memcpy(&flat_array[struct_size * i], gjs_arg_get<void*>(&arg),
@@ -1243,7 +1239,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
                                  GITypeInfo* type_info, const char* arg_name,
                                  GjsArgumentType arg_type, GITransfer transfer,
-                                 bool may_be_null, void** contents,
+                                 GjsArgumentFlags flags, void** contents,
                                  size_t* length_p) {
     bool found_length;
 
@@ -1254,7 +1250,7 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
 
     GjsAutoTypeInfo param_info = g_type_info_get_param_type(type_info, 0);
 
-    if ((value.isNull() && !may_be_null) ||
+    if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
         (!value.isString() && !value.isObjectOrNull())) {
         throw_invalid_argument(context, value, param_info, arg_name, arg_type);
         return false;
@@ -1333,7 +1329,8 @@ intern_gdk_atom(const char *name,
 static bool value_to_interface_gi_argument(
     JSContext* cx, JS::HandleValue value, GIBaseInfo* interface_info,
     GIInfoType interface_type, GITransfer transfer, bool expect_object,
-    GIArgument* arg, GjsArgumentType arg_type, bool* report_type_mismatch) {
+    GIArgument* arg, GjsArgumentType arg_type, GjsArgumentFlags flags,
+    bool* report_type_mismatch) {
     g_assert(report_type_mismatch);
     GType gtype;
 
@@ -1364,8 +1361,15 @@ static bool value_to_interface_gi_argument(
                           g_type_name(gtype));
 
     if (gtype == G_TYPE_VALUE) {
-        GValue gvalue = G_VALUE_INIT;
+        if (flags & GjsArgumentFlags::CALLER_ALLOCATES) {
+            if (!gjs_value_to_g_value_no_copy(cx, value,
+                                              gjs_arg_get<GValue*>(arg)))
+                return false;
 
+            return true;
+        }
+
+        GValue gvalue = G_VALUE_INIT;
         if (!gjs_value_to_g_value(cx, value, &gvalue)) {
             gjs_arg_unset<void*>(arg);
             return false;
@@ -1588,16 +1592,10 @@ GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
     return true;
 }
 
-bool
-gjs_value_to_g_argument(JSContext      *context,
-                        JS::HandleValue value,
-                        GITypeInfo     *type_info,
-                        const char     *arg_name,
-                        GjsArgumentType arg_type,
-                        GITransfer      transfer,
-                        bool            may_be_null,
-                        GArgument      *arg)
-{
+bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
+                             GITypeInfo* type_info, const char* arg_name,
+                             GjsArgumentType arg_type, GITransfer transfer,
+                             GjsArgumentFlags flags, GIArgument* arg) {
     GITypeTag type_tag = g_type_info_get_tag(type_info);
 
     gjs_debug_marshal(
@@ -1776,12 +1774,12 @@ gjs_value_to_g_argument(JSContext      *context,
                 g_struct_info_is_foreign(interface_info)) {
                 return gjs_struct_foreign_convert_to_g_argument(
                     context, value, interface_info, arg_name, arg_type,
-                    transfer, may_be_null, arg);
+                    transfer, flags, arg);
             }
 
             if (!value_to_interface_gi_argument(
                     context, value, interface_info, interface_type, transfer,
-                    expect_object, arg, arg_type, &report_type_mismatch))
+                    expect_object, arg, arg_type, flags, &report_type_mismatch))
                 wrong = true;
         }
         break;
@@ -1798,7 +1796,7 @@ gjs_value_to_g_argument(JSContext      *context,
     case GI_TYPE_TAG_GHASH:
         if (value.isNull()) {
             gjs_arg_set(arg, nullptr);
-            if (!may_be_null) {
+            if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
                 wrong = true;
                 report_type_mismatch = true;
             }
@@ -1861,7 +1859,7 @@ _Pragma("GCC diagnostic pop")
         }
 
         if (!gjs_array_to_explicit_array(context, value, type_info, arg_name,
-                                         arg_type, transfer, may_be_null, &data,
+                                         arg_type, transfer, flags, &data,
                                          &length)) {
             wrong = true;
             break;
@@ -1917,7 +1915,8 @@ _Pragma("GCC diagnostic pop")
             throw_invalid_argument(context, value, type_info, arg_name, arg_type);
         }
         return false;
-    } else if (nullable_type && !gjs_arg_get<void*>(arg) && !may_be_null) {
+    } else if (nullable_type && !gjs_arg_get<void*>(arg) &&
+               !(flags & GjsArgumentFlags::MAY_BE_NULL)) {
         GjsAutoChar display_name =
             gjs_argument_display_name(arg_name, arg_type);
         gjs_throw(context, "%s (type %s) may not be null", display_name.get(),
@@ -2032,18 +2031,21 @@ gjs_value_to_arg(JSContext      *context,
                  GIArgInfo      *arg_info,
                  GIArgument     *arg)
 {
+    GjsArgumentFlags flags = GjsArgumentFlags::NONE;
     GITypeInfo type_info;
 
     g_arg_info_load_type(arg_info, &type_info);
 
-    return gjs_value_to_g_argument(context, value,
-                                   &type_info,
-                                   g_base_info_get_name( (GIBaseInfo*) arg_info),
-                                   (g_arg_info_is_return_value(arg_info) ?
-                                    GJS_ARGUMENT_RETURN_VALUE : GJS_ARGUMENT_ARGUMENT),
-                                   g_arg_info_get_ownership_transfer(arg_info),
-                                   g_arg_info_may_be_null(arg_info),
-                                   arg);
+    if (g_arg_info_may_be_null(arg_info))
+        flags |= GjsArgumentFlags::MAY_BE_NULL;
+    if (g_arg_info_is_caller_allocates(arg_info))
+        flags |= GjsArgumentFlags::CALLER_ALLOCATES;
+
+    return gjs_value_to_g_argument(
+        context, value, &type_info, g_base_info_get_name(arg_info),
+        (g_arg_info_is_return_value(arg_info) ? GJS_ARGUMENT_RETURN_VALUE
+                                              : GJS_ARGUMENT_ARGUMENT),
+        g_arg_info_get_ownership_transfer(arg_info), flags, arg);
 }
 
 template <typename T>

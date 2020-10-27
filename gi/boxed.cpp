@@ -633,12 +633,10 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
         }
     }
 
-    if (!gjs_value_to_g_argument(context, value,
-                                 type_info,
-                                 g_base_info_get_name ((GIBaseInfo *)field_info),
-                                 GJS_ARGUMENT_FIELD,
-                                 GI_TRANSFER_NOTHING,
-                                 true, &arg))
+    if (!gjs_value_to_g_argument(context, value, type_info,
+                                 g_base_info_get_name(field_info),
+                                 GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING,
+                                 GjsArgumentFlags::MAY_BE_NULL, &arg))
         return false;
 
     bool success = true;

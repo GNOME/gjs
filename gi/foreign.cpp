@@ -11,7 +11,6 @@
 
 #include <js/TypeDecls.h>
 
-#include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -109,24 +108,18 @@ void gjs_struct_foreign_register(const char* gi_namespace,
     return retval;
 }
 
-bool
-gjs_struct_foreign_convert_to_g_argument(JSContext      *context,
-                                         JS::Value       value,
-                                         GIBaseInfo     *interface_info,
-                                         const char     *arg_name,
-                                         GjsArgumentType argument_type,
-                                         GITransfer      transfer,
-                                         bool            may_be_null,
-                                         GArgument      *arg)
-{
+bool gjs_struct_foreign_convert_to_g_argument(
+    JSContext* context, JS::Value value, GIBaseInfo* interface_info,
+    const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
+    GjsArgumentFlags flags, GArgument* arg) {
     GjsForeignInfo *foreign;
 
     foreign = gjs_struct_foreign_lookup(context, interface_info);
     if (!foreign)
         return false;
 
-    if (!foreign->to_func(context, value, arg_name,
-                           argument_type, transfer, may_be_null, arg))
+    if (!foreign->to_func(context, value, arg_name, argument_type, transfer,
+                          flags, arg))
         return false;
 
     return true;

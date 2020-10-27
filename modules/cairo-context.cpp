@@ -963,10 +963,10 @@ gjs_cairo_context_get_context(JSContext       *context,
 
 [[nodiscard]] static bool context_to_g_argument(
     JSContext* context, JS::Value value, const char* arg_name,
-    GjsArgumentType argument_type, GITransfer transfer, bool may_be_null,
+    GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
     if (value.isNull()) {
-        if (!may_be_null) {
+        if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
             GjsAutoChar display_name =
                 gjs_argument_display_name(arg_name, argument_type);
             gjs_throw(context, "%s may not be null", display_name.get());

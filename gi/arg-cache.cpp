@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
+#include <limits>
 
 #include <ffi.h>
 #include <girepository.h>
@@ -185,7 +186,7 @@ static bool gjs_marshal_generic_in_in(JSContext* cx, GjsArgumentCache* self,
                                    self->is_return_value()
                                        ? GJS_ARGUMENT_RETURN_VALUE
                                        : GJS_ARGUMENT_ARGUMENT,
-                                   self->transfer, self->nullable, arg);
+                                   self->transfer, self->flags, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -213,7 +214,7 @@ static bool gjs_marshal_explicit_array_in_in(JSContext* cx,
 
     if (!gjs_array_to_explicit_array(
             cx, value, &self->type_info, self->arg_name, GJS_ARGUMENT_ARGUMENT,
-            self->transfer, self->nullable, &data, &length))
+            self->transfer, self->flags, &data, &length))
         return false;
 
     uint8_t length_pos = self->contents.array.length_pos;
@@ -265,7 +266,7 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
     GjsCallbackTrampoline* trampoline;
     ffi_closure* closure;
 
-    if (value.isNull() && self->nullable) {
+    if (value.isNull() && (self->flags & GjsArgumentFlags::MAY_BE_NULL)) {
         closure = nullptr;
         trampoline = nullptr;
     } else {
@@ -445,7 +446,7 @@ static bool gjs_marshal_gtype_in_in(JSContext* cx, GjsArgumentCache* self,
 
 // Common code for most types that are pointers on the C side
 bool GjsArgumentCache::handle_nullable(JSContext* cx, GIArgument* arg) {
-    if (!nullable)
+    if (!(flags & GjsArgumentFlags::MAY_BE_NULL))
         return report_invalid_null(cx, arg_name);
     gjs_arg_unset<void*>(arg);
     return true;
@@ -462,7 +463,7 @@ static bool gjs_marshal_string_in_in(JSContext* cx, GjsArgumentCache* self,
         return report_typeof_mismatch(cx, self->arg_name, value,
                                       ExpectedType::STRING);
 
-    if (self->contents.string_is_filename) {
+    if (self->flags & GjsArgumentFlags::FILENAME) {
         GjsAutoChar str;
         if (!gjs_string_to_filename(cx, value, &str))
             return false;
@@ -488,7 +489,7 @@ static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
     // Unpack the values from their uint32_t bitfield. See note in
     // gjs_arg_cache_build_enum_bounds().
     int64_t min, max;
-    if (self->is_unsigned) {
+    if (self->flags & GjsArgumentFlags::UNSIGNED) {
         min = self->contents.enum_type.enum_min;
         max = self->contents.enum_type.enum_max;
     } else {
@@ -502,7 +503,7 @@ static bool gjs_marshal_enum_in_in(JSContext* cx, GjsArgumentCache* self,
         return false;
     }
 
-    if (self->is_unsigned)
+    if (self->flags & GjsArgumentFlags::UNSIGNED)
         gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
     else
         gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, number);
@@ -539,7 +540,7 @@ static bool gjs_marshal_foreign_in_in(JSContext* cx, GjsArgumentCache* self,
     self->contents.tmp_foreign_info = foreign_info;
     return gjs_struct_foreign_convert_to_g_argument(
         cx, value, foreign_info, self->arg_name, GJS_ARGUMENT_ARGUMENT,
-        self->transfer, self->nullable, arg);
+        self->transfer, self->flags, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1245,7 +1246,7 @@ static const GjsArgumentMarshallers caller_allocates_out_marshallers = {
 
 static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
     self->marshallers = &skip_all_marshallers;
-    self->skip_in = self->skip_out = true;
+    self->flags = (GjsArgumentFlags::SKIP_IN | GjsArgumentFlags::SKIP_OUT);
 }
 
 bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
@@ -1292,7 +1293,7 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
     // marshal_in is ignored for the return value, but skip_in is not (it is
     // used in the failure release path)
-    self->skip_in = true;
+    self->flags = (self->flags | GjsArgumentFlags::SKIP_IN);
     self->marshallers = &return_value_marshallers;
 
     return true;
@@ -1300,8 +1301,8 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
 static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
                                             GIEnumInfo* enum_info) {
-    int64_t min = G_MAXINT64;
-    int64_t max = G_MININT64;
+    int64_t min = std::numeric_limits<int64_t>::max();
+    int64_t max = std::numeric_limits<int64_t>::min();
     int n = g_enum_info_get_n_values(enum_info);
     for (int i = 0; i < n; i++) {
         GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
@@ -1320,7 +1321,11 @@ static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
     // whether we have to compare them as signed.
     self->contents.enum_type.enum_min = static_cast<uint32_t>(min);
     self->contents.enum_type.enum_max = static_cast<uint32_t>(max);
-    self->is_unsigned = min >= 0 && max > G_MAXINT32;
+
+    if (min >= 0 && max > std::numeric_limits<int32_t>::max())
+        self->flags = (self->flags | GjsArgumentFlags::UNSIGNED);
+    else
+        self->flags = (self->flags & ~GjsArgumentFlags::UNSIGNED);
 }
 
 static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
@@ -1539,7 +1544,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                 self->marshallers = &string_in_transfer_none_marshallers;
             else
                 self->marshallers = &string_in_marshallers;
-            self->contents.string_is_filename = true;
+            self->flags = (self->flags | GjsArgumentFlags::FILENAME);
             break;
 
         case GI_TYPE_TAG_UTF8:
@@ -1547,7 +1552,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                 self->marshallers = &string_in_transfer_none_marshallers;
             else
                 self->marshallers = &string_in_marshallers;
-            self->contents.string_is_filename = false;
+            self->flags = (self->flags & ~GjsArgumentFlags::FILENAME);
             break;
 
         case GI_TYPE_TAG_INTERFACE: {
@@ -1613,16 +1618,24 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     self->arg_name = g_base_info_get_name(arg);
     g_arg_info_load_type(arg, &self->type_info);
     self->transfer = g_arg_info_get_ownership_transfer(arg);
-    self->nullable = g_arg_info_may_be_null(arg);
+
+    GjsArgumentFlags flags = GjsArgumentFlags::NONE;
+    if (g_arg_info_may_be_null(arg))
+        flags |= GjsArgumentFlags::MAY_BE_NULL;
+    if (g_arg_info_is_caller_allocates(arg))
+        flags |= GjsArgumentFlags::CALLER_ALLOCATES;
 
     if (direction == GI_DIRECTION_IN)
-        self->skip_out = true;
+        flags |= GjsArgumentFlags::SKIP_OUT;
     else if (direction == GI_DIRECTION_OUT)
-        self->skip_in = true;
+        flags |= GjsArgumentFlags::SKIP_IN;
     *inc_counter_out = true;
 
+    self->flags = flags;
+
     GITypeTag type_tag = g_type_info_get_tag(&self->type_info);
-    if (direction == GI_DIRECTION_OUT && g_arg_info_is_caller_allocates(arg)) {
+    if (direction == GI_DIRECTION_OUT &&
+        (flags & GjsArgumentFlags::CALLER_ALLOCATES)) {
         if (type_tag != GI_TYPE_TAG_INTERFACE) {
             gjs_throw(cx,
                       "Unsupported type %s for argument %s with (out "

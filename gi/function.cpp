@@ -327,6 +327,14 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     }
 }
 
+inline GIArgument* get_argument_for_arg_info(GIArgInfo* arg_info,
+                                             GIArgument** args, int index) {
+    if (!g_arg_info_is_caller_allocates(arg_info))
+        return *reinterpret_cast<GIArgument**>(args[index]);
+    else
+        return args[index];
+}
+
 bool GjsCallbackTrampoline::callback_closure_inner(
     JSContext* context, JS::HandleObject this_object,
     JS::MutableHandleValue rval, GIArgument** args, GITypeInfo* ret_type,
@@ -393,7 +401,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                     g_error("Unable to grow vector");
 
                 GIArgument* arg = args[i + c_args_offset];
-                if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT)
+                if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT &&
+                    !g_arg_info_is_caller_allocates(&arg_info))
                     arg = *reinterpret_cast<GIArgument**>(arg);
 
                 if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
@@ -424,8 +433,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         /* non-void return value, no out args. Should
          * be a single return value. */
         if (!gjs_value_to_g_argument(context, rval, ret_type, "callback",
-                                     GJS_ARGUMENT_RETURN_VALUE, transfer, true,
-                                     &argument))
+                                     GJS_ARGUMENT_RETURN_VALUE, transfer,
+                                     GjsArgumentFlags::MAY_BE_NULL, &argument))
             return false;
 
         set_return_ffi_arg_from_giargument(ret_type, result, &argument);
@@ -439,7 +448,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 continue;
 
             if (!gjs_value_to_arg(context, rval, &arg_info,
-                                  *reinterpret_cast<GIArgument **>(args[i + c_args_offset])))
+                                  get_argument_for_arg_info(&arg_info, args,
+                                                            i + c_args_offset)))
                 return false;
 
             break;
@@ -474,7 +484,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
             if (!gjs_value_to_g_argument(context, elem, ret_type, "callback",
                                          GJS_ARGUMENT_RETURN_VALUE, transfer,
-                                         true, &argument))
+                                         GjsArgumentFlags::MAY_BE_NULL,
+                                         &argument))
                 return false;
 
             set_return_ffi_arg_from_giargument(ret_type, result, &argument);
@@ -492,7 +503,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 return false;
 
             if (!gjs_value_to_arg(context, elem, &arg_info,
-                                  *(GIArgument **)args[i + c_args_offset]))
+                                  get_argument_for_arg_info(&arg_info, args,
+                                                            i + c_args_offset)))
                 return false;
 
             elem_idx++;
@@ -643,7 +655,7 @@ void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
 static void* get_return_ffi_pointer_from_giargument(
     GjsArgumentCache* return_arg, GIFFIReturnValue* return_value) {
     // This should be the inverse of gi_type_info_extract_ffi_return_value().
-    if (return_arg->skip_out)
+    if (return_arg->skip_out())
         return nullptr;
 
     // FIXME: Note that v_long and v_ulong don't have type-safe template
@@ -839,7 +851,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
             break;
         }
 
-        if (!cache->skip_in)
+        if (!cache->skip_in())
             js_arg_pos++;
 
         processed_c_args++;
@@ -884,7 +896,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     if (!r_value)
         args.rval().setUndefined();
 
-    if (!function->arguments[-1].skip_out) {
+    if (!function->arguments[-1].skip_out()) {
         gi_type_info_extract_ffi_return_value(
             &function->arguments[-1].type_info, &return_value,
             &state.out_cvalues[-1]);
@@ -910,7 +922,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
             }
         }
 
-        if (!cache->skip_out) {
+        if (!cache->skip_out()) {
             if (!r_value) {
                 if (!return_values.append(js_out_arg)) {
                     JS_ReportOutOfMemory(context);
@@ -954,7 +966,7 @@ release:
             processed_c_args);
 
         // Only process in or inout arguments if we failed, the rest is garbage
-        if (failed && cache->skip_in)
+        if (failed && cache->skip_in())
             continue;
 
         // Save the return GIArgument if it was requested
@@ -1108,7 +1120,7 @@ function_to_string (JSContext *context,
     n_jsargs = 0;
     arg_names_str = g_string_new("");
     for (i = 0; i < n_args; i++) {
-        if (priv->arguments[i].skip_in)
+        if (priv->arguments[i].skip_in())
             continue;
 
         if (n_jsargs > 0)
@@ -1240,7 +1252,7 @@ init_cached_function_data (JSContext      *context,
         GIDirection direction;
         GIArgInfo arg_info;
 
-        if (arguments[i].skip_in || arguments[i].skip_out)
+        if (arguments[i].skip_in() || arguments[i].skip_out())
             continue;
 
         g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);

@@ -17,6 +17,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gi/arg.h"
 #include "gjs/macros.h"
 
 struct GjsFunctionCallState;
@@ -41,11 +42,8 @@ struct GjsArgumentCache {
     GITypeInfo type_info;
 
     uint8_t arg_pos;
-    bool skip_in : 1;
-    bool skip_out : 1;
     GITransfer transfer : 2;
-    bool nullable : 1;
-    bool is_unsigned : 1;  // number and enum only
+    GjsArgumentFlags flags : 5;
 
     union {
         // for explicit array only
@@ -79,9 +77,6 @@ struct GjsArgumentCache {
             uint32_t enum_max;
         } enum_type;
         unsigned flags_mask;
-
-        // string / filename
-        bool string_is_filename : 1;
 
         // out caller allocates (FIXME: should be in object)
         size_t caller_allocates_size;
@@ -126,16 +121,24 @@ struct GjsArgumentCache {
         arg_name = "instance parameter";
         // Some calls accept null for the instance, but generally in an object
         // oriented language it's wrong to call a method on null
-        nullable = false;
-        skip_out = true;
+        flags = GjsArgumentFlags::NONE | GjsArgumentFlags::SKIP_OUT;
     }
 
     void set_return_value() {
         arg_pos = RETURN_VALUE;
         arg_name = "return value";
-        nullable = false;  // We don't really care for return values
+        flags =
+            GjsArgumentFlags::NONE;  // We don't really care for return values
     }
     [[nodiscard]] bool is_return_value() { return arg_pos == RETURN_VALUE; }
+
+    constexpr bool skip_in() const {
+        return (flags & GjsArgumentFlags::SKIP_IN);
+    }
+
+    constexpr bool skip_out() const {
+        return (flags & GjsArgumentFlags::SKIP_OUT);
+    }
 };
 
 // This is a trick to print out the sizes of the structs at compile time, in
