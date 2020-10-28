@@ -171,10 +171,11 @@ cpplint:
 
 eslint:
   when: on_success
-  image: ewlsh/lint-condo
+  image: node:12
   stage: source_check
   script:
-    - node /usr/src/lint-condo
+    - yarn install --frozen-lockfile
+    - yarn lint
   except:
     refs:
       - schedules

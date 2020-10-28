@@ -1,5 +1,5 @@
 /* -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil; -*- */
-/* eslint-disable no-unused-vars, valid-jsdoc */
+/* eslint-disable no-unused-vars */
 // SPDX-License-Identifier: BSD-3-Clause
 // SPDX-FileCopyrightText: 2008 litl, LLC.
 // SPDX-FileCopyrightText: 2001 Robert Penner

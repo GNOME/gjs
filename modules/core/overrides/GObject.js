@@ -591,10 +591,11 @@ function _init() {
      * The criteria are passed as properties of a match object.
      * The match object has to be non-empty for successful matches.
      * If no handler was found, a falsy value is returned.
+     *
      * @function
      * @param {GObject.Object} instance - the instance owning the signal handler
      *   to be found.
-     * @param {Object} match - a properties object indicating whether to match
+     * @param {object} match - a properties object indicating whether to match
      *   by signal ID, detail, or callback function.
      * @param {string} [match.signalId] - signal the handler has to be connected
      *   to.
@@ -602,7 +603,7 @@ function _init() {
      *   connected to.
      * @param {Function} [match.func] - the callback function the handler will
      *   invoke.
-     * @returns {number|BigInt|Object|null} A valid non-0 signal handler ID for
+     * @returns {number | bigint | object | null} A valid non-0 signal handler ID for
      *   a successful match.
      */
     GObject.signal_handler_find = function (instance, match) {
@@ -618,10 +619,11 @@ function _init() {
      * The match object has to have at least `func` for successful matches.
      * If no handlers were found, 0 is returned, the number of blocked handlers
      * otherwise.
+     *
      * @function
      * @param {GObject.Object} instance - the instance owning the signal handler
      *   to be found.
-     * @param {Object} match - a properties object indicating whether to match
+     * @param {object} match - a properties object indicating whether to match
      *   by signal ID, detail, or callback function.
      * @param {string} [match.signalId] - signal the handler has to be connected
      *   to.
@@ -647,10 +649,11 @@ function _init() {
      * handlers otherwise.
      * The match criteria should not apply to any handlers that are not
      * currently blocked.
+     *
      * @function
      * @param {GObject.Object} instance - the instance owning the signal handler
      *   to be found.
-     * @param {Object} match - a properties object indicating whether to match
+     * @param {object} match - a properties object indicating whether to match
      *   by signal ID, detail, or callback function.
      * @param {string} [match.signalId] - signal the handler has to be connected
      *   to.
@@ -674,10 +677,11 @@ function _init() {
      * The match object has to have at least `func` for successful matches.
      * If no handlers were found, 0 is returned, the number of disconnected
      * handlers otherwise.
+     *
      * @function
      * @param {GObject.Object} instance - the instance owning the signal handler
      *   to be found.
-     * @param {Object} match - a properties object indicating whether to match
+     * @param {object} match - a properties object indicating whether to match
      *   by signal ID, detail, or callback function.
      * @param {string} [match.signalId] - signal the handler has to be connected
      *   to.
@@ -699,6 +703,7 @@ function _init() {
 
     /**
      * Blocks all handlers on an instance that match `func`.
+     *
      * @function
      * @param {GObject.Object} instance - the instance to block handlers from.
      * @param {Function} func - the callback function the handler will invoke.
@@ -709,6 +714,7 @@ function _init() {
     };
     /**
      * Unblocks all handlers on an instance that match `func`.
+     *
      * @function
      * @param {GObject.Object} instance - the instance to unblock handlers from.
      * @param {Function} func - the callback function the handler will invoke.
@@ -719,6 +725,7 @@ function _init() {
     };
     /**
      * Disconnects all handlers on an instance that match `func`.
+     *
      * @function
      * @param {GObject.Object} instance - the instance to remove handlers from.
      * @param {Function} func - the callback function the handler will invoke.
