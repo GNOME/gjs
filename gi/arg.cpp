@@ -1710,10 +1710,11 @@ static bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_gerror_gi_argument(
-    JSContext* cx, JS::HandleValue value, GITransfer transfer, GIArgument* arg,
-    const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags) {
+bool gjs_value_to_gerror_gi_argument(JSContext* cx, JS::HandleValue value,
+                                     GITransfer transfer, GIArgument* arg,
+                                     const char* arg_name,
+                                     GjsArgumentType arg_type,
+                                     GjsArgumentFlags flags) {
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '%s' JS value %s to GIArgument type error",

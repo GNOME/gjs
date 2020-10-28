@@ -467,6 +467,19 @@ struct BasicTypeTransferableReturn : BasicTypeReturn, Transferable {
     }
 };
 
+struct ErrorIn : SkipAll, Transferable, Nullable {
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_gerror_gi_argument(cx, value, m_transfer, arg,
+                                               m_arg_name,
+                                               GJS_ARGUMENT_ARGUMENT, flags());
+    }
+
+    GjsArgumentFlags flags() const override {
+        return Argument::flags() | Nullable::flags();
+    }
+};
+
 struct ExplicitArray : FallbackOut, Array, Nullable {
     ExplicitArray(GITypeInfo* type_info, int pos, GITypeTag tag,
                   GIDirection direction)
@@ -1754,6 +1767,7 @@ bool Argument::release(JSContext*, GjsFunctionCallState*, GIArgument*,
 template <typename T>
 constexpr size_t argument_maximum_size() {
     if constexpr (std::is_same_v<T, Arg::BasicTypeReturn> ||
+                  std::is_same_v<T, Arg::ErrorIn> ||
                   std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
     if constexpr (std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
@@ -2391,6 +2405,10 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             build_interface_in_arg(common_args, interface_info);
             return;
         }
+
+        case GI_TYPE_TAG_ERROR:
+            set_argument(new Arg::ErrorIn(), common_args);
+            return;
 
         case GI_TYPE_TAG_ARRAY:
             if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
