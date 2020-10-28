@@ -91,6 +91,12 @@ bool gjs_value_to_basic_gslist_gi_argument(JSContext*, JS::HandleValue,
                                            const char* arg_name,
                                            GjsArgumentType);
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_basic_ghash_gi_argument(JSContext*, JS::HandleValue,
+                                          GITypeTag key_tag,
+                                          GITypeTag value_tag, GITransfer,
+                                          GIArgument*, const char* arg_name,
+                                          GjsArgumentType, GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_interface_gi_argument(JSContext*, JS::HandleValue,
                                         GIBaseInfo* interface_info, GITransfer,
                                         GIArgument*, const char* arg_name,
@@ -153,6 +159,8 @@ void gjs_gi_argument_release_basic_glist(GITransfer, GITypeTag element_tag,
                                          GIArgument*);
 void gjs_gi_argument_release_basic_gslist(GITransfer, GITypeTag element_tag,
                                           GIArgument*);
+void gjs_gi_argument_release_basic_ghash(GITransfer, GITypeTag key_tag,
+                                         GITypeTag value_tag, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_out_array(JSContext*, GITransfer, GITypeInfo*,
                                        unsigned length, GIArgument*);

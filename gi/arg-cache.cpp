@@ -231,6 +231,14 @@ struct GListContainer {
     }
 };
 
+struct GHashContainer {
+    constexpr explicit GHashContainer(GITypeTag tag) : m_value_tag(tag) {}
+    constexpr GITypeTag value_tag() const { return m_value_tag; }
+
+    // Key type is managed by the basic container
+    GITypeTag m_value_tag;
+};
+
 struct HasIntrospectionInfo {
     constexpr explicit HasIntrospectionInfo(GIBaseInfo* info,
                                             const TakeOwnership& add_ref)
@@ -566,6 +574,72 @@ struct BasicGListIn : BasicTypeContainerIn, GListContainer {
             gjs_gi_argument_release_basic_glist(transfer, m_tag, in_arg);
         else
             gjs_gi_argument_release_basic_gslist(transfer, m_tag, in_arg);
+        return true;
+    }
+};
+
+struct BasicGHashReturn : BasicTypeTransferableReturn,
+                          GHashContainer,
+                          Nullable {
+    explicit BasicGHashReturn(GITypeTag key_tag, GITypeTag value_tag)
+        : BasicTypeTransferableReturn(key_tag), GHashContainer(value_tag) {
+        g_assert(GI_TYPE_TAG_IS_BASIC(m_value_tag));
+    }
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return gjs_value_from_basic_ghash(cx, value, m_tag, m_value_tag,
+                                          gjs_arg_get<GHashTable*>(arg));
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        if (m_transfer == GI_TRANSFER_NOTHING)
+            return true;
+
+        gjs_debug_marshal(
+            GJS_DEBUG_GFUNCTION,
+            "Releasing GIArgument ghash out param or return value");
+
+        gjs_gi_argument_release_basic_ghash(m_transfer, m_tag, m_value_tag,
+                                            out_arg);
+        return true;
+    }
+
+    GjsArgumentFlags flags() const override {
+        return Argument::flags() | Nullable::flags();
+    }
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_GHASH});
+    }
+};
+
+struct BasicGHashIn : BasicGHashReturn {
+    using BasicGHashReturn::BasicGHashReturn;
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_basic_ghash_gi_argument(
+            cx, value, m_tag, m_value_tag, m_transfer, arg, m_arg_name,
+            GJS_ARGUMENT_ARGUMENT, flags());
+    }
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        // GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
+        // GI_TRANSFER_CONTAINER: See FIXME in gjs_array_to_g_list(); currently
+        //   an error and we won't get here.
+        if (!state->call_completed() || m_transfer != GI_TRANSFER_NOTHING)
+            return true;
+
+        gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                          "Releasing GIArgument ghash in param");
+
+        gjs_gi_argument_release_basic_ghash(m_transfer, m_tag, m_value_tag,
+                                            in_arg);
         return true;
     }
 };
@@ -1864,8 +1938,10 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicGListReturn> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
         return 32;
-    if constexpr (std::is_same_v<T, Arg::ObjectIn> ||
-                  std::is_same_v<T, Arg::BoxedIn>)
+    if constexpr (std::is_same_v<T, Arg::BasicGHashIn> ||
+                  std::is_same_v<T, Arg::BasicGHashReturn> ||
+                  std::is_same_v<T, Arg::BoxedIn> ||
+                  std::is_same_v<T, Arg::ObjectIn>)
         return 40;
     if constexpr (std::is_same_v<T, Arg::BoxedCallerAllocatesOut>)
         return 120;
@@ -2163,6 +2239,23 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
 
         if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
             set_return(new Arg::BasicGListReturn(tag, element_tag), transfer,
+                       flags);
+            return;
+        }
+    } else if (tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo hash_key_type{
+            g_type_info_get_param_type(&type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(hash_key_type);
+        bool key_is_pointer = g_type_info_is_pointer(hash_key_type);
+
+        GI::AutoTypeInfo hash_value_type{
+            g_type_info_get_param_type(&type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(hash_value_type);
+        bool value_is_pointer = g_type_info_is_pointer(hash_value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            set_return(new Arg::BasicGHashReturn(key_tag, value_tag), transfer,
                        flags);
             return;
         }
@@ -2522,6 +2615,29 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 
             if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
                 set_argument(new Arg::BasicGListIn(tag, element_tag),
+                             common_args);
+                return;
+            }
+
+            // Fall back to the generic marshaller
+            set_argument(new Arg::FallbackIn(type_info), common_args);
+            return;
+        }
+
+        case GI_TYPE_TAG_GHASH: {
+            GI::AutoTypeInfo hash_key_type{
+                g_type_info_get_param_type(type_info, 0)};
+            GITypeTag key_tag = g_type_info_get_tag(hash_key_type);
+            bool key_is_pointer = g_type_info_is_pointer(hash_key_type);
+
+            GI::AutoTypeInfo hash_value_type{
+                g_type_info_get_param_type(type_info, 1)};
+            GITypeTag value_tag = g_type_info_get_tag(hash_value_type);
+            bool value_is_pointer = g_type_info_is_pointer(hash_value_type);
+
+            if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+                Gjs::is_basic_type(value_tag, value_is_pointer)) {
+                set_argument(new Arg::BasicGHashIn(key_tag, value_tag),
                              common_args);
                 return;
             }

@@ -1880,8 +1880,7 @@ bool gjs_value_to_basic_gslist_gi_argument(JSContext* cx, JS::HandleValue value,
                                       arg_type, &gjs_arg_member<GSList*>(arg));
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_basic_ghash_gi_argument(
+bool gjs_value_to_basic_ghash_gi_argument(
     JSContext* cx, JS::HandleValue value, GITypeTag key_tag,
     GITypeTag value_tag, GITransfer transfer, GIArgument* arg,
     const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags) {
@@ -3832,8 +3831,8 @@ void gjs_gi_argument_release_basic_gslist(GITransfer transfer,
     basic_linked_list_release<GSList>(transfer, element_tag, arg);
 }
 
-static void basic_ghash_release(GITransfer transfer, GITypeTag key_tag,
-                                GITypeTag value_tag, GIArgument* arg) {
+void gjs_gi_argument_release_basic_ghash(GITransfer transfer, GITypeTag key_tag,
+                                         GITypeTag value_tag, GIArgument* arg) {
     g_assert(GI_TYPE_TAG_IS_BASIC(key_tag) && GI_TYPE_TAG_IS_BASIC(value_tag));
 
     if (!gjs_arg_get<GHashTable*>(arg))
@@ -3973,7 +3972,8 @@ static bool gjs_g_arg_release_internal(
 
         if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
             Gjs::is_basic_type(value_tag, value_is_pointer)) {
-            basic_ghash_release(transfer, key_tag, value_tag, arg);
+            gjs_gi_argument_release_basic_ghash(transfer, key_tag, value_tag,
+                                                arg);
             return true;
         }
         // else fall through to generic marshaller
