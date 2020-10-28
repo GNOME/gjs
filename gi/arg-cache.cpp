@@ -221,6 +221,23 @@ struct ExplicitArray {
     }
 };
 
+struct BasicCArray {
+    constexpr explicit BasicCArray(GITypeTag element_tag)
+        : m_element_tag(element_tag) {
+        g_assert(GI_TYPE_TAG_IS_BASIC(element_tag));
+    }
+
+    GITypeTag m_element_tag;
+};
+
+struct FixedSizeArray {
+    explicit FixedSizeArray(int size) : m_fixed_size(size) {
+        g_assert(m_fixed_size >= 0);
+    }
+
+    int m_fixed_size = -1;
+};
+
 struct GListContainer {
     constexpr explicit GListContainer(GITypeTag container_tag)
         : m_double_link(container_tag == GI_TYPE_TAG_GLIST) {}
@@ -647,6 +664,89 @@ struct BasicGHashIn : BasicGHashReturn {
     }
 };
 
+struct BasicCZeroTerminatedArrayReturn : BasicTypeContainerReturn {
+    using BasicTypeContainerReturn::BasicTypeContainerReturn;
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return gjs_array_from_basic_zero_terminated_array(
+            cx, value, m_tag, gjs_arg_get<void*>(arg));
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        gjs_gi_argument_release_basic_out_array(m_transfer, m_tag, out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
+};
+
+struct BasicCZeroTerminatedArrayIn : BasicTypeContainerIn {
+    using BasicTypeContainerIn::BasicTypeContainerIn;
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_basic_array_gi_argument(
+            cx, value, m_tag, GI_ARRAY_TYPE_C, arg, m_arg_name,
+            GJS_ARGUMENT_ARGUMENT, flags());
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        GITransfer effective_transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        gjs_gi_argument_release_basic_in_array(effective_transfer, m_tag,
+                                               in_arg);
+        return true;
+    }
+};
+
+struct BasicCFixedSizeArrayReturn : BasicTypeContainerReturn, FixedSizeArray {
+    BasicCFixedSizeArrayReturn(GITypeTag element_tag, int fixed_size)
+        : BasicTypeContainerReturn(element_tag), FixedSizeArray(fixed_size) {}
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return gjs_value_from_basic_fixed_size_array_gi_argument(
+            cx, value, m_tag, m_fixed_size, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        gjs_gi_argument_release_basic_out_array(m_transfer, m_tag, m_fixed_size,
+                                                out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
+};
+
+struct BasicCFixedSizeArrayIn : BasicTypeContainerIn, FixedSizeArray {
+    BasicCFixedSizeArrayIn(GITypeTag element_tag, int fixed_size)
+        : BasicTypeContainerIn(element_tag), FixedSizeArray(fixed_size) {}
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_basic_array_gi_argument(
+            cx, value, m_tag, GI_ARRAY_TYPE_C, arg, m_arg_name,
+            GJS_ARGUMENT_ARGUMENT, flags());
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        GITransfer effective_transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        gjs_gi_argument_release_basic_in_array(effective_transfer, m_tag,
+                                               m_fixed_size, in_arg);
+        return true;
+    }
+};
+
 struct ExplicitArrayBase : BasicTypeContainerReturn, ExplicitArray {
     ExplicitArrayBase(int length_pos, GITypeTag length_tag,
                       GIDirection length_direction)
@@ -1040,6 +1140,134 @@ struct CallbackIn : SkipAll, Callback {
                  GIArgument*) override;
  private:
     ffi_closure *m_ffi_closure;
+};
+
+struct BasicExplicitCArrayOut : ExplicitArrayBase, BasicCArray, Positioned {
+    explicit BasicExplicitCArrayOut(GITypeTag element_tag, int length_pos,
+                                    GITypeTag length_tag,
+                                    GIDirection length_direction)
+        : ExplicitArrayBase(length_pos, length_tag, length_direction),
+          BasicCArray(element_tag) {}
+
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
+    };
+    bool out(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        GIArgument* length_arg = &(state->out_cvalue(m_length_pos));
+        size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
+
+        return gjs_value_from_basic_explicit_array(cx, value, m_element_tag,
+                                                   arg, length);
+    }
+    bool release(JSContext*, GjsFunctionCallState* state,
+                 [[maybe_unused]] GIArgument* in_arg,
+                 GIArgument* out_arg) override {
+        GIArgument* length_arg = &state->out_cvalue(m_length_pos);
+        size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
+
+        gjs_gi_argument_release_basic_out_array(m_transfer, m_element_tag,
+                                                length, out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
+};
+
+struct BasicExplicitCArrayIn : BasicExplicitCArrayOut {
+    using BasicExplicitCArrayOut::BasicExplicitCArrayOut;
+
+    bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue value) override {
+        void* data;
+        size_t length;
+
+        if (!gjs_array_to_basic_explicit_array(
+                cx, value, m_element_tag, m_arg_name, GJS_ARGUMENT_ARGUMENT,
+                flags(), &data, &length))
+            return false;
+
+        gjs_gi_argument_set_array_length(m_tag, &state->in_cvalue(m_length_pos),
+                                         length);
+        gjs_arg_set(arg, data);
+        return true;
+    }
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 [[maybe_unused]] GIArgument* out_arg) override {
+        GIArgument* length_arg = &state->in_cvalue(m_length_pos);
+        size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
+
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        gjs_gi_argument_release_basic_in_array(transfer, m_element_tag, length,
+                                               in_arg);
+        return true;
+    }
+};
+
+struct BasicExplicitCArrayInOut : BasicExplicitCArrayIn {
+    using BasicExplicitCArrayIn::BasicExplicitCArrayIn;
+
+    bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue value) override {
+        if (!BasicExplicitCArrayIn::in(cx, state, arg, value))
+            return false;
+
+        if (!gjs_arg_get<void*>(arg)) {
+            // Special case where we were given JS null to also pass null for
+            // length, and not a pointer to an integer that derefs to 0.
+            gjs_arg_unset(&state->in_cvalue(m_length_pos));
+            gjs_arg_unset(&state->out_cvalue(m_length_pos));
+            gjs_arg_unset(&state->inout_original_cvalue(m_length_pos));
+
+            gjs_arg_unset(&state->out_cvalue(m_arg_pos));
+            gjs_arg_unset(&state->inout_original_cvalue(m_arg_pos));
+
+            return true;
+        }
+
+        state->out_cvalue(m_length_pos) =
+            state->inout_original_cvalue(m_length_pos) =
+                state->in_cvalue(m_length_pos);
+        gjs_arg_set(&state->in_cvalue(m_length_pos),
+                    &state->out_cvalue(m_length_pos));
+        return set_inout_parameter(state, arg);
+    }
+    bool out(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        GIArgument* length_arg = &(state->out_cvalue(m_length_pos));
+        size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
+
+        return gjs_value_from_basic_explicit_array(cx, value, m_element_tag,
+                                                   arg, length);
+    }
+    bool release(JSContext*, GjsFunctionCallState* state,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        GIArgument* length_arg = &state->out_cvalue(m_length_pos);
+        size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
+
+        GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
+        if (gjs_arg_get<void*>(original_out_arg) !=
+            gjs_arg_get<void*>(out_arg)) {
+            GITransfer transfer =
+                state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+            gjs_gi_argument_release_basic_in_array(transfer, m_element_tag,
+                                                   length, original_out_arg);
+        }
+
+        gjs_gi_argument_release_basic_out_array(m_transfer, m_element_tag,
+                                                length, out_arg);
+        return true;
+    }
 };
 
 struct CallerAllocatesOut : FallbackOut, CallerAllocates {
@@ -1955,11 +2183,18 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::GdkAtomIn> ||
                   std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
-    if constexpr (std::is_same_v<T, Arg::BasicGListIn> ||
+    if constexpr (std::is_same_v<T, Arg::BasicCFixedSizeArrayIn> ||
+                  std::is_same_v<T, Arg::BasicCFixedSizeArrayReturn> ||
+                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayIn> ||
+                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayReturn> ||
+                  std::is_same_v<T, Arg::BasicGListIn> ||
                   std::is_same_v<T, Arg::BasicGListReturn> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
         return 32;
-    if constexpr (std::is_same_v<T, Arg::BasicGHashIn> ||
+    if constexpr (std::is_same_v<T, Arg::BasicExplicitCArrayIn> ||
+                  std::is_same_v<T, Arg::BasicExplicitCArrayInOut> ||
+                  std::is_same_v<T, Arg::BasicExplicitCArrayOut> ||
+                  std::is_same_v<T, Arg::BasicGHashIn> ||
                   std::is_same_v<T, Arg::BasicGHashReturn> ||
                   std::is_same_v<T, Arg::BoxedIn> ||
                   std::is_same_v<T, Arg::ObjectIn>)
@@ -2098,6 +2333,13 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                                    GITypeInfo* type_info, GIDirection direction,
                                    GIArgInfo* arg, GjsArgumentFlags flags,
                                    int length_pos) {
+    g_assert(length_pos >= 0);
+    g_assert(g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C);
+
+    GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+    GITypeTag element_tag = g_type_info_get_tag(element_type);
+    bool element_is_pointer = g_type_info_is_pointer(element_type);
+
     GIArgInfo length_arg;
     g_callable_info_load_arg(callable, length_pos, &length_arg);
     GITypeInfo length_type;
@@ -2110,19 +2352,40 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
     Argument::Init common_args{gi_index, arg_name, transfer, flags};
 
     if (direction == GI_DIRECTION_IN) {
-        set_argument(new Arg::CArrayIn(type_info, length_pos, length_tag,
-                                       length_direction),
-                     common_args);
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            set_argument(
+                new Arg::BasicExplicitCArrayIn(element_tag, length_pos,
+                                               length_tag, length_direction),
+                common_args);
+        } else {
+            set_argument(new Arg::CArrayIn(type_info, length_pos, length_tag,
+                                           length_direction),
+                         common_args);
+        }
         set_skip_all(length_pos, g_base_info_get_name(&length_arg));
     } else if (direction == GI_DIRECTION_INOUT) {
-        set_argument(new Arg::CArrayInOut(type_info, length_pos, length_tag,
-                                          length_direction),
-                     common_args);
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            set_argument(
+                new Arg::BasicExplicitCArrayInOut(element_tag, length_pos,
+                                                  length_tag, length_direction),
+                common_args);
+        } else {
+            set_argument(new Arg::CArrayInOut(type_info, length_pos, length_tag,
+                                              length_direction),
+                         common_args);
+        }
         set_skip_all(length_pos, g_base_info_get_name(&length_arg));
     } else {
-        set_argument(new Arg::CArrayOut(type_info, length_pos, length_tag,
-                                        length_direction),
-                     common_args);
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            set_argument(
+                new Arg::BasicExplicitCArrayOut(element_tag, length_pos,
+                                                length_tag, length_direction),
+                common_args);
+        } else {
+            set_argument(new Arg::CArrayOut(type_info, length_pos, length_tag,
+                                            length_direction),
+                         common_args);
+        }
     }
 
     if (direction == GI_DIRECTION_OUT)
@@ -2132,6 +2395,13 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
 void ArgsCache::set_array_return(GICallableInfo* callable,
                                  GITypeInfo* type_info, GjsArgumentFlags flags,
                                  int length_pos) {
+    g_assert(length_pos >= 0);
+    g_assert(g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C);
+
+    GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+    GITypeTag element_tag = g_type_info_get_tag(element_type);
+    bool element_is_pointer = g_type_info_is_pointer(element_type);
+
     GIArgInfo length_arg;
     g_callable_info_load_arg(callable, length_pos, &length_arg);
     GITypeInfo length_type;
@@ -2140,9 +2410,15 @@ void ArgsCache::set_array_return(GICallableInfo* callable,
     GIDirection length_direction = g_arg_info_get_direction(&length_arg);
 
     GITransfer transfer = g_callable_info_get_caller_owns(callable);
-    set_return(
-        new Arg::CArrayOut(type_info, length_pos, length_tag, length_direction),
-        transfer, GjsArgumentFlags::NONE);
+    if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+        set_return(new Arg::BasicExplicitCArrayOut(
+                       element_tag, length_pos, length_tag, length_direction),
+                   transfer, GjsArgumentFlags::NONE);
+    } else {
+        set_return(new Arg::CArrayOut(type_info, length_pos, length_tag,
+                                      length_direction),
+                   transfer, GjsArgumentFlags::NONE);
+    }
 
     init_out_array_length_argument(&length_arg, flags, length_pos);
 }
@@ -2237,6 +2513,29 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
             if (length_pos >= 0) {
                 set_array_return(callable, &type_info, flags, length_pos);
                 return;
+            }
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(&type_info, 0)};
+            GITypeTag element_tag = g_type_info_get_tag(element_type);
+            bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+            if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+                if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
+                    if (g_type_info_is_zero_terminated(&type_info)) {
+                        set_return(new Arg::BasicCZeroTerminatedArrayReturn(
+                                       element_tag),
+                                   transfer, flags);
+                        return;
+                    }
+                    int fixed_size =
+                        g_type_info_get_array_fixed_size(&type_info);
+                    if (fixed_size >= 0) {
+                        set_return(new Arg::BasicCFixedSizeArrayReturn(
+                                       element_tag, fixed_size),
+                                   transfer, flags);
+                        return;
+                    }
+                }
             }
 
             [[fallthrough]];
@@ -2669,8 +2968,35 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             return;
         }
 
-        case GI_TYPE_TAG_ARRAY:
-            if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+        case GI_TYPE_TAG_ARRAY: {
+            GIArrayType array_type = g_type_info_get_array_type(type_info);
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(type_info, 0)};
+            GITypeTag element_tag = g_type_info_get_tag(element_type);
+            bool element_is_pointer = g_type_info_is_pointer(element_type);
+            bool element_is_basic =
+                Gjs::is_basic_type(element_tag, element_is_pointer);
+
+            if (element_is_basic) {
+                if (array_type == GI_ARRAY_TYPE_C) {
+                    if (g_type_info_is_zero_terminated(type_info)) {
+                        set_argument(
+                            new Arg::BasicCZeroTerminatedArrayIn(element_tag),
+                            common_args);
+                        return;
+                    }
+                    int fixed_size =
+                        g_type_info_get_array_fixed_size(type_info);
+                    if (fixed_size >= 0) {
+                        set_argument(new Arg::BasicCFixedSizeArrayIn(
+                                         element_tag, fixed_size),
+                                     common_args);
+                        return;
+                    }
+                }
+            }
+
+            if (array_type == GI_ARRAY_TYPE_C) {
                 if (g_type_info_is_zero_terminated(type_info)) {
                     set_argument(new Arg::ZeroTerminatedArrayIn(type_info),
                                  common_args);
@@ -2683,6 +3009,7 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
                 }
             }
             [[fallthrough]];
+        }
 
         default:
             // FIXME: Falling back to the generic marshaller

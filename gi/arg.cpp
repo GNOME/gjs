@@ -1118,8 +1118,7 @@ static bool throw_invalid_interface_argument(JSContext* cx,
     return false;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_array_to_basic_explicit_array(
+bool gjs_array_to_basic_explicit_array(
     JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
     const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags,
     void** contents_out, size_t* length_out) {
@@ -2001,11 +2000,12 @@ bool gjs_value_to_basic_ghash_gi_argument(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_basic_array_gi_argument(
-    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
-    GIArrayType array_type, GIArgument* arg, const char* arg_name,
-    GjsArgumentType arg_type, GjsArgumentFlags flags) {
+bool gjs_value_to_basic_array_gi_argument(JSContext* cx, JS::HandleValue value,
+                                          GITypeTag element_tag,
+                                          GIArrayType array_type,
+                                          GIArgument* arg, const char* arg_name,
+                                          GjsArgumentType arg_type,
+                                          GjsArgumentFlags flags) {
     // First, let's handle the case where we're passed an instance of Uint8Array
     // and it needs to be marshalled to GByteArray.
     if (value.isObject()) {
@@ -2688,6 +2688,14 @@ bool gjs_value_from_explicit_array(JSContext* context,
         transfer, length, gjs_arg_get<void*>(arg));
 }
 
+bool gjs_value_from_basic_explicit_array(JSContext* cx,
+                                         JS::MutableHandleValue value_out,
+                                         GITypeTag element_tag, GIArgument* arg,
+                                         size_t length) {
+    return gjs_array_from_basic_c_array_internal(
+        cx, value_out, element_tag, length, gjs_arg_get<void*>(arg));
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_boxed_array(JSContext* context,
                                        JS::MutableHandleValue value_p,
@@ -2818,8 +2826,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_array_from_basic_zero_terminated_array(
+bool gjs_array_from_basic_zero_terminated_array(
     JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
     void* c_array) {
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
@@ -3042,8 +3049,7 @@ bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_basic_fixed_size_array_gi_argument(
+bool gjs_value_from_basic_fixed_size_array_gi_argument(
     JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
     size_t fixed_size, GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -4355,6 +4361,39 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
     return true;
 }
 
+void gjs_gi_argument_release_basic_in_array(GITransfer transfer,
+                                            GITypeTag element_tag,
+                                            GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument basic C array in param");
+
+    if (is_string_type(element_tag) && transfer != GI_TRANSFER_CONTAINER)
+        g_clear_pointer(&gjs_arg_member<GStrv>(arg), g_strfreev);
+    else
+        g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
+}
+
+void gjs_gi_argument_release_basic_in_array(GITransfer transfer,
+                                            GITypeTag element_tag,
+                                            size_t length, GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument basic C array in param");
+
+    Gjs::AutoPointer<void*, void, g_free> array{gjs_arg_steal<void**>(arg)};
+
+    if (!is_string_type(element_tag))
+        return;
+
+    for (size_t ix = 0; ix < length; ix++)
+        g_free(array[ix]);
+}
+
 bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
                                       GITypeInfo* type_info, unsigned length,
                                       GIArgument* arg) {
@@ -4384,6 +4423,39 @@ bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
         ArrayReleaseType::ZERO_TERMINATED>(context, GI_TRANSFER_EVERYTHING,
                                            GjsArgumentFlags::ARG_IN, param_type,
                                            0, arg);
+}
+
+void gjs_gi_argument_release_basic_out_array(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument array out param");
+
+    if (is_string_type(element_tag) && transfer != GI_TRANSFER_CONTAINER)
+        g_clear_pointer(&gjs_arg_member<GStrv>(arg), g_strfreev);
+    else
+        g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
+}
+
+void gjs_gi_argument_release_basic_out_array(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             size_t length, GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument array out param");
+
+    Gjs::AutoPointer<void*, void, g_free> array{gjs_arg_steal<void**>(arg)};
+
+    if (transfer == GI_TRANSFER_CONTAINER || !is_string_type(element_tag))
+        return;
+
+    for (size_t ix = 0; ix < length; ix++)
+        g_free(array[ix]);
 }
 
 bool gjs_gi_argument_release_out_array(JSContext* context, GITransfer transfer,
