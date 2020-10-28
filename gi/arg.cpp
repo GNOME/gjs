@@ -1847,10 +1847,10 @@ GJS_JSAPI_RETURN_CONVENTION static bool basic_array_to_linked_list(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_basic_glist_gi_argument(
-    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
-    GIArgument* arg, const char* arg_name, GjsArgumentType arg_type) {
+bool gjs_value_to_basic_glist_gi_argument(JSContext* cx, JS::HandleValue value,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg, const char* arg_name,
+                                          GjsArgumentType arg_type) {
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
              "use gjs_array_to_g_list() for lists containing non-basic types");
 
@@ -1863,10 +1863,11 @@ static bool gjs_value_to_basic_glist_gi_argument(
                                       arg_type, &gjs_arg_member<GList*>(arg));
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_basic_gslist_gi_argument(
-    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
-    GIArgument* arg, const char* arg_name, GjsArgumentType arg_type) {
+bool gjs_value_to_basic_gslist_gi_argument(JSContext* cx, JS::HandleValue value,
+                                           GITypeTag element_tag,
+                                           GIArgument* arg,
+                                           const char* arg_name,
+                                           GjsArgumentType arg_type) {
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
              "use gjs_array_to_g_list() for lists containing non-basic types");
 
@@ -3118,20 +3119,20 @@ GJS_JSAPI_RETURN_CONVENTION static bool array_from_basic_linked_list(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_array_from_basic_glist_gi_argument(
-    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
-    GIArgument* arg) {
+bool gjs_array_from_basic_glist_gi_argument(JSContext* cx,
+                                            JS::MutableHandleValue value_out,
+                                            GITypeTag element_tag,
+                                            GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GArgument glist to JS::Value");
     return array_from_basic_linked_list(cx, value_out, element_tag,
                                         gjs_arg_get<GList*>(arg));
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_array_from_basic_gslist_gi_argument(
-    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
-    GIArgument* arg) {
+bool gjs_array_from_basic_gslist_gi_argument(JSContext* cx,
+                                             JS::MutableHandleValue value_out,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GArgument gslist to JS::Value");
     return array_from_basic_linked_list(cx, value_out, element_tag,
@@ -3815,6 +3816,20 @@ static void basic_linked_list_release(GITransfer transfer,
         gjs_arg_set(&elem, l->data);
         release_basic_type_internal(element_tag, &elem);
     }
+}
+
+void gjs_gi_argument_release_basic_glist(GITransfer transfer,
+                                         GITypeTag element_tag,
+                                         GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument GList");
+    basic_linked_list_release<GList>(transfer, element_tag, arg);
+}
+
+void gjs_gi_argument_release_basic_gslist(GITransfer transfer,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument GSList");
+    basic_linked_list_release<GSList>(transfer, element_tag, arg);
 }
 
 static void basic_ghash_release(GITransfer transfer, GITypeTag key_tag,

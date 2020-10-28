@@ -55,7 +55,7 @@
 #include "gjs/macros.h"
 #include "util/log.h"
 
-using mozilla::Maybe, mozilla::Some;
+using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 
 enum ExpectedType {
     OBJECT,
@@ -218,6 +218,16 @@ struct Array : BasicType {
         : BasicType(tag), m_length_pos(pos), m_length_direction(direction) {
         g_assert(pos >= 0 && pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
+    }
+};
+
+struct GListContainer {
+    constexpr explicit GListContainer(GITypeTag container_tag)
+        : m_double_link(container_tag == GI_TYPE_TAG_GLIST) {}
+    bool m_double_link : 1;
+
+    constexpr GITypeTag container_tag() const {
+        return m_double_link ? GI_TYPE_TAG_GLIST : GI_TYPE_TAG_GSLIST;
     }
 };
 
@@ -477,6 +487,86 @@ struct ErrorIn : SkipAll, Transferable, Nullable {
 
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
+    }
+};
+
+struct BasicTypeContainerReturn : BasicTypeTransferableReturn, Nullable {
+    explicit BasicTypeContainerReturn(GITypeTag element_tag)
+        : BasicTypeTransferableReturn(element_tag) {}
+
+    GjsArgumentFlags flags() const override {
+        return Argument::flags() | Nullable::flags();
+    }
+    Maybe<ReturnTag> return_tag() const override {
+        // in Return subclasses, this must be overridden with the container tag
+        g_return_val_if_reached(Nothing{});
+    }
+};
+
+struct BasicTypeContainerIn : BasicTypeContainerReturn {
+    using BasicTypeContainerReturn::BasicTypeContainerReturn;
+
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+};
+
+struct BasicGListReturn : BasicTypeContainerReturn, GListContainer {
+    explicit BasicGListReturn(GITypeTag container_tag, GITypeTag element_tag)
+        : BasicTypeContainerReturn(element_tag),
+          GListContainer(container_tag) {}
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        if (m_double_link)
+            return gjs_array_from_basic_glist_gi_argument(cx, value, m_tag,
+                                                          arg);
+        return gjs_array_from_basic_gslist_gi_argument(cx, value, m_tag, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        if (m_transfer == GI_TRANSFER_NOTHING)
+            return true;
+
+        if (m_double_link)
+            gjs_gi_argument_release_basic_glist(m_transfer, m_tag, out_arg);
+        else
+            gjs_gi_argument_release_basic_gslist(m_transfer, m_tag, out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{container_tag()});
+    }
+};
+
+struct BasicGListIn : BasicTypeContainerIn, GListContainer {
+    explicit BasicGListIn(GITypeTag container_tag, GITypeTag element_tag)
+        : BasicTypeContainerIn(element_tag), GListContainer(container_tag) {}
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        if (m_double_link) {
+            return gjs_value_to_basic_glist_gi_argument(
+                cx, value, m_tag, arg, m_arg_name, GJS_ARGUMENT_ARGUMENT);
+        }
+        return gjs_value_to_basic_gslist_gi_argument(
+            cx, value, m_tag, arg, m_arg_name, GJS_ARGUMENT_ARGUMENT);
+    }
+
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        if (transfer != GI_TRANSFER_NOTHING)
+            return true;  // GI_TRANSFER_CONTAINER not supported for in args
+
+        if (m_double_link)
+            gjs_gi_argument_release_basic_glist(transfer, m_tag, in_arg);
+        else
+            gjs_gi_argument_release_basic_gslist(transfer, m_tag, in_arg);
+        return true;
     }
 };
 
@@ -1770,7 +1860,9 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::ErrorIn> ||
                   std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
-    if constexpr (std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
+    if constexpr (std::is_same_v<T, Arg::BasicGListIn> ||
+                  std::is_same_v<T, Arg::BasicGListReturn> ||
+                  std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
         return 32;
     if constexpr (std::is_same_v<T, Arg::ObjectIn> ||
                   std::is_same_v<T, Arg::BoxedIn>)
@@ -2063,6 +2155,17 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
                        flags);
         }
         return;
+    } else if (tag == GI_TYPE_TAG_GLIST || tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{
+            g_type_info_get_param_type(&type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            set_return(new Arg::BasicGListReturn(tag, element_tag), transfer,
+                       flags);
+            return;
+        }
     }
 
     // in() is ignored for the return value, but skip_in is not (it is used
@@ -2409,6 +2512,24 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
         case GI_TYPE_TAG_ERROR:
             set_argument(new Arg::ErrorIn(), common_args);
             return;
+
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST: {
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(type_info, 0)};
+            GITypeTag element_tag = g_type_info_get_tag(element_type);
+            bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+            if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+                set_argument(new Arg::BasicGListIn(tag, element_tag),
+                             common_args);
+                return;
+            }
+
+            // Fall back to the generic marshaller
+            set_argument(new Arg::FallbackIn(type_info), common_args);
+            return;
+        }
 
         case GI_TYPE_TAG_ARRAY:
             if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
