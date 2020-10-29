@@ -2220,11 +2220,9 @@ bool gjs_value_to_callback_out_arg(JSContext* context, JS::HandleValue value,
 // These marshaller functions are responsible for converting C values returned
 // from a C function call, usually stored in a GIArgument, back to JS values.
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_basic_gi_argument(JSContext* cx,
-                                             JS::MutableHandleValue value_out,
-                                             GITypeTag type_tag,
-                                             GIArgument* arg) {
+bool gjs_value_from_basic_gi_argument(JSContext* cx,
+                                      JS::MutableHandleValue value_out,
+                                      GITypeTag type_tag, GIArgument* arg) {
     g_assert(GI_TYPE_TAG_IS_BASIC(type_tag) &&
              "use gjs_value_from_gi_argument() for non-basic types");
 
@@ -4269,6 +4267,19 @@ bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
 
     return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag,
                                       GJS_ARGUMENT_ARGUMENT, flags, arg);
+}
+
+void gjs_gi_argument_release_basic(GITransfer transfer, GITypeTag type_tag,
+                                   GjsArgumentFlags flags, GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING &&
+        !is_transfer_in_nothing(transfer, flags))
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument %s out param or return value",
+                      g_type_tag_to_string(type_tag));
+
+    release_basic_type_internal(type_tag, arg);
 }
 
 bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,

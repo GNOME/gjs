@@ -143,9 +143,9 @@ namespace Arg {
 // implementation, taking advantage of the C++ multiple inheritance.
 
 struct BasicType {
-    constexpr BasicType() : m_tag(GI_TYPE_TAG_VOID) {}
-    constexpr explicit BasicType(GITypeTag tag) : m_tag(tag) {}
-    constexpr operator GITypeTag() const { return m_tag; }
+    constexpr explicit BasicType(GITypeTag tag) : m_tag(tag) {
+        g_assert(GI_TYPE_TAG_IS_BASIC(tag));
+    }
 
     GITypeTag m_tag : 5;
 };
@@ -430,6 +430,41 @@ struct SimpleOut : SkipAll, Positioned {
             JS::HandleValue) override {
         return set_out_parameter(state, arg);
     };
+};
+
+struct BasicTypeReturn : SkipAll, BasicType {
+    using BasicType::BasicType;
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
+            JS::HandleValue) override {
+        return invalid(cx, G_STRFUNC);
+    }
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return gjs_value_from_basic_gi_argument(cx, value, m_tag, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        gjs_gi_argument_release_basic(GI_TRANSFER_NOTHING, m_tag,
+                                      Argument::flags(), out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{m_tag});
+    }
+};
+
+struct BasicTypeTransferableReturn : BasicTypeReturn, Transferable {
+    using BasicTypeReturn::BasicTypeReturn;
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        gjs_gi_argument_release_basic(m_transfer, m_tag, Argument::flags(),
+                                      out_arg);
+        return true;
+    }
 };
 
 struct ExplicitArray : FallbackOut, Array, Nullable {
@@ -1718,8 +1753,11 @@ bool Argument::release(JSContext*, GjsFunctionCallState*, GIArgument*,
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
 template <typename T>
 constexpr size_t argument_maximum_size() {
-    if constexpr (std::is_same_v<T, Arg::NumericIn<int>>)
+    if constexpr (std::is_same_v<T, Arg::BasicTypeReturn> ||
+                  std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
+    if constexpr (std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
+        return 32;
     if constexpr (std::is_same_v<T, Arg::ObjectIn> ||
                   std::is_same_v<T, Arg::BoxedIn>)
         return 40;
@@ -1999,6 +2037,18 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
 
         default:
             break;
+    }
+
+    bool is_pointer = g_type_info_is_pointer(&type_info);
+    if (Gjs::is_basic_type(tag, is_pointer)) {
+        // void return type + pointer is not a basic type
+        if (transfer == GI_TRANSFER_NOTHING) {
+            set_return(new Arg::BasicTypeReturn(tag), transfer, flags);
+        } else {
+            set_return(new Arg::BasicTypeTransferableReturn(tag), transfer,
+                       flags);
+        }
+        return;
     }
 
     // in() is ignored for the return value, but skip_in is not (it is used

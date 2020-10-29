@@ -82,7 +82,9 @@ bool gjs_value_to_interface_gi_argument(JSContext*, JS::HandleValue,
                                         GIBaseInfo* interface_info, GITransfer,
                                         GIArgument*, const char* arg_name,
                                         GjsArgumentType, GjsArgumentFlags);
-
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_gi_argument(JSContext*, JS::MutableHandleValue,
+                                      GITypeTag, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_gi_argument(JSContext*, JS::MutableHandleValue, GITypeInfo*,
                                 GjsArgumentType, GITransfer, GIArgument*);
@@ -126,6 +128,8 @@ inline bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
     return gjs_gi_argument_release(cx, transfer, type_info,
                                    GjsArgumentFlags::NONE, arg);
 }
+void gjs_gi_argument_release_basic(GITransfer, GITypeTag, GjsArgumentFlags,
+                                   GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_out_array(JSContext*, GITransfer, GITypeInfo*,
                                        unsigned length, GIArgument*);
