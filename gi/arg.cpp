@@ -3102,10 +3102,10 @@ bool gjs_value_from_byte_array_gi_argument(JSContext* cx,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_basic_garray_gi_argument(
-    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
-    GIArgument* arg) {
+bool gjs_value_from_basic_garray_gi_argument(JSContext* cx,
+                                             JS::MutableHandleValue value_out,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument GArray of %s to JS::Value",
                       g_type_tag_to_string(element_tag));
@@ -3939,9 +3939,9 @@ static void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
         g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
 }
 
-static void gjs_gi_argument_release_basic_garray(GITransfer transfer,
-                                                 GITypeTag element_tag,
-                                                 GIArgument* arg) {
+void gjs_gi_argument_release_basic_garray(GITransfer transfer,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg) {
     if (!gjs_arg_get<void*>(arg))
         return;
 
@@ -3962,9 +3962,9 @@ void gjs_gi_argument_release_byte_array(GIArgument* arg) {
     g_clear_pointer(&gjs_arg_member<GByteArray*>(arg), g_byte_array_unref);
 }
 
-static void gjs_gi_argument_release_basic_gptrarray(GITransfer transfer,
-                                                    GITypeTag element_tag,
-                                                    GIArgument* arg) {
+void gjs_gi_argument_release_basic_gptrarray(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
     if (!gjs_arg_get<void*>(arg))
         return;
 

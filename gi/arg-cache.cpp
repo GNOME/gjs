@@ -747,6 +747,86 @@ struct BasicCFixedSizeArrayIn : BasicTypeContainerIn, FixedSizeArray {
     }
 };
 
+struct BasicGArrayReturn : BasicTypeContainerReturn {
+    using BasicTypeContainerReturn::BasicTypeContainerReturn;
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value_out) override {
+        return gjs_value_from_basic_garray_gi_argument(cx, value_out, m_tag,
+                                                       arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        if (m_transfer != GI_TRANSFER_NOTHING)
+            gjs_gi_argument_release_basic_garray(m_transfer, m_tag, out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
+};
+
+struct BasicGArrayIn : BasicTypeContainerIn {
+    using BasicTypeContainerIn::BasicTypeContainerIn;
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_basic_array_gi_argument(
+            cx, value, m_tag, GI_ARRAY_TYPE_ARRAY, arg, arg_name(),
+            GJS_ARGUMENT_ARGUMENT, flags());
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        if (!state->call_completed() || m_transfer != GI_TRANSFER_NOTHING)
+            return true;
+
+        gjs_gi_argument_release_basic_garray(m_transfer, m_tag, in_arg);
+        return true;
+    }
+};
+
+struct BasicGPtrArrayReturn : BasicTypeContainerReturn {
+    using BasicTypeContainerReturn::BasicTypeContainerReturn;
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value_out) override {
+        return gjs_value_from_basic_garray_gi_argument(cx, value_out, m_tag,
+                                                       arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        if (m_transfer != GI_TRANSFER_NOTHING)
+            gjs_gi_argument_release_basic_gptrarray(m_transfer, m_tag, out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
+};
+
+struct BasicGPtrArrayIn : BasicTypeContainerIn {
+    using BasicTypeContainerIn::BasicTypeContainerIn;
+
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_basic_array_gi_argument(
+            cx, value, m_tag, GI_ARRAY_TYPE_PTR_ARRAY, arg, arg_name(),
+            GJS_ARGUMENT_ARGUMENT, flags());
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        if (!state->call_completed() || m_transfer != GI_TRANSFER_NOTHING)
+            return true;
+
+        gjs_gi_argument_release_basic_gptrarray(m_transfer, m_tag, in_arg);
+        return true;
+    }
+};
+
 struct ByteArrayReturn : SkipAll, Transferable {
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
@@ -2227,8 +2307,12 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicCFixedSizeArrayReturn> ||
                   std::is_same_v<T, Arg::BasicCZeroTerminatedArrayIn> ||
                   std::is_same_v<T, Arg::BasicCZeroTerminatedArrayReturn> ||
+                  std::is_same_v<T, Arg::BasicGArrayIn> ||
+                  std::is_same_v<T, Arg::BasicGArrayReturn> ||
                   std::is_same_v<T, Arg::BasicGListIn> ||
                   std::is_same_v<T, Arg::BasicGListReturn> ||
+                  std::is_same_v<T, Arg::BasicGPtrArrayIn> ||
+                  std::is_same_v<T, Arg::BasicGPtrArrayReturn> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
         return 32;
     if constexpr (std::is_same_v<T, Arg::BasicExplicitCArrayIn> ||
@@ -2582,6 +2666,14 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
                                    transfer, flags);
                         return;
                     }
+                } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+                    set_return(new Arg::BasicGArrayReturn(element_tag),
+                               transfer, flags);
+                    return;
+                } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+                    set_return(new Arg::BasicGPtrArrayReturn(element_tag),
+                               transfer, flags);
+                    return;
                 }
             }
 
@@ -3030,6 +3122,18 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
                 Gjs::is_basic_type(element_tag, element_is_pointer);
 
             if (element_is_basic) {
+                if (array_type == GI_ARRAY_TYPE_ARRAY) {
+                    set_argument(new Arg::BasicGArrayIn(element_tag),
+                                 common_args);
+                    return;
+                }
+
+                if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+                    set_argument(new Arg::BasicGPtrArrayIn(element_tag),
+                                 common_args);
+                    return;
+                }
+
                 if (array_type == GI_ARRAY_TYPE_C) {
                     if (g_type_info_is_zero_terminated(type_info)) {
                         set_argument(
