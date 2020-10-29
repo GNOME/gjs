@@ -277,8 +277,12 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
     if (G_UNLIKELY (!in_object))
         return nullptr;
 
+    bool found;
+    if (!JS_HasProperty(context, in_object, constructor_name, &found))
+        return nullptr;
+
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+    if (found && !JS_GetProperty(context, in_object, constructor_name, &value))
         return nullptr;
 
     JS::RootedObject constructor(context);
