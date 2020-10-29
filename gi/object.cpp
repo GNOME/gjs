@@ -1708,8 +1708,12 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
     if (G_UNLIKELY (!in_object))
         return NULL;
 
+    bool found;
+    if (!JS_HasProperty(context, in_object, constructor_name, &found))
+        return NULL;
+
     JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+    if (found && !JS_GetProperty(context, in_object, constructor_name, &value))
         return NULL;
 
     JS::RootedObject constructor(context);
