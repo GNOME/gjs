@@ -747,6 +747,44 @@ struct BasicCFixedSizeArrayIn : BasicTypeContainerIn, FixedSizeArray {
     }
 };
 
+struct ByteArrayReturn : SkipAll, Transferable {
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
+            JS::HandleValue) override {
+        return invalid(cx, G_STRFUNC);
+    }
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return gjs_value_from_byte_array_gi_argument(cx, value, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState*,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        if (m_transfer != GI_TRANSFER_NOTHING)
+            gjs_gi_argument_release_byte_array(out_arg);
+        return true;
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
+};
+
+struct ByteArrayIn : SkipAll, Transferable {
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_byte_array_gi_argument(cx, value, arg, arg_name(),
+                                                   flags());
+    }
+    bool release(JSContext*, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        if (!state->call_completed() || m_transfer != GI_TRANSFER_NOTHING)
+            return true;
+
+        gjs_gi_argument_release_byte_array(in_arg);
+        return true;
+    }
+};
+
 struct ExplicitArrayBase : BasicTypeContainerReturn, ExplicitArray {
     ExplicitArrayBase(int length_pos, GITypeTag length_tag,
                       GIDirection length_direction)
@@ -2179,6 +2217,8 @@ bool Argument::release(JSContext*, GjsFunctionCallState*, GIArgument*,
 template <typename T>
 constexpr size_t argument_maximum_size() {
     if constexpr (std::is_same_v<T, Arg::BasicTypeReturn> ||
+                  std::is_same_v<T, Arg::ByteArrayIn> ||
+                  std::is_same_v<T, Arg::ByteArrayReturn> ||
                   std::is_same_v<T, Arg::ErrorIn> ||
                   std::is_same_v<T, Arg::GdkAtomIn> ||
                   std::is_same_v<T, Arg::NumericIn<int>>)
@@ -2514,13 +2554,20 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
                 set_array_return(callable, &type_info, flags, length_pos);
                 return;
             }
+
+            GIArrayType array_type = g_type_info_get_array_type(&type_info);
+            if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                set_return(new Arg::ByteArrayReturn(), transfer, flags);
+                return;
+            }
+
             GI::AutoTypeInfo element_type{
                 g_type_info_get_param_type(&type_info, 0)};
             GITypeTag element_tag = g_type_info_get_tag(element_type);
             bool element_is_pointer = g_type_info_is_pointer(element_type);
 
             if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
-                if (g_type_info_get_array_type(&type_info) == GI_ARRAY_TYPE_C) {
+                if (array_type == GI_ARRAY_TYPE_C) {
                     if (g_type_info_is_zero_terminated(&type_info)) {
                         set_return(new Arg::BasicCZeroTerminatedArrayReturn(
                                        element_tag),
@@ -2970,6 +3017,11 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 
         case GI_TYPE_TAG_ARRAY: {
             GIArrayType array_type = g_type_info_get_array_type(type_info);
+            if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                set_argument(new Arg::ByteArrayIn(), common_args);
+                return;
+            }
+
             GI::AutoTypeInfo element_type{
                 g_type_info_get_param_type(type_info, 0)};
             GITypeTag element_tag = g_type_info_get_tag(element_type);

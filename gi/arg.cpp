@@ -2006,17 +2006,6 @@ bool gjs_value_to_basic_array_gi_argument(JSContext* cx, JS::HandleValue value,
                                           GIArgument* arg, const char* arg_name,
                                           GjsArgumentType arg_type,
                                           GjsArgumentFlags flags) {
-    // First, let's handle the case where we're passed an instance of Uint8Array
-    // and it needs to be marshalled to GByteArray.
-    if (value.isObject()) {
-        JSObject* bytearray_obj = &value.toObject();
-        if (JS_IsUint8Array(bytearray_obj) &&
-            array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-            gjs_arg_set(arg, gjs_byte_array_get_byte_array(bytearray_obj));
-            return true;
-        }
-    }
-
     Gjs::AutoPointer<void> data;
     size_t length;
     if (!gjs_array_to_basic_explicit_array(cx, value, element_tag, arg_name,
@@ -2034,11 +2023,8 @@ bool gjs_value_to_basic_array_gi_argument(JSContext* cx, JS::HandleValue value,
             g_array_append_vals(array, data, length);
         gjs_arg_set(arg, array);
     } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-        GByteArray* byte_array = g_byte_array_sized_new(length);
-
-        if (data)
-            g_byte_array_append(byte_array, data.as<const uint8_t>(), length);
-        gjs_arg_set(arg, byte_array);
+        return gjs_value_to_byte_array_gi_argument(cx, value, arg, arg_name,
+                                                   flags);
     } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
         GPtrArray* array = g_ptr_array_sized_new(length);
 
@@ -2047,6 +2033,35 @@ bool gjs_value_to_basic_array_gi_argument(JSContext* cx, JS::HandleValue value,
             memcpy(array->pdata, data, sizeof(void*) * length);
         gjs_arg_set(arg, array);
     }
+    return true;
+}
+
+bool gjs_value_to_byte_array_gi_argument(JSContext* cx, JS::HandleValue value,
+                                         GIArgument* arg, const char* arg_name,
+                                         GjsArgumentFlags flags) {
+    // First, let's handle the case where we're passed an instance of
+    // Uint8Array and it needs to be marshalled to GByteArray.
+    if (value.isObject()) {
+        JSObject* bytearray_obj = &value.toObject();
+        if (JS_IsUint8Array(bytearray_obj)) {
+            gjs_arg_set(arg, gjs_byte_array_get_byte_array(bytearray_obj));
+            return true;
+        }
+    }
+
+    Gjs::AutoPointer<void> data;
+    size_t length;
+    if (!gjs_array_to_basic_explicit_array(cx, value, GI_TYPE_TAG_UINT8,
+                                           arg_name, GJS_ARGUMENT_ARGUMENT,
+                                           flags, data.out(), &length)) {
+        return false;
+    }
+
+    GByteArray* byte_array = g_byte_array_sized_new(length);
+
+    if (data)
+        g_byte_array_append(byte_array, data.as<const uint8_t>(), length);
+    gjs_arg_set(arg, byte_array);
     return true;
 }
 
@@ -3067,9 +3082,9 @@ bool gjs_value_from_basic_fixed_size_array_gi_argument(
                                                  fixed_size, c_array);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_byte_array_gi_argument(
-    JSContext* cx, JS::MutableHandleValue value_out, GIArgument* arg) {
+bool gjs_value_from_byte_array_gi_argument(JSContext* cx,
+                                           JS::MutableHandleValue value_out,
+                                           GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument byte array to JS::Value");
 
@@ -3940,7 +3955,7 @@ static void gjs_gi_argument_release_basic_garray(GITransfer transfer,
         g_free(g_array_index(array, char*, ix));
 }
 
-static void gjs_gi_argument_release_byte_array(GIArgument* arg) {
+void gjs_gi_argument_release_byte_array(GIArgument* arg) {
     if (!gjs_arg_get<void*>(arg))
         return;
 
