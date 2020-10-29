@@ -616,6 +616,15 @@ struct BasicGListIn : BasicTypeContainerIn, GListContainer {
     }
 };
 
+struct BasicGListOut : BasicGListReturn, Positioned {
+    using BasicGListReturn::BasicGListReturn;
+
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
+    }
+};
+
 struct BasicGHashReturn : BasicTypeTransferableReturn,
                           GHashContainer,
                           Nullable {
@@ -679,6 +688,15 @@ struct BasicGHashIn : BasicGHashReturn {
         gjs_gi_argument_release_basic_ghash(m_transfer, m_tag, m_value_tag,
                                             in_arg);
         return true;
+    }
+};
+
+struct BasicGHashOut : BasicGHashReturn, Positioned {
+    using BasicGHashReturn::BasicGHashReturn;
+
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
     }
 };
 
@@ -2329,6 +2347,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicGArrayIn> ||
                   std::is_same_v<T, Arg::BasicGArrayReturn> ||
                   std::is_same_v<T, Arg::BasicGListIn> ||
+                  std::is_same_v<T, Arg::BasicGListOut> ||
                   std::is_same_v<T, Arg::BasicGListReturn> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayIn> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayReturn> ||
@@ -2339,6 +2358,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicExplicitCArrayInOut> ||
                   std::is_same_v<T, Arg::BasicExplicitCArrayOut> ||
                   std::is_same_v<T, Arg::BasicGHashIn> ||
+                  std::is_same_v<T, Arg::BasicGHashOut> ||
                   std::is_same_v<T, Arg::BasicGHashReturn> ||
                   std::is_same_v<T, Arg::BoxedIn> ||
                   std::is_same_v<T, Arg::ObjectIn>)
@@ -3267,6 +3287,32 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index, GITypeInfo* type_info,
             set_argument(new Arg::BasicTypeTransferableOut(tag), common_args);
         }
         return;
+    }
+
+    if (tag == GI_TYPE_TAG_GLIST || tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            set_argument(new Arg::BasicGListOut(tag, element_tag), common_args);
+            return;
+        }
+    } else if (tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            set_argument(new Arg::BasicGHashOut(key_tag, value_tag),
+                         common_args);
+            return;
+        }
     }
 
     set_argument(new Arg::FallbackOut(type_info), common_args);
