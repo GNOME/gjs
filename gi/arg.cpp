@@ -213,11 +213,6 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
     return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
 }
 
-[[nodiscard]] static inline bool basic_type_needs_release(GITypeTag tag) {
-    g_assert(GI_TYPE_TAG_IS_BASIC(tag));
-    return is_string_type(tag);
-}
-
 /* Check if an argument of the given needs to be released if we obtained it
  * from out argument (or the return value), and we're transferring ownership
  */
@@ -1942,8 +1937,8 @@ bool gjs_value_to_basic_ghash_gi_argument(
     }
 
     if (transfer == GI_TRANSFER_CONTAINER) {
-        if (basic_type_needs_release(key_tag) ||
-            basic_type_needs_release(value_tag)) {
+        if (Gjs::basic_type_needs_release(key_tag) ||
+            Gjs::basic_type_needs_release(value_tag)) {
             // See comment in gjs_value_to_g_hash()
             gjs_throw(cx, "Container transfer for in parameters not supported");
             return false;
@@ -3120,8 +3115,7 @@ bool gjs_value_from_basic_garray_gi_argument(JSContext* cx,
                                                  garray->len, garray->data);
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_basic_gptrarray_gi_argument(
+bool gjs_value_from_basic_gptrarray_gi_argument(
     JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
     GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -3749,7 +3743,7 @@ enum class ArrayReleaseType {
 template <ArrayReleaseType release_type>
 static inline void release_basic_array_internal(GITypeTag element_tag,
                                                 unsigned length, void** array) {
-    if (!basic_type_needs_release(element_tag))
+    if (!Gjs::basic_type_needs_release(element_tag))
         return;
 
     for (size_t ix = 0;; ix++) {
@@ -3927,9 +3921,9 @@ void gjs_gi_argument_release_basic_ghash(GITransfer transfer, GITypeTag key_tag,
     }
 }
 
-static void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
-                                                  GITypeTag element_tag,
-                                                  GIArgument* arg) {
+void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
+                                           GITypeTag element_tag,
+                                           GIArgument* arg) {
     if (!gjs_arg_get<void*>(arg))
         return;
 
@@ -3937,6 +3931,21 @@ static void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
         g_clear_pointer(&gjs_arg_member<GStrv>(arg), g_strfreev);
     else
         g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
+}
+
+void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
+                                           GITypeTag element_tag, size_t length,
+                                           GIArgument* arg) {
+    if (!gjs_arg_get<void*>(arg))
+        return;
+
+    Gjs::AutoPointer<void*, void, g_free> array{gjs_arg_steal<void**>(arg)};
+
+    if (!is_string_type(element_tag) || transfer == GI_TRANSFER_CONTAINER)
+        return;
+
+    for (size_t ix = 0; ix < length; ix++)
+        g_free(array[ix]);
 }
 
 void gjs_gi_argument_release_basic_garray(GITransfer transfer,

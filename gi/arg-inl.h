@@ -270,4 +270,9 @@ namespace Gjs {
     return GI_TYPE_TAG_IS_BASIC(tag);
 }
 
+[[nodiscard]] static inline bool basic_type_needs_release(GITypeTag tag) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(tag));
+    return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
+}
+
 }  // namespace Gjs
