@@ -771,6 +771,10 @@ struct BasicTypeContainerIn : BasicTypeContainerReturn {
     }
 };
 
+struct BasicTypeContainerInOut : BasicTypeContainerOut {
+    using BasicTypeContainerOut::BasicTypeContainerOut;
+};
+
 template <class Marshaller, class Container>
 struct BasicTypeContainer : Marshaller, Container {
     explicit BasicTypeContainer(GITypeInfo* type_info)
@@ -787,6 +791,12 @@ struct BasicTypeContainer : Marshaller, Container {
             return Marshaller::invalid(cx, G_STRFUNC);
         if constexpr (std::is_same_v<Marshaller, BasicTypeContainerOut>)
             return Marshaller::set_out_parameter(state, arg);
+        if constexpr (std::is_same_v<Marshaller, BasicTypeContainerInOut>) {
+            return Container::in(cx, Marshaller::element_tag(), arg,
+                                 Marshaller::arg_name(), Marshaller::flags(),
+                                 value) &&
+                   Marshaller::set_inout_parameter(state, arg);
+        }
         g_return_val_if_reached(false);
     }
 
@@ -795,7 +805,8 @@ struct BasicTypeContainer : Marshaller, Container {
         if constexpr (std::is_same_v<Marshaller, BasicTypeContainerIn>)
             return Marshaller::skip();
         if constexpr (std::is_same_v<Marshaller, BasicTypeContainerReturn> ||
-                      std::is_same_v<Marshaller, BasicTypeContainerOut>) {
+                      std::is_same_v<Marshaller, BasicTypeContainerOut> ||
+                      std::is_same_v<Marshaller, BasicTypeContainerInOut>) {
             return Container::out(cx, Marshaller::element_tag(), arg, value);
         }
         g_return_val_if_reached(false);
@@ -820,8 +831,25 @@ struct BasicTypeContainer : Marshaller, Container {
 
             return true;
         }
+        if constexpr (std::is_same_v<Marshaller, BasicTypeContainerInOut>) {
+            if (!state->call_completed())
+                transfer = GI_TRANSFER_NOTHING;
+
+            GIArgument* original_out_arg =
+                &(state->inout_original_cvalue(Marshaller::m_arg_pos));
+            void* original_out_ptr = gjs_arg_get<void*>(original_out_arg);
+            if (original_out_ptr &&
+                original_out_ptr != gjs_arg_get<void*>(out_arg) &&
+                transfer != GI_TRANSFER_EVERYTHING) {
+                if (Gjs::basic_type_needs_release(element_tag))
+                    Container::release_contents(original_out_arg);
+                if (transfer != GI_TRANSFER_CONTAINER)
+                    Container::release_container(original_out_arg);
+            }
+        }
         if constexpr (std::is_same_v<Marshaller, BasicTypeContainerReturn> ||
-                      std::is_same_v<Marshaller, BasicTypeContainerOut>) {
+                      std::is_same_v<Marshaller, BasicTypeContainerOut> ||
+                      std::is_same_v<Marshaller, BasicTypeContainerInOut>) {
             if (!gjs_arg_get<void*>(out_arg) || transfer == GI_TRANSFER_NOTHING)
                 return true;
 
@@ -844,6 +872,8 @@ using BasicGListReturn =
     BasicTypeContainer<BasicTypeContainerReturn, GListContainer>;
 using BasicGListIn = BasicTypeContainer<BasicTypeContainerIn, GListContainer>;
 using BasicGListOut = BasicTypeContainer<BasicTypeContainerOut, GListContainer>;
+using BasicGListInOut =
+    BasicTypeContainer<BasicTypeContainerInOut, GListContainer>;
 
 using BasicCZeroTerminatedArrayReturn =
     BasicTypeContainer<BasicTypeContainerReturn, ZeroTerminatedArray>;
@@ -851,6 +881,8 @@ using BasicCZeroTerminatedArrayIn =
     BasicTypeContainer<BasicTypeContainerIn, ZeroTerminatedArray>;
 using BasicCZeroTerminatedArrayOut =
     BasicTypeContainer<BasicTypeContainerOut, ZeroTerminatedArray>;
+using BasicCZeroTerminatedArrayInOut =
+    BasicTypeContainer<BasicTypeContainerInOut, ZeroTerminatedArray>;
 
 using BasicCFixedSizeArrayReturn =
     BasicTypeContainer<BasicTypeContainerReturn, FixedSizeArray>;
@@ -858,12 +890,16 @@ using BasicCFixedSizeArrayIn =
     BasicTypeContainer<BasicTypeContainerIn, FixedSizeArray>;
 using BasicCFixedSizeArrayOut =
     BasicTypeContainer<BasicTypeContainerOut, FixedSizeArray>;
+using BasicCFixedSizeArrayInOut =
+    BasicTypeContainer<BasicTypeContainerInOut, FixedSizeArray>;
 
 using BasicGArrayReturn =
     BasicTypeContainer<BasicTypeContainerReturn, GArrayContainer>;
 using BasicGArrayIn = BasicTypeContainer<BasicTypeContainerIn, GArrayContainer>;
 using BasicGArrayOut =
     BasicTypeContainer<BasicTypeContainerOut, GArrayContainer>;
+using BasicGArrayInOut =
+    BasicTypeContainer<BasicTypeContainerInOut, GArrayContainer>;
 
 using BasicGPtrArrayReturn =
     BasicTypeContainer<BasicTypeContainerReturn, GPtrArrayContainer>;
@@ -871,6 +907,8 @@ using BasicGPtrArrayIn =
     BasicTypeContainer<BasicTypeContainerIn, GPtrArrayContainer>;
 using BasicGPtrArrayOut =
     BasicTypeContainer<BasicTypeContainerOut, GPtrArrayContainer>;
+using BasicGPtrArrayInOut =
+    BasicTypeContainer<BasicTypeContainerInOut, GPtrArrayContainer>;
 
 struct BasicGHashReturn : BasicTypeTransferableReturn,
                           GHashContainer,
@@ -949,6 +987,31 @@ struct BasicGHashOut : BasicGHashReturn, Positioned {
     }
 };
 
+struct BasicGHashInOut : BasicGHashOut {
+    using BasicGHashOut::BasicGHashOut;
+    bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue value) override {
+        if (!gjs_value_to_basic_ghash_gi_argument(
+                cx, value, m_tag, m_value_tag, m_transfer, arg, m_arg_name,
+                GJS_ARGUMENT_ARGUMENT, flags()))
+            return false;
+
+        return set_inout_parameter(state, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState* state,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        GIArgument* original_out_arg =
+            &(state->inout_original_cvalue(m_arg_pos));
+        gjs_gi_argument_release_basic_ghash(GI_TRANSFER_NOTHING, m_tag,
+                                            m_value_tag, original_out_arg);
+        if (m_transfer != GI_TRANSFER_NOTHING)
+            gjs_gi_argument_release_basic_ghash(m_transfer, m_tag, m_value_tag,
+                                                out_arg);
+        return true;
+    }
+};
+
 struct ByteArrayReturn : SkipAll, Transferable {
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
@@ -993,6 +1056,27 @@ struct ByteArrayOut : ByteArrayReturn, Positioned {
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue) override {
         return set_out_parameter(state, arg);
+    }
+};
+
+struct ByteArrayInOut : ByteArrayOut {
+    using ByteArrayOut::ByteArrayOut;
+    bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_byte_array_gi_argument(cx, value, arg, m_arg_name,
+                                                   flags()) &&
+               set_inout_parameter(state, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState* state,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg) override {
+        GIArgument* original_out_arg =
+            &(state->inout_original_cvalue(m_arg_pos));
+        if (m_transfer != GI_TRANSFER_EVERYTHING)
+            gjs_gi_argument_release_byte_array(original_out_arg);
+        if (m_transfer != GI_TRANSFER_NOTHING)
+            gjs_gi_argument_release_byte_array(out_arg);
+        return true;
     }
 };
 
@@ -2431,6 +2515,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicTypeOut> ||
                   std::is_same_v<T, Arg::BasicTypeReturn> ||
                   std::is_same_v<T, Arg::ByteArrayIn> ||
+                  std::is_same_v<T, Arg::ByteArrayInOut> ||
                   std::is_same_v<T, Arg::ByteArrayOut> ||
                   std::is_same_v<T, Arg::ByteArrayReturn> ||
                   std::is_same_v<T, Arg::ErrorIn> ||
@@ -2438,18 +2523,23 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
     if constexpr (std::is_same_v<T, Arg::BasicCFixedSizeArrayIn> ||
+                  std::is_same_v<T, Arg::BasicCFixedSizeArrayInOut> ||
                   std::is_same_v<T, Arg::BasicCFixedSizeArrayOut> ||
                   std::is_same_v<T, Arg::BasicCFixedSizeArrayReturn> ||
                   std::is_same_v<T, Arg::BasicCZeroTerminatedArrayIn> ||
+                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayInOut> ||
                   std::is_same_v<T, Arg::BasicCZeroTerminatedArrayOut> ||
                   std::is_same_v<T, Arg::BasicCZeroTerminatedArrayReturn> ||
                   std::is_same_v<T, Arg::BasicGArrayIn> ||
+                  std::is_same_v<T, Arg::BasicGArrayInOut> ||
                   std::is_same_v<T, Arg::BasicGArrayOut> ||
                   std::is_same_v<T, Arg::BasicGArrayReturn> ||
                   std::is_same_v<T, Arg::BasicGListIn> ||
+                  std::is_same_v<T, Arg::BasicGListInOut> ||
                   std::is_same_v<T, Arg::BasicGListOut> ||
                   std::is_same_v<T, Arg::BasicGListReturn> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayIn> ||
+                  std::is_same_v<T, Arg::BasicGPtrArrayInOut> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayOut> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayReturn> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableInOut> ||
@@ -2460,6 +2550,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicExplicitCArrayInOut> ||
                   std::is_same_v<T, Arg::BasicExplicitCArrayOut> ||
                   std::is_same_v<T, Arg::BasicGHashIn> ||
+                  std::is_same_v<T, Arg::BasicGHashInOut> ||
                   std::is_same_v<T, Arg::BasicGHashOut> ||
                   std::is_same_v<T, Arg::BasicGHashReturn> ||
                   std::is_same_v<T, Arg::BoxedIn> ||
@@ -3534,21 +3625,90 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
             set_argument(new Arg::NumericInOut<double>(), common_args);
             return;
 
-        case GI_TYPE_TAG_ARRAY:
-            if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST: {
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(type_info, 0)};
+            GITypeTag element_tag = g_type_info_get_tag(element_type);
+            bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+            if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+                set_argument(new Arg::BasicGListInOut(type_info), common_args);
+                return;
+            }
+
+            set_argument(new Arg::FallbackInOut(type_info), common_args);
+            return;
+        }
+
+        case GI_TYPE_TAG_GHASH: {
+            GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+            GITypeTag key_tag = g_type_info_get_tag(key_type);
+            bool key_is_pointer = g_type_info_is_pointer(key_type);
+
+            GI::AutoTypeInfo value_type{
+                g_type_info_get_param_type(type_info, 1)};
+            GITypeTag value_tag = g_type_info_get_tag(value_type);
+            bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+            if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+                Gjs::is_basic_type(value_tag, value_is_pointer)) {
+                set_argument(new Arg::BasicGHashInOut(type_info), common_args);
+                return;
+            }
+
+            set_argument(new Arg::FallbackInOut(type_info), common_args);
+            return;
+        }
+
+        case GI_TYPE_TAG_ARRAY: {
+            GIArrayType array_type = g_type_info_get_array_type(type_info);
+
+            if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+                set_argument(new Arg::ByteArrayInOut(), common_args);
+                return;
+            }
+
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(type_info, 0)};
+            GITypeTag element_tag = g_type_info_get_tag(element_type);
+            bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+            if (array_type == GI_ARRAY_TYPE_C) {
                 if (g_type_info_is_zero_terminated(type_info)) {
+                    if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+                        set_argument(
+                            new Arg::BasicCZeroTerminatedArrayInOut(type_info),
+                            common_args);
+                        return;
+                    }
                     set_argument(new Arg::ZeroTerminatedArrayInOut(type_info),
                                  common_args);
                     return;
                 }
                 if (g_type_info_get_array_fixed_size(type_info) >= 0) {
+                    if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+                        set_argument(
+                            new Arg::BasicCFixedSizeArrayInOut(type_info),
+                            common_args);
+                        return;
+                    }
                     set_argument(new Arg::FixedSizeArrayInOut(type_info),
                                  common_args);
                     return;
                 }
+            } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+                set_argument(new Arg::BasicGArrayInOut(type_info), common_args);
+                return;
+            } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+                set_argument(new Arg::BasicGPtrArrayInOut(type_info),
+                             common_args);
+                return;
             }
+
             set_argument(new Arg::FallbackInOut(type_info), common_args);
             return;
+        }
 
         default: {
         }
