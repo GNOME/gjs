@@ -558,7 +558,7 @@ describe('GArray', function () {
 
 describe('GPtrArray', function () {
     describe('of strings', function () {
-        testContainerMarshalling('garray_utf8', ['0', '1', '2'], ['-2', '-1', '0', '1']);
+        testContainerMarshalling('gptrarray_utf8', ['0', '1', '2'], ['-2', '-1', '0', '1']);
     });
 
     describe('of structs', function () {
