@@ -668,6 +668,27 @@ struct BasicTypeOut : BasicTypeReturn, Positioned {
     }
 };
 
+struct BasicTypeInOut : BasicTypeOut {
+    using BasicTypeOut::BasicTypeOut;
+    bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue value) override {
+        if (!gjs_value_to_basic_gi_argument(cx, value, m_tag, arg, arg_name(),
+                                            GJS_ARGUMENT_ARGUMENT, flags()))
+            return false;
+
+        return set_inout_parameter(state, arg);
+    }
+    bool release(JSContext*, GjsFunctionCallState* state,
+                 GIArgument* in_arg [[maybe_unused]],
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        GIArgument* original_out_arg =
+            &(state->inout_original_cvalue(m_arg_pos));
+        gjs_gi_argument_release_basic(GI_TRANSFER_NOTHING, m_tag, flags(),
+                                      original_out_arg);
+        return true;
+    }
+};
+
 struct BasicTypeTransferableReturn : BasicTypeReturn, Transferable {
     using BasicTypeReturn::BasicTypeReturn;
     bool release(JSContext*, GjsFunctionCallState*,
@@ -685,6 +706,21 @@ struct BasicTypeTransferableOut : BasicTypeTransferableReturn, Positioned {
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue) override {
         return set_out_parameter(state, arg);
+    }
+};
+
+struct BasicTypeTransferableInOut : BasicTypeInOut, Transferable {
+    using BasicTypeInOut::BasicTypeInOut;
+
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg) override {
+        if (!BasicTypeInOut::release(cx, state, in_arg, out_arg))
+            return false;
+
+        if (m_transfer != GI_TRANSFER_NOTHING)
+            gjs_gi_argument_release_basic(m_transfer, m_tag, flags(), out_arg);
+
+        return true;
     }
 };
 
@@ -2391,7 +2427,8 @@ bool Argument::release(JSContext*, GjsFunctionCallState*, GIArgument*,
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
 template <typename T>
 constexpr size_t argument_maximum_size() {
-    if constexpr (std::is_same_v<T, Arg::BasicTypeOut> ||
+    if constexpr (std::is_same_v<T, Arg::BasicTypeInOut> ||
+                  std::is_same_v<T, Arg::BasicTypeOut> ||
                   std::is_same_v<T, Arg::BasicTypeReturn> ||
                   std::is_same_v<T, Arg::ByteArrayIn> ||
                   std::is_same_v<T, Arg::ByteArrayOut> ||
@@ -2415,6 +2452,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicGPtrArrayIn> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayOut> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayReturn> ||
+                  std::is_same_v<T, Arg::BasicTypeTransferableInOut> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableOut> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
         return 32;
@@ -3509,11 +3547,24 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
                     return;
                 }
             }
-            [[fallthrough]];
-
-        default:
             set_argument(new Arg::FallbackInOut(type_info), common_args);
+            return;
+
+        default: {
+        }
     }
+
+    bool is_pointer = g_type_info_is_pointer(type_info);
+    if (Gjs::is_basic_type(tag, is_pointer)) {
+        if (transfer == GI_TRANSFER_NOTHING) {
+            set_argument(new Arg::BasicTypeInOut(tag), common_args);
+        } else {
+            set_argument(new Arg::BasicTypeTransferableInOut(tag), common_args);
+        }
+        return;
+    }
+
+    set_argument(new Arg::FallbackInOut(type_info), common_args);
 }
 
 void ArgsCache::build_instance(GICallableInfo* callable) {

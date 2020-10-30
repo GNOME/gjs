@@ -78,11 +78,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
 static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    GITypeInfo* arginfo, const char* arg_name,
                                    GjsArgumentType arg_type);
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_basic_gi_argument(JSContext*, JS::HandleValue,
-                                           GITypeTag, GIArgument*,
-                                           const char* arg_name,
-                                           GjsArgumentType, GjsArgumentFlags);
 
 bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
     /* Do proper value check for flags with GType's */
@@ -1592,12 +1587,11 @@ static bool check_nullable_argument(JSContext* cx, const char* arg_name,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
-                                           GITypeTag type_tag, GIArgument* arg,
-                                           const char* arg_name,
-                                           GjsArgumentType arg_type,
-                                           GjsArgumentFlags flags) {
+bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
+                                    GITypeTag type_tag, GIArgument* arg,
+                                    const char* arg_name,
+                                    GjsArgumentType arg_type,
+                                    GjsArgumentFlags flags) {
     g_assert(GI_TYPE_TAG_IS_BASIC(type_tag) &&
              "use gjs_value_to_gi_argument() for non-basic types");
 
