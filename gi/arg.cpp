@@ -52,8 +52,8 @@
 #include "util/misc.h"
 
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
-    JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
-    GITypeTag type_tag, GArgument* arg);
+    JSContext*, GITransfer, GITypeInfo*, GITypeTag, GjsArgumentFlags,
+    GIArgument*);
 static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    GITypeInfo* arginfo, const char* arg_name,
                                    GjsArgumentType arg_type);
@@ -504,12 +504,14 @@ template <typename T>
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
-                                 GITypeInfo* key_param_info,
-                                 GITypeInfo* val_param_info,
-                                 GITransfer transfer, GHashTable** hash_p) {
+                                 GITypeInfo* type_info, GITransfer transfer,
+                                 GHashTable** hash_p) {
     size_t id_ix, id_len;
 
     g_assert(props && "Property bag cannot be null");
+
+    GITypeInfo* key_param_info = g_type_info_get_param_type(type_info, 0);
+    GITypeInfo* val_param_info = g_type_info_get_param_type(type_info, 1);
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -1695,8 +1697,8 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
             g_assert(val_param_info != nullptr);
 
             JS::RootedObject props(context, &value.toObject());
-            if (!gjs_object_to_g_hash(context, props, key_param_info,
-                                      val_param_info, transfer, &ghash)) {
+            if (!gjs_object_to_g_hash(context, props, type_info, transfer,
+                                      &ghash)) {
                 return false;
             }
 
@@ -1933,7 +1935,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
     JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
-    GIArgument* arg) {
+    GjsArgumentFlags flags, GIArgument* arg) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     GjsSmartPointer<T> list = gjs_arg_steal<T*>(arg);
 
@@ -1949,7 +1951,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
         gjs_arg_set(&elem, l->data);
 
         if (!gjs_g_arg_release_internal(cx, transfer, param_info, type_tag,
-                                        &elem)) {
+                                        flags, &elem)) {
             return false;
         }
     }
@@ -2827,6 +2829,7 @@ struct GHR_closure {
     JSContext *context;
     GjsAutoTypeInfo key_param_info, val_param_info;
     GITransfer transfer;
+    GjsArgumentFlags flags;
     bool failed;
 };
 
@@ -2836,10 +2839,9 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     GArgument key_arg, val_arg;
     gjs_arg_set(&key_arg, key);
     gjs_arg_set(&val_arg, val);
-    if (!gjs_g_arg_release_internal(c->context, c->transfer,
-                                    c->key_param_info,
+    if (!gjs_g_arg_release_internal(c->context, c->transfer, c->key_param_info,
                                     g_type_info_get_tag(c->key_param_info),
-                                    &key_arg))
+                                    c->flags, &key_arg))
         c->failed = true;
 
     GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
@@ -2855,7 +2857,7 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
         default:
             if (!gjs_g_arg_release_internal(c->context, c->transfer,
                                             c->val_param_info, val_type,
-                                            &val_arg))
+                                            c->flags, &val_arg))
                 c->failed = true;
     }
 
@@ -2866,17 +2868,19 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
  * (free nothing) and for in parameters (free any temporaries we've
  * allocated
  */
-#define TRANSFER_IN_NOTHING (GI_TRANSFER_EVERYTHING + 1)
+constexpr static bool is_transfer_in_nothing(GITransfer transfer,
+                                             GjsArgumentFlags flags) {
+    return (transfer == GI_TRANSFER_NOTHING) && (flags & GjsArgumentFlags::IN);
+}
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_g_arg_release_internal(JSContext  *context,
-                           GITransfer  transfer,
-                           GITypeInfo *type_info,
-                           GITypeTag   type_tag,
-                           GArgument  *arg)
-{
-    g_assert(transfer != GI_TRANSFER_NOTHING);
+static bool gjs_g_arg_release_internal(JSContext* context, GITransfer transfer,
+                                       GITypeInfo* type_info,
+                                       GITypeTag type_tag,
+                                       GjsArgumentFlags flags,
+                                       GIArgument* arg) {
+    g_assert(transfer != GI_TRANSFER_NOTHING ||
+             flags != GjsArgumentFlags::NONE);
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -2901,7 +2905,7 @@ gjs_g_arg_release_internal(JSContext  *context,
         break;
 
     case GI_TYPE_TAG_ERROR:
-        if (transfer != TRANSFER_IN_NOTHING)
+        if (!is_transfer_in_nothing(transfer, flags))
             g_clear_error(&gjs_arg_member<GError*>(arg));
         break;
 
@@ -2943,10 +2947,10 @@ gjs_g_arg_release_internal(JSContext  *context,
              */
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                if (transfer != TRANSFER_IN_NOTHING)
+                if (!is_transfer_in_nothing(transfer, flags))
                     g_clear_object(&gjs_arg_member<GObject*>(arg));
             } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                if (transfer != TRANSFER_IN_NOTHING)
+                if (!is_transfer_in_nothing(transfer, flags))
                     g_clear_pointer(&gjs_arg_member<GParamSpec*>(arg),
                                     g_param_spec_unref);
             } else if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
@@ -2960,19 +2964,19 @@ gjs_g_arg_release_internal(JSContext  *context,
                     g_clear_pointer(&gjs_arg_member<GValue*>(arg),
                                     g_value_unset);
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                if (transfer != TRANSFER_IN_NOTHING)
+                if (!is_transfer_in_nothing(transfer, flags))
                     g_boxed_free(gtype, gjs_arg_steal<void*>(arg));
             } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
-                if (transfer != TRANSFER_IN_NOTHING)
+                if (!is_transfer_in_nothing(transfer, flags))
                     g_clear_pointer(&gjs_arg_member<GVariant*>(arg),
                                     g_variant_unref);
             } else if (gtype == G_TYPE_NONE) {
-                if (transfer != TRANSFER_IN_NOTHING) {
+                if (!is_transfer_in_nothing(transfer, flags)) {
                     gjs_throw(context, "Don't know how to release GArgument: not an object or boxed type");
                     return false;
                 }
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                if (transfer != TRANSFER_IN_NOTHING) {
+                if (!is_transfer_in_nothing(transfer, flags)) {
                     auto* priv =
                         FundamentalPrototype::for_gtype(context, gtype);
                     priv->call_unref_function(gjs_arg_steal<void*>(arg));
@@ -3074,11 +3078,9 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                         for (array = arg_array; *array; array++) {
                             gjs_arg_set(&elem, *array);
-                            if (!gjs_g_arg_release_internal(context,
-                                                            GI_TRANSFER_EVERYTHING,
-                                                            param_info,
-                                                            element_type,
-                                                            &elem)) {
+                            if (!gjs_g_arg_release_internal(
+                                    context, GI_TRANSFER_EVERYTHING, param_info,
+                                    element_type, flags, &elem)) {
                                 return false;
                             }
                         }
@@ -3091,11 +3093,9 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                         for (i = 0; i < len; i++) {
                             gjs_arg_set(&elem, arg_array[i]);
-                            if (!gjs_g_arg_release_internal(context,
-                                                            GI_TRANSFER_EVERYTHING,
-                                                            param_info,
-                                                            element_type,
-                                                            &elem)) {
+                            if (!gjs_g_arg_release_internal(
+                                    context, GI_TRANSFER_EVERYTHING, param_info,
+                                    element_type, flags, &elem)) {
                                 return false;
                             }
                         }
@@ -3157,7 +3157,7 @@ gjs_g_arg_release_internal(JSContext  *context,
                                     g_array_index(array, gpointer, i));
                         if (!gjs_g_arg_release_internal(
                                 context, transfer, param_info, element_type,
-                                &arg_iter))
+                                flags, &arg_iter))
                             return false;
                     }
                 }
@@ -3190,7 +3190,7 @@ gjs_g_arg_release_internal(JSContext  *context,
 
                     gjs_arg_set(&arg_iter, g_ptr_array_index(array, i));
                     if (!gjs_g_argument_release(context, transfer, param_info,
-                                                &arg_iter))
+                                                flags, &arg_iter))
                         return false;
                 }
             }
@@ -3202,11 +3202,11 @@ gjs_g_arg_release_internal(JSContext  *context,
 
     case GI_TYPE_TAG_GLIST:
         return gjs_g_arg_release_g_list<GList>(context, transfer, type_info,
-                                               arg);
+                                               flags, arg);
 
     case GI_TYPE_TAG_GSLIST:
         return gjs_g_arg_release_g_list<GSList>(context, transfer, type_info,
-                                                arg);
+                                                flags, arg);
 
     case GI_TYPE_TAG_GHASH:
         if (gjs_arg_get<GHashTable*>(arg)) {
@@ -3215,11 +3215,8 @@ gjs_g_arg_release_internal(JSContext  *context,
             if (transfer == GI_TRANSFER_CONTAINER)
                 g_hash_table_steal_all(hash_table);
             else {
-                GHR_closure c = {
-                    context, NULL, NULL,
-                    transfer,
-                    false
-                };
+                GHR_closure c = {context,  nullptr, nullptr,
+                                 transfer, flags,   false};
 
                 c.key_param_info = g_type_info_get_param_type(type_info, 0);
                 g_assert(c.key_param_info != nullptr);
@@ -3243,15 +3240,13 @@ gjs_g_arg_release_internal(JSContext  *context,
     return true;
 }
 
-bool
-gjs_g_argument_release(JSContext  *context,
-                       GITransfer  transfer,
-                       GITypeInfo *type_info,
-                       GArgument  *arg)
-{
+bool gjs_g_argument_release(JSContext* cx, GITransfer transfer,
+                            GITypeInfo* type_info, GjsArgumentFlags flags,
+                            GIArgument* arg) {
     GITypeTag type_tag;
 
-    if (transfer == GI_TRANSFER_NOTHING)
+    if (transfer == GI_TRANSFER_NOTHING &&
+        !is_transfer_in_nothing(transfer, flags))
         return true;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
@@ -3260,15 +3255,13 @@ gjs_g_argument_release(JSContext  *context,
                       "Releasing GArgument %s out param or return value",
                       g_type_tag_to_string(type_tag));
 
-    return gjs_g_arg_release_internal(context, transfer, type_info, type_tag, arg);
+    return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag, flags,
+                                      arg);
 }
 
-bool
-gjs_g_argument_release_in_arg(JSContext  *context,
-                              GITransfer  transfer,
-                              GITypeInfo *type_info,
-                              GArgument  *arg)
-{
+bool gjs_g_argument_release_in_arg(JSContext* cx, GITransfer transfer,
+                                   GITypeInfo* type_info,
+                                   GjsArgumentFlags flags, GIArgument* arg) {
     GITypeTag type_tag;
 
     /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
@@ -3287,8 +3280,8 @@ gjs_g_argument_release_in_arg(JSContext  *context,
                       g_type_tag_to_string(type_tag));
 
     if (type_needs_release (type_info, type_tag))
-        return gjs_g_arg_release_internal(context, (GITransfer) TRANSFER_IN_NOTHING,
-                                          type_info, type_tag, arg);
+        return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag,
+                                          flags, arg);
 
     return true;
 }
@@ -3320,8 +3313,9 @@ bool gjs_g_argument_release_in_array(JSContext* context, GITransfer transfer,
     if (type_needs_release(param_type, type_tag)) {
         for (i = 0; i < length; i++) {
             gjs_arg_set(&elem, array[i]);
-            if (!gjs_g_arg_release_internal(context, (GITransfer) TRANSFER_IN_NOTHING,
-                                            param_type, type_tag, &elem)) {
+            if (!gjs_g_arg_release_internal(context, GI_TRANSFER_NOTHING,
+                                            param_type, type_tag,
+                                            GjsArgumentFlags::IN, &elem)) {
                 return false;
             }
         }
@@ -3352,11 +3346,9 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
         for (i = 0; i < length; i++) {
             gjs_arg_set(&elem, array[i]);
             JS::AutoSaveExceptionState saved_exc(context);
-            if (!gjs_g_arg_release_internal(context,
-                                            GI_TRANSFER_EVERYTHING,
-                                            param_type,
-                                            type_tag,
-                                            &elem)) {
+            if (!gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
+                                            param_type, type_tag,
+                                            GjsArgumentFlags::OUT, &elem)) {
                 return false;
             }
         }
