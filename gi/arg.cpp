@@ -11,7 +11,8 @@
 
 #include <array>
 #include <string>
-#include <utility>  // for move
+#include <unordered_map>
+#include <utility>  // for move, make_pair
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -249,6 +250,127 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
     }
 }
 
+namespace ContainerCache {
+static std::unordered_map<void*, std::pair<JSContext*, GITypeInfo*>>
+    container_to_type;
+static std::unordered_map<void*, void*> value_to_container;
+
+static inline void track_container(JSContext* cx, GITypeInfo* type_info,
+                                   void* container) {
+    g_assert(cx && container &&
+             Gjs::is_container(g_type_info_get_tag(type_info)));
+    container_to_type.insert({container, std::make_pair(cx, type_info)});
+}
+
+[[nodiscard]] static inline bool track_value(void* container, void* value) {
+    if (!value || !container)
+        return false;
+
+    value_to_container.insert({value, container});
+    return true;
+}
+
+template <GITypeTag TAG = GI_TYPE_TAG_VOID>
+[[nodiscard]] static constexpr bool needs_tracking(GITypeInfo* param_info,
+                                                   GITransfer transfer,
+                                                   GjsArgumentFlags flags) {
+    if (!type_needs_release(param_info, g_type_info_get_tag(param_info)))
+        return false;
+
+    //  Here we assume that inout transfer is symmetric, although we should
+    //  make it dependent on the argument direction, see:
+    //  https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
+
+    if (transfer == GI_TRANSFER_CONTAINER && (flags & GjsArgumentFlags::ARG_IN))
+        return true;
+
+    if constexpr (TAG == GI_TYPE_TAG_ARRAY) {
+        return transfer == GI_TRANSFER_EVERYTHING &&
+               (flags & GjsArgumentFlags::ARG_IN);
+    } else if constexpr (TAG == GI_TYPE_TAG_GHASH) {
+        if (transfer == GI_TRANSFER_CONTAINER)
+            return true;
+
+        return transfer == GI_TRANSFER_EVERYTHING &&
+               (flags & GjsArgumentFlags::ARG_INOUT);
+    }
+
+    return false;
+}
+
+template <GITypeTag TAG = GI_TYPE_TAG_VOID, GIArrayType Array = GI_ARRAY_TYPE_C>
+[[nodiscard]] static bool container_value_free(void* value) {
+    auto value_it = value_to_container.end();
+    bool ret = true;
+
+    if constexpr (TAG == GI_TYPE_TAG_ARRAY && Array == GI_ARRAY_TYPE_ARRAY) {
+        value = *static_cast<void**>(value);
+    }
+
+    value_it = value_to_container.find(value);
+    g_assert(value_it != value_to_container.end());
+
+    auto container_it = container_to_type.find(value_it->second);
+    g_assert(container_it != container_to_type.end());
+    auto const& container_pair = container_it->second;
+    auto const& container_info = container_pair.second;
+    int param_index;
+
+    if constexpr (TAG == GI_TYPE_TAG_GHASH) {
+        param_index = 1;  // hash value type
+    } else {
+        param_index = 0;  // element type
+    }
+    GI::AutoTypeInfo type_info{
+        g_type_info_get_param_type(container_info, param_index)};
+
+    GIArgument arg;
+    JSContext* cx = container_pair.first;
+    gjs_arg_set(&arg, value);
+    if (!gjs_gi_argument_release_in_arg(cx, GI_TRANSFER_NOTHING, type_info,
+                                        &arg)) {
+        gjs_throw(cx,
+                  "Impossible to release argument of type %s for container %s",
+                  g_type_tag_to_string(g_type_info_get_tag(type_info)),
+                  g_type_tag_to_string(g_type_info_get_tag(container_info)));
+        ret = false;
+    }
+
+    value_to_container.erase(value_it);
+
+    if (value_to_container.empty())
+        container_to_type.erase(container_it);
+
+    return ret;
+}
+
+template <GITypeTag TAG = GI_TYPE_TAG_VOID, GIArrayType Array = GI_ARRAY_TYPE_C>
+static inline void on_container_value_free(void* value) {
+    static_cast<void>(container_value_free<TAG, Array>(value));
+}
+
+static void on_hash_table_value_free(void* value) {
+    on_container_value_free<GI_TYPE_TAG_GHASH>(value);
+}
+
+[[nodiscard]] static bool cleanup_container_data(void* old_container) {
+    bool ret = true;
+    for (auto it = ContainerCache::value_to_container.begin();
+         it != ContainerCache::value_to_container.end();) {
+        if (it->second == old_container) {
+            void* value = it->first;
+            it++;
+            ret |= container_value_free(value);
+        } else {
+            it++;
+        }
+    }
+
+    return ret;
+}
+
+};  // namespace ContainerCache
+
 ///// "TO" MARSHALLERS /////////////////////////////////////////////////////////
 // These marshaller functions are responsible for converting JS values to the
 // required GIArgument type, for the in parameters of a C function call.
@@ -257,7 +379,7 @@ template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     JSContext* cx, JS::HandleValue value, GITypeInfo* type_info,
     GITransfer transfer, const char* arg_name, GjsArgumentType arg_type,
-    T** list_p) {
+    GjsArgumentFlags flags, T** list_p) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
 
     // While a list can be NULL in C, that means empty array in JavaScript, it
@@ -284,19 +406,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     GITypeTag element_tag = g_type_info_get_tag(param_info);
     g_assert(!GI_TYPE_TAG_IS_BASIC(element_tag) &&
              "use basic_array_to_linked_list() instead");
-
-    if (transfer == GI_TRANSFER_CONTAINER) {
-        if (type_needs_release(param_info, element_tag)) {
-            /* FIXME: to make this work, we'd have to keep a list of temporary
-             * GIArguments for the function call so we could free them after
-             * the surrounding container had been freed by the callee.
-             */
-            gjs_throw(cx, "Container transfer for in parameters not supported");
-            return false;
-        }
-
-        transfer = GI_TRANSFER_NOTHING;
-    }
 
     JS::RootedObject array(cx, value.toObjectOrNull());
     JS::RootedValue elem(cx);
@@ -334,12 +443,21 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     else if constexpr (std::is_same_v<T, GSList>)
         list = g_slist_reverse(list);
 
+    if (list && ContainerCache::needs_tracking(param_info, transfer, flags)) {
+        bool any_tracked = false;
+        for (T* l = list; l; l = l->next)
+            any_tracked |= ContainerCache::track_value(list, l->data);
+
+        if (any_tracked)
+            ContainerCache::track_container(cx, type_info, list);
+    }
+
     *list_p = list;
 
     return true;
 }
 
-[[nodiscard]] static GHashTable* create_hash_table_for_key_type(
+[[nodiscard]] static GHashTable* create_hash_table_for_basic_key_tag(
     GITypeTag key_type) {
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
@@ -347,6 +465,26 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     if (is_string_type(key_type))
         return g_hash_table_new(g_str_hash, g_str_equal);
     return g_hash_table_new(NULL, NULL);
+}
+
+[[nodiscard]] static GHashTable* create_hash_table_for_key_type(
+    GITypeInfo* type_info, GITransfer transfer, GjsArgumentFlags flags) {
+    GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+    GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+    GDestroyNotify key_destroy = nullptr;
+    GDestroyNotify value_destroy = nullptr;
+
+    if (ContainerCache::needs_tracking<GI_TYPE_TAG_GHASH>(key_type, transfer,
+                                                          flags))
+        key_destroy = ContainerCache::on_container_value_free;
+    if (ContainerCache::needs_tracking<GI_TYPE_TAG_GHASH>(value_type, transfer,
+                                                          flags))
+        value_destroy = ContainerCache::on_hash_table_value_free;
+
+    if (is_string_type(g_type_info_get_tag(key_type)))
+        return g_hash_table_new_full(g_str_hash, g_str_equal, key_destroy,
+                                     value_destroy);
+    return g_hash_table_new_full(nullptr, nullptr, key_destroy, value_destroy);
 }
 
 template <typename IntType>
@@ -505,7 +643,7 @@ template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
                                  GITypeInfo* type_info, GITransfer transfer,
-                                 GHashTable** hash_p) {
+                                 GjsArgumentFlags flags, GHashTable** hash_p) {
     size_t id_ix, id_len;
 
     g_assert(props && "Property bag cannot be null");
@@ -519,27 +657,19 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
         (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_type)) &&
         "use gjs_value_to_basic_ghash_gi_argument() instead");
 
-    if (transfer == GI_TRANSFER_CONTAINER) {
-        if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
-            type_needs_release (val_param_info, g_type_info_get_tag(val_param_info))) {
-            /* FIXME: to make this work, we'd have to keep a list of temporary
-             * GIArguments for the function call so we could free them after
-             * the surrounding container had been freed by the callee.
-             */
-            gjs_throw(context,
-                      "Container transfer for in parameters not supported");
-            return false;
-        }
-
-        transfer = GI_TRANSFER_NOTHING;
-    }
-
     JS::Rooted<JS::IdVector> ids(context, context);
     if (!JS_Enumerate(context, props, &ids))
         return false;
 
     Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result{
-        create_hash_table_for_key_type(key_tag)};
+        create_hash_table_for_key_type(type_info, transfer, flags)};
+
+    bool key_needs_tracking = ContainerCache::needs_tracking<GI_TYPE_TAG_GHASH>(
+        key_param_info, transfer, flags);
+    bool value_needs_tracking =
+        ContainerCache::needs_tracking<GI_TYPE_TAG_GHASH>(val_param_info,
+                                                          transfer, flags);
+    bool any_tracked = false;
 
     JS::RootedValue key_js(context), val_js(context);
     JS::RootedId cur_id(context);
@@ -580,10 +710,20 @@ _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
         // The compiler isn't smart enough to figure out that key_ptr will
         // always be initialized if value_to_ghashtable_key() returns true.
         g_hash_table_insert(result, key_ptr, val_ptr);
+
+        if (key_ptr && key_needs_tracking)
+            any_tracked |= ContainerCache::track_value(result, key_ptr);
+
+        if (key_ptr && value_needs_tracking)
+            any_tracked |= ContainerCache::track_value(result, val_ptr);
+
 #if __GNUC__ >= 8
 _Pragma("GCC diagnostic pop")
 #endif  // clang-format on
     }
+
+    if (any_tracked)
+        ContainerCache::track_container(context, type_info, result);
 
     *hash_p = result.release();
     return true;
@@ -1947,7 +2087,7 @@ bool gjs_value_to_basic_ghash_gi_argument(
         return false;
 
     Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result{
-        create_hash_table_for_key_type(key_tag)};
+        create_hash_table_for_basic_key_tag(key_tag)};
 
     JS::RootedValue v_key{cx}, v_val{cx};
     JS::RootedId cur_id{cx};
@@ -2138,11 +2278,11 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                                        flags, arg);
     case GI_TYPE_TAG_GLIST:
         return gjs_array_to_g_list(context, value, type_info, transfer,
-                                   arg_name, arg_type,
+                                   arg_name, arg_type, flags,
                                    &gjs_arg_member<GList*>(arg));
     case GI_TYPE_TAG_GSLIST:
         return gjs_array_to_g_list(context, value, type_info, transfer,
-                                   arg_name, arg_type,
+                                   arg_name, arg_type, flags,
                                    &gjs_arg_member<GSList*>(arg));
 
     case GI_TYPE_TAG_GHASH:
@@ -2161,7 +2301,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
             GHashTable *ghash;
             JS::RootedObject props(context, &value.toObject());
             if (!gjs_object_to_g_hash(context, props, type_info, transfer,
-                                      &ghash)) {
+                                      flags, &ghash)) {
                 return false;
             }
 
@@ -2181,8 +2321,33 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         }
 
         GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
+        bool needs_tracking = ContainerCache::needs_tracking<GI_TYPE_TAG_ARRAY>(
+            param_info, transfer, flags);
+
         if (array_type == GI_ARRAY_TYPE_C) {
-            gjs_arg_set(arg, data.release());
+            void* arg_data = data.release();
+            gjs_arg_set(arg, arg_data);
+
+            if (needs_tracking) {
+                bool any_tracked = false;
+
+                if (g_type_info_is_zero_terminated(type_info)) {
+                    for (auto array = gjs_arg_get<void**>(arg); *array; array++)
+                        any_tracked |=
+                            ContainerCache::track_value(arg_data, *array);
+                } else {
+                    int fixed_size =
+                        g_type_info_get_array_fixed_size(type_info);
+                    for (auto i = 0; i < fixed_size; i++)
+                        any_tracked |= ContainerCache::track_value(
+                            arg_data, gjs_arg_get<void**>(arg)[i]);
+                }
+
+                if (any_tracked) {
+                    ContainerCache::track_container(context, type_info,
+                                                    arg_data);
+                }
+            }
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
             GITypeTag storage_type = g_type_info_get_storage_type(param_info);
             GArray* array =
@@ -2191,6 +2356,21 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
             if (data)
                 g_array_append_vals(array, data, length);
             gjs_arg_set(arg, array);
+
+            if (data && needs_tracking) {
+                bool any_tracked = false;
+
+                for (auto i = 0U; i < array->len; i++)
+                    any_tracked |= ContainerCache::track_value(
+                        array, g_array_index(array, void*, i));
+
+                if (any_tracked) {
+                    g_array_set_clear_func(
+                        array, ContainerCache::on_container_value_free<
+                                   GI_TYPE_TAG_ARRAY, GI_ARRAY_TYPE_ARRAY>);
+                    ContainerCache::track_container(context, type_info, array);
+                }
+            }
         } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
             // handled in gjs_value_to_basic_array_gi_argument()
             g_assert_not_reached();
@@ -2201,6 +2381,20 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
             if (data)
                 memcpy(array->pdata, data, sizeof(void*) * length);
             gjs_arg_set(arg, array);
+
+            if (data && needs_tracking) {
+                bool any_tracked = false;
+
+                for (auto i = 0U; i < array->len; i++)
+                    any_tracked |= ContainerCache::track_value(
+                        array, g_ptr_array_index(array, i));
+
+                if (any_tracked) {
+                    g_ptr_array_set_free_func(
+                        array, ContainerCache::on_container_value_free);
+                    ContainerCache::track_container(context, type_info, array);
+                }
+            }
         }
         break;
     }
@@ -3662,10 +3856,17 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
     JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
     GjsArgumentFlags flags, GIArgument* arg) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
-    Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
 
-    if (transfer == GI_TRANSFER_CONTAINER)
-        return true;
+    if (flags & GjsArgumentFlags::ARG_IN) {
+        if (transfer == GI_TRANSFER_EVERYTHING)
+            return true;
+
+        if (transfer == GI_TRANSFER_CONTAINER)
+            return ContainerCache::cleanup_container_data(
+                gjs_arg_steal<T*>(arg));
+    }
+
+    Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
 
     GIArgument elem;
     GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
@@ -4160,13 +4361,19 @@ static bool gjs_g_arg_release_internal(
     case GI_TYPE_TAG_ARRAY:
     {
         GIArrayType array_type = g_type_info_get_array_type(type_info);
+        GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
+        bool was_tracked = ContainerCache::needs_tracking<GI_TYPE_TAG_ARRAY>(
+            param_info, transfer, flags);
 
         if (!gjs_arg_get<void*>(arg)) {
             /* OK */
         } else if (array_type == GI_ARRAY_TYPE_C) {
-            GI::AutoTypeInfo param_info{
-                g_type_info_get_param_type(type_info, 0)};
             GITypeTag element_type;
+
+            if (was_tracked) {
+                return ContainerCache::cleanup_container_data(
+                    gjs_arg_steal<void*>(arg));
+            }
 
             element_type = g_type_info_get_tag(param_info);
 
@@ -4216,6 +4423,9 @@ static bool gjs_g_arg_release_internal(
                 return false;
             }
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+            if (was_tracked)
+                return true;
+
             GITypeTag element_type;
 
             GI::AutoTypeInfo param_info{
@@ -4255,11 +4465,14 @@ static bool gjs_g_arg_release_internal(
                 // basic types handled above
                 gjs_throw(context,
                           "Don't know how to release GArray element-type %d",
-                          element_type);
+                          g_type_info_get_tag(param_info));
                 return false;
             }
 
         } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+            if (was_tracked)
+                return true;
+
             GI::AutoTypeInfo param_info{
                 g_type_info_get_param_type(type_info, 0)};
             Gjs::AutoPointer<GPtrArray, GPtrArray, g_ptr_array_unref> array{
@@ -4294,6 +4507,15 @@ static bool gjs_g_arg_release_internal(
 
     case GI_TYPE_TAG_GHASH:
         if (gjs_arg_get<GHashTable*>(arg)) {
+            GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+            GI::AutoTypeInfo value_type{
+                g_type_info_get_param_type(type_info, 1)};
+            if (ContainerCache::needs_tracking<GI_TYPE_TAG_GHASH>(
+                    key_type, transfer, flags) ||
+                ContainerCache::needs_tracking<GI_TYPE_TAG_GHASH>(
+                    value_type, transfer, flags))
+                return true;
+
             Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy>
                 hash_table{gjs_arg_steal<GHashTable*>(arg)};
             if (transfer == GI_TRANSFER_CONTAINER)
@@ -4302,9 +4524,9 @@ static bool gjs_g_arg_release_internal(
                 GHR_closure c = {context,  nullptr, nullptr,
                                  transfer, flags,   false};
 
-                c.key_param_info = g_type_info_get_param_type(type_info, 0);
+                c.key_param_info = std::move(key_type);
                 g_assert(c.key_param_info != nullptr);
-                c.val_param_info = g_type_info_get_param_type(type_info, 1);
+                c.val_param_info = std::move(value_type);
                 g_assert(c.val_param_info != nullptr);
 
                 g_hash_table_foreach_steal(hash_table, gjs_ghr_helper, &c);
@@ -4361,10 +4583,12 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
     /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
      * GI_TRANSFER_CONTAINER:
      * - non-containers: treated as GI_TRANSFER_EVERYTHING
-     * - containers: See FIXME in gjs_array_to_g_list(); currently
-     *   an error and we won't get here.
+     * - containers: we use the destroy notify function when possible
      */
-    if (transfer != GI_TRANSFER_NOTHING)
+    if (transfer == GI_TRANSFER_EVERYTHING)
+        return true;
+
+    if (!(flags & GjsArgumentFlags::ARG_IN))
         return true;
 
     GITypeTag type_tag = g_type_info_get_tag(type_info);
@@ -4414,14 +4638,23 @@ void gjs_gi_argument_release_basic_in_array(GITransfer transfer,
 
 bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
                                       GITypeInfo* type_info, unsigned length,
-                                      GIArgument* arg) {
-    if (transfer != GI_TRANSFER_NOTHING)
+                                      GjsArgumentFlags flags, GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return true;
+
+    if (!(flags & GjsArgumentFlags::ARG_IN))
         return true;
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Releasing GIArgument array in param");
 
     GI::AutoTypeInfo param_type{g_type_info_get_param_type(type_info, 0)};
+
+    if (ContainerCache::needs_tracking<GI_TYPE_TAG_ARRAY>(param_type, transfer,
+                                                          flags)) {
+        return ContainerCache::cleanup_container_data(gjs_arg_get<void*>(arg));
+    }
+
     return gjs_gi_argument_release_array_internal<
         ArrayReleaseType::EXPLICIT_LENGTH>(context, GI_TRANSFER_EVERYTHING,
                                            GjsArgumentFlags::ARG_IN, param_type,
@@ -4429,14 +4662,24 @@ bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
 }
 
 bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
-                                      GITypeInfo* type_info, GIArgument* arg) {
+                                      GITypeInfo* type_info,
+                                      GjsArgumentFlags flags, GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
+        return true;
+
+    if (!(flags & GjsArgumentFlags::ARG_IN))
         return true;
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Releasing GIArgument array in param");
 
     GI::AutoTypeInfo param_type{g_type_info_get_param_type(type_info, 0)};
+
+    if (ContainerCache::needs_tracking<GI_TYPE_TAG_ARRAY>(param_type, transfer,
+                                                          flags)) {
+        return ContainerCache::cleanup_container_data(gjs_arg_get<void*>(arg));
+    }
+
     return gjs_gi_argument_release_array_internal<
         ArrayReleaseType::ZERO_TERMINATED>(context, GI_TRANSFER_EVERYTHING,
                                            GjsArgumentFlags::ARG_IN, param_type,

@@ -236,10 +236,25 @@ bool gjs_gi_argument_release_out_array(JSContext*, GITransfer, GITypeInfo*,
                                        GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_in_array(JSContext*, GITransfer, GITypeInfo*,
-                                      unsigned length, GIArgument*);
+                                      unsigned length, GjsArgumentFlags,
+                                      GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_gi_argument_release_in_array(JSContext* cx, GITransfer transfer,
+                                             GITypeInfo* type_info,
+                                             unsigned length, GIArgument* arg) {
+    return gjs_gi_argument_release_in_array(cx, transfer, type_info, length,
+                                            GjsArgumentFlags::ARG_IN, arg);
+}
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_in_array(JSContext*, GITransfer, GITypeInfo*,
-                                      GIArgument*);
+                                      GjsArgumentFlags, GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_gi_argument_release_in_array(JSContext* cx, GITransfer transfer,
+                                             GITypeInfo* type_info,
+                                             GIArgument* arg) {
+    return gjs_gi_argument_release_in_array(cx, transfer, type_info,
+                                            GjsArgumentFlags::ARG_IN, arg);
+}
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_in_arg(JSContext*, GITransfer, GITypeInfo*,
                                     GjsArgumentFlags, GIArgument*);

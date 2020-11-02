@@ -87,32 +87,14 @@ function testTransferMarshalling(root, value, inoutValue, defaultValue, options 
         testSimpleMarshalling(`${root}_none`, value, inoutValue, defaultValue, options.none);
     });
     describe('with transfer full', function () {
-        const fullOptions = {
-            in: {
-                omit: true,  // this case is not in the test suite
-            },
-            inout: {
-                skip: 'https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192',
-            },
-        };
-        Object.assign(fullOptions, options.full);
-        testSimpleMarshalling(`${root}_full`, value, inoutValue, defaultValue, fullOptions);
+        testSimpleMarshalling(`${root}_full`, value, inoutValue, defaultValue, options.full);
     });
 }
 
 function testContainerMarshalling(root, value, inoutValue, defaultValue, options = {}) {
     testTransferMarshalling(root, value, inoutValue, defaultValue, options);
     describe('with transfer container', function () {
-        const containerOptions = {
-            in: {
-                omit: true,  // this case is not in the test suite
-            },
-            inout: {
-                skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/44',
-            },
-        };
-        Object.assign(containerOptions, options.container);
-        testSimpleMarshalling(`${root}_container`, value, inoutValue, defaultValue, containerOptions);
+        testSimpleMarshalling(`${root}_container`, value, inoutValue, defaultValue, options.container);
     });
 }
 
@@ -515,17 +497,13 @@ describe('C array with length', function () {
         testInParameter('array_struct', createStructArray());
 
         describe('passed by value', function () {
-            testInParameter('array_struct_value', createStructArray(), {
-                skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/44',
-            });
+            testInParameter('array_struct_value', createStructArray());
         });
     });
 
     describe('of simple structs', function () {
         testInParameter('array_simple_struct',
-            createStructArray(GIMarshallingTests.SimpleStruct), {
-                skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/44',
-            });
+            createStructArray(GIMarshallingTests.SimpleStruct));
     });
 
     it('marshals two arrays with the same length parameter', function () {
@@ -941,11 +919,7 @@ describe('GHashTable', function () {
 });
 
 describe('GValue', function () {
-    testSimpleMarshalling('gvalue', 42, '42', null, {
-        inout: {
-            skip: 'https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192',
-        },
-    });
+    testSimpleMarshalling('gvalue', 42, '42', null);
 
     it('can handle noncanonical float NaN', function () {
         expect(GIMarshallingTests.gvalue_noncanonical_nan_float()).toBeNaN();

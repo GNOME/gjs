@@ -287,9 +287,9 @@ describe('Life, the Universe and Everything', function () {
             expect(Regress.test_utf8_out()).toEqual(NONCONST_STR);
         });
 
-        xit('as in-out parameters', function () {
+        it('as in-out parameters', function () {
             expect(Regress.test_utf8_inout(CONST_STR)).toEqual(NONCONST_STR);
-        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192');
+        });
     });
 
     it('return values in filename encoding', function () {
@@ -347,9 +347,9 @@ describe('Life, the Universe and Everything', function () {
         expect(Regress.test_array_int_out()).toEqual([0, 1, 2, 3, 4]);
     });
 
-    xit('inout arrays of integers', function () {
+    it('inout arrays of integers', function () {
         expect(Regress.test_array_int_inout([0, 1, 2, 3, 4])).toEqual([2, 3, 4, 5]);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192');
+    });
 
     describe('String arrays', function () {
         it('marshalling in', function () {

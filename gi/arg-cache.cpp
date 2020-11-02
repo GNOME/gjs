@@ -1631,7 +1631,7 @@ struct ZeroTerminatedArrayInOut : FallbackInOut {
             state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
         GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
         if (!gjs_gi_argument_release_in_array(cx, transfer, &m_type_info,
-                                              original_out_arg))
+                                              flags(), original_out_arg))
             return false;
 
         transfer =
@@ -1689,7 +1689,7 @@ struct FixedSizeArrayInOut : FallbackInOut {
         GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
         int size = g_type_info_get_array_fixed_size(&m_type_info);
         if (!gjs_gi_argument_release_in_array(cx, transfer, &m_type_info, size,
-                                              original_out_arg))
+                                              flags(), original_out_arg))
             return false;
 
         transfer =
@@ -2351,7 +2351,7 @@ bool FallbackInOut::release(JSContext* cx, GjsFunctionCallState* state,
     // See https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
 
     if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg) &&
-        !gjs_gi_argument_release_in_arg(cx, transfer, &m_type_info,
+        !gjs_gi_argument_release_in_arg(cx, transfer, &m_type_info, flags(),
                                         original_out_arg))
         return false;
 
@@ -2397,8 +2397,8 @@ bool CArrayInOut::release(JSContext* cx, GjsFunctionCallState* state,
     // Here we've to guess what to do, but in general is "better" to leak than
     // crash, so let's assume that in/out transfer is matching.
     if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg)) {
-        if (!gjs_gi_argument_release_in_array(cx, transfer, &m_type_info,
-                                              length, original_out_arg))
+        if (!gjs_gi_argument_release_in_array(cx, transfer, &m_type_info, length,
+                                              flags(), original_out_arg))
             return false;
     }
 
