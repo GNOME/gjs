@@ -19,6 +19,7 @@
 #include <glib.h>         // for gboolean
 #include <js/TypeDecls.h>  // for HandleValue
 
+#include "gi/info.h"
 #include "gi/js-value-inl.h"
 #include "gi/utils-inl.h"
 #include "gjs/macros.h"
@@ -263,6 +264,57 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
 }
 
 namespace Gjs {
+
+/* Check if an argument of the given needs to be released if we created it
+ * from a JS value to pass it into a function and aren't transferring ownership.
+ */
+[[nodiscard]] inline bool type_needs_release(GITypeInfo* type_info,
+                                             GITypeTag type_tag) {
+    switch (type_tag) {
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_UTF8:
+            return true;
+
+        case GI_TYPE_TAG_INTERFACE: {
+            GType gtype;
+
+            GI::AutoBaseInfo interface_info{
+                g_type_info_get_interface(type_info)};
+            g_assert(interface_info != nullptr);
+
+            switch (interface_info.type()) {
+                case GI_INFO_TYPE_STRUCT:
+                case GI_INFO_TYPE_ENUM:
+                case GI_INFO_TYPE_FLAGS:
+                case GI_INFO_TYPE_OBJECT:
+                case GI_INFO_TYPE_INTERFACE:
+                case GI_INFO_TYPE_UNION:
+                case GI_INFO_TYPE_BOXED:
+                    // These are subtypes of GIRegisteredTypeInfo for which the
+                    // cast is safe
+                    gtype = g_registered_type_info_get_g_type(interface_info);
+                    break;
+                default:
+                    gtype = G_TYPE_NONE;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_CLOSURE))
+                return true;
+            else if (g_type_is_a(gtype, G_TYPE_VALUE))
+                return true;
+            else
+                return false;
+        }
+
+        default:
+            return false;
+    }
+}
 
 [[nodiscard]] static inline bool is_basic_type(GITypeTag tag, bool is_pointer) {
     if (tag == GI_TYPE_TAG_VOID && is_pointer)

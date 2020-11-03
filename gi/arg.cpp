@@ -154,57 +154,6 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
     return static_cast<int>(value);
 }
 
-/* Check if an argument of the given needs to be released if we created it
- * from a JS value to pass it into a function and aren't transferring ownership.
- */
-[[nodiscard]] static bool type_needs_release(GITypeInfo* type_info,
-                                             GITypeTag type_tag) {
-    switch (type_tag) {
-        case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_ERROR:
-        case GI_TYPE_TAG_FILENAME:
-        case GI_TYPE_TAG_GHASH:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_UTF8:
-            return true;
-
-        case GI_TYPE_TAG_INTERFACE: {
-            GType gtype;
-
-            GI::AutoBaseInfo interface_info{
-                g_type_info_get_interface(type_info)};
-            g_assert(interface_info != nullptr);
-
-            switch (interface_info.type()) {
-                case GI_INFO_TYPE_STRUCT:
-                case GI_INFO_TYPE_ENUM:
-                case GI_INFO_TYPE_FLAGS:
-                case GI_INFO_TYPE_OBJECT:
-                case GI_INFO_TYPE_INTERFACE:
-                case GI_INFO_TYPE_UNION:
-                case GI_INFO_TYPE_BOXED:
-                    // These are subtypes of GIRegisteredTypeInfo for which the
-                    // cast is safe
-                    gtype = g_registered_type_info_get_g_type(interface_info);
-                    break;
-                default:
-                    gtype = G_TYPE_NONE;
-            }
-
-            if (g_type_is_a(gtype, G_TYPE_CLOSURE))
-                return true;
-            else if (g_type_is_a(gtype, G_TYPE_VALUE))
-                return true;
-            else
-                return false;
-        }
-
-        default:
-            return false;
-    }
-}
-
 [[nodiscard]] static inline bool is_string_type(GITypeTag tag) {
     return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
 }
@@ -274,7 +223,7 @@ template <GITypeTag TAG = GI_TYPE_TAG_VOID>
 [[nodiscard]] static constexpr bool needs_tracking(GITypeInfo* param_info,
                                                    GITransfer transfer,
                                                    GjsArgumentFlags flags) {
-    if (!type_needs_release(param_info, g_type_info_get_tag(param_info)))
+    if (!Gjs::type_needs_release(param_info, g_type_info_get_tag(param_info)))
         return false;
 
     //  Here we assume that inout transfer is symmetric, although we should
@@ -3982,7 +3931,7 @@ static inline bool gjs_gi_argument_release_array_internal(
     }
 
     if (flags & GjsArgumentFlags::ARG_IN &&
-        !type_needs_release(param_type, type_tag))
+        !Gjs::type_needs_release(param_type, type_tag))
         return true;
 
     if (flags & GjsArgumentFlags::ARG_OUT &&
@@ -4596,7 +4545,7 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument %s in param",
                       g_type_tag_to_string(type_tag));
 
-    if (type_needs_release (type_info, type_tag))
+    if (Gjs::type_needs_release(type_info, type_tag))
         return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag,
                                           GJS_ARGUMENT_ARGUMENT, flags, arg);
 

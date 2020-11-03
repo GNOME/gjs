@@ -13,6 +13,7 @@
 #include <functional>  // for mem_fn
 #include <limits>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>  // for unordered_set::erase(), insert()
 #include <utility>
 
@@ -46,6 +47,7 @@
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
+#include "gi/utils-inl.h"  // for gjs_int_to_pointer, gjs_pointer_to_int
 #include "gi/value.h"
 #include "gi/wrapperutils.h"  // for GjsTypecheckNoThrow
 #include "gjs/auto.h"
@@ -552,6 +554,7 @@ struct FallbackIn : SkipAll, Fallback, Nullable {
 
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
+    bool in(JSContext*, GITransfer, GIArgument*, JS::HandleValue);
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
@@ -565,6 +568,8 @@ struct FallbackInOut : SkipAll, Positioned, Fallback {
 
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
+    bool in_untracked(JSContext*, GjsFunctionCallState*, GITransfer,
+                      GIArgument*, JS::HandleValue);
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
              JS::MutableHandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -1616,6 +1621,162 @@ struct CallerAllocatesOut : FallbackOut, CallerAllocates {
     }
 };
 
+struct InoutTracker {
+    static InoutTracker* ensure(GjsFunctionCallState* state) {
+        if (!state->inout_tracker)
+            state->inout_tracker = new InoutTracker();
+
+        return state->inout_tracker;
+    }
+
+    [[nodiscard]]
+    static bool needs_tracking(GITypeInfo* type_info, GITransfer transfer) {
+        GITypeTag tag = g_type_info_get_tag(type_info);
+        if (!Gjs::is_container(tag))
+            return false;
+
+        if (tag == GI_TYPE_TAG_GHASH) {
+            GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+            GI::AutoTypeInfo value_type{
+                g_type_info_get_param_type(type_info, 1)};
+            if (!type_needs_release(key_type, g_type_info_get_tag(key_type)) &&
+                !type_needs_release(value_type,
+                                    g_type_info_get_tag(value_type)))
+                return false;
+        } else {
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(type_info, 0)};
+            if (!type_needs_release(element_type,
+                                    g_type_info_get_tag(element_type)))
+                return false;
+        }
+
+        if (transfer == GI_TRANSFER_CONTAINER)
+            return true;
+
+        if (tag == GI_TYPE_TAG_ARRAY || tag == GI_TYPE_TAG_GHASH)
+            return transfer == GI_TRANSFER_EVERYTHING;
+
+        return false;
+    }
+
+    void track(uint8_t ix, GITypeInfo* type_info, GIArgument* arg) {
+        GList* free_list = nullptr;
+        GITypeTag tag = g_type_info_get_tag(type_info);
+
+        if (tag == GI_TYPE_TAG_ARRAY) {
+            GIArrayType array_type = g_type_info_get_array_type(type_info);
+            if (array_type == GI_ARRAY_TYPE_C) {
+                if (g_type_info_is_zero_terminated(type_info)) {
+                    for (auto array = gjs_arg_get<void**>(arg); *array;
+                         array++) {
+                        free_list = g_list_prepend(free_list, *array);
+                    }
+                } else {
+                    int fixed_size =
+                        g_type_info_get_array_fixed_size(type_info);
+                    for (auto i = 0; i < fixed_size; i++) {
+                        free_list = g_list_prepend(free_list,
+                                                   gjs_arg_get<void**>(arg)[i]);
+                    }
+                }
+            } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+                auto* array = gjs_arg_get<GPtrArray*>(arg);
+                for (auto i = 0U; i < array->len; i++) {
+                    free_list =
+                        g_list_prepend(free_list, g_ptr_array_index(array, i));
+                }
+            } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+                auto* array = gjs_arg_get<::GArray*>(arg);
+                for (auto i = 0U; i < array->len; i++) {
+                    free_list = g_list_prepend(free_list,
+                                               g_array_index(array, void*, i));
+                }
+            }
+        } else if (tag == GI_TYPE_TAG_GLIST) {
+            for (auto l = gjs_arg_get<::GList*>(arg); l; l = l->next) {
+                free_list = g_list_prepend(free_list, l->data);
+            }
+        } else if (tag == GI_TYPE_TAG_GSLIST) {
+            for (auto l = gjs_arg_get<::GSList*>(arg); l; l = l->next) {
+                free_list = g_list_prepend(free_list, l->data);
+            }
+        } else if (tag == GI_TYPE_TAG_GHASH) {
+            auto ghash = gjs_arg_get<::GHashTable*>(arg);
+            GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+            GI::AutoTypeInfo value_type{
+                g_type_info_get_param_type(type_info, 1)};
+
+            if (type_needs_release(key_type, g_type_info_get_tag(key_type)))
+                free_list = g_hash_table_get_keys(ghash);
+
+            if (type_needs_release(value_type,
+                                   g_type_info_get_tag(value_type))) {
+                auto last_value = g_list_last(free_list);
+                // We use this as separator between values and keys
+                last_value = g_list_append(
+                    last_value,
+                    gjs_int_to_pointer(static_cast<int>(GI_TYPE_TAG_GHASH)));
+                last_value->next->next = g_hash_table_get_values(ghash);
+            }
+        }
+
+        m_args[ix] = free_list;
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool release(JSContext* cx, uint8_t ix, GITypeInfo* type_info) {
+        auto it = m_args.find(ix);
+        if (it == m_args.end())
+            return true;
+
+        GITypeTag tag = g_type_info_get_tag(type_info);
+        if (tag == GI_TYPE_TAG_GHASH) {
+            GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+            GI::AutoTypeInfo value_type{
+                g_type_info_get_param_type(type_info, 1)};
+            bool is_key = true;
+            for (auto l = m_args[ix].get(); l; l = l->next) {
+                GIArgument arg;
+                gjs_arg_set(&arg, l->data);
+
+                if (gjs_pointer_to_int<int>(l->data) == GI_TYPE_TAG_GHASH) {
+                    is_key = false;
+                    continue;
+                }
+
+                if (!gjs_gi_argument_release_in_arg(
+                        cx, GI_TRANSFER_NOTHING, is_key ? key_type : value_type,
+                        &arg))
+                    return false;
+            }
+        } else if (Gjs::is_container(tag)) {
+            GI::AutoTypeInfo element_type{
+                g_type_info_get_param_type(type_info, 0)};
+            for (auto l = m_args[ix].get(); l; l = l->next) {
+                GIArgument arg;
+                gjs_arg_set(&arg, l->data);
+
+                if (!gjs_gi_argument_release_in_arg(cx, GI_TRANSFER_NOTHING,
+                                                    element_type, &arg))
+                    return false;
+            }
+        }
+
+        m_args.erase(it);
+
+        if (m_args.empty())
+            delete this;
+
+        return true;
+    }
+
+ private:
+    InoutTracker() {}
+
+    std::unordered_map<uint8_t, AutoPointer<GList, GList, g_list_free>> m_args;
+};
+
 struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
     BoxedCallerAllocatesOut(GITypeInfo* type_info, size_t size, GType gtype)
         : CallerAllocatesOut(type_info, size), GTypedType(gtype) {}
@@ -1744,18 +1905,46 @@ bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
 GJS_JSAPI_RETURN_CONVENTION
 bool FallbackIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                     JS::HandleValue value) {
+    return FallbackIn::in(cx, m_transfer, arg, value);
+}
+
+bool FallbackIn::in(JSContext* cx, GITransfer transfer, GIArgument* arg,
+                    JS::HandleValue value) {
     return gjs_value_to_gi_argument(cx, value, &m_type_info, m_arg_name,
-                                    GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
+                                    GJS_ARGUMENT_ARGUMENT, transfer, flags(),
                                     arg);
+}
+
+bool FallbackInOut::in_untracked(JSContext* cx, GjsFunctionCallState* state,
+                                 GITransfer transfer, GIArgument* arg,
+                                 JS::HandleValue value) {
+    return gjs_value_to_gi_argument(cx, value, &m_type_info, m_arg_name,
+                                    GJS_ARGUMENT_ARGUMENT, transfer, flags(),
+                                    arg) &&
+           set_inout_parameter(state, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 bool FallbackInOut::in(JSContext* cx, GjsFunctionCallState* state,
                        GIArgument* arg, JS::HandleValue value) {
-    return gjs_value_to_gi_argument(cx, value, &m_type_info, m_arg_name,
-                                    GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
-                                    arg) &&
-           set_inout_parameter(state, arg);
+    GITransfer transfer = m_transfer;
+    bool need_tracking = InoutTracker::needs_tracking(&m_type_info, transfer);
+
+    if (need_tracking) {
+        // In case we track the value here, we should ignore the internal
+        // argument tracking system, that uses more memory.
+        transfer = GI_TRANSFER_NOTHING;
+    }
+
+    if (!FallbackInOut::in_untracked(cx, state, transfer, arg, value))
+        return false;
+
+    if (need_tracking && gjs_arg_get<GArgument*>(arg)) {
+        arg = gjs_arg_get<GArgument*>(arg);
+        InoutTracker::ensure(state)->track(m_arg_pos, &m_type_info, arg);
+    }
+
+    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -2345,15 +2534,27 @@ bool FallbackInOut::release(JSContext* cx, GjsFunctionCallState* state,
                             GIArgument*, GIArgument* out_arg) {
     GITransfer transfer =
         state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
-    GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
 
-    // Assume that inout transfer means that in and out transfer are the same.
-    // See https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
+    if (InoutTracker::needs_tracking(&m_type_info, m_transfer)) {
+        // In this case we're handling the contents releasing into the
+        // InoutTracker, so we can just ignore releasing
+        if (state->inout_tracker) {
+            if (!state->inout_tracker->release(cx, m_arg_pos, &m_type_info))
+                return false;
+        }
+    } else {
+        GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
 
-    if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg) &&
-        !gjs_gi_argument_release_in_arg(cx, transfer, &m_type_info, flags(),
-                                        original_out_arg))
-        return false;
+        // Assume that inout transfer means that in and out transfer are the
+        // same. See
+        // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
+
+        if (gjs_arg_get<void*>(original_out_arg) !=
+                gjs_arg_get<void*>(out_arg) &&
+            gjs_gi_argument_release_in_arg(cx, transfer, &m_type_info, flags(),
+                                           original_out_arg))
+            return false;
+    }
 
     return gjs_gi_argument_release(cx, transfer, &m_type_info, out_arg);
 }

@@ -34,6 +34,12 @@ namespace JS {
 class CallArgs;
 }
 
+namespace Gjs {
+namespace Arg {
+struct InoutTracker;
+}
+}  // namespace Gjs
+
 typedef enum {
     PARAM_NORMAL,
     PARAM_SKIPPED,
@@ -100,6 +106,7 @@ class GjsFunctionCallState {
     JS::RootedVector<JS::Value> return_values;
     Gjs::AutoError local_error;
     GICallableInfo* info;
+    Gjs::Arg::InoutTracker* inout_tracker = nullptr;
     uint8_t gi_argc = 0;
     uint8_t processed_c_args = 0;
     bool failed : 1;
