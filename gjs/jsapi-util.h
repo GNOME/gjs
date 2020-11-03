@@ -12,6 +12,7 @@
 #include <stdlib.h>     // for free
 #include <sys/types.h>  // for ssize_t
 
+#include <limits>
 #include <string>  // for string, u16string
 #include <type_traits>  // for enable_if_t, add_pointer_t, add_const_t
 #include <utility>      // IWYU pragma: keep
@@ -21,6 +22,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/BigInt.h>
 #include <js/GCAPI.h>
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <js/Id.h>
@@ -29,6 +31,11 @@
 #include <jspubtd.h>     // for JSProtoKey
 
 #include "gjs/macros.h"
+#include "util/log.h"
+
+#if GJS_VERBOSE_ENABLE_MARSHAL
+#    include "gi/arg-types-inl.h"  // for static_type_name
+#endif
 
 class JSErrorReport;
 namespace JS {
@@ -599,6 +606,36 @@ FOREACH_GC_REASON(DEFINE_GC_REASON);
 static constexpr size_t N_REASONS = 0 FOREACH_GC_REASON(COUNT_GC_REASON);
 #undef COUNT_GC_REASON
 };
+
+template <typename T>
+[[nodiscard]] bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
+    static_assert(sizeof(T) == 8, "64-bit types only");
+    g_assert(bi && "bigint cannot be null");
+    g_assert(clamped && "forgot out parameter");
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Checking if BigInt %s is out of range for type %s",
+                      gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>());
+
+    if (JS::BigIntFits(bi, clamped)) {
+        gjs_debug_marshal(
+            GJS_DEBUG_GFUNCTION, "BigInt %s is in the range of type %s",
+            std::to_string(*clamped).c_str(), Gjs::static_type_name<T>());
+        return false;
+    }
+
+    if (JS::BigIntIsNegative(bi)) {
+        *clamped = std::numeric_limits<T>::min();
+    } else {
+        *clamped = std::numeric_limits<T>::max();
+    }
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "BigInt %s is not in the range of type %s, clamped to %s",
+                      gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>(),
+                      std::to_string(*clamped).c_str());
+    return true;
+}
 
 }  // namespace Gjs
 
