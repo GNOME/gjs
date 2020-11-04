@@ -13,29 +13,29 @@ RUN dnf -y install 'dnf-command(builddep)' clang-devel cmake git llvm-devel \
     make ninja-build which
 RUN dnf -y builddep ${MOZJS_BUILDDEPS} sysprof
 
-WORKDIR /root
+# WORKDIR /root
 
-ADD https://include-what-you-use.org/downloads/include-what-you-use-0.14.src.tar.gz /root/
-RUN tar xzf include-what-you-use-0.14.src.tar.gz
-RUN mkdir -p include-what-you-use/_build
+# ADD https://include-what-you-use.org/downloads/include-what-you-use-0.14.src.tar.gz /root/
+# RUN tar xzf include-what-you-use-0.14.src.tar.gz
+# RUN mkdir -p include-what-you-use/_build
 
-WORKDIR /root/include-what-you-use/_build
+# WORKDIR /root/include-what-you-use/_build
 
-RUN cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr ..
-RUN ninja
-RUN DESTDIR=/root/iwyu-install ninja install
+# RUN cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr ..
+# RUN ninja
+# RUN DESTDIR=/root/iwyu-install ninja install
 
-WORKDIR /root
+# WORKDIR /root
 
-RUN git clone --depth 1 https://gitlab.gnome.org/GNOME/sysprof.git
+# RUN git clone --depth 1 https://gitlab.gnome.org/GNOME/sysprof.git
 
-WORKDIR /root/sysprof
+# WORKDIR /root/sysprof
 
-RUN meson _build -Dprefix=/usr -Dlibdir=lib64 -Denable_examples=false \
-    -Denable_gtk=false -Denable_tests=false -Denable_tools=false -Dhelp=false \
-    -Dlibsysprof=false -Dwith_sysprofd=none
-RUN ninja -C _build
-RUN DESTDIR=/root/sysprof-install ninja -C _build install
+# RUN meson _build -Dprefix=/usr -Dlibdir=lib64 -Denable_examples=false \
+#     -Denable_gtk=false -Denable_tests=false -Denable_tools=false -Dhelp=false \
+#     -Dlibsysprof=false -Dwith_sysprofd=none
+# RUN ninja -C _build
+# RUN DESTDIR=/root/sysprof-install ninja -C _build install
 
 WORKDIR /root
 
@@ -75,9 +75,9 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     dnf clean all && rm -rf /var/cache/dnf
 
 COPY --from=build /root/mozjs-install/usr /usr
-COPY --from=build /root/sysprof-install/usr /usr
-COPY --from=build /root/iwyu-install/usr /usr
-RUN ln -s /usr/bin/iwyu_tool.py /usr/bin/iwyu_tool
+# COPY --from=build /root/sysprof-install/usr /usr
+# COPY --from=build /root/iwyu-install/usr /usr
+# RUN ln -s /usr/bin/iwyu_tool.py /usr/bin/iwyu_tool
 
 # Enable sudo for wheel users
 RUN sed -i -e 's/# %wheel/%wheel/' -e '0,/%wheel/{s/%wheel/# %wheel/}' \
