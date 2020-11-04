@@ -333,16 +333,23 @@ static bool gjs_value_guess_g_type(JSContext* context, JS::Value value,
     return true;
 }
 
-static bool
-throw_expect_type(JSContext      *cx,
-                  JS::HandleValue value,
-                  const char     *expected_type,
-                  GType           gtype = 0)
-{
-    gjs_throw(cx, "Wrong type %s; %s%s%s expected",
-              JS::InformalValueTypeName(value), expected_type,
-              gtype ? " " : "",
-              gtype ? g_type_name(gtype) : "");
+static bool throw_expect_type(JSContext* cx, JS::HandleValue value,
+                              const char* expected_type, GType gtype = 0,
+                              bool out_of_range = false) {
+    JS::UniqueChars val_str;
+    out_of_range = (out_of_range && value.isNumeric());
+
+    if (out_of_range) {
+        JS::RootedString str(cx, JS::ToString(cx, value));
+        if (str)
+            val_str = JS_EncodeStringToUTF8(cx, str);
+    }
+
+    gjs_throw(cx, "Wrong type %s; %s%s%s expected%s%s",
+              JS::InformalValueTypeName(value), expected_type, gtype ? " " : "",
+              gtype ? g_type_name(gtype) : "",
+              out_of_range ? ". But it's out of range: " : "",
+              out_of_range ? val_str.get() : "");
     return false;  /* for convenience */
 }
 
@@ -402,7 +409,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             !out_of_range) {
             g_value_set_schar(gvalue, (signed char)i);
         } else {
-            return throw_expect_type(context, value, "char");
+            return throw_expect_type(context, value, "char", 0, out_of_range);
         }
     } else if (gtype == G_TYPE_UCHAR) {
         uint32_t i;
@@ -411,7 +418,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
             !out_of_range) {
             g_value_set_uchar(gvalue, (unsigned char)i);
         } else {
-            return throw_expect_type(context, value, "unsigned char");
+            return throw_expect_type(context, value, "unsigned char", 0,
+                                     out_of_range);
         }
     } else if (gtype == G_TYPE_INT) {
         gint32 i;
@@ -434,7 +442,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             !out_of_range) {
             g_value_set_float(gvalue, d);
         } else {
-            return throw_expect_type(context, value, "float");
+            return throw_expect_type(context, value, "float", 0, out_of_range);
         }
     } else if (gtype == G_TYPE_UINT) {
         guint32 i;
