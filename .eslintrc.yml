@@ -3,6 +3,7 @@
 # SPDX-FileCopyrightText: 2018 Claudio André <claudioandre.br@gmail.com>
 env:
   es6: true
+  es2020: true
 extends: 'eslint:recommended'
 plugins:
   - jsdoc
