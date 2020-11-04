@@ -20,7 +20,7 @@ stages:
     - sed -i '/^mountopt =.*/d' /etc/containers/storage.conf
 
     # Where the real magic happens
-    - buildah bud -f $DOCKERFILE -t "$IMAGE_NAME" $ARGS
+    - buildah bud --isolation=chroot -f $DOCKERFILE -t "$IMAGE_NAME" $ARGS
 
     # Prepare to publish
     - buildah tag "$IMAGE_NAME" "$IMAGE_JOB_NAME"
