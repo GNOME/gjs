@@ -21,6 +21,7 @@
     <file>modules/mutualImport/a.js</file>
     <file>modules/mutualImport/b.js</file>
     <file>modules/overrides/GIMarshallingTests.js</file>
+    <file>modules/say.js</file>
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>

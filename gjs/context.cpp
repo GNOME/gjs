@@ -553,6 +553,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     }
 
     JS::SetModuleResolveHook(rt, gjs_module_resolve);
+    JS::SetModuleDynamicImportHook(rt, gjs_dynamic_module_resolve);
     JS::SetModuleMetadataHook(rt, gjs_populate_module_meta);
 
     if (!JS_DefineProperty(m_cx, internal_global, "moduleGlobalThis", global,

@@ -270,6 +270,8 @@ class GjsInternalGlobal : GjsBaseGlobal {
               0),
         JS_FN("getRegistry", gjs_internal_get_registry, 1, 0),
         JS_FN("loadResourceOrFile", gjs_internal_load_resource_or_file, 1, 0),
+        JS_FN("loadResourceOrFileAsync",
+              gjs_internal_load_resource_or_file_async, 1, 0),
         JS_FN("parseURI", gjs_internal_parse_uri, 1, 0),
         JS_FN("resolveRelativeResourceOrFile",
               gjs_internal_resolve_relative_resource_or_file, 2, 0),

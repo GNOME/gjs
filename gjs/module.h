@@ -39,4 +39,10 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
                               JS::HandleObject meta_object);
 
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_dynamic_module_resolve(JSContext* cx,
+                                JS::HandleValue importing_module_priv,
+                                JS::HandleString specifier,
+                                JS::HandleObject internal_promise);
+
 #endif  // GJS_MODULE_H_

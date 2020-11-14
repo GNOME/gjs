@@ -68,6 +68,16 @@ describe('Builtin ES modules', function () {
         expect(typeof N_).toBe('function');
     });
 
+    it('gettext named dynamic import', async function () {
+        const localGettext = await import('gettext');
+        expect(typeof localGettext.ngettext).toEqual('function');
+    });
+
+    it('gettext dynamic import matches static import', async function () {
+        const localGettext = await import('gettext');
+        expect(localGettext.default).toEqual(gettext);
+    });
+
     it('system default import', function () {
         expect(typeof system.exit).toBe('function');
     });
@@ -75,5 +85,39 @@ describe('Builtin ES modules', function () {
     it('system named import', function () {
         expect(typeof exit).toBe('function');
         expect(exit).toBe(system.exit);
+    });
+
+    it('system dynamic import matches static import', async function () {
+        const localSystem = await import('system');
+        expect(localSystem.default).toEqual(system);
+    });
+
+    it('system named dynamic import', async function () {
+        const localSystem = await import('system');
+        expect(typeof localSystem.exit).toBe('function');
+    });
+});
+
+describe('Dynamic imports', function () {
+    let module;
+    beforeEach(async function () {
+        try {
+            module = await import('resource:///org/gjs/jsunit/modules/say.js');
+        } catch (err) {
+            logError(err);
+            fail();
+        }
+    });
+
+    it('default import', function () {
+        expect(module.default()).toEqual('default export');
+    });
+
+    it('named import', function () {
+        expect(module.say('hi')).toEqual('<( hi )');
+    });
+
+    it('dynamic gi import matches static', async function () {
+        expect((await import('gi://Gio')).default).toEqual(Gio);
     });
 });
