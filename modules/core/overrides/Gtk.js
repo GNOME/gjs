@@ -45,10 +45,7 @@ function _init() {
 
     Gtk.Widget.prototype._init = function (params) {
         if (this.constructor[Gtk.template]) {
-            if (BuilderScope) {
-                Gtk.Widget.set_template_scope.call(this.constructor,
-                    new BuilderScope(this));
-            } else {
+            if (!BuilderScope) {
                 Gtk.Widget.set_connect_func.call(this.constructor,
                     (builder, obj, signalName, handlerName, connectObj, flags) => {
                         const swapped = flags & GObject.ConnectFlags.SWAPPED;
@@ -110,6 +107,9 @@ function _init() {
             } else {
                 Gtk.Widget.set_template.call(klass, template);
             }
+
+            if (BuilderScope)
+                Gtk.Widget.set_template_scope.call(klass, new BuilderScope());
         }
 
         if (children) {
@@ -136,15 +136,11 @@ function _init() {
         BuilderScope = GObject.registerClass({
             Implements: [Gtk.BuilderScope],
         }, class extends GObject.Object {
-            _init(thisArg) {
-                super._init();
-                this._this = thisArg;
-            }
-
             vfunc_create_closure(builder, handlerName, flags, connectObject) {
                 const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
                 return _createClosure(
-                    builder, this._this, handlerName, swapped, connectObject);
+                    builder, builder.get_current_object(),
+                    handlerName, swapped, connectObject);
             }
         });
     }
