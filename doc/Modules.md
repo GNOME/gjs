@@ -281,3 +281,43 @@ The System module offers a number of useful functions and properties for debuggi
 Built-in version of the well-known [Tweener][tweener-www] animation/property transition library.
 
 [tweener-www]: http://hosted.zeh.com.br/tweener/docs/
+
+## GObject Introspection
+
+**Import with `const gi = imports.gi;`**
+
+A wrapper of **libgirepository** to import native gobject-introspection libraries. This
+object has a property `versions` which is an object on which you can set string-valued
+properties indicating the version of that gobject-introspection library you want to load,
+and loading multiple versions in the same process is forbidden. So if you want to
+use gtk-3.0, set `imports.gi.versions.Gtk = '3.0';`.
+
+Any other properties of `imports.gi` will attempt to import a gobject-introspection library
+with the property name, picking the latest version if there is no entry for it in `imports.gi.versions`.
+
+## More about **imports**
+
+**imports** is a global object that you can use to import any js file or GObject
+Introspection lib as moudule, there are 4 special properties of **imports**:
+
+ * `searchPath`
+
+    An array of path that used to look for files, if you want to prepend a path
+    you can do something like `imports.searchPath.unshift(myPath)`.
+
+ * `__modulePath__`
+ * `__moduleName__`
+ * `__parentModule__`
+
+    These 3 properties is intended to be used internally, you should not use them.
+
+Any other properties of **imports** is treated as a module, if you access these
+properties, an import is attempted. Gjs try to look up a js file or directory by property name
+from each location in `imports.searchPath`. For `imports.foo`, if a file named
+`foo.js` is found, this file is executed and then imported as a module object; else if 
+a directory `foo` is found, a new importer object is returned and its `searchPath` property
+is replaced by the path of `foo`.
+
+Note that any variable, function and class declared at the top level,
+except those declared by `let` or `const`, are exported as properties of the module object,
+and one js file is executed only once at most even if it is imported multiple times.
