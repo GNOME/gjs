@@ -1728,7 +1728,11 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         int length_pos = g_type_info_get_array_length(&self->type_info);
 
         if (length_pos >= 0) {
-            gjs_arg_cache_set_skip_all(&arguments[length_pos]);
+            GjsArgumentCache *cached_length = &arguments[length_pos];
+            bool skip_length =
+                !(cached_length->skip_in() && cached_length->skip_out());
+            if (skip_length)
+                gjs_arg_cache_set_skip_all(cached_length);
 
             if (direction == GI_DIRECTION_IN) {
                 self->marshallers = &c_array_in_marshallers;
@@ -1752,7 +1756,7 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
             g_arg_info_load_type(&length_arg, &length_type);
             self->contents.array.length_tag = g_type_info_get_tag(&length_type);
 
-            if (length_pos < gi_index) {
+            if (length_pos < gi_index && skip_length) {
                 // we already collected length_pos, remove it
                 *inc_counter_out = false;
             }
