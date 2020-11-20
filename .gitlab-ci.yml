@@ -171,10 +171,10 @@ cpplint:
 
 eslint:
   when: on_success
-  image: ewlsh/lint-condo
+  image: node:12
   stage: source_check
   script:
-    - node /usr/src/lint-condo
+    - ./tools/run_eslint.sh
   except:
     refs:
       - schedules

@@ -1,0 +1,15 @@
+{
+  "name": "gjs-development-scripts",
+  "version": "0.0.0",
+  "repository": "https://gitlab.gnome.org/GNOME/gjs",
+  "license": "MIT OR LGPL-2.0-or-later",
+  "private": true,
+  "scripts": {
+    "lint": "cd .. && eslint . --format unix --resolve-plugins-relative-to tools",
+    "fix": "yarn lint --fix"
+  },
+  "devDependencies": {
+    "eslint": "^7.12.1",
+    "eslint-plugin-jsdoc": "^30.7.3"
+  }
+}

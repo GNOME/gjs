@@ -182,6 +182,7 @@ function init(params) {
  * single entry point.
  * You must define a main(ARGV) function inside a main.js
  * module in moduledir.
+ *
  * @param {object} params see init()
  */
 function start(params) {
@@ -211,6 +212,7 @@ function run(module) {
  * `libs` must be an object whose keys are a typelib name,
  * and values are the respective version. The empty string
  * indicates any version.
+ *
  * @param {object} libs the external dependencies to import
  */
 function require(libs) {
@@ -221,6 +223,7 @@ function require(libs) {
 /**
  * As checkSymbol(), but exit with an error if the
  * dependency cannot be satisfied.
+ *
  * @param {string} lib an external dependency to import
  * @param {string} [ver] version of the dependency
  * @param {string} [symbol] symbol to check for
@@ -248,7 +251,7 @@ function requireSymbol(lib, ver, symbol) {
  * @param {string} lib an external dependency to import
  * @param {string} [ver] version of the dependency
  * @param {string} [symbol] symbol to check for
- * @return {boolean} true if `lib` can be imported and provides `symbol`, false
+ * @returns {boolean} true if `lib` can be imported and provides `symbol`, false
  * otherwise
  */
 function checkSymbol(lib, ver, symbol) {

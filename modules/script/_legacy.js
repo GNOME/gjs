@@ -162,6 +162,7 @@ Class.prototype._construct = function (params, ...otherArgs) {
 
 /**
  * Check whether this class conforms to the interface "iface".
+ *
  * @param {object} iface a Lang.Interface
  * @returns {boolean} whether this class implements iface
  */
