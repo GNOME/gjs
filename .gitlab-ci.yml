@@ -13,7 +13,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2020-11-20.0'
+    FDO_DISTRIBUTION_TAG: '2020-11-20.1'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -22,7 +22,12 @@ build-alpine-image:
     - .gjs-alpine
   stage: prepare
   variables:
-    FDO_DISTRIBUTION_PACKAGES: cppcheck yarn
+    FDO_DISTRIBUTION_PACKAGES: cppcheck git python3 yarn
+    FDO_DISTRIBUTION_EXEC: |
+      python3 -m ensurepip &&
+      rm -r /usr/lib/python*/ensurepip &&
+      pip3 install --no-cache --upgrade cpplint &&
+      mkdir -p /cwd
 
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
@@ -171,7 +176,9 @@ cppcheck:
 cpplint:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:alpine.cpplint
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   variables:
     TASK_ID: "cpplint"
   script:
@@ -357,12 +364,6 @@ zeal_11:
   STORAGE_DRIVER: vfs
   BUILDAH_FORMAT: docker
   BUILDAH_ISOLATION: chroot
-
-alpine.cpplint:
-  <<: *create_docker_image
-  variables:
-    <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile.alpine.cpplint
 
 fedora.mozjs68:
   <<: *create_docker_image
