@@ -70,16 +70,14 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
     n_methods = g_object_info_get_n_methods(info);
 
     for (i = 0; i < n_methods; ++i) {
-        GIFunctionInfo *func_info;
+        GjsAutoFunctionInfo func_info;
         GIFunctionInfoFlags flags;
 
         func_info = g_object_info_get_method(info, i);
 
         flags = g_function_info_get_flags(func_info);
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0)
-            return func_info;
-
-        g_base_info_unref((GIBaseInfo *) func_info);
+            return func_info.release();
     }
 
     return nullptr;
@@ -231,7 +229,6 @@ FundamentalPrototype::FundamentalPrototype(GIObjectInfo* info, GType gtype)
 }
 
 FundamentalPrototype::~FundamentalPrototype(void) {
-    g_clear_pointer(&m_constructor_info, g_base_info_unref);
     GJS_DEC_COUNTER(fundamental_prototype);
 }
 

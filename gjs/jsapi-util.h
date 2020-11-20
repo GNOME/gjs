@@ -1,18 +1,20 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2018-2020  Canonical, Ltd
 
 #ifndef GJS_JSAPI_UTIL_H_
 #define GJS_JSAPI_UTIL_H_
 
 #include <config.h>
 
-#include <stddef.h>  // for size_t
 #include <stdint.h>
+#include <stdlib.h>     // for free
 #include <sys/types.h>  // for ssize_t
 
-#include <memory>  // for unique_ptr
 #include <string>  // for string, u16string
+#include <type_traits>  // for enable_if_t, add_pointer_t, add_const_t
+#include <utility>      // IWYU pragma: keep
 #include <vector>
 
 #include <girepository.h>
@@ -34,38 +36,150 @@ class CallArgs;
 
 struct GjsAutoTakeOwnership {};
 
-template <typename T, typename F,
-          void (*free_func)(F*) = nullptr, F* (*ref_func)(F*) = nullptr>
-struct GjsAutoPointer : std::unique_ptr<T, decltype(free_func)> {
-    GjsAutoPointer(T* ptr = nullptr)  // NOLINT(runtime/explicit)
-        : GjsAutoPointer::unique_ptr(ptr, *free_func) {}
-    GjsAutoPointer(T* ptr, const GjsAutoTakeOwnership&)
-        : GjsAutoPointer(nullptr) {
-        // FIXME: should use if constexpr (...), but that doesn't work with
-        // ubsan, which generates a null pointer check making it not a constexpr
-        // anymore: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962 - Also a
-        // bogus warning, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94554
-        auto ref = ref_func;
-        this->reset(ptr && ref ? reinterpret_cast<T*>(ref(ptr)) : ptr);
+template <typename F = void>
+using GjsAutoPointerRefFunction = F* (*)(F*);
+
+template <typename F = void>
+using GjsAutoPointerFreeFunction = void (*)(F*);
+
+template <typename T, typename F = void,
+          GjsAutoPointerFreeFunction<F> free_func = free,
+          GjsAutoPointerRefFunction<F> ref_func = nullptr>
+struct GjsAutoPointer {
+    using Tp =
+        std::conditional_t<std::is_array_v<T>, std::remove_extent_t<T>, T>;
+    using Ptr = std::add_pointer_t<Tp>;
+    using ConstPtr = std::add_pointer_t<std::add_const_t<Tp>>;
+
+ private:
+    template <typename FunctionType, FunctionType function>
+    static constexpr bool has_function() {
+        using NullType = std::integral_constant<FunctionType, nullptr>;
+        using ActualType = std::integral_constant<FunctionType, function>;
+
+        return !std::is_same_v<ActualType, NullType>;
     }
 
-    constexpr operator T*() const { return this->get(); }
-    constexpr T& operator[](size_t i) const {
-        return static_cast<T*>(*this)[i];
+ public:
+    static constexpr bool has_free_function() {
+        return has_function<GjsAutoPointerFreeFunction<F>, free_func>();
     }
 
-    [[nodiscard]] constexpr T* copy() const {
-        return reinterpret_cast<T*>(ref_func(this->get()));
+    static constexpr bool has_ref_function() {
+        return has_function<GjsAutoPointerRefFunction<F>, ref_func>();
+    }
+
+    constexpr GjsAutoPointer(Ptr ptr = nullptr)  // NOLINT(runtime/explicit)
+        : m_ptr(ptr) {}
+    template <typename U, typename = std::enable_if_t<std::is_same_v<U, Tp> &&
+                                                      std::is_array_v<T>>>
+    explicit constexpr GjsAutoPointer(U ptr[]) : m_ptr(ptr) {}
+
+    constexpr GjsAutoPointer(Ptr ptr, const GjsAutoTakeOwnership&)
+        : GjsAutoPointer(ptr) {
+        m_ptr = copy();
+    }
+    constexpr GjsAutoPointer(ConstPtr ptr, const GjsAutoTakeOwnership& o)
+        : GjsAutoPointer(const_cast<Ptr>(ptr), o) {}
+    constexpr GjsAutoPointer(GjsAutoPointer&& other) : GjsAutoPointer() {
+        this->swap(other);
+    }
+    constexpr GjsAutoPointer(GjsAutoPointer const& other) : GjsAutoPointer() {
+        *this = other;
+    }
+
+    constexpr GjsAutoPointer& operator=(Ptr ptr) {
+        reset(ptr);
+        return *this;
+    }
+
+    GjsAutoPointer& operator=(GjsAutoPointer&& other) {
+        this->swap(other);
+        return *this;
+    }
+
+    GjsAutoPointer& operator=(GjsAutoPointer const& other) {
+        GjsAutoPointer dup(other.get(), GjsAutoTakeOwnership());
+        this->swap(dup);
+        return *this;
+    }
+
+    template <typename U = T>
+    constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> operator->() {
+        return m_ptr;
+    }
+
+    template <typename U = T>
+    constexpr std::enable_if_t<!std::is_array_v<U>, ConstPtr> operator->()
+        const {
+        return m_ptr;
+    }
+
+    constexpr Tp operator*() const { return *m_ptr; }
+    constexpr operator Ptr() { return m_ptr; }
+    constexpr operator Ptr() const { return m_ptr; }
+    constexpr operator ConstPtr() const { return m_ptr; }
+    constexpr operator bool() const { return m_ptr != nullptr; }
+
+    constexpr Ptr get() { return m_ptr; }
+    constexpr ConstPtr get() const { return m_ptr; }
+    constexpr Ptr* out() { return &m_ptr; }
+
+    constexpr Ptr release() {
+        auto* ptr = m_ptr;
+        m_ptr = nullptr;
+        return ptr;
+    }
+
+    constexpr void reset(Ptr ptr = nullptr) {
+        Ptr old_ptr = m_ptr;
+        m_ptr = ptr;
+
+        if constexpr (has_free_function()) {
+            if (old_ptr) {
+                if constexpr (std::is_array_v<T>)
+                    free_func(reinterpret_cast<T*>(old_ptr));
+                else
+                    free_func(old_ptr);
+            }
+        }
+    }
+
+    constexpr void swap(GjsAutoPointer& other) {
+        std::swap(this->m_ptr, other.m_ptr);
+    }
+
+    /* constexpr */ ~GjsAutoPointer() {  // one day, with -std=c++2a
+        reset();
+    }
+
+    template <typename U = T>
+    [[nodiscard]] constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> copy()
+        const {
+        static_assert(has_ref_function(), "No ref function provided");
+        return m_ptr ? reinterpret_cast<Ptr>(ref_func(m_ptr)) : nullptr;
     }
 
     template <typename C>
     [[nodiscard]] constexpr C* as() const {
-        return const_cast<C*>(reinterpret_cast<const C*>(this->get()));
+        return const_cast<C*>(reinterpret_cast<const C*>(m_ptr));
     }
+
+ private:
+    Ptr m_ptr;
 };
 
+template <typename T, typename F = void,
+          GjsAutoPointerFreeFunction<F> free_func,
+          GjsAutoPointerRefFunction<F> ref_func>
+constexpr bool operator==(
+    GjsAutoPointer<T, F, free_func, ref_func> const& lhs,
+    GjsAutoPointer<T, F, free_func, ref_func> const& rhs) {
+    return lhs.get() == rhs.get();
+}
+
 template <typename T>
-using GjsAutoFree = GjsAutoPointer<T, void, g_free>;
+using GjsAutoFree = GjsAutoPointer<T>;
 
 struct GjsAutoCharFuncs {
     static char* dup(char* str) { return g_strdup(str); }
@@ -74,10 +188,30 @@ struct GjsAutoCharFuncs {
 using GjsAutoChar =
     GjsAutoPointer<char, char, GjsAutoCharFuncs::free, GjsAutoCharFuncs::dup>;
 
-using GjsAutoStrv = GjsAutoPointer<char*, char*, g_strfreev>;
+struct GjsAutoErrorFuncs {
+    static GError* error_copy(GError* error) { return g_error_copy(error); }
+};
+using GjsAutoError =
+    GjsAutoPointer<GError, GError, g_error_free, GjsAutoErrorFuncs::error_copy>;
+
+using GjsAutoStrv = GjsAutoPointer<char*, char*, g_strfreev, g_strdupv>;
 
 template <typename T>
 using GjsAutoUnref = GjsAutoPointer<T, void, g_object_unref, g_object_ref>;
+
+using GjsAutoGVariant =
+    GjsAutoPointer<GVariant, GVariant, g_variant_unref, g_variant_ref>;
+
+template <typename V, typename T>
+constexpr void GjsAutoPointerDeleter(T v) {
+    if constexpr (std::is_array_v<V>)
+        delete[] reinterpret_cast<std::remove_extent_t<V>*>(v);
+    else
+        delete v;
+}
+
+template <typename T>
+using GjsAutoCppPointer = GjsAutoPointer<T, T, GjsAutoPointerDeleter<T>>;
 
 template <typename T = GTypeClass>
 struct GjsAutoTypeClass : GjsAutoPointer<T, void, &g_type_class_unref> {
@@ -93,8 +227,7 @@ struct GjsAutoTypeClass : GjsAutoPointer<T, void, &g_type_class_unref> {
 // returns GIFunctionInfo*,) use one of the derived classes below.
 struct GjsAutoBaseInfo : GjsAutoPointer<GIBaseInfo, GIBaseInfo,
                                         g_base_info_unref, g_base_info_ref> {
-    GjsAutoBaseInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
-        : GjsAutoPointer(ptr) {}
+    using GjsAutoPointer::GjsAutoPointer;
 
     [[nodiscard]] const char* name() const {
         return g_base_info_get_name(*this);
@@ -111,6 +244,8 @@ struct GjsAutoBaseInfo : GjsAutoPointer<GIBaseInfo, GIBaseInfo,
 // the info is either of a certain type or null.
 template <GIInfoType TAG>
 struct GjsAutoInfo : GjsAutoBaseInfo {
+    using GjsAutoBaseInfo::GjsAutoBaseInfo;
+
     // Normally one-argument constructors should be explicit, but we are trying
     // to conform to the interface of std::unique_ptr here.
     GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
@@ -147,6 +282,8 @@ using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;
 // GICallableInfo can be one of several tags, so we have to have a separate
 // class, and use GI_IS_CALLABLE_INFO() to validate.
 struct GjsAutoCallableInfo : GjsAutoBaseInfo {
+    using GjsAutoBaseInfo::GjsAutoBaseInfo;
+
     GjsAutoCallableInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
         : GjsAutoBaseInfo(ptr) {
         validate();
@@ -162,6 +299,51 @@ struct GjsAutoCallableInfo : GjsAutoBaseInfo {
         if (*this)
             g_assert(GI_IS_CALLABLE_INFO(get()));
     }
+};
+
+template <typename T>
+struct GjsSmartPointer : GjsAutoPointer<T> {
+    using GjsAutoPointer<T>::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<char*> : GjsAutoStrv {
+    using GjsAutoStrv::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GStrv> : GjsAutoStrv {
+    using GjsAutoStrv::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GObject> : GjsAutoUnref<GObject> {
+    using GjsAutoUnref<GObject>::GjsAutoUnref;
+};
+
+template <>
+struct GjsSmartPointer<GIBaseInfo> : GjsAutoBaseInfo {
+    using GjsAutoBaseInfo::GjsAutoBaseInfo;
+};
+
+template <>
+struct GjsSmartPointer<GError> : GjsAutoError {
+    using GjsAutoError::GjsAutoError;
+};
+
+template <>
+struct GjsSmartPointer<GVariant> : GjsAutoGVariant {
+    using GjsAutoGVariant::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GList> : GjsAutoPointer<GList, GList, g_list_free> {
+    using GjsAutoPointer::GjsAutoPointer;
+};
+
+template <>
+struct GjsSmartPointer<GSList> : GjsAutoPointer<GSList, GSList, g_slist_free> {
+    using GjsAutoPointer::GjsAutoPointer;
 };
 
 /* For use of GjsAutoInfo<TAG> in GC hash maps */

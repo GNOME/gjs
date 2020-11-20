@@ -13,6 +13,7 @@ gjs_tests_sources = [
     'gjs-test-call-args.cpp',
     'gjs-test-coverage.cpp',
     'gjs-test-rooting.cpp',
+    'gjs-test-jsapi-utils.cpp',
     'gjs-test-no-introspection-object.cpp', 'gjs-test-no-introspection-object.h',
 ]
 

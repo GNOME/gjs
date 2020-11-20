@@ -47,7 +47,6 @@ ErrorInstance::ErrorInstance(JSContext* cx, JS::HandleObject obj)
 }
 
 ErrorInstance::~ErrorInstance(void) {
-    g_clear_error(&m_ptr);
     GJS_DEC_COUNTER(gerror_instance);
 }
 
@@ -352,14 +351,9 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
     if (!info) {
         /* We don't have error domain metadata */
         /* Marshal the error as a plain GError */
-        GIBaseInfo *glib_boxed;
-        JSObject *retval;
-
-        glib_boxed = g_irepository_find_by_name(nullptr, "GLib", "Error");
-        retval = BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
-
-        g_base_info_unref(glib_boxed);
-        return retval;
+        GjsAutoBaseInfo glib_boxed =
+            g_irepository_find_by_name(nullptr, "GLib", "Error");
+        return BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
     }
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED,

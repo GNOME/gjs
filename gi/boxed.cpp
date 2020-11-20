@@ -150,12 +150,12 @@ void BoxedInstance::allocate_directly(void) {
  * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
  * for fast lookup. 
  */
-BoxedPrototype::FieldMap* BoxedPrototype::create_field_map(
+std::unique_ptr<BoxedPrototype::FieldMap> BoxedPrototype::create_field_map(
     JSContext* cx, GIStructInfo* struct_info) {
     int n_fields;
     int i;
 
-    auto* result = new BoxedPrototype::FieldMap();
+    auto result = std::make_unique<BoxedPrototype::FieldMap>();
     n_fields = g_struct_info_get_n_fields(struct_info);
     if (!result->reserve(n_fields)) {
         JS_ReportOutOfMemory(cx);
@@ -419,29 +419,22 @@ BoxedInstance::~BoxedInstance() {
     if (m_owning_ptr) {
         if (m_allocated_directly) {
             if (gtype() == G_TYPE_VALUE)
-                g_value_unset(static_cast<GValue*>(m_ptr));
-            g_free(m_ptr);
+                g_value_unset(m_ptr.as<GValue>());
+            g_free(m_ptr.release());
         } else {
             if (g_type_is_a(gtype(), G_TYPE_BOXED))
-                g_boxed_free(gtype(), m_ptr);
+                g_boxed_free(gtype(), m_ptr.release());
             else if (g_type_is_a(gtype(), G_TYPE_VARIANT))
-                g_variant_unref(static_cast<GVariant*>(m_ptr));
+                g_variant_unref(static_cast<GVariant*>(m_ptr.release()));
             else
                 g_assert_not_reached ();
         }
-
-        m_ptr = nullptr;
     }
 
     GJS_DEC_COUNTER(boxed_instance);
 }
 
 BoxedPrototype::~BoxedPrototype(void) {
-    g_clear_pointer(&m_info, g_base_info_unref);
-
-    if (m_field_map)
-        delete m_field_map;
-
     GJS_DEC_COUNTER(boxed_prototype);
 }
 
@@ -767,12 +760,9 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
             g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
-            GITypeInfo *param_info;
-
-            param_info = g_type_info_get_param_type(type_info, 0);
+            GjsAutoBaseInfo param_info =
+                g_type_info_get_param_type(type_info, 0);
             is_simple = type_can_be_allocated_directly(param_info);
-
-            g_base_info_unref((GIBaseInfo*)param_info);
         } else if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_VOID) {
             return true;
         } else {
@@ -782,8 +772,8 @@ const struct JSClass BoxedBase::klass = {
         switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_INTERFACE:
             {
-                GIBaseInfo *interface = g_type_info_get_interface(type_info);
-                switch (g_base_info_get_type(interface)) {
+            GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
+            switch (g_base_info_get_type(interface)) {
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
                     if (!struct_is_simple((GIStructInfo *)interface))
@@ -816,9 +806,7 @@ const struct JSClass BoxedBase::klass = {
                 case GI_INFO_TYPE_FLAGS:
                 default:
                     break;
-                }
-
-                g_base_info_unref(interface);
+            }
                 break;
             }
         case GI_TYPE_TAG_BOOLEAN:
@@ -863,13 +851,10 @@ const struct JSClass BoxedBase::klass = {
         return false;
 
     for (i = 0; i < n_fields && is_simple; i++) {
-        GIFieldInfo *field_info = g_struct_info_get_field(info, i);
-        GITypeInfo *type_info = g_field_info_get_type(field_info);
+        GjsAutoBaseInfo field_info = g_struct_info_get_field(info, i);
+        GjsAutoBaseInfo type_info = g_field_info_get_type(field_info);
 
         is_simple = type_can_be_allocated_directly(type_info);
-
-        g_base_info_unref((GIBaseInfo *)field_info);
-        g_base_info_unref((GIBaseInfo *)type_info);
     }
 
     return is_simple;
@@ -880,7 +865,6 @@ BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
       m_zero_args_constructor(-1),
       m_default_constructor(-1),
       m_default_constructor_name(JSID_VOID),
-      m_field_map(nullptr),
       m_can_allocate_directly(struct_is_simple(info)) {
     GJS_INC_COUNTER(boxed_prototype);
 }
