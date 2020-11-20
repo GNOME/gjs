@@ -1,11 +1,28 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 ---
+include:
+  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/7ea696055e322cc7aa4bcbe5422b56a198c4bdff/templates/alpine.yml'
+
 stages:
-- source_check
-- test
-- thorough_tests
-- manual
-- deploy
+  - prepare
+  - source_check
+  - test
+  - thorough_tests
+  - manual
+  - deploy
+
+.gjs-alpine:
+  variables:
+    FDO_DISTRIBUTION_TAG: '2020-11-20.0'
+    FDO_UPSTREAM_REPO: GNOME/gjs
+
+build-alpine-image:
+  extends:
+    - .fdo.container-build@alpine@x86_64
+    - .gjs-alpine
+  stage: prepare
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: cppcheck yarn
 
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
@@ -133,7 +150,9 @@ pages:
 #############################################
 cppcheck:
   when: on_success
-  image: uilianries/docker-cppcheck
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   stage: source_check
   script:
     - cppcheck . -v -f -q -UHAVE_PRINTF_ALTERNATIVE_INT --error-exitcode=1 --inline-suppr --library=gtk,tools/cppcheck.cfg --enable=warning,performance,portability
@@ -171,7 +190,9 @@ cpplint:
 
 eslint:
   when: on_success
-  image: node:12
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   stage: source_check
   script:
     - ./tools/run_eslint.sh
