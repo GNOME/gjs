@@ -174,8 +174,7 @@ eslint:
   image: node:12
   stage: source_check
   script:
-    - yarn install --frozen-lockfile
-    - yarn lint
+    - ./tools/run_eslint.sh
   except:
     refs:
       - schedules
