@@ -75,7 +75,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
             fflush(stdout);
             if (!fgets(buf, sizeof buf, stdin))
                 buf[0] = '\0';
-            line.reset(g_strchomp(g_strdup(buf)));
+            line.reset(g_strdup(g_strchomp(buf)));
 
             if (!isatty(STDIN_FILENO)) {
                 if (feof(stdin)) {
