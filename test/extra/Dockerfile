@@ -2,7 +2,7 @@
 
 # === Build Spidermonkey stage ===
 
-FROM fedora:32 AS mozjs-build
+FROM registry.fedoraproject.org/fedora:32 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs68
 ARG BUILD_OPTS="--enable-posix-nspr-emulation --enable-unaligned-private-values"
 
@@ -26,7 +26,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM fedora:32
+FROM registry.fedoraproject.org/fedora:32
 
 ENV SHELL=/bin/bash
 
