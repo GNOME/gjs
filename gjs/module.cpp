@@ -41,6 +41,9 @@ class GjsScriptModule {
         GJS_DEC_COUNTER(module);
     }
 
+    GjsScriptModule(GjsScriptModule&) = delete;
+    GjsScriptModule& operator=(GjsScriptModule&) = delete;
+
     /* Private data accessors */
 
     [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
