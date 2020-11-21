@@ -703,7 +703,7 @@ template <typename T>
     if constexpr (std::is_same_v<T, char*>)
         return g_new0(char*, length);
 
-    auto* array = g_new(T, length);
+    T* array = g_new(T, length);
     array[length - 1] = {0};
     return array;
 }
