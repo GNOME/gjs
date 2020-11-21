@@ -53,9 +53,10 @@ static gboolean gjs_dbus_implementation_check_interface(
     exported_object_path = g_dbus_interface_skeleton_get_object_path(
         G_DBUS_INTERFACE_SKELETON(self));
     if (!exported_object_path || strcmp(object_path, exported_object_path)) {
-        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
-                    "Wrong object path %s for %s", object_path,
-                    exported_object_path);
+        g_set_error(
+            error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
+            "Wrong object path %s for %s", object_path,
+            exported_object_path ? exported_object_path : "unexported object");
         return FALSE;
     }
     if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
