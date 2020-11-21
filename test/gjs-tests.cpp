@@ -281,7 +281,8 @@ static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
 
     /* Try with a string that is likely to be stored as Latin-1 */
     str = JS_NewStringCopyZ(fx->cx, "abcd");
-    g_assert_true(gjs_string_get_char16_data(fx->cx, str, &chars, &len));
+    bool ok = gjs_string_get_char16_data(fx->cx, str, &chars, &len);
+    g_assert_true(ok);
 
     result.assign(chars, len);
     g_assert_true(result == u"abcd");
@@ -303,7 +304,8 @@ static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
 
     /* Try with a string that is likely to be stored as Latin-1 */
     str = JS_NewStringCopyZ(fx->cx, "abcd");
-    g_assert_true(gjs_string_to_ucs4(fx->cx, str, &chars, &len));
+    bool ok = gjs_string_to_ucs4(fx->cx, str, &chars, &len);
+    g_assert_true(ok);
 
     result.assign(chars, chars + len);
     g_assert_true(result == U"abcd");
