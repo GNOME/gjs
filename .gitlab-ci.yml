@@ -136,7 +136,7 @@ cppcheck:
   image: uilianries/docker-cppcheck
   stage: source_check
   script:
-    - cppcheck . -v -f -q -UHAVE_PRINTF_ALTERNATIVE_INT --error-exitcode=1 --inline-suppr --library=gtk --enable=warning,performance,portability
+    - cppcheck . -v -f -q -UHAVE_PRINTF_ALTERNATIVE_INT --error-exitcode=1 --inline-suppr --library=gtk,tools/cppcheck.cfg --enable=warning,performance,portability
   except:
     refs:
       - schedules
