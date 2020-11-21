@@ -192,7 +192,7 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
                                                  &n_interfaces, &n_properties))
         return false;
 
-    GType* iface_types = g_newa(GType, n_interfaces);
+    GjsAutoPointer<GType> iface_types = g_new(GType, n_interfaces);
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
@@ -266,8 +266,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
                                                  &n_interfaces, &n_properties))
         return false;
 
-    auto* iface_types =
-        static_cast<GType*>(g_alloca(sizeof(GType) * n_interfaces));
+    GjsAutoPointer<GType> iface_types = g_new(GType, n_interfaces);
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
@@ -369,7 +368,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!JS::GetArrayLength(cx, params_obj, &n_parameters))
         return false;
 
-    GType* params = g_newa(GType, n_parameters);
+    GjsAutoPointer<GType> params = g_new(GType, n_parameters);
     JS::RootedValue gtype_val(cx);
     for (uint32_t ix = 0; ix < n_parameters; ix++) {
         if (!JS_GetElement(cx, params_obj, ix, &gtype_val) ||

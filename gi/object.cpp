@@ -1904,7 +1904,6 @@ ObjectInstance::emit_impl(JSContext          *context,
     guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
-    GValue *instance_and_args;
     GValue rvalue = G_VALUE_INIT;
     unsigned int i;
     bool failed;
@@ -1940,9 +1939,8 @@ ObjectInstance::emit_impl(JSContext          *context,
         g_value_init(&rvalue, signal_query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE);
     }
 
-    instance_and_args = g_newa(GValue, signal_query.n_params + 1);
-    memset(instance_and_args, 0, sizeof(GValue) * (signal_query.n_params + 1));
-
+    GjsAutoPointer<GValue> instance_and_args =
+        g_new0(GValue, signal_query.n_params + 1);
     g_value_init(&instance_and_args[0], gtype());
     g_value_set_instance(&instance_and_args[0], m_ptr);
 
