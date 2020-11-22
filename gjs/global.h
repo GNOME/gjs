@@ -36,7 +36,6 @@ enum class GjsGlobalSlot : uint32_t {
     PROTOTYPE_importer,
     PROTOTYPE_function,
     PROTOTYPE_ns,
-    PROTOTYPE_repo,
     PROTOTYPE_cairo_context,
     PROTOTYPE_cairo_gradient,
     PROTOTYPE_cairo_image_surface,
