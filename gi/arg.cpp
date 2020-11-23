@@ -613,18 +613,13 @@ template <typename T>
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_object_to_g_hash(JSContext   *context,
-                     JS::Value    hash_value,
-                     GITypeInfo  *key_param_info,
-                     GITypeInfo  *val_param_info,
-                     GITransfer   transfer,
-                     GHashTable **hash_p)
-{
+static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
+                                 GITypeInfo* key_param_info,
+                                 GITypeInfo* val_param_info,
+                                 GITransfer transfer, GHashTable** hash_p) {
     size_t id_ix, id_len;
 
-    g_assert(hash_value.isObjectOrNull());
-    JS::RootedObject props(context, hash_value.toObjectOrNull());
+    g_assert(props && "Property bag cannot be null");
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -1784,12 +1779,9 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
             g_assert(key_param_info != nullptr);
             g_assert(val_param_info != nullptr);
 
-            if (!gjs_object_to_g_hash(context,
-                                      value,
-                                      key_param_info,
-                                      val_param_info,
-                                      transfer,
-                                      &ghash)) {
+            JS::RootedObject props(context, &value.toObject());
+            if (!gjs_object_to_g_hash(context, props, key_param_info,
+                                      val_param_info, transfer, &ghash)) {
                 return false;
             }
 
