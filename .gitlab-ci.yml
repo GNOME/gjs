@@ -363,28 +363,14 @@ zeal_11:
   BUILDAH_FORMAT: docker
   BUILDAH_ISOLATION: chroot
 
-fedora.mozjs68:
-  <<: *create_docker_image
-  variables:
-    <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile
-
-fedora.mozjs68-debug:
-  <<: *create_docker_image
-  variables:
-    <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile.debug
-
 fedora.mozjs78:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile
-    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg MOZJS_BUILDDEPS=mozjs78 --build-arg BUILD_OPTS=
 
 fedora.mozjs78-debug:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile.debug
-    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg MOZJS_BUILDDEPS=mozjs78 --build-arg BUILD_OPTS=

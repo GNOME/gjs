@@ -3,9 +3,9 @@
 # === Build Spidermonkey stage ===
 
 FROM registry.fedoraproject.org/fedora:32 AS mozjs-build
-ARG MOZJS_BRANCH=mozjs68
+ARG MOZJS_BRANCH=mozjs78
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
-ARG BUILD_OPTS="--enable-posix-nspr-emulation --enable-unaligned-private-values"
+ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
