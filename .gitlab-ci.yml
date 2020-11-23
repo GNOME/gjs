@@ -1,11 +1,33 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 ---
+include:
+  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/7ea696055e322cc7aa4bcbe5422b56a198c4bdff/templates/alpine.yml'
+
 stages:
-- source_check
-- test
-- thorough_tests
-- manual
-- deploy
+  - prepare
+  - source_check
+  - test
+  - thorough_tests
+  - manual
+  - deploy
+
+.gjs-alpine:
+  variables:
+    FDO_DISTRIBUTION_TAG: '2020-11-20.1'
+    FDO_UPSTREAM_REPO: GNOME/gjs
+
+build-alpine-image:
+  extends:
+    - .fdo.container-build@alpine@x86_64
+    - .gjs-alpine
+  stage: prepare
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: cppcheck git python3 yarn
+    FDO_DISTRIBUTION_EXEC: |
+      python3 -m ensurepip &&
+      rm -r /usr/lib/python*/ensurepip &&
+      pip3 install --no-cache --upgrade cpplint &&
+      mkdir -p /cwd
 
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
@@ -133,10 +155,12 @@ pages:
 #############################################
 cppcheck:
   when: on_success
-  image: uilianries/docker-cppcheck
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   stage: source_check
   script:
-    - cppcheck . -v -f -q --error-exitcode=1 --inline-suppr --library=gtk --enable=warning,performance,portability
+    - cppcheck . -v -f -q -UHAVE_PRINTF_ALTERNATIVE_INT --error-exitcode=1 --inline-suppr --library=gtk,tools/cppcheck.cfg --enable=warning,performance,portability
   except:
     refs:
       - schedules
@@ -152,7 +176,9 @@ cppcheck:
 cpplint:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:alpine.cpplint
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   variables:
     TASK_ID: "cpplint"
   script:
@@ -171,7 +197,9 @@ cpplint:
 
 eslint:
   when: on_success
-  image: node:12
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   stage: source_check
   script:
     - ./tools/run_eslint.sh
@@ -304,15 +332,13 @@ zeal_11:
 #          Create CI Docker Images          #
 #############################################
 .Docker image template: &create_docker_image
-  image: registry.fedoraproject.org/fedora:32
+  image: registry.freedesktop.org/freedesktop/ci-templates/x86_64/buildah:2020-10-30.1
   stage: deploy
   only:
     variables:
       - $CRON_TASK == "BUILD_CI_IMAGES"
 
   script:
-    - dnf install -y buildah runc
-
     # Newer versions of podman/buildah try to set overlayfs mount options when
     # using the vfs driver, and this causes errors.
     - sed -i '/^mountopt =.*/d' /etc/containers/storage.conf
@@ -337,12 +363,6 @@ zeal_11:
   BUILDAH_FORMAT: docker
   BUILDAH_ISOLATION: chroot
 
-alpine.cpplint:
-  <<: *create_docker_image
-  variables:
-    <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile.alpine.cpplint
-
 fedora.mozjs68:
   <<: *create_docker_image
   variables:
@@ -360,11 +380,11 @@ fedora.mozjs78:
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile
-    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg BUILD_OPTS=
+    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg MOZJS_BUILDDEPS=mozjs78 --build-arg BUILD_OPTS=
 
 fedora.mozjs78-debug:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile.debug
-    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg BUILD_OPTS=
+    ARGS: --build-arg MOZJS_BRANCH=mozjs78 --build-arg MOZJS_BUILDDEPS=mozjs78 --build-arg BUILD_OPTS=

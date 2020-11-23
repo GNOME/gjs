@@ -89,10 +89,28 @@ struct GjsFunctionCallState {
     GIArgument* inout_original_cvalues;
     std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
-    bool call_completed;
+    int gi_argc;
+    bool call_completed : 1;
+    bool is_method : 1;
 
-    explicit GjsFunctionCallState(JSContext* cx)
-        : instance_object(cx), call_completed(false) {}
+    GjsFunctionCallState(JSContext* cx, GICallableInfo* callable, int args)
+        : instance_object(cx),
+          gi_argc(args),
+          call_completed(false),
+          is_method(g_callable_info_is_method(callable)) {
+        int size = gi_argc + first_arg_offset();
+        in_cvalues = new GIArgument[size] + first_arg_offset();
+        out_cvalues = new GIArgument[size] + first_arg_offset();
+        inout_original_cvalues = new GIArgument[size] + first_arg_offset();
+    }
+
+    ~GjsFunctionCallState() {
+        delete[](in_cvalues - first_arg_offset());
+        delete[](out_cvalues - first_arg_offset());
+        delete[](inout_original_cvalues - first_arg_offset());
+    }
+
+    constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
 };
 
 GJS_JSAPI_RETURN_CONVENTION

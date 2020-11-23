@@ -4,4 +4,5 @@
 ninja -C _build
 cppcheck --project=_build/compile_commands.json --inline-suppr \
     --enable=warning,performance,portability,missingInclude \
-    --library=gtk --force --quiet $@
+    -UHAVE_PRINTF_ALTERNATIVE_INT \
+    --library=gtk,tools/cppcheck.cfg --force --quiet $@

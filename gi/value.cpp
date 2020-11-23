@@ -124,9 +124,6 @@ closure_marshal(GClosure        *closure,
     unsigned i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
-    bool *skip;
-    int *array_len_indices_for;
-    GITypeInfo **type_info_for;
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
                       "Marshal closure %p",
@@ -187,13 +184,12 @@ closure_marshal(GClosure        *closure,
     /* Check if any parameters, such as array lengths, need to be eliminated
      * before we invoke the closure.
      */
-    skip = g_newa(bool, n_param_values);
-    memset(skip, 0, sizeof (bool) * n_param_values);
-    array_len_indices_for = g_newa(int, n_param_values);
+    GjsAutoPointer<bool> skip = g_new0(bool, n_param_values);
+    GjsAutoPointer<int> array_len_indices_for = g_new(int, n_param_values);
     for(i = 0; i < n_param_values; i++)
         array_len_indices_for[i] = -1;
-    type_info_for = g_newa(GITypeInfo *, n_param_values);
-    memset(type_info_for, 0, sizeof (gpointer) * n_param_values);
+    GjsAutoPointer<GITypeInfo> type_info_for =
+        g_new0(GITypeInfo, n_param_values);
 
     signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
@@ -203,9 +199,9 @@ closure_marshal(GClosure        *closure,
             int array_len_pos;
 
             arg_info = g_callable_info_get_arg(signal_info, i - 1);
-            type_info_for[i] = g_arg_info_get_type(arg_info);
+            g_arg_info_load_type(arg_info, &type_info_for[i]);
 
-            array_len_pos = g_type_info_get_array_length(type_info_for[i]);
+            array_len_pos = g_type_info_get_array_length(&type_info_for[i]);
             if (array_len_pos != -1) {
                 skip[array_len_pos + 1] = true;
                 array_len_indices_for[i] = array_len_pos + 1;
@@ -240,12 +236,9 @@ closure_marshal(GClosure        *closure,
         array_len_index = array_len_indices_for[i];
         if (array_len_index != -1) {
             const GValue *array_len_gval = &param_values[array_len_index];
-            res = gjs_value_from_array_and_length_values(context,
-                                                         &argv_to_append,
-                                                         type_info_for[i],
-                                                         gval, array_len_gval,
-                                                         no_copy, &signal_query,
-                                                         array_len_index);
+            res = gjs_value_from_array_and_length_values(
+                context, &argv_to_append, &type_info_for[i], gval,
+                array_len_gval, no_copy, &signal_query, array_len_index);
         } else {
             res = gjs_value_from_g_value_internal(context,
                                                   &argv_to_append,
@@ -263,10 +256,6 @@ closure_marshal(GClosure        *closure,
 
         argv.infallibleAppend(argv_to_append);
     }
-
-    for (i = 1; i < n_param_values; i++)
-        if (type_info_for[i])
-            g_base_info_unref((GIBaseInfo *)type_info_for[i]);
 
     JS::RootedValue rval(context);
     mozilla::Unused << gjs_closure_invoke(closure, nullptr, argv, &rval, false);

@@ -175,7 +175,7 @@ int gjs_open_bytes(GBytes* bytes, GError** error) {
     }
 
     if ((size_t)bytes_written != count)
-        g_warning("%s: %zd bytes sent, only %zu bytes written", __func__, count,
+        g_warning("%s: %zu bytes sent, only %zd bytes written", __func__, count,
                   bytes_written);
 
     result = close(pipefd[1]);

@@ -776,18 +776,9 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     //
     // Use gi_arg_pos to index inside the GIArgument array. Use ffi_arg_pos to
     // index inside ffi_arg_pointers.
-    GjsFunctionCallState state(context);
-    if (is_method) {
-        state.in_cvalues = g_newa(GIArgument, gi_argc + 2) + 2;
-        state.out_cvalues = g_newa(GIArgument, gi_argc + 2) + 2;
-        state.inout_original_cvalues = g_newa(GIArgument, gi_argc + 2) + 2;
-    } else {
-        state.in_cvalues = g_newa(GIArgument, gi_argc + 1) + 1;
-        state.out_cvalues = g_newa(GIArgument, gi_argc + 1) + 1;
-        state.inout_original_cvalues = g_newa(GIArgument, gi_argc + 1) + 1;
-    }
+    GjsFunctionCallState state(context, function->info, gi_argc);
 
-    void** ffi_arg_pointers = g_newa(void*, ffi_argc);
+    auto ffi_arg_pointers = std::make_unique<void*[]>(ffi_argc);
 
     failed = false;
     unsigned ffi_arg_pos = 0;  // index into ffi_arg_pointers
@@ -882,7 +873,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     return_value_p = get_return_ffi_pointer_from_giargument(
         &function->arguments[-1], &return_value);
     ffi_call(&(function->invoker.cif), FFI_FN(function->invoker.native_address),
-             return_value_p, ffi_arg_pointers);
+             return_value_p, ffi_arg_pointers.get());
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
