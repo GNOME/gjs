@@ -2862,13 +2862,6 @@ gjs_value_from_g_argument (JSContext             *context,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_g_arg_release_internal(JSContext  *context,
-                                         GITransfer  transfer,
-                                         GITypeInfo *type_info,
-                                         GITypeTag   type_tag,
-                                         GArgument  *arg);
-
 struct GHR_closure {
     JSContext *context;
     GjsAutoTypeInfo key_param_info, val_param_info;
