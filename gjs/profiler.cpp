@@ -3,7 +3,7 @@
 
 #include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
 
-#ifndef HAVE_SIGNAL_H
+#ifdef HAVE_SIGNAL_H
 #    include <signal.h>  // for siginfo_t, sigevent, sigaction, SIGPROF, ...
 #endif
 
