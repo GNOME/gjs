@@ -13,6 +13,7 @@
 #include <js/GCHashTable.h>  // for WeakCache
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <jsapi.h>  // for InformalValueTypeName, JS_GetClass
 #include <mozilla/HashTable.h>
 

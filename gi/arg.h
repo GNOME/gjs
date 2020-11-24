@@ -13,9 +13,9 @@
 #include <girepository.h>
 #include <glib-object.h>
 
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
-#include "gjs/enum-utils.h"
 #include "gjs/macros.h"
 
 // Different roles for a GIArgument; currently used only in exception and debug

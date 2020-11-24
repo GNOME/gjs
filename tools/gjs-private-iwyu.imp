@@ -23,7 +23,4 @@
   {"include": ["@\"sysprof-capture-.*\"", "private", "<sysprof-capture.h>", "public"]},
   {"include": ["@<sysprof-capture-.*>", "private", "<sysprof-capture.h>", "public"]},
   {"include": ["<X11/Xlib.h>", "private", "<cairo-xlib.h>", "public"]},
-
-  # Workaround for https://github.com/include-what-you-use/include-what-you-use/issues/226
-  {"include": ["<cstdint>", "private", "<stdint.h>", "public"]},
 ]

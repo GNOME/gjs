@@ -20,6 +20,7 @@
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for IdVector, JS_AtomizeAndPinJSString

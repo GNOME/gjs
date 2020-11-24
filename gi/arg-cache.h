@@ -18,6 +18,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/arg.h"
+#include "gjs/enum-utils.h"
 #include "gjs/macros.h"
 
 struct GjsFunctionCallState;

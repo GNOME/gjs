@@ -57,6 +57,9 @@ FWD_DECLS_IN_HEADER = (
 )
 add_fwd_header = False
 
+CSTDINT = '#include <cstdint>'
+STDINTH = '#include <stdint.h>'
+
 FALSE_POSITIVES = (
     # The bodies of these structs already come before their usage,
     # we don't need to have forward declarations of them as well
@@ -70,6 +73,20 @@ FALSE_POSITIVES = (
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
 
+    # False positive when using EnumType operators
+    ('gi/arg-cache.cpp', '#include <type_traits>', 'for enable_if_t'),
+
+    # False positive when using GjsAutoPointer
+    ('gi/private.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gi/value.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
+    ('gjs/debugger.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gjs/importer.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gjs/profiler.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+
     # Weird false positive on some versions of IWYU
     ('gi/arg.cpp', 'struct _GHashTable;', ''),
     ('gi/arg.cpp', 'struct _GVariant;', ''),
@@ -78,6 +95,15 @@ FALSE_POSITIVES = (
 
 def output():
     global file, state, add_fwd_header, there_were_errors
+
+    # Workaround for
+    # https://github.com/include-what-you-use/include-what-you-use/issues/226
+    if CSTDINT in add:
+        why = add.pop(CSTDINT, None)
+        if STDINTH in remove:
+            remove.pop(STDINTH, None)
+        else:
+            add[STDINTH] = why
 
     if add_fwd_header:
         if FWD_HEADER not in all_includes:

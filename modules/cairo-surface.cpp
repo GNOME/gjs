@@ -21,6 +21,7 @@
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/foreign.h"
+#include "gjs/enum-utils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"

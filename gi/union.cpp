@@ -10,6 +10,7 @@
 #include <js/Class.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
 
 #include "gi/arg-inl.h"
