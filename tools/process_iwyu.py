@@ -144,6 +144,11 @@ for line in sys.stdin:
     if not line:
         continue
 
+    if 'fatal error:' in line:
+        print(line)
+        there_were_errors = True
+        continue
+
     # filter out errors having to do with compiler arguments unknown to IWYU
     if line.startswith('error:'):
         continue
