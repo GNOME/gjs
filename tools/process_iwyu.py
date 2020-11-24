@@ -95,7 +95,6 @@ FALSE_POSITIVES = (
      'for remove_reference<>::type'),
 
     # Weird false positive on some versions of IWYU
-    ('gi/arg.cpp', 'struct _GHashTable;', ''),
     ('gi/arg.cpp', 'struct _GVariant;', ''),
     ('gjs/profiler.cpp', '#include <gjs/profiler.h>', ''),
 )
