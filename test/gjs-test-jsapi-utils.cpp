@@ -8,7 +8,6 @@
 #include <glib-object.h>
 #include <glib.h>
 #include <stddef.h>  // for NULL
-#include <type_traits>  // for remove_reference<>::type
 #include <utility>   // for move, swap
 
 #include "gjs/jsapi-util.h"

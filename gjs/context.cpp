@@ -17,7 +17,6 @@
 
 #include <new>
 #include <string>       // for u16string
-#include <type_traits>  // for remove_reference<>::type
 #include <unordered_map>
 #include <utility>  // for move
 #include <vector>

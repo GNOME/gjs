@@ -7,9 +7,8 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
-#include <string>       // for string
-#include <type_traits>  // for remove_reference
-#include <utility>      // for move, forward
+#include <string>
+#include <utility>  // for move, forward
 
 #include <girepository.h>
 #include <glib-object.h>

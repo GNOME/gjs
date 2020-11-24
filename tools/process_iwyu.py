@@ -77,14 +77,21 @@ FALSE_POSITIVES = (
     ('gi/arg-cache.cpp', '#include <type_traits>', 'for enable_if_t'),
 
     # False positive when using GjsAutoPointer
+    ('gi/boxed.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
+    ('gi/object.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
     ('gi/private.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gi/value.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
+    ('gjs/context.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
     ('gjs/debugger.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gjs/importer.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gjs/profiler.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('test/gjs-test-jsapi-utils.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
 
     # Weird false positive on some versions of IWYU
