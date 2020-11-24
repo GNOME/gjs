@@ -73,11 +73,21 @@ FALSE_POSITIVES = (
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
 
+    # False positive when using Mozilla vectors' append() and
+    # infallibleAppend()
+    ('gi/function.cpp', '#include <utility>', 'for forward'),
+    ('gi/ns.cpp', '#include <utility>', 'for forward'),
+    ('gi/value.cpp', '#include <utility>', 'for forward'),
+    ('gjs/importer.cpp', '#include <utility>', 'for forward'),
+    ('gjs/module.cpp', '#include <utility>', 'for forward'),
+
     # False positive when using EnumType operators
-    ('gi/arg-cache.cpp', '#include <type_traits>', 'for enable_if_t'),
+    ('gi/arg-cache.h', '#include <type_traits>', 'for enable_if_t'),
+    ('modules/cairo-context.cpp', '#include <type_traits>', 'for enable_if_t'),
+    ('modules/cairo-region.cpp', '#include <type_traits>', 'for enable_if_t'),
+    ('modules/cairo-surface.cpp', '#include <type_traits>', 'for enable_if_t'),
 
     # False positive when using GjsAutoPointer
-    ('gi/boxed.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
     ('gi/object.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gi/private.cpp', '#include <type_traits>',

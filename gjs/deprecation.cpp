@@ -15,6 +15,7 @@
 
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
+#include <js/GCPolicyAPI.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -27,8 +28,6 @@
 
 // Avoid static_assert in MSVC builds
 namespace JS {
-template <typename T> struct GCPolicy;
-
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }

@@ -7,6 +7,7 @@
 
 #include <config.h>
 
+#include <js/GCPolicyAPI.h>
 #include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/Symbol.h>
@@ -18,8 +19,6 @@
 
 // Avoid static_assert in MSVC builds
 namespace JS {
-template <typename T> struct GCPolicy;
-
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }

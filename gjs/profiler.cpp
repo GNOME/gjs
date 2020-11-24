@@ -13,14 +13,12 @@
 #ifdef ENABLE_PROFILER
 #    include <alloca.h>
 #    include <errno.h>
-#    include <stddef.h>  // for size_t
 #    include <stdint.h>
 #    include <stdio.h>      // for sscanf
 #    include <string.h>     // for memcpy, strlen
-#    include <sys/time.h>   // for CLOCK_MONOTONIC
 #    include <sys/types.h>  // for timer_t
 #    include <syscall.h>    // for __NR_gettid
-#    include <time.h>       // for itimerspec, timer_delete, ...
+#    include <time.h>       // for size_t, CLOCK_MONOTONIC, itimerspec, ...
 #    ifdef HAVE_UNISTD_H
 #        include <unistd.h>  // for getpid, syscall
 #    endif

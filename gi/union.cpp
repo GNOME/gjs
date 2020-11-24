@@ -5,6 +5,7 @@
 #include <config.h>
 
 #include <girepository.h>
+#include <glib.h>  // for g_atomic_rc_box_acquire, ...
 
 #include <js/CallArgs.h>
 #include <js/Class.h>

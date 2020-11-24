@@ -45,7 +45,6 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
-#include <js/Utility.h>  // for DeletePolicy
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_IsExceptionPending, ...
