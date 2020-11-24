@@ -5,9 +5,11 @@
 #include <config.h>
 
 #include <cstddef>        // for size_t
+#include <functional>     // for hash<int>
 #include <string>         // for string
+#include <string_view>    // for hash<string>
 #include <unordered_set>  // for unordered_set
-#include <utility>        // for hash, move
+#include <utility>        // for move
 
 #include <glib.h>  // for g_warning
 

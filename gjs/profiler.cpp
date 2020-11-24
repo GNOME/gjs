@@ -31,6 +31,8 @@
 #endif
 
 #include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
+#include <js/TypeDecls.h>
+#include <mozilla/Atomics.h>  // for ProfilingStack operators
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"

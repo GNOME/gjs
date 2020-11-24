@@ -17,6 +17,7 @@
 #include <js/RootingAPI.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/experimental/CodeCoverage.h>  // for EnableCodeCoverage
 #include <jsapi.h>        // for JSAutoRealm, JS_SetPropertyById

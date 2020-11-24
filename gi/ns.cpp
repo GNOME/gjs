@@ -9,7 +9,9 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/ComparisonOperators.h>
 #include <js/Id.h>  // for JSID_IS_STRING
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
