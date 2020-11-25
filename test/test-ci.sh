@@ -40,7 +40,7 @@ do_Get_Upstream_Master () {
     echo 'Cloning upstream master'
 
     mkdir -p ~/tmp-upstream; cd ~/tmp-upstream || exit 1
-    git clone --depth 1 https://gitlab.gnome.org/GNOME/gjs.git; cd gjs || exit 1
+    git clone --branch master --no-tags --depth 1 https://gitlab.gnome.org/GNOME/gjs.git; cd gjs || exit 1
     echo '-----------------------------------------'
 }
 

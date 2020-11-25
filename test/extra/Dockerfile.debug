@@ -29,7 +29,7 @@ RUN DESTDIR=/root/iwyu-install ninja install
 
 WORKDIR /root
 
-RUN git clone --depth 1 https://gitlab.gnome.org/GNOME/sysprof.git
+RUN git clone --branch master --no-tags --depth 1 https://gitlab.gnome.org/GNOME/sysprof.git
 
 WORKDIR /root/sysprof
 
@@ -41,7 +41,7 @@ RUN DESTDIR=/root/sysprof-install ninja -C _build install
 
 WORKDIR /root
 
-RUN git clone --depth 1 https://github.com/ptomato/mozjs.git -b ${MOZJS_BRANCH}
+RUN git clone --no-tags --depth 1 https://github.com/ptomato/mozjs.git -b ${MOZJS_BRANCH}
 RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
