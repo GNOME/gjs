@@ -8,7 +8,7 @@ GIDATADIR=$(pkg-config --variable=gidatadir gobject-introspection-1.0)
 BUILDDIR="$(pwd)/_coverage_build"
 LCOV_ARGS="--config-file $SOURCEDIR/tools/lcovrc"
 GENHTML_ARGS='--legend --show-details --branch-coverage'
-IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp"
+IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp */gjs/subprojects/*"
 
 rm -rf "$BUILDDIR"
 meson "$BUILDDIR" -Db_coverage=true
