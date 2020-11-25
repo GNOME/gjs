@@ -15,7 +15,6 @@ meson "$BUILDDIR" -Db_coverage=true
 
 VERSION=$(meson introspect "$BUILDDIR" --projectinfo | python -c 'import json, sys; print(json.load(sys.stdin)["version"])')
 
-ninja -C "$BUILDDIR"
 mkdir -p _coverage
 meson test -C "$BUILDDIR" --num-processes 1
 lcov --directory "$BUILDDIR" --capture --output-file _coverage/gjs.lcov.run --no-checksum $LCOV_ARGS
