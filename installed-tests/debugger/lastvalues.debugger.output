@@ -1,0 +1,25 @@
+GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
+db> c
+Debugger statement, toplevel at lastvalues.debugger.js:6:0
+db> p a
+$1 = undefined
+db> p b
+$2 = null
+db> p c
+$3 = 42
+db> p $1
+$4 = undefined
+db> p $2
+$5 = null
+db> p $3
+$6 = 42
+db> p $$
+$7 = 42
+db> p $6*3
+$8 = 126
+db> p $$*3
+$9 = 378
+db> c
+Program exited with code 0

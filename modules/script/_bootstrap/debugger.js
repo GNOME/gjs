@@ -79,6 +79,7 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
 function showDebuggeeValue(dv, style = {pretty: options.pretty}) {
     const i = nextDebuggeeValueIndex++;
     debuggeeValues[`$${i}`] = dv;
+    debuggeeValues['$$'] = dv;
     const [brief, full] = debuggeeValueToString(dv, style);
     print(`$${i} = ${brief}`);
     if (full !== undefined)
@@ -263,7 +264,10 @@ printCommand.helpText = `USAGE
 PARAMETER
     · expr: expression to be printed
     · pretty|p: prettify the output
-    · brief|b: brief output`;
+    · brief|b: brief output
+
+expr may also reference the variables $1, $2, ... for already printed
+expressions, or $$ for the most recently printed expression.`;
 
 function keysCommand(rest) {
     return doPrint(`Object.keys(${rest})`);
