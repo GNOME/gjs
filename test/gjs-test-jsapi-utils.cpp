@@ -251,14 +251,7 @@ static void test_gjs_autopointer_assign_operator_self_object(Fixture* fx,
                                                              const void*) {
     GjsAutoTestObject autoptr(fx->ptr);
 
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wself-assign"
-#endif
-    autoptr = autoptr;
-#if defined(__clang__)
-#    pragma clang diagnostic pop
-#endif
+    autoptr = *&autoptr;
 
     g_assert_true(autoptr == fx->ptr);
 }
