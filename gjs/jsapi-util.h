@@ -121,8 +121,7 @@ struct GjsAutoPointer {
     constexpr operator ConstPtr() const { return m_ptr; }
     constexpr operator bool() const { return m_ptr != nullptr; }
 
-    constexpr Ptr get() { return m_ptr; }
-    constexpr ConstPtr get() const { return m_ptr; }
+    constexpr Ptr get() const { return m_ptr; }
     constexpr Ptr* out() { return &m_ptr; }
 
     constexpr Ptr release() {
