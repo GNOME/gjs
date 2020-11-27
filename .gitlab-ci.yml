@@ -60,7 +60,13 @@ build-alpine-image:
     when: always
     paths:
       - _build/compile_commands.json
+      - _build/installed-tests/js/jsunit-resources.c
+      - _build/installed-tests/js/jsunit-resources.h
+      - _build/js-resources.c
+      - _build/js-resources.h
       - _build/meson-logs/*log*.txt
+      - _build/test/mock-js-resources.c
+      - _build/test/mock-js-resources.h
   script:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
@@ -204,10 +210,16 @@ cppcheck:
   extends:
     - .fdo.distribution-image@alpine
     - .gjs-alpine
-  stage: source_check
+  stage: test  # so that we have compile_commands.json and generated C files
   script:
     - cppcheck --version
-    - cppcheck . -v -f -q -UHAVE_PRINTF_ALTERNATIVE_INT --error-exitcode=1 --inline-suppr --library=gtk,tools/cppcheck.cfg --enable=warning,performance,portability
+    # Create fake g-i test files, we are not analyzing them anyway
+    - mkdir -p /usr/share/gobject-introspection-1.0/tests
+    - |
+      touch /usr/share/gobject-introspection-1.0/tests/gimarshallingtests.{c,h} \
+        /usr/share/gobject-introspection-1.0/tests/regress.{c,h} \
+        /usr/share/gobject-introspection-1.0/tests/warnlib.{c,h}
+    - ./tools/run_cppcheck.sh -q
   except:
     refs:
       - schedules

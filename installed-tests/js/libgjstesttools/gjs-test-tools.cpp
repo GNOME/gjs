@@ -216,6 +216,7 @@ void gjs_test_tools_run_dispose_other_thread(GObject* object, GError** error) {
         object, error);
     // cppcheck-suppress leakNoVarFunctionCall
     g_thread_join(thread);
+    // cppcheck-suppress memleak
 }
 
 /**

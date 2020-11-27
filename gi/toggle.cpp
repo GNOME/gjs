@@ -146,6 +146,8 @@ ToggleQueue::shutdown(void)
 }
 
 void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
+                          // https://trac.cppcheck.net/ticket/10733
+                          // cppcheck-suppress passedByValue
                           ToggleQueue::Handler handler) {
     g_assert(owns_lock() && "Unsafe access to queue");
 
