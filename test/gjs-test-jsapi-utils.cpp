@@ -59,31 +59,31 @@ static void test_gjs_autopointer_ctor_empty() {
 
 static void test_gjs_autopointer_ctor_basic(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr(fx->ptr);
-    g_assert(autoptr == fx->ptr);
-    g_assert(autoptr.get() == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
+    g_assert_true(autoptr.get() == fx->ptr);
 }
 
 static void test_gjs_autopointer_ctor_take_ownership(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr(fx->ptr, GjsAutoTakeOwnership());
-    g_assert(autoptr == fx->ptr);
-    g_assert(autoptr.get() == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
+    g_assert_true(autoptr.get() == fx->ptr);
     g_object_unref(fx->ptr);
 }
 
 static void test_gjs_autopointer_ctor_assign(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr = fx->ptr;
-    g_assert(autoptr == fx->ptr);
-    g_assert(autoptr.get() == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
+    g_assert_true(autoptr.get() == fx->ptr);
 }
 
 static void test_gjs_autopointer_ctor_assign_other(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr1 = fx->ptr;
     GjsAutoTestObject autoptr2 = autoptr1;
 
-    g_assert(autoptr1 == fx->ptr);
-    g_assert(autoptr1.get() == fx->ptr);
-    g_assert(autoptr2 == fx->ptr);
-    g_assert(autoptr2.get() == fx->ptr);
+    g_assert_true(autoptr1 == fx->ptr);
+    g_assert_true(autoptr1.get() == fx->ptr);
+    g_assert_true(autoptr2 == fx->ptr);
+    g_assert_true(autoptr2.get() == fx->ptr);
 }
 
 static void test_gjs_autopointer_dtor(Fixture* fx, const void*) {
@@ -91,8 +91,8 @@ static void test_gjs_autopointer_dtor(Fixture* fx, const void*) {
 
     {
         GjsAutoTestObject autoptr(fx->ptr);
-        g_assert(autoptr == fx->ptr);
-        g_assert(autoptr.get() == fx->ptr);
+        g_assert_true(autoptr == fx->ptr);
+        g_assert_true(autoptr.get() == fx->ptr);
     }
 
     g_assert_nonnull(fx->ptr);
@@ -115,7 +115,7 @@ static void test_gjs_autopointer_dtor_cpp() {
     {
         auto* ptr = new TestStruct(dtor_callback);
         GjsAutoCppPointer<TestStruct> autoptr(ptr);
-        g_assert(ptr == autoptr);
+        g_assert_true(ptr == autoptr);
     }
 
     g_assert_true(deleted);
@@ -154,8 +154,8 @@ static void test_gjs_autopointer_dtor_cpp_array() {
 static void test_gjs_autopointer_dtor_take_ownership(Fixture* fx, const void*) {
     {
         GjsAutoTestObject autoptr(fx->ptr, GjsAutoTakeOwnership());
-        g_assert(autoptr == fx->ptr);
-        g_assert(autoptr.get() == fx->ptr);
+        g_assert_true(autoptr == fx->ptr);
+        g_assert_true(autoptr.get() == fx->ptr);
     }
 
     g_assert_nonnull(fx->ptr);
@@ -179,8 +179,8 @@ static void test_gjs_autopointer_assign_operator() {
 
     autoptr = ptr;
 
-    g_assert(autoptr == ptr);
-    g_assert(autoptr.get() == ptr);
+    g_assert_true(autoptr == ptr);
+    g_assert_true(autoptr.get() == ptr);
 }
 
 static void test_gjs_autopointer_assign_operator_other_ptr() {
@@ -194,7 +194,7 @@ static void test_gjs_autopointer_assign_operator_other_ptr() {
 
     autoptr = ptr2;
 
-    g_assert(autoptr == ptr2);
+    g_assert_true(autoptr == ptr2);
     g_assert_nonnull(ptr1);
     g_object_unref(ptr1);
     g_assert_null(ptr1);
@@ -208,7 +208,7 @@ static void test_gjs_autopointer_assign_operator_self_ptr(Fixture* fx,
 
     autoptr = fx->ptr;
 
-    g_assert(autoptr == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
 }
 
 static void test_gjs_autopointer_assign_operator_object(Fixture* fx,
@@ -219,8 +219,8 @@ static void test_gjs_autopointer_assign_operator_object(Fixture* fx,
     autoptr1 = fx->ptr;
     autoptr2 = autoptr1;
 
-    g_assert(autoptr1 == autoptr2);
-    g_assert(autoptr2.get() == fx->ptr);
+    g_assert_true(autoptr1 == autoptr2);
+    g_assert_true(autoptr2.get() == fx->ptr);
 }
 
 static void test_gjs_autopointer_assign_operator_other_object() {
@@ -237,8 +237,8 @@ static void test_gjs_autopointer_assign_operator_other_object() {
 
         autoptr1 = autoptr2;
 
-        g_assert(autoptr1 == ptr2);
-        g_assert(autoptr2 == ptr2);
+        g_assert_true(autoptr1 == ptr2);
+        g_assert_true(autoptr2 == ptr2);
         g_assert_nonnull(ptr1);
         g_object_unref(ptr1);
     }
@@ -260,7 +260,7 @@ static void test_gjs_autopointer_assign_operator_self_object(Fixture* fx,
 #    pragma clang diagnostic pop
 #endif
 
-    g_assert(autoptr == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
 }
 
 static void test_gjs_autopointer_assign_operator_copy_and_swap(Fixture* fx,
@@ -269,11 +269,11 @@ static void test_gjs_autopointer_assign_operator_copy_and_swap(Fixture* fx,
     auto* ptr = fx->ptr;
 
     auto test_copy_fun = [ptr](GjsAutoTestObject data) {
-        g_assert(data == ptr);
+        g_assert_true(data == ptr);
     };
 
     test_copy_fun(autoptr);
-    g_assert(autoptr == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
 }
 
 static void test_gjs_autopointer_operator_move(Fixture* fx, const void*) {
@@ -281,14 +281,14 @@ static void test_gjs_autopointer_operator_move(Fixture* fx, const void*) {
     void* ptr = fx->ptr;
 
     auto test_move_fun = [ptr](GjsAutoTestObject&& data) {
-        g_assert(ptr == data);
+        g_assert_true(ptr == data);
     };
 
     test_move_fun(std::move(autoptr));
     g_assert_nonnull(autoptr);
 
     GjsAutoTestObject autoptr2 = std::move(autoptr);
-    g_assert(autoptr2 == fx->ptr);
+    g_assert_true(autoptr2 == fx->ptr);
     g_assert_null(autoptr);
 }
 
@@ -298,7 +298,7 @@ static void test_gjs_autopointer_operator_swap(Fixture* fx, const void*) {
 
     std::swap(autoptr1, autoptr2);
     g_assert_null(autoptr1);
-    g_assert(autoptr2 == fx->ptr);
+    g_assert_true(autoptr2 == fx->ptr);
 }
 
 static void test_gjs_autopointer_assign_operator_arrow(Fixture* fx,
@@ -346,13 +346,13 @@ static void test_gjs_autopointer_assign_operator_array() {
 static void test_gjs_autopointer_get(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr(fx->ptr);
 
-    g_assert(fx->ptr == autoptr.get());
+    g_assert_true(fx->ptr == autoptr.get());
 }
 
 static void test_gjs_autopointer_out(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr(fx->ptr);
 
-    g_assert(fx->ptr == *(autoptr.out()));
+    g_assert_true(fx->ptr == *(autoptr.out()));
 }
 
 static void test_gjs_autopointer_release(Fixture* fx, const void*) {
@@ -361,7 +361,7 @@ static void test_gjs_autopointer_release(Fixture* fx, const void*) {
     g_assert_nonnull(autoptr);
 
     auto* released = autoptr.release();
-    g_assert(released == fx->ptr);
+    g_assert_true(released == fx->ptr);
     g_assert_null(autoptr);
 
     g_object_unref(fx->ptr);
@@ -388,12 +388,12 @@ static void test_gjs_autopointer_reset_nullptr(Fixture* fx, const void*) {
 static void test_gjs_autopointer_reset_self_ptr(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr(fx->ptr);
 
-    g_assert(autoptr == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
 
     g_object_ref(fx->ptr);
 
     autoptr.reset(fx->ptr);
-    g_assert(autoptr == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
 
     g_assert_nonnull(fx->ptr);
 }
@@ -407,12 +407,12 @@ static void test_gjs_autopointer_reset_other_ptr() {
     {
         GjsAutoTestObject autoptr(ptr1);
 
-        g_assert(autoptr == ptr1);
+        g_assert_true(autoptr == ptr1);
 
         g_object_ref(ptr1);
 
         autoptr.reset(ptr2);
-        g_assert(autoptr == ptr2);
+        g_assert_true(autoptr == ptr2);
 
         g_assert_nonnull(ptr1);
         g_assert_nonnull(ptr2);
@@ -430,7 +430,7 @@ static void test_gjs_autopointer_swap_other_ptr(Fixture* fx, const void*) {
 
     autoptr1.swap(autoptr2);
     g_assert_null(autoptr1);
-    g_assert(autoptr2 == fx->ptr);
+    g_assert_true(autoptr2 == fx->ptr);
 
     g_assert_nonnull(fx->ptr);
 }
@@ -439,7 +439,7 @@ static void test_gjs_autopointer_swap_self_ptr(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr(fx->ptr);
 
     autoptr.swap(autoptr);
-    g_assert(autoptr == fx->ptr);
+    g_assert_true(autoptr == fx->ptr);
 
     g_assert_nonnull(fx->ptr);
 }
@@ -451,7 +451,7 @@ static void test_gjs_autopointer_swap_empty(Fixture* fx, const void*) {
     autoptr1.swap(autoptr2);
     g_assert_null(autoptr1);
 
-    g_assert(autoptr2 == fx->ptr);
+    g_assert_true(autoptr2 == fx->ptr);
     g_assert_nonnull(fx->ptr);
 }
 
@@ -475,7 +475,7 @@ static void test_gjs_autochar_init() {
 
     g_assert_cmpstr(autoptr, ==, "FoooBar");
     g_assert_cmpuint(autoptr[4], ==, 'B');
-    g_assert(autoptr == str);
+    g_assert_true(autoptr == str);
 }
 
 static void test_gjs_autochar_init_take_ownership() {
@@ -484,7 +484,7 @@ static void test_gjs_autochar_init_take_ownership() {
 
     g_assert_cmpstr(autoptr, ==, str);
     g_assert_cmpuint(autoptr[4], ==, 'B');
-    g_assert(autoptr != str);
+    g_assert_true(autoptr != str);
 }
 
 static void test_gjs_autochar_copy() {
@@ -492,7 +492,7 @@ static void test_gjs_autochar_copy() {
 
     char* copy = autoptr.copy();
     g_assert_cmpstr(autoptr, ==, copy);
-    g_assert(autoptr != copy);
+    g_assert_true(autoptr != copy);
 
     g_free(copy);
 }
@@ -513,7 +513,7 @@ static void test_gjs_autostrv_init_take_ownership() {
 
     for (int i = g_strv_length(const_cast<char**>(strv)); i >= 0; i--)
         g_assert_cmpstr(autoptr[i], ==, strv[i]);
-    g_assert(autoptr != strv);
+    g_assert_false(autoptr == strv);
 }
 
 static void test_gjs_autostrv_copy() {
@@ -523,7 +523,7 @@ static void test_gjs_autostrv_copy() {
     char** copy = autoptr.copy();
     for (int i = g_strv_length(const_cast<char**>(strv)); i >= 0; i--)
         g_assert_cmpstr(copy[i], ==, strv[i]);
-    g_assert(autoptr != copy);
+    g_assert_false(autoptr == copy);
 
     g_strfreev(copy);
 }
