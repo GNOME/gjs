@@ -37,28 +37,115 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
 
     explicit Ns(const char* ns_name)
-        : GjsAutoChar(const_cast<char*>(ns_name), GjsAutoTakeOwnership()) {}
+        : GjsAutoChar(const_cast<char*>(ns_name), GjsAutoTakeOwnership()) {
+        GJS_INC_COUNTER(ns);
+    }
+
+    ~Ns() { GJS_DEC_COUNTER(ns); }
 
     // JSClass operations
 
+    // The *resolved out parameter, on success, should be false to indicate that
+    // id was not resolved; and true if id was resolved.
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      bool* resolved);
+                      bool* resolved) {
+        if (!JSID_IS_STRING(id)) {
+            *resolved = false;
+            return true;  // not resolved, but no error
+        }
+
+        // let Object.prototype resolve these
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        if (id == atoms.to_string() || id == atoms.value_of()) {
+            *resolved = false;
+            return true;
+        }
+
+        JS::UniqueChars name;
+        if (!gjs_get_string_id(cx, id, &name))
+            return false;
+        if (!name) {
+            *resolved = false;
+            return true;  // not resolved, but no error
+        }
+
+        GjsAutoBaseInfo info =
+            g_irepository_find_by_name(nullptr, get(), name.get());
+        if (!info) {
+            *resolved = false;  // No property defined, but no error either
+            return true;
+        }
+
+        gjs_debug(GJS_DEBUG_GNAMESPACE,
+                  "Found info type %s for '%s' in namespace '%s'",
+                  gjs_info_type_name(info.type()), info.name(), info.ns());
+
+        bool defined;
+        if (!gjs_define_info(cx, obj, info, &defined)) {
+            gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
+                      info.name());
+            return false;
+        }
+
+        // we defined the property in this object?
+        *resolved = defined;
+        return true;
+    }
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+    bool new_enumerate_impl(JSContext* cx,
+                            JS::HandleObject obj [[maybe_unused]],
                             JS::MutableHandleIdVector properties,
-                            bool only_enumerable);
+                            bool only_enumerable [[maybe_unused]]) {
+        int n = g_irepository_get_n_infos(nullptr, get());
+        if (!properties.reserve(properties.length() + n)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
 
-    static void finalize_impl(JSFreeOp* fop, Ns* priv);
+        for (int k = 0; k < n; k++) {
+            GjsAutoBaseInfo info = g_irepository_get_info(nullptr, get(), k);
+            const char* name = info.name();
+
+            jsid id = gjs_intern_string_to_id(cx, name);
+            if (id == JSID_VOID)
+                return false;
+            properties.infallibleAppend(id);
+        }
+
+        return true;
+    }
+
+    static void finalize_impl(JSFreeOp* fop [[maybe_unused]], Ns* priv) {
+        g_assert(priv && "Finalize called on wrong object");
+        delete priv;
+    }
 
     // Properties and methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool get_name(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
+        GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
+        return gjs_string_from_utf8(cx, priv->get(), args.rval());
+    }
 
-    static const JSClassOps class_ops;
-    static const JSPropertySpec proto_props[];
+    static constexpr JSClassOps class_ops = {
+        nullptr,  // addProperty
+        nullptr,  // deleteProperty
+        nullptr,  // enumerate
+        &Ns::new_enumerate,
+        &Ns::resolve,
+        nullptr,  // mayResolve
+        &Ns::finalize,
+    };
+
+    // clang-format off
+    static constexpr JSPropertySpec proto_props[] = {
+        JS_STRING_SYM_PS(toStringTag, "GIRepositoryNamespace", JSPROP_READONLY),
+        JS_PSG("__name__", &Ns::get_name, GJS_MODULE_PROP_FLAGS),
+        JS_PS_END};
+    // clang-format on
 
     static constexpr js::ClassSpec class_spec = {
         nullptr,  // createConstructor
@@ -77,129 +164,26 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* create(JSContext* cx, const char* ns_name);
+    static JSObject* create(JSContext* cx, const char* ns_name) {
+        JS::RootedObject proto(cx, Ns::create_prototype(cx));
+        if (!proto)
+            return nullptr;
+
+        JS::RootedObject ns(cx,
+                            JS_NewObjectWithGivenProto(cx, &Ns::klass, proto));
+        if (!ns)
+            return nullptr;
+
+        auto* priv = new Ns(ns_name);
+        g_assert(!JS_GetPrivate(ns));
+        JS_SetPrivate(ns, priv);
+
+        gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
+                            "ns constructor, obj %p priv %p", ns.get(), priv);
+
+        return ns;
+    }
 };
-
-/* The *resolved out parameter, on success, should be false to indicate that id
- * was not resolved; and true if id was resolved. */
-bool Ns::resolve_impl(JSContext* context, JS::HandleObject obj, JS::HandleId id,
-                      bool* resolved) {
-    bool defined;
-
-    if (!JSID_IS_STRING(id)) {
-        *resolved = false;
-        return true; /* not resolved, but no error */
-    }
-
-    /* let Object.prototype resolve these */
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (id == atoms.to_string() || id == atoms.value_of()) {
-        *resolved = false;
-        return true;
-    }
-
-    JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name))
-        return false;
-    if (!name) {
-        *resolved = false;
-        return true;  /* not resolved, but no error */
-    }
-
-    GjsAutoBaseInfo info =
-        g_irepository_find_by_name(nullptr, get(), name.get());
-    if (!info) {
-        *resolved = false; /* No property defined, but no error either */
-        return true;
-    }
-
-    gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Found info type %s for '%s' in namespace '%s'",
-              gjs_info_type_name(info.type()), info.name(), info.ns());
-
-    if (!gjs_define_info(context, obj, info, &defined)) {
-        gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
-                  info.name());
-        return false;
-    }
-
-    /* we defined the property in this object? */
-    *resolved = defined;
-    return true;
-}
-
-bool Ns::new_enumerate_impl(JSContext* cx,
-                            JS::HandleObject obj [[maybe_unused]],
-                            JS::MutableHandleIdVector properties,
-                            bool only_enumerable [[maybe_unused]]) {
-    int n = g_irepository_get_n_infos(nullptr, get());
-    if (!properties.reserve(properties.length() + n)) {
-        JS_ReportOutOfMemory(cx);
-        return false;
-    }
-
-    for (int k = 0; k < n; k++) {
-        GjsAutoBaseInfo info = g_irepository_get_info(nullptr, get(), k);
-        const char* name = info.name();
-
-        jsid id = gjs_intern_string_to_id(cx, name);
-        if (id == JSID_VOID)
-            return false;
-        properties.infallibleAppend(id);
-    }
-
-    return true;
-}
-
-bool Ns::get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
-    return gjs_string_from_utf8(cx, priv->get(), args.rval());
-}
-
-void Ns::finalize_impl(JSFreeOp*, Ns* priv) {
-    g_assert(priv && "Finalize called on wrong object");
-    GJS_DEC_COUNTER(ns);
-    delete priv;
-}
-
-// clang-format off
-const JSClassOps Ns::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    &Ns::new_enumerate,
-    &Ns::resolve,
-    nullptr,  // mayResolve
-    &Ns::finalize,
-};
-
-const JSPropertySpec Ns::proto_props[] = {
-    JS_STRING_SYM_PS(toStringTag, "GIRepositoryNamespace", JSPROP_READONLY),
-    JS_PSG("__name__", &Ns::get_name, GJS_MODULE_PROP_FLAGS),
-    JS_PS_END
-};
-// clang-format on
-
-JSObject* Ns::create(JSContext* cx, const char* ns_name) {
-    JS::RootedObject proto(cx, Ns::create_prototype(cx));
-    if (!proto)
-        return nullptr;
-
-    JS::RootedObject ns(cx, JS_NewObjectWithGivenProto(cx, &Ns::klass, proto));
-    if (!ns)
-        return nullptr;
-
-    auto* priv = new Ns(ns_name);
-    GJS_INC_COUNTER(ns);
-
-    g_assert(!JS_GetPrivate(ns));
-    JS_SetPrivate(ns, priv);
-
-    gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE, "ns constructor, obj %p priv %p",
-                        ns.get(), priv);
-
-    return ns;
-}
 
 JSObject*
 gjs_create_ns(JSContext    *context,
