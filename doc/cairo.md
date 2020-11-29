@@ -12,7 +12,7 @@ Methods are studlyCaps, similar to other JavaScript apis, eg
 `cairo_move_to` is wrapped to `Cairo.Context.moveTo()`
 `cairo_surface_write_to_png` to `Cairo.Context.writeToPNG()`.
 
-Abbrevations such as RGB, RGBA, PNG, PDF, SVG are always
+Abbreviations such as RGB, RGBA, PNG, PDF, SVG are always
 upper-case.
 
 Enums are set in the cairo namespace, the enum names are capitalized:
@@ -78,7 +78,7 @@ let pattern = new Cairo.SolidPattern.createRGB(0, 0, 0);
 let pattern = new Cairo.SolidPattern.createRGBA(0, 0, 0, 0);
 ```
 TODO:
-* context: wrap the remaning methods
+* context: wrap the remaining methods
 * surface methods
 * image surface methods
 * matrix

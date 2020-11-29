@@ -298,7 +298,7 @@ with the property name, picking the latest version if there is no entry for it i
 ## More about **imports**
 
 **imports** is a global object that you can use to import any js file or GObject
-Introspection lib as moudule, there are 4 special properties of **imports**:
+Introspection lib as module, there are 4 special properties of **imports**:
 
  * `searchPath`
 

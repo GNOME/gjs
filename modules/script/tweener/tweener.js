@@ -601,7 +601,7 @@ function addCaller(target, tweeningParameters) {
 function _getNumberOfProperties(object) {
     var totalProperties = 0;
 
-    // the following line is disabled becasue eslint was picking up the following error: the variable name is defined but never used, however since it is required to search the object it is used and we'll allow the line to be ignored to get rid of the error message
+    // the following line is disabled because eslint was picking up the following error: the variable name is defined but never used, however since it is required to search the object it is used and we'll allow the line to be ignored to get rid of the error message
     /* eslint-disable-next-line */
     for (let name in object) {
         totalProperties++;
@@ -720,7 +720,7 @@ function _affectTweens(affectFunction, scope, properties) {
                     affectFunction(i);
                     affected = true;
                 } else {
-                    // The properties are mixed, so split the tween and affect only certian specific
+                    // The properties are mixed, so split the tween and affect only certain specific
                     // properties
                     var splicedTweenIndex = _splitTweens(i, affectedProperties);
                     affectFunction(splicedTweenIndex);

@@ -51,10 +51,10 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
        use JS_InitClass for static classes like Math */
     g_assert (constructor_native != NULL);
 
-    /* Class initalization consists of five parts:
+    /* Class initialization consists of five parts:
        - building a prototype
        - defining prototype properties and functions
-       - building a constructor and definining it on the right object
+       - building a constructor and defining it on the right object
        - defining constructor properties and functions
        - linking the constructor and the prototype, so that
          JS_NewObjectForConstructor can find it

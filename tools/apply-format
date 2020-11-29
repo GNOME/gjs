@@ -295,7 +295,7 @@ else # Diff-only.
     declare git_args=(git diff -U0 --no-color)
     [ "$staged" = true ] && git_args+=("--staged")
 
-    # $format_diff may contain a command ("python") and the script to excute, so we
+    # $format_diff may contain a command ("python") and the script to execute, so we
     # need to split it.
     read -r -a format_diff_args <<< "$format_diff"
     [ "$in_place" = true ] && format_diff_args+=("-i")

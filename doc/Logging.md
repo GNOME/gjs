@@ -1,4 +1,4 @@
-GJS includes a number of built-in funtions for logging and aiding debugging, in
+GJS includes a number of built-in functions for logging and aiding debugging, in
 addition to those available as a part of the GNOME APIs.
 
 # Built-in Functions
@@ -37,7 +37,7 @@ gjs> try {
 ....     logError(e, 'FooError');
 .... }
 
-(gjs:28115): Gjs-WARNING **: 19:28:13.334: JS ERROR: FooError: Error: Some error occured
+(gjs:28115): Gjs-WARNING **: 19:28:13.334: JS ERROR: FooError: Error: Some error occurred
 @typein:2:16
 @<stdin>:1:34
 ```
@@ -45,7 +45,7 @@ gjs> try {
 
 ### print() & printerr()
 
-`print()` takes any number of string (or coercable) arguments, joins them with a
+`print()` takes any number of string (or coercible) arguments, joins them with a
 space and appends a newline (`\n`). The resulting message will be printed
 directly to `stdout` of the current process using `g_print()`.
 

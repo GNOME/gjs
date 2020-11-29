@@ -148,7 +148,7 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
 }
 
 /* Check if an argument of the given needs to be released if we created it
- * from a JS value to pass it into a function and aren't transfering ownership.
+ * from a JS value to pass it into a function and aren't transferring ownership.
  */
 [[nodiscard]] static bool type_needs_release(GITypeInfo* type_info,
                                              GITypeTag type_tag) {

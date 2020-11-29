@@ -547,7 +547,7 @@ function easeOutInElastic(t, b, c, d, pParams) {
  * @param b             Starting value.
  * @param c             Change needed in value.
  * @param d             Expected easing duration (in frames or seconds).
- * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
+ * @param s             Overshoot amount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
 function easeInBack(t, b, c, d, pParams) {
@@ -562,7 +562,7 @@ function easeInBack(t, b, c, d, pParams) {
  * @param b             Starting value.
  * @param c             Change needed in value.
  * @param d             Expected easing duration (in frames or seconds).
- * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
+ * @param s             Overshoot amount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
 function easeOutBack(t, b, c, d, pParams) {
@@ -577,7 +577,7 @@ function easeOutBack(t, b, c, d, pParams) {
  * @param b             Starting value.
  * @param c             Change needed in value.
  * @param d             Expected easing duration (in frames or seconds).
- * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
+ * @param s             Overshoot amount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
 function easeInOutBack(t, b, c, d, pParams) {
@@ -594,7 +594,7 @@ function easeInOutBack(t, b, c, d, pParams) {
  * @param b             Starting value.
  * @param c             Change needed in value.
  * @param d             Expected easing duration (in frames or seconds).
- * @param s             Overshoot ammount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
+ * @param s             Overshoot amount: higher s means greater overshoot (0 produces cubic easing with no overshoot, and the default value of 1.70158 produces an overshoot of 10 percent).
  * @return              The correct value.
  */
 function easeOutInBack(t, b, c, d, pParams) {

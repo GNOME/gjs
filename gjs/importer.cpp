@@ -198,7 +198,7 @@ static bool import_directory(JSContext* context, JS::HandleObject obj,
 }
 
 /* Make the property we set in gjs_module_import() permanent;
- * we do this after the import succesfully completes.
+ * we do this after the import successfully completes.
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool
