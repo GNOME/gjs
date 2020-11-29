@@ -42,7 +42,7 @@ accepted.
 Your responsibilities as a contributor:
 
 - Be welcoming and encouraging to newcomers.
-- Conduct yourself professionally; rude, abusive, harrassing, or
+- Conduct yourself professionally; rude, abusive, harassing, or
   discriminatory behaviour is not tolerated.
 - For any major changes and enhancements you want to make, first create
   an issue in the [bugtracker], discuss things transparently, and get

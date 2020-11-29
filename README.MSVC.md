@@ -66,7 +66,7 @@ JS_STANDALONE=1 $(mozjs_srcroot)/js/src/configure --enable-nspr-build --host=i68
 
 Notice that "JS_STANDALONE=1" and "--disable-jemalloc" are absolutely required,
 otherwise GJS will not build/run correctly.  If your GJS build crashes upon
-launch, use Depedency Walker to ensure that mozjs-78.dll does not depend on
+launch, use Dependency Walker to ensure that mozjs-78.dll does not depend on
 mozglue.dll!  If it does, or if GJS fails to link with missing arena_malloc() and
 friends symbols, you have built SpiderMoney incorrectly and will need to rebuild
 SpiderMonkey (with the build options as noted above) and retry the build.
