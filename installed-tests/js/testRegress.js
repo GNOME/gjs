@@ -849,7 +849,7 @@ describe('Life, the Universe and Everything', function () {
         });
 
         it('method cannot be called on a GBoxed of the wrong type', function () {
-            expect(() => Regress.TestSimpleBoxedA.protoype.copy.call(wrongBoxed))
+            expect(() => Regress.TestSimpleBoxedA.prototype.copy.call(wrongBoxed))
                 .toThrow();
         });
 
