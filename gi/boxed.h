@@ -49,7 +49,6 @@ class BoxedBase
  protected:
     explicit BoxedBase(BoxedPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
-    ~BoxedBase(void) {}
 
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
     static constexpr const char* DEBUG_TAG = "GBoxed";

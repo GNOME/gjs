@@ -31,7 +31,6 @@ class UnionBase
  protected:
     explicit UnionBase(UnionPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
-    ~UnionBase(void) {}
 
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
     static constexpr const char* DEBUG_TAG = "union";

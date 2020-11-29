@@ -37,7 +37,6 @@ class FundamentalBase
  protected:
     explicit FundamentalBase(FundamentalPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
-    ~FundamentalBase(void) {}
 
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GFUNDAMENTAL;
     static constexpr const char* DEBUG_TAG = "fundamental";

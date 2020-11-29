@@ -137,7 +137,6 @@ class GIWrapperBase {
     Prototype* m_proto;
 
     explicit GIWrapperBase(Prototype* proto = nullptr) : m_proto(proto) {}
-    ~GIWrapperBase(void) {}
 
     // These three can be overridden in subclasses. See define_jsclass().
     static constexpr JSPropertySpec* proto_properties = nullptr;

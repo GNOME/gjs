@@ -46,7 +46,6 @@ class ErrorBase
  protected:
     explicit ErrorBase(ErrorPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
-    ~ErrorBase(void) {}
 
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GERROR;
     static constexpr const char* DEBUG_TAG = "gerror";
