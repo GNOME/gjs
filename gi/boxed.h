@@ -51,8 +51,8 @@ class BoxedBase
         : GIWrapperBase(proto) {}
     ~BoxedBase(void) {}
 
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GBOXED;
-    static constexpr const char* debug_tag = "GBoxed";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
+    static constexpr const char* DEBUG_TAG = "GBoxed";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;

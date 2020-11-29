@@ -39,8 +39,8 @@ class FundamentalBase
         : GIWrapperBase(proto) {}
     ~FundamentalBase(void) {}
 
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GFUNDAMENTAL;
-    static constexpr const char* debug_tag = "fundamental";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GFUNDAMENTAL;
+    static constexpr const char* DEBUG_TAG = "fundamental";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;

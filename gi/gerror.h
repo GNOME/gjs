@@ -48,8 +48,8 @@ class ErrorBase
         : GIWrapperBase(proto) {}
     ~ErrorBase(void) {}
 
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GERROR;
-    static constexpr const char* debug_tag = "gerror";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GERROR;
+    static constexpr const char* DEBUG_TAG = "gerror";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;

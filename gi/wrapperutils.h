@@ -284,24 +284,24 @@ class GIWrapperBase {
  protected:
     void debug_lifecycle(const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
-            Base::debug_topic, "[%p: %s pointer %p - %s.%s (%s)] %s", this,
-            Base::debug_tag, ptr_addr(), ns(), name(), type_name(), message);
+            Base::DEBUG_TOPIC, "[%p: %s pointer %p - %s.%s (%s)] %s", this,
+            Base::DEBUG_TAG, ptr_addr(), ns(), name(), type_name(), message);
     }
     void debug_lifecycle(const void* obj GJS_USED_VERBOSE_LIFECYCLE,
                          const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(
-            Base::debug_topic,
+            Base::DEBUG_TOPIC,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s", this,
-            Base::debug_tag, ptr_addr(), obj, ns(), name(), type_name(),
+            Base::DEBUG_TAG, ptr_addr(), obj, ns(), name(), type_name(),
             message);
     }
     void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
                       const char* id GJS_USED_VERBOSE_PROPS,
                       const void* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(
-            Base::debug_topic,
+            Base::DEBUG_TOPIC,
             "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s '%s'", this,
-            Base::debug_tag, ptr_addr(), obj, ns(), name(), type_name(),
+            Base::DEBUG_TAG, ptr_addr(), obj, ns(), name(), type_name(),
             message, id);
     }
     void debug_jsprop(const char* message, jsid id, const void* obj) const {
@@ -314,9 +314,9 @@ class GIWrapperBase {
     static void debug_jsprop_static(const char* message GJS_USED_VERBOSE_PROPS,
                                     jsid id GJS_USED_VERBOSE_PROPS,
                                     const void* obj GJS_USED_VERBOSE_PROPS) {
-        gjs_debug_jsprop(Base::debug_topic,
+        gjs_debug_jsprop(Base::DEBUG_TOPIC,
                          "[%s JS wrapper %p] %s '%s', no instance associated",
-                         Base::debug_tag, obj, message,
+                         Base::DEBUG_TAG, obj, message,
                          gjs_debug_id(id).c_str());
     }
 
@@ -515,7 +515,7 @@ class GIWrapperBase {
 
         static_cast<GIWrapperBase*>(priv)->debug_lifecycle(obj,
                                                            "JSObject created");
-        gjs_debug_lifecycle(Base::debug_topic, "m_proto is %p",
+        gjs_debug_lifecycle(Base::DEBUG_TOPIC, "m_proto is %p",
                             priv->get_prototype());
 
         // We may need to return a value different from obj (for example because
@@ -836,7 +836,7 @@ class GIWrapperPrototype : public Base {
                 constructor))
             return false;
 
-        gjs_debug(Base::debug_topic,
+        gjs_debug(Base::DEBUG_TOPIC,
                   "Defined class for %s (%s), prototype %p, "
                   "JSClass %p, in object %p",
                   Base::name(), Base::type_name(), prototype.get(),

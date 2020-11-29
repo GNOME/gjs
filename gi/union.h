@@ -33,8 +33,8 @@ class UnionBase
         : GIWrapperBase(proto) {}
     ~UnionBase(void) {}
 
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GBOXED;
-    static constexpr const char* debug_tag = "union";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
+    static constexpr const char* DEBUG_TAG = "union";
 
     static const JSClassOps class_ops;
     static const JSClass klass;

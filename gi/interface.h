@@ -47,8 +47,8 @@ class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
         : GIWrapperBase(proto) {}
     ~InterfaceBase(void) {}
 
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GINTERFACE;
-    static constexpr const char* debug_tag = "GInterface";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GINTERFACE;
+    static constexpr const char* DEBUG_TAG = "GInterface";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
