@@ -37,8 +37,6 @@ class UnionBase
 
     static const JSClassOps class_ops;
     static const JSClass klass;
-
-    [[nodiscard]] static const char* to_string_kind(void) { return "union"; }
 };
 
 class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,

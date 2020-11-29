@@ -44,10 +44,6 @@ class FundamentalBase
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
 
-    // Helper methods
-
-    [[nodiscard]] const char* to_string_kind() const { return "fundamental"; }
-
     // Public API
 
  public:

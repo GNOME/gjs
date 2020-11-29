@@ -532,9 +532,9 @@ class GIWrapperBase {
     GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
         GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, Base, priv);
-        return gjs_wrapper_to_string_func(
-            cx, obj, static_cast<const Base*>(priv)->to_string_kind(),
-            priv->info(), priv->gtype(), priv->ptr_addr(), args.rval());
+        return gjs_wrapper_to_string_func(cx, obj, Base::DEBUG_TAG,
+                                          priv->info(), priv->gtype(),
+                                          priv->ptr_addr(), args.rval());
     }
 
     // Helper methods

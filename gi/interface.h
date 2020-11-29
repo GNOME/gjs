@@ -47,13 +47,11 @@ class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
         : GIWrapperBase(proto) {}
 
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GINTERFACE;
-    static constexpr const char* DEBUG_TAG = "GInterface";
+    static constexpr const char* DEBUG_TAG = "interface";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
     static JSFunctionSpec static_methods[];
-
-    [[nodiscard]] const char* to_string_kind(void) const { return "interface"; }
 
     // JSNative methods
 

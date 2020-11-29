@@ -168,7 +168,6 @@ class ObjectBase
                                                            JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
-    [[nodiscard]] const char* to_string_kind() const;
     GJS_JSAPI_RETURN_CONVENTION
     static bool init_gobject(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
