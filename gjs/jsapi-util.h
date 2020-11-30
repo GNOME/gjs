@@ -389,8 +389,8 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 
 void gjs_throw_constructor_error             (JSContext       *context);
 
-void gjs_throw_abstract_constructor_error(JSContext    *context,
-                                          JS::CallArgs& args);
+void gjs_throw_abstract_constructor_error(JSContext* cx,
+                                          const JS::CallArgs& args);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_build_string_array(JSContext* cx,

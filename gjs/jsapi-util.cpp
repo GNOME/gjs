@@ -186,10 +186,8 @@ gjs_throw_constructor_error(JSContext *context)
               "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
 }
 
-void
-gjs_throw_abstract_constructor_error(JSContext    *context,
-                                     JS::CallArgs& args)
-{
+void gjs_throw_abstract_constructor_error(JSContext* context,
+                                          const JS::CallArgs& args) {
     const JSClass *proto_class;
     const char *name = "anonymous";
 
