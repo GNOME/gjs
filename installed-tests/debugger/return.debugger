@@ -1,6 +1,8 @@
-b 2
-b 6
-b 10
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
+b 4
+b 8
+b 12
 c
 return
 ret 5

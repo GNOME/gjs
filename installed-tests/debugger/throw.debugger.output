@@ -1,18 +1,20 @@
 GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, a() at throw.debugger.js:2:4
+Debugger statement, a() at throw.debugger.js:4:4
 db> throw 'foobar' + 3.14;
 Unwinding due to exception. (Type 'c' to continue unwinding.)
-#0    a() at throw.debugger.js:2:4
+#0    a() at throw.debugger.js:4:4
 Exception value is:
 $1 = "foobar3.14"
 db> fin
-Run till exit from a() at throw.debugger.js:2:4
+Run till exit from a() at throw.debugger.js:4:4
 Frame terminated by exception:
 $2 = "foobar3.14"
 (To rethrow it, type 'throw'.)
 Unwinding due to exception. (Type 'c' to continue unwinding.)
-#0    toplevel at throw.debugger.js:7:4
+#0    toplevel at throw.debugger.js:9:4
 Exception value is:
 $3 = "foobar3.14"
 db> throw

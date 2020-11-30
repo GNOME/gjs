@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 # Currently the only option is "pretty" for pretty-printing. Set doesn't yet
 # allow setting variables in the program.
 c

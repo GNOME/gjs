@@ -1,35 +1,37 @@
 GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> s
-toplevel at step.debugger.js:10:0
-entered frame: a() at step.debugger.js:2:4
+toplevel at step.debugger.js:12:0
+entered frame: a() at step.debugger.js:4:4
 db> s
-a() at step.debugger.js:2:4
-entered frame: b() at step.debugger.js:7:4
+a() at step.debugger.js:4:4
+entered frame: b() at step.debugger.js:9:4
 db> s
-b() at step.debugger.js:7:4
+b() at step.debugger.js:9:4
 A line in b
 db> s
-b() at step.debugger.js:8:0
+b() at step.debugger.js:10:0
 No value returned.
 db> s
-b() at step.debugger.js:8:0
-a() at step.debugger.js:2:4
+b() at step.debugger.js:10:0
+a() at step.debugger.js:4:4
 db> s
-a() at step.debugger.js:2:4
+a() at step.debugger.js:4:4
 db> s
-a() at step.debugger.js:3:4
+a() at step.debugger.js:5:4
 A line in a
 db> s
-a() at step.debugger.js:4:0
+a() at step.debugger.js:6:0
 No value returned.
 db> s
-a() at step.debugger.js:4:0
-toplevel at step.debugger.js:10:0
+a() at step.debugger.js:6:0
+toplevel at step.debugger.js:12:0
 db> s
-toplevel at step.debugger.js:10:0
+toplevel at step.debugger.js:12:0
 db> s
-toplevel at step.debugger.js:11:0
+toplevel at step.debugger.js:13:0
 No value returned.
 db> s
-toplevel at step.debugger.js:11:0
+toplevel at step.debugger.js:13:0
 Program exited with code 0

@@ -1,6 +1,8 @@
 GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at keys.debugger.js:6:0
+Debugger statement, toplevel at keys.debugger.js:8:0
 db> keys a
 $1 = [object Array]
 [
