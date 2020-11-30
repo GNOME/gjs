@@ -12,7 +12,6 @@
 #include <functional>  // for mem_fn
 #include <string>
 #include <tuple>        // for tie
-#include <type_traits>  // for remove_reference<>::type
 #include <utility>      // for move
 #include <vector>
 

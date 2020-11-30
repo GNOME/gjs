@@ -22,7 +22,6 @@
 #include <js/MemoryFunctions.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <js/Utility.h>  // for UniqueChars
 #include <jsapi.h>       // for JS_GetPrivate, JS_SetPrivate, JS_Ge...
 #include <jspubtd.h>     // for JSProto_TypeError
 

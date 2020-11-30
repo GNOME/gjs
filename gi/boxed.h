@@ -16,10 +16,10 @@
 #include <glib.h>
 
 #include <js/GCHashTable.h>  // for GCHashMap
+#include <js/HashTable.h>    // for DefaultHasher
 #include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <mozilla/HashTable.h>  // for DefaultHasher
 
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"

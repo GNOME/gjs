@@ -7,7 +7,9 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <string.h>
+
 #include <limits>
+#include <unordered_set>  // for unordered_set::erase(), insert()
 
 #include <ffi.h>
 #include <girepository.h>
@@ -37,6 +39,7 @@
 #include "gi/param.h"
 #include "gi/union.h"
 #include "gi/value.h"
+#include "gi/wrapperutils.h"  // for GjsTypecheckNoThrow
 #include "gjs/byteArray.h"
 #include "gjs/jsapi-util.h"
 #include "util/log.h"

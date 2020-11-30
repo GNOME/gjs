@@ -3,15 +3,10 @@
 
 # IWYU mapping file for files that are part of libgjs
 [
-  {"include": ["<bits/std_abs.h>", "private", "<stdlib.h>", "public"]},
-  {"include": ["<bits/std_function.h>", "private", "<functional>", "public"]},
-  {"include": ["@<bits/stdint-.*>", "private", "<stdint.h>", "public"]},
   {"include": ["<bits/types/sigevent_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/siginfo_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/struct_itimerspec.h>", "private", "<time.h>", "public"]},
-  {"include": ["<bits/types/struct_timespec.h>", "private", "<time.h>", "public"]},
   {"include": ["<bits/types/timer_t.h>", "private", "<sys/types.h>", "public"]},
-  {"include": ["<ext/alloc_traits.h>", "private", "<memory>", "public"]},
 
   {"include": ["@<ffi.*>", "private", "<ffi.h>", "public"]},
   {"include": ["@\"gio/.*\"", "private", "<gio/gio.h>", "public"]},
@@ -23,7 +18,4 @@
   {"include": ["@\"sysprof-capture-.*\"", "private", "<sysprof-capture.h>", "public"]},
   {"include": ["@<sysprof-capture-.*>", "private", "<sysprof-capture.h>", "public"]},
   {"include": ["<X11/Xlib.h>", "private", "<cairo-xlib.h>", "public"]},
-
-  # Workaround for https://github.com/include-what-you-use/include-what-you-use/issues/226
-  {"include": ["<cstdint>", "private", "<stdint.h>", "public"]},
 ]

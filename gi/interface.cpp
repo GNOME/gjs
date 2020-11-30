@@ -9,6 +9,7 @@
 
 #include <js/Class.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 
 #include "gi/function.h"
 #include "gi/interface.h"

@@ -5,11 +5,13 @@
 #include <config.h>
 
 #include <girepository.h>
+#include <glib.h>  // for g_atomic_rc_box_acquire, ...
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
 
 #include "gi/arg-inl.h"

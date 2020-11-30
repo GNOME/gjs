@@ -17,7 +17,6 @@
 
 #include <new>
 #include <string>       // for u16string
-#include <type_traits>  // for remove_reference<>::type
 #include <unordered_map>
 #include <utility>  // for move
 #include <vector>
@@ -46,7 +45,6 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
-#include <js/Utility.h>  // for DeletePolicy
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_IsExceptionPending, ...

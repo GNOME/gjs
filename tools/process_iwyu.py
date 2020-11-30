@@ -57,6 +57,9 @@ FWD_DECLS_IN_HEADER = (
 )
 add_fwd_header = False
 
+CSTDINT = '#include <cstdint>'
+STDINTH = '#include <stdint.h>'
+
 FALSE_POSITIVES = (
     # The bodies of these structs already come before their usage,
     # we don't need to have forward declarations of them as well
@@ -70,14 +73,54 @@ FALSE_POSITIVES = (
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
 
+    # False positive when using Mozilla vectors' append() and
+    # infallibleAppend()
+    ('gi/function.cpp', '#include <utility>', 'for forward'),
+    ('gi/ns.cpp', '#include <utility>', 'for forward'),
+    ('gi/value.cpp', '#include <utility>', 'for forward'),
+    ('gjs/importer.cpp', '#include <utility>', 'for forward'),
+    ('gjs/module.cpp', '#include <utility>', 'for forward'),
+
+    # False positive when using EnumType operators
+    ('gi/arg-cache.h', '#include <type_traits>', 'for enable_if_t'),
+    ('modules/cairo-context.cpp', '#include <type_traits>', 'for enable_if_t'),
+    ('modules/cairo-region.cpp', '#include <type_traits>', 'for enable_if_t'),
+    ('modules/cairo-surface.cpp', '#include <type_traits>', 'for enable_if_t'),
+
+    # False positive when using GjsAutoPointer
+    ('gi/object.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gi/private.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gi/value.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
+    ('gjs/context.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gjs/debugger.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gjs/importer.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('gjs/profiler.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+    ('test/gjs-test-jsapi-utils.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
+
     # Weird false positive on some versions of IWYU
-    ('gi/arg.cpp', 'struct _GHashTable;', ''),
     ('gi/arg.cpp', 'struct _GVariant;', ''),
+    ('gjs/profiler.cpp', '#include <gjs/profiler.h>', ''),
 )
 
 
 def output():
     global file, state, add_fwd_header, there_were_errors
+
+    # Workaround for
+    # https://github.com/include-what-you-use/include-what-you-use/issues/226
+    if CSTDINT in add:
+        why = add.pop(CSTDINT, None)
+        if STDINTH in remove:
+            remove.pop(STDINTH, None)
+        else:
+            add[STDINTH] = why
 
     if add_fwd_header:
         if FWD_HEADER not in all_includes:
@@ -98,8 +141,6 @@ def output():
             print(f'{Colors.RED}-{line}{Colors.NORMAL}{why}')
         there_were_errors = True
 
-    state = None
-    file = None
     add.clear()
     remove.clear()
     all_includes.clear()
@@ -109,6 +150,11 @@ def output():
 for line in sys.stdin:
     line = line.strip()
     if not line:
+        continue
+
+    if 'fatal error:' in line:
+        print(line)
+        there_were_errors = True
         continue
 
     # filter out errors having to do with compiler arguments unknown to IWYU

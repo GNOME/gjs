@@ -12,8 +12,8 @@
 
 #include <js/TypeDecls.h>
 
-#include "gi/wrapperutils.h"  // IWYU pragma: keep
-#include "gjs/global.h"       // IWYU pragma: keep
+#include "gi/wrapperutils.h"
+#include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 

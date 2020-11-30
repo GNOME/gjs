@@ -15,6 +15,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/wrapperutils.h"
+#include "gjs/jsapi-util.h"  // for GjsAutoPointer operators
 #include "gjs/macros.h"
 #include "util/log.h"
 

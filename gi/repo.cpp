@@ -15,7 +15,6 @@
 #include <js/ComparisonOperators.h>
 #include <js/Id.h>                  // for JSID_IS_STRING, JSID_VOID
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
-#include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars

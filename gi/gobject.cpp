@@ -10,9 +10,11 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_New, JSAutoRealm, JS_GetProperty
 
 #include "gi/gobject.h"

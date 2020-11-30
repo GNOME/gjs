@@ -7,9 +7,8 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
-#include <string>       // for string
-#include <type_traits>  // for remove_reference
-#include <utility>      // for move, forward
+#include <string>
+#include <utility>  // for move, forward
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -20,6 +19,7 @@
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for IdVector, JS_AtomizeAndPinJSString

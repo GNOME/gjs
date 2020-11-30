@@ -18,13 +18,13 @@
 #include <glib.h>
 
 #include <js/GCHashTable.h>  // for GCHashMap
+#include <js/HashTable.h>    // for DefaultHasher
 #include <js/Id.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsfriendapi.h>            // for JSID_IS_ATOM, JSID_TO_ATOM
 #include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
-#include <mozilla/HashTable.h>      // for DefaultHasher
 #include <mozilla/Likely.h>         // for MOZ_LIKELY
 
 #include "gi/wrapperutils.h"

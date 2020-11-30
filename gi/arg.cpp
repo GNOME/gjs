@@ -7,7 +7,6 @@
 
 #include <string.h>  // for strcmp, strlen, memcpy
 
-#include <memory>  // for operator!=, unique_ptr
 #include <string>
 
 #include <girepository.h>
@@ -45,6 +44,7 @@
 #include "gjs/atoms.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
+#include "gjs/enum-utils.h"
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
 

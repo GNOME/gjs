@@ -5,14 +5,17 @@
 #include <config.h>
 
 #include <cstddef>        // for size_t
+#include <functional>     // for hash<int>
 #include <string>         // for string
+#include <string_view>    // for hash<string>
 #include <unordered_set>  // for unordered_set
-#include <utility>        // for hash, move
+#include <utility>        // for move
 
 #include <glib.h>  // for g_warning
 
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
+#include <js/GCPolicyAPI.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -25,8 +28,6 @@
 
 // Avoid static_assert in MSVC builds
 namespace JS {
-template <typename T> struct GCPolicy;
-
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }

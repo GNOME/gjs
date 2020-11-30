@@ -3,7 +3,7 @@
 
 #include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
 
-#ifndef HAVE_SIGNAL_H
+#ifdef HAVE_SIGNAL_H
 #    include <signal.h>  // for siginfo_t, sigevent, sigaction, SIGPROF, ...
 #endif
 
@@ -13,14 +13,12 @@
 #ifdef ENABLE_PROFILER
 #    include <alloca.h>
 #    include <errno.h>
-#    include <stddef.h>  // for size_t
 #    include <stdint.h>
 #    include <stdio.h>      // for sscanf
 #    include <string.h>     // for memcpy, strlen
-#    include <sys/time.h>   // for CLOCK_MONOTONIC
 #    include <sys/types.h>  // for timer_t
 #    include <syscall.h>    // for __NR_gettid
-#    include <time.h>       // for itimerspec, timer_delete, ...
+#    include <time.h>       // for size_t, CLOCK_MONOTONIC, itimerspec, ...
 #    ifdef HAVE_UNISTD_H
 #        include <unistd.h>  // for getpid, syscall
 #    endif
@@ -31,6 +29,8 @@
 #endif
 
 #include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
+#include <js/TypeDecls.h>
+#include <mozilla/Atomics.h>  // for ProfilingStack operators
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"

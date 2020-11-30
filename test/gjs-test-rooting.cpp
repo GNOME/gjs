@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include <glib-object.h>  // for g_object_weak_unref, g_object_weak_ref
 #include <glib.h>
 
 #include <js/Class.h>

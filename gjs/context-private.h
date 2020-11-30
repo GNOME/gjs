@@ -17,15 +17,16 @@
 #include <glib.h>
 
 #include <js/GCHashTable.h>
+#include <js/GCPolicyAPI.h>
 #include <js/GCVector.h>
+#include <js/HashTable.h>  // for DefaultHasher
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/UniquePtr.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
-#include <mozilla/HashTable.h>  // for DefaultHasher
-#include <mozilla/UniquePtr.h>
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
@@ -56,11 +57,6 @@ using GTypeNotUint64 =
 // The GC sweep method should ignore FundamentalTable and GTypeTable's key types
 namespace JS {
 // Forward declarations
-template <typename T>
-class WeakCache;
-template <typename T>
-struct GCPolicy;
-
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 // We need GCPolicy<GType> for GTypeTable. SpiderMonkey already defines

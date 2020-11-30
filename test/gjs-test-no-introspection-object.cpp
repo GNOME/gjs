@@ -13,7 +13,7 @@ struct _GjsTestNoIntrospectionObject {
 G_DEFINE_TYPE(GjsTestNoIntrospectionObject, gjstest_no_introspection_object,
               G_TYPE_OBJECT)
 
-static GjsTestNoIntrospectionObject* last_object = NULL;
+static GjsTestNoIntrospectionObject* last_object = nullptr;
 
 static void gjstest_no_introspection_object_init(
     GjsTestNoIntrospectionObject* self) {

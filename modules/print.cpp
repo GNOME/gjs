@@ -10,6 +10,7 @@
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/Conversions.h>
+#include <js/GCPolicyAPI.h>
 #include <js/PropertySpec.h>  // for JS_FN, JSFunctionSpec, JS_FS_END
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -21,8 +22,6 @@
 
 // Avoid static_assert in MSVC builds
 namespace JS {
-template <typename T> struct GCPolicy;
-
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }

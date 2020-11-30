@@ -9,6 +9,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/GCPolicyAPI.h>
 #include <js/TypeDecls.h>
 #include <jsfriendapi.h>  // for DumpBacktrace
 
@@ -17,8 +18,6 @@
 
 // Avoid static_assert in MSVC builds
 namespace JS {
-template <typename T> struct GCPolicy;
-
 template <>
 struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }
