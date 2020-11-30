@@ -1,5 +1,6 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2017 Canonical, Ltd.
 
 imports.gi.versions.Gtk = '3.0';
 

@@ -1,6 +1,9 @@
 // -*- mode: js; indent-tabs-mode: nil -*-
 /* eslint-disable no-restricted-properties */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2011 Jasper St. Pierre <jstpierre@mecheye.net>
+// SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
+// SPDX-FileCopyrightText: 2015 Endless Mobile, Inc.
 
 const Lang = imports.lang;
 

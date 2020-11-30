@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2011 Red Hat, Inc.
 
 const Regress = imports.gi.Regress;
 const GObject = imports.gi.GObject;

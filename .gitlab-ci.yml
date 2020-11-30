@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 ---
 include:
   - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/7ea696055e322cc7aa4bcbe5422b56a198c4bdff/templates/alpine.yml'
@@ -13,7 +14,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2020-11-20.1'
+    FDO_DISTRIBUTION_TAG: '2020-11-23.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -26,7 +27,7 @@ build-alpine-image:
     FDO_DISTRIBUTION_EXEC: |
       python3 -m ensurepip &&
       rm -r /usr/lib/python*/ensurepip &&
-      pip3 install --no-cache --upgrade cpplint &&
+      pip3 install --no-cache --upgrade cpplint reuse &&
       mkdir -p /cwd
 
 .coverage: &coverage
@@ -235,7 +236,16 @@ codespell:
   stage: source_check
   image: "docker.io/bilelmoussaoui/codespell"
   script:
-    - codespell -S "*.png,*.po,*.jpg,.git,NEWS" -f --builtin "code,clear" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
+    - codespell -S "*.png,*.po,*.jpg,.git,LICENSES,NEWS" -f --builtin "code,clear" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
+
+license-check:
+  when: on_success
+  stage: source_check
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
+  script:
+    - reuse lint
 
 #############################################
 #                Manual Jobs                #

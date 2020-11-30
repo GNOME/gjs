@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2017 Patrick Griffis <tingping@tingping.se>
+// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 
 const {GLib, Gio, GObject} = imports.gi;
 

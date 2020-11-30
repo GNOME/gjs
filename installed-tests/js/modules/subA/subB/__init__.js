@@ -1,5 +1,6 @@
 /* exported ImporterClass, testImporterFunction */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2009 litl, LLC
 
 function testImporterFunction() {
     return '__init__ function tested';

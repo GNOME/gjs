@@ -1,18 +1,20 @@
 GJS debugger. Type "help" for help
-db> b 2
-Breakpoint 1 at return.debugger.js:2:4
-db> b 6
-Breakpoint 2 at return.debugger.js:6:4
-db> b 10
-Breakpoint 3 at return.debugger.js:10:4
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
+db> b 4
+Breakpoint 1 at return.debugger.js:4:4
+db> b 8
+Breakpoint 2 at return.debugger.js:8:4
+db> b 12
+Breakpoint 3 at return.debugger.js:12:4
 db> c
-Breakpoint 1, func1() at return.debugger.js:2:4
+Breakpoint 1, func1() at return.debugger.js:4:4
 db> return
 undefined
-Breakpoint 2, func2() at return.debugger.js:6:4
+Breakpoint 2, func2() at return.debugger.js:8:4
 db> ret 5
 5
-Breakpoint 3, func3() at return.debugger.js:10:4
+Breakpoint 3, func3() at return.debugger.js:12:4
 db> ret `${4 * 10 + 2} is the answer`
 42 is the answer
 Program exited with code 0

@@ -1,4 +1,6 @@
 GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> detach
 hi
 Program exited with code 0

@@ -1,5 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
+# SPDX-FileCopyrightText: 2016 Philip Chimento <philip.chimento@gmail.com>
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
     gjs="$TOP_BUILDDIR/gjs-console"

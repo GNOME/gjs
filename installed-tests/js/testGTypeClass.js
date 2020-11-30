@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2012 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 
 // We use Gio to have some objects that we know exist
 const Gio = imports.gi.Gio;

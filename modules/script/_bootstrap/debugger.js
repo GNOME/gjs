@@ -1,6 +1,7 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
 /* global debuggee, quit, loadNative, readline, uneval */
 // SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2011 Mozilla Foundation and contributors
 
 /*
  * This is a simple command-line debugger for GJS programs. It is based on

@@ -1,14 +1,16 @@
 GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> backtrace
-#0    toplevel at backtrace.debugger.js:1:0
+#0    toplevel at backtrace.debugger.js:3:0
 db> c
-Debugger statement, toplevel at backtrace.debugger.js:1:0
+Debugger statement, toplevel at backtrace.debugger.js:3:0
 db> bt
-#0    toplevel at backtrace.debugger.js:1:0
+#0    toplevel at backtrace.debugger.js:3:0
 db> c
-Debugger statement, <anonymous>([object Array], 0, [object Array]) at backtrace.debugger.js:3:4
+Debugger statement, <anonymous>([object Array], 0, [object Array]) at backtrace.debugger.js:5:4
 db> where
-#0    <anonymous>([object Array], 0, [object Array]) at backtrace.debugger.js:3:4
-#1    toplevel at backtrace.debugger.js:2:36
+#0    <anonymous>([object Array], 0, [object Array]) at backtrace.debugger.js:5:4
+#1    toplevel at backtrace.debugger.js:4:36
 db> q
 Program exited with code 0

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 litl, LLC
 
 const ByteArray = imports.byteArray;
 const {Gio, GjsPrivate, GLib} = imports.gi;

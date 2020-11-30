@@ -1,21 +1,23 @@
 GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
 Print me
-Debugger statement, foo() at finish.debugger.js:3:4
+Debugger statement, foo() at finish.debugger.js:5:4
 db> finish
-Run till exit from foo() at finish.debugger.js:3:4
+Run till exit from foo() at finish.debugger.js:5:4
 Print me also
 No value returned.
-toplevel at finish.debugger.js:14:0
+toplevel at finish.debugger.js:16:0
 db> c
 Print me
-Debugger statement, bar() at finish.debugger.js:9:4
+Debugger statement, bar() at finish.debugger.js:11:4
 db> fin
-Run till exit from bar() at finish.debugger.js:9:4
+Run till exit from bar() at finish.debugger.js:11:4
 Print me also
 Value returned is:
 $1 = 5
-toplevel at finish.debugger.js:15:0
+toplevel at finish.debugger.js:17:0
 db> c
 Print me at the end
 Program exited with code 0

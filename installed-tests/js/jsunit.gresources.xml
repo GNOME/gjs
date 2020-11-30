@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: MIT OR LGPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2014 Jonas Danielsson <jonas@threetimestwo.org> -->
 <gresources>
   <gresource prefix="/org/gjs/jsunit">
     <file preprocess="xml-stripblanks">complex3.ui</file>

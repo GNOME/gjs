@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008, 2018 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
+// SPDX-FileCopyrightText: 2020 Ole Jørgen Brønner <olejorgenb@yahoo.no>
 
 // Various tests having to do with how introspection is implemented in GJS
 

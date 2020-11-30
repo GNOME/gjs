@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2013 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2015 Endless Mobile, Inc.
 
 const {GIMarshallingTests, Gio, GLib, GObject} = imports.gi;
 

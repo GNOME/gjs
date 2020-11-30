@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2010 litl, LLC
 
 const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;

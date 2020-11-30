@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-properties */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 litl, LLC
 
 // tests for imports.lang module
 // except for Lang.Class and Lang.Interface, which are tested in testLegacyClass

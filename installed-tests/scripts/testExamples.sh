@@ -1,5 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2018 Claudio André <claudioandre.br@gmail.com>
 
 DIR="$( cd "$( dirname "${0}" )" && pwd )"
 source "${DIR}"/common.sh

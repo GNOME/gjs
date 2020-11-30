@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2019 Sonny Piers <sonny@fastmail.net>
 
 // This is an example of a WebSocket client in Gjs using libsoup
 // https://developer.gnome.org/libsoup/stable/libsoup-2.4-WebSockets.html

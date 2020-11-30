@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 litl, LLC
 
 // Include this in case both GTK3 and GTK4 installed, otherwise an exception
 // will be thrown
