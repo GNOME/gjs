@@ -15,7 +15,7 @@ RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root
 
-RUN git clone --depth 1 https://github.com/ptomato/mozjs.git -b ${MOZJS_BRANCH}
+RUN git clone --no-tags --depth 1 https://github.com/ptomato/mozjs.git -b ${MOZJS_BRANCH}
 RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
