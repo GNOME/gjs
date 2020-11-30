@@ -22,7 +22,4 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gtype_get_actual_gtype(JSContext* context, JS::HandleObject object,
                                 GType* gtype_out);
 
-[[nodiscard]] bool gjs_typecheck_gtype(JSContext* cx, JS::HandleObject obj,
-                                       bool throw_error);
-
 #endif  // GI_GTYPE_H_

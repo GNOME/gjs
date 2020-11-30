@@ -177,11 +177,3 @@ bool gjs_gtype_get_actual_gtype(JSContext* context, JS::HandleObject object,
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     return _gjs_gtype_get_actual_gtype(context, atoms, object, gtype_out, 2);
 }
-
-bool
-gjs_typecheck_gtype (JSContext             *context,
-                     JS::HandleObject       obj,
-                     bool                   throw_error)
-{
-    return do_base_typecheck(context, obj, throw_error);
-}
