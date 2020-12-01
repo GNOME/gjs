@@ -150,7 +150,7 @@ class Function : public CWrapper<Function> {
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* create(JSContext* cx, GType gtype, GICallableInfo* info);
 
-    [[nodiscard]] char* format_name();
+    [[nodiscard]] std::string format_name();
 
     GJS_JSAPI_RETURN_CONVENTION
     bool invoke(JSContext* cx, const JS::CallArgs& args,
@@ -740,14 +740,19 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
     return true;
 }
 
-/* Intended for error messages. Return value must be freed */
-char* Function::format_name() {
-    if (g_callable_info_is_method(m_info))
-        return g_strdup_printf(
-            "method %s.%s.%s", m_info.ns(),
-            g_base_info_get_name(g_base_info_get_container(m_info)),
-            m_info.name());
-    return g_strdup_printf("function %s.%s", m_info.ns(), m_info.name());
+// Intended for error messages
+std::string Function::format_name() {
+    bool is_method = g_callable_info_is_method(m_info);
+    std::string retval = is_method ? "method" : "function";
+    retval += ' ';
+    retval += m_info.ns();
+    retval += '.';
+    if (is_method) {
+        retval += g_base_info_get_name(g_base_info_get_container(m_info));
+        retval += '.';
+    }
+    retval += m_info.name();
+    return retval;
 }
 
 void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
@@ -814,8 +819,8 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     GjsFunctionCallState state(context, m_info);
 
     if (state.gi_argc > GjsArgumentCache::MAX_ARGS) {
-        GjsAutoChar name = format_name();
-        gjs_throw(context, "Function %s has too many arguments", name.get());
+        gjs_throw(context, "Function %s has too many arguments",
+                  format_name().c_str());
         return false;
     }
 
@@ -826,16 +831,13 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     // PARAM_SKIPPED args).
     // args.length() is the number of arguments that were actually passed.
     if (args.length() > m_js_in_argc) {
-        GjsAutoChar name = format_name();
-
         if (!JS::WarnUTF8(context,
                           "Too many arguments to %s: expected %u, got %u",
-                          name.get(), m_js_in_argc, args.length()))
+                          format_name().c_str(), m_js_in_argc, args.length()))
             return false;
     } else if (args.length() < m_js_in_argc) {
-        GjsAutoChar name = format_name();
-
-        args.reportMoreArgsNeeded(context, name, m_js_in_argc, args.length());
+        args.reportMoreArgsNeeded(context, format_name().c_str(), m_js_in_argc,
+                                  args.length());
         return false;
     }
 
@@ -905,11 +907,10 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
         if (!cache->marshallers->in) {
             gjs_throw(context,
-                      "Error invoking %s.%s: impossible to determine what "
-                      "to pass to the '%s' argument. It may be that the "
-                      "function is unsupported, or there may be a bug in "
-                      "its annotations.",
-                      m_info.ns(), m_info.name(), cache->arg_name);
+                      "Error invoking %s: impossible to determine what to pass "
+                      "to the '%s' argument. It may be that the function is "
+                      "unsupported, or there may be a bug in its annotations.",
+                      format_name().c_str(), cache->arg_name);
             state.failed = true;
             break;
         }
@@ -1174,13 +1175,13 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
     GjsAutoChar descr;
     if (g_base_info_get_type(m_info) == GI_INFO_TYPE_FUNCTION) {
         descr = g_strdup_printf(
-            "function %s(%s) {\n\t/* wrapper for native symbol %s(); */\n}",
-            m_info.name(), arg_names.c_str(),
+            "%s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
+            format_name().c_str(), arg_names.c_str(),
             g_function_info_get_symbol(m_info));
     } else {
-        descr = g_strdup_printf(
-            "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
-            m_info.name(), arg_names.c_str());
+        descr =
+            g_strdup_printf("%s(%s) {\n\t/* wrapper for native symbol */\n}",
+                            format_name().c_str(), arg_names.c_str());
     }
 
     return gjs_string_from_utf8(cx, descr, rval);
