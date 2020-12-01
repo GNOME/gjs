@@ -596,11 +596,7 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
         args[0].set(value);
         JS::RootedObject tmp_object(context,
             gjs_construct_object_dynamic(context, proto, args));
-        if (!tmp_object)
-            return false;
-
-        source_priv = BoxedBase::for_js_typecheck(context, tmp_object);
-        if (!source_priv)
+        if (!tmp_object || !for_js_typecheck(context, tmp_object, &source_priv))
             return false;
     }
 

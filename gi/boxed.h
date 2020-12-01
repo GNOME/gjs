@@ -21,6 +21,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -44,6 +45,7 @@ class SystemAllocPolicy;
 
 class BoxedBase
     : public GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance> {
+    friend class CWrapperPointerOps<BoxedBase>;
     friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
 
  protected:

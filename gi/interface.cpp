@@ -86,8 +86,8 @@ bool InterfaceBase::has_instance(JSContext* cx, unsigned argc, JS::Value* vp) {
                                      &interface_proto))
         return false;
 
-    InterfaceBase* priv = InterfaceBase::for_js_typecheck(cx, interface_proto);
-    if (!priv)
+    InterfaceBase* priv;
+    if (!for_js_typecheck(cx, interface_proto, &priv))
         return false;
 
     return priv->to_prototype()->has_instance_impl(cx, args);

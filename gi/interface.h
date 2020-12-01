@@ -17,6 +17,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -39,6 +40,7 @@ class InterfaceInstance;
 
 class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
                                            InterfaceInstance> {
+    friend class CWrapperPointerOps<InterfaceBase>;
     friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
                                InterfaceInstance>;
 

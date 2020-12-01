@@ -26,6 +26,7 @@
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/arg-inl.h"
+#include "gi/cwrapper.h"
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"  // IWYU pragma: keep
@@ -49,10 +50,6 @@ bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
 bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
                                       const char* field_name);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
-                                   GType gtype);
-
 namespace InfoType {
 enum Tag { Enum, Interface, Object, Struct, Union };
 }
@@ -72,27 +69,6 @@ struct GjsTypecheckNoThrow {};
 template <InfoType::Tag>
 GJS_JSAPI_RETURN_CONVENTION bool gjs_define_static_methods(
     JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
-
-/*
- * GJS_GET_WRAPPER_PRIV:
- * @cx: JSContext pointer passed into JSNative function
- * @argc: Number of arguments passed into JSNative function
- * @vp: Argument value array passed into JSNative function
- * @args: Name for JS::CallArgs variable defined by this code snippet
- * @thisobj: Name for JS::RootedObject variable referring to function's this
- * @type: Type of private data
- * @priv: Name for private data variable defined by this code snippet
- *
- * A convenience macro for getting the private data from GJS classes using
- * GIWrapper.
- * Throws an error and returns false if the 'this' object is not the right type.
- * Use in any JSNative function.
- */
-#define GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, thisobj, type, priv) \
-    GJS_GET_THIS(cx, argc, vp, args, thisobj);                        \
-    type* priv = type::for_js_typecheck(cx, thisobj, args);           \
-    if (!priv)                                                        \
-        return false;
 
 /*
  * GIWrapperBase:
@@ -130,7 +106,7 @@ GJS_JSAPI_RETURN_CONVENTION bool gjs_define_static_methods(
  * https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
  */
 template <class Base, class Prototype, class Instance>
-class GIWrapperBase {
+class GIWrapperBase : public CWrapperPointerOps<Base> {
  protected:
     // nullptr if this Base is a Prototype; points to the corresponding
     // Prototype if this Base is an Instance.
@@ -144,65 +120,7 @@ class GIWrapperBase {
     static constexpr JSFunctionSpec* proto_methods = nullptr;
     static constexpr JSFunctionSpec* static_methods = nullptr;
 
-    // Methods to get an existing Base
-
  public:
-    /*
-     * GIWrapperBase::for_js:
-     *
-     * Gets the Base belonging to a particular JS object wrapper. Checks that
-     * the wrapper object has the right JSClass (Base::klass) and returns null
-     * if not. */
-    [[nodiscard]] static Base* for_js(JSContext* cx, JS::HandleObject wrapper) {
-        return static_cast<Base*>(
-            JS_GetInstancePrivate(cx, wrapper, &Base::klass, nullptr));
-    }
-
-    /*
-     * GIWrapperBase::check_jsclass:
-     *
-     * Checks if the given wrapper object has the right JSClass (Base::klass).
-     */
-    [[nodiscard]] static bool check_jsclass(JSContext* cx,
-                                            JS::HandleObject wrapper) {
-        return !!for_js(cx, wrapper);
-    }
-
-    /*
-     * GIWrapperBase::for_js_typecheck:
-     *
-     * Like for_js(), only throws a JS exception if the wrapper object has the
-     * wrong class. Use in JSNative functions, where you have access to a
-     * JS::CallArgs. The exception message will mention args.callee.
-     *
-     * The second overload can be used when you don't have access to an
-     * instance of JS::CallArgs. The exception message will be generic.
-     */
-    GJS_JSAPI_RETURN_CONVENTION
-    static Base* for_js_typecheck(
-        JSContext* cx, JS::HandleObject wrapper,
-        JS::CallArgs& args) {  // NOLINT(runtime/references)
-        return static_cast<Base*>(
-            JS_GetInstancePrivate(cx, wrapper, &Base::klass, &args));
-    }
-    GJS_JSAPI_RETURN_CONVENTION
-    static Base* for_js_typecheck(JSContext* cx, JS::HandleObject wrapper) {
-        if (!gjs_typecheck_instance(cx, wrapper, &Base::klass, true))
-            return nullptr;
-        return for_js(cx, wrapper);
-    }
-
-    /*
-     * GIWrapperBase::for_js_nocheck:
-     *
-     * Use when you don't have a JSContext* available. This method is infallible
-     * and cannot trigger a GC, so it's safe to use from finalize() and trace().
-     * (It can return null if no private data has been set yet on the wrapper.)
-     */
-    [[nodiscard]] static Base* for_js_nocheck(JSObject* wrapper) {
-        return static_cast<Base*>(JS_GetPrivate(wrapper));
-    }
-
     // Methods implementing our CRTP polymorphism scheme follow below. We don't
     // use standard C++ polymorphism because that would occupy another 8 bytes
     // for a vtable.
@@ -574,8 +492,9 @@ class GIWrapperBase {
     template <typename T = void>
     GJS_JSAPI_RETURN_CONVENTION static T* to_c_ptr(JSContext* cx,
                                                    JS::HandleObject obj) {
-        Base* priv = Base::for_js_typecheck(cx, obj);
-        if (!priv || !priv->check_is_instance(cx, "get a C pointer"))
+        Base* priv;
+        if (!Base::for_js_typecheck(cx, obj, &priv) ||
+            !priv->check_is_instance(cx, "get a C pointer"))
             return nullptr;
 
         return static_cast<T*>(priv->to_instance()->ptr());
@@ -640,9 +559,9 @@ class GIWrapperBase {
      * @expected_type: (nullable): GType to check
      *
      * Checks not only that the JS object is of the correct JSClass (like
-     * for_js_typecheck() does); but also that the object is an instance, not
-     * the protptype; and that the instance's wrapped pointer is of the correct
-     * GType or GI info.
+     * CWrapperPointerOps::typecheck() does); but also that the object is an
+     * instance, not the prototype; and that the instance's wrapped pointer is
+     * of the correct GType or GI info.
      *
      * The overload with a GjsTypecheckNoThrow parameter will not throw a JS
      * exception if the prototype is passed in or the typecheck fails.
@@ -650,8 +569,9 @@ class GIWrapperBase {
     GJS_JSAPI_RETURN_CONVENTION
     static bool typecheck(JSContext* cx, JS::HandleObject object,
                           GIBaseInfo* expected_info, GType expected_gtype) {
-        Base* priv = Base::for_js_typecheck(cx, object);
-        if (!priv || !priv->check_is_instance(cx, "convert to pointer"))
+        Base* priv;
+        if (!Base::for_js_typecheck(cx, object, &priv) ||
+            !priv->check_is_instance(cx, "convert to pointer"))
             return false;
 
         if (priv->to_instance()->typecheck_impl(cx, expected_info,

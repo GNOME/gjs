@@ -12,6 +12,7 @@
 
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -26,6 +27,7 @@ class UnionInstance;
 
 class UnionBase
     : public GIWrapperBase<UnionBase, UnionPrototype, UnionInstance> {
+    friend class CWrapperPointerOps<UnionBase>;
     friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
  protected:

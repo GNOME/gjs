@@ -372,6 +372,7 @@ libgjs_sources = [
     'gi/arg-cache.cpp', 'gi/arg-cache.h',
     'gi/boxed.cpp', 'gi/boxed.h',
     'gi/closure.cpp', 'gi/closure.h',
+    'gi/cwrapper.cpp', 'gi/cwrapper.h',
     'gi/enumeration.cpp', 'gi/enumeration.h',
     'gi/foreign.cpp', 'gi/foreign.h',
     'gi/fundamental.cpp', 'gi/fundamental.h',

@@ -40,6 +40,7 @@
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/closure.h"
+#include "gi/cwrapper.h"
 #include "gi/function.h"
 #include "gi/gjs_gi_trace.h"
 #include "gi/object.h"

@@ -14,6 +14,7 @@
 #include <js/PropertySpec.h>
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"  // for GjsAutoPointer operators
 #include "gjs/macros.h"
@@ -41,6 +42,7 @@ class CallArgs;
 
 class ErrorBase
     : public GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance> {
+    friend class CWrapperPointerOps<ErrorBase>;
     friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
  protected:
