@@ -51,15 +51,39 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
     // Properties
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool get_name(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
+        GJS_GET_THIS(cx, argc, vp, args, obj);
+        GType gtype = value(cx, obj, &args);
+        if (gtype == 0)
+            return false;
+
+        return gjs_string_from_utf8(cx, g_type_name(gtype), args.rval());
+    }
 
     // Methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
+        GJS_GET_THIS(cx, argc, vp, rec, obj);
+        GType gtype = value(cx, obj, &rec);
+        if (gtype == 0)
+            return false;
 
-    static const JSPropertySpec proto_props[];
-    static const JSFunctionSpec proto_funcs[];
+        GjsAutoChar strval =
+            g_strdup_printf("[object GType for '%s']", g_type_name(gtype));
+        return gjs_string_from_utf8(cx, strval, rec.rval());
+    }
+
+    // clang-format off
+    static constexpr JSPropertySpec proto_props[] = {
+        JS_PSG("name", &GTypeObj::get_name, JSPROP_PERMANENT),
+        JS_STRING_SYM_PS(toStringTag, "GIRepositoryGType", JSPROP_READONLY),
+        JS_PS_END};
+
+    static constexpr JSFunctionSpec proto_funcs[] = {
+        JS_FN("toString", &GTypeObj::to_string, 0, 0),
+        JS_FS_END};
+    // clang-format on
 
     static constexpr js::ClassSpec class_spec = {
         nullptr,  // createConstructor
@@ -92,127 +116,81 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
     GJS_JSAPI_RETURN_CONVENTION
     static bool actual_gtype_recurse(JSContext* cx, const GjsAtoms& atoms,
                                      JS::HandleObject object, GType* gtype_out,
-                                     int recurse);
+                                     int recurse) {
+        GType gtype = value(cx, object);
+        if (gtype > 0) {
+            *gtype_out = gtype;
+            return true;
+        }
 
- public:
-    GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* create(JSContext* cx, GType gtype);
+        JS::RootedValue v_gtype(cx);
 
-    GJS_JSAPI_RETURN_CONVENTION
-    static bool actual_gtype(JSContext* cx, JS::HandleObject object,
-                             GType* gtype_out);
-};
+        // OK, we don't have a GType wrapper object -- grab the "$gtype"
+        // property on that and hope it's a GType wrapper object
+        if (!JS_GetPropertyById(cx, object, atoms.gtype(), &v_gtype))
+            return false;
+        if (!v_gtype.isObject()) {
+            // OK, so we're not a class. But maybe we're an instance. Check for
+            // "constructor" and recurse on that.
+            if (!JS_GetPropertyById(cx, object, atoms.constructor(), &v_gtype))
+                return false;
+        }
 
-GJS_JSAPI_RETURN_CONVENTION
-bool GTypeObj::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_THIS(cx, argc, vp, rec, obj);
-    GType gtype = value(cx, obj, &rec);
-    if (gtype == 0)
-        return false;
+        if (recurse > 0 && v_gtype.isObject()) {
+            JS::RootedObject gtype_obj(cx, &v_gtype.toObject());
+            return actual_gtype_recurse(cx, atoms, gtype_obj, gtype_out,
+                                        recurse - 1);
+        }
 
-    GjsAutoChar strval = g_strdup_printf("[object GType for '%s']",
-                                         g_type_name(gtype));
-    return gjs_string_from_utf8(cx, strval, rec.rval());
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-bool GTypeObj::get_name(JSContext* context, unsigned argc, JS::Value* vp) {
-    GJS_GET_THIS(context, argc, vp, rec, obj);
-    GType gtype = value(context, obj, &rec);
-    if (gtype == 0)
-        return false;
-
-    return gjs_string_from_utf8(context, g_type_name(gtype), rec.rval());
-}
-
-/* Properties */
-const JSPropertySpec GTypeObj::proto_props[] = {
-    JS_PSG("name", &GTypeObj::get_name, JSPROP_PERMANENT),
-    JS_STRING_SYM_PS(toStringTag, "GIRepositoryGType", JSPROP_READONLY),
-    JS_PS_END,
-};
-
-/* Functions */
-const JSFunctionSpec GTypeObj::proto_funcs[] = {
-    JS_FN("toString", &GTypeObj::to_string, 0, 0), JS_FS_END};
-
-JSObject* GTypeObj::create(JSContext* context, GType gtype) {
-    g_assert(((void) "Attempted to create wrapper object for invalid GType",
-              gtype != 0));
-
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    // We cannot use gtype_table().lookupForAdd() here, because in between the
-    // lookup and the add, GCs may take place and mutate the hash table. A GC
-    // may only remove an element, not add one, so it's still safe to do this
-    // without locking.
-    auto p = gjs->gtype_table().lookup(gtype);
-    if (p.found())
-        return p->value();
-
-    JS::RootedObject proto(context, GTypeObj::create_prototype(context));
-    if (!proto)
-        return nullptr;
-
-    JS::RootedObject gtype_wrapper(
-        context, JS_NewObjectWithGivenProto(context, &GTypeObj::klass, proto));
-    if (!gtype_wrapper)
-        return nullptr;
-
-    JS_SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
-
-    gjs->gtype_table().put(gtype, gtype_wrapper);
-
-    return gtype_wrapper;
-}
-
-bool GTypeObj::actual_gtype_recurse(JSContext* context, const GjsAtoms& atoms,
-                                    JS::HandleObject object, GType* gtype_out,
-                                    int recurse) {
-    GType gtype = value(context, object);
-    if (gtype > 0) {
-        *gtype_out = gtype;
+        *gtype_out = G_TYPE_INVALID;
         return true;
     }
 
-    JS::RootedValue gtype_val(context);
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create(JSContext* cx, GType gtype) {
+        g_assert(gtype != 0 &&
+                 "Attempted to create wrapper object for invalid GType");
 
-    /* OK, we don't have a GType wrapper object -- grab the "$gtype"
-     * property on that and hope it's a GType wrapper object */
-    if (!JS_GetPropertyById(context, object, atoms.gtype(), &gtype_val))
-        return false;
-    if (!gtype_val.isObject()) {
-        /* OK, so we're not a class. But maybe we're an instance. Check
-           for "constructor" and recurse on that. */
-        if (!JS_GetPropertyById(context, object, atoms.constructor(),
-                                &gtype_val))
-            return false;
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+        // We cannot use gtype_table().lookupForAdd() here, because in between
+        // the lookup and the add, GCs may take place and mutate the hash table.
+        // A GC may only remove an element, not add one, so it's still safe to
+        // do this without locking.
+        auto p = gjs->gtype_table().lookup(gtype);
+        if (p.found())
+            return p->value();
+
+        JS::RootedObject proto(cx, GTypeObj::create_prototype(cx));
+        if (!proto)
+            return nullptr;
+
+        JS::RootedObject gtype_wrapper(
+            cx, JS_NewObjectWithGivenProto(cx, &GTypeObj::klass, proto));
+        if (!gtype_wrapper)
+            return nullptr;
+
+        JS_SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
+
+        gjs->gtype_table().put(gtype, gtype_wrapper);
+
+        return gtype_wrapper;
     }
 
-    if (recurse > 0 && gtype_val.isObject()) {
-        JS::RootedObject gtype_obj(context, &gtype_val.toObject());
-        return actual_gtype_recurse(context, atoms, gtype_obj, gtype_out,
-                                    recurse - 1);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool actual_gtype(JSContext* cx, JS::HandleObject object,
+                             GType* gtype_out) {
+        g_assert(gtype_out && "Missing return location");
+
+        // 2 means: recurse at most three times (including this call).
+        // The levels are calculated considering that, in the worst case we need
+        // to go from instance to class, from class to GType object and from
+        // GType object to GType value.
+
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        return actual_gtype_recurse(cx, atoms, object, gtype_out, 2);
     }
-
-    *gtype_out = G_TYPE_INVALID;
-    return true;
-}
-
-bool GTypeObj::actual_gtype(JSContext* context, JS::HandleObject object,
-                            GType* gtype_out) {
-    g_assert(gtype_out && "Missing return location");
-
-    /* 2 means: recurse at most three times (including this
-       call).
-       The levels are calculated considering that, in the
-       worst case we need to go from instance to class, from
-       class to GType object and from GType object to
-       GType value.
-     */
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return actual_gtype_recurse(context, atoms, object, gtype_out, 2);
-}
+};
 
 JSObject* gjs_gtype_create_gtype_wrapper(JSContext* context, GType gtype) {
     return GTypeObj::create(context, gtype);
