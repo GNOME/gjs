@@ -304,11 +304,13 @@ class GIWrapperBase {
             message, id);
     }
     void debug_jsprop(const char* message, jsid id, const void* obj) const {
-        debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
+        if constexpr (GJS_VERBOSE_ENABLE_PROPS)
+            debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
     }
     void debug_jsprop(const char* message, JSString* id,
                       const void* obj) const {
-        debug_jsprop(message, gjs_debug_string(id).c_str(), obj);
+        if constexpr (GJS_VERBOSE_ENABLE_PROPS)
+            debug_jsprop(message, gjs_debug_string(id).c_str(), obj);
     }
     static void debug_jsprop_static(const char* message GJS_USED_VERBOSE_PROPS,
                                     jsid id GJS_USED_VERBOSE_PROPS,
