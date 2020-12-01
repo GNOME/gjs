@@ -63,13 +63,3 @@ describe('GType marshalling', function () {
         expect(GObject.type_parent(GObject.TYPE_STRING)).toBeNull();
     });
 });
-
-describe('GType prototype object', function () {
-    it('has no name', function () {
-        expect(GIRepositoryGType.name).toBeNull();
-    });
-
-    it('has a string representation', function () {
-        expect(GIRepositoryGType.toString()).toEqual('[object GType prototype]');
-    });
-});

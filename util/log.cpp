@@ -202,6 +202,9 @@ _Pragma("GCC diagnostic pop")
     case GJS_DEBUG_GINTERFACE:
         prefix = "JS G IFACE";
         break;
+    case GJS_DEBUG_GTYPE:
+        prefix = "JS GTYPE";
+        break;
     default:
         prefix = "???";
         break;
