@@ -457,6 +457,10 @@ if build_cairo
     endif
 endif
 
+if build_readline
+    libgjs_dependencies += readline_deps
+endif
+
 if build_profiler
     libgjs_dependencies += profiler_deps
 endif
