@@ -35,7 +35,7 @@ do_Get_Upstream_Base () {
     # should probably be rebased.
     git remote add upstream https://gitlab.gnome.org/GNOME/gjs.git || \
         git remote set-url upstream https://gitlab.gnome.org/GNOME/gjs.git
-    base_branch="${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME:-${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME:-${CI_COMMIT_BRANCH:-${CI_DEFAULT_BRANCH}}}}"
+    base_branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_DEFAULT_BRANCH}}"
     git fetch --shallow-since="14 days ago" --no-tags upstream "$base_branch"
     git branch ci-upstream-base-branch FETCH_HEAD
 
