@@ -809,6 +809,11 @@ In cases where this is not practical, either use `g_critical()` and
 continue execution as best as possible, or use `g_error()` to abort with
 a fatal error.
 
+For this reason, don't use `g_assert()` or `g_assert_not_reached()` in unit tests!
+Otherwise the tests will crash in a release build.
+In unit tests, use `g_assert_true()`, `g_assert_false()`, `g_assert_cmpint()`, etc.
+Likewise, don't use these unit test assertions in the main code!
+
 Another issue is that values used only by assertions will produce an
 "unused value" warning when assertions are disabled.
 For example, this code will warn:
