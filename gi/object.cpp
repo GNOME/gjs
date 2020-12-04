@@ -2182,25 +2182,20 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
 
 bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    const char* kind = ObjectBase::DEBUG_TAG;
+    if (!priv->is_prototype())
+        kind = priv->to_instance()->to_string_kind();
     return gjs_wrapper_to_string_func(
-        cx, obj, priv->to_string_kind(), priv->info(), priv->gtype(),
+        cx, obj, kind, priv->info(), priv->gtype(),
         priv->is_prototype() ? nullptr : priv->to_instance()->ptr(),
         args.rval());
-}
-
-// Override of GIWrapperBase::to_string_kind()
-const char* ObjectBase::to_string_kind(void) const {
-    if (is_prototype())
-        return "object";
-    return to_instance()->to_string_kind();
 }
 
 /*
  * ObjectInstance::to_string_kind:
  *
- * Instance-only version of GIWrapperBase::to_string_kind(). ObjectInstance
- * shows a "finalized" marker in its toString() method if the wrapped GObject
- * has already been finalized.
+ * ObjectInstance shows a "finalized" marker in its toString() method if the
+ * wrapped GObject has already been finalized.
  */
 const char* ObjectInstance::to_string_kind(void) const {
     return m_gobj_disposed ? "object (FINALIZED)" : "object";

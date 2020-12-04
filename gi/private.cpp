@@ -335,9 +335,6 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
                              &params_obj))
         return false;
 
-    if (!gjs_typecheck_gtype(cx, gtype_obj, true))
-        return false;
-
     /* we only support standard accumulators for now */
     GSignalAccumulator accumulator;
     switch (accumulator_enum) {

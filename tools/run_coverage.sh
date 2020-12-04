@@ -8,14 +8,13 @@ GIDATADIR=$(pkg-config --variable=gidatadir gobject-introspection-1.0)
 BUILDDIR="$(pwd)/_coverage_build"
 LCOV_ARGS="--config-file $SOURCEDIR/tools/lcovrc"
 GENHTML_ARGS='--legend --show-details --branch-coverage'
-IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp"
+IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp */gjs/subprojects/*"
 
 rm -rf "$BUILDDIR"
 meson "$BUILDDIR" -Db_coverage=true
 
 VERSION=$(meson introspect "$BUILDDIR" --projectinfo | python -c 'import json, sys; print(json.load(sys.stdin)["version"])')
 
-ninja -C "$BUILDDIR"
 mkdir -p _coverage
 meson test -C "$BUILDDIR" --num-processes 1
 lcov --directory "$BUILDDIR" --capture --output-file _coverage/gjs.lcov.run --no-checksum $LCOV_ARGS

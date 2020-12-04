@@ -121,8 +121,7 @@ struct GjsAutoPointer {
     constexpr operator ConstPtr() const { return m_ptr; }
     constexpr operator bool() const { return m_ptr != nullptr; }
 
-    constexpr Ptr get() { return m_ptr; }
-    constexpr ConstPtr get() const { return m_ptr; }
+    constexpr Ptr get() const { return m_ptr; }
     constexpr Ptr* out() { return &m_ptr; }
 
     constexpr Ptr release() {
@@ -390,8 +389,8 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
 
 void gjs_throw_constructor_error             (JSContext       *context);
 
-void gjs_throw_abstract_constructor_error(JSContext    *context,
-                                          JS::CallArgs& args);
+void gjs_throw_abstract_constructor_error(JSContext* cx,
+                                          const JS::CallArgs& args);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_build_string_array(JSContext* cx,

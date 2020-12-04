@@ -49,10 +49,9 @@ class BoxedBase
  protected:
     explicit BoxedBase(BoxedPrototype* proto = nullptr)
         : GIWrapperBase(proto) {}
-    ~BoxedBase(void) {}
 
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GBOXED;
-    static constexpr const char* debug_tag = "GBoxed";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
+    static constexpr const char* DEBUG_TAG = "boxed";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
@@ -65,8 +64,6 @@ class BoxedBase
     static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
     // Helper methods that work on either instances or prototypes
-
-    [[nodiscard]] const char* to_string_kind() const { return "boxed"; }
 
     GJS_JSAPI_RETURN_CONVENTION
     GIFieldInfo* get_field_info(JSContext* cx, uint32_t id) const;

@@ -122,34 +122,14 @@ The standard header looks like this:
 
 ```c++
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * Copyright (c) YEARS  NAME <EMAIL>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: YEAR NAME <EMAIL>
 
 #include <HEADERS>
 
-/* gi/private.cpp - private "imports._gi" module with operations that we need
- * to use from JS in order to create GObject classes, but should not be exposed
- * to client code.
- */
+// gi/private.cpp - private "imports._gi" module with operations that we need
+// to use from JS in order to create GObject classes, but should not be exposed
+// to client code.
 ```
 
 A few things to note about this particular format: The "`-*-`" string on
@@ -158,8 +138,8 @@ file, not a C file (since C++ and C headers both share the `.h`
 extension.)
 This is originally an Emacs convention, but other editors use it too.
 
-The next section in the file is a concise note that describes the file's
-copyright and the license that the file is released under.
+The next lines in the file are machine-readable SPDX comments describing the file's copyright and the license that the file is released under.
+These comments should follow the [REUSE specification][reuse].
 This makes it perfectly clear what terms the source code can be
 distributed under and should not be modified.
 Names can be added to the copyright when making a substantial
@@ -170,6 +150,8 @@ file contains.
 If an algorithm is being implemented or something tricky is going on,
 this should be explained here, as well as any notes or *gotchas* in the
 code to watch out for.
+
+[reuse]: https://reuse.software/
 
 ##### Class overviews ######
 
@@ -826,6 +808,11 @@ recoverable error mechanism of `GError*` should be used instead.
 In cases where this is not practical, either use `g_critical()` and
 continue execution as best as possible, or use `g_error()` to abort with
 a fatal error.
+
+For this reason, don't use `g_assert()` or `g_assert_not_reached()` in unit tests!
+Otherwise the tests will crash in a release build.
+In unit tests, use `g_assert_true()`, `g_assert_false()`, `g_assert_cmpint()`, etc.
+Likewise, don't use these unit test assertions in the main code!
 
 Another issue is that values used only by assertions will produce an
 "unused value" warning when assertions are disabled.

@@ -88,8 +88,8 @@ class ObjectBase
  public:
     using SignalMatchFunc = guint(gpointer, GSignalMatchType, guint, GQuark,
                                   GClosure*, gpointer, gpointer);
-    static const GjsDebugTopic debug_topic = GJS_DEBUG_GOBJECT;
-    static constexpr const char* debug_tag = "GObject";
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GOBJECT;
+    static constexpr const char* DEBUG_TAG = "GObject";
 
     static const struct JSClassOps class_ops;
     static const struct JSClass klass;
@@ -168,7 +168,6 @@ class ObjectBase
                                                            JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
-    [[nodiscard]] const char* to_string_kind() const;
     GJS_JSAPI_RETURN_CONVENTION
     static bool init_gobject(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION

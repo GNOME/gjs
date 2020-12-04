@@ -15,7 +15,6 @@ do_Set_Env () {
     #Macros
     export ACLOCAL_PATH=$ACLOCAL_PATH:/usr/local/share/aclocal
 
-    export JHBUILD_RUN_AS_ROOT=1
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
 
