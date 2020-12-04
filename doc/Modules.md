@@ -2,7 +2,7 @@ GJS includes some built-in modules, as well as helpers for some core APIs like D
 
 ## [Gio](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/Gio.js)
 
-**Import with `const Gio = imports.gi.Gio;`**
+**Import with `const Gio = gi.require('Gio');` or `import Gio from 'gi://Gio'`**
 
 The `Gio` override includes a number of utilities for DBus that will be documented further at a later date. Below is a reasonable overview.
 
@@ -32,7 +32,7 @@ The `Gio` override includes a number of utilities for DBus that will be document
 
 ## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/GLib.js)
 
-**Import with `const GLib = imports.gi.GLib;`**
+**Import with `const GLib = gi.require('GLib');` or `import GLib from 'gi://GLib'`**
 
 Mostly GVariant and GBytes compatibility.
 
@@ -43,13 +43,13 @@ Mostly GVariant and GBytes compatibility.
 
 ## [GObject](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/GObject.js)
 
-**Import with `const GObject = imports.gi.GObject;`**
+**Import with `const GObject = gi.require('GObject');` or `import GObject from 'gi://GObject'`**
 
 Mostly GObject implementation (properties, signals, GType mapping). May be useful as a reference.
 
 ## [Gtk](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/core/overrides/Gtk.js)
 
-**Import with `const Gtk = imports.gi.Gtk;`**
+**Import with `const Gtk = gi.require('Gtk', '3.0');` or `import Gtk from 'gi://Gtk'`**
 
 Mostly GtkBuilder/composite template implementation. May be useful as a reference.
 
@@ -57,8 +57,7 @@ Mostly GtkBuilder/composite template implementation. May be useful as a referenc
 **REMINDER:** You should specify a version prior to importing a library with multiple versions:
 
 ```js
-imports.gi.versions.Gtk = "3.0";
-const Gtk = imports.gi.Gtk;
+import Gtk from 'gi://Gtk?version=3.0';
 ```
 >>>
 
@@ -284,10 +283,26 @@ Built-in version of the well-known [Tweener][tweener-www] animation/property tra
 
 ## GObject Introspection
 
+**Import with `import gi from 'gi';`**
+
+A wrapper of **libgirepository** to import native gobject-introspection libraries.
+
+* `gi.require(library: string, version?: string)`
+
+Loads a native gobject-introspection library.
+Version is required if more than one version of a library is installed.
+
+You can also import libraries through the `gi://` URL scheme.
+This function is only intended to be used when you want to import a
+library conditionally, since top-level import statements are resolved
+statically.
+
+### Legacy Imports (`imports.gi`)
+
 **Import with `const gi = imports.gi;`**
 
-A wrapper of **libgirepository** to import native gobject-introspection libraries. This
-object has a property `versions` which is an object on which you can set string-valued
+A wrapper for **libgirepository** is also available via the global `imports` object.
+This object has a property `versions` which is an object on which you can set string-valued
 properties indicating the version of that gobject-introspection library you want to load,
 and loading multiple versions in the same process is forbidden. So if you want to
 use gtk-3.0, set `imports.gi.versions.Gtk = '3.0';`.
@@ -295,7 +310,9 @@ use gtk-3.0, set `imports.gi.versions.Gtk = '3.0';`.
 Any other properties of `imports.gi` will attempt to import a gobject-introspection library
 with the property name, picking the latest version if there is no entry for it in `imports.gi.versions`.
 
-## More about **imports**
+## Legacy Imports
+
+Prior to the introduction of [ES Modules](ESModules.md), GJS had its own import system.
 
 **imports** is a global object that you can use to import any js file or GObject
 Introspection lib as module, there are 4 special properties of **imports**:

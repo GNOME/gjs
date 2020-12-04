@@ -150,6 +150,155 @@ gjstest_test_func_gjs_context_exit(void)
     g_object_unref(context);
 }
 
+static void gjstest_test_func_gjs_context_eval_module_file() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    uint8_t exit_status;
+    GError* error = nullptr;
+
+    bool ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/default.js",
+        &exit_status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    // for modules, last executed statement is _not_ the exit code
+    g_assert_cmpuint(exit_status, ==, 0);
+}
+
+static void gjstest_test_func_gjs_context_eval_module_file_throw() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    uint8_t exit_status;
+    GError* error = nullptr;
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, "*bad module*");
+
+    bool ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/throws.js",
+        &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+
+    g_test_assert_expected_messages();
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_module_file_exit() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+    uint8_t exit_status;
+
+    bool ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/exit0.js",
+        &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
+    g_assert_cmpuint(exit_status, ==, 0);
+
+    g_clear_error(&error);
+
+    ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/exit.js",
+        &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
+    g_assert_cmpuint(exit_status, ==, 42);
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_module_file_fail_instantiate() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+    uint8_t exit_status;
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING, "*foo*");
+
+    // evaluating this module without registering 'foo' first should make it
+    // fail ModuleInstantiate
+    bool ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/import.js",
+        &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+
+    g_test_assert_expected_messages();
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_register_module_eval_module() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_register_module(
+        gjs, "foo", "resource:///org/gnome/gjs/mock/test/modules/default.js",
+        &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    uint8_t exit_status;
+    ok = gjs_context_eval_module(gjs, "foo", &exit_status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    g_assert_cmpuint(exit_status, ==, 0);
+}
+
+static void gjstest_test_func_gjs_context_register_module_eval_module_file() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_register_module(
+        gjs, "foo", "resource:///org/gnome/gjs/mock/test/modules/default.js",
+        &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    uint8_t exit_status;
+    ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/import.js",
+        &exit_status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    g_assert_cmpuint(exit_status, ==, 0);
+}
+
+static void gjstest_test_func_gjs_context_register_module_non_existent() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_register_module(gjs, "foo", "nonexist.js", &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_module_unregistered() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+    uint8_t exit_status;
+
+    bool ok = gjs_context_eval_module(gjs, "foo", &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+
+    g_clear_error(&error);
+}
+
 #define JS_CLASS "\
 const GObject = imports.gi.GObject; \
 const FooBar = GObject.registerClass(class FooBar extends GObject.Object {}); \
@@ -619,6 +768,24 @@ main(int    argc,
     g_test_add_func("/gjs/context/eval/non-zero-terminated",
                     gjstest_test_func_gjs_context_eval_non_zero_terminated);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
+    g_test_add_func("/gjs/context/eval-module-file",
+                    gjstest_test_func_gjs_context_eval_module_file);
+    g_test_add_func("/gjs/context/eval-module-file/throw",
+                    gjstest_test_func_gjs_context_eval_module_file_throw);
+    g_test_add_func("/gjs/context/eval-module-file/exit",
+                    gjstest_test_func_gjs_context_eval_module_file_exit);
+    g_test_add_func(
+        "/gjs/context/eval-module-file/fail-instantiate",
+        gjstest_test_func_gjs_context_eval_module_file_fail_instantiate);
+    g_test_add_func("/gjs/context/register-module/eval-module",
+                    gjstest_test_func_gjs_context_register_module_eval_module);
+    g_test_add_func(
+        "/gjs/context/register-module/eval-module-file",
+        gjstest_test_func_gjs_context_register_module_eval_module_file);
+    g_test_add_func("/gjs/context/register-module/non-existent",
+                    gjstest_test_func_gjs_context_register_module_non_existent);
+    g_test_add_func("/gjs/context/eval-module/unregistered",
+                    gjstest_test_func_gjs_context_eval_module_unregistered);
     g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
     g_test_add_func("/gjs/gobject/without_introspection",
                     gjstest_test_func_gjs_gobject_without_introspection);

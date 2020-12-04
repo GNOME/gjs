@@ -59,6 +59,12 @@ async function bar() {
 bar();
 EOF
 
+# this JS script should fail to import a second version of the same namespace
+cat <<EOF >doublegi.js
+import 'gi://Gio?version=2.0';
+import 'gi://Gio?version=75.94';
+EOF
+
 total=0
 
 report () {
@@ -256,6 +262,9 @@ grep -q TN: coverage.lcov
 report "coverage prefix is treated as an absolute path"
 rm -f coverage.lcov
 
-rm -f exit.js help.js promise.js awaitcatch.js
+$gjs -m doublegi.js 2>&1 | grep -q 'already loaded'
+report "avoid statically importing two versions of the same module"
+
+rm -f exit.js help.js promise.js awaitcatch.js doublegi.js
 
 echo "1..$total"

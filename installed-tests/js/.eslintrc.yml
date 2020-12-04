@@ -29,3 +29,10 @@ globals:
   clearTimeout: writable
   setInterval: writable
   setTimeout: writable
+overrides:
+  - files:
+      - testESModules.js
+      - modules/importmeta.js
+      - modules/exports.js
+    parserOptions:
+      sourceType: module

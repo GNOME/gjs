@@ -194,3 +194,22 @@ gdbus_test_description = configure_file(
 if get_option('installed_tests')
     install_data('testGDBus.js', install_dir: installed_js_tests_dir)
 endif
+
+# testESModules.js is also separate because it needs an extra minijasmine flag
+
+test('ESModules', minijasmine, args: [files('testESModules.js'), '-m'],
+    env: tests_environment, protocol: 'tap', suite: 'JS')
+
+esm_test_description_subst = {
+    'name': 'testESModules.js',
+    'installed_tests_execdir': installed_tests_execdir,
+}
+esm_test_description = configure_file(
+    configuration: esm_test_description_subst,
+    input: '../minijasmine-module.test.in', output: 'testESModules.test',
+    install: get_option('installed_tests'),
+    install_dir: installed_tests_metadir)
+
+if get_option('installed_tests')
+    install_data('testESModules.js', install_dir: installed_js_tests_dir)
+endif

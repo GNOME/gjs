@@ -2,6 +2,7 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 
 Files: .gitlab/issue_templates/*
     doc/* CONTRIBUTING.md NEWS *README* tools/heapgraph.md tools/yarn.lock
+    installed-tests/js/modules/data.txt
 Copyright: No rights reserved
 License: CC0-1.0
 

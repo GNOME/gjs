@@ -4,5 +4,10 @@
 <gresources>
   <gresource prefix="/org/gnome/gjs/mock">
     <file>test/gjs-test-coverage/loadedJSFromResource.js</file>
+    <file>test/modules/default.js</file>
+    <file>test/modules/exit.js</file>
+    <file>test/modules/exit0.js</file>
+    <file>test/modules/import.js</file>
+    <file>test/modules/throws.js</file>
   </gresource>
 </gresources>

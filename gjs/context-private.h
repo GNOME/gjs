@@ -71,6 +71,7 @@ class GjsContextPrivate : public JS::JobQueue {
     GjsContext* m_public_context;
     JSContext* m_cx;
     JS::Heap<JSObject*> m_global;
+    JS::Heap<JSObject*> m_internal_global;
     GThread* m_owner_thread;
 
     char* m_program_name;
@@ -170,6 +171,9 @@ class GjsContextPrivate : public JS::JobQueue {
     }
     [[nodiscard]] JSContext* context() const { return m_cx; }
     [[nodiscard]] JSObject* global() const { return m_global.get(); }
+    [[nodiscard]] JSObject* internal_global() const {
+        return m_internal_global.get();
+    }
     [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
     [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
     [[nodiscard]] bool destroying() const { return m_destroying; }
