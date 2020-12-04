@@ -21,4 +21,7 @@ gjs_module_import(JSContext       *cx,
                   const char      *name,
                   GFile           *file);
 
+GJS_JSAPI_RETURN_CONVENTION
+JSObject* gjs_get_native_registry(JSObject* global);
+
 #endif  // GJS_MODULE_H_
