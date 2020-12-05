@@ -1225,27 +1225,19 @@ describe('Virtual function', function () {
     });
 
     it('marshals one inout parameter', function () {
-        if (typeof VFuncTester.prototype.vfunc_one_inout_parameter === 'undefined')
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
         expect(tester.vfunc_one_inout_parameter(10)).toEqual(50);
     });
 
     it('marshals multiple inout parameters', function () {
-        if (typeof VFuncTester.prototype.vfunc_multiple_inout_parameters === 'undefined')
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
         expect(tester.vfunc_multiple_inout_parameters(10, 5)).toEqual([50, -5]);
     });
 
     it('marshals a return value and one inout parameter', function () {
-        if (typeof VFuncTester.prototype.vfunc_return_value_and_one_inout_parameter === 'undefined')
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
         expect(tester.vfunc_return_value_and_one_inout_parameter(10))
             .toEqual([49, 50]);
     });
 
     it('marshals a return value and multiple inout parameters', function () {
-        if (typeof VFuncTester.prototype.vfunc_return_value_and_multiple_inout_parameters === 'undefined')
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/merge_requests/201');
         expect(tester.vfunc_return_value_and_multiple_inout_parameters(10, -51))
             .toEqual([49, 50, 51]);
     });

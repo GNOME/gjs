@@ -123,7 +123,7 @@ gobject = dependency('gobject-2.0', version: glib_required_version,
 gio = dependency('gio-2.0', version: glib_required_version,
     fallback: ['glib', 'libgio_dep'])
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
-gi = dependency('gobject-introspection-1.0', version: '>= 1.61.2',
+gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
 spidermonkey = dependency('mozjs-78')
 
@@ -675,7 +675,7 @@ add_test_setup('post_verify', timeout_multiplier: 2, env: zeal11_environment)
 
 ### Warn about conditions that may affect runtime ##############################
 
-if gi.version().version_compare('<1.61.2')
+if gi.version().version_compare('<1.66.0')
     warning('''You do not have a new enough version of
 gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.''')
