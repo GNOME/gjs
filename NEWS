@@ -235,7 +235,7 @@ Version 1.65.2
   * Various maintenance [Philip Chimento, !413, !425]
   * doc fixes [Sonny Piers, !415, !416]
   * jsapi-util: Make log levels of exceptions consistent [Philip Chimento, !418]
-  * Too much recursion error accessing overrided gobject interface property from
+  * Too much recursion error accessing overridden gobject interface property from
     a subclass [Philip Chimento, #306, !408]
   * JS: migrate from the global `window` to `globalThis` [Andy Holmes, !423]
   * doc: Fix a typo [Matthew Leeds, !424]
@@ -1053,7 +1053,7 @@ Version 1.53.90
       String.prototype.toLocaleUpperCase() now take an optional locale or
       array of locales.
     + Intl.PluralRules is now available.
-    + Intl.NumberFormat.protoype.formatToParts() is now available.
+    + Intl.NumberFormat.prototype.formatToParts() is now available.
     + Intl.Collator now has a caseFirst option.
     + Intl.DateTimeFormat now has an hourCycle option.
 
@@ -1567,7 +1567,7 @@ Version 1.50.1
   worst problems are now fixed, although even more improvements will be
   released in the next unstable version. Fixes include:
 
-  * Specifing prefixes for code coverage files now works again
+  * Specifying prefixes for code coverage files now works again
   * Code coverage now works on lines inside ES6 class definitions
   * The detection of which lines are executable has been improved a bit
 
