@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
+c
+p a
+p b
+p c
+p $1
+p $2
+p $3
+p $$
+p $6*3
+p $$*3
+c
