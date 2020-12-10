@@ -119,7 +119,7 @@ def output():
         why = add.pop(CSTDINT, None)
         if STDINTH in remove:
             remove.pop(STDINTH, None)
-        else:
+        elif STDINTH not in all_includes:
             add[STDINTH] = why
 
     if add_fwd_header:
