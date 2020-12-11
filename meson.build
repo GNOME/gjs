@@ -598,8 +598,9 @@ tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
     js_tests_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
-tests_environment.set('LSAN_OPTIONS', 'exitcode=23,suppressions=@0@'.format(
-    meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
+tests_environment.set('LSAN_OPTIONS',
+    'fast_unwind_on_malloc=0,exitcode=23,suppressions=@0@'.format(
+        meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('GSETTINGS_BACKEND', 'memory')
