@@ -35,7 +35,12 @@ do_Get_Upstream_Base () {
     git remote add upstream https://gitlab.gnome.org/GNOME/gjs.git || \
         git remote set-url upstream https://gitlab.gnome.org/GNOME/gjs.git
     base_branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_DEFAULT_BRANCH}}"
-    git fetch --shallow-since="14 days ago" --no-tags upstream "$base_branch"
+    if ! git fetch --shallow-since="28 days ago" --no-tags upstream "$base_branch"; then
+        echo "Main branch doesn't have history in the past 28 days, fetching "
+        echo "the last 30 commits."
+        git fetch --depth=30 --no-tags upstream "$base_branch"
+    fi
+
     git branch ci-upstream-base-branch FETCH_HEAD
 
     # Work out the newest common ancestor between the detached HEAD that this CI
@@ -44,13 +49,15 @@ do_Get_Upstream_Base () {
     #
     # $CI_MERGE_REQUEST_TARGET_BRANCH_NAME is only defined if we’re running in a
     # merge request pipeline; fall back to $CI_DEFAULT_BRANCH otherwise.
-    git rev-list --first-parent ci-upstream-base-branch | tac > base-revs.txt
-    git rev-list --first-parent HEAD | tac > head-revs.txt
-    newest_common_ancestor_sha=$(comm -12 base-revs.txt head-revs.txt | tail -1)
+    newest_common_ancestor_sha=$(git merge-base ci-upstream-base-branch HEAD)
     if test -z "$newest_common_ancestor_sha"; then
         echo "Couldn’t find common ancestor with the upstream main branch. This"
         echo "typically happens if you branched a long time ago. Please update"
         echo "your clone, rebase, and re-push your branch."
+        echo "Base revisions:"
+        git log --oneline -10 ci-upstream-base-branch
+        echo "Branch revisions:"
+        git log --oneline -10 HEAD
         exit 1
     fi
     echo "Merge base:"

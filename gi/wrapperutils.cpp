@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <sstream>
+
 #include <girepository.h>
 #include <glib-object.h>
 
@@ -26,39 +28,27 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
                                 const char* objtype, GIBaseInfo* info,
                                 GType gtype, const void* native_address,
                                 JS::MutableHandleValue rval) {
-    GString *buf;
-    bool ret = false;
-
-    buf = g_string_new("");
-    g_string_append_c(buf, '[');
-    g_string_append(buf, objtype);
+    std::ostringstream out;
+    out << '[' << objtype;
     if (!native_address)
-        g_string_append(buf, " prototype of");
+        out << " prototype of";
     else
-        g_string_append(buf, " instance wrapper");
+        out << " instance wrapper";
 
     if (info) {
-        g_string_append_printf(buf, " GIName:%s.%s",
-                               g_base_info_get_namespace(info),
-                               g_base_info_get_name(info));
+        out << " GIName:" << g_base_info_get_namespace(info) << "."
+            << g_base_info_get_name(info);
     } else {
-        g_string_append(buf, " GType:");
-        g_string_append(buf, g_type_name(gtype));
+        out << " GType:" << g_type_name(gtype);
     }
 
-    g_string_append_printf(buf, " jsobj@%p", this_obj);
+    out << " jsobj@0x" << uintptr_t(this_obj);
     if (native_address)
-        g_string_append_printf(buf, " native@%p", native_address);
+        out << " native@0x" << uintptr_t(native_address);
 
-    g_string_append_c(buf, ']');
+    out << ']';
 
-    if (!gjs_string_from_utf8(context, buf->str, rval))
-        goto out;
-
-    ret = true;
- out:
-    g_string_free(buf, true);
-    return ret;
+    return gjs_string_from_utf8(context, out.str().c_str(), rval);
 }
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,

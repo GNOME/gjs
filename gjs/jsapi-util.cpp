@@ -244,11 +244,9 @@ JSObject* gjs_define_string_array(JSContext* context,
  * are \x escaped.
  *
  */
-[[nodiscard]] static char* gjs_string_readable(JSContext* context,
-                                               JS::HandleString string) {
-    GString *buf = g_string_new("");
-
-    g_string_append_c(buf, '"');
+[[nodiscard]] static std::string gjs_string_readable(JSContext* context,
+                                                     JS::HandleString string) {
+    std::string buf(1, '"');
 
     JS::UniqueChars chars(JS_EncodeStringToUTF8(context, string));
     if (!chars) {
@@ -262,52 +260,47 @@ JSObject* gjs_define_string_array(JSContext* context,
         char *escaped = g_new(char, len + 1);
 
         JS_PutEscapedString(context, escaped, len, string, '"');
-        g_string_append(buf, escaped);
+        buf += escaped;
         g_free(escaped);
     } else {
-        g_string_append(buf, chars.get());
+        buf += chars.get();
     }
 
-    g_string_append_c(buf, '"');
-
-    return g_string_free(buf, false);
+    return buf + '"';
 }
 
-[[nodiscard]] static char* _gjs_g_utf8_make_valid(const char* name) {
-    GString *string;
+[[nodiscard]] static std::string _gjs_g_utf8_make_valid(const char* name) {
     const char *remainder, *invalid;
     int remaining_bytes, valid_bytes;
 
     g_return_val_if_fail (name != NULL, NULL);
 
-    string = nullptr;
     remainder = name;
     remaining_bytes = strlen (name);
 
+    if (remaining_bytes == 0)
+        return std::string(name);
+
+    std::string buf;
+    buf.reserve(remaining_bytes);
     while (remaining_bytes != 0) {
         if (g_utf8_validate (remainder, remaining_bytes, &invalid))
             break;
         valid_bytes = invalid - remainder;
 
-        if (!string)
-            string = g_string_sized_new (remaining_bytes);
-
-        g_string_append_len (string, remainder, valid_bytes);
+        buf.append(remainder, valid_bytes);
         /* append U+FFFD REPLACEMENT CHARACTER */
-        g_string_append (string, "\357\277\275");
+        buf += "\357\277\275";
 
         remaining_bytes -= valid_bytes + 1;
         remainder = invalid + 1;
     }
 
-    if (!string)
-        return g_strdup (name);
+    buf += remainder;
 
-    g_string_append (string, remainder);
+    g_assert(g_utf8_validate(buf.c_str(), -1, nullptr));
 
-    g_assert (g_utf8_validate (string->str, -1, NULL));
-
-    return g_string_free (string, false);
+    return buf;
 }
 
 /**
@@ -317,10 +310,7 @@ JSObject* gjs_define_string_array(JSContext* context,
  *
  * Returns: A UTF-8 encoded string describing @value
  */
-char*
-gjs_value_debug_string(JSContext      *context,
-                       JS::HandleValue value)
-{
+std::string gjs_value_debug_string(JSContext* context, JS::HandleValue value) {
     /* Special case debug strings for strings */
     if (value.isString()) {
         JS::RootedString str(context, value.toString());
@@ -344,13 +334,13 @@ gjs_value_debug_string(JSContext      *context,
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
                 if (!str)
-                    return g_strdup("[out of memory copying class name]");
+                    return "[out of memory copying class name]";
             } else {
                 gjs_log_exception(context);
-                return g_strdup("[unknown object]");
+                return "[unknown object]";
             }
         } else {
-            return g_strdup("[unknown non-object]");
+            return "[unknown non-object]";
         }
     }
 

@@ -4,7 +4,7 @@
 
 First of all, if you are contributing C++ code, install the handy git
 commit hook that will autoformat your code when you commit it.
-In your GJS checkout directory, run
+In your `gjs` directory, run
 `tools/git-pre-commit-format install`.
 For more information, see
 <https://github.com/barisione/clang-format-hooks/>.
@@ -38,7 +38,7 @@ make sure to use the same build prefix for SpiderMonkey with `--prefix`.
 
 ## First build ##
 
-To build GJS, change to your checkout directory, and run:
+To build GJS, change to your `gjs` directory, and run:
 ```sh
 meson _build
 ninja -C _build
@@ -53,7 +53,7 @@ To install GJS into the path you chose with `-Dprefix`, (or into
 
 ## Making Sure Your Stuff Doesn't Break Anything Else ##
 
-Make your changes in your GJS checkout directory, then run
+Make your changes in your `gjs` directory, then run
 `ninja -C _build` to build a modified copy of GJS.
 
 Each changeset should ensure that the test suite still passes.

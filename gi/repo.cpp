@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <string.h>  // for strlen
 
+#if GJS_VERBOSE_ENABLE_GI_USAGE
+#    include <string>
+#endif
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -282,12 +286,10 @@ _gjs_log_info_usage(GIBaseInfo *info)
         info_type = g_base_info_get_type(info);
 
         if (info_type == GI_INFO_TYPE_FUNCTION) {
-            GString *args;
+            std::string args("{ ");
             int n_args;
             int i;
             GITransfer retval_transfer;
-
-            args = g_string_new("{ ");
 
             n_args = g_callable_info_get_n_args((GICallableInfo*) info);
             for (i = 0; i < n_args; ++i) {
@@ -299,23 +301,24 @@ _gjs_log_info_usage(GIBaseInfo *info)
                 direction = g_arg_info_get_direction(arg);
                 transfer = g_arg_info_get_ownership_transfer(arg);
 
-                g_string_append_printf(args,
-                                       "{ GI_DIRECTION_%s, GI_TRANSFER_%s }, ",
-                                       DIRECTION_STRING(direction),
-                                       TRANSFER_STRING(transfer));
+                if (i > 0)
+                    args += ", ";
+
+                args += std::string("{ GI_DIRECTION_") +
+                        DIRECTION_STRING(direction) + ", GI_TRANSFER_" +
+                        TRANSFER_STRING(transfer) + " }";
 
                 g_base_info_unref((GIBaseInfo*) arg);
             }
-            if (args->len > 2)
-                g_string_truncate(args, args->len - 2); /* chop comma */
 
-            g_string_append(args, " }");
+            args += " }";
 
             retval_transfer = g_callable_info_get_caller_owns((GICallableInfo*) info);
 
-            details = g_strdup_printf(".details = { .func = { .retval_transfer = GI_TRANSFER_%s, .n_args = %d, .args = %s } }",
-                                      TRANSFER_STRING(retval_transfer), n_args, args->str);
-            g_string_free(args, true);
+            details = g_strdup_printf(
+                ".details = { .func = { .retval_transfer = GI_TRANSFER_%s, "
+                ".n_args = %d, .args = %s } }",
+                TRANSFER_STRING(retval_transfer), n_args, args.c_str());
         } else {
             details = g_strdup_printf(".details = { .nothing = {} }");
         }

@@ -317,12 +317,9 @@ static void test_jsapi_util_debug_string_valid_utf8(GjsUnitTestFixture* fx,
     JS::RootedValue v_string(fx->cx);
     g_assert_true(gjs_string_from_utf8(fx->cx, VALID_UTF8_STRING, &v_string));
 
-    char *debug_output = gjs_value_debug_string(fx->cx, v_string);
+    std::string debug_output = gjs_value_debug_string(fx->cx, v_string);
 
-    g_assert_nonnull(debug_output);
-    g_assert_cmpstr("\"" VALID_UTF8_STRING "\"", ==, debug_output);
-
-    g_free(debug_output);
+    g_assert_cmpstr("\"" VALID_UTF8_STRING "\"", ==, debug_output.c_str());
 }
 
 static void test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture* fx,
@@ -333,12 +330,8 @@ static void test_jsapi_util_debug_string_invalid_utf8(GjsUnitTestFixture* fx,
     const char16_t invalid_unicode[] = { 0xffff, 0xffff };
     v_string.setString(JS_NewUCStringCopyN(fx->cx, invalid_unicode, 2));
 
-    char *debug_output = gjs_value_debug_string(fx->cx, v_string);
-
-    g_assert_nonnull(debug_output);
-    /* g_assert_cmpstr("\"\\xff\\xff\\xff\\xff\"", ==, debug_output); */
-
-    g_free(debug_output);
+    std::string debug_output = gjs_value_debug_string(fx->cx, v_string);
+    // g_assert_cmpstr("\"\\xff\\xff\\xff\\xff\"", ==, debug_output.c_str());
 }
 
 static void test_jsapi_util_debug_string_object_with_complicated_to_string(
@@ -352,12 +345,9 @@ static void test_jsapi_util_debug_string_object_with_complicated_to_string(
     contents[1].setString(JS_NewUCStringCopyN(fx->cx, desserts + 2, 2));
     JS::RootedObject array(fx->cx, JS::NewArrayObject(fx->cx, contents));
     JS::RootedValue v_array(fx->cx, JS::ObjectValue(*array));
-    char *debug_output = gjs_value_debug_string(fx->cx, v_array);
+    std::string debug_output = gjs_value_debug_string(fx->cx, v_array);
 
-    g_assert_nonnull(debug_output);
-    g_assert_cmpstr(u8"🍪,🍩", ==, debug_output);
-
-    g_free(debug_output);
+    g_assert_cmpstr(u8"🍪,🍩", ==, debug_output.c_str());
 }
 
 static void

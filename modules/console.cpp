@@ -12,6 +12,8 @@
 #    include <readline/readline.h>
 #endif
 
+#include <string>
+
 #include <glib.h>
 #include <glib/gprintf.h>  // for g_fprintf
 
@@ -104,11 +106,11 @@ public:
  * invocation of this function.)
  */
 [[nodiscard]] static bool gjs_console_eval_and_print(JSContext* cx,
-                                                     const char* bytes,
-                                                     size_t length,
+                                                     const std::string& bytes,
                                                      int lineno) {
     JS::SourceText<mozilla::Utf8Unit> source;
-    if (!source.init(cx, bytes, length, JS::SourceOwnership::Borrowed))
+    if (!source.init(cx, bytes.c_str(), bytes.size(),
+                     JS::SourceOwnership::Borrowed))
         return false;
 
     JS::CompileOptions options(cx);
@@ -126,12 +128,7 @@ public:
     if (result.isUndefined())
         return true;
 
-    char *display_str;
-    display_str = gjs_value_debug_string(cx, result);
-    if (display_str) {
-        g_fprintf(stdout, "%s\n", display_str);
-        g_free(display_str);
-    }
+    g_fprintf(stdout, "%s\n", gjs_value_debug_string(cx, result).c_str());
     return true;
 }
 
@@ -144,7 +141,6 @@ gjs_console_interact(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     bool eof = false;
     JS::RootedObject global(context, gjs_get_import_global(context));
-    GString *buffer = NULL;
     char *temp_buf = NULL;
     int lineno;
     int startline;
@@ -161,26 +157,24 @@ gjs_console_interact(JSContext *context,
          * coincides with the end of a line.
          */
         startline = lineno;
-        buffer = g_string_new("");
+        std::string buffer;
         do {
             if (!gjs_console_readline(
                     &temp_buf, startline == lineno ? "gjs> " : ".... ")) {
                 eof = true;
                 break;
             }
-            g_string_append(buffer, temp_buf);
+            buffer += temp_buf;
             g_free(temp_buf);
             lineno++;
-        } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer->str,
-                                                buffer->len));
+        } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer.c_str(),
+                                                buffer.size()));
 
         bool ok;
         {
             AutoReportException are(context);
-            ok = gjs_console_eval_and_print(context, buffer->str, buffer->len,
-                                            startline);
+            ok = gjs_console_eval_and_print(context, buffer, startline);
         }
-        g_string_free(buffer, true);
 
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
         ok = gjs->run_jobs_fallible() && ok;
