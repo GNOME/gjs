@@ -22,7 +22,6 @@ typedef struct {
     macro(fundamental_prototype)    \
     macro(gerror_instance)          \
     macro(gerror_prototype)         \
-    macro(importer)                 \
     macro(interface)                \
     macro(module)                   \
     macro(ns)                       \
