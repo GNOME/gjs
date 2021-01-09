@@ -1,3 +1,101 @@
+Version 1.67.1
+--------------
+
+- The debugger now has a "backtrace full" command which works very similarly to
+  its GDB equivalent.
+
+- The GObject.ParamFlags.CONSTRUCT_ONLY flag is now correctly enforced, when
+  using it on GObject classes defined in JavaScript. This might break code that
+  was incorrectly trying to set a property that it had previously defined as
+  construct-only. The workaround is to remove the CONSTRUCT_ONLY flag.
+
+- Fixed exception when calling GObject.Type().
+
+- Several performance improvements.
+
+- Progress on ES Modules.
+
+- Closed bugs and merge requests:
+
+  * gobject: Handle CONSTRUCT_ONLY flag [!377, Florian Müllner]
+  * Add native module registry to global (Part 2) [!456, Evan Welsh]
+  * testGIMarshalling: Expand test coverage for flags [!479, Simon McVittie]
+  * Private Objects: Use native allocators and structs [!494, Marco Trevisan]
+  * Pass-by-reference GValue arguments do not work right [#74, !496, !507, Marco
+    Trevisan]
+  * Templated-data-only GjsAutoPointer (and use it more around) [!504, Marco
+    Trevisan]
+  * Error in function "_init()" in module "modules/overrides/GObject.js" [#238,
+    !508, Nina Pypchenko]
+  * fails to build on 32-bit [#357, !511, Michael Catanzaro]
+  * Revert "arg-cache: Save space by not caching GType" [!512, Jonas Dreßler]
+  * gi/wrapperutils: Move gjs_get_string_id() into resolve() implementations
+    [!513, Jonas Dreßler]
+  * updates on eslint configuration [!517, Nasah Kuma]
+  * Update CONTRIBUTING.md about the runner system failure [!518, Nasah Kuma]
+  * Switch to eslint-plugin-jsdoc and remove lint-condo [!520, #359, Evan Welsh,
+    Philip Chimento]
+  * gi: Check property before access [!521, Florian Müllner]
+  * testGIMarshalling: Actually run the GPtrArray utf8 tests [!522, Marco
+    Trevisan]
+  * Add more documents for "imports" and "imports.gi" [!526, wsgalaxy]
+  * overrides/Gtk: Set BuilderScope in class init [!527, Florian Müllner]
+  * gi/arg-cache: Only skip array length parameter once [!528, Florian Müllner]
+  * Copyright conformance with Reuse Software spec [!529, Philip Chimento, Evan
+    Welsh]
+  * Remove JSClass macros [!530, !533, !537, Philip Chimento]
+  * Avoid pulling from DockerHub in CI [!531, Philip Chimento, Marco Trevisan]
+  * Use GNOME-specific rules with cppcheck [!532, Philip Chimento]
+  * Fedora 33 CI images [!535, Philip Chimento]
+  * Fix IWYU bugs [!536, Philip Chimento]
+  * Reduce bandwidth usage in CI, and pick a more accurate base for diff checks
+    [!538, Philip Chimento]
+  * debugger: Make '$$' mean the last value [!539, Philip Chimento]
+  * Add codespell CI job [#362, !540, !541, !547, Björn Daase]
+  * Various maintenance [!542, !548, Philip Chimento]
+  * fix readline build on certain systems [!543, Jakub Kulík]
+  * build: Require gobject-introspection 1.66.0 [!546, Philip Chimento]
+  * Add backtrace full command to debugger [#208, !550, Nasah Kuma]
+
+- Various refactors for type safety [Marco Trevisan]
+
+- Various maintenance [Philip Chimento]
+
+Version 1.66.2
+--------------
+
+- Performance improvements and crash fixes backported from the development
+  branch.
+
+- Bug fixes enabling use of GTK 4.
+
+- Closed bugs and merge requests:
+
+  * Error in function "_init()" in module "modules/overrides/GObject.js" [#238,
+    !508, Nina Pypchenko]
+  * Revert "arg-cache: Save space by not caching GType" [!512, Jonas Dreßler]
+  * gi/wrapperutils: Move gjs_get_string_id() into resolve() implementations
+    [!513, Jonas Dreßler]
+  * overrides/Gtk: Set BuilderScope in class init [!527, Florian Müllner]
+  * fix readline build on certain systems [!543, Jakub Kulík]
+
+Version 1.64.5
+--------------
+
+- Performance improvements and crash fixes backported from the development
+  branch.
+
+- Bug fixes enabling use of GTK 4.
+
+- Closed bugs and merge requests:
+
+  * Error in function "_init()" in module "modules/overrides/GObject.js" [#238,
+    !508, Nina Pypchenko]
+  * gi/wrapperutils: Move gjs_get_string_id() into resolve() implementations
+    [!513, Jonas Dreßler]
+  * overrides/Gtk: Set BuilderScope in class init [!527, Florian Müllner]
+  * fix readline build on certain systems [!543, Jakub Kulík]
+
 Version 1.66.1
 --------------
 
@@ -13,7 +111,6 @@ Version 1.66.1
   * Passing fundamentals to functions no longer works [#353, !506, Evan Welsh]
 
 - Fixed examples/clutter.js to work with more recent Clutter [Philip Chimento]
-
 
 Version 1.66.0
 --------------
