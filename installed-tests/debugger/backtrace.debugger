@@ -4,5 +4,7 @@ backtrace
 c
 bt
 c
+backtrace full
+bt full
 where
 q
