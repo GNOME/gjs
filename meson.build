@@ -676,7 +676,7 @@ add_test_setup('post_verify', timeout_multiplier: 2, env: zeal11_environment)
 
 ### Warn about conditions that may affect runtime ##############################
 
-if gi.version().version_compare('<1.66.0')
+if gi.version().version_compare('<1.66.1')
     warning('''You do not have a new enough version of
 gobject-introspection to run the tests. You can still build GJS, but some
 tests will fail.''')

@@ -450,6 +450,14 @@ describe('C array with length', function () {
         ]);
     });
 
+    describe('of flags', function () {
+        testInParameter('array_flags', [
+            GIMarshallingTests.Flags.VALUE1,
+            GIMarshallingTests.Flags.VALUE2,
+            GIMarshallingTests.Flags.VALUE3,
+        ]);
+    });
+
     it('marshals an array with a 64-bit length parameter', function () {
         expect(() => GIMarshallingTests.array_in_guint64_len([-1, 0, 1, 2])).not.toThrow();
     });
@@ -757,6 +765,11 @@ describe('GValue', function () {
         expect(() => GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE3))
             .not.toThrow();
     }).pend("GJS doesn't support native enum types");
+
+    xit('flags can be passed into a function and packed', function () {
+        expect(() => GIMarshallingTests.gvalue_in_flags(GIMarshallingTests.Flags.VALUE3))
+            .not.toThrow();
+    }).pend("we don't know to pack flags in a GValue as flags and not gint");
 
     it('marshals as an int64 out parameter', function () {
         expect(GIMarshallingTests.gvalue_int64_out()).toEqual(Limits.int64.max);
@@ -1147,6 +1160,14 @@ let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingT
         return GIMarshallingTests.Enum.VALUE3;
     }
 
+    vfunc_vfunc_return_flags() {
+        return GIMarshallingTests.Flags.VALUE2;
+    }
+
+    vfunc_vfunc_out_flags() {
+        return GIMarshallingTests.Flags.VALUE3;
+    }
+
     vfunc_vfunc_return_object_transfer_none() {
         if (!this._returnObject)
             this._returnObject = new GIMarshallingTests.Object({int: 53});
@@ -1285,6 +1306,14 @@ describe('Virtual function', function () {
         expect(tester.vfunc_out_enum()).toEqual(GIMarshallingTests.Enum.VALUE3);
     });
 
+    it('marshals a flags return value', function () {
+        expect(tester.vfunc_return_flags()).toEqual(GIMarshallingTests.Flags.VALUE2);
+    });
+
+    it('marshals a flags out parameter', function () {
+        expect(tester.vfunc_out_flags()).toEqual(GIMarshallingTests.Flags.VALUE3);
+    });
+
     // These tests check what the refcount is of the returned objects; see
     // comments in gimarshallingtests.c.
     // Objects that are exposed in JS always have at least one reference (the
@@ -1340,6 +1369,12 @@ const WrongVFuncTester = GObject.registerClass(class WrongVFuncTester extends GI
     }
 
     vfunc_vfunc_out_enum() {
+    }
+
+    vfunc_vfunc_return_flags() {
+    }
+
+    vfunc_vfunc_out_flags() {
     }
 
     vfunc_vfunc_return_object_transfer_none() {
@@ -1427,6 +1462,26 @@ describe('Wrong virtual functions', function () {
             'JS ERROR: Error: Expected type enum for Argument*undefined*');
 
         expect(tester.vfunc_out_enum()).toEqual(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals a flags return value', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'JS ERROR: Error: Expected type flags for Return*undefined*');
+
+        expect(tester.vfunc_return_flags()).toEqual(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testVFuncReturnWrongValue');
+    });
+
+    it('marshals a flags out parameter', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'JS ERROR: Error: Expected type flags for Argument*undefined*');
+
+        expect(tester.vfunc_out_flags()).toEqual(0);
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
             'testVFuncReturnWrongValue');
