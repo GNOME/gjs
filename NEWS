@@ -1,3 +1,21 @@
+Version 1.66.2
+--------------
+
+- Performance improvements and crash fixes backported from the development
+  branch.
+
+- Bug fixes enabling use of GTK 4.
+
+- Closed bugs and merge requests:
+
+  * Error in function "_init()" in module "modules/overrides/GObject.js" [#238,
+    !508, Nina Pypchenko]
+  * Revert "arg-cache: Save space by not caching GType" [!512, Jonas Dreßler]
+  * gi/wrapperutils: Move gjs_get_string_id() into resolve() implementations
+    [!513, Jonas Dreßler]
+  * overrides/Gtk: Set BuilderScope in class init [!527, Florian Müllner]
+  * fix readline build on certain systems [!543, Jakub Kulík]
+
 Version 1.66.1
 --------------
 
