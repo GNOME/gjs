@@ -140,7 +140,7 @@ Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
     return `${url}:${lineNumber}:${columnNumber}`;
 };
 
-function showFrame(f, n) {
+function showFrame(f, n, option) {
     if (f === undefined || f === null) {
         f = focusedFrame;
         if (f === null) {
@@ -153,9 +153,22 @@ function showFrame(f, n) {
         if (n === undefined)
             throw new Error('Internal error: frame not on stack');
     }
+    if (!option) {
+        print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
+    } else {
+        const variables = f.environment.names();
+        print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
+        for (let i = 0; i < variables.length; i++) {
+            if (variables.length === 0)
+                print('No locals.');
 
-    print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
+            const value = f.environment.getVariable(variables[i]);
+            const [brief] = debuggeeValueToString(value, {brief: false, pretty: false});
+            print(`${variables[i]} = ${brief}`);
+        }
+    }
 }
+
 
 function saveExcursion(fn) {
     const tf = topFrame, ff = focusedFrame;
@@ -187,15 +200,26 @@ quitCommand.summary = 'Quit the debugger';
 quitCommand.helpText = `USAGE
     quit`;
 
-function backtraceCommand() {
+function backtraceCommand(option) {
     if (topFrame === null)
         print('No stack.');
-    for (var i = 0, f = topFrame; f; i++, f = f.older)
-        showFrame(f, i);
+    if (option === '') {
+        for (let i = 0, f = topFrame; f; i++, f = f.older)
+            showFrame(f, i, false);
+    } else if (option === 'full') {
+        for (let i = 0, f = topFrame; f; i++, f = f.older)
+            showFrame(f, i, true);
+    } else {
+        print('Invalid option');
+    }
 }
-backtraceCommand.summary = 'Print backtrace of all stack frames';
+backtraceCommand.summary = 'Print backtrace of all stack frames and details of all local variables if the full option is added';
 backtraceCommand.helpText = `USAGE
-    bt`;
+    bt <option>
+
+PARAMETERS
+    · option: option name. Allowed options are:
+        · full: prints the local variables in a stack frame`;
 
 function setCommand(rest) {
     var space = rest.indexOf(' ');
