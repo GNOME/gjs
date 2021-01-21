@@ -91,11 +91,11 @@ This `main()` function should initialize a GApplication whose id is **${entry-po
 
 The following API will be available to applications, through the [`package.js`](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/package.js) module.
 
-* `window.pkg` (ie `pkg` on the global object) will provide access to the package module
+* `globalThis.pkg` (ie `pkg` on the global object) will provide access to the package module
 * `pkg.name` and `pkg.version` will return the package name and version, as passed to `pkg.init()`
 * `pkg.prefix`, `pkg.datadir`, `pkg.libdir` will return the installed locations of those folders
 * `pkg.pkgdatadir`, `pkg.moduledir`, `pkg.pkglibdir`, `pkg.localedir` will return the respective directories, or the appropriate subdirectory of the current directory if running uninstalled
-* `pkg.initGettext()` will initialize gettext. After calling `window._`, `window.C_` and `window.N_` will be available
+* `pkg.initGettext()` will initialize gettext. After calling `globalThis._`, `globalThis.C_` and `globalThis.N_` will be available
 * `pkg.initFormat()` will initialize the format module. After calling, String.prototype.format will be available
 * `pkg.initSubmodule(name)` will initialize a submodule named @name. It must be called before accessing the typelibs installed by that submodule
 * `pkg.loadResource(name)` will load and register a GResource named @name. @name is optional and defaults to ${package-name}

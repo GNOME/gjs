@@ -114,7 +114,7 @@ If your usage of an object is like a hash table (and thus conceptually the keys 
 
 - We use javaStyle variable names, with CamelCase for type names and lowerCamelCase for variable and method names. However, when calling a C method with underscore-based names via introspection, we just keep them looking as they do in C for simplicity.
 - Private variables, whether object member variables or module-scoped variables, should begin with `_`.
-- True global variables (in the global or 'window' object) should be avoided whenever possible. If you do create them, the variable name should have a namespace in it, like `BigFoo`
+- True global variables should be avoided whenever possible. If you do create them, the variable name should have a namespace in it, like `BigFoo`
 - When you assign a module to an alias to avoid typing `imports.foo.bar` all the time, the alias should be `const TitleCase` so `const Bar = imports.foo.bar;`
 - If you need to name a variable something weird to avoid a namespace collision, add a trailing `_` (not leading, leading `_` means private).
 
