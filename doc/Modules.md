@@ -314,7 +314,7 @@ Introspection lib as module, there are 4 special properties of **imports**:
 Any other properties of **imports** is treated as a module, if you access these
 properties, an import is attempted. Gjs try to look up a js file or directory by property name
 from each location in `imports.searchPath`. For `imports.foo`, if a file named
-`foo.js` is found, this file is executed and then imported as a module object; else if 
+`foo.js` is found, this file is executed and then imported as a module object; else if
 a directory `foo` is found, a new importer object is returned and its `searchPath` property
 is replaced by the path of `foo`.
 
