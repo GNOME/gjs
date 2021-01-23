@@ -181,7 +181,7 @@ var MyNewClass = class {
 Mainloop is simply a layer of convenience and backwards-compatibility over some GLib functions (such as [`GLib.timeout_add()`][gjs-timeoutadd] which in GJS is mapped to [`g_timeout_add_full()`][c-timeoutaddfull]). It's use is not generally recommended anymore.
 
 [c-timeoutaddfull]: https://developer.gnome.org/glib/stable/glib-The-Main-Event-Loop.html#g-timeout-add-full
-[gjs-timeoutadd]: http://devdocs.baznga.org/glib20~2.50.0/glib.timeout_add
+[gjs-timeoutadd]: https://gjs-docs.gnome.org/glib20/glib.timeout_add
 
 ## [Package](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/package.js)
 

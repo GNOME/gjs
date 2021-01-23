@@ -202,7 +202,7 @@ if (myApp.flags & Gio.ApplicationFlags.HANDLES_OPEN) {
 }
 ```
 
-[gjs-docs]: http://devdocs.baznga.org/
+[gjs-docs]: https://gjs-docs.gnome.org
 [mdn-bitwise]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Bitwise_Operators
 
 ## Structs and Unions
@@ -221,7 +221,7 @@ widget.connect("key-press-event", (widget, event) => {
 });
 ```
 
-[gdk-event]: http://devdocs.baznga.org/gdk30~3.22p/gdk.event
+[gdk-event]: https://gjs-docs.gnome.org/gdk40/gdk.event
 
 ## Multiple return values (caller-allocates)
 

@@ -18,8 +18,17 @@ systems.)
 The readline library is not required, but strongly recommended.
 We recommend installing your system's development packages for GLib,
 libffi, gobject-introspection, and readline.
-(For example, on Ubuntu you would run
-`sudo apt-get install libglib2.0-dev libffi-dev libreadline-dev libgirepository1.0-dev libreadline-dev`.)
+
+<details>
+    <summary>Ubuntu</summary>
+    <code>sudo apt-get install libglib2.0-dev libffi-dev libreadline-dev libgirepository1.0-dev</code>
+</details>
+
+<details>
+    <summary>Fedora</summary>
+    <code>sudo dnf install glib2-devel libffi readline-devel gobject-introspection-devel</code>
+</details>
+
 But, if your system's versions of these packages aren't new enough, then
 the build process will download and build sufficient versions.
 
@@ -157,3 +166,16 @@ instrumentation enabled, run the test suite to collect the coverage
 data, and open the generated HTML report.
 
 [embedder](https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md)
+
+## Troubleshooting
+
+### I sent a merge request from my fork but CI does not pass.
+
+Check the job log, most likely you missed the following
+
+> The container registry is not enabled in $USERNAME/gjs, enable it in the project general settings panel
+
+* Go to your fork general setting, for example https://gitlab.gnome.org/$USERNAME/gjs/edit
+* Expand "Visibility, project features, permissions"
+* Enable "Container registry"
+* Hit "Save changes"
