@@ -193,7 +193,7 @@ Infrastructure and utilities for [standalone applications](Home#standalone-appli
 
 A GObject-like signal framework for native Javascript objects.
 
-**NOTE:** Unlike [GObject signals](Mapping#signals), `this` within a signal callback will refer to the global object (ie. `window`).
+**NOTE:** Unlike [GObject signals](Mapping#signals), `this` within a signal callback will refer to the global object (ie. `globalThis`).
 
 ```js
 const Signals = imports.signals;
@@ -209,7 +209,7 @@ let obj = new MyJSObject();
 
 // Connect and disconnect like standard GObject signals
 let handlerId = obj.connect("exampleSignal", (obj, stringArg, intArg) => {
-    // Remember 'this' === 'window'
+    // Remember 'this' === 'globalThis'
 });
 obj.disconnect(handlerId);
 

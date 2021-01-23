@@ -84,7 +84,7 @@ filt_opts.add_argument('--no-weak-maps', '-nwm', dest='no_weak_maps',
 
 filt_opts.add_argument('--show-global', '-g', dest='show_global',
                        action='store_true', default=False,
-                       help='Show the global object (eg. window/GjsGlobal)')
+                       help='Show the global object (eg. globalThis/GjsGlobal)')
 
 filt_opts.add_argument('--show-imports', '-i', dest='show_imports',
                        action='store_true', default=False,

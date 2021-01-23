@@ -121,6 +121,7 @@ rules:
   no-octal-escape: error
   no-proto: error
   no-prototype-builtins: 'off'
+  no-restricted-globals: [error, window]
   no-restricted-properties:
     - error
     - object: Lang
@@ -244,5 +245,6 @@ globals:
   logError: readonly
   print: readonly
   printerr: readonly
+  window: readonly
 parserOptions:
   ecmaVersion: 2020

@@ -105,7 +105,7 @@ You can also exclude Gray Roots, WeakMaps, nodes with a heap address or nodes
 with labels containing a string. Because GObject addresses are part of the node
 label, these can be excluded with `--hide-node` as well.
 
-By default the global object (GjsGlobal aka `window`), imports (GjsModule,
+By default the global object (GjsGlobal aka `globalThis`), imports (GjsModule,
 GjsFileImporter), and namespaces (GIRepositoryNamespace) aren't shown in the
 graph since these are less useful and can't be garbage collected anyways.
 
@@ -167,7 +167,7 @@ Node/Root Filtering:
                         Don't show roots common to the heap FILE
   --no-gray-roots, -ng  Don't show gray roots (marked to be collected)
   --no-weak-maps, -nwm  Don't show WeakMaps
-  --show-global, -g     Show the global object (eg. window/GjsGlobal)
+  --show-global, -g     Show the global object (eg. globalThis/GjsGlobal)
   --show-imports, -i    Show import and module nodes (eg. imports.foo)
   --hide-addr ADDR, -ha ADDR
                         Don't show roots with the heap address ADDR

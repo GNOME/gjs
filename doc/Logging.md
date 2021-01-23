@@ -98,13 +98,12 @@ function _makeLogFunction(level) {
     };
 }
 
-// `window` is the global object in GJS, for historical reasons
-window.log      = _makeLogFunction(GLib.LogLevelFlags.LEVEL_MESSAGE);
-window.debug    = _makeLogFunction(GLib.LogLevelFlags.LEVEL_DEBUG);
-window.info     = _makeLogFunction(GLib.LogLevelFlags.LEVEL_INFO);
-window.warning  = _makeLogFunction(GLib.LogLevelFlags.LEVEL_WARNING);
-window.critical = _makeLogFunction(GLib.LogLevelFlags.LEVEL_CRITICAL);
-window.error    = _makeLogFunction(GLib.LogLevelFlags.LEVEL_ERROR);
+globalThis.log      = _makeLogFunction(GLib.LogLevelFlags.LEVEL_MESSAGE);
+globalThis.debug    = _makeLogFunction(GLib.LogLevelFlags.LEVEL_DEBUG);
+globalThis.info     = _makeLogFunction(GLib.LogLevelFlags.LEVEL_INFO);
+globalThis.warning  = _makeLogFunction(GLib.LogLevelFlags.LEVEL_WARNING);
+globalThis.critical = _makeLogFunction(GLib.LogLevelFlags.LEVEL_CRITICAL);
+globalThis.error    = _makeLogFunction(GLib.LogLevelFlags.LEVEL_ERROR);
 
 // Log all messages when connected to the journal
 if (GLib.log_writer_is_journald(2))
