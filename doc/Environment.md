@@ -5,34 +5,34 @@ GJS allows runtime configuration with a number of environment variables.
 ### General
 
 * `GJS_PATH`
-  
+
   Set this variable to a list of colon-separated (`:`) paths (just like `PATH`),
   to add them to the search path for the importer. Use of the `--include-path`
   command-line option is preferred over this variable.
 
 * `GJS_ABORT_ON_OOM`
-  
+
   > NOTE: This feature is not well tested.
-  
+
   Setting this variable to any value causes GJS to exit when an out-of-memory
   condition is encountered, instead of just printing a warning.
-  
+
 ### JavaScript Engine
 
 * `JS_GC_ZEAL`
-  
+
   Enable GC zeal, a testing and debugging feature that helps find GC-related
   bugs in JSAPI applications. See the [Hacking][hacking-gczeal] and the
   [JSAPI Documentation][mdn-gczeal] for more information about this variable.
 
 * `GJS_DISABLE_JIT`
-  
+
   Setting this variable to any value will disable JIT compiling in the
   JavaScript engine.
 
 
 ### Debugging
-  
+
 * `GJS_DEBUG_HEAP_OUTPUT`
 
   In addition to `System.dumpHeap()`, you can dump a heap from a running program
@@ -40,14 +40,14 @@ GJS allows runtime configuration with a number of environment variables.
   `SIGUSR1` signal.
 
 * `GJS_DEBUG_OUTPUT`
-  
+
   Set this to "stderr" to log to `stderr` or a file path to save to.
 
 * `GJS_DEBUG_TOPICS`
-  
+
   Set this to a semi-colon delimited (`;`) list of prefixes to allow to be
   logged. Prefixes include:
-  
+
    * "JS GI USE"
    * "JS MEMORY"
    * "JS CTX"
@@ -78,19 +78,19 @@ GJS allows runtime configuration with a number of environment variables.
 ### Testing
 
 * `GJS_COVERAGE_OUTPUT`
-  
+
   Set this variable to define an output path for code coverage information. Use
   of the `--coverage-output` command-line option is preferred over this
   variable.
 
 * `GJS_COVERAGE_PREFIXES`
-  
+
   Set this variable to define a colon-separated (`:`) list of prefixes to output
   code coverage information for. Use of the `--coverage-prefix` command-line
   option is preferred over this variable.
 
 * `GJS_ENABLE_PROFILER`
-  
+
   Set this variable to `1` to enable or `0` to disable the profiler. Use of the
   `--profile` command-line option is preferred over this variable.
 
