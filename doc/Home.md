@@ -46,6 +46,8 @@ Third party applications written in GJS:
 * [Foliate](https://github.com/johnfactotum/foliate)
 * [Marker](https://github.com/fabiocolacio/Marker)
 * [Gnomit](https://github.com/small-tech/gnomit)
+* [Clapper](https://github.com/Rafostar/clapper/)
+* [Flatseal](https://github.com/tchx84/Flatseal)
 
 ## Getting Help
 
