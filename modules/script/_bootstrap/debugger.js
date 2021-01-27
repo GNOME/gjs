@@ -140,7 +140,7 @@ Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
     return `${url}:${lineNumber}:${columnNumber}`;
 };
 
-function showFrame(f, n, option) {
+function showFrame(f, n, option = {btCommand: false, fullOption: false}) {
     if (f === undefined || f === null) {
         f = focusedFrame;
         if (f === null) {
@@ -153,19 +153,22 @@ function showFrame(f, n, option) {
         if (n === undefined)
             throw new Error('Internal error: frame not on stack');
     }
-    if (!option) {
-        print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
-    } else {
-        const variables = f.environment.names();
-        print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
-        for (let i = 0; i < variables.length; i++) {
-            if (variables.length === 0)
-                print('No locals.');
+    print(`#${n.toString().padEnd(4)} ${f.describeFull()}`);
+    if (option.btCommand) {
+        if (option.fullOption) {
+            const variables = f.environment.names();
+            for (let i = 0; i < variables.length; i++) {
+                if (variables.length === 0)
+                    print('No locals.');
 
-            const value = f.environment.getVariable(variables[i]);
-            const [brief] = debuggeeValueToString(value, {brief: false, pretty: false});
-            print(`${variables[i]} = ${brief}`);
+                const value = f.environment.getVariable(variables[i]);
+                const [brief] = debuggeeValueToString(value, {brief: false, pretty: false});
+                print(`${variables[i]} = ${brief}`);
+            }
         }
+    } else {
+        let lineNumber = f.line;
+        print(`   ${lineNumber}\t${f.script.source.text.split('\n')[lineNumber - 1]}`);
     }
 }
 
@@ -205,10 +208,10 @@ function backtraceCommand(option) {
         print('No stack.');
     if (option === '') {
         for (let i = 0, f = topFrame; f; i++, f = f.older)
-            showFrame(f, i, false);
+            showFrame(f, i, {btCommand: true, fullOption: false});
     } else if (option === 'full') {
         for (let i = 0, f = topFrame; f; i++, f = f.older)
-            showFrame(f, i, true);
+            showFrame(f, i, {btCommand: true, fullOption: true});
     } else {
         print('Invalid option');
     }
