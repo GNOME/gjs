@@ -175,6 +175,15 @@ import { ngettext as _ } from 'gettext';
 _('Hello!');
 ```
 
+### List of Built-in ES Modules
+
+* [Format](modules/Format.md)
+* [Cairo](modules/Cairo.md)
+* [System](modules/System.md)
+* [Gettext](modules/Gettext.md)
+* [Gi](modules/GObject_Introspection.md)
+* ~~Mainloop~~ <!-- TODO (not in ESM yet) -->
+
 ## `import()` expressions
 
 Dynamic [`import()` statements][] are not currently supported in GJS.
