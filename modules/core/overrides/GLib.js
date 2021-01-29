@@ -308,7 +308,7 @@ function _init() {
     };
 
     this.Bytes.prototype.toArray = function () {
-        return imports.byteArray.fromGBytes(this);
+        return imports._byteArrayNative.fromGBytes(this);
     };
 
     this.log_structured = function (logDomain, logLevel, stringFields) {
