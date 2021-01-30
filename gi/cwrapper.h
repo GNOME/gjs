@@ -36,7 +36,7 @@ struct JSPropertySpec;
 // it can be easily retrieved in order to create new objects.
 
 /*
- * GJS_GET_WRAPPER_PRIV:
+ * GJS_CHECK_WRAPPER_PRIV:
  * @cx: JSContext pointer passed into JSNative function
  * @argc: Number of arguments passed into JSNative function
  * @vp: Argument value array passed into JSNative function
@@ -50,10 +50,10 @@ struct JSPropertySpec;
  * Throws an error and returns false if the 'this' object is not the right type.
  * Use in any JSNative function.
  */
-#define GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, thisobj, type, priv) \
-    GJS_GET_THIS(cx, argc, vp, args, thisobj);                        \
-    type* priv;                                                       \
-    if (!type::for_js_typecheck(cx, thisobj, &priv, &args))           \
+#define GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, thisobj, type, priv) \
+    GJS_GET_THIS(cx, argc, vp, args, thisobj);                          \
+    type* priv;                                                         \
+    if (!type::for_js_typecheck(cx, thisobj, &priv, &args))             \
         return false;
 
 GJS_JSAPI_RETURN_CONVENTION

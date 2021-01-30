@@ -306,7 +306,7 @@ bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
 }
 
 bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -378,7 +378,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
 }
 
 bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -441,7 +441,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
 /* Dynamic setter for GObject properties. Returns false on OOM/exception.
  * args.rval() becomes the "stored value" for the property. */
 bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -498,7 +498,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
 }
 
 bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
@@ -1826,7 +1826,7 @@ void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
 }
 
 bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv->check_is_instance(cx, "connect to signals"))
         return false;
 
@@ -1834,7 +1834,7 @@ bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 bool ObjectBase::connect_after(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv->check_is_instance(cx, "connect to signals"))
         return false;
 
@@ -1890,7 +1890,7 @@ ObjectInstance::connect_impl(JSContext          *context,
 }
 
 bool ObjectBase::emit(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv->check_is_instance(cx, "emit signal"))
         return false;
 
@@ -2060,7 +2060,7 @@ bool ObjectInstance::signal_match_arguments_from_object(
 }
 
 bool ObjectBase::signal_find(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     if (!priv->check_is_instance(cx, "find signal"))
         return false;
 
@@ -2129,7 +2129,7 @@ signal_match_to_action_name<&g_signal_handlers_disconnect_matched>() {
 
 template <ObjectBase::SignalMatchFunc(*MatchFunc)>
 bool ObjectBase::signals_action(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     const std::string action_name = signal_match_to_action_name<MatchFunc>();
     if (!priv->check_is_instance(cx, (action_name + " signal").c_str()))
         return false;
@@ -2182,7 +2182,7 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
 }
 
 bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
     const char* kind = ObjectBase::DEBUG_TAG;
     if (!priv->is_prototype())
         kind = priv->to_instance()->to_string_kind();
@@ -2212,7 +2212,7 @@ const char* ObjectInstance::to_string_kind(void) const {
  */
 bool ObjectBase::init_gobject(JSContext* context, unsigned argc,
                               JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(context, argc, vp, argv, obj, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(context, argc, vp, argv, obj, ObjectBase, priv);
     if (!priv->check_is_instance(context, "initialize"))
         return false;
 
@@ -2522,7 +2522,7 @@ static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
 }
 
 bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, prototype, ObjectBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, prototype, ObjectBase, priv);
     /* Normally we wouldn't assert is_prototype(), but this method can only be
      * called internally so it's OK to crash if done wrongly */
     return priv->to_prototype()->hook_up_vfunc_impl(cx, args);

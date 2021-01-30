@@ -126,7 +126,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
-        GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
+        GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
         return gjs_string_from_utf8(cx, priv->get(), args.rval());
     }
 

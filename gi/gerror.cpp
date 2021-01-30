@@ -91,14 +91,14 @@ bool ErrorInstance::constructor_impl(JSContext* context,
  * well as instances.
  */
 bool ErrorBase::get_domain(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
     args.rval().setInt32(priv->domain());
     return true;
 }
 
 // JSNative property getter for `message`.
 bool ErrorBase::get_message(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
     if (!priv->check_is_instance(cx, "get a field"))
         return false;
 
@@ -108,7 +108,7 @@ bool ErrorBase::get_message(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 // JSNative property getter for `code`.
 bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
     if (!priv->check_is_instance(cx, "get a field"))
         return false;
 

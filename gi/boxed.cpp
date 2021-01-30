@@ -515,7 +515,7 @@ bool BoxedInstance::get_nested_interface_object(
  * conditions have been met.
  */
 bool BoxedBase::field_getter(JSContext* context, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(context, argc, vp, args, obj, BoxedBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(context, argc, vp, args, obj, BoxedBase, priv);
     if (!priv->check_is_instance(context, "get a field"))
         return false;
 
@@ -657,7 +657,7 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
  * conditions have been met.
  */
 bool BoxedBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, BoxedBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, BoxedBase, priv);
     if (!priv->check_is_instance(cx, "set a field"))
         return false;
 
