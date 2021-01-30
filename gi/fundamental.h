@@ -13,6 +13,7 @@
 
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"  // for GjsAutoCallableInfo
 #include "gjs/macros.h"
@@ -31,6 +32,7 @@ namespace JS { class CallArgs; }
 class FundamentalBase
     : public GIWrapperBase<FundamentalBase, FundamentalPrototype,
                            FundamentalInstance> {
+    friend class CWrapperPointerOps<FundamentalBase>;
     friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
                                FundamentalInstance>;
 

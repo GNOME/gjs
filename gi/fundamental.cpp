@@ -456,8 +456,9 @@ JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
 
 bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
                                 GValue* gvalue) {
-    auto* priv = FundamentalBase::for_js_typecheck(cx, obj);
-    if (!priv || !priv->check_is_instance(cx, "convert to GValue"))
+    FundamentalBase* priv;
+    if (!for_js_typecheck(cx, obj, &priv) ||
+        !priv->check_is_instance(cx, "convert to GValue"))
         return false;
 
     priv->to_instance()->set_value(gvalue);

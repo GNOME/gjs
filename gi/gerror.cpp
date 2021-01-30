@@ -91,14 +91,14 @@ bool ErrorInstance::constructor_impl(JSContext* context,
  * well as instances.
  */
 bool ErrorBase::get_domain(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
     args.rval().setInt32(priv->domain());
     return true;
 }
 
 // JSNative property getter for `message`.
 bool ErrorBase::get_message(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
     if (!priv->check_is_instance(cx, "get a field"))
         return false;
 
@@ -108,7 +108,7 @@ bool ErrorBase::get_message(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 // JSNative property getter for `code`.
 bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
-    GJS_GET_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ErrorBase, priv);
     if (!priv->check_is_instance(cx, "get a field"))
         return false;
 
@@ -136,8 +136,8 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
         return gjs_string_from_utf8(context, descr, rec.rval());
     }
 
-    ErrorBase* priv = ErrorBase::for_js_typecheck(context, self, rec);
-    if (!priv)
+    ErrorBase* priv;
+    if (!for_js_typecheck(context, self, &priv, &rec))
         return false;
 
     /* We follow the same pattern as standard JS errors, at the expense of
@@ -168,8 +168,8 @@ bool ErrorBase::value_of(JSContext* context, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    ErrorBase* priv = ErrorBase::for_js_typecheck(context, prototype, rec);
-    if (!priv)
+    ErrorBase* priv;
+    if (!for_js_typecheck(context, prototype, &priv, &rec))
         return false;
 
     rec.rval().setInt32(priv->domain());

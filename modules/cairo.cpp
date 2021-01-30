@@ -55,36 +55,34 @@ gjs_js_define_cairo_stuff(JSContext              *context,
                           JS::MutableHandleObject module)
 {
     module.set(JS_NewPlainObject(context));
-    JS::RootedObject proto(context);  /* not used */
 
-    if (!gjs_cairo_region_define_proto(context, module, &proto))
+    if (!CairoRegion::create_prototype(context, module))
         return false;
     gjs_cairo_region_init();
 
-    if (!gjs_cairo_context_define_proto(context, module, &proto))
+    if (!CairoContext::create_prototype(context, module))
         return false;
     gjs_cairo_context_init();
 
-    if (!gjs_cairo_surface_define_proto(context, module, &proto))
+    if (!CairoSurface::create_prototype(context, module))
         return false;
     gjs_cairo_surface_init();
 
-    return
-        gjs_cairo_image_surface_define_proto(context, module, &proto) &&
-        gjs_cairo_path_define_proto(context, module, &proto) &&
+    return CairoImageSurface::create_prototype(context, module) &&
+           CairoPath::create_prototype(context, module) &&
 #if CAIRO_HAS_PS_SURFACE
-        gjs_cairo_ps_surface_define_proto(context, module, &proto) &&
+           CairoPSSurface::create_prototype(context, module) &&
 #endif
 #if CAIRO_HAS_PDF_SURFACE
-        gjs_cairo_pdf_surface_define_proto(context, module, &proto) &&
+           CairoPDFSurface::create_prototype(context, module) &&
 #endif
 #if CAIRO_HAS_SVG_SURFACE
-        gjs_cairo_svg_surface_define_proto(context, module, &proto) &&
+           CairoSVGSurface::create_prototype(context, module) &&
 #endif
-        gjs_cairo_pattern_define_proto(context, module, &proto) &&
-        gjs_cairo_gradient_define_proto(context, module, &proto) &&
-        gjs_cairo_linear_gradient_define_proto(context, module, &proto) &&
-        gjs_cairo_radial_gradient_define_proto(context, module, &proto) &&
-        gjs_cairo_surface_pattern_define_proto(context, module, &proto) &&
-        gjs_cairo_solid_pattern_define_proto(context, module, &proto);
+           CairoPattern::create_prototype(context, module) &&
+           CairoGradient::create_prototype(context, module) &&
+           CairoLinearGradient::create_prototype(context, module) &&
+           CairoRadialGradient::create_prototype(context, module) &&
+           CairoSurfacePattern::create_prototype(context, module) &&
+           CairoSolidPattern::create_prototype(context, module);
 }

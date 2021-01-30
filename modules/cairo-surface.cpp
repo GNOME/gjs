@@ -4,7 +4,6 @@
 
 #include <config.h>
 
-#include <cairo-gobject.h>
 #include <cairo.h>
 #include <girepository.h>
 #include <glib.h>
@@ -20,6 +19,7 @@
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
+#include "gi/cwrapper.h"
 #include "gi/foreign.h"
 #include "gjs/enum-utils.h"
 #include "gjs/jsapi-class.h"
@@ -28,25 +28,9 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-struct GjsCairoSurface
-    : GjsAutoPointer<cairo_surface_t, cairo_surface_t, cairo_surface_destroy,
-                     cairo_surface_reference> {
-    explicit GjsCairoSurface(cairo_surface_t* surface)
-        : GjsAutoPointer(surface, GjsAutoTakeOwnership()) {}
-};
-
-GJS_DEFINE_PROTO_ABSTRACT_WITH_GTYPE("Surface", cairo_surface,
-                                     CAIRO_GOBJECT_TYPE_SURFACE,
-                                     JSCLASS_BACKGROUND_FINALIZE)
-
-static void gjs_cairo_surface_finalize(JSFreeOp*, JSObject* obj) {
-    delete static_cast<GjsCairoSurface*>(JS_GetPrivate(obj));
-    JS_SetPrivate(obj, nullptr);
-}
-
 /* Properties */
 // clang-format off
-JSPropertySpec gjs_cairo_surface_proto_props[] = {
+const JSPropertySpec CairoSurface::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "Surface", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
@@ -65,7 +49,7 @@ writeToPNG_func(JSContext *context,
                              "filename", &filename))
         return false;
 
-    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
     if (!surface)
         return false;
 
@@ -91,7 +75,7 @@ getType_func(JSContext *context,
         return false;
     }
 
-    cairo_surface_t* surface = gjs_cairo_surface_get_surface(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
     if (!surface)
         return false;
 
@@ -104,7 +88,7 @@ getType_func(JSContext *context,
     return true;
 }
 
-JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
+const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // flush
     // getContent
     // getFontOptions
@@ -118,52 +102,27 @@ JSFunctionSpec gjs_cairo_surface_proto_funcs[] = {
     // copyPage
     // showPage
     // hasShowTextGlyphs
-    JS_FN("writeToPNG", writeToPNG_func, 0, 0),
-    JS_FS_END};
-
-JSFunctionSpec gjs_cairo_surface_static_funcs[] = { JS_FS_END };
+    JS_FN("writeToPNG", writeToPNG_func, 0, 0), JS_FS_END};
 
 /* Public API */
 
 /**
- * gjs_cairo_surface_construct:
- * @object: object to construct
- * @surface: cairo_surface to attach to the object
- *
- * Constructs a surface wrapper giving an empty JSObject and a
- * cairo surface. A reference to @surface will be taken.
- *
- * This is mainly used for subclasses where object is already created.
- */
-void gjs_cairo_surface_construct(JSObject* object, cairo_surface_t* surface) {
-    g_return_if_fail(object);
-    g_return_if_fail(surface);
-
-    g_assert(!JS_GetPrivate(object));
-    JS_SetPrivate(object, new GjsCairoSurface(surface));
-}
-
-/**
- * gjs_cairo_surface_finalize:
+ * CairoSurface::finalize_impl:
  * @fop: the free op
- * @object: object to finalize
+ * @surface: the pointer to finalize
  *
  * Destroys the resources associated with a surface wrapper.
  *
  * This is mainly used for subclasses.
  */
-void
-gjs_cairo_surface_finalize_surface(JSFreeOp *fop,
-                                   JSObject *object)
-{
-    g_return_if_fail(fop);
-    g_return_if_fail(object);
-
-    gjs_cairo_surface_finalize(fop, object);
+void CairoSurface::finalize_impl(JSFreeOp*, cairo_surface_t* surface) {
+    if (!surface)
+        return;
+    cairo_surface_destroy(surface);
 }
 
 /**
- * gjs_cairo_surface_from_surface:
+ * CairoSurface::from_c_ptr:
  * @context: the context
  * @surface: cairo_surface to attach to the object
  *
@@ -171,49 +130,38 @@ gjs_cairo_surface_finalize_surface(JSFreeOp *fop,
  * A reference to @surface will be taken.
  *
  */
-JSObject *
-gjs_cairo_surface_from_surface(JSContext       *context,
-                               cairo_surface_t *surface)
-{
+JSObject* CairoSurface::from_c_ptr(JSContext* context,
+                                   cairo_surface_t* surface) {
     g_return_val_if_fail(context, nullptr);
     g_return_val_if_fail(surface, nullptr);
 
     cairo_surface_type_t type = cairo_surface_get_type(surface);
     if (type == CAIRO_SURFACE_TYPE_IMAGE)
-        return gjs_cairo_image_surface_from_surface(context, surface);
+        return CairoImageSurface::from_c_ptr(context, surface);
     if (type == CAIRO_SURFACE_TYPE_PDF)
-        return gjs_cairo_pdf_surface_from_surface(context, surface);
+        return CairoPDFSurface::from_c_ptr(context, surface);
     if (type == CAIRO_SURFACE_TYPE_PS)
-        return gjs_cairo_ps_surface_from_surface(context, surface);
+        return CairoPSSurface::from_c_ptr(context, surface);
     if (type == CAIRO_SURFACE_TYPE_SVG)
-        return gjs_cairo_svg_surface_from_surface(context, surface);
-
-    JS::RootedObject proto(context, gjs_cairo_surface_get_proto(context));
-    JS::RootedObject object(context,
-        JS_NewObjectWithGivenProto(context, &gjs_cairo_surface_class, proto));
-    if (!object) {
-        gjs_throw(context, "failed to create surface");
-        return nullptr;
-    }
-
-    gjs_cairo_surface_construct(object, surface);
-
-    return object;
+        return CairoSVGSurface::from_c_ptr(context, surface);
+    return CairoSurface::CWrapper::from_c_ptr(context, surface);
 }
 
 /**
- * gjs_cairo_surface_get_surface:
+ * CairoSurface::for_js:
  * @cx: the context
  * @surface_wrapper: surface wrapper
  *
+ * Overrides NativeObject::for_js().
+ *
  * Returns: the surface attached to the wrapper.
  */
-cairo_surface_t* gjs_cairo_surface_get_surface(
-    JSContext* cx, JS::HandleObject surface_wrapper) {
+cairo_surface_t* CairoSurface::for_js(JSContext* cx,
+                                      JS::HandleObject surface_wrapper) {
     g_return_val_if_fail(cx, nullptr);
     g_return_val_if_fail(surface_wrapper, nullptr);
 
-    JS::RootedObject proto(cx, gjs_cairo_surface_get_proto(cx));
+    JS::RootedObject proto(cx, CairoSurface::prototype(cx));
 
     bool is_surface_subclass = false;
     if (!gjs_object_in_prototype_chain(cx, proto, surface_wrapper,
@@ -225,8 +173,7 @@ cairo_surface_t* gjs_cairo_surface_get_surface(
         return nullptr;
     }
 
-    auto* priv = static_cast<GjsCairoSurface*>(JS_GetPrivate(surface_wrapper));
-    return priv ? priv->get() : nullptr;
+    return static_cast<cairo_surface_t*>(JS_GetPrivate(surface_wrapper));
 }
 
 [[nodiscard]] static bool surface_to_g_argument(
@@ -253,8 +200,7 @@ cairo_surface_t* gjs_cairo_surface_get_surface(
     }
 
     JS::RootedObject surface_wrapper(context, &value.toObject());
-    cairo_surface_t* s =
-        gjs_cairo_surface_get_surface(context, surface_wrapper);
+    cairo_surface_t* s = CairoSurface::for_js(context, surface_wrapper);
     if (!s)
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
@@ -265,13 +211,11 @@ cairo_surface_t* gjs_cairo_surface_get_surface(
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-surface_from_g_argument(JSContext             *context,
-                        JS::MutableHandleValue value_p,
-                        GIArgument            *arg)
-{
-    JSObject* obj = gjs_cairo_surface_from_surface(
-        context, gjs_arg_get<cairo_surface_t*>(arg));
+static bool surface_from_g_argument(JSContext* cx,
+                                    JS::MutableHandleValue value_p,
+                                    GIArgument* arg) {
+    JSObject* obj =
+        CairoSurface::from_c_ptr(cx, gjs_arg_get<cairo_surface_t*>(arg));
     if (!obj)
         return false;
 

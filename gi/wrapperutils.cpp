@@ -9,15 +9,10 @@
 #include <girepository.h>
 #include <glib-object.h>
 
-#include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_DefinePropertyById
 
 #include "gi/function.h"
-#include "gi/gtype.h"
 #include "gi/wrapperutils.h"
-#include "gjs/atoms.h"
-#include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 
 /* Default spidermonkey toString is worthless.  Replace it
@@ -62,17 +57,6 @@ bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
     gjs_throw(cx, "Property %s.%s is not writable", g_type_name(gtype),
               field_name);
     return false;
-}
-
-bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
-                                   GType gtype) {
-    JS::RootedObject gtype_obj(cx, gjs_gtype_create_gtype_wrapper(cx, gtype));
-    if (!gtype_obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    return JS_DefinePropertyById(cx, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
 }
 
 // These policies work around having separate g_foo_info_get_n_methods() and

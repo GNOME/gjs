@@ -18,6 +18,7 @@ typedef enum {
     GJS_DEBUG_CONTEXT,
     GJS_DEBUG_IMPORTER,
     GJS_DEBUG_NATIVE,
+    GJS_DEBUG_CAIRO,
     GJS_DEBUG_KEEP_ALIVE,
     GJS_DEBUG_GREPO,
     GJS_DEBUG_GNAMESPACE,
@@ -30,6 +31,7 @@ typedef enum {
     GJS_DEBUG_GERROR,
     GJS_DEBUG_GFUNDAMENTAL,
     GJS_DEBUG_GINTERFACE,
+    GJS_DEBUG_GTYPE,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and
