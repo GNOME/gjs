@@ -165,6 +165,7 @@ gjs_console_interact(JSContext *context,
                 break;
             }
             buffer += temp_buf;
+            buffer += "\n";
             g_free(temp_buf);
             lineno++;
         } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer.c_str(),
