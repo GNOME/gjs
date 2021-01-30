@@ -56,6 +56,14 @@ describe('Importer', function () {
         imports.searchPath = oldSearchPath;
     });
 
+    it('is on the global object (backwards compatibility)', function () {
+        expect(imports instanceof globalThis.GjsFileImporter).toBeTruthy();
+    });
+
+    it('is abstract', function () {
+        expect(() => new globalThis.GjsFileImporter()).toThrow();
+    });
+
     it('exists', function () {
         expect(imports).toBeDefined();
     });

@@ -822,8 +822,15 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool no_construct(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    gjs_throw_abstract_constructor_error(cx, args);
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_importer_define_proto(JSContext* cx) {
-    JSObject* global = JS::CurrentGlobalOrNull(cx);
+    JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
     g_assert(global && "Must enter a realm before defining importer");
 
     // If we've been here more than once, we already have the proto
@@ -841,6 +848,14 @@ static JSObject* gjs_importer_define_proto(JSContext* cx) {
         return nullptr;
     gjs_set_global_slot(global, GjsGlobalSlot::PROTOTYPE_importer,
                         JS::ObjectValue(*proto));
+
+    // For backwards compatibility
+    JSFunction* constructor = JS_NewFunction(
+        cx, no_construct, 0, JSFUN_CONSTRUCTOR, "GjsFileImporter");
+    JS::RootedObject ctor_obj(cx, JS_GetFunctionObject(constructor));
+    if (!JS_LinkConstructorAndPrototype(cx, ctor_obj, proto) ||
+        !JS_DefineProperty(cx, global, "GjsFileImporter", ctor_obj, 0))
+        return nullptr;
 
     gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",
               gjs_importer_class.name, proto.get());
