@@ -61,3 +61,20 @@ describe('System.programPath', function () {
         expect(System.programPath).toBe(null);
     });
 });
+
+describe('System.programArgs', function () {
+    it('System.programArgs is an array', function () {
+        expect(Array.isArray(System.programArgs)).toBeTruthy();
+    });
+
+    it('modifications persist', function () {
+        System.programArgs.push('--foo');
+        expect(System.programArgs.pop()).toBe('--foo');
+    });
+
+    it('System.programArgs is equal to ARGV', function () {
+        expect(System.programArgs).toEqual(ARGV);
+        ARGV.push('--foo');
+        expect(System.programArgs.pop()).toBe('--foo');
+    });
+});

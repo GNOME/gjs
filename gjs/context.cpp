@@ -599,6 +599,14 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     }
 }
 
+void GjsContextPrivate::set_args(std::vector<std::string>&& args) {
+    m_args = args;
+}
+
+JSObject* GjsContextPrivate::build_args_array() {
+    return gjs_build_string_array(m_cx, m_args);
+}
+
 static void
 gjs_context_get_property (GObject     *object,
                           guint        prop_id,
@@ -1337,6 +1345,13 @@ gjs_context_define_string_array(GjsContext  *js_context,
         strings = {array_values, array_values + array_length};
     }
 
+    // ARGV is a special case to preserve backwards compatibility.
+    if (strcmp(array_name, "ARGV") == 0) {
+        gjs->set_args(std::move(strings));
+
+        return true;
+    }
+
     JS::RootedObject global_root(gjs->context(), gjs->global());
     if (!gjs_define_string_array(gjs->context(), global_root, array_name,
                                  strings, JSPROP_READONLY | JSPROP_PERMANENT)) {
@@ -1349,6 +1364,14 @@ gjs_context_define_string_array(GjsContext  *js_context,
     }
 
     return true;
+}
+
+void gjs_context_set_argv(GjsContext* js_context, ssize_t array_length,
+                          const char** array_values) {
+    g_return_if_fail(GJS_IS_CONTEXT(js_context));
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    std::vector<std::string> args(array_values, array_values + array_length);
+    gjs->set_args(std::move(args));
 }
 
 static GjsContext *current_context;

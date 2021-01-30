@@ -811,6 +811,28 @@ static void gjstest_test_args_rounded_values() {
     assert_equal(gjs_arg_get_maybe_rounded<uint64_t>(&arg), 0.0);
 }
 
+static void gjstest_test_func_gjs_context_argv_array() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = NULL;
+    int status;
+
+    const char* argv[1] = {"test"};
+    bool ok = gjs_context_define_string_array(gjs, "ARGV", 1, argv, &error);
+
+    g_assert_no_error(error);
+    g_clear_error(&error);
+    g_assert_true(ok);
+
+    ok = gjs_context_eval(gjs, R"js(
+        imports.system.exit(ARGV[0] === "test" ? 0 : 1)
+    )js",
+                          -1, "<main>", &status, &error);
+
+    g_assert_cmpint(status, ==, 0);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
+    g_assert_false(ok);
+}
+
 int
 main(int    argc,
      char **argv)
@@ -840,6 +862,8 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/context/argv",
+                    gjstest_test_func_gjs_context_argv_array);
     g_test_add_func("/gjs/context/eval/dynamic-import",
                     gjstest_test_func_gjs_context_eval_dynamic_import);
     g_test_add_func("/gjs/context/eval/dynamic-import/relative",
