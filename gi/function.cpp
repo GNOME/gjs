@@ -6,7 +6,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>  // for exit
-#include <string.h>  // for memset
 
 #include <memory>  // for unique_ptr
 #include <string>
@@ -32,18 +31,20 @@
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for HandleValueArray, JS_GetElement
+#include <jspubtd.h>      // for JSProtoKey
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/closure.h"
+#include "gi/cwrapper.h"
 #include "gi/function.h"
 #include "gi/gerror.h"
 #include "gi/object.h"
 #include "gi/utils-inl.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
-#include "gjs/jsapi-class.h"
+#include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
@@ -53,25 +54,122 @@
  */
 #define GJS_ARG_INDEX_INVALID G_MAXUINT8
 
-typedef struct {
-    GICallableInfo* info;
+class Function : public CWrapper<Function> {
+    friend CWrapperPointerOps<Function>;
+    friend CWrapper<Function>;
 
-    GjsArgumentCache* arguments;
+    static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_function;
+    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GFUNCTION;
 
-    uint8_t js_in_argc;
-    guint8 js_out_argc;
-    GIFunctionInvoker invoker;
-} Function;
+    GjsAutoCallableInfo m_info;
 
-extern struct JSClass gjs_function_class;
+    GjsArgumentCache* m_arguments;
+
+    uint8_t m_js_in_argc;
+    uint8_t m_js_out_argc;
+    GIFunctionInvoker m_invoker;
+
+    explicit Function(GICallableInfo* info)
+        : m_info(info, GjsAutoTakeOwnership()),
+          m_arguments(nullptr),
+          m_js_in_argc(0),
+          m_js_out_argc(0),
+          m_invoker({}) {
+        GJS_INC_COUNTER(function);
+    }
+    ~Function();
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool init(JSContext* cx, GType gtype = G_TYPE_NONE);
+
+    /**
+     * Like CWrapperPointerOps::for_js_typecheck(), but additionally checks that
+     * the pointer is not null, which is the case for prototype objects.
+     */
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool for_js_instance(JSContext* cx, JS::HandleObject obj,
+                                Function** out, JS::CallArgs* args) {
+        Function* priv;
+        if (!Function::for_js_typecheck(cx, obj, &priv, args))
+            return false;
+        if (!priv) {
+            // This is the prototype
+            gjs_throw(cx, "Impossible on prototype; only on instances");
+            return false;
+        }
+        *out = priv;
+        return true;
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool call(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    static void finalize_impl(JSFreeOp*, Function* priv);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool get_length(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool to_string_impl(JSContext* cx, JS::MutableHandleValue rval);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* inherit_builtin_function(JSContext* cx, JSProtoKey) {
+        JS::RootedObject builtin_function_proto(
+            cx, JS::GetRealmFunctionPrototype(cx));
+        return JS_NewObjectWithGivenProto(cx, &Function::klass,
+                                          builtin_function_proto);
+    }
+
+    static const JSClassOps class_ops;
+    static const JSPropertySpec proto_props[];
+    static const JSFunctionSpec proto_funcs[];
+
+    static constexpr js::ClassSpec class_spec = {
+        nullptr,  // createConstructor
+        &Function::inherit_builtin_function,
+        nullptr,  // constructorFunctions
+        nullptr,  // constructorProperties
+        Function::proto_funcs,
+        Function::proto_props,
+        nullptr,  // finishInit
+        js::ClassSpec::DontDefineConstructor};
+
+    static constexpr JSClass klass = {
+        "GIRepositoryFunction",
+        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE, &Function::class_ops,
+        &Function::class_spec};
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create(JSContext* cx, GType gtype, GICallableInfo* info);
+
+    [[nodiscard]] char* format_name();
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool invoke(JSContext* cx, const JS::CallArgs& args,
+                JS::HandleObject this_obj = nullptr,
+                GIArgument* r_value = nullptr);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool invoke_constructor_uncached(JSContext* cx, GIFunctionInfo* info,
+                                            JS::HandleObject obj,
+                                            const JS::CallArgs& args,
+                                            GIArgument* rvalue) {
+        Function function(info);
+        if (!function.init(cx))
+            return false;
+        return function.invoke(cx, args, obj, rvalue);
+    }
+};
 
 /* Because we can't free the mmap'd data for a callback
  * while it's in use, this list keeps track of ones that
  * will be freed the next time we invoke a C function.
  */
 static std::vector<GjsAutoCallbackTrampoline> completed_trampolines;
-
-GJS_DEFINE_PRIV_FROM_JS(Function, gjs_function_class)
 
 GjsCallbackTrampoline* gjs_callback_trampoline_ref(
     GjsCallbackTrampoline* trampoline) {
@@ -639,15 +737,13 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
 }
 
 /* Intended for error messages. Return value must be freed */
-[[nodiscard]] static char* format_function_name(Function* function) {
-    if (g_callable_info_is_method(function->info))
+char* Function::format_name() {
+    if (g_callable_info_is_method(m_info))
         return g_strdup_printf(
-            "method %s.%s.%s", g_base_info_get_namespace(function->info),
-            g_base_info_get_name(g_base_info_get_container(function->info)),
-            g_base_info_get_name(function->info));
-    return g_strdup_printf("function %s.%s",
-                           g_base_info_get_namespace(function->info),
-                           g_base_info_get_name(function->info));
+            "method %s.%s.%s", m_info.ns(),
+            g_base_info_get_name(g_base_info_get_container(m_info)),
+            m_info.name());
+    return g_strdup_printf("function %s.%s", m_info.ns(), m_info.name());
 }
 
 void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
@@ -701,55 +797,49 @@ static void* get_return_ffi_pointer_from_giargument(
 // create JavaScript objects by calling it without @r_value, or you can decide
 // to keep the return values in #GArgument format by providing a @r_value
 // argument.
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_invoke_c_function(JSContext* context, Function* function,
-                                  const JS::CallArgs& args,
-                                  JS::HandleObject this_obj = nullptr,
-                                  GIArgument* r_value = nullptr) {
+bool Function::invoke(JSContext* context, const JS::CallArgs& args,
+                      JS::HandleObject this_obj /* = nullptr */,
+                      GIArgument* r_value /* = nullptr */) {
     g_assert((args.isConstructing() || !this_obj) &&
              "If not a constructor, then pass the 'this' object via CallArgs");
 
     void* return_value_p;  // will point inside the return GIArgument union
     GIFFIReturnValue return_value;
 
-    int gi_argc, gi_arg_pos;
-    bool can_throw_gerror;
+    int gi_arg_pos;
     bool did_throw_gerror = false;
     GError *local_error = NULL;
     bool failed, postinvoke_release_failed;
-
-    bool is_method;
     JS::RootedValueVector return_values(context);
 
-    is_method = g_callable_info_is_method(function->info);
-    can_throw_gerror = g_callable_info_can_throw_gerror(function->info);
+    bool is_method = g_callable_info_is_method(m_info);
+    bool can_throw_gerror = g_callable_info_can_throw_gerror(m_info);
 
-    unsigned ffi_argc = function->invoker.cif.nargs;
-    gi_argc = g_callable_info_get_n_args( (GICallableInfo*) function->info);
+    unsigned ffi_argc = m_invoker.cif.nargs;
+    int gi_argc = g_callable_info_get_n_args(m_info);
     if (gi_argc > GjsArgumentCache::MAX_ARGS) {
-        GjsAutoChar name = format_function_name(function);
+        GjsAutoChar name = format_name();
         gjs_throw(context, "Function %s has too many arguments", name.get());
         return false;
     }
 
     // ffi_argc is the number of arguments that the underlying C function takes.
     // gi_argc is the number of arguments the GICallableInfo describes (which
-    // does not include "this" or GError**). function->js_in_argc is the number
+    // does not include "this" or GError**). m_js_in_argc is the number
     // of arguments we expect the JS function to take (which does not include
     // PARAM_SKIPPED args).
     // args.length() is the number of arguments that were actually passed.
-    if (args.length() > function->js_in_argc) {
-        GjsAutoChar name = format_function_name(function);
+    if (args.length() > m_js_in_argc) {
+        GjsAutoChar name = format_name();
 
         if (!JS::WarnUTF8(context,
                           "Too many arguments to %s: expected %u, got %u",
-                          name.get(), function->js_in_argc, args.length()))
+                          name.get(), m_js_in_argc, args.length()))
             return false;
-    } else if (args.length() < function->js_in_argc) {
-        GjsAutoChar name = format_function_name(function);
+    } else if (args.length() < m_js_in_argc) {
+        GjsAutoChar name = format_name();
 
-        args.reportMoreArgsNeeded(context, name, function->js_in_argc,
-                                  args.length());
+        args.reportMoreArgsNeeded(context, name, m_js_in_argc, args.length());
         return false;
     }
 
@@ -776,7 +866,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     //
     // Use gi_arg_pos to index inside the GIArgument array. Use ffi_arg_pos to
     // index inside ffi_arg_pointers.
-    GjsFunctionCallState state(context, function->info, gi_argc);
+    GjsFunctionCallState state(context, m_info, gi_argc);
 
     auto ffi_arg_pointers = std::make_unique<void*[]>(ffi_argc);
 
@@ -789,7 +879,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
         return false;
 
     if (is_method) {
-        GjsArgumentCache* cache = &function->arguments[-2];
+        GjsArgumentCache* cache = &m_arguments[-2];
         GIArgument* in_value = &state.in_cvalues[-2];
         JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
 
@@ -809,7 +899,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
 
     unsigned processed_c_args = ffi_arg_pos;
     for (gi_arg_pos = 0; gi_arg_pos < gi_argc; gi_arg_pos++, ffi_arg_pos++) {
-        GjsArgumentCache* cache = &function->arguments[gi_arg_pos];
+        GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
         GIArgument* in_value = &state.in_cvalues[gi_arg_pos];
 
         gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -826,8 +916,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
                       "to pass to the '%s' argument. It may be that the "
                       "function is unsupported, or there may be a bug in "
                       "its annotations.",
-                      g_base_info_get_namespace(function->info),
-                      g_base_info_get_name(function->info), cache->arg_name);
+                      m_info.ns(), m_info.name(), cache->arg_name);
             failed = true;
             break;
         }
@@ -870,10 +959,10 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     g_assert_cmpuint(ffi_arg_pos, ==, ffi_argc);
     g_assert_cmpuint(gi_arg_pos, ==, gi_argc);
 
-    return_value_p = get_return_ffi_pointer_from_giargument(
-        &function->arguments[-1], &return_value);
-    ffi_call(&(function->invoker.cif), FFI_FN(function->invoker.native_address),
-             return_value_p, ffi_arg_pointers.get());
+    return_value_p =
+        get_return_ffi_pointer_from_giargument(&m_arguments[-1], &return_value);
+    ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
+             ffi_arg_pointers.get());
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
@@ -887,17 +976,16 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
     if (!r_value)
         args.rval().setUndefined();
 
-    if (!function->arguments[-1].skip_out()) {
+    if (!m_arguments[-1].skip_out()) {
         gi_type_info_extract_ffi_return_value(
-            &function->arguments[-1].type_info, &return_value,
-            &state.out_cvalues[-1]);
+            &m_arguments[-1].type_info, &return_value, &state.out_cvalues[-1]);
     }
 
     // Process out arguments and return values. This loop is skipped if we fail
     // the type conversion above, or if did_throw_gerror is true.
     js_arg_pos = 0;
     for (gi_arg_pos = -1; gi_arg_pos < gi_argc; gi_arg_pos++) {
-        GjsArgumentCache* cache = &function->arguments[gi_arg_pos];
+        GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
         GIArgument* out_value = &state.out_cvalues[gi_arg_pos];
 
         gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -925,7 +1013,7 @@ static bool gjs_invoke_c_function(JSContext* context, Function* function,
         }
     }
 
-    g_assert(failed || did_throw_gerror || js_arg_pos == function->js_out_argc);
+    g_assert(failed || did_throw_gerror || js_arg_pos == m_js_out_argc);
 
 release:
     // If we failed before calling the function, or if the function threw an
@@ -946,7 +1034,7 @@ release:
     for (gi_arg_pos = is_method ? -2 : -1;
          gi_arg_pos < gi_argc && ffi_arg_pos < ffi_arg_max;
          gi_arg_pos++, ffi_arg_pos++) {
-        GjsArgumentCache* cache = &function->arguments[gi_arg_pos];
+        GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
         GIArgument* in_value = &state.in_cvalues[gi_arg_pos];
         GIArgument* out_value = &state.out_cvalues[gi_arg_pos];
 
@@ -978,12 +1066,11 @@ release:
 
     g_assert(ffi_arg_pos == processed_c_args + (is_method ? 2 : 1));
 
-    if (!r_value && function->js_out_argc > 0 &&
-        (!failed && !did_throw_gerror)) {
+    if (!r_value && m_js_out_argc > 0 && (!failed && !did_throw_gerror)) {
         // If we have one return value or out arg, return that item on its
         // own, otherwise return a JavaScript array with [return value,
         // out arg 1, out arg 2, ...]
-        if (function->js_out_argc == 1) {
+        if (m_js_out_argc == 1) {
             args.rval().set(return_values[0]);
         } else {
             JSObject* array = JS::NewArrayObject(context, return_values);
@@ -1004,98 +1091,68 @@ release:
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-function_call(JSContext *context,
-              unsigned   js_argc,
-              JS::Value *vp)
-{
+bool Function::call(JSContext* context, unsigned js_argc, JS::Value* vp) {
     JS::CallArgs js_argv = JS::CallArgsFromVp(js_argc, vp);
     JS::RootedObject callee(context, &js_argv.callee());
 
     Function *priv;
+    if (!Function::for_js_typecheck(context, callee, &priv, &js_argv))
+        return false;
 
-    priv = priv_from_js(context, callee);
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p",
                       callee.get(), priv);
 
     if (priv == NULL)
-        return true; /* we are the prototype, or have the wrong class */
+        return true;  // we are the prototype
 
-    return gjs_invoke_c_function(context, priv, js_argv);
+    return priv->invoke(context, js_argv);
 }
 
-GJS_NATIVE_CONSTRUCTOR_DEFINE_ABSTRACT(function)
+Function::~Function() {
+    if (m_arguments) {
+        g_assert(m_info && "Don't know how to free cache without GI info");
 
-/* Does not actually free storage for structure, just
- * reverses init_cached_function_data
- */
-static void
-uninit_cached_function_data (Function *function)
-{
-    if (function->arguments) {
-        g_assert(function->info &&
-                 "Don't know how to free cache without GI info");
-
-        // Careful! function->arguments is offset by one or two elements inside
+        // Careful! m_arguments is offset by one or two elements inside
         // the allocated space, so we have to free index -1 or -2.
-        int start_index = g_callable_info_is_method(function->info) ? -2 : -1;
-        int gi_argc = MIN(g_callable_info_get_n_args(function->info),
-                          function->js_in_argc + function->js_out_argc);
+        int start_index = g_callable_info_is_method(m_info) ? -2 : -1;
+        int gi_argc = MIN(g_callable_info_get_n_args(m_info),
+                          m_js_in_argc + m_js_out_argc);
 
         for (int i = 0; i < gi_argc; i++) {
             int ix = start_index + i;
 
-            if (!function->arguments[ix].marshallers)
+            if (!m_arguments[ix].marshallers)
                 break;
 
-            if (function->arguments[ix].marshallers->free)
-                function->arguments[ix].marshallers->free(
-                    &function->arguments[ix]);
+            if (m_arguments[ix].marshallers->free)
+                m_arguments[ix].marshallers->free(&m_arguments[ix]);
         }
 
-        g_free(&function->arguments[start_index]);
-        function->arguments = nullptr;
+        g_free(&m_arguments[start_index]);
+        m_arguments = nullptr;
     }
 
-    g_clear_pointer(&function->info, g_base_info_unref);
-    g_function_invoker_destroy(&function->invoker);
+    g_function_invoker_destroy(&m_invoker);
+    GJS_DEC_COUNTER(function);
 }
 
-static void function_finalize(JSFreeOp*, JSObject* obj) {
-    Function *priv;
-
-    priv = (Function *) JS_GetPrivate(obj);
-    gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
-                        "finalize, obj %p priv %p", obj, priv);
+void Function::finalize_impl(JSFreeOp*, Function* priv) {
     if (priv == NULL)
         return; /* we are the prototype, not a real instance, so constructor never called */
-
-    uninit_cached_function_data(priv);
-
-    GJS_DEC_COUNTER(function);
-    g_free(priv);
+    delete priv;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-get_num_arguments (JSContext *context,
-                   unsigned   argc,
-                   JS::Value *vp)
-{
-    GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
-    rec.rval().setInt32(priv->js_in_argc);
+bool Function::get_length(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, this_obj);
+    Function* priv;
+    if (!Function::for_js_instance(cx, this_obj, &priv, &args))
+        return false;
+    args.rval().setInt32(priv->m_js_in_argc);
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-function_to_string (JSContext *context,
-                    guint      argc,
-                    JS::Value *vp)
-{
-    GJS_GET_PRIV(context, argc, vp, rec, to, Function, priv);
-    int i, n_args, n_jsargs;
+bool Function::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
+    GJS_CHECK_WRAPPER_PRIV(context, argc, vp, rec, this_obj, Function, priv);
 
     if (priv == NULL) {
         JSString* retval = JS_NewStringCopyZ(context, "function () {\n}");
@@ -1105,92 +1162,74 @@ function_to_string (JSContext *context,
         return true;
     }
 
-    n_args = g_callable_info_get_n_args(priv->info);
+    return priv->to_string_impl(context, rec.rval());
+}
+
+bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
+    int i, n_jsargs;
+
+    int n_args = g_callable_info_get_n_args(m_info);
     n_jsargs = 0;
     std::string arg_names;
     for (i = 0; i < n_args; i++) {
-        if (priv->arguments[i].skip_in())
+        if (m_arguments[i].skip_in())
             continue;
 
         if (n_jsargs > 0)
             arg_names += ", ";
 
         n_jsargs++;
-        arg_names += priv->arguments[i].arg_name;
+        arg_names += m_arguments[i].arg_name;
     }
 
     GjsAutoChar descr;
-    if (g_base_info_get_type(priv->info) == GI_INFO_TYPE_FUNCTION) {
+    if (g_base_info_get_type(m_info) == GI_INFO_TYPE_FUNCTION) {
         descr = g_strdup_printf(
             "function %s(%s) {\n\t/* wrapper for native symbol %s(); */\n}",
-            g_base_info_get_name(priv->info), arg_names.c_str(),
-            g_function_info_get_symbol(priv->info));
+            m_info.name(), arg_names.c_str(),
+            g_function_info_get_symbol(m_info));
     } else {
         descr = g_strdup_printf(
             "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
-            g_base_info_get_name(priv->info), arg_names.c_str());
+            m_info.name(), arg_names.c_str());
     }
 
-    return gjs_string_from_utf8(context, descr, rec.rval());
+    return gjs_string_from_utf8(cx, descr, rval);
 }
 
-/* The bizarre thing about this vtable is that it applies to both
- * instances of the object, and to the prototype that instances of the
- * class have.
- */
-static const struct JSClassOps gjs_function_class_ops = {
+const JSClassOps Function::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
     nullptr,  // newEnumerate
     nullptr,  // resolve
     nullptr,  // mayResolve
-    function_finalize,
-    function_call};
-
-struct JSClass gjs_function_class = {
-    "GIRepositoryFunction", /* means "new GIRepositoryFunction()" works */
-    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
-    &gjs_function_class_ops
+    &Function::finalize,
+    &Function::call,
 };
 
-static JSPropertySpec gjs_function_proto_props[] = {
-    JS_PSG("length", get_num_arguments, JSPROP_PERMANENT),
+const JSPropertySpec Function::proto_props[] = {
+    JS_PSG("length", &Function::get_length, JSPROP_PERMANENT),
     JS_STRING_SYM_PS(toStringTag, "GIRepositoryFunction", JSPROP_READONLY),
     JS_PS_END};
 
 /* The original Function.prototype.toString complains when
    given a GIRepository function as an argument */
-static JSFunctionSpec gjs_function_proto_funcs[] = {
-    JS_FN("toString", function_to_string, 0, 0),
-    JS_FS_END
-};
+// clang-format off
+const JSFunctionSpec Function::proto_funcs[] = {
+    JS_FN("toString", &Function::to_string, 0, 0),
+    JS_FS_END};
+// clang-format on
 
-static JSFunctionSpec *gjs_function_static_funcs = nullptr;
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-init_cached_function_data (JSContext      *context,
-                           Function       *function,
-                           GType           gtype,
-                           GICallableInfo *info)
-{
-    guint8 i, n_args;
+bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
+    guint8 i;
     GError *error = NULL;
-    GIInfoType info_type;
 
-    info_type = g_base_info_get_type((GIBaseInfo *)info);
-
-    if (info_type == GI_INFO_TYPE_FUNCTION) {
-        if (!g_function_info_prep_invoker((GIFunctionInfo *)info,
-                                          &(function->invoker),
-                                          &error)) {
+    if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
+        if (!g_function_info_prep_invoker(m_info, &m_invoker, &error))
             return gjs_throw_gerror(context, error);
-        }
-    } else if (info_type == GI_INFO_TYPE_VFUNC) {
-        gpointer addr;
-
-        addr = g_vfunc_info_get_address((GIVFuncInfo *)info, gtype, &error);
+    } else if (m_info.type() == GI_INFO_TYPE_VFUNC) {
+        void* addr = g_vfunc_info_get_address(m_info, gtype, &error);
         if (error != NULL) {
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
                 return gjs_throw_gerror(context, error);
@@ -1201,63 +1240,57 @@ init_cached_function_data (JSContext      *context,
             return false;
         }
 
-        if (!g_function_invoker_new_for_address(addr, info,
-                                                &(function->invoker),
-                                                &error)) {
+        if (!g_function_invoker_new_for_address(addr, m_info, &m_invoker,
+                                                &error))
             return gjs_throw_gerror(context, error);
-        }
     }
 
-    bool is_method = g_callable_info_is_method(info);
-    n_args = g_callable_info_get_n_args((GICallableInfo*) info);
+    bool is_method = g_callable_info_is_method(m_info);
+    uint8_t n_args = g_callable_info_get_n_args(m_info);
 
     // arguments is one or two inside an array of n_args + 2, so
     // arguments[-1] is the return value (which can be skipped if void)
     // arguments[-2] is the instance parameter
     size_t offset = is_method ? 2 : 1;
-    GjsArgumentCache* arguments =
-        g_new0(GjsArgumentCache, n_args + offset) + offset;
-
-    function->arguments = arguments;
-    function->info = g_base_info_ref(info);
-    function->js_in_argc = 0;
-    function->js_out_argc = 0;
+    m_arguments = g_new0(GjsArgumentCache, n_args + offset) + offset;
 
     if (is_method &&
-        !gjs_arg_cache_build_instance(context, &arguments[-2], info))
+        !gjs_arg_cache_build_instance(context, &m_arguments[-2], m_info))
         return false;
 
     bool inc_counter;
-    if (!gjs_arg_cache_build_return(context, &arguments[-1], arguments, info,
-                                    &inc_counter))
+    if (!gjs_arg_cache_build_return(context, &m_arguments[-1], m_arguments,
+                                    m_info, &inc_counter))
         return false;
 
-    function->js_out_argc = inc_counter ? 1 : 0;
+    if (inc_counter)
+        m_js_out_argc++;
 
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
 
-        if (arguments[i].skip_in() || arguments[i].skip_out())
+        if (m_arguments[i].skip_in() || m_arguments[i].skip_out())
             continue;
 
-        g_callable_info_load_arg((GICallableInfo*) info, i, &arg_info);
+        g_callable_info_load_arg(m_info, i, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
 
-        if (!gjs_arg_cache_build_arg(context, &arguments[i], arguments, i,
-                                     direction, &arg_info, info, &inc_counter))
+        if (!gjs_arg_cache_build_arg(context, &m_arguments[i], m_arguments, i,
+                                     direction, &arg_info, m_info,
+                                     &inc_counter))
             return false;
 
         if (inc_counter) {
             switch (direction) {
                 case GI_DIRECTION_INOUT:
-                    function->js_out_argc++;
+                    m_js_out_argc++;
                     [[fallthrough]];
                 case GI_DIRECTION_IN:
-                    function->js_in_argc++;
+                    m_js_in_argc++;
                     break;
                 case GI_DIRECTION_OUT:
-                    function->js_out_argc++;
+                    m_js_out_argc++;
                     break;
                 default:
                     g_assert_not_reached();
@@ -1268,45 +1301,28 @@ init_cached_function_data (JSContext      *context,
     return true;
 }
 
-[[nodiscard]] static inline JSObject* gjs_builtin_function_get_proto(
-    JSContext* cx) {
-    return JS::GetRealmFunctionPrototype(cx);
-}
-
-GJS_DEFINE_PROTO_FUNCS_WITH_PARENT(function, builtin_function)
-
-GJS_JSAPI_RETURN_CONVENTION
-static JSObject*
-function_new(JSContext      *context,
-             GType           gtype,
-             GICallableInfo *info)
-{
-    Function *priv;
-
-    JS::RootedObject proto(context);
-    if (!gjs_function_define_proto(context, nullptr, &proto))
+JSObject* Function::create(JSContext* context, GType gtype,
+                           GICallableInfo* info) {
+    JS::RootedObject proto(context, Function::create_prototype(context));
+    if (!proto)
         return nullptr;
 
-    JS::RootedObject function(context,
-        JS_NewObjectWithGivenProto(context, &gjs_function_class, proto));
+    JS::RootedObject function(
+        context, JS_NewObjectWithGivenProto(context, &Function::klass, proto));
     if (!function) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
         return NULL;
     }
 
-    priv = g_new0(Function, 1);
+    auto* priv = new Function(info);
 
-    GJS_INC_COUNTER(function);
-
-    g_assert(priv_from_js(context, function) == NULL);
+    g_assert(!JS_GetPrivate(function) && "Function should be a fresh object");
     JS_SetPrivate(function, priv);
 
-    gjs_debug_lifecycle(GJS_DEBUG_GFUNCTION,
-                        "function constructor, obj %p priv %p", function.get(),
-                        priv);
+    debug_lifecycle(function, priv, "Constructor");
 
-    if (!init_cached_function_data(context, priv, gtype, (GICallableInfo *)info))
-      return NULL;
+    if (!priv->init(context, gtype))
+        return nullptr;
 
     return function;
 }
@@ -1324,7 +1340,7 @@ gjs_define_function(JSContext       *context,
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
 
-    JS::RootedObject function(context, function_new(context, gtype, info));
+    JS::RootedObject function(context, Function::create(context, gtype, info));
     if (!function)
         return NULL;
 
@@ -1354,13 +1370,6 @@ bool gjs_invoke_constructor_from_c(JSContext* context, GIFunctionInfo* info,
                                    JS::HandleObject obj,
                                    const JS::CallArgs& args,
                                    GIArgument* rvalue) {
-    Function function;
-
-    memset(&function, 0, sizeof(Function));
-    if (!init_cached_function_data(context, &function, 0, info))
-        return false;
-
-    bool result = gjs_invoke_c_function(context, &function, args, obj, rvalue);
-    uninit_cached_function_data(&function);
-    return result;
+    return Function::invoke_constructor_uncached(context, info, obj, args,
+                                                 rvalue);
 }
