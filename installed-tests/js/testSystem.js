@@ -55,3 +55,9 @@ describe('System.dumpHeap()', function () {
         expect(() => System.dumpHeap('/does/not/exist')).toThrow();
     });
 });
+
+describe('System.programPath', function () {
+    it('is null when executed from minijasmine', function () {
+        expect(System.programPath).toBe(null);
+    });
+});

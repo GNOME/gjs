@@ -53,6 +53,7 @@ class JSTracer;
     macro(param_spec, "ParamSpec") \
     macro(parent_module, "__parentModule__") \
     macro(program_invocation_name, "programInvocationName") \
+    macro(program_path, "programPath") \
     macro(prototype, "prototype") \
     macro(search_path, "searchPath") \
     macro(signal_id, "signalId") \

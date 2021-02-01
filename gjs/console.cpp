@@ -286,6 +286,7 @@ main(int argc, char **argv)
         exit(0);
     }
 
+    GjsAutoChar program_path = nullptr;
     gjs_argc = g_strv_length(gjs_argv);
     if (command != NULL) {
         script = command;
@@ -308,10 +309,13 @@ main(int argc, char **argv)
         /* All unprocessed options should be in script_argv */
         g_assert(gjs_argc == 2);
         error = NULL;
-        if (!g_file_get_contents(gjs_argv[1], &script, &len, &error)) {
+        GjsAutoUnref<GFile> input = g_file_new_for_commandline_arg(gjs_argv[1]);
+        if (!g_file_load_contents(input, nullptr, &script, &len, nullptr,
+                                  &error)) {
             g_printerr("%s\n", error->message);
             exit(1);
         }
+        program_path = g_file_get_path(input);
         filename = gjs_argv[1];
         program_name = gjs_argv[1];
     }
@@ -347,8 +351,8 @@ main(int argc, char **argv)
 
     js_context = GJS_CONTEXT(g_object_new(
         GJS_TYPE_CONTEXT, "search-path", include_path, "program-name",
-        program_name, "profiler-enabled", enable_profiler, "exec-as-module",
-        exec_as_module, nullptr));
+        program_name, "program-path", program_path.get(), "profiler-enabled",
+        enable_profiler, "exec-as-module", exec_as_module, nullptr));
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != NULL) {

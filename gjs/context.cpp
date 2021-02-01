@@ -127,6 +127,7 @@ GjsContextPrivate* GjsContextPrivate::from_current_context() {
 
 enum {
     PROP_0,
+    PROP_PROGRAM_PATH,
     PROP_SEARCH_PATH,
     PROP_PROGRAM_NAME,
     PROP_PROFILER_ENABLED,
@@ -246,6 +247,15 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
                                     pspec);
+    g_param_spec_unref(pspec);
+
+    pspec = g_param_spec_string(
+        "program-path", "Executed File Path",
+        "The full path of the launched file or NULL if GJS was launched from "
+        "the C API or interactive console.",
+        nullptr, (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+
+    g_object_class_install_property(object_class, PROP_PROGRAM_PATH, pspec);
     g_param_spec_unref(pspec);
 
     /**
@@ -418,6 +428,7 @@ void GjsContextPrivate::dispose(void) {
 
 GjsContextPrivate::~GjsContextPrivate(void) {
     g_clear_pointer(&m_search_path, g_strfreev);
+    g_clear_pointer(&m_program_path, g_free);
     g_clear_pointer(&m_program_name, g_free);
 }
 
@@ -600,6 +611,9 @@ gjs_context_get_property (GObject     *object,
     case PROP_PROGRAM_NAME:
         g_value_set_string(value, gjs->program_name());
         break;
+    case PROP_PROGRAM_PATH:
+        g_value_set_string(value, gjs->program_path());
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -620,6 +634,9 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_PROGRAM_NAME:
         gjs->set_program_name(g_value_dup_string(value));
+        break;
+    case PROP_PROGRAM_PATH:
+        gjs->set_program_path(g_value_dup_string(value));
         break;
     case PROP_PROFILER_ENABLED:
         gjs->set_should_profile(g_value_get_boolean(value));

@@ -75,6 +75,7 @@ class GjsContextPrivate : public JS::JobQueue {
     GThread* m_owner_thread;
 
     char* m_program_name;
+    char* m_program_path;
 
     char** m_search_path;
 
@@ -180,6 +181,8 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] bool sweeping() const { return m_in_gc_sweep; }
     [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
+    GJS_USE const char* program_path(void) const { return m_program_path; }
+    void set_program_path(char* value) { m_program_path = value; }
     void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
     void set_execute_as_module(bool value) { m_exec_as_module = value; }

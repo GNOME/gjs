@@ -20,6 +20,7 @@
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>     // for NullValue
 #include <jsapi.h>        // for JS_DefinePropertyById, JS_DefineF...
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 
@@ -203,13 +204,25 @@ gjs_js_define_system_stuff(JSContext              *context,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     const char* program_name = gjs->program_name();
+    const char* program_path = gjs->program_path();
 
-    JS::RootedValue value(context);
-    return gjs_string_from_utf8(context, program_name, &value) &&
+    JS::RootedValue v_program_invocation_name(context);
+    JS::RootedValue v_program_path(context, JS::NullValue());
+    if (program_path) {
+        if (!gjs_string_from_utf8(context, program_path, &v_program_path))
+            return false;
+    }
+
+    return gjs_string_from_utf8(context, program_name,
+                                &v_program_invocation_name) &&
            /* The name is modeled after program_invocation_name, part of glibc
             */
            JS_DefinePropertyById(context, module,
-                                 gjs->atoms().program_invocation_name(), value,
+                                 gjs->atoms().program_invocation_name(),
+                                 v_program_invocation_name,
+                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
+           JS_DefinePropertyById(context, module, gjs->atoms().program_path(),
+                                 v_program_path,
                                  GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
            JS_DefinePropertyById(context, module, gjs->atoms().version(),
                                  GJS_VERSION,
