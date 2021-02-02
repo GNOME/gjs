@@ -763,7 +763,7 @@ gjs_array_to_ptrarray(JSContext   *context,
         array[i] = gjs_arg_get<void*>(&arg);
     }
 
-    *arr_p = g_steal_pointer(&array);
+    *arr_p = array.release();
     return true;
 }
 
