@@ -943,11 +943,7 @@ bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
     return gjs->register_module(identifier, uri, error);
 }
 
-bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
-                             const char* filename, int* exit_status_p,
-                             GError** error) {
-    AutoResetExit reset(this);
-
+bool GjsContextPrivate::auto_profile_enter() {
     bool auto_profile = m_should_profile;
     if (auto_profile &&
         (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
@@ -957,6 +953,50 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
 
     if (auto_profile)
         gjs_profiler_start(m_profiler);
+
+    return auto_profile;
+}
+
+void GjsContextPrivate::auto_profile_exit(bool auto_profile) {
+    if (auto_profile)
+        gjs_profiler_stop(m_profiler);
+}
+
+uint8_t GjsContextPrivate::handle_exit_code(const char* type,
+                                            const char* identifier,
+                                            GError** error) {
+    uint8_t code;
+    if (should_exit(&code)) {
+        /* exit_status_p is public API so can't be changed, but should be
+         * uint8_t, not int */
+        g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                    "Exit with code %d", code);
+        return code;  // Don't log anything
+    }
+    if (!JS_IsExceptionPending(m_cx)) {
+        g_critical("%s %s terminated with an uncatchable exception", type,
+                   identifier);
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "%s %s terminated with an uncatchable exception", type,
+                    identifier);
+    } else {
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "%s %s threw an exception", type, identifier);
+    }
+
+    gjs_log_exception_uncaught(m_cx);
+    /* No exit code from script, but we don't want to exit(0) */
+    return 1;
+}
+
+bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
+                             const char* filename, int* exit_status_p,
+                             GError** error) {
+    AutoResetExit reset(this);
+
+    bool auto_profile = auto_profile_enter();
+
+    JSAutoRealm ar(m_cx, m_global);
 
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
@@ -969,34 +1009,10 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         ok = run_jobs_fallible() && ok;
     }
 
-    if (auto_profile)
-        gjs_profiler_stop(m_profiler);
+    auto_profile_exit(auto_profile);
 
     if (!ok) {
-        uint8_t code;
-        if (should_exit(&code)) {
-            /* exit_status_p is public API so can't be changed, but should be
-             * uint8_t, not int */
-            *exit_status_p = code;
-            g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
-                        "Exit with code %d", code);
-            return false;  // Don't log anything
-        }
-
-        if (!JS_IsExceptionPending(m_cx)) {
-            g_critical("Script %s terminated with an uncatchable exception",
-                       filename);
-            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                        "Script %s terminated with an uncatchable exception",
-                        filename);
-        } else {
-            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                        "Script %s threw an exception", filename);
-        }
-
-        gjs_log_exception_uncaught(m_cx);
-        /* No exit code from script, but we don't want to exit(0) */
-        *exit_status_p = 1;
+        *exit_status_p = handle_exit_code("Script", filename, error);
         return false;
     }
 

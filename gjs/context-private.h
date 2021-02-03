@@ -134,6 +134,11 @@ class GjsContextPrivate : public JS::JobQueue {
 
     void warn_about_unhandled_promise_rejections(void);
 
+    uint8_t handle_exit_code(const char* type, const char* identifier,
+                             GError** error);
+    [[nodiscard]] bool auto_profile_enter(void);
+    void auto_profile_exit(bool status);
+
     class AutoResetExit {
         GjsContextPrivate* m_self;
 
