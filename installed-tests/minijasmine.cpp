@@ -3,7 +3,9 @@
 // SPDX-FileCopyrightText: 2016 Philip Chimento
 
 #include <locale.h>  // for setlocale, LC_ALL
+#include <stdint.h>
 #include <stdlib.h>  // for exit
+#include <string.h>
 
 #include <gio/gio.h>
 #include <girepository.h>
@@ -62,12 +64,19 @@ main(int argc, char **argv)
     bool success;
     int code;
 
-    success = gjs_context_eval(cx, "imports.minijasmine;", -1,
-                               "<jasmine>", &code, &error);
-    if (!success)
+    int exitcode_ignored;
+    if (!gjs_context_eval(cx, "imports.minijasmine;", -1, "<jasmine>",
+                          &exitcode_ignored, &error))
         bail_out(cx, error->message);
 
-    success = gjs_context_eval_file(cx, argv[1], &code, &error);
+    bool eval_as_module = argc >= 3 && strcmp(argv[2], "-m") == 0;
+    if (eval_as_module) {
+        uint8_t u8_exitcode_ignored;
+        success = gjs_context_eval_module_file(cx, argv[1],
+                                               &u8_exitcode_ignored, &error);
+    } else {
+        success = gjs_context_eval_file(cx, argv[1], &exitcode_ignored, &error);
+    }
     if (!success)
         bail_out(cx, error->message);
 
