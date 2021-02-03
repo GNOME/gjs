@@ -25,4 +25,5 @@ SpacesBeforeTrailingComments: 2
 # operate on diffs like clang-format does.
 Language: JavaScript
 DisableFormat: true
+SortIncludes: false  # https://bugs.llvm.org/show_bug.cgi?id=27042
 ...
