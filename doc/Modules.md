@@ -63,14 +63,13 @@ import Gtk from 'gi://Gtk?version=3.0';
 
 ## Cairo
 
-**Import with `const Cairo = imports.cairo;`**
+**Import with `import Cairo from 'cairo';`**
 
 Mostly API compatible with [cairo](https://www.cairographics.org/documentation/), but using camelCase function names. There is list of constants in [cairo.js][cairo-const] and functions for each object in its corresponding C++ file (eg. [cairo-context.cpp][cairo-func]). A simple example drawing a 32x32 red circle:
 
 ```js
-imports.gi.versions.Gtk = "3.0";
-const Gtk = imports.gi.Gtk;
-const Cairo = imports.cairo;
+import Gtk from 'gi://Gtk?version=3.0';
+import Cairo from 'cairo';
 
 let drawingArea = new Gtk.DrawingArea({
     height_request: 32,
@@ -125,11 +124,15 @@ Gettext.ngettext("I have %d apple", "I have %d apples", num).format(num);
 
 ## [Gettext](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/gettext.js)
 
-**Import with `const Gettext = imports.gettext;`**
+**Import with `import gettext from 'gettext';`**
 
 Helper functions for gettext. See also [examples/gettext.js][example-gettext] for usage.
 
 [example-gettext]: https://gitlab.gnome.org/GNOME/gjs/blob/master/examples/gettext.js
+
+### Legacy Imports (`imports.gettext`)
+
+Gettext is also exposed via `imports.gettext` on the global `imports` object.
 
 ## [jsUnit](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/jsUnit.js)
 
@@ -218,7 +221,7 @@ obj.disconnectAll();
 
 ## [System](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/system.cpp)
 
-**Import with `const System = imports.system;`**
+**Import with `import system from 'system';`**
 
 The System module offers a number of useful functions and properties for debugging and shell interaction (eg. ARGV):
 
@@ -262,9 +265,8 @@ The System module offers a number of useful functions and properties for debuggi
  [examples/gtk-application.js][example-application]):
 
     ```js
-    imports.gi.versions.Gtk = "3.0";
-    const Gtk = imports.gi.Gtk;
-    const System = imports.system;
+    import Gtk from 'gi://Gtk?version=3.0';
+    import system from 'system';
 
     let myApp = new Gtk.Application();
     myApp.connect("activate", () => log("activated"));

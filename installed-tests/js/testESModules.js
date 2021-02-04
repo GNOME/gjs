@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
+import gettext from 'gettext';
+import {ngettext as N_} from 'gettext';
 import gi from 'gi';
 import Gio from 'gi://Gio';
+import system from 'system';
+import {exit} from 'system';
 
 import $ from 'resource:///org/gjs/jsunit/modules/exports.js';
 import {NamedExport, data} from 'resource:///org/gjs/jsunit/modules/exports.js';
@@ -52,5 +56,24 @@ describe('ES module imports', function () {
 
     it('does not expose internal import.meta properties to userland modules', function () {
         expect(metaProperties).toEqual(['url']);
+    });
+});
+
+describe('Builtin ES modules', function () {
+    it('gettext default import', function () {
+        expect(typeof gettext.ngettext).toBe('function');
+    });
+
+    it('gettext named import', function () {
+        expect(typeof N_).toBe('function');
+    });
+
+    it('system default import', function () {
+        expect(typeof system.exit).toBe('function');
+    });
+
+    it('system named import', function () {
+        expect(typeof exit).toBe('function');
+        expect(exit).toBe(system.exit);
     });
 });

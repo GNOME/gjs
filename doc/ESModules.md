@@ -154,6 +154,22 @@ import Gdk from 'gi://Gdk';
 import Hdy from 'gi://Hdy';
 ```
 
+## Built-in modules
+
+Built-in modules provide a default export with all their exported functions and properties. Most modules provide named exports too. `cairo` does not provide named exports of its API.
+
+Modifying the values of the default export _does not_ change the values of named exports.
+
+```js
+import system from 'system';
+system.exit(1);
+```
+
+```js
+import { ngettext as _ } from 'gettext';
+_('Hello!');
+```
+
 ## `import()` expressions
 
 Dynamic [`import()` statements][] are not currently supported in GJS.

@@ -195,21 +195,32 @@ if get_option('installed_tests')
     install_data('testGDBus.js', install_dir: installed_js_tests_dir)
 endif
 
-# testESModules.js is also separate because it needs an extra minijasmine flag
+# tests using ES modules are also separate because they need an extra
+# minijasmine flag
 
-test('ESModules', minijasmine, args: [files('testESModules.js'), '-m'],
-    env: tests_environment, protocol: 'tap', suite: 'JS')
-
-esm_test_description_subst = {
-    'name': 'testESModules.js',
-    'installed_tests_execdir': installed_tests_execdir,
-}
-esm_test_description = configure_file(
-    configuration: esm_test_description_subst,
-    input: '../minijasmine-module.test.in', output: 'testESModules.test',
-    install: get_option('installed_tests'),
-    install_dir: installed_tests_metadir)
-
-if get_option('installed_tests')
-    install_data('testESModules.js', install_dir: installed_js_tests_dir)
+modules_tests = ['ESModules']
+if build_cairo
+    modules_tests += 'CairoModule'
 endif
+
+foreach test : modules_tests
+    test_file = files('test@0@.js'.format(test))
+
+    test(test, minijasmine, args: [test_file, '-m'], env: tests_environment,
+        protocol: 'tap', suite: 'JS')
+
+    esm_test_description_subst = {
+        'name': 'test@0@.js'.format(test),
+        'installed_tests_execdir': installed_tests_execdir,
+    }
+    esm_test_description = configure_file(
+        configuration: esm_test_description_subst,
+        input: '../minijasmine-module.test.in',
+        output: 'test@0@.test'.format(test),
+        install: get_option('installed_tests'),
+        install_dir: installed_tests_metadir)
+
+    if get_option('installed_tests')
+        install_data(test_file, install_dir: installed_js_tests_dir)
+    endif
+endforeach
