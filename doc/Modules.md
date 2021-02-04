@@ -92,20 +92,38 @@ drawingArea.connect("draw", (widget, cr) => {
 [cairo-const]: https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/cairo.js
 [cairo-func]: https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/cairo-context.cpp#L825
 
-## [Format](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/format.js)
+## [Format](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/esm/format.js)
 
-**Import with `const Format = imports.format;`**
+**Import with `import format from 'format';`**
 
-The format import is mostly obsolete, providing `vprintf()`, `printf()` and `format()`. Native [template literals][template-literals] should be preferred now, except in few situations like Gettext (See [Bug #50920][bug-50920]).
+The format module is mostly obsolete, providing only `sprintf()`.
+Native [template literals][template-literals] should be preferred now,
+except in few situations like Gettext (See [Bug #50920][bug-50920]).
+We plan to increase support for template literals in translations so
+`sprintf()` is no longer necessary.
 
 ```js
+import { sprintf } from 'format';
+
+// Using sprintf() (Output: Pi to 2 decimal points: 3.14)
+sprintf("%s to %d decimal points: %.2f", foo, bar*2, baz);
+
+// Using sprintf() with Gettext
+sprintf(_("%d:%d"), 11, 59);
+
 let foo = "Pi";
 let bar = 1;
 let baz = Math.PI;
 
 // Using native template literals (Output: Pi to 2 decimal points: 3.14)
 `${foo} to ${bar*2} decimal points: ${baz.toFixed(bar*2)}`
+```
 
+### [Deprecated Functions](https://gitlab.gnome.org/GNOME/gjs/blob/master/modules/script/format.js)
+
+**Import with `const Format = imports.format;`**
+
+```js
 // Applying format() to the string prototype
 const Format = imports.format;
 String.prototype.format = Format.format;

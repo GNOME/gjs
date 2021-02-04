@@ -166,6 +166,11 @@ system.exit(1);
 ```
 
 ```js
+import * as format from 'format';
+format.sprintf('Hi %s!', 'Bob');
+```
+
+```js
 import { ngettext as _ } from 'gettext';
 _('Hello!');
 ```

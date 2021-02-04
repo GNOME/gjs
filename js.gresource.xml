@@ -9,6 +9,7 @@
 
     <!-- ESM-based modules -->
     <file>modules/esm/cairo.js</file>
+    <file>modules/esm/format.js</file>
     <file>modules/esm/gettext.js</file>
     <file>modules/esm/gi.js</file>
     <file>modules/esm/system.js</file>
