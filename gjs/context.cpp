@@ -1253,6 +1253,14 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     JS::CompileOptions options(m_cx);
     options.setFileAndLine(filename, 1);
 
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
+    GjsAutoChar uri = g_file_get_uri(file);
+    JS::RootedObject priv(m_cx, gjs_script_module_build_private(m_cx, uri));
+    if (!priv)
+        return false;
+
+    options.setPrivateValue(JS::ObjectValue(*priv));
+
     if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
         return false;
 

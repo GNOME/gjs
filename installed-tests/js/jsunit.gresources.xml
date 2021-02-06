@@ -13,6 +13,7 @@
     <file>modules/badOverrides/Regress.js</file>
     <file>modules/badOverrides/WarnLib.js</file>
     <file>modules/data.txt</file>
+    <file>modules/dynamic.js</file>
     <file>modules/importmeta.js</file>
     <file>modules/exports.js</file>
     <file>modules/foobar.js</file>

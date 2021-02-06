@@ -124,7 +124,8 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     moduleResolveAsyncHook(importingModulePriv, specifier) {
-        // importingModulePriv may be falsy in the case of gjs_context_eval()
+        // importingModulePriv should never be missing. If it is then a JSScript
+        // is missing a private object
         if (!importingModulePriv || !importingModulePriv.uri)
             throw new ImportError('Cannot resolve relative imports from an unknown file.');
 

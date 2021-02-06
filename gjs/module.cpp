@@ -94,7 +94,7 @@ class GjsScriptModule {
     GJS_JSAPI_RETURN_CONVENTION
     bool evaluate_import(JSContext* cx, JS::HandleObject module,
                          const char* script, ssize_t script_len,
-                         const char* filename) {
+                         const char* filename, const char* uri) {
         std::u16string utf16_string =
             gjs_utf8_script_to_utf16(script, script_len);
         // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
@@ -113,6 +113,9 @@ class GjsScriptModule {
 
         JS::CompileOptions options(cx);
         options.setFileAndLine(filename, 1);
+
+        JS::RootedObject priv(cx, build_private(cx, uri));
+        options.setPrivateValue(JS::ObjectValue(*priv));
 
         JS::RootedValue ignored_retval(cx);
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
@@ -145,7 +148,8 @@ class GjsScriptModule {
         g_assert(script);
 
         GjsAutoChar full_path = g_file_get_parse_name(file);
-        return evaluate_import(cx, module, script, script_len, full_path);
+        GjsAutoChar uri = g_file_get_uri(file);
+        return evaluate_import(cx, module, script, script_len, full_path, uri);
     }
 
     /* JSClass operations */
@@ -215,6 +219,22 @@ class GjsScriptModule {
     };
 
  public:
+    /*
+     * Creates a JS object to pass to JS::CompileOptions as a script's private.
+     */
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* build_private(JSContext* cx, const char* script_uri) {
+        JS::RootedObject priv(cx, JS_NewPlainObject(cx));
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+        JS::RootedValue val(cx);
+        if (!gjs_string_from_utf8(cx, script_uri, &val) ||
+            !JS_SetPropertyById(cx, priv, atoms.uri(), val))
+            return nullptr;
+
+        return priv;
+    }
+
     /* Carries out the import operation */
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject *
@@ -233,6 +253,21 @@ class GjsScriptModule {
         return module;
     }
 };
+
+/**
+ * gjs_script_module_build_private:
+ * @param cx the #JSContext
+ * @param uri the URI this script module is loaded from
+ *
+ * @brief To support dynamic imports from scripts, we need to provide private
+ * data when we compile scripts which is compatible with our module resolution
+ * hooks in modules/internal/loader.js
+ *
+ * @returns a JSObject which can be used for a JSScript's private data.
+ */
+JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri) {
+    return GjsScriptModule::build_private(cx, uri);
+}
 
 /**
  * gjs_module_import:

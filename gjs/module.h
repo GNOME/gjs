@@ -22,6 +22,9 @@ gjs_module_import(JSContext       *cx,
                   GFile           *file);
 
 GJS_JSAPI_RETURN_CONVENTION
+JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri);
+
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_get_native_registry(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
