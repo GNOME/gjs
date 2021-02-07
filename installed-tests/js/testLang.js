@@ -71,11 +71,11 @@ describe('Lang module', function () {
         it('calls the bound function with the supplied this-object', function () {
             let callback = Lang.bind(o, o.callback);
             callback();
-            expect(o.callback.calls.mostRecent()).toEqual({
+            expect(o.callback.calls.mostRecent()).toEqual(jasmine.objectContaining({
                 object: o,
                 args: [],
                 returnValue: true,
-            });
+            }));
         });
 
         it('throws an error when no function supplied', function () {
