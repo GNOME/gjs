@@ -80,6 +80,7 @@ FALSE_POSITIVES = (
     ('gi/value.cpp', '#include <utility>', 'for forward'),
     ('gjs/importer.cpp', '#include <utility>', 'for forward'),
     ('gjs/module.cpp', '#include <utility>', 'for forward'),
+    ('gjs/objectbox.cpp', '#include <utility>', 'for forward'),
 
     # False positive when using EnumType operators
     ('gi/arg-cache.h', '#include <type_traits>', 'for enable_if_t'),

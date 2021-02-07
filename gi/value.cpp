@@ -40,6 +40,7 @@
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/objectbox.h"
 #include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -536,7 +537,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+            if (g_type_is_a(gtype, ObjectBox::gtype())) {
+                g_value_set_boxed(gvalue, ObjectBox::boxed(context, obj).get());
+                return true;
+            } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
                 /* special case GError */
                 gboxed = ErrorBase::to_c_ptr(context, obj);
                 if (!gboxed)
@@ -849,6 +853,15 @@ gjs_value_from_g_value_internal(JSContext             *context,
             gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
                               "Converting null boxed pointer to JS::Value");
             value_p.setNull();
+            return true;
+        }
+
+        if (g_type_is_a(gtype, ObjectBox::gtype())) {
+            obj = ObjectBox::object_for_c_ptr(context,
+                                              static_cast<ObjectBox*>(gboxed));
+            if (!obj)
+                return false;
+            value_p.setObject(*obj);
             return true;
         }
 
