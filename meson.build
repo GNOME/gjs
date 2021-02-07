@@ -113,7 +113,7 @@ endif
 
 ### Check for required libraries ###############################################
 
-glib_required_version = '>= 2.58.0'
+glib_required_version = '>= 2.66.0'
 glib = dependency('glib-2.0', version: glib_required_version,
     fallback: ['glib', 'libglib_dep'])
 gthread = dependency('gthread-2.0', version: glib_required_version,
@@ -402,6 +402,7 @@ libgjs_sources = [
     'gjs/error-types.cpp',
     'gjs/global.cpp', 'gjs/global.h',
     'gjs/importer.cpp', 'gjs/importer.h',
+    'gjs/internal.cpp', 'gjs/internal.h',
     'gjs/mem.cpp', 'gjs/mem-private.h',
     'gjs/module.cpp', 'gjs/module.h',
     'gjs/native.cpp', 'gjs/native.h',
@@ -599,6 +600,8 @@ tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
     js_tests_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
+# Workaround for https://github.com/google/sanitizers/issues/1322
+tests_environment.set('ASAN_OPTIONS', 'intercept_tls_get_addr=0')
 tests_environment.set('LSAN_OPTIONS',
     'fast_unwind_on_malloc=0,exitcode=23,suppressions=@0@'.format(
         meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))

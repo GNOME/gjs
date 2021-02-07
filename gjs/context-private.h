@@ -71,6 +71,7 @@ class GjsContextPrivate : public JS::JobQueue {
     GjsContext* m_public_context;
     JSContext* m_cx;
     JS::Heap<JSObject*> m_global;
+    JS::Heap<JSObject*> m_internal_global;
     GThread* m_owner_thread;
 
     char* m_program_name;
@@ -119,6 +120,7 @@ class GjsContextPrivate : public JS::JobQueue {
     bool m_force_gc : 1;
     bool m_draining_job_queue : 1;
     bool m_should_profile : 1;
+    bool m_exec_as_module : 1;
     bool m_should_listen_sigusr2 : 1;
 
     int64_t m_sweep_begin_time;
@@ -132,6 +134,11 @@ class GjsContextPrivate : public JS::JobQueue {
     static gboolean drain_job_queue_idle_handler(void* data);
 
     void warn_about_unhandled_promise_rejections(void);
+
+    uint8_t handle_exit_code(const char* type, const char* identifier,
+                             GError** error);
+    [[nodiscard]] bool auto_profile_enter(void);
+    void auto_profile_exit(bool status);
 
     class AutoResetExit {
         GjsContextPrivate* m_self;
@@ -164,6 +171,9 @@ class GjsContextPrivate : public JS::JobQueue {
     }
     [[nodiscard]] JSContext* context() const { return m_cx; }
     [[nodiscard]] JSObject* global() const { return m_global.get(); }
+    [[nodiscard]] JSObject* internal_global() const {
+        return m_internal_global.get();
+    }
     [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
     [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
     [[nodiscard]] bool destroying() const { return m_destroying; }
@@ -172,6 +182,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_program_name(char* value) { m_program_name = value; }
     void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
+    void set_execute_as_module(bool value) { m_exec_as_module = value; }
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
@@ -198,6 +209,8 @@ class GjsContextPrivate : public JS::JobQueue {
     bool eval_with_scope(JS::HandleObject scope_object, const char* script,
                          ssize_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
+    [[nodiscard]] bool eval_module(const char* identifier, uint8_t* exit_code_p,
+                                   GError** error);
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,
@@ -225,6 +238,9 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+
+    [[nodiscard]] bool register_module(const char* identifier,
+                                       const char* filename, GError** error);
 
     void set_sweeping(bool value);
 

@@ -1,0 +1,7 @@
+---
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
+extends: '../../.eslintrc.yml'
+parserOptions:
+  sourceType: 'module'
+  ecmaVersion: 2020

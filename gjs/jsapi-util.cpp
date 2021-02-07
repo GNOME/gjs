@@ -621,6 +621,24 @@ JSObject* gjs_get_import_global(JSContext* cx) {
     return GjsContextPrivate::from_cx(cx)->global();
 }
 
+/**
+ * gjs_get_internal_global:
+ *
+ * @brief Gets the "internal global" for the context's runtime. The internal
+ * global object is the global object used for all "internal" JavaScript
+ * code (e.g. the module loader) that should not be accessible from users'
+ * code.
+ *
+ * @param cx a #JSContext
+ *
+ * @returns the "internal global" for the context's
+ *  runtime. Will never return %NULL while GJS has an active context
+ *  for the runtime.
+ */
+JSObject* gjs_get_internal_global(JSContext* cx) {
+    return GjsContextPrivate::from_cx(cx)->internal_global();
+}
+
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
 /* Unfortunately Visual Studio's C++ .lib somehow did not contain the right
  * codecvt stuff that we need to convert from utf8 to utf16 (char16_t), so we

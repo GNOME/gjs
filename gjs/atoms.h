@@ -35,9 +35,11 @@ class JSTracer;
     macro(gtype, "$gtype") \
     macro(height, "height") \
     macro(imports, "imports") \
+    macro(importSync, "importSync") \
     macro(init, "_init") \
     macro(instance_init, "_instance_init") \
     macro(interact, "interact") \
+    macro(internal, "internal") \
     macro(length, "length") \
     macro(line_number, "lineNumber") \
     macro(message, "message") \
@@ -56,6 +58,8 @@ class JSTracer;
     macro(signal_id, "signalId") \
     macro(stack, "stack") \
     macro(to_string, "toString") \
+    macro(uri, "uri") \
+    macro(url, "url") \
     macro(value_of, "valueOf") \
     macro(version, "version") \
     macro(versions, "versions") \

@@ -5,6 +5,7 @@
 #include <config.h>
 
 #include <stddef.h>     // for size_t
+#include <string.h>
 #include <sys/types.h>  // for ssize_t
 
 #include <string>  // for u16string
@@ -12,22 +13,31 @@
 #include <gio/gio.h>
 #include <glib.h>
 
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>  // for ConstUTF8CharsZ
 #include <js/Class.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/Conversions.h>
 #include <js/GCVector.h>  // for RootedVector
+#include <js/Id.h>
 #include <js/PropertyDescriptor.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_DefinePropertyById, ...
 
+#include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
+#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 #include "gjs/module.h"
+#include "gjs/native.h"
 #include "util/log.h"
 
 class GjsScriptModule {
@@ -268,4 +278,209 @@ JSObject* gjs_get_native_registry(JSObject* global) {
 
     g_assert(native_registry.isObject());
     return &native_registry.toObject();
+}
+
+/**
+ * gjs_get_module_registry:
+ *
+ * @brief Retrieves a global's module registry from the MODULE_REGISTRY slot.
+ * Registries are JS Maps. See gjs_get_native_registry for more detail.
+ *
+ * @param cx the current #JSContext
+ * @param global a global #JSObject
+ *
+ * @returns the registry map as a #JSObject
+ */
+JSObject* gjs_get_module_registry(JSObject* global) {
+    JS::Value esm_registry =
+        gjs_get_global_slot(global, GjsGlobalSlot::MODULE_REGISTRY);
+
+    g_assert(esm_registry.isObject());
+    return &esm_registry.toObject();
+}
+
+/**
+ * gjs_module_load:
+ *
+ * Loads and registers a module given a specifier and
+ * URI.
+ *
+ * @returns whether an error occurred while resolving the specifier.
+ */
+JSObject* gjs_module_load(JSContext* cx, const char* identifier,
+                          const char* file_uri) {
+    g_assert((gjs_global_is_type(cx, GjsGlobalType::DEFAULT) ||
+              gjs_global_is_type(cx, GjsGlobalType::INTERNAL)) &&
+             "gjs_module_load can only be called from module-enabled "
+             "globals.");
+
+    JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
+    JS::RootedValue v_loader(
+        cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));
+    g_assert(v_loader.isObject());
+    JS::RootedObject loader(cx, &v_loader.toObject());
+
+    JS::ConstUTF8CharsZ id_chars(identifier, strlen(identifier));
+    JS::ConstUTF8CharsZ uri_chars(file_uri, strlen(file_uri));
+    JS::RootedString id(cx, JS_NewStringCopyUTF8Z(cx, id_chars));
+    if (!id)
+        return nullptr;
+    JS::RootedString uri(cx, JS_NewStringCopyUTF8Z(cx, uri_chars));
+    if (!uri)
+        return nullptr;
+
+    JS::RootedValueArray<2> args(cx);
+    args[0].setString(id);
+    args[1].setString(uri);
+
+    gjs_debug(GJS_DEBUG_IMPORTER,
+              "Module resolve hook for module '%s' (%s), global %p", identifier,
+              file_uri, global.get());
+
+    JS::RootedValue result(cx);
+    if (!JS::Call(cx, loader, "moduleLoadHook", args, &result))
+        return nullptr;
+
+    g_assert(result.isObject() && "Module hook failed to return an object!");
+    return &result.toObject();
+}
+
+/**
+ * import_native_module_sync:
+ *
+ * @brief Synchronously imports native "modules" from the import global's
+ * native registry. This function does not do blocking I/O so it is
+ * safe to call it synchronously for accessing native "modules" within
+ * modules. This function is always called within the import global's
+ * realm.
+ *
+ * Compare gjs_import_native_module() for the legacy importer.
+ *
+ * @param cx the current JSContext
+ * @param argc
+ * @param vp
+ *
+ * @returns whether an error occurred while importing the native module.
+ */
+static bool import_native_module_sync(JSContext* cx, unsigned argc,
+                                      JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::UniqueChars id;
+    if (!gjs_parse_call_args(cx, "importSync", args, "s", "identifier", &id))
+        return false;
+
+    JS::RootedObject global(cx, gjs_get_import_global(cx));
+    JSAutoRealm ar(cx, global);
+
+    JS::AutoSaveExceptionState exc_state(cx);
+
+    JS::RootedObject native_registry(cx, gjs_get_native_registry(global));
+    JS::RootedObject v_module(cx);
+
+    JS::RootedId key(cx, gjs_intern_string_to_id(cx, id.get()));
+    if (!gjs_global_registry_get(cx, native_registry, key, &v_module))
+        return false;
+
+    if (v_module) {
+        args.rval().setObject(*v_module);
+        return true;
+    }
+
+    JS::RootedObject native_obj(cx);
+    if (!gjs_load_native_module(cx, id.get(), &native_obj)) {
+        gjs_throw(cx, "Failed to load native module: %s", id.get());
+        return false;
+    }
+
+    if (!gjs_global_registry_set(cx, native_registry, key, native_obj))
+        return false;
+
+    args.rval().setObject(*native_obj);
+    return true;
+}
+
+/**
+ * gjs_populate_module_meta:
+ *
+ * Hook SpiderMonkey calls to populate the import.meta object.
+ * Defines a property "import.meta.url", and additionally a method
+ * "import.meta.importSync" if this is an internal module.
+ *
+ * @param private_ref the private value for the #Module object
+ * @param meta the import.meta object
+ *
+ * @returns whether an error occurred while populating the module meta.
+ */
+bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
+                              JS::HandleObject meta) {
+    g_assert(private_ref.isObject());
+    JS::RootedObject module(cx, &private_ref.toObject());
+
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module metadata hook for module %p",
+              &private_ref.toObject());
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedValue v_uri(cx);
+    if (!JS_GetPropertyById(cx, module, atoms.uri(), &v_uri) ||
+        !JS_DefinePropertyById(cx, meta, atoms.url(), v_uri,
+                               GJS_MODULE_PROP_FLAGS))
+        return false;
+
+    JS::RootedValue v_internal(cx);
+    if (!JS_GetPropertyById(cx, module, atoms.internal(), &v_internal))
+        return false;
+    if (JS::ToBoolean(v_internal)) {
+        gjs_debug(GJS_DEBUG_IMPORTER, "Defining meta.importSync for module %p",
+                  &private_ref.toObject());
+        if (!JS_DefineFunctionById(cx, meta, atoms.importSync(),
+                                   import_native_module_sync, 1,
+                                   GJS_MODULE_PROP_FLAGS))
+            return false;
+    }
+
+    return true;
+}
+
+/**
+ * gjs_module_resolve:
+ *
+ * Hook SpiderMonkey calls to resolve import specifiers.
+ *
+ * @param importingModulePriv the private value of the #Module object initiating
+ *   the import.
+ * @param specifier the import specifier to resolve
+ *
+ * @returns whether an error occurred while resolving the specifier.
+ */
+JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
+                             JS::HandleString specifier) {
+    g_assert((gjs_global_is_type(cx, GjsGlobalType::DEFAULT) ||
+              gjs_global_is_type(cx, GjsGlobalType::INTERNAL)) &&
+             "gjs_module_resolve can only be called from module-enabled "
+             "globals.");
+    g_assert(importingModulePriv.isObject() &&
+             "the importing module can't be null, don't add import to the "
+             "bootstrap script");
+
+    JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
+    JS::RootedValue v_loader(
+        cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));
+    g_assert(v_loader.isObject());
+    JS::RootedObject loader(cx, &v_loader.toObject());
+
+    JS::RootedValueArray<2> args(cx);
+    args[0].set(importingModulePriv);
+    args[1].setString(specifier);
+
+    gjs_debug(GJS_DEBUG_IMPORTER,
+              "Module resolve hook for module '%s' (relative to %p), global %p",
+              gjs_debug_string(specifier).c_str(),
+              &importingModulePriv.toObject(), global.get());
+
+    JS::RootedValue result(cx);
+    if (!JS::Call(cx, loader, "moduleResolveHook", args, &result))
+        return nullptr;
+
+    g_assert(result.isObject() && "resolve hook failed to return an object!");
+    return &result.toObject();
 }

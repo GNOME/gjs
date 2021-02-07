@@ -33,11 +33,16 @@
 
 #include <js/AllocPolicy.h>  // for SystemAllocPolicy
 #include <js/CallArgs.h>     // for UndefinedHandleValue
+#include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/ErrorReport.h>
+#include <js/Exception.h>           // for StealPendingExceptionStack
 #include <js/GCAPI.h>               // for JS_GC, JS_AddExtraGCRootsTr...
 #include <js/GCHashTable.h>         // for WeakCache
 #include <js/GCVector.h>            // for RootedVector
+#include <js/Id.h>
+#include <js/Modules.h>
 #include <js/Promise.h>             // for JobQueue::SavedJobQueue
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/RootingAPI.h>
@@ -62,8 +67,10 @@
 #include "gjs/error-types.h"
 #include "gjs/global.h"
 #include "gjs/importer.h"
+#include "gjs/internal.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem.h"
+#include "gjs/module.h"
 #include "gjs/native.h"
 #include "gjs/profiler-private.h"
 #include "gjs/profiler.h"
@@ -123,6 +130,7 @@ enum {
     PROP_PROGRAM_NAME,
     PROP_PROFILER_ENABLED,
     PROP_PROFILER_SIGUSR2,
+    PROP_EXEC_AS_MODULE,
 };
 
 static GMutex contexts_lock;
@@ -272,6 +280,13 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class, PROP_PROFILER_SIGUSR2, pspec);
     g_param_spec_unref(pspec);
 
+    pspec = g_param_spec_boolean(
+        "exec-as-module", "Execute as module",
+        "Whether to execute the file as a module", FALSE,
+        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    g_object_class_install_property(object_class, PROP_EXEC_AS_MODULE, pspec);
+    g_param_spec_unref(pspec);
+
     /* For GjsPrivate */
     {
 #ifdef G_OS_WIN32
@@ -296,6 +311,8 @@ gjs_context_class_init(GjsContextClass *klass)
 void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     JS::TraceEdge<JSObject*>(trc, &gjs->m_global, "GJS global object");
+    JS::TraceEdge<JSObject*>(trc, &gjs->m_internal_global,
+                             "GJS internal global object");
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
@@ -382,6 +399,7 @@ void GjsContextPrivate::dispose(void) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Ending trace on global object");
         JS_RemoveExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
         m_global = nullptr;
+        m_internal_global = nullptr;
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_fundamental_table;
@@ -467,17 +485,17 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     m_atoms = new GjsAtoms();
 
-    JS::RootedObject global(
-        m_cx, gjs_create_global_object(cx, GjsGlobalType::DEFAULT));
+    JS::RootedObject internal_global(
+        m_cx, gjs_create_global_object(cx, GjsGlobalType::INTERNAL));
 
-    if (!global) {
+    if (!internal_global) {
         gjs_log_exception(m_cx);
-        g_error("Failed to initialize global object");
+        g_error("Failed to initialize internal global object");
     }
 
-    JSAutoRealm ar(m_cx, global);
+    JSAutoRealm ar(m_cx, internal_global);
 
-    m_global = global;
+    m_internal_global = internal_global;
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
 
     if (!m_atoms->init_atoms(m_cx)) {
@@ -485,26 +503,83 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to initialize global strings");
     }
 
-    std::vector<std::string> paths;
-    if (m_search_path)
-        paths = {m_search_path, m_search_path + g_strv_length(m_search_path)};
-    JS::RootedObject importer(m_cx, gjs_create_root_importer(m_cx, paths));
-    if (!importer) {
-        gjs_log_exception(cx);
-        g_error("Failed to create root importer");
+    if (!gjs_define_global_properties(m_cx, internal_global,
+                                      GjsGlobalType::INTERNAL,
+                                      "GJS internal global", "nullptr")) {
+        gjs_log_exception(m_cx);
+        g_error("Failed to define properties on internal global object");
     }
 
-    g_assert(
-        gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS).isUndefined() &&
-        "Someone else already created root importer");
+    JS::RootedObject global(
+        m_cx,
+        gjs_create_global_object(cx, GjsGlobalType::DEFAULT, internal_global));
 
-    gjs_set_global_slot(global, GjsGlobalSlot::IMPORTS,
-                        JS::ObjectValue(*importer));
-
-    if (!gjs_define_global_properties(m_cx, global, GjsGlobalType::DEFAULT,
-                                      "GJS", "default")) {
+    if (!global) {
         gjs_log_exception(m_cx);
-        g_error("Failed to define properties on global object");
+        g_error("Failed to initialize global object");
+    }
+
+    m_global = global;
+
+    {
+        JSAutoRealm ar(cx, global);
+
+        std::vector<std::string> paths;
+        if (m_search_path)
+            paths = {m_search_path,
+                     m_search_path + g_strv_length(m_search_path)};
+        JS::RootedObject importer(m_cx, gjs_create_root_importer(m_cx, paths));
+        if (!importer) {
+            gjs_log_exception(cx);
+            g_error("Failed to create root importer");
+        }
+
+        g_assert(
+            gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS).isUndefined() &&
+            "Someone else already created root importer");
+
+        gjs_set_global_slot(global, GjsGlobalSlot::IMPORTS,
+                            JS::ObjectValue(*importer));
+
+        if (!gjs_define_global_properties(m_cx, global, GjsGlobalType::DEFAULT,
+                                          "GJS", "default")) {
+            gjs_log_exception(m_cx);
+            g_error("Failed to define properties on global object");
+        }
+    }
+
+    JS::SetModuleResolveHook(rt, gjs_module_resolve);
+    JS::SetModuleMetadataHook(rt, gjs_populate_module_meta);
+
+    if (!JS_DefineProperty(m_cx, internal_global, "moduleGlobalThis", global,
+                           JSPROP_PERMANENT)) {
+        gjs_log_exception(m_cx);
+        g_error("Failed to define module global in internal global.");
+    }
+
+    if (!gjs_load_internal_module(cx, "internalLoader")) {
+        gjs_log_exception(cx);
+        g_error("Failed to load internal module loaders.");
+    }
+
+    JS::RootedObject loader(
+        cx, gjs_module_load(
+                cx, "resource:///org/gnome/gjs/modules/internal/loader.js",
+                "resource:///org/gnome/gjs/modules/internal/loader.js"));
+
+    if (!loader) {
+        gjs_log_exception(cx);
+        g_error("Failed to load module loader module.");
+    }
+
+    if (!JS::ModuleInstantiate(cx, loader)) {
+        gjs_log_exception(cx);
+        g_error("Failed to instantiate module loader module.");
+    }
+
+    if (!JS::ModuleEvaluate(cx, loader)) {
+        gjs_log_exception(cx);
+        g_error("Failed to evaluate module loader module.");
     }
 }
 
@@ -546,6 +621,9 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_PROFILER_SIGUSR2:
         gjs->set_should_listen_sigusr2(g_value_get_boolean(value));
+        break;
+    case PROP_EXEC_AS_MODULE:
+        gjs->set_execute_as_module(g_value_get_boolean(value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -913,11 +991,26 @@ gjs_context_eval(GjsContext   *js_context,
     return gjs->eval(script, script_len, filename, exit_status_p, error);
 }
 
-bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
-                             const char* filename, int* exit_status_p,
-                             GError** error) {
-    AutoResetExit reset(this);
+bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
+                             uint8_t* exit_code, GError** error) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
+    GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    return gjs->eval_module(identifier, exit_code, error);
+}
+
+bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
+                                 const char* uri, GError** error) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+
+    return gjs->register_module(identifier, uri, error);
+}
+
+bool GjsContextPrivate::auto_profile_enter() {
     bool auto_profile = m_should_profile;
     if (auto_profile &&
         (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
@@ -927,6 +1020,50 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
 
     if (auto_profile)
         gjs_profiler_start(m_profiler);
+
+    return auto_profile;
+}
+
+void GjsContextPrivate::auto_profile_exit(bool auto_profile) {
+    if (auto_profile)
+        gjs_profiler_stop(m_profiler);
+}
+
+uint8_t GjsContextPrivate::handle_exit_code(const char* type,
+                                            const char* identifier,
+                                            GError** error) {
+    uint8_t code;
+    if (should_exit(&code)) {
+        /* exit_status_p is public API so can't be changed, but should be
+         * uint8_t, not int */
+        g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                    "Exit with code %d", code);
+        return code;  // Don't log anything
+    }
+    if (!JS_IsExceptionPending(m_cx)) {
+        g_critical("%s %s terminated with an uncatchable exception", type,
+                   identifier);
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "%s %s terminated with an uncatchable exception", type,
+                    identifier);
+    } else {
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "%s %s threw an exception", type, identifier);
+    }
+
+    gjs_log_exception_uncaught(m_cx);
+    /* No exit code from script, but we don't want to exit(0) */
+    return 1;
+}
+
+bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
+                             const char* filename, int* exit_status_p,
+                             GError** error) {
+    AutoResetExit reset(this);
+
+    bool auto_profile = auto_profile_enter();
+
+    JSAutoRealm ar(m_cx, m_global);
 
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
@@ -939,34 +1076,10 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
         ok = run_jobs_fallible() && ok;
     }
 
-    if (auto_profile)
-        gjs_profiler_stop(m_profiler);
+    auto_profile_exit(auto_profile);
 
     if (!ok) {
-        uint8_t code;
-        if (should_exit(&code)) {
-            /* exit_status_p is public API so can't be changed, but should be
-             * uint8_t, not int */
-            *exit_status_p = code;
-            g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
-                        "Exit with code %d", code);
-            return false;  // Don't log anything
-        }
-
-        if (!JS_IsExceptionPending(m_cx)) {
-            g_critical("Script %s terminated with an uncatchable exception",
-                       filename);
-            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                        "Script %s terminated with an uncatchable exception",
-                        filename);
-        } else {
-            g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                        "Script %s threw an exception", filename);
-        }
-
-        gjs_log_exception_uncaught(m_cx);
-        /* No exit code from script, but we don't want to exit(0) */
-        *exit_status_p = 1;
+        *exit_status_p = handle_exit_code("Script", filename, error);
         return false;
     }
 
@@ -983,6 +1096,82 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     }
 
     return true;
+}
+
+bool GjsContextPrivate::eval_module(const char* identifier,
+                                    uint8_t* exit_status_p, GError** error) {
+    AutoResetExit reset(this);
+
+    bool auto_profile = auto_profile_enter();
+
+    JSAutoRealm ac(m_cx, m_global);
+
+    JS::RootedObject registry(m_cx, gjs_get_module_registry(m_global));
+    JS::RootedId key(m_cx, gjs_intern_string_to_id(m_cx, identifier));
+    JS::RootedObject obj(m_cx);
+    if (!gjs_global_registry_get(m_cx, registry, key, &obj) || !obj) {
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "Cannot load module with identifier: '%s'", identifier);
+        *exit_status_p = 1;
+        return false;
+    }
+
+    if (!JS::ModuleInstantiate(m_cx, obj)) {
+        gjs_log_exception(m_cx);
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "Failed to resolve imports for module: '%s'", identifier);
+        *exit_status_p = 1;
+        return false;
+    }
+
+    bool ok = true;
+    if (!JS::ModuleEvaluate(m_cx, obj))
+        ok = false;
+
+    /* The promise job queue should be drained even on error, to finish
+     * outstanding async tasks before the context is torn down. Drain after
+     * uncaught exceptions have been reported since draining runs callbacks.
+     */
+    {
+        JS::AutoSaveExceptionState saved_exc(m_cx);
+        ok = run_jobs_fallible() && ok;
+    }
+
+    auto_profile_exit(auto_profile);
+
+    if (!ok) {
+        *exit_status_p = handle_exit_code("Module", identifier, error);
+        return false;
+    }
+
+    /* Assume success if no errors were thrown or exit code set. */
+    *exit_status_p = 0;
+    return true;
+}
+
+bool GjsContextPrivate::register_module(const char* identifier, const char* uri,
+                                        GError** error) {
+    JSAutoRealm ar(m_cx, m_global);
+
+    if (gjs_module_load(m_cx, identifier, uri))
+        return true;
+
+    const char* msg = "unknown";
+    JS::ExceptionStack exn_stack(m_cx);
+    JS::ErrorReportBuilder builder(m_cx);
+    if (JS::StealPendingExceptionStack(m_cx, &exn_stack) &&
+        builder.init(m_cx, exn_stack,
+                     JS::ErrorReportBuilder::WithSideEffects)) {
+        msg = builder.toStringResult().c_str();
+    } else {
+        JS_ClearPendingException(m_cx);
+    }
+
+    g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                "Failed to parse module '%s': %s", identifier,
+                msg ? msg : "unknown");
+
+    return false;
 }
 
 bool
@@ -1002,6 +1191,15 @@ gjs_context_eval_file(GjsContext    *js_context,
 
     return gjs_context_eval(js_context, script, script_len, filename,
                             exit_status_p, error);
+}
+
+bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
+                                  uint8_t* exit_status_p, GError** error) {
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
+    GjsAutoChar uri = g_file_get_uri(file);
+
+    return gjs_context_register_module(js_context, uri, uri, error) &&
+           gjs_context_eval_module(js_context, uri, exit_status_p, error);
 }
 
 /*
