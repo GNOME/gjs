@@ -48,6 +48,18 @@ function summarizeObject(dv) {
 }
 
 function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
+    // Special sentinel values returned by Debugger.Environment.getVariable()
+    if (typeof dv === 'object' && dv !== null) {
+        if (dv.missingArguments)
+            return ['<missing>', undefined];
+        if (dv.optimizedOut)
+            return ['<optimized out>', undefined];
+        if (dv.uninitialized)
+            return ['<uninitialized>', undefined];
+        if (!(dv instanceof Debugger.Object))
+            return ['<unexpected object>', JSON.stringify(dv, null, 4)];
+    }
+
     const dvrepr = dvToString(dv);
     if (!style.pretty || dv === null || typeof dv !== 'object')
         return [dvrepr, undefined];

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Red Hat, Inc.
 
+// eslint-disable-next-line no-restricted-properties
 const Format = imports.format;
 String.prototype.format = Format.format;
 

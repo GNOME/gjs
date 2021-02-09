@@ -306,6 +306,7 @@ function initGettext() {
 }
 
 function initFormat() {
+    // eslint-disable-next-line no-restricted-properties
     let format = imports.format;
     String.prototype.format = format.format;
 }

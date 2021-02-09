@@ -124,6 +124,12 @@ rules:
   no-restricted-globals: [error, window]
   no-restricted-properties:
     - error
+    - object: imports
+      property: format
+      message: Use template strings
+    - object: pkg
+      property: initFormat
+      message: Use template strings
     - object: Lang
       property: copyProperties
       message: Use Object.assign()

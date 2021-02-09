@@ -279,6 +279,7 @@ sanitizer_clang:
     CC: clang
     CXX: clang++
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
+    TEST_OPTS: --timeout-multiplier=2
   when: manual
   except:
     - schedules
