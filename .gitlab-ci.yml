@@ -86,6 +86,7 @@ sanitizer_gcc:
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
+    TEST_OPTS: --timeout-multiplier=2
   except:
     - schedules
 
