@@ -28,6 +28,7 @@
 
 #include <codecvt>  // for codecvt_utf8_utf16
 #include <locale>   // for wstring_convert
+#include <memory>   // for unique_ptr
 #include <string>   // for u16string
 #include <vector>
 
@@ -457,5 +458,154 @@ bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp) {
     GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
 
     args.rval().setBoolean(g_file_query_exists(file, nullptr));
+    return true;
+}
+
+class PromiseData {
+ public:
+    JSContext* cx;
+
+ private:
+    JS::Heap<JSFunction*> m_resolve;
+    JS::Heap<JSFunction*> m_reject;
+
+    JS::HandleFunction resolver() {
+        return JS::HandleFunction::fromMarkedLocation(m_resolve.address());
+    }
+    JS::HandleFunction rejecter() {
+        return JS::HandleFunction::fromMarkedLocation(m_reject.address());
+    }
+
+    static void trace(JSTracer* trc, void* data) {
+        auto* self = PromiseData::from_ptr(data);
+        JS::TraceEdge(trc, &self->m_resolve, "loadResourceOrFileAsync resolve");
+        JS::TraceEdge(trc, &self->m_reject, "loadResourceOrFileAsync reject");
+    }
+
+ public:
+    explicit PromiseData(JSContext* a_cx, JSFunction* resolve,
+                         JSFunction* reject)
+        : cx(a_cx), m_resolve(resolve), m_reject(reject) {
+        JS_AddExtraGCRootsTracer(cx, &PromiseData::trace, this);
+    }
+
+    ~PromiseData() {
+        JS_RemoveExtraGCRootsTracer(cx, &PromiseData::trace, this);
+    }
+
+    static PromiseData* from_ptr(void* ptr) {
+        return static_cast<PromiseData*>(ptr);
+    }
+
+    // Adapted from SpiderMonkey js::RejectPromiseWithPendingError()
+    // https://searchfox.org/mozilla-central/rev/95cf843de977805a3951f9137f5ff1930599d94e/js/src/builtin/Promise.cpp#4435
+    void reject_with_pending_exception() {
+        JS::RootedValue exception(cx);
+        bool ok = JS_GetPendingException(cx, &exception);
+        g_assert(ok && "Cannot reject a promise with an uncatchable exception");
+
+        JS::RootedValueArray<1> args(cx);
+        args[0].set(exception);
+        JS::RootedValue ignored_rval(cx);
+        ok = JS_CallFunction(cx, /* this_obj = */ nullptr, rejecter(), args,
+                             &ignored_rval);
+        g_assert(ok && "Failed rejecting promise");
+    }
+
+    void resolve(JS::Value result) {
+        JS::RootedValueArray<1> args(cx);
+        args[0].set(result);
+        JS::RootedValue ignored_rval(cx);
+        bool ok = JS_CallFunction(cx, /* this_obj = */ nullptr, resolver(),
+                                  args, &ignored_rval);
+        g_assert(ok && "Failed resolving promise");
+    }
+};
+
+static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
+    std::unique_ptr<PromiseData> promise(PromiseData::from_ptr(data));
+
+    char* contents;
+    size_t length;
+    GError* error = nullptr;
+    if (!g_file_load_contents_finish(G_FILE(file), res, &contents, &length,
+                                     /* etag_out = */ nullptr, &error)) {
+        GjsAutoChar uri = g_file_get_uri(G_FILE(file));
+        gjs_throw_custom(promise->cx, JSProto_Error, "ImportError",
+                         "Unable to load file from: %s (%s)", uri.get(),
+                         error->message);
+        g_clear_error(&error);
+        promise->reject_with_pending_exception();
+        return;
+    }
+
+    JS::RootedValue text(promise->cx);
+    bool ok = gjs_string_from_utf8_n(promise->cx, contents, length, &text);
+    g_free(contents);
+    if (!ok) {
+        promise->reject_with_pending_exception();
+        return;
+    }
+
+    promise->resolve(text);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+
+    g_assert(args.length() == 2 && "Executor called weirdly");
+    g_assert(args[0].isObject() && "Executor called weirdly");
+    g_assert(args[1].isObject() && "Executor called weirdly");
+    g_assert(JS_ObjectIsFunction(&args[0].toObject()) &&
+             "Executor called weirdly");
+    g_assert(JS_ObjectIsFunction(&args[1].toObject()) &&
+             "Executor called weirdly");
+
+    JS::Value priv_value = js::GetFunctionNativeReserved(&args.callee(), 0);
+    g_assert(!priv_value.isNull() && "Executor called twice");
+    GjsAutoUnref<GFile> file = G_FILE(priv_value.toPrivate());
+    g_assert(file && "Executor called twice");
+    // We now own the GFile, and will pass the reference to the GAsyncResult, so
+    // remove it from the executor's private slot so it doesn't become dangling
+    js::SetFunctionNativeReserved(&args.callee(), 0, JS::NullValue());
+
+    auto* data = new PromiseData(cx, JS_GetObjectFunction(&args[0].toObject()),
+                                 JS_GetObjectFunction(&args[1].toObject()));
+    g_file_load_contents_async(file, nullptr, load_async_callback, data);
+
+    args.rval().setUndefined();
+    return true;
+}
+
+bool gjs_internal_load_resource_or_file_async(JSContext* cx, unsigned argc,
+                                              JS::Value* vp) {
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+
+    g_assert(args.length() == 1 && "loadResourceOrFileAsync(str)");
+    g_assert(args[0].isString() && "loadResourceOrFileAsync(str)");
+
+    JS::RootedString string_arg(cx, args[0].toString());
+    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
+    if (!uri)
+        return false;
+
+    GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
+
+    JS::RootedObject executor(cx,
+                              JS_GetFunctionObject(js::NewFunctionWithReserved(
+                                  cx, load_async_executor, 2, 0,
+                                  "loadResourceOrFileAsync executor")));
+    if (!executor)
+        return false;
+
+    // Stash the file object for the callback to find later; executor owns it
+    js::SetFunctionNativeReserved(executor, 0, JS::PrivateValue(file.copy()));
+
+    JSObject* promise = JS::NewPromiseObject(cx, executor);
+    if (!promise)
+        return false;
+
+    args.rval().setObject(*promise);
     return true;
 }

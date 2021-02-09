@@ -22,6 +22,9 @@ gjs_module_import(JSContext       *cx,
                   GFile           *file);
 
 GJS_JSAPI_RETURN_CONVENTION
+JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri);
+
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_get_native_registry(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -38,5 +41,11 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue mod_val,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
                               JS::HandleObject meta_object);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_dynamic_module_resolve(JSContext* cx,
+                                JS::HandleValue importing_module_priv,
+                                JS::HandleString specifier,
+                                JS::HandleObject internal_promise);
 
 #endif  // GJS_MODULE_H_

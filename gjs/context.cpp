@@ -553,6 +553,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     }
 
     JS::SetModuleResolveHook(rt, gjs_module_resolve);
+    JS::SetModuleDynamicImportHook(rt, gjs_dynamic_module_resolve);
     JS::SetModuleMetadataHook(rt, gjs_populate_module_meta);
 
     if (!JS_DefineProperty(m_cx, internal_global, "moduleGlobalThis", global,
@@ -1251,6 +1252,14 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
 
     JS::CompileOptions options(m_cx);
     options.setFileAndLine(filename, 1);
+
+    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
+    GjsAutoChar uri = g_file_get_uri(file);
+    JS::RootedObject priv(m_cx, gjs_script_module_build_private(m_cx, uri));
+    if (!priv)
+        return false;
+
+    options.setPrivateValue(JS::ObjectValue(*priv));
 
     if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
         return false;

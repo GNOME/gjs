@@ -237,4 +237,17 @@ describe('Importer', function () {
         expect(imports[0]).not.toBeDefined();
         expect(imports.foobar[0]).not.toBeDefined();
     });
+
+    it('scripts support relative dynamic imports', async function () {
+        const {say} = await import('./modules/say.js');
+
+        expect(typeof say).toBe('function');
+        expect(say('hello')).toBe('<( hello )');
+    });
+
+    it('imported scripts support relative dynamic imports', async function () {
+        const response = await imports.dynamic.test();
+
+        expect(response).toBe('<( I did it! )');
+    });
 });

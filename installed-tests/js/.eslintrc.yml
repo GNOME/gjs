@@ -35,5 +35,6 @@ overrides:
       - testESModules.js
       - modules/importmeta.js
       - modules/exports.js
+      - modules/say.js
     parserOptions:
       sourceType: module

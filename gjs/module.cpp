@@ -21,6 +21,8 @@
 #include <js/Conversions.h>
 #include <js/GCVector.h>  // for RootedVector
 #include <js/Id.h>
+#include <js/Modules.h>
+#include <js/Promise.h>
 #include <js/PropertyDescriptor.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
@@ -29,6 +31,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_DefinePropertyById, ...
+#include <jsfriendapi.h>  // for SetFunctionNativeReserved
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -91,7 +94,7 @@ class GjsScriptModule {
     GJS_JSAPI_RETURN_CONVENTION
     bool evaluate_import(JSContext* cx, JS::HandleObject module,
                          const char* script, ssize_t script_len,
-                         const char* filename) {
+                         const char* filename, const char* uri) {
         std::u16string utf16_string =
             gjs_utf8_script_to_utf16(script, script_len);
         // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
@@ -110,6 +113,9 @@ class GjsScriptModule {
 
         JS::CompileOptions options(cx);
         options.setFileAndLine(filename, 1);
+
+        JS::RootedObject priv(cx, build_private(cx, uri));
+        options.setPrivateValue(JS::ObjectValue(*priv));
 
         JS::RootedValue ignored_retval(cx);
         if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
@@ -142,7 +148,8 @@ class GjsScriptModule {
         g_assert(script);
 
         GjsAutoChar full_path = g_file_get_parse_name(file);
-        return evaluate_import(cx, module, script, script_len, full_path);
+        GjsAutoChar uri = g_file_get_uri(file);
+        return evaluate_import(cx, module, script, script_len, full_path, uri);
     }
 
     /* JSClass operations */
@@ -212,6 +219,22 @@ class GjsScriptModule {
     };
 
  public:
+    /*
+     * Creates a JS object to pass to JS::CompileOptions as a script's private.
+     */
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* build_private(JSContext* cx, const char* script_uri) {
+        JS::RootedObject priv(cx, JS_NewPlainObject(cx));
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+        JS::RootedValue val(cx);
+        if (!gjs_string_from_utf8(cx, script_uri, &val) ||
+            !JS_SetPropertyById(cx, priv, atoms.uri(), val))
+            return nullptr;
+
+        return priv;
+    }
+
     /* Carries out the import operation */
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject *
@@ -230,6 +253,21 @@ class GjsScriptModule {
         return module;
     }
 };
+
+/**
+ * gjs_script_module_build_private:
+ * @param cx the #JSContext
+ * @param uri the URI this script module is loaded from
+ *
+ * @brief To support dynamic imports from scripts, we need to provide private
+ * data when we compile scripts which is compatible with our module resolution
+ * hooks in modules/internal/loader.js
+ *
+ * @returns a JSObject which can be used for a JSScript's private data.
+ */
+JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri) {
+    return GjsScriptModule::build_private(cx, uri);
+}
 
 /**
  * gjs_module_import:
@@ -483,4 +521,139 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
 
     g_assert(result.isObject() && "resolve hook failed to return an object!");
     return &result.toObject();
+}
+
+// Call JS::FinishDynamicModuleImport() with the values stashed in the function.
+// Can fail in JS::FinishDynamicModuleImport(), but will assert if anything
+// fails in fetching the stashed values, since that would be a serious GJS bug.
+GJS_JSAPI_RETURN_CONVENTION
+static bool finish_import(JSContext* cx, const JS::CallArgs& args) {
+    JS::Value callback_priv = js::GetFunctionNativeReserved(&args.callee(), 0);
+    g_assert(callback_priv.isObject() && "Wrong private value");
+    JS::RootedObject callback_data(cx, &callback_priv.toObject());
+
+    JS::RootedValue importing_module_priv(cx);
+    JS::RootedValue v_specifier(cx);
+    JS::RootedValue v_internal_promise(cx);
+    bool ok =
+        JS_GetProperty(cx, callback_data, "priv", &importing_module_priv) &&
+        JS_GetProperty(cx, callback_data, "promise", &v_internal_promise) &&
+        JS_GetProperty(cx, callback_data, "specifier", &v_specifier);
+    g_assert(ok && "Wrong properties on private value");
+
+    g_assert(v_specifier.isString() && "Wrong type for specifier");
+    g_assert(v_internal_promise.isObject() && "Wrong type for promise");
+
+    JS::RootedString specifier(cx, v_specifier.toString());
+    JS::RootedObject internal_promise(cx, &v_internal_promise.toObject());
+
+    args.rval().setUndefined();
+    return JS::FinishDynamicModuleImport(cx, importing_module_priv, specifier,
+                                         internal_promise);
+}
+
+// Failing a JSAPI function may result either in an exception pending on the
+// context, in which case we must call JS::FinishDynamicModuleImport() to reject
+// the internal promise; or in an uncatchable exception such as OOM, in which
+// case we must not call JS::FinishDynamicModuleImport().
+GJS_JSAPI_RETURN_CONVENTION
+static bool fail_import(JSContext* cx, const JS::CallArgs& args) {
+    if (JS_IsExceptionPending(cx))
+        return finish_import(cx, args);
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool import_rejected(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    gjs_debug(GJS_DEBUG_IMPORTER, "Async import promise rejected");
+
+    // Throw the value that the promise is rejected with, so that
+    // FinishDynamicModuleImport will reject the internal_promise with it.
+    JS_SetPendingException(cx, args.get(0),
+                           JS::ExceptionStackBehavior::DoNotCapture);
+
+    return finish_import(cx, args);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool import_resolved(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    gjs_debug(GJS_DEBUG_IMPORTER, "Async import promise resolved");
+
+    JS::RootedObject global(cx, gjs_get_import_global(cx));
+    JSAutoRealm ar(cx, global);
+
+    g_assert(args[0].isObject());
+    JS::RootedObject module(cx, &args[0].toObject());
+
+    if (!JS::ModuleInstantiate(cx, module) || !JS::ModuleEvaluate(cx, module))
+        return fail_import(cx, args);
+
+    return finish_import(cx, args);
+}
+
+bool gjs_dynamic_module_resolve(JSContext* cx,
+                                JS::HandleValue importing_module_priv,
+                                JS::HandleString specifier,
+                                JS::HandleObject internal_promise) {
+    g_assert(gjs_global_is_type(cx, GjsGlobalType::DEFAULT) &&
+             "gjs_dynamic_module_resolve can only be called from the default "
+             "global.");
+
+    JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
+    JSAutoRealm ar(cx, global);
+
+    JS::RootedValue v_loader(
+        cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));
+    g_assert(v_loader.isObject());
+    JS::RootedObject loader(cx, &v_loader.toObject());
+
+    JS::RootedObject callback_data(cx, JS_NewPlainObject(cx));
+    if (!callback_data ||
+        !JS_DefineProperty(cx, callback_data, "specifier", specifier,
+                           JSPROP_PERMANENT) ||
+        !JS_DefineProperty(cx, callback_data, "promise", internal_promise,
+                           JSPROP_PERMANENT) ||
+        !JS_DefineProperty(cx, callback_data, "priv", importing_module_priv,
+                           JSPROP_PERMANENT))
+        return false;
+
+    gjs_debug(GJS_DEBUG_IMPORTER,
+              "Async module resolve hook for module '%s' (relative to %p), "
+              "global %p",
+              gjs_debug_string(specifier).c_str(),
+              &importing_module_priv.toObject(), global.get());
+
+    JS::RootedValueArray<2> args(cx);
+    args[0].set(importing_module_priv);
+    args[1].setString(specifier);
+
+    JS::RootedValue result(cx);
+    if (!JS::Call(cx, loader, "moduleResolveAsyncHook", args, &result))
+        return JS::FinishDynamicModuleImport(cx, importing_module_priv,
+                                             specifier, internal_promise);
+
+    JS::RootedObject resolved(
+        cx, JS_GetFunctionObject(js::NewFunctionWithReserved(
+                cx, import_resolved, 1, 0, "async import resolved")));
+    if (!resolved)
+        return false;
+    JS::RootedObject rejected(
+        cx, JS_GetFunctionObject(js::NewFunctionWithReserved(
+                cx, import_rejected, 1, 0, "async import rejected")));
+    if (!rejected)
+        return false;
+    js::SetFunctionNativeReserved(resolved, 0, JS::ObjectValue(*callback_data));
+    js::SetFunctionNativeReserved(rejected, 0, JS::ObjectValue(*callback_data));
+
+    JS::RootedObject promise(cx, &result.toObject());
+
+    // Calling JS::FinishDynamicModuleImport() at the end of the resolve and
+    // reject handlers will also call the module resolve hook. The module will
+    // already have been resolved, but that is how SpiderMonkey obtains the
+    // module object.
+    return JS::AddPromiseReactions(cx, promise, resolved, rejected);
 }

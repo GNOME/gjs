@@ -122,6 +122,80 @@ class ModuleLoader extends InternalModuleLoader {
 
         return this.resolveBareSpecifier(specifier);
     }
+
+    moduleResolveAsyncHook(importingModulePriv, specifier) {
+        // importingModulePriv should never be missing. If it is then a JSScript
+        // is missing a private object
+        if (!importingModulePriv || !importingModulePriv.uri)
+            throw new ImportError('Cannot resolve relative imports from an unknown file.');
+
+        return this.resolveModuleAsync(specifier, importingModulePriv.uri);
+    }
+
+    /**
+     * Resolves a module import with optional handling for relative imports asynchronously.
+     *
+     * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
+     * @param {string | null} importingModuleURI the URI of the module
+     *   triggering this resolve
+     * @returns {import("../types").Module}
+     */
+    async resolveModuleAsync(specifier, importingModuleURI) {
+        const registry = getRegistry(this.global);
+
+        // Check if the module has already been loaded
+        let module = registry.get(specifier);
+        if (module)
+            return module;
+
+        // 1) Resolve path and URI-based imports.
+        const uri = this.resolveSpecifier(specifier, importingModuleURI);
+        if (uri) {
+            module = registry.get(uri.uri);
+
+            // Check if module is already loaded (relative handling)
+            if (module)
+                return module;
+
+            const result = await this.loadURIAsync(uri);
+            if (!result)
+                return null;
+
+            const [text, internal = false] = result;
+
+            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            const compiled = this.compileModule(priv, text);
+
+            registry.set(uri.uri, compiled);
+            return compiled;
+        }
+
+        // 2) Resolve internal imports.
+
+        return this.resolveBareSpecifier(specifier);
+    }
+
+    /**
+     * Loads a file or resource URI asynchronously
+     *
+     * @param {Uri} uri the file or resource URI to load
+     * @returns {Promise<[string] | [string, boolean] | null>}
+     */
+    async loadURIAsync(uri) {
+        if (uri.scheme) {
+            const loader = this.schemeHandlers.get(uri.scheme);
+
+            if (loader)
+                return loader.loadAsync(uri);
+        }
+
+        if (uri.scheme === 'file' || uri.scheme === 'resource') {
+            const result = await loadResourceOrFileAsync(uri.uri);
+            return [result];
+        }
+
+        return null;
+    }
 }
 
 const moduleLoader = new ModuleLoader(moduleGlobalThis);
@@ -166,5 +240,12 @@ moduleLoader.registerScheme('gi', {
         }
 
         return [generateGIModule(namespace, version), true];
+    },
+    /**
+     * @param {import("./internalLoader.js").Uri} uri the URI to load asynchronously
+     */
+    loadAsync(uri) {
+        // gi: only does string manipulation, so it is safe to use the same code for sync and async.
+        return this.load(uri);
     },
 });

@@ -13,6 +13,7 @@
     <file>modules/badOverrides/Regress.js</file>
     <file>modules/badOverrides/WarnLib.js</file>
     <file>modules/data.txt</file>
+    <file>modules/dynamic.js</file>
     <file>modules/importmeta.js</file>
     <file>modules/exports.js</file>
     <file>modules/foobar.js</file>
@@ -21,6 +22,7 @@
     <file>modules/mutualImport/a.js</file>
     <file>modules/mutualImport/b.js</file>
     <file>modules/overrides/GIMarshallingTests.js</file>
+    <file>modules/say.js</file>
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>

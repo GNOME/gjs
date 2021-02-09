@@ -19,6 +19,7 @@ globals:
   compileModule: readonly
   compileInternalModule: readonly
   loadResourceOrFile: readonly
+  loadResourceOrFileAsync: readonly
   parseURI: readonly
   uriExists: readonly
   resolveRelativeResourceOrFile: readonly

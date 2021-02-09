@@ -112,6 +112,81 @@ gjstest_test_func_gjs_context_construct_eval(void)
     g_object_unref (context);
 }
 
+static void gjstest_test_func_gjs_context_eval_dynamic_import() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = NULL;
+    int status;
+
+    bool ok = gjs_context_eval(gjs, R"js(
+        import('system')
+            .catch(logError)
+            .finally(() => imports.mainloop.quit());
+        imports.mainloop.run();
+    )js",
+                               -1, "<main>", &status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+}
+
+static void gjstest_test_func_gjs_context_eval_dynamic_import_relative() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = NULL;
+    int status;
+
+    bool ok = g_file_set_contents("num.js", "export default 77;", -1, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    ok = gjs_context_eval(gjs, R"js(
+        let num;
+        import('./num.js')
+            .then(module => (num = module.default))
+            .catch(logError)
+            .finally(() => imports.mainloop.quit());
+        imports.mainloop.run();
+        num;
+    )js",
+                          -1, "<main>", &status, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    g_assert_cmpint(status, ==, 77);
+
+    g_unlink("num.js");
+}
+
+static void gjstest_test_func_gjs_context_eval_dynamic_import_bad() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = NULL;
+    int status;
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
+                          "*Unknown module: 'badmodule'*");
+
+    bool ok = gjs_context_eval(gjs, R"js(
+        let isBad = false;
+        import('badmodule')
+            .catch(err => {
+                logError(err);
+                isBad = true;
+            })
+            .finally(() => imports.mainloop.quit());
+        imports.mainloop.run();
+
+        if (isBad) imports.system.exit(10);
+    )js",
+                               -1, "<main>", &status, &error);
+
+    g_assert_false(ok);
+    g_assert_cmpuint(status, ==, 10);
+
+    g_test_assert_expected_messages();
+
+    g_clear_error(&error);
+}
+
 static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
     GError* error = NULL;
@@ -765,6 +840,12 @@ main(int    argc,
 
     g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/context/eval/dynamic-import",
+                    gjstest_test_func_gjs_context_eval_dynamic_import);
+    g_test_add_func("/gjs/context/eval/dynamic-import/relative",
+                    gjstest_test_func_gjs_context_eval_dynamic_import_relative);
+    g_test_add_func("/gjs/context/eval/dynamic-import/bad",
+                    gjstest_test_func_gjs_context_eval_dynamic_import_bad);
     g_test_add_func("/gjs/context/eval/non-zero-terminated",
                     gjstest_test_func_gjs_context_eval_non_zero_terminated);
     g_test_add_func("/gjs/context/exit", gjstest_test_func_gjs_context_exit);
