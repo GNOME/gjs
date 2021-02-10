@@ -39,7 +39,9 @@ globalThis.clearTimeout = globalThis.clearInterval = _clearTimeoutInternal;
 let jasmineRequire = imports.jasmine.getJasmineRequireObj();
 let jasmineCore = jasmineRequire.core(jasmineRequire);
 globalThis._jasmineEnv = jasmineCore.getEnv();
-
+globalThis._jasmineEnv.configure({
+    random: false,
+});
 globalThis._jasmineMain = GLib.MainLoop.new(null, false);
 globalThis._jasmineRetval = 0;
 
