@@ -38,6 +38,16 @@ describe('GI importer', function () {
     });
 });
 
+// Jasmine v3 often uses duck-typing (checking for a property to determine a type) to pretty print objects.
+// Unfortunately, checking for jasmineToString and other properties causes our importer objects to throw when resolving.
+// Luckily, we can override the default behavior with a custom formatter.
+function formatImporter(obj) {
+    if (typeof obj === 'object' && obj.toString && (obj.toString()?.startsWith('[object GjsModule') || obj.toString()?.startsWith('[GjsFileImporter ')))
+        return obj.toString();
+
+    return undefined;
+}
+
 describe('Importer', function () {
     let oldSearchPath;
     let foobar, subA, subB, subFoobar;
@@ -54,6 +64,10 @@ describe('Importer', function () {
 
     afterAll(function () {
         imports.searchPath = oldSearchPath;
+    });
+
+    beforeEach(function () {
+        jasmine.addCustomObjectFormatter(formatImporter);
     });
 
     it('is on the global object (backwards compatibility)', function () {
