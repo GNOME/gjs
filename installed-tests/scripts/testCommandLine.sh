@@ -65,6 +65,16 @@ import 'gi://Gio?version=2.0';
 import 'gi://Gio?version=75.94';
 EOF
 
+# this JS script is used to test ARGV handling
+cat <<EOF >argv.js
+const System = imports.system;
+
+if (System.programPath.endsWith('/argv.js'))
+    System.exit(0);
+else
+    System.exit(1);
+EOF
+
 total=0
 
 report () {
@@ -105,6 +115,10 @@ report "System.exit(0) should exit successfully"
 $gjs -c 'imports.system.exit(42)'
 test $? -eq 42
 report "System.exit(42) should exit with the correct exit code"
+
+# Test the System.programPath works in gjs-console
+$gjs argv.js
+report "System.programPath should end in '/argv.js' when gjs argv.js is run"
 
 # FIXME: should check -eq 42 specifically, but in debug mode we will be
 # hitting an assertion. For this reason, skip when running under valgrind
@@ -265,6 +279,6 @@ rm -f coverage.lcov
 $gjs -m doublegi.js 2>&1 | grep -q 'already loaded'
 report "avoid statically importing two versions of the same module"
 
-rm -f exit.js help.js promise.js awaitcatch.js doublegi.js
+rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js
 
 echo "1..$total"
