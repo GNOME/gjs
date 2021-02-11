@@ -57,6 +57,7 @@ debugger_tests = [
     'frame',
     'keys',
     'lastvalues',
+    'list',
     'next',
     'print',
     'quit',

@@ -236,6 +236,43 @@ PARAMETERS
     · option: option name. Allowed options are:
         · full: prints the local variables in a stack frame`;
 
+function listCommand(option) {
+    if (focusedFrame === null) {
+        print('No frame to list from');
+        return;
+    }
+    let lineNumber = focusedFrame.line;
+    if (option === '') {
+        printSurroundingLines(lineNumber);
+        return;
+    }
+    let currentLine = Number(option);
+    if (Number.isNaN(currentLine) === false)
+        printSurroundingLines(currentLine);
+
+    else
+        print('Unknown option');
+}
+
+function printSurroundingLines(currentLine = 1) {
+    let sourceLines = focusedFrame.script.source.text.split('\n');
+    let lastLine = sourceLines.length - 1;
+    let maxLineLimit = Math.min(lastLine, currentLine + 5);
+    let minLineLimit = Math.max(1, currentLine - 5);
+    for (let i = minLineLimit; i < maxLineLimit + 1; i++) {
+        if (i === currentLine)
+            print(`  *\x1b[1m${i}\t${sourceLines[i - 1]}\x1b[0m`);
+        else
+            print(`   ${i}\t${sourceLines[i - 1]}`);
+    }
+}
+
+listCommand.summary = 'Prints five lines of code before and five lines after the current line of code on which the debugger is running';
+listCommand.helpText = `USAGE
+    list <option>
+PARAMETERS
+    -option : option name. Allowed options are: line number`;
+
 function setCommand(rest) {
     var space = rest.indexOf(' ');
     if (space === -1) {
@@ -694,6 +731,7 @@ var commandArray = [
     throwCommand, 't',
     untilCommand, 'u', 'upto',
     upCommand,
+    listCommand, 'li', 'l',
 ];
 // clang-format on
 var currentCmd = null;

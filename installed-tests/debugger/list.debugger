@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2021 Mantoh Nasah Kuma <nasahnash20@gmail.com>
+list
+list 4
+list 11
+list 12
+list 0
+list divide
+break 4
+c
+list
+q
