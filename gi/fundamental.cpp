@@ -222,10 +222,6 @@ FundamentalPrototype::FundamentalPrototype(GIObjectInfo* info, GType gtype)
       m_get_value_function(g_object_info_get_get_value_function_pointer(info)),
       m_set_value_function(g_object_info_get_set_value_function_pointer(info)),
       m_constructor_info(find_fundamental_constructor(info)) {
-    g_assert(m_ref_function);
-    g_assert(m_unref_function);
-    g_assert(m_set_value_function);
-    g_assert(m_get_value_function);
     GJS_INC_COUNTER(fundamental_prototype);
 }
 
@@ -445,8 +441,8 @@ JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
                                                  const GValue* value,
                                                  GType gtype) {
     auto* proto_priv = FundamentalPrototype::for_gtype(cx, gtype);
-    void* fobj = proto_priv->call_get_value_function(value);
-    if (!fobj) {
+    void* fobj;
+    if (!proto_priv->call_get_value_function(value, &fobj)) {
         gjs_throw(cx, "Failed to convert GValue to a fundamental instance");
         return nullptr;
     }
@@ -461,7 +457,12 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         !priv->check_is_instance(cx, "convert to GValue"))
         return false;
 
-    priv->to_instance()->set_value(gvalue);
+    if (!priv->to_instance()->set_value(gvalue)) {
+        gjs_throw(cx,
+                  "Fundamental object does not support conversion to a GValue");
+        return false;
+    }
+
     return true;
 }
 
