@@ -52,6 +52,7 @@ class JSTracer;
     macro(overrides, "overrides") \
     macro(param_spec, "ParamSpec") \
     macro(parent_module, "__parentModule__") \
+    macro(program_args, "programArgs") \
     macro(program_invocation_name, "programInvocationName") \
     macro(program_path, "programPath") \
     macro(prototype, "prototype") \

@@ -13,6 +13,7 @@
 
 #include <stdbool.h>    /* IWYU pragma: keep */
 #include <stdint.h>
+#include <sys/types.h> /* for ssize_t */
 
 #ifndef _WIN32
 #    include <signal.h> /* for siginfo_t */
@@ -64,6 +65,10 @@ GJS_EXPORT GJS_USE bool gjs_context_eval_module(GjsContext* context,
 GJS_EXPORT GJS_USE bool gjs_context_define_string_array(
     GjsContext* js_context, const char* array_name, gssize array_length,
     const char** array_values, GError** error);
+
+GJS_EXPORT void gjs_context_set_argv(GjsContext* js_context,
+                                     ssize_t array_length,
+                                     const char** array_values);
 
 GJS_EXPORT GJS_USE GList* gjs_context_get_all(void);
 

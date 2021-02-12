@@ -8,6 +8,14 @@
     const {print, printerr, log, logError} = imports._print;
 
     Object.defineProperties(exports, {
+        ARGV: {
+            configurable: false,
+            enumerable: true,
+            get() {
+                // Wait until after bootstrap or programArgs won't be set.
+                return imports.system.programArgs;
+            },
+        },
         print: {
             configurable: false,
             enumerable: true,

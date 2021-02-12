@@ -5,22 +5,26 @@ const system = import.meta.importSync('system');
 
 export let {
     addressOf,
-    refcount,
     breakpoint,
-    gc,
-    exit,
-    version,
-    programInvocationName,
     clearDateCaches,
+    exit,
+    gc,
+    programArgs,
+    programInvocationName,
+    programPath,
+    refcount,
+    version,
 } = system;
 
 export default {
     addressOf,
-    refcount,
     breakpoint,
-    gc,
-    exit,
-    version,
-    programInvocationName,
     clearDateCaches,
+    exit,
+    gc,
+    programArgs,
+    programInvocationName,
+    programPath,
+    refcount,
+    version,
 };

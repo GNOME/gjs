@@ -165,16 +165,9 @@ check_script_args_for_stray_gjs_args(int           argc,
 int define_argv_and_eval_script(GjsContext* js_context, int argc,
                                 char* const* argv, const char* script,
                                 size_t len, const char* filename) {
+    gjs_context_set_argv(js_context, argc, const_cast<const char**>(argv));
+
     GError* error = nullptr;
-
-    /* prepare command line arguments */
-    if (!gjs_context_define_string_array(
-            js_context, "ARGV", argc, const_cast<const char**>(argv), &error)) {
-        g_critical("Failed to define ARGV: %s", error->message);
-        g_clear_error(&error);
-        return 1;
-    }
-
     /* evaluate the script */
     int code = 0;
     if (exec_as_module) {
