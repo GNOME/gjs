@@ -1,3 +1,61 @@
+Version 1.67.2
+--------------
+
+- New language features: Importing ES modules is now supported, both statically
+  with import statements and dynamically with the import() function. For more
+  information on how to use modules, see:
+  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import
+  Four built-in modules exist: cairo, gettext, gi, and system. Except for gi,
+  they work similarly to the old-style modules imports.cairo, imports.gettext,
+  and imports.system. Consult the documentation in doc/Modules.md on how to use
+  them.
+
+- The debugger now has a "list" command which works very similarly to its GDB
+  equivalent.
+
+- New API: GObject.ParamSpec.jsobject() works like the other GObject.ParamSpec
+  types, and allows you to have a GObject property whose value is a JavaScript
+  object (plain object, Date, Array, etc.)
+
+- New API: System.programPath is the name of the JS program that GJS is running,
+  or null if there isn't one (for example, in the interactive interpreter.)
+
+- New API: System.programArgs is an array of arguments given to the JS program.
+  It is the same as ARGV but is consistently always present. (ARGV was not
+  defined in the interactive interpreter or when embedding GJS in a C program.)
+
+- Closed bugs and merge requests:
+
+  * Support Native JSObject GType for Signals and Properties [!305, Marco
+    Trevisan, Philip Chimento]
+  * Add 'system.programPath' API. [!443, Evan Welsh]
+  * ESM: Enable static imports. (Part 3) [!450, Evan Welsh, Philip Chimento]
+  * Refactor ARGV handling and add `system.programArgs` [!455, Evan Welsh,
+    Philip Chimento]
+  * Function make the object more C++ friendly [!514, Marco Trevisan]
+  * ESM: Enable dynamic imports. [!525, Evan Welsh, Philip Chimento]
+  * Remove JSClass macros from Ns, GType, and Cairo types [!549, Philip
+    Chimento]
+  * various documentation improvements [!551, Sonny Piers]
+  * Replace remaining mentions of window with globalThis [!552, Sonny Piers]
+  * add .editorconfig file [!553, Sonny Piers]
+  * Display current line of source code when displaying current frame in
+    debugger [!554, Nasah Kuma]
+  * doc: add Clapper and Flatseal to thirty party applications written in GJS
+    [!555, Sonny Piers]
+  * Multiline template literals are missing newlines when entered at interactive
+    prompt [#371, !556, Ales Huzik]
+  * function: Remove JSClass macros [!558, Philip Chimento, Marco Trevisan]
+  * Missing classes on global. [#372, !559, Philip Chimento]
+  * arg: fix build failure with glib master [!560, Michael Catanzaro]
+  * Update to Jasmine 2.9.1 [!561, Evan Welsh]
+  * Various maintenance [!562, Philip Chimento]
+  * Add list command to debugger [!563, Nasah Kuma]
+  * Upgrade to Jasmine 3.6.0 [!564, Evan Welsh]
+
+- Various refactors in preparation for BigInt support in gobject-introspection
+  [Marco Trevisan]
+
 Version 1.67.1
 --------------
 
@@ -2595,7 +2653,7 @@ Bugs fixed:
     Bug 560244 - support for strv parameters
 
 
-Version 0.1 
+Version 0.1
 -----------
 
 Initial version! Ha!
