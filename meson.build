@@ -490,15 +490,6 @@ if build_profiler
     libgjs_dependencies += profiler_deps
 endif
 
-link_args = []
-if cxx.has_link_argument('-Wl,-no-undefined')
-    link_args += '-Wl,-no-undefined'
-else
-    # -undefined error is the equivalent of -no-undefined for the macOS linker,
-    # but -undefined would also be understood as a valid argument for GNU ld!
-    link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
-endif
-
 libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines
 
 # Check G-I and/or Meson on this one.
@@ -512,10 +503,10 @@ endif
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
     cpp_args: libgjs_cpp_args,
-    link_args: link_args,
     dependencies: libgjs_dependencies,
     install: false)
 
+link_args = []
 symbol_map = files('libgjs.map')
 symbol_list = files('libgjs.symbols')
 link_args += cxx.get_supported_link_arguments([
