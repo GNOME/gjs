@@ -342,15 +342,15 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
 
     BoxedPrototype* proto = get_prototype();
 
-    /* If the structure is registered as a boxed, we can create a new instance by
-     * looking for a zero-args constructor and calling it.
-     * Constructors don't really make sense for non-boxed types, since there is no
-     * memory management for the return value, and zero_args_constructor and
-     * default_constructor are always -1 for them.
-     *
-     * For backward compatibility, we choose the zero args constructor if one
-     * exists, otherwise we choose the internal slice allocator if possible;
-     * finally, we fallback on the default constructor */
+    // If the structure is registered as a boxed, we can create a new instance
+    // by looking for a zero-args constructor and calling it.
+    // Constructors don't really make sense for non-boxed types, since there is
+    // no memory management for the return value, and zero_args_constructor and
+    // default_constructor are always -1 for them.
+    //
+    // For backward compatibility, we choose the zero args constructor if one
+    // exists, otherwise we malloc the correct amount of space if possible;
+    // finally, we fallback on the default constructor.
     if (proto->has_zero_args_constructor()) {
         GjsAutoFunctionInfo func_info = proto->zero_args_constructor_info();
 
