@@ -32,6 +32,7 @@
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/misc.h"  // for _gjs_memdup2
 
 // Avoid static_assert in MSVC builds
 namespace JS {
@@ -204,7 +205,8 @@ gjs_string_get_char16_data(JSContext       *context,
     if (js_data == NULL)
         return false;
 
-    *data_p = (char16_t *) g_memdup(js_data, sizeof(*js_data) * (*len_p));
+    *data_p = static_cast<char16_t*>(
+        _gjs_memdup2(js_data, sizeof(*js_data) * (*len_p)));
 
     return true;
 }
