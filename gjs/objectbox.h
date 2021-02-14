@@ -32,6 +32,9 @@ struct ObjectBox {
  private:
     explicit ObjectBox(JSObject*);
 
+    static void* boxed_copy(void*);
+    static void boxed_free(void*);
+
     struct impl;
     std::unique_ptr<impl> m_impl;
 };
