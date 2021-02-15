@@ -847,10 +847,32 @@ gjs_value_from_g_value_internal(JSContext             *context,
             gjs_throw(context, "Failed to convert strv to array");
             return false;
         }
-    } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE) ||
-               g_type_is_a(gtype, G_TYPE_ARRAY) ||
+    } else if (g_type_is_a(gtype, G_TYPE_ARRAY) ||
                g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
                g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
+        if (!signal_query) {
+            gjs_throw(context, "Can't convert untyped array to JS value");
+            return false;
+        }
+
+        GISignalInfo* signal_info = get_signal_info_if_available(signal_query);
+        if (!signal_info) {
+            gjs_throw(context, "Unknown signal");
+            return false;
+        }
+
+        // Look for element-type
+        GITypeInfo type_info;
+        GIArgInfo* arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
+        g_arg_info_load_type(arg_info, &type_info);
+        GITypeInfo* element_info = g_type_info_get_param_type(&type_info, 0);
+
+        if (!gjs_array_from_g_value_array(context, value_p, element_info,
+                                          gvalue)) {
+            gjs_throw(context, "Failed to convert array");
+            return false;
+        }
+    } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE)) {
         gjs_throw(context,
                   "Unable to introspect element-type of container in GValue");
         return false;

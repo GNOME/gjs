@@ -2160,6 +2160,38 @@ gjs_array_from_boxed_array (JSContext             *context,
                                           param_info, length, data);
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
+                                  GITypeInfo* param_info,
+                                  const GValue* gvalue) {
+    void* data = nullptr;
+    size_t length = 0;
+    GIArrayType array_type;
+    GType value_gtype = G_VALUE_TYPE(gvalue);
+
+    // GByteArray is just a typedef for GArray internally
+    if (g_type_is_a(value_gtype, G_TYPE_BYTE_ARRAY) ||
+        g_type_is_a(value_gtype, G_TYPE_ARRAY)) {
+        array_type = g_type_is_a(value_gtype, G_TYPE_BYTE_ARRAY)
+                         ? GI_ARRAY_TYPE_BYTE_ARRAY
+                         : GI_ARRAY_TYPE_ARRAY;
+        auto* array = reinterpret_cast<GArray*>(g_value_get_boxed(gvalue));
+        data = array->data;
+        length = array->len;
+    } else if (g_type_is_a(value_gtype, G_TYPE_PTR_ARRAY)) {
+        array_type = GI_ARRAY_TYPE_PTR_ARRAY;
+        auto* ptr_array =
+            reinterpret_cast<GPtrArray*>(g_value_get_boxed(gvalue));
+        data = ptr_array->pdata;
+        length = ptr_array->len;
+    } else {
+        g_assert_not_reached();
+    }
+
+    return gjs_array_from_carray_internal(cx, value_p, array_type, param_info,
+                                          length, data);
+}
+
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
