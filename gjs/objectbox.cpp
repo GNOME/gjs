@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for size_t
-
 #include <algorithm>  // for find
 
 #include <glib.h>
@@ -114,24 +112,21 @@ JSObject* ObjectBox::object_for_c_ptr(JSContext* cx, ObjectBox* box) {
     return box->m_impl->m_root.get();
 }
 
+void* ObjectBox::boxed_copy(void* boxed) {
+    auto* box = static_cast<ObjectBox*>(boxed);
+    box->m_impl->ref();
+    return box;
+}
+
+void ObjectBox::boxed_free(void* boxed) {
+    auto* box = static_cast<ObjectBox*>(boxed);
+    box->m_impl->unref();
+}
+
 GType ObjectBox::gtype() {
-    static volatile size_t type_id = 0;
-
-    if (g_once_init_enter(&type_id)) {
-        auto objectbox_copy = [](void* boxed) -> void* {
-            auto* box = static_cast<ObjectBox*>(boxed);
-            box->m_impl->ref();
-            return box;
-        };
-        auto objectbox_free = [](void* boxed) {
-            auto* box = static_cast<ObjectBox*>(boxed);
-            box->m_impl->unref();
-        };
-        GType type = g_boxed_type_register_static("JSObject", objectbox_copy,
-                                                  objectbox_free);
-        g_once_init_leave(&type_id, type);
-    }
-
+    // Initialization of static local variable guaranteed only once in C++11
+    static GType type_id = g_boxed_type_register_static(
+        "JSObject", &ObjectBox::boxed_copy, &ObjectBox::boxed_free);
     return type_id;
 }
 
