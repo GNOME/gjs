@@ -37,8 +37,8 @@ gjs_format_int_alternative_output(int n)
 }
 
 GType gjs_locale_category_get_type(void) {
-    static volatile size_t g_define_type_id__volatile = 0;
-    if (g_once_init_enter(&g_define_type_id__volatile)) {
+    static size_t gjs_locale_category_get_type = 0;
+    if (g_once_init_enter(&gjs_locale_category_get_type)) {
         static const GEnumValue v[] = {
             {GJS_LOCALE_CATEGORY_ALL, "GJS_LOCALE_CATEGORY_ALL", "all"},
             {GJS_LOCALE_CATEGORY_COLLATE, "GJS_LOCALE_CATEGORY_COLLATE",
@@ -55,9 +55,9 @@ GType gjs_locale_category_get_type(void) {
         GType g_define_type_id = g_enum_register_static(
             g_intern_static_string("GjsLocaleCategory"), v);
 
-        g_once_init_leave(&g_define_type_id__volatile, g_define_type_id);
+        g_once_init_leave(&gjs_locale_category_get_type, g_define_type_id);
     }
-    return g_define_type_id__volatile;
+    return gjs_locale_category_get_type;
 }
 
 /**
