@@ -21,7 +21,7 @@ var topFrame = null;
 var debuggeeValues = {};
 var nextDebuggeeValueIndex = 1;
 var lastExc = null;
-var options = {pretty: true};
+var options = {pretty: true, colors: true};
 var breakpoints = [undefined];  // Breakpoint numbers start at 1
 
 // Cleanup functions to run when we next re-enter the repl.
@@ -260,10 +260,12 @@ function printSurroundingLines(currentLine = 1) {
     let maxLineLimit = Math.min(lastLine, currentLine + 5);
     let minLineLimit = Math.max(1, currentLine - 5);
     for (let i = minLineLimit; i < maxLineLimit + 1; i++) {
-        if (i === currentLine)
-            print(`  *\x1b[1m${i}\t${sourceLines[i - 1]}\x1b[0m`);
-        else
+        if (i === currentLine) {
+            const code = colorCode('1');
+            print(`  *${code[0]}${i}\t${sourceLines[i - 1]}${code[1]}`);
+        } else {
             print(`   ${i}\t${sourceLines[i - 1]}`);
+        }
     }
 }
 
@@ -273,6 +275,12 @@ listCommand.helpText = `USAGE
 PARAMETERS
     -option : option name. Allowed options are: line number`;
 
+function colorCode(codeNumber) {
+    if (options.colors === true)
+        return [`\x1b[${codeNumber}m`, '\x1b[0m'];
+    else
+        return ['', ''];
+}
 function setCommand(rest) {
     var space = rest.indexOf(' ');
     if (space === -1) {
@@ -299,6 +307,7 @@ setCommand.helpText = `USAGE
 PARAMETERS
     · option: option name. Allowed options are:
         · pretty: set print mode to pretty or brief. Allowed value true or false
+        · colors: set printing with colors to true or false.
     · value: option value`;
 
 function splitPrintOptions(s, style) {

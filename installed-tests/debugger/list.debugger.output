@@ -1,18 +1,19 @@
 GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2021 Mantoh Nasah Kuma <nasahnash20@gmail.com>
+db> set colors false
 db> list
    6	    else if (a === undefined || b === undefined)
    7	        return undefined;
    8	    else
    9	        return a / b;
    10	}
-  *[1m11	divide();[0m
+  *11	divide();
 db> list 4
    1	// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
    2	// SPDX-FileCopyrightText: 2021 Mantoh Nasah Kuma <nasahnash20@gmail.com>
    3	function divide(a, b) {
-  *[1m4	    if (b === 0)[0m
+  *4	    if (b === 0)
    5	        return undefined;
    6	    else if (a === undefined || b === undefined)
    7	        return undefined;
@@ -24,7 +25,7 @@ db> list 11
    8	    else
    9	        return a / b;
    10	}
-  *[1m11	divide();[0m
+  *11	divide();
 db> list 12
    7	        return undefined;
    8	    else
@@ -47,7 +48,7 @@ db> list
    1	// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
    2	// SPDX-FileCopyrightText: 2021 Mantoh Nasah Kuma <nasahnash20@gmail.com>
    3	function divide(a, b) {
-  *[1m4	    if (b === 0)[0m
+  *4	    if (b === 0)
    5	        return undefined;
    6	    else if (a === undefined || b === undefined)
    7	        return undefined;

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2021 Mantoh Nasah Kuma <nasahnash20@gmail.com>
+set colors false
 list
 list 4
 list 11
