@@ -21,6 +21,7 @@
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/GCPolicyAPI.h>
 #include <js/Id.h>     // for JSID_IS_STRING...
+#include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/Symbol.h>
 #include <js/TypeDecls.h>
@@ -453,6 +454,36 @@ gjs_debug_object(JSObject * const obj)
         return "<null object>";
 
     std::ostringstream out;
+
+    if (js::IsFunctionObject(obj)) {
+        JSFunction* fun = JS_GetObjectFunction(obj);
+        JSString* display_name = JS_GetFunctionDisplayId(fun);
+        if (display_name && JS_GetStringLength(display_name))
+            out << "<function " << gjs_debug_string(display_name);
+        else
+            out << "<anonymous function";
+        out << " at " << fun << '>';
+        return out.str();
+    }
+
+    // This is OK because the promise methods can't cause a garbage collection
+    JS::HandleObject handle = JS::HandleObject::fromMarkedLocation(&obj);
+    if (JS::IsPromiseObject(handle)) {
+        out << '<';
+        JS::PromiseState state = JS::GetPromiseState(handle);
+        if (state == JS::PromiseState::Pending)
+            out << "pending ";
+        out << "promise " << JS::GetPromiseID(handle) << " at " << obj;
+        if (state != JS::PromiseState::Pending) {
+            out << ' ';
+            out << (state == JS::PromiseState::Rejected ? "rejected"
+                                                        : "resolved");
+            out << " with " << gjs_debug_value(JS::GetPromiseResult(handle));
+        }
+        out << '>';
+        return out.str();
+    }
+
     const JSClass* clasp = JS_GetClass(obj);
     out << "<object " << clasp->name << " at " << obj <<  '>';
     return out.str();
@@ -480,16 +511,6 @@ gjs_debug_value(JS::Value v)
     }
     if (v.isSymbol()) {
         out << gjs_debug_symbol(v.toSymbol());
-        return out.str();
-    }
-    if (v.isObject() && js::IsFunctionObject(&v.toObject())) {
-        JSFunction* fun = JS_GetObjectFunction(&v.toObject());
-        JSString *display_name = JS_GetFunctionDisplayId(fun);
-        if (display_name)
-            out << "<function " << gjs_debug_string(display_name);
-        else
-            out << "<unnamed function";
-        out << " at " << fun << '>';
         return out.str();
     }
     if (v.isObject()) {
