@@ -780,7 +780,7 @@ JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
     return JS::CurrentGlobalOrNull(cx);
 }
 
-/* See engine.cpp and JS::SetEnqueuePromiseJobCallback(). */
+// See engine.cpp and JS::SetJobQueue().
 bool GjsContextPrivate::enqueuePromiseJob(
     JSContext* cx [[maybe_unused]], JS::HandleObject promise [[maybe_unused]],
     JS::HandleObject job, JS::HandleObject allocation_site [[maybe_unused]],
