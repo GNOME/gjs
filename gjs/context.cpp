@@ -798,6 +798,7 @@ bool GjsContextPrivate::enqueuePromiseJob(
         return false;
     }
 
+    JS::JobQueueMayNotBeEmpty(m_cx);
     start_draining_job_queue();
     return true;
 }
@@ -876,6 +877,7 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
 
     m_job_queue.clear();
     stop_draining_job_queue();
+    JS::JobQueueIsEmpty(m_cx);
     return retval;
 }
 
