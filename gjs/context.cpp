@@ -933,10 +933,10 @@ void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
 /**
  * gjs_context_maybe_gc:
  * @context: a #GjsContext
- * 
+ *
  * Similar to the Spidermonkey JS_MaybeGC() call which
  * heuristically looks at JS runtime memory usage and
- * may initiate a garbage collection. 
+ * may initiate a garbage collection.
  *
  * This function always unconditionally invokes JS_MaybeGC(), but
  * additionally looks at memory usage from the system malloc()
@@ -950,7 +950,7 @@ void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
  *
  * A good time to call this function is when your application
  * transitions to an idle state.
- */ 
+ */
 void
 gjs_context_maybe_gc (GjsContext  *context)
 {
@@ -961,10 +961,10 @@ gjs_context_maybe_gc (GjsContext  *context)
 /**
  * gjs_context_gc:
  * @context: a #GjsContext
- * 
+ *
  * Initiate a full GC; may or may not block until complete.  This
  * function just calls Spidermonkey JS_GC().
- */ 
+ */
 void
 gjs_context_gc (GjsContext  *context)
 {

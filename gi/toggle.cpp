@@ -150,11 +150,11 @@ ToggleQueue::enqueue(GObject               *gobj,
      *
      * Taking a reference now would be bad anyway, since it would force
      * the object to toggle back up again.
-     */   
+     */
 
     std::lock_guard<std::mutex> hold(lock);
     q.push_back(item);
-    
+
     if (m_idle_id) {
         g_assert(((void) "Should always enqueue with the same handler",
                   m_toggle_handler == handler));

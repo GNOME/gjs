@@ -146,10 +146,9 @@ void BoxedInstance::allocate_directly(void) {
     debug_lifecycle("Boxed pointer directly allocated");
 }
 
-/* When initializing a boxed object from a hash of properties, we don't want
- * to do n O(n) lookups, so put put the fields into a hash table and store it on proto->priv
- * for fast lookup. 
- */
+// When initializing a boxed object from a hash of properties, we don't want to
+// do n O(n) lookups, so put put the fields into a hash table and store it on
+// proto->priv for fast lookup.
 std::unique_ptr<BoxedPrototype::FieldMap> BoxedPrototype::create_field_map(
     JSContext* cx, GIStructInfo* struct_info) {
     int n_fields;
