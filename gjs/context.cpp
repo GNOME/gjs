@@ -752,24 +752,29 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
 }
 
 void GjsContextPrivate::start_draining_job_queue(void) {
-    if (!m_idle_drain_handler)
+    if (!m_idle_drain_handler) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Starting promise job queue handler");
         m_idle_drain_handler = g_idle_add_full(
             G_PRIORITY_DEFAULT, drain_job_queue_idle_handler, this, nullptr);
+    }
 }
 
 void GjsContextPrivate::stop_draining_job_queue(void) {
     m_draining_job_queue = false;
     if (m_idle_drain_handler) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Stopping promise job queue handler");
         g_source_remove(m_idle_drain_handler);
         m_idle_drain_handler = 0;
     }
 }
 
 gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
+    gjs_debug(GJS_DEBUG_CONTEXT, "Promise job queue handler");
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     gjs->runJobs(gjs->context());
     /* Uncatchable exceptions are swallowed here - no way to get a handle on
      * the main loop to exit it from this idle handler */
+    gjs_debug(GJS_DEBUG_CONTEXT, "Promise job queue handler finished");
     g_assert(gjs->empty() && gjs->m_idle_drain_handler == 0 &&
              "GjsContextPrivate::runJobs() should have emptied queue");
     return G_SOURCE_REMOVE;
@@ -781,12 +786,19 @@ JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
 }
 
 // See engine.cpp and JS::SetJobQueue().
-bool GjsContextPrivate::enqueuePromiseJob(
-    JSContext* cx [[maybe_unused]], JS::HandleObject promise [[maybe_unused]],
-    JS::HandleObject job, JS::HandleObject allocation_site [[maybe_unused]],
-    JS::HandleObject incumbent_global [[maybe_unused]]) {
+bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
+                                          JS::HandleObject promise,
+                                          JS::HandleObject job,
+                                          JS::HandleObject allocation_site,
+                                          JS::HandleObject incumbent_global
+                                          [[maybe_unused]]) {
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
+
+    gjs_debug(GJS_DEBUG_CONTEXT,
+              "Enqueue job %s, promise=%s, allocation site=%s",
+              gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
+              gjs_debug_object(allocation_site).c_str());
 
     if (m_idle_drain_handler)
         g_assert(!empty());
@@ -856,6 +868,8 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
         m_job_queue[ix] = nullptr;
         {
             JSAutoRealm ar(m_cx, job);
+            gjs_debug(GJS_DEBUG_CONTEXT, "handling job %s",
+                      gjs_debug_object(job).c_str());
             if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
                 /* Uncatchable exception - return false so that
                  * System.exit() works in the interactive shell and when
@@ -894,10 +908,12 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
           m_queue(gjs->m_cx, std::move(gjs->m_job_queue)),
           m_idle_was_pending(gjs->m_idle_drain_handler != 0),
           m_was_draining(gjs->m_draining_job_queue) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Pausing job queue");
         gjs->stop_draining_job_queue();
     }
 
     ~SavedQueue(void) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Unpausing job queue");
         m_gjs->m_job_queue = std::move(m_queue.get());
         m_gjs->m_draining_job_queue = m_was_draining;
         if (m_idle_was_pending)
