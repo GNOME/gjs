@@ -107,6 +107,12 @@ class AutoCatchCtrlC {
         if (m_prev_handler != SIG_ERR)
             signal(SIGINT, m_prev_handler);
     }
+
+    void raise_default() {
+        if (m_prev_handler != SIG_ERR)
+            signal(SIGINT, m_prev_handler);
+        raise(SIGINT);
+    }
 };
 sigjmp_buf AutoCatchCtrlC::jump_buffer;
 
@@ -175,11 +181,15 @@ gjs_console_interact(JSContext *context,
                      JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    bool eof;
+    bool eof, exit_warning;
     JS::RootedObject global(context, gjs_get_import_global(context));
     char* temp_buf;
     int lineno;
     int startline;
+
+#ifndef HAVE_READLINE_READLINE_H
+    int rl_end = 0;  // nonzero if using readline and any text is typed in
+#endif
 
     JS::SetWarningReporter(context, gjs_console_warning_reporter);
 
@@ -187,7 +197,7 @@ gjs_console_interact(JSContext *context,
 
     // Separate initialization from declaration because of possible overwriting
     // when siglongjmp() jumps into this function
-    eof = false;
+    eof = exit_warning = false;
     temp_buf = nullptr;
     lineno = 1;
     do {
@@ -207,6 +217,17 @@ gjs_console_interact(JSContext *context,
             // buffer.
             while (sigsetjmp(AutoCatchCtrlC::jump_buffer, 1) != 0) {
                 g_fprintf(stdout, "\n");
+                if (buffer.empty() && rl_end == 0) {
+                    if (!exit_warning) {
+                        g_fprintf(stdout,
+                                  "(To exit, press Ctrl+C again or Ctrl+D)\n");
+                        exit_warning = true;
+                    } else {
+                        ctrl_c.raise_default();
+                    }
+                } else {
+                    exit_warning = false;
+                }
                 buffer.clear();
                 startline = lineno = 1;
             }
@@ -229,6 +250,7 @@ gjs_console_interact(JSContext *context,
             AutoReportException are(context);
             ok = gjs_console_eval_and_print(context, buffer, startline);
         }
+        exit_warning = false;
 
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
         ok = gjs->run_jobs_fallible() && ok;
