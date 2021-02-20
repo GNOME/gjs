@@ -5,6 +5,11 @@
 
 #include <config.h>  // for HAVE_READLINE_READLINE_H
 
+#ifdef HAVE_SIGNAL_H
+#    include <setjmp.h>
+#    include <signal.h>
+#endif
+
 #ifdef HAVE_READLINE_READLINE_H
 #    include <stdio.h>  // include before readline/readline.h
 
@@ -80,6 +85,37 @@ public:
     }
 };
 
+#ifdef HAVE_SIGNAL_H
+
+// Adapted from https://stackoverflow.com/a/17035073/172999
+class AutoCatchCtrlC {
+    void (*m_prev_handler)(int);
+
+    static void handler(int signal) {
+        if (signal == SIGINT)
+            siglongjmp(jump_buffer, 1);
+    }
+
+ public:
+    static sigjmp_buf jump_buffer;
+
+    AutoCatchCtrlC() {
+        m_prev_handler = signal(SIGINT, &AutoCatchCtrlC::handler);
+    }
+
+    ~AutoCatchCtrlC() {
+        if (m_prev_handler != SIG_ERR)
+            signal(SIGINT, m_prev_handler);
+    }
+};
+sigjmp_buf AutoCatchCtrlC::jump_buffer;
+
+#else  // !HAVE_SIGNAL_H
+
+struct AutoCatchCtrlC {};
+
+#endif  // !HAVE_SIGNAL_H
+
 [[nodiscard]] static bool gjs_console_readline(char** bufp,
                                                const char* prompt) {
 #ifdef HAVE_READLINE_READLINE_H
@@ -139,15 +175,20 @@ gjs_console_interact(JSContext *context,
                      JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    bool eof = false;
+    bool eof;
     JS::RootedObject global(context, gjs_get_import_global(context));
-    char *temp_buf = NULL;
+    char* temp_buf;
     int lineno;
     int startline;
 
     JS::SetWarningReporter(context, gjs_console_warning_reporter);
 
-        /* It's an interactive filehandle; drop into read-eval-print loop. */
+    AutoCatchCtrlC ctrl_c;
+
+    // Separate initialization from declaration because of possible overwriting
+    // when siglongjmp() jumps into this function
+    eof = false;
+    temp_buf = nullptr;
     lineno = 1;
     do {
         /*
@@ -159,6 +200,18 @@ gjs_console_interact(JSContext *context,
         startline = lineno;
         std::string buffer;
         do {
+#ifdef HAVE_SIGNAL_H
+            // sigsetjmp() returns 0 if control flow encounters it normally, and
+            // nonzero if it's been jumped to. In the latter case, use a while
+            // loop so that we call sigsetjmp() a second time to reinit the jump
+            // buffer.
+            while (sigsetjmp(AutoCatchCtrlC::jump_buffer, 1) != 0) {
+                g_fprintf(stdout, "\n");
+                buffer.clear();
+                startline = lineno = 1;
+            }
+#endif  // HAVE_SIGNAL_H
+
             if (!gjs_console_readline(
                     &temp_buf, startline == lineno ? "gjs> " : ".... ")) {
                 eof = true;
