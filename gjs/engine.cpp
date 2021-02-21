@@ -245,6 +245,8 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
         cx, JSJitCompilerOption::JSJITCOMPILER_ION_ENABLE, value);
     JS_SetGlobalJitCompilerOption(
         cx, JSJitCompilerOption::JSJITCOMPILER_BASELINE_ENABLE, value);
+    JS_SetGlobalJitCompilerOption(
+        cx, JSJitCompilerOption::JSJITCOMPILER_BASELINE_INTERPRETER_ENABLE, value);
 
     return cx;
 }
