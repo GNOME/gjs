@@ -56,6 +56,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/mem-private.h"
+#include "gjs/profiler-private.h"
 #include "util/log.h"
 
 class JSTracer;
@@ -311,6 +312,9 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
+    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    AutoProfilerLabel label(cx, "property getter", fullName.c_str());
+
     priv->debug_jsprop("Property getter", name, obj);
 
     if (priv->is_prototype())
@@ -383,6 +387,9 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
+    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    AutoProfilerLabel label(cx, "field getter", fullName.c_str());
+
     priv->debug_jsprop("Field getter", name, obj);
 
     if (priv->is_prototype())
@@ -446,6 +453,9 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
+    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    AutoProfilerLabel label(cx, "property setter", fullName.c_str());
+
     priv->debug_jsprop("Property setter", name, obj);
 
     if (priv->is_prototype())
@@ -502,6 +512,9 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
+
+    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    AutoProfilerLabel label(cx, "field setter", fullName.c_str());
 
     priv->debug_jsprop("Field setter", name, obj);
 
@@ -1863,6 +1876,11 @@ ObjectInstance::connect_impl(JSContext          *context,
                              "callback", &callback))
         return false;
 
+    std::string dynamicString = format_name() + '.' +
+                                (after ? "connect_after" : "connect") + "('" +
+                                signal_name.get() + "')";
+    AutoProfilerLabel label(context, "", dynamicString.c_str());
+
     if (!JS::IsCallable(callback)) {
         gjs_throw(context, "second arg must be a callback");
         return false;
@@ -1918,6 +1936,10 @@ ObjectInstance::emit_impl(JSContext          *context,
     if (!gjs_parse_call_args(context, "emit", argv, "!s",
                              "signal name", &signal_name))
         return false;
+
+    std::string dynamicString =
+        format_name() + "emit('" + signal_name.get() + "')";
+    AutoProfilerLabel label(context, "", dynamicString.c_str());
 
     if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
                              &signal_detail, false)) {
@@ -2215,6 +2237,9 @@ bool ObjectBase::init_gobject(JSContext* context, unsigned argc,
     GJS_CHECK_WRAPPER_PRIV(context, argc, vp, argv, obj, ObjectBase, priv);
     if (!priv->check_is_instance(context, "initialize"))
         return false;
+
+    std::string dynamicString = priv->format_name() + "._init";
+    AutoProfilerLabel label(context, "", dynamicString.c_str());
 
     return priv->to_instance()->init_impl(context, argv, &obj);
 }

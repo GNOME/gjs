@@ -32,6 +32,7 @@
 #include "gjs/jsapi-class.h"  // IWYU pragma: keep
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/profiler-private.h"
 #include "util/log.h"
 
 struct JSFunctionSpec;
@@ -188,6 +189,14 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     }
     [[nodiscard]] const char* name() const {
         return info() ? g_base_info_get_name(info()) : type_name();
+    }
+
+    [[nodiscard]] std::string format_name() const {
+        std::string retval = ns();
+        if (!retval.empty())
+            retval += '.';
+        retval += name();
+        return retval;
     }
 
  private:
@@ -429,8 +438,13 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
         Instance* priv = Instance::new_for_js_object(cx, obj);
 
-        if (!priv->constructor_impl(cx, obj, args))
-            return false;
+        {
+            std::string fullName = priv->format_name();
+            AutoProfilerLabel label(cx, "constructor", fullName.c_str());
+
+            if (!priv->constructor_impl(cx, obj, args))
+                return false;
+        }
 
         static_cast<GIWrapperBase*>(priv)->debug_lifecycle(obj,
                                                            "JSObject created");

@@ -46,6 +46,7 @@
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
+#include "gjs/profiler-private.h"
 #include "util/log.h"
 
 /* We use guint8 for arguments; functions can't
@@ -869,6 +870,8 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     if (!args.isConstructing() && !args.computeThis(context, &obj))
         return false;
 
+    std::string dynamicString("(unknown)");
+
     if (state.is_method) {
         GjsArgumentCache* cache = &m_arguments[-state.first_arg_offset()];
         GIArgument* in_value = &state.in_cvalues[-state.first_arg_offset()];
@@ -886,7 +889,16 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
         if (g_type_is_a(cache->contents.object.gtype, G_TYPE_OBJECT) ||
             g_type_is_a(cache->contents.object.gtype, G_TYPE_INTERFACE))
             state.instance_object = obj;
+
+        if (g_type_is_a(cache->contents.object.gtype, G_TYPE_OBJECT)) {
+            auto* o = ObjectBase::for_js(context, obj);
+            dynamicString = o->format_name();
+        }
     }
+
+    dynamicString += '.';
+    dynamicString += format_name();
+    AutoProfilerLabel label(context, "", dynamicString.c_str());
 
     state.processed_c_args = ffi_arg_pos;
     for (gi_arg_pos = 0; gi_arg_pos < state.gi_argc;
