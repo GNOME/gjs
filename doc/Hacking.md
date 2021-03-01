@@ -12,6 +12,8 @@ For more information, see
 you'll need to manually format your code before it gets merged.
 You can also skip this step if you are not writing any C++ code.)
 
+## Dependencies
+
 GJS requires four other libraries to be installed: GLib, libffi,
 gobject-introspection, and SpiderMonkey (also called "mozjs78" on some
 systems.)
@@ -55,6 +57,12 @@ ninja -C _build
 
 Add any options with `-D` arguments to the `meson _build` command.
 For a list of available options, run `meson configure`.
+
+That's it! You can now run your build of gjs for testing and hacking with
+
+```sh
+LD_LIBRARY_PATH=_build GI_TYPELIB_PATH=_build ./_build/gjs-console script.js
+```
 
 To install GJS into the path you chose with `-Dprefix`, (or into
 `/usr/local` if you didn't choose a path), run
@@ -141,7 +149,7 @@ To execute cppcheck, a static code analysis tool for the C and C++, run:
 ```sh
 tools/run_cppcheck.sh
 ```
-It is a versatile tool that can check non-standard code, including: variable 
+It is a versatile tool that can check non-standard code, including: variable
 checking, bounds checking, leaks, etc. It can detect the types of bugs that
 the compilers normally fail to detect.
 

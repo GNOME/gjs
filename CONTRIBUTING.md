@@ -84,11 +84,6 @@ Next, read the [workflow guide to contributing to GNOME][workflow].
 (In short, create a fork of the repository, make your changes on a
 branch, push them to your fork, and create a merge request.)
 
-If your contribution fixes an existing issue, please refer to the issue
-in your commit message with `Closes #123` (for issue 123).
-Otherwise, creating a separate issue is not required.
-See the section on "Commit messages" below.
-
 When you submit your merge request, make sure to click "Allow commits
 from contributors with push access".
 This is so that the maintainers can re-run the GitLab CI jobs, since
@@ -319,7 +314,7 @@ For further guidelines about line length and commit messages, read
 If the commit is related to an open issue in the issue tracker, note
 that on the last line of the commit message. For example, `See #153`, or
 `Closes #277` if the issue should be automatically closed when the merge
-request is accepted.
+request is accepted. Otherwise, creating a separate issue is not required.
 
 ## Thanks ##
 
