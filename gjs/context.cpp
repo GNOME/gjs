@@ -883,19 +883,22 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
  private:
     GjsContextPrivate* m_gjs;
     JS::PersistentRooted<JobQueueStorage> m_queue;
+    bool m_idle_was_pending : 1;
     bool m_was_draining : 1;
 
  public:
     explicit SavedQueue(GjsContextPrivate* gjs)
         : m_gjs(gjs),
           m_queue(gjs->m_cx, std::move(gjs->m_job_queue)),
+          m_idle_was_pending(gjs->m_idle_drain_handler != 0),
           m_was_draining(gjs->m_draining_job_queue) {
         gjs->stop_draining_job_queue();
     }
 
     ~SavedQueue(void) {
         m_gjs->m_job_queue = std::move(m_queue.get());
-        if (m_was_draining)
+        m_gjs->m_draining_job_queue = m_was_draining;
+        if (m_idle_was_pending)
             m_gjs->start_draining_job_queue();
     }
 };
