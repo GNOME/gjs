@@ -5,7 +5,7 @@
 #include <config.h>
 
 #include <stdint.h>
-#include <string.h>  // for memset
+#include <stdlib.h>  // for exit
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -20,7 +20,6 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for InformalValueTypeName, JS_ClearPendingException
-#include <mozilla/Unused.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -259,7 +258,15 @@ closure_marshal(GClosure        *closure,
     }
 
     JS::RootedValue rval(context);
-    mozilla::Unused << gjs_closure_invoke(closure, nullptr, argv, &rval, false);
+
+    if (!gjs_closure_invoke(closure, nullptr, argv, &rval, false)) {
+        // "Uncatchable" exception thrown, we have to exit. This
+        // matches the closure exit handling in function.cpp
+        uint8_t code;
+        if (gjs->should_exit(&code))
+            exit(code);
+    }
+
     // Any exception now pending, is handled when returning control to JS
 
     if (return_value != NULL) {

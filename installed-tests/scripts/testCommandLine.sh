@@ -75,6 +75,34 @@ else
     System.exit(1);
 EOF
 
+# this JS script is used to test correct exiting from signal callbacks
+cat <<EOF >signalexit.js
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import { exit } from 'system';
+
+const Button = GObject.registerClass({
+    Signals: {
+        'clicked': {},
+    },
+}, class Button extends GObject.Object {
+    go() {
+        this.emit('clicked');
+    }
+});
+
+const button = new Button();
+button.connect('clicked', () => exit(15));
+let n = 1;
+GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2, () => {
+    print(\`click \${n++}\`);
+    button.go();
+    return GLib.SOURCE_CONTINUE;
+});
+const loop = new GLib.MainLoop(null, false);
+loop.run();
+EOF
+
 total=0
 
 report () {
@@ -279,6 +307,22 @@ rm -f coverage.lcov
 $gjs -m doublegi.js 2>&1 | grep -q 'already loaded'
 report "avoid statically importing two versions of the same module"
 
-rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js
+# https://gitlab.gnome.org/GNOME/gjs/-/issues/19
+echo "# VALGRIND = $VALGRIND"
+if test -z $VALGRIND; then
+    ASAN_OPTIONS=detect_leaks=0 output=$($gjs -m signalexit.js)
+    test $? -eq 15
+    report "exit with correct code from a signal callback"
+    test -n "$output" -a -z "${output##*click 1*}"
+    report "avoid asserting when System.exit is called from a signal callback"
+    test -n "${output##*click 2*}"
+    report "exit after first System.exit call in a signal callback"
+else
+    skip "exit with correct code from a signal callback" "running under valgrind"
+    skip "avoid asserting when System.exit is called from a signal callback" "running under valgrind"
+    skip "exit after first System.exit call in a signal callback" "running under valgrind"
+fi
+
+rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js signalexit.js
 
 echo "1..$total"
