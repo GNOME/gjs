@@ -82,13 +82,31 @@ class FundamentalPrototype
         return m_constructor_info;
     }
 
-    void* call_ref_function(void* ptr) const { return m_ref_function(ptr); }
-    void call_unref_function(void* ptr) const { m_unref_function(ptr); }
-    [[nodiscard]] void* call_get_value_function(const GValue* value) const {
-        return m_get_value_function(value);
+    void* call_ref_function(void* ptr) const {
+        if (!m_ref_function)
+            return ptr;
+
+        return m_ref_function(ptr);
     }
-    void call_set_value_function(GValue* value, void* object) const {
-        m_set_value_function(value, object);
+    void call_unref_function(void* ptr) const {
+        if (m_unref_function)
+            m_unref_function(ptr);
+    }
+    [[nodiscard]] bool call_get_value_function(const GValue* value,
+                                               void** ptr_out) const {
+        if (!m_get_value_function)
+            return false;
+
+        *ptr_out = m_get_value_function(value);
+        return true;
+    }
+    bool call_set_value_function(GValue* value, void* object) const {
+        if (m_set_value_function) {
+            m_set_value_function(value, object);
+            return true;
+        }
+
+        return false;
     }
 
     // Helper methods
@@ -137,8 +155,8 @@ class FundamentalInstance
 
     void ref(void) { get_prototype()->call_ref_function(m_ptr); }
     void unref(void) { get_prototype()->call_unref_function(m_ptr); }
-    void set_value(GValue* gvalue) const {
-        get_prototype()->call_set_value_function(gvalue, m_ptr);
+    [[nodiscard]] bool set_value(GValue* gvalue) const {
+        return get_prototype()->call_set_value_function(gvalue, m_ptr);
     }
 
     GJS_JSAPI_RETURN_CONVENTION

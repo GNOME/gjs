@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 
+imports.gi.versions.Gdk = '4.0';
 imports.gi.versions.Gtk = '4.0';
 
 const ByteArray = imports.byteArray;
-const {Gio, GObject, Gtk} = imports.gi;
+const {Gdk, Gio, GObject, Gtk} = imports.gi;
 
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
@@ -173,5 +174,11 @@ describe('Gtk overrides', function () {
         const iter = new Gtk.TreeIter();
         iter.stamp = 42;
         expect(iter.stamp).toEqual(42);
+    });
+});
+
+describe('Gtk 4 regressions', function () {
+    it('Gdk.Event fundamental type should not crash', function () {
+        expect(() => new Gdk.Event()).toThrowError(/Couldn't find a constructor/);
     });
 });
