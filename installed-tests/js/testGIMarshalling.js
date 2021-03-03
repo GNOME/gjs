@@ -1751,3 +1751,34 @@ describe('GObject properties', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
     });
 });
+
+xdescribe('GObject signals', function () {
+    let obj;
+    beforeEach(function () {
+        obj = new GIMarshallingTests.SignalsObject();
+    });
+
+    function testSignalEmission(type, value, skip = false) {
+        it(`checks emission of signal with ${type} argument`, function () {
+            if (skip)
+                pending(skip);
+
+            function signalCallback(o, arg) {
+                expect(value).toEqual(arg);
+            }
+
+            const signalName = `some_${type}`;
+            const funcName = `emit_${type}`.replace(/-/g, '_');
+            const signalId = obj.connect(signalName, signalCallback);
+            obj[funcName]();
+            obj.disconnect(signalId);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/259');
+    }
+
+    testSignalEmission('boxed-gptrarray-utf8', ['0', '1', '2']);
+    testSignalEmission('boxed-gptrarray-boxed-struct', [
+        new GIMarshallingTests.BoxedStruct({long_: 42}),
+        new GIMarshallingTests.BoxedStruct({long_: 43}),
+        new GIMarshallingTests.BoxedStruct({long_: 44}),
+    ]);
+});
