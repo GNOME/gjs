@@ -170,6 +170,8 @@ foreach test : jasmine_tests
     endif
 endforeach
 
+install_subdir('modules', install_dir: installed_js_tests_dir)
+
 # testGDBus.js is separate, because it can be skipped, and during build should
 # be run using dbus-run-session
 
