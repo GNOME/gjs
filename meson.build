@@ -4,7 +4,12 @@
 
 project('gjs', 'cpp', 'c', version: '1.67.2', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 0.52.0',
-    default_options: ['cpp_std=c++17', 'c_std=c99', 'warning_level=2'])
+    default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'c_std=c99',
+        'warning_level=2'])
+
+# cpp_rtti: SpiderMonkey can be compiled with or without runtime type
+# information, and the default is without. We must match that option because we
+# need to derive from SpiderMonkey classes.
 
 api_version = '1.0'
 api_name = '@0@-@1@'.format(meson.project_name(), api_version)
@@ -46,7 +51,7 @@ if cc.get_id() == 'msvc'
     ]), language: ['cpp', 'c'])
 else
     # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
-    # header files commonly do	
+    # header files commonly do
     add_project_arguments(cxx.get_supported_arguments([
         '-fno-strict-aliasing',
         '-Wno-variadic-macros',  # GLib uses these in header files
@@ -79,21 +84,10 @@ else
     endif
 endif
 
-# SpiderMonkey can be compiled with or without runtime type information, we must
-# match that option because we need to derive from SpiderMonkey classes
-if get_option('spidermonkey_rtti')
-    if cxx.has_argument('-GR-')
-        add_project_arguments('-GR-', language: 'cpp')  # MSVC/clang-cl option
-    endif
-else
-    if cxx.has_argument('-fno-rtti')
-        add_project_arguments('-fno-rtti', language: 'cpp')
-        # -fno-rtti is not compatible with the vptr sanitizer (part of ubsan)
-        if get_option('b_sanitize') != 'none' and \
-            cxx.has_argument('-fno-sanitize=vptr')
-            add_project_arguments('-fno-sanitize=vptr', language: 'cpp')
-        endif
-    endif
+# -fno-rtti is not compatible with the vptr sanitizer (part of ubsan)
+if not get_option('cpp_rtti') and get_option('b_sanitize') != 'none' and \
+    cxx.has_argument('-fno-sanitize=vptr')
+    add_project_arguments('-fno-sanitize=vptr', language: 'cpp')
 endif
 
 if get_option('verbose_logs')
@@ -490,15 +484,6 @@ if build_profiler
     libgjs_dependencies += profiler_deps
 endif
 
-link_args = []
-if cxx.has_link_argument('-Wl,-no-undefined')
-    link_args += '-Wl,-no-undefined'
-else
-    # -undefined error is the equivalent of -no-undefined for the macOS linker,
-    # but -undefined would also be understood as a valid argument for GNU ld!
-    link_args += cxx.get_supported_link_arguments('-Wl,-undefined,error')
-endif
-
 libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines
 
 # Check G-I and/or Meson on this one.
@@ -512,10 +497,10 @@ endif
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
     cpp_args: libgjs_cpp_args,
-    link_args: link_args,
     dependencies: libgjs_dependencies,
     install: false)
 
+link_args = []
 symbol_map = files('libgjs.map')
 symbol_list = files('libgjs.symbols')
 link_args += cxx.get_supported_link_arguments([

@@ -20,8 +20,6 @@ option('systemtap', type: 'boolean', value: false,
     description: 'Include systemtap trace support (requires -Ddtrace=true)')
 option('bsymbolic_functions', type: 'boolean', value: true,
     description: 'Link with -Bsymbolic-functions linker flag used to avoid intra-library PLT jumps, if supported; not used for Visual Studio and clang-cl builds')
-option('spidermonkey_rtti', type: 'boolean', value: false,
-    description: 'Needs to match SpiderMonkey\'s config option')
 option('skip_dbus_tests', type: 'boolean', value: false,
     description: 'Skip tests that use a DBus session bus')
 option('skip_gtk_tests', type: 'boolean', value: false,

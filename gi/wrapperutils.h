@@ -952,7 +952,7 @@ class GIWrapperInstance : public Base {
      * GIWrapperInstance::new_for_js_object:
      *
      * Creates a GIWrapperInstance and associates it with @obj as its private
-     * data. This is called by the JS constructor. Uses the slice allocator.
+     * data. This is called by the JS constructor.
      */
     [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
                                                      JS::HandleObject obj) {

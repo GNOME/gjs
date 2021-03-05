@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>, <philip@endlessm.com>
 
 const Gi = imports._gi;
-const GjsPrivate = imports.gi.GjsPrivate;
+const {GjsPrivate, GLib} = imports.gi;
 const {_checkAccessors} = imports._common;
 const Legacy = imports._legacy;
 
@@ -150,6 +150,9 @@ function _createGTypeName(klass) {
         if (callerBasename)
             gtypeClassName = `${callerBasename}_${gtypeClassName}`;
     }
+
+    if (gtypeClassName === '')
+        gtypeClassName = `anonymous_${GLib.uuid_string_random()}`;
 
     return sanitizeGType(`Gjs_${gtypeClassName}`);
 }

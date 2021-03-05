@@ -153,6 +153,8 @@ const MyCustomInit = GObject.registerClass(class MyCustomInit extends GObject.Ob
     }
 });
 
+const NoName = GObject.registerClass(class extends GObject.Object {});
+
 describe('GObject class with decorator', function () {
     let myInstance;
     beforeEach(function () {
@@ -335,6 +337,15 @@ describe('GObject class with decorator', function () {
 
         expect(obj instanceof Cla$$).toBeTruthy();
         expect(obj instanceof MyObject).toBeTruthy();
+    });
+
+    it('handles anonymous class expressions', function () {
+        const obj = new NoName();
+        expect(obj instanceof NoName).toBeTruthy();
+
+        const NoName2 = GObject.registerClass(class extends GObject.Object {});
+        const obj2 = new NoName2();
+        expect(obj2 instanceof NoName2).toBeTruthy();
     });
 
     it('calls its _instance_init() function while chaining up in constructor', function () {

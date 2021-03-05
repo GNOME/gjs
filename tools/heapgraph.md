@@ -60,11 +60,11 @@ Found 343 targets with type "Object"
 
 $ cat file.tree
 ├─[vm_stack[1]]─➤ [Object jsobj@0x7fce60683440]
-│ 
+│
 ├─[vm_stack[1]]─➤ [Object jsobj@0x7fce606833c0]
-│ 
+│
 ├─[exact-Object]─➤ [Object jsobj@0x7fce60683380]
-│ 
+│
 ├─[exact-Object]─➤ [GjsGlobal jsobj@0x7fce60680060]
 │ ├─[Debugger]─➤ [Function Debugger jsobj@0x7fce606a4540]
 │ │ ╰─[Object]─➤ [Function Object jsobj@0x7fce606a9cc0]
