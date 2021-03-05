@@ -38,15 +38,19 @@ describe('Unsafe integer marshalling', function () {
 
 describe('Marshalling empty flat arrays of structs', function () {
     let widget;
+    let gtkEnabled;
     beforeAll(function () {
-        if (GLib.getenv('ENABLE_GTK') !== 'yes') {
-            pending('GTK disabled');
+        gtkEnabled = GLib.getenv('ENABLE_GTK') === 'yes';
+        if (!gtkEnabled)
             return;
-        }
         Gtk.init(null);
     });
 
     beforeEach(function () {
+        if (!gtkEnabled) {
+            pending('GTK disabled');
+            return;
+        }
         widget = new Gtk.Label();
     });
 
@@ -84,15 +88,19 @@ describe('GError domains', function () {
 
 describe('Object properties on GtkBuilder-constructed objects', function () {
     let o1;
+    let gtkEnabled;
     beforeAll(function () {
-        if (GLib.getenv('ENABLE_GTK') !== 'yes') {
-            pending('GTK disabled');
+        gtkEnabled = GLib.getenv('ENABLE_GTK') === 'yes';
+        if (!gtkEnabled)
             return;
-        }
         Gtk.init(null);
     });
 
     beforeEach(function () {
+        if (!gtkEnabled) {
+            pending('GTK disabled');
+            return;
+        }
         const ui = `
             <interface>
               <object class="GtkButton" id="button">
