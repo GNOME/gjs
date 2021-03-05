@@ -46,7 +46,7 @@ describe('ES module imports', function () {
     });
 
     it('import.meta.url', function () {
-        expect(import.meta.url).toMatch(/\/installed-tests\/js\/testESModules\.js$/);
+        expect(import.meta.url).toMatch(/\/installed-tests\/(gjs\/)?js\/testESModules\.js$/);
     });
 
     it('finds files relative to import.meta.url', function () {
