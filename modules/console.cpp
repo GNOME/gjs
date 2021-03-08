@@ -8,6 +8,11 @@
 #ifdef HAVE_SIGNAL_H
 #    include <setjmp.h>
 #    include <signal.h>
+#    ifdef _WIN32
+#        define sigjmp_buf jmp_buf
+#        define siglongjmp(e, v) longjmp (e, v)
+#        define sigsetjmp(v, m) setjmp (v)
+#    endif
 #endif
 
 #ifdef HAVE_READLINE_READLINE_H
