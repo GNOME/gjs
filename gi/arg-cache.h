@@ -122,7 +122,7 @@ struct GjsArgumentCache {
         arg_name = "instance parameter";
         // Some calls accept null for the instance, but generally in an object
         // oriented language it's wrong to call a method on null
-        flags = GjsArgumentFlags::NONE | GjsArgumentFlags::SKIP_OUT;
+        flags = static_cast<GjsArgumentFlags>(GjsArgumentFlags::NONE | GjsArgumentFlags::SKIP_OUT);
     }
 
     void set_return_value() {

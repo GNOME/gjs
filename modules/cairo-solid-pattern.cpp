@@ -7,6 +7,7 @@
 #include <cairo.h>
 
 #include <js/CallArgs.h>
+#include <js/GCPolicyAPI.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -17,6 +18,12 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
+
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
 
 JSObject* CairoSolidPattern::new_proto(JSContext* cx, JSProtoKey) {
     JS::RootedObject parent_proto(cx, CairoPattern::prototype(cx));

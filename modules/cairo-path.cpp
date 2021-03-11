@@ -8,6 +8,7 @@
 #include <cairo.h>
 #include <glib.h>  // for g_assert
 
+#include <js/GCPolicyAPI.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -15,6 +16,12 @@
 #include <jsapi.h>
 
 #include "modules/cairo-private.h"
+
+// Avoid static_assert in MSVC builds
+namespace JS {
+template <>
+struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
+}
 
 // clang-format off
 const JSPropertySpec CairoPath::proto_props[] = {

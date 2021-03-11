@@ -1249,7 +1249,8 @@ static const GjsArgumentMarshallers caller_allocates_out_marshallers = {
 
 static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
     self->marshallers = &skip_all_marshallers;
-    self->flags = (GjsArgumentFlags::SKIP_IN | GjsArgumentFlags::SKIP_OUT);
+    self->flags =
+        static_cast<GjsArgumentFlags>(GjsArgumentFlags::SKIP_IN | GjsArgumentFlags::SKIP_OUT);
 }
 
 bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
@@ -1296,7 +1297,7 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
     // marshal_in is ignored for the return value, but skip_in is not (it is
     // used in the failure release path)
-    self->flags = (self->flags | GjsArgumentFlags::SKIP_IN);
+    self->flags = static_cast<GjsArgumentFlags>(self->flags | GjsArgumentFlags::SKIP_IN);
     self->marshallers = &return_value_marshallers;
 
     return true;
@@ -1326,9 +1327,9 @@ static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
     self->contents.enum_type.enum_max = static_cast<uint32_t>(max);
 
     if (min >= 0 && max > std::numeric_limits<int32_t>::max())
-        self->flags = (self->flags | GjsArgumentFlags::UNSIGNED);
+        self->flags = static_cast<GjsArgumentFlags>(self->flags | GjsArgumentFlags::UNSIGNED);
     else
-        self->flags = (self->flags & ~GjsArgumentFlags::UNSIGNED);
+        self->flags = static_cast<GjsArgumentFlags>(self->flags & ~GjsArgumentFlags::UNSIGNED);
 }
 
 static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
@@ -1547,7 +1548,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                 self->marshallers = &string_in_transfer_none_marshallers;
             else
                 self->marshallers = &string_in_marshallers;
-            self->flags = (self->flags | GjsArgumentFlags::FILENAME);
+            self->flags = static_cast<GjsArgumentFlags>(self->flags | GjsArgumentFlags::FILENAME);
             break;
 
         case GI_TYPE_TAG_UTF8:
@@ -1555,7 +1556,7 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
                 self->marshallers = &string_in_transfer_none_marshallers;
             else
                 self->marshallers = &string_in_marshallers;
-            self->flags = (self->flags & ~GjsArgumentFlags::FILENAME);
+            self->flags = static_cast<GjsArgumentFlags>(self->flags & ~GjsArgumentFlags::FILENAME);
             break;
 
         case GI_TYPE_TAG_INTERFACE: {

@@ -30,9 +30,16 @@ struct WrapperImpl {
     }
 };
 
+
+#if defined (__clang__) || defined (__GNUC__)
 template <class EnumType>
 using Wrapper =
     std::conditional_t<is_class<EnumType>(), WrapperImpl<EnumType>, void>;
+#else
+template <class EnumType>
+using Wrapper =
+    std::conditional_t<is_class<EnumType>(), std::underlying_type_t<EnumType>, void>;
+#endif
 }  // namespace GjsEnum
 
 template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
@@ -60,7 +67,7 @@ template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
 constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped&> operator|=(
     EnumType& first,  //  NOLINT(runtime/references)
     EnumType const& second) {
-    first = (first | second);
+    first = static_cast<EnumType>(first | second);
     return reinterpret_cast<Wrapped&>(first);
 }
 
@@ -68,7 +75,7 @@ template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
 constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped&> operator&=(
     EnumType& first,  //  NOLINT(runtime/references)
     EnumType const& second) {
-    first = (first & second);
+    first = static_cast<EnumType>(first & second);
     return reinterpret_cast<Wrapped&>(first);
 }
 

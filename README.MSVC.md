@@ -1,14 +1,10 @@
 Instructions for building GJS on Visual Studio or clang-cl
 ==========================================================
 Building the GJS on Windows is now supported using Visual Studio
-versions 2017 or later with or without clang-cl in both 32-bit and
+versions 2019 or later with or without clang-cl in both 32-bit and
 64-bit (x64) flavors, via Meson.  It should be noted that a
 recent-enough Windows SDK from Microsoft is still required if using
-clang-cl, as we will still use items from the Windows SDK.  If using
-Visual Studio, Visual Studio 2017 15.9.x or later are known to work;
-earlier versions at after Visual Studio 2017 15.6 may or may not work,
-please let us know how things went if Visual Studio 15.6, 15.7 or 15.8
-is used.
+clang-cl, as we will still use items from the Windows SDK.
 
 Recent official binary installers of CLang (which contains clang-cl)
 from the LLVM website are known to work to build SpiderMonkey 78 and
