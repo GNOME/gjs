@@ -29,6 +29,7 @@
 #include <js/Value.h>
 #include <jsapi.h>        // for JSID_TO_FLAT_STRING, JS_GetTwoByte...
 #include <jsfriendapi.h>  // for FlatStringToLinearString, GetLatin...
+#include <mozilla/CheckedInt.h>
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -205,8 +206,14 @@ gjs_string_get_char16_data(JSContext       *context,
     if (js_data == NULL)
         return false;
 
-    *data_p = static_cast<char16_t*>(
-        _gjs_memdup2(js_data, sizeof(*js_data) * (*len_p)));
+    mozilla::CheckedInt<size_t> len_bytes =
+        mozilla::CheckedInt<size_t>(*len_p) * sizeof(*js_data);
+    if (!len_bytes.isValid()) {
+        JS_ReportOutOfMemory(context);  // cannot call gjs_throw, it may GC
+        return false;
+    }
+
+    *data_p = static_cast<char16_t*>(_gjs_memdup2(js_data, len_bytes.value()));
 
     return true;
 }
