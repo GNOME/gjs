@@ -28,10 +28,13 @@ describe('Life, the Universe and Everything', function () {
             const method = `test_int${bits}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
+            expect(Regress[method](undefined)).toBe(0);
         });
 
         it(`includes unsigned ${bits}-bit integers`, function () {
-            expect(Regress[`test_uint${bits}`](42)).toBe(42);
+            const method = `test_uint${bits}`;
+            expect(Regress[method](42)).toBe(42);
+            expect(Regress[method](undefined)).toBe(0);
         });
     });
 
@@ -40,12 +43,19 @@ describe('Life, the Universe and Everything', function () {
             const method = `test_${type}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
+
+            if (['float', 'double'].includes(type))
+                expect(Number.isNaN(Regress[method](undefined))).toBeTruthy();
+            else
+                expect(Regress[method](undefined)).toBe(0);
         });
     });
 
     ['ushort', 'uint', 'ulong', 'size'].forEach(type => {
         it(`includes ${type}s`, function () {
-            expect(Regress[`test_${type}`](42)).toBe(42);
+            const method = `test_${type}`;
+            expect(Regress[method](42)).toBe(42);
+            expect(Regress[method](undefined)).toBe(0);
         });
     });
 

@@ -197,6 +197,13 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     if constexpr (std::is_same_v<WantedType, T>)
         return js_value_to_c(cx, value, out);
 
+    if constexpr (std::is_integral_v<WantedType>) {
+        if (value.isUndefined()) {
+            *out = 0;
+            return true;
+        }
+    }
+
     if constexpr (std::is_arithmetic_v<T>) {
         bool ret = js_value_to_c(cx, value, out);
         if (out_of_range) {
@@ -205,6 +212,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
                      static_cast<T>(std::numeric_limits<WantedType>::max()) ||
                  *out <
                      static_cast<T>(std::numeric_limits<WantedType>::lowest()));
+
+            if constexpr (std::is_integral_v<WantedType>)
+                *out_of_range |= std::isnan(*out);
         }
         return ret;
     }
