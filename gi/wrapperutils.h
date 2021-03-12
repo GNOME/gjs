@@ -167,7 +167,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      * Instance, it returns you the Prototype belonging to the corresponding JS
      * prototype.
      */
-    [[nodiscard]] Prototype* get_prototype() {
+    [[nodiscard]] [[gnu::const]] Prototype* get_prototype() {
         return is_prototype() ? to_prototype() : m_proto;
     }
     [[nodiscard]] const Prototype* get_prototype() const {

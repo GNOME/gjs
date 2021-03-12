@@ -414,7 +414,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                                            const Action& action);
 
  public:
-    [[nodiscard]] GjsListLink* get_link() { return &m_instance_link; }
+    [[nodiscard]] [[gnu::const]] GjsListLink* get_link() {
+        return &m_instance_link;
+    }
+
     static void prepare_shutdown(void);
 
     /* JSClass operations */
