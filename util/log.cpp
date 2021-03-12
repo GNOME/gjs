@@ -17,6 +17,8 @@
 #    include <unistd.h>  // for getpid
 #endif
 
+#include <glib.h>
+
 #include "util/log.h"
 #include "util/misc.h"
 

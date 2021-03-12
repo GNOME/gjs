@@ -404,14 +404,12 @@ JSObject* gjs_define_string_array(JSContext* cx, JS::HandleObject obj,
                                   const std::vector<std::string>& strings,
                                   unsigned attrs);
 
-void        gjs_throw                        (JSContext       *context,
-                                              const char      *format,
-                                              ...)  G_GNUC_PRINTF (2, 3);
-void        gjs_throw_custom                 (JSContext       *context,
-                                              JSProtoKey       error_kind,
-                                              const char      *error_name,
-                                              const char      *format,
-                                              ...)  G_GNUC_PRINTF (4, 5);
+[[gnu::format(printf, 2, 3)]] void gjs_throw(JSContext* cx, const char* format,
+                                             ...);
+[[gnu::format(printf, 4, 5)]] void gjs_throw_custom(JSContext* cx,
+                                                    JSProtoKey error_kind,
+                                                    const char* error_name,
+                                                    const char* format, ...);
 void        gjs_throw_literal                (JSContext       *context,
                                               const char      *string);
 bool gjs_throw_gerror_message(JSContext* cx, GError* error);

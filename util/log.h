@@ -5,8 +5,6 @@
 #ifndef UTIL_LOG_H_
 #define UTIL_LOG_H_
 
-#include <glib.h>
-
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app
  * should have its own entry in the enum. Be sure to add new enum entries
@@ -149,8 +147,7 @@ typedef enum {
 #    define gjs_debug_gsignal(...) ((void)0)
 #endif
 
-void gjs_debug(GjsDebugTopic topic,
-               const char   *format,
-               ...) G_GNUC_PRINTF (2, 3);
+[[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic topic,
+                                             const char* format, ...);
 
 #endif  // UTIL_LOG_H_

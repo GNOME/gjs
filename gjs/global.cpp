@@ -300,7 +300,8 @@ class GjsInternalGlobal : GjsBaseGlobal {
 
     static bool define_properties(JSContext* cx, JS::HandleObject global,
                                   const char* realm_name,
-                                  const char* bootstrap_script G_GNUC_UNUSED) {
+                                  const char* bootstrap_script
+                                  [[maybe_unused]]) {
         JS::Realm* realm = JS::GetObjectRealmOrNull(global);
         g_assert(realm && "Global object must be associated with a realm");
         // const_cast is allowed here if we never free the realm data
