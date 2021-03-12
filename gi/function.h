@@ -43,8 +43,8 @@ struct GjsCallbackTrampoline {
                           bool is_vfunc);
     ~GjsCallbackTrampoline();
 
-    constexpr GClosure* js_function() { return m_js_function; }
-    constexpr ffi_closure* closure() { return m_closure; }
+    constexpr GClosure* js_function() const { return m_js_function; }
+    constexpr ffi_closure* closure() const { return m_closure; }
 
     gatomicrefcount ref_count;
 
