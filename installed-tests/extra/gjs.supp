@@ -11,7 +11,7 @@
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
-   fun:_dl_allocate_tls
+   ...
    fun:pthread_create@@GLIBC_2.2.5
    fun:_ZN7mozilla9TimeStamp20ComputeProcessUptimeEv
    fun:_ZN7mozilla9TimeStamp15ProcessCreationEPb
@@ -28,19 +28,7 @@
    fun:malloc
    fun:g_malloc
    ...
-   fun:gtk_css_node_declaration_make_writable
-   ...
-   fun:gtk_style_constructed
-}
-
-{
-   gtk-style-context2
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:g_malloc
-   ...
-   fun:gtk_css_node_declaration_make_writable_resize
+   fun:gtk_css_node_declaration_make_writable*
    ...
    fun:gtk_style_constructed
 }
@@ -57,7 +45,7 @@
    fun:_cairo_ft_font_face_get_implementation
    fun:cairo_scaled_font_create
    fun:_cairo_gstate_ensure_scaled_font
-   fun:_cairo_gstate_get_scaled_font
+   ...
    fun:_cairo_default_context_get_scaled_font
    fun:cairo_show_text
 }
@@ -74,14 +62,9 @@
    ...
    fun:FcPatternDuplicate
    fun:_cairo_ft_font_face_create_for_pattern
-   fun:_cairo_ft_font_face_create_for_toy
-   fun:_cairo_toy_font_face_create_impl_face
-   fun:_cairo_toy_font_face_init
-   fun:cairo_toy_font_face_create
    ...
-   fun:_cairo_gstate_ensure_font_face
    fun:_cairo_gstate_ensure_scaled_font
-   fun:_cairo_gstate_get_scaled_font
+   ...
    fun:_cairo_default_context_get_scaled_font
    ...
    fun:cairo_show_text
