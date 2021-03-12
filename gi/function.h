@@ -118,6 +118,9 @@ struct GjsFunctionCallState {
         delete[](inout_original_cvalues - first_arg_offset());
     }
 
+    GjsFunctionCallState(const GjsFunctionCallState&) = delete;
+    GjsFunctionCallState& operator=(const GjsFunctionCallState&) = delete;
+
     constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
 
     constexpr bool did_throw_gerror() const {
