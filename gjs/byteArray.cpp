@@ -28,6 +28,7 @@
 #include "gjs/deprecation.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "util/misc.h"  // for _gjs_memdup2
 
 /* Callbacks to use with JS::NewExternalArrayBuffer() */
 
@@ -357,8 +358,8 @@ JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
     JS::RootedObject array_buffer(cx);
     // a null data pointer takes precedence over whatever `nbytes` says
     if (data)
-        array_buffer =
-            JS::NewArrayBufferWithContents(cx, nbytes, g_memdup(data, nbytes));
+        array_buffer = JS::NewArrayBufferWithContents(
+            cx, nbytes, _gjs_memdup2(data, nbytes));
     else
         array_buffer = JS::NewArrayBuffer(cx, 0);
     if (!array_buffer)
