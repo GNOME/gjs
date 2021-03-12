@@ -180,14 +180,11 @@ describe('Gtk overrides', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             '*destroy*');
 
-        let BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
+        const BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
             vfunc_destroy() {}
         });
 
-        let w = new Gtk.Window();
-        w.add(new BadLabel());
-
-        w.destroy();
+        new BadLabel();
         System.gc();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,

@@ -66,7 +66,7 @@ private:
      * are / were queued. is_queued() just checks and does not modify. */
     [[nodiscard]] std::pair<bool, bool> is_queued(GObject* gobj) const;
     /* Cancels pending toggles and returns whether any were queued. */
-    std::pair<bool, bool> cancel(GObject *gobj);
+    std::pair<bool, bool> cancel(GObject* gobj);
 
     /* Pops a toggle from the queue and processes it. Call this if you don't
      * want to wait for it to be processed in idle time. Returns false if queue
