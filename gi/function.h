@@ -85,10 +85,12 @@ using GjsAutoCallbackTrampoline =
                    gjs_callback_trampoline_unref, gjs_callback_trampoline_ref>;
 
 // Stack allocation only!
-struct GjsFunctionCallState {
-    GIArgument* in_cvalues;
-    GIArgument* out_cvalues;
-    GIArgument* inout_original_cvalues;
+class GjsFunctionCallState {
+    GIArgument* m_in_cvalues;
+    GIArgument* m_out_cvalues;
+    GIArgument* m_inout_original_cvalues;
+
+ public:
     std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
     JS::RootedValueVector return_values;
@@ -107,21 +109,33 @@ struct GjsFunctionCallState {
           can_throw_gerror(g_callable_info_can_throw_gerror(callable)),
           is_method(g_callable_info_is_method(callable)) {
         int size = gi_argc + first_arg_offset();
-        in_cvalues = new GIArgument[size] + first_arg_offset();
-        out_cvalues = new GIArgument[size] + first_arg_offset();
-        inout_original_cvalues = new GIArgument[size] + first_arg_offset();
+        m_in_cvalues = new GIArgument[size];
+        m_out_cvalues = new GIArgument[size];
+        m_inout_original_cvalues = new GIArgument[size];
     }
 
     ~GjsFunctionCallState() {
-        delete[](in_cvalues - first_arg_offset());
-        delete[](out_cvalues - first_arg_offset());
-        delete[](inout_original_cvalues - first_arg_offset());
+        delete[] m_in_cvalues;
+        delete[] m_out_cvalues;
+        delete[] m_inout_original_cvalues;
     }
 
     GjsFunctionCallState(const GjsFunctionCallState&) = delete;
     GjsFunctionCallState& operator=(const GjsFunctionCallState&) = delete;
 
     constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
+
+    constexpr GIArgument& in_cvalue(int index) const {
+        return m_in_cvalues[index + first_arg_offset()];
+    }
+
+    constexpr GIArgument& out_cvalue(int index) const {
+        return m_out_cvalues[index + first_arg_offset()];
+    }
+
+    constexpr GIArgument& inout_original_cvalue(int index) const {
+        return m_inout_original_cvalues[index + first_arg_offset()];
+    }
 
     constexpr bool did_throw_gerror() const {
         return can_throw_gerror && local_error;

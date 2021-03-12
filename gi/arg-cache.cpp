@@ -201,8 +201,8 @@ static bool gjs_marshal_generic_inout_in(JSContext* cx, GjsArgumentCache* self,
         return false;
 
     int ix = self->arg_pos;
-    state->out_cvalues[ix] = state->inout_original_cvalues[ix] = *arg;
-    gjs_arg_set(arg, &state->out_cvalues[ix]);
+    state->out_cvalue(ix) = state->inout_original_cvalue(ix) = *arg;
+    gjs_arg_set(arg, &state->out_cvalue(ix));
     return true;
 }
 
@@ -222,7 +222,7 @@ static bool gjs_marshal_explicit_array_in_in(JSContext* cx,
 
     uint8_t length_pos = self->contents.array.length_pos;
     gjs_g_argument_set_array_length(self->contents.array.length_tag,
-                                    &state->in_cvalues[length_pos], length);
+                                    &state->in_cvalue(length_pos), length);
     gjs_arg_set(arg, data);
     return true;
 }
@@ -242,21 +242,21 @@ static bool gjs_marshal_explicit_array_inout_in(JSContext* cx,
     if (!gjs_arg_get<void*>(arg)) {
         // Special case where we were given JS null to also pass null for
         // length, and not a pointer to an integer that derefs to 0.
-        gjs_arg_unset<void*>(&state->in_cvalues[length_pos]);
-        gjs_arg_unset<int>(&state->out_cvalues[length_pos]);
-        gjs_arg_unset<int>(&state->inout_original_cvalues[length_pos]);
+        gjs_arg_unset<void*>(&state->in_cvalue(length_pos));
+        gjs_arg_unset<int>(&state->out_cvalue(length_pos));
+        gjs_arg_unset<int>(&state->inout_original_cvalue(length_pos));
 
-        gjs_arg_unset<void*>(&state->out_cvalues[ix]);
-        gjs_arg_unset<void*>(&state->inout_original_cvalues[ix]);
+        gjs_arg_unset<void*>(&state->out_cvalue(ix));
+        gjs_arg_unset<void*>(&state->inout_original_cvalue(ix));
     } else {
-        state->out_cvalues[length_pos] =
-            state->inout_original_cvalues[length_pos] =
-                state->in_cvalues[length_pos];
-        gjs_arg_set(&state->in_cvalues[length_pos],
-                    &state->out_cvalues[length_pos]);
+        state->out_cvalue(length_pos) =
+            state->inout_original_cvalue(length_pos) =
+                state->in_cvalue(length_pos);
+        gjs_arg_set(&state->in_cvalue(length_pos),
+                    &state->out_cvalue(length_pos));
 
-        state->out_cvalues[ix] = state->inout_original_cvalues[ix] = *arg;
-        gjs_arg_set(arg, &state->out_cvalues[ix]);
+        state->out_cvalue(ix) = state->inout_original_cvalue(ix) = *arg;
+        gjs_arg_set(arg, &state->out_cvalue(ix));
     }
 
     return true;
@@ -313,11 +313,11 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
                     static_cast<GjsCallbackTrampoline*>(data));
             };
         }
-        gjs_arg_set(&state->in_cvalues[destroy_pos], destroy_notify);
+        gjs_arg_set(&state->in_cvalue(destroy_pos), destroy_notify);
     }
     if (self->has_callback_closure()) {
         uint8_t closure_pos = self->contents.callback.closure_pos;
-        gjs_arg_set(&state->in_cvalues[closure_pos], trampoline);
+        gjs_arg_set(&state->in_cvalue(closure_pos), trampoline);
     }
 
     if (trampoline && self->contents.callback.scope == GI_SCOPE_TYPE_ASYNC) {
@@ -335,9 +335,8 @@ static bool gjs_marshal_generic_out_in(JSContext*, GjsArgumentCache* self,
                                        GjsFunctionCallState* state,
                                        GIArgument* arg, JS::HandleValue) {
     // Default value in case a broken C function doesn't fill in the pointer
-    gjs_arg_unset<void*>(&state->out_cvalues[self->arg_pos]);
-    gjs_arg_set(arg,
-                &gjs_arg_member<void*>(&state->out_cvalues[self->arg_pos]));
+    gjs_arg_unset<void*>(&state->out_cvalue(self->arg_pos));
+    gjs_arg_set(arg, &gjs_arg_member<void*>(&state->out_cvalue(self->arg_pos)));
     return true;
 }
 
@@ -347,7 +346,7 @@ static bool gjs_marshal_caller_allocates_in(JSContext*, GjsArgumentCache* self,
                                             GIArgument* arg, JS::HandleValue) {
     void* blob = g_malloc0(self->contents.caller_allocates_size);
     gjs_arg_set(arg, blob);
-    gjs_arg_set(&state->out_cvalues[self->arg_pos], blob);
+    gjs_arg_set(&state->out_cvalue(self->arg_pos), blob);
     return true;
 }
 
@@ -804,7 +803,7 @@ static bool gjs_marshal_explicit_array_out_out(JSContext* cx,
                                                GIArgument* arg,
                                                JS::MutableHandleValue value) {
     uint8_t length_pos = self->contents.array.length_pos;
-    GIArgument* length_arg = &(state->out_cvalues[length_pos]);
+    GIArgument* length_arg = &state->out_cvalue(length_pos);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
 
@@ -850,8 +849,7 @@ static bool gjs_marshal_generic_inout_release(JSContext* cx,
     // the temporary C value we allocated, clearly we're responsible for
     // freeing it.
 
-    GIArgument* original_out_arg =
-        &(state->inout_original_cvalues[self->arg_pos]);
+    GIArgument* original_out_arg = &state->inout_original_cvalue(self->arg_pos);
     if (!gjs_g_argument_release_in_arg(cx, GI_TRANSFER_NOTHING,
                                        &self->type_info, original_out_arg))
         return false;
@@ -864,7 +862,7 @@ static bool gjs_marshal_explicit_array_out_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg [[maybe_unused]], GIArgument* out_arg) {
     uint8_t length_pos = self->contents.array.length_pos;
-    GIArgument* length_arg = &(state->out_cvalues[length_pos]);
+    GIArgument* length_arg = &state->out_cvalue(length_pos);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
 
@@ -877,7 +875,7 @@ static bool gjs_marshal_explicit_array_in_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg, GIArgument* out_arg [[maybe_unused]]) {
     uint8_t length_pos = self->contents.array.length_pos;
-    GIArgument* length_arg = &(state->in_cvalues[length_pos]);
+    GIArgument* length_arg = &state->in_cvalue(length_pos);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
 
@@ -893,7 +891,7 @@ static bool gjs_marshal_explicit_array_inout_release(
     JSContext* cx, GjsArgumentCache* self, GjsFunctionCallState* state,
     GIArgument* in_arg [[maybe_unused]], GIArgument* out_arg) {
     uint8_t length_pos = self->contents.array.length_pos;
-    GIArgument* length_arg = &(state->in_cvalues[length_pos]);
+    GIArgument* length_arg = &state->in_cvalue(length_pos);
     GITypeTag length_tag = self->contents.array.length_tag;
     size_t length = gjs_g_argument_get_array_length(length_tag, length_arg);
 
@@ -901,8 +899,7 @@ static bool gjs_marshal_explicit_array_inout_release(
     // the temporary C value we allocated, clearly we're responsible for
     // freeing it.
 
-    GIArgument* original_out_arg =
-        &(state->inout_original_cvalues[self->arg_pos]);
+    GIArgument* original_out_arg = &state->inout_original_cvalue(self->arg_pos);
     if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg) &&
         !gjs_g_argument_release_in_array(cx, GI_TRANSFER_NOTHING,
                                          &self->type_info, length,
