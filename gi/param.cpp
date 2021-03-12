@@ -15,6 +15,7 @@
 #include <jsapi.h>       // for JS_GetClass, JS_GetPropertyById
 #include <jspubtd.h>     // for JSProto_TypeError
 
+#include "gi/cwrapper.h"
 #include "gi/function.h"
 #include "gi/param.h"
 #include "gi/repo.h"
