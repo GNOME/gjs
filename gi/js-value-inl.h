@@ -213,7 +213,8 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
                  *out <
                      static_cast<T>(std::numeric_limits<WantedType>::lowest()));
 
-            if constexpr (std::is_integral_v<WantedType>)
+            if constexpr (std::is_integral_v<WantedType> &&
+                          std::is_floating_point_v<T>)
                 *out_of_range |= std::isnan(*out);
         }
         return ret;
