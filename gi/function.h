@@ -43,8 +43,8 @@ struct GjsCallbackTrampoline {
                           bool is_vfunc);
     ~GjsCallbackTrampoline();
 
-    constexpr GClosure* js_function() { return m_js_function; }
-    constexpr ffi_closure* closure() { return m_closure; }
+    constexpr GClosure* js_function() const { return m_js_function; }
+    constexpr ffi_closure* closure() const { return m_closure; }
 
     gatomicrefcount ref_count;
 
@@ -117,6 +117,9 @@ struct GjsFunctionCallState {
         delete[](out_cvalues - first_arg_offset());
         delete[](inout_original_cvalues - first_arg_offset());
     }
+
+    GjsFunctionCallState(const GjsFunctionCallState&) = delete;
+    GjsFunctionCallState& operator=(const GjsFunctionCallState&) = delete;
 
     constexpr int first_arg_offset() const { return is_method ? 2 : 1; }
 

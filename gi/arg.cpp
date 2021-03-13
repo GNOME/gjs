@@ -5,6 +5,7 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for strcmp, strlen, memcpy
 
 #include <string>

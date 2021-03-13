@@ -238,6 +238,8 @@ codespell:
   image: "docker.io/bilelmoussaoui/codespell"
   script:
     - codespell -S "*.png,*.po,*.jpg,.git,LICENSES" -f --builtin "code,clear" --skip="./installed-tests/js/jasmine.js" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
+  except:
+    - schedules
 
 license-check:
   when: on_success
@@ -247,6 +249,8 @@ license-check:
     - .gjs-alpine
   script:
     - reuse lint
+  except:
+    - schedules
 
 #############################################
 #                Manual Jobs                #

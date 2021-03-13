@@ -12,6 +12,7 @@
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for JS_DefineProperty, JS_NewPlainObject
 
+#include "gi/cwrapper.h"
 #include "gi/enumeration.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"

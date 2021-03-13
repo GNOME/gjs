@@ -1331,13 +1331,21 @@ describe('Virtual function', function () {
             expect(refcount).toEqual(expectedRefcount);
         });
     }
+    // Running in extra-gc mode can drop the JS reference, since it is not
+    // actually stored anywhere reachable from user code. However, we cannot
+    // force the extra GC under normal conditions because it occurs in the
+    // middle of C++ code.
+    const skipExtraGC = {};
+    const zeal = GLib.getenv('JS_GC_ZEAL');
+    if (zeal && zeal.startsWith('2,'))
+        skipExtraGC.skip = 'Skip during extra-gc.';
     // 1 reference = the object is owned only by JS.
     // 2 references = the object is owned by JS and the vfunc caller.
     testVfuncRefcount('return', 'none', 1);
-    testVfuncRefcount('return', 'full', 2);
+    testVfuncRefcount('return', 'full', 2, skipExtraGC);
     testVfuncRefcount('out', 'none', 1);
-    testVfuncRefcount('out', 'full', 2);
-    testVfuncRefcount('in', 'none', 2, {}, GIMarshallingTests.Object);
+    testVfuncRefcount('out', 'full', 2, skipExtraGC);
+    testVfuncRefcount('in', 'none', 2, skipExtraGC, GIMarshallingTests.Object);
     testVfuncRefcount('in', 'full', 1, {
         skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/275',
     }, GIMarshallingTests.Object);
