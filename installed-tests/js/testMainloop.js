@@ -21,7 +21,7 @@ describe('Mainloop.timeout_add()', function () {
 
         Mainloop.timeout_add(10, runTenTimes);
         Mainloop.timeout_add(10, runOnlyOnce);
-        neverRunSource = Mainloop.timeout_add(15000, neverRun);
+        neverRunSource = Mainloop.timeout_add(60000, neverRun);
     });
 
     it('runs a timeout function', function () {
