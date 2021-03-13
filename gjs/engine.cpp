@@ -35,51 +35,7 @@
 static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
                                   void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
-
-  /* Implementation note for mozjs 24:
-     sweeping happens in two phases, in the first phase all
-     GC things from the allocation arenas are queued for
-     sweeping, then the actual sweeping happens.
-     The first phase is marked by JSFINALIZE_GROUP_START,
-     the second one by JSFINALIZE_GROUP_END, and finally
-     we will see JSFINALIZE_COLLECTION_END at the end of
-     all GC.
-     (see jsgc.cpp, BeginSweepPhase/BeginSweepingZoneGroup
-     and SweepPhase, all called from IncrementalCollectSlice).
-     Incremental GC muds the waters, because BeginSweepPhase
-     is always run to entirety, but SweepPhase can be run
-     incrementally and mixed with JS code runs or even
-     native code, when MaybeGC/IncrementalGC return.
-
-     Luckily for us, objects are treated specially, and
-     are not really queued for deferred incremental
-     finalization (unless they are marked for background
-     sweeping). Instead, they are finalized immediately
-     during phase 1, so the following guarantees are
-     true (and we rely on them)
-     - phase 1 of GC will begin and end in the same JSAPI
-       call (ie, our callback will be called with GROUP_START
-       and the triggering JSAPI call will not return until
-       we see a GROUP_END)
-     - object finalization will begin and end in the same
-       JSAPI call
-     - therefore, if there is a finalizer frame somewhere
-       in the stack, gjs_runtime_is_sweeping() will return
-       true.
-
-     Comments in mozjs24 imply that this behavior might
-     change in the future, but it hasn't changed in
-     mozilla-central as of 2014-02-23. In addition to
-     that, the mozilla-central version has a huge comment
-     in a different portion of the file, explaining
-     why finalization of objects can't be mixed with JS
-     code, so we can probably rely on this behavior.
-  */
-
-  if (status == JSFINALIZE_GROUP_PREPARE)
-        gjs->set_sweeping(true);
-  else if (status == JSFINALIZE_GROUP_END)
-        gjs->set_sweeping(false);
+    gjs->set_finalize_status(status);
 }
 
 static void on_promise_unhandled_rejection(
