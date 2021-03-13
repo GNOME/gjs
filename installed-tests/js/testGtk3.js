@@ -191,6 +191,21 @@ describe('Gtk overrides', function () {
             'Gtk overrides avoid crashing and print a stack trace');
     });
 
+    it('GTK vfuncs can be explicitly called during disposition', function () {
+        let called;
+        const GoodLabel = GObject.registerClass(class GoodLabel extends Gtk.Label {
+            vfunc_destroy() {
+                called = true;
+            }
+        });
+
+        let label = new GoodLabel();
+        label.destroy();
+        expect(called).toBeTruthy();
+        label = null;
+        System.gc();
+    });
+
     it('accepts string in place of GdkAtom', function () {
         expect(() => Gtk.Clipboard.get(1)).toThrow();
         expect(() => Gtk.Clipboard.get(true)).toThrow();
