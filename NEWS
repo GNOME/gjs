@@ -1,3 +1,36 @@
+Version 1.67.3
+--------------
+
+- Closed bugs and merge requests:
+
+  * System.exit() doesn't work inside signal handler [#19, !565, Evan Welsh]
+  * GdkEvent subtypes trigger assert in Gtk4 [#365, !566, Evan Welsh]
+  * Replace g_memdup [#375, !567, Philip Chimento]
+  * 1.67.2: build fails with gcc 11 [#376, !568, Philip Chimento]
+  * Warnings introspecting array of boxed type as signal argument. [#377, !569,
+    Carlos Garnacho]
+  * Add list command to debugger [!571, Nasah Kuma]
+  * Assertion failure in enqueuePromiseJob [#349, !572, Philip Chimento]
+  * in interpreter Ctrl-c should exit inner shell if stuck [#98, !574, Philip
+    Chimento]
+  * Compiler ambiguity in enum-utils.h on operator overloading [#368, !576,
+    Chun-wei Fan]
+  * Fix GJS_DISABLE_JIT not fully disabling JIT [!575, Ivan Molodetskikh]
+  * Error running gjs built with prefix: g_object_new_is_valid_property: object
+    class 'GjsContext' has no property named 'program-path' [#381, !577, Sonny
+    Piers]
+  * Various maintenance [!578, !586, Philip Chimento]
+  * Add some profiling labels [!579, Ivan Molodetskikh]
+  * Some installed tests (introspection) segfault when GTK isn't available
+    [#383, !580, Olivier Tilloy]
+  * Installed tests do not install the js/modules subdir [#384, !581, Olivier
+    Tilloy]
+  * Installed tests fail because expected path doesn't include project name
+    [#385, !582, Olivier Tilloy]
+  * 1.67.2: Regress test hangs / timeouts on i686 [#379, !583, Marco Trevisan]
+  * object: Do not call any function on disposed GObject pointers [!585, Marco
+    Trevisan]
+
 Version 1.67.2
 --------------
 
