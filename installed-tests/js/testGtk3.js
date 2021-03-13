@@ -180,18 +180,30 @@ describe('Gtk overrides', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             '*destroy*');
 
-        let BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
+        const BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
             vfunc_destroy() {}
         });
 
-        let w = new Gtk.Window();
-        w.add(new BadLabel());
-
-        w.destroy();
+        new BadLabel();
         System.gc();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
             'Gtk overrides avoid crashing and print a stack trace');
+    });
+
+    it('GTK vfuncs can be explicitly called during disposition', function () {
+        let called;
+        const GoodLabel = GObject.registerClass(class GoodLabel extends Gtk.Label {
+            vfunc_destroy() {
+                called = true;
+            }
+        });
+
+        let label = new GoodLabel();
+        label.destroy();
+        expect(called).toBeTruthy();
+        label = null;
+        System.gc();
     });
 
     it('accepts string in place of GdkAtom', function () {

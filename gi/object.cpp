@@ -1297,7 +1297,9 @@ void
 ObjectInstance::release_native_object(void)
 {
     discard_wrapper();
-    if (m_uses_toggle_ref)
+    if (m_gobj_disposed)
+        m_ptr.release();
+    else if (m_uses_toggle_ref)
         g_object_remove_toggle_ref(m_ptr.release(), wrapped_gobj_toggle_notify,
                                    nullptr);
     else
@@ -1479,9 +1481,6 @@ ObjectInstance::disassociate_js_gobject(void)
 {
     bool had_toggle_down, had_toggle_up;
 
-    if (!m_gobj_disposed)
-        g_object_weak_unref(m_ptr.get(), wrapped_gobj_dispose_notify, this);
-
     auto& toggle_queue = ToggleQueue::get_default();
     std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr.get());
     if (had_toggle_down != had_toggle_up) {
@@ -1491,8 +1490,12 @@ ObjectInstance::disassociate_js_gobject(void)
             m_ptr.get(), type_name());
     }
 
-    /* Fist, remove the wrapper pointer from the wrapped GObject */
-    unset_object_qdata();
+    if (!m_gobj_disposed) {
+        g_object_weak_unref(m_ptr.get(), wrapped_gobj_dispose_notify, this);
+
+        /* Fist, remove the wrapper pointer from the wrapped GObject */
+        unset_object_qdata();
+    }
 
     /* Now release all the resources the current wrapper has */
     invalidate_closure_list(&m_closures);
