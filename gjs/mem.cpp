@@ -15,15 +15,15 @@
 namespace Gjs {
 namespace Memory {
 namespace Counters {
-#define GJS_DEFINE_COUNTER(name) Counter name(#name);
+#define GJS_DEFINE_COUNTER(name, ix) Counter name(#name);
 
-GJS_DEFINE_COUNTER(everything)
+GJS_DEFINE_COUNTER(everything, -1)
 GJS_FOR_EACH_COUNTER(GJS_DEFINE_COUNTER)
 }  // namespace Counters
 }  // namespace Memory
 }  // namespace Gjs
 
-#define GJS_LIST_COUNTER(name) &Gjs::Memory::Counters::name,
+#define GJS_LIST_COUNTER(name, ix) &Gjs::Memory::Counters::name,
 
 static Gjs::Memory::Counter* counters[] = {
     GJS_FOR_EACH_COUNTER(GJS_LIST_COUNTER)};
