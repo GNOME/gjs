@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2019 Canonical, Ltd.
 
 const System = imports.system;
-const GObject = imports.gi.GObject;
+const {Gio, GObject} = imports.gi;
 
 describe('System.addressOf()', function () {
     it('gives different results for different objects', function () {
@@ -53,6 +53,17 @@ describe('System.gc()', function () {
 describe('System.dumpHeap()', function () {
     it('throws but does not crash when given a nonexistent path', function () {
         expect(() => System.dumpHeap('/does/not/exist')).toThrow();
+    });
+});
+
+describe('System.dumpMemoryInfo()', function () {
+    it('', function () {
+        expect(() => System.dumpMemoryInfo('memory.md')).not.toThrow();
+        expect(() => Gio.File.new_for_path('memory.md').delete(null)).not.toThrow();
+    });
+
+    it('throws but does not crash when given a nonexistent path', function () {
+        expect(() => System.dumpMemoryInfo('/does/not/exist')).toThrowError(/\/does\/not\/exist/);
     });
 });
 
