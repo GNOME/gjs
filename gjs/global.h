@@ -42,6 +42,8 @@ enum class GjsGlobalSlot : uint32_t {
     // Stores the module registry (a Map object)
     MODULE_REGISTRY,
     NATIVE_REGISTRY,
+    // prettyPrint() function defined in JS but used internally in C++
+    PRETTY_PRINT_FUNC,
     PROTOTYPE_gtype,
     PROTOTYPE_importer,
     PROTOTYPE_function,

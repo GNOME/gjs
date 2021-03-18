@@ -5,7 +5,23 @@
 (function (exports) {
     'use strict';
 
-    const {print, printerr, log, logError} = imports._print;
+    const {
+        print,
+        printerr,
+        log: nativeLog,
+        logError: nativeLogError,
+        setPrettyPrintFunction,
+    } = imports._print;
+
+    function log(...args) {
+        return nativeLog(args.map(prettyPrint).join(' '));
+    }
+
+    function logError(e, ...args) {
+        if (args.length === 0)
+            return nativeLogError(e);
+        return nativeLogError(e, args.map(prettyPrint).join(' '));
+    }
 
     Object.defineProperties(exports, {
         ARGV: {
@@ -41,4 +57,5 @@
             value: logError,
         },
     });
+    setPrettyPrintFunction(exports, prettyPrint);
 })(globalThis);

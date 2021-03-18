@@ -17,8 +17,10 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <jsapi.h>
 
+#include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "modules/print.h"
 
@@ -135,12 +137,38 @@ static bool gjs_printerr(JSContext* context, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+// The pretty-print functionality is best written in JS, but needs to be used
+// from C++ code. This stores the prettyPrint() function in a slot on the global
+// object so that it can be used internally by the Console module.
+// This function is not available to user code.
+GJS_JSAPI_RETURN_CONVENTION
+static bool set_pretty_print_function(JSContext*, unsigned argc,
+                                      JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    // can only be called internally, so OK to assert correct arguments
+    g_assert(args.length() == 2 && "setPrettyPrintFunction takes 2 arguments");
+
+    JS::Value v_global = args[0];
+    JS::Value v_func = args[1];
+
+    g_assert(v_global.isObject() && "first argument must be an object");
+    g_assert(v_func.isObject() && "second argument must be an object");
+
+    gjs_set_global_slot(&v_global.toObject(), GjsGlobalSlot::PRETTY_PRINT_FUNC,
+                        v_func);
+
+    args.rval().setUndefined();
+    return true;
+}
+
 // clang-format off
 static constexpr JSFunctionSpec funcs[] = {
     JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
+    JS_FN("setPrettyPrintFunction", set_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 // clang-format on
 
