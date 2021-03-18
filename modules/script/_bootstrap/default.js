@@ -5,7 +5,25 @@
 (function (exports) {
     'use strict';
 
-    const {print, printerr, log, logError} = imports._print;
+    const {
+        print,
+        printerr,
+        log: nativeLog,
+        logError: nativeLogError,
+        prettyPrintSymbol,
+    } = imports._print;
+
+    function prettyPrint(value) {
+        // to be filled in
+    }
+
+    function log(...args) {
+        return nativeLog(args.map(prettyPrint).join(' '));
+    }
+
+    function logError(e, ...args) {
+        return nativeLogError(e, args.map(prettyPrint).join(' '));
+    }
 
     Object.defineProperties(exports, {
         ARGV: {
@@ -39,6 +57,12 @@
             enumerable: true,
             writable: true,
             value: logError,
+        },
+        [prettyPrintSymbol]: {
+            configurable: false,
+            enumerable: true,
+            writable: true,
+            value: prettyPrint,
         },
     });
 })(globalThis);
