@@ -1082,10 +1082,18 @@ static void wrapped_gobj_dispose_notify(
                         where_the_object_was);
 }
 
+static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
+                                       gboolean is_last_ref);
+
 void
 ObjectInstance::gobj_dispose_notify(void)
 {
     m_gobj_disposed = true;
+
+    if (m_uses_toggle_ref) {
+        g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, nullptr);
+        wrapped_gobj_toggle_notify(nullptr, m_ptr, TRUE);
+    }
 }
 
 void ObjectInstance::iterate_wrapped_gobjects(
@@ -1297,7 +1305,7 @@ void
 ObjectInstance::release_native_object(void)
 {
     discard_wrapper();
-    if (m_gobj_disposed)
+    if (m_uses_toggle_ref && m_gobj_disposed)
         m_ptr.release();
     else if (m_uses_toggle_ref)
         g_object_remove_toggle_ref(m_ptr.release(), wrapped_gobj_toggle_notify,
