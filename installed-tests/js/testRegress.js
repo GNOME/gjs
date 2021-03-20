@@ -285,6 +285,11 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    it('integer array with static length', function () {
+        const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        expect(() => Regress.test_array_static_in_int(arr)).not.toThrow();
+    });
+
     it("string array that's const in C", function () {
         expect(Regress.test_strv_out_c()).toEqual(['thanks', 'for', 'all', 'the', 'fish']);
     });
@@ -925,6 +930,113 @@ describe('Life, the Universe and Everything', function () {
             expect(v).toEqual(jasmine.any(Regress.TestObj));
         });
 
+        describe('GProperty', function () {
+            let t, boxed, hashTable, hashTable2, list2, string, gtype, byteArray;
+            const list = null;
+            const int = 42;
+            const double = Math.PI;
+            const double2 = Math.E;
+
+            beforeEach(function () {
+                boxed = new Regress.TestBoxed({some_int8: 127});
+                hashTable = {a: 1, b: 2};
+                hashTable2 = {c: 3, d: 4};
+                list2 = ['j', 'k', 'l'];
+                string = 'cauliflower';
+                gtype = GObject.Object.$gtype;
+                byteArray = Uint8Array.from('abcd', c => c.charCodeAt(0));
+                t = new Regress.TestObj({
+                    boxed,
+                    // hashTable,
+                    list,
+                    // pptrarray: list,
+                    // hashTableOld: hashTable,
+                    listOld: list,
+                    int,
+                    float: double,
+                    double,
+                    string,
+                    gtype,
+                    // byteArray,
+                });
+            });
+
+            it('Boxed type', function () {
+                expect(t.boxed.some_int8).toBe(127);
+                const boxed2 = new Regress.TestBoxed({some_int8: 31});
+                t.boxed = boxed2;
+                expect(t.boxed.some_int8).toBe(31);
+            });
+
+            xit('Hash table', function () {
+                expect(t.hashTable).toBe(hashTable);
+                t.hashTable = hashTable2;
+                expect(t.hashTable).toBe(hashTable2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+            xit('List', function () {
+                expect(t.list).toBe(list);
+                t.list = list2;
+                expect(t.list).toBe(list2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+            xit('Pointer array', function () {
+                expect(t.pptrarray).toBe(list);
+                t.pptrarray = list2;
+                expect(t.pptrarray).toBe(list2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+            xit('Hash table with old-style annotation', function () {
+                expect(t.hashTableOld).toBe(hashTable);
+                t.hashTableOld = hashTable2;
+                expect(t.hashTableOld).toBe(hashTable2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+            xit('List with old-style annotation', function () {
+                expect(t.listOld).toBe(list);
+                t.listOld = list2;
+                expect(t.listOld).toBe(list2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+            it('Integer', function () {
+                expect(t.int).toBe(int);
+                t.int = 35;
+                expect(t.int).toBe(35);
+            });
+
+            it('Float', function () {
+                expect(t.float).toBeCloseTo(double);
+                t.float = double2;
+                expect(t.float).toBeCloseTo(double2);
+            });
+
+            it('Double', function () {
+                expect(t.double).toBeCloseTo(double);
+                t.double = double2;
+                expect(t.double).toBeCloseTo(double2);
+            });
+
+            it('String', function () {
+                expect(t.string).toBe(string);
+                t.string = 'string2';
+                expect(t.string).toBe('string2');
+            });
+
+            xit('GType object', function () {
+                expect(t.gtype).toBe(gtype);
+                const gtype2 = GObject.InitiallyUnowned.$gtype;
+                t.gtype = gtype2;
+                expect(t.gtype).toBe(gtype2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+            xit('Byte array', function () {
+                expect(t.byteArray).toBe(byteArray);
+                const byteArray2 = Uint8Array.from('efgh', c => c.charCodeAt(0));
+                t.byteArray = byteArray2;
+                expect(t.byteArray).toBe(byteArray2);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/276');
+        });
+
         describe('Object-valued GProperty', function () {
             let o1, t1, t2;
             beforeEach(function () {
@@ -1250,6 +1362,7 @@ describe('Life, the Universe and Everything', function () {
                 int: 42,
                 float: Math.PI,
                 double: Math.E,
+                boolean: true,
             });
         });
 
@@ -1266,6 +1379,12 @@ describe('Life, the Universe and Everything', function () {
 
         it('can call an instance method that overrides the parent class', function () {
             expect(subobj.instance_method()).toEqual(0);
+        });
+
+        it('can have its own properties', function () {
+            expect(subobj.boolean).toBeTruthy();
+            subobj.boolean = false;
+            expect(subobj.boolean).toBeFalsy();
         });
     });
 
@@ -1400,6 +1519,12 @@ describe('Life, the Universe and Everything', function () {
         const o = new Regress.TestObj();
         const callback = jasmine.createSpy('callback');
         o.instance_method_callback(callback);
+        expect(callback).toHaveBeenCalled();
+    });
+
+    it('static method taking a callback', function () {
+        const callback = jasmine.createSpy('callback');
+        Regress.TestObj.static_method_callback(callback);
         expect(callback).toHaveBeenCalled();
     });
 
