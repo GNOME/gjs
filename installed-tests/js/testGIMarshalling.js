@@ -1500,22 +1500,22 @@ describe('Inherited GObject', function () {
     ['SubObject', 'SubSubObject'].forEach(klass => {
         describe(klass, function () {
             it('has a parent method that can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 42});
+                const o = new GIMarshallingTests[klass]({int: 42});
                 expect(() => o.method()).not.toThrow();
             });
 
             it('has a method that can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 0});
+                const o = new GIMarshallingTests[klass]({int: 0});
                 expect(() => o.sub_method()).not.toThrow();
             });
 
             it('has an overridden method that can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 0});
+                const o = new GIMarshallingTests[klass]({int: 0});
                 expect(() => o.overwritten_method()).not.toThrow();
             });
 
-            it('has a method with default implementation can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 42});
+            it('has a method with default implementation that can be called', function () {
+                const o = new GIMarshallingTests[klass]({int: 42});
                 o.method_with_default_implementation(43);
                 expect(o.int).toEqual(43);
             });
