@@ -1,3 +1,13 @@
+Version 1.68.0
+--------------
+
+- Closed bugs and merge requests:
+
+  * 40.rc session crashes in gjs on unlocking (sometimes) [#387, !588, Marco
+    Trevisan]
+  * 40.rc: installed-tests installed despite explicitly disabled [#388, !589,
+    Philip Chimento]
+
 Version 1.67.3
 --------------
 
