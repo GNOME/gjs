@@ -1258,14 +1258,12 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     size_t offset = is_method ? 2 : 1;
     m_arguments = g_new0(GjsArgumentCache, n_args + offset) + offset;
 
-    if (is_method &&
-        !gjs_arg_cache_build_instance(context, &m_arguments[-2], m_info))
-        return false;
+    if (is_method)
+        gjs_arg_cache_build_instance(&m_arguments[-2], m_info);
 
     bool inc_counter;
-    if (!gjs_arg_cache_build_return(context, &m_arguments[-1], m_arguments,
-                                    m_info, &inc_counter))
-        return false;
+    gjs_arg_cache_build_return(&m_arguments[-1], m_arguments, m_info,
+                               &inc_counter);
 
     if (inc_counter)
         m_js_out_argc++;
@@ -1280,10 +1278,8 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
         g_callable_info_load_arg(m_info, i, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
 
-        if (!gjs_arg_cache_build_arg(context, &m_arguments[i], m_arguments, i,
-                                     direction, &arg_info, m_info,
-                                     &inc_counter))
-            return false;
+        gjs_arg_cache_build_arg(&m_arguments[i], m_arguments, i, direction,
+                                &arg_info, m_info, &inc_counter);
 
         if (inc_counter) {
             switch (direction) {

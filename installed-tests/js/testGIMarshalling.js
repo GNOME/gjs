@@ -546,8 +546,10 @@ describe('GArray', function () {
         // the test should be replaced with the one above when issue
         // https://gitlab.gnome.org/GNOME/gjs/issues/106 is fixed.
         it('marshals as a transfer-full caller-allocated out parameter throws errors', function () {
+            // should throw when called, not when the function object is created
+            expect(() => GIMarshallingTests.garray_utf8_full_out_caller_allocated).not.toThrow();
             expect(() => GIMarshallingTests.garray_utf8_full_out_caller_allocated())
-                .toThrowError(/Unsupported type array.*\(out caller-allocates\)/);
+                .toThrowError(/type array.*\(out caller-allocates\)/);
         });
     });
 

@@ -12,6 +12,8 @@ const System = imports.system;
 
 describe('GLib.DestroyNotify parameter', function () {
     it('throws when encountering a GDestroyNotify not associated with a callback', function () {
+        // should throw when called, not when the function object is created
+        expect(() => Gio.MemoryInputStream.new_from_data).not.toThrow();
         // the 'destroy' argument applies to the data, which is not supported in
         // gobject-introspection
         expect(() => Gio.MemoryInputStream.new_from_data('foobar'))
