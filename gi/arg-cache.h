@@ -24,6 +24,18 @@
 struct GjsFunctionCallState;
 struct GjsArgumentCache;
 
+enum NotIntrospectableReason : uint8_t {
+    CALLBACK_OUT,
+    DESTROY_NOTIFY_NO_CALLBACK,
+    DESTROY_NOTIFY_NO_USER_DATA,
+    INTERFACE_TRANSFER_CONTAINER,
+    OUT_CALLER_ALLOCATES_NON_STRUCT,
+    UNREGISTERED_BOXED_WITH_TRANSFER,
+    UNREGISTERED_UNION,
+    UNSUPPORTED_TYPE,
+    LAST_REASON
+};
+
 struct GjsArgumentMarshallers {
     bool (*in)(JSContext* cx, GjsArgumentCache* cache,
                GjsFunctionCallState* state, GIArgument* in_argument,
@@ -81,6 +93,9 @@ struct GjsArgumentCache {
 
         // out caller allocates (FIXME: should be in object)
         size_t caller_allocates_size;
+
+        // not introspectable
+        NotIntrospectableReason reason;
     } contents;
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -158,20 +173,17 @@ static_assert(sizeof(GjsArgumentCache) <= 112,
               "function.");
 #endif  // x86-64 clang
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
+void gjs_arg_cache_build_arg(GjsArgumentCache* self,
                              GjsArgumentCache* arguments, uint8_t gi_index,
                              GIDirection direction, GIArgInfo* arg,
                              GICallableInfo* callable, bool* inc_counter_out);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_arg_cache_build_return(JSContext* cx, GjsArgumentCache* self,
+void gjs_arg_cache_build_return(GjsArgumentCache* self,
                                 GjsArgumentCache* arguments,
                                 GICallableInfo* callable,
                                 bool* inc_counter_out);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
+void gjs_arg_cache_build_instance(GjsArgumentCache* self,
                                   GICallableInfo* callable);
 
 [[nodiscard]] size_t gjs_g_argument_get_array_length(GITypeTag tag,

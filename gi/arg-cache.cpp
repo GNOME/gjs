@@ -114,30 +114,6 @@ static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool throw_not_introspectable_argument(JSContext* cx,
-                                              GICallableInfo* function,
-                                              const char* arg_name) {
-    gjs_throw(cx,
-              "Function %s.%s cannot be called: argument '%s' is not "
-              "introspectable.",
-              g_base_info_get_namespace(function),
-              g_base_info_get_name(function), arg_name);
-    return false;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool throw_not_introspectable_unboxed_type(JSContext* cx,
-                                                  GICallableInfo* function,
-                                                  const char* arg_name) {
-    gjs_throw(cx,
-              "Function %s.%s cannot be called: unexpected unregistered type "
-              "for argument '%s'.",
-              g_base_info_get_namespace(function),
-              g_base_info_get_name(function), arg_name);
-    return false;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
 static bool report_typeof_mismatch(JSContext* cx, const char* arg_name,
                                    JS::HandleValue value,
                                    ExpectedType expected) {
@@ -179,6 +155,34 @@ static bool gjs_marshal_skipped_in(JSContext*, GjsArgumentCache*,
                                    GjsFunctionCallState*, GIArgument*,
                                    JS::HandleValue) {
     return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_marshal_not_introspectable_in(JSContext* cx,
+                                              GjsArgumentCache* self,
+                                              GjsFunctionCallState* state,
+                                              GIArgument*, JS::HandleValue) {
+    static const char* reason_strings[] = {
+        "callback out-argument",
+        "DestroyNotify argument with no callback",
+        "DestroyNotify argument with no user data",
+        "type not supported for (transfer container)",
+        "type not supported for (out caller-allocates)",
+        "boxed type with transfer not registered as a GType",
+        "union type not registered as a GType",
+        "type not supported by introspection",
+    };
+    static_assert(
+        G_N_ELEMENTS(reason_strings) == NotIntrospectableReason::LAST_REASON,
+        "Explanations must match the values in NotIntrospectableReason");
+
+    gjs_throw(cx,
+              "Function %s() cannot be called: argument '%s' with type %s is "
+              "not introspectable because it has a %s",
+              state->display_name().get(), self->arg_name,
+              g_type_tag_to_string(g_type_info_get_tag(&self->type_info)),
+              reason_strings[self->contents.reason]);
+    return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1051,9 +1055,9 @@ static const GjsArgumentMarshallers fallback_out_marshallers = {
 };
 
 static const GjsArgumentMarshallers invalid_in_marshallers = {
-    nullptr,  // no in, will cause the function invocation code to throw
-    gjs_marshal_skipped_out,  // out
-    gjs_marshal_skipped_release,  // release
+    gjs_marshal_not_introspectable_in,  // in, always throws
+    gjs_marshal_skipped_out,            // out
+    gjs_marshal_skipped_release,        // release
 };
 
 static const GjsArgumentMarshallers enum_in_marshallers = {
@@ -1253,7 +1257,7 @@ static inline void gjs_arg_cache_set_skip_all(GjsArgumentCache* self) {
         static_cast<GjsArgumentFlags>(GjsArgumentFlags::SKIP_IN | GjsArgumentFlags::SKIP_OUT);
 }
 
-bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
+void gjs_arg_cache_build_return(GjsArgumentCache* self,
                                 GjsArgumentCache* arguments,
                                 GICallableInfo* callable,
                                 bool* inc_counter_out) {
@@ -1264,7 +1268,7 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
     if (g_type_info_get_tag(&self->type_info) == GI_TYPE_TAG_VOID) {
         *inc_counter_out = false;
         gjs_arg_cache_set_skip_all(self);
-        return true;
+        return;
     }
 
     *inc_counter_out = true;
@@ -1291,7 +1295,7 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
             g_arg_info_load_type(&length_arg, &length_type);
             self->contents.array.length_tag = g_type_info_get_tag(&length_type);
 
-            return true;
+            return;
         }
     }
 
@@ -1299,8 +1303,6 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
     // used in the failure release path)
     self->flags = static_cast<GjsArgumentFlags>(self->flags | GjsArgumentFlags::SKIP_IN);
     self->marshallers = &return_value_marshallers;
-
-    return true;
 }
 
 static void gjs_arg_cache_build_enum_bounds(GjsArgumentCache* self,
@@ -1355,28 +1357,29 @@ static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
            strcmp("Gdk", g_base_info_get_namespace(info)) == 0;
 }
 
-static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
-                                                 GjsArgumentCache* self,
-                                                 GICallableInfo* callable,
+static void gjs_arg_cache_build_interface_in_arg(GjsArgumentCache* self,
                                                  GIBaseInfo* interface_info,
                                                  bool is_instance_param) {
     GIInfoType interface_type = g_base_info_get_type(interface_info);
 
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
-    if (G_UNLIKELY(self->transfer == GI_TRANSFER_CONTAINER))
-        return throw_not_introspectable_argument(cx, callable, self->arg_name);
+    if (G_UNLIKELY(self->transfer == GI_TRANSFER_CONTAINER)) {
+        self->marshallers = &invalid_in_marshallers;
+        self->contents.reason = INTERFACE_TRANSFER_CONTAINER;
+        return;
+    }
 
     switch (interface_type) {
         case GI_INFO_TYPE_ENUM:
             gjs_arg_cache_build_enum_bounds(self, interface_info);
             self->marshallers = &enum_in_marshallers;
-            return true;
+            return;
 
         case GI_INFO_TYPE_FLAGS:
             gjs_arg_cache_build_flags_mask(self, interface_info);
             self->marshallers = &flags_in_marshallers;
-            return true;
+            return;
 
         case GI_INFO_TYPE_STRUCT:
             if (g_struct_info_is_foreign(interface_info)) {
@@ -1384,7 +1387,7 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                     self->marshallers = &foreign_struct_instance_in_marshallers;
                 else
                     self->marshallers = &foreign_struct_in_marshallers;
-                return true;
+                return;
             }
             [[fallthrough]];
         case GI_INFO_TYPE_BOXED:
@@ -1405,13 +1408,13 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                     self->marshallers = &gvalue_in_transfer_none_marshallers;
                 else
                     self->marshallers = &gvalue_in_marshallers;
-                return true;
+                return;
             }
 
             if (is_gdk_atom(interface_info)) {
                 // Fall back to the generic marshaller
                 self->marshallers = &fallback_interface_in_marshallers;
-                return true;
+                return;
             }
 
             if (gtype == G_TYPE_CLOSURE) {
@@ -1419,7 +1422,7 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                     self->marshallers = &gclosure_in_transfer_none_marshallers;
                 else
                     self->marshallers = &gclosure_in_marshallers;
-                return true;
+                return;
             }
 
             if (gtype == G_TYPE_BYTES) {
@@ -1427,51 +1430,52 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
                     self->marshallers = &gbytes_in_transfer_none_marshallers;
                 else
                     self->marshallers = &gbytes_in_marshallers;
-                return true;
+                return;
             }
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
                 self->marshallers = &object_in_marshallers;
-                return true;
+                return;
             }
 
             if (g_type_is_a(gtype, G_TYPE_PARAM)) {
                 // Fall back to the generic marshaller
                 self->marshallers = &fallback_interface_in_marshallers;
-                return true;
+                return;
             }
 
             if (interface_type == GI_INFO_TYPE_UNION) {
                 if (gtype == G_TYPE_NONE) {
                     // Can't handle unions without a GType
-                    return throw_not_introspectable_unboxed_type(
-                        cx, callable, self->arg_name);
+                    self->marshallers = &invalid_in_marshallers;
+                    self->contents.reason = UNREGISTERED_UNION;
+                    return;
                 }
 
                 self->marshallers = &union_in_marshallers;
-                return true;
+                return;
             }
 
             if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
                 self->marshallers = &fundamental_in_marshallers;
-                return true;
+                return;
             }
 
             if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
                 self->marshallers = &interface_in_marshallers;
-                return true;
+                return;
             }
 
             // generic boxed type
             if (gtype == G_TYPE_NONE && self->transfer != GI_TRANSFER_NOTHING) {
                 // Can't transfer ownership of a structure type not
                 // registered as a boxed
-                return throw_not_introspectable_unboxed_type(cx, callable,
-                                                             self->arg_name);
+                self->marshallers = &invalid_in_marshallers;
+                self->contents.reason = UNREGISTERED_BOXED_WITH_TRANSFER;
             }
 
             self->marshallers = &boxed_in_marshallers;
-            return true;
+            return;
         } break;
 
         case GI_INFO_TYPE_INVALID:
@@ -1490,15 +1494,12 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
         default:
             // Don't know how to handle this interface type (should not happen
             // in practice, for typelibs emitted by g-ir-compiler)
-            return throw_not_introspectable_argument(cx, callable,
-                                                     self->arg_name);
+            self->marshallers = &invalid_in_marshallers;
+            self->contents.reason = UNSUPPORTED_TYPE;
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
-                                              GjsArgumentCache* self,
-                                              GICallableInfo* callable,
+static void gjs_arg_cache_build_normal_in_arg(GjsArgumentCache* self,
                                               GITypeTag tag) {
     // "Normal" in arguments are those arguments that don't require special
     // processing, and don't touch other arguments.
@@ -1562,9 +1563,9 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
         case GI_TYPE_TAG_INTERFACE: {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(&self->type_info);
-            return gjs_arg_cache_build_interface_in_arg(
-                cx, self, callable, interface_info,
-                /* is_instance_param = */ false);
+            gjs_arg_cache_build_interface_in_arg(
+                self, interface_info, /* is_instance_param = */ false);
+            return;
         }
 
         case GI_TYPE_TAG_ARRAY:
@@ -1576,11 +1577,9 @@ static bool gjs_arg_cache_build_normal_in_arg(JSContext* cx,
             // FIXME: Falling back to the generic marshaller
             self->marshallers = &fallback_in_marshallers;
     }
-
-    return true;
 }
 
-bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
+void gjs_arg_cache_build_instance(GjsArgumentCache* self,
                                   GICallableInfo* callable) {
     GIBaseInfo* interface_info = g_base_info_get_container(callable);  // !owned
 
@@ -1596,23 +1595,22 @@ bool gjs_arg_cache_build_instance(JSContext* cx, GjsArgumentCache* self,
     if (info_type == GI_INFO_TYPE_STRUCT &&
         g_struct_info_is_gtype_struct(interface_info)) {
         self->marshallers = &gtype_struct_instance_in_marshallers;
-        return true;
+        return;
     }
     if (info_type == GI_INFO_TYPE_OBJECT) {
         GType gtype = g_registered_type_info_get_g_type(interface_info);
 
         if (g_type_is_a(gtype, G_TYPE_PARAM)) {
             self->marshallers = &param_instance_in_marshallers;
-            return true;
+            return;
         }
     }
 
-    return gjs_arg_cache_build_interface_in_arg(cx, self, callable,
-                                                interface_info,
-                                                /* is_instance_param = */ true);
+    gjs_arg_cache_build_interface_in_arg(self, interface_info,
+                                         /* is_instance_param = */ true);
 }
 
-bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
+void gjs_arg_cache_build_arg(GjsArgumentCache* self,
                              GjsArgumentCache* arguments, uint8_t gi_index,
                              GIDirection direction, GIArgInfo* arg,
                              GICallableInfo* callable, bool* inc_counter_out) {
@@ -1641,11 +1639,9 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
     if (direction == GI_DIRECTION_OUT &&
         (flags & GjsArgumentFlags::CALLER_ALLOCATES)) {
         if (type_tag != GI_TYPE_TAG_INTERFACE) {
-            gjs_throw(cx,
-                      "Unsupported type %s for argument %s with (out "
-                      "caller-allocates)",
-                      g_type_tag_to_string(type_tag), self->arg_name);
-            return false;
+            self->marshallers = &invalid_in_marshallers;
+            self->contents.reason = OUT_CALLER_ALLOCATES_NON_STRUCT;
+            return;
         }
 
         GjsAutoBaseInfo interface_info =
@@ -1660,17 +1656,15 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         } else if (interface_type == GI_INFO_TYPE_UNION) {
             size = g_union_info_get_size(interface_info);
         } else {
-            gjs_throw(cx,
-                      "Unsupported type %s for argument %s with (out "
-                      "caller-allocates)",
-                      g_info_type_to_string(interface_type), self->arg_name);
-            return false;
+            self->marshallers = &invalid_in_marshallers;
+            self->contents.reason = OUT_CALLER_ALLOCATES_NON_STRUCT;
+            return;
         }
 
         self->marshallers = &caller_allocates_out_marshallers;
         self->contents.caller_allocates_size = size;
 
-        return true;
+        return;
     }
 
     if (type_tag == GI_TYPE_TAG_INTERFACE) {
@@ -1679,12 +1673,9 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
         if (interface_info.type() == GI_INFO_TYPE_CALLBACK) {
             if (direction != GI_DIRECTION_IN) {
                 // Can't do callbacks for out or inout
-                gjs_throw(cx,
-                          "Function %s.%s has a callback out-argument %s, not "
-                          "supported",
-                          g_base_info_get_namespace(callable),
-                          g_base_info_get_name(callable), self->arg_name);
-                return false;
+                self->marshallers = &invalid_in_marshallers;
+                self->contents.reason = CALLBACK_OUT;
+                return;
             }
 
             if (strcmp(interface_info.name(), "DestroyNotify") == 0 &&
@@ -1696,6 +1687,7 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                 // then this is probably an unsupported function, so the
                 // function invocation code will check this and throw.
                 self->marshallers = &invalid_in_marshallers;
+                self->contents.reason = DESTROY_NOTIFY_NO_CALLBACK;
                 *inc_counter_out = false;
             } else {
                 self->marshallers = &callback_in_marshallers;
@@ -1710,12 +1702,9 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                     gjs_arg_cache_set_skip_all(&arguments[closure_pos]);
 
                 if (destroy_pos >= 0 && closure_pos < 0) {
-                    gjs_throw(cx,
-                              "Function %s.%s has a GDestroyNotify but no "
-                              "user_data, not supported",
-                              g_base_info_get_namespace(callable),
-                              g_base_info_get_name(callable));
-                    return false;
+                    self->marshallers = &invalid_in_marshallers;
+                    self->contents.reason = DESTROY_NOTIFY_NO_USER_DATA;
+                    return;
                 }
 
                 self->contents.callback.scope = g_arg_info_get_scope(arg);
@@ -1723,7 +1712,7 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                 self->set_callback_closure_pos(closure_pos);
             }
 
-            return true;
+            return;
         }
     }
 
@@ -1765,17 +1754,14 @@ bool gjs_arg_cache_build_arg(JSContext* cx, GjsArgumentCache* self,
                 *inc_counter_out = false;
             }
 
-            return true;
+            return;
         }
     }
 
     if (direction == GI_DIRECTION_IN)
-        return gjs_arg_cache_build_normal_in_arg(cx, self, callable, type_tag);
-
-    if (direction == GI_DIRECTION_INOUT)
+        gjs_arg_cache_build_normal_in_arg(self, type_tag);
+    else if (direction == GI_DIRECTION_INOUT)
         self->marshallers = &fallback_inout_marshallers;
     else
         self->marshallers = &fallback_out_marshallers;
-
-    return true;
 }
