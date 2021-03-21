@@ -766,6 +766,10 @@ describe('Auto accessor generation', function () {
                 'Long-named property', GObject.ParamFlags.READWRITE, 0, 100, 48),
             'construct': GObject.ParamSpec.int('construct', 'Construct', 'Construct',
                 GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT, 0, 100, 96),
+            'construct-only': GObject.ParamSpec.int('construct-only', 'Construct only',
+                'Construct-only property',
+                GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
+                0, 100, 80),
             'snake-name': GObject.ParamSpec.int('snake-name', 'Snake name',
                 'Snake-cased property', GObject.ParamFlags.READWRITE, 0, 100, 36),
             'camel-name': GObject.ParamSpec.int('camel-name', 'Camel name',
@@ -844,8 +848,11 @@ describe('Auto accessor generation', function () {
 
     it("initial value is the param spec's default value", function () {
         expect(a.simple).toEqual(24);
+        expect(a.long_long_name).toEqual(48);
+        expect(a.longLongName).toEqual(48);
         expect(a['long-long-name']).toEqual(48);
         expect(a.construct).toEqual(96);
+        expect(a.construct_only).toEqual(80);
     });
 
     it('notify when the property changes', function () {

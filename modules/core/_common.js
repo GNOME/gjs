@@ -59,6 +59,8 @@ function _generateAccessors(pspec, propdesc, GObject) {
 
 function _checkAccessors(proto, pspec, GObject) {
     const {name, flags} = pspec;
+    if (flags & GObject.ParamFlags.CONSTRUCT_ONLY)
+        return;
 
     const underscoreName = name.replace(/-/g, '_');
     const camelName = name.replace(/-([a-z])/g, match => match[1].toUpperCase());
