@@ -44,7 +44,7 @@ struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 
 class JSLinearString;
 
-char* gjs_hyphen_to_underscore(const char* str) {
+GjsAutoChar gjs_hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);
     char *retval = s;
     while (*(s++) != '\0') {
