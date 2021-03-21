@@ -853,6 +853,25 @@ describe('Auto accessor generation', function () {
         expect(a['long-long-name']).toEqual(48);
         expect(a.construct).toEqual(96);
         expect(a.construct_only).toEqual(80);
+        expect(a.constructOnly).toEqual(80);
+        expect(a['construct-only']).toEqual(80);
+    });
+
+    it('set properties at construct time', function () {
+        a = new AutoAccessors({
+            simple: 1,
+            longLongName: 1,
+            construct: 1,
+            'construct-only': 1,
+        });
+        expect(a.simple).toEqual(1);
+        expect(a.long_long_name).toEqual(1);
+        expect(a.longLongName).toEqual(1);
+        expect(a['long-long-name']).toEqual(1);
+        expect(a.construct).toEqual(1);
+        expect(a.construct_only).toEqual(1);
+        expect(a.constructOnly).toEqual(1);
+        expect(a['construct-only']).toEqual(1);
     });
 
     it('notify when the property changes', function () {

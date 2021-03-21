@@ -542,6 +542,7 @@ bool gjs_object_require_converted_property(JSContext       *context,
 [[nodiscard]] std::string gjs_debug_id(jsid id);
 
 [[nodiscard]] char* gjs_hyphen_to_underscore(const char* str);
+[[nodiscard]] GjsAutoChar gjs_hyphen_to_camel(const char* str);
 
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
 [[nodiscard]] std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str);

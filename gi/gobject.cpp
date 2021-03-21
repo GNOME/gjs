@@ -55,10 +55,13 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 
     GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
 
-    if (pspec->flags & G_PARAM_CONSTRUCT_ONLY)
-        return JS_DefineProperty(
-            cx, object, underscore_name, jsvalue,
-            GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
+    if (pspec->flags & G_PARAM_CONSTRUCT_ONLY) {
+        unsigned flags = GJS_MODULE_PROP_FLAGS | JSPROP_READONLY;
+        GjsAutoChar camel_name = gjs_hyphen_to_camel(pspec->name);
+        return JS_DefineProperty(cx, object, underscore_name, jsvalue, flags) &&
+               JS_DefineProperty(cx, object, camel_name, jsvalue, flags) &&
+               JS_DefineProperty(cx, object, pspec->name, jsvalue, flags);
+    }
 
     return JS_SetProperty(cx, object, underscore_name, jsvalue);
 }
