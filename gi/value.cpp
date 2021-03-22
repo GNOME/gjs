@@ -267,11 +267,14 @@ closure_marshal(GClosure        *closure,
             exit(code);
     }
 
-    // Any exception now pending, is handled when returning control to JS
-
+    // null return_value means the closure wasn't expected to return a value.
+    // Discard the JS function's return value in that case.
     if (return_value != NULL) {
         if (rval.isUndefined()) {
-            /* something went wrong invoking, error should be set already */
+            // Either an exception was thrown and logged, or the JS function
+            // returned undefined. Leave the GValue uninitialized.
+            // FIXME: not sure what happens on the other side with an
+            // uninitialized GValue!
             return;
         }
 
