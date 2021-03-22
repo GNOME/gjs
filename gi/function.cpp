@@ -416,13 +416,11 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             GError* local_error =
                 gjs_gerror_make_from_error(context, exc_object);
 
-            if (local_error) {
-                // the GError ** pointer is the last argument, and is not
-                // included in the n_args
-                auto* gerror = gjs_arg_get<GError**>(error_argument);
-                g_propagate_error(gerror, local_error);
-                JS_ClearPendingException(context);  // don't log
-            }
+            // the GError ** pointer is the last argument, and is not
+            // included in the n_args
+            auto* gerror = gjs_arg_get<GError**>(error_argument);
+            g_propagate_error(gerror, local_error);
+            JS_ClearPendingException(context);  // don't log
         } else if (!rval.isUndefined()) {
             JS_SetPendingException(context, rval);
         }
