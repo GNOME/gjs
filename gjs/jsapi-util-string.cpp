@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <ctype.h>  // for toupper
 #include <stdint.h>
 #include <string.h>     // for size_t, strlen
 #include <sys/types.h>  // for ssize_t
@@ -50,6 +51,26 @@ char* gjs_hyphen_to_underscore(const char* str) {
         if (*s == '-')
             *s = '_';
     }
+    return retval;
+}
+
+GjsAutoChar gjs_hyphen_to_camel(const char* str) {
+    GjsAutoChar retval = static_cast<char*>(g_malloc(strlen(str) + 1));
+    const char* input_iter = str;
+    char* output_iter = retval.get();
+    bool uppercase_next = false;
+    while (*input_iter != '\0') {
+        if (*input_iter == '-') {
+            uppercase_next = true;
+        } else if (uppercase_next) {
+            *output_iter++ = toupper(*input_iter);
+            uppercase_next = false;
+        } else {
+            *output_iter++ = *input_iter;
+        }
+        input_iter++;
+    }
+    *output_iter = '\0';
     return retval;
 }
 
