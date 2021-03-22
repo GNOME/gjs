@@ -409,20 +409,23 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
         }
 
-        // If the callback has a GError** argument and invoking the closure
-        // returned an error, try to make a GError from it
-        if (error_argument && rval.isObject()) {
-            JS::RootedObject exc_object(context, &rval.toObject());
-            GError* local_error =
-                gjs_gerror_make_from_error(context, exc_object);
+        // If an exception has been thrown, log it. Unless the callback has a
+        // GError** argument, then try to make a GError from it if it's an
+        // object (and otherwise fall back to logging)
+        if (error_argument) {
+            JS::RootedValue v_exception(context);
+            JS_GetPendingException(context, &v_exception);
+            if (v_exception.isObject()) {
+                JS_ClearPendingException(context);  // don't log
+                JS::RootedObject exc_object(context, &v_exception.toObject());
+                GError* local_error =
+                    gjs_gerror_make_from_error(context, exc_object);
 
-            // the GError ** pointer is the last argument, and is not
-            // included in the n_args
-            auto* gerror = gjs_arg_get<GError**>(error_argument);
-            g_propagate_error(gerror, local_error);
-            JS_ClearPendingException(context);  // don't log
-        } else if (!rval.isUndefined()) {
-            JS_SetPendingException(context, rval);
+                // the GError ** pointer is the last argument, and is not
+                // included in the n_args
+                auto* gerror = gjs_arg_get<GError**>(error_argument);
+                g_propagate_error(gerror, local_error);
+            }
         }
         gjs_log_exception_uncaught(context);
     }
@@ -518,7 +521,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         }
     }
 
-    if (!gjs_closure_invoke(m_js_function, this_object, jsargs, rval, true))
+    if (!gjs_closure_invoke(m_js_function, this_object, jsargs, rval))
         return false;
 
     if (n_outargs == 0 && ret_type_is_void) {

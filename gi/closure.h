@@ -11,6 +11,8 @@
 
 #include <js/TypeDecls.h>
 
+#include "gjs/macros.h"
+
 class JSTracer;
 namespace JS {
 class HandleValueArray;
@@ -20,11 +22,10 @@ class HandleValueArray;
                                         const char* description,
                                         bool root_function);
 
-[[nodiscard]] bool gjs_closure_invoke(GClosure* closure,
-                                      JS::HandleObject this_obj,
-                                      const JS::HandleValueArray& args,
-                                      JS::MutableHandleValue retval,
-                                      bool return_exception);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_closure_invoke(GClosure* closure, JS::HandleObject this_obj,
+                        const JS::HandleValueArray& args,
+                        JS::MutableHandleValue retval);
 
 [[nodiscard]] JSContext* gjs_closure_get_context(GClosure* closure);
 [[nodiscard]] bool gjs_closure_is_valid(GClosure* closure);
