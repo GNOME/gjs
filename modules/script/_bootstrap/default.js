@@ -23,6 +23,59 @@
         return nativeLogError(e, args.map(prettyPrint).join(' '));
     }
 
+    function prettyPrint(value) {
+        switch (typeof value) {
+        case 'object':
+            return formatObject(value);
+        case 'function':
+            return formatFunction(value);
+        default:
+            return value.toString();
+        }
+    }
+
+    function formatObject(obj) {
+        if (Array.isArray(obj))
+            return formatArray(obj).toString();
+        if (obj instanceof Date)
+            return formatDate(obj);
+
+        const formattedObject = [];
+        for (const [key, value] of Object.entries(obj)) {
+            switch (typeof value) {
+            case 'object':
+                formattedObject.push(`${key}: ${formatObject(value)}`);
+                break;
+            case 'function':
+                formattedObject.push(`${key}: ${formatFunction(value)}`);
+                break;
+            case 'string':
+                formattedObject.push(`${key}: "${value}"`);
+                break;
+            default:
+                formattedObject.push(`${key}: ${value}`);
+                break;
+            }
+        }
+        return `{ ${formattedObject.join(', ')} }`;
+    }
+
+    function formatArray(arr) {
+        const formattedArray = [];
+        for (const [key, value] of arr.entries())
+            formattedArray[key] = prettyPrint(value);
+        return `[${formattedArray.join(', ')}]`;
+    }
+
+    function formatDate(date) {
+        return date.toISOString();
+    }
+
+    function formatFunction(func) {
+        let funcOutput = `[ Function: ${func.name} ]`;
+        return funcOutput;
+    }
+
     Object.defineProperties(exports, {
         ARGV: {
             configurable: false,
