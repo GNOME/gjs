@@ -1084,17 +1084,14 @@ static void wrapped_gobj_dispose_notify(
                         where_the_object_was);
 }
 
-static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
-                                       gboolean is_last_ref);
-
 void
 ObjectInstance::gobj_dispose_notify(void)
 {
     m_gobj_disposed = true;
 
     if (m_uses_toggle_ref) {
-        g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, nullptr);
-        wrapped_gobj_toggle_notify(nullptr, m_ptr, TRUE);
+        g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, this);
+        wrapped_gobj_toggle_notify(this, m_ptr, TRUE);
     }
 }
 
@@ -1222,10 +1219,11 @@ toggle_handler(GObject               *gobj,
     }
 }
 
-static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
-                                       gboolean is_last_ref) {
+void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
+                                                gboolean is_last_ref) {
     bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
+    auto* self = static_cast<ObjectInstance*>(instance);
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
     if (gjs->destroying()) {
@@ -1281,7 +1279,7 @@ static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
                         toggle_up_queued? "up" : "down");
             }
 
-            ObjectInstance::for_gobject(gobj)->toggle_down();
+            self->toggle_down();
         } else {
             toggle_queue.enqueue(gobj, ToggleQueue::DOWN, toggle_handler);
         }
@@ -1296,7 +1294,7 @@ static void wrapped_gobj_toggle_notify(void*, GObject* gobj,
                 g_error("toggling up object %s that's already queued to toggle up\n",
                         G_OBJECT_TYPE_NAME(gobj));
             }
-            ObjectInstance::for_gobject(gobj)->toggle_up();
+            self->toggle_up();
         } else {
             toggle_queue.enqueue(gobj, ToggleQueue::UP, toggle_handler);
         }
@@ -1311,7 +1309,7 @@ ObjectInstance::release_native_object(void)
         m_ptr.release();
     else if (m_uses_toggle_ref)
         g_object_remove_toggle_ref(m_ptr.release(), wrapped_gobj_toggle_notify,
-                                   nullptr);
+                                   this);
     else
         m_ptr = nullptr;
 }
@@ -1459,7 +1457,7 @@ ObjectInstance::ensure_uses_toggle_ref(JSContext *cx)
      */
     m_uses_toggle_ref = true;
     switch_to_rooted(cx);
-    g_object_add_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, nullptr);
+    g_object_add_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, this);
 
     /* We now have both a ref and a toggle ref, we only want the toggle ref.
      * This may immediately remove the GC root we just added, since refcount
