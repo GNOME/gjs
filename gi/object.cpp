@@ -2235,11 +2235,11 @@ bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
 /*
  * ObjectInstance::to_string_kind:
  *
- * ObjectInstance shows a "finalized" marker in its toString() method if the
- * wrapped GObject has already been finalized.
+ * ObjectInstance shows a "disposed" marker in its toString() method if the
+ * wrapped GObject has already been disposed.
  */
 const char* ObjectInstance::to_string_kind(void) const {
-    return m_gobj_disposed ? "object (FINALIZED)" : "object";
+    return m_gobj_disposed ? "object (DISPOSED)" : "object";
 }
 
 /*
