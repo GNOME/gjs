@@ -144,16 +144,44 @@ describe('Access to destroyed GObject', function () {
 describe('Disposed or finalized GObject', function () {
     it('is marked as disposed when it is a manually disposed property', function () {
         const emblem = new Gio.EmblemedIcon({
-            gicon: new Gio.ThemedIcon({ name: 'alarm' }),
+            gicon: new Gio.ThemedIcon({name: 'alarm'}),
         });
 
-        let { gicon } = emblem;
+        let {gicon} = emblem;
         gicon.run_dispose();
         gicon = null;
         System.gc();
 
         expect(emblem.gicon.toString()).toMatch(
             /\[object \(DISPOSED\) instance wrapper .* jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+
+    it('calls dispose vfunc on explicit disposal only', function () {
+        const callSpy = jasmine.createSpy('vfunc_dispose');
+        const DisposeFile = GObject.registerClass(class DisposeFile extends Gio.ThemedIcon {
+            vfunc_dispose(...args) {
+                expect(this.names).toEqual(['dummy']);
+                callSpy(...args);
+            }
+        });
+
+        let file = new DisposeFile({name: 'dummy'});
+        file.run_dispose();
+        expect(callSpy).toHaveBeenCalledOnceWith();
+
+        file.run_dispose();
+        expect(callSpy).toHaveBeenCalledTimes(2);
+        file = null;
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*during garbage collection*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*dispose*');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'calls dispose vfunc on explicit disposal only');
+
+        expect(callSpy).toHaveBeenCalledTimes(2);
     });
 
     it('generates a warn on object garbage collection', function () {
