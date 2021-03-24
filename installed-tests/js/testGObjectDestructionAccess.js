@@ -126,7 +126,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function toString', function () {
         expect(destroyedWindow.toString()).toMatch(
-            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object \(DISPOSED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 
     it('Proto function toString before/after', function () {
@@ -138,6 +138,6 @@ describe('Access to destroyed GObject', function () {
         validWindow.destroy();
 
         expect(validWindow.toString()).toMatch(
-            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object \(DISPOSED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 });
