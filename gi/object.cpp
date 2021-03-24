@@ -79,9 +79,12 @@ static_assert(sizeof(ObjectInstance) <= 88,
 bool ObjectInstance::s_weak_pointer_callback = false;
 ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
 
+static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
+
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
+G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
 // clang-format on
 
 [[nodiscard]] static GQuark gjs_object_priv_quark() {
@@ -237,13 +240,27 @@ void ObjectPrototype::set_type_qdata(void) {
 void
 ObjectInstance::set_object_qdata(void)
 {
-    g_object_set_qdata(m_ptr, gjs_object_priv_quark(), this);
+    g_object_set_qdata_full(
+        m_ptr, gjs_object_priv_quark(), this, [](void* object) {
+            auto* self = static_cast<ObjectInstance*>(object);
+            if (G_UNLIKELY(!self->m_gobj_disposed)) {
+                g_warning(
+                    "Object %p (a %s) was finalized but we didn't track "
+                    "its disposal",
+                    self->m_ptr.get(), g_type_name(self->gtype()));
+                self->m_gobj_disposed = true;
+            }
+            self->m_gobj_finalized = true;
+            gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
+                                "Wrapped GObject %p finalized",
+                                self->m_ptr.get());
+        });
 }
 
 void
 ObjectInstance::unset_object_qdata(void)
 {
-    g_object_set_qdata(m_ptr, gjs_object_priv_quark(), nullptr);
+    g_object_steal_qdata(m_ptr, gjs_object_priv_quark());
 }
 
 GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
@@ -1084,10 +1101,31 @@ static void wrapped_gobj_dispose_notify(
                         where_the_object_was);
 }
 
+void ObjectInstance::track_gobject_finalization() {
+    auto quark = ObjectBase::disposed_quark();
+    g_object_steal_qdata(m_ptr, quark);
+    g_object_set_qdata_full(m_ptr, quark, this, [](void* data) {
+        auto* self = static_cast<ObjectInstance*>(data);
+        self->m_gobj_finalized = true;
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p finalized",
+                            self->m_ptr.get());
+    });
+}
+
+void ObjectInstance::ignore_gobject_finalization() {
+    auto quark = ObjectBase::disposed_quark();
+    if (g_object_get_qdata(m_ptr, quark) == this) {
+        g_object_steal_qdata(m_ptr, quark);
+        g_object_set_qdata(m_ptr, quark, gjs_int_to_pointer(DISPOSED_OBJECT));
+    }
+}
+
 void
 ObjectInstance::gobj_dispose_notify(void)
 {
     m_gobj_disposed = true;
+
+    track_gobject_finalization();
 
     if (m_uses_toggle_ref) {
         g_object_ref(m_ptr.get());
@@ -1307,6 +1345,19 @@ void
 ObjectInstance::release_native_object(void)
 {
     discard_wrapper();
+
+    if (m_gobj_finalized) {
+        g_critical(
+            "Object %p of type %s has been finalized while it was still "
+            "owned by gjs, this is due to invalid memory management.",
+            m_ptr.get(), g_type_name(gtype()));
+        m_ptr.release();
+        return;
+    }
+
+    if (m_gobj_disposed)
+        ignore_gobject_finalization();
+
     if (m_uses_toggle_ref && !m_gobj_disposed)
         g_object_remove_toggle_ref(m_ptr.release(), wrapped_gobj_toggle_notify,
                                    this);
@@ -1352,6 +1403,7 @@ ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
     : GIWrapperInstance(cx, object),
       m_wrapper_finalized(false),
       m_gobj_disposed(false),
+      m_gobj_finalized(false),
       m_uses_toggle_ref(false) {
     GTypeQuery query;
     type_query_dynamic_safe(&query);
@@ -1667,11 +1719,11 @@ ObjectInstance::~ObjectInstance() {
         bool had_toggle_up;
         bool had_toggle_down;
 
-        if (G_UNLIKELY(m_ptr->ref_count <= 0)) {
+        if (m_gobj_finalized || G_UNLIKELY(m_ptr->ref_count <= 0)) {
             g_error(
                 "Finalizing wrapper for an already freed object of type: "
-                "%s.%s\n",
-                ns(), name());
+                "%s.%s: %p\n",
+                ns(), name(), m_ptr.get());
         }
 
         auto& toggle_queue = ToggleQueue::get_default();
@@ -2239,6 +2291,8 @@ bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
  * wrapped GObject has already been disposed.
  */
 const char* ObjectInstance::to_string_kind(void) const {
+    if (m_gobj_finalized)
+        return "object (FINALIZED)";
     return m_gobj_disposed ? "object (DISPOSED)" : "object";
 }
 

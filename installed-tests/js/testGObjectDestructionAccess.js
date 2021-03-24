@@ -4,9 +4,8 @@
 
 imports.gi.versions.Gtk = '3.0';
 
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
+const {GLib, Gio, GObject, Gtk} = imports.gi;
+const {system: System} = imports;
 
 describe('Access to destroyed GObject', function () {
     let destroyedWindow;
@@ -139,5 +138,32 @@ describe('Access to destroyed GObject', function () {
 
         expect(validWindow.toString()).toMatch(
             /\[object \(DISPOSED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+});
+
+describe('Disposed or finalized GObject', function () {
+    it('generates a warn on object garbage collection', function () {
+        Gio.File.new_for_path('/').unref();
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn on object garbage collection');
+    });
+
+    it('generates a warn on object garbage collection if has expando property', function () {
+        let file = Gio.File.new_for_path('/');
+        file.toggleReferenced = true;
+        file.unref();
+        expect(file.toString()).toMatch(
+            /\[object \(FINALIZED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+        file = null;
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn on object garbage collection');
     });
 });
