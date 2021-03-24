@@ -362,6 +362,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* wrapper_from_gobject(JSContext* cx, GObject* ptr);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool set_value_from_gobject(JSContext* cx, GObject*,
+                                       JS::MutableHandleValue);
+
     /* Methods to manipulate the list of closures */
 
  private:
