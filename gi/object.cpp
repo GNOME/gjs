@@ -1754,6 +1754,10 @@ ObjectInstance::~ObjectInstance() {
 
         if (!m_gobj_disposed)
             g_object_weak_unref(m_ptr, wrapped_gobj_dispose_notify, this);
+
+        if (!m_gobj_finalized)
+            unset_object_qdata();
+
         release_native_object();
     }
 
