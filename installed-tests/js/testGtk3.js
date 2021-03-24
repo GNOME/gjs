@@ -214,6 +214,23 @@ describe('Gtk overrides', function () {
             'GTK vfuncs are not called if the object is disposed');
     });
 
+    it('destroy signal is emitted while disposing objects', function () {
+        const label = new Gtk.Label({label: 'Hello'});
+        const handleDispose = jasmine.createSpy('handleDispose').and.callFake(() => {
+            expect(label.label).toBe('Hello');
+        });
+        label.connect('destroy', handleDispose);
+        label.destroy();
+
+        expect(handleDispose).toHaveBeenCalledWith(label);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Label (0x* deallocated *');
+        expect(label.label).toBeUndefined();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
+            'GTK destroy signal is emitted while disposing objects');
+    });
+
     it('accepts string in place of GdkAtom', function () {
         expect(() => Gtk.Clipboard.get(1)).toThrow();
         expect(() => Gtk.Clipboard.get(true)).toThrow();
