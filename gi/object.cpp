@@ -320,10 +320,11 @@ bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
                                        JS::HandleId id, JS::HandleValue) {
     debug_jsprop("Add property hook", id, obj);
 
-    if (is_custom_js_class() || m_gobj_disposed)
+    if (is_custom_js_class())
         return true;
 
     ensure_uses_toggle_ref(cx);
+
     return true;
 }
 
@@ -1493,11 +1494,15 @@ ObjectInstance::associate_js_gobject(JSContext       *context,
         g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
 }
 
-void
-ObjectInstance::ensure_uses_toggle_ref(JSContext *cx)
-{
+// The return value here isn't intended to be JS API like boolean, as we only
+// return whether the object has a toggle reference, and if we've added one
+// and depending on this callers may need to unref the object on failure.
+bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     if (m_uses_toggle_ref)
-        return;
+        return true;
+
+    if (!check_gobject_disposed("add toggle reference on"))
+        return false;
 
     debug_lifecycle("Switching object instance to toggle ref");
 
@@ -1522,6 +1527,8 @@ ObjectInstance::ensure_uses_toggle_ref(JSContext *cx)
      * This may immediately remove the GC root we just added, since refcount
      * may drop to 1. */
     g_object_unref(m_ptr);
+
+    return true;
 }
 
 static void invalidate_closure_list(std::forward_list<GClosure*>* closures) {
@@ -1635,10 +1642,11 @@ ObjectInstance::init_impl(JSContext              *context,
          * we're not actually using it, so just let it get collected. Avoiding
          * this would require a non-trivial amount of work.
          * */
-        other_priv->ensure_uses_toggle_ref(context);
+        if (!other_priv->ensure_uses_toggle_ref(context))
+            gobj = nullptr;
+
         object.set(other_priv->m_wrapper);
-        g_object_unref(gobj); /* We already own a reference */
-        gobj = NULL;
+        g_clear_object(&gobj); /* We already own a reference */
         return true;
     }
 
@@ -2431,7 +2439,11 @@ bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
 
     // Custom JS objects will most likely have visible state, so just do this
     // from the start.
-    ensure_uses_toggle_ref(cx);
+    if (!ensure_uses_toggle_ref(cx)) {
+        gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
+                  m_gobj_disposed ? "disposed " : "", gobj);
+        return false;
+    }
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v(cx);
