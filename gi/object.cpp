@@ -10,6 +10,7 @@
 
 #include <algorithm>  // for find
 #include <functional>  // for mem_fn
+#include <limits>
 #include <string>
 #include <tuple>        // for tie
 #include <utility>      // for move
@@ -46,6 +47,7 @@
 #include "gi/object.h"
 #include "gi/repo.h"
 #include "gi/toggle.h"
+#include "gi/utils-inl.h"  // for gjs_int_to_pointer
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
@@ -260,7 +262,9 @@ ObjectInstance::set_object_qdata(void)
 void
 ObjectInstance::unset_object_qdata(void)
 {
-    g_object_steal_qdata(m_ptr, gjs_object_priv_quark());
+    auto priv_quark = gjs_object_priv_quark();
+    if (g_object_get_qdata(m_ptr, priv_quark) == this)
+        g_object_steal_qdata(m_ptr, priv_quark);
 }
 
 GParamSpec* ObjectPrototype::find_param_spec_from_id(JSContext* cx,
@@ -1125,6 +1129,7 @@ ObjectInstance::gobj_dispose_notify(void)
 {
     m_gobj_disposed = true;
 
+    unset_object_qdata();
     track_gobject_finalization();
 
     if (m_uses_toggle_ref) {
@@ -1479,11 +1484,13 @@ ObjectInstance::associate_js_gobject(JSContext       *context,
     m_ptr = gobj;
     set_object_qdata();
     m_wrapper = object;
+    m_gobj_disposed = !!g_object_get_qdata(gobj, ObjectBase::disposed_quark());
 
     ensure_weak_pointer_callback(context);
     link();
 
-    g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
+    if (!G_UNLIKELY(m_gobj_disposed))
+        g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
 }
 
 void
@@ -1550,9 +1557,10 @@ ObjectInstance::disassociate_js_gobject(void)
             m_ptr.get(), type_name());
     }
 
-    if (!m_gobj_disposed) {
+    if (!m_gobj_disposed)
         g_object_weak_unref(m_ptr.get(), wrapped_gobj_dispose_notify, this);
 
+    if (!m_gobj_finalized) {
         /* Fist, remove the wrapper pointer from the wrapped GObject */
         unset_object_qdata();
     }
@@ -2495,6 +2503,24 @@ JSObject* ObjectInstance::wrapper_from_gobject(JSContext* cx, GObject* gobj) {
     }
 
     return priv->wrapper();
+}
+
+bool ObjectInstance::set_value_from_gobject(JSContext* cx, GObject* gobj,
+                                            JS::MutableHandleValue value_p) {
+    if (!gobj) {
+        value_p.setNull();
+        return true;
+    }
+
+    auto* wrapper = ObjectInstance::wrapper_from_gobject(cx, gobj);
+    if (wrapper) {
+        value_p.setObject(*wrapper);
+        return true;
+    }
+
+    gjs_throw(cx, "Failed to find JS object for GObject %p of type %s", gobj,
+              g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
+    return false;
 }
 
 // Replaces GIWrapperBase::to_c_ptr(). The GIWrapperBase version is deleted.

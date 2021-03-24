@@ -142,6 +142,20 @@ describe('Access to destroyed GObject', function () {
 });
 
 describe('Disposed or finalized GObject', function () {
+    it('is marked as disposed when it is a manually disposed property', function () {
+        const emblem = new Gio.EmblemedIcon({
+            gicon: new Gio.ThemedIcon({ name: 'alarm' }),
+        });
+
+        let { gicon } = emblem;
+        gicon.run_dispose();
+        gicon = null;
+        System.gc();
+
+        expect(emblem.gicon.toString()).toMatch(
+            /\[object \(DISPOSED\) instance wrapper .* jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+
     it('generates a warn on object garbage collection', function () {
         Gio.File.new_for_path('/').unref();
 

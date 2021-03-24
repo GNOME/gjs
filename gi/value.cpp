@@ -842,18 +842,9 @@ gjs_value_from_g_value_internal(JSContext             *context,
         v = g_value_get_boolean(gvalue);
         value_p.setBoolean(!!v);
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-        GObject *gobj;
-
-        gobj = (GObject*) g_value_get_object(gvalue);
-
-        if (gobj) {
-            JSObject* obj = ObjectInstance::wrapper_from_gobject(context, gobj);
-            if (!obj)
-                return false;
-            value_p.setObject(*obj);
-        } else {
-            value_p.setNull();
-        }
+        return ObjectInstance::set_value_from_gobject(
+            context, static_cast<GObject*>(g_value_get_object(gvalue)),
+            value_p);
     } else if (gtype == G_TYPE_STRV) {
         if (!gjs_array_from_strv (context,
                                   value_p,
