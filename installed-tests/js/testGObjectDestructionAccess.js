@@ -39,6 +39,28 @@ describe('Access to destroyed GObject', function () {
             'testExceptionInDestroyedObjectPropertySet');
     });
 
+    it('Add expando property', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.expandoProperty = 'Hello!';
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectExpandoPropertySet');
+    });
+
+    it('Access to unset expando property', function () {
+        expect(destroyedWindow.expandoProperty).toBeUndefined();
+    });
+
+    it('Access previously set expando property', function () {
+        destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
+        destroyedWindow.expandoProperty = 'Hello!';
+        destroyedWindow.destroy();
+
+        expect(destroyedWindow.expandoProperty).toBe('Hello!');
+    });
+
     it('Access to getter method', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
