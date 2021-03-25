@@ -495,7 +495,7 @@ function _init() {
     Gio._promisify = _promisify;
 
     // Temporary Gio.File.prototype fix
-    Gio._LocalFilePrototype = Gio.File.new_for_path('').constructor.prototype;
+    Gio._LocalFilePrototype = Gio.File.new_for_path('/').constructor.prototype;
 
     // Override Gio.Settings and Gio.SettingsSchema - the C API asserts if
     // trying to access a nonexistent schema or key, which is not handy for
