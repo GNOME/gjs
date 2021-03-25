@@ -89,6 +89,8 @@ gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     install_dir_typelib: installed_tests_execdir)
 gimarshallingtests_typelib = gimarshallingtests_gir[1]
 
+subdir('libgjstesttools')
+
 jasmine_tests = [
     'self',
     'ByteArray',
@@ -149,6 +151,7 @@ foreach test : jasmine_tests
     test(test, minijasmine, args: test_file,
         depends: [
             gschemas_compiled,
+            gjstest_tools_typelib,
             gimarshallingtests_typelib,
             regress_typelib,
             warnlib_typelib,
