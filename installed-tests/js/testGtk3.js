@@ -191,19 +191,27 @@ describe('Gtk overrides', function () {
             'Gtk overrides avoid crashing and print a stack trace');
     });
 
-    it('GTK vfuncs can be explicitly called during disposition', function () {
-        let called;
-        const GoodLabel = GObject.registerClass(class GoodLabel extends Gtk.Label {
+    it('GTK vfuncs are not called if the object is disposed', function () {
+        const spy = jasmine.createSpy('vfunc_destroy');
+        const NotSoGoodLabel = GObject.registerClass(class NotSoGoodLabel extends Gtk.Label {
             vfunc_destroy() {
-                called = true;
+                spy();
             }
         });
 
-        let label = new GoodLabel();
+        let label = new NotSoGoodLabel();
+
         label.destroy();
-        expect(called).toBeTruthy();
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*during garbage collection*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*destroy*');
         label = null;
         System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
+            'GTK vfuncs are not called if the object is disposed');
     });
 
     it('accepts string in place of GdkAtom', function () {
