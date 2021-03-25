@@ -577,15 +577,16 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
 
 tests_environment = environment()
 js_tests_builddir = meson.current_build_dir() / 'installed-tests' / 'js'
+libgjs_test_tools_builddir = js_tests_builddir / 'libgjstesttools'
 # GJS_PATH is empty here since we want to force the use of our own
 # resources. G_FILENAME_ENCODING ensures filenames are not UTF-8
 tests_environment.set('TOP_BUILDDIR', meson.build_root())
 tests_environment.set('GJS_USE_UNINSTALLED_FILES', '1')
 tests_environment.set('GJS_PATH', '')
 tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
-    js_tests_builddir)
+    js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
-    js_tests_builddir)
+    js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 # Workaround for https://github.com/google/sanitizers/issues/1322
 tests_environment.set('ASAN_OPTIONS', 'intercept_tls_get_addr=0')
