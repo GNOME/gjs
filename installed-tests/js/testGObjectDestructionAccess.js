@@ -4,7 +4,7 @@
 
 imports.gi.versions.Gtk = '3.0';
 
-const {GLib, Gio, GObject, Gtk} = imports.gi;
+const {GLib, Gio, GjsTestTools, GObject, Gtk} = imports.gi;
 const {system: System} = imports;
 
 describe('Access to destroyed GObject', function () {
@@ -164,6 +164,14 @@ describe('Access to destroyed GObject', function () {
 });
 
 describe('Disposed or finalized GObject', function () {
+    beforeAll(function () {
+        GjsTestTools.init();
+    });
+
+    afterEach(function () {
+        GjsTestTools.reset();
+    });
+
     it('is marked as disposed when it is a manually disposed property', function () {
         const emblem = new Gio.EmblemedIcon({
             gicon: new Gio.ThemedIcon({ name: 'alarm' }),
@@ -195,11 +203,30 @@ describe('Disposed or finalized GObject', function () {
         expect(file.toString()).toMatch(
             /\[object \(FINALIZED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
         file = null;
-
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             '*Object 0x* has been finalized *');
         System.gc();
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
-            'generates a warn on object garbage collection');
+            'generates a warn on object garbage collection if has expando property');
+    });
+
+    it('generates a warn if already disposed at garbage collection', function () {
+        const loop = new GLib.MainLoop(null, false);
+
+        let file = Gio.File.new_for_path('/');
+        GjsTestTools.delayed_unref(file, 1);  // Will happen after dispose
+        file.run_dispose();
+
+        let done = false;
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => (done = true));
+        while (!done)
+            loop.get_context().iteration(true);
+
+        file = null;
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn if already disposed at garbage collection');
     });
 });
