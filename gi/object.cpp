@@ -1090,8 +1090,10 @@ ObjectInstance::gobj_dispose_notify(void)
     m_gobj_disposed = true;
 
     if (m_uses_toggle_ref) {
+        g_object_ref(m_ptr.get());
         g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, this);
         wrapped_gobj_toggle_notify(this, m_ptr, TRUE);
+        m_uses_toggle_ref = false;
     }
 }
 
@@ -1305,9 +1307,7 @@ void
 ObjectInstance::release_native_object(void)
 {
     discard_wrapper();
-    if (m_uses_toggle_ref && m_gobj_disposed)
-        m_ptr.release();
-    else if (m_uses_toggle_ref)
+    if (m_uses_toggle_ref && !m_gobj_disposed)
         g_object_remove_toggle_ref(m_ptr.release(), wrapped_gobj_toggle_notify,
                                    this);
     else
