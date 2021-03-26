@@ -1139,6 +1139,9 @@ ObjectInstance::gobj_dispose_notify(void)
         wrapped_gobj_toggle_notify(this, m_ptr, TRUE);
         m_uses_toggle_ref = false;
     }
+
+    if (GjsContextPrivate::from_current_context()->is_owner_thread())
+        discard_wrapper();
 }
 
 void ObjectInstance::iterate_wrapped_gobjects(
@@ -1734,13 +1737,6 @@ ObjectInstance::~ObjectInstance() {
     if (m_ptr) {
         bool had_toggle_up;
         bool had_toggle_down;
-
-        if (m_gobj_finalized || G_UNLIKELY(m_ptr->ref_count <= 0)) {
-            g_error(
-                "Finalizing wrapper for an already freed object of type: "
-                "%s.%s: %p\n",
-                ns(), name(), m_ptr.get());
-        }
 
         auto& toggle_queue = ToggleQueue::get_default();
         std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr);

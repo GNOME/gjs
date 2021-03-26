@@ -20,4 +20,23 @@ void gjs_test_tools_delayed_unref(GObject* object, int interval);
 
 void gjs_test_tools_delayed_dispose(GObject* object, int interval);
 
+void gjs_test_tools_ref_other_thread(GObject* object);
+
+void gjs_test_tools_delayed_ref_other_thread(GObject* object, int interval);
+
+void gjs_test_tools_unref_other_thread(GObject* object);
+
+void gjs_test_tools_delayed_unref_other_thread(GObject* object, int interval);
+
+void gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
+                                                   int interval);
+
+void gjs_test_tools_run_dispose_other_thread(GObject* object);
+
+void gjs_test_tools_save_object(GObject* object);
+
+GObject* gjs_test_tools_get_saved();
+
+GObject* gjs_test_tools_get_disposed(GObject* object);
+
 G_END_DECLS

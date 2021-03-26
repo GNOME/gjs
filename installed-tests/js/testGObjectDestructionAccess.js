@@ -229,4 +229,49 @@ describe('Disposed or finalized GObject', function () {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'generates a warn if already disposed at garbage collection');
     });
+
+    it('created from other function is marked as disposed', function () {
+        let file = Gio.File.new_for_path('/');
+        GjsTestTools.save_object(file);
+        file.run_dispose();
+        file = null;
+        System.gc();
+
+        expect(GjsTestTools.get_saved()).toMatch(
+            /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+
+    it('returned from function is marked as disposed', function () {
+        expect(GjsTestTools.get_disposed(Gio.File.new_for_path('/'))).toMatch(
+            /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+
+    it('returned from function is marked as disposed and then as finalized', function () {
+        let file = Gio.File.new_for_path('/');
+        GjsTestTools.save_object(file);
+        GjsTestTools.delayed_unref(file, 30);
+        file.run_dispose();
+
+        let disposedFile = GjsTestTools.get_saved();
+        expect(disposedFile).toEqual(file);
+        expect(disposedFile).toMatch(
+            /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+
+        expect(disposedFile).toMatch(
+            /\[object \(FINALIZED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        disposedFile = null;
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'returned from function is marked as disposed and then as finalized');
+    });
 });
