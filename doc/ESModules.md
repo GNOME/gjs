@@ -46,9 +46,17 @@ gjs -m module.js
 
 ES modules cannot be loaded from strings at this time.
 
-`import('./module.js')` can be used to load modules from any GJS script
-or module.
-`import` will always default to loading a file as an ES Module.
+Besides the import expression syntax described above, Dynamic [`import()` statements][] can be used to load modules from any GJS script or module.
+
+```js
+import('./animalSounds.js').then((module) => {
+    // module.default is the default export
+    // named exports are accessible as properties
+    // module.bark
+}).catch(logError)
+```
+
+Because `import()` is asynchronous, you will need a mainloop running.
 
 ### C API
 
@@ -170,10 +178,6 @@ import { ngettext as _ } from 'gettext';
 _('Hello!');
 ```
 
-## `import()` expressions
-
-Dynamic [`import()` statements][] are not currently supported in GJS.
-
 ## `import.meta`
 
 * {Object}
@@ -208,7 +212,7 @@ necessary.
 
 An `import` statement can only reference an ES module.
 `import` statements are permitted only in ES modules, but dynamic
-[`import()`][] expressions will be supported in legacy `imports` modules
+[`import()`][] expressions is supported in legacy `imports` modules
 for loading ES modules.
 
 When importing legacy `imports` modules, all `var` declarations are
