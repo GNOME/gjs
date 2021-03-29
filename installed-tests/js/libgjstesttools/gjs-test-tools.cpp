@@ -10,6 +10,7 @@
 #include "gjs/jsapi-util.h"
 
 static GObject* m_tmp_object = NULL;
+static GWeakRef m_tmp_weak;
 static std::unordered_set<GObject*> m_finalized_objects;
 static std::mutex m_finalized_objects_lock;
 
@@ -27,6 +28,8 @@ void gjs_test_tools_reset() {
         g_clear_object(&m_tmp_object);
     else
         m_tmp_object = nullptr;
+
+    g_weak_ref_set(&m_tmp_weak, nullptr);
 
     FinalizedObjectsLocked()->clear();
 }
@@ -75,6 +78,12 @@ void gjs_test_tools_delayed_dispose(GObject* object, int interval) {
 void gjs_test_tools_save_object(GObject* object) {
     g_assert(!m_tmp_object);
     g_set_object(&m_tmp_object, object);
+    monitor_object_finalization(object);
+}
+
+void gjs_test_tools_save_object_unreffed(GObject* object) {
+    g_assert(!m_tmp_object);
+    m_tmp_object = object;
     monitor_object_finalization(object);
 }
 
@@ -182,6 +191,36 @@ GObject* gjs_test_tools_get_saved() {
         m_tmp_object = nullptr;
 
     return static_cast<GObject*>(g_steal_pointer(&m_tmp_object));
+}
+
+/**
+ * gjs_test_tools_steal_saved:
+ * Returns: (transfer none)
+ */
+GObject* gjs_test_tools_steal_saved() { return gjs_test_tools_get_saved(); }
+
+void gjs_test_tools_save_weak(GObject* object) {
+    g_weak_ref_set(&m_tmp_weak, object);
+}
+
+/**
+ * gjs_test_tools_get_weak:
+ * Returns: (transfer full)
+ */
+GObject* gjs_test_tools_get_weak() {
+    return static_cast<GObject*>(g_weak_ref_get(&m_tmp_weak));
+}
+
+/**
+ * gjs_test_tools_get_weak_other_thread:
+ * Returns: (transfer full)
+ */
+GObject* gjs_test_tools_get_weak_other_thread() {
+    return static_cast<GObject*>(
+        // cppcheck-suppress leakNoVarFunctionCall
+        g_thread_join(g_thread_new(
+            "weak_get",
+            [](void*) -> void* { return gjs_test_tools_get_weak(); }, NULL)));
 }
 
 /**

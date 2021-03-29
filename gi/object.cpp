@@ -1329,6 +1329,9 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
     is_main_thread = gjs->is_owner_thread();
 
     auto& toggle_queue = ToggleQueue::get_default();
+    if (is_main_thread && toggle_queue.is_being_handled(gobj))
+        return;
+
     std::tie(toggle_down_queued, toggle_up_queued) = toggle_queue.is_queued(gobj);
 
     if (is_last_ref) {
@@ -1336,16 +1339,16 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
          * The JSObject is rooted and we need to unroot it so it
          * can be garbage collected
          */
-        if (is_main_thread) {
-            if (G_UNLIKELY (toggle_up_queued || toggle_down_queued)) {
-                g_error("toggling down object %s that's already queued to toggle %s\n",
-                        G_OBJECT_TYPE_NAME(gobj),
-                        toggle_up_queued && toggle_down_queued? "up and down" :
-                        toggle_up_queued? "up" : "down");
+        if (is_main_thread && !toggle_up_queued) {
+            if (G_UNLIKELY(toggle_down_queued)) {
+                g_error(
+                    "toggling down object %p (%s) that's already queued to "
+                    "toggle down",
+                    gobj, G_OBJECT_TYPE_NAME(gobj));
             }
 
             self->toggle_down();
-        } else {
+        } else if (!toggle_down_queued) {
             toggle_queue.enqueue(gobj, ToggleQueue::DOWN, toggle_handler);
         }
     } else {
@@ -1356,11 +1359,13 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
          */
         if (is_main_thread && !toggle_down_queued) {
             if (G_UNLIKELY (toggle_up_queued)) {
-                g_error("toggling up object %s that's already queued to toggle up\n",
-                        G_OBJECT_TYPE_NAME(gobj));
+                g_error(
+                    "toggling up object %p (%s) that's already queued to "
+                    "toggle up",
+                    gobj, G_OBJECT_TYPE_NAME(gobj));
             }
             self->toggle_up();
-        } else {
+        } else if (!toggle_up_queued) {
             toggle_queue.enqueue(gobj, ToggleQueue::UP, toggle_handler);
         }
     }
@@ -1467,7 +1472,22 @@ void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
 bool
 ObjectInstance::weak_pointer_was_finalized(void)
 {
-    if (has_wrapper() && !wrapper_is_rooted() && update_after_gc()) {
+    if (has_wrapper() && !wrapper_is_rooted()) {
+        bool toggle_down_queued, toggle_up_queued;
+
+        auto& toggle_queue = ToggleQueue::get_default();
+        std::tie(toggle_down_queued, toggle_up_queued) =
+            toggle_queue.is_queued(m_ptr);
+
+        if (!toggle_down_queued && toggle_up_queued)
+            return false;
+
+        if (!update_after_gc())
+            return false;
+
+        if (toggle_down_queued)
+            toggle_queue.cancel(m_ptr);
+
         /* Ouch, the JS object is dead already. Disassociate the
          * GObject and hope the GObject dies too. (Remove it from
          * the weak pointer list first, since the disassociation
@@ -1576,7 +1596,7 @@ ObjectInstance::disassociate_js_gobject(void)
 
     auto& toggle_queue = ToggleQueue::get_default();
     std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr.get());
-    if (had_toggle_down != had_toggle_up) {
+    if (had_toggle_up && !had_toggle_down) {
         g_error(
             "JS object wrapper for GObject %p (%s) is being released while "
             "toggle references are still pending.",

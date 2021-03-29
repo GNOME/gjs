@@ -306,4 +306,113 @@ describe('Disposed or finalized GObject', function () {
         file = null;
         System.gc();
     });
+
+    it('can be re-reffed from other thread delayed', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        const objectAddress = System.addressOfGObject(file);
+        GjsTestTools.save_object_unreffed(file);
+        GjsTestTools.delayed_ref_other_thread(file, 10);
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+
+        // We need to cleanup the extra ref we added before now.
+        // However, depending on whether the thread ref happens the object
+        // may be already finalized, and in such case we need to throw
+        try {
+            file = GjsTestTools.steal_saved();
+            if (file) {
+                expect(System.addressOfGObject(file)).toBe(objectAddress);
+                expect(file instanceof Gio.File).toBeTruthy();
+                file.unref();
+            }
+        } catch (e) {
+            expect(() => {
+                throw e;
+            }).toThrowError(/.*Unhandled GType.*/);
+        }
+    });
+
+    it('can be re-reffed and unreffed again from other thread', function () {
+        let file = Gio.File.new_for_path('/');
+        const objectAddress = System.addressOfGObject(file);
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_object(file);
+        GjsTestTools.delayed_unref_other_thread(file.ref(), 10);
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+
+        file = GjsTestTools.get_saved();
+        expect(System.addressOfGObject(file)).toBe(objectAddress);
+        expect(file instanceof Gio.File).toBeTruthy();
+    });
+
+    it('can be re-reffed and unreffed again from other thread with delay', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.delayed_ref_unref_other_thread(file, 10);
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+    });
+
+    it('can be toggled up by getting a GWeakRef', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak();
+    });
+
+    it('can be toggled up by getting a GWeakRef from another thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak_other_thread();
+    });
+
+    it('can be toggled up by getting a GWeakRef from another thread and re-reffed in main thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak_other_thread();
+
+        // Ok, let's play more dirty now...
+        file.ref(); // toggle up
+        file.unref(); // toggle down
+
+        file.ref();
+        file.ref();
+        file.unref();
+        file.unref();
+    });
+
+    it('can be toggled up by getting a GWeakRef from another and re-reffed from various threads', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak_other_thread();
+
+        GjsTestTools.ref_other_thread(file);
+        GjsTestTools.unref_other_thread(file);
+
+        file.ref();
+        file.unref();
+
+        GjsTestTools.ref_other_thread(file);
+        file.unref();
+
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
+    });
 });
