@@ -302,4 +302,20 @@ describe('Disposed or finalized GObject', function () {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'returned from function is marked as disposed and then as finalized');
     });
+
+    it('ignores toggling queued unref toggles', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
+        file.run_dispose();
+    });
+
+    it('ignores toggling queued toggles', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.ref_other_thread(file);
+        GjsTestTools.unref_other_thread(file);
+        file.run_dispose();
+    });
 });
