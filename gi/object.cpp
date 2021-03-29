@@ -1136,6 +1136,7 @@ ObjectInstance::gobj_dispose_notify(void)
     if (m_uses_toggle_ref) {
         g_object_ref(m_ptr.get());
         g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, this);
+        ToggleQueue::get_default().cancel(m_ptr);
         wrapped_gobj_toggle_notify(this, m_ptr, TRUE);
         m_uses_toggle_ref = false;
     }
