@@ -290,4 +290,20 @@ describe('Disposed or finalized GObject', function () {
         GjsTestTools.unref_other_thread(file);
         file.run_dispose();
     });
+
+    it('can be disposed from other thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
+        GjsTestTools.run_dispose_other_thread(file);
+    });
+
+    it('can be garbage collected once disposed from other thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.run_dispose_other_thread(file);
+        file = null;
+        System.gc();
+    });
 });

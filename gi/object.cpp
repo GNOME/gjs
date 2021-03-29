@@ -1257,12 +1257,27 @@ static void
 toggle_handler(GObject               *gobj,
                ToggleQueue::Direction direction)
 {
+    auto* self = ObjectInstance::for_gobject(gobj);
+
+    if (G_UNLIKELY(!self)) {
+        void* disposed = g_object_get_qdata(gobj, ObjectBase::disposed_quark());
+
+        if (G_UNLIKELY(disposed == gjs_int_to_pointer(DISPOSED_OBJECT))) {
+            g_critical("Handling toggle %s for an unknown object %p",
+                       direction == ToggleQueue::UP ? "up" : "down", gobj);
+            return;
+        }
+
+        // In this case the object has been disposed but its wrapper not yet
+        self = static_cast<ObjectInstance*>(disposed);
+    }
+
     switch (direction) {
         case ToggleQueue::UP:
-            ObjectInstance::for_gobject(gobj)->toggle_up();
+            self->toggle_up();
             break;
         case ToggleQueue::DOWN:
-            ObjectInstance::for_gobject(gobj)->toggle_down();
+            self->toggle_down();
             break;
         default:
             g_assert_not_reached();
