@@ -35,7 +35,17 @@ void gjs_test_tools_run_dispose_other_thread(GObject* object);
 
 void gjs_test_tools_save_object(GObject* object);
 
+void gjs_test_tools_save_object_unreffed(GObject* object);
+
 GObject* gjs_test_tools_get_saved();
+
+GObject* gjs_test_tools_steal_saved();
+
+void gjs_test_tools_save_weak(GObject* object);
+
+GObject* gjs_test_tools_get_weak();
+
+GObject* gjs_test_tools_get_weak_other_thread();
 
 GObject* gjs_test_tools_get_disposed(GObject* object);
 
