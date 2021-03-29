@@ -327,8 +327,10 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
                                       JS::MutableHandleValue rval) {
-    if (!check_gobject_disposed("get any property from"))
+    if (!check_gobject_disposed("get any property from")) {
+        rval.setUndefined();
         return true;
+    }
 
     GValue gvalue = { 0, };
 
@@ -1877,8 +1879,10 @@ ObjectInstance::connect_impl(JSContext          *context,
 
     gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
 
-    if (!check_gobject_disposed("connect to any signal on"))
+    if (!check_gobject_disposed("connect to any signal on")) {
+        args.rval().setInt32(0);
         return true;
+    }
 
     JS::UniqueChars signal_name;
     JS::RootedObject callback(context);
@@ -1940,8 +1944,10 @@ ObjectInstance::emit_impl(JSContext          *context,
     gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
                       argv.length());
 
-    if (!check_gobject_disposed("emit any signal on"))
+    if (!check_gobject_disposed("emit any signal on")) {
+        argv.rval().setUndefined();
         return true;
+    }
 
     JS::UniqueChars signal_name;
     if (!gjs_parse_call_args(context, "emit", argv, "!s",
@@ -2104,8 +2110,10 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
     gjs_debug_gsignal("[Gi.signal_find_symbol]() obj %p priv %p argc %d",
                       m_wrapper.get(), this, args.length());
 
-    if (!check_gobject_disposed("find any signal on"))
+    if (!check_gobject_disposed("find any signal on")) {
+        args.rval().setInt32(0);
         return true;
+    }
 
     JS::RootedObject match(cx);
     if (!gjs_parse_call_args(cx, "[Gi.signal_find_symbol]", args, "o", "match",
@@ -2179,6 +2187,7 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
                       m_wrapper.get(), this, args.length());
 
     if (!check_gobject_disposed((action_name + " any signal on").c_str())) {
+        args.rval().setInt32(0);
         return true;
     }
     JS::RootedObject match(cx);

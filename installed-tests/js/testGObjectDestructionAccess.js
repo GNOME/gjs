@@ -5,6 +5,7 @@
 imports.gi.versions.Gtk = '3.0';
 
 const GLib = imports.gi.GLib;
+const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
 describe('Access to destroyed GObject', function () {
@@ -23,7 +24,7 @@ describe('Access to destroyed GObject', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
 
-        void destroyedWindow.title;
+        expect(destroyedWindow.title).toBeUndefined();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectPropertyGet');
@@ -45,7 +46,7 @@ describe('Access to destroyed GObject', function () {
         GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
             '*GTK_IS_WINDOW*');
 
-        void destroyedWindow.get_title();
+        expect(destroyedWindow.get_title()).toBeNull();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodGet');
@@ -67,7 +68,7 @@ describe('Access to destroyed GObject', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
 
-        destroyedWindow.connect('foo-signal', () => {});
+        expect(destroyedWindow.connect('foo-signal', () => {})).toBe(0);
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectConnect');
@@ -77,7 +78,7 @@ describe('Access to destroyed GObject', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
 
-        destroyedWindow.connect_after('foo-signal', () => {});
+        expect(destroyedWindow.connect_after('foo-signal', () => {})).toBe(0);
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectConnectAfter');
@@ -87,10 +88,40 @@ describe('Access to destroyed GObject', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             'Object Gtk.Window (0x*');
 
-        destroyedWindow.emit('foo-signal');
+        expect(destroyedWindow.emit('foo-signal')).toBeUndefined();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectEmit');
+    });
+
+    it('Proto function signals_disconnect', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        expect(GObject.signal_handlers_disconnect_by_func(destroyedWindow, () => {})).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectSignalsDisconnect');
+    });
+
+    it('Proto function signals_block', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        expect(GObject.signal_handlers_block_by_func(destroyedWindow, () => {})).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectSignalsBlock');
+    });
+
+    it('Proto function signals_unblock', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        expect(GObject.signal_handlers_unblock_by_func(destroyedWindow, () => {})).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectSignalsUnblock');
     });
 
     it('Proto function toString', function () {
