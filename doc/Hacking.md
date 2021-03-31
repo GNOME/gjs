@@ -14,21 +14,21 @@ You can also skip this step if you are not writing any C++ code.)
 
 ## Dependencies
 
-GJS requires four other libraries to be installed: GLib, libffi,
-gobject-introspection, and SpiderMonkey (also called "mozjs78" on some
-systems.)
+GJS requires five other libraries to be installed: GLib, libffi,
+gobject-introspection, SpiderMonkey (also called "mozjs78" on some
+systems.) and the build tool Meson.
 The readline library is not required, but strongly recommended.
 We recommend installing your system's development packages for GLib,
-libffi, gobject-introspection, and readline.
+libffi, gobject-introspection, Meson and readline.
 
 <details>
     <summary>Ubuntu</summary>
-    <code>sudo apt-get install libglib2.0-dev libffi-dev libreadline-dev libgirepository1.0-dev</code>
+    <code>sudo apt-get install libglib2.0-dev libffi-dev libreadline-dev libgirepository1.0-dev meson</code>
 </details>
 
 <details>
     <summary>Fedora</summary>
-    <code>sudo dnf install glib2-devel libffi readline-devel gobject-introspection-devel</code>
+    <code>sudo dnf install glib2-devel libffi readline-devel gobject-introspection-devel meson</code>
 </details>
 
 But, if your system's versions of these packages aren't new enough, then
