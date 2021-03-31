@@ -23,6 +23,7 @@ libffi, gobject-introspection, and readline.
 
 <details>
     <summary>Ubuntu</summary>
+    <code>sudo apt install meson</code>
     <code>sudo apt-get install libglib2.0-dev libffi-dev libreadline-dev libgirepository1.0-dev</code>
 </details>
 
