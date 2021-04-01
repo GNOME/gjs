@@ -6,6 +6,7 @@
     'use strict';
 
     const {print, printerr, log, logError} = imports._print;
+    const {setTimeout, setInterval, clearTimeout, clearInterval} = imports._timers;
 
     Object.defineProperties(exports, {
         ARGV: {
@@ -15,6 +16,30 @@
                 // Wait until after bootstrap or programArgs won't be set.
                 return imports.system.programArgs;
             },
+        },
+        setTimeout: {
+            configurable: false,
+            enumerable: true,
+            writable: true,
+            value: setTimeout,
+        },
+        setInterval: {
+            configurable: false,
+            enumerable: true,
+            writable: true,
+            value: setInterval,
+        },
+        clearTimeout: {
+            configurable: false,
+            enumerable: true,
+            writable: true,
+            value: clearTimeout,
+        },
+        clearInterval: {
+            configurable: false,
+            enumerable: true,
+            writable: true,
+            value: clearInterval,
         },
         print: {
             configurable: false,

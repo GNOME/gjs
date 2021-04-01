@@ -45,5 +45,6 @@
     <file>modules/core/_format.js</file>
     <file>modules/core/_gettext.js</file>
     <file>modules/core/_signals.js</file>
+    <file>modules/core/_timers.js</file>
   </gresource>
 </gresources>

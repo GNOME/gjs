@@ -52,6 +52,36 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_warn(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+
+    if (argc != 1) {
+        gjs_throw(cx, "Must pass a single argument to warn()");
+        return false;
+    }
+
+    /* JS::ToString might throw, in which case we will only log that the value
+     * could not be converted to string */
+    JS::AutoSaveExceptionState exc_state(cx);
+    JS::RootedString jstr(cx, JS::ToString(cx, argv[0]));
+    exc_state.restore();
+
+    if (!jstr) {
+        g_message("JS LOG: <cannot convert value to string>");
+        return true;
+    }
+
+    JS::UniqueChars s(JS_EncodeStringToUTF8(cx, jstr));
+    if (!s)
+        return false;
+
+    g_warning("%s", s.get());
+
+    argv.rval().setUndefined();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_log_error(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
@@ -137,6 +167,7 @@ static bool gjs_printerr(JSContext* context, unsigned argc, JS::Value* vp) {
 // clang-format off
 static constexpr JSFunctionSpec funcs[] = {
     JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("warn", gjs_warn, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),

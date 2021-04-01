@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -40,6 +41,7 @@ namespace js {
 class SystemAllocPolicy;
 }
 class GjsAtoms;
+class GjsEventLoop;
 class JSTracer;
 
 using JobQueueStorage =
@@ -72,7 +74,9 @@ class GjsContextPrivate : public JS::JobQueue {
     std::vector<std::string> m_args;
 
     JobQueueStorage m_job_queue;
-    unsigned m_idle_drain_handler;
+    GSource* m_promise_queue_source;
+    GCancellable* m_promise_queue_source_cancellable;
+    GjsEventLoop* m_event_loop;
 
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
 
@@ -126,7 +130,6 @@ class GjsContextPrivate : public JS::JobQueue {
     class SavedQueue;
     void start_draining_job_queue(void);
     void stop_draining_job_queue(void);
-    static gboolean drain_job_queue_idle_handler(void* data);
 
     void warn_about_unhandled_promise_rejections(void);
 
@@ -169,6 +172,7 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] JSObject* internal_global() const {
         return m_internal_global.get();
     }
+    [[nodiscard]] GjsEventLoop* event_loop() const { return m_event_loop; }
     [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
     [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
     [[nodiscard]] bool destroying() const { return m_destroying.load(); }

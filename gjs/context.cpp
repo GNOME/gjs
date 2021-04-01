@@ -72,6 +72,7 @@
 #include "gjs/importer.h"
 #include "gjs/internal.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/mainloop.h"
 #include "gjs/mem.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
@@ -79,8 +80,11 @@
 #include "gjs/profiler-private.h"
 #include "gjs/profiler.h"
 #include "gjs/text-encoding.h"
+#include "gjs/promise.h"
 #include "modules/modules.h"
 #include "util/log.h"
+
+class GjsEventLoop;
 
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
@@ -320,6 +324,8 @@ gjs_context_class_init(GjsContextClass *klass)
     g_free (priv_typelib_dir);
     }
 
+    gjs_register_native_module("_promiseNative",
+                               gjs_define_native_promise_stuff);
     gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
     gjs_register_native_module("_encodingNative",
                                gjs_define_text_encoding_stuff);
@@ -446,6 +452,7 @@ GjsContextPrivate::~GjsContextPrivate(void) {
     g_clear_pointer(&m_search_path, g_strfreev);
     g_clear_pointer(&m_program_path, g_free);
     g_clear_pointer(&m_program_name, g_free);
+    g_clear_pointer(&m_event_loop, gjs_event_loop_free);
 }
 
 static void
@@ -493,8 +500,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     : m_public_context(public_context),
       m_cx(cx),
       m_owner_thread(std::this_thread::get_id()),
+      m_event_loop(gjs_event_loop_new()),
       m_environment_preparer(cx) {
-
     JS_SetGCCallback(
         cx,
         [](JSContext*, JSGCStatus status, JS::GCReason reason, void* data) {
@@ -861,32 +868,33 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
 }
 
 void GjsContextPrivate::start_draining_job_queue(void) {
-    if (!m_idle_drain_handler) {
+    if (!m_promise_queue_source) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Starting promise job queue handler");
-        m_idle_drain_handler = g_idle_add_full(
-            G_PRIORITY_DEFAULT, drain_job_queue_idle_handler, this, nullptr);
+
+        m_promise_queue_source_cancellable = g_cancellable_new();
+        m_promise_queue_source = gjs_promise_job_queue_source_new(
+            this, m_promise_queue_source_cancellable);
+
+        gjs_promise_job_queue_source_attach(m_promise_queue_source);
     }
+
+    gjs_promise_job_queue_source_wakeup(m_promise_queue_source);
 }
 
 void GjsContextPrivate::stop_draining_job_queue(void) {
     m_draining_job_queue = false;
-    if (m_idle_drain_handler) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Stopping promise job queue handler");
-        g_source_remove(m_idle_drain_handler);
-        m_idle_drain_handler = 0;
-    }
-}
 
-gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
-    gjs_debug(GJS_DEBUG_CONTEXT, "Promise job queue handler");
-    auto* gjs = static_cast<GjsContextPrivate*>(data);
-    gjs->runJobs(gjs->context());
-    /* Uncatchable exceptions are swallowed here - no way to get a handle on
-     * the main loop to exit it from this idle handler */
-    gjs_debug(GJS_DEBUG_CONTEXT, "Promise job queue handler finished");
-    g_assert(gjs->empty() && gjs->m_idle_drain_handler == 0 &&
-             "GjsContextPrivate::runJobs() should have emptied queue");
-    return G_SOURCE_REMOVE;
+    if (m_promise_queue_source_cancellable) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Cancelling promise job queue handler");
+        g_cancellable_cancel(m_promise_queue_source_cancellable);
+    }
+
+    if (m_promise_queue_source) {
+        gjs_debug(GJS_DEBUG_CONTEXT, "Destroying promise job queue handler");
+        gjs_promise_job_queue_source_remove(m_promise_queue_source);
+        m_promise_queue_source = nullptr;
+        m_promise_queue_source_cancellable = nullptr;
+    }
 }
 
 JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
@@ -908,11 +916,6 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
               "Enqueue job %s, promise=%s, allocation site=%s",
               gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
               gjs_debug_object(allocation_site).c_str());
-
-    if (m_idle_drain_handler)
-        g_assert(!empty());
-    else
-        g_assert(empty());
 
     if (!m_job_queue.append(job)) {
         JS_ReportOutOfMemory(m_cx);
@@ -998,8 +1001,8 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
         }
     }
 
+    m_draining_job_queue = false;
     m_job_queue.clear();
-    stop_draining_job_queue();
     JS::JobQueueIsEmpty(m_cx);
     return retval;
 }
@@ -1008,14 +1011,12 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
  private:
     GjsContextPrivate* m_gjs;
     JS::PersistentRooted<JobQueueStorage> m_queue;
-    bool m_idle_was_pending : 1;
     bool m_was_draining : 1;
 
  public:
     explicit SavedQueue(GjsContextPrivate* gjs)
         : m_gjs(gjs),
           m_queue(gjs->m_cx, std::move(gjs->m_job_queue)),
-          m_idle_was_pending(gjs->m_idle_drain_handler != 0),
           m_was_draining(gjs->m_draining_job_queue) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Pausing job queue");
         gjs->stop_draining_job_queue();
@@ -1025,8 +1026,7 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
         gjs_debug(GJS_DEBUG_CONTEXT, "Unpausing job queue");
         m_gjs->m_job_queue = std::move(m_queue.get());
         m_gjs->m_draining_job_queue = m_was_draining;
-        if (m_idle_was_pending)
-            m_gjs->start_draining_job_queue();
+        m_gjs->start_draining_job_queue();
     }
 };
 
@@ -1228,12 +1228,17 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
 
+    if (ok)
+        gjs_event_loop_spin(m_event_loop, m_public_context);
+
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks. */
     {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs_fallible() && ok;
+
+        stop_draining_job_queue();
     }
 
     auto_profile_exit(auto_profile);
@@ -1244,13 +1249,17 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     }
 
     if (exit_status_p) {
+        uint8_t code;
         if (retval.isInt32()) {
             int code = retval.toInt32();
             gjs_debug(GJS_DEBUG_CONTEXT,
                       "Script returned integer code %d", code);
             *exit_status_p = code;
+        } else if (should_exit(&code)) {
+            *exit_status_p = code;
         } else {
-            /* Assume success if no integer was returned */
+            /* Assume success if no integer was returned and should exit isn't
+             * set */
             *exit_status_p = 0;
         }
     }
@@ -1284,9 +1293,10 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         return false;
     }
 
-    bool ok = true;
-    if (!JS::ModuleEvaluate(m_cx, obj))
-        ok = false;
+    bool ok = JS::ModuleEvaluate(m_cx, obj);
+
+    if (ok)
+        gjs_event_loop_spin(m_event_loop, m_public_context);
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
@@ -1295,6 +1305,8 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs_fallible() && ok;
+
+        stop_draining_job_queue();
     }
 
     auto_profile_exit(auto_profile);

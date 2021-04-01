@@ -120,6 +120,7 @@ jasmine_tests = [
     'Regress',
     'Signals',
     'System',
+    'Timers',
     'Tweener',
     'WarnLib',
 ]

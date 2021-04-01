@@ -254,5 +254,9 @@ globals:
   print: readonly
   printerr: readonly
   window: readonly
+  setTimeout: readonly
+  setInterval: readonly
+  clearTimeout: readonly
+  clearInterval: readonly
 parserOptions:
   ecmaVersion: 2020

@@ -86,14 +86,15 @@ describe('Mainloop.idle_add()', function () {
         });
     });
 
-    // Add an idle before exit, then never run main loop again.
-    // This is to test that we remove idle callbacks when the associated
-    // JSContext is blown away. The leak check in minijasmine will
-    // fail if the idle function is not garbage collected.
-    it('does not leak idle callbacks', function () {
-        Mainloop.idle_add(() => {
-            fail('This should never have been called');
-            return true;
-        });
-    });
+    // TODO(ewlsh): This no longer works with our implicit mainloop.
+    // // Add an idle before exit, then never run main loop again.
+    // // This is to test that we remove idle callbacks when the associated
+    // // JSContext is blown away. The leak check in minijasmine will
+    // // fail if the idle function is not garbage collected.
+    // it('does not leak idle callbacks', function () {
+    //     Mainloop.idle_add(() => {
+    //         fail('This should never have been called');
+    //         return true;
+    //     });
+    // });
 });

@@ -3,3 +3,8 @@
 # SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 rules:
   jsdoc/require-jsdoc: 'off'
+globals:
+  setTimeout: off
+  setInterval: off
+  clearTimeout: off
+  clearInterval: off

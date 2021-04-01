@@ -41,6 +41,7 @@
 #include "gjs/importer.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/mainloop.h"
 #include "gjs/mem-private.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
@@ -512,7 +513,7 @@ class PromiseData {
 
 static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
     std::unique_ptr<PromiseData> promise(PromiseData::from_ptr(data));
-
+    auto priv = GjsContextPrivate::from_cx(promise->cx);
     char* contents;
     size_t length;
     GError* error = nullptr;
@@ -524,6 +525,7 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
                          error->message);
         g_clear_error(&error);
         promise->reject_with_pending_exception();
+        gjs_event_loop_unref(priv->event_loop());
         return;
     }
 
@@ -532,10 +534,12 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
     g_free(contents);
     if (!ok) {
         promise->reject_with_pending_exception();
+
         return;
     }
 
     promise->resolve(text);
+    gjs_event_loop_unref(priv->event_loop());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -549,6 +553,7 @@ static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_assert(JS_ObjectIsFunction(resolve) && "Executor called weirdly");
     g_assert(JS_ObjectIsFunction(reject) && "Executor called weirdly");
 
+    auto priv = GjsContextPrivate::from_cx(cx);
     JS::Value priv_value = js::GetFunctionNativeReserved(&args.callee(), 0);
     g_assert(!priv_value.isNull() && "Executor called twice");
     GjsAutoUnref<GFile> file = G_FILE(priv_value.toPrivate());
@@ -559,6 +564,7 @@ static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     auto* data = new PromiseData(cx, JS_GetObjectFunction(resolve),
                                  JS_GetObjectFunction(reject));
+    gjs_event_loop_ref(priv->event_loop());
     g_file_load_contents_async(file, nullptr, load_async_callback, data);
 
     args.rval().setUndefined();
