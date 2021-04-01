@@ -24,5 +24,7 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     return JS_DefinePropertyById(cx, constructor, atoms.gtype(), gtype_obj,
-                                 JSPROP_PERMANENT);
+                                 JSPROP_PERMANENT) &&
+           JS_DefinePropertyById(cx, constructor, atoms.gobject_type(),
+                                 gtype_obj, JSPROP_PERMANENT);
 }

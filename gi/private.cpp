@@ -413,6 +413,10 @@ static JSFunctionSpec module_funcs[] = {
 };
 
 static JSPropertySpec module_props[] = {
+    JS_PSG("gobject_prototype_symbol",
+           symbol_getter<&GjsAtoms::gobject_prototype>, GJS_MODULE_PROP_FLAGS),
+    JS_PSG("gobject_type_symbol", symbol_getter<&GjsAtoms::gobject_type>,
+           GJS_MODULE_PROP_FLAGS),
     JS_PSG("hook_up_vfunc_symbol", symbol_getter<&GjsAtoms::hook_up_vfunc>,
            GJS_MODULE_PROP_FLAGS),
     JS_PSG("signal_find_symbol", symbol_getter<&GjsAtoms::signal_find>,

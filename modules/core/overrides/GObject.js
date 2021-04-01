@@ -78,6 +78,60 @@ function registerClass(...args) {
     return initclass._classInit(klass);
 }
 
+function registerType(klass) {
+    let gtypename = _createGTypeName(klass);
+    let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
+    let gobjectInterfaces = klass.hasOwnProperty(interfaces) ? klass[interfaces] : [];
+    let propertiesArray = _propertiesAsArray(klass);
+    let parent = Object.getPrototypeOf(klass);
+    let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
+
+    propertiesArray.forEach(pspec => _checkAccessors(klass.prototype, pspec, GObject));
+
+    let registered_type = Gi.register_type(parent[Gi.gobject_prototype_symbol] ?? parent.prototype, gtypename, gflags,
+        gobjectInterfaces, propertiesArray);
+
+    // TODO: Construct a better "wrapper" than the registered prototype
+    // TODO: Avoid discarding a constructed constructor
+    klass[Gi.gobject_prototype_symbol] = registered_type.prototype;
+    klass.prototype[Gi.gobject_prototype_symbol] = registered_type.prototype;
+    klass[Gi.gobject_type_symbol] = registered_type[Gi.gobject_type_symbol];
+    // klass.prototype[Gi.gobject_type_symbol] = registered_type[Gi.gobject_type_symbol];
+
+    _createSignals(klass[Gi.gobject_type_symbol], gobjectSignals);
+
+    gobjectInterfaces.forEach(iface => _copyAllDescriptorsNoOverwrite(klass.prototype, iface.prototype));
+
+    Object.getOwnPropertyNames(klass.prototype)
+    .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
+    .forEach(name => {
+        let descr = Object.getOwnPropertyDescriptor(klass.prototype, name);
+        if (typeof descr.value !== 'function')
+            return;
+
+        let func = klass.prototype[name];
+
+        if (name.startsWith('vfunc_')) {
+            klass[Gi.gobject_prototype_symbol][Gi.hook_up_vfunc_symbol](name.slice(6), func);
+        } else if (name.startsWith('on_')) {
+            let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
+                klass[Gi.gobject_type_symbol]);
+            if (id !== 0) {
+                GObject.signal_override_class_closure(id, klass[Gi.gobject_type_symbol], function (...argArray) {
+                    let emitter = argArray.shift();
+
+                    return func.apply(emitter, argArray);
+                });
+            }
+        }
+    });
+
+    gobjectInterfaces.forEach(iface =>
+        _checkInterface(iface, klass.prototype));
+
+    return registered_type[Gi.gobject_type_symbol];
+}
+
 // Some common functions between GObject.Class and GObject.Interface
 
 function _createSignals(gtype, sigs) {
@@ -173,6 +227,17 @@ function _copyAllDescriptors(target, source, filter) {
     .forEach(key => {
         let descriptor = Object.getOwnPropertyDescriptor(source, key);
         Object.defineProperty(target, key, descriptor);
+    });
+}
+
+function _copyAllDescriptorsNoOverwrite(target, source) {
+    [...Object.getOwnPropertyNames(source), ...Object.getOwnPropertySymbols(source)]
+    .forEach(key => {
+        if (!target[key]) {
+            let descriptor = Object.getOwnPropertyDescriptor(source, key);
+
+            Object.defineProperty(target, key, descriptor);
+        }
     });
 }
 
@@ -430,6 +495,7 @@ function _init() {
     };
 
     GObject.registerClass = registerClass;
+    GObject.registerType = registerType;
 
     GObject.Object._classInit = function (klass) {
         let gtypename = _createGTypeName(klass);
@@ -441,7 +507,7 @@ function _init() {
 
         propertiesArray.forEach(pspec => _checkAccessors(klass.prototype, pspec, GObject));
 
-        let newClass = Gi.register_type(parent.prototype, gtypename, gflags,
+        let newClass = Gi.register_type(parent[Gi.gobject_prototype_symbol] ?? parent.prototype, gtypename, gflags,
             gobjectInterfaces, propertiesArray);
         Object.setPrototypeOf(newClass, parent);
 

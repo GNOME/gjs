@@ -1622,6 +1622,10 @@ bool ObjectInstance::constructor_impl(JSContext* context,
     if (!JS_HasOwnPropertyById(context, rooted_target, gjs->atoms().gtype(),
                                &has_gtype))
         return false;
+    if (!has_gtype &&
+        !JS_HasOwnPropertyById(context, rooted_target,
+                               gjs->atoms().gobject_type(), &has_gtype))
+        return false;
 
     if (!has_gtype) {
         gjs_throw(context,
@@ -1631,9 +1635,25 @@ bool ObjectInstance::constructor_impl(JSContext* context,
         return false;
     }
 
-    return gjs_object_require_property(context, object, "GObject instance",
-                                       gjs->atoms().init(), &initer) &&
-           gjs->call_function(object, initer, argv, argv.rval());
+    // If our instance is an instance of &klass it is an instance of a native
+    // class.
+    if (JS_InstanceOf(context, object, &klass, nullptr)) {
+        return gjs_object_require_property(context, object, "GObject instance",
+                                           gjs->atoms().init(), &initer) &&
+               gjs->call_function(object, initer, argv, argv.rval());
+        // Otherwise it is a JS-based class and we should call the constructor
+        // directly.
+    } else {
+        // TODO(ewlsh): This needs error guards.
+        ObjectBase* priv = ObjectBase::for_js(context, object);
+
+        if (!priv->check_is_instance(context, "initialize"))
+            return false;
+
+        JS::RootedObject obj(context, object);
+
+        return priv->to_instance()->init_impl(context, argv, &obj);
+    }
 }
 
 void ObjectInstance::trace_impl(JSTracer* tracer) {

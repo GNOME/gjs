@@ -429,8 +429,23 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         JS::RootedObject proto(cx);
         if (!JS_GetPrototype(cx, obj, &proto))
             return false;
-        if (JS_GetClass(proto) != &Base::klass) {
-            gjs_throw(cx, "Tried to construct an object without a GType");
+
+        JS::RootedValue gproto(cx);
+
+        bool has_property = false;
+
+        auto gjs_cx = GjsContextPrivate::from_cx(cx);
+        auto atoms = gjs_cx->atoms();
+        if (!JS_HasOwnPropertyById(cx, proto, atoms.gobject_prototype(),
+                                   &has_property))
+            return false;
+
+        if (JS_GetClass(proto) != &Base::klass &&
+            (!has_property ||
+             !JS_GetPropertyById(cx, proto, atoms.gobject_prototype(),
+                                 &gproto) ||
+             !gproto.isObject())) {
+            gjs_throw(cx, "Tried to construct an object without a GType!");
             return false;
         }
 
@@ -896,6 +911,22 @@ class GIWrapperPrototype : public Base {
                                                      JS::HandleObject wrapper) {
         JS::RootedObject proto(cx);
         JS_GetPrototype(cx, wrapper, &proto);
+
+        if (JS_GetClass(proto) != &Base::klass) {
+            JS::RootedValue gproto(cx);
+
+            auto priv = GjsContextPrivate::from_cx(cx);
+            auto atoms = priv->atoms();
+
+            if (JS_GetPropertyById(cx, proto, atoms.gobject_prototype(),
+                                   &gproto) &&
+                gproto.isObject()) {
+                proto.set(&gproto.toObject());
+            }
+
+            // TODO(ewlsh): Handle assertions with errors instead.
+        }
+
         Base* retval = Base::for_js(cx, proto);
         g_assert(retval);
         return retval->to_prototype();

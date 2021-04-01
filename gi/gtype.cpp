@@ -129,6 +129,9 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
         // property on that and hope it's a GType wrapper object
         if (!JS_GetPropertyById(cx, object, atoms.gtype(), &v_gtype))
             return false;
+        if (!v_gtype.isObject() &&
+            !JS_GetPropertyById(cx, object, atoms.gobject_type(), &v_gtype))
+            return false;
         if (!v_gtype.isObject()) {
             // OK, so we're not a class. But maybe we're an instance. Check for
             // "constructor" and recurse on that.
