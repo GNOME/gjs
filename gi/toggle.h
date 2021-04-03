@@ -42,8 +42,8 @@ private:
     std::deque<Item> q;
     std::atomic_bool m_shutdown = ATOMIC_VAR_INIT(false);
 
-    unsigned m_idle_id;
-    Handler m_toggle_handler;
+    unsigned m_idle_id = 0;
+    Handler m_toggle_handler = nullptr;
     std::atomic<GObject*> m_toggling_gobj = nullptr;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
