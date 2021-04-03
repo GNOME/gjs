@@ -1401,9 +1401,7 @@ ObjectInstance::release_native_object(void)
 void
 gjs_object_clear_toggles(void)
 {
-    auto& toggle_queue = ToggleQueue::get_default();
-    while (toggle_queue.handle_toggle(toggle_handler))
-        ;
+    ToggleQueue::get_default().handle_all_toggles(toggle_handler);
 }
 
 void

@@ -44,12 +44,16 @@ ToggleQueue::find_and_erase_operation_locked(const GObject               *gobj,
     return had_toggle;
 }
 
+void ToggleQueue::handle_all_toggles(Handler handler) {
+    while (handle_toggle(handler))
+        ;
+}
+
 gboolean
 ToggleQueue::idle_handle_toggle(void *data)
 {
     auto self = static_cast<ToggleQueue *>(data);
-    while (self->handle_toggle(self->m_toggle_handler))
-        ;
+    self->handle_all_toggles(self->m_toggle_handler);
 
     return G_SOURCE_REMOVE;
 }

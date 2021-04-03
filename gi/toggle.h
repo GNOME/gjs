@@ -75,6 +75,7 @@ private:
      * want to wait for it to be processed in idle time. Returns false if queue
      * is empty. */
     bool handle_toggle(Handler handler);
+    void handle_all_toggles(Handler handler);
 
     /* Checks if the gobj is currently being handled, to avoid recursion */
     bool is_being_handled(GObject* gobj);
