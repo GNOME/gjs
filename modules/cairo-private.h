@@ -282,7 +282,7 @@ class CairoPSSurface : public CWrapper<CairoPSSurface, cairo_surface_t> {
 class CairoPSSurface {
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* from_c_ptr(JSContext* cx, cairo_surface_t* surface);
-}
+};
 #endif  // CAIRO_HAS_PS_SURFACE
 
 #ifdef CAIRO_HAS_PDF_SURFACE
@@ -328,7 +328,7 @@ class CairoPDFSurface {
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* from_c_ptr(JSContext* cx, cairo_surface_t* surface);
-}
+};
 #endif  // CAIRO_HAS_PDF_SURFACE
 
 #ifdef CAIRO_HAS_SVG_SURFACE
@@ -373,7 +373,7 @@ class CairoSVGSurface {
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* from_c_ptr(JSContext* cx, cairo_surface_t* surface);
-}
+};
 #endif  // CAIRO_HAS_SVG_SURFACE
 
 /* pattern */
