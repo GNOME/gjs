@@ -1,5 +1,16 @@
 # Hacking on GJS #
 
+## Quick start ##
+
+If you are looking to get started quickly, then you can clone GJS using
+GNOME Builder and choose the `org.gnome.GjsConsole` build configuration.
+
+For the most part, you will be able to build GJS with the Build button
+and run the interpreter with the Run button.
+If you need to issue any of the Meson commands manually, make sure to do
+so in a runtime terminal (Ctrl+Alt+T) rather than a build terminal or a
+regular terminal.
+
 ## Setting up ##
 
 First of all, if you are contributing C++ code, install the handy git
