@@ -1,10 +1,10 @@
 [![Build Status](https://gitlab.gnome.org/GNOME/gjs/badges/master/pipeline.svg)](https://gitlab.gnome.org/GNOME/gjs/pipelines)
 [![Coverage report](https://gitlab.gnome.org/GNOME/gjs/badges/master/coverage.svg)](https://gnome.pages.gitlab.gnome.org/gjs/)
-[![Contributors](https://img.shields.io/github/contributors/GNOME/gjs.svg)](https://gitlab.gnome.org/GNOME/gjs/-/graphs/master)
-[![Last commit](https://img.shields.io/github/last-commit/GNOME/gjs.svg)](https://gitlab.gnome.org/GNOME/gjs/commits/master)
+[![Contributors](https://img.shields.io/github/contributors/GNOME/gjs.svg)](https://gitlab.gnome.org/GNOME/gjs/-/graphs/HEAD)
+[![Last commit](https://img.shields.io/github/last-commit/GNOME/gjs.svg)](https://gitlab.gnome.org/GNOME/gjs/commits/HEAD)
 [![Search hit](https://img.shields.io/github/search/GNOME/gjs/goto.svg?label=github%20hits)](https://github.com/search?utf8=%E2%9C%93&q=gjs&type=)
-[![License](https://img.shields.io/badge/License-LGPL%20v2%2B-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/master/COPYING)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/master/COPYING)
+[![License](https://img.shields.io/badge/License-LGPL%20v2%2B-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/COPYING)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/COPYING)
 
 JavaScript bindings for GNOME
 =============================
@@ -39,7 +39,7 @@ Type `gjs --help` for more information.
 
 For instructions on how to get started contributing to GJS, please read
 the contributing guide,
-<https://gitlab.gnome.org/GNOME/gjs/blob/master/CONTRIBUTING.md>.
+<https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/CONTRIBUTING.md>.
 
 ## History
 
@@ -63,7 +63,7 @@ a forked version, [Cinnamon].
 
 ### Documentation
 
-* [Get started](https://gitlab.gnome.org/GNOME/gjs/-/blob/master/doc/Home.md)
+* [Get started](https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/doc/Home.md)
 * [API documentation](https://gjs-docs.gnome.org/)
 
 ### JavaScript & SpiderMonkey
@@ -85,7 +85,7 @@ The form of this README was inspired by [Nadia Odunayo][hospitable] on
 the Greater Than Code podcast.
 
 [havocp]: https://blog.ometer.com/2008/08/25/embeddable-languages/
-[gscript]: https://gitlab.gnome.org/Archive/gscript/tree/master/gscript
+[gscript]: https://gitlab.gnome.org/Archive/gscript/tree/HEAD/gscript
 [litl webbook]: https://en.wikipedia.org/wiki/Litl
 [GNOME Shell]: https://wiki.gnome.org/Projects/GnomeShell
 [treitter]: https://treitter.livejournal.com/14871.html

@@ -6,7 +6,7 @@ To find out when a language feature was implemented in GJS, review [NEWS][gjs-ne
 
 GJS includes some built-in modules like Cairo and Gettext, as well as helpers for some core APIs like DBus and GVariants. See the [Modules](Modules.md) page for an overview of the built-in modules and their usage.
 
-[gjs-news]: https://gitlab.gnome.org/GNOME/gjs/raw/master/NEWS
+[gjs-news]: https://gitlab.gnome.org/GNOME/gjs/raw/HEAD/NEWS
 [mdn-polyfills]: https://developer.mozilla.org/docs/Glossary/Polyfill
 
 ## GNOME API Documentation
@@ -18,8 +18,8 @@ The [Mapping](Mapping.md) page has an overview of GNOME API usage in GJS such as
 There are also a growing number of [examples][gjs-examples] and thorough tests of language features in the [test suite][gjs-tests].
 
 [gjs-docs]: https://gjs-docs.gnome.org/
-[gjs-examples]: https://gitlab.gnome.org/GNOME/gjs/tree/master/examples
-[gjs-tests]: https://gitlab.gnome.org/GNOME/gjs/blob/master/installed-tests/js
+[gjs-examples]: https://gitlab.gnome.org/GNOME/gjs/tree/HEAD/examples
+[gjs-tests]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/installed-tests/js
 
 
 ## Standalone Applications

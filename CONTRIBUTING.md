@@ -331,10 +331,10 @@ this guide!
 [devdocs]: https://github.com/ptomato/devdocs
 [gjsguide]: https://gitlab.gnome.org/rockon999/gjs-guide
 [workflow]: https://wiki.gnome.org/GitLab#Using_a_fork_-_Non_GNOME_developer
-[hacking]: https://gitlab.gnome.org/GNOME/gjs/blob/master/doc/Hacking.md
-[doap]: https://gitlab.gnome.org/GNOME/gjs/blob/master/gjs.doap
+[hacking]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/Hacking.md
+[doap]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/gjs.doap
 [googlestyle]: https://google.github.io/styleguide/cppguide.html
-[cppstyle]: https://gitlab.gnome.org/GNOME/gjs/blob/master/doc/CPP_Style_Guide.md
+[cppstyle]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/CPP_Style_Guide.md
 [eslint]: https://eslint.org/
 [commitmessages]: https://chris.beams.io/posts/git-commit/
 [contributingtemplate]: https://github.com/nayafia/contributing-template

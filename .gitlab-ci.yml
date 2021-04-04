@@ -14,7 +14,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2020-11-23.0'
+    FDO_DISTRIBUTION_TAG: '2021-04-02.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -27,7 +27,7 @@ build-alpine-image:
     FDO_DISTRIBUTION_EXEC: |
       python3 -m ensurepip &&
       rm -r /usr/lib/python*/ensurepip &&
-      pip3 install --no-cache --upgrade cpplint reuse &&
+      pip3 install --no-cache --upgrade cpplint reuse codespell &&
       mkdir -p /cwd
 
 .coverage: &coverage
@@ -234,10 +234,12 @@ iwyu:
 
 codespell:
   when: on_success
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
   stage: source_check
-  image: "docker.io/bilelmoussaoui/codespell"
   script:
-    - codespell -S "*.png,*.po,*.jpg,.git,LICENSES" -f --builtin "code,clear" --skip="./installed-tests/js/jasmine.js" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
+    - codespell -S "*.png,*.po,*.jpg,.git,LICENSES" -f --builtin "code,usage,clear" --skip="./installed-tests/js/jasmine.js,./README.md,./subprojects/glib.wrap,./subprojects/gobject-introspection.wrap,./subprojects/sysprof.wrap" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
   except:
     - schedules
 

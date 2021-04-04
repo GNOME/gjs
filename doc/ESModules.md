@@ -1,6 +1,6 @@
 # Modules: ECMAScript modules
 
-> _This documentation is inspired by [Node.js' documentation](https://github.com/nodejs/node/blob/master/doc/api/esm.md)
+> _This documentation is inspired by [Node.js' documentation](https://github.com/nodejs/node/blob/HEAD/doc/api/esm.md)
 > on ECMAScript modules._
 
 ECMAScript Modules or "ES modules" are the [official ECMAScript
