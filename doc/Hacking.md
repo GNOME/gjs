@@ -49,10 +49,14 @@ SpiderMonkey cannot be auto-installed, so you will need to install it
 either through your system's package manager, or building it yourself.
 Even if your system includes a development package for SpiderMonkey, we
 still recommend building it if you are going to do any development on
-GJS so that you can enable the debugging features.
+GJS's C++ code so that you can enable the debugging features.
 These debugging features reduce performance by quite a lot, but they
 will help catch mistakes in the API that could otherwise go unnoticed
 and cause crashes in gnome-shell later on.
+
+If you aren't writing any C++ code, then you don't need to build it
+yourself. Install SpiderMonkey using your system's package manager
+instead.
 
 To build SpiderMonkey, follow the instructions on [this page](https://github.com/mozilla-spidermonkey/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md) to download the source code and build the library.
 If you are using `-Dprefix` to build GJS into a different path, then
