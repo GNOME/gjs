@@ -49,4 +49,6 @@ GObject* gjs_test_tools_get_weak_other_thread();
 
 GObject* gjs_test_tools_get_disposed(GObject* object);
 
+int gjs_test_tools_open_bytes(GBytes* bytes, GError** error);
+
 G_END_DECLS

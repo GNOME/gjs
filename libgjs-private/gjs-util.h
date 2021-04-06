@@ -57,10 +57,6 @@ void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
                                           const char* property,
                                           const GValue* value);
 
-/* For tests */
-GJS_EXPORT
-int gjs_open_bytes(GBytes* bytes, GError** error);
-
 G_END_DECLS
 
 #endif /* LIBGJS_PRIVATE_GJS_UTIL_H_ */
