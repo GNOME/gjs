@@ -1385,6 +1385,10 @@ ObjectInstance::release_native_object(void)
         return;
     }
 
+    if (m_ptr)
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Releasing native object %s %p",
+                            g_type_name(gtype()), m_ptr.get());
+
     if (m_gobj_disposed)
         ignore_gobject_finalization();
 
@@ -2507,8 +2511,8 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     GType gtype = G_TYPE_FROM_INSTANCE(gobj);
 
-    gjs_debug_marshal(GJS_DEBUG_GOBJECT, "Wrapping %s with JSObject",
-                      g_type_name(gtype));
+    gjs_debug_marshal(GJS_DEBUG_GOBJECT, "Wrapping %s %p with JSObject",
+                      g_type_name(gtype), gobj);
 
     JS::RootedObject proto(cx, gjs_lookup_object_prototype(cx, gtype));
     if (!proto)
