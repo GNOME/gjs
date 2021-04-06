@@ -100,5 +100,5 @@ GJS allows runtime configuration with a number of environment variables.
   typically useful to set this manually.
 
 
-[hacking-gczeal]: https://gitlab.gnome.org/GNOME/gjs/blob/master/doc/Hacking.md#gc-zeal
+[hacking-gczeal]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/Hacking.md#gc-zeal
 [mdn-gczeal]: https://developer.mozilla.org/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS_SetGCZeal

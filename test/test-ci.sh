@@ -30,7 +30,7 @@ do_Get_Upstream_Base () {
     # of date branches.
     #
     # Limit the fetch to a certain date horizon to limit the amount of data we
-    # get. If the branch was forked from origin/master before this horizon, it
+    # get. If the branch was forked from the main branch before this horizon, it
     # should probably be rebased.
     git remote add upstream https://gitlab.gnome.org/GNOME/gjs.git || \
         git remote set-url upstream https://gitlab.gnome.org/GNOME/gjs.git

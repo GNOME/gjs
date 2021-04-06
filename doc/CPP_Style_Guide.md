@@ -34,7 +34,7 @@ at <https://gitlab.gnome.org/GNOME/gjs>.
 
 [google]: https://google.github.io/styleguide/cppguide.html
 [llvm]: https://llvm.org/docs/CodingStandards.html
-[llvm-source]: https://raw.githubusercontent.com/llvm-mirror/llvm/master/docs/CodingStandards.rst
+[llvm-source]: https://raw.githubusercontent.com/llvm-mirror/llvm/HEAD/docs/CodingStandards.rst
 
 ## Languages, Libraries, and Standards ##
 

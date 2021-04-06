@@ -110,6 +110,6 @@ if (GLib.log_writer_is_journald(2))
     GLib.setenv('G_MESSAGES_DEBUG', LOG_DOMAIN, false);
 ```
 
-[global-cpp]: https://gitlab.gnome.org/GNOME/gjs/blob/master/gjs/global.cpp
-[polari]: https://gitlab.gnome.org/GNOME/polari/blob/master/src/main.js
+[global-cpp]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/gjs/global.cpp
+[polari]: https://gitlab.gnome.org/GNOME/polari/blob/HEAD/src/main.js
 

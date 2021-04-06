@@ -90,7 +90,7 @@ Version 1.67.2
     prompt [#371, !556, Ales Huzik]
   * function: Remove JSClass macros [!558, Philip Chimento, Marco Trevisan]
   * Missing classes on global. [#372, !559, Philip Chimento]
-  * arg: fix build failure with glib master [!560, Michael Catanzaro]
+  * arg: fix build failure with glib main branch [!560, Michael Catanzaro]
   * Update to Jasmine 2.9.1 [!561, Evan Welsh]
   * Various maintenance [!562, Philip Chimento]
   * Add list command to debugger [!563, Nasah Kuma]
@@ -225,7 +225,7 @@ Version 1.65.92
 
   * CI: Make iwyu idempotent [!481, Simon McVittie]
   * Enum and flags test failing in s390x [#319, !480, Simon McVittie]
-  * Bring back Visual Studio build support for GJS master [!482, Chun-wei Fan]
+  * Bring back Visual Studio build support for GJS main branch [!482, Chun-wei Fan]
   * gjs_dbus_implementation_emit_signal: don't try to unref NULL [!482, Adam
     Williamson]
   * doc: add third party applications [!484, Sonny Piers]
@@ -243,7 +243,7 @@ Version 1.65.91
   * Crash in gjs_dbus_implementation_flush() [#332, !471, Andy Holmes]
   * eslint: Bump ecmaScript version [!473, Florian Müllner]
   * Documentation: add documentation for ENV variables [!474, Andy Holmes]
-  * Fix build for master on Windows (due to SpiderMonkey-78.x upgrade) [!475,
+  * Fix build for the main branch on Windows (due to SpiderMonkey-78.x upgrade) [!475,
     Chun-wei Fan]
   * Argument cache causes test failure in armhf [#342, !476, Marco Trevisan]
   * Argument cache causes test regressions in s390x [#341, !477, Simon McVittie]
@@ -521,7 +521,7 @@ Version 1.63.91
 - Closed bugs and merge requests:
   * [mozjs68] Reorganize modules for ESM. [Evan Welsh, Philip Chimento, !383]
   * Various maintenance [Philip Chimento, !388]
-  * Fix building GJS master with Visual Studio and update build instructions
+  * Fix building GJS main branch with Visual Studio and update build instructions
     [Chun-wei Fan, !389]
   * Resolve "Gnome Shell crash on GC run with mozjs68" [Philip Chimento, !391]
   * installed-tests/js: Add missing dep on warnlib_typelib [Jan Alexander
@@ -1422,7 +1422,7 @@ Version 1.53.4
 Version 1.53.3
 --------------
 
-- This release was made from an earlier state of master, before a bug was
+- This release was made from an earlier state of the main branch, before a bug was
   introduced, while we sort out how to fix it. As a result, we don't have too
   many changes this round.
 
@@ -1524,7 +1524,7 @@ Version 1.52.1
   version. The intention of 1.52.1 is to deliver a version that runs cleaner
   under performance tools, in time for the upcoming GNOME Shell performance
   hackfest. We also wanted to deliver a stable CI pipeline before branching
-  GNOME 3.28 off of master.
+  GNOME 3.28 off of the main branch.
 
 - Claudio André's work on the CI pipeline deserves a spotlight. We now have
   test jobs that run linters, sanitizers, Valgrind, and more; the tests are
@@ -1538,7 +1538,7 @@ Version 1.52.1
 - heapgraph.py is a tool in the repository (not installed in distributions) for
   analyzing and graphing heap dumps, to aid with tracking down memory leaks.
 
-- The linter CI jobs will compare your branch against GNOME/gjs@master, and fail
+- The linter CI jobs will compare your branch against the main branch of GNOME/gjs, and fail
   if your branch added any new linter errors. There may be false positives, and
   the rules configuration is not perfect. If that's the case on your merge
   request, you can skip the appropriate linter job by adding the text
@@ -1673,7 +1673,7 @@ Version 1.50.3
     Marco Trevisan]
   * Test "Cairo context has methods when created from a C function" fails [#27,
     !35, Valentín Barros]
-  * Various fixes from the master branch for rare crashes [Philip Chimento]
+  * Various fixes from the main branch for rare crashes [Philip Chimento]
 
 Version 1.51.4
 --------------
@@ -1711,7 +1711,7 @@ Version 1.51.4
 Version 1.51.3
 --------------
 
-- This release was made from an earlier state of master, before a breaking
+- This release was made from an earlier state of the main branch, before a breaking
   change was merged, while we decide whether to revert that change or not.
 
 - Closed bugs and merge requests:

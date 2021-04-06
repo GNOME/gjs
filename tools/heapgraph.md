@@ -185,5 +185,5 @@ and heap parsing:
 * [GC.cpp Comments](https://searchfox.org/mozilla-central/source/js/src/gc/GC.cpp)
 * [How JavaScript Objects Are Implemented](https://www.infoq.com/presentations/javascript-objects-spidermonkey)
 * [Tracing garbage collection](https://en.wikipedia.org/wiki/Tracing_garbage_collection#Tri-color_marking) on Wikipedia
-* [SpiderMonkey Memory](https://gitlab.gnome.org/GNOME/gjs/blob/master/doc/SpiderMonkey_Memory.md) via GJS Repo
+* [SpiderMonkey Memory](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/SpiderMonkey_Memory.md) via GJS Repo
 
