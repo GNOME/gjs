@@ -244,31 +244,12 @@ GObject* gjs_test_tools_get_disposed(GObject* object) {
 #ifdef G_OS_UNIX
 
 // Adapted from glnx_throw_errno_prefix()
-G_GNUC_PRINTF(2, 3)
-static gboolean throw_errno_prefix(GError** error, const char* fmt, ...) {
+static gboolean throw_errno_prefix(GError** error, const char* prefix) {
     int errsv = errno;
-    char* old_msg;
-    GString* buf;
-
-    va_list args;
-
-    if (!error)
-        return FALSE;
-
-    va_start(args, fmt);
 
     g_set_error_literal(error, G_IO_ERROR, g_io_error_from_errno(errsv),
                         g_strerror(errsv));
-
-    old_msg = g_steal_pointer(&(*error)->message);
-    buf = g_string_new("");
-    g_string_append_vprintf(buf, fmt, args);
-    g_string_append(buf, ": ");
-    g_string_append(buf, old_msg);
-    g_free(old_msg);
-    (*error)->message = g_string_free(g_steal_pointer(&buf), FALSE);
-
-    va_end(args);
+    g_prefix_error(error, "%s: ", prefix);
 
     errno = errsv;
     return FALSE;
