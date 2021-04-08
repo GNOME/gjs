@@ -464,7 +464,7 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
 
     auto* instance = priv->to_instance();
     if (!instance->set_value(gvalue)) {
-        if (g_type_is_a(instance->gtype(), G_VALUE_TYPE(gvalue))) {
+        if (g_value_type_compatible(instance->gtype(), G_VALUE_TYPE(gvalue))) {
             g_value_set_instance(gvalue, instance->m_ptr);
             return true;
         }
