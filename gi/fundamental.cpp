@@ -443,6 +443,11 @@ JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
     auto* proto_priv = FundamentalPrototype::for_gtype(cx, gtype);
     void* fobj;
     if (!proto_priv->call_get_value_function(value, &fobj)) {
+        if (G_VALUE_HOLDS(value, gtype) && g_value_fits_pointer(value)) {
+            return FundamentalInstance::object_for_c_ptr(
+                cx, g_value_peek_pointer(value));
+        }
+
         gjs_throw(cx, "Failed to convert GValue to a fundamental instance");
         return nullptr;
     }
@@ -457,7 +462,13 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         !priv->check_is_instance(cx, "convert to GValue"))
         return false;
 
-    if (!priv->to_instance()->set_value(gvalue)) {
+    auto* instance = priv->to_instance();
+    if (!instance->set_value(gvalue)) {
+        if (g_type_is_a(instance->gtype(), G_VALUE_TYPE(gvalue))) {
+            g_value_set_instance(gvalue, instance->m_ptr);
+            return true;
+        }
+
         gjs_throw(cx,
                   "Fundamental object does not support conversion to a GValue");
         return false;
