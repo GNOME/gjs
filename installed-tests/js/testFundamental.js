@@ -96,4 +96,16 @@ describe('Fundamental type support', function () {
         expect(() => obj.emit('test-fundamental-no-funcs-subtype', fund)).toThrowError(
             / RegressTestFundamentalObjectNoGetSetFunc .* conversion to a GValue.* RegressTestFundamentalSubObjectNoGetSetFunc/);
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+
+    it('can marshal a custom fundamental type into a transformable type', function () {
+        Regress.TestFundamentalObjectNoGetSetFunc.make_compatible_with_fundamental_sub_object();
+        const fund = new Regress.TestFundamentalObjectNoGetSetFunc('foo');
+        const obj = new TestObj();
+        const signalSpy = jasmine.createSpy('signalSpy');
+        obj.connect('test-fundamental-value-funcs-subtype', signalSpy);
+        obj.connect('test-fundamental-value-funcs-subtype', (_o, f) =>
+            expect(f instanceof Regress.TestFundamentalSubObject).toBeTrue());
+        obj.emit('test-fundamental-value-funcs-subtype', fund);
+        expect(signalSpy).toHaveBeenCalled();
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
 });
