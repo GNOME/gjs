@@ -45,6 +45,6 @@ describe('Fundamental type support', function () {
         const signalSpy = jasmine.createSpy('signalSpy');
         obj.connect('test-fundamental-value-funcs', signalSpy);
         expect(() => obj.emit('test-fundamental-value-funcs', fund)).toThrowError(
-            /conversion to a GValue/);
+            /.* RegressTestFundamentalObjectNoGetSetFunc .* conversion to a GValue.* RegressTestFundamentalSubObject/);
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
 });

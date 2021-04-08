@@ -448,7 +448,10 @@ JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
                 cx, g_value_peek_pointer(value));
         }
 
-        gjs_throw(cx, "Failed to convert GValue to a fundamental instance");
+        gjs_throw(cx,
+                  "Failed to convert GValue of type %s to a fundamental %s "
+                  "instance",
+                  G_VALUE_TYPE_NAME(value), g_type_name(gtype));
         return nullptr;
     }
 
@@ -470,7 +473,9 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         }
 
         gjs_throw(cx,
-                  "Fundamental object does not support conversion to a GValue");
+                  "Fundamental object of type %s does not support conversion "
+                  "to a GValue of type %s",
+                  instance->type_name(), G_VALUE_TYPE_NAME(gvalue));
         return false;
     }
 
