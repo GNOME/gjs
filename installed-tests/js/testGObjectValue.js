@@ -169,6 +169,15 @@ describe('GObject value (GValue)', function () {
         }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
     });
 
+    INSTANCED_TYPES.forEach(type => {
+        it(`initializes from instance of ${type}`, function () {
+            skipUnsupported(type);
+            const instance = getDefaultContentByType(type);
+            v.init_from_instance(instance);
+            expect(getContent(v, type)).toEqual(instance);
+        });
+    });
+
     afterEach(function () {
         v.unset();
     });

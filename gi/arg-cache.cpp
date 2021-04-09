@@ -1389,6 +1389,15 @@ static bool gjs_arg_cache_build_interface_in_arg(JSContext* cx,
         case GI_INFO_TYPE_INTERFACE:
         case GI_INFO_TYPE_UNION: {
             GType gtype = g_registered_type_info_get_g_type(interface_info);
+
+            if (!is_instance_param && interface_type == GI_INFO_TYPE_STRUCT &&
+                gtype == G_TYPE_NONE &&
+                !g_struct_info_is_gtype_struct(interface_info)) {
+                // This covers cases such as GTypeInstance
+                self->marshallers = &fallback_in_marshallers;
+                return true;
+            }
+
             self->contents.object.gtype = gtype;
             self->contents.object.info = g_base_info_ref(interface_info);
 
