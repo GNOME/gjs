@@ -1018,12 +1018,12 @@ gjs_value_from_g_value_internal(JSContext             *context,
     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
         /* The gtype is none of the above, it should be a custom
            fundamental type. */
-        JSObject* obj =
-            FundamentalInstance::object_for_gvalue(context, gvalue, gtype);
-        if (obj == NULL)
+        JS::RootedObject obj(context);
+        if (!FundamentalInstance::object_for_gvalue(context, gvalue, gtype,
+                                                    &obj))
             return false;
-        else
-            value_p.setObject(*obj);
+
+        value_p.setObjectOrNull(obj);
     } else {
         gjs_throw(context,
                   "Don't know how to convert GType %s to JavaScript object",
