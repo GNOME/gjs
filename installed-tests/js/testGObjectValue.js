@@ -7,7 +7,7 @@ const SIGNED_TYPES = ['schar', 'int', 'int64', 'long'];
 const UNSIGNED_TYPES = ['char', 'uchar', 'uint', 'uint64', 'ulong'];
 const FLOATING_TYPES = ['double', 'float'];
 const NUMERIC_TYPES = [...SIGNED_TYPES, ...UNSIGNED_TYPES, ...FLOATING_TYPES];
-const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed'];
+const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed', 'gvalue'];
 const INSTANCED_TYPES = ['object'];
 const ALL_TYPES = [...NUMERIC_TYPES, ...SPECIFIC_TYPES, ...INSTANCED_TYPES];
 
@@ -66,6 +66,13 @@ describe('GObject value (GValue)', function () {
                 randomString: new GLib.Variant('s', getDefaultContentByType('string')),
             });
         }
+        if (type === 'gvalue') {
+            const value = new GObject.Value();
+            const valueType = NUMERIC_TYPES[Math.random() * NUMERIC_TYPES.length | 0];
+            value.init(getGType(valueType));
+            setContent(value, valueType, getDefaultContentByType(valueType));
+            return value;
+        }
 
         throw new Error(`No default content set for type ${type}`);
     }
@@ -74,15 +81,32 @@ describe('GObject value (GValue)', function () {
         if (type === 'schar')
             return GObject.TYPE_CHAR;
 
-        if (type === 'boxed')
+        if (type === 'boxed' || type === 'gvalue')
             return getDefaultContentByType(type).constructor.$gtype;
 
         return GObject[`TYPE_${type.toUpperCase()}`];
     }
 
+    function getContent(gvalue, type) {
+        if (type === 'gvalue')
+            type = 'boxed';
+
+        return gvalue[`get_${type}`]();
+    }
+
+    function setContent(gvalue, type, content) {
+        if (type === 'gvalue')
+            type = 'boxed';
+
+        return gvalue[`set_${type}`](content);
+    }
+
     function skipUnsupported(type) {
         if (type === 'boxed')
             pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/402');
+
+        if (type === 'gvalue')
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/272');
     }
 
     ALL_TYPES.forEach(type => {
@@ -108,18 +132,18 @@ describe('GObject value (GValue)', function () {
 
             it(`sets and gets ${type}`, function () {
                 skipUnsupported(type);
-                v[`set_${type}`](randomContent);
-                expect(v[`get_${type}`]()).toEqual(randomContent);
+                setContent(v, type, randomContent);
+                expect(getContent(v, type)).toEqual(randomContent);
             });
 
             it(`copies ${type}`, function () {
                 skipUnsupported(type);
-                v[`set_${type}`](randomContent);
+                setContent(v, type, randomContent);
 
                 const other = new GObject.Value();
                 other.init(gtype);
                 v.copy(other);
-                expect(other[`get_${type}`]()).toEqual(randomContent);
+                expect(getContent(other, type)).toEqual(randomContent);
             });
         });
     });
