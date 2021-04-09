@@ -108,4 +108,14 @@ describe('Fundamental type support', function () {
         obj.emit('test-fundamental-value-funcs-subtype', fund);
         expect(signalSpy).toHaveBeenCalled();
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+
+    it('can marshal to a null value', function () {
+        const v = new GObject.Value();
+        expect(v.init(Regress.TestFundamentalObject.$gtype)).toBeNull();
+    });
+
+    it('can marshal to a null value if has no getter function', function () {
+        const v = new GObject.Value();
+        expect(v.init(Regress.TestFundamentalObjectNoGetSetFunc.$gtype)).toBeNull();
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
 });

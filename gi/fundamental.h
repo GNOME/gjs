@@ -173,8 +173,9 @@ class FundamentalInstance
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* object_for_c_ptr(JSContext* cx, void* gfundamental);
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* object_for_gvalue(JSContext* cx, const GValue* gvalue,
-                                       GType gtype);
+    static bool object_for_gvalue(JSContext* cx, const GValue* gvalue,
+                                  GType gtype,
+                                  JS::MutableHandleObject object_out);
 
     static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
 };
