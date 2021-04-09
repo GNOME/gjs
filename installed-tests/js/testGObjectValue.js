@@ -136,6 +136,13 @@ describe('GObject value (GValue)', function () {
                 expect(getContent(v, type)).toEqual(randomContent);
             });
 
+            it(`can be passed to a function and returns a ${type}`, function () {
+                skipUnsupported(type);
+                setContent(v, type, randomContent);
+                expect(GIMarshallingTests.gvalue_round_trip(v)).toEqual(randomContent);
+                expect(GIMarshallingTests.gvalue_copy(v)).toEqual(randomContent);
+            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+
             it(`copies ${type}`, function () {
                 skipUnsupported(type);
                 setContent(v, type, randomContent);
@@ -146,6 +153,20 @@ describe('GObject value (GValue)', function () {
                 expect(getContent(other, type)).toEqual(randomContent);
             });
         });
+
+        it(`can be marshalled and un-marshalled from JS ${type}`, function () {
+            if (['gtype', 'gvalue'].includes(type))
+                pending('Not supported - always implicitly converted');
+            const content = getDefaultContentByType(type);
+            expect(GIMarshallingTests.gvalue_round_trip(content)).toEqual(content);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
+
+    ['int', 'uint', 'boolean', 'gtype', ...FLOATING_TYPES].forEach(type => {
+        it(`can be marshalled and un-marshalled from JS gtype of ${type}`, function () {
+            const gtype = getGType(type);
+            expect(GIMarshallingTests.gvalue_round_trip(gtype).constructor.$gtype).toEqual(gtype);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
     });
 
     afterEach(function () {
