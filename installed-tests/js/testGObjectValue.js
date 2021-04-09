@@ -3,13 +3,11 @@
 
 const {GLib, GObject, GIMarshallingTests} = imports.gi;
 
-GObject.TYPE_SCHAR = GObject.TYPE_CHAR;
-
 const SIGNED_TYPES = ['schar', 'int', 'int64', 'long'];
 const UNSIGNED_TYPES = ['char', 'uchar', 'uint', 'uint64', 'ulong'];
 const FLOATING_TYPES = ['double', 'float'];
 const NUMERIC_TYPES = [...SIGNED_TYPES, ...UNSIGNED_TYPES, ...FLOATING_TYPES];
-const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant'];
+const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed'];
 const INSTANCED_TYPES = ['object'];
 const ALL_TYPES = [...NUMERIC_TYPES, ...SPECIFIC_TYPES, ...INSTANCED_TYPES];
 
@@ -30,21 +28,29 @@ describe('GObject value (GValue)', function () {
             return `Hello GValue! ${getDefaultContentByType('uint')}`;
         if (type === 'boolean')
             return !!(getDefaultContentByType('int') % 2);
-        if (type === 'gtype') {
-            const other = ALL_TYPES[Math.random() * ALL_TYPES.length | 0];
-            return GObject[`TYPE_${other.toUpperCase()}`];
+        if (type === 'gtype')
+            return getGType(ALL_TYPES[Math.random() * ALL_TYPES.length | 0]);
+
+        if (type === 'boxed' || type === 'boxed-struct') {
+            return new GIMarshallingTests.BoxedStruct({
+                long_: getDefaultContentByType('long'),
+                // string_: getDefaultContentByType('string'), not supported
+            });
         }
         if (type === 'object') {
             const wasCreatingObject = this.creatingObject;
             this.creatingObject = true;
             const props = ALL_TYPES.filter(e =>
                 (e !== 'object' || !wasCreatingObject) &&
+                e !== 'boxed' &&
                 e !== 'gtype' &&
                 e !== 'param' &&
                 // Include string when gobject-introspection!268 is merged
                 e !== 'string' &&
-                e !== 'schar').reduce((ac, a) => ({
-                ...ac, [`some-${a}`]: getDefaultContentByType(a)
+                e !== 'schar').concat([
+                'boxed-struct',
+            ]).reduce((ac, a) => ({
+                ...ac, [`some-${a}`]: getDefaultContentByType(a),
             }), {});
             delete this.creatingObject;
             return new GIMarshallingTests.PropertiesObject(props);
@@ -64,8 +70,23 @@ describe('GObject value (GValue)', function () {
         throw new Error(`No default content set for type ${type}`);
     }
 
+    function getGType(type) {
+        if (type === 'schar')
+            return GObject.TYPE_CHAR;
+
+        if (type === 'boxed')
+            return getDefaultContentByType(type).constructor.$gtype;
+
+        return GObject[`TYPE_${type.toUpperCase()}`];
+    }
+
+    function skipUnsupported(type) {
+        if (type === 'boxed')
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/402');
+    }
+
     ALL_TYPES.forEach(type => {
-        const gtype = GObject[`TYPE_${type.toUpperCase()}`];
+        const gtype = getGType(type);
         it(`initializes ${type}`, function () {
             v.init(gtype);
         });
@@ -86,11 +107,13 @@ describe('GObject value (GValue)', function () {
             });
 
             it(`sets and gets ${type}`, function () {
+                skipUnsupported(type);
                 v[`set_${type}`](randomContent);
                 expect(v[`get_${type}`]()).toEqual(randomContent);
             });
 
             it(`copies ${type}`, function () {
+                skipUnsupported(type);
                 v[`set_${type}`](randomContent);
 
                 const other = new GObject.Value();
