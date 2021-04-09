@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
-const {GLib, GObject, GIMarshallingTests} = imports.gi;
+const {GLib, GObject, GIMarshallingTests, Regress} = imports.gi;
 
 const SIGNED_TYPES = ['schar', 'int', 'int64', 'long'];
 const UNSIGNED_TYPES = ['char', 'uchar', 'uint', 'uint64', 'ulong'];
 const FLOATING_TYPES = ['double', 'float'];
 const NUMERIC_TYPES = [...SIGNED_TYPES, ...UNSIGNED_TYPES, ...FLOATING_TYPES];
 const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed', 'gvalue'];
-const INSTANCED_TYPES = ['object'];
+const INSTANCED_TYPES = ['object', 'instance'];
 const ALL_TYPES = [...NUMERIC_TYPES, ...SPECIFIC_TYPES, ...INSTANCED_TYPES];
 
 describe('GObject value (GValue)', function () {
@@ -44,6 +44,7 @@ describe('GObject value (GValue)', function () {
                 (e !== 'object' || !wasCreatingObject) &&
                 e !== 'boxed' &&
                 e !== 'gtype' &&
+                e !== 'instance' &&
                 e !== 'param' &&
                 // Include string when gobject-introspection!268 is merged
                 e !== 'string' &&
@@ -73,6 +74,9 @@ describe('GObject value (GValue)', function () {
             setContent(value, valueType, getDefaultContentByType(valueType));
             return value;
         }
+        if (type === 'instance')
+            return new Regress.TestFundamentalSubObject(getDefaultContentByType('string'));
+
 
         throw new Error(`No default content set for type ${type}`);
     }
@@ -81,7 +85,7 @@ describe('GObject value (GValue)', function () {
         if (type === 'schar')
             return GObject.TYPE_CHAR;
 
-        if (type === 'boxed' || type === 'gvalue')
+        if (type === 'boxed' || type === 'gvalue' || type === 'instance')
             return getDefaultContentByType(type).constructor.$gtype;
 
         return GObject[`TYPE_${type.toUpperCase()}`];
@@ -91,12 +95,20 @@ describe('GObject value (GValue)', function () {
         if (type === 'gvalue')
             type = 'boxed';
 
+        if (type === 'instance') {
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+            return GIMarshallingTests.gvalue_round_trip(gvalue);
+        }
+
         return gvalue[`get_${type}`]();
     }
 
     function setContent(gvalue, type, content) {
         if (type === 'gvalue')
             type = 'boxed';
+
+        if (type === 'instance')
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/402');
 
         return gvalue[`set_${type}`](content);
     }
