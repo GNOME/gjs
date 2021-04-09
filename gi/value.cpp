@@ -992,6 +992,20 @@ gjs_value_from_g_value_internal(JSContext             *context,
         g_base_info_unref((GIBaseInfo*)arg_info);
         g_base_info_unref((GIBaseInfo*)signal_info);
         return res;
+    } else if (gtype == G_TYPE_GTYPE) {
+        GType gvalue_gtype = g_value_get_gtype(gvalue);
+
+        if (gvalue_gtype == 0) {
+            value_p.setNull();
+            return true;
+        }
+
+        JS::RootedObject obj(
+            context, gjs_gtype_create_gtype_wrapper(context, gvalue_gtype));
+        if (!obj)
+            return false;
+
+        value_p.setObject(*obj);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         gpointer pointer;
 
