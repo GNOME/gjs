@@ -201,6 +201,14 @@ const data = file.get_parent().resolve_relative_path('data.json');
 const [, contents] = data.load_contents(null);
 ```
 
+or if you want the path for the current file or directory
+
+```js
+import GLib from 'gi://GLib';
+const [filename] = GLib.filename_from_uri(import.meta.url);
+const dirname = GLib.path_get_dirname(path);
+```
+
 ## Interoperability with legacy `imports` modules
 
 Because `imports` is a global object, it is still available in ES
