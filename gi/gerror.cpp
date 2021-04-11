@@ -426,10 +426,8 @@ bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj,
     return GIWrapperBase::typecheck(cx, obj, nullptr, G_TYPE_ERROR, no_throw);
 }
 
-GError *
-gjs_gerror_make_from_error(JSContext       *cx,
-                           JS::HandleObject obj)
-{
+GJS_JSAPI_RETURN_CONVENTION
+static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
     if (ErrorBase::typecheck(cx, obj, GjsTypecheckNoThrow())) {
         /* This is already a GError, just copy it */
         GError* inner = ErrorBase::to_c_ptr(cx, obj);
@@ -466,6 +464,27 @@ gjs_gerror_make_from_error(JSContext       *cx,
         code = GJS_JS_ERROR_ERROR;
 
     return g_error_new_literal(GJS_JS_ERROR, code, message.get());
+}
+
+/*
+ * gjs_gerror_make_from_error:
+ *
+ * Attempts to convert a JavaScript exception into a #GError. This function is
+ * infallible and will always return a #GError with some message, even if the
+ * exception object couldn't be converted.
+ *
+ * Returns: (transfer full): a new #GError
+ */
+GError* gjs_gerror_make_from_error(JSContext* cx, JS::HandleObject obj) {
+    GError* retval = gerror_from_error_impl(cx, obj);
+    if (retval)
+        return retval;
+
+    // Make a GError with an InternalError even if it wasn't possible to convert
+    // the exception into one
+    gjs_log_exception(cx);  // log the inner exception
+    return g_error_new_literal(GJS_JS_ERROR, GJS_JS_ERROR_INTERNAL_ERROR,
+                               "Failed to convert JS exception into GError");
 }
 
 /*

@@ -329,6 +329,7 @@ describe('Fixed-size C array', function () {
     describe('of ints', function () {
         testReturnValue('array_fixed_int', [-1, 0, 1, 2]);
         testInParameter('array_fixed_int', [-1, 0, 1, 2]);
+        testOutParameter('array_fixed', [-1, 0, 1, 2]);
         testInoutParameter('array_fixed', [-1, 0, 1, 2], [2, 1, 0, -1]);
     });
 
@@ -903,6 +904,13 @@ describe('Callback', function () {
         expect(GIMarshallingTests.callback_array_out_parameter(() => [50, 51]))
             .toEqual([50, 51]);
     }).pend('Function not added to gobject-introspection test suite yet');
+
+    it('marshals a callback parameter that can be called from C', function () {
+        expect(GIMarshallingTests.callback_owned_boxed(box => {
+            expect(box.long_).toEqual(1);
+            box.long_ = 52;
+        })).toEqual(52);
+    });
 });
 
 describe('Raw pointers', function () {
@@ -936,6 +944,10 @@ describe('Registered flags type', function () {
                 funcName: 'flags_returnv',
             },
         });
+
+    it('accepts zero', function () {
+        expect(() => GIMarshallingTests.flags_in_zero(0)).not.toThrow();
+    });
 });
 
 describe('Bare flags type', function () {
@@ -945,6 +957,10 @@ describe('Bare flags type', function () {
                 funcName: 'no_type_flags_returnv',
             },
         });
+
+    it('accepts zero', function () {
+        expect(() => GIMarshallingTests.no_type_flags_in_zero(0)).not.toThrow();
+    });
 });
 
 describe('Simple struct', function () {
@@ -1101,6 +1117,34 @@ describe('GObject', function () {
 });
 
 let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingTests.Object {
+    vfunc_method_int8_in(i) {
+        this.int = i;
+    }
+
+    vfunc_method_int8_out() {
+        return 40;
+    }
+
+    vfunc_method_int8_arg_and_out_caller(i) {
+        return i + 3;
+    }
+
+    vfunc_method_int8_arg_and_out_callee(i) {
+        return i + 4;
+    }
+
+    vfunc_method_str_arg_out_ret(s) {
+        return [`Called with ${s}`, 41];
+    }
+
+    vfunc_method_with_default_implementation(i) {
+        this.int = i + 2;
+    }
+
+    // vfunc_vfunc_with_callback(callback) {
+    //     this.int = callback(41);
+    // }
+
     vfunc_vfunc_return_value_only() {
         return 42;
     }
@@ -1222,6 +1266,37 @@ describe('Virtual function', function () {
     beforeEach(function () {
         tester = new VFuncTester();
     });
+
+    it('marshals an in argument', function () {
+        tester.method_int8_in(39);
+        expect(tester.int).toEqual(39);
+    });
+
+    it('marshals an out argument', function () {
+        expect(tester.method_int8_out()).toEqual(40);
+    });
+
+    xit('marshals a POD out argument', function () {
+        expect(tester.method_int8_arg_and_out_caller(39)).toEqual(42);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/263');
+
+    it('marshals a callee-allocated pointer out argument', function () {
+        expect(tester.method_int8_arg_and_out_callee(38)).toEqual(42);
+    });
+
+    xit('marshals a string out argument and return value', function () {
+        expect(tester.method_str_arg_out_ret('a string')).toEqual(['Called with a string', 41]);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/263');
+
+    it('can override a default implementation in JS', function () {
+        tester.method_with_default_implementation(40);
+        expect(tester.int).toEqual(42);
+    });
+
+    xit('marshals a callback', function () {
+        tester.call_vfunc_with_callback();
+        expect(tester.int).toEqual(41);
+    }).pend('callback parameters to vfuncs not supported');
 
     it('marshals a return value', function () {
         expect(tester.vfunc_return_value_only()).toEqual(42);
@@ -1500,22 +1575,22 @@ describe('Inherited GObject', function () {
     ['SubObject', 'SubSubObject'].forEach(klass => {
         describe(klass, function () {
             it('has a parent method that can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 42});
+                const o = new GIMarshallingTests[klass]({int: 42});
                 expect(() => o.method()).not.toThrow();
             });
 
             it('has a method that can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 0});
+                const o = new GIMarshallingTests[klass]({int: 0});
                 expect(() => o.sub_method()).not.toThrow();
             });
 
             it('has an overridden method that can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 0});
+                const o = new GIMarshallingTests[klass]({int: 0});
                 expect(() => o.overwritten_method()).not.toThrow();
             });
 
-            it('has a method with default implementation can be called', function () {
-                const o = new GIMarshallingTests.SubObject({int: 42});
+            it('has a method with default implementation that can be called', function () {
+                const o = new GIMarshallingTests[klass]({int: 42});
                 o.method_with_default_implementation(43);
                 expect(o.int).toEqual(43);
             });
@@ -1660,6 +1735,11 @@ describe('Overrides', function () {
         expect(struct.method()).toEqual(6);
     });
 
+    it('returns the overridden struct', function () {
+        const obj = GIMarshallingTests.OverridesStruct.returnv();
+        expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesStruct);
+    });
+
     it('can override an object constructor', function () {
         const obj = new GIMarshallingTests.OverridesObject(42);
         expect(obj.num).toEqual(42);
@@ -1668,6 +1748,11 @@ describe('Overrides', function () {
     it('can override an object method', function () {
         const obj = new GIMarshallingTests.OverridesObject();
         expect(obj.method()).toEqual(6);
+    });
+
+    it('returns the overridden object', function () {
+        const obj = GIMarshallingTests.OverridesObject.returnv();
+        expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesObject);
     });
 });
 

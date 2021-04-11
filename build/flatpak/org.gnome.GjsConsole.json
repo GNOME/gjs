@@ -1,0 +1,31 @@
+{
+  "comment": "----------------------------------------------------------------",
+  "comment": "This manifest is intended for a quick start with GJS using",
+  "comment": "GNOME Builder.",
+  "comment": "If you are planning to make contributions over a longer period",
+  "comment": "then consider following the setup guide in doc/Hacking.md.",
+  "comment": "----------------------------------------------------------------",
+  "app-id": "org.gnome.GjsConsole",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "master",
+  "sdk": "org.gnome.Sdk",
+  "command": "gjs-console",
+  "finish-args": [
+    "--socket=x11",
+    "--socket=wayland",
+    "--share=network",
+    "--filesystem=host"
+  ],
+  "modules": [
+    {
+      "name": "gjs",
+      "buildsystem": "meson",
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://gitlab.gnome.org/GNOME/gjs.git"
+        }
+      ]
+    }
+  ]
+}

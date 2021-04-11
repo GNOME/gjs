@@ -33,14 +33,9 @@
  * So here is an awful hack inspired by
  * http://egachine.berlios.de/embedding-sm-best-practice/embedding-sm-best-practice.html#error-handling
  */
-static void
-G_GNUC_PRINTF(4, 0)
-gjs_throw_valist(JSContext       *context,
-                 JSProtoKey       error_kind,
-                 const char      *error_name,
-                 const char      *format,
-                 va_list          args)
-{
+[[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
+    JSContext* context, JSProtoKey error_kind, const char* error_name,
+    const char* format, va_list args) {
     char *s;
     bool result;
 

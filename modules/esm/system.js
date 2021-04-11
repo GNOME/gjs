@@ -5,8 +5,10 @@ const system = import.meta.importSync('system');
 
 export let {
     addressOf,
+    addressOfGObject,
     breakpoint,
     clearDateCaches,
+    dumpHeap,
     exit,
     gc,
     programArgs,
@@ -18,8 +20,10 @@ export let {
 
 export default {
     addressOf,
+    addressOfGObject,
     breakpoint,
     clearDateCaches,
+    dumpHeap,
     exit,
     gc,
     programArgs,

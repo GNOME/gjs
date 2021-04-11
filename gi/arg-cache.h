@@ -21,7 +21,7 @@
 #include "gjs/enum-utils.h"
 #include "gjs/macros.h"
 
-struct GjsFunctionCallState;
+class GjsFunctionCallState;
 struct GjsArgumentCache;
 
 struct GjsArgumentMarshallers {

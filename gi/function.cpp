@@ -416,13 +416,11 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             GError* local_error =
                 gjs_gerror_make_from_error(context, exc_object);
 
-            if (local_error) {
-                // the GError ** pointer is the last argument, and is not
-                // included in the n_args
-                auto* gerror = gjs_arg_get<GError**>(error_argument);
-                g_propagate_error(gerror, local_error);
-                JS_ClearPendingException(context);  // don't log
-            }
+            // the GError ** pointer is the last argument, and is not
+            // included in the n_args
+            auto* gerror = gjs_arg_get<GError**>(error_argument);
+            g_propagate_error(gerror, local_error);
+            JS_ClearPendingException(context);  // don't log
         } else if (!rval.isUndefined()) {
             JS_SetPendingException(context, rval);
         }
@@ -840,15 +838,15 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     }
 
     // These arrays hold argument pointers.
-    // - state.in_cvalues: C values which are passed on input (in or inout)
-    // - state.out_cvalues: C values which are returned as arguments (out or
+    // - state.in_cvalue(): C values which are passed on input (in or inout)
+    // - state.out_cvalue(): C values which are returned as arguments (out or
     //   inout)
-    // - state.inout_original_cvalues: For the special case of (inout) args, we
-    //   need to keep track of the original values we passed into the function,
-    //   in case we need to free it.
+    // - state.inout_original_cvalue(): For the special case of (inout) args,
+    //   we need to keep track of the original values we passed into the
+    //   function, in case we need to free it.
     // - ffi_arg_pointers: For passing data to FFI, we need to create another
     //   layer of indirection; this array is a pointer to an element in
-    //   state.in_cvalues or state.out_cvalues.
+    //   state.in_cvalue() or state.out_cvalue().
     // - return_value: The actual return value of the C function, i.e. not an
     //   (out) param
     //
@@ -874,7 +872,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
     if (state.is_method) {
         GjsArgumentCache* cache = &m_arguments[-state.first_arg_offset()];
-        GIArgument* in_value = &state.in_cvalues[-state.first_arg_offset()];
+        GIArgument* in_value = &state.in_cvalue(-state.first_arg_offset());
         JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
 
         if (!cache->marshallers->in(context, cache, &state, in_value,
@@ -904,7 +902,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     for (gi_arg_pos = 0; gi_arg_pos < state.gi_argc;
          gi_arg_pos++, ffi_arg_pos++) {
         GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
-        GIArgument* in_value = &state.in_cvalues[gi_arg_pos];
+        GIArgument* in_value = &state.in_cvalue(gi_arg_pos);
 
         gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                           "Marshalling argument '%s' in, %d/%d GI args, %u/%u "
@@ -973,7 +971,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
     if (!m_arguments[-1].skip_out()) {
         gi_type_info_extract_ffi_return_value(
-            &m_arguments[-1].type_info, &return_value, &state.out_cvalues[-1]);
+            &m_arguments[-1].type_info, &return_value, &state.out_cvalue(-1));
     }
 
     // Process out arguments and return values. This loop is skipped if we fail
@@ -981,7 +979,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     js_arg_pos = 0;
     for (gi_arg_pos = -1; gi_arg_pos < state.gi_argc; gi_arg_pos++) {
         GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
-        GIArgument* out_value = &state.out_cvalues[gi_arg_pos];
+        GIArgument* out_value = &state.out_cvalue(gi_arg_pos);
 
         gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                           "Marshalling argument '%s' out, %d/%d GI args",
@@ -1033,8 +1031,8 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
          gi_arg_pos < state->gi_argc && ffi_arg_pos < ffi_arg_max;
          gi_arg_pos++, ffi_arg_pos++) {
         GjsArgumentCache* cache = &m_arguments[gi_arg_pos];
-        GIArgument* in_value = &state->in_cvalues[gi_arg_pos];
-        GIArgument* out_value = &state->out_cvalues[gi_arg_pos];
+        GIArgument* in_value = &state->in_cvalue(gi_arg_pos);
+        GIArgument* out_value = &state->out_cvalue(gi_arg_pos);
 
         gjs_debug_marshal(
             GJS_DEBUG_GFUNCTION,
