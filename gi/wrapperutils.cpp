@@ -37,9 +37,9 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
         out << " GType:" << g_type_name(gtype);
     }
 
-    out << " jsobj@0x" << uintptr_t(this_obj);
+    out << " jsobj@" << this_obj;
     if (native_address)
-        out << " native@0x" << uintptr_t(native_address);
+        out << " native@" << native_address;
 
     out << ']';
 
