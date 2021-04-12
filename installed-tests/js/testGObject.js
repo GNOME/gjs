@@ -7,6 +7,7 @@
 // which are big enough to get their own files.
 
 const {GLib, GObject} = imports.gi;
+const {system: System} = imports;
 
 describe('GObject overrides', function () {
     const TestObj = GObject.registerClass({
@@ -50,6 +51,13 @@ describe('GObject overrides', function () {
             GObject.signal_emit_by_name(o, 'test');
             expect(handler).not.toHaveBeenCalled();
         });
+    });
+
+    it('toString() shows the native object address', function () {
+        const o = new TestObj();
+        const address = System.addressOfGObject(o);
+        expect(o.toString()).toMatch(
+            new RegExp(`[object instance wrapper .* jsobj@0x[a-f0-9]+ native@${address}`));
     });
 });
 
