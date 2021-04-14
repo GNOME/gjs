@@ -85,6 +85,48 @@ bool CairoSurface::getType_func(JSContext* context, unsigned argc,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool setDeviceOffset_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+    double x_offset = 0.0, y_offset = 0.0;
+    if (!gjs_parse_call_args(cx, "setDeviceOffset", args, "ff", "x_offset",
+                             &x_offset, "y_offset", &y_offset))
+        return false;
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    cairo_surface_set_device_offset(surface, x_offset, y_offset);
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool setDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+    double x_scale = 1.0, y_scale = 1.0;
+
+    if (!gjs_parse_call_args(cx, "setDeviceScale", args, "ff", "x_scale",
+                             &x_scale, "y_scale", &y_scale))
+        return false;
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    cairo_surface_set_device_scale(surface, x_scale, y_scale);
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface),
+                                "surface"))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
 const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // flush
     // getContent
@@ -92,8 +134,9 @@ const JSFunctionSpec CairoSurface::proto_funcs[] = {
     JS_FN("getType", getType_func, 0, 0),
     // markDirty
     // markDirtyRectangle
-    // setDeviceOffset
+    JS_FN("setDeviceOffset", setDeviceOffset_func, 2, 0),
     // getDeviceOffset
+    JS_FN("setDeviceScale", setDeviceScale_func, 2, 0),
     // setFallbackResolution
     // getFallbackResolution
     // copyPage
