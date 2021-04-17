@@ -1804,6 +1804,8 @@ describe('GObject properties', function () {
     testPropertyGetSet('ulong', 42, 64);
     testPropertyGetSet('int64', 42, 64);
     testPropertyGetSet('uint64', 42, 64);
+    testPropertyGetSet('string', 'Gjs', 'is cool!',
+        'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
 
     it('gets and sets a float property', function () {
         obj.some_float = Math.E;

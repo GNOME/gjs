@@ -992,6 +992,20 @@ gjs_value_from_g_value_internal(JSContext             *context,
         g_base_info_unref((GIBaseInfo*)arg_info);
         g_base_info_unref((GIBaseInfo*)signal_info);
         return res;
+    } else if (gtype == G_TYPE_GTYPE) {
+        GType gvalue_gtype = g_value_get_gtype(gvalue);
+
+        if (gvalue_gtype == 0) {
+            value_p.setNull();
+            return true;
+        }
+
+        JS::RootedObject obj(
+            context, gjs_gtype_create_gtype_wrapper(context, gvalue_gtype));
+        if (!obj)
+            return false;
+
+        value_p.setObject(*obj);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         gpointer pointer;
 
@@ -1021,12 +1035,12 @@ gjs_value_from_g_value_internal(JSContext             *context,
     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
         /* The gtype is none of the above, it should be a custom
            fundamental type. */
-        JSObject* obj =
-            FundamentalInstance::object_for_gvalue(context, gvalue, gtype);
-        if (obj == NULL)
+        JS::RootedObject obj(context);
+        if (!FundamentalInstance::object_for_gvalue(context, gvalue, gtype,
+                                                    &obj))
             return false;
-        else
-            value_p.setObject(*obj);
+
+        value_p.setObjectOrNull(obj);
     } else {
         gjs_throw(context,
                   "Don't know how to convert GType %s to JavaScript object",

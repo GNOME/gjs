@@ -1279,10 +1279,26 @@ static bool value_to_interface_gi_argument(
 
             gjs_arg_set(arg, klass);
             return true;
+        }
 
-        } else if ((interface_type == GI_INFO_TYPE_STRUCT ||
-                    interface_type == GI_INFO_TYPE_BOXED) &&
-                   !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+        GType arg_gtype = gtype;
+        if (interface_type == GI_INFO_TYPE_STRUCT && gtype == G_TYPE_NONE &&
+            !g_struct_info_is_foreign(interface_info)) {
+            GType actual_gtype = G_TYPE_NONE;
+            // In case we have no known type from gi we should try to be
+            // more dynamic and try to get the type from JS, to handle the
+            // case in which we're handling a gpointer such as GTypeInstance
+            // FIXME(3v1n0): would be nice to know if GI would give this info
+            if (!gjs_gtype_get_actual_gtype(cx, obj, &actual_gtype))
+                return false;
+
+            if (G_TYPE_IS_INSTANTIATABLE(actual_gtype))
+                gtype = actual_gtype;
+        }
+
+        if ((interface_type == GI_INFO_TYPE_STRUCT ||
+             interface_type == GI_INFO_TYPE_BOXED) &&
+            !g_type_is_a(gtype, G_TYPE_CLOSURE)) {
             // Handle Struct/Union first since we don't necessarily need a GType
             // for them. We special case Closures later, so skip them here.
             if (g_type_is_a(gtype, G_TYPE_BYTES) && JS_IsUint8Array(obj)) {
@@ -1293,14 +1309,22 @@ static bool value_to_interface_gi_argument(
                 return ErrorBase::transfer_to_gi_argument(
                     cx, obj, arg, GI_DIRECTION_IN, transfer);
             }
-            return BoxedBase::transfer_to_gi_argument(
-                cx, obj, arg, GI_DIRECTION_IN, transfer, gtype, interface_info);
+            if (arg_gtype != G_TYPE_NONE || gtype == G_TYPE_NONE ||
+                g_type_is_a(gtype, G_TYPE_BOXED) ||
+                g_type_is_a(gtype, G_TYPE_VALUE) ||
+                g_type_is_a(gtype, G_TYPE_VARIANT)) {
+                return BoxedBase::transfer_to_gi_argument(
+                    cx, obj, arg, GI_DIRECTION_IN, transfer, gtype,
+                    interface_info);
+            }
+        }
 
-        } else if (interface_type == GI_INFO_TYPE_UNION) {
+        if (interface_type == GI_INFO_TYPE_UNION) {
             return UnionBase::transfer_to_gi_argument(
                 cx, obj, arg, GI_DIRECTION_IN, transfer, gtype, interface_info);
+        }
 
-        } else if (gtype != G_TYPE_NONE) {
+        if (gtype != G_TYPE_NONE) {
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
                 return ObjectBase::transfer_to_gi_argument(
                     cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);

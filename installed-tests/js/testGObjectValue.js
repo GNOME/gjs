@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
-const {GLib, GObject} = imports.gi;
-
-GObject.TYPE_SCHAR = GObject.TYPE_CHAR;
+const {GLib, GObject, GIMarshallingTests, Regress} = imports.gi;
 
 const SIGNED_TYPES = ['schar', 'int', 'int64', 'long'];
 const UNSIGNED_TYPES = ['char', 'uchar', 'uint', 'uint64', 'ulong'];
 const FLOATING_TYPES = ['double', 'float'];
-const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'variant'];
-const ALL_TYPES = [...SIGNED_TYPES, ...UNSIGNED_TYPES, ...FLOATING_TYPES, ...SPECIFIC_TYPES];
+const NUMERIC_TYPES = [...SIGNED_TYPES, ...UNSIGNED_TYPES, ...FLOATING_TYPES];
+const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed', 'gvalue'];
+const INSTANCED_TYPES = ['object', 'instance'];
+const ALL_TYPES = [...NUMERIC_TYPES, ...SPECIFIC_TYPES, ...INSTANCED_TYPES];
 
 describe('GObject value (GValue)', function () {
     let v;
@@ -28,9 +28,37 @@ describe('GObject value (GValue)', function () {
             return `Hello GValue! ${getDefaultContentByType('uint')}`;
         if (type === 'boolean')
             return !!(getDefaultContentByType('int') % 2);
-        if (type === 'gtype') {
-            const other = ALL_TYPES[Math.random() * ALL_TYPES.length | 0];
-            return GObject[`TYPE_${other.toUpperCase()}`];
+        if (type === 'gtype')
+            return getGType(ALL_TYPES[Math.random() * ALL_TYPES.length | 0]);
+
+        if (type === 'boxed' || type === 'boxed-struct') {
+            return new GIMarshallingTests.BoxedStruct({
+                long_: getDefaultContentByType('long'),
+                // string_: getDefaultContentByType('string'), not supported
+            });
+        }
+        if (type === 'object') {
+            const wasCreatingObject = this.creatingObject;
+            this.creatingObject = true;
+            const props = ALL_TYPES.filter(e =>
+                (e !== 'object' || !wasCreatingObject) &&
+                e !== 'boxed' &&
+                e !== 'gtype' &&
+                e !== 'instance' &&
+                e !== 'param' &&
+                // Include string when gobject-introspection!268 is merged
+                e !== 'string' &&
+                e !== 'schar').concat([
+                'boxed-struct',
+            ]).reduce((ac, a) => ({
+                ...ac, [`some-${a}`]: getDefaultContentByType(a),
+            }), {});
+            delete this.creatingObject;
+            return new GIMarshallingTests.PropertiesObject(props);
+        }
+        if (type === 'param') {
+            return GObject.ParamSpec.string('test-param', '', getDefaultContentByType('string'),
+                GObject.ParamFlags.READABLE, '');
         }
         if (type === 'variant') {
             return new GLib.Variant('a{sv}', {
@@ -39,12 +67,62 @@ describe('GObject value (GValue)', function () {
                 randomString: new GLib.Variant('s', getDefaultContentByType('string')),
             });
         }
+        if (type === 'gvalue') {
+            const value = new GObject.Value();
+            const valueType = NUMERIC_TYPES[Math.random() * NUMERIC_TYPES.length | 0];
+            value.init(getGType(valueType));
+            setContent(value, valueType, getDefaultContentByType(valueType));
+            return value;
+        }
+        if (type === 'instance')
+            return new Regress.TestFundamentalSubObject(getDefaultContentByType('string'));
+
 
         throw new Error(`No default content set for type ${type}`);
     }
 
+    function getGType(type) {
+        if (type === 'schar')
+            return GObject.TYPE_CHAR;
+
+        if (type === 'boxed' || type === 'gvalue' || type === 'instance')
+            return getDefaultContentByType(type).constructor.$gtype;
+
+        return GObject[`TYPE_${type.toUpperCase()}`];
+    }
+
+    function getContent(gvalue, type) {
+        if (type === 'gvalue')
+            type = 'boxed';
+
+        if (type === 'instance') {
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+            return GIMarshallingTests.gvalue_round_trip(gvalue);
+        }
+
+        return gvalue[`get_${type}`]();
+    }
+
+    function setContent(gvalue, type, content) {
+        if (type === 'gvalue')
+            type = 'boxed';
+
+        if (type === 'instance')
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/402');
+
+        return gvalue[`set_${type}`](content);
+    }
+
+    function skipUnsupported(type) {
+        if (type === 'boxed')
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/402');
+
+        if (type === 'gvalue')
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/272');
+    }
+
     ALL_TYPES.forEach(type => {
-        const gtype = GObject[`TYPE_${type.toUpperCase()}`];
+        const gtype = getGType(type);
         it(`initializes ${type}`, function () {
             v.init(gtype);
         });
@@ -65,18 +143,50 @@ describe('GObject value (GValue)', function () {
             });
 
             it(`sets and gets ${type}`, function () {
-                v[`set_${type}`](randomContent);
-                expect(v[`get_${type}`]()).toEqual(randomContent);
+                skipUnsupported(type);
+                setContent(v, type, randomContent);
+                expect(getContent(v, type)).toEqual(randomContent);
             });
 
+            it(`can be passed to a function and returns a ${type}`, function () {
+                skipUnsupported(type);
+                setContent(v, type, randomContent);
+                expect(GIMarshallingTests.gvalue_round_trip(v)).toEqual(randomContent);
+                expect(GIMarshallingTests.gvalue_copy(v)).toEqual(randomContent);
+            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+
             it(`copies ${type}`, function () {
-                v[`set_${type}`](randomContent);
+                skipUnsupported(type);
+                setContent(v, type, randomContent);
 
                 const other = new GObject.Value();
                 other.init(gtype);
                 v.copy(other);
-                expect(other[`get_${type}`]()).toEqual(randomContent);
+                expect(getContent(other, type)).toEqual(randomContent);
             });
+        });
+
+        it(`can be marshalled and un-marshalled from JS ${type}`, function () {
+            if (['gtype', 'gvalue'].includes(type))
+                pending('Not supported - always implicitly converted');
+            const content = getDefaultContentByType(type);
+            expect(GIMarshallingTests.gvalue_round_trip(content)).toEqual(content);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
+
+    ['int', 'uint', 'boolean', 'gtype', ...FLOATING_TYPES].forEach(type => {
+        it(`can be marshalled and un-marshalled from JS gtype of ${type}`, function () {
+            const gtype = getGType(type);
+            expect(GIMarshallingTests.gvalue_round_trip(gtype).constructor.$gtype).toEqual(gtype);
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
+
+    INSTANCED_TYPES.forEach(type => {
+        it(`initializes from instance of ${type}`, function () {
+            skipUnsupported(type);
+            const instance = getDefaultContentByType(type);
+            v.init_from_instance(instance);
+            expect(getContent(v, type)).toEqual(instance);
         });
     });
 
