@@ -55,6 +55,7 @@
 #include <js/AllocPolicy.h>
 #include <js/Array.h>
 #include <js/ArrayBuffer.h>
+#include <js/BigInt.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>

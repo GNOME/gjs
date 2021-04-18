@@ -1410,7 +1410,7 @@ describe('Virtual function', function () {
         expect(() => tester.vfunc_meth_with_error(6)).toThrowError(/42/);
         expect(() => tester.vfunc_meth_with_error(7)).toThrowError(/true/);
         expect(() => tester.vfunc_meth_with_error(8)).toThrowError(/"a string"/);
-        expect(() => tester.vfunc_meth_with_error(9)).toThrow();  // TODO(ptomato): toThrowError(/42n/)
+        expect(() => tester.vfunc_meth_with_error(9)).toThrowError(/42n/);
         expect(() => tester.vfunc_meth_with_error(10)).toThrowError(/Symbol\("a symbol"\)/);
     });
 
