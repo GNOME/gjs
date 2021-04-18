@@ -19,6 +19,7 @@
 
 #include <js/Array.h>
 #include <js/CharacterEncoding.h>
+#include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -574,6 +575,34 @@ static void test_jsapi_util_debug_string_object_with_complicated_to_string(
     g_assert_cmpstr(u8"🍪,🍩", ==, debug_output.c_str());
 }
 
+static void test_gjs_debug_id_string_no_quotes(GjsUnitTestFixture* fx,
+                                               const void*) {
+    jsid id = gjs_intern_string_to_id(fx->cx, "prop_key");
+    std::string debug_output = gjs_debug_id(id);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "prop_key");
+}
+
+static void test_gjs_debug_string_quotes(GjsUnitTestFixture* fx, const void*) {
+    JS::ConstUTF8CharsZ chars("a string", strlen("a string"));
+    JSString* str = JS_NewStringCopyUTF8Z(fx->cx, chars);
+    std::string debug_output = gjs_debug_string(str);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
+}
+
+static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
+                                               const void*) {
+    JS::RootedValue v(fx->cx);
+    bool ok = gjs_string_from_utf8(fx->cx, "a string", &v);
+
+    g_assert_true(ok);
+
+    std::string debug_output = gjs_debug_value(v);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
+}
+
 static void
 gjstest_test_func_util_misc_strv_concat_null(void)
 {
@@ -930,6 +959,13 @@ main(int    argc,
                         gjstest_test_safe_integer_max);
     ADD_JSAPI_UTIL_TEST("gi/args/safe-integer/min",
                         gjstest_test_safe_integer_min);
+
+    // Debug functions
+    ADD_JSAPI_UTIL_TEST("debug_id/string/no-quotes",
+                        test_gjs_debug_id_string_no_quotes);
+    ADD_JSAPI_UTIL_TEST("debug_string/quotes", test_gjs_debug_string_quotes);
+    ADD_JSAPI_UTIL_TEST("debug_value/string/quotes",
+                        test_gjs_debug_value_string_quotes);
 
 #undef ADD_JSAPI_UTIL_TEST
 
