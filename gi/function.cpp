@@ -378,10 +378,6 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     JS::RootedValue rval(context);
 
     g_callable_info_load_return_type(m_info, &ret_type);
-    GIArgument* error_argument = nullptr;
-
-    if (g_callable_info_can_throw_gerror(m_info))
-        error_argument = args[n_args + c_args_offset];
 
     if (!callback_closure_inner(context, this_object, &rval, args, &ret_type,
                                 n_args, c_args_offset, result)) {
@@ -409,25 +405,21 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
         }
 
-        // If an exception has been thrown, log it. Unless the callback has a
-        // GError** argument, then try to make a GError from it if it's an
-        // object (and otherwise fall back to logging)
-        if (error_argument) {
-            JS::RootedValue v_exception(context);
-            JS_GetPendingException(context, &v_exception);
-            if (v_exception.isObject()) {
-                JS_ClearPendingException(context);  // don't log
-                JS::RootedObject exc_object(context, &v_exception.toObject());
-                GError* local_error =
-                    gjs_gerror_make_from_error(context, exc_object);
+        // If the callback has a GError** argument, then make a GError from the
+        // value that was thrown. Otherwise, log it as "uncaught" (critical
+        // instead of warning)
 
-                // the GError ** pointer is the last argument, and is not
-                // included in the n_args
-                auto* gerror = gjs_arg_get<GError**>(error_argument);
-                g_propagate_error(gerror, local_error);
-            }
+        if (!g_callable_info_can_throw_gerror(m_info)) {
+            gjs_log_exception_uncaught(context);
+            return;
         }
-        gjs_log_exception_uncaught(context);
+
+        // The GError** pointer is the last argument, and is not included in
+        // the n_args
+        GIArgument* error_argument = args[n_args + c_args_offset];
+        auto* gerror = gjs_arg_get<GError**>(error_argument);
+        GError* local_error = gjs_gerror_make_from_thrown_value(context);
+        g_propagate_error(gerror, local_error);
     }
 }
 

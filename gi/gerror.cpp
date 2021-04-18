@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include <string>
+
 #include <girepository.h>
 #include <glib-object.h>
 
@@ -443,12 +445,18 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
     if (!JS_GetPropertyById(cx, obj, atoms.name(), &v_name))
         return nullptr;
 
-    JS::UniqueChars name = gjs_string_to_utf8(cx, v_name);
-    if (!name)
-        return nullptr;
-
     JS::RootedValue v_message(cx);
     if (!JS_GetPropertyById(cx, obj, atoms.message(), &v_message))
+        return nullptr;
+
+    if (!v_name.isString() || !v_message.isString()) {
+        return g_error_new_literal(
+            GJS_JS_ERROR, GJS_JS_ERROR_ERROR,
+            "Object thrown with unexpected name or message property");
+    }
+
+    JS::UniqueChars name = gjs_string_to_utf8(cx, v_name);
+    if (!name)
         return nullptr;
 
     JS::UniqueChars message = gjs_string_to_utf8(cx, v_message);
@@ -467,15 +475,32 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
 }
 
 /*
- * gjs_gerror_make_from_error:
+ * gjs_gerror_make_from_thrown_value:
  *
- * Attempts to convert a JavaScript exception into a #GError. This function is
- * infallible and will always return a #GError with some message, even if the
- * exception object couldn't be converted.
+ * Attempts to convert a JavaScript thrown value (pending on @cx) into a
+ * #GError. This function is infallible and will always return a #GError with
+ * some message, even if the exception value couldn't be converted.
+ *
+ * Clears the pending exception on @cx.
  *
  * Returns: (transfer full): a new #GError
  */
-GError* gjs_gerror_make_from_error(JSContext* cx, JS::HandleObject obj) {
+GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
+    g_assert(JS_IsExceptionPending(cx) &&
+             "Should be called when an exception is pending");
+
+    JS::RootedValue exc(cx);
+    JS_GetPendingException(cx, &exc);
+    JS_ClearPendingException(cx);  // don't log
+
+    if (!exc.isObject()) {
+        return g_error_new(GJS_JS_ERROR, GJS_JS_ERROR_ERROR,
+                           "Non-exception %s value %s thrown",
+                           JS::InformalValueTypeName(exc),
+                           gjs_debug_value(exc).c_str());
+    }
+
+    JS::RootedObject obj(cx, &exc.toObject());
     GError* retval = gerror_from_error_impl(cx, obj);
     if (retval)
         return retval;
@@ -484,7 +509,7 @@ GError* gjs_gerror_make_from_error(JSContext* cx, JS::HandleObject obj) {
     // the exception into one
     gjs_log_exception(cx);  // log the inner exception
     return g_error_new_literal(GJS_JS_ERROR, GJS_JS_ERROR_INTERNAL_ERROR,
-                               "Failed to convert JS exception into GError");
+                               "Failed to convert JS thrown value into GError");
 }
 
 /*
