@@ -378,10 +378,6 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     JS::RootedValue rval(context);
 
     g_callable_info_load_return_type(m_info, &ret_type);
-    GIArgument* error_argument = nullptr;
-
-    if (g_callable_info_can_throw_gerror(m_info))
-        error_argument = args[n_args + c_args_offset];
 
     if (!callback_closure_inner(context, this_object, &rval, args, &ret_type,
                                 n_args, c_args_offset, result)) {
@@ -409,22 +405,21 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
         }
 
-        // If the callback has a GError** argument and invoking the closure
-        // returned an error, try to make a GError from it
-        if (error_argument && rval.isObject()) {
-            JS::RootedObject exc_object(context, &rval.toObject());
-            GError* local_error =
-                gjs_gerror_make_from_error(context, exc_object);
+        // If the callback has a GError** argument, then make a GError from the
+        // value that was thrown. Otherwise, log it as "uncaught" (critical
+        // instead of warning)
 
-            // the GError ** pointer is the last argument, and is not
-            // included in the n_args
-            auto* gerror = gjs_arg_get<GError**>(error_argument);
-            g_propagate_error(gerror, local_error);
-            JS_ClearPendingException(context);  // don't log
-        } else if (!rval.isUndefined()) {
-            JS_SetPendingException(context, rval);
+        if (!g_callable_info_can_throw_gerror(m_info)) {
+            gjs_log_exception_uncaught(context);
+            return;
         }
-        gjs_log_exception_uncaught(context);
+
+        // The GError** pointer is the last argument, and is not included in
+        // the n_args
+        GIArgument* error_argument = args[n_args + c_args_offset];
+        auto* gerror = gjs_arg_get<GError**>(error_argument);
+        GError* local_error = gjs_gerror_make_from_thrown_value(context);
+        g_propagate_error(gerror, local_error);
     }
 }
 
@@ -518,7 +513,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         }
     }
 
-    if (!gjs_closure_invoke(m_js_function, this_object, jsargs, rval, true))
+    if (!gjs_closure_invoke(m_js_function, this_object, jsargs, rval))
         return false;
 
     if (n_outargs == 0 && ret_type_is_void) {

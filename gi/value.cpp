@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdlib.h>  // for exit
 
+#include <string>
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -259,12 +261,21 @@ closure_marshal(GClosure        *closure,
 
     JS::RootedValue rval(context);
 
-    if (!gjs_closure_invoke(closure, nullptr, argv, &rval, false)) {
-        // "Uncatchable" exception thrown, we have to exit. This
-        // matches the closure exit handling in function.cpp
-        uint8_t code;
-        if (gjs->should_exit(&code))
-            exit(code);
+    if (!gjs_closure_invoke(closure, nullptr, argv, &rval)) {
+        if (JS_IsExceptionPending(context)) {
+            gjs_log_exception_uncaught(context);
+        } else {
+            // "Uncatchable" exception thrown, we have to exit. This
+            // matches the closure exit handling in function.cpp
+            uint8_t code;
+            if (gjs->should_exit(&code))
+                exit(code);
+
+            // Some other uncatchable exception, e.g. out of memory
+            JSFunction* fn = gjs_closure_get_callable(closure);
+            g_error("Function %s terminated with uncatchable exception",
+                    gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str());
+        }
     }
 
     // null return_value means the closure wasn't expected to return a value.

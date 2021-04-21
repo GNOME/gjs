@@ -1193,6 +1193,31 @@ let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingT
                 code: GLib.SpawnError.TOO_BIG,
                 message: 'This test is Too Big to Fail',
             });
+        case 4:
+            throw null;  // eslint-disable-line no-throw-literal
+        case 5:
+            throw undefined;  // eslint-disable-line no-throw-literal
+        case 6:
+            throw 42;  // eslint-disable-line no-throw-literal
+        case 7:
+            throw true;  // eslint-disable-line no-throw-literal
+        case 8:
+            throw 'a string';  // eslint-disable-line no-throw-literal
+        case 9:
+            throw 42n;  // eslint-disable-line no-throw-literal
+        case 10:
+            throw Symbol('a symbol');
+        case 11:
+            throw {plain: 'object'};  // eslint-disable-line no-throw-literal
+        case 12:
+            // eslint-disable-next-line no-throw-literal
+            throw {name: 'TypeError', message: 'an error message'};
+        case 13:
+            // eslint-disable-next-line no-throw-literal
+            throw {name: 1, message: 'an error message'};
+        case 14:
+            // eslint-disable-next-line no-throw-literal
+            throw {name: 'TypeError', message: false};
         }
     }
 
@@ -1371,6 +1396,23 @@ describe('Virtual function', function () {
             expect(e.matches(GLib.SpawnError, GLib.SpawnError.TOO_BIG)).toBeTruthy();
             expect(e.message).toEqual('This test is Too Big to Fail');
         }
+    });
+
+    it('marshals an error out parameter with a primitive value', function () {
+        expect(() => tester.vfunc_meth_with_error(4)).toThrowError(/null/);
+        expect(() => tester.vfunc_meth_with_error(5)).toThrowError(/undefined/);
+        expect(() => tester.vfunc_meth_with_error(6)).toThrowError(/42/);
+        expect(() => tester.vfunc_meth_with_error(7)).toThrowError(/true/);
+        expect(() => tester.vfunc_meth_with_error(8)).toThrowError(/"a string"/);
+        expect(() => tester.vfunc_meth_with_error(9)).toThrow();  // TODO(ptomato): toThrowError(/42n/)
+        expect(() => tester.vfunc_meth_with_error(10)).toThrowError(/Symbol\("a symbol"\)/);
+    });
+
+    it('marshals an error out parameter with a plain object', function () {
+        expect(() => tester.vfunc_meth_with_error(11)).toThrowError(/Object/);
+        expect(() => tester.vfunc_meth_with_error(12)).toThrowError(TypeError, /an error message/);
+        expect(() => tester.vfunc_meth_with_error(13)).toThrowError(/Object/);
+        expect(() => tester.vfunc_meth_with_error(14)).toThrowError(Error, /Object/);
     });
 
     it('marshals an enum return value', function () {

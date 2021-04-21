@@ -400,16 +400,28 @@ gjs_intern_string_to_id(JSContext  *cx,
     return JS::PropertyKey::fromPinnedString(str);
 }
 
-[[nodiscard]] static std::string gjs_debug_linear_string(JSLinearString* str) {
+enum Quotes {
+    DoubleQuotes,
+    NoQuotes,
+};
+
+[[nodiscard]] static std::string gjs_debug_linear_string(JSLinearString* str,
+                                                         Quotes quotes) {
     size_t len = js::GetLinearStringLength(str);
+
+    std::ostringstream out;
+    if (quotes == DoubleQuotes)
+        out << '"';
 
     JS::AutoCheckCannotGC nogc;
     if (js::LinearStringHasLatin1Chars(str)) {
         const JS::Latin1Char *chars = js::GetLatin1LinearStringChars(nogc, str);
-        return std::string(reinterpret_cast<const char *>(chars), len);
+        out << std::string(reinterpret_cast<const char*>(chars), len);
+        if (quotes == DoubleQuotes)
+            out << '"';
+        return out.str();
     }
 
-    std::ostringstream out;
     const char16_t *chars = js::GetTwoByteLinearStringChars(nogc, str);
     for (size_t ix = 0; ix < len; ix++) {
         char16_t c = chars[ix];
@@ -424,6 +436,8 @@ gjs_intern_string_to_id(JSContext  *cx,
         else
             out << "\\x" << std::setfill('0') << std::setw(4) << unsigned(c);
     }
+    if (quotes == DoubleQuotes)
+        out << '"';
     return out.str();
 }
 
@@ -437,7 +451,8 @@ gjs_debug_string(JSString *str)
         out << JS_GetStringLength(str) << '>';
         return out.str();
     }
-    return gjs_debug_linear_string(JS_ASSERT_STRING_IS_LINEAR(str));
+    return gjs_debug_linear_string(JS_ASSERT_STRING_IS_LINEAR(str),
+                                   DoubleQuotes);
 }
 
 std::string
@@ -535,6 +550,8 @@ gjs_debug_value(JS::Value v)
         out << v.toDouble();
         return out.str();
     }
+    if (v.isBigInt())
+        return "<BigInt>";
     if (v.isString()) {
         out << gjs_debug_string(v.toString());
         return out.str();
@@ -558,6 +575,6 @@ std::string
 gjs_debug_id(jsid id)
 {
     if (JSID_IS_STRING(id))
-        return gjs_debug_linear_string(JSID_TO_LINEAR_STRING(id));
+        return gjs_debug_linear_string(JSID_TO_LINEAR_STRING(id), NoQuotes);
     return gjs_debug_value(js::IdToValue(id));
 }
