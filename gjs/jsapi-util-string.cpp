@@ -550,6 +550,8 @@ gjs_debug_value(JS::Value v)
         out << v.toDouble();
         return out.str();
     }
+    if (v.isBigInt())
+        return "<BigInt>";
     if (v.isString()) {
         out << gjs_debug_string(v.toString());
         return out.str();
