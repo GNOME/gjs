@@ -193,13 +193,14 @@ bool ObjectInstance::check_gobject_disposed(const char* for_what) const {
         return true;
 
     g_critical(
-        "Object %s.%s (%p), has been already deallocated — impossible to %s "
+        "Object %s.%s (%p), has been already %s — impossible to %s "
         "it. This might be caused by the object having been destroyed from C "
         "code using something such as destroy(), dispose(), or remove() "
         "vfuncs.",
-        ns(), name(), m_ptr.get(), for_what);
+        ns(), name(), m_ptr.get(), m_gobj_finalized ? "finalized" : "disposed",
+        for_what);
     gjs_dumpstack();
-    return false;
+    return !m_gobj_finalized;
 }
 
 ObjectInstance *
@@ -1542,7 +1543,7 @@ bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     if (m_uses_toggle_ref)
         return true;
 
-    if (!check_gobject_disposed("add toggle reference on"))
+    if (!check_gobject_disposed("add toggle reference on") || m_gobj_disposed)
         return false;
 
     debug_lifecycle("Switching object instance to toggle ref");
@@ -1983,7 +1984,8 @@ ObjectInstance::connect_impl(JSContext          *context,
 
     gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
 
-    if (!check_gobject_disposed("connect to any signal on")) {
+    if (!check_gobject_disposed("connect to any signal on") ||
+        m_gobj_disposed) {
         args.rval().setInt32(0);
         return true;
     }
