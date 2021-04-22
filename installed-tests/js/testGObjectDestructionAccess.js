@@ -172,18 +172,29 @@ describe('Disposed or finalized GObject', function () {
         GjsTestTools.reset();
     });
 
-    it('is marked as disposed when it is a manually disposed property', function () {
-        const emblem = new Gio.EmblemedIcon({
-            gicon: new Gio.ThemedIcon({name: 'alarm'}),
+    [true, false].forEach(gc => {
+        it(`is marked as disposed when it is a manually disposed property ${gc ? '' : 'not '}garbage collected`, function () {
+            const emblem = new Gio.EmblemedIcon({
+                gicon: new Gio.ThemedIcon({name: 'alarm'}),
+            });
+
+            let {gicon} = emblem;
+            gicon.run_dispose();
+            gicon = null;
+            System.gc();
+
+            Array(10).fill().forEach(() => {
+                // We need to repeat the test to ensure that we disassociate
+                // wrappers from disposed objects on destruction.
+                gicon = emblem.gicon;
+                expect(gicon.toString()).toMatch(
+                    /\[object \(DISPOSED\) instance wrapper .* jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+                gicon = null;
+                if (gc)
+                    System.gc();
+            });
         });
-
-        let {gicon} = emblem;
-        gicon.run_dispose();
-        gicon = null;
-        System.gc();
-
-        expect(emblem.gicon.toString()).toMatch(
-            /\[object \(DISPOSED\) instance wrapper .* jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 
     it('calls dispose vfunc on explicit disposal only', function () {
@@ -258,15 +269,23 @@ describe('Disposed or finalized GObject', function () {
             'generates a warn if already disposed at garbage collection');
     });
 
-    it('created from other function is marked as disposed', function () {
-        let file = Gio.File.new_for_path('/');
-        GjsTestTools.save_object(file);
-        file.run_dispose();
-        file = null;
-        System.gc();
+    [true, false].forEach(gc => {
+        it(`created from other function is marked as disposed and ${gc ? '' : 'not '}garbage collected`, function () {
+            let file = Gio.File.new_for_path('/');
+            GjsTestTools.save_object(file);
+            file.run_dispose();
+            file = null;
+            System.gc();
 
-        expect(GjsTestTools.get_saved()).toMatch(
-            /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            Array(10).fill().forEach(() => {
+                // We need to repeat the test to ensure that we disassociate
+                // wrappers from disposed objects on destruction.
+                expect(GjsTestTools.peek_saved()).toMatch(
+                    /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+                if (gc)
+                    System.gc();
+            });
+        });
     });
 
     it('returned from function is marked as disposed', function () {

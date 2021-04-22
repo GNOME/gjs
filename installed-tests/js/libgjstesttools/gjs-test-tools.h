@@ -41,6 +41,8 @@ GObject* gjs_test_tools_get_saved();
 
 GObject* gjs_test_tools_steal_saved();
 
+GObject* gjs_test_tools_peek_saved();
+
 void gjs_test_tools_save_weak(GObject* object);
 
 GObject* gjs_test_tools_get_weak();

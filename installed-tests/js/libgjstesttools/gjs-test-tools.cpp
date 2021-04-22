@@ -213,6 +213,17 @@ void gjs_test_tools_save_weak(GObject* object) {
 }
 
 /**
+ * gjs_test_tools_peek_saved:
+ * Returns: (transfer none)
+ */
+GObject* gjs_test_tools_peek_saved() {
+    if (FinalizedObjectsLocked()->count(m_tmp_object))
+        return nullptr;
+
+    return m_tmp_object;
+}
+
+/**
  * gjs_test_tools_get_weak:
  * Returns: (transfer full)
  */
