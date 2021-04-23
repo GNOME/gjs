@@ -177,6 +177,7 @@ class ObjectBase
 
     [[nodiscard]] static GQuark custom_type_quark();
     [[nodiscard]] static GQuark custom_property_quark();
+    [[nodiscard]] static GQuark disposed_quark();
 };
 
 // See https://bugzilla.mozilla.org/show_bug.cgi?id=1614220
@@ -304,6 +305,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     bool m_wrapper_finalized : 1;
     bool m_gobj_disposed : 1;
+    bool m_gobj_finalized : 1;
 
     /* True if this object has visible JS state, and thus its lifecycle is
      * managed using toggle references. False if this object just keeps a
@@ -360,6 +362,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* wrapper_from_gobject(JSContext* cx, GObject* ptr);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool set_value_from_gobject(JSContext* cx, GObject*,
+                                       JS::MutableHandleValue);
+
     /* Methods to manipulate the list of closures */
 
  private:
@@ -373,8 +379,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
  private:
     void set_object_qdata(void);
     void unset_object_qdata(void);
+    void track_gobject_finalization();
+    void ignore_gobject_finalization();
     void check_js_object_finalized(void);
-    void ensure_uses_toggle_ref(JSContext* cx);
+    bool ensure_uses_toggle_ref(JSContext* cx);
     [[nodiscard]] bool check_gobject_disposed(const char* for_what) const;
     GJS_JSAPI_RETURN_CONVENTION
     bool signal_match_arguments_from_object(JSContext* cx,
@@ -477,6 +485,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void gobj_dispose_notify(void);
     static void context_dispose_notify(void* data,
                                        GObject* where_the_object_was);
+    static void wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
+                                           gboolean is_last_ref);
 };
 
 GJS_JSAPI_RETURN_CONVENTION

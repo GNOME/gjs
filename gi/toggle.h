@@ -31,17 +31,20 @@ public:
 
 private:
     struct Item {
+        Item() {}
+        Item(GObject* o, ToggleQueue::Direction d) : gobj(o), direction(d) {}
         GObject *gobj;
+        GWeakRef weak_ref;
         ToggleQueue::Direction direction;
-        unsigned needs_unref : 1;
     };
 
     mutable std::mutex lock;
     std::deque<Item> q;
     std::atomic_bool m_shutdown = ATOMIC_VAR_INIT(false);
 
-    unsigned m_idle_id;
-    Handler m_toggle_handler;
+    unsigned m_idle_id = 0;
+    Handler m_toggle_handler = nullptr;
+    std::atomic<GObject*> m_toggling_gobj = nullptr;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
     inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
@@ -72,6 +75,10 @@ private:
      * want to wait for it to be processed in idle time. Returns false if queue
      * is empty. */
     bool handle_toggle(Handler handler);
+    void handle_all_toggles(Handler handler);
+
+    /* Checks if the gobj is currently being handled, to avoid recursion */
+    bool is_being_handled(GObject* gobj);
 
     /* After calling this, the toggle queue won't accept any more toggles. Only
      * intended for use when destroying the JSContext and breaking the

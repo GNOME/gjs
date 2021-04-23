@@ -4,9 +4,8 @@
 
 imports.gi.versions.Gtk = '3.0';
 
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
+const {GLib, Gio, GjsTestTools, GObject, Gtk} = imports.gi;
+const {system: System} = imports;
 
 describe('Access to destroyed GObject', function () {
     let destroyedWindow;
@@ -38,6 +37,28 @@ describe('Access to destroyed GObject', function () {
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectPropertySet');
+    });
+
+    it('Add expando property', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x*');
+
+        destroyedWindow.expandoProperty = 'Hello!';
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectExpandoPropertySet');
+    });
+
+    it('Access to unset expando property', function () {
+        expect(destroyedWindow.expandoProperty).toBeUndefined();
+    });
+
+    it('Access previously set expando property', function () {
+        destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
+        destroyedWindow.expandoProperty = 'Hello!';
+        destroyedWindow.destroy();
+
+        expect(destroyedWindow.expandoProperty).toBe('Hello!');
     });
 
     it('Access to getter method', function () {
@@ -126,7 +147,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function toString', function () {
         expect(destroyedWindow.toString()).toMatch(
-            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object \(DISPOSED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 
     it('Proto function toString before/after', function () {
@@ -138,6 +159,307 @@ describe('Access to destroyed GObject', function () {
         validWindow.destroy();
 
         expect(validWindow.toString()).toMatch(
-            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+            /\[object \(DISPOSED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+});
+
+describe('Disposed or finalized GObject', function () {
+    beforeAll(function () {
+        GjsTestTools.init();
+    });
+
+    afterEach(function () {
+        GjsTestTools.reset();
+    });
+
+    [true, false].forEach(gc => {
+        it(`is marked as disposed when it is a manually disposed property ${gc ? '' : 'not '}garbage collected`, function () {
+            const emblem = new Gio.EmblemedIcon({
+                gicon: new Gio.ThemedIcon({name: 'alarm'}),
+            });
+
+            let {gicon} = emblem;
+            gicon.run_dispose();
+            gicon = null;
+            System.gc();
+
+            Array(10).fill().forEach(() => {
+                // We need to repeat the test to ensure that we disassociate
+                // wrappers from disposed objects on destruction.
+                gicon = emblem.gicon;
+                expect(gicon.toString()).toMatch(
+                    /\[object \(DISPOSED\) instance wrapper .* jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+                gicon = null;
+                if (gc)
+                    System.gc();
+            });
+        });
+    });
+
+    it('calls dispose vfunc on explicit disposal only', function () {
+        const callSpy = jasmine.createSpy('vfunc_dispose');
+        const DisposeFile = GObject.registerClass(class DisposeFile extends Gio.ThemedIcon {
+            vfunc_dispose(...args) {
+                expect(this.names).toEqual(['dummy']);
+                callSpy(...args);
+            }
+        });
+
+        let file = new DisposeFile({name: 'dummy'});
+        file.run_dispose();
+        expect(callSpy).toHaveBeenCalledOnceWith();
+
+        file.run_dispose();
+        expect(callSpy).toHaveBeenCalledTimes(2);
+        file = null;
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*during garbage collection*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*dispose*');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'calls dispose vfunc on explicit disposal only');
+
+        expect(callSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('generates a warn on object garbage collection', function () {
+        Gio.File.new_for_path('/').unref();
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn on object garbage collection');
+    });
+
+    it('generates a warn on object garbage collection if has expando property', function () {
+        let file = Gio.File.new_for_path('/');
+        file.toggleReferenced = true;
+        file.unref();
+        expect(file.toString()).toMatch(
+            /\[object \(FINALIZED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+        file = null;
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn on object garbage collection if has expando property');
+    });
+
+    it('generates a warn if already disposed at garbage collection', function () {
+        const loop = new GLib.MainLoop(null, false);
+
+        let file = Gio.File.new_for_path('/');
+        GjsTestTools.delayed_unref(file, 1);  // Will happen after dispose
+        file.run_dispose();
+
+        let done = false;
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => (done = true));
+        while (!done)
+            loop.get_context().iteration(true);
+
+        file = null;
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn if already disposed at garbage collection');
+    });
+
+    [true, false].forEach(gc => {
+        it(`created from other function is marked as disposed and ${gc ? '' : 'not '}garbage collected`, function () {
+            let file = Gio.File.new_for_path('/');
+            GjsTestTools.save_object(file);
+            file.run_dispose();
+            file = null;
+            System.gc();
+
+            Array(10).fill().forEach(() => {
+                // We need to repeat the test to ensure that we disassociate
+                // wrappers from disposed objects on destruction.
+                expect(GjsTestTools.peek_saved()).toMatch(
+                    /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+                if (gc)
+                    System.gc();
+            });
+        });
+    });
+
+    it('returned from function is marked as disposed', function () {
+        expect(GjsTestTools.get_disposed(Gio.File.new_for_path('/'))).toMatch(
+            /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+
+    it('returned from function is marked as disposed and then as finalized', function () {
+        let file = Gio.File.new_for_path('/');
+        GjsTestTools.save_object(file);
+        GjsTestTools.delayed_unref(file, 30);
+        file.run_dispose();
+
+        let disposedFile = GjsTestTools.get_saved();
+        expect(disposedFile).toEqual(file);
+        expect(disposedFile).toMatch(
+            /\[object \(DISPOSED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+
+        expect(disposedFile).toMatch(
+            /\[object \(FINALIZED\) instance wrapper GType:GLocalFile jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        disposedFile = null;
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'returned from function is marked as disposed and then as finalized');
+    });
+
+    it('ignores toggling queued unref toggles', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
+        file.run_dispose();
+    });
+
+    it('ignores toggling queued toggles', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.ref_other_thread(file);
+        GjsTestTools.unref_other_thread(file);
+        file.run_dispose();
+    });
+
+    it('can be disposed from other thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
+        GjsTestTools.run_dispose_other_thread(file);
+    });
+
+    it('can be garbage collected once disposed from other thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.run_dispose_other_thread(file);
+        file = null;
+        System.gc();
+    });
+
+    it('can be re-reffed from other thread delayed', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        const objectAddress = System.addressOfGObject(file);
+        GjsTestTools.save_object_unreffed(file);
+        GjsTestTools.delayed_ref_other_thread(file, 10);
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+
+        // We need to cleanup the extra ref we added before now.
+        // However, depending on whether the thread ref happens the object
+        // may be already finalized, and in such case we need to throw
+        try {
+            file = GjsTestTools.steal_saved();
+            if (file) {
+                expect(System.addressOfGObject(file)).toBe(objectAddress);
+                expect(file instanceof Gio.File).toBeTruthy();
+                file.unref();
+            }
+        } catch (e) {
+            expect(() => {
+                throw e;
+            }).toThrowError(/.*Unhandled GType.*/);
+        }
+    });
+
+    it('can be re-reffed and unreffed again from other thread', function () {
+        let file = Gio.File.new_for_path('/');
+        const objectAddress = System.addressOfGObject(file);
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_object(file);
+        GjsTestTools.delayed_unref_other_thread(file.ref(), 10);
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+
+        file = GjsTestTools.get_saved();
+        expect(System.addressOfGObject(file)).toBe(objectAddress);
+        expect(file instanceof Gio.File).toBeTruthy();
+    });
+
+    it('can be re-reffed and unreffed again from other thread with delay', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.delayed_ref_unref_other_thread(file, 10);
+        file = null;
+        System.gc();
+
+        const loop = new GLib.MainLoop(null, false);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        loop.run();
+    });
+
+    it('can be toggled up by getting a GWeakRef', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak();
+    });
+
+    it('can be toggled up by getting a GWeakRef from another thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak_other_thread();
+    });
+
+    it('can be toggled up by getting a GWeakRef from another thread and re-reffed in main thread', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak_other_thread();
+
+        // Ok, let's play more dirty now...
+        file.ref(); // toggle up
+        file.unref(); // toggle down
+
+        file.ref();
+        file.ref();
+        file.unref();
+        file.unref();
+    });
+
+    it('can be toggled up by getting a GWeakRef from another and re-reffed from various threads', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+        GjsTestTools.get_weak_other_thread();
+
+        GjsTestTools.ref_other_thread(file);
+        GjsTestTools.unref_other_thread(file);
+
+        file.ref();
+        file.unref();
+
+        GjsTestTools.ref_other_thread(file);
+        file.unref();
+
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
     });
 });

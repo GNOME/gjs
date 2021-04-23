@@ -2681,13 +2681,10 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                // Null arg is already handled above
-                JSObject* obj = ObjectInstance::wrapper_from_gobject(
-                    context, G_OBJECT(gjs_arg_get<GObject*>(arg)));
-                if (!obj)
-                    return false;
-                value_p.setObject(*obj);
-                return true;
+                g_assert(gjs_arg_get<void*>(arg) &&
+                         "Null arg is already handled above");
+                return ObjectInstance::set_value_from_gobject(
+                    context, gjs_arg_get<GObject*>(arg), value_p);
             }
 
             if (g_type_is_a(gtype, G_TYPE_BOXED) ||

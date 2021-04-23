@@ -191,19 +191,44 @@ describe('Gtk overrides', function () {
             'Gtk overrides avoid crashing and print a stack trace');
     });
 
-    it('GTK vfuncs can be explicitly called during disposition', function () {
-        let called;
-        const GoodLabel = GObject.registerClass(class GoodLabel extends Gtk.Label {
+    it('GTK vfuncs are not called if the object is disposed', function () {
+        const spy = jasmine.createSpy('vfunc_destroy');
+        const NotSoGoodLabel = GObject.registerClass(class NotSoGoodLabel extends Gtk.Label {
             vfunc_destroy() {
-                called = true;
+                spy();
             }
         });
 
-        let label = new GoodLabel();
+        let label = new NotSoGoodLabel();
+
         label.destroy();
-        expect(called).toBeTruthy();
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*during garbage collection*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*destroy*');
         label = null;
         System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
+            'GTK vfuncs are not called if the object is disposed');
+    });
+
+    it('destroy signal is emitted while disposing objects', function () {
+        const label = new Gtk.Label({label: 'Hello'});
+        const handleDispose = jasmine.createSpy('handleDispose').and.callFake(() => {
+            expect(label.label).toBe('Hello');
+        });
+        label.connect('destroy', handleDispose);
+        label.destroy();
+
+        expect(handleDispose).toHaveBeenCalledWith(label);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Label (0x* deallocated *');
+        expect(label.label).toBeUndefined();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
+            'GTK destroy signal is emitted while disposing objects');
     });
 
     it('accepts string in place of GdkAtom', function () {

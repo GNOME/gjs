@@ -365,6 +365,11 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         if (gobj) {
             this_object = ObjectInstance::wrapper_from_gobject(context, gobj);
             if (!this_object) {
+                if (g_object_get_qdata(gobj, ObjectBase::disposed_quark())) {
+                    warn_about_illegal_js_callback(
+                        "on disposed object",
+                        "using the destroy(), dispose(), or remove() vfuncs");
+                }
                 gjs_log_exception(context);
                 return;
             }

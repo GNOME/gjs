@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
 const ByteArray = imports.byteArray;
-const {Gio, GjsPrivate, GLib} = imports.gi;
+const {Gio, GjsTestTools, GLib} = imports.gi;
 
 /* The methods list with their signatures.
  *
@@ -240,14 +240,14 @@ class Test {
     }
 
     fdOut(bytes) {
-        const fd = GjsPrivate.open_bytes(bytes);
+        const fd = GjsTestTools.open_bytes(bytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         return [0, fdList];
     }
 
     fdOut2Async([bytes], invocation) {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
-            const fd = GjsPrivate.open_bytes(bytes);
+            const fd = GjsTestTools.open_bytes(bytes);
             const fdList = Gio.UnixFDList.new_from_array([fd]);
             invocation.return_value_with_unix_fd_list(new GLib.Variant('(h)', [0]),
                 fdList);
@@ -556,7 +556,7 @@ describe('Exported DBus object', function () {
 
     it('can call a remote method with a Unix FD', function (done) {
         const expectedBytes = ByteArray.fromString('some bytes');
-        const fd = GjsPrivate.open_bytes(expectedBytes);
+        const fd = GjsTestTools.open_bytes(expectedBytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         proxy.fdInRemote(0, fdList, ([bytes], exc, outFdList) => {
             expect(exc).toBeNull();
@@ -568,7 +568,7 @@ describe('Exported DBus object', function () {
 
     it('can call an asynchronously implemented remote method with a Unix FD', function (done) {
         const expectedBytes = ByteArray.fromString('some bytes');
-        const fd = GjsPrivate.open_bytes(expectedBytes);
+        const fd = GjsTestTools.open_bytes(expectedBytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         proxy.fdIn2Remote(0, fdList, ([bytes], exc, outFdList) => {
             expect(exc).toBeNull();
