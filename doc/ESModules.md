@@ -63,6 +63,23 @@ Because `import()` is asynchronous, you will need a mainloop running.
 Using the C API in `gjs.h`, ES modules can be loaded from a file or
 resource using `gjs_load_module_file()`. <!-- TODO -->
 
+### Shebang
+
+`example.js`
+
+```js
+#!/usr/bin/env -S gjs -m
+
+import GLib from 'gi://GLib';
+log(GLib);
+```
+
+```sh
+chmod +x example.js
+./example.js
+```
+
+
 ## `import` Specifiers
 
 ### Terminology
