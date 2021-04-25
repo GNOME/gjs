@@ -77,6 +77,7 @@
 #include "gjs/objectbox.h"
 #include "gjs/profiler-private.h"
 #include "gjs/profiler.h"
+#include "gjs/text-encoding.h"
 #include "modules/modules.h"
 #include "util/log.h"
 
@@ -319,6 +320,8 @@ gjs_context_class_init(GjsContextClass *klass)
     }
 
     gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
+    gjs_register_native_module("_encodingNative",
+                               gjs_define_text_encoding_stuff);
     gjs_register_native_module("_gi", gjs_define_private_gi_stuff);
     gjs_register_native_module("gi", gjs_define_repo);
 
