@@ -303,7 +303,7 @@ gjs_context_class_init(GjsContextClass *klass)
     g_param_spec_unref(pspec);
 
     /* For GjsPrivate */
-    {
+    if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
