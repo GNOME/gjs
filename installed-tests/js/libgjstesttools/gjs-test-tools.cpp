@@ -239,6 +239,11 @@ GObject* gjs_test_tools_peek_saved() {
     return m_tmp_object;
 }
 
+int gjs_test_tools_get_saved_ref_count() {
+    GObject* saved = gjs_test_tools_peek_saved();
+    return saved ? saved->ref_count : 0;
+}
+
 /**
  * gjs_test_tools_get_weak:
  * Returns: (transfer full)

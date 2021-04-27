@@ -13,7 +13,6 @@
 #include <glib.h>
 
 #include "gi/toggle.h"
-#include "gjs/jsapi-util.h"
 
 std::deque<ToggleQueue::Item>::iterator
 ToggleQueue::find_operation_locked(const GObject               *gobj,
@@ -90,12 +89,6 @@ std::pair<bool, bool> ToggleQueue::cancel(GObject* gobj) {
     return {had_toggle_down, had_toggle_up};
 }
 
-bool ToggleQueue::is_being_handled(GObject* gobj) {
-    GObject* tmp_gobj = gobj;
-
-    return m_toggling_gobj.compare_exchange_strong(tmp_gobj, gobj);
-}
-
 bool ToggleQueue::handle_toggle(Handler handler) {
     Item item;
     {
@@ -107,34 +100,10 @@ bool ToggleQueue::handle_toggle(Handler handler) {
         q.pop_front();
     }
 
-    /* When getting the object from the weak reference we're implicitly
-     * adding a new reference to the object, this may cause the toggle
-     * notification to be triggered again and this may lead to enqueuing
-     * the object again, so let's save the toggling object in an atomic
-     * pointer so that we can check it quickly to ensure that we're not
-     * recursing into ourself.
-     */
-    GObject* null_gobj = nullptr;
-    m_toggling_gobj.compare_exchange_strong(null_gobj, item.gobj);
 
-    if (item.direction == Direction::DOWN) {
-        GjsSmartPointer<GObject> gobj(
-            static_cast<GObject*>(g_weak_ref_get(&item.weak_ref)));
+    debug("handle", item.gobj);
+    handler(item.gobj, item.direction);
 
-        if (gobj) {
-            debug("handle", gobj);
-            handler(gobj, item.direction);
-        } else {
-            debug("not handling finalized", item.gobj);
-        }
-
-        g_weak_ref_clear(&item.weak_ref);
-    } else {
-        debug("handle", item.gobj);
-        handler(item.gobj, item.direction);
-    }
-
-    m_toggling_gobj = nullptr;
 
     return true;
 }
@@ -161,25 +130,20 @@ ToggleQueue::enqueue(GObject               *gobj,
         return;
     }
 
-    if (is_being_handled(gobj))
-        return;
-
     std::lock_guard<std::mutex> hold(lock);
-    /* Only keep a weak reference on the object here, as if we're here, the
+    /* Only keep an unowned reference on the object here, as if we're here, the
      * JSObject wrapper has already a reference and we don't want to cause
      * any weak notify in case it has lost one already in the main thread.
-     * So let's use the weak reference to keep track of the object till we
+     * So let's just save the pointer to keep track of the object till we
      * don't handle this toggle.
-     * Unfortunately due to GNOME/glib#2384 we can't be symmetric here and
-     * behave differently on toggle up and down events, however when toggling
-     * up we already have a strong reference, so there's no much need to do
+     * We rely on object's cancelling the queue in case an object gets
+     * finalized earlier than we've processed it.
      */
-    auto& item = q.emplace_back(gobj, direction);
+    q.emplace_back(gobj, direction);
 
     if (direction == UP) {
         debug("enqueue UP", gobj);
     } else {
-        g_weak_ref_init(&item.weak_ref, gobj);
         debug("enqueue DOWN", gobj);
     }
 
