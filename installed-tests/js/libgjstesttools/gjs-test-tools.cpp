@@ -219,6 +219,12 @@ void gjs_test_tools_save_weak(GObject* object) {
     g_weak_ref_set(&m_tmp_weak, object);
 }
 
+int gjs_test_tools_get_saved_ref_count() {
+    if (FinalizedObjectsLocked()->count(m_tmp_object))
+        return 0;
+    return m_tmp_object.load()->ref_count;
+}
+
 /**
  * gjs_test_tools_get_weak:
  * Returns: (transfer full)

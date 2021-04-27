@@ -64,6 +64,9 @@ _GJS_TEST_TOOL_EXTERN
 GObject* gjs_test_tools_steal_saved();
 
 _GJS_TEST_TOOL_EXTERN
+int gjs_test_tools_get_saved_ref_count();
+
+_GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_clear_saved();
 
 _GJS_TEST_TOOL_EXTERN

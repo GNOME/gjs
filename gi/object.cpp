@@ -252,6 +252,8 @@ ObjectInstance::set_object_qdata(void)
                     self->m_ptr.get(), g_type_name(self->gtype()));
                 self->m_gobj_disposed = true;
             }
+            if (ToggleQueue::get_default().cancel(self->m_ptr).first)
+                self->toggle_down();
             self->m_gobj_finalized = true;
             gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
                                 "Wrapped GObject %p finalized",
@@ -1111,6 +1113,8 @@ void ObjectInstance::track_gobject_finalization() {
     g_object_steal_qdata(m_ptr, quark);
     g_object_set_qdata_full(m_ptr, quark, this, [](void* data) {
         auto* self = static_cast<ObjectInstance*>(data);
+        if (ToggleQueue::get_default().cancel(self->m_ptr).first)
+            self->toggle_down();
         self->m_gobj_finalized = true;
         gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p finalized",
                             self->m_ptr.get());
@@ -1262,7 +1266,8 @@ toggle_handler(GObject               *gobj,
     if (G_UNLIKELY(!self)) {
         void* disposed = g_object_get_qdata(gobj, ObjectBase::disposed_quark());
 
-        if (G_UNLIKELY(disposed == gjs_int_to_pointer(DISPOSED_OBJECT))) {
+        if (G_UNLIKELY(!disposed ||
+                       disposed == gjs_int_to_pointer(DISPOSED_OBJECT))) {
             g_critical("Handling toggle %s for an unknown object %p",
                        direction == ToggleQueue::UP ? "up" : "down", gobj);
             return;
@@ -1329,9 +1334,6 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
     is_main_thread = gjs->is_owner_thread();
 
     auto& toggle_queue = ToggleQueue::get_default();
-    if (is_main_thread && toggle_queue.is_being_handled(gobj))
-        return;
-
     std::tie(toggle_down_queued, toggle_up_queued) = toggle_queue.is_queued(gobj);
 
     if (is_last_ref) {
