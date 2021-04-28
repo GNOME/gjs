@@ -147,6 +147,9 @@ typedef enum {
 #    define gjs_debug_gsignal(...) ((void)0)
 #endif
 
+void gjs_log_init();
+void gjs_log_cleanup();
+
 [[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic topic,
                                              const char* format, ...);
 
