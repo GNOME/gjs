@@ -15,6 +15,7 @@
 #    include <process.h>
 #endif
 
+#include <atomic>
 #include <new>
 #include <string>       // for u16string
 #include <unordered_map>
@@ -392,7 +393,7 @@ void GjsContextPrivate::dispose(void) {
         JS_GC(m_cx);
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Destroying JS context");
-        m_destroying = true;
+        m_destroying.store(true);
 
         /* Now, release all native objects, to avoid recursion between
          * the JS teardown and the C teardown.  The JSObject proxies
