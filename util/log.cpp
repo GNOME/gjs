@@ -22,6 +22,8 @@
 #    include <unistd.h>  // for getpid
 #endif
 
+#include <vector>
+
 #include <glib.h>
 
 #include "util/log.h"
@@ -30,19 +32,69 @@
 static std::atomic_bool s_initialized = ATOMIC_VAR_INIT(false);
 static bool s_debug_log_enabled = false;
 static bool s_print_thread = false;
-static const char* s_topics = nullptr;
 static FILE* s_logfp = nullptr;
-static GjsAutoStrv s_prefixes;
 static GjsAutoPointer<GTimer, GTimer, g_timer_destroy> s_timer;
+static std::vector<bool> s_enabled_topics;
+
+static const char* topic_to_prefix(GjsDebugTopic topic) {
+    switch (topic) {
+        case GJS_DEBUG_GI_USAGE:
+            return "JS GI USE";
+        case GJS_DEBUG_MEMORY:
+            return "JS MEMORY";
+        case GJS_DEBUG_CONTEXT:
+            return "JS CTX";
+        case GJS_DEBUG_IMPORTER:
+            return "JS IMPORT";
+        case GJS_DEBUG_NATIVE:
+            return "JS NATIVE";
+        case GJS_DEBUG_CAIRO:
+            return "JS CAIRO";
+        case GJS_DEBUG_KEEP_ALIVE:
+            return "JS KP ALV";
+        case GJS_DEBUG_GREPO:
+            return "JS G REPO";
+        case GJS_DEBUG_GNAMESPACE:
+            return "JS G NS";
+        case GJS_DEBUG_GOBJECT:
+            return "JS G OBJ";
+        case GJS_DEBUG_GFUNCTION:
+            return "JS G FUNC";
+        case GJS_DEBUG_GFUNDAMENTAL:
+            return "JS G FNDMTL";
+        case GJS_DEBUG_GCLOSURE:
+            return "JS G CLSR";
+        case GJS_DEBUG_GBOXED:
+            return "JS G BXD";
+        case GJS_DEBUG_GENUM:
+            return "JS G ENUM";
+        case GJS_DEBUG_GPARAM:
+            return "JS G PRM";
+        case GJS_DEBUG_GERROR:
+            return "JS G ERR";
+        case GJS_DEBUG_GINTERFACE:
+            return "JS G IFACE";
+        case GJS_DEBUG_GTYPE:
+            return "JS GTYPE";
+        default:
+            return "???";
+    }
+}
+
+static GjsDebugTopic prefix_to_topic(const char* prefix) {
+    for (unsigned i = 0; i < GJS_DEBUG_LAST; i++) {
+        auto topic = static_cast<GjsDebugTopic>(i);
+        if (g_str_equal(topic_to_prefix(topic), prefix))
+            return topic;
+    }
+
+    return GJS_DEBUG_LAST;
+}
 
 void gjs_log_init() {
     bool expected = false;
     if (!s_initialized.compare_exchange_strong(expected, true))
         return;
-
-    s_topics = g_getenv("GJS_DEBUG_TOPICS");
-    if (s_topics)
-        s_prefixes = g_strsplit(s_topics, ";", -1);
 
     if (gjs_environment_variable_is_set("GJS_DEBUG_TIMESTAMP"))
         s_timer = g_timer_new();
@@ -89,6 +141,18 @@ void gjs_log_init() {
 
     if (!s_logfp)
         s_logfp = stderr;
+
+    if (s_debug_log_enabled) {
+        auto* topics = g_getenv("GJS_DEBUG_TOPICS");
+        s_enabled_topics = std::vector<bool>(GJS_DEBUG_LAST, topics == nullptr);
+        if (topics) {
+            GjsAutoStrv prefixes(g_strsplit(topics, ";", -1));
+            for (unsigned i = 0; prefixes[i] != NULL; i++) {
+                GjsDebugTopic topic = prefix_to_topic(prefixes[i]);
+                s_enabled_topics[topic] = topic != GJS_DEBUG_LAST;
+            }
+        }
+    }
 }
 
 void gjs_log_cleanup() {
@@ -102,29 +166,7 @@ void gjs_log_cleanup() {
     }
 
     s_timer = nullptr;
-    s_prefixes = nullptr;
-}
-
-/* prefix is allowed if it's in the ;-delimited environment variable
- * GJS_DEBUG_TOPICS or if that variable is not set.
- */
-static bool
-is_allowed_prefix (const char *prefix)
-{
-    bool found = false;
-    int i;
-
-    if (!s_prefixes)
-        return true;
-
-    for (i = 0; s_prefixes[i] != NULL; i++) {
-        if (!strcmp(s_prefixes[i], prefix)) {
-            found = true;
-            break;
-        }
-    }
-
-    return found;
+    s_enabled_topics.clear();
 }
 
 #define PREFIX_LENGTH 12
@@ -148,77 +190,10 @@ gjs_debug(GjsDebugTopic topic,
           const char   *format,
           ...)
 {
-    const char *prefix;
     va_list args;
     char *s;
 
-    if (!s_debug_log_enabled)
-        return;
-
-    switch (topic) {
-    case GJS_DEBUG_GI_USAGE:
-        prefix = "JS GI USE";
-        break;
-    case GJS_DEBUG_MEMORY:
-        prefix = "JS MEMORY";
-        break;
-    case GJS_DEBUG_CONTEXT:
-        prefix = "JS CTX";
-        break;
-    case GJS_DEBUG_IMPORTER:
-        prefix = "JS IMPORT";
-        break;
-    case GJS_DEBUG_NATIVE:
-        prefix = "JS NATIVE";
-        break;
-    case GJS_DEBUG_CAIRO:
-        prefix = "JS CAIRO";
-        break;
-    case GJS_DEBUG_KEEP_ALIVE:
-        prefix = "JS KP ALV";
-        break;
-    case GJS_DEBUG_GREPO:
-        prefix = "JS G REPO";
-        break;
-    case GJS_DEBUG_GNAMESPACE:
-        prefix = "JS G NS";
-        break;
-    case GJS_DEBUG_GOBJECT:
-        prefix = "JS G OBJ";
-        break;
-    case GJS_DEBUG_GFUNCTION:
-        prefix = "JS G FUNC";
-        break;
-    case GJS_DEBUG_GFUNDAMENTAL:
-        prefix = "JS G FNDMTL";
-        break;
-    case GJS_DEBUG_GCLOSURE:
-        prefix = "JS G CLSR";
-        break;
-    case GJS_DEBUG_GBOXED:
-        prefix = "JS G BXD";
-        break;
-    case GJS_DEBUG_GENUM:
-        prefix = "JS G ENUM";
-        break;
-    case GJS_DEBUG_GPARAM:
-        prefix = "JS G PRM";
-        break;
-    case GJS_DEBUG_GERROR:
-        prefix = "JS G ERR";
-        break;
-    case GJS_DEBUG_GINTERFACE:
-        prefix = "JS G IFACE";
-        break;
-    case GJS_DEBUG_GTYPE:
-        prefix = "JS GTYPE";
-        break;
-    default:
-        prefix = "???";
-        break;
-    }
-
-    if (!is_allowed_prefix(prefix))
+    if (!s_debug_log_enabled || !s_enabled_topics[topic])
         return;
 
     va_start (args, format);
@@ -256,7 +231,7 @@ gjs_debug(GjsDebugTopic topic,
         s = s2;
     }
 
-    write_to_stream(s_logfp, prefix, s);
+    write_to_stream(s_logfp, topic_to_prefix(topic), s);
 
     g_free(s);
 }

@@ -30,6 +30,7 @@ typedef enum {
     GJS_DEBUG_GFUNDAMENTAL,
     GJS_DEBUG_GINTERFACE,
     GJS_DEBUG_GTYPE,
+    GJS_DEBUG_LAST,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and
