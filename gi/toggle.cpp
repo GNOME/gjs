@@ -1,42 +1,48 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Endless Mobile, Inc.
+// SPDX-FileCopyrightText: 2021 Canonical Ltd.
 // SPDX-FileContributor: Authored by: Philip Chimento <philip@endlessm.com>
 // SPDX-FileContributor: Philip Chimento <philip.chimento@gmail.com>
+// SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
 #include <algorithm>  // for find_if
 #include <deque>
 #include <mutex>
 #include <utility>  // for pair
 
-#include <glib-object.h>
-#include <glib.h>
-
+#include "gi/object.h"
 #include "gi/toggle.h"
+#include "util/log.h"
 
-std::deque<ToggleQueue::Item>::iterator
-ToggleQueue::find_operation_locked(const GObject               *gobj,
-                                   ToggleQueue::Direction direction) {
-    return std::find_if(q.begin(), q.end(),
-        [gobj, direction](const Item& item)->bool {
-            return item.gobj == gobj && item.direction == direction;
+/* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
+                  const ObjectInstance* object GJS_USED_VERBOSE_LIFECYCLE) {
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p (%s @ %p)", did,
+                        object, object ? g_type_name(object->gtype()) : "",
+                        object ? object->ptr() : nullptr);
+}
+
+std::deque<ToggleQueue::Item>::iterator ToggleQueue::find_operation_locked(
+    const ObjectInstance* obj, ToggleQueue::Direction direction) {
+    return std::find_if(
+        q.begin(), q.end(), [obj, direction](const Item& item) -> bool {
+            return item.object == obj && item.direction == direction;
         });
 }
 
 std::deque<ToggleQueue::Item>::const_iterator
-ToggleQueue::find_operation_locked(const GObject *gobj,
+ToggleQueue::find_operation_locked(const ObjectInstance* obj,
                                    ToggleQueue::Direction direction) const {
-    return std::find_if(q.begin(), q.end(),
-        [gobj, direction](const Item& item)->bool {
-            return item.gobj == gobj && item.direction == direction;
+    return std::find_if(
+        q.begin(), q.end(), [obj, direction](const Item& item) -> bool {
+            return item.object == obj && item.direction == direction;
         });
 }
 
-bool
-ToggleQueue::find_and_erase_operation_locked(const GObject               *gobj,
-                                             ToggleQueue::Direction direction)
-{
-    auto pos = find_operation_locked(gobj, direction);
+bool ToggleQueue::find_and_erase_operation_locked(
+    const ObjectInstance* obj, ToggleQueue::Direction direction) {
+    auto pos = find_operation_locked(obj, direction);
     bool had_toggle = (pos != q.end());
     if (had_toggle)
         q.erase(pos);
@@ -62,21 +68,19 @@ ToggleQueue::idle_destroy_notify(void *data)
     self->m_toggle_handler = nullptr;
 }
 
-std::pair<bool, bool>
-ToggleQueue::is_queued(GObject *gobj) const
-{
+std::pair<bool, bool> ToggleQueue::is_queued(ObjectInstance* obj) const {
     std::lock_guard<std::mutex> hold(lock);
-    bool has_toggle_down = find_operation_locked(gobj, DOWN) != q.end();
-    bool has_toggle_up = find_operation_locked(gobj, UP) != q.end();
+    bool has_toggle_down = find_operation_locked(obj, DOWN) != q.end();
+    bool has_toggle_up = find_operation_locked(obj, UP) != q.end();
     return {has_toggle_down, has_toggle_up};
 }
 
-std::pair<bool, bool> ToggleQueue::cancel(GObject* gobj) {
-    debug("cancel", gobj);
+std::pair<bool, bool> ToggleQueue::cancel(ObjectInstance* obj) {
+    debug("cancel", obj);
     std::lock_guard<std::mutex> hold(lock);
-    bool had_toggle_down = find_and_erase_operation_locked(gobj, DOWN);
-    bool had_toggle_up = find_and_erase_operation_locked(gobj, UP);
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p was %s", gobj,
+    bool had_toggle_down = find_and_erase_operation_locked(obj, DOWN);
+    bool had_toggle_up = find_and_erase_operation_locked(obj, UP);
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p was %s", obj->ptr(),
                         had_toggle_down && had_toggle_up
                             ? "queued to toggle BOTH"
                         : had_toggle_down ? "queued to toggle DOWN"
@@ -96,8 +100,11 @@ bool ToggleQueue::handle_toggle(Handler handler) {
         q.pop_front();
     }
 
-    debug("handle", item.gobj);
-    handler(item.gobj, item.direction);
+    if (item.direction == UP)
+        debug("handle UP", item.object);
+    else
+        debug("handle DOWN", item.object);
+    handler(item.object, item.direction);
 
     return true;
 }
@@ -111,16 +118,13 @@ ToggleQueue::shutdown(void)
     m_shutdown = true;
 }
 
-void
-ToggleQueue::enqueue(GObject               *gobj,
-                     ToggleQueue::Direction direction,
-                     ToggleQueue::Handler   handler)
-{
+void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
+                          ToggleQueue::Handler handler) {
     if (G_UNLIKELY (m_shutdown)) {
-        gjs_debug(GJS_DEBUG_GOBJECT, "Enqueuing GObject %p to toggle %s after "
-                  "shutdown, probably from another thread (%p).", gobj,
-                  direction == UP ? "UP" : "DOWN",
-                  g_thread_self());
+        gjs_debug(GJS_DEBUG_GOBJECT,
+                  "Enqueuing GObject %p to toggle %s after "
+                  "shutdown, probably from another thread (%p).",
+                  obj->ptr(), direction == UP ? "UP" : "DOWN", g_thread_self());
         return;
     }
 
@@ -133,12 +137,12 @@ ToggleQueue::enqueue(GObject               *gobj,
      * We rely on object's cancelling the queue in case an object gets
      * finalized earlier than we've processed it.
      */
-    q.emplace_back(gobj, direction);
+    q.emplace_back(obj, direction);
 
     if (direction == UP) {
-        debug("enqueue UP", gobj);
+        debug("enqueue UP", obj);
     } else {
-        debug("enqueue DOWN", gobj);
+        debug("enqueue DOWN", obj);
     }
 
     if (m_idle_id) {
