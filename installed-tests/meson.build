@@ -24,7 +24,7 @@ foreach test : simple_tests
     test_file = files('scripts' / 'test@0@.sh'.format(test))
 
     test(test, test_file, env: tests_environment, protocol: 'tap',
-        suite: 'Scripts')
+        suite: ['Scripts', 'thread-safe'])
 
     test_description_subst = {
         'name': 'test@0@.sh'.format(test),
@@ -78,7 +78,7 @@ foreach test : debugger_tests
 
     test('@0@ command'.format(test), debugger_test_driver,
         args: test_file, env: tests_environment, protocol: 'tap',
-        suite: 'Debugger')
+        suite: ['Debugger', 'thread-safe'])
 
     test_description_subst = {
         'name': '@0@.debugger'.format(test),
