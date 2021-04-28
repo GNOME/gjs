@@ -63,6 +63,9 @@ _GJS_TEST_TOOL_EXTERN
 GObject* gjs_test_tools_steal_saved();
 
 _GJS_TEST_TOOL_EXTERN
+void gjs_test_tools_clear_saved();
+
+_GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_save_weak(GObject* object);
 
 _GJS_TEST_TOOL_EXTERN
