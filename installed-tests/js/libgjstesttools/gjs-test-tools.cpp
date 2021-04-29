@@ -156,22 +156,35 @@ void gjs_test_tools_unref_other_thread(GObject* object) {
                                ref_thread_data_new(object, -1, UNREF)));
 }
 
-void gjs_test_tools_delayed_ref_other_thread(GObject* object, int interval) {
-    g_thread_unref(g_thread_new("ref_object", ref_thread_func,
-                                ref_thread_data_new(object, interval, REF)));
+/**
+ * gjs_test_tools_delayed_ref_other_thread:
+ * Returns: (transfer full)
+ */
+GThread* gjs_test_tools_delayed_ref_other_thread(GObject* object,
+                                                 int interval) {
+    return g_thread_new("ref_object", ref_thread_func,
+                        ref_thread_data_new(object, interval, REF));
 }
 
-void gjs_test_tools_delayed_unref_other_thread(GObject* object, int interval) {
-    g_thread_unref(g_thread_new("unref_object", ref_thread_func,
-                                ref_thread_data_new(object, interval, UNREF)));
-}
-
-void gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
+/**
+ * gjs_test_tools_delayed_unref_other_thread:
+ * Returns: (transfer full)
+ */
+GThread* gjs_test_tools_delayed_unref_other_thread(GObject* object,
                                                    int interval) {
-    g_thread_unref(
-        g_thread_new("ref_unref_object", ref_thread_func,
-                     ref_thread_data_new(object, interval,
-                                         static_cast<RefType>(REF | UNREF))));
+    return g_thread_new("unref_object", ref_thread_func,
+                        ref_thread_data_new(object, interval, UNREF));
+}
+
+/**
+ * gjs_test_tools_delayed_ref_unref_other_thread:
+ * Returns: (transfer full)
+ */
+GThread* gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
+                                                       int interval) {
+    return g_thread_new("ref_unref_object", ref_thread_func,
+                        ref_thread_data_new(object, interval,
+                                            static_cast<RefType>(REF | UNREF)));
 }
 
 void gjs_test_tools_run_dispose_other_thread(GObject* object) {
