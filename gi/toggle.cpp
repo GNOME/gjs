@@ -7,8 +7,8 @@
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
 #include <algorithm>  // for find_if
+#include <atomic>
 #include <deque>
-#include <mutex>
 #include <utility>  // for pair
 
 #include "gi/object.h"
@@ -21,6 +21,28 @@ inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p (%s @ %p)", did,
                         object, object ? g_type_name(object->gtype()) : "",
                         object ? object->ptr() : nullptr);
+}
+
+void ToggleQueue::lock() {
+    auto holding_thread = std::thread::id();
+    auto current_thread = std::this_thread::get_id();
+
+    while (!m_holder.compare_exchange_weak(holding_thread, current_thread,
+                                           std::memory_order_acquire)) {
+        // In case the current thread is holding the lock, we can just try
+        // again, checking if this is still true and in case continue
+        if (holding_thread != current_thread)
+            holding_thread = std::thread::id();
+    }
+
+    m_holder_ref_count++;
+}
+
+void ToggleQueue::maybe_unlock() {
+    g_assert(owns_lock() && "Nothing to unlock here");
+
+    if (!(--m_holder_ref_count))
+        m_holder.store(std::thread::id(), std::memory_order_release);
 }
 
 std::deque<ToggleQueue::Item>::iterator ToggleQueue::find_operation_locked(
@@ -50,6 +72,7 @@ bool ToggleQueue::find_and_erase_operation_locked(
 }
 
 void ToggleQueue::handle_all_toggles(Handler handler) {
+    g_assert(owns_lock() && "Unsafe access to queue");
     while (handle_toggle(handler))
         ;
 }
@@ -57,7 +80,7 @@ void ToggleQueue::handle_all_toggles(Handler handler) {
 gboolean
 ToggleQueue::idle_handle_toggle(void *data)
 {
-    auto self = static_cast<ToggleQueue *>(data);
+    auto self = Locked(static_cast<ToggleQueue*>(data));
     self->handle_all_toggles(self->m_toggle_handler);
 
     return G_SOURCE_REMOVE;
@@ -66,14 +89,13 @@ ToggleQueue::idle_handle_toggle(void *data)
 void
 ToggleQueue::idle_destroy_notify(void *data)
 {
-    auto self = static_cast<ToggleQueue *>(data);
-    std::lock_guard<std::mutex> hold(self->lock);
+    auto self = Locked(static_cast<ToggleQueue*>(data));
     self->m_idle_id = 0;
     self->m_toggle_handler = nullptr;
 }
 
 std::pair<bool, bool> ToggleQueue::is_queued(ObjectInstance* obj) const {
-    std::lock_guard<std::mutex> hold(lock);
+    g_assert(owns_lock() && "Unsafe access to queue");
     bool has_toggle_down = find_operation_locked(obj, DOWN) != q.end();
     bool has_toggle_up = find_operation_locked(obj, UP) != q.end();
     return {has_toggle_down, has_toggle_up};
@@ -81,7 +103,7 @@ std::pair<bool, bool> ToggleQueue::is_queued(ObjectInstance* obj) const {
 
 std::pair<bool, bool> ToggleQueue::cancel(ObjectInstance* obj) {
     debug("cancel", obj);
-    std::lock_guard<std::mutex> hold(lock);
+    g_assert(owns_lock() && "Unsafe access to queue");
     bool had_toggle_down = find_and_erase_operation_locked(obj, DOWN);
     bool had_toggle_up = find_and_erase_operation_locked(obj, UP);
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p was %s", obj->ptr(),
@@ -94,21 +116,19 @@ std::pair<bool, bool> ToggleQueue::cancel(ObjectInstance* obj) {
 }
 
 bool ToggleQueue::handle_toggle(Handler handler) {
-    Item item;
-    {
-        std::lock_guard<std::mutex> hold(lock);
-        if (q.empty())
-            return false;
+    g_assert(owns_lock() && "Unsafe access to queue");
 
-        item = q.front();
-        q.pop_front();
-    }
+    if (q.empty())
+        return false;
 
+    auto const& item = q.front();
     if (item.direction == UP)
         debug("handle UP", item.object);
     else
         debug("handle DOWN", item.object);
+
     handler(item.object, item.direction);
+    q.pop_front();
 
     return true;
 }
@@ -124,6 +144,8 @@ ToggleQueue::shutdown(void)
 
 void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
                           ToggleQueue::Handler handler) {
+    g_assert(owns_lock() && "Unsafe access to queue");
+
     if (G_UNLIKELY (m_shutdown)) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Enqueuing GObject %p to toggle %s after "
@@ -132,7 +154,6 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
         return;
     }
 
-    std::lock_guard<std::mutex> hold(lock);
     /* Only keep an unowned reference on the object here, as if we're here, the
      * JSObject wrapper has already a reference and we don't want to cause
      * any weak notify in case it has lost one already in the main thread.
