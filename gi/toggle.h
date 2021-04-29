@@ -67,9 +67,6 @@ public:
     [[nodiscard]] std::deque<Item>::const_iterator find_operation_locked(
         const ObjectInstance* obj, Direction direction) const;
 
-    [[nodiscard]] bool find_and_erase_operation_locked(
-        const ObjectInstance* obj, Direction direction);
-
     static gboolean idle_handle_toggle(void *data);
     static void idle_destroy_notify(void *data);
 

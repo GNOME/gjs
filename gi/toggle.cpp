@@ -62,15 +62,6 @@ ToggleQueue::find_operation_locked(const ObjectInstance* obj,
         });
 }
 
-bool ToggleQueue::find_and_erase_operation_locked(
-    const ObjectInstance* obj, ToggleQueue::Direction direction) {
-    auto pos = find_operation_locked(obj, direction);
-    bool had_toggle = (pos != q.end());
-    if (had_toggle)
-        q.erase(pos);
-    return had_toggle;
-}
-
 void ToggleQueue::handle_all_toggles(Handler handler) {
     g_assert(owns_lock() && "Unsafe access to queue");
     while (handle_toggle(handler))
@@ -104,9 +95,21 @@ std::pair<bool, bool> ToggleQueue::is_queued(ObjectInstance* obj) const {
 std::pair<bool, bool> ToggleQueue::cancel(ObjectInstance* obj) {
     debug("cancel", obj);
     g_assert(owns_lock() && "Unsafe access to queue");
-    bool had_toggle_down = find_and_erase_operation_locked(obj, DOWN);
-    bool had_toggle_up = find_and_erase_operation_locked(obj, UP);
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p was %s", obj->ptr(),
+    bool had_toggle_down = false;
+    bool had_toggle_up = false;
+
+    for (auto it = q.begin(); it != q.end();) {
+        if (it->object == obj) {
+            had_toggle_down |= (it->direction == Direction::DOWN);
+            had_toggle_up |= (it->direction == Direction::UP);
+            it = q.erase(it);
+            continue;
+        }
+        it++;
+    }
+
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p (%p) was %s", obj,
+                        obj ? obj->ptr() : nullptr,
                         had_toggle_down && had_toggle_up
                             ? "queued to toggle BOTH"
                         : had_toggle_down ? "queued to toggle DOWN"
@@ -151,6 +154,17 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
                   "Enqueuing GObject %p to toggle %s after "
                   "shutdown, probably from another thread (%p).",
                   obj->ptr(), direction == UP ? "UP" : "DOWN", g_thread_self());
+        return;
+    }
+
+    auto other_item = find_operation_locked(obj, direction == UP ? DOWN : UP);
+    if (other_item != q.end()) {
+        if (direction == UP) {
+            debug("enqueue UP, dequeuing already DOWN object", obj);
+        } else {
+            debug("enqueue DOWN, dequeuing already UP object", obj);
+        }
+        q.erase(other_item);
         return;
     }
 
