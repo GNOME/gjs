@@ -48,6 +48,7 @@ if cc.get_id() == 'msvc'
         '-wd4251',
         '-wd4291',
         '-wd4800',
+        '-wd5030',
     ]), language: ['cpp', 'c'])
 else
     # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
