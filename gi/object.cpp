@@ -1283,7 +1283,7 @@ static void toggle_handler(ObjectInstance* self,
     }
 }
 
-void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
+void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
                                                 gboolean is_last_ref) {
     bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
@@ -1330,21 +1330,16 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
     auto toggle_queue = ToggleQueue::get_default();
     std::tie(toggle_down_queued, toggle_up_queued) =
         toggle_queue->is_queued(self);
+    bool anything_queued = toggle_up_queued || toggle_down_queued;
 
     if (is_last_ref) {
         /* We've transitions from 2 -> 1 references,
          * The JSObject is rooted and we need to unroot it so it
          * can be garbage collected
          */
-        if (is_main_thread && !toggle_up_queued) {
-            if (G_UNLIKELY(toggle_down_queued)) {
-                g_error(
-                    "toggling down object %p (%s) that's already queued to "
-                    "toggle down",
-                    gobj, G_OBJECT_TYPE_NAME(gobj));
-            }
+        if (is_main_thread && !anything_queued) {
             self->toggle_down();
-        } else if (!toggle_down_queued) {
+        } else {
             toggle_queue->enqueue(self, ToggleQueue::DOWN, toggle_handler);
         }
     } else {
@@ -1353,15 +1348,9 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
          * The JSObject associated with the gobject is not rooted,
          * but it needs to be. We'll root it.
          */
-        if (is_main_thread && !toggle_down_queued) {
-            if (G_UNLIKELY (toggle_up_queued)) {
-                g_error(
-                    "toggling up object %p (%s) that's already queued to "
-                    "toggle up",
-                    gobj, G_OBJECT_TYPE_NAME(gobj));
-            }
+        if (is_main_thread && !anything_queued) {
             self->toggle_up();
-        } else if (!toggle_up_queued) {
+        } else {
             toggle_queue->enqueue(self, ToggleQueue::UP, toggle_handler);
         }
     }

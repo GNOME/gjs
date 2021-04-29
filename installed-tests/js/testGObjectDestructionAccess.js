@@ -475,5 +475,5 @@ describe('GObject with toggle references', function () {
         GjsTestTools.clear_saved();
         System.gc();
         expect(GjsTestTools.get_weak()).toBeNull();
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/297');
+    });
 });
