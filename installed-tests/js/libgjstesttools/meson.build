@@ -6,7 +6,7 @@ gjstest_tools_sources = [
     'gjs-test-tools.h',
 ]
 libgjstesttools = library('gjstesttools',
-    gjstest_tools_sources, dependencies: [glib, gobject, gio],
+    sources: gjstest_tools_sources,
     include_directories: top_include, dependencies: libgjs_dep,
     cpp_args: libgjs_cpp_args + test_gir_extra_c_args + test_gir_warning_c_args,
     install: get_option('installed_tests'), install_dir: installed_tests_execdir)
