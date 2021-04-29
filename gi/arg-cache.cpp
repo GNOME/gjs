@@ -1261,7 +1261,8 @@ bool gjs_arg_cache_build_return(JSContext*, GjsArgumentCache* self,
 
     g_callable_info_load_return_type(callable, &self->type_info);
 
-    if (g_type_info_get_tag(&self->type_info) == GI_TYPE_TAG_VOID) {
+    if (g_type_info_get_tag(&self->type_info) == GI_TYPE_TAG_VOID &&
+        !g_type_info_is_pointer(&self->type_info)) {
         *inc_counter_out = false;
         gjs_arg_cache_set_skip_all(self);
         return true;

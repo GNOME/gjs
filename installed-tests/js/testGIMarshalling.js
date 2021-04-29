@@ -906,6 +906,10 @@ describe('Callback', function () {
 });
 
 describe('Raw pointers', function () {
+    it('gets an allocated return value', function () {
+        expect(GIMarshallingTests.pointer_in_return(null)).toBeFalsy();
+    });
+
     xit('can be roundtripped at least if the pointer is null', function () {
         expect(GIMarshallingTests.pointer_in_return(null)).toBeNull();
     }).pend('https://gitlab.gnome.org/GNOME/gjs/merge_requests/46');
