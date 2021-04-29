@@ -628,4 +628,47 @@ describe('Disposed or finalized GObject', function () {
         file.ref();
         GjsTestTools.unref_other_thread(file);
     });
+
+    it('can be toggled up-down from various threads when the wrapper is gone', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+
+        // We also check that late thread events won't affect the destroyed wrapper
+        const threads = [];
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 0));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 100000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 200000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 300000));
+        GjsTestTools.save_object(file);
+        GjsTestTools.save_weak(file);
+        file = null;
+        System.gc();
+
+        threads.forEach(th => th.join());
+        GjsTestTools.clear_saved();
+        System.gc();
+
+        expect(GjsTestTools.get_weak()).toBeNull();
+    });
+
+    it('can be toggled up-down from various threads when disposed and the wrapper is gone', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+
+        // We also check that late thread events won't affect the destroyed wrapper
+        const threads = [];
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 0));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 100000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 200000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 300000));
+        GjsTestTools.save_object(file);
+        GjsTestTools.save_weak(file);
+        file.run_dispose();
+        file = null;
+        System.gc();
+
+        threads.forEach(th => th.join());
+        GjsTestTools.clear_saved();
+        expect(GjsTestTools.get_weak()).toBeNull();
+    });
 });
