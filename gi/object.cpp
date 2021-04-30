@@ -188,18 +188,27 @@ bool ObjectBase::typecheck(JSContext* cx, JS::HandleObject obj,
     return false;
 }
 
-bool ObjectInstance::check_gobject_disposed(const char* for_what) const {
+bool ObjectInstance::check_gobject_disposed_or_finalized(
+    const char* for_what) const {
     if (!m_gobj_disposed)
         return true;
 
     g_critical(
-        "Object %s.%s (%p), has been already deallocated — impossible to %s "
+        "Object %s.%s (%p), has been already %s — impossible to %s "
         "it. This might be caused by the object having been destroyed from C "
         "code using something such as destroy(), dispose(), or remove() "
         "vfuncs.",
-        ns(), name(), m_ptr.get(), for_what);
+        ns(), name(), m_ptr.get(), m_gobj_finalized ? "finalized" : "disposed",
+        for_what);
     gjs_dumpstack();
     return false;
+}
+
+bool ObjectInstance::check_gobject_finalized(const char* for_what) const {
+    if (check_gobject_disposed_or_finalized(for_what))
+        return true;
+
+    return !m_gobj_finalized;
 }
 
 ObjectInstance *
@@ -349,7 +358,7 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
                                       JS::MutableHandleValue rval) {
-    if (!check_gobject_disposed("get any property from")) {
+    if (!check_gobject_finalized("get any property from")) {
         rval.setUndefined();
         return true;
     }
@@ -426,7 +435,7 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
                                        JS::MutableHandleValue rval) {
-    if (!check_gobject_disposed("get any property from"))
+    if (!check_gobject_finalized("get any property from"))
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
@@ -495,7 +504,7 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
                                       JS::HandleValue value) {
-    if (!check_gobject_disposed("set any property on"))
+    if (!check_gobject_finalized("set any property on"))
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
@@ -558,7 +567,7 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::field_setter_not_impl(JSContext* cx,
                                            JS::HandleString name) {
-    if (!check_gobject_disposed("set GObject field on"))
+    if (!check_gobject_finalized("set GObject field on"))
         return true;
 
     ObjectPrototype* proto_priv = get_prototype();
@@ -1542,7 +1551,7 @@ bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     if (m_uses_toggle_ref)
         return true;
 
-    if (!check_gobject_disposed("add toggle reference on"))
+    if (!check_gobject_disposed_or_finalized("add toggle reference on"))
         return false;
 
     debug_lifecycle("Switching object instance to toggle ref");
@@ -1983,7 +1992,7 @@ ObjectInstance::connect_impl(JSContext          *context,
 
     gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
 
-    if (!check_gobject_disposed("connect to any signal on")) {
+    if (!check_gobject_disposed_or_finalized("connect to any signal on")) {
         args.rval().setInt32(0);
         return true;
     }
@@ -2048,7 +2057,7 @@ ObjectInstance::emit_impl(JSContext          *context,
     gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
                       argv.length());
 
-    if (!check_gobject_disposed("emit any signal on")) {
+    if (!check_gobject_finalized("emit any signal on")) {
         argv.rval().setUndefined();
         return true;
     }
@@ -2214,7 +2223,7 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
     gjs_debug_gsignal("[Gi.signal_find_symbol]() obj %p priv %p argc %d",
                       m_wrapper.get(), this, args.length());
 
-    if (!check_gobject_disposed("find any signal on")) {
+    if (!check_gobject_finalized("find any signal on")) {
         args.rval().setInt32(0);
         return true;
     }
@@ -2290,7 +2299,7 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
     gjs_debug_gsignal("[%s]() obj %p priv %p argc %d", action_tag.c_str(),
                       m_wrapper.get(), this, args.length());
 
-    if (!check_gobject_disposed((action_name + " any signal on").c_str())) {
+    if (!check_gobject_finalized((action_name + " any signal on").c_str())) {
         args.rval().setInt32(0);
         return true;
     }
@@ -2582,7 +2591,7 @@ bool ObjectBase::to_c_ptr(JSContext* cx, JS::HandleObject obj, GObject** ptr) {
         return false;
 
     ObjectInstance* instance = priv->to_instance();
-    if (!instance->check_gobject_disposed("access")) {
+    if (!instance->check_gobject_finalized("access")) {
         *ptr = nullptr;
         return true;
     }

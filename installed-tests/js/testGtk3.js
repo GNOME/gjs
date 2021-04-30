@@ -225,8 +225,8 @@ describe('Gtk overrides', function () {
         expect(handleDispose).toHaveBeenCalledWith(label);
 
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Label (0x* deallocated *');
-        expect(label.label).toBeUndefined();
+            'Object Gtk.Label (0x* disposed *');
+        expect(label.label).toBe('Hello');
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
             'GTK destroy signal is emitted while disposing objects');
     });

@@ -16,14 +16,15 @@ describe('Access to destroyed GObject', function () {
 
     beforeEach(function () {
         destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
+        destroyedWindow.set_title('To be destroyed');
         destroyedWindow.destroy();
     });
 
     it('Get property', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
-        expect(destroyedWindow.title).toBeUndefined();
+        expect(destroyedWindow.title).toBe('To be destroyed');
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectPropertyGet');
@@ -31,9 +32,12 @@ describe('Access to destroyed GObject', function () {
 
     it('Set property', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* disposed *');
 
         destroyedWindow.title = 'I am dead';
+        expect(destroyedWindow.title).toBe('I am dead');
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectPropertySet');
@@ -41,7 +45,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Add expando property', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
         destroyedWindow.expandoProperty = 'Hello!';
 
@@ -63,11 +67,9 @@ describe('Access to destroyed GObject', function () {
 
     it('Access to getter method', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
-        GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*GTK_IS_WINDOW*');
+            'Object Gtk.Window (0x* disposed *');
 
-        expect(destroyedWindow.get_title()).toBeNull();
+        expect(destroyedWindow.get_title()).toBe('To be destroyed');
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodGet');
@@ -75,11 +77,12 @@ describe('Access to destroyed GObject', function () {
 
     it('Access to setter method', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
-        GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*GTK_IS_WINDOW*');
+            'Object Gtk.Window (0x* disposed *');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* disposed *');
 
         destroyedWindow.set_title('I am dead');
+        expect(destroyedWindow.get_title()).toBe('I am dead');
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectMethodSet');
@@ -87,7 +90,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function connect', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
         expect(destroyedWindow.connect('foo-signal', () => {})).toBe(0);
 
@@ -97,7 +100,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function connect_after', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
         expect(destroyedWindow.connect_after('foo-signal', () => {})).toBe(0);
 
@@ -107,9 +110,9 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function emit', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
-        expect(destroyedWindow.emit('foo-signal')).toBeUndefined();
+        expect(destroyedWindow.emit('keys-changed')).toBeUndefined();
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'testExceptionInDestroyedObjectEmit');
@@ -117,7 +120,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function signals_disconnect', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
         expect(GObject.signal_handlers_disconnect_by_func(destroyedWindow, () => {})).toBe(0);
 
@@ -127,7 +130,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function signals_block', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
         expect(GObject.signal_handlers_block_by_func(destroyedWindow, () => {})).toBe(0);
 
@@ -137,7 +140,7 @@ describe('Access to destroyed GObject', function () {
 
     it('Proto function signals_unblock', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'Object Gtk.Window (0x*');
+            'Object Gtk.Window (0x* disposed *');
 
         expect(GObject.signal_handlers_unblock_by_func(destroyedWindow, () => {})).toBe(0);
 
@@ -160,6 +163,169 @@ describe('Access to destroyed GObject', function () {
 
         expect(validWindow.toString()).toMatch(
             /\[object \(DISPOSED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
+    });
+});
+
+describe('Access to finalized GObject', function () {
+    let destroyedWindow;
+
+    beforeAll(function () {
+        Gtk.init(null);
+    });
+
+    beforeEach(function () {
+        destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
+        destroyedWindow.set_title('To be destroyed');
+        destroyedWindow.destroy();
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* disposed *');
+        destroyedWindow.unref();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectPropertyGet');
+    });
+
+    afterEach(function () {
+        destroyedWindow = null;
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'generates a warn on object garbage collection');
+    });
+
+    it('Get property', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(destroyedWindow.title).toBeUndefined();
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectPropertyGet');
+    });
+
+    it('Set property', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        destroyedWindow.title = 'I am dead';
+        expect(destroyedWindow.title).toBeUndefined();
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectPropertySet');
+    });
+
+    it('Add expando property', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        destroyedWindow.expandoProperty = 'Hello!';
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectExpandoPropertySet');
+    });
+
+    it('Access to unset expando property', function () {
+        expect(destroyedWindow.expandoProperty).toBeUndefined();
+    });
+
+    it('Access previously set expando property', function () {
+        destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
+        destroyedWindow.expandoProperty = 'Hello!';
+        destroyedWindow.destroy();
+
+        expect(destroyedWindow.expandoProperty).toBe('Hello!');
+    });
+
+    it('Access to getter method', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+        GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*GTK_IS_WINDOW*');
+
+        expect(destroyedWindow.get_title()).toBeNull();
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectMethodGet');
+    });
+
+    it('Access to setter method', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+        GLib.test_expect_message('Gtk', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*GTK_IS_WINDOW*');
+
+        destroyedWindow.set_title('I am dead');
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectMethodSet');
+    });
+
+    it('Proto function connect', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(destroyedWindow.connect('foo-signal', () => { })).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectConnect');
+    });
+
+    it('Proto function connect_after', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(destroyedWindow.connect_after('foo-signal', () => { })).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectConnectAfter');
+    });
+
+    it('Proto function emit', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(destroyedWindow.emit('keys-changed')).toBeUndefined();
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectEmit');
+    });
+
+    it('Proto function signals_disconnect', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(GObject.signal_handlers_disconnect_by_func(destroyedWindow, () => { })).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectSignalsDisconnect');
+    });
+
+    it('Proto function signals_block', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(GObject.signal_handlers_block_by_func(destroyedWindow, () => { })).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectSignalsBlock');
+    });
+
+    it('Proto function signals_unblock', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            'Object Gtk.Window (0x* finalized *');
+
+        expect(GObject.signal_handlers_unblock_by_func(destroyedWindow, () => { })).toBe(0);
+
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'testExceptionInDestroyedObjectSignalsUnblock');
+    });
+
+    it('Proto function toString', function () {
+        expect(destroyedWindow.toString()).toMatch(
+            /\[object \(FINALIZED\) instance wrapper GIName:Gtk.Window jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 });
 
