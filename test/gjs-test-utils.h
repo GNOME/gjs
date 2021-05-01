@@ -42,9 +42,11 @@ void gjs_test_add_tests_for_jsapi_utils();
 namespace Gjs {
 namespace Test {
 
+void add_tests_for_toggle_queue();
+
 template <typename T>
 constexpr void assert_equal(T a, T b) {
-    if constexpr (std::is_integral_v<T>) {
+    if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
         if constexpr (std::is_unsigned_v<T>)
             g_assert_cmpuint(a, ==, b);
         else
@@ -61,6 +63,12 @@ constexpr void assert_equal(T a, T b) {
     } else {
         g_assert_true(a == b);
     }
+}
+
+template <typename T, typename U>
+constexpr void assert_equal(std::pair<T, U> const& pair, T first, U second) {
+    assert_equal(pair.first, first);
+    assert_equal(pair.second, second);
 }
 
 }  // namespace Test

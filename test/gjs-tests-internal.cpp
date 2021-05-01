@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     gjs_test_add_tests_for_rooting();
     gjs_test_add_tests_for_parse_call_args();
     gjs_test_add_tests_for_jsapi_utils();
+    Gjs::Test::add_tests_for_toggle_queue();
 
     g_test_run();
 
