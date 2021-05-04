@@ -1399,7 +1399,7 @@ static void gjs_arg_cache_build_interface_in_arg(GjsArgumentCache* self,
                 !g_struct_info_is_gtype_struct(interface_info)) {
                 // This covers cases such as GTypeInstance
                 self->marshallers = &fallback_in_marshallers;
-                return true;
+                return;
             }
 
             self->contents.object.gtype = gtype;
