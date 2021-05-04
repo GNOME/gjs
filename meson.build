@@ -594,6 +594,9 @@ tests_environment.set('ASAN_OPTIONS', 'intercept_tls_get_addr=0')
 tests_environment.set('LSAN_OPTIONS',
     'fast_unwind_on_malloc=0,exitcode=23,suppressions=@0@'.format(
         meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
+tests_environment.set('TSAN_OPTIONS',
+    'history_size=5,force_seq_cst_atomics=1,suppressions=@0@'.format(
+        meson.current_source_dir() / 'installed-tests' / 'extra' / 'tsan.supp'))
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('GSETTINGS_BACKEND', 'memory')

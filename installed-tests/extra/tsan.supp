@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2021 Canonical Ltd.
+
+# When calling a closure we expect the async function to initialize
+# memory that is later managed by the worker thread, if something is not
+# synchronized, this is not a gjs issue so we can ignore it.
+# Also those are mostly false positive as it can be tested by removing
+# this line and testing with glib compiled with -Db_sanitize=thread
+race:gjs_closure_invoke

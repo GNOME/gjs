@@ -30,6 +30,7 @@ typedef enum {
     GJS_DEBUG_GFUNDAMENTAL,
     GJS_DEBUG_GINTERFACE,
     GJS_DEBUG_GTYPE,
+    GJS_DEBUG_LAST,
 } GjsDebugTopic;
 
 /* These defines are because we have some pretty expensive and
@@ -146,6 +147,9 @@ typedef enum {
 #    define GJS_USED_VERBOSE_GSIGNAL [[maybe_unused]]
 #    define gjs_debug_gsignal(...) ((void)0)
 #endif
+
+void gjs_log_init();
+void gjs_log_cleanup();
 
 [[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic topic,
                                              const char* format, ...);

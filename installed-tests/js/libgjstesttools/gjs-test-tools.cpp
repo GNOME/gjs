@@ -18,7 +18,7 @@
 #    include <glib-unix.h> /* for g_unix_open_pipe */
 #endif
 
-static GObject* m_tmp_object = NULL;
+static std::atomic<GObject*> m_tmp_object = nullptr;
 static GWeakRef m_tmp_weak;
 static std::unordered_set<GObject*> m_finalized_objects;
 static std::mutex m_finalized_objects_lock;
@@ -33,11 +33,7 @@ struct FinalizedObjectsLocked {
 void gjs_test_tools_init() {}
 
 void gjs_test_tools_reset() {
-    if (!FinalizedObjectsLocked()->count(m_tmp_object))
-        g_clear_object(&m_tmp_object);
-    else
-        m_tmp_object = nullptr;
-
+    gjs_test_tools_clear_saved();
     g_weak_ref_set(&m_tmp_weak, nullptr);
 
     FinalizedObjectsLocked()->clear();
@@ -85,15 +81,22 @@ void gjs_test_tools_delayed_dispose(GObject* object, int interval) {
 }
 
 void gjs_test_tools_save_object(GObject* object) {
-    g_assert(!m_tmp_object);
-    g_set_object(&m_tmp_object, object);
-    monitor_object_finalization(object);
+    g_object_ref(object);
+    gjs_test_tools_save_object_unreffed(object);
 }
 
 void gjs_test_tools_save_object_unreffed(GObject* object) {
-    g_assert(!m_tmp_object);
-    m_tmp_object = object;
-    monitor_object_finalization(object);
+    GObject* expected = nullptr;
+    g_assert(m_tmp_object.compare_exchange_strong(expected, object));
+}
+
+void gjs_test_tools_clear_saved() {
+    if (!FinalizedObjectsLocked()->count(m_tmp_object)) {
+        auto* object = m_tmp_object.exchange(nullptr);
+        g_clear_object(&object);
+    } else {
+        m_tmp_object = nullptr;
+    }
 }
 
 void gjs_test_tools_ref_other_thread(GObject* object) {
@@ -162,22 +165,35 @@ void gjs_test_tools_unref_other_thread(GObject* object) {
                                ref_thread_data_new(object, -1, UNREF)));
 }
 
-void gjs_test_tools_delayed_ref_other_thread(GObject* object, int interval) {
-    g_thread_unref(g_thread_new("ref_object", ref_thread_func,
-                                ref_thread_data_new(object, interval, REF)));
+/**
+ * gjs_test_tools_delayed_ref_other_thread:
+ * Returns: (transfer full)
+ */
+GThread* gjs_test_tools_delayed_ref_other_thread(GObject* object,
+                                                 int interval) {
+    return g_thread_new("ref_object", ref_thread_func,
+                        ref_thread_data_new(object, interval, REF));
 }
 
-void gjs_test_tools_delayed_unref_other_thread(GObject* object, int interval) {
-    g_thread_unref(g_thread_new("unref_object", ref_thread_func,
-                                ref_thread_data_new(object, interval, UNREF)));
-}
-
-void gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
+/**
+ * gjs_test_tools_delayed_unref_other_thread:
+ * Returns: (transfer full)
+ */
+GThread* gjs_test_tools_delayed_unref_other_thread(GObject* object,
                                                    int interval) {
-    g_thread_unref(
-        g_thread_new("ref_unref_object", ref_thread_func,
-                     ref_thread_data_new(object, interval,
-                                         static_cast<RefType>(REF | UNREF))));
+    return g_thread_new("unref_object", ref_thread_func,
+                        ref_thread_data_new(object, interval, UNREF));
+}
+
+/**
+ * gjs_test_tools_delayed_ref_unref_other_thread:
+ * Returns: (transfer full)
+ */
+GThread* gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
+                                                       int interval) {
+    return g_thread_new("ref_unref_object", ref_thread_func,
+                        ref_thread_data_new(object, interval,
+                                            static_cast<RefType>(REF | UNREF)));
 }
 
 void gjs_test_tools_run_dispose_other_thread(GObject* object) {
@@ -199,7 +215,7 @@ GObject* gjs_test_tools_get_saved() {
     if (FinalizedObjectsLocked()->count(m_tmp_object))
         m_tmp_object = nullptr;
 
-    return static_cast<GObject*>(g_steal_pointer(&m_tmp_object));
+    return m_tmp_object.exchange(nullptr);
 }
 
 /**
@@ -221,6 +237,11 @@ GObject* gjs_test_tools_peek_saved() {
         return nullptr;
 
     return m_tmp_object;
+}
+
+int gjs_test_tools_get_saved_ref_count() {
+    GObject* saved = gjs_test_tools_peek_saved();
+    return saved ? saved->ref_count : 0;
 }
 
 /**

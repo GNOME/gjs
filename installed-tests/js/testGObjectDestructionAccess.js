@@ -519,6 +519,16 @@ describe('Disposed or finalized GObject', function () {
         file = null;
         System.gc();
     });
+});
+
+describe('GObject with toggle references', function () {
+    beforeAll(function () {
+        GjsTestTools.init();
+    });
+
+    afterEach(function () {
+        GjsTestTools.reset();
+    });
 
     it('can be re-reffed from other thread delayed', function () {
         let file = Gio.File.new_for_path('/');
@@ -627,5 +637,99 @@ describe('Disposed or finalized GObject', function () {
 
         file.ref();
         GjsTestTools.unref_other_thread(file);
+    });
+
+    it('can be toggled up-down from various threads when the wrapper is gone', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+
+        // We also check that late thread events won't affect the destroyed wrapper
+        const threads = [];
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 0));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 100000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 200000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 300000));
+        GjsTestTools.save_object(file);
+        GjsTestTools.save_weak(file);
+        file = null;
+        System.gc();
+
+        threads.forEach(th => th.join());
+        GjsTestTools.clear_saved();
+        System.gc();
+
+        expect(GjsTestTools.get_weak()).toBeNull();
+    });
+
+    it('can be toggled up-down from various threads when disposed and the wrapper is gone', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+
+        // We also check that late thread events won't affect the destroyed wrapper
+        const threads = [];
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 0));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 100000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 200000));
+        threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 300000));
+        GjsTestTools.save_object(file);
+        GjsTestTools.save_weak(file);
+        file.run_dispose();
+        file = null;
+        System.gc();
+
+        threads.forEach(th => th.join());
+        GjsTestTools.clear_saved();
+        expect(GjsTestTools.get_weak()).toBeNull();
+    });
+
+    it('can be finalized while queued in toggle queue', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        file.ref();
+        GjsTestTools.unref_other_thread(file);
+        GjsTestTools.unref_other_thread(file);
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
+            '*Object 0x* has been finalized *');
+        file = null;
+        System.gc();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
+            'can be finalized while queued in toggle queue');
+    });
+
+    it('can be toggled up-down from various threads while getting a GWeakRef from main', function () {
+        let file = Gio.File.new_for_path('/');
+        file.expandMeWithToggleRef = true;
+        GjsTestTools.save_weak(file);
+
+        const ids = [];
+        let threads = [];
+        ids.push(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            threads = threads.slice(-50);
+            threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 1));
+            return true;
+        }));
+
+        const loop = new GLib.MainLoop(null, false);
+        ids.push(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            expect(GjsTestTools.get_weak()).toEqual(file);
+            return true;
+        }));
+
+        // We must not timeout due to deadlock #404 and finally not crash per #297
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => loop.quit());
+        loop.run();
+        ids.forEach(id => GLib.source_remove(id));
+
+        // We also check that late thread events won't affect the destroyed wrapper
+        GjsTestTools.save_object(file);
+        file = null;
+        System.gc();
+        threads.forEach(th => th.join());
+        expect(GjsTestTools.get_saved_ref_count()).toBeGreaterThan(0);
+
+        GjsTestTools.clear_saved();
+        System.gc();
+        expect(GjsTestTools.get_weak()).toBeNull();
     });
 });

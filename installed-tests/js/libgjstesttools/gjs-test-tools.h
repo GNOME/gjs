@@ -35,17 +35,18 @@ _GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_ref_other_thread(GObject* object);
 
 _GJS_TEST_TOOL_EXTERN
-void gjs_test_tools_delayed_ref_other_thread(GObject* object, int interval);
+GThread* gjs_test_tools_delayed_ref_other_thread(GObject* object, int interval);
 
 _GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_unref_other_thread(GObject* object);
 
 _GJS_TEST_TOOL_EXTERN
-void gjs_test_tools_delayed_unref_other_thread(GObject* object, int interval);
+GThread* gjs_test_tools_delayed_unref_other_thread(GObject* object,
+                                                   int interval);
 
 _GJS_TEST_TOOL_EXTERN
-void gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
-                                                   int interval);
+GThread* gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
+                                                       int interval);
 
 _GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_run_dispose_other_thread(GObject* object);
@@ -64,6 +65,12 @@ GObject* gjs_test_tools_steal_saved();
 
 _GJS_TEST_TOOL_EXTERN
 GObject* gjs_test_tools_peek_saved();
+
+_GJS_TEST_TOOL_EXTERN
+int gjs_test_tools_get_saved_ref_count();
+
+_GJS_TEST_TOOL_EXTERN
+void gjs_test_tools_clear_saved();
 
 _GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_save_weak(GObject* object);

@@ -124,6 +124,13 @@ jasmine_tests = [
     'WarnLib',
 ]
 
+# FIXME(3v1n0): We should really address these issues
+non_thread_safe = [
+    'Gtk4',
+    'Importer',
+    'ESModules',
+]
+
 if build_cairo
     jasmine_tests += 'Cairo'
 endif
@@ -147,6 +154,10 @@ gschemas_compiled = gnome.compile_schemas(
 
 foreach test : jasmine_tests
     test_file = files('test@0@.js'.format(test))
+    suite = ['JS']
+    if test not in non_thread_safe
+        suite += 'thread-safe'
+    endif
 
     test(test, minijasmine, args: test_file,
         depends: [
@@ -156,7 +167,7 @@ foreach test : jasmine_tests
             regress_typelib,
             warnlib_typelib,
         ],
-        env: tests_environment, protocol: 'tap', suite: 'JS')
+        env: tests_environment, protocol: 'tap', suite: suite)
 
     test_description_subst = {
         'name': 'test@0@.js'.format(test),
@@ -212,9 +223,13 @@ endif
 
 foreach test : modules_tests
     test_file = files('test@0@.js'.format(test))
+    suite = ['JS']
+    if test not in non_thread_safe
+        suite += 'thread-safe'
+    endif
 
     test(test, minijasmine, args: [test_file, '-m'], env: tests_environment,
-        protocol: 'tap', suite: 'JS')
+        protocol: 'tap', suite: suite)
 
     esm_test_description_subst = {
         'name': 'test@0@.js'.format(test),

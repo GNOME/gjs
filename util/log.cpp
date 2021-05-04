@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
+#include <atomic>  // for atomic_bool
+#include <string>  // for string
+#include <type_traits>  // for remove_reference<>::type
+
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
 #include <string.h>  // for strchr, strcmp
+#include "gjs/jsapi-util.h"
 
 #ifdef _WIN32
 # include <io.h>
@@ -17,43 +22,151 @@
 #    include <unistd.h>  // for getpid
 #endif
 
+#include <vector>
+
 #include <glib.h>
 
 #include "util/log.h"
 #include "util/misc.h"
 
-/* prefix is allowed if it's in the ;-delimited environment variable
- * GJS_DEBUG_TOPICS or if that variable is not set.
- */
-static bool
-is_allowed_prefix (const char *prefix)
-{
-    static const char *topics = NULL;
-    static char **prefixes = NULL;
-    bool found = false;
-    int i;
+static std::atomic_bool s_initialized = ATOMIC_VAR_INIT(false);
+static bool s_debug_log_enabled = false;
+static bool s_print_thread = false;
+static FILE* s_logfp = nullptr;
+static GjsAutoPointer<GTimer, GTimer, g_timer_destroy> s_timer;
+static std::vector<bool> s_enabled_topics;
 
-    if (topics == NULL) {
-        topics = g_getenv("GJS_DEBUG_TOPICS");
+static const char* topic_to_prefix(GjsDebugTopic topic) {
+    switch (topic) {
+        case GJS_DEBUG_GI_USAGE:
+            return "JS GI USE";
+        case GJS_DEBUG_MEMORY:
+            return "JS MEMORY";
+        case GJS_DEBUG_CONTEXT:
+            return "JS CTX";
+        case GJS_DEBUG_IMPORTER:
+            return "JS IMPORT";
+        case GJS_DEBUG_NATIVE:
+            return "JS NATIVE";
+        case GJS_DEBUG_CAIRO:
+            return "JS CAIRO";
+        case GJS_DEBUG_KEEP_ALIVE:
+            return "JS KP ALV";
+        case GJS_DEBUG_GREPO:
+            return "JS G REPO";
+        case GJS_DEBUG_GNAMESPACE:
+            return "JS G NS";
+        case GJS_DEBUG_GOBJECT:
+            return "JS G OBJ";
+        case GJS_DEBUG_GFUNCTION:
+            return "JS G FUNC";
+        case GJS_DEBUG_GFUNDAMENTAL:
+            return "JS G FNDMTL";
+        case GJS_DEBUG_GCLOSURE:
+            return "JS G CLSR";
+        case GJS_DEBUG_GBOXED:
+            return "JS G BXD";
+        case GJS_DEBUG_GENUM:
+            return "JS G ENUM";
+        case GJS_DEBUG_GPARAM:
+            return "JS G PRM";
+        case GJS_DEBUG_GERROR:
+            return "JS G ERR";
+        case GJS_DEBUG_GINTERFACE:
+            return "JS G IFACE";
+        case GJS_DEBUG_GTYPE:
+            return "JS GTYPE";
+        default:
+            return "???";
+    }
+}
 
-        if (!topics)
-            return true;
-
-        /* We never really free this, should be gone when the process exits */
-        prefixes = g_strsplit(topics, ";", -1);
+static GjsDebugTopic prefix_to_topic(const char* prefix) {
+    for (unsigned i = 0; i < GJS_DEBUG_LAST; i++) {
+        auto topic = static_cast<GjsDebugTopic>(i);
+        if (g_str_equal(topic_to_prefix(topic), prefix))
+            return topic;
     }
 
-    if (!prefixes)
-        return true;
+    return GJS_DEBUG_LAST;
+}
 
-    for (i = 0; prefixes[i] != NULL; i++) {
-        if (!strcmp(prefixes[i], prefix)) {
-            found = true;
-            break;
+void gjs_log_init() {
+    bool expected = false;
+    if (!s_initialized.compare_exchange_strong(expected, true))
+        return;
+
+    if (gjs_environment_variable_is_set("GJS_DEBUG_TIMESTAMP"))
+        s_timer = g_timer_new();
+
+    s_print_thread = gjs_environment_variable_is_set("GJS_DEBUG_THREAD");
+
+    const char* debug_output = g_getenv("GJS_DEBUG_OUTPUT");
+    if (debug_output && g_str_equal(debug_output, "stderr")) {
+        s_debug_log_enabled = true;
+    } else if (debug_output) {
+        std::string log_file;
+        char* c;
+
+        /* Allow debug-%u.log for per-pid logfiles as otherwise log
+         * messages from multiple processes can overwrite each other.
+         *
+         * (printf below should be safe as we check '%u' is the only format
+         * string)
+         */
+        c = strchr(const_cast<char*>(debug_output), '%');
+        if (c && c[1] == 'u' && !strchr(c + 1, '%')) {
+            GjsAutoChar file_name;
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+            _Pragma("GCC diagnostic push")
+                _Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
+#endif
+                    file_name = g_strdup_printf(debug_output, getpid());
+#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+            _Pragma("GCC diagnostic pop")
+#endif
+                log_file = file_name.get();
+        } else {
+            log_file = debug_output;
+        }
+
+        /* avoid truncating in case we're using shared logfile */
+        s_logfp = fopen(log_file.c_str(), "a");
+        if (!s_logfp)
+            fprintf(stderr, "Failed to open log file `%s': %s\n",
+                    log_file.c_str(), g_strerror(errno));
+
+        s_debug_log_enabled = true;
+    }
+
+    if (!s_logfp)
+        s_logfp = stderr;
+
+    if (s_debug_log_enabled) {
+        auto* topics = g_getenv("GJS_DEBUG_TOPICS");
+        s_enabled_topics = std::vector<bool>(GJS_DEBUG_LAST, topics == nullptr);
+        if (topics) {
+            GjsAutoStrv prefixes(g_strsplit(topics, ";", -1));
+            for (unsigned i = 0; prefixes[i] != NULL; i++) {
+                GjsDebugTopic topic = prefix_to_topic(prefixes[i]);
+                s_enabled_topics[topic] = topic != GJS_DEBUG_LAST;
+            }
         }
     }
+}
 
-    return found;
+void gjs_log_cleanup() {
+    bool expected = true;
+    if (!s_initialized.compare_exchange_strong(expected, false))
+        return;
+
+    if (s_logfp && s_logfp != stderr) {
+        fclose(s_logfp);
+        s_logfp = nullptr;
+    }
+
+    s_timer = nullptr;
+    s_enabled_topics.clear();
 }
 
 #define PREFIX_LENGTH 12
@@ -77,154 +190,19 @@ gjs_debug(GjsDebugTopic topic,
           const char   *format,
           ...)
 {
-    static FILE *logfp = NULL;
-    static bool debug_log_enabled = false;
-    static bool checked_for_timestamp = false;
-    static bool print_timestamp = false;
-    static bool checked_for_thread = false;
-    static bool print_thread = false;
-    static GTimer *timer = NULL;
-    const char *prefix;
     va_list args;
     char *s;
 
-    if (!checked_for_timestamp) {
-        print_timestamp = gjs_environment_variable_is_set("GJS_DEBUG_TIMESTAMP");
-        checked_for_timestamp = true;
-    }
-
-    if (!checked_for_thread) {
-        print_thread = gjs_environment_variable_is_set("GJS_DEBUG_THREAD");
-        checked_for_thread = true;
-    }
-
-    if (print_timestamp && !timer) {
-        timer = g_timer_new();
-    }
-
-    if (logfp == NULL) {
-        const char *debug_output = g_getenv("GJS_DEBUG_OUTPUT");
-        if (debug_output != NULL &&
-            strcmp(debug_output, "stderr") == 0) {
-            debug_log_enabled = true;
-        } else if (debug_output != NULL) {
-            const char *log_file;
-            char *free_me;
-            char *c;
-
-            /* Allow debug-%u.log for per-pid logfiles as otherwise log
-             * messages from multiple processes can overwrite each other.
-             *
-             * (printf below should be safe as we check '%u' is the only format
-             * string)
-             */
-            c = strchr((char *) debug_output, '%');
-            if (c && c[1] == 'u' && !strchr(c+1, '%')) {
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
-#endif
-                free_me = g_strdup_printf(debug_output, (guint)getpid());
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic pop")
-#endif
-                log_file = free_me;
-            } else {
-                log_file = debug_output;
-                free_me = NULL;
-            }
-
-            /* avoid truncating in case we're using shared logfile */
-            logfp = fopen(log_file, "a");
-            if (!logfp)
-                fprintf(stderr, "Failed to open log file `%s': %s\n",
-                        log_file, g_strerror(errno));
-
-            g_free(free_me);
-
-            debug_log_enabled = true;
-        }
-
-        if (logfp == NULL)
-            logfp = stderr;
-    }
-
-    if (!debug_log_enabled)
-        return;
-
-    switch (topic) {
-    case GJS_DEBUG_GI_USAGE:
-        prefix = "JS GI USE";
-        break;
-    case GJS_DEBUG_MEMORY:
-        prefix = "JS MEMORY";
-        break;
-    case GJS_DEBUG_CONTEXT:
-        prefix = "JS CTX";
-        break;
-    case GJS_DEBUG_IMPORTER:
-        prefix = "JS IMPORT";
-        break;
-    case GJS_DEBUG_NATIVE:
-        prefix = "JS NATIVE";
-        break;
-    case GJS_DEBUG_CAIRO:
-        prefix = "JS CAIRO";
-        break;
-    case GJS_DEBUG_KEEP_ALIVE:
-        prefix = "JS KP ALV";
-        break;
-    case GJS_DEBUG_GREPO:
-        prefix = "JS G REPO";
-        break;
-    case GJS_DEBUG_GNAMESPACE:
-        prefix = "JS G NS";
-        break;
-    case GJS_DEBUG_GOBJECT:
-        prefix = "JS G OBJ";
-        break;
-    case GJS_DEBUG_GFUNCTION:
-        prefix = "JS G FUNC";
-        break;
-    case GJS_DEBUG_GFUNDAMENTAL:
-        prefix = "JS G FNDMTL";
-        break;
-    case GJS_DEBUG_GCLOSURE:
-        prefix = "JS G CLSR";
-        break;
-    case GJS_DEBUG_GBOXED:
-        prefix = "JS G BXD";
-        break;
-    case GJS_DEBUG_GENUM:
-        prefix = "JS G ENUM";
-        break;
-    case GJS_DEBUG_GPARAM:
-        prefix = "JS G PRM";
-        break;
-    case GJS_DEBUG_GERROR:
-        prefix = "JS G ERR";
-        break;
-    case GJS_DEBUG_GINTERFACE:
-        prefix = "JS G IFACE";
-        break;
-    case GJS_DEBUG_GTYPE:
-        prefix = "JS GTYPE";
-        break;
-    default:
-        prefix = "???";
-        break;
-    }
-
-    if (!is_allowed_prefix(prefix))
+    if (!s_debug_log_enabled || !s_enabled_topics[topic])
         return;
 
     va_start (args, format);
     s = g_strdup_vprintf (format, args);
     va_end (args);
 
-    if (print_timestamp) {
+    if (s_timer) {
         static gdouble previous = 0.0;
-        gdouble total = g_timer_elapsed(timer, NULL) * 1000.0;
+        gdouble total = g_timer_elapsed(s_timer, NULL) * 1000.0;
         gdouble since = total - previous;
         const char *ts_suffix;
         char *s2;
@@ -247,13 +225,13 @@ _Pragma("GCC diagnostic pop")
         previous = total;
     }
 
-    if (print_thread) {
+    if (s_print_thread) {
         char *s2 = g_strdup_printf("(thread %p) %s", g_thread_self(), s);
         g_free(s);
         s = s2;
     }
 
-    write_to_stream(logfp, prefix, s);
+    write_to_stream(s_logfp, topic_to_prefix(topic), s);
 
     g_free(s);
 }

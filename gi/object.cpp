@@ -1145,7 +1145,7 @@ ObjectInstance::gobj_dispose_notify(void)
     if (m_uses_toggle_ref) {
         g_object_ref(m_ptr.get());
         g_object_remove_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, this);
-        ToggleQueue::get_default().cancel(m_ptr);
+        ToggleQueue::get_default()->cancel(this);
         wrapped_gobj_toggle_notify(this, m_ptr, TRUE);
         m_uses_toggle_ref = false;
     }
@@ -1241,6 +1241,22 @@ ObjectInstance::toggle_down(void)
 void
 ObjectInstance::toggle_up(void)
 {
+    if (G_UNLIKELY(!m_ptr || m_gobj_disposed || m_gobj_finalized)) {
+        if (m_ptr) {
+            gjs_debug_lifecycle(
+                GJS_DEBUG_GOBJECT,
+                "Avoid to toggle up a wrapper for a %s object: %p (%s)",
+                m_gobj_finalized ? "finalized" : "disposed", m_ptr.get(),
+                g_type_name(gtype()));
+        } else {
+            gjs_debug_lifecycle(
+                GJS_DEBUG_GOBJECT,
+                "Avoid to toggle up a wrapper for a released %s object (%p)",
+                g_type_name(gtype()), this);
+        }
+        return;
+    }
+
     /* We need to root the JSObject associated with the passed in GObject so it
      * doesn't get garbage collected (and lose any associated javascript state
      * such as custom properties).
@@ -1262,25 +1278,8 @@ ObjectInstance::toggle_up(void)
     }
 }
 
-static void
-toggle_handler(GObject               *gobj,
-               ToggleQueue::Direction direction)
-{
-    auto* self = ObjectInstance::for_gobject(gobj);
-
-    if (G_UNLIKELY(!self)) {
-        void* disposed = g_object_get_qdata(gobj, ObjectBase::disposed_quark());
-
-        if (G_UNLIKELY(disposed == gjs_int_to_pointer(DISPOSED_OBJECT))) {
-            g_critical("Handling toggle %s for an unknown object %p",
-                       direction == ToggleQueue::UP ? "up" : "down", gobj);
-            return;
-        }
-
-        // In this case the object has been disposed but its wrapper not yet
-        self = static_cast<ObjectInstance*>(disposed);
-    }
-
+static void toggle_handler(ObjectInstance* self,
+                           ToggleQueue::Direction direction) {
     switch (direction) {
         case ToggleQueue::UP:
             self->toggle_up();
@@ -1293,7 +1292,7 @@ toggle_handler(GObject               *gobj,
     }
 }
 
-void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
+void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
                                                 gboolean is_last_ref) {
     bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
@@ -1337,28 +1336,20 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
      */
     is_main_thread = gjs->is_owner_thread();
 
-    auto& toggle_queue = ToggleQueue::get_default();
-    if (is_main_thread && toggle_queue.is_being_handled(gobj))
-        return;
-
-    std::tie(toggle_down_queued, toggle_up_queued) = toggle_queue.is_queued(gobj);
+    auto toggle_queue = ToggleQueue::get_default();
+    std::tie(toggle_down_queued, toggle_up_queued) =
+        toggle_queue->is_queued(self);
+    bool anything_queued = toggle_up_queued || toggle_down_queued;
 
     if (is_last_ref) {
         /* We've transitions from 2 -> 1 references,
          * The JSObject is rooted and we need to unroot it so it
          * can be garbage collected
          */
-        if (is_main_thread && !toggle_up_queued) {
-            if (G_UNLIKELY(toggle_down_queued)) {
-                g_error(
-                    "toggling down object %p (%s) that's already queued to "
-                    "toggle down",
-                    gobj, G_OBJECT_TYPE_NAME(gobj));
-            }
-
+        if (is_main_thread && !anything_queued) {
             self->toggle_down();
-        } else if (!toggle_down_queued) {
-            toggle_queue.enqueue(gobj, ToggleQueue::DOWN, toggle_handler);
+        } else {
+            toggle_queue->enqueue(self, ToggleQueue::DOWN, toggle_handler);
         }
     } else {
         /* We've transitioned from 1 -> 2 references.
@@ -1366,16 +1357,10 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
          * The JSObject associated with the gobject is not rooted,
          * but it needs to be. We'll root it.
          */
-        if (is_main_thread && !toggle_down_queued) {
-            if (G_UNLIKELY (toggle_up_queued)) {
-                g_error(
-                    "toggling up object %p (%s) that's already queued to "
-                    "toggle up",
-                    gobj, G_OBJECT_TYPE_NAME(gobj));
-            }
+        if (is_main_thread && !anything_queued) {
             self->toggle_up();
-        } else if (!toggle_up_queued) {
-            toggle_queue.enqueue(gobj, ToggleQueue::UP, toggle_handler);
+        } else {
+            toggle_queue->enqueue(self, ToggleQueue::UP, toggle_handler);
         }
     }
 }
@@ -1414,14 +1399,13 @@ ObjectInstance::release_native_object(void)
 void
 gjs_object_clear_toggles(void)
 {
-    ToggleQueue::get_default().handle_all_toggles(toggle_handler);
+    ToggleQueue::get_default()->handle_all_toggles(toggle_handler);
 }
 
 void
 gjs_object_shutdown_toggle_queue(void)
 {
-    auto& toggle_queue = ToggleQueue::get_default();
-    toggle_queue.shutdown();
+    ToggleQueue::get_default()->shutdown();
 }
 
 /*
@@ -1475,6 +1459,10 @@ void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
                         "%zu wrapped GObject(s) to examine",
                         ObjectInstance::num_wrapped_gobjects());
 
+    // Take a lock on the queue till we're done with it, so that we don't
+    // risk that another thread will queue something else while sweeping
+    auto locked_queue = ToggleQueue::get_default();
+
     ObjectInstance::remove_wrapped_gobjects_if(
         std::mem_fn(&ObjectInstance::weak_pointer_was_finalized),
         std::mem_fn(&ObjectInstance::disassociate_js_gobject));
@@ -1486,9 +1474,9 @@ ObjectInstance::weak_pointer_was_finalized(void)
     if (has_wrapper() && !wrapper_is_rooted()) {
         bool toggle_down_queued, toggle_up_queued;
 
-        auto& toggle_queue = ToggleQueue::get_default();
+        auto toggle_queue = ToggleQueue::get_default();
         std::tie(toggle_down_queued, toggle_up_queued) =
-            toggle_queue.is_queued(m_ptr);
+            toggle_queue->is_queued(this);
 
         if (!toggle_down_queued && toggle_up_queued)
             return false;
@@ -1497,7 +1485,7 @@ ObjectInstance::weak_pointer_was_finalized(void)
             return false;
 
         if (toggle_down_queued)
-            toggle_queue.cancel(m_ptr);
+            toggle_queue->cancel(this);
 
         /* Ouch, the JS object is dead already. Disassociate the
          * GObject and hope the GObject dies too. (Remove it from
@@ -1605,8 +1593,8 @@ ObjectInstance::disassociate_js_gobject(void)
 {
     bool had_toggle_down, had_toggle_up;
 
-    auto& toggle_queue = ToggleQueue::get_default();
-    std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr.get());
+    auto locked_queue = ToggleQueue::get_default();
+    std::tie(had_toggle_down, had_toggle_up) = locked_queue->cancel(this);
     if (had_toggle_up && !had_toggle_down) {
         g_error(
             "JS object wrapper for GObject %p (%s) is being released while "
@@ -1780,14 +1768,17 @@ ObjectInstance::~ObjectInstance() {
 
     invalidate_closure_list(&m_closures);
 
+    // Do not keep the queue locked here, as we may want to leave the other
+    // threads to queue toggle events till we're owning the GObject so that
+    // eventually (once the toggle reference is finally removed) we can be
+    // sure that no other toggle event will target this (soon dead) wrapper.
+    bool had_toggle_up;
+    bool had_toggle_down;
+    std::tie(had_toggle_down, had_toggle_up) =
+        ToggleQueue::get_default()->cancel(this);
+
     /* GObject is not already freed */
     if (m_ptr) {
-        bool had_toggle_up;
-        bool had_toggle_down;
-
-        auto& toggle_queue = ToggleQueue::get_default();
-        std::tie(had_toggle_down, had_toggle_up) = toggle_queue.cancel(m_ptr);
-
         if (!had_toggle_up && had_toggle_down) {
             g_error(
                 "Finalizing wrapper for an object that's scheduled to be "
@@ -1801,7 +1792,14 @@ ObjectInstance::~ObjectInstance() {
         if (!m_gobj_finalized)
             unset_object_qdata();
 
+        bool was_using_toggle_refs = m_uses_toggle_ref;
         release_native_object();
+
+        if (was_using_toggle_refs) {
+            // We need to cancel again, to be sure that no other thread added
+            // another toggle reference before we were removing the last one.
+            ToggleQueue::get_default()->cancel(this);
+        }
     }
 
     if (wrapper_is_rooted()) {
