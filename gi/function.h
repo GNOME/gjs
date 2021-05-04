@@ -95,6 +95,7 @@ class GjsFunctionCallState {
     JS::RootedObject instance_object;
     JS::RootedValueVector return_values;
     GjsAutoError local_error;
+    GICallableInfo* info;
     int gi_argc = 0;
     unsigned processed_c_args = 0;
     bool failed : 1;
@@ -104,6 +105,7 @@ class GjsFunctionCallState {
     GjsFunctionCallState(JSContext* cx, GICallableInfo* callable)
         : instance_object(cx),
           return_values(cx),
+          info(callable),
           gi_argc(g_callable_info_get_n_args(callable)),
           failed(false),
           can_throw_gerror(g_callable_info_can_throw_gerror(callable)),
@@ -142,6 +144,17 @@ class GjsFunctionCallState {
     }
 
     constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
+
+    [[nodiscard]] GjsAutoChar display_name() {
+        GIBaseInfo* container = g_base_info_get_container(info);  // !owned
+        if (container) {
+            return g_strdup_printf(
+                "%s.%s.%s", g_base_info_get_namespace(container),
+                g_base_info_get_name(container), g_base_info_get_name(info));
+        }
+        return g_strdup_printf("%s.%s", g_base_info_get_namespace(info),
+                               g_base_info_get_name(info));
+    }
 };
 
 GJS_JSAPI_RETURN_CONVENTION

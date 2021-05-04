@@ -1502,6 +1502,14 @@ describe('Life, the Universe and Everything', function () {
         expect(callback2).toHaveBeenCalledTimes(2);
     }).pend('Callback with destroy-notify and no user data not currently supported');
 
+    // If this is ever supported, then replace it with the above test.
+    it('callback with destroy-notify and no user data throws error', function () {
+        // should throw when called, not when the function object is created
+        expect(() => Regress.test_callback_destroy_notify_no_user_data).not.toThrow();
+        expect(() => Regress.test_callback_destroy_notify_no_user_data(() => {}))
+            .toThrowError(/no user data/);
+    });
+
     it('async callback', function () {
         Regress.test_callback_async(() => 44);
         expect(Regress.test_callback_thaw_async()).toEqual(44);
