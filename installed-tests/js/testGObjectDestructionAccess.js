@@ -706,7 +706,14 @@ describe('GObject with toggle references', function () {
         let threads = [];
         ids.push(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             threads = threads.slice(-50);
-            threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 1));
+            try {
+                threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 1));
+            } catch (e) {
+                // If creating the thread failed we're almost going out of memory
+                // so let's first wait for the ones allocated to complete.
+                threads.forEach(th => th.join());
+                threads = [];
+            }
             return true;
         }));
 
