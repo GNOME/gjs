@@ -437,22 +437,31 @@ FundamentalPrototype* FundamentalPrototype::for_gtype(JSContext* cx,
     return FundamentalPrototype::for_js(cx, proto);
 }
 
-JSObject* FundamentalInstance::object_for_gvalue(JSContext* cx,
-                                                 const GValue* value,
-                                                 GType gtype) {
+bool FundamentalInstance::object_for_gvalue(
+    JSContext* cx, const GValue* value, GType gtype,
+    JS::MutableHandleObject object_out) {
     auto* proto_priv = FundamentalPrototype::for_gtype(cx, gtype);
-    void* fobj;
+    void* fobj = nullptr;
+
     if (!proto_priv->call_get_value_function(value, &fobj)) {
-        if (G_VALUE_HOLDS(value, gtype) && g_value_fits_pointer(value)) {
-            return FundamentalInstance::object_for_c_ptr(
-                cx, g_value_peek_pointer(value));
+        if (!G_VALUE_HOLDS(value, gtype) || !g_value_fits_pointer(value)) {
+            gjs_throw(cx,
+                      "Failed to convert GValue of type %s to a fundamental %s "
+                      "instance",
+                      G_VALUE_TYPE_NAME(value), g_type_name(gtype));
+            return false;
         }
 
-        gjs_throw(cx, "Failed to convert GValue to a fundamental instance");
-        return nullptr;
+        fobj = g_value_peek_pointer(value);
     }
 
-    return FundamentalInstance::object_for_c_ptr(cx, fobj);
+    if (!fobj) {
+        object_out.set(nullptr);
+        return true;
+    }
+
+    object_out.set(FundamentalInstance::object_for_c_ptr(cx, fobj));
+    return object_out.get() != nullptr;
 }
 
 bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
@@ -464,7 +473,7 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
 
     auto* instance = priv->to_instance();
     if (!instance->set_value(gvalue)) {
-        if (g_type_is_a(instance->gtype(), G_VALUE_TYPE(gvalue))) {
+        if (g_value_type_compatible(instance->gtype(), G_VALUE_TYPE(gvalue))) {
             g_value_set_instance(gvalue, instance->m_ptr);
             return true;
         }

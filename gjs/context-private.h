@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <sys/types.h>  // for ssize_t
 
+#include <atomic>
 #include <string>
 #include <type_traits>  // for is_same
 #include <unordered_map>
@@ -119,7 +120,7 @@ class GjsContextPrivate : public JS::JobQueue {
     uint8_t m_exit_code;
 
     /* flags */
-    bool m_destroying : 1;
+    std::atomic_bool m_destroying = ATOMIC_VAR_INIT(false);
     bool m_in_gc_sweep : 1;
     bool m_should_exit : 1;
     bool m_force_gc : 1;
@@ -181,7 +182,7 @@ class GjsContextPrivate : public JS::JobQueue {
     }
     [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
     [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
-    [[nodiscard]] bool destroying() const { return m_destroying; }
+    [[nodiscard]] bool destroying() const { return m_destroying.load(); }
     [[nodiscard]] bool sweeping() const { return m_in_gc_sweep; }
     [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }

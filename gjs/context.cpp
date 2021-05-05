@@ -15,6 +15,7 @@
 #    include <process.h>
 #endif
 
+#include <atomic>
 #include <new>
 #include <string>       // for u16string
 #include <unordered_map>
@@ -211,6 +212,7 @@ setup_dump_heap(void)
 static void
 gjs_context_init(GjsContext *js_context)
 {
+    gjs_log_init();
     gjs_context_make_current(js_context);
 }
 
@@ -219,6 +221,8 @@ gjs_context_class_init(GjsContextClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GParamSpec *pspec;
+
+    gjs_log_init();
 
     object_class->dispose = gjs_context_dispose;
     object_class->finalize = gjs_context_finalize;
@@ -392,7 +396,7 @@ void GjsContextPrivate::dispose(void) {
         JS_GC(m_cx);
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Destroying JS context");
-        m_destroying = true;
+        m_destroying.store(true);
 
         /* Now, release all native objects, to avoid recursion between
          * the JS teardown and the C teardown.  The JSObject proxies
@@ -445,6 +449,11 @@ gjs_context_finalize(GObject *object)
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
     gjs->~GjsContextPrivate();
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
+
+    g_mutex_lock(&contexts_lock);
+    if (!all_contexts)
+        gjs_log_cleanup();
+    g_mutex_unlock(&contexts_lock);
 }
 
 static void
