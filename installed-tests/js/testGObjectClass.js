@@ -770,6 +770,10 @@ describe('Auto accessor generation', function () {
                 'Construct-only property',
                 GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
                 0, 100, 80),
+            'construct-only-with-setter': GObject.ParamSpec.int('construct-only-with-setter', 'Construct only with setter',
+                'Construct-only property with a setter method',
+                GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
+                0, 100, 80),
             'snake-name': GObject.ParamSpec.int('snake-name', 'Snake name',
                 'Snake-cased property', GObject.ParamFlags.READWRITE, 0, 100, 36),
             'camel-name': GObject.ParamSpec.int('camel-name', 'Camel name',
@@ -787,6 +791,7 @@ describe('Auto accessor generation', function () {
         },
     }, class AutoAccessors extends GObject.Object {
         _init(props = {}) {
+            this._constructOnlySetterCalled = 0;
             super._init(props);
             this._snakeNameGetterCalled = 0;
             this._snakeNameSetterCalled = 0;
@@ -830,6 +835,15 @@ describe('Auto accessor generation', function () {
         get missing_setter() {
             return 42;
         }
+
+        get construct_only_with_setter() {
+            return this._constructOnlyValue;
+        }
+
+        set constructOnlyWithSetter(value) {
+            this._constructOnlySetterCalled++;
+            this._constructOnlyValue = value;
+        }
     });
 
     let a;
@@ -863,6 +877,7 @@ describe('Auto accessor generation', function () {
             longLongName: 1,
             construct: 1,
             'construct-only': 1,
+            'construct-only-with-setter': 2,
         });
         expect(a.simple).toEqual(1);
         expect(a.long_long_name).toEqual(1);
@@ -872,6 +887,10 @@ describe('Auto accessor generation', function () {
         expect(a.construct_only).toEqual(1);
         expect(a.constructOnly).toEqual(1);
         expect(a['construct-only']).toEqual(1);
+        expect(a.constructOnlyWithSetter).toEqual(2);
+        expect(a.construct_only_with_setter).toEqual(2);
+        expect(a['construct-only-with-setter']).toEqual(2);
+        expect(a._constructOnlySetterCalled).toEqual(1);
     });
 
     it('notify when the property changes', function () {
