@@ -8,13 +8,13 @@ const TestObj = GObject.registerClass({
     Signals: {
         'test-fundamental-value-funcs': {param_types: [Regress.TestFundamentalObject.$gtype]},
         'test-fundamental-value-funcs-subtype': {param_types: [Regress.TestFundamentalSubObject.$gtype]},
-        'test-fundamental-no-funcs': {param_types:
-            Regress.TestFundamentalObjectNoGetSetFunc
-                ? [Regress.TestFundamentalObjectNoGetSetFunc.$gtype] : []},
+        'test-fundamental-no-funcs': {
+            param_types: Regress.TestFundamentalObjectNoGetSetFunc
+                ? [Regress.TestFundamentalObjectNoGetSetFunc.$gtype] : [],
+        },
         'test-fundamental-no-funcs-subtype': {
-            param_types:
-                Regress.TestFundamentalSubObjectNoGetSetFunc
-                    ? [Regress.TestFundamentalSubObjectNoGetSetFunc.$gtype] : [],
+            param_types: Regress.TestFundamentalSubObjectNoGetSetFunc
+                ? [Regress.TestFundamentalSubObjectNoGetSetFunc.$gtype] : [],
         },
     },
 }, class TestObj extends GObject.Object {});
