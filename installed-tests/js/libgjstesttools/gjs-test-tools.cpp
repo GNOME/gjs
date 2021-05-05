@@ -99,9 +99,11 @@ void gjs_test_tools_clear_saved() {
     }
 }
 
-void gjs_test_tools_ref_other_thread(GObject* object) {
-    // cppcheck-suppress leakNoVarFunctionCall
-    g_thread_join(g_thread_new("ref_object", g_object_ref, object));
+void gjs_test_tools_ref_other_thread(GObject* object, GError** error) {
+    auto* thread = g_thread_try_new("ref_object", g_object_ref, object, error);
+    if (thread)
+        g_thread_join(thread);
+    // cppcheck-suppress memleak
 }
 
 typedef enum {
@@ -159,20 +161,23 @@ static void* ref_thread_func(void* data) {
     return nullptr;
 }
 
-void gjs_test_tools_unref_other_thread(GObject* object) {
-    // cppcheck-suppress leakNoVarFunctionCall
-    g_thread_join(g_thread_new("unref_object", ref_thread_func,
-                               ref_thread_data_new(object, -1, UNREF)));
+void gjs_test_tools_unref_other_thread(GObject* object, GError** error) {
+    auto* thread =
+        g_thread_try_new("unref_object", ref_thread_func,
+                         ref_thread_data_new(object, -1, UNREF), error);
+    if (thread)
+        g_thread_join(thread);
+    // cppcheck-suppress memleak
 }
 
 /**
  * gjs_test_tools_delayed_ref_other_thread:
  * Returns: (transfer full)
  */
-GThread* gjs_test_tools_delayed_ref_other_thread(GObject* object,
-                                                 int interval) {
-    return g_thread_new("ref_object", ref_thread_func,
-                        ref_thread_data_new(object, interval, REF));
+GThread* gjs_test_tools_delayed_ref_other_thread(GObject* object, int interval,
+                                                 GError** error) {
+    return g_thread_try_new("ref_object", ref_thread_func,
+                            ref_thread_data_new(object, interval, REF), error);
 }
 
 /**
@@ -180,9 +185,11 @@ GThread* gjs_test_tools_delayed_ref_other_thread(GObject* object,
  * Returns: (transfer full)
  */
 GThread* gjs_test_tools_delayed_unref_other_thread(GObject* object,
-                                                   int interval) {
-    return g_thread_new("unref_object", ref_thread_func,
-                        ref_thread_data_new(object, interval, UNREF));
+                                                   int interval,
+                                                   GError** error) {
+    return g_thread_try_new("unref_object", ref_thread_func,
+                            ref_thread_data_new(object, interval, UNREF),
+                            error);
 }
 
 /**
@@ -190,21 +197,25 @@ GThread* gjs_test_tools_delayed_unref_other_thread(GObject* object,
  * Returns: (transfer full)
  */
 GThread* gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
-                                                       int interval) {
-    return g_thread_new("ref_unref_object", ref_thread_func,
-                        ref_thread_data_new(object, interval,
-                                            static_cast<RefType>(REF | UNREF)));
+                                                       int interval,
+                                                       GError** error) {
+    return g_thread_try_new(
+        "ref_unref_object", ref_thread_func,
+        ref_thread_data_new(object, interval,
+                            static_cast<RefType>(REF | UNREF)),
+        error);
 }
 
-void gjs_test_tools_run_dispose_other_thread(GObject* object) {
-    // cppcheck-suppress leakNoVarFunctionCall
-    g_thread_join(g_thread_new(
+void gjs_test_tools_run_dispose_other_thread(GObject* object, GError** error) {
+    auto* thread = g_thread_try_new(
         "run_dispose",
         [](void* object) -> void* {
             g_object_run_dispose(G_OBJECT(object));
             return nullptr;
         },
-        object));
+        object, error);
+    // cppcheck-suppress leakNoVarFunctionCall
+    g_clear_pointer(&thread, g_thread_join);
 }
 
 /**
@@ -256,12 +267,16 @@ GObject* gjs_test_tools_get_weak() {
  * gjs_test_tools_get_weak_other_thread:
  * Returns: (transfer full)
  */
-GObject* gjs_test_tools_get_weak_other_thread() {
+GObject* gjs_test_tools_get_weak_other_thread(GError** error) {
+    auto* thread = g_thread_try_new(
+        "weak_get", [](void*) -> void* { return gjs_test_tools_get_weak(); },
+        NULL, error);
+    if (!thread)
+        return nullptr;
+
     return static_cast<GObject*>(
         // cppcheck-suppress leakNoVarFunctionCall
-        g_thread_join(g_thread_new(
-            "weak_get",
-            [](void*) -> void* { return gjs_test_tools_get_weak(); }, NULL)));
+        g_thread_join(thread));
 }
 
 /**
