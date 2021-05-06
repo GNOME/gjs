@@ -500,6 +500,7 @@ libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
     cpp_args: libgjs_cpp_args,
     dependencies: libgjs_dependencies,
+    cpp_pch: 'gjs/gjs_pch.hh',
     install: false)
 
 link_args = []
@@ -519,6 +520,7 @@ libgjs = shared_library(meson.project_name(),
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     link_with: libgjs_jsapi,
     dependencies: libgjs_dependencies,
+    cpp_pch: 'gjs/gjs_pch.hh',
     version: '0.0.0', soversion: '0',
     gnu_symbol_visibility: 'hidden',
     install: true)
@@ -712,4 +714,6 @@ message('\n'.join([
     'Use readline for input in interactive shell and debugger: @0@'.format(
         build_readline),
     'Build profiler (Linux only): @0@'.format(build_profiler),
+    'Build with precompiled headers: @0@'.format(get_option('b_pch') and
+        pch_headers.length() > 0),
 ]))
