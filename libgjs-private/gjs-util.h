@@ -9,6 +9,8 @@
 
 #include <locale.h>
 
+#include <gio/gio.h>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -19,6 +21,32 @@ G_BEGIN_DECLS
 /* For imports.format */
 GJS_EXPORT
 char * gjs_format_int_alternative_output (int n);
+
+/**
+ * GjsCompareDataFunc:
+ * @a: a value
+ * @b: a value to compare with
+ * @user_data: user data
+ *
+ * Specifies the type of a comparison function used to compare two
+ * values.  The function should return a negative integer if the first
+ * value comes before the second, 0 if they are equal, or a positive
+ * integer if the first value comes after the second.
+ *
+ * Returns: negative value if @a < @b; zero if @a = @b; positive
+ *          value if @a > @b
+ */
+typedef int (*GjsCompareDataFunc)(const GObject *a, const GObject *b,
+                                  void *user_data);
+
+GJS_EXPORT
+unsigned gjs_list_store_insert_sorted(GListStore *store, GObject *item,
+                                      GjsCompareDataFunc compare_func,
+                                      void *user_data);
+
+GJS_EXPORT
+void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
+                         void *user_data);
 
 /* For imports.gettext */
 typedef enum

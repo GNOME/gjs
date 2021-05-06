@@ -32,6 +32,37 @@ describe('ListStore iterator', function () {
     });
 });
 
+function compareFunc(a, b) {
+    return a.value - b.value;
+}
+
+describe('Sorting in ListStore', function () {
+    let list;
+
+    beforeEach(function () {
+        list = new Gio.ListStore({
+            item_type: Foo,
+        });
+    });
+
+    it('test insert_sorted', function () {
+        for (let i = 10; i > 0; i--)
+            list.insert_sorted(new Foo(i), compareFunc);
+        let i = 1;
+        for (let f of list)
+            expect(f.value).toBe(i++);
+    });
+
+    it('test sort', function () {
+        for (let i = 10; i > 0; i--)
+            list.append(new Foo(i));
+        list.sort(compareFunc);
+        let i = 1;
+        for (let f of list)
+            expect(f.value).toBe(i++);
+    });
+});
+
 describe('Gio.Settings overrides', function () {
     it("doesn't crash when forgetting to specify a schema ID", function () {
         expect(() => new Gio.Settings()).toThrowError(/schema/);

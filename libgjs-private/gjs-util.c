@@ -176,3 +176,40 @@ out:
     g_clear_pointer(&base_info, g_base_info_unref);
     g_clear_pointer(&child_set_property_fun, g_base_info_unref);
 }
+
+/**
+ * gjs_list_store_insert_sorted:
+ * @store: a #GListStore
+ * @item: the new item
+ * @compare_func: (scope call): pairwise comparison function for sorting
+ * @user_data: (closure): user data for @compare_func
+ *
+ * Inserts @item into @store at a position to be determined by the
+ * @compare_func.
+ *
+ * The list must already be sorted before calling this function or the
+ * result is undefined.  Usually you would approach this by only ever
+ * inserting items by way of this function.
+ *
+ * This function takes a ref on @item.
+ *
+ * Returns: the position at which @item was inserted
+ */
+unsigned int gjs_list_store_insert_sorted(GListStore *store, GObject *item,
+                                          GjsCompareDataFunc compare_func,
+                                          void *user_data) {
+  return g_list_store_insert_sorted(store, item, (GCompareDataFunc)compare_func, user_data);
+}
+
+/**
+ * gjs_list_store_sort:
+ * @store: a #GListStore
+ * @compare_func: (scope call): pairwise comparison function for sorting
+ * @user_data: (closure): user data for @compare_func
+ *
+ * Sort the items in @store according to @compare_func.
+ */
+void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
+                         void *user_data) {
+  g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
+}

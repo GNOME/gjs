@@ -490,6 +490,12 @@ function _init() {
 
     // ListStore
     Gio.ListStore.prototype[Symbol.iterator] = _listModelIterator;
+    Gio.ListStore.prototype.insert_sorted = function (item, compareFunc) {
+        return GjsPrivate.list_store_insert_sorted(this, item, compareFunc);
+    };
+    Gio.ListStore.prototype.sort = function (compareFunc) {
+        return GjsPrivate.list_store_sort(this, compareFunc);
+    };
 
     // Promisify
     Gio._promisify = _promisify;
