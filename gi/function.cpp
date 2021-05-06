@@ -54,6 +54,8 @@
  */
 #define GJS_ARG_INDEX_INVALID G_MAXUINT8
 
+namespace Gjs {
+
 class Function : public CWrapper<Function> {
     friend CWrapperPointerOps<Function>;
     friend CWrapper<Function>;
@@ -169,6 +171,8 @@ class Function : public CWrapper<Function> {
         return function.invoke(cx, args, obj, rvalue);
     }
 };
+
+}  // namespace Gjs
 
 /* Because we can't free the mmap'd data for a callback
  * while it's in use, this list keeps track of ones that
@@ -737,7 +741,7 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
 }
 
 // Intended for error messages
-std::string Function::format_name() {
+std::string Gjs::Function::format_name() {
     bool is_method = g_callable_info_is_method(m_info);
     std::string retval = is_method ? "method" : "function";
     retval += ' ';
@@ -752,6 +756,8 @@ std::string Function::format_name() {
 }
 
 void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
+
+namespace Gjs {
 
 static void* get_return_ffi_pointer_from_giargument(
     GjsArgumentCache* return_arg, GIFFIReturnValue* return_value) {
@@ -1092,7 +1098,7 @@ bool Function::call(JSContext* context, unsigned js_argc, JS::Value* vp) {
     JS::CallArgs js_argv = JS::CallArgsFromVp(js_argc, vp);
     JS::RootedObject callee(context, &js_argv.callee());
 
-    Function *priv;
+    Function* priv;
     if (!Function::for_js_typecheck(context, callee, &priv, &js_argv))
         return false;
 
@@ -1320,6 +1326,8 @@ JSObject* Function::create(JSContext* context, GType gtype,
     return function;
 }
 
+}  // namespace Gjs
+
 GJS_JSAPI_RETURN_CONVENTION
 JSObject*
 gjs_define_function(JSContext       *context,
@@ -1333,7 +1341,8 @@ gjs_define_function(JSContext       *context,
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
 
-    JS::RootedObject function(context, Function::create(context, gtype, info));
+    JS::RootedObject function(context,
+                              Gjs::Function::create(context, gtype, info));
     if (!function)
         return NULL;
 
@@ -1363,6 +1372,6 @@ bool gjs_invoke_constructor_from_c(JSContext* context, GIFunctionInfo* info,
                                    JS::HandleObject obj,
                                    const JS::CallArgs& args,
                                    GIArgument* rvalue) {
-    return Function::invoke_constructor_uncached(context, info, obj, args,
-                                                 rvalue);
+    return Gjs::Function::invoke_constructor_uncached(context, info, obj, args,
+                                                      rvalue);
 }
