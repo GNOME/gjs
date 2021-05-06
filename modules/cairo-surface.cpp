@@ -62,11 +62,8 @@ writeToPNG_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-getType_func(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
+bool CairoSurface::getType_func(JSContext* context, unsigned argc,
+                                JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_surface_type_t type;
 
@@ -230,12 +227,9 @@ static bool surface_release_argument(JSContext*, GITransfer transfer,
     return true;
 }
 
-static GjsForeignInfo foreign_info = {
-    surface_to_g_argument,
-    surface_from_g_argument,
-    surface_release_argument
-};
-
 void gjs_cairo_surface_init(void) {
+    static GjsForeignInfo foreign_info = {surface_to_g_argument,
+                                          surface_from_g_argument,
+                                          surface_release_argument};
     gjs_struct_foreign_register("cairo", "Surface", &foreign_info);
 }

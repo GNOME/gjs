@@ -192,6 +192,9 @@ class CairoSurface : public CWrapper<CairoSurface, cairo_surface_t> {
         return cairo_surface_reference(surface);
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool getType_func(JSContext* context, unsigned argc, JS::Value* vp);
+
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* from_c_ptr(JSContext* cx, cairo_surface_t* surface);
@@ -415,6 +418,9 @@ class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
     static cairo_pattern_t* copy_ptr(cairo_pattern_t* pattern) {
         return cairo_pattern_reference(pattern);
     }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool getType_func(JSContext* context, unsigned argc, JS::Value* vp);
 
  protected:
     static void finalize_impl(JSFreeOp* fop, cairo_pattern_t* pattern);

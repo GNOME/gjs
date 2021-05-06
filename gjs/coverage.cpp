@@ -50,7 +50,7 @@ G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            G_TYPE_OBJECT)
 
 enum {
-    PROP_0,
+    PROP_COVERAGE_0,
     PROP_PREFIXES,
     PROP_CONTEXT,
     PROP_CACHE,

@@ -27,7 +27,7 @@
 
 static std::unordered_map<GType, AutoParamArray> class_init_properties;
 
-[[nodiscard]] static JSContext* current_context() {
+[[nodiscard]] static JSContext* current_js_context() {
     GjsContext* gjs = gjs_context_get_current();
     return static_cast<JSContext*>(gjs_context_get_native_context(gjs));
 }
@@ -106,7 +106,7 @@ static void gjs_object_base_finalize(void* klass) {
 static GObject* gjs_object_constructor(
     GType type, unsigned n_construct_properties,
     GObjectConstructParam* construct_properties) {
-    JSContext* cx = current_context();
+    JSContext* cx = current_js_context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
     if (!gjs->object_init_list().empty()) {
@@ -168,7 +168,7 @@ static void gjs_object_set_gproperty(GObject* object,
                                      unsigned property_id [[maybe_unused]],
                                      const GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
-    JSContext *cx = current_context();
+    JSContext* cx = current_js_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
     JSAutoRealm ar(cx, js_obj);
@@ -181,7 +181,7 @@ static void gjs_object_get_gproperty(GObject* object,
                                      unsigned property_id [[maybe_unused]],
                                      GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
-    JSContext *cx = current_context();
+    JSContext* cx = current_js_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
     JS::RootedValue jsvalue(cx);
@@ -218,7 +218,7 @@ static void gjs_object_class_init(void* class_pointer, void*) {
 
 static void gjs_object_custom_init(GTypeInstance* instance,
                                    void* g_class [[maybe_unused]]) {
-    JSContext *cx = current_context();
+    JSContext* cx = current_js_context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
     if (gjs->object_init_list().empty())
