@@ -7,19 +7,12 @@
 #include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE, CAIRO_HAS_PS_SURFA...
 #include <cairo.h>
 
-#include <js/GCPolicyAPI.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/jsapi-util.h"
 #include "modules/cairo-private.h"
-
-// Avoid static_assert in MSVC builds
-namespace JS {
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-}
 
 #ifdef CAIRO_HAS_XLIB_SURFACE
 #    include <cairo-xlib.h>

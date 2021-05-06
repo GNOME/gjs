@@ -13,7 +13,6 @@
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
-#include <js/GCPolicyAPI.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -31,12 +30,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
-
-// Avoid static_assert in MSVC builds
-namespace JS {
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-}
 
 #define _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj) \
     GJS_GET_THIS(cx, argc, vp, argv, obj);                              \

@@ -6,7 +6,6 @@
 
 #include <cairo.h>
 
-#include <js/GCPolicyAPI.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -19,9 +18,6 @@
 
 namespace JS {
 class CallArgs;
-// Avoid static_assert in MSVC builds
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }
 
 JSObject* CairoLinearGradient::new_proto(JSContext* cx, JSProtoKey) {

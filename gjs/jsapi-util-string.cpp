@@ -20,7 +20,6 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
-#include <js/GCPolicyAPI.h>
 #include <js/Id.h>     // for JSID_IS_STRING...
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
@@ -35,12 +34,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/misc.h"  // for _gjs_memdup2
-
-// Avoid static_assert in MSVC builds
-namespace JS {
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-}
 
 class JSLinearString;
 

@@ -10,7 +10,7 @@
 
 #include <js/AllocPolicy.h>
 #include <js/ComparisonOperators.h>
-#include <js/GCPolicyAPI.h>
+#include <js/GCPolicyAPI.h>  // for GCPolicy (ptr only), NonGCPointe...
 #include <js/GCVector.h>
 #include <js/RootingAPI.h>
 #include <js/TracingAPI.h>
