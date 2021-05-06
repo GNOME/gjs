@@ -109,6 +109,10 @@ gjs_breakpoint(JSContext *context,
     return true;
 }
 
+// This can reduce performance, so should be used for debugging only.
+// js::CollectNurseryBeforeDump promotes any live objects in the nursery to the
+// tenured heap. This is slow, but this way, we are certain to get an accurate
+// picture of the heap.
 static bool
 gjs_dump_heap(JSContext *cx,
               unsigned   argc,
@@ -127,10 +131,10 @@ gjs_dump_heap(JSContext *cx,
                       strerror(errno));
             return false;
         }
-        js::DumpHeap(cx, fp, js::IgnoreNurseryObjects);
+        js::DumpHeap(cx, fp, js::CollectNurseryBeforeDump);
         fclose(fp);
     } else {
-        js::DumpHeap(cx, stdout, js::IgnoreNurseryObjects);
+        js::DumpHeap(cx, stdout, js::CollectNurseryBeforeDump);
     }
 
     gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to %s",

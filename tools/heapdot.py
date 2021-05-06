@@ -119,6 +119,10 @@ def output_dot_file(args, graph, targs, fname):
         elif label.startswith('WeakMap'):
             label = 'WeakMap'
             style = 'dashed'
+        # A Proxy
+        elif label.startswith('Proxy'):
+            shape = 'doublecircle'
+            color = 'goldenrod2'
         # Mostly uninteresting objects
         elif label in ['base_shape', 'object_group', 'type_object']:
             style = 'dotted'

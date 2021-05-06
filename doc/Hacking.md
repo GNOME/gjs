@@ -76,7 +76,7 @@ For a list of available options, run `meson configure`.
 That's it! You can now run your build of gjs for testing and hacking with
 
 ```sh
-LD_LIBRARY_PATH=_build GI_TYPELIB_PATH=_build ./_build/gjs-console script.js
+LD_LIBRARY_PATH=_build GI_TYPELIB_PATH=_build GJS_USE_UNINSTALLED_FILES=1 ./_build/gjs-console script.js
 ```
 
 To install GJS into the path you chose with `-Dprefix`, (or into

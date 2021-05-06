@@ -143,7 +143,8 @@ static GjsAutoChar dump_heap_output;
 static unsigned dump_heap_idle_id = 0;
 
 #ifdef G_OS_UNIX
-/* Currently heap dumping is only supported on UNIX platforms! */
+// Currently heap dumping via SIGUSR1 is only supported on UNIX platforms!
+// This can reduce performance. See note in system.cpp on System.dumpHeap().
 static void
 gjs_context_dump_heaps(void)
 {
@@ -162,7 +163,7 @@ gjs_context_dump_heaps(void)
 
     for (GList *l = all_contexts; l; l = g_list_next(l)) {
         auto* gjs = static_cast<GjsContextPrivate*>(l->data);
-        js::DumpHeap(gjs->context(), fp, js::IgnoreNurseryObjects);
+        js::DumpHeap(gjs->context(), fp, js::CollectNurseryBeforeDump);
     }
 
     fclose(fp);
@@ -303,7 +304,7 @@ gjs_context_class_init(GjsContextClass *klass)
     g_param_spec_unref(pspec);
 
     /* For GjsPrivate */
-    {
+    if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
