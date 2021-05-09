@@ -355,6 +355,9 @@ gjs_context_dispose(GObject *object)
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
+    g_assert(gjs->is_owner_thread() &&
+             "Gjs Context disposed from another thread");
+
     /* Profiler must be stopped and freed before context is shut down */
     gjs->free_profiler();
 
