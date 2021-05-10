@@ -50,20 +50,6 @@ struct ObjectInstance;
 class ObjectInstance;
 class ObjectPrototype;
 
-class GjsListLink {
- private:
-    ObjectInstance* m_prev = nullptr;
-    ObjectInstance* m_next = nullptr;
-
- public:
-    [[nodiscard]] ObjectInstance* prev() const { return m_prev; }
-    [[nodiscard]] ObjectInstance* next() const { return m_next; }
-
-    void prepend(ObjectInstance* this_instance, ObjectInstance* head);
-    void unlink(void);
-    [[nodiscard]] size_t size() const;
-};
-
 /*
  * ObjectBase:
  *
@@ -301,7 +287,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     // a list of all GClosures installed on this object (from signal connections
     // and scope-notify callbacks passed to methods), used when tracing
     std::forward_list<GClosure*> m_closures;
-    GjsListLink m_instance_link;
 
     bool m_wrapper_finalized : 1;
     bool m_gobj_disposed : 1;
@@ -407,28 +392,18 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* Methods to manipulate the linked list of instances */
 
  private:
-    static ObjectInstance* wrapped_gobject_list;
-    [[nodiscard]] ObjectInstance* next() const {
-        return m_instance_link.next();
-    }
+    static std::vector<ObjectInstance*> s_wrapped_gobject_list;
     void link(void);
     void unlink(void);
     [[nodiscard]] static size_t num_wrapped_gobjects() {
-        return wrapped_gobject_list
-                   ? wrapped_gobject_list->m_instance_link.size()
-                   : 0;
+        return s_wrapped_gobject_list.size();
     }
     using Action = std::function<void(ObjectInstance*)>;
     using Predicate = std::function<bool(ObjectInstance*)>;
-    static void iterate_wrapped_gobjects(const Action& action);
     static void remove_wrapped_gobjects_if(const Predicate& predicate,
                                            const Action& action);
 
  public:
-    [[nodiscard]] [[gnu::const]] GjsListLink* get_link() {
-        return &m_instance_link;
-    }
-
     static void prepare_shutdown(void);
 
     /* JSClass operations */

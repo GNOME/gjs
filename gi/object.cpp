@@ -13,6 +13,7 @@
 #include <limits>
 #include <string>
 #include <tuple>        // for tie
+#include <type_traits>
 #include <unordered_set>
 #include <utility>      // for move
 #include <vector>
@@ -74,14 +75,15 @@ class JSTracer;
 #if defined(__x86_64__) && defined(__clang__)
 /* This isn't meant to be comprehensive, but should trip on at least one CI job
  * if sizeof(ObjectInstance) is increased. */
-static_assert(sizeof(ObjectInstance) <= 64,
+static_assert(sizeof(ObjectInstance) <= 48,
               "Think very hard before increasing the size of ObjectInstance. "
               "There can be tens of thousands of them alive in a typical "
               "gnome-shell run.");
 #endif  // x86-64 clang
 
 bool ObjectInstance::s_weak_pointer_callback = false;
-ObjectInstance *ObjectInstance::wrapped_gobject_list = nullptr;
+decltype(ObjectInstance::s_wrapped_gobject_list)
+    ObjectInstance::s_wrapped_gobject_list;
 
 static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
@@ -113,61 +115,15 @@ void ObjectBase::type_query_dynamic_safe(GTypeQuery* query) {
     g_type_query(type, query);
 }
 
-void
-GjsListLink::prepend(ObjectInstance *this_instance,
-                     ObjectInstance *head)
-{
-    GjsListLink *elem = head->get_link();
-
-    g_assert(this_instance->get_link() == this);
-
-    if (elem->m_prev) {
-        GjsListLink *prev = elem->m_prev->get_link();
-        prev->m_next = this_instance;
-        this->m_prev = elem->m_prev;
-    }
-
-    elem->m_prev = this_instance;
-    this->m_next = head;
+void ObjectInstance::link() {
+    g_assert(std::find(s_wrapped_gobject_list.begin(),
+                       s_wrapped_gobject_list.end(),
+                       this) == s_wrapped_gobject_list.end());
+    s_wrapped_gobject_list.push_back(this);
 }
 
-void
-GjsListLink::unlink(void)
-{
-    if (m_prev)
-        m_prev->get_link()->m_next = m_next;
-    if (m_next)
-        m_next->get_link()->m_prev = m_prev;
-
-    m_prev = m_next = nullptr;
-}
-
-size_t
-GjsListLink::size(void) const
-{
-    const GjsListLink *elem = this;
-    size_t count = 0;
-
-    do {
-        count++;
-        if (!elem->m_next)
-            break;
-        elem = elem->m_next->get_link();
-    } while (elem);
-
-    return count;
-}
-
-void ObjectInstance::link(void) {
-    if (wrapped_gobject_list)
-        m_instance_link.prepend(this, wrapped_gobject_list);
-    wrapped_gobject_list = this;
-}
-
-void ObjectInstance::unlink(void) {
-    if (wrapped_gobject_list == this)
-        wrapped_gobject_list = m_instance_link.next();
-    m_instance_link.unlink();
+void ObjectInstance::unlink() {
+    Gjs::remove_one_from_unsorted_vector(&s_wrapped_gobject_list, this);
 }
 
 const void* ObjectBase::jsobj_addr(void) const {
@@ -1151,29 +1107,22 @@ ObjectInstance::gobj_dispose_notify(void)
         discard_wrapper();
 }
 
-void ObjectInstance::iterate_wrapped_gobjects(
-    const ObjectInstance::Action& action) {
-    ObjectInstance *link = ObjectInstance::wrapped_gobject_list;
-    while (link) {
-        ObjectInstance *next = link->next();
-        action(link);
-        link = next;
-    }
-}
-
 void ObjectInstance::remove_wrapped_gobjects_if(
     const ObjectInstance::Predicate& predicate,
     const ObjectInstance::Action& action) {
-    std::vector<ObjectInstance *> removed;
-    iterate_wrapped_gobjects([&predicate, &removed](ObjectInstance* link) {
-        if (predicate(link)) {
-            removed.push_back(link);
-            link->unlink();
-        }
-    });
-
-    for (ObjectInstance *priv : removed)
-        action(priv);
+    // Note: remove_if() does not actually remove elements, just reorders them
+    // and returns a start iterator of elements to remove
+    s_wrapped_gobject_list.erase(
+        std::remove_if(s_wrapped_gobject_list.begin(),
+                       s_wrapped_gobject_list.end(),
+                       ([predicate, action](ObjectInstance* link) {
+                           if (predicate(link)) {
+                               action(link);
+                               return true;
+                           }
+                           return false;
+                       })),
+        s_wrapped_gobject_list.end());
 }
 
 /*
@@ -1184,7 +1133,7 @@ void ObjectInstance::remove_wrapped_gobjects_if(
  */
 void ObjectInstance::context_dispose_notify(void*, GObject* where_the_object_was
                                             [[maybe_unused]]) {
-    ObjectInstance::iterate_wrapped_gobjects(
+    std::for_each(s_wrapped_gobject_list.begin(), s_wrapped_gobject_list.end(),
         std::mem_fn(&ObjectInstance::handle_context_dispose));
 }
 
@@ -1197,7 +1146,6 @@ void ObjectInstance::handle_context_dispose(void) {
     if (wrapper_is_rooted()) {
         debug_lifecycle("Was rooted, but unrooting due to GjsContext dispose");
         discard_wrapper();
-        unlink();
     }
 }
 
@@ -1464,6 +1412,8 @@ void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
     ObjectInstance::remove_wrapped_gobjects_if(
         std::mem_fn(&ObjectInstance::weak_pointer_was_finalized),
         std::mem_fn(&ObjectInstance::disassociate_js_gobject));
+
+    s_wrapped_gobject_list.shrink_to_fit();
 }
 
 bool
