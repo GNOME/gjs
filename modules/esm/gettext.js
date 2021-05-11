@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
 export let {
+    LocaleCategory,
     setlocale,
     textdomain,
     bindtextdomain,
@@ -16,6 +17,7 @@ export let {
 } = imports._gettext;
 
 export default {
+    LocaleCategory,
     setlocale,
     textdomain,
     bindtextdomain,
