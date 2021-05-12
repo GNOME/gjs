@@ -369,6 +369,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* Methods to manipulate the list of closures */
 
  private:
+    void invalidate_closures();
     static void closure_invalidated_notify(void* data, GClosure* closure);
 
  public:

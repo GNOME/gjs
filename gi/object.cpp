@@ -1556,21 +1556,26 @@ bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     return true;
 }
 
-static void invalidate_closure_list(std::forward_list<GClosure*>* closures) {
+static void invalidate_closure_list(std::forward_list<GClosure*>* closures,
+                                    void* data, GClosureNotify notify_func) {
     g_assert(closures);
-    // Can't loop directly through the items, since invalidating an item's
-    // closure might have the effect of removing the item from the list in the
-    // invalidate notifier
-    while (!closures->empty()) {
+    g_assert(notify_func);
+
+    auto before = closures->before_begin();
+    for (auto it = closures->begin(); it != closures->end();) {
         // This will also free the closure data, through the closure
         // invalidation mechanism, but adding a temporary reference to
         // ensure that the closure is still valid when calling invalidation
         // notify callbacks
         GjsAutoGClosure closure(closures->front(), GjsAutoTakeOwnership());
+        it = closures->erase_after(before);
+
+        // Only call the invalidate notifiers that won't touch this vector
+        g_closure_remove_invalidate_notifier(closure, data, notify_func);
         g_closure_invalidate(closure);
-        /* Erase element if not already erased */
-        closures->remove(closure);
     }
+
+    g_assert(closures->empty());
 }
 
 // Note: m_wrapper (the JS object) may already be null when this is called, if
@@ -1598,7 +1603,7 @@ ObjectInstance::disassociate_js_gobject(void)
     }
 
     /* Now release all the resources the current wrapper has */
-    invalidate_closure_list(&m_closures);
+    invalidate_closures();
     release_native_object();
 
     /* Mark that a JS object once existed, but it doesn't any more */
@@ -1764,7 +1769,7 @@ void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
 ObjectInstance::~ObjectInstance() {
     TRACE(GJS_OBJECT_WRAPPER_FINALIZE(this, m_ptr, ns(), name()));
 
-    invalidate_closure_list(&m_closures);
+    invalidate_closures();
 
     // Do not keep the queue locked here, as we may want to leave the other
     // threads to queue toggle events till we're owning the GObject so that
@@ -1818,7 +1823,7 @@ ObjectInstance::~ObjectInstance() {
 }
 
 ObjectPrototype::~ObjectPrototype() {
-    invalidate_closure_list(&m_vfuncs);
+    invalidate_closure_list(&m_vfuncs, this, &vfunc_invalidated_notify);
 
     g_type_class_unref(g_type_class_peek(m_gtype));
 
@@ -1963,8 +1968,13 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
 }
 
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
+    // This callback should *only* touch m_closures
     auto* priv = static_cast<ObjectInstance*>(data);
     priv->m_closures.remove(closure);
+}
+
+void ObjectInstance::invalidate_closures() {
+    invalidate_closure_list(&m_closures, this, &closure_invalidated_notify);
 }
 
 bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -2799,6 +2809,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 }
 
 void ObjectPrototype::vfunc_invalidated_notify(void* data, GClosure* closure) {
+    // This callback should *only* touch m_vfuncs
     auto* priv = static_cast<ObjectPrototype*>(data);
     priv->m_vfuncs.remove(closure);
 }
