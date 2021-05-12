@@ -332,7 +332,11 @@ bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
     if (is_custom_js_class())
         return true;
 
-    ensure_uses_toggle_ref(cx);
+    if (!ensure_uses_toggle_ref(cx)) {
+        gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
+                  m_gobj_disposed ? "disposed " : "", m_ptr.get());
+        return false;
+    }
 
     return true;
 }
@@ -1530,15 +1534,12 @@ ObjectInstance::associate_js_gobject(JSContext       *context,
         g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
 }
 
-// The return value here isn't intended to be JS API like boolean, as we only
-// return whether the object has a toggle reference, and if we've added one
-// and depending on this callers may need to unref the object on failure.
 bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     if (m_uses_toggle_ref)
         return true;
 
     if (!check_gobject_disposed_or_finalized("add toggle reference on"))
-        return false;
+        return true;
 
     debug_lifecycle("Switching object instance to toggle ref");
 
@@ -1678,11 +1679,22 @@ ObjectInstance::init_impl(JSContext              *context,
          * we're not actually using it, so just let it get collected. Avoiding
          * this would require a non-trivial amount of work.
          * */
-        if (!other_priv->ensure_uses_toggle_ref(context))
-            gobj = nullptr;
+        bool toggle_ref_added = false;
+        if (!m_uses_toggle_ref) {
+            if (!other_priv->ensure_uses_toggle_ref(context)) {
+                gjs_throw(context,
+                          "Impossible to set toggle references on %sobject %p",
+                          other_priv->m_gobj_disposed ? "disposed " : "", gobj);
+                return false;
+            }
+
+            toggle_ref_added = m_uses_toggle_ref;
+        }
 
         object.set(other_priv->m_wrapper);
-        g_clear_object(&gobj); /* We already own a reference */
+
+        if (toggle_ref_added)
+            g_clear_object(&gobj); /* We already own a reference */
         return true;
     }
 
@@ -1940,9 +1952,14 @@ GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
     return parent->lookup_cached_field_info(cx, key);
 }
 
-void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
-    if (!is_prototype())
-        to_instance()->ensure_uses_toggle_ref(cx);
+bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
+    if (!is_prototype()) {
+        if (!to_instance()->ensure_uses_toggle_ref(cx)) {
+            gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
+                      m_gobj_disposed ? "disposed " : "", to_instance()->ptr());
+            return false;
+        }
+    }
 
     g_assert(std::find(m_closures.begin(), m_closures.end(), closure) ==
                  m_closures.end() &&
@@ -1953,6 +1970,8 @@ void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     m_closures.push_front(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
+
+    return true;
 }
 
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
@@ -2021,7 +2040,8 @@ ObjectInstance::connect_impl(JSContext          *context,
         context, JS_GetObjectFunction(callback), "signal callback", signal_id);
     if (closure == NULL)
         return false;
-    associate_closure(context, closure);
+    if (!associate_closure(context, closure))
+        return false;
 
     id = g_signal_connect_closure_by_id(m_ptr, signal_id, signal_detail,
                                         closure, after);
@@ -2482,7 +2502,7 @@ bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
 
     // Custom JS objects will most likely have visible state, so just do this
     // from the start.
-    if (!ensure_uses_toggle_ref(cx)) {
+    if (!ensure_uses_toggle_ref(cx) || !m_uses_toggle_ref) {
         gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
                   m_gobj_disposed ? "disposed " : "", gobj);
         return false;

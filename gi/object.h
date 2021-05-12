@@ -378,7 +378,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     static void closure_invalidated_notify(void* data, GClosure* closure);
 
  public:
-    void associate_closure(JSContext* cx, GClosure* closure);
+    GJS_JSAPI_RETURN_CONVENTION bool associate_closure(JSContext*, GClosure*);
 
     /* Helper methods */
 
@@ -388,7 +388,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void track_gobject_finalization();
     void ignore_gobject_finalization();
     void check_js_object_finalized(void);
-    bool ensure_uses_toggle_ref(JSContext* cx);
+    GJS_JSAPI_RETURN_CONVENTION bool ensure_uses_toggle_ref(JSContext* cx);
     [[nodiscard]] bool check_gobject_disposed_or_finalized(
         const char* for_what) const;
     [[nodiscard]] bool check_gobject_finalized(const char* for_what) const;

@@ -300,7 +300,8 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
                 return false;
             }
 
-            priv->associate_closure(cx, trampoline->js_function());
+            if (!priv->associate_closure(cx, trampoline->js_function()))
+                return false;
         }
         closure = trampoline->closure();
     }
