@@ -1,16 +1,12 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2021 Canonical, Ltd
 
 #ifndef GJS_MEM_PRIVATE_H_
 #define GJS_MEM_PRIVATE_H_
 
-#include <glib.h>
-
-typedef struct {
-    int value;
-    const char* name;
-} GjsMemCounter;
+#include <atomic>
 
 // clang-format off
 #define GJS_FOR_EACH_COUNTER(macro) \
@@ -32,23 +28,43 @@ typedef struct {
     macro(union_prototype)
 // clang-format on
 
-#define GJS_DECLARE_COUNTER(name) extern GjsMemCounter gjs_counter_##name;
+namespace Gjs {
+namespace Memory {
 
+struct Counter {
+    explicit Counter(const char* n) : name(n) {}
+    std::atomic_int64_t value = ATOMIC_VAR_INIT(0);
+    const char* name;
+};
+
+namespace Counters {
+#define GJS_DECLARE_COUNTER(name) extern Counter name;
 GJS_DECLARE_COUNTER(everything)
 GJS_FOR_EACH_COUNTER(GJS_DECLARE_COUNTER)
+#undef GJS_DECLARE_COUNTER
 
-#define GJS_INC_COUNTER(name)                               \
-    do {                                                    \
-        g_atomic_int_add(&gjs_counter_everything.value, 1); \
-        g_atomic_int_add(&gjs_counter_##name.value, 1);     \
-    } while (0)
+template <Counter* counter>
+constexpr void inc() {
+    everything.value++;
+    counter->value++;
+}
 
-#define GJS_DEC_COUNTER(name)                                \
-    do {                                                     \
-        g_atomic_int_add(&gjs_counter_everything.value, -1); \
-        g_atomic_int_add(&gjs_counter_##name.value, -1);     \
-    } while (0)
+template <Counter* counter>
+constexpr void dec() {
+    counter->value--;
+    everything.value--;
+}
 
-#define GJS_GET_COUNTER(name) g_atomic_int_get(&gjs_counter_##name.value)
+}  // namespace Counters
+}  // namespace Memory
+}  // namespace Gjs
+
+#define GJS_INC_COUNTER(name) \
+    (Gjs::Memory::Counters::inc<&Gjs::Memory::Counters::name>());
+
+#define GJS_DEC_COUNTER(name) \
+    (Gjs::Memory::Counters::dec<&Gjs::Memory::Counters::name>());
+
+#define GJS_GET_COUNTER(name) (Gjs::Memory::Counters::name.value.load())
 
 #endif  // GJS_MEM_PRIVATE_H_

@@ -2,24 +2,31 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
+#include <stdint.h>
+
+#include <atomic>  // for atomic_int64_t
+
 #include <glib.h>
 
 #include "gjs/mem-private.h"
 #include "gjs/mem.h"
 #include "util/log.h"
 
-#define GJS_DEFINE_COUNTER(name)             \
-    GjsMemCounter gjs_counter_ ## name = { \
-        0, #name                                \
-    };
-
+namespace Gjs {
+namespace Memory {
+namespace Counters {
+#define GJS_DEFINE_COUNTER(name) Counter name(#name);
 
 GJS_DEFINE_COUNTER(everything)
 GJS_FOR_EACH_COUNTER(GJS_DEFINE_COUNTER)
+}  // namespace Counters
+}  // namespace Memory
+}  // namespace Gjs
 
-#define GJS_LIST_COUNTER(name) &gjs_counter_##name,
+#define GJS_LIST_COUNTER(name) &Gjs::Memory::Counters::name,
 
-static GjsMemCounter* counters[] = {GJS_FOR_EACH_COUNTER(GJS_LIST_COUNTER)};
+static Gjs::Memory::Counter* counters[] = {
+    GJS_FOR_EACH_COUNTER(GJS_LIST_COUNTER)};
 
 void
 gjs_memory_report(const char *where,
@@ -27,7 +34,7 @@ gjs_memory_report(const char *where,
 {
     int i;
     int n_counters;
-    int total_objects;
+    int64_t total_objects;
 
     gjs_debug(GJS_DEBUG_MEMORY,
               "Memory report: %s",
@@ -46,13 +53,13 @@ gjs_memory_report(const char *where,
     }
 
     gjs_debug(GJS_DEBUG_MEMORY,
-              "  %d objects currently alive",
+              "  %" G_GINT64_FORMAT " objects currently alive",
               GJS_GET_COUNTER(everything));
 
     if (GJS_GET_COUNTER(everything) != 0) {
         for (i = 0; i < n_counters; ++i) {
-            gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %d", counters[i]->name,
-                      counters[i]->value);
+            gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %" G_GINT64_FORMAT,
+                      counters[i]->name, counters[i]->value.load());
         }
 
         if (die_if_leaks)
