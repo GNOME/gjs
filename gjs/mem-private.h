@@ -8,7 +8,7 @@
 #include <glib.h>
 
 typedef struct {
-    volatile int value;
+    int value;
     const char* name;
 } GjsMemCounter;
 

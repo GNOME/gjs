@@ -24,7 +24,7 @@ void g_assertion_message(const char*, const char*, int, const char*,
 
 static GMutex gc_lock;
 static GCond gc_finished;
-static volatile int gc_counter;
+static int gc_counter;
 
 #define PARENT(fx) ((GjsUnitTestFixture *)fx)
 struct GjsRootingFixture {
