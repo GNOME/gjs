@@ -183,6 +183,12 @@ struct GjsAutoPointer {
     Ptr m_ptr;
 };
 
+template <typename T, GjsAutoPointerFreeFunction<T> free_func = free,
+          GjsAutoPointerRefFunction<T> ref_func = nullptr>
+struct GjsAutoPointerSimple : GjsAutoPointer<T, T, free_func, ref_func> {
+    using GjsAutoPointer<T, T, free_func, ref_func>::GjsAutoPointer;
+};
+
 template <typename T, typename F = void,
           GjsAutoPointerFreeFunction<F> free_func,
           GjsAutoPointerRefFunction<F> ref_func>
