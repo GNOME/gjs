@@ -18,6 +18,7 @@
 #include <atomic>
 #include <new>
 #include <string>       // for u16string
+#include <thread>       // for get_id
 #include <unordered_map>
 #include <utility>  // for move
 #include <vector>
@@ -483,9 +484,8 @@ gjs_context_constructed(GObject *object)
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     : m_public_context(public_context),
       m_cx(cx),
+      m_owner_thread(std::this_thread::get_id()),
       m_environment_preparer(cx) {
-    m_owner_thread = g_thread_self();
-
     const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
     if (env_profiler || m_should_listen_sigusr2)
         m_should_profile = true;

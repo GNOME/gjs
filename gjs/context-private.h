@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -56,7 +57,7 @@ class GjsContextPrivate : public JS::JobQueue {
     JSContext* m_cx;
     JS::Heap<JSObject*> m_global;
     JS::Heap<JSObject*> m_internal_global;
-    GThread* m_owner_thread;
+    std::thread::id m_owner_thread;
 
     char* m_program_name;
     char* m_program_path;
@@ -178,7 +179,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_args(std::vector<std::string>&& args);
     GJS_JSAPI_RETURN_CONVENTION JSObject* build_args_array();
     [[nodiscard]] bool is_owner_thread() const {
-        return m_owner_thread == g_thread_self();
+        return m_owner_thread == std::this_thread::get_id();
     }
     [[nodiscard]] JS::WeakCache<FundamentalTable>& fundamental_table() {
         return *m_fundamental_table;
