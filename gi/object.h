@@ -488,13 +488,14 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                         GType expected_type) const;
 
     /* Notification callbacks */
-
- public:
     void gobj_dispose_notify(void);
-    static void context_dispose_notify(void* data,
-                                       GObject* where_the_object_was);
+    static void wrapped_gobj_dispose_notify(void* data, GObject*);
     static void wrapped_gobj_toggle_notify(void* instance, GObject* gobj,
                                            gboolean is_last_ref);
+
+ public:
+    static void context_dispose_notify(void* data,
+                                       GObject* where_the_object_was);
 };
 
 GJS_JSAPI_RETURN_CONVENTION
