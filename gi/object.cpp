@@ -1059,15 +1059,14 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
     size_t ix, length;
     JS::RootedId prop_id(context);
     JS::RootedValue value(context);
-    JS::Rooted<JS::IdVector> ids(context, context);
+    JS::Rooted<JS::IdVector> ids(context);
     if (!JS_Enumerate(context, props, &ids)) {
         gjs_throw(context, "Failed to create property iterator for object props hash");
         return false;
     }
 
+    values->reserve(ids.length());
     for (ix = 0, length = ids.length(); ix < length; ix++) {
-        GValue gvalue = G_VALUE_INIT;
-
         /* ids[ix] is reachable because props is rooted, but require_property
          * doesn't know that */
         prop_id = ids[ix];
@@ -1094,14 +1093,13 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
                                                     param_spec->name);
             /* prevent setting the prop even in JS */
 
+        GValue& gvalue = values->emplace_back();
+        gvalue = G_VALUE_INIT;
         g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param_spec));
-        if (!gjs_value_to_g_value(context, value, &gvalue)) {
-            g_value_unset(&gvalue);
+        if (!gjs_value_to_g_value(context, value, &gvalue))
             return false;
-        }
 
         names->push_back(param_spec->name);  /* owned by GParamSpec in cache */
-        values->push_back(gvalue);
     }
 
     return true;
