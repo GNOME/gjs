@@ -279,7 +279,13 @@ iwyu:
     - meson setup _build
     - ./tools/run_iwyu.sh ci-upstream-base
   only:
-    - branches
+    refs:
+      - branches
+    changes:
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
+      - '**/meson.build'
   except:
     - schedules
     - /^gnome-\d+-\d+$/
