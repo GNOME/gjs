@@ -51,6 +51,7 @@
 #endif
 #include <inttypes.h>
 #include <iomanip>
+#include <js/RequiredDefines.h>  // check-pch: ignore, part of mozjs cflags
 #include <js/AllocPolicy.h>
 #include <js/Array.h>
 #include <js/ArrayBuffer.h>
