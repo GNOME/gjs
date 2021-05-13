@@ -22,6 +22,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for InformalValueTypeName, JS_ClearPendingException
+#include <jsfriendapi.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -38,6 +39,7 @@
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
+#include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
@@ -574,6 +576,13 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 gboxed = ErrorBase::to_c_ptr(context, obj);
                 if (!gboxed)
                     return false;
+            } else if (g_type_is_a(gtype, G_TYPE_BYTE_ARRAY)) {
+                /* special case GByteArray */
+                JS::RootedObject obj(context, &value.toObject());
+                if (JS_IsUint8Array(obj)) {
+                    g_value_set_boxed(gvalue, gjs_byte_array_get_byte_array(obj));
+                    return true;
+                }
             } else {
                 GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
 
@@ -855,6 +864,20 @@ gjs_value_from_g_value_internal(JSContext             *context,
     } else if (g_type_is_a(gtype, G_TYPE_ARRAY) ||
                g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
                g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
+
+        if (g_type_is_a(gtype, G_TYPE_BYTE_ARRAY)) {
+            auto* byte_array = static_cast<GByteArray*>(g_value_get_boxed(gvalue));
+            JSObject* array =
+                gjs_byte_array_from_byte_array(context, byte_array);
+            if (!array) {
+                gjs_throw(context,
+                          "Couldn't convert GByteArray to a Uint8Array");
+                return false;
+            }
+            value_p.setObject(*array);
+            return true;
+        }
+
         if (!signal_query) {
             gjs_throw(context, "Can't convert untyped array to JS value");
             return false;

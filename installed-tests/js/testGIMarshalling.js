@@ -1883,8 +1883,7 @@ describe('GObject properties', function () {
     testPropertyGetSet('enum', GIMarshallingTests.GEnum.VALUE2,
         GIMarshallingTests.GEnum.VALUE3);
     testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
-        ByteArray.fromString('👾'),
-        'https://gitlab.gnome.org/GNOME/gjs/issues/276');
+        ByteArray.fromString('👾'));
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);
