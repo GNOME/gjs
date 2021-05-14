@@ -177,45 +177,45 @@ class GjsMaybeOwned {
      * GjsMaybeOwned wrapper in place of the GC thing itself due to the implicit
      * cast operator. But if you want to call methods on the GC thing, for
      * example if it's a JS::Value, you have to use get(). */
-    [[nodiscard]] const T get() const {
+    [[nodiscard]] constexpr const T get() const {
         return m_root ? m_root->get() : m_heap.get();
     }
-    operator const T() const { return get(); }
+    constexpr operator const T() const { return get(); }
 
     /* Use debug_addr() only for debug logging, because it is unbarriered. */
     template <typename U = T>
-    [[nodiscard]] const void* debug_addr(
+    [[nodiscard]] constexpr const void* debug_addr(
         std::enable_if_t<std::is_pointer_v<U>>* = nullptr) const {
         return m_root ? m_root->get() : m_heap.unbarrieredGet();
     }
 
-    bool
-    operator==(const T& other) const
-    {
+    constexpr bool operator==(const T& other) const {
         if (m_root)
             return m_root->get() == other;
         return m_heap == other;
     }
-    inline bool operator!=(const T& other) const { return !(*this == other); }
+    constexpr bool operator!=(const T& other) const {
+        return !(*this == other);
+    }
 
     /* We can access the pointer without a read barrier if the only thing we
      * are doing with it is comparing it to nullptr. */
-    bool
-    operator==(std::nullptr_t) const
-    {
+    constexpr bool operator==(std::nullptr_t) const {
         if (m_root)
             return m_root->get() == nullptr;
         return m_heap.unbarrieredGet() == nullptr;
     }
-    inline bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
+    constexpr bool operator!=(std::nullptr_t) const {
+        return !(*this == nullptr);
+    }
 
     /* Likewise the truth value does not require a read barrier */
-    inline explicit operator bool() const { return *this != nullptr; }
+    constexpr explicit operator bool() const { return *this != nullptr; }
 
     /* You can get a Handle<T> if the thing is rooted, so that you can use this
      * wrapper with stack rooting. However, you must not do this if the
      * JSContext can be destroyed while the Handle is live. */
-    [[nodiscard]] JS::Handle<T> handle() {
+    [[nodiscard]] constexpr JS::Handle<T> handle() {
         g_assert(m_root);
         return *m_root;
     }
@@ -316,7 +316,7 @@ class GjsMaybeOwned {
         return GjsHeapOperation<T>::update_after_gc(&m_heap);
     }
 
-    [[nodiscard]] bool rooted() const { return m_root != nullptr; }
+    [[nodiscard]] constexpr bool rooted() const { return m_root != nullptr; }
 };
 
 #endif  // GJS_JSAPI_UTIL_ROOT_H_
