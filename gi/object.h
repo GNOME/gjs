@@ -27,6 +27,7 @@
 #include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
 #include <mozilla/Likely.h>         // for MOZ_LIKELY
 
+#include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
@@ -61,13 +62,6 @@ class GjsListLink {
     void prepend(ObjectInstance* this_instance, ObjectInstance* head);
     void unlink(void);
     [[nodiscard]] size_t size() const;
-};
-
-struct AutoGValueVector : public std::vector<GValue> {
-    ~AutoGValueVector() {
-        for (GValue value : *this)
-            g_value_unset(&value);
-    }
 };
 
 /*

@@ -539,8 +539,6 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         /* special case GValue */
         if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-            GValue nested_gvalue = G_VALUE_INIT;
-
             /* explicitly handle values that are already GValues
                to avoid infinite recursion */
             if (value.isObject()) {
@@ -557,11 +555,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 }
             }
 
+            Gjs::AutoGValue nested_gvalue;
             if (!gjs_value_to_g_value(context, value, &nested_gvalue))
                 return false;
 
             g_value_set_boxed(gvalue, &nested_gvalue);
-            g_value_unset(&nested_gvalue);
             return true;
         }
 

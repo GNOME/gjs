@@ -1221,14 +1221,13 @@ static bool value_to_interface_gi_argument(
             return true;
         }
 
-        GValue gvalue = G_VALUE_INIT;
+        Gjs::AutoGValue gvalue;
         if (!gjs_value_to_g_value(cx, value, &gvalue)) {
             gjs_arg_unset<void*>(arg);
             return false;
         }
 
         gjs_arg_set(arg, g_boxed_copy(G_TYPE_VALUE, &gvalue));
-        g_value_unset(&gvalue);
         return true;
 
     } else if (arg::is_gdk_atom(interface_info)) {

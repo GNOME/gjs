@@ -367,8 +367,6 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
         return true;
     }
 
-    GValue gvalue = { 0, };
-
     ObjectPrototype* proto_priv = get_prototype();
     GParamSpec *param = proto_priv->find_param_spec_from_id(cx, name);
 
@@ -388,15 +386,10 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
                      param->name);
 
-    g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param));
+    Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param));
     g_object_get_property(m_ptr, param->name, &gvalue);
-    if (!gjs_value_from_g_value(cx, rval, &gvalue)) {
-        g_value_unset(&gvalue);
-        return false;
-    }
-    g_value_unset(&gvalue);
 
-    return true;
+    return gjs_value_from_g_value(cx, rval, &gvalue);
 }
 
 [[nodiscard]] static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
@@ -531,15 +524,11 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, JS::HandleString name,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
                      param_spec->name);
 
-    GValue gvalue = G_VALUE_INIT;
-    g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param_spec));
-    if (!gjs_value_to_g_value(cx, value, &gvalue)) {
-        g_value_unset(&gvalue);
+    Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param_spec));
+    if (!gjs_value_to_g_value(cx, value, &gvalue))
         return false;
-    }
 
     g_object_set_property(m_ptr, param_spec->name, &gvalue);
-    g_value_unset(&gvalue);
 
     return true;
 }
@@ -1097,9 +1086,8 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
                                                     param_spec->name);
             /* prevent setting the prop even in JS */
 
-        GValue& gvalue = values->emplace_back();
-        gvalue = G_VALUE_INIT;
-        g_value_init(&gvalue, G_PARAM_SPEC_VALUE_TYPE(param_spec));
+        Gjs::AutoGValue& gvalue =
+            values->emplace_back(G_PARAM_SPEC_VALUE_TYPE(param_spec));
         if (!gjs_value_to_g_value(context, value, &gvalue))
             return false;
 

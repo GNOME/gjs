@@ -568,14 +568,13 @@ static bool gjs_marshal_gvalue_in_in(JSContext* cx, GjsArgumentCache*,
         }
     }
 
-    GValue gvalue = G_VALUE_INIT;
+    Gjs::AutoGValue gvalue;
 
     if (!gjs_value_to_g_value(cx, value, &gvalue))
         return false;
 
     gjs_arg_set(arg, g_boxed_copy(G_TYPE_VALUE, &gvalue));
 
-    g_value_unset(&gvalue);
     return true;
 }
 
