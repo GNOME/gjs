@@ -303,6 +303,7 @@ if build_readline
         cxx.check_header('readline/readline.h', prefix: '#include <cstdio>',
             required: readline.found()))
 endif
+header_conf.set('USE_UNITY_BUILD', get_option('unity'))
 header_conf.set('HAVE_SYS_SYSCALL_H', cxx.check_header('sys/syscall.h'))
 header_conf.set('HAVE_UNISTD_H', cxx.check_header('unistd.h'))
 header_conf.set('HAVE_SIGNAL_H', cxx.check_header('signal.h',

@@ -127,7 +127,7 @@ GjsContextPrivate* GjsContextPrivate::from_current_context() {
 }
 
 enum {
-    PROP_0,
+    PROP_CONTEXT_0,
     PROP_PROGRAM_PATH,
     PROP_SEARCH_PATH,
     PROP_PROGRAM_NAME,

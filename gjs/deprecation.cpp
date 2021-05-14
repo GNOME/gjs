@@ -15,7 +15,6 @@
 
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
-#include <js/GCPolicyAPI.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -24,13 +23,8 @@
 #include <jsfriendapi.h>  // for FormatStackDump
 
 #include "gjs/deprecation.h"
+#include "gjs/jsapi-util.h"  // IWYU pragma: keep
 #include "gjs/macros.h"
-
-// Avoid static_assert in MSVC builds
-namespace JS {
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-}
 
 const char* messages[] = {
     // None:

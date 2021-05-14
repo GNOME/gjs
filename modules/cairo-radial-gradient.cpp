@@ -6,7 +6,6 @@
 
 #include <cairo.h>
 
-#include <js/GCPolicyAPI.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -15,13 +14,11 @@
 #include <jspubtd.h>  // for JSProtoKey
 
 #include "gjs/jsapi-util-args.h"
+#include "gjs/jsapi-util.h"  // IWYU pragma: keep
 #include "modules/cairo-private.h"
 
 namespace JS {
 class CallArgs;
-// Avoid static_assert in MSVC builds
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }
 
 JSObject* CairoRadialGradient::new_proto(JSContext* cx, JSProtoKey) {

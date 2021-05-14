@@ -1350,10 +1350,12 @@ static void gjs_arg_cache_build_flags_mask(GjsArgumentCache* self,
     self->contents.flags_mask = mask;
 }
 
+namespace arg_cache {
 [[nodiscard]] static inline bool is_gdk_atom(GIBaseInfo* info) {
     return strcmp("Atom", g_base_info_get_name(info)) == 0 &&
            strcmp("Gdk", g_base_info_get_namespace(info)) == 0;
 }
+}  // namespace arg_cache
 
 static void gjs_arg_cache_build_interface_in_arg(GjsArgumentCache* self,
                                                  GIBaseInfo* interface_info,
@@ -1418,7 +1420,7 @@ static void gjs_arg_cache_build_interface_in_arg(GjsArgumentCache* self,
                 return;
             }
 
-            if (is_gdk_atom(interface_info)) {
+            if (arg_cache::is_gdk_atom(interface_info)) {
                 // Fall back to the generic marshaller
                 self->marshallers = &fallback_interface_in_marshallers;
                 return;

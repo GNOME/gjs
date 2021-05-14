@@ -8,7 +8,6 @@
 #include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE
 #include <cairo.h>
 
-#include <js/GCPolicyAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gjs/jsapi-util.h"
@@ -27,9 +26,6 @@
 
 namespace JS {
 class CallArgs;
-// Avoid static_assert in MSVC builds
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
 }
 
 JSObject* CairoPDFSurface::new_proto(JSContext* cx, JSProtoKey) {

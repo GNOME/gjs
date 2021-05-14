@@ -97,7 +97,7 @@ sanitizer_thread_gcc:
     - asan # TSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
+    TASK_ID: "fedora-x86_64-gcc-default-ubsan_tsan-check"
     CONFIG_OPTS: -Db_sanitize=thread
     TEST_OPTS: --timeout-multiplier=2 --suite=thread-safe
   except:
@@ -132,6 +132,18 @@ build_minimal:
     CONFIG_OPTS: >-
       -Dbuildtype=release
       -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
+  except:
+    - schedules
+
+build_unity:
+  <<: *build
+  stage: test
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
+  variables:
+    TASK_ID: "fedora-x86_64-gcc-default-unity-check"
+    CONFIG_OPTS: >-
+      -Dprofiler=disabled
+      --unity on --unity-size=10
   except:
     - schedules
 

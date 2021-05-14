@@ -9,18 +9,11 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/GCPolicyAPI.h>
 #include <js/TypeDecls.h>
 #include <jsfriendapi.h>  // for DumpBacktrace
 
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
-
-// Avoid static_assert in MSVC builds
-namespace JS {
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-}
 
 void
 gjs_context_print_stack_stderr(GjsContext *context)

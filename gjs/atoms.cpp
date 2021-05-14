@@ -7,7 +7,6 @@
 
 #include <config.h>
 
-#include <js/GCPolicyAPI.h>
 #include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/Symbol.h>
@@ -16,12 +15,7 @@
 #include <jsapi.h>  // for JS_AtomizeAndPinString
 
 #include "gjs/atoms.h"
-
-// Avoid static_assert in MSVC builds
-namespace JS {
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-}
+#include "gjs/jsapi-util.h"  // IWYU pragma: keep
 
 bool GjsAtom::init(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);

@@ -31,11 +31,8 @@ const JSPropertySpec CairoPattern::proto_props[] = {
 /* Methods */
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-getType_func(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
+bool CairoPattern::getType_func(JSContext* context, unsigned argc,
+                                JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, obj);
     cairo_pattern_type_t type;
 

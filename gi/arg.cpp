@@ -1150,10 +1150,12 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
     return true;
 }
 
+namespace arg {
 [[nodiscard]] static bool is_gdk_atom(GIBaseInfo* info) {
     return (strcmp("Atom", g_base_info_get_name(info)) == 0 &&
             strcmp("Gdk", g_base_info_get_namespace(info)) == 0);
 }
+}  // namespace arg
 
 static void
 intern_gdk_atom(const char *name,
@@ -1229,7 +1231,7 @@ static bool value_to_interface_gi_argument(
         g_value_unset(&gvalue);
         return true;
 
-    } else if (is_gdk_atom(interface_info)) {
+    } else if (arg::is_gdk_atom(interface_info)) {
         if (!value.isNull() && !value.isString()) {
             *report_type_mismatch = true;
             return false;
@@ -2632,7 +2634,7 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT || interface_type == GI_INFO_TYPE_BOXED) {
-                if (is_gdk_atom(interface_info)) {
+                if (arg::is_gdk_atom(interface_info)) {
                     GjsAutoFunctionInfo atom_name_fun =
                         g_struct_info_find_method(interface_info, "name");
                     GIArgument atom_name_ret;

@@ -115,7 +115,7 @@ class GjsAtoms {
 #undef DECLARE_SYMBOL_ATOM_MEMBER
 };
 
-#ifndef GJS_USE_ATOM_FOREACH
+#if !defined(GJS_USE_ATOM_FOREACH) && !defined(USE_UNITY_BUILD)
 #    undef FOR_EACH_ATOM
 #    undef FOR_EACH_SYMBOL_ATOM
 #endif

@@ -403,7 +403,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
     return true;
 }
 
-static JSFunctionSpec module_funcs[] = {
+static JSFunctionSpec private_module_funcs[] = {
     JS_FN("override_property", gjs_override_property, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("register_interface", gjs_register_interface, 3,
           GJS_MODULE_PROP_FLAGS),
@@ -412,7 +412,7 @@ static JSFunctionSpec module_funcs[] = {
     JS_FS_END,
 };
 
-static JSPropertySpec module_props[] = {
+static JSPropertySpec private_module_props[] = {
     JS_PSG("hook_up_vfunc_symbol", symbol_getter<&GjsAtoms::hook_up_vfunc>,
            GJS_MODULE_PROP_FLAGS),
     JS_PSG("signal_find_symbol", symbol_getter<&GjsAtoms::signal_find>,
@@ -428,6 +428,6 @@ static JSPropertySpec module_props[] = {
 bool gjs_define_private_gi_stuff(JSContext* cx,
                                  JS::MutableHandleObject module) {
     module.set(JS_NewPlainObject(cx));
-    return JS_DefineFunctions(cx, module, module_funcs) &&
-           JS_DefineProperties(cx, module, module_props);
+    return JS_DefineFunctions(cx, module, private_module_funcs) &&
+           JS_DefineProperties(cx, module, private_module_props);
 }

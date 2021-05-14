@@ -12,7 +12,6 @@
 
 #include <atomic>
 #include <string>
-#include <type_traits>  // for is_same
 #include <unordered_map>
 #include <vector>
 
@@ -20,7 +19,6 @@
 #include <glib.h>
 
 #include <js/GCHashTable.h>
-#include <js/GCPolicyAPI.h>
 #include <js/GCVector.h>
 #include <js/HashTable.h>  // for DefaultHasher
 #include <js/Promise.h>
@@ -52,23 +50,6 @@ using FundamentalTable =
 using GTypeTable =
     JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
-
-struct Dummy {};
-using GTypeNotUint64 =
-    std::conditional_t<!std::is_same_v<GType, uint64_t>, GType, Dummy>;
-
-// The GC sweep method should ignore FundamentalTable and GTypeTable's key types
-namespace JS {
-// Forward declarations
-template <>
-struct GCPolicy<void*> : public IgnoreGCPolicy<void*> {};
-// We need GCPolicy<GType> for GTypeTable. SpiderMonkey already defines
-// GCPolicy<uint64_t> which is equal to GType on some systems; for others we
-// need to define it. (macOS's uint64_t is unsigned long long, which is a
-// different type from unsigned long, even if they are the same width)
-template <>
-struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
-}  // namespace JS
 
 class GjsContextPrivate : public JS::JobQueue {
     GjsContext* m_public_context;
