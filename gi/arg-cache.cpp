@@ -29,6 +29,7 @@
 #include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
+#include "gi/closure.h"
 #include "gi/foreign.h"
 #include "gi/function.h"
 #include "gi/fundamental.h"
@@ -635,7 +636,7 @@ static bool gjs_marshal_gclosure_in_in(JSContext* cx, GjsArgumentCache* self,
                                       ExpectedType::FUNCTION);
 
     JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
-    GClosure* closure = gjs_closure_new_marshaled(cx, func, "boxed");
+    GClosure* closure = Gjs::Closure::create_marshaled(cx, func, "boxed");
     gjs_arg_set(arg, closure);
     g_closure_ref(closure);
     g_closure_sink(closure);

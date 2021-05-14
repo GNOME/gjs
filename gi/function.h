@@ -20,6 +20,7 @@
 #include <js/TypeDecls.h>
 #include <js/Value.h>  // IWYU pragma: keep
 
+#include "gi/closure.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
@@ -61,7 +62,7 @@ struct GjsCallbackTrampoline {
     void warn_about_illegal_js_callback(const char* when, const char* reason);
 
     GjsAutoCallableInfo m_info;
-    GjsAutoGClosure m_js_function;
+    Gjs::Closure::Ptr m_js_function;
 
     ffi_closure* m_closure = nullptr;
     GIScopeType m_scope;

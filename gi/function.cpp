@@ -309,10 +309,9 @@ void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
  * getting the return value back.
  */
 void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
-    JSContext *context;
     GITypeInfo ret_type;
 
-    if (G_UNLIKELY(!gjs_closure_is_valid(m_js_function))) {
+    if (G_UNLIKELY(!m_js_function->is_valid())) {
         warn_about_illegal_js_callback(
             "during shutdown",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
@@ -321,7 +320,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         return;
     }
 
-    context = gjs_closure_get_context(m_js_function);
+    JSContext* context = m_js_function->context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     if (G_UNLIKELY(gjs->sweeping())) {
         warn_about_illegal_js_callback(
@@ -338,8 +337,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         return;
     }
 
-    JSAutoRealm ar(
-        context, JS_GetFunctionObject(gjs_closure_get_callable(m_js_function)));
+    JSAutoRealm ar(context, JS_GetFunctionObject(m_js_function->callable()));
 
     int n_args = m_param_types.size();
     g_assert(n_args >= 0);
@@ -400,7 +398,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                 exit(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            JSFunction* fn = gjs_closure_get_callable(m_js_function);
+            JSFunction* fn = m_js_function->callable();
             g_error("Function %s (%s.%s) terminated with uncatchable exception",
                     gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str(),
                     m_info.ns(), m_info.name());
@@ -522,7 +520,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         }
     }
 
-    if (!gjs_closure_invoke(m_js_function, this_object, jsargs, rval))
+    if (!m_js_function->invoke(this_object, jsargs, rval))
         return false;
 
     if (n_outargs == 0 && ret_type_is_void) {
@@ -562,7 +560,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             return false;
 
         if (!is_array) {
-            JSFunction* fn = gjs_closure_get_callable(m_js_function);
+            JSFunction* fn = m_js_function->callable();
             gjs_throw(context,
                       "Function %s (%s.%s) returned unexpected value, "
                       "expecting an Array",
@@ -735,7 +733,8 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
     // - async and call callbacks, and other notify callbacks, are rooted
     // - vfuncs are traced from the GObject prototype
     bool should_root = m_scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object;
-    m_js_function = gjs_closure_new(cx, function, m_info.name(), should_root);
+    m_js_function =
+        Gjs::Closure::create(cx, function, m_info.name(), should_root);
 
     return true;
 }

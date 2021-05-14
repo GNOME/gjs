@@ -1,12 +1,12 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2021 Canonical Ltd.
+// SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
 #include <config.h>
 
-#include <glib.h>
-
-#include <new>
+#include <glib.h>  // for g_assert
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -20,18 +20,45 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-struct Closure {
-    JSContext *context;
-    GjsMaybeOwned<JSFunction*> func;
-};
+namespace Gjs {
 
-struct GjsClosure {
-    GClosure base;
+Closure::Closure(JSContext* cx, JSFunction* callable, bool root,
+                 const char* description GJS_USED_VERBOSE_GCLOSURE)
+    : m_cx(cx) {
+    GJS_INC_COUNTER(closure);
+    GClosureNotify closure_notify;
 
-    /* We need a separate object to be able to call
-       the C++ constructor without stomping on the base */
-    Closure priv;
-};
+    if (root) {
+        // Fully manage closure lifetime if so asked
+        auto* gjs = GjsContextPrivate::from_cx(cx);
+        g_assert(cx == gjs->context());
+        m_func.root(
+            cx, callable,
+            [](JS::HandleFunction, void* data) {
+                static_cast<Closure*>(data)->global_context_finalized();
+            },
+            this);
+        closure_notify = [](void*, GClosure* closure) {
+            static_cast<Closure*>(closure)->closure_invalidated();
+        };
+    } else {
+        // Only mark the closure as invalid if memory is managed
+        // outside (i.e. by object.c for signals)
+        m_func = callable;
+        closure_notify = [](void*, GClosure* closure) {
+            static_cast<Closure*>(closure)->closure_set_invalid();
+        };
+    }
+
+    g_closure_add_invalidate_notifier(this, nullptr, closure_notify);
+    g_closure_add_finalize_notifier(
+        this, nullptr, [](void*, GClosure* closure) {
+            static_cast<Closure*>(closure)->~Closure();
+        });
+
+    gjs_debug_closure("Create closure %p which calls function %p '%s'", this,
+                      m_func.debug_addr(), description);
+}
 
 /*
  * Memory management of closures is "interesting" because we're keeping around
@@ -67,40 +94,26 @@ struct GjsClosure {
  *
  */
 
-static void
-invalidate_js_pointers(GjsClosure *gc)
-{
-    Closure *c;
-
-    c = &gc->priv;
-
-    if (!c->func)
+void Closure::invalidate_js_pointers() {
+    if (!m_func)
         return;
 
-    c->func.reset();
-    c->context = nullptr;
+    reset();
 
     /* Notify any closure reference holders they
      * may want to drop references.
      */
-    g_closure_invalidate(&gc->base);
+    g_closure_invalidate(this);
 }
 
-static void global_context_finalized(JS::HandleFunction func [[maybe_unused]],
-                                     void* data) {
-    GjsClosure *gc = (GjsClosure*) data;
-    Closure *c = &gc->priv;
-
+void Closure::global_context_finalized() {
     gjs_debug_closure(
         "Context global object destroy notifier on closure %p which calls "
         "object %p",
-        c, c->func.debug_addr());
+        this, m_func.debug_addr());
 
-    if (c->func) {
-        g_assert(c->func == func.get());
-
-        invalidate_js_pointers(gc);
-    }
+    if (m_func)
+        invalidate_js_pointers();
 }
 
 /* Invalidation is like "dispose" - it is guaranteed to happen at
@@ -114,18 +127,13 @@ static void global_context_finalized(JS::HandleFunction func [[maybe_unused]],
  *
  * Unlike "dispose" invalidation only happens once.
  */
-static void closure_invalidated(void*, GClosure* closure) {
-    Closure *c;
-
-    c = &((GjsClosure*) closure)->priv;
-
+void Closure::closure_invalidated() {
     GJS_DEC_COUNTER(closure);
-    gjs_debug_closure("Invalidating closure %p which calls function %p",
-                      closure, c->func.debug_addr());
+    gjs_debug_closure("Invalidating closure %p which calls function %p", this,
+                      m_func.debug_addr());
 
-    if (!c->func) {
-        gjs_debug_closure("   (closure %p already dead, nothing to do)",
-                          closure);
+    if (!m_func) {
+        gjs_debug_closure("   (closure %p already dead, nothing to do)", this);
         return;
     }
 
@@ -136,153 +144,62 @@ static void closure_invalidated(void*, GClosure* closure) {
      * invalidated for some reason other than destruction of the
      * JSContext.
      */
-    gjs_debug_closure("   (closure %p's context was alive, "
-                      "removing our destroy notifier on global object)",
-                      closure);
+    gjs_debug_closure(
+        "   (closure %p's context was alive, "
+        "removing our destroy notifier on global object)",
+        this);
 
-    c->func.reset();
-    c->context = nullptr;
+    reset();
 }
 
-static void closure_set_invalid(void*, GClosure* closure) {
-    Closure *self = &((GjsClosure*) closure)->priv;
-
+void Closure::closure_set_invalid() {
     gjs_debug_closure("Invalidating signal closure %p which calls function %p",
-                      closure, self->func.debug_addr());
+                      this, m_func.debug_addr());
 
-    self->func.prevent_collection();
-    self->func.reset();
-    self->context = nullptr;
+    m_func.prevent_collection();
+    reset();
 
     GJS_DEC_COUNTER(closure);
 }
 
-static void closure_finalize(void*, GClosure* closure) {
-    Closure *self = &((GjsClosure*) closure)->priv;
-
-    self->~Closure();
-}
-
-bool gjs_closure_invoke(GClosure* closure, JS::HandleObject this_obj,
-                        const JS::HandleValueArray& args,
-                        JS::MutableHandleValue retval) {
-    Closure *c;
-    JSContext *context;
-
-    c = &((GjsClosure*) closure)->priv;
-
-    if (!c->func) {
+bool Closure::invoke(JS::HandleObject this_obj,
+                     const JS::HandleValueArray& args,
+                     JS::MutableHandleValue retval) {
+    if (!m_func) {
         /* We were destroyed; become a no-op */
-        c->context = nullptr;
+        reset();
         return false;
     }
 
-    context = c->context;
-    JSAutoRealm ar(context, JS_GetFunctionObject(c->func));
+    JSAutoRealm ar(m_cx, JS_GetFunctionObject(m_func));
 
-    if (gjs_log_exception(context)) {
-        gjs_debug_closure("Exception was pending before invoking callback??? "
-                          "Not expected - closure %p", closure);
+    if (gjs_log_exception(m_cx)) {
+        gjs_debug_closure(
+            "Exception was pending before invoking callback??? "
+            "Not expected - closure %p",
+            this);
     }
 
-    JS::RootedFunction func(context, c->func);
-    if (!JS::Call(context, this_obj, func, args, retval)) {
+    JS::RootedFunction func(m_cx, m_func);
+    if (!JS::Call(m_cx, this_obj, func, args, retval)) {
         /* Exception thrown... */
         gjs_debug_closure(
             "Closure invocation failed (exception should have been thrown) "
             "closure %p function %p",
-            closure, c->func.debug_addr());
+            this, m_func.debug_addr());
         return false;
     }
 
-    if (gjs_log_exception_uncaught(context)) {
-        gjs_debug_closure("Closure invocation succeeded but an exception was set"
-                          " - closure %p", closure);
+    if (gjs_log_exception_uncaught(m_cx)) {
+        gjs_debug_closure(
+            "Closure invocation succeeded but an exception was set"
+            " - closure %p",
+            m_cx);
     }
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     gjs->schedule_gc_if_needed();
     return true;
 }
 
-bool
-gjs_closure_is_valid(GClosure *closure)
-{
-    Closure *c;
-
-    c = &((GjsClosure*) closure)->priv;
-
-    return !!c->context;
-}
-
-JSContext*
-gjs_closure_get_context(GClosure *closure)
-{
-    Closure *c;
-
-    c = &((GjsClosure*) closure)->priv;
-
-    return c->context;
-}
-
-JSFunction* gjs_closure_get_callable(GClosure* closure) {
-    Closure *c;
-
-    c = &((GjsClosure*) closure)->priv;
-
-    return c->func;
-}
-
-void
-gjs_closure_trace(GClosure *closure,
-                  JSTracer *tracer)
-{
-    Closure *c;
-
-    c = &((GjsClosure*) closure)->priv;
-
-    if (!c->func)
-        return;
-
-    c->func.trace(tracer, "signal connection");
-}
-
-GClosure* gjs_closure_new(JSContext* context, JSFunction* callable,
-                          const char* description GJS_USED_VERBOSE_GCLOSURE,
-                          bool root_function) {
-    Closure *c;
-
-    auto* gc = reinterpret_cast<GjsClosure*>(
-        g_closure_new_simple(sizeof(GjsClosure), nullptr));
-    c = new (&gc->priv) Closure();
-
-    /* The saved context is used for lifetime management, so that the closure will
-     * be torn down with the context that created it. The context could be attached to
-     * the default context of the runtime using if we wanted the closure to survive
-     * the context that created it.
-     */
-    c->context = context;
-
-    GJS_INC_COUNTER(closure);
-
-    if (root_function) {
-        /* Fully manage closure lifetime if so asked */
-        c->func.root(context, callable, global_context_finalized, gc);
-
-        g_closure_add_invalidate_notifier(&gc->base, nullptr,
-                                          closure_invalidated);
-    } else {
-        c->func = callable;
-        /* Only mark the closure as invalid if memory is managed
-           outside (i.e. by object.c for signals) */
-        g_closure_add_invalidate_notifier(&gc->base, nullptr,
-                                          closure_set_invalid);
-    }
-
-    g_closure_add_finalize_notifier(&gc->base, nullptr, closure_finalize);
-
-    gjs_debug_closure("Create closure %p which calls function %p '%s'", gc,
-                      c->func.debug_addr(), description);
-
-    return &gc->base;
-}
+}  // namespace Gjs
