@@ -39,20 +39,22 @@ typedef enum {
 using GjsAutoGClosure =
     GjsAutoPointer<GClosure, GClosure, g_closure_unref, g_closure_ref>;
 
-struct GjsCallbackTrampoline {
-    GjsCallbackTrampoline(GICallableInfo* callable_info, GIScopeType scope,
-                          bool is_vfunc);
+struct GjsCallbackTrampoline : public Gjs::Closure {
+    GJS_JSAPI_RETURN_CONVENTION static GjsCallbackTrampoline* create(
+        JSContext* cx, JS::HandleFunction function,
+        GICallableInfo* callable_info, GIScopeType scope, bool has_scope_object,
+        bool is_vfunc);
+
     ~GjsCallbackTrampoline();
 
-    constexpr GClosure* js_function() const { return m_js_function; }
     constexpr ffi_closure* closure() const { return m_closure; }
 
-    gatomicrefcount ref_count;
-
-    bool initialize(JSContext* cx, JS::HandleFunction function,
-                    bool has_scope_object);
-
  private:
+    GJS_JSAPI_RETURN_CONVENTION bool initialize();
+    GjsCallbackTrampoline(JSContext* cx, JS::HandleFunction function,
+                          GICallableInfo* callable_info, GIScopeType scope,
+                          bool has_scope_object, bool is_vfunc);
+
     void callback_closure(GIArgument** args, void* result);
     GJS_JSAPI_RETURN_CONVENTION
     bool callback_closure_inner(JSContext* cx, JS::HandleObject this_object,
@@ -62,28 +64,14 @@ struct GjsCallbackTrampoline {
     void warn_about_illegal_js_callback(const char* when, const char* reason);
 
     GjsAutoCallableInfo m_info;
-    Gjs::Closure::Ptr m_js_function;
+    GIScopeType m_scope;
 
     ffi_closure* m_closure = nullptr;
-    GIScopeType m_scope;
     std::vector<GjsParamType> m_param_types;
 
     bool m_is_vfunc;
     ffi_cif m_cif;
 };
-
-GJS_JSAPI_RETURN_CONVENTION
-GjsCallbackTrampoline* gjs_callback_trampoline_new(
-    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
-    GIScopeType scope, bool has_scope_object, bool is_vfunc);
-
-void gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline);
-GjsCallbackTrampoline* gjs_callback_trampoline_ref(
-    GjsCallbackTrampoline* trampoline);
-
-using GjsAutoCallbackTrampoline =
-    GjsAutoPointer<GjsCallbackTrampoline, GjsCallbackTrampoline,
-                   gjs_callback_trampoline_unref, gjs_callback_trampoline_ref>;
 
 // Stack allocation only!
 class GjsFunctionCallState {

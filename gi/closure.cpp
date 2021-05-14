@@ -51,10 +51,6 @@ Closure::Closure(JSContext* cx, JSFunction* callable, bool root,
     }
 
     g_closure_add_invalidate_notifier(this, nullptr, closure_notify);
-    g_closure_add_finalize_notifier(
-        this, nullptr, [](void*, GClosure* closure) {
-            static_cast<Closure*>(closure)->~Closure();
-        });
 
     gjs_debug_closure("Create closure %p which calls function %p '%s'", this,
                       m_func.debug_addr(), description);

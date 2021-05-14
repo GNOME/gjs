@@ -28,7 +28,18 @@ class HandleValueArray;
 namespace Gjs {
 
 class Closure : public GClosure {
+ protected:
     Closure(JSContext*, JSFunction*, bool root, const char* description);
+    ~Closure() = default;
+
+    // Need to call this if inheriting from Closure to call the dtor
+    template <class C>
+    constexpr void add_finalize_notifier() {
+        static_assert(std::is_base_of_v<Closure, C>);
+        g_closure_add_finalize_notifier(
+            this, nullptr,
+            [](void*, GClosure* closure) { static_cast<C*>(closure)->~C(); });
+    }
 
     void* operator new(size_t size) {
         return g_closure_new_simple(size, nullptr);
@@ -51,13 +62,16 @@ class Closure : public GClosure {
 
     [[nodiscard]] static Closure* create(JSContext* cx, JSFunction* callable,
                                          const char* description, bool root) {
-        return new Closure(cx, callable, root, description);
+        auto* self = new Closure(cx, callable, root, description);
+        self->add_finalize_notifier<Closure>();
+        return self;
     }
 
     [[nodiscard]] static Closure* create_marshaled(JSContext* cx,
                                                    JSFunction* callable,
                                                    const char* description) {
         auto* self = new Closure(cx, callable, true /* root */, description);
+        self->add_finalize_notifier<Closure>();
         g_closure_set_marshal(self, marshal_cb);
         return self;
     }
@@ -67,6 +81,7 @@ class Closure : public GClosure {
                                                     const char* description,
                                                     int signal_id) {
         auto* self = new Closure(cx, callable, false /* root */, description);
+        self->add_finalize_notifier<Closure>();
         g_closure_set_meta_marshal(self, gjs_int_to_pointer(signal_id),
                                    marshal_cb);
         return self;

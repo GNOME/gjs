@@ -2789,25 +2789,22 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             return false;
         }
         JS::RootedFunction func(cx, JS_GetObjectFunction(function));
-        trampoline = gjs_callback_trampoline_new(
+        trampoline = GjsCallbackTrampoline::create(
             cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
         if (!trampoline)
             return false;
 
         // This is traced, and will be cleared from the list when the closure is
         // invalidated
-        g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(),
-                           trampoline->js_function()) == m_vfuncs.end() &&
+        g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(), trampoline) ==
+                     m_vfuncs.end() &&
                  "This vfunc was already associated with this class");
-        m_vfuncs.push_front(trampoline->js_function());
+        m_vfuncs.push_front(trampoline);
         g_closure_add_invalidate_notifier(
-            trampoline->js_function(), this,
-            &ObjectPrototype::vfunc_invalidated_notify);
+            trampoline, this, &ObjectPrototype::vfunc_invalidated_notify);
         g_closure_add_invalidate_notifier(
-            trampoline->js_function(), trampoline, [](void* data, GClosure*) {
-                auto* trampoline = static_cast<GjsCallbackTrampoline*>(data);
-                gjs_callback_trampoline_unref(trampoline);
-            });
+            trampoline, nullptr,
+            [](void*, GClosure* closure) { g_closure_unref(closure); });
 
         *reinterpret_cast<ffi_closure**>(method_ptr) = trampoline->closure();
     }
