@@ -2054,9 +2054,7 @@ ObjectInstance::emit_impl(JSContext          *context,
     guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
-    GValue rvalue = G_VALUE_INIT;
     unsigned int i;
-    bool failed;
 
     gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
                       argv.length());
@@ -2091,49 +2089,35 @@ ObjectInstance::emit_impl(JSContext          *context,
         return false;
     }
 
-    if (signal_query.return_type != G_TYPE_NONE) {
-        g_value_init(&rvalue, signal_query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE);
-    }
+    AutoGValueVector instance_and_args;
+    instance_and_args.reserve(signal_query.n_params + 1);
+    Gjs::AutoGValue& instance = instance_and_args.emplace_back(gtype());
+    g_value_set_instance(&instance, m_ptr);
 
-    GjsAutoPointer<GValue> instance_and_args =
-        g_new0(GValue, signal_query.n_params + 1);
-    g_value_init(&instance_and_args[0], gtype());
-    g_value_set_instance(&instance_and_args[0], m_ptr);
-
-    failed = false;
     for (i = 0; i < signal_query.n_params; ++i) {
-        GValue *value;
-        value = &instance_and_args[i + 1];
-
-        g_value_init(value, signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE);
-        if ((signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0)
-            failed = !gjs_value_to_g_value_no_copy(context, argv[i + 1], value);
-        else
-            failed = !gjs_value_to_g_value(context, argv[i + 1], value);
-
-        if (failed)
-            break;
+        GType gtype = signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE;
+        Gjs::AutoGValue& value = instance_and_args.emplace_back(gtype);
+        if ((signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0) {
+            if (!gjs_value_to_g_value_no_copy(context, argv[i + 1], &value))
+                return false;
+        } else {
+            if (!gjs_value_to_g_value(context, argv[i + 1], &value))
+                return false;
+        }
     }
 
-    if (!failed) {
-        g_signal_emitv(instance_and_args, signal_id, signal_detail,
-                       &rvalue);
-    }
-
-    if (signal_query.return_type != G_TYPE_NONE) {
-        if (!gjs_value_from_g_value(context, argv.rval(), &rvalue))
-            failed = true;
-
-        g_value_unset(&rvalue);
-    } else {
+    if (signal_query.return_type == G_TYPE_NONE) {
+        g_signal_emitv(instance_and_args.data(), signal_id, signal_detail,
+                       nullptr);
         argv.rval().setUndefined();
+        return true;
     }
 
-    for (i = 0; i < (signal_query.n_params + 1); ++i) {
-        g_value_unset(&instance_and_args[i]);
-    }
+    GType gtype = signal_query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE;
+    Gjs::AutoGValue rvalue(gtype);
+    g_signal_emitv(instance_and_args.data(), signal_id, signal_detail, &rvalue);
 
-    return !failed;
+    return gjs_value_from_g_value(context, argv.rval(), &rvalue);
 }
 
 bool ObjectInstance::signal_match_arguments_from_object(
