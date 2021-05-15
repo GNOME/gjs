@@ -64,13 +64,12 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     void warn_about_illegal_js_callback(const char* when, const char* reason);
 
     GjsAutoCallableInfo m_info;
-    GIScopeType m_scope;
-
     ffi_closure* m_closure = nullptr;
     std::vector<GjsParamType> m_param_types;
-
-    bool m_is_vfunc;
     ffi_cif m_cif;
+
+    GIScopeType m_scope : 2;
+    bool m_is_vfunc : 1;
 };
 
 // Stack allocation only!

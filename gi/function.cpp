@@ -627,8 +627,8 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
               scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object,
               g_base_info_get_name(callable_info)),
       m_info(callable_info, GjsAutoTakeOwnership()),
-      m_scope(scope),
       m_param_types(g_callable_info_get_n_args(callable_info), {}),
+      m_scope(scope),
       m_is_vfunc(is_vfunc) {
     add_finalize_notifier<GjsCallbackTrampoline>();
 }
