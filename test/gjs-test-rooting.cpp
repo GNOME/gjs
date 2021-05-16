@@ -3,7 +3,6 @@
 
 #include <config.h>
 
-#include <glib-object.h>  // for g_object_weak_unref, g_object_weak_ref
 #include <glib.h>
 
 #include <js/Class.h>
@@ -224,7 +223,7 @@ static void test_maybe_owned_switch_to_unrooted_allows_collection(
     delete obj;
 }
 
-static void context_destroyed(JS::HandleObject, void* data) {
+static void context_destroyed(JSContext*, void* data) {
     auto fx = static_cast<GjsRootingFixture *>(data);
     g_assert_false(fx->notify_called);
     g_assert_false(fx->finalized);
@@ -234,8 +233,10 @@ static void context_destroyed(JS::HandleObject, void* data) {
 
 static void test_maybe_owned_notify_callback_called_on_context_destroy(
     GjsRootingFixture* fx, const void*) {
+    auto* gjs = GjsContextPrivate::from_cx(PARENT(fx)->cx);
     fx->obj = new GjsMaybeOwned<JSObject *>();
-    fx->obj->root(PARENT(fx)->cx, test_obj_new(fx), context_destroyed, fx);
+    fx->obj->root(PARENT(fx)->cx, test_obj_new(fx));
+    gjs->register_notifier(context_destroyed, fx);
 
     gjs_unit_test_destroy_context(PARENT(fx));
     g_assert_true(fx->notify_called);
@@ -244,8 +245,10 @@ static void test_maybe_owned_notify_callback_called_on_context_destroy(
 
 static void test_maybe_owned_object_destroyed_after_notify(
     GjsRootingFixture* fx, const void*) {
+    auto* gjs = GjsContextPrivate::from_cx(PARENT(fx)->cx);
     fx->obj = new GjsMaybeOwned<JSObject *>();
-    fx->obj->root(PARENT(fx)->cx, test_obj_new(fx), context_destroyed, fx);
+    fx->obj->root(PARENT(fx)->cx, test_obj_new(fx));
+    gjs->register_notifier(context_destroyed, fx);
 
     gjs_unit_test_destroy_context(PARENT(fx));
     g_assert_true(fx->finalized);

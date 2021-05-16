@@ -337,6 +337,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             if (trampoline->m_scope == GI_SCOPE_TYPE_ASYNC) {
                 // We don't release the trampoline here as we've an extra ref
                 // that has been set in gjs_marshal_callback_in()
+                gjs_debug_closure("Saving async closure for gc cleanup %p",
+                                  trampoline);
                 completed_trampolines.emplace_back(trampoline);
             }
             gjs->schedule_gc_if_needed();

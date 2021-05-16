@@ -30,7 +30,7 @@ namespace Gjs {
 class Closure : public GClosure {
  protected:
     Closure(JSContext*, JSFunction*, bool root, const char* description);
-    ~Closure() = default;
+    ~Closure() { unset_context(); }
 
     // Need to call this if inheriting from Closure to call the dtor
     template <class C>
@@ -100,7 +100,10 @@ class Closure : public GClosure {
     }
 
  private:
+    void unset_context();
+
     void reset() {
+        unset_context();
         m_func.reset();
         m_cx = nullptr;
     }
@@ -110,9 +113,12 @@ class Closure : public GClosure {
         for_gclosure(closure)->marshal(ret, n_params, params, hint, data);
     }
 
+    static void global_context_notifier_cb(JSContext*, void* data) {
+        static_cast<Closure*>(data)->global_context_finalized();
+    }
+
     void closure_invalidated();
     void closure_set_invalid();
-    void invalidate_js_pointers();
     void global_context_finalized();
     void marshal(GValue* ret, unsigned n_parms, const GValue* params,
                  void* hint, void* data);

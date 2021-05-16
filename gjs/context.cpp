@@ -15,6 +15,9 @@
 #    include <process.h>
 #endif
 
+#ifdef DEBUG
+#    include <algorithm>  // for find
+#endif
 #include <atomic>
 #include <new>
 #include <string>       // for u16string
@@ -57,10 +60,12 @@
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 #include <mozilla/UniquePtr.h>
 
+#include "gi/closure.h"  // for Closure::Ptr, Closure
 #include "gi/function.h"
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
+#include "gi/utils-inl.h"
 #include "gjs/atoms.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
@@ -374,10 +379,8 @@ gjs_context_dispose(GObject *object)
     if (gjs->context())
         ObjectInstance::context_dispose_notify(nullptr, object);
 
-    /* Run dispose notifications next, so that anything releasing
-     * references in response to this can still get garbage collected */
     gjs_debug(GJS_DEBUG_CONTEXT,
-              "Notifying reference holders of GjsContext dispose");
+              "Notifying external reference holders of GjsContext dispose");
     G_OBJECT_CLASS(gjs_context_parent_class)->dispose(object);
 
     gjs->dispose();
@@ -389,8 +392,25 @@ void GjsContextPrivate::free_profiler(void) {
         g_clear_pointer(&m_profiler, _gjs_profiler_free);
 }
 
+void GjsContextPrivate::register_notifier(DestroyNotify notify_func,
+                                          void* data) {
+    m_destroy_notifications.push_back({notify_func, data});
+}
+
+void GjsContextPrivate::unregister_notifier(DestroyNotify notify_func,
+                                            void* data) {
+    auto target = std::make_pair(notify_func, data);
+    Gjs::remove_one_from_unsorted_vector(&m_destroy_notifications, target);
+}
+
 void GjsContextPrivate::dispose(void) {
     if (m_cx) {
+        gjs_debug(GJS_DEBUG_CONTEXT,
+                  "Notifying reference holders of GjsContext dispose");
+
+        for (auto const& destroy_notify : m_destroy_notifications)
+            destroy_notify.first(m_cx, destroy_notify.second);
+
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Checking unhandled promise rejections");
         warn_about_unhandled_promise_rejections();
@@ -784,6 +804,8 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
             }
             m_gc_begin_time = 0;
             m_gc_reason = nullptr;
+
+            m_destroy_notifications.shrink_to_fit();
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
             break;
         default:

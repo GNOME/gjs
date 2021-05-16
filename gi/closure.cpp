@@ -32,12 +32,8 @@ Closure::Closure(JSContext* cx, JSFunction* callable, bool root,
         // Fully manage closure lifetime if so asked
         auto* gjs = GjsContextPrivate::from_cx(cx);
         g_assert(cx == gjs->context());
-        m_func.root(
-            cx, callable,
-            [](JS::HandleFunction, void* data) {
-                static_cast<Closure*>(data)->global_context_finalized();
-            },
-            this);
+        m_func.root(cx, callable);
+        gjs->register_notifier(global_context_notifier_cb, this);
         closure_notify = [](void*, GClosure* closure) {
             static_cast<Closure*>(closure)->closure_invalidated();
         };
@@ -90,16 +86,16 @@ Closure::Closure(JSContext* cx, JSFunction* callable, bool root,
  *
  */
 
-void Closure::invalidate_js_pointers() {
-    if (!m_func)
+void Closure::unset_context() {
+    if (!m_cx)
         return;
 
-    reset();
+    if (m_func && m_func.rooted()) {
+        auto* gjs = GjsContextPrivate::from_cx(m_cx);
+        gjs->unregister_notifier(global_context_notifier_cb, this);
+    }
 
-    /* Notify any closure reference holders they
-     * may want to drop references.
-     */
-    g_closure_invalidate(this);
+    m_cx = nullptr;
 }
 
 void Closure::global_context_finalized() {
@@ -108,15 +104,22 @@ void Closure::global_context_finalized() {
         "object %p",
         this, m_func.debug_addr());
 
-    if (m_func)
-        invalidate_js_pointers();
+    if (m_func) {
+        // Manually unset the context as we don't need to unregister the
+        // notifier here, or we'd end up touching a vector we're iterating
+        m_cx = nullptr;
+        reset();
+        // Notify any closure reference holders they
+        // may want to drop references.
+        g_closure_invalidate(this);
+    }
 }
 
 /* Invalidation is like "dispose" - it is guaranteed to happen at
  * finalize, but may happen before finalize. Normally, g_closure_invalidate()
  * is called when the "target" of the closure becomes invalid, so that the
  * source (the signal connection, say can be removed.) The usage above
- * in invalidate_js_pointers() is typical. Since the target of the closure
+ * in global_context_finalized() is typical. Since the target of the closure
  * is under our control, it's unlikely that g_closure_invalidate() will ever
  * be called by anyone else, but in case it ever does, it's slightly better
  * to remove the "keep alive" here rather than in the finalize notifier.
