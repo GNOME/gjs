@@ -45,6 +45,8 @@ void g_assertion_message(const char*, const char*, int, const char*,
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
 
+namespace Gjs {
+namespace Test {
 static unsigned cpp_random_seed = 0;
 
 using Gjs::Test::assert_equal;
@@ -847,10 +849,15 @@ static void gjstest_test_func_gjs_context_argv_array() {
     g_assert_false(ok);
 }
 
+}  // namespace Test
+}  // namespace Gjs
+
 int
 main(int    argc,
      char **argv)
 {
+    using namespace Gjs::Test;  // NOLINT(build/namespaces)
+
     /* Avoid interference in the tests from stray environment variable */
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
