@@ -955,9 +955,6 @@ main(int    argc,
 #undef ADD_JSAPI_UTIL_TEST
 
     gjs_test_add_tests_for_coverage ();
-    gjs_test_add_tests_for_parse_call_args();
-    gjs_test_add_tests_for_rooting();
-    gjs_test_add_tests_for_jsapi_utils();
 
     g_test_run();
 
