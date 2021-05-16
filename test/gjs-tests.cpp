@@ -47,6 +47,8 @@ void g_assertion_message(const char*, const char*, int, const char*,
 
 static unsigned cpp_random_seed = 0;
 
+using Gjs::Test::assert_equal;
+
 template <typename T>
 T get_random_number() {
     std::mt19937_64 gen(cpp_random_seed);
@@ -65,23 +67,6 @@ T get_random_number() {
         return std::uniform_real_distribution<T>(lowest_value)(gen);
     } else if constexpr (std::is_pointer_v<T>) {
         return reinterpret_cast<T>(get_random_number<uintptr_t>());
-    }
-}
-
-template <typename T>
-constexpr void assert_equal(T a, T b) {
-    if constexpr (std::is_integral_v<T>) {
-        if constexpr (std::is_unsigned_v<T>)
-            g_assert_cmpuint(a, ==, b);
-        else
-            g_assert_cmpint(a, ==, b);
-    } else if constexpr (std::is_arithmetic_v<T>) {
-        g_assert_cmpfloat_with_epsilon(a, b, std::numeric_limits<T>::epsilon());
-    } else if constexpr (std::is_same_v<T, char*>) {
-        g_assert_cmpstr(a, ==, b);
-    } else if constexpr (std::is_pointer_v<T>) {
-        assert_equal(reinterpret_cast<uintptr_t>(a),
-                     reinterpret_cast<uintptr_t>(b));
     }
 }
 
