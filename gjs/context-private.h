@@ -115,6 +115,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     void schedule_gc_internal(bool force_gc);
     static gboolean trigger_gc_if_needed(void* data);
+    void on_garbage_collection(JSGCStatus);
 
     class SavedQueue;
     void start_draining_job_queue(void);

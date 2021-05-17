@@ -58,6 +58,7 @@
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 #include <mozilla/UniquePtr.h>
 
+#include "gi/function.h"
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
@@ -493,6 +494,15 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
       m_cx(cx),
       m_owner_thread(std::this_thread::get_id()),
       m_environment_preparer(cx) {
+
+    JS_SetGCCallback(
+        cx,
+        [](JSContext*, JSGCStatus status, JS::GCReason, void* data) {
+            static_cast<GjsContextPrivate*>(data)->on_garbage_collection(
+                status);
+        },
+        this);
+
     const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
     if (env_profiler || m_should_listen_sigusr2)
         m_should_profile = true;
@@ -734,6 +744,20 @@ void GjsContextPrivate::schedule_gc_if_needed(void) {
     JS_MaybeGC(m_cx);
 
     schedule_gc_internal(false);
+}
+
+void GjsContextPrivate::on_garbage_collection(JSGCStatus status) {
+    // We finalize any pending toggle refs before doing any garbage collection,
+    // so that we can collect the JS wrapper objects, and in order to minimize
+    // the chances of objects having a pending toggle up queued when they are
+    // garbage collected. */
+    if (status == JSGC_BEGIN) {
+        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Begin garbage collection");
+        gjs_object_clear_toggles();
+        gjs_function_clear_async_closures();
+    } else if (status == JSGC_END) {
+        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
+    }
 }
 
 void GjsContextPrivate::set_sweeping(bool value) {

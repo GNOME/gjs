@@ -27,8 +27,6 @@
 #include <jsapi.h>  // for InitSelfHostedCode, JS_Destr...
 #include <mozilla/UniquePtr.h>
 
-#include "gi/function.h"
-#include "gi/object.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/jsapi-util.h"
@@ -82,21 +80,6 @@ static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
         gjs->set_sweeping(true);
   else if (status == JSFINALIZE_GROUP_END)
         gjs->set_sweeping(false);
-}
-
-static void on_garbage_collect(JSContext*, JSGCStatus status, JS::GCReason,
-                               void*) {
-    /* We finalize any pending toggle refs before doing any garbage collection,
-     * so that we can collect the JS wrapper objects, and in order to minimize
-     * the chances of objects having a pending toggle up queued when they are
-     * garbage collected. */
-    if (status == JSGC_BEGIN) {
-        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Begin garbage collection");
-        gjs_object_clear_toggles();
-        gjs_function_clear_async_closures();
-    } else if (status == JSGC_END) {
-        gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
-    }
 }
 
 static void on_promise_unhandled_rejection(
@@ -213,7 +196,6 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS_SetContextPrivate(cx, uninitialized_gjs);
 
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, uninitialized_gjs);
-    JS_SetGCCallback(cx, on_garbage_collect, uninitialized_gjs);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
     JS::SetJobQueue(cx, dynamic_cast<JS::JobQueue*>(uninitialized_gjs));
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
