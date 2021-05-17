@@ -174,12 +174,6 @@ class Function : public CWrapper<Function> {
 
 }  // namespace Gjs
 
-/* Because we can't free the mmap'd data for a callback
- * while it's in use, this list keeps track of ones that
- * will be freed the next time we invoke a C function.
- */
-static std::vector<Gjs::Closure::Ptr> completed_trampolines;
-
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 static inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>
 set_ffi_arg(void* result, GIArgument* value) {
@@ -339,7 +333,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                 // that has been set in gjs_marshal_callback_in()
                 gjs_debug_closure("Saving async closure for gc cleanup %p",
                                   trampoline);
-                completed_trampolines.emplace_back(trampoline);
+                gjs->async_closure_enqueue_for_gc(trampoline);
             }
             gjs->schedule_gc_if_needed();
         }
@@ -739,8 +733,6 @@ std::string Gjs::Function::format_name() {
     retval += m_info.name();
     return retval;
 }
-
-void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
 
 namespace Gjs {
 

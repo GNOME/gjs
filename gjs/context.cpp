@@ -61,7 +61,6 @@
 #include <mozilla/UniquePtr.h>
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
-#include "gi/function.h"
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
@@ -794,7 +793,9 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
             // order to minimize the chances of objects having a pending toggle
             // up queued when they are garbage collected.
             gjs_object_clear_toggles();
-            gjs_function_clear_async_closures();
+
+            m_async_closures.clear();
+            m_async_closures.shrink_to_fit();
             break;
         case JSGC_END:
             if (m_profiler && m_gc_begin_time != 0) {
@@ -1087,6 +1088,14 @@ void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
     [[maybe_unused]] size_t erased = m_unhandled_rejection_stacks.erase(id);
     g_assert(((void)"Handler attached to rejected promise that wasn't "
               "previously marked as unhandled", erased == 1));
+}
+
+void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
+    //  Because we can't free the mmap'd data for a callback
+    //  while it's in use, this list keeps track of ones that
+    //  will be freed the next time gc happens
+    g_assert(!trampoline->context() || trampoline->context() == m_cx);
+    m_async_closures.emplace_back(trampoline);
 }
 
 /**

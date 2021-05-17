@@ -32,6 +32,7 @@
 #include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
+#include "gi/closure.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -80,6 +81,7 @@ class GjsContextPrivate : public JS::JobQueue {
     unsigned m_idle_drain_handler;
 
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
+    std::vector<Gjs::Closure::Ptr> m_async_closures;
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
 
     GjsProfiler* m_profiler;
@@ -246,6 +248,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     void register_notifier(DestroyNotify notify_func, void* data);
     void unregister_notifier(DestroyNotify notify_func, void* data);
+    void async_closure_enqueue_for_gc(Gjs::Closure*);
 
     [[nodiscard]] bool register_module(const char* identifier,
                                        const char* filename, GError** error);

@@ -157,6 +157,4 @@ bool gjs_invoke_constructor_from_c(JSContext* cx, GIFunctionInfo* info,
                                    const JS::CallArgs& args,
                                    GIArgument* rvalue);
 
-void gjs_function_clear_async_closures();
-
 #endif  // GI_FUNCTION_H_

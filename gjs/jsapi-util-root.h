@@ -21,8 +21,6 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 
-#include "gjs/context-private.h"
-#include "gjs/context.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
