@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
 #include <atomic>  // for atomic_bool
+#include <memory>  // for unique_ptr
 #include <string>  // for string
 #include <type_traits>  // for remove_reference<>::type
 
@@ -32,7 +33,7 @@
 static std::atomic_bool s_initialized = ATOMIC_VAR_INIT(false);
 static bool s_debug_log_enabled = false;
 static bool s_print_thread = false;
-static FILE* s_logfp = nullptr;
+static std::unique_ptr<LogFile> s_log_file;
 static GjsAutoPointer<GTimer, GTimer, g_timer_destroy> s_timer;
 static std::vector<bool> s_enabled_topics;
 
@@ -131,16 +132,17 @@ void gjs_log_init() {
         }
 
         /* avoid truncating in case we're using shared logfile */
-        s_logfp = fopen(log_file.c_str(), "a");
-        if (!s_logfp)
+        s_log_file = std::make_unique<LogFile>(log_file.c_str());
+        if (s_log_file->has_error()) {
             fprintf(stderr, "Failed to open log file `%s': %s\n",
                     log_file.c_str(), g_strerror(errno));
+        }
 
         s_debug_log_enabled = true;
     }
 
-    if (!s_logfp)
-        s_logfp = stderr;
+    if (!s_log_file)
+        s_log_file = std::make_unique<LogFile>(nullptr, stderr);
 
     if (s_debug_log_enabled) {
         auto* topics = g_getenv("GJS_DEBUG_TOPICS");
@@ -159,11 +161,6 @@ void gjs_log_cleanup() {
     bool expected = true;
     if (!s_initialized.compare_exchange_strong(expected, false))
         return;
-
-    if (s_logfp && s_logfp != stderr) {
-        fclose(s_logfp);
-        s_logfp = nullptr;
-    }
 
     s_timer = nullptr;
     s_enabled_topics.clear();
@@ -231,7 +228,7 @@ gjs_debug(GjsDebugTopic topic,
         s = s2;
     }
 
-    write_to_stream(s_logfp, topic_to_prefix(topic), s);
+    write_to_stream(s_log_file->fp(), topic_to_prefix(topic), s);
 
     g_free(s);
 }

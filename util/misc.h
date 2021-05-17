@@ -5,7 +5,8 @@
 #ifndef UTIL_MISC_H_
 #define UTIL_MISC_H_
 
-#include <stdlib.h>  // for size_t
+#include <errno.h>
+#include <stdio.h>  // for FILE, stdout
 #include <string.h>  // for memcpy
 
 #include <glib.h>  // for g_malloc
@@ -41,5 +42,42 @@ static inline void* _gjs_memdup2(const void* mem, size_t byte_size) {
     memcpy(new_mem, mem, byte_size);
     return new_mem;
 }
+
+/*
+ * LogFile:
+ * RAII class encapsulating access to a FILE* pointer that must be closed,
+ * unless it is an already-open fallback file such as stdout or stderr.
+ */
+class LogFile {
+    FILE* m_fp;
+    const char* m_errmsg;
+    bool m_should_close : 1;
+
+    LogFile(const LogFile&) = delete;
+    LogFile& operator=(const LogFile&) = delete;
+
+ public:
+    explicit LogFile(const char* filename, FILE* fallback_fp = stdout)
+        : m_errmsg(nullptr), m_should_close(false) {
+        if (filename) {
+            m_fp = fopen(filename, "a");
+            if (!m_fp)
+                m_errmsg = strerror(errno);
+            else
+                m_should_close = true;
+        } else {
+            m_fp = fallback_fp;
+        }
+    }
+
+    ~LogFile() {
+        if (m_should_close)
+            fclose(m_fp);
+    }
+
+    FILE* fp() { return m_fp; }
+    bool has_error() { return !!m_errmsg; }
+    const char* errmsg() { return m_errmsg; }
+};
 
 #endif  // UTIL_MISC_H_

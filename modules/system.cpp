@@ -5,9 +5,6 @@
 
 #include <config.h>  // for GJS_VERSION
 
-#include <errno.h>
-#include <stdio.h>   // for FILE, fclose, stdout
-#include <string.h>  // for strerror
 #include <time.h>    // for tzset
 
 #include <glib-object.h>
@@ -31,6 +28,7 @@
 #include "gjs/jsapi-util.h"
 #include "modules/system.h"
 #include "util/log.h"
+#include "util/misc.h"  // for LogFile
 
 /* Note that this cannot be relied on to test whether two objects are the same!
  * SpiderMonkey can move objects around in memory during garbage collection,
@@ -124,18 +122,13 @@ gjs_dump_heap(JSContext *cx,
     if (!gjs_parse_call_args(cx, "dumpHeap", args, "|F", "filename", &filename))
         return false;
 
-    if (filename) {
-        FILE *fp = fopen(filename, "a");
-        if (!fp) {
-            gjs_throw(cx, "Cannot dump heap to %s: %s", filename.get(),
-                      strerror(errno));
-            return false;
-        }
-        js::DumpHeap(cx, fp, js::CollectNurseryBeforeDump);
-        fclose(fp);
-    } else {
-        js::DumpHeap(cx, stdout, js::CollectNurseryBeforeDump);
+    LogFile file(filename);
+    if (file.has_error()) {
+        gjs_throw(cx, "Cannot dump heap to %s: %s", filename.get(),
+                  file.errmsg());
+        return false;
     }
+    js::DumpHeap(cx, file.fp(), js::CollectNurseryBeforeDump);
 
     gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to %s",
               filename ? filename.get() : "stdout");
