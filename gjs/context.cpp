@@ -368,6 +368,9 @@ gjs_context_dispose(GObject *object)
     gjs_object_clear_toggles();
     gjs_object_shutdown_toggle_queue();
 
+    if (gjs->context())
+        ObjectInstance::context_dispose_notify(nullptr, object);
+
     /* Run dispose notifications next, so that anything releasing
      * references in response to this can still get garbage collected */
     gjs_debug(GJS_DEBUG_CONTEXT,
@@ -480,8 +483,6 @@ gjs_context_constructed(GObject *object)
     g_mutex_unlock(&contexts_lock);
 
     setup_dump_heap();
-
-    g_object_weak_ref(object, &ObjectInstance::context_dispose_notify, nullptr);
 }
 
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
