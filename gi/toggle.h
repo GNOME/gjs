@@ -17,6 +17,11 @@
 #include <utility>  // for pair
 
 class ObjectInstance;
+namespace Gjs {
+namespace Test {
+struct ToggleQueue;
+}
+}
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
  * from any thread. For more information, see object.cpp, comments near
@@ -31,6 +36,7 @@ public:
     using Handler = void (*)(ObjectInstance*, Direction);
 
  private:
+    friend Gjs::Test::ToggleQueue;
     struct Item {
         Item() {}
         Item(ObjectInstance* o, Direction d) : object(o), direction(d) {}

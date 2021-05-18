@@ -141,9 +141,12 @@ build_unity:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-unity-check"
+    # unity-size here is forced to use an high number to check whether we can
+    # join all the sources together, but should not be used in real world to
+    # not to break multi-jobs compilation
     CONFIG_OPTS: >-
       -Dprofiler=disabled
-      --unity on --unity-size=10
+      --unity on --unity-size=10000
   except:
     - schedules
 

@@ -17,3 +17,6 @@ gjstest_tools_gir = gnome.generate_gir(libgjstesttools,
     install: get_option('installed_tests'), install_dir_gir: false,
     install_dir_typelib: installed_tests_execdir)
 gjstest_tools_typelib = gjstest_tools_gir[1]
+libgjstesttools_dep = declare_dependency(
+    link_with: libgjstesttools,
+    include_directories: include_directories('.'))

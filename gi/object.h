@@ -41,6 +41,11 @@ class CallArgs;
 namespace js {
 class SystemAllocPolicy;
 }
+namespace Gjs {
+namespace Test {
+struct ObjectInstance;
+}
+}
 class ObjectInstance;
 class ObjectPrototype;
 
@@ -294,6 +299,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                                    GObject>;
     friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
     friend class ObjectBase;  // for add_property, prop_getter, etc.
+    friend struct Gjs::Test::ObjectInstance;
 
     // GIWrapperInstance::m_ptr may be null in ObjectInstance.
 

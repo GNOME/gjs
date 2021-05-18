@@ -45,7 +45,11 @@ void g_assertion_message(const char*, const char*, int, const char*,
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
 
+namespace Gjs {
+namespace Test {
 static unsigned cpp_random_seed = 0;
+
+using Gjs::Test::assert_equal;
 
 template <typename T>
 T get_random_number() {
@@ -65,23 +69,6 @@ T get_random_number() {
         return std::uniform_real_distribution<T>(lowest_value)(gen);
     } else if constexpr (std::is_pointer_v<T>) {
         return reinterpret_cast<T>(get_random_number<uintptr_t>());
-    }
-}
-
-template <typename T>
-constexpr void assert_equal(T a, T b) {
-    if constexpr (std::is_integral_v<T>) {
-        if constexpr (std::is_unsigned_v<T>)
-            g_assert_cmpuint(a, ==, b);
-        else
-            g_assert_cmpint(a, ==, b);
-    } else if constexpr (std::is_arithmetic_v<T>) {
-        g_assert_cmpfloat_with_epsilon(a, b, std::numeric_limits<T>::epsilon());
-    } else if constexpr (std::is_same_v<T, char*>) {
-        g_assert_cmpstr(a, ==, b);
-    } else if constexpr (std::is_pointer_v<T>) {
-        assert_equal(reinterpret_cast<uintptr_t>(a),
-                     reinterpret_cast<uintptr_t>(b));
     }
 }
 
@@ -862,10 +849,15 @@ static void gjstest_test_func_gjs_context_argv_array() {
     g_assert_false(ok);
 }
 
+}  // namespace Test
+}  // namespace Gjs
+
 int
 main(int    argc,
      char **argv)
 {
+    using namespace Gjs::Test;  // NOLINT(build/namespaces)
+
     /* Avoid interference in the tests from stray environment variable */
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
@@ -970,9 +962,6 @@ main(int    argc,
 #undef ADD_JSAPI_UTIL_TEST
 
     gjs_test_add_tests_for_coverage ();
-    gjs_test_add_tests_for_parse_call_args();
-    gjs_test_add_tests_for_rooting();
-    gjs_test_add_tests_for_jsapi_utils();
 
     g_test_run();
 

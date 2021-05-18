@@ -8,6 +8,13 @@
 
 #include <config.h>
 
+#include <glib.h>    // for g_assert_...
+#include <stdint.h>  // for uintptr_t
+#include <iterator>  // for pair
+#include <limits>    // for numeric_limits
+#include <string>
+#include <utility>  // IWYU pragma: keep
+
 #include "gjs/context.h"
 
 #include <js/TypeDecls.h>
@@ -31,5 +38,40 @@ void gjs_test_add_tests_for_parse_call_args(void);
 void gjs_test_add_tests_for_rooting(void);
 
 void gjs_test_add_tests_for_jsapi_utils();
+
+namespace Gjs {
+namespace Test {
+
+void add_tests_for_toggle_queue();
+
+template <typename T>
+constexpr void assert_equal(T a, T b) {
+    if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
+        if constexpr (std::is_unsigned_v<T>)
+            g_assert_cmpuint(a, ==, b);
+        else
+            g_assert_cmpint(a, ==, b);
+    } else if constexpr (std::is_arithmetic_v<T>) {
+        g_assert_cmpfloat_with_epsilon(a, b, std::numeric_limits<T>::epsilon());
+    } else if constexpr (std::is_same_v<T, char*>) {
+        g_assert_cmpstr(a, ==, b);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        assert_equal(a.c_str(), b.c_str());
+    } else if constexpr (std::is_pointer_v<T>) {
+        assert_equal(reinterpret_cast<uintptr_t>(a),
+                     reinterpret_cast<uintptr_t>(b));
+    } else {
+        g_assert_true(a == b);
+    }
+}
+
+template <typename T, typename U>
+constexpr void assert_equal(std::pair<T, U> const& pair, T first, U second) {
+    assert_equal(pair.first, first);
+    assert_equal(pair.second, second);
+}
+
+}  // namespace Test
+}  // namespace Gjs
 
 #endif  // TEST_GJS_TEST_UTILS_H_

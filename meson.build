@@ -504,12 +504,27 @@ if get_option('b_pch') and not meson.version().version_compare('>= 0.58.1')
     endif
 endif
 
+# This dependency should provide everything that is needed to compile gjs except
+# the sources themselves, is used to copmile both the static libraries and the
+# tests
+base_build_dep = declare_dependency(
+    compile_args: libgjs_cpp_args,
+    dependencies: libgjs_dependencies)
+
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
     cpp_args: libgjs_cpp_args,
-    dependencies: libgjs_dependencies,
     cpp_pch: pch_headers,
+    dependencies: base_build_dep,
     install: false)
+
+# We need to create an internal static library to be able to link with the tests
+# that may use internal APIs. This is also used to generate the actual shared
+# library so that we compile its sources just once.
+libgjs_internal = static_library('gjs-internal',
+    libgjs_sources, probes_header, probes_objfile,
+    dependencies: base_build_dep,
+    link_with: libgjs_jsapi)
 
 link_args = []
 symbol_map = files('libgjs.map')
@@ -522,13 +537,11 @@ link_args += cxx.get_supported_link_arguments([
 ])
 
 libgjs = shared_library(meson.project_name(),
-    libgjs_sources, libgjs_private_sources, module_resource_srcs,
-    probes_header, probes_objfile,
-    cpp_args: libgjs_cpp_args,
-    link_args: link_args, link_depends: [symbol_map, symbol_list],
-    link_with: libgjs_jsapi,
-    dependencies: libgjs_dependencies,
+    sources: [ libgjs_private_sources, module_resource_srcs ],
     cpp_pch: pch_headers,
+    link_args: link_args, link_depends: [symbol_map, symbol_list],
+    link_whole: libgjs_internal,
+    dependencies: base_build_dep,
     version: '0.0.0', soversion: '0',
     gnu_symbol_visibility: 'hidden',
     install: true)
@@ -537,7 +550,7 @@ install_headers(gjs_public_headers, subdir: api_name / 'gjs')
 
 # Allow using libgjs as a subproject
 libgjs_dep = declare_dependency(link_with: [libgjs, libgjs_jsapi],
-    dependencies: libgjs_dependencies, include_directories: top_include)
+    dependencies: base_build_dep, include_directories: top_include)
 
 ### Build GjsPrivate introspection library #####################################
 
@@ -553,7 +566,6 @@ gjs_private_typelib = gjs_private_gir[1]
 gjs_console_srcs = ['gjs/console.cpp']
 
 gjs_console = executable('gjs-console', gjs_console_srcs,
-    cpp_args: libgjs_cpp_args,
     dependencies: libgjs_dep, install: true)
 
 meson.add_install_script('build/symlink-gjs.py', get_option('bindir'))
@@ -595,6 +607,7 @@ libgjs_test_tools_builddir = js_tests_builddir / 'libgjstesttools'
 tests_environment.set('TOP_BUILDDIR', meson.build_root())
 tests_environment.set('GJS_USE_UNINSTALLED_FILES', '1')
 tests_environment.set('GJS_PATH', '')
+tests_environment.set('GJS_DEBUG_OUTPUT', 'stderr')
 tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
     js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
@@ -634,17 +647,17 @@ endif
 
 ### Tests and test setups ######################################################
 
-# Note: The test program in test/ needs to be ported
-#       to Windows before we can build it on Windows.
-if host_machine.system() != 'windows'
-    subdir('test')
-endif
-
 if not get_option('skip_gtk_tests')
     have_gtk4 = dependency('gtk4', required: false).found()
 endif
 
 subdir('installed-tests')
+
+# Note: The test program in test/ needs to be ported
+#       to Windows before we can build it on Windows.
+if host_machine.system() != 'windows'
+    subdir('test')
+endif
 
 valgrind_environment = environment()
 valgrind_environment.set('G_SLICE', 'always-malloc,debug-blocks')
