@@ -13,6 +13,7 @@
 #include <iterator>  // for pair
 #include <limits>    // for numeric_limits
 #include <string>
+#include <type_traits>  // for is_same
 #include <utility>  // IWYU pragma: keep
 
 #include "gjs/context.h"
@@ -44,8 +45,22 @@ namespace Test {
 
 void add_tests_for_toggle_queue();
 
-template <typename T>
-constexpr void assert_equal(T a, T b) {
+template <typename T1, typename T2>
+constexpr bool comparable_types() {
+    if constexpr (std::is_same<T1, T2>()) {
+        return true;
+    } else if constexpr (std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2>) {
+        return std::is_signed_v<T1> == std::is_signed_v<T2>;
+    } else if constexpr (std::is_enum_v<T1> == std::is_enum_v<T2>) {
+        return std::is_signed_v<T1> == std::is_signed_v<T2>;
+    } else {
+        return false;
+    }
+}
+
+template <typename T, typename U>
+constexpr void assert_equal(T a, U b) {
+    static_assert(comparable_types<T, U>());
     if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
         if constexpr (std::is_unsigned_v<T>)
             g_assert_cmpuint(a, ==, b);
