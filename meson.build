@@ -482,10 +482,6 @@ if build_readline
     libgjs_dependencies += readline_deps
 endif
 
-if build_profiler
-    libgjs_dependencies += profiler_deps
-endif
-
 libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines
 
 # Check G-I and/or Meson on this one.
@@ -511,11 +507,16 @@ base_build_dep = declare_dependency(
     compile_args: libgjs_cpp_args,
     dependencies: libgjs_dependencies)
 
+internal_build_dep = [base_build_dep]
+if build_profiler
+    internal_build_dep += profiler_deps
+endif
+
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
     cpp_args: libgjs_cpp_args,
     cpp_pch: pch_headers,
-    dependencies: base_build_dep,
+    dependencies: internal_build_dep,
     install: false)
 
 # We need to create an internal static library to be able to link with the tests
@@ -524,7 +525,7 @@ libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
 libgjs_internal = static_library('gjs-internal',
     libgjs_sources, probes_header, probes_objfile,
     cpp_pch: pch_headers,
-    dependencies: base_build_dep,
+    dependencies: internal_build_dep,
     link_with: libgjs_jsapi)
 
 link_args = []
