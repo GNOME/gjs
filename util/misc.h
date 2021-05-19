@@ -11,6 +11,12 @@
 
 #include <glib.h>  // for g_malloc
 
+#ifdef G_DISABLE_ASSERT
+#    define GJS_USED_ASSERT [[maybe_unused]]
+#else
+#    define GJS_USED_ASSERT
+#endif
+
 bool    gjs_environment_variable_is_set   (const char *env_variable_name);
 
 char** gjs_g_strv_concat(char*** strv_array, int len);

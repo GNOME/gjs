@@ -45,6 +45,7 @@
 #include "gjs/module.h"
 #include "gjs/native.h"
 #include "util/log.h"
+#include "util/misc.h"
 
 #include "gi/repo.h"
 
@@ -501,7 +502,7 @@ class PromiseData {
     // https://searchfox.org/mozilla-central/rev/95cf843de977805a3951f9137f5ff1930599d94e/js/src/builtin/Promise.cpp#4435
     void reject_with_pending_exception() {
         JS::RootedValue exception(cx);
-        bool ok = JS_GetPendingException(cx, &exception);
+        bool ok GJS_USED_ASSERT = JS_GetPendingException(cx, &exception);
         g_assert(ok && "Cannot reject a promise with an uncatchable exception");
 
         JS::RootedValueArray<1> args(cx);
@@ -516,8 +517,8 @@ class PromiseData {
         JS::RootedValueArray<1> args(cx);
         args[0].set(result);
         JS::RootedValue ignored_rval(cx);
-        bool ok = JS_CallFunction(cx, /* this_obj = */ nullptr, resolver(),
-                                  args, &ignored_rval);
+        bool ok GJS_USED_ASSERT = JS_CallFunction(
+            cx, /* this_obj = */ nullptr, resolver(), args, &ignored_rval);
         g_assert(ok && "Failed resolving promise");
     }
 };

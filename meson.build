@@ -25,7 +25,8 @@ if get_option('systemtap') and not get_option('dtrace')
     error('-Ddtrace=true is required for -Dsystemtap=true')
 endif
 
-if get_option('buildtype').startswith('release') and get_option('verbose_logs')
+release_build = get_option('buildtype').startswith('release')
+if release_build and get_option('verbose_logs')
     error('-Dverbose_logs=true is not allowed with --buildtype=release')
 endif
 
@@ -102,7 +103,7 @@ if get_option('verbose_logs')
     ], language: 'cpp')
 endif
 
-if get_option('buildtype').startswith('release')
+if release_build
     add_project_arguments('-DG_DISABLE_CAST_CHECKS', language: ['c', 'cpp'])
 endif
 
@@ -225,7 +226,7 @@ if not nondebug_spidermonkey
     debug_arg = ['-DDEBUG']  # for compile tests
 endif
 
-if get_option('buildtype').startswith('release') and not nondebug_spidermonkey
+if release_build and not nondebug_spidermonkey
     error('''You are trying to make a release
 build with a debug-enabled copy of SpiderMonkey. This is probably not what you
 want, since it will have bad performance and is not binary-compatible with
@@ -507,14 +508,15 @@ base_build_dep = declare_dependency(
     compile_args: libgjs_cpp_args,
     dependencies: libgjs_dependencies)
 
-internal_build_dep = [base_build_dep]
-if build_profiler
-    internal_build_dep += profiler_deps
-endif
+internal_build_dep = declare_dependency(
+    compile_args: (release_build ? ['-DG_DISABLE_ASSERT'] : []),
+    dependencies: [
+        base_build_dep,
+        build_profiler ? profiler_deps : [],
+    ])
 
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
-    cpp_args: libgjs_cpp_args,
     cpp_pch: pch_headers,
     dependencies: internal_build_dep,
     install: false)

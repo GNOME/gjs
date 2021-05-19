@@ -42,6 +42,7 @@
 #include "gjs/module.h"
 #include "gjs/native.h"
 #include "util/log.h"
+#include "util/misc.h"
 
 class GjsScriptModule {
     char *m_name;
@@ -535,7 +536,7 @@ static bool finish_import(JSContext* cx, const JS::CallArgs& args) {
     JS::RootedValue importing_module_priv(cx);
     JS::RootedValue v_specifier(cx);
     JS::RootedValue v_internal_promise(cx);
-    bool ok =
+    bool ok GJS_USED_ASSERT =
         JS_GetProperty(cx, callback_data, "priv", &importing_module_priv) &&
         JS_GetProperty(cx, callback_data, "promise", &v_internal_promise) &&
         JS_GetProperty(cx, callback_data, "specifier", &v_specifier);
