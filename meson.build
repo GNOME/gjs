@@ -523,6 +523,7 @@ libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
 # library so that we compile its sources just once.
 libgjs_internal = static_library('gjs-internal',
     libgjs_sources, probes_header, probes_objfile,
+    cpp_pch: pch_headers,
     dependencies: base_build_dep,
     link_with: libgjs_jsapi)
 
