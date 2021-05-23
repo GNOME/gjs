@@ -214,6 +214,13 @@ to_gbytes_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool define_legacy_tostring(JSContext* cx, JS::HandleObject array) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    return JS_DefineFunctionById(cx, array, atoms.to_string(),
+                                 instance_to_string_func, 1, 0);
+}
+
 /* fromString() function implementation */
 GJS_JSAPI_RETURN_CONVENTION
 static bool
@@ -297,10 +304,7 @@ from_string_func(JSContext *context,
     if (!array_buffer)
         return false;
     obj = JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1);
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!JS_DefineFunctionById(context, obj, atoms.to_string(),
-                               instance_to_string_func, 1, 0))
+    if (!obj || !define_legacy_tostring(context, obj))
         return false;
 
     argv.rval().setObject(*obj);
@@ -330,6 +334,15 @@ from_gbytes_func(JSContext *context,
 
     size_t len;
     const void* data = g_bytes_get_data(gbytes, &len);
+    if (len == 0) {
+        JS::RootedObject empty_array(context, JS_NewUint8Array(context, 0));
+        if (!empty_array || !define_legacy_tostring(context, empty_array))
+            return false;
+
+        argv.rval().setObject(*empty_array);
+        return true;
+    }
+
     JS::RootedObject array_buffer(
         context,
         JS::NewExternalArrayBuffer(
@@ -342,12 +355,7 @@ from_gbytes_func(JSContext *context,
 
     JS::RootedObject obj(
         context, JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1));
-    if (!obj)
-        return false;
-
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    if (!JS_DefineFunctionById(context, obj, atoms.to_string(),
-                               instance_to_string_func, 1, 0))
+    if (!obj || !define_legacy_tostring(context, obj))
         return false;
 
     argv.rval().setObject(*obj);
