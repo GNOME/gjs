@@ -49,6 +49,7 @@ Third party applications written in GJS:
 * [Clapper](https://github.com/Rafostar/clapper/)
 * [Flatseal](https://github.com/tchx84/Flatseal)
 * [Almond](https://github.com/stanford-oval/almond-gnome/)
+* [Commit](https://github.com/sonnyp/commit/)
 
 ## Getting Help
 
