@@ -296,6 +296,16 @@ from_string_func(JSContext *context,
         if (!encoded)
             return gjs_throw_gerror_message(context, error);  // frees GError
 
+        if (bytes_written == 0) {
+            g_free(encoded);
+            JS::RootedObject empty_array(context, JS_NewUint8Array(context, 0));
+            if (!empty_array || !define_legacy_tostring(context, empty_array))
+                return false;
+
+            argv.rval().setObject(*empty_array);
+            return true;
+        }
+
         array_buffer =
             JS::NewExternalArrayBuffer(context, bytes_written, encoded,
                                        gfree_arraybuffer_contents, nullptr);
