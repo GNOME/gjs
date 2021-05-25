@@ -68,6 +68,16 @@ describe('Byte array', function () {
         expect(ByteArray.toGBytes(a).get_size()).toEqual(0);
     });
 
+    it('deals gracefully with a 0-length GLib.Bytes', function () {
+        const noBytes = ByteArray.toGBytes(new Uint8Array(0));
+        expect(ByteArray.fromGBytes(noBytes).length).toEqual(0);
+    });
+
+    it('deals gracefully with a 0-length string', function () {
+        expect(ByteArray.fromString('').length).toEqual(0);
+        expect(ByteArray.fromString('', 'LATIN1').length).toEqual(0);
+    });
+
     it('deals gracefully with a non Uint8Array', function () {
         const a = [97, 98, 99, 100, 0];
         expect(() => ByteArray.toString(a)).toThrow();
