@@ -7,11 +7,12 @@
 
 #include <stdint.h>
 
+#include <js/ProfilingCategory.h>
 #include <js/ProfilingStack.h>
 #include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
 
 #include "gjs/context.h"
-#include "gjs/macros.h"
 #include "gjs/profiler.h"
 
 class AutoProfilerLabel {
