@@ -65,11 +65,11 @@ describe('Sorting in ListStore', function () {
 
 describe('Promisify function', function () {
     it("doesn't crash when async function is not defined", function () {
-        expect(() => Gio._promisify(Gio.Subprocess.prototype, 'commuicate_utf8_async', 'communicate_utf8_finish')).toThrowError('commuicate_utf8_async is not defined');
+        expect(() => Gio._promisify(Gio.Subprocess.prototype, 'commuicate_utf8_async', 'communicate_utf8_finish')).toThrowError(/commuicate_utf8_async/);
     });
 
     it("doesn't crash when finish function is not defined", function () {
-        expect(() => Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'commuicate_utf8_finish')).toThrowError('commuicate_utf8_finish is not defined');
+        expect(() => Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'commuicate_utf8_finish')).toThrowError(/commuicate_utf8_finish/);
     });
 });
 

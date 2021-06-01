@@ -405,10 +405,10 @@ function* _listModelIterator() {
 
 function _promisify(proto, asyncFunc, finishFunc) {
     if (proto[asyncFunc] === undefined)
-        throw new Error(`${asyncFunc} is not defined`);
+        throw new Error(`${asyncFunc}`);
 
     if (proto[finishFunc] === undefined)
-        throw new Error(`${finishFunc} is not defined`);
+        throw new Error(`${finishFunc}`);
 
     if (proto[`_original_${asyncFunc}`] !== undefined)
         return;
