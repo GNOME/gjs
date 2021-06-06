@@ -405,10 +405,10 @@ function* _listModelIterator() {
 
 function _promisify(proto, asyncFunc, finishFunc) {
     if (proto[asyncFunc] === undefined)
-        throw new Error(`${asyncFunc}`);
+        throw new Error(`${proto} has no method named ${asyncFunc}`);
 
     if (proto[finishFunc] === undefined)
-        throw new Error(`${finishFunc}`);
+        throw new Error(`${proto} has no method named ${finishFunc}`);
 
     if (proto[`_original_${asyncFunc}`] !== undefined)
         return;
