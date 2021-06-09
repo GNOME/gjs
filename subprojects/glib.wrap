@@ -4,5 +4,5 @@
 [wrap-git]
 directory=glib
 url=https://gitlab.gnome.org/GNOME/glib.git
-revision=master
+revision=main
 depth=1
