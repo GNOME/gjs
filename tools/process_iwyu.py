@@ -68,6 +68,7 @@ FALSE_POSITIVES = (
 
     # IWYU weird false positive when using std::vector::emplace_back() or
     # std::vector::push_back()
+    # https://github.com/include-what-you-use/include-what-you-use/issues/908
     ('gi/function.cpp', '#include <algorithm>', 'for max'),
     ('gi/private.cpp', '#include <algorithm>', 'for max'),
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
@@ -75,6 +76,8 @@ FALSE_POSITIVES = (
 
     # False positive when using Mozilla vectors' append() and
     # infallibleAppend()
+    # https://github.com/include-what-you-use/include-what-you-use/issues/926
+    # https://bugzilla.mozilla.org/show_bug.cgi?id=1713550
     ('gi/function.cpp', '#include <utility>', 'for forward'),
     ('gi/ns.cpp', '#include <utility>', 'for forward'),
     ('gi/value.cpp', '#include <utility>', 'for forward'),
@@ -83,12 +86,14 @@ FALSE_POSITIVES = (
     ('gjs/objectbox.cpp', '#include <utility>', 'for forward'),
 
     # False positive when using EnumType operators
+    # https://github.com/include-what-you-use/include-what-you-use/issues/927
     ('gi/arg-cache.h', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-context.cpp', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-region.cpp', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-surface.cpp', '#include <type_traits>', 'for enable_if_t'),
 
     # False positive when using GjsAutoPointer
+    # https://github.com/include-what-you-use/include-what-you-use/issues/927
     ('gi/object.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gi/private.cpp', '#include <type_traits>',
