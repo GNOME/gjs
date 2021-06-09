@@ -18,6 +18,7 @@
 #include <glib/gstdio.h>  // for g_unlink
 
 #include <js/Array.h>
+#include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Id.h>
 #include <js/RootingAPI.h>
@@ -27,6 +28,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>
 #include <jspubtd.h>  // for JSProto_Number
+#include <mozilla/Span.h>  // for MakeStringSpan
 
 #include "gi/arg-inl.h"
 #include "gjs/context.h"
@@ -578,6 +580,35 @@ static void test_gjs_debug_string_quotes(GjsUnitTestFixture* fx, const void*) {
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
 }
 
+static void test_gjs_debug_value_bigint(GjsUnitTestFixture* fx, const void*) {
+    JS::BigInt* bi = JS::NumberToBigInt(fx->cx, 42);
+    JS::Value v = JS::BigIntValue(bi);
+    std::string debug_output = gjs_debug_value(v);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "42n");
+}
+
+static void test_gjs_debug_value_bigint_uint64(GjsUnitTestFixture* fx,
+                                               const void*) {
+    // gjs_debug_value(BigIntValue) prints whatever fits into int64_t, because
+    // more complicated operations might be fallible
+    JS::BigInt* bi = JS::NumberToBigInt(fx->cx, G_MAXUINT64);
+    JS::Value v = JS::BigIntValue(bi);
+    std::string debug_output = gjs_debug_value(v);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "-1n");
+}
+
+static void test_gjs_debug_value_bigint_huge(GjsUnitTestFixture* fx,
+                                             const void*) {
+    JS::BigInt* bi = JS::SimpleStringToBigInt(
+        fx->cx, mozilla::MakeStringSpan("10000000000000001"), 16);
+    JS::Value v = JS::BigIntValue(bi);
+    std::string debug_output = gjs_debug_value(v);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "1n");
+}
+
 static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
                                                const void*) {
     JS::RootedValue v(fx->cx);
@@ -956,6 +987,11 @@ main(int    argc,
     ADD_JSAPI_UTIL_TEST("debug_id/string/no-quotes",
                         test_gjs_debug_id_string_no_quotes);
     ADD_JSAPI_UTIL_TEST("debug_string/quotes", test_gjs_debug_string_quotes);
+    ADD_JSAPI_UTIL_TEST("debug_value/bigint", test_gjs_debug_value_bigint);
+    ADD_JSAPI_UTIL_TEST("debug_value/bigint/uint64",
+                        test_gjs_debug_value_bigint_uint64);
+    ADD_JSAPI_UTIL_TEST("debug_value/bigint/huge",
+                        test_gjs_debug_value_bigint_huge);
     ADD_JSAPI_UTIL_TEST("debug_value/string/quotes",
                         test_gjs_debug_value_string_quotes);
 

@@ -10,7 +10,7 @@ ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-RUN dnf -y install 'dnf-command(builddep)' git make which llvm-devel
+RUN dnf -y install 'dnf-command(builddep)' autoconf213 git make which llvm-devel
 RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root

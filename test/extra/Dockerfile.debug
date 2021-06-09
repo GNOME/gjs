@@ -10,8 +10,8 @@ ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-RUN dnf -y install 'dnf-command(builddep)' clang-devel cmake git llvm-devel \
-    make ninja-build which
+RUN dnf -y install 'dnf-command(builddep)' autoconf213 clang-devel cmake git \
+    llvm-devel make ninja-build which
 RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root

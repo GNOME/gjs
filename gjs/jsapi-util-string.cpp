@@ -16,6 +16,7 @@
 
 #include <glib.h>
 
+#include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
@@ -543,8 +544,11 @@ gjs_debug_value(JS::Value v)
         out << v.toDouble();
         return out.str();
     }
-    if (v.isBigInt())
-        return "<BigInt>";
+    if (v.isBigInt()) {
+        // technically this prints v % INT64_MAX
+        out << JS::ToBigInt64(v.toBigInt()) << 'n';
+        return out.str();
+    }
     if (v.isString()) {
         out << gjs_debug_string(v.toString());
         return out.str();

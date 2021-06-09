@@ -189,6 +189,7 @@ rules:
   object-curly-newline:
     - error
     - consistent: true
+      multiline: true
   object-curly-spacing: error
   object-shorthand: error
   operator-assignment: error

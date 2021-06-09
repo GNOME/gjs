@@ -981,9 +981,9 @@ describe('GObject class with JSObject property', function () {
     });
 
     it('assigns a Function on construct', function () {
-        expect(() => new MyObjectWithJSObjectProperty({jsobj_prop: () => {
-            return true;
-        }})).not.toThrow();
+        expect(() => new MyObjectWithJSObjectProperty({
+            jsobj_prop: () => true,
+        })).not.toThrow();
     });
 
     it('throws an error when using a boolean value on construct', function () {
