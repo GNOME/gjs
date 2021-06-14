@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 
-/* eslint no-redeclare: ["error", { "builtinGlobals": false }] */  // for toString
+// Allow toString to be declared.
+/* eslint no-redeclare: ["error", { "builtinGlobals": false }] */
+
 var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;
 
 // For backwards compatibility
