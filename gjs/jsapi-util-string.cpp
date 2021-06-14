@@ -99,10 +99,11 @@ gjs_string_from_utf8(JSContext             *context,
 {
     JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
     JS::RootedString str(context, JS_NewStringCopyUTF8Z(context, chars));
-    if (str)
-        value_p.setString(str);
+    if (!str)
+        return false;
 
-    return str != nullptr;
+    value_p.setString(str);
+    return true;
 }
 
 bool
