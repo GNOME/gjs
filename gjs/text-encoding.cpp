@@ -47,6 +47,21 @@ static const char* UTF16_CODESET = "UTF-16LE";
 static const char* UTF16_CODESET = "UTF-16BE";
 #endif
 
+[[nodiscard]] static bool is_utf8_label(const char* encoding) {
+    // We could be smarter about utf8 synonyms here.
+    // For now, we handle any casing and trailing/leading
+    // whitespace.
+    //
+    // is_utf8_label is only an optimization, so if a label
+    // doesn't match we just use the slower path.
+    if (strcasecmp(encoding, "utf-8") == 0 || strcasecmp(encoding, "utf8") == 0)
+        return true;
+
+    GjsAutoChar stripped(g_strdup(encoding));
+    return strcasecmp(g_strstrip(stripped), "utf-8") == 0 ||
+           strcasecmp(stripped, "utf8") == 0;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl_slow(JSContext* cx, uint8_t* data, uint32_t len,
                                 const char* encoding,
@@ -83,19 +98,11 @@ bool bytearray_to_string(JSContext* context, JS::HandleObject byte_array,
         return false;
     }
 
-    bool encoding_is_utf8;
+    bool encoding_is_utf8 = true;
+    if (encoding)
+        encoding_is_utf8 = is_utf8_label(encoding);
+
     uint8_t* data;
-
-    if (encoding) {
-        /* maybe we should be smarter about utf8 synonyms here.
-         * doesn't matter much though. encoding_is_utf8 is
-         * just an optimization anyway.
-         */
-        encoding_is_utf8 = (strcmp(encoding, "UTF-8") == 0);
-    } else {
-        encoding_is_utf8 = true;
-    }
-
     uint32_t len;
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
