@@ -7,8 +7,13 @@ var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;
 
 // For backwards compatibility
 
-function fromArray(a) {
-    return new ByteArray(Uint8Array.from(a));
+/**
+ * @param {Iterable<number>} array an iterable to convert into a ByteArray
+ *   wrapper
+ * @returns {ByteArray}
+ */
+function fromArray(array) {
+    return new ByteArray(Uint8Array.from(array));
 }
 
 var ByteArray = class ByteArray {
