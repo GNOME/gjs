@@ -75,41 +75,6 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-to_gbytes_func(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
-    JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
-    GIBaseInfo *gbytes_info;
-    JS::RootedObject byte_array(context);
-
-    if (!gjs_parse_call_args(context, "toGBytes", rec, "o",
-                             "byteArray", &byte_array))
-        return false;
-
-    if (!JS_IsUint8Array(byte_array)) {
-        gjs_throw(context,
-                  "Argument to ByteArray.toGBytes() must be a Uint8Array");
-        return false;
-    }
-
-    GBytes* bytes = gjs_byte_array_get_bytes(byte_array);
-
-    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
-                          nullptr);
-    gbytes_info = g_irepository_find_by_gtype(NULL, G_TYPE_BYTES);
-    JSObject* ret_bytes_obj =
-        BoxedInstance::new_for_c_struct(context, gbytes_info, bytes);
-    g_bytes_unref(bytes);
-    if (!ret_bytes_obj)
-        return false;
-
-    rec.rval().setObject(*ret_bytes_obj);
-    return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
 static bool define_legacy_tostring(JSContext* cx, JS::HandleObject array) {
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     return JS_DefineFunctionById(cx, array, atoms.to_string(),
@@ -308,7 +273,6 @@ GByteArray* gjs_byte_array_get_byte_array(JSObject* obj) {
 static JSFunctionSpec gjs_byte_array_module_funcs[] = {
     JS_FN("fromString", from_string_func, 2, 0),
     JS_FN("fromGBytes", from_gbytes_func, 1, 0),
-    JS_FN("toGBytes", to_gbytes_func, 1, 0),
     JS_FN("toString", to_string_func, 2, 0),
     JS_FS_END};
 

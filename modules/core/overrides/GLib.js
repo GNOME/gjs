@@ -50,13 +50,6 @@ function _readSingleType(signature, forceSimple) {
     return [char];
 }
 
-function _makeBytes(byteArray) {
-    if (byteArray instanceof Uint8Array || byteArray instanceof ByteArray.ByteArray)
-        return ByteArray.toGBytes(byteArray);
-    else
-        return new GLib.Bytes(byteArray);
-}
-
 function _packVariant(signature, value) {
     if (signature.length === 0)
         throw new TypeError('GVariant signature cannot be empty');
@@ -113,7 +106,7 @@ function _packVariant(signature, value) {
                     byteArray = Uint8Array.of(...byteArray, 0);
                 bytes = ByteArray.toGBytes(byteArray);
             } else {
-                bytes = _makeBytes(value);
+                bytes = new GLib.Bytes(value);
             }
             return GLib.Variant.new_from_bytes(new GLib.VariantType('ay'),
                 bytes, true);
