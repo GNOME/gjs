@@ -35,22 +35,27 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/text-encoding.h"
 
+// UTF16_CODESET is used to encode and decode UTF-16 buffers with
+// iconv. To ensure the output of iconv is laid out in memory correctly
+// we have to use UTF-16LE on little endian systems and UTF-16BE on big
+// endian systems.
+//
+// This ensures we can simply reinterpret_cast<char16_t> iconv's output.
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+static const char* UTF16_CODESET = "UTF-16LE";
+#else
+static const char* UTF16_CODESET = "UTF-16BE";
+#endif
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_impl_slow(JSContext* cx, uint8_t* data, uint32_t len,
                                 const char* encoding,
                                 JS::MutableHandleValue rval) {
     size_t bytes_written;
     GError* error = nullptr;
-    GjsAutoChar u16_str = g_convert(reinterpret_cast<char*>(data), len,
-    // Make sure the bytes of the UTF-16 string are laid out in memory
-    // such that we can simply reinterpret_cast<char16_t> them.
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-                                    "UTF-16LE",
-#else
-                                    "UTF-16BE",
-#endif
-                                    encoding, nullptr, /* bytes read */
-                                    &bytes_written, &error);
+    GjsAutoChar u16_str =
+        g_convert(reinterpret_cast<char*>(data), len, UTF16_CODESET, encoding,
+                  /* bytes_read = */ nullptr, &bytes_written, &error);
     if (!u16_str)
         return gjs_throw_gerror_message(cx, error);  // frees GError
 
