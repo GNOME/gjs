@@ -5,7 +5,9 @@
 // Allow toString to be declared.
 /* eslint no-redeclare: ["error", { "builtinGlobals": false }] */
 
-var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;
+var {fromGBytes, fromString, toString} = imports._byteArrayNative;
+
+const {GLib} = imports.gi;
 
 // For backwards compatibility
 
@@ -16,6 +18,17 @@ var {fromGBytes, fromString, toGBytes, toString} = imports._byteArrayNative;
  */
 function fromArray(array) {
     return new ByteArray(Uint8Array.from(array));
+}
+
+/**
+ * @param {Uint8Array} array the Uint8Array to convert to GLib.Bytes
+ * @returns {GLib.Bytes}
+ */
+function toGBytes(array) {
+    if (!(array instanceof Uint8Array))
+        throw new Error('Argument to ByteArray.toGBytes() must be a Uint8Array');
+
+    return new GLib.Bytes(array);
 }
 
 var ByteArray = class ByteArray {
