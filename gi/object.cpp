@@ -13,6 +13,7 @@
 #include <limits>
 #include <string>
 #include <tuple>        // for tie
+#include <unordered_set>
 #include <utility>      // for move
 #include <vector>
 
@@ -1051,6 +1052,7 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
     JS::RootedId prop_id(context);
     JS::RootedValue value(context);
     JS::Rooted<JS::IdVector> ids(context, context);
+    std::unordered_set<GParamSpec*> visited_params;
     if (!JS_Enumerate(context, props, &ids)) {
         gjs_throw(context, "Failed to create property iterator for object props hash");
         return false;
@@ -1071,6 +1073,10 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
         GParamSpec *param_spec = find_param_spec_from_id(context, js_prop_name);
         if (!param_spec)
             return false;
+
+        if (visited_params.find(param_spec) != visited_params.end())
+            continue;
+        visited_params.insert(param_spec);
 
         if (!JS_GetPropertyById(context, props, prop_id, &value))
             return false;
