@@ -15,23 +15,36 @@
 #    endif
 #endif
 
-#ifdef HAVE_READLINE_READLINE_H
-#    include <stdio.h>  // include before readline/readline.h
+#include <glib.h>
+#include <glib/gprintf.h>  // for g_fprintf
 
+#if defined(HAVE_READLINE_READLINE_H) || defined(HAVE_SYS_IOCTL_H) || \
+    defined(HAVE_UNISTD_H) || defined(G_OS_UNIX)
+#    include <stdio.h>  // include before readline/readline.h and sys/ioctl.h
+#endif
+
+#ifdef HAVE_READLINE_READLINE_H
 #    include <readline/history.h>
 #    include <readline/readline.h>
 #endif
 
 #include <string>
 
-#include <glib.h>
-#include <glib/gprintf.h>  // for g_fprintf
+#if defined(HAVE_SYS_IOCTL_H) && defined(HAVE_UNISTD_H)
+#    include <fcntl.h>
+#    include <sys/ioctl.h>
+#    include <unistd.h>
+#    if defined(TIOCGWINSZ)
+#        define GET_SIZE_USE_IOCTL
+#    endif
+#endif
 
 #include <js/CallArgs.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
+#include <js/PropertyDescriptor.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
@@ -276,13 +289,55 @@ gjs_console_interact(JSContext *context,
     return true;
 }
 
+bool gjs_console_get_terminal_size(JSContext* cx, unsigned argc,
+                                   JS::Value* vp) {
+    JS::RootedObject obj(cx, JS_NewPlainObject(cx));
+    if (!obj)
+        return false;
+
+    // Use 'int' because Windows uses int values, whereas most Unix systems
+    // use 'short'
+    unsigned int width, height;
+
+    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+#ifdef GET_SIZE_USE_IOCTL
+    struct winsize ws;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) < 0) {
+        gjs_throw(cx, "No terminal output is present.\n");
+        return false;
+    }
+
+    width = ws.ws_col;
+    height = ws.ws_row;
+#else
+    // TODO(ewlsh): Implement Windows equivalent.
+    // See
+    // https://docs.microsoft.com/en-us/windows/console/window-and-screen-buffer-size.
+    gjs_throw(cx, "Unable to retrieve terminal size on this platform.\n");
+    return false;
+#endif
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_DefinePropertyById(cx, obj, atoms.height(), height,
+                               JSPROP_READONLY) ||
+        !JS_DefinePropertyById(cx, obj, atoms.width(), width, JSPROP_READONLY))
+        return false;
+
+    argv.rval().setObject(*obj);
+    return true;
+}
+
 bool
 gjs_define_console_stuff(JSContext              *context,
                          JS::MutableHandleObject module)
 {
     module.set(JS_NewPlainObject(context));
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefineFunctionById(context, module, atoms.interact(),
+    return JS_DefineFunction(context, module, "getTerminalSize",
+                             gjs_console_get_terminal_size, 1,
+                             GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunctionById(context, module, atoms.interact(),
                                  gjs_console_interact, 1,
                                  GJS_MODULE_PROP_FLAGS);
 }

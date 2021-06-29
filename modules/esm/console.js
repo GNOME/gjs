@@ -2,12 +2,69 @@
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
 // eslint-disable-next-line
-/// <reference lib='es2019' />
+/// <reference lib='es2020' />
 
 // @ts-check
 
 // @ts-expect-error
 import GLib from 'gi://GLib';
+
+const {getTerminalSize: getNativeTerminalSize } =
+    // @ts-expect-error
+    import.meta.importSync('console');
+
+export { getNativeTerminalSize };
+
+/**
+ * @typedef TerminalSize
+ * @property {number} width
+ * @property {number} height
+ */
+
+/**
+ * Gets the terminal size from environment variables.
+ *
+ * @returns {TerminalSize | null}
+ */
+function getTerminalSizeFromEnvironment() {
+    const rawColumns = GLib.getenv('COLUMNS');
+    const rawLines = GLib.getenv('LINES');
+
+    if (rawColumns === null || rawLines === null)
+        return null;
+
+    const columns = Number.parseInt(rawColumns, 10);
+    const lines = Number.parseInt(rawLines, 10);
+
+    if (Number.isNaN(columns) || Number.isNaN(lines))
+        return null;
+
+    return {
+        width: columns,
+        height: lines,
+    };
+}
+
+/**
+ * @returns {TerminalSize}
+ */
+export function getTerminalSize() {
+    let size = getTerminalSizeFromEnvironment();
+    if (size)
+        return size;
+
+    try {
+        size = getNativeTerminalSize();
+        if (size)
+            return size;
+    } catch {}
+
+    // Return a default size if we can't determine the current terminal (if any) dimensions.
+    return {
+        width: 80,
+        height: 60,
+    };
+}
 
 const sLogger = Symbol('Logger');
 const sPrinter = Symbol('Printer');
@@ -139,8 +196,180 @@ export class Console {
     }
 
     // 1.1.7 table(tabularData, properties)
-    table(_tabularData, _properties) {
-        throw new Error('table() is not implemented.');
+    table(tabularData, properties) {
+        const COLUMN_PADDING = 1;
+        const SEPARATOR = '|';
+        const PLACEHOLDER = '…';
+
+        // If the data is not an object (and non-null) we can't log anything as a table.
+        if (typeof tabularData !== 'object' || tabularData === null)
+            return;
+
+        const rows = Object.keys(tabularData);
+        // If there are no rows, we can't log anything as a table.
+        if (rows.length === 0)
+            return;
+
+        // Get all possible columns from each row of data...
+        const objectColumns = rows
+            .filter(
+                key =>
+                    tabularData[key] !== null &&
+                    typeof tabularData[key] === 'object'
+            )
+            .map(key => Object.keys(tabularData[key]))
+            .flat();
+        // De-duplicate columns and sort alphabetically...
+        const objectColumnKeys = [...new Set(objectColumns)].sort();
+        // Determine if there are any rows which cannot be placed in columns (they aren't objects or arrays)
+        const hasNonColumnValues = rows.some(
+            key =>
+                tabularData[key] === null ||
+                typeof tabularData[key] !== 'object'
+        );
+
+        // Used as a placeholder for a catch-all Values column
+        const Values = Symbol('Values');
+
+        /** @type {any[]} */
+        let columns = objectColumnKeys;
+
+        if (Array.isArray(properties))
+            columns = [...properties];
+        else if (hasNonColumnValues)
+            columns = [...objectColumnKeys, Values];
+
+        const {width} = getTerminalSize();
+        const columnCount = columns.length;
+        const horizontalColumnPadding = COLUMN_PADDING * 2;
+        // Subtract n+2 separator lengths because there are 2 more separators than columns.
+        // The 2 extra bound the index column.
+        const dividableWidth = width - (columnCount + 2) * SEPARATOR.length;
+
+        const maximumIndexColumnWidth =
+            dividableWidth - columnCount * (horizontalColumnPadding * COLUMN_PADDING + 1);
+        const largestIndexColumnContentWidth = rows.reduce(
+            (prev, next) => Math.max(prev, next.length),
+            0
+        );
+        // This it the width of the index column with *no* width constraint.
+        const optimalIndexColumnWidth =
+            largestIndexColumnContentWidth + horizontalColumnPadding;
+        // Constrain the column width by the terminal width...
+        const indexColumnWidth = Math.min(
+            maximumIndexColumnWidth,
+            optimalIndexColumnWidth
+        );
+        // Calculate the amount of space each data column can take up,
+        // given the index column...
+        const spacing = Math.floor(
+            (dividableWidth - indexColumnWidth) / columnCount
+        );
+
+        /**
+         * @param {string} content a string to format within a column
+         * @param {number} totalWidth the total width the column can take up, including padding
+         */
+        function formatColumn(content, totalWidth) {
+            const halfPadding = Math.ceil((totalWidth - content.length) / 2);
+
+            if (content.length > totalWidth - horizontalColumnPadding) {
+                // Subtract horizontal padding and placeholder length.
+                const truncatedCol = content.substr(
+                    0,
+                    totalWidth - horizontalColumnPadding - PLACEHOLDER.length
+                );
+                const padding = ''.padStart(COLUMN_PADDING, ' ');
+
+                return `${padding}${truncatedCol}${PLACEHOLDER}${padding}`;
+            } else {
+                return `${content
+                    // Pad start to half the intended length (-1 to account for padding)
+                    .padStart(content.length + halfPadding, ' ')
+                    // Pad end to entire width
+                    .padEnd(totalWidth, ' ')}`;
+            }
+        }
+
+        /**
+         *
+         */
+        function formatRow(indexCol, cols, separator = '|') {
+            return `${separator}${[indexCol, ...cols].join(
+                separator
+            )}${separator}`;
+        }
+
+        // Like +----+----+
+        const borderLine = formatRow(
+            '---'.padStart(indexColumnWidth, '-'),
+            columns.map(() => '---'.padStart(spacing, '-')),
+            '+'
+        );
+
+        /**
+         * @param {unknown} val a value to format into a string representation
+         * @returns {string}
+         */
+        function formatValue(val) {
+            let output;
+            if (typeof val === 'string')
+                output = val;
+            else if (
+                Array.isArray(val) ||
+                String(val) === '[object Object]'
+            )
+                output = JSON.stringify(val, null, 0);
+            else
+                output = String(val);
+
+            const lines = output.split('\n');
+            if (lines.length > 1)
+                return `${lines[0].trim()}${PLACEHOLDER}`;
+
+            return lines[0];
+        }
+
+        const lines = [
+            borderLine,
+            // The header
+            formatRow(
+                formatColumn('', indexColumnWidth),
+                columns.map(col =>
+                    formatColumn(
+                        col === Values ? 'Values' : String(col),
+                        spacing
+                    )
+                )
+            ),
+            borderLine,
+            // The rows
+            ...rows.map(rowKey => {
+                const row = tabularData[rowKey];
+
+                let line = formatRow(formatColumn(rowKey, indexColumnWidth), [
+                    ...columns.map(colKey => {
+                        /** @type {string} */
+                        let col = '';
+
+                        if (row !== null && typeof row === 'object') {
+                            if (colKey in row)
+                                col = formatValue(row[colKey]);
+                        } else if (colKey === Values) {
+                            col = formatValue(row);
+                        }
+
+                        return formatColumn(col, spacing);
+                    }),
+                ]);
+
+                return line;
+            }),
+            borderLine,
+        ];
+
+        // @ts-expect-error
+        print(lines.join('\n'));
     }
 
     // 1.1.8 trace(...data)
