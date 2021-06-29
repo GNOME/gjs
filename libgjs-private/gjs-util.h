@@ -137,6 +137,9 @@ void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
                                           const char* property,
                                           const GValue* value);
 
+GJS_EXPORT
+void gjs_clear_terminal(void);
+
 G_END_DECLS
 
 #endif /* LIBGJS_PRIVATE_GJS_UTIL_H_ */

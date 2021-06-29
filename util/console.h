@@ -24,6 +24,8 @@ extern const int stderr_fd;
 GJS_USE
 bool gjs_console_is_tty(int fd);
 
+bool gjs_console_clear(void);
+
 G_END_DECLS
 
 #endif  // UTIL_CONSOLE_H_

@@ -17,6 +17,7 @@
 #include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, textdomain */
 
 #include "libgjs-private/gjs-util.h"
+#include "util/console.h"
 
 char *
 gjs_format_int_alternative_output(int n)
@@ -328,4 +329,16 @@ void gjs_log_set_writer_func(GjsGLogWriterFunc func, void* user_data,
     log_writer_user_data_free = user_data_free;
 
     g_log_set_writer_func(gjs_log_writer_func_wrapper, func, NULL);
+}
+
+/**
+ * gjs_clear_terminal:
+ *
+ * Clears the terminal, if possible.
+ */
+void gjs_clear_terminal(void) {
+    if (!gjs_console_is_tty(stdout_fd))
+        return;
+
+    gjs_console_clear();
 }

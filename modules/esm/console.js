@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
 import GLib from 'gi://GLib';
+import GjsPrivate from 'gi://GjsPrivate';
 
 const sLogger = Symbol('Logger');
 const sPrinter = Symbol('Printer');
@@ -150,6 +151,7 @@ class Console {
      */
     clear() {
         this[sGroupIndentation] = '';
+        GjsPrivate.clear_terminal();
     }
 
     /**
