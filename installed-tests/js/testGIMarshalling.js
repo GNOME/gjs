@@ -515,11 +515,11 @@ describe('Zero-terminated C array', function () {
         });
 
         ['none', 'container', 'full'].forEach(transfer => {
-            xit(`marshals as a transfer-${transfer} in and out parameter`, function () {
+            it(`marshals as a transfer-${transfer} in and out parameter`, function () {
                 const returnedArray =
                     GIMarshallingTests[`array_gvariant_${transfer}_in`](variantArray);
                 expect(returnedArray.map(v => v.deepUnpack())).toEqual([27, 'Hello']);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/269');
+            });
         });
     });
 });
