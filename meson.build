@@ -124,6 +124,10 @@ gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
 spidermonkey = dependency('mozjs-78', version: '>= 78.2.0')
 
+gio_unix = dependency('gio-unix-2.0', version: glib_required_version, required: false)
+
+has_gio_unix = gio_unix.found()
+
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC/clang-cl builds...
 cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_argument_syntax() != 'msvc')
@@ -313,6 +317,8 @@ header_conf.set('HAVE_SIGNAL_H', cxx.check_header('signal.h',
 # enable GNU extensions on systems that have them
 header_conf.set('_GNU_SOURCE', 1)
 
+header_conf.set('HAVE_GIO_UNIX', has_gio_unix)
+
 configure_file(output: 'config.h', configuration: header_conf)
 
 ### Check for environment ######################################################
@@ -482,6 +488,10 @@ endif
 
 if build_readline
     libgjs_dependencies += readline_deps
+endif
+
+if has_gio_unix
+    libgjs_dependencies += gio_unix
 endif
 
 libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines

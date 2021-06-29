@@ -9,11 +9,11 @@
 // @ts-expect-error
 import GLib from 'gi://GLib';
 
-const {getTerminalSize: getNativeTerminalSize } =
+const {getTerminalSize: getNativeTerminalSize, clearTerminal} =
     // @ts-expect-error
     import.meta.importSync('console');
 
-export { getNativeTerminalSize };
+export {getNativeTerminalSize};
 
 /**
  * @typedef TerminalSize
@@ -172,7 +172,10 @@ export class Console {
 
     // 1.1.2 clear()
     clear() {
-        throw new Error('clear() is not implemented.');
+        try {
+            // clearTerminal can throw Gio-related errors.
+            clearTerminal();
+        } catch {}
     }
 
     // 1.1.3 debug(...data)

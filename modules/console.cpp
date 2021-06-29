@@ -39,6 +39,13 @@
 #    endif
 #endif
 
+#ifdef HAVE_GIO_UNIX
+#    include <gio/gio.h>
+#    include <gio/gunixoutputstream.h>  // IWYU pragma: keep
+#    include <glib-object.h>
+#    include <string.h>
+#endif
+
 #include <js/CallArgs.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
@@ -328,6 +335,43 @@ bool gjs_console_get_terminal_size(JSContext* cx, unsigned argc,
     return true;
 }
 
+/**
+ * ANSI escape code sequence to clear the terminal screen.
+ *
+ * Combination of 0x1B (Escape) and the sequence nJ where n=2,
+ * n=2 clears the entire display instead of only after the cursor.
+ *
+ * See https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_(Control_Sequence_Introducer)_sequences
+ */
+constexpr const char* ANSI_CODE [[maybe_unused]] = "\x1b[2J";
+
+bool gjs_console_clear_terminal(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+#ifdef HAVE_GIO_UNIX
+    int fd = fileno(stdout);
+    if (fd >= 0) {
+        GjsAutoUnref<GOutputStream> ostream(
+            g_unix_output_stream_new(fd, false));
+        size_t bytes_written;
+        GError* error = nullptr;
+
+        if (!g_output_stream_write_all(ostream, ANSI_CODE, strlen(ANSI_CODE),
+                                       &bytes_written, nullptr, &error))
+            return gjs_throw_gerror_message(cx, error);
+
+        if (!g_output_stream_flush(ostream, nullptr, &error))
+            return gjs_throw_gerror_message(cx, error);
+
+        if (!g_output_stream_close(ostream, nullptr, &error))
+            return gjs_throw_gerror_message(cx, error);
+    }
+#endif
+
+    args.rval().setUndefined();
+    return true;
+}
+
 bool
 gjs_define_console_stuff(JSContext              *context,
                          JS::MutableHandleObject module)
@@ -336,6 +380,9 @@ gjs_define_console_stuff(JSContext              *context,
     const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
     return JS_DefineFunction(context, module, "getTerminalSize",
                              gjs_console_get_terminal_size, 1,
+                             GJS_MODULE_PROP_FLAGS) &&
+           JS_DefineFunction(context, module, "clearTerminal",
+                             gjs_console_clear_terminal, 1,
                              GJS_MODULE_PROP_FLAGS) &&
            JS_DefineFunctionById(context, module, atoms.interact(),
                                  gjs_console_interact, 1,
