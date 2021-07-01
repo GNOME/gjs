@@ -488,6 +488,26 @@ gjs_context_constructed(GObject *object)
     setup_dump_heap();
 }
 
+static void load_context_module(JSContext* cx, const char* uri,
+                                const char* debug_identifier) {
+    JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri));
+
+    if (!loader) {
+        gjs_log_exception(cx);
+        g_error("Failed to load %s module.", debug_identifier);
+    }
+
+    if (!JS::ModuleInstantiate(cx, loader)) {
+        gjs_log_exception(cx);
+        g_error("Failed to instantiate %s module.", debug_identifier);
+    }
+
+    if (!JS::ModuleEvaluate(cx, loader)) {
+        gjs_log_exception(cx);
+        g_error("Failed to evaluate %s module.", debug_identifier);
+    }
+}
+
 GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     : m_public_context(public_context),
       m_cx(cx),
@@ -604,25 +624,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to load internal module loaders.");
     }
 
-    JS::RootedObject loader(
-        cx, gjs_module_load(
-                cx, "resource:///org/gnome/gjs/modules/internal/loader.js",
-                "resource:///org/gnome/gjs/modules/internal/loader.js"));
-
-    if (!loader) {
-        gjs_log_exception(cx);
-        g_error("Failed to load module loader module.");
-    }
-
-    if (!JS::ModuleInstantiate(cx, loader)) {
-        gjs_log_exception(cx);
-        g_error("Failed to instantiate module loader module.");
-    }
-
-    if (!JS::ModuleEvaluate(cx, loader)) {
-        gjs_log_exception(cx);
-        g_error("Failed to evaluate module loader module.");
-    }
+    load_context_module(cx,
+                        "resource:///org/gnome/gjs/modules/internal/loader.js",
+                        "module loader");
 }
 
 void GjsContextPrivate::set_args(std::vector<std::string>&& args) {
