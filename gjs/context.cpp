@@ -627,6 +627,13 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     load_context_module(cx,
                         "resource:///org/gnome/gjs/modules/internal/loader.js",
                         "module loader");
+
+    {
+        JSAutoRealm ar(cx, global);
+        load_context_module(
+            cx, "resource:///org/gnome/gjs/modules/esm/_bootstrap/default.js",
+            "ESM bootstrap");
+    }
 }
 
 void GjsContextPrivate::set_args(std::vector<std::string>&& args) {
