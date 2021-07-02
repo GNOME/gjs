@@ -51,8 +51,6 @@ static inline void assign(JSContext*, char c, bool nullable,
     *ref = value.toBoolean();
 }
 
-/* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
- * to box primitive types instead of throwing? */
 GJS_ALWAYS_INLINE
 static inline void assign(JSContext*, char c, bool nullable,
                           JS::HandleValue value, JS::MutableHandleObject ref) {
@@ -287,8 +285,8 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * gjs_parse_call_args:
  * @context:
  * @function_name: The name of the function being called
- * @format: Printf-like format specifier containing the expected arguments
  * @args: #JS::CallArgs from #JSNative function
+ * @format: Printf-like format specifier containing the expected arguments
  * @params: for each character in @format, a pair of const char * which is the
  * name of the argument, and a location to store the value. The type of
  * location argument depends on the format character, as described below.
