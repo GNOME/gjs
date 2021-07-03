@@ -33,15 +33,16 @@ void g_assertion_message(const char*, const char*, int, const char*,
                          const char*) __attribute__((analyzer_noreturn));
 #endif
 
-#define assert_match(str, pattern)                                           \
-    G_STMT_START {                                                           \
-        const char *__s1 = (str), *__s2 = (pattern);                         \
-        if (!g_pattern_match_simple(__s2, __s1)) {                           \
-            g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
-                                "assertion failed (\"" #str                  \
-                                "\" matches \"" #pattern "\")");             \
-        }                                                                    \
-    }                                                                        \
+#define assert_match(str, pattern)                                          \
+    G_STMT_START {                                                          \
+        const char *__s1 = (str), *__s2 = (pattern);                        \
+        if (!g_pattern_match_simple(__s2, __s1)) {                          \
+            g_assertion_message_cmpstr(                                     \
+                G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC,                \
+                "assertion failed (\"" #str "\" matches \"" #pattern "\")", \
+                __s1, "~=", __s2);                                          \
+        }                                                                   \
+    }                                                                       \
     G_STMT_END
 
 typedef enum _test_enum {
