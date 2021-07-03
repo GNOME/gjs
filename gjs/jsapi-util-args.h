@@ -184,20 +184,15 @@ GJS_ALWAYS_INLINE static inline void assign(JSContext* cx, char c,
     assign(cx, c, nullable, value, (int *)ref);
 }
 
-/* Force JS::RootedObject * to be converted to JS::MutableHandleObject,
- * see overload in jsapi-util-args.cpp */
-template <typename T, typename std::enable_if_t<
-                          !std::is_same_v<T, JS::RootedObject*>, int> = 0>
+template <typename T>
 static inline void free_if_necessary(T param_ref [[maybe_unused]]) {}
 
 GJS_ALWAYS_INLINE
-static inline void
-free_if_necessary(JS::MutableHandleObject param_ref)
-{
+static inline void free_if_necessary(JS::RootedObject* param_ref) {
     /* This is not exactly right, since before we consumed a JS::ObjectValue
      * there may have been something different inside the handle. But it has
      * already been clobbered at this point anyhow */
-    param_ref.set(nullptr);
+    JS::MutableHandleObject(param_ref).set(nullptr);
 }
 
 template <typename T>
