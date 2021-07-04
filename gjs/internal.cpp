@@ -26,8 +26,6 @@
 #include <stddef.h>     // for size_t
 #include <sys/types.h>  // for ssize_t
 
-#include <codecvt>  // for codecvt_utf8_utf16
-#include <locale>   // for wstring_convert
 #include <memory>   // for unique_ptr
 #include <string>   // for u16string
 #include <vector>
@@ -72,21 +70,14 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     gjs_debug(GJS_DEBUG_IMPORTER, "Loading internal module '%s' (%s)",
               identifier, full_path.get());
 
-    char* script;
+    char* script_unowned;
     size_t script_len;
-
-    if (!gjs_load_internal_source(cx, full_path, &script, &script_len))
+    if (!gjs_load_internal_source(cx, full_path, &script_unowned, &script_len))
         return false;
 
-    std::u16string utf16_string = gjs_utf8_script_to_utf16(script, script_len);
-    g_free(script);
-
-    // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
-    // but that messes up code coverage. See bug
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
-    JS::SourceText<char16_t> buf;
-    if (!buf.init(cx, utf16_string.c_str(), utf16_string.size(),
-                  JS::SourceOwnership::Borrowed))
+    GjsAutoChar script = script_unowned;
+    JS::SourceText<mozilla::Utf8Unit> buf;
+    if (!buf.init(cx, script.get(), script_len, JS::SourceOwnership::Borrowed))
         return false;
 
     JS::CompileOptions options(cx);
