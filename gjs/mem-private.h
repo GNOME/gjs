@@ -6,26 +6,28 @@
 #ifndef GJS_MEM_PRIVATE_H_
 #define GJS_MEM_PRIVATE_H_
 
+#include <stddef.h>  // for size_t
+
 #include <atomic>
 
 // clang-format off
 #define GJS_FOR_EACH_COUNTER(macro) \
-    macro(boxed_instance)           \
-    macro(boxed_prototype)          \
-    macro(closure)                  \
-    macro(function)                 \
-    macro(fundamental_instance)     \
-    macro(fundamental_prototype)    \
-    macro(gerror_instance)          \
-    macro(gerror_prototype)         \
-    macro(interface)                \
-    macro(module)                   \
-    macro(ns)                       \
-    macro(object_instance)          \
-    macro(object_prototype)         \
-    macro(param)                    \
-    macro(union_instance)           \
-    macro(union_prototype)
+    macro(boxed_instance, 0)        \
+    macro(boxed_prototype, 1)       \
+    macro(closure, 2)               \
+    macro(function, 3)              \
+    macro(fundamental_instance, 4)  \
+    macro(fundamental_prototype, 5) \
+    macro(gerror_instance, 6)       \
+    macro(gerror_prototype, 7)      \
+    macro(interface, 8)             \
+    macro(module, 9)                \
+    macro(ns, 10)                   \
+    macro(object_instance, 11)      \
+    macro(object_prototype, 12)     \
+    macro(param, 13)                \
+    macro(union_instance, 14)       \
+    macro(union_prototype, 15)
 // clang-format on
 
 namespace Gjs {
@@ -38,8 +40,8 @@ struct Counter {
 };
 
 namespace Counters {
-#define GJS_DECLARE_COUNTER(name) extern Counter name;
-GJS_DECLARE_COUNTER(everything)
+#define GJS_DECLARE_COUNTER(name, ix) extern Counter name;
+GJS_DECLARE_COUNTER(everything, -1)
 GJS_FOR_EACH_COUNTER(GJS_DECLARE_COUNTER)
 #undef GJS_DECLARE_COUNTER
 
@@ -58,6 +60,30 @@ constexpr void dec() {
 }  // namespace Counters
 }  // namespace Memory
 }  // namespace Gjs
+
+#define COUNT(name, ix) +1
+static constexpr size_t GJS_N_COUNTERS = 0 GJS_FOR_EACH_COUNTER(COUNT);
+#undef COUNT
+
+static constexpr const char GJS_COUNTER_DESCRIPTIONS[GJS_N_COUNTERS][52] = {
+    // max length of description string ---------------v
+    "Number of boxed type wrapper objects",
+    "Number of boxed type prototype objects",
+    "Number of signal handlers",
+    "Number of introspected functions",
+    "Number of fundamental type wrapper objects",
+    "Number of fundamental type prototype objects",
+    "Number of GError wrapper objects",
+    "Number of GError prototype objects",
+    "Number of GObject interface objects",
+    "Number of modules",
+    "Number of GI namespace objects",
+    "Number of GObject wrapper objects",
+    "Number of GObject prototype objects",
+    "Number of GParamSpec wrapper objects",
+    "Number of C union wrapper objects",
+    "Number of C union prototype objects",
+};
 
 #define GJS_INC_COUNTER(name) \
     (Gjs::Memory::Counters::inc<&Gjs::Memory::Counters::name>());

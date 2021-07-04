@@ -58,6 +58,7 @@
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 #include <mozilla/UniquePtr.h>
 
+#include "gi/function.h"
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
@@ -404,7 +405,7 @@ void GjsContextPrivate::dispose(void) {
          * context
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Final triggered GC");
-        JS_GC(m_cx);
+        JS_GC(m_cx, Gjs::GCReason::GJS_CONTEXT_DISPOSE);
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Destroying JS context");
         m_destroying.store(true);
@@ -493,6 +494,15 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
       m_cx(cx),
       m_owner_thread(std::this_thread::get_id()),
       m_environment_preparer(cx) {
+
+    JS_SetGCCallback(
+        cx,
+        [](JSContext*, JSGCStatus status, JS::GCReason reason, void* data) {
+            static_cast<GjsContextPrivate*>(data)->on_garbage_collection(
+                status, reason);
+        },
+        this);
+
     const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
     if (env_profiler || m_should_listen_sigusr2)
         m_should_profile = true;
@@ -699,7 +709,7 @@ gboolean GjsContextPrivate::trigger_gc_if_needed(void* data) {
 
     if (gjs->m_force_gc) {
         gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Big Hammer hit");
-        JS_GC(gjs->m_cx);
+        JS_GC(gjs->m_cx, Gjs::GCReason::BIG_HAMMER);
     } else {
         gjs_gc_if_needed(gjs->m_cx);
     }
@@ -736,24 +746,106 @@ void GjsContextPrivate::schedule_gc_if_needed(void) {
     schedule_gc_internal(false);
 }
 
-void GjsContextPrivate::set_sweeping(bool value) {
-    // If we have a profiler enabled, record the duration of GC sweep
-    if (this->m_profiler != nullptr) {
-        int64_t now = g_get_monotonic_time() * 1000L;
+void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason reason) {
+    int64_t now = 0;
+    if (m_profiler)
+        now = g_get_monotonic_time() * 1000L;
 
-        if (value) {
+    switch (status) {
+        case JSGC_BEGIN:
+            m_gc_begin_time = now;
+            m_gc_reason = gjs_explain_gc_reason(reason);
+            gjs_debug_lifecycle(GJS_DEBUG_CONTEXT,
+                                "Begin garbage collection because of %s",
+                                m_gc_reason);
+
+            // We finalize any pending toggle refs before doing any garbage
+            // collection, so that we can collect the JS wrapper objects, and in
+            // order to minimize the chances of objects having a pending toggle
+            // up queued when they are garbage collected.
+            gjs_object_clear_toggles();
+            gjs_function_clear_async_closures();
+            break;
+        case JSGC_END:
+            if (m_profiler && m_gc_begin_time != 0) {
+                _gjs_profiler_add_mark(m_profiler, m_gc_begin_time,
+                                       now - m_gc_begin_time, "GJS",
+                                       "Garbage collection", m_gc_reason);
+            }
+            m_gc_begin_time = 0;
+            m_gc_reason = nullptr;
+            gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
+            break;
+        default:
+            g_assert_not_reached();
+    }
+}
+
+void GjsContextPrivate::set_finalize_status(JSFinalizeStatus status) {
+    // Implementation note for mozjs-24:
+    //
+    // Sweeping happens in two phases, in the first phase all GC things from the
+    // allocation arenas are queued for sweeping, then the actual sweeping
+    // happens. The first phase is marked by JSFINALIZE_GROUP_START, the second
+    // one by JSFINALIZE_GROUP_END, and finally we will see
+    // JSFINALIZE_COLLECTION_END at the end of all GC. (see jsgc.cpp,
+    // BeginSweepPhase/BeginSweepingZoneGroup and SweepPhase, all called from
+    // IncrementalCollectSlice).
+    //
+    // Incremental GC muddies the waters, because BeginSweepPhase is always run
+    // to entirety, but SweepPhase can be run incrementally and mixed with JS
+    // code runs or even native code, when MaybeGC/IncrementalGC return.
+    //
+    // Luckily for us, objects are treated specially, and are not really queued
+    // for deferred incremental finalization (unless they are marked for
+    // background sweeping). Instead, they are finalized immediately during
+    // phase 1, so the following guarantees are true (and we rely on them):
+    // - phase 1 of GC will begin and end in the same JSAPI call (i.e., our
+    //   callback will be called with GROUP_START and the triggering JSAPI call
+    //   will not return until we see a GROUP_END)
+    // - object finalization will begin and end in the same JSAPI call
+    // - therefore, if there is a finalizer frame somewhere in the stack,
+    //   GjsContextPrivate::sweeping() will return true.
+    //
+    // Comments in mozjs-24 imply that this behavior might change in the future,
+    // but it hasn't changed in mozilla-central as of 2014-02-23. In addition to
+    // that, the mozilla-central version has a huge comment in a different
+    // portion of the file, explaining why finalization of objects can't be
+    // mixed with JS code, so we can probably rely on this behavior.
+
+    int64_t now = 0;
+
+    if (m_profiler)
+        now = g_get_monotonic_time() * 1000L;
+
+    switch (status) {
+        case JSFINALIZE_GROUP_PREPARE:
+            m_in_gc_sweep = true;
             m_sweep_begin_time = now;
-        } else {
-            if (m_sweep_begin_time != 0) {
-                _gjs_profiler_add_mark(this->m_profiler, m_sweep_begin_time,
+            break;
+        case JSFINALIZE_GROUP_START:
+            m_group_sweep_begin_time = now;
+            break;
+        case JSFINALIZE_GROUP_END:
+            if (m_profiler && m_group_sweep_begin_time != 0) {
+                _gjs_profiler_add_mark(m_profiler, m_group_sweep_begin_time,
+                                       now - m_group_sweep_begin_time, "GJS",
+                                       "Group sweep", nullptr);
+            }
+            m_group_sweep_begin_time = 0;
+            break;
+        case JSFINALIZE_COLLECTION_END:
+            m_in_gc_sweep = false;
+            if (m_profiler && m_sweep_begin_time != 0) {
+                _gjs_profiler_add_mark(m_profiler, m_sweep_begin_time,
                                        now - m_sweep_begin_time, "GJS", "Sweep",
                                        nullptr);
-                m_sweep_begin_time = 0;
             }
-        }
+            m_sweep_begin_time = 0;
+            break;
+        default:
+            g_assert_not_reached();
     }
-
-    m_in_gc_sweep = value;
 }
 
 void GjsContextPrivate::exit(uint8_t exit_code) {
@@ -1004,7 +1096,7 @@ void
 gjs_context_gc (GjsContext  *context)
 {
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(context);
-    JS_GC(gjs->context());
+    JS_GC(gjs->context(), Gjs::GCReason::GJS_API_CALL);
 }
 
 /**

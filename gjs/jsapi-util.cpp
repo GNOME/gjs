@@ -575,7 +575,8 @@ gjs_gc_if_needed (JSContext *context)
         uint64_t rss_usize = rss_size;
         if (rss_usize > linux_rss_trigger) {
             linux_rss_trigger = MIN(G_MAXUINT32, rss_usize * 1.25);
-            JS::NonIncrementalGC(context, GC_SHRINK, JS::GCReason::API);
+            JS::NonIncrementalGC(context, GC_SHRINK,
+                                 Gjs::GCReason::LINUX_RSS_TRIGGER);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */
             linux_rss_trigger = rss_usize * 1.25;
@@ -673,4 +674,24 @@ std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len) {
         return convert.from_bytes(script);
     return convert.from_bytes(script, script + len);
 #endif
+}
+
+const char* gjs_explain_gc_reason(JS::GCReason reason) {
+    if (JS::InternalGCReason(reason))
+        return JS::ExplainGCReason(reason);
+
+    static const char* reason_strings[] = {
+        "RSS above threshold",
+        "GjsContext disposed",
+        "Big Hammer hit",
+        "gjs_context_gc() called",
+    };
+    static_assert(G_N_ELEMENTS(reason_strings) == Gjs::GCReason::N_REASONS,
+                  "Explanations must match the values in Gjs::GCReason");
+
+    g_assert(size_t(reason) < size_t(JS::GCReason::FIRST_FIREFOX_REASON) +
+                                  Gjs::GCReason::N_REASONS &&
+             "Bad Gjs::GCReason");
+    return reason_strings[size_t(reason) -
+                          size_t(JS::GCReason::FIRST_FIREFOX_REASON)];
 }

@@ -21,6 +21,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/GCAPI.h>
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <js/Id.h>
 #include <js/TypeDecls.h>
@@ -566,5 +567,35 @@ bool gjs_object_require_converted_property(JSContext       *context,
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
 [[nodiscard]] std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str);
 #endif
+
+// Custom GC reasons; SpiderMonkey includes a bunch of "Firefox reasons" which
+// don't apply when embedding the JS engine, so we repurpose them for our own
+// reasons.
+
+// clang-format off
+#define FOREACH_GC_REASON(macro)  \
+    macro(LINUX_RSS_TRIGGER, 0)   \
+    macro(GJS_CONTEXT_DISPOSE, 1) \
+    macro(BIG_HAMMER, 2)          \
+    macro(GJS_API_CALL, 3)
+// clang-format on
+
+namespace Gjs {
+
+struct GCReason {
+#define DEFINE_GC_REASON(name, ix)                     \
+    static constexpr JS::GCReason name = JS::GCReason( \
+        static_cast<int>(JS::GCReason::FIRST_FIREFOX_REASON) + ix);
+FOREACH_GC_REASON(DEFINE_GC_REASON);
+#undef DEFINE_GC_REASON
+
+#define COUNT_GC_REASON(name, ix) +1
+static constexpr size_t N_REASONS = 0 FOREACH_GC_REASON(COUNT_GC_REASON);
+#undef COUNT_GC_REASON
+};
+
+}  // namespace Gjs
+
+[[nodiscard]] const char* gjs_explain_gc_reason(JS::GCReason reason);
 
 #endif  // GJS_JSAPI_UTIL_H_

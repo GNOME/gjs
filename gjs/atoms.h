@@ -28,6 +28,7 @@ class JSTracer;
     macro(file, "__file__") \
     macro(file_name, "fileName") \
     macro(func, "func") \
+    macro(gc_bytes, "gcBytes") \
     macro(gi, "gi") \
     macro(gio, "Gio") \
     macro(glib, "GLib") \
@@ -42,6 +43,7 @@ class JSTracer;
     macro(internal, "internal") \
     macro(length, "length") \
     macro(line_number, "lineNumber") \
+    macro(malloc_bytes, "mallocBytes") \
     macro(message, "message") \
     macro(module_init, "__init__") \
     macro(module_name, "__moduleName__") \
@@ -68,7 +70,8 @@ class JSTracer;
     macro(width, "width") \
     macro(window, "window") \
     macro(x, "x") \
-    macro(y, "y")
+    macro(y, "y") \
+    macro(zone, "zone")
 
 #define FOR_EACH_SYMBOL_ATOM(macro) \
     macro(hook_up_vfunc, "__GObject__hook_up_vfunc") \

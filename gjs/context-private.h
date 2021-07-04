@@ -19,6 +19,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/GCAPI.h>
 #include <js/GCHashTable.h>
 #include <js/GCVector.h>
 #include <js/HashTable.h>  // for DefaultHasher
@@ -111,10 +112,16 @@ class GjsContextPrivate : public JS::JobQueue {
     bool m_exec_as_module : 1;
     bool m_should_listen_sigusr2 : 1;
 
+    // If profiling is enabled, we record the durations and reason for GC mark
+    // and sweep
+    int64_t m_gc_begin_time;
     int64_t m_sweep_begin_time;
+    int64_t m_group_sweep_begin_time;
+    const char* m_gc_reason;  // statically allocated
 
     void schedule_gc_internal(bool force_gc);
     static gboolean trigger_gc_if_needed(void* data);
+    void on_garbage_collection(JSGCStatus, JS::GCReason);
 
     class SavedQueue;
     void start_draining_job_queue(void);
@@ -234,7 +241,8 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] bool register_module(const char* identifier,
                                        const char* filename, GError** error);
 
-    void set_sweeping(bool value);
+    void set_gc_status(JSGCStatus status, JS::GCReason reason);
+    void set_finalize_status(JSFinalizeStatus status);
 
     static void trace(JSTracer* trc, void* data);
 

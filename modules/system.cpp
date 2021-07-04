@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2012 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2019 Endless Mobile, Inc.
+// SPDX-FileCopyrightText: 2021 Philip Chimento <philip.chimento@gmail.com>
 
 #include <config.h>  // for GJS_VERSION
 
+#include <stdint.h>
+#include <stdio.h>
 #include <time.h>    // for tzset
 
 #include <glib-object.h>
@@ -13,6 +17,7 @@
 #include <js/CallArgs.h>
 #include <js/Date.h>                // for ResetTimeZone
 #include <js/GCAPI.h>               // for JS_GC
+#include <js/JSON.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -26,6 +31,7 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/profiler-private.h"
 #include "modules/system.h"
 #include "util/log.h"
 #include "util/misc.h"  // for LogFile
@@ -179,12 +185,99 @@ static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+static bool write_gc_info(const char16_t* buf, uint32_t len, void* data) {
+    auto* fp = static_cast<FILE*>(data);
+
+    long bytes_written;  // NOLINT(runtime/int): the GLib API requires this type
+    GjsAutoChar utf8 = g_utf16_to_utf8(reinterpret_cast<const uint16_t*>(buf),
+                                       len, /* items_read = */ nullptr,
+                                       &bytes_written, /* error = */ nullptr);
+    if (!utf8)
+        utf8 = g_strdup("<invalid string>");
+
+    fwrite(utf8, 1, bytes_written, fp);
+    return true;
+}
+
+static bool gjs_dump_memory_info(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    GjsAutoChar filename;
+    if (!gjs_parse_call_args(cx, "dumpMemoryInfo", args, "|F", "filename",
+                             &filename))
+        return false;
+
+    int64_t gc_counters[Gjs::GCCounters::N_COUNTERS];
+
+    // The object returned from NewMemoryInfoObject has gcBytes and mallocBytes
+    // properties which are the sum (over all zones) of bytes used. gcBytes is
+    // the number of bytes in garbage-collectable things (GC things).
+    // mallocBytes is the number of bytes allocated with malloc (reported with
+    // JS::AddAssociatedMemory).
+    //
+    // This info leaks internal state of the JS engine, which is why it is not
+    // returned to the caller, only dumped to a file and piped to Sysprof.
+    //
+    // The object also has a zone property with its own gcBytes and mallocBytes
+    // properties, representing the bytes used in the zone that the memory
+    // object belongs to. We only have one zone in GJS's context, so
+    // zone.gcBytes and zone.mallocBytes are a good measure for how much memory
+    // the actual user program is occupying. These are the values that we expose
+    // as counters in Sysprof. The difference between these values and the sum
+    // values is due to the self-hosting zone and atoms zone, that represent
+    // overhead of the JS engine.
+
+    JS::RootedObject gc_info(cx, js::gc::NewMemoryInfoObject(cx));
+    if (!gc_info)
+        return false;
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    int32_t val;
+    JS::RootedObject zone_info(cx);
+    if (!gjs_object_require_property(cx, gc_info, "gc.zone", atoms.zone(),
+                                     &zone_info) ||
+        !gjs_object_require_property(cx, zone_info, "gc.zone.gcBytes",
+                                     atoms.gc_bytes(), &val))
+        return false;
+    gc_counters[Gjs::GCCounters::GC_HEAP_BYTES] = int64_t(val);
+    if (!gjs_object_require_property(cx, zone_info, "gc.zone.mallocBytes",
+                                     atoms.malloc_bytes(), &val))
+        return false;
+    gc_counters[Gjs::GCCounters::MALLOC_HEAP_BYTES] = int64_t(val);
+
+    auto* gjs = GjsContextPrivate::from_cx(cx);
+    if (gjs->profiler() &&
+        !_gjs_profiler_sample_gc_memory_info(gjs->profiler(), gc_counters)) {
+        gjs_throw(cx, "Could not write GC counters to profiler");
+        return false;
+    }
+
+    LogFile file(filename);
+    if (file.has_error()) {
+        gjs_throw(cx, "Cannot dump memory info to %s: %s", filename.get(),
+                  file.errmsg());
+        return false;
+    }
+
+    fprintf(file.fp(), "# GC Memory Info Object #\n\n```json\n");
+    JS::RootedValue v_gc_info(cx, JS::ObjectValue(*gc_info));
+    JS::RootedValue spacing(cx, JS::Int32Value(2));
+    if (!JS_Stringify(cx, &v_gc_info, nullptr, spacing, write_gc_info,
+                      file.fp()))
+        return false;
+    fprintf(file.fp(), "\n```\n");
+
+    args.rval().setUndefined();
+    return true;
+}
+
 static JSFunctionSpec module_funcs[] = {
     JS_FN("addressOf", gjs_address_of, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("addressOfGObject", gjs_address_of_gobject, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("refcount", gjs_refcount, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("breakpoint", gjs_breakpoint, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("dumpHeap", gjs_dump_heap, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("dumpMemoryInfo", gjs_dump_memory_info, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("gc", gjs_gc, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("exit", gjs_exit, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("clearDateCaches", gjs_clear_date_caches, 0, GJS_MODULE_PROP_FLAGS),
