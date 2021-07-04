@@ -441,8 +441,6 @@ Here is an example of all of the above rules together:
 #    include <windows.h>
 #endif
 
-#include <codecvt>  // for codecvt_utf8_utf16
-#include <locale>   // for wstring_convert
 #include <vector>
 
 #include <girepository.h>
@@ -1011,3 +1009,13 @@ class Foo {
     }
 };
 ```
+
+#### Don't use C++ standard library UTF-8/UTF-16 encoding facilities
+
+There are
+[bugs](https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral)
+in Visual Studio that make `wstring_convert` non-portable.
+Instead, use `g_utf8_to_utf16()` and friends (unfortunately not
+typesafe) or `mozilla::ConvertUtf8toUtf16()` and friends (when that
+becomes possible; it is currently not possible due to a linker bug.)
+

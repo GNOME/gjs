@@ -12,8 +12,6 @@
 #    include <windows.h>
 #endif
 
-#include <codecvt>  // for codecvt_utf8_utf16
-#include <locale>   // for wstring_convert
 #include <string>
 #include <utility>  // for move
 #include <vector>
@@ -637,42 +635,6 @@ JSObject* gjs_get_import_global(JSContext* cx) {
  */
 JSObject* gjs_get_internal_global(JSContext* cx) {
     return GjsContextPrivate::from_cx(cx)->internal_global();
-}
-
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
-/* Unfortunately Visual Studio's C++ .lib somehow did not contain the right
- * codecvt stuff that we need to convert from utf8 to utf16 (char16_t), so we
- * need to work around this Visual Studio bug.  Use Windows API
- * MultiByteToWideChar() and obtain the std::u16string on the std::wstring we
- * obtain from MultiByteToWideChar().  See:
- * https://social.msdn.microsoft.com/Forums/en-US/8f40dcd8-c67f-4eba-9134-a19b9178e481/vs-2015-rc-linker-stdcodecvt-error?forum=vcgeneral
- */
-static std::wstring gjs_win32_vc140_utf8_to_utf16(const char* str,
-                                                  ssize_t len) {
-    int bufsize = MultiByteToWideChar(CP_UTF8, 0, str, len, nullptr, 0);
-    if (bufsize == 0)
-        return nullptr;
-
-    std::wstring wstr(bufsize, 0);
-    int result = MultiByteToWideChar(CP_UTF8, 0, str, len, &wstr[0], bufsize);
-    if (result == 0)
-        return nullptr;
-
-    wstr.resize(len < 0 ? strlen(str) : len);
-    return wstr;
-}
-#endif
-
-std::u16string gjs_utf8_script_to_utf16(const char* script, ssize_t len) {
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
-    std::wstring wscript = gjs_win32_vc140_utf8_to_utf16(script, len);
-    return std::u16string(reinterpret_cast<const char16_t*>(wscript.c_str()));
-#else
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    if (len < 0)
-        return convert.from_bytes(script);
-    return convert.from_bytes(script, script + len);
-#endif
 }
 
 const char* gjs_explain_gc_reason(JS::GCReason reason) {
