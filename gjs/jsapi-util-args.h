@@ -51,8 +51,6 @@ static inline void assign(JSContext*, char c, bool nullable,
     *ref = value.toBoolean();
 }
 
-/* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
- * to box primitive types instead of throwing? */
 GJS_ALWAYS_INLINE
 static inline void assign(JSContext*, char c, bool nullable,
                           JS::HandleValue value, JS::MutableHandleObject ref) {
@@ -98,6 +96,21 @@ assign(JSContext      *cx,
     }
     if (!gjs_string_to_filename(cx, value, ref))
         throw g_strdup("Couldn't convert to filename");
+}
+
+GJS_ALWAYS_INLINE
+static inline void assign(JSContext*, char c, bool nullable,
+                          JS::HandleValue value, JS::MutableHandleString ref) {
+    if (c != 'S')
+        throw g_strdup_printf("Wrong type for %c, got JS::MutableHandleString",
+                              c);
+    if (nullable && value.isNull()) {
+        ref.set(nullptr);
+        return;
+    }
+    if (!value.isString())
+        throw g_strdup("Not a string");
+    ref.set(value.toString());
 }
 
 GJS_ALWAYS_INLINE
@@ -186,20 +199,16 @@ GJS_ALWAYS_INLINE static inline void assign(JSContext* cx, char c,
     assign(cx, c, nullable, value, (int *)ref);
 }
 
-/* Force JS::RootedObject * to be converted to JS::MutableHandleObject,
- * see overload in jsapi-util-args.cpp */
-template <typename T, typename std::enable_if_t<
-                          !std::is_same_v<T, JS::RootedObject*>, int> = 0>
+template <typename T>
 static inline void free_if_necessary(T param_ref [[maybe_unused]]) {}
 
-GJS_ALWAYS_INLINE
-static inline void
-free_if_necessary(JS::MutableHandleObject param_ref)
-{
-    /* This is not exactly right, since before we consumed a JS::ObjectValue
-     * there may have been something different inside the handle. But it has
-     * already been clobbered at this point anyhow */
-    param_ref.set(nullptr);
+template <typename T>
+GJS_ALWAYS_INLINE static inline void free_if_necessary(
+    JS::Rooted<T>* param_ref) {
+    // This is not exactly right, since before we consumed a JS::Value there may
+    // have been something different inside the handle. But it has already been
+    // clobbered at this point anyhow.
+    JS::MutableHandle<T>(param_ref).set(nullptr);
 }
 
 template <typename T>
@@ -254,7 +263,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
     bool retval = parse_call_args_helper(cx, function_name, args, fmt_required,
                                          fmt_optional, ++param_ix, params...);
 
-    /* We still own the strings in the error case, free any we converted */
+    // We still own JSString/JSObject in the error case, free any we converted
     if (!retval)
         free_if_necessary(param_ref);
     return retval;
@@ -287,8 +296,8 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * gjs_parse_call_args:
  * @context:
  * @function_name: The name of the function being called
- * @format: Printf-like format specifier containing the expected arguments
  * @args: #JS::CallArgs from #JSNative function
+ * @format: Printf-like format specifier containing the expected arguments
  * @params: for each character in @format, a pair of const char * which is the
  * name of the argument, and a location to store the value. The type of
  * location argument depends on the format character, as described below.
@@ -302,6 +311,7 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * s: A string, converted into UTF-8 (pass a JS::UniqueChars*)
  * F: A string, converted into "filename encoding" (i.e. active locale) (pass
  *   a GjsAutoChar *)
+ * S: A string, no conversion (pass a JS::MutableHandleString)
  * i: A number, will be converted to a 32-bit int (pass an int32_t * or a
  *   pointer to an enum type)
  * u: A number, converted into a 32-bit unsigned int (pass a uint32_t *)
@@ -316,9 +326,9 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * after a '|' when not specified, do not cause any changes in the C
  * value location.
  *
- * A prefix character '?' in front of 's', 'F', or 'o' means that the next value
- * may be null. For 's' or 'F' a null pointer is returned, for 'o' the handle is
- * set to null.
+ * A prefix character '?' in front of 's', 'F', 'S', or 'o' means that the next
+ * value may be null. For 's' or 'F' a null pointer is returned, for 'S' or 'o'
+ * the handle is set to null.
  */
 template <typename... Args>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(

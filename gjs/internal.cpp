@@ -110,6 +110,12 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     return true;
 }
 
+static bool handle_wrong_args(JSContext* cx) {
+    gjs_log_exception(cx);
+    g_error("Wrong invocation of internal code");
+    return false;
+}
+
 /**
  * gjs_internal_set_global_module_loader:
  *
@@ -120,19 +126,16 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
  *
  * @returns guaranteed to return true or assert.
  */
-bool gjs_internal_set_global_module_loader(JSContext*, unsigned argc,
+bool gjs_internal_set_global_module_loader(JSContext* cx, unsigned argc,
                                            JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    g_assert(args.length() == 2 && "setGlobalModuleLoader takes 2 arguments");
+    JS::RootedObject global(cx), loader(cx);
+    if (!gjs_parse_call_args(cx, "setGlobalModuleLoader", args, "oo", "global",
+                             &global, "loader", &loader))
+        return handle_wrong_args(cx);
 
-    JS::Value v_global = args[0];
-    JS::Value v_loader = args[1];
-
-    g_assert(v_global.isObject() && "first argument must be an object");
-    g_assert(v_loader.isObject() && "second argument must be an object");
-
-    gjs_set_global_slot(&v_global.toObject(), GjsGlobalSlot::MODULE_LOADER,
-                        v_loader);
+    gjs_set_global_slot(global, GjsGlobalSlot::MODULE_LOADER,
+                        JS::ObjectValue(*loader));
 
     args.rval().setUndefined();
     return true;
@@ -145,27 +148,21 @@ bool gjs_internal_set_global_module_loader(JSContext*, unsigned argc,
  * given the module's URI as the first argument.
  *
  * @param cx the current JSContext
- * @param args the call args from the native function call
+ * @param uri The URI of the module
+ * @param source The source text of the module
+ * @param v_module_out Return location for the module as a JS value
  *
  * @returns whether an error occurred while compiling the module.
  */
-static bool compile_module(JSContext* cx, JS::CallArgs args) {
-    g_assert(args[0].isString());
-    g_assert(args[1].isString());
-
-    JS::RootedString s1(cx, args[0].toString());
-    JS::RootedString s2(cx, args[1].toString());
-
-    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, s1);
-    if (!uri)
-        return false;
-
+static bool compile_module(JSContext* cx, const JS::UniqueChars& uri,
+                           JS::HandleString source,
+                           JS::MutableHandleValue v_module_out) {
     JS::CompileOptions options(cx);
     options.setFileAndLine(uri.get(), 1).setSourceIsLazy(false);
 
     size_t text_len;
     char16_t* text;
-    if (!gjs_string_get_char16_data(cx, s2, &text, &text_len))
+    if (!gjs_string_get_char16_data(cx, source, &text, &text_len))
         return false;
 
     JS::SourceText<char16_t> buf;
@@ -176,7 +173,7 @@ static bool compile_module(JSContext* cx, JS::CallArgs args) {
     if (!new_module)
         return false;
 
-    args.rval().setObject(*new_module);
+    v_module_out.setObject(*new_module);
     return true;
 }
 
@@ -197,11 +194,17 @@ static bool compile_module(JSContext* cx, JS::CallArgs args) {
 bool gjs_internal_compile_internal_module(JSContext* cx, unsigned argc,
                                           JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    g_assert(args.length() == 2 && "compileInternalModule takes 2 arguments");
 
     JS::RootedObject global(cx, gjs_get_internal_global(cx));
     JSAutoRealm ar(cx, global);
-    return compile_module(cx, args);
+
+    JS::UniqueChars uri;
+    JS::RootedString source(cx);
+    if (!gjs_parse_call_args(cx, "compileInternalModule", args, "sS", "uri",
+                             &uri, "source", &source))
+        return handle_wrong_args(cx);
+
+    return compile_module(cx, uri, source, args.rval());
 }
 
 /**
@@ -220,11 +223,17 @@ bool gjs_internal_compile_internal_module(JSContext* cx, unsigned argc,
  */
 bool gjs_internal_compile_module(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    g_assert(args.length() == 2 && "compileModule takes 2 arguments");
 
     JS::RootedObject global(cx, gjs_get_import_global(cx));
     JSAutoRealm ar(cx, global);
-    return compile_module(cx, args);
+
+    JS::UniqueChars uri;
+    JS::RootedString source(cx);
+    if (!gjs_parse_call_args(cx, "compileModule", args, "sS", "uri", &uri,
+                             "source", &source))
+        return handle_wrong_args(cx);
+
+    return compile_module(cx, uri, source, args.rval());
 }
 
 /**
@@ -242,14 +251,12 @@ bool gjs_internal_compile_module(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool gjs_internal_set_module_private(JSContext* cx, unsigned argc,
                                      JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    g_assert(args.length() == 2 && "setModulePrivate takes 2 arguments");
-    g_assert(args[0].isObject());
-    g_assert(args[1].isObject());
+    JS::RootedObject module(cx), private_obj(cx);
+    if (!gjs_parse_call_args(cx, "setModulePrivate", args, "oo", "module",
+                             &module, "private", &private_obj))
+        return handle_wrong_args(cx);
 
-    JS::RootedObject moduleObj(cx, &args[0].toObject());
-    JS::RootedObject privateObj(cx, &args[1].toObject());
-
-    JS::SetModulePrivate(moduleObj, JS::ObjectValue(*privateObj));
+    JS::SetModulePrivate(module, JS::ObjectValue(*private_obj));
     return true;
 }
 
@@ -266,10 +273,10 @@ bool gjs_internal_set_module_private(JSContext* cx, unsigned argc,
  */
 bool gjs_internal_get_registry(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    g_assert(args.length() == 1 && "getRegistry takes 1 argument");
-    g_assert(args[0].isObject());
+    JS::RootedObject global(cx);
+    if (!gjs_parse_call_args(cx, "getRegistry", args, "o", "global", &global))
+        return handle_wrong_args(cx);
 
-    JS::RootedObject global(cx, &args[0].toObject());
     JSAutoRealm ar(cx, global);
 
     JS::RootedObject registry(cx, gjs_get_module_registry(global));
@@ -283,11 +290,10 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     using AutoURI = GjsAutoPointer<GUri, GUri, g_uri_unref>;
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
+    JS::RootedString string_arg(cx);
+    if (!gjs_parse_call_args(cx, "parseUri", args, "S", "uri", &string_arg))
+        return handle_wrong_args(cx);
 
-    g_assert(args.length() == 1 && "parseUri() takes one string argument");
-    g_assert(args[0].isString() && "parseUri() takes one string argument");
-
-    JS::RootedString string_arg(cx, args[0].toString());
     JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
     if (!uri)
         return false;
@@ -373,19 +379,10 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
                                                     unsigned argc,
                                                     JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-
-    g_assert(args.length() == 2 && "resolveRelativeResourceOrFile(str, str)");
-    g_assert(args[0].isString() && "resolveRelativeResourceOrFile(str, str)");
-    g_assert(args[1].isString() && "resolveRelativeResourceOrFile(str, str)");
-
-    JS::RootedString string_arg(cx, args[0].toString());
-    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
-    if (!uri)
-        return false;
-    string_arg = args[1].toString();
-    JS::UniqueChars relative_path = JS_EncodeStringToUTF8(cx, string_arg);
-    if (!relative_path)
-        return false;
+    JS::UniqueChars uri, relative_path;
+    if (!gjs_parse_call_args(cx, "resolveRelativeResourceOrFile", args, "ss",
+                             "uri", &uri, "relativePath", &relative_path))
+        return handle_wrong_args(cx);
 
     GjsAutoUnref<GFile> module_file = g_file_new_for_uri(uri.get());
     GjsAutoUnref<GFile> module_parent_file = g_file_get_parent(module_file);
@@ -411,14 +408,9 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
 bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
                                         JS::Value* vp) {
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-
-    g_assert(args.length() == 1 && "loadResourceOrFile(str)");
-    g_assert(args[0].isString() && "loadResourceOrFile(str)");
-
-    JS::RootedString string_arg(cx, args[0].toString());
-    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
-    if (!uri)
-        return false;
+    JS::UniqueChars uri;
+    if (!gjs_parse_call_args(cx, "loadResourceOrFile", args, "s", "uri", &uri))
+        return handle_wrong_args(cx);
 
     GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
 
@@ -447,14 +439,9 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
 
 bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-
-    g_assert(args.length() >= 1 && "uriExists(str)");  // extra args are OK
-    g_assert(args[0].isString() && "uriExists(str)");
-
-    JS::RootedString string_arg(cx, args[0].toString());
-    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
-    if (!uri)
-        return false;
+    JS::UniqueChars uri;
+    if (!gjs_parse_call_args(cx, "uriExists", args, "!s", "uri", &uri))
+        return handle_wrong_args(cx);
 
     GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
 
@@ -554,14 +541,13 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = CallArgsFromVp(argc, vp);
+    JS::RootedObject resolve(cx), reject(cx);
+    if (!gjs_parse_call_args(cx, "executor", args, "oo", "resolve", &resolve,
+                             "reject", &reject))
+        return handle_wrong_args(cx);
 
-    g_assert(args.length() == 2 && "Executor called weirdly");
-    g_assert(args[0].isObject() && "Executor called weirdly");
-    g_assert(args[1].isObject() && "Executor called weirdly");
-    g_assert(JS_ObjectIsFunction(&args[0].toObject()) &&
-             "Executor called weirdly");
-    g_assert(JS_ObjectIsFunction(&args[1].toObject()) &&
-             "Executor called weirdly");
+    g_assert(JS_ObjectIsFunction(resolve) && "Executor called weirdly");
+    g_assert(JS_ObjectIsFunction(reject) && "Executor called weirdly");
 
     JS::Value priv_value = js::GetFunctionNativeReserved(&args.callee(), 0);
     g_assert(!priv_value.isNull() && "Executor called twice");
@@ -571,8 +557,8 @@ static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
     // remove it from the executor's private slot so it doesn't become dangling
     js::SetFunctionNativeReserved(&args.callee(), 0, JS::NullValue());
 
-    auto* data = new PromiseData(cx, JS_GetObjectFunction(&args[0].toObject()),
-                                 JS_GetObjectFunction(&args[1].toObject()));
+    auto* data = new PromiseData(cx, JS_GetObjectFunction(resolve),
+                                 JS_GetObjectFunction(reject));
     g_file_load_contents_async(file, nullptr, load_async_callback, data);
 
     args.rval().setUndefined();
@@ -582,14 +568,10 @@ static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool gjs_internal_load_resource_or_file_async(JSContext* cx, unsigned argc,
                                               JS::Value* vp) {
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-
-    g_assert(args.length() == 1 && "loadResourceOrFileAsync(str)");
-    g_assert(args[0].isString() && "loadResourceOrFileAsync(str)");
-
-    JS::RootedString string_arg(cx, args[0].toString());
-    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
-    if (!uri)
-        return false;
+    JS::UniqueChars uri;
+    if (!gjs_parse_call_args(cx, "loadResourceOrFileAsync", args, "s", "uri",
+                             &uri))
+        return handle_wrong_args(cx);
 
     GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
 
