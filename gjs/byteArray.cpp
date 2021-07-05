@@ -50,7 +50,7 @@ static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     const char* actual_encoding = encoding ? encoding.get() : "utf-8";
     JS::RootedString str(
         cx, gjs_decode_from_uint8array(cx, byte_array, actual_encoding,
-                                       GjsStringTermination::ZERO_TERMINATED));
+                                       GjsStringTermination::ZERO_TERMINATED, true));
     if (!str)
         return false;
 
@@ -76,7 +76,7 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
     const char* actual_encoding = encoding ? encoding.get() : "utf-8";
     JS::RootedString str(
         cx, gjs_decode_from_uint8array(cx, this_obj, actual_encoding,
-                                       GjsStringTermination::ZERO_TERMINATED));
+                                       GjsStringTermination::ZERO_TERMINATED, true));
     if (!str)
         return false;
 
