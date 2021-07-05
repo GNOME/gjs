@@ -31,8 +31,10 @@ globals:
   setTimeout: writable
 overrides:
   - files:
+      - matchers.js
       - testCairoModule.js
       - testESModules.js
+      - testEncoding.js
       - modules/importmeta.js
       - modules/exports.js
       - modules/say.js
