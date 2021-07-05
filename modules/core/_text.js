@@ -4,6 +4,39 @@
 const Encoding = imports._encodingNative;
 
 const { getEncodingFromLabel } = imports._encodings;
+const { singleByteEncodings } = imports._singleByteEncodings;
+
+/**
+ * @param {number[]} encoding 
+ * @param {number} byte
+ * @param {boolean} fatal
+ * @returns {number}
+ */
+const decodeSingleByteEncodingCharacter = (encoding, byte, fatal) => {
+    if (byte < 0x80) {
+        return byte;
+    } else {
+        if (encoding[byte - 0x80] == null && fatal) {
+            throw new TypeError(`Invalid character in decode.`);
+        }
+        return encoding[byte - 0x80] ?? 0xFFFD;
+    }
+}
+
+/**
+ * @param {number[]} encoding
+ * @param {Uint8Array} bytes 
+ * @param {boolean} fatal
+ * @returns {string}
+ */
+const decodeSingleByteEncoding = (encoding, bytes, fatal) => {
+    const decoded = [...bytes.values()].map(byte => decodeSingleByteEncodingCharacter(encoding, byte, fatal));
+
+    return String.fromCodePoint(...decoded);
+};
+
+const isSingleByteEncoding = (label) => label in singleByteEncodings;
+const getSingleByteEncoding = (label) => singleByteEncodings[label];
 
 var TextDecoder = class TextDecoder {
     /**  
@@ -123,6 +156,12 @@ var TextDecoder = class TextDecoder {
 
             let { buffer, byteLength, byteOffset } = input;
             input = new Uint8Array(buffer, byteOffset + 3, byteLength - 3);
+        }
+
+        if (isSingleByteEncoding(this._internalEncoding)) {
+            const encoding = getSingleByteEncoding(this._internalEncoding);
+
+            return decodeSingleByteEncoding(encoding, input, this.fatal);
         }
 
         return Encoding.decode(input, this._internalEncoding, this.fatal);
