@@ -125,7 +125,7 @@ var TextDecoder = class TextDecoder {
             input = new Uint8Array(buffer, byteOffset + 3, byteLength - 3);
         }
 
-        return Encoding.decode(input, this._internalEncoding);
+        return Encoding.decode(input, this._internalEncoding, this.fatal);
     }
 }
 

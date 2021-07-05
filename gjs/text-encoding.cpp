@@ -62,9 +62,104 @@ static const char* UTF16_CODESET = "UTF-16BE";
 #endif
 
 GJS_JSAPI_RETURN_CONVENTION
+static JSString* gjs_lossy_decode_from_uint8array_slow(
+    JSContext* cx, uint8_t* bytes, size_t bytes_len, const char* from_codeset) {
+    GError* error = nullptr;
+    GjsAutoUnref<GCharsetConverter> converter(
+        g_charset_converter_new(UTF16_CODESET, from_codeset, &error));
+
+    // This should only throw if an encoding is not available.
+    if (error)
+        return gjs_throw_type_error_from_gerror(cx, error);
+
+    // TODO(ewlsh): We can likely be more intelligent about our initial
+    // allocation and allocate based on bytes_len
+    int buffer_size = 1024;
+
+    // Cast data to correct input types
+    const char* input = reinterpret_cast<const char*>(bytes);
+    size_t input_len = bytes_len;
+
+    // The base string that we'll append to.
+    std::u16string output_str = u"";
+
+    do {
+        // Create a buffer to convert into.
+        std::vector<char> buffer(buffer_size);
+        size_t bytes_written = 0, bytes_read = 0;
+
+        g_converter_convert(G_CONVERTER(converter.get()), input, input_len,
+                            buffer.data(), buffer.size(),
+                            G_CONVERTER_INPUT_AT_END, &bytes_read,
+                            &bytes_written, &error);
+
+        // If bytes were read, adjust input.
+        if (bytes_read > 0) {
+            input += bytes_read;
+            input_len -= bytes_read;
+        }
+
+        // If bytes were written append the buffer contents to our string
+        // accumulator
+        if (bytes_written > 0) {
+            char16_t* utf16_buffer = reinterpret_cast<char16_t*>(buffer.data());
+            // UTF-16 uses exactly 2 bytes for every character.
+            output_str.append(utf16_buffer, bytes_written / 2);
+        } else if (error) {
+            // A PARTIAL_INPUT error can only occur if the user does not provide
+            // the full sequence for a multi-byte character, we skip over the
+            // next character and insert a unicode fallback.
+
+            // An INVALID_DATA error occurs when there is no way to decode a
+            // given byte into UTF-16 or the given byte does not exist in the
+            // source encoding.
+            if (g_error_matches(error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA) ||
+                g_error_matches(error, G_IO_ERROR, G_IO_ERROR_PARTIAL_INPUT)) {
+                // If we're already at the end of the string, don't insert a
+                // fallback.
+                if (input_len > 0) {
+                    // Skip the next byte and reduce length by one.
+                    input += 1;
+                    input_len -= 1;
+
+                    // Append the unicode fallback character to the output
+                    output_str.append(u"\ufffd", 1);
+                }
+
+                // Clear the error.
+                g_clear_error(&error);
+            } else if (g_error_matches(error, G_IO_ERROR,
+                                       G_IO_ERROR_NO_SPACE)) {
+                // If the buffer was full increase the buffer
+                // size and re-try the conversion.
+                buffer_size += 512;
+
+                // Clear the error.
+                g_clear_error(&error);
+            }
+        }
+
+        // Stop decoding if an unknown error occurs.
+    } while (input_len > 0 && !error);
+
+    // An unexpected error occurred.
+    if (error)
+        return gjs_throw_type_error_from_gerror(cx, error);
+
+    // Copy the accumulator's data into a JSString of Unicode (UTF-16) chars.
+    return JS_NewUCStringCopyN(cx, output_str.c_str(), output_str.size());
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static JSString* gjs_decode_from_uint8array_slow(JSContext* cx, uint8_t* input,
                                                  uint32_t input_len,
-                                                 const char* encoding) {
+                                                 const char* encoding,
+                                                 bool fatal) {
+    // If the decoding is not fatal we use the lossy decoder.
+    if (!fatal)
+        return gjs_lossy_decode_from_uint8array_slow(cx, input, input_len,
+                                                     encoding);
+
     size_t bytes_written, bytes_read;
     GError* error = nullptr;
 
@@ -113,7 +208,8 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx, uint8_t* input,
 // decode() function implementation
 JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
                                      const char* encoding,
-                                     GjsStringTermination string_termination) {
+                                     GjsStringTermination string_termination,
+                                     bool fatal) {
     if (!JS_IsUint8Array(byte_array)) {
         gjs_throw(cx, "Argument to decode() must be a Uint8Array");
         return nullptr;
@@ -140,37 +236,43 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
     // and encoders.
     bool encoding_is_utf8 = is_utf8_label(encoding);
     if (!encoding_is_utf8)
-        return gjs_decode_from_uint8array_slow(cx, data, len, encoding);
+        return gjs_decode_from_uint8array_slow(cx, data, len, encoding, fatal);
 
     JS::RootedString decoded(cx);
-    JS::UTF8Chars chars(reinterpret_cast<char*>(data), len);
-    JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
-
-    // If an exception occurred, we need to check if the
-    // exception was an InternalError. Unfortunately,
-    // SpiderMonkey's decoder can throw InternalError for some
-    // invalid UTF-8 sources, we have to convert this into a
-    // TypeError to match the Encoding specification.
-    if (str) {
-        decoded.set(str);
+    if (!fatal) {
+        decoded.set(gjs_lossy_string_from_utf8_n(
+            cx, reinterpret_cast<char*>(data), len));
     } else {
-        if (!JS_IsExceptionPending(cx))
-            return nullptr;
-        JS::RootedValue exc(cx);
-        if (!JS_GetPendingException(cx, &exc) || !exc.isObject())
-            return nullptr;
+        JS::UTF8Chars chars(reinterpret_cast<char*>(data), len);
+        JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
 
-        JS::RootedObject exc_obj(cx, &exc.toObject());
-        const JSClass* internal_error =
-            js::ProtoKeyToClass(JSProto_InternalError);
-        if (JS_InstanceOf(cx, exc_obj, internal_error, nullptr)) {
-            // Clear the existing exception.
-            JS_ClearPendingException(cx);
-            gjs_throw_custom(cx, JSProto_TypeError, nullptr,
-                             "The provided encoded data was not valid UTF-8");
+        // If an exception occurred, we need to check if the
+        // exception was an InternalError. Unfortunately,
+        // SpiderMonkey's decoder can throw InternalError for some
+        // invalid UTF-8 sources, we have to convert this into a
+        // TypeError to match the Encoding specification.
+        if (str) {
+            decoded.set(str);
+        } else {
+            if (!JS_IsExceptionPending(cx))
+                return nullptr;
+            JS::RootedValue exc(cx);
+            if (!JS_GetPendingException(cx, &exc) || !exc.isObject())
+                return nullptr;
+
+            JS::RootedObject exc_obj(cx, &exc.toObject());
+            const JSClass* internal_error =
+                js::ProtoKeyToClass(JSProto_InternalError);
+            if (JS_InstanceOf(cx, exc_obj, internal_error, nullptr)) {
+                // Clear the existing exception.
+                JS_ClearPendingException(cx);
+                gjs_throw_custom(
+                    cx, JSProto_TypeError, nullptr,
+                    "The provided encoded data was not valid UTF-8");
+            }
+
+            return nullptr;
         }
-
-        return nullptr;
     }
 
     uint8_t* current_data;
@@ -202,7 +304,7 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
 
     // This was the UTF-8 optimized path, so we explicitly pass the encoding
     return gjs_decode_from_uint8array_slow(cx, current_data, current_len,
-                                           "UTF-8");
+                                           "UTF-8", fatal);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -211,13 +313,16 @@ static bool gjs_decode(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     JS::RootedObject byte_array(cx);
     JS::UniqueChars encoding;
-    if (!gjs_parse_call_args(cx, "decode", args, "os", "byteArray", &byte_array,
-                             "encoding", &encoding))
+    bool fatal = false;
+    if (!gjs_parse_call_args(cx, "decode", args, "os|b", "byteArray",
+                             &byte_array, "encoding", &encoding, "fatal",
+                             &fatal))
         return false;
 
     JS::RootedString decoded(
         cx, gjs_decode_from_uint8array(cx, byte_array, encoding.get(),
-                                       GjsStringTermination::EXPLICIT_LENGTH));
+                                       GjsStringTermination::EXPLICIT_LENGTH,
+                                       fatal));
     if (!decoded)
         return false;
 

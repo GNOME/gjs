@@ -22,7 +22,8 @@ enum class GjsStringTermination {
 GJS_JSAPI_RETURN_CONVENTION
 JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
                                      const char* encoding,
-                                     GjsStringTermination string_termination);
+                                     GjsStringTermination string_termination,
+                                     bool fatal);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
