@@ -2,3 +2,6 @@
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
 // Bootstrap file which supports ESM imports.
+
+// Bootstrap the Encoding API
+import '_encoding/encoding';

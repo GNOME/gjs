@@ -9,6 +9,10 @@
 
     <!-- ESM-based modules -->
     <file>modules/esm/_bootstrap/default.js</file>
+
+    <file>modules/esm/_encoding/encoding.js</file>
+    <file>modules/esm/_encoding/encodingMap.js</file>
+    <file>modules/esm/_encoding/util.js</file>
   
     <file>modules/esm/cairo.js</file>
     <file>modules/esm/gettext.js</file>

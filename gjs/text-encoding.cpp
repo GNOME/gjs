@@ -207,6 +207,26 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
                                            "UTF-8");
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_decode(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject byte_array(cx);
+    JS::UniqueChars encoding;
+    if (!gjs_parse_call_args(cx, "decode", args, "os", "byteArray", &byte_array,
+                             "encoding", &encoding))
+        return false;
+
+    JS::RootedString decoded(
+        cx, gjs_decode_from_uint8array(cx, byte_array, encoding.get(),
+                                       GjsStringTermination::EXPLICIT_LENGTH));
+    if (!decoded)
+        return false;
+
+    args.rval().setString(decoded);
+    return true;
+}
+
 // encode() function implementation
 JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
                                    const char* encoding,
@@ -349,7 +369,41 @@ static bool gjs_encode_into_uint8array(JSContext* cx, JS::HandleString str,
     return true;
 }
 
-static JSFunctionSpec gjs_text_encoding_module_funcs[] = {JS_FS_END};
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_encode(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedString str(cx);
+    JS::UniqueChars encoding;
+    if (!gjs_parse_call_args(cx, "encode", args, "Ss", "string", &str,
+                             "encoding", &encoding))
+        return false;
+
+    JS::RootedObject uint8array(
+        cx, gjs_encode_to_uint8array(cx, str, encoding.get(),
+                                     GjsStringTermination::EXPLICIT_LENGTH));
+    if (!uint8array)
+        return false;
+
+    args.rval().setObject(*uint8array);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_encode_into(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedString str(cx);
+    JS::RootedObject uint8array(cx);
+    if (!gjs_parse_call_args(cx, "encodeInto", args, "So", "string", &str,
+                             "byteArray", &uint8array))
+        return false;
+
+    return gjs_encode_into_uint8array(cx, str, uint8array, args.rval());
+}
+
+static JSFunctionSpec gjs_text_encoding_module_funcs[] = {
+    JS_FN("decode", gjs_decode, 3, 0),
+    JS_FN("encodeInto", gjs_encode_into, 2, 0),
+    JS_FN("encode", gjs_encode, 2, 0), JS_FS_END};
 
 bool gjs_define_text_encoding_stuff(JSContext* cx,
                                     JS::MutableHandleObject module) {
