@@ -106,6 +106,7 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Likely.h>
 #include <mozilla/UniquePtr.h>
+#include <mozilla/Unused.h>
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/history.h>
 #include <readline/readline.h>
