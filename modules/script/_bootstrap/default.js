@@ -6,6 +6,7 @@
     'use strict';
 
     const {print, printerr, log, logError} = imports._print;
+    const {TextEncoder, TextDecoder} = imports._text;
 
     Object.defineProperties(exports, {
         ARGV: {
@@ -15,6 +16,18 @@
                 // Wait until after bootstrap or programArgs won't be set.
                 return imports.system.programArgs;
             },
+        },
+        TextEncoder: {
+            configurable: false,
+            enumerable: true,
+            writable: false,
+            value: TextEncoder,
+        },
+        TextDecoder: {
+            configurable: false,
+            enumerable: true,
+            writable: false,
+            value: TextDecoder,
         },
         print: {
             configurable: false,

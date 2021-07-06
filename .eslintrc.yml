@@ -242,6 +242,9 @@ rules:
     - inside
   yield-star-spacing: error
   yoda: error
+settings:
+  jsdoc:
+    mode: typescript
 globals:
   ARGV: readonly
   Debugger: readonly
@@ -254,5 +257,7 @@ globals:
   print: readonly
   printerr: readonly
   window: readonly
+  TextEncoder: readonly
+  TextDecoder: readonly
 parserOptions:
   ecmaVersion: 2020
