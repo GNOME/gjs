@@ -14,9 +14,20 @@
 
 #include "gjs/macros.h"
 
+enum class GjsStringTermination {
+    ZERO_TERMINATED,
+    EXPLICIT_LENGTH,
+};
+
 GJS_JSAPI_RETURN_CONVENTION
-bool bytearray_to_string(JSContext* cx, JS::HandleObject uint8array,
-                         const char* encoding, JS::MutableHandleValue rval);
+JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
+                                     const char* encoding,
+                                     GjsStringTermination string_termination);
+
+GJS_JSAPI_RETURN_CONVENTION
+JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
+                                   const char* encoding,
+                                   GjsStringTermination string_termination);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_text_encoding_stuff(JSContext* cx,

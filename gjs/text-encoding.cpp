@@ -35,6 +35,20 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/text-encoding.h"
 
+// Callback to use with JS::NewExternalArrayBuffer()
+
+static void gfree_arraybuffer_contents(void* contents, void*) {
+    g_free(contents);
+}
+
+static std::nullptr_t gjs_throw_type_error_from_gerror(JSContext* cx,
+                                                       GError* error) {
+    g_return_val_if_fail(error, nullptr);
+    gjs_throw_custom(cx, JSProto_TypeError, nullptr, "%s", error->message);
+    g_error_free(error);
+    return nullptr;
+}
+
 // UTF16_CODESET is used to encode and decode UTF-16 buffers with
 // iconv. To ensure the output of iconv is laid out in memory correctly
 // we have to use UTF-16LE on little endian systems and UTF-16BE on big
@@ -46,6 +60,29 @@ static const char* UTF16_CODESET = "UTF-16LE";
 #else
 static const char* UTF16_CODESET = "UTF-16BE";
 #endif
+
+GJS_JSAPI_RETURN_CONVENTION
+static JSString* gjs_decode_from_uint8array_slow(JSContext* cx, uint8_t* input,
+                                                 uint32_t input_len,
+                                                 const char* encoding) {
+    size_t bytes_written, bytes_read;
+    GError* error = nullptr;
+
+    GjsAutoChar bytes =
+        g_convert(reinterpret_cast<char*>(input), input_len, UTF16_CODESET,
+                  encoding, &bytes_read, &bytes_written, &error);
+
+    if (error)
+        return gjs_throw_type_error_from_gerror(cx, error);
+
+    // bytes_written should be bytes in a UTF-16 string so should be a
+    // multiple of 2
+    g_assert((bytes_written % 2) == 0);
+
+    // Cast g_convert's output to char16_t and copy the data.
+    const char16_t* unicode_bytes = reinterpret_cast<char16_t*>(bytes.get());
+    return JS_NewUCStringCopyN(cx, unicode_bytes, bytes_written / 2);
+}
 
 [[nodiscard]] static bool is_utf8_label(const char* encoding) {
     // We could be smarter about utf8 synonyms here.
@@ -62,71 +99,78 @@ static const char* UTF16_CODESET = "UTF-16BE";
            strcasecmp(stripped, "utf8") == 0;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool to_string_impl_slow(JSContext* cx, uint8_t* data, uint32_t len,
-                                const char* encoding,
-                                JS::MutableHandleValue rval) {
-    size_t bytes_written;
-    GError* error = nullptr;
-    GjsAutoChar u16_str =
-        g_convert(reinterpret_cast<char*>(data), len, UTF16_CODESET, encoding,
-                  /* bytes_read = */ nullptr, &bytes_written, &error);
-    if (!u16_str)
-        return gjs_throw_gerror_message(cx, error);  // frees GError
+// Finds the length of a given data array, stopping at the first 0 byte.
+[[nodiscard]] static uint32_t zero_terminated_length(uint8_t* data,
+                                                     uint32_t len) {
+    uint8_t *start = data, *end = data + (len * sizeof(uint8_t));
+    uint8_t* found = std::find(start, end, 0);
+    if (found != end)
+        return std::distance(data, found) / sizeof(uint8_t);
 
-    // bytes_written should be bytes in a UTF-16 string so should be a multiple
-    // of 2
-    g_assert((bytes_written % 2) == 0);
-
-    // g_convert 0-terminates the string, although the 0 isn't included in
-    // bytes_written
-    JSString* s =
-        JS_NewUCStringCopyZ(cx, reinterpret_cast<char16_t*>(u16_str.get()));
-    if (!s)
-        return false;
-
-    rval.setString(s);
-    return true;
+    return len;
 }
 
-// implement ByteArray.toString() with an optional encoding arg
-bool bytearray_to_string(JSContext* context, JS::HandleObject byte_array,
-                         const char* encoding, JS::MutableHandleValue rval) {
+// decode() function implementation
+JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
+                                     const char* encoding,
+                                     GjsStringTermination string_termination) {
     if (!JS_IsUint8Array(byte_array)) {
-        gjs_throw(context,
-                  "Argument to ByteArray.toString() must be a Uint8Array");
-        return false;
+        gjs_throw(cx, "Argument to decode() must be a Uint8Array");
+        return nullptr;
     }
-
-    bool encoding_is_utf8 = true;
-    if (encoding)
-        encoding_is_utf8 = is_utf8_label(encoding);
 
     uint8_t* data;
     uint32_t len;
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
 
-    if (len == 0) {
-        rval.setString(JS_GetEmptyString(context));
-        return true;
-    }
+    // If the desired behavior is zero-terminated, calculate the
+    // zero-terminated length of the given data. If the original
+    // length, len, is smaller than the zero-terminated length,
+    // use it.
+    if (len && string_termination == GjsStringTermination::ZERO_TERMINATED)
+        len = std::min(len, zero_terminated_length(data, len));
 
+    // If the calculated length is 0 we can just return an empty string.
+    if (len == 0)
+        return JS_GetEmptyString(cx);
+
+    // Optimization, only use glib's iconv-based converters if we're dealing
+    // with a non-UTF8 encoding. SpiderMonkey has highly optimized UTF-8 decoder
+    // and encoders.
+    bool encoding_is_utf8 = is_utf8_label(encoding);
     if (!encoding_is_utf8)
-        return to_string_impl_slow(context, data, len, encoding, rval);
+        return gjs_decode_from_uint8array_slow(cx, data, len, encoding);
 
-    // optimization, avoids iconv overhead and runs libmozjs hardwired
-    // utf8-to-utf16
+    JS::RootedString decoded(cx);
+    JS::UTF8Chars chars(reinterpret_cast<char*>(data), len);
+    JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
 
-    // If there are any 0 bytes, including the terminating byte, stop at the
-    // first one
-    if (data[len - 1] == 0 || memchr(data, 0, len)) {
-        if (!gjs_string_from_utf8(context, reinterpret_cast<char*>(data), rval))
-            return false;
+    // If an exception occurred, we need to check if the
+    // exception was an InternalError. Unfortunately,
+    // SpiderMonkey's decoder can throw InternalError for some
+    // invalid UTF-8 sources, we have to convert this into a
+    // TypeError to match the Encoding specification.
+    if (str) {
+        decoded.set(str);
     } else {
-        if (!gjs_string_from_utf8_n(context, reinterpret_cast<char*>(data), len,
-                                    rval))
-            return false;
+        if (!JS_IsExceptionPending(cx))
+            return nullptr;
+        JS::RootedValue exc(cx);
+        if (!JS_GetPendingException(cx, &exc) || !exc.isObject())
+            return nullptr;
+
+        JS::RootedObject exc_obj(cx, &exc.toObject());
+        const JSClass* internal_error =
+            js::ProtoKeyToClass(JSProto_InternalError);
+        if (JS_InstanceOf(cx, exc_obj, internal_error, nullptr)) {
+            // Clear the existing exception.
+            JS_ClearPendingException(cx);
+            gjs_throw_custom(cx, JSProto_TypeError, nullptr,
+                             "The provided encoded data was not valid UTF-8");
+        }
+
+        return nullptr;
     }
 
     uint8_t* current_data;
@@ -134,23 +178,167 @@ bool bytearray_to_string(JSContext* context, JS::HandleObject byte_array,
     bool ignore_val;
 
     // If a garbage collection occurs between when we call
-    // js::GetUint8ArrayLengthAndData and return from gjs_string_from_utf8, a
-    // use-after-free corruption can occur if the garbage collector shifts the
-    // location of the Uint8Array's private data. To mitigate this we call
-    // js::GetUint8ArrayLengthAndData again and then compare if the length and
-    // pointer are still the same. If the pointers differ, we use the slow path
-    // to ensure no data corruption occurred. The shared-ness of an array cannot
-    // change between calls, so we ignore it.
+    // js::GetUint8ArrayLengthAndData and return from
+    // gjs_decode_from_uint8array, a use-after-free corruption can occur if the
+    // garbage collector shifts the location of the Uint8Array's private data.
+    // To mitigate this we call js::GetUint8ArrayLengthAndData again and then
+    // compare if the length and pointer are still the same. If the pointers
+    // differ, we use the slow path to ensure no data corruption occurred. The
+    // shared-ness of an array cannot change between calls, so we ignore it.
     js::GetUint8ArrayLengthAndData(byte_array, &current_len, &ignore_val,
                                    &current_data);
 
     // Ensure the private data hasn't changed
-    if (current_len == len && current_data == data)
-        return true;
+    if (current_data == data)
+        return decoded;
+
+    // Length shouldn't change across calls but recalculate
+    // based on the moved data to be sure.
+    if (current_len &&
+        string_termination == GjsStringTermination::ZERO_TERMINATED) {
+        current_len = std::min(
+            current_len, zero_terminated_length(current_data, current_len));
+    }
 
     // This was the UTF-8 optimized path, so we explicitly pass the encoding
-    return to_string_impl_slow(context, current_data, current_len, "UTF-8",
-                               rval);
+    return gjs_decode_from_uint8array_slow(cx, current_data, current_len,
+                                           "UTF-8");
+}
+
+// encode() function implementation
+JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
+                                   const char* encoding,
+                                   GjsStringTermination string_termination) {
+    JS::RootedObject array_buffer(cx);
+
+    bool encoding_is_utf8 = is_utf8_label(encoding);
+    if (encoding_is_utf8) {
+        char* utf8;
+        size_t utf8_len;
+
+        if (!gjs_string_to_utf8_n(cx, str, &utf8, &utf8_len))
+            return nullptr;
+
+        if (string_termination == GjsStringTermination::ZERO_TERMINATED) {
+            utf8_len = std::min(utf8_len, strlen(utf8));
+        }
+
+        array_buffer = JS::NewArrayBufferWithContents(cx, utf8_len, utf8);
+    } else {
+        GError* error = nullptr;
+        char* encoded = nullptr;
+        gsize bytes_written;
+
+        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered
+         * while we are using the string's chars */
+        {
+            JS::AutoCheckCannotGC nogc;
+            size_t len;
+
+            if (JS_StringHasLatin1Chars(str)) {
+                const JS::Latin1Char* chars =
+                    JS_GetLatin1StringCharsAndLength(cx, nogc, str, &len);
+                if (!chars)
+                    return nullptr;
+
+                encoded =
+                    g_convert(reinterpret_cast<const char*>(chars), len,
+                              /* to_encoding */ encoding,
+                              /* from_encoding */ "LATIN1",
+                              /* bytes read */ nullptr, &bytes_written, &error);
+            } else {
+                const char16_t* chars =
+                    JS_GetTwoByteStringCharsAndLength(cx, nogc, str, &len);
+                if (!chars)
+                    return nullptr;
+
+                encoded =
+                    g_convert(reinterpret_cast<const char*>(chars), len * 2,
+                              encoding,  // to_encoding
+                              "UTF-16",  /* from_encoding */
+                              nullptr,   /* bytes read */
+                              &bytes_written, &error);
+            }
+        }
+
+        if (!encoded)
+            return gjs_throw_type_error_from_gerror(cx, error);  // frees GError
+
+        if (bytes_written == 0) {
+            g_free(encoded);
+            JS::RootedObject empty_array(cx, JS_NewUint8Array(cx, 0));
+            if (!empty_array)
+                return nullptr;
+
+            return empty_array;
+        }
+
+        array_buffer = JS::NewExternalArrayBuffer(
+            cx, bytes_written, encoded, gfree_arraybuffer_contents, nullptr);
+    }
+
+    if (!array_buffer)
+        return nullptr;
+
+    return JS_NewUint8ArrayWithBuffer(cx, array_buffer, 0, -1);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_encode_into_uint8array(JSContext* cx, JS::HandleString str,
+                                       JS::HandleObject uint8array,
+                                       JS::MutableHandleValue rval) {
+    if (!JS_IsUint8Array(uint8array)) {
+        gjs_throw_custom(cx, JSProto_TypeError, nullptr,
+                         "Argument to encodeInto() must be a Uint8Array");
+        return false;
+    }
+
+    uint32_t len = JS_GetTypedArrayByteLength(uint8array);
+    bool shared = JS_GetTypedArraySharedness(uint8array);
+
+    if (shared) {
+        gjs_throw(cx, "Cannot encode data into shared memory.");
+        return false;
+    }
+
+    mozilla::Maybe<mozilla::Tuple<size_t, size_t>> results;
+
+    {
+        JS::AutoCheckCannotGC nogc(cx);
+        uint8_t* data = JS_GetUint8ArrayData(uint8array, &shared, nogc);
+
+        // We already checked for sharedness with JS_GetTypedArraySharedness
+        g_assert(!shared);
+
+        results = JS_EncodeStringToUTF8BufferPartial(
+            cx, str, mozilla::AsWritableChars(mozilla::Span(data, len)));
+    }
+
+    if (!results) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+
+    size_t read, written;
+
+    mozilla::Tie(read, written) = *results;
+
+    g_assert(written <= len);
+
+    JS::RootedObject result(cx, JS_NewPlainObject(cx));
+    if (!result)
+        return false;
+
+    JS::RootedValue readv(cx, JS::NumberValue(read)),
+        writtenv(cx, JS::NumberValue(written));
+
+    if (!JS_SetProperty(cx, result, "read", readv) ||
+        !JS_SetProperty(cx, result, "written", writtenv)) {
+        return false;
+    }
+
+    rval.setObject(*result);
+    return true;
 }
 
 static JSFunctionSpec gjs_text_encoding_module_funcs[] = {JS_FS_END};

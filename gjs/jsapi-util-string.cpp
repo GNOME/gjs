@@ -19,7 +19,6 @@
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
-#include <js/ComparisonOperators.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/Id.h>     // for JSID_IS_STRING...
 #include <js/Promise.h>
@@ -90,6 +89,42 @@ JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
 
     JS::RootedString str(cx, value.toString());
     return JS_EncodeStringToUTF8(cx, str);
+}
+
+/**
+ * gjs_string_to_utf8:
+ * @param cx: the current #JSContext
+ * @param str: a handle to a JSString
+ * @param output a pointer for the output char array
+ * @param output_len a pointer for the length of output
+ *
+ * @brief Converts a JSString to UTF-8 and puts the char array in #output and
+ * its length in #output_len.
+ *
+ * This function is a wrapper around the JSAPI for deflating UTF-8, it should
+ * be used instead of using JS::DeflateStringToUTF8Buffer directly.
+ */
+bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, char** output,
+                          size_t* output_len) {
+    JSLinearString* linear = JS_EnsureLinearString(cx, str);
+    if (!linear)
+        return false;
+
+    size_t length = JS::GetDeflatedUTF8StringLength(linear);
+    char* bytes = static_cast<char*>(g_malloc(length + 1));
+    if (!bytes)
+        return false;
+
+    // Append a zero-terminator to the string.
+    bytes[length] = '\0';
+
+    size_t deflated_length [[maybe_unused]] =
+        JS::DeflateStringToUTF8Buffer(linear, mozilla::Span(bytes, length));
+    g_assert(deflated_length == length);
+
+    *output_len = length;
+    *output = bytes;
+    return true;
 }
 
 bool
