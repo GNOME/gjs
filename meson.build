@@ -543,7 +543,6 @@ link_args += cxx.get_supported_link_arguments([
 
 libgjs = shared_library(meson.project_name(),
     sources: [ libgjs_private_sources, module_resource_srcs ],
-    cpp_pch: pch_headers,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     link_whole: libgjs_internal,
     dependencies: base_build_dep,
