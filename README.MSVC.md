@@ -123,6 +123,13 @@ Get rid of the 'JS_FRIEND_API' macro from the class
 'TempAllocPolicy : public AllocPolicyBase' (ca. lines 112 and 178),
 for the member method definitions of onOutOfMemory() and reportAllocOverflow()
 
+-Update $(includedir)/mozjs-78/js/BigInt.h (after the build):
+
+Remove the 'JS_PUBLIC_API' macro from the definition of
+'template <typename NumericT>
+extern BigInt* NumberToBigInt(JSContext* cx, NumericT val)' (ca lines 72-73), as
+it should not be there.
+
 ======================
 To carry out the build
 ======================
