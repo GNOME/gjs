@@ -54,12 +54,13 @@ static const char* UTF16_CODESET = "UTF-16BE";
     //
     // is_utf8_label is only an optimization, so if a label
     // doesn't match we just use the slower path.
-    if (strcasecmp(encoding, "utf-8") == 0 || strcasecmp(encoding, "utf8") == 0)
+    if (g_ascii_strcasecmp(encoding, "utf-8") == 0 ||
+        g_ascii_strcasecmp(encoding, "utf8") == 0)
         return true;
 
     GjsAutoChar stripped(g_strdup(encoding));
-    return strcasecmp(g_strstrip(stripped), "utf-8") == 0 ||
-           strcasecmp(stripped, "utf8") == 0;
+    return g_ascii_strcasecmp(g_strstrip(stripped), "utf-8") == 0 ||
+           g_ascii_strcasecmp(stripped, "utf8") == 0;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
