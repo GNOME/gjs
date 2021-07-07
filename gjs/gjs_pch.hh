@@ -28,7 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -121,8 +120,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <syscall.h>
 #ifdef ENABLE_PROFILER
+#include <alloca.h>
+#include <syscall.h>
 #include <sysprof-capture.h>
 #endif
 #ifdef HAVE_UNISTD_H
