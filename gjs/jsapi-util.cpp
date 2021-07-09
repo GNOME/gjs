@@ -517,12 +517,10 @@ static void _linux_get_self_process_size(long* rss_size)  // NOLINT(runtime/int)
 
     *rss_size = 0;
 
-    char* contents_unowned;
-    if (!g_file_get_contents("/proc/self/stat", &contents_unowned, &len,
-                             nullptr))
+    GjsAutoChar contents;
+    if (!g_file_get_contents("/proc/self/stat", contents.out(), &len, nullptr))
         return;
 
-    GjsAutoChar contents = contents_unowned;
     iter = contents;
     // See "man proc" for where this 23 comes from
     for (i = 0; i < 23; i++) {

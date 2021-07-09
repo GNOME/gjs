@@ -303,9 +303,9 @@ import_module_init(JSContext       *context,
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedValue ignored(context);
 
-    char* script_unowned;
-    if (!(g_file_load_contents(file, nullptr, &script_unowned, &script_len,
-                               nullptr, &error))) {
+    GjsAutoChar script;
+    if (!g_file_load_contents(file, nullptr, script.out(), &script_len, nullptr,
+                              &error)) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
@@ -315,8 +315,6 @@ import_module_init(JSContext       *context,
 
         return false;
     }
-
-    GjsAutoChar script = script_unowned;
     g_assert(script);
 
     GjsAutoChar full_path = g_file_get_parse_name(file);

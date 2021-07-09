@@ -70,12 +70,11 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     gjs_debug(GJS_DEBUG_IMPORTER, "Loading internal module '%s' (%s)",
               identifier, full_path.get());
 
-    char* script_unowned;
+    GjsAutoChar script;
     size_t script_len;
-    if (!gjs_load_internal_source(cx, full_path, &script_unowned, &script_len))
+    if (!gjs_load_internal_source(cx, full_path, script.out(), &script_len))
         return false;
 
-    GjsAutoChar script = script_unowned;
     JS::SourceText<mozilla::Utf8Unit> buf;
     if (!buf.init(cx, script.get(), script_len, JS::SourceOwnership::Borrowed))
         return false;
