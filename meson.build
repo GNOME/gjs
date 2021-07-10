@@ -495,9 +495,9 @@ if host_machine.system() == 'windows'
 endif
 
 pch_headers = ['gjs/gjs_pch.hh']
-if get_option('b_pch') and not meson.version().version_compare('>= 0.58.1')
+if get_option('b_pch') and not meson.version().version_compare('>= 0.59.0')
     if cxx.get_id() == 'gcc'
-        warning('Precompiled headers not supported with g++ and meson versions earlier than 0.58.1')
+        warning('Precompiled headers not supported with g++ and meson versions earlier than 0.59.0')
         pch_headers = []
     endif
 endif
