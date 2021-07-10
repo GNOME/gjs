@@ -161,6 +161,11 @@ class ModuleLoader extends InternalModuleLoader {
             if (!result)
                 return null;
 
+            // Check if module loaded while awaiting.
+            module = registry.get(uri.uri);
+            if (module)
+                return module;
+
             const [text, internal = false] = result;
 
             const priv = new ModulePrivate(uri.uri, uri.uri, internal);
