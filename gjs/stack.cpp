@@ -10,6 +10,7 @@
 #include <glib.h>
 
 #include <js/TypeDecls.h>
+#include <js/friend/DumpFunctions.h>
 #include <jsfriendapi.h>  // for DumpBacktrace
 
 #include "gjs/context.h"

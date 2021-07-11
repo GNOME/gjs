@@ -23,6 +23,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>     // for NullValue
+#include <js/friend/DumpFunctions.h>
 #include <jsapi.h>        // for JS_DefinePropertyById, JS_DefineF...
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 

@@ -19,6 +19,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <js/friend/DumpFunctions.h>
 #include <jsapi.h>        // for MaxFrames, CaptureCurrentStack
 #include <jsfriendapi.h>  // for FormatStackDump
 
