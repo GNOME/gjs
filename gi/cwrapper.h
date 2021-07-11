@@ -17,6 +17,7 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/Id.h>
+#include <js/Object.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
