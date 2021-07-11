@@ -64,7 +64,7 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     if (!style.pretty || dv === null || typeof dv !== 'object')
         return [dvrepr, undefined];
 
-    if (['Error', 'GIRespositoryNamespace', 'GObject_Object'].includes(dv.class)) {
+    if (['TypeError', 'Error', 'GIRespositoryNamespace', 'GObject_Object'].includes(dv.class)) {
         const errval = debuggeeGlobalWrapper.executeInGlobalWithBindings(
             'v.toString()', {v: dv});
         return [dvrepr, errval['return']];
