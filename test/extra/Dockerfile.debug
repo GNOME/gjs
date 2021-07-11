@@ -6,12 +6,12 @@
 FROM registry.fedoraproject.org/fedora:34 AS build
 ARG MOZJS_BRANCH=mozjs78
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
-ARG BUILD_OPTS=
+ARG BUILD_OPTS=AUTOCONF=autoconf
 
 ENV SHELL=/bin/bash
 
 RUN dnf -y install 'dnf-command(builddep)' autoconf213 clang-devel cmake git \
-    llvm-devel make ninja-build which
+    llvm-devel make ninja-build which xz clang llvm rust
 RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root
@@ -35,7 +35,7 @@ RUN mkdir -p mozjs/_build
 WORKDIR /root/mozjs/_build
 
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
-    --with-system-zlib --with-intl-api --enable-debug AUTOCONF=autoconf \
+    --with-system-zlib --with-intl-api --enable-debug \
     ${BUILD_OPTS}
 RUN make -j$(nproc)
 RUN DESTDIR=/root/mozjs-install make install
