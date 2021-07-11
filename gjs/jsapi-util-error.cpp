@@ -68,11 +68,14 @@
         goto out;
     }
 
-    if (!JS_GetClassObject(context, error_kind, &constructor))
+    if (!JS_GetClassObject(context, error_kind, &constructor) || !constructor)
         goto out;
 
+    v_constructor.setObject(*constructor);
+
     /* throw new Error(message) */
-    new_exc = JS_New(context, constructor, error_args);
+    if (!JS::Construct(context, v_constructor, error_args, &new_exc))
+        goto out;
 
     if (!new_exc)
         goto out;

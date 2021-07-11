@@ -335,8 +335,14 @@ gjs_error_from_js_gerror(JSContext *cx,
     JS::RootedObject error_constructor(cx);
     if (!JS_GetClassObject(cx, error_kind, &error_constructor))
         return nullptr;
+    JS::RootedValue error_constructorv(cx);
+    error_constructorv.setObject(*error_constructor);
 
-    return JS_New(cx, error_constructor, error_args);
+    JS::RootedObject object(cx);
+    if (!JS::Construct(cx, error_constructorv, error_args, &object))
+        return nullptr;
+
+    return object;
 }
 
 JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
