@@ -137,7 +137,8 @@ static GObject* gjs_object_constructor(
     if (!constructor)
         return nullptr;
 
-    JSObject* object;
+    JS::RootedValue v_constructor(cx, JS::ObjectValue(*constructor));
+    JS::RootedObject object(cx);
     if (n_construct_properties) {
         JS::RootedObject props_hash(cx, JS_NewPlainObject(cx));
 
@@ -149,13 +150,13 @@ static GObject* gjs_object_constructor(
 
         JS::RootedValueArray<1> args(cx);
         args[0].set(JS::ObjectValue(*props_hash));
-        object = JS_New(cx, constructor, args);
-    } else {
-        object = JS_New(cx, constructor, JS::HandleValueArray::empty());
-    }
 
-    if (!object)
+        if (!JS::Construct(cx, v_constructor, args, &object))
+            return nullptr;
+    } else if (!JS::Construct(cx, v_constructor, JS::HandleValueArray::empty(),
+                              &object)) {
         return nullptr;
+    }
 
     auto* priv = ObjectBase::for_js_nocheck(object);
     /* Should have been set in init_impl() and pushed into object_init_list,

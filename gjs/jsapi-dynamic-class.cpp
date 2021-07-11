@@ -141,7 +141,12 @@ gjs_construct_object_dynamic(JSContext                  *context,
                                      atoms.constructor(), &constructor))
         return NULL;
 
-    return JS_New(context, constructor, args);
+    JS::RootedValue v_constructor(context, JS::ObjectValue(*constructor));
+    JS::RootedObject object(context);
+    if (!JS::Construct(context, v_constructor, args, &object))
+        return nullptr;
+
+    return object;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
