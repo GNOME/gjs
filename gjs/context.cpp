@@ -620,7 +620,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to instantiate module loader module.");
     }
 
-    if (!JS::ModuleEvaluate(cx, loader)) {
+    JS::RootedValue ignore(m_cx);
+    if (!JS::ModuleEvaluate(cx, loader, &ignore)) {
         gjs_log_exception(cx);
         g_error("Failed to evaluate module loader module.");
     }
@@ -1285,7 +1286,8 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     }
 
     bool ok = true;
-    if (!JS::ModuleEvaluate(m_cx, obj))
+    JS::RootedValue ignore(m_cx);
+    if (!JS::ModuleEvaluate(m_cx, obj, &ignore))
         ok = false;
 
     /* The promise job queue should be drained even on error, to finish
@@ -1377,7 +1379,7 @@ bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
-                                        const char* script, ssize_t script_len,
+                                        const char* script_, ssize_t script_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
     /* log and clear exception if it's set (should not be, normally...) */
@@ -1390,7 +1392,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!eval_obj)
         eval_obj = JS_NewPlainObject(m_cx);
 
-    std::u16string utf16_string = gjs_utf8_script_to_utf16(script, script_len);
+    std::u16string utf16_string = gjs_utf8_script_to_utf16(script_, script_len);
     // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
     // but that messes up code coverage. See bug
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
@@ -1406,7 +1408,9 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     }
 
     JS::CompileOptions options(m_cx);
-    options.setFileAndLine(filename, 1);
+    options.setFileAndLine(filename, 1)
+        .setdeferDebugMetadata()
+        .setNonSyntacticScope(true);
 
     GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
     GjsAutoChar uri = g_file_get_uri(file);
@@ -1414,9 +1418,22 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!priv)
         return false;
 
-    options.setPrivateValue(JS::ObjectValue(*priv));
+    JS::RootedValue privv(m_cx);
+    privv.setObject(*priv);
+    JS::RootedScript script(m_cx);
+    script.set(JS::Compile(m_cx, options, buf));
 
-    if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
+    if (!script)
+        return false;
+
+    // TODO -
+    // https://github.com/mozilla/gecko-dev/commit/810f80185c290c08ef83d24daf8dfc64ef42e378#diff-35d2bbb110db1669ead652e8dd00f4abd7a25dd44d9b24fa26d6c86cde123cfd
+    if (!JS::UpdateDebugMetadata(m_cx, script, options, privv, nullptr, nullptr,
+                                 nullptr)) {
+        return false;
+    }
+
+    if (!JS_ExecuteScript(m_cx, scope_chain, script, retval))
         return false;
 
     schedule_gc_if_needed();
