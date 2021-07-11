@@ -17,7 +17,7 @@
 
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
-#include <js/Id.h>                  // for JSID_IS_STRING, JSID_VOID
+#include <js/Id.h>                  // for JSID_VOID
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -156,7 +156,7 @@ repo_resolve(JSContext       *context,
              JS::HandleId     id,
              bool            *resolved)
 {
-    if (!JSID_IS_STRING(id)) {
+    if (!id.isString()) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
