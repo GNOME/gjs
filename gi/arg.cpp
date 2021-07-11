@@ -24,6 +24,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
+#include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_ReportOutOfMemory, JS_GetElement
 #include <jsfriendapi.h>  // for JS_IsUint8Array, JS_GetObjectFunc...
 
