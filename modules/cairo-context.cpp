@@ -13,6 +13,7 @@
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -368,7 +369,7 @@ dispose_func(JSContext *context,
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(context, argc, vp, rec, obj);
 
     cairo_destroy(cr);
-    JS_SetPrivate(obj, nullptr);
+    JS::SetPrivate(obj, nullptr);
 
     rec.rval().setUndefined();
     return true;

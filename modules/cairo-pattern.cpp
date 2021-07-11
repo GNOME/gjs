@@ -9,11 +9,12 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
+#include <jsapi.h>  // for JS_GetClass, ...
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -136,5 +137,5 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
         return nullptr;
     }
 
-    return static_cast<cairo_pattern_t*>(JS_GetPrivate(pattern_wrapper));
+    return static_cast<cairo_pattern_t*>(JS::GetPrivate(pattern_wrapper));
 }

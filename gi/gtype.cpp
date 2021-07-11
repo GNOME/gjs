@@ -12,6 +12,7 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/GCHashTable.h>         // for WeakCache
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -170,7 +171,7 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
         if (!gtype_wrapper)
             return nullptr;
 
-        JS_SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
+        JS::SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
 
         gjs->gtype_table().put(gtype, gtype_wrapper);
 

@@ -24,6 +24,7 @@
 #include <js/GCVector.h>  // for RootedVector
 #include <js/Id.h>
 #include <js/Modules.h>
+#include <js/Object.h>
 #include <js/Promise.h>
 #include <js/PropertyDescriptor.h>
 #include <js/Realm.h>
@@ -67,13 +68,13 @@ class GjsScriptModule {
     /* Private data accessors */
 
     [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
-        return static_cast<GjsScriptModule*>(JS_GetPrivate(module));
+        return static_cast<GjsScriptModule*>(JS::GetPrivate(module));
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
     [[nodiscard]] static JSObject* create(JSContext* cx, const char* name) {
         JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
-        JS_SetPrivate(module, new GjsScriptModule(name));
+        JS::SetPrivate(module, new GjsScriptModule(name));
         return module;
     }
 

@@ -11,13 +11,14 @@
 #include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
+#include <jsapi.h>  // for JS_GetClass, ...
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -272,7 +273,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         return nullptr;
     }
 
-    return static_cast<cairo_surface_t*>(JS_GetPrivate(surface_wrapper));
+    return static_cast<cairo_surface_t*>(JS::GetPrivate(surface_wrapper));
 }
 
 [[nodiscard]] static bool surface_to_g_argument(

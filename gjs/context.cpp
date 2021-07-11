@@ -430,7 +430,7 @@ void GjsContextPrivate::dispose(void) {
         m_gtype_table->clear();
 
         /* Do a full GC here before tearing down, since once we do
-         * that we may not have the JS_GetPrivate() to access the
+         * that we may not have the JS::GetPrivate() to access the
          * context
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Final triggered GC");

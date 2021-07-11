@@ -9,6 +9,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/Object.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -113,14 +114,14 @@ static bool gjs_param_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static void param_finalize(JSFreeOp*, JSObject* obj) {
-    Param* priv = static_cast<Param*>(JS_GetPrivate(obj));
+    Param* priv = static_cast<Param*>(JS::GetPrivate(obj));
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);
     if (!priv)
         return; /* wrong class? */
 
     GJS_DEC_COUNTER(param);
-    JS_SetPrivate(obj, nullptr);
+    JS::SetPrivate(obj, nullptr);
     delete priv;
 }
 
@@ -219,7 +220,7 @@ gjs_param_from_g_param(JSContext    *context,
 
     GJS_INC_COUNTER(param);
     auto* priv = new Param(gparam);
-    JS_SetPrivate(obj, priv);
+    JS::SetPrivate(obj, priv);
 
     gjs_debug(GJS_DEBUG_GPARAM,
               "JSObject created with param instance %p type %s", gparam,

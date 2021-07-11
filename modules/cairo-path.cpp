@@ -8,6 +8,7 @@
 #include <cairo.h>
 #include <glib.h>  // for g_assert
 
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -37,8 +38,8 @@ JSObject* CairoPath::take_c_ptr(JSContext* cx, cairo_path_t* ptr) {
     if (!wrapper)
         return nullptr;
 
-    g_assert(!JS_GetPrivate(wrapper));
-    JS_SetPrivate(wrapper, ptr);
+    g_assert(!JS::GetPrivate(wrapper));
+    JS::SetPrivate(wrapper, ptr);
 
     debug_lifecycle(ptr, wrapper, "take_c_ptr");
 

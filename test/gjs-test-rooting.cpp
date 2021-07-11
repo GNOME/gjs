@@ -7,10 +7,11 @@
 
 #include <js/Class.h>
 #include <js/GCAPI.h>  // for JS_GC, JS_SetGCCallback, JSGCStatus
+#include <js/Object.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_GetPrivate, JS_NewObject, JS_Set...
+#include <jsapi.h>  // for JS_NewObject
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"
@@ -37,7 +38,7 @@ struct GjsRootingFixture {
 };
 
 static void test_obj_finalize(JSFreeOp*, JSObject* obj) {
-    bool *finalized_p = static_cast<bool *>(JS_GetPrivate(obj));
+    bool* finalized_p = static_cast<bool*>(JS::GetPrivate(obj));
     g_assert_false(*finalized_p);
     *finalized_p = true;
 }
@@ -61,7 +62,7 @@ static JSObject *
 test_obj_new(GjsRootingFixture *fx)
 {
     JSObject *retval = JS_NewObject(PARENT(fx)->cx, &test_obj_class);
-    JS_SetPrivate(retval, &fx->finalized);
+    JS::SetPrivate(retval, &fx->finalized);
     return retval;
 }
 

@@ -32,6 +32,7 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -2687,7 +2688,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     ObjectInstance* priv = new ObjectInstance(prototype, obj);
 
-    JS_SetPrivate(obj, priv);
+    JS::SetPrivate(obj, priv);
 
     g_object_ref_sink(gobj);
     priv->associate_js_gobject(cx, obj, gobj);
