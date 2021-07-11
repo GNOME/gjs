@@ -4,6 +4,9 @@
 
 const GLib = imports.gi.GLib;
 
+// Register custom matchers...
+imports.matchers.registerMatchers();
+
 function _removeNewlines(str) {
     let allNewlines = /\n/g;
     return str.replace(allNewlines, '\\n');

@@ -101,6 +101,7 @@ jasmine_tests = [
     'GIMarshalling',
     'Gio',
     'GLib',
+    'GLibLogWriter',
     'GObject',
     'GObjectClass',
     'GObjectInterface',

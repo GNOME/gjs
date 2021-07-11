@@ -7,6 +7,9 @@ env:
 extends: 'eslint:recommended'
 plugins:
   - jsdoc
+settings:
+  jsdoc:
+    mode: typescript
 rules:
   array-bracket-newline:
     - error

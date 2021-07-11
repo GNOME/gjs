@@ -6,6 +6,7 @@
     <file preprocess="xml-stripblanks">complex3.ui</file>
     <file preprocess="xml-stripblanks">complex4.ui</file>
     <file>jasmine.js</file>
+    <file>matchers.js</file>
     <file>minijasmine.js</file>
     <file>modules/alwaysThrows.js</file>
     <file>modules/badOverrides/GIMarshallingTests.js</file>
