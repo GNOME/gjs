@@ -24,6 +24,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>   // for UniqueChars
+#include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
 #include <jsfriendapi.h>  // for JS_NewUint8ArrayWithBuffer, GetUint...
 
@@ -63,7 +64,7 @@ static const char* UTF16_CODESET = "UTF-16BE";
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool to_string_impl_slow(JSContext* cx, uint8_t* data, uint32_t len,
+static bool to_string_impl_slow(JSContext* cx, uint8_t* data, size_t len,
                                 const char* encoding,
                                 JS::MutableHandleValue rval) {
     size_t bytes_written;
@@ -103,7 +104,7 @@ bool bytearray_to_string(JSContext* context, JS::HandleObject byte_array,
         encoding_is_utf8 = is_utf8_label(encoding);
 
     uint8_t* data;
-    uint32_t len;
+    size_t len;
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
 
@@ -130,7 +131,7 @@ bool bytearray_to_string(JSContext* context, JS::HandleObject byte_array,
     }
 
     uint8_t* current_data;
-    uint32_t current_len;
+    size_t current_len;
     bool ignore_val;
 
     // If a garbage collection occurs between when we call
