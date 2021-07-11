@@ -31,7 +31,7 @@ Unwinding due to exception. (Type 'c' to continue unwinding.)
 #0    mistake([object Array]) at backtrace.debugger.js:14:33
    14	    let {uninitialized_} = array.shift();
 Exception value is:
-$1 = [object Error]
+$1 = [object TypeError]
 TypeError: array.shift() is undefined
 db> bt full
 #0    mistake([object Array]) at backtrace.debugger.js:14:33
