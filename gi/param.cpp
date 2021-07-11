@@ -12,7 +12,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for JS_GetClass, JS_GetPropertyById
+#include <jsapi.h>       // for JS::GetClass, JS_GetPropertyById
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/cwrapper.h"
@@ -215,7 +215,7 @@ gjs_param_from_g_param(JSContext    *context,
 
     JS::RootedObject proto(context, gjs_lookup_param_prototype(context));
 
-    obj = JS_NewObjectWithGivenProto(context, JS_GetClass(proto), proto);
+    obj = JS_NewObjectWithGivenProto(context, JS::GetClass(proto), proto);
 
     GJS_INC_COUNTER(param);
     auto* priv = new Param(gparam);
