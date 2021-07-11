@@ -13,12 +13,13 @@
 
 #include <js/ArrayBuffer.h>
 #include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
-#include <js/Utility.h>   // for UniqueChars
+#include <js/Utility.h>  // for UniqueChars
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
 #include <jsfriendapi.h>  // for JS_NewUint8ArrayWithBuffer, GetUint...
