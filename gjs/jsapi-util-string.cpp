@@ -20,7 +20,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
-#include <js/Id.h>     // for JSID_IS_STRING...
+#include <js/Id.h>
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/Symbol.h>
@@ -430,7 +430,7 @@ gjs_string_from_ucs4(JSContext             *cx,
  * Returns: false on error, otherwise true
  **/
 bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
-    if (!JSID_IS_STRING(id)) {
+    if (!id.isString()) {
         name_p->reset();
         return true;
     }
@@ -653,7 +653,7 @@ gjs_debug_value(JS::Value v)
 std::string
 gjs_debug_id(jsid id)
 {
-    if (JSID_IS_STRING(id))
+    if (id.isString())
         return gjs_debug_linear_string(JSID_TO_LINEAR_STRING(id), NoQuotes);
     return gjs_debug_value(js::IdToValue(id));
 }

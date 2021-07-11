@@ -24,7 +24,6 @@
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsfriendapi.h>            // for JSID_IS_ATOM, JSID_TO_ATOM
 #include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
 #include <mozilla/Likely.h>         // for MOZ_LIKELY
 
@@ -170,10 +169,10 @@ class ObjectBase
 struct IdHasher {
     typedef jsid Lookup;
     static mozilla::HashNumber hash(jsid id) {
-        if (MOZ_LIKELY(JSID_IS_ATOM(id)))
-            return js::DefaultHasher<JSAtom*>::hash(JSID_TO_ATOM(id));
-        if (JSID_IS_SYMBOL(id))
-            return js::DefaultHasher<JS::Symbol*>::hash(JSID_TO_SYMBOL(id));
+        if (MOZ_LIKELY(id.isString()))
+            return js::DefaultHasher<JSString*>::hash(id.toString());
+        if (id.isSymbol())
+            return js::DefaultHasher<JS::Symbol*>::hash(id.toSymbol());
         return mozilla::HashGeneric(JSID_BITS(id));
     }
     static bool match(jsid id1, jsid id2) { return id1 == id2; }
