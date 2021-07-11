@@ -15,7 +15,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
+#include <jsapi.h>  // for JS::GetPrivate, JS_GetClass, ...
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -170,7 +170,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         return nullptr;
     }
 
-    return static_cast<cairo_surface_t*>(JS_GetPrivate(surface_wrapper));
+    return static_cast<cairo_surface_t*>(JS::GetPrivate(surface_wrapper));
 }
 
 [[nodiscard]] static bool surface_to_g_argument(

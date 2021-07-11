@@ -1315,8 +1315,8 @@ JSObject* Function::create(JSContext* context, GType gtype,
 
     auto* priv = new Function(info);
 
-    g_assert(!JS_GetPrivate(function) && "Function should be a fresh object");
-    JS_SetPrivate(function, priv);
+    g_assert(!JS::GetPrivate(function) && "Function should be a fresh object");
+    JS::SetPrivate(function, priv);
 
     debug_lifecycle(function, priv, "Constructor");
 

@@ -170,7 +170,7 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
         if (!gtype_wrapper)
             return nullptr;
 
-        JS_SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
+        JS::SetPrivate(gtype_wrapper, GSIZE_TO_POINTER(gtype));
 
         gjs->gtype_table().put(gtype, gtype_wrapper);
 

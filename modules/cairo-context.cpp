@@ -368,7 +368,7 @@ dispose_func(JSContext *context,
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(context, argc, vp, rec, obj);
 
     cairo_destroy(cr);
-    JS_SetPrivate(obj, nullptr);
+    JS::SetPrivate(obj, nullptr);
 
     rec.rval().setUndefined();
     return true;
