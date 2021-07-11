@@ -720,5 +720,5 @@ JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
     if (!proto)
         return nullptr;
 
-    return JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto);
+    return JS_NewObjectWithGivenProto(cx, JS::GetClass(proto), proto);
 }

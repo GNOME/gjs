@@ -115,7 +115,7 @@ gjs_typecheck_instance(JSContext       *context,
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
         if (throw_error) {
-            const JSClass *obj_class = JS_GetClass(obj);
+            const JSClass* obj_class = JS::GetClass(obj);
 
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",
@@ -141,7 +141,15 @@ gjs_construct_object_dynamic(JSContext                  *context,
                                      atoms.constructor(), &constructor))
         return NULL;
 
-    return JS_New(context, constructor, args);
+    JS::RootedValue constructorv(context);
+    constructorv.setObject(*constructor);
+
+    JS::RootedObject object(context);
+
+    if (!JS::Construct(context, constructorv, args, &object))
+        return nullptr;
+
+    return object;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -208,7 +216,9 @@ gjs_define_property_dynamic(JSContext       *cx,
     if (!setter_obj)
         return false;
 
-    flags |= JSPROP_GETTER | JSPROP_SETTER;
+    // TODO(mozjs91): See for JSPROP_GETTER removal
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1713083 flags |=
+    // JSPROP_GETTER | JSPROP_SETTER;
 
     return JS_DefineProperty(cx, proto, prop_name, getter_obj, setter_obj,
                              flags);

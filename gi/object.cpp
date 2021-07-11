@@ -2532,7 +2532,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
         return nullptr;
 
     JS::RootedObject obj(
-        cx, JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto));
+        cx, JS_NewObjectWithGivenProto(cx, JS::GetClass(proto), proto));
     if (!obj)
         return nullptr;
 

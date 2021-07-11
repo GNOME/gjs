@@ -15,7 +15,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <jsapi.h>  // for JS::GetPrivate, JS_GetClass, ...
+#include <jsapi.h>  // for JS::GetPrivate, JS::GetClass, ...
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -166,7 +166,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         return nullptr;
     if (!is_surface_subclass) {
         gjs_throw(cx, "Expected Cairo.Surface but got %s",
-                  JS_GetClass(surface_wrapper)->name);
+                  JS::GetClass(surface_wrapper)->name);
         return nullptr;
     }
 

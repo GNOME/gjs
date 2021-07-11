@@ -63,7 +63,7 @@ importer_to_string(JSContext *cx,
 
     GjsAutoChar output;
 
-    const JSClass* klass = JS_GetClass(importer);
+    const JSClass* klass = JS::GetClass(importer);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue module_path(cx);
     if (!JS_GetPropertyById(cx, importer, atoms.module_path(), &module_path))
@@ -198,17 +198,21 @@ seal_import(JSContext       *cx,
             JS::HandleId     id,
             const char      *name)
 {
-    JS::Rooted<JS::PropertyDescriptor> descr(cx);
+    JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> descr(cx);
 
-    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) || !descr.object()) {
+    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) ||
+        descr.isNothing()) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
                   name);
         return false;
     }
 
-    descr.setConfigurable(false);
-    if (!JS_DefinePropertyById(cx, descr.object(), id, descr)) {
+    JS::Rooted<JS::PropertyDescriptor> descr_(cx, descr.value());
+
+    descr_.setConfigurable(false);
+
+    if (!JS_DefinePropertyById(cx, obj, id, descr_)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to redefine attributes to seal '%s' in importer",
                   name);

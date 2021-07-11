@@ -13,7 +13,7 @@
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS::GetPrivate, JS_GetClass, ...
+#include <jsapi.h>  // for JS::GetPrivate, JS::GetClass, ...
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -132,7 +132,7 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
         return nullptr;
     if (!is_pattern_subclass) {
         gjs_throw(cx, "Expected Cairo.Pattern but got %s",
-                  JS_GetClass(pattern_wrapper)->name);
+                  JS::GetClass(pattern_wrapper)->name);
         return nullptr;
     }
 
