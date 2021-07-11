@@ -134,19 +134,10 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
         return nullptr;
     }
 
-    // commented are defaults in moz-24
     JS_SetNativeStackQuota(cx, 1024 * 1024);
     JS_SetGCParameter(cx, JSGC_MAX_BYTES, -1);
-    JS_SetGCParameter(cx, JSGC_MODE, JSGC_MODE_INCREMENTAL);
+    JS_SetGCParameter(cx, JSGC_INCREMENTAL_GC_ENABLED, 1);
     JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET_MS, 10); /* ms */
-    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_TIME_LIMIT, 1000); /* ms */
-    // JS_SetGCParameter(cx, JSGC_LOW_FREQUENCY_HEAP_GROWTH, 150);
-    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MIN, 150);
-    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HEAP_GROWTH_MAX, 300);
-    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_LOW_LIMIT, 100);
-    // JS_SetGCParameter(cx, JSGC_HIGH_FREQUENCY_HIGH_LIMIT, 500);
-    // JS_SetGCParameter(cx, JSGC_ALLOCATION_THRESHOLD, 30);
-    // JS_SetGCParameter(cx, JSGC_DECOMMIT_THRESHOLD, 32);
 
     /* set ourselves as the private data */
     JS_SetContextPrivate(cx, uninitialized_gjs);
