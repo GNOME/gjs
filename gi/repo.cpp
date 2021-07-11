@@ -17,9 +17,11 @@
 
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/Exception.h>
 #include <js/Id.h>                  // for JSID_VOID
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>

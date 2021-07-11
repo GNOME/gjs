@@ -15,6 +15,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 
+#include <js/Context.h>
 #include <js/ContextOptions.h>
 #include <js/GCAPI.h>           // for JS_SetGCParameter, JS_AddFin...
 #include <js/Initialization.h>  // for JS_Init, JS_ShutDown

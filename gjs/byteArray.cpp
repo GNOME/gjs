@@ -16,8 +16,8 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>   // for UniqueChars
+#include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
-#include <jsfriendapi.h>  // for JS_NewUint8ArrayWithBuffer, GetUint...
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"

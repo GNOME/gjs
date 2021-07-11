@@ -21,10 +21,13 @@
 #include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetRealmFunctionPrototype
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>

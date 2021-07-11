@@ -19,13 +19,17 @@
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/Conversions.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
 #include <js/Id.h>
 #include <js/Modules.h>
 #include <js/Promise.h>
 #include <js/PropertyDescriptor.h>
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>

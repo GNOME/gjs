@@ -17,6 +17,7 @@
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/Id.h>
+#include <js/MapAndSet.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetObjectRealmOrNull, SetRealmPrivate

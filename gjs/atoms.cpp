@@ -9,10 +9,10 @@
 
 #include <js/Id.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/Symbol.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_AtomizeAndPinString
 
 #include "gjs/atoms.h"
 

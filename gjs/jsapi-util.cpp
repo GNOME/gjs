@@ -23,13 +23,15 @@
 #include <js/Class.h>
 #include <js/Conversions.h>
 #include <js/ErrorReport.h>
+#include <js/Exception.h>
 #include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
 #include <js/GCVector.h>  // for RootedVector
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_GetPropertyById, JS_ClearPendin...
+#include <jsapi.h>        // for JS_GetPropertyById, JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
 
 #include "gjs/atoms.h"

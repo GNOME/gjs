@@ -11,11 +11,12 @@
 #include <glib.h>
 
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_New, JSAutoRealm, JS_GetProperty
+#include <jsapi.h>  // for JS_SetProperty, JS_DefineProperty
 
 #include "gi/gobject.h"
 #include "gi/object.h"

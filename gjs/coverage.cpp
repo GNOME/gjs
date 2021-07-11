@@ -14,14 +14,14 @@
 #include <glib-object.h>
 
 #include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer, JS_Remove...
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/experimental/CodeCoverage.h>  // for EnableCodeCoverage
-#include <jsapi.h>        // for JSAutoRealm, JS_SetPropertyById
-#include <jsfriendapi.h>  // for GetCodeCoverageSummary
+#include <jsapi.h>                         // for JS_SetPropertyById
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

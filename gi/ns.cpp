@@ -10,6 +10,7 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Id.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>

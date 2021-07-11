@@ -40,6 +40,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/Context.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>           // for StealPendingExceptionStack
 #include <js/GCAPI.h>               // for JS_GC, JS_AddExtraGCRootsTr...
@@ -49,6 +50,7 @@
 #include <js/Modules.h>
 #include <js/Promise.h>             // for JobQueue::SavedJobQueue
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TracingAPI.h>
@@ -56,8 +58,9 @@
 #include <js/UniquePtr.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_IsExceptionPending, ...
-#include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
+#include <js/friend/DumpFunctions.h>
+#include <jsapi.h>        // for Call, CurrentGlobalOrNull
+#include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 #include <mozilla/UniquePtr.h>
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure

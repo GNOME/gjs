@@ -15,14 +15,16 @@
 
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
+#include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for InformalValueTypeName, JS_ClearPendingException
-#include <jsfriendapi.h>
+#include <js/experimental/TypedData.h>
+#include <jsapi.h>  // for InformalValueTypeName, JS_Get...
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"

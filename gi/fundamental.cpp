@@ -10,6 +10,7 @@
 
 #include <js/AllocPolicy.h>  // for SystemAllocPolicy
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCHashTable.h>  // for WeakCache
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>

@@ -23,10 +23,13 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>
 #include <js/Id.h>  // for PropertyKey
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/Symbol.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars

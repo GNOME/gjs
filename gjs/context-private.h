@@ -21,6 +21,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Context.h>
 #include <js/GCAPI.h>
 #include <js/GCHashTable.h>
 #include <js/GCVector.h>
@@ -30,7 +31,6 @@
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
 #include "gi/closure.h"

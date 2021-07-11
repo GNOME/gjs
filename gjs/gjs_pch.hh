@@ -49,7 +49,6 @@
 #endif
 #include <inttypes.h>
 #include <iomanip>
-#include <js/RequiredDefines.h>  // check-pch: ignore, part of mozjs cflags
 #include <js/AllocPolicy.h>
 #include <js/Array.h>
 #include <js/ArrayBuffer.h>
@@ -60,6 +59,7 @@
 #include <js/ComparisonOperators.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/Context.h>
 #include <js/ContextOptions.h>
 #include <js/Conversions.h>
 #include <js/ErrorReport.h>
@@ -72,6 +72,7 @@
 #include <js/HeapAPI.h>
 #include <js/Id.h>
 #include <js/Initialization.h>
+#include <js/MapAndSet.h>
 #include <js/MemoryFunctions.h>
 #include <js/Modules.h>
 #include <js/ProfilingCategory.h>
@@ -84,6 +85,7 @@
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>
 #include <js/SourceText.h>
+#include <js/String.h>
 #include <js/Symbol.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
@@ -95,6 +97,8 @@
 #include <js/Wrapper.h>
 #include <js/experimental/CodeCoverage.h>
 #include <js/experimental/SourceHook.h>
+#include <js/experimental/TypedData.h>
+#include <js/friend/DumpFunctions.h>
 #include <jsapi.h>
 #include <jsfriendapi.h>
 #include <jspubtd.h>

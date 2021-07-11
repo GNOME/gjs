@@ -19,6 +19,7 @@
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ErrorReport.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/Id.h>
 #include <js/Promise.h>
@@ -27,8 +28,8 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>        // for JSID_TO_FLAT_STRING, JS_GetTwoByte...
-#include <jsfriendapi.h>  // for FlatStringToLinearString, GetLatin...
+#include <jsapi.h>        // for JS_GetFunctionDisplayId
+#include <jsfriendapi.h>  // for IdToValue, IsFunctionObject, ...
 #include <mozilla/CheckedInt.h>
 
 #include "gjs/jsapi-util.h"
