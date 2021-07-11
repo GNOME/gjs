@@ -47,7 +47,8 @@ namespace mozilla {
 union Utf8Unit;
 }
 
-static void gjs_console_warning_reporter(JSContext* cx, JSErrorReport* report) {
+static void gjs_console_warning_reporter(JSContext* cx [[maybe_unused]],
+                                         JSErrorReport* report) {
     JS::PrintError(stderr, report, /* reportWarnings = */ true);
 }
 
