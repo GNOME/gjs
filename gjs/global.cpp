@@ -17,6 +17,7 @@
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/Id.h>
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetObjectRealmOrNull, SetRealmPrivate
@@ -98,7 +99,8 @@ class GjsBaseGlobal {
                          JS::SourceOwnership::TakeOwnership))
             return false;
 
-        JS::RootedScript compiled_script(cx, JS::Compile(cx, options, source));
+        JS::RootedScript compiled_script(cx);
+        compiled_script.set(JS::Compile(cx, options, source));
         if (!compiled_script)
             return false;
 
@@ -521,11 +523,11 @@ bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
 }
 
 void detail::set_global_slot(JSObject* global, uint32_t slot, JS::Value value) {
-    JS_SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
+    JS::SetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot, value);
 }
 
 JS::Value detail::get_global_slot(JSObject* global, uint32_t slot) {
-    return JS_GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
+    return JS::GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
 
 decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
