@@ -109,6 +109,7 @@
 #include <mozilla/HashFunctions.h>
 #include <mozilla/HashTable.h>
 #include <mozilla/Likely.h>
+#include <mozilla/Maybe.h>
 #include <mozilla/UniquePtr.h>
 #include <mozilla/Unused.h>
 #ifdef HAVE_READLINE_READLINE_H

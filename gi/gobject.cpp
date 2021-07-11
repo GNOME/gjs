@@ -17,6 +17,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_SetProperty, JS_DefineProperty
+#include <mozilla/Maybe.h>
 
 #include "gi/gobject.h"
 #include "gi/object.h"
@@ -61,28 +62,38 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
         GjsAutoChar camel_name = gjs_hyphen_to_camel(pspec->name);
 
         if (g_param_spec_get_qdata(pspec, ObjectBase::custom_property_quark())) {
-            JS::Rooted<JS::PropertyDescriptor> jsprop(cx);
+            JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> jsprop(cx);
+            JS::RootedObject holder(cx);
 
             // Ensure to call any associated setter method
             if (!g_str_equal(underscore_name.get(), pspec->name)) {
-                if (!JS_GetPropertyDescriptor(cx, object, underscore_name, &jsprop))
+                if (!JS_GetPropertyDescriptor(cx, object, underscore_name,
+                                              &jsprop, &holder)) {
                     return false;
-                if (jsprop.setter() &&
-                    !JS_SetProperty(cx, object, underscore_name, jsvalue))
+                }
+
+                if (jsprop.isSome() && jsprop->setter() &&
+                    !JS_SetProperty(cx, object, underscore_name, jsvalue)) {
                     return false;
+                }
             }
 
             if (!g_str_equal(camel_name.get(), pspec->name)) {
-                if (!JS_GetPropertyDescriptor(cx, object, camel_name, &jsprop))
+                if (!JS_GetPropertyDescriptor(cx, object, camel_name, &jsprop,
+                                              &holder)) {
                     return false;
-                if (jsprop.setter() &&
-                    !JS_SetProperty(cx, object, camel_name, jsvalue))
+                }
+
+                if (jsprop.isSome() && jsprop.value().setter() &&
+                    !JS_SetProperty(cx, object, camel_name, jsvalue)) {
                     return false;
+                }
             }
 
-            if (!JS_GetPropertyDescriptor(cx, object, pspec->name, &jsprop))
+            if (!JS_GetPropertyDescriptor(cx, object, pspec->name, &jsprop,
+                                          &holder))
                 return false;
-            if (jsprop.setter() &&
+            if (jsprop.isSome() && jsprop.value().setter() &&
                 !JS_SetProperty(cx, object, pspec->name, jsvalue))
                 return false;
         }

@@ -37,6 +37,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_DefinePropertyById, ...
 #include <jsfriendapi.h>  // for SetFunctionNativeReserved
+#include <mozilla/Maybe.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -183,9 +184,12 @@ class GjsScriptModule {
             return true;  /* nothing imported yet */
         }
 
-        if (!JS_HasPropertyById(cx, lexical, id, resolved))
+        JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_desc(cx);
+        JS::RootedObject holder(cx);
+        if (!JS_GetPropertyDescriptorById(cx, lexical, id, &maybe_desc,
+                                          &holder))
             return false;
-        if (!*resolved)
+        if (maybe_desc.isNothing())
             return true;
 
         /* The property is present in the lexical environment. This should not
@@ -201,9 +205,8 @@ class GjsScriptModule {
                   "please fix your code anyway.",
                   gjs_debug_id(id).c_str(), m_name);
 
-        JS::Rooted<JS::PropertyDescriptor> desc(cx);
-        return JS_GetPropertyDescriptorById(cx, lexical, id, &desc) &&
-            JS_DefinePropertyById(cx, module, id, desc);
+        JS::Rooted<JS::PropertyDescriptor> desc(cx, maybe_desc.value());
+        return JS_DefinePropertyById(cx, module, id, desc);
     }
 
     GJS_JSAPI_RETURN_CONVENTION

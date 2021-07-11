@@ -11,7 +11,6 @@
 #endif
 
 #include <string>
-#include <utility>  // for move
 #include <vector>   // for vector
 
 #include <gio/gio.h>
@@ -37,6 +36,7 @@
 #include <js/Value.h>
 #include <jsapi.h>    // for JS_DefinePropertyById, JS_DefineP...
 #include <jspubtd.h>  // for JSProto_Error
+#include <mozilla/Maybe.h>
 #include <mozilla/UniquePtr.h>
 
 #include "gjs/atoms.h"
@@ -201,17 +201,21 @@ seal_import(JSContext       *cx,
             JS::HandleId     id,
             const char      *name)
 {
-    JS::Rooted<JS::PropertyDescriptor> descr(cx);
+    JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_descr(cx);
 
-    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &descr) || !descr.object()) {
+    if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &maybe_descr) ||
+        maybe_descr.isNothing()) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to get attributes to seal '%s' in importer",
                   name);
         return false;
     }
 
+    JS::Rooted<JS::PropertyDescriptor> descr(cx, maybe_descr.value());
+
     descr.setConfigurable(false);
-    if (!JS_DefinePropertyById(cx, descr.object(), id, descr)) {
+
+    if (!JS_DefinePropertyById(cx, obj, id, descr)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to redefine attributes to seal '%s' in importer",
                   name);
