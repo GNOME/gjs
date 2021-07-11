@@ -54,6 +54,7 @@
 #include <js/UniquePtr.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
+#include <js/friend/DumpFunctions.h>
 #include <jsapi.h>        // for JS_IsExceptionPending, ...
 #include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
 #include <mozilla/UniquePtr.h>
