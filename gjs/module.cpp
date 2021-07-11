@@ -202,9 +202,17 @@ class GjsScriptModule {
                   "please fix your code anyway.",
                   gjs_debug_id(id).c_str(), m_name);
 
-        JS::Rooted<JS::PropertyDescriptor> desc(cx);
-        return JS_GetPropertyDescriptorById(cx, lexical, id, &desc) &&
-            JS_DefinePropertyById(cx, module, id, desc);
+        JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> desc(cx);
+        JS::Rooted<JS::PropertyDescriptor> desc_(cx);
+        JS::RootedObject holder(cx);
+
+        if (!JS_GetPropertyDescriptorById(cx, lexical, id, &desc, &holder) ||
+            desc.isNothing())
+            return false;
+
+        desc_.set(desc.value());
+
+        return JS_DefinePropertyById(cx, module, id, desc_);
     }
 
     GJS_JSAPI_RETURN_CONVENTION
