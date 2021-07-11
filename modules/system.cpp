@@ -347,7 +347,7 @@ gjs_js_define_system_stuff(JSContext              *context,
                                  GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
            JS_DefinePropertyById(context, module, gjs->atoms().program_args(),
                                  program_args_getter, nullptr,
-                                 GJS_MODULE_PROP_FLAGS | JSPROP_GETTER) &&
+                                 GJS_MODULE_PROP_FLAGS) &&
            JS_DefinePropertyById(context, module, gjs->atoms().version(),
                                  GJS_VERSION,
                                  GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);

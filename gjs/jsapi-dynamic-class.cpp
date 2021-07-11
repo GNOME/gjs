@@ -12,7 +12,7 @@
 #include <js/CallArgs.h>  // for JSNative
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
-#include <js/PropertyDescriptor.h>  // for JSPROP_GETTER
+#include <js/PropertyDescriptor.h>
 #include <js/Realm.h>  // for GetRealmObjectPrototype
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -215,10 +215,6 @@ gjs_define_property_dynamic(JSContext       *cx,
         define_native_accessor_wrapper(cx, setter, 1, setter_name, private_slot));
     if (!setter_obj)
         return false;
-
-    // TODO(mozjs91): See for JSPROP_GETTER removal
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1713083 flags |=
-    // JSPROP_GETTER | JSPROP_SETTER;
 
     return JS_DefineProperty(cx, proto, prop_name, getter_obj, setter_obj,
                              flags);
