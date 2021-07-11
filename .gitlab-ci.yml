@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 ---
 include:
-  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/7ea696055e322cc7aa4bcbe5422b56a198c4bdff/templates/alpine.yml'
+  - remote: 'https://gitlab.gnome.org/ewlsh/ci-templates/-/raw/master/templates/alpine.yml'
 
 stages:
   - prepare
@@ -31,7 +31,7 @@ build-alpine-image:
       mkdir -p /cwd
 
 .coverage: &coverage
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "coverage"
     coverage: '/^  lines.*(\d+\.\d+\%)/'
@@ -82,7 +82,7 @@ sanitizer_gcc:
   stage: test
   tags:
     - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
@@ -95,7 +95,7 @@ sanitizer_thread_gcc:
   stage: test
   tags:
     - asan # TSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-tsan-check"
     CONFIG_OPTS: -Db_sanitize=thread
@@ -109,7 +109,7 @@ sanitizer_thread_gcc:
 build_maximal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
@@ -126,7 +126,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91
   variables:
     TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     CONFIG_OPTS: >-
@@ -138,7 +138,7 @@ build_minimal:
 build_unity:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-unity-check"
     # unity-size here is forced to use an high number to check whether we can
@@ -274,7 +274,7 @@ pch_check:
 iwyu:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     CONFIG_OPTS: -Db_pch=false
   script:
@@ -329,7 +329,7 @@ coverage:
 iwyu-full:
   when: manual
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   script:
     - meson setup _build
     - ./tools/run_iwyu.sh
@@ -341,7 +341,7 @@ sanitizer_clang:
   stage: manual
   tags:
     - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
@@ -355,7 +355,7 @@ sanitizer_clang:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
@@ -372,7 +372,7 @@ installed_tests:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     TEST_OPTS: --setup=valgrind
@@ -385,7 +385,7 @@ valgrind:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST_OPTS: --setup=extra_gc
@@ -396,7 +396,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST_OPTS: --setup=pre_verify
@@ -407,7 +407,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST_OPTS: --setup=post_verify
@@ -450,13 +450,13 @@ zeal_11:
   BUILDAH_FORMAT: docker
   BUILDAH_ISOLATION: chroot
 
-fedora.mozjs78:
+fedora.mozjs91:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile
 
-fedora.mozjs78-debug:
+fedora.mozjs91-debug:
   <<: *create_docker_image
   variables:
     <<: *docker_variables

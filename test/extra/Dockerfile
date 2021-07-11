@@ -10,18 +10,22 @@ ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-RUN dnf -y install 'dnf-command(builddep)' autoconf213 git make which llvm-devel
+RUN dnf -y install 'dnf-command(builddep)' autoconf213 git make which llvm-devel \
+    xz clang llvm rust
 RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root
 
-RUN git clone --no-tags --depth 1 https://github.com/ptomato/mozjs.git -b ${MOZJS_BRANCH}
+RUN curl -# -o mozjs.tar.xz -L https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/FKL1EcZ4Rj2U4v9poe9kYA/runs/0/artifacts/public/build/mozjs-91.0a1.0.tar.xz
+RUN unxz mozjs.tar.xz
+RUN tar -xf mozjs.tar
+RUN mv mozjs-91.0a1.0 mozjs
 RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
 
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
-    --with-system-zlib --with-intl-api AUTOCONF=autoconf ${BUILD_OPTS}
+    --with-system-zlib --with-intl-api ${BUILD_OPTS}
 RUN make -j$(nproc)
 RUN DESTDIR=/root/mozjs-install make install
 RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
