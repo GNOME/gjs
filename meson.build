@@ -491,7 +491,7 @@ libgjs_cpp_args += ['-DG_LOG_DOMAIN="Gjs"']
 
 if host_machine.system() == 'windows'
     # We need these defines to build properly for all Windows builds
-    libgjs_cpp_args += ['-DWIN32', '-DXP_WIN']
+    libgjs_cpp_args += ['-DWIN32', '-DXP_WIN', '-DWIN32_LEAN_AND_MEAN']
 endif
 
 pch_headers = ['gjs/gjs_pch.hh']
@@ -543,7 +543,6 @@ link_args += cxx.get_supported_link_arguments([
 
 libgjs = shared_library(meson.project_name(),
     sources: [ libgjs_private_sources, module_resource_srcs ],
-    cpp_pch: pch_headers,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
     link_whole: libgjs_internal,
     dependencies: base_build_dep,
