@@ -39,6 +39,18 @@ struct _GjsDBusImplementationPrivate {
 G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
                            G_TYPE_DBUS_INTERFACE_SKELETON);
 
+static inline GVariant* _g_variant_ref_sink0(void* value) {
+    if (value)
+        g_variant_ref_sink(value);
+
+    return value;
+}
+
+static inline void _g_variant_unref0(void* value) {
+    if (value)
+        g_variant_unref(value);
+}
+
 static gboolean gjs_dbus_implementation_check_interface(
     GjsDBusImplementation* self, GDBusConnection* connection,
     const char* object_path, const char* interface_name, GError** error) {
@@ -157,7 +169,10 @@ gjs_dbus_implementation_init(GjsDBusImplementation *self) {
     priv->vtable.get_property = gjs_dbus_implementation_property_get;
     priv->vtable.set_property = gjs_dbus_implementation_property_set;
 
-    priv->outstanding_properties = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)g_variant_unref);
+    priv->outstanding_properties = g_hash_table_new_full(g_str_hash,
+                                                         g_str_equal,
+                                                         g_free,
+                                                         _g_variant_unref0);
 }
 
 static void gjs_dbus_implementation_dispose(GObject* object) {
@@ -361,7 +376,9 @@ gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self,
                                                gchar                 *property,
                                                GVariant              *newvalue)
 {
-    g_hash_table_replace (self->priv->outstanding_properties, g_strdup (property), g_variant_ref (newvalue));
+    g_hash_table_replace(self->priv->outstanding_properties,
+                         g_strdup(property),
+                         _g_variant_ref_sink0(newvalue));
 
     if (!self->priv->idle_id)
         self->priv->idle_id = g_idle_add(idle_cb, self);
@@ -385,8 +402,7 @@ gjs_dbus_implementation_emit_signal (GjsDBusImplementation *self,
     GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
     const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);
 
-    if (parameters != NULL)
-        g_variant_ref_sink(parameters);
+    _g_variant_ref_sink0(parameters);
 
     for (const GList *iter = connections; iter; iter = iter->next) {
         g_dbus_connection_emit_signal(G_DBUS_CONNECTION(iter->data),
@@ -399,8 +415,7 @@ gjs_dbus_implementation_emit_signal (GjsDBusImplementation *self,
 
         g_object_unref(iter->data);
     }
-    if (parameters != NULL)
-        g_variant_unref(parameters);
+    _g_variant_unref0(parameters);
 
     g_list_free(connections);
 }
