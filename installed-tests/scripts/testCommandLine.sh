@@ -65,6 +65,37 @@ import 'gi://Gio?version=2.0';
 import 'gi://Gio?version=75.94';
 EOF
 
+cat <<EOF >doubledynamicImportee.js
+export function noop() {}
+EOF
+
+# this JS script should succeed without an error on the second import
+cat <<EOF >doubledynamic.js
+let done = false;
+
+import("./doubledynamicImportee.js")
+    .then(ddi => {
+        ddi.noop();
+    })
+    .finally(() => {
+        if (done)
+            imports.mainloop.quit();
+        done = true;
+    });
+
+import("./doubledynamicImportee.js")
+    .then(ddi => {
+        ddi.noop();
+    })
+    .finally(() => {
+        if (done)
+            imports.mainloop.quit();
+        done = true;
+    });
+
+imports.mainloop.run();
+EOF
+
 # this JS script is used to test ARGV handling
 cat <<EOF >argv.js
 const System = imports.system;
@@ -307,6 +338,9 @@ rm -f coverage.lcov
 $gjs -m doublegi.js 2>&1 | grep -q 'already loaded'
 report "avoid statically importing two versions of the same module"
 
+$gjs doubledynamic.js
+report "ensure dynamic imports load even if the same import resolves elsewhere first"
+
 # https://gitlab.gnome.org/GNOME/gjs/-/issues/19
 echo "# VALGRIND = $VALGRIND"
 if test -z $VALGRIND; then
@@ -323,6 +357,7 @@ else
     skip "exit after first System.exit call in a signal callback" "running under valgrind"
 fi
 
-rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js signalexit.js
+rm -f exit.js help.js promise.js awaitcatch.js doublegi.js doubledynamic.js \
+    doubledynamicImportee.js argv.js signalexit.js
 
 echo "1..$total"
