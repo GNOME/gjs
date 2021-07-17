@@ -166,4 +166,13 @@ describe('Complete enumeration of GIRepositoryNamespace (new_enumerate)', functi
         const expectAtLeast = ['KEY_ybelowdot', 'EventSequence', 'ByteOrder', 'Window'];
         expect(names).toEqual(jasmine.arrayContaining(expectAtLeast));
     });
+
+    it('all enumerated properties are defined', function () {
+        const names = Object.keys(Gdk);
+        
+        expect(() => {
+            // Access each enumerated property to check it can be defined.
+            names.forEach((name) => Gdk[name]);
+        }).not.toThrowError(/API of type .* not implemented, cannot define .*/);
+    });
 });
