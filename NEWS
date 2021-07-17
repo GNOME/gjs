@@ -1,3 +1,46 @@
+Version 1.68.1
+--------------
+
+- Many stability fixes due to refactoring how disposed GObjects are handled.
+  Special thanks to Marco Trevisan for the substantial effort.
+
+- Closed bugs and merge requests:
+
+  * Accessing GLib.ByteArray throws [#386, !590, Philip Chimento]
+  * Missing hyphen and camelCase getters for CONSTRUCT_ONLY GObject properties
+    defined in JavaScript [#391, !591, Philip Chimento]
+  * gnome-shell crashes on deferencing a destroyed wrapper object [#395, !593,
+    !617, Marco Trevisan]
+  * GNOME crash "JS object wrapper for GObject 0x563bf88f5f50 (GSettings) is
+    being released..." [#294, !593, !617, Marco Trevisan]
+  * Finalizing wrapper for an already freed object [#399, !593, !617, Marco
+    Trevisan]
+  * Calling implemented methods or getters on disposed objects returns function
+    pointers [#396, !594, Marco Trevisan]
+  * overrides/Gio: Fix _LocalFilePrototype [!595, Florian Müllner]
+  * doc: Fix documentation for dynamic imports [!596, Sonny Piers]
+  * Added the meson installation command in dependencies [!597, Veena Nagar]
+  * Upgrade codespell to 2.0.0 in CI [#367, !598, Kajal Sah]
+  * cairo: Add missing semi-colons from dummy class declarations [!599, Matt
+    Turner]
+  * Fixed System.addressOfGObject and System.dumpHeap missing from System ES
+    module [!600, Philip Chimento]
+  * `Error: Failed to convert GValue to a fundamental instance` in
+    Gtk.EventControllerLegacy [#398, !601, Marco Trevisan]
+  * doc: add an example to get relative filename and dirname with
+    import.meta.url [!603, Sonny Piers]
+  * wrapperutils: Use native ostringstream pointer to string conversion [!604,
+    Marco Trevisan]
+  * testFundamental: Add more tests ensuring we properly handle subtypes [!602,
+    Marco Trevisan]
+  * Some simple Visual Studio fixes for master [!612, Chun-wei Fan]
+  * Using GFileMonitor crashes GNOME Shell with toggling down object error
+    [#297, !613, !617, Marco Trevisan]
+  * Deadlock on toggle queue due to GWeakRef [#404, !613, !617, Marco Trevisan]
+  * Using g_thread_join from JS is crashing [#406, !613, !617, Marco Trevisan]
+  * GObject: Ensure to call setter methods for construct-only properties [!614,
+    Carlos Garnacho]
+
 Version 1.68.0
 --------------
 
