@@ -142,6 +142,10 @@ class Test {
         return `${a} ${b} ${c} ${d} ${e}`;
     }
 
+    emitPropertyChanged(name, value) {
+        this._impl.emit_property_changed(name, value);
+    }
+
     emitSignal() {
         this._impl.emit_signal('signalFoo', GLib.Variant.new('(s)', ['foobar']));
     }
@@ -660,5 +664,22 @@ describe('Exported DBus object', function () {
         }).toThrowError('Property PropReadOnly is not writable');
 
         expect(proxy.PropReadOnly).toBe(PROP_READ_ONLY_INITIAL_VALUE);
+    });
+
+    it('Marking a property as invalidated works', function () {
+        let changedProps = {};
+        let invalidatedProps = [];
+
+        proxy.connect('g-properties-changed', (proxy_, changed, invalidated) => {
+            changedProps = changed.deepUnpack();
+            invalidatedProps = invalidated;
+            loop.quit();
+        });
+
+        test.emitPropertyChanged('PropReadOnly', null);
+        loop.run();
+
+        expect(changedProps).not.toContain('PropReadOnly');
+        expect(invalidatedProps).toContain('PropReadOnly');
     });
 });
