@@ -169,10 +169,9 @@ describe('Complete enumeration of GIRepositoryNamespace (new_enumerate)', functi
 
     it('all enumerated properties are defined', function () {
         const names = Object.keys(Gdk);
-        
         expect(() => {
             // Access each enumerated property to check it can be defined.
-            names.forEach((name) => Gdk[name]);
+            names.forEach(name => Gdk[name]);
         }).not.toThrowError(/API of type .* not implemented, cannot define .*/);
     });
 });
