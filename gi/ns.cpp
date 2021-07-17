@@ -29,6 +29,36 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
+[[nodiscard]] static bool type_is_enumerable(GIInfoType info_type) {
+    switch (info_type) {
+        case GI_INFO_TYPE_BOXED:
+        case GI_INFO_TYPE_STRUCT:
+        case GI_INFO_TYPE_UNION:
+        case GI_INFO_TYPE_OBJECT:
+        case GI_INFO_TYPE_ENUM:
+        case GI_INFO_TYPE_FLAGS:
+        case GI_INFO_TYPE_INTERFACE:
+        case GI_INFO_TYPE_FUNCTION:
+        case GI_INFO_TYPE_CONSTANT:
+            return true;
+        // Don't enumerate types which GJS doesn't define on namespaces.
+        // See gjs_define_info
+        case GI_INFO_TYPE_INVALID:
+        case GI_INFO_TYPE_INVALID_0:
+        case GI_INFO_TYPE_CALLBACK:
+        case GI_INFO_TYPE_VALUE:
+        case GI_INFO_TYPE_SIGNAL:
+        case GI_INFO_TYPE_VFUNC:
+        case GI_INFO_TYPE_PROPERTY:
+        case GI_INFO_TYPE_FIELD:
+        case GI_INFO_TYPE_ARG:
+        case GI_INFO_TYPE_TYPE:
+        case GI_INFO_TYPE_UNRESOLVED:
+        default:
+            return false;
+    }
+}
+
 class Ns : private GjsAutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
@@ -106,6 +136,10 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
 
         for (int k = 0; k < n; k++) {
             GjsAutoBaseInfo info = g_irepository_get_info(nullptr, get(), k);
+            GIInfoType info_type = g_base_info_get_type(info);
+            if (!type_is_enumerable(info_type))
+                continue;
+
             const char* name = info.name();
 
             jsid id = gjs_intern_string_to_id(cx, name);
