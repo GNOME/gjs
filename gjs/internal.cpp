@@ -102,7 +102,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
     JS::RootedId key(cx, gjs_intern_string_to_id(cx, full_path));
 
-    // TODO: This is the value returned for TLA (top-level await)
+    // TODO(ewlsh): This is the value returned for TLA (top-level await)
     JS::RootedValue ignore(cx);
     if (!gjs_global_registry_set(cx, registry, key, module) ||
         !JS::ModuleInstantiate(cx, module) ||

@@ -65,21 +65,27 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 
             // Ensure to call any associated setter method
             if (!g_str_equal(underscore_name.get(), pspec->name)) {
-                if (!JS_GetPropertyDescriptor(cx, object, underscore_name, &jsprop,
-                                          &holder))
+                if (!JS_GetPropertyDescriptor(cx, object, underscore_name,
+                                              &jsprop, &holder)) {
                     return false;
+                }
+
                 if (jsprop.isSome() && jsprop.value().setter() &&
-                 !JS_SetProperty(cx, object, underscore_name, jsvalue))
-                  return false;
-           }
+                    !JS_SetProperty(cx, object, underscore_name, jsvalue)) {
+                    return false;
+                }
+            }
 
            if (!g_str_equal(camel_name.get(), pspec->name)) {
                if (!JS_GetPropertyDescriptor(cx, object, camel_name, &jsprop,
-                                          &holder))
-                 return false;
-                if (jsprop.isSome() && jsprop.value().setter() &&
-                 !JS_SetProperty(cx, object, camel_name, jsvalue))
+                                             &holder)) {
                    return false;
+               }
+
+               if (jsprop.isSome() && jsprop.value().setter() &&
+                   !JS_SetProperty(cx, object, camel_name, jsvalue)) {
+                   return false;
+               }
          }
 
          if (!JS_GetPropertyDescriptor(cx, object, pspec->name, &jsprop,

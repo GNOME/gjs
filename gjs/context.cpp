@@ -1427,7 +1427,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!script)
         return false;
 
-    // TODO -
+    // TODO(ewlsh): Investigate changes to script private API
     // https://github.com/mozilla/gecko-dev/commit/810f80185c290c08ef83d24daf8dfc64ef42e378#diff-35d2bbb110db1669ead652e8dd00f4abd7a25dd44d9b24fa26d6c86cde123cfd
     if (!JS::UpdateDebugMetadata(m_cx, script, options, privv, nullptr, nullptr,
                                  nullptr)) {
