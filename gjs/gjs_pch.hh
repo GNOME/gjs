@@ -74,6 +74,7 @@
 #include <js/Initialization.h>
 #include <js/MemoryFunctions.h>
 #include <js/Modules.h>
+#include <js/Object.h>
 #include <js/ProfilingCategory.h>
 #include <js/ProfilingStack.h>
 #include <js/Promise.h>
@@ -84,6 +85,7 @@
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>
 #include <js/SourceText.h>
+#include <js/String.h>
 #include <js/Symbol.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
@@ -95,6 +97,8 @@
 #include <js/Wrapper.h>
 #include <js/experimental/CodeCoverage.h>
 #include <js/experimental/SourceHook.h>
+#include <js/experimental/TypedData.h>
+#include <js/friend/DumpFunctions.h>
 #include <jsapi.h>
 #include <jsfriendapi.h>
 #include <jspubtd.h>
