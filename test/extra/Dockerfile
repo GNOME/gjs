@@ -16,10 +16,10 @@ RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root
 
-RUN curl -# -o mozjs.tar.xz -L https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/FKL1EcZ4Rj2U4v9poe9kYA/runs/0/artifacts/public/build/mozjs-91.0a1.0.tar.xz
+RUN curl -# -o mozjs.tar.xz -L https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/OsmkeFYMRxmYCP_q7W5jwQ/runs/0/artifacts/public/build/mozjs-91.0.0.tar.xz
 RUN unxz mozjs.tar.xz
 RUN tar -xf mozjs.tar
-RUN mv mozjs-91.0a1.0 mozjs
+RUN mv mozjs-91.0.0 mozjs
 RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
