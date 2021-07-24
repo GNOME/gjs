@@ -525,6 +525,8 @@ class PromiseData {
 static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
     std::unique_ptr<PromiseData> promise(PromiseData::from_ptr(data));
 
+    JSAutoRealm ac(promise->cx, gjs_get_import_global(promise->cx));
+
     char* contents;
     size_t length;
     GError* error = nullptr;
