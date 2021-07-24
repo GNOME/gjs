@@ -24,13 +24,13 @@ thumbs-down; or write code which is incorporated into [GJS itself][gjs].
 ### What kinds of contributions we are not looking for ###
 
 Please don't use the [issue tracker][bugtracker] for support questions.
-Instead, check out the [#javascript][irc] IRC channel on irc.gnome.org.
-You can also try the [javascript-list][mailinglist] mailing list, or
+Instead, check out the [#javascript][chat] chat channel on Matrix.
+You can also try the [GNOME Discourse][discourse] forum, or
 Stack Overflow.
 
 If you are writing code, please do not submit merge requests that only
 fix linter errors in code that you are not otherwise changing (unless
-you have discussed it in advance with a maintainer on [IRC][irc].)
+you have discussed it in advance with a maintainer on [Matrix][chat].)
 
 When writing code or submitting a feature request, make sure to first
 read the section below titled "Roadmap".
@@ -117,7 +117,7 @@ make your bug harder to track down.
 _If you find a security vulnerability,_ make sure to mark the issue as
 "confidential"!
 
-If in doubt, ask on [IRC][irc] whether you should report a bug about
+If in doubt, ask on [Matrix][chat] whether you should report a bug about
 something, but generally it's OK to just go ahead.
 
 Bug report #170 is a good example of a bug report with an independently
@@ -206,8 +206,8 @@ Continuous being broken.
 
 ## Community ##
 
-For general questions and support, visit the [#javascript][irc] channel
-on irc.gnome.org.
+For general questions and support, visit the [#javascript][chat] channel
+on Matrix.
 
 The maintainers are listed in the [DOAP file][doap] in the root of the
 repository.
@@ -327,8 +327,8 @@ this guide!
 [gitlab.gnome.org]: https://gitlab.gnome.org
 [bugtracker]: https://gitlab.gnome.org/GNOME/gjs/issues
 [gjs]: https://gitlab.gnome.org/GNOME/gjs
-[irc]: https://riot.im/app/#/room/#_gimpnet_#javascript:matrix.org
-[mailinglist]: https://mail.gnome.org/mailman/listinfo/javascript-list
+[chat]: https://matrix.to/#/#javascript:gnome.org
+[discourse]: https://discourse.gnome.org/
 [newcomers]: https://gitlab.gnome.org/GNOME/gjs/issues?label_name%5B%5D=4.+Newcomers
 [helpwanted]: https://gitlab.gnome.org/GNOME/gjs/issues?label_name%5B%5D=4.+Help+Wanted
 [internship]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/Internship-Getting-Started.md

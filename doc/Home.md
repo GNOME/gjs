@@ -53,8 +53,8 @@ Third party applications written in GJS:
 
 ## Getting Help
 
-* Mailing List: http://mail.gnome.org/mailman/listinfo/javascript-list
-* IRC: irc://irc.gnome.org/#javascript
+* Discourse: https://discourse.gnome.org/
+* Chat: https://matrix.to/#/#javascript:gnome.org
 * Issue/Bug Tracker: https://gitlab.gnome.org/GNOME/gjs/issues
 * StackOverflow: https://stackoverflow.com/questions/tagged/gjs
 
