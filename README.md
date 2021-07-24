@@ -63,7 +63,7 @@ a forked version, [Cinnamon].
 
 ### Documentation
 
-* [Get started](https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/doc/Home.md)
+* [Get started](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/CONTRIBUTING.md)
 * [Get started - Internship](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/Internship-Getting-Started.md)
 * [API documentation](https://gjs-docs.gnome.org/)
 

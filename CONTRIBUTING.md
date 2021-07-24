@@ -299,9 +299,9 @@ autoformatter, read the [CPP_Style_Guide.md][cppstyle] file.
 For Javascript code, an [ESLint configuration file][eslint] is included
 in the root of the GJS repository.
 This is not integrated with a git commit hook, so you need to manually
-manually sure that all your new code conforms to the style.
-Don't rewrite old code with `eslint --fix` unless you are already
-changing that code for some other reason.
+make sure that all your code conforms to the style.
+Running `./tools/run_eslint.sh --fix` should autoformat most of your
+JavaScript code correctly.
 
 ### Commit messages ###
 

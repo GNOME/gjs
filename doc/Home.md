@@ -1,6 +1,8 @@
 # GJS: Javascript Bindings for GNOME
 
-The current stable series is built on Mozilla's SpiderMonkey 78 featuring **ECMAScript 2019** and GObjectIntrospection making most of the **GNOME API library** available.
+The current stable series is built on Mozilla's SpiderMonkey 78,
+featuring **ECMAScript 2019** and GObject Introspection making most of
+the **GNOME platform API** available.
 
 To find out when a language feature was implemented in GJS, review [NEWS][gjs-news] in the GitLab repository. In many cases older versions of GJS can be supported using [polyfills][mdn-polyfills] and [legacy-style GJS classes](Modules.md#lang).
 
@@ -11,7 +13,8 @@ GJS includes some built-in modules like Cairo and Gettext, as well as helpers fo
 
 ## GNOME API Documentation
 
-There is now official [GNOME API Documentation][gjs-docs] for GJS, including everything from GLib and Gtk to Soup and WebKit2.
+There is official [GNOME API Documentation][gjs-docs] for GJS, including
+everything from GLib and Gtk to Soup and WebKit2.
 
 The [Mapping](Mapping.md) page has an overview of GNOME API usage in GJS such as subclassing, constants and flags, functions with multiple return values, and more.
 
@@ -20,7 +23,6 @@ There are also a growing number of [examples][gjs-examples] and thorough tests o
 [gjs-docs]: https://gjs-docs.gnome.org/
 [gjs-examples]: https://gitlab.gnome.org/GNOME/gjs/tree/HEAD/examples
 [gjs-tests]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/installed-tests/js
-
 
 ## Standalone Applications
 
