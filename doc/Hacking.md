@@ -65,9 +65,25 @@ These debugging features reduce performance by quite a lot, but they
 will help catch mistakes in the API that could otherwise go unnoticed
 and cause crashes in gnome-shell later on.
 
-If you aren't writing any C++ code, then you don't need to build it
-yourself. Install SpiderMonkey using your system's package manager
-instead.
+If you aren't writing any C++ code, and your system provides it (for
+example, Fedora 33 or Ubuntu 20.10 and later versions), then you don't
+need to build it yourself.
+Install SpiderMonkey using your system's package manager instead:
+
+<details>
+    <summary>Ubuntu</summary>
+    <code>sudo apt-get install libmozjs-78-dev</code>
+</details>
+
+<details>
+    <summary>Fedora</summary>
+    <code>sudo dnf install mozjs78-devel</code>
+</details>
+
+If you _are_ writing C++ code, then please build SpiderMonkey yourself
+with the debugging features enabled.
+This can save you time later when you submit your merge request, because
+the code will be checked using the debugging features.
 
 To build SpiderMonkey, follow the instructions on [this page](https://github.com/mozilla-spidermonkey/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md) to download the source code and build the library.
 If you are using `-Dprefix` to build GJS into a different path, then
