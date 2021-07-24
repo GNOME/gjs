@@ -70,6 +70,9 @@ free to leave a comment on there asking for help on how to get started.
 than the Newcomers issues, but many of them still do not require
 in-depth familiarity with GJS.
 
+If you're applying to work on GJS for Outreachy or Summer of Code, see
+our [Internship Getting Started][internship] documentation.
+
 ## How to contribute documentation or tutorials ##
 
 If you don't have an account on [gitlab.gnome.org], first create one.
@@ -328,6 +331,7 @@ this guide!
 [mailinglist]: https://mail.gnome.org/mailman/listinfo/javascript-list
 [newcomers]: https://gitlab.gnome.org/GNOME/gjs/issues?label_name%5B%5D=4.+Newcomers
 [helpwanted]: https://gitlab.gnome.org/GNOME/gjs/issues?label_name%5B%5D=4.+Help+Wanted
+[internship]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/doc/Internship-Getting-Started.md
 [devdocs]: https://github.com/ptomato/devdocs
 [gjsguide]: https://gitlab.gnome.org/rockon999/gjs-guide
 [workflow]: https://wiki.gnome.org/GitLab#Using_a_fork_-_Non_GNOME_developer

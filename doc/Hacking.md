@@ -13,7 +13,18 @@ regular terminal.
 
 ## Setting up ##
 
-First of all, if you are contributing C++ code, install the handy git
+First of all, download the GJS source code using Git.
+Go to [GJS on GitLab](https://gitlab.gnome.org/GNOME/gjs), and click
+"Fork" near the top right of the page.
+Then, click the "Clone" button that's located a bit under the "Fork"
+button, and click the little clipboard icon next to "Clone with SSH" or
+"Clone with HTTPS", to copy the address to your clipboard.
+Go to your terminal, and type `git clone` and then paste the address
+into your terminal with Shift+Ctrl+V.
+(Don't forget Shift! It's important when pasting into a terminal.)
+This will download the GJS source code into a `gjs` directory.
+
+If you are contributing C++ code, install the handy git
 commit hook that will autoformat your code when you commit it.
 In your `gjs` directory, run
 `tools/git-pre-commit-format install`.
