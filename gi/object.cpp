@@ -28,6 +28,7 @@
 #include <js/ComparisonOperators.h>
 #include <js/GCAPI.h>               // for JS_AddWeakPointerCompartmentCallback
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
+#include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/TypeDecls.h>
@@ -1353,7 +1354,8 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
          * The JSObject associated with the gobject is not rooted,
          * but it needs to be. We'll root it.
          */
-        if (is_main_thread && !anything_queued) {
+        if (is_main_thread && !anything_queued &&
+            !JS::RuntimeHeapIsCollecting()) {
             self->toggle_up();
         } else {
             toggle_queue->enqueue(self, ToggleQueue::UP, toggle_handler);
