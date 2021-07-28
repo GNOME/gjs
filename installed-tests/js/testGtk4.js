@@ -112,6 +112,20 @@ const MyComplexGtkSubclassFromFile = GObject.registerClass({
 const SubclassSubclass = GObject.registerClass(
     class SubclassSubclass extends MyComplexGtkSubclass {});
 
+
+const CustomActionWidget = GObject.registerClass(
+class CustomActionWidget extends Gtk.Widget {
+    static _classInit(klass) {
+        klass = Gtk.Widget._classInit(klass);
+
+        Gtk.Widget.install_action.call(klass,
+            'custom.action',
+            null,
+            widget => (widget.action = 42));
+        return klass;
+    }
+});
+
 function validateTemplate(description, ClassName, pending = false) {
     let suite = pending ? xdescribe : describe;
     suite(description, function () {
@@ -181,4 +195,10 @@ describe('Gtk 4 regressions', function () {
     it('Gdk.Event fundamental type should not crash', function () {
         expect(() => new Gdk.Event()).toThrowError(/Couldn't find a constructor/);
     });
+
+    xit('Actions added via Gtk.WidgetClass.add_action() should not crash', function () {
+        const custom = new CustomActionWidget();
+        custom.activate_action('custom.action', null);
+        expect(custom.action).toEqual(42);
+    }).pend('https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/3796');
 });

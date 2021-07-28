@@ -325,9 +325,12 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
         gjs_arg_set(&state->in_cvalue(closure_pos), trampoline);
     }
 
-    if (trampoline && self->contents.callback.scope == GI_SCOPE_TYPE_ASYNC) {
+    GIScopeType scope = self->contents.callback.scope;
+    bool keep_forever = scope == GI_SCOPE_TYPE_NOTIFIED &&
+                        !self->has_callback_destroy();
+    if (trampoline && (scope == GI_SCOPE_TYPE_ASYNC || keep_forever)) {
         // Add an extra reference that will be cleared when garbage collecting
-        // async calls
+        // async calls or never for notified callbacks without destroy
         g_closure_ref(trampoline);
     }
     gjs_arg_set(arg, closure);
