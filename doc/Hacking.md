@@ -13,7 +13,18 @@ regular terminal.
 
 ## Setting up ##
 
-First of all, if you are contributing C++ code, install the handy git
+First of all, download the GJS source code using Git.
+Go to [GJS on GitLab](https://gitlab.gnome.org/GNOME/gjs), and click
+"Fork" near the top right of the page.
+Then, click the "Clone" button that's located a bit under the "Fork"
+button, and click the little clipboard icon next to "Clone with SSH" or
+"Clone with HTTPS", to copy the address to your clipboard.
+Go to your terminal, and type `git clone` and then paste the address
+into your terminal with Shift+Ctrl+V.
+(Don't forget Shift! It's important when pasting into a terminal.)
+This will download the GJS source code into a `gjs` directory.
+
+If you are contributing C++ code, install the handy git
 commit hook that will autoformat your code when you commit it.
 In your `gjs` directory, run
 `tools/git-pre-commit-format install`.
@@ -54,9 +65,25 @@ These debugging features reduce performance by quite a lot, but they
 will help catch mistakes in the API that could otherwise go unnoticed
 and cause crashes in gnome-shell later on.
 
-If you aren't writing any C++ code, then you don't need to build it
-yourself. Install SpiderMonkey using your system's package manager
-instead.
+If you aren't writing any C++ code, and your system provides it (for
+example, Fedora 33 or Ubuntu 20.10 and later versions), then you don't
+need to build it yourself.
+Install SpiderMonkey using your system's package manager instead:
+
+<details>
+    <summary>Ubuntu</summary>
+    <code>sudo apt-get install libmozjs-78-dev</code>
+</details>
+
+<details>
+    <summary>Fedora</summary>
+    <code>sudo dnf install mozjs78-devel</code>
+</details>
+
+If you _are_ writing C++ code, then please build SpiderMonkey yourself
+with the debugging features enabled.
+This can save you time later when you submit your merge request, because
+the code will be checked using the debugging features.
 
 To build SpiderMonkey, follow the instructions on [this page](https://github.com/mozilla-spidermonkey/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md) to download the source code and build the library.
 If you are using `-Dprefix` to build GJS into a different path, then
