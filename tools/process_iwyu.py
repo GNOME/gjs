@@ -94,6 +94,7 @@ FALSE_POSITIVES = (
 
     # False positive when using GjsAutoPointer
     # https://github.com/include-what-you-use/include-what-you-use/issues/927
+    ('gi/boxed.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
     ('gi/object.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gi/private.cpp', '#include <type_traits>',

@@ -3,6 +3,7 @@
 
 # IWYU mapping file for files that are part of libgjs
 [
+  {"include": ["<bits/this_thread_sleep.h>", "private", "<thread>", "public"]},
   {"include": ["<bits/types/sigevent_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/siginfo_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/struct_itimerspec.h>", "private", "<time.h>", "public"]},
