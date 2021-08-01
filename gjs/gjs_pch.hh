@@ -70,6 +70,7 @@
 #include <js/GCPolicyAPI.h>
 #include <js/GCVector.h>
 #include <js/HashTable.h>
+#include <js/HeapAPI.h>
 #include <js/Id.h>
 #include <js/Initialization.h>
 #include <js/MemoryFunctions.h>
