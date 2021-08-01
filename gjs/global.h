@@ -32,7 +32,8 @@ enum class GjsBaseGlobalSlot : uint32_t {
 };
 
 enum class GjsDebuggerGlobalSlot : uint32_t {
-    LAST = static_cast<uint32_t>(GjsBaseGlobalSlot::LAST),
+    REMOTE_SERVER = static_cast<uint32_t>(GjsBaseGlobalSlot::LAST),
+    LAST,
 };
 
 enum class GjsGlobalSlot : uint32_t {

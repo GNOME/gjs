@@ -9,13 +9,14 @@
 
     <!-- ESM-based modules -->
     <file>modules/esm/_bootstrap/default.js</file>
-  
+
     <file>modules/esm/cairo.js</file>
     <file>modules/esm/gettext.js</file>
     <file>modules/esm/gi.js</file>
     <file>modules/esm/system.js</file>
 
     <!-- Script-based Modules -->
+    <file>modules/script/_bootstrap/remoteDebugger.js</file>
     <file>modules/script/_bootstrap/debugger.js</file>
     <file>modules/script/_bootstrap/default.js</file>
     <file>modules/script/_bootstrap/coverage.js</file>

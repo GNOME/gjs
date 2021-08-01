@@ -30,6 +30,7 @@ static char *command = NULL;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
 static gboolean debugging = false;
+static gboolean remote_debugging = false;
 static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
@@ -50,6 +51,8 @@ static GOptionEntry entries[] = {
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
         "FILE" },
     { "debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode" },
+    { "remote debugger", 'D', 0, G_OPTION_ARG_NONE, &remote_debugging,
+        "Start in remote debug mode" },
     { NULL }
 };
 // clang-format on
@@ -380,6 +383,9 @@ main(int argc, char **argv)
      * frame. */
     if (debugging)
         gjs_context_setup_debugger_console(js_context);
+
+    else if (remote_debugging)
+        gjs_context_setup_remote_debugger_console(js_context);
 
     int code = define_argv_and_eval_script(js_context, script_argc, script_argv,
                                            script, len, filename);

@@ -38,6 +38,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/remote-server.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -109,6 +110,12 @@ static JSFunctionSpec debugger_funcs[] = {
     JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
+
+static JSFunctionSpec remote_debugger_funcs[] = {
+    JS_FN("writeMessage", gjs_socket_connection_write_message, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("startRemoteDebugging", gjs_start_remote_debugging, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END
+};
 // clang-format on
 
 void gjs_context_setup_debugger_console(GjsContext* gjs) {
@@ -134,4 +141,38 @@ void gjs_context_setup_debugger_console(GjsContext* gjs) {
                                       GjsGlobalType::DEBUGGER, "GJS debugger",
                                       "debugger"))
         gjs_log_exception(cx);
+}
+
+void gjs_context_setup_remote_debugger_console(GjsContext* gjs) {
+    auto cx = static_cast<JSContext*>(gjs_context_get_native_context(gjs));
+
+    JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
+    JS::RootedObject debugger_global(
+        cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER));
+    {
+        // Enter realm of the debugger and initialize it with the debuggee
+        JSAutoRealm ar(cx, debugger_global);
+        auto debugging_server = new RemoteDebuggingServer(cx, debugger_global);
+
+        gjs_set_global_slot(debugger_global,
+                            GjsDebuggerGlobalSlot::REMOTE_SERVER,
+                            JS::PrivateValue(debugging_server));
+
+        JS::RootedObject debuggee_wrapper(cx, debuggee);
+        if (!JS_WrapObject(cx, &debuggee_wrapper)) {
+            gjs_log_exception(cx);
+            return;
+        }
+
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
+        if (!JS_SetPropertyById(cx, debugger_global, atoms.debuggee(),
+                                v_wrapper) ||
+            !JS_DefineFunctions(cx, debugger_global, debugger_funcs) ||
+            !JS_DefineFunctions(cx, debugger_global, remote_debugger_funcs) ||
+            !gjs_define_global_properties(cx, debugger_global,
+                                          GjsGlobalType::DEBUGGER,
+                                          "GJS debugger", "remoteDebugger"))
+            gjs_log_exception(cx);
+    }
 }

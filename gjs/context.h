@@ -101,6 +101,9 @@ GJS_EXPORT GJS_USE const char* gjs_get_js_version(void);
 GJS_EXPORT
 void gjs_context_setup_debugger_console(GjsContext* gjs);
 
+GJS_EXPORT
+void gjs_context_setup_remote_debugger_console(GjsContext* gjs);
+
 G_END_DECLS
 
 #endif /* GJS_CONTEXT_H_ */
