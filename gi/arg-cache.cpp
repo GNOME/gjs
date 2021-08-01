@@ -29,6 +29,7 @@
 #include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
+#include "gi/closure.h"
 #include "gi/foreign.h"
 #include "gi/function.h"
 #include "gi/fundamental.h"
@@ -287,9 +288,9 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
         GjsAutoCallableInfo callable_info =
             g_type_info_get_interface(&self->type_info);
         bool is_object_method = !!state->instance_object;
-        trampoline = gjs_callback_trampoline_new(cx, func, callable_info,
-                                                 self->contents.callback.scope,
-                                                 is_object_method, false);
+        trampoline = GjsCallbackTrampoline::create(
+            cx, func, callable_info, self->contents.callback.scope,
+            is_object_method, false);
         if (!trampoline)
             return false;
         if (self->contents.callback.scope == GI_SCOPE_TYPE_NOTIFIED &&
@@ -300,7 +301,7 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
                 return false;
             }
 
-            if (!priv->associate_closure(cx, trampoline->js_function()))
+            if (!priv->associate_closure(cx, trampoline))
                 return false;
         }
         closure = trampoline->closure();
@@ -311,11 +312,10 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
         GDestroyNotify destroy_notify = nullptr;
         if (trampoline) {
             /* Adding another reference and a DestroyNotify that unsets it */
-            gjs_callback_trampoline_ref(trampoline);
+            g_closure_ref(trampoline);
             destroy_notify = [](void* data) {
                 g_assert(data);
-                gjs_callback_trampoline_unref(
-                    static_cast<GjsCallbackTrampoline*>(data));
+                g_closure_unref(static_cast<GClosure*>(data));
             };
         }
         gjs_arg_set(&state->in_cvalue(destroy_pos), destroy_notify);
@@ -328,7 +328,7 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
     if (trampoline && self->contents.callback.scope == GI_SCOPE_TYPE_ASYNC) {
         // Add an extra reference that will be cleared when garbage collecting
         // async calls
-        gjs_callback_trampoline_ref(trampoline);
+        g_closure_ref(trampoline);
     }
     gjs_arg_set(arg, closure);
 
@@ -635,7 +635,7 @@ static bool gjs_marshal_gclosure_in_in(JSContext* cx, GjsArgumentCache* self,
                                       ExpectedType::FUNCTION);
 
     JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
-    GClosure* closure = gjs_closure_new_marshaled(cx, func, "boxed");
+    GClosure* closure = Gjs::Closure::create_marshaled(cx, func, "boxed");
     gjs_arg_set(arg, closure);
     g_closure_ref(closure);
     g_closure_sink(closure);
@@ -933,8 +933,7 @@ static bool gjs_marshal_callback_release(JSContext*, GjsArgumentCache*,
     if (!closure)
         return true;
 
-    GjsAutoCallbackTrampoline trampoline =
-        static_cast<GjsCallbackTrampoline*>(closure->user_data);
+    g_closure_unref(static_cast<GClosure*>(closure->user_data));
     // CallbackTrampolines are refcounted because for notified/async closures
     // it is possible to destroy it while in call, and therefore we cannot
     // check its scope at this point

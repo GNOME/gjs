@@ -31,6 +31,7 @@
 #include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
+#include "gi/closure.h"
 #include "gi/foreign.h"
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
@@ -1342,7 +1343,7 @@ static bool value_to_interface_gi_argument(
 
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    GClosure* closure = gjs_closure_new_marshaled(
+                    GClosure* closure = Gjs::Closure::create_marshaled(
                         cx, JS_GetObjectFunction(obj), "boxed");
                     // GI doesn't know about floating GClosure references. We
                     // guess that if this is a return value going from JS::Value

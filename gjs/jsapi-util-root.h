@@ -21,8 +21,6 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 
-#include "gjs/context-private.h"
-#include "gjs/context.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
@@ -47,7 +45,7 @@
  *
  * If the thing is rooted, it will be unrooted either when the GjsMaybeOwned is
  * destroyed, or when the JSContext is destroyed. In the latter case, you can
- * get an optional notification by passing a callback to root().
+ * get an optional notification by registering a callback in the PrivateContext.
  *
  * To switch between one of the three modes, you must first call reset(). This
  * drops all references to any GC thing and leaves the GjsMaybeOwned in the
@@ -98,53 +96,12 @@ struct GjsHeapOperation<JSFunction*> {
  * any instances of classes that have it as a member on the stack either. */
 template<typename T>
 class GjsMaybeOwned {
- public:
-    typedef void (*DestroyNotify)(JS::Handle<T> thing, void *data);
-
  private:
     /* m_root value controls which of these members we can access. When switching
      * from one to the other, be careful to call the constructor and destructor
      * of JS::Heap, since they use post barriers. */
     JS::Heap<T> m_heap;
     std::unique_ptr<JS::PersistentRooted<T>> m_root;
-
-    struct Notifier {
-        Notifier(GjsMaybeOwned<T> *parent, DestroyNotify func, void *data)
-            : m_parent(parent)
-            , m_func(func)
-            , m_data(data)
-        {
-            GjsContext* current = gjs_context_get_current();
-            g_assert(GJS_IS_CONTEXT(current));
-            g_object_weak_ref(G_OBJECT(current), on_context_destroy, this);
-        }
-
-        ~Notifier() { disconnect(); }
-
-        static void on_context_destroy(void* data,
-                                       GObject* ex_context [[maybe_unused]]) {
-            auto self = static_cast<Notifier*>(data);
-            auto *parent = self->m_parent;
-            self->m_parent = nullptr;
-            self->m_func(parent->handle(), self->m_data);
-        }
-
-        void disconnect() {
-            if (!m_parent)
-                return;
-
-            GjsContext* current = gjs_context_get_current();
-            g_assert(GJS_IS_CONTEXT(current));
-            g_object_weak_unref(G_OBJECT(current), on_context_destroy, this);
-            m_parent = nullptr;
-        }
-
-     private:
-        GjsMaybeOwned<T> *m_parent;
-        DestroyNotify m_func;
-        void *m_data;
-    };
-    std::unique_ptr<Notifier> m_notify;
 
     /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
     inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
@@ -159,7 +116,6 @@ class GjsMaybeOwned {
         g_assert(m_root);
 
         m_root.reset();
-        m_notify.reset();
 
         new (&m_heap) JS::Heap<T>();
     }
@@ -222,20 +178,12 @@ class GjsMaybeOwned {
 
     /* Roots the GC thing. You must not use this if you're already using the
      * wrapper to store a non-rooted GC thing. */
-    void
-    root(JSContext    *cx,
-         const T&      thing,
-         DestroyNotify notify = nullptr,
-         void         *data   = nullptr)
-    {
+    void root(JSContext* cx, const T& thing) {
         debug("root()");
         g_assert(!m_root);
         g_assert(m_heap.get() == JS::SafelyInitialized<T>());
         m_heap.~Heap();
         m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
-
-        if (notify)
-            m_notify = std::make_unique<Notifier>(this, notify, data);
     }
 
     /* You can only assign directly to the GjsMaybeOwned wrapper in the
@@ -266,11 +214,7 @@ class GjsMaybeOwned {
         teardown_rooting();
     }
 
-    void
-    switch_to_rooted(JSContext    *cx,
-                     DestroyNotify notify = nullptr,
-                     void         *data   = nullptr)
-    {
+    void switch_to_rooted(JSContext* cx) {
         debug("switch to rooted");
         g_assert(!m_root);
 
@@ -279,7 +223,7 @@ class GjsMaybeOwned {
         JS::Rooted<T> thing(cx, m_heap);
 
         reset();
-        root(cx, thing, notify, data);
+        root(cx, thing);
         g_assert(m_root);
     }
 

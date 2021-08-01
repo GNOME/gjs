@@ -14,6 +14,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>  // for pair
 #include <vector>
 
 #include <glib-object.h>
@@ -31,6 +32,7 @@
 #include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
+#include "gi/closure.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -54,6 +56,10 @@ using GTypeTable =
                   js::SystemAllocPolicy>;
 
 class GjsContextPrivate : public JS::JobQueue {
+ public:
+    using DestroyNotify = void (*)(JSContext*, void* data);
+
+ private:
     GjsContext* m_public_context;
     JSContext* m_cx;
     JS::Heap<JSObject*> m_global;
@@ -74,6 +80,8 @@ class GjsContextPrivate : public JS::JobQueue {
     JobQueueStorage m_job_queue;
     unsigned m_idle_drain_handler;
 
+    std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
+    std::vector<Gjs::Closure::Ptr> m_async_closures;
     std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
 
     GjsProfiler* m_profiler;
@@ -237,6 +245,10 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+
+    void register_notifier(DestroyNotify notify_func, void* data);
+    void unregister_notifier(DestroyNotify notify_func, void* data);
+    void async_closure_enqueue_for_gc(Gjs::Closure*);
 
     [[nodiscard]] bool register_module(const char* identifier,
                                        const char* filename, GError** error);

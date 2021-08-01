@@ -116,29 +116,23 @@ gjs_value_from_array_and_length_values(JSContext             *context,
                                          &array_arg, array_length.toInt32());
 }
 
-static void
-closure_marshal(GClosure        *closure,
-                GValue          *return_value,
-                guint            n_param_values,
-                const GValue    *param_values,
-                gpointer         invocation_hint,
-                gpointer         marshal_data)
-{
+// FIXME(3v1n0): Move into closure.cpp one day...
+void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
+                           const GValue* param_values, void* invocation_hint,
+                           void* marshal_data) {
     JSContext *context;
     unsigned i;
     GSignalQuery signal_query = { 0, };
     GISignalInfo *signal_info;
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Marshal closure %p",
-                      closure);
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
 
-    if (!gjs_closure_is_valid(closure)) {
+    if (!is_valid()) {
         /* We were destroyed; become a no-op */
         return;
     }
 
-    context = gjs_closure_get_context(closure);
+    context = m_cx;
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     if (G_UNLIKELY(gjs->sweeping())) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
@@ -161,7 +155,7 @@ closure_marshal(GClosure        *closure,
         return;
     }
 
-    JSFunction* func = gjs_closure_get_callable(closure);
+    JSFunction* func = callable();
     JSAutoRealm ar(context, JS_GetFunctionObject(func));
 
     if (marshal_data) {
@@ -263,7 +257,7 @@ closure_marshal(GClosure        *closure,
 
     JS::RootedValue rval(context);
 
-    if (!gjs_closure_invoke(closure, nullptr, argv, &rval)) {
+    if (!invoke(nullptr, argv, &rval)) {
         if (JS_IsExceptionPending(context)) {
             gjs_log_exception_uncaught(context);
         } else {
@@ -274,7 +268,7 @@ closure_marshal(GClosure        *closure,
                 exit(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            JSFunction* fn = gjs_closure_get_callable(closure);
+            JSFunction* fn = callable();
             g_error("Function %s terminated with uncatchable exception",
                     gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str());
         }
@@ -298,28 +292,6 @@ closure_marshal(GClosure        *closure,
             return;
         }
     }
-}
-
-GClosure* gjs_closure_new_for_signal(JSContext* context, JSFunction* callable,
-                                     const char* description, guint signal_id) {
-    GClosure *closure;
-
-    closure = gjs_closure_new(context, callable, description, false);
-
-    g_closure_set_meta_marshal(closure, GUINT_TO_POINTER(signal_id), closure_marshal);
-
-    return closure;
-}
-
-GClosure* gjs_closure_new_marshaled(JSContext* context, JSFunction* callable,
-                                    const char* description) {
-    GClosure *closure;
-
-    closure = gjs_closure_new(context, callable, description, true);
-
-    g_closure_set_marshal(closure, closure_marshal);
-
-    return closure;
 }
 
 GJS_JSAPI_RETURN_CONVENTION

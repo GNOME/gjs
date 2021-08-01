@@ -174,25 +174,6 @@ class Function : public CWrapper<Function> {
 
 }  // namespace Gjs
 
-/* Because we can't free the mmap'd data for a callback
- * while it's in use, this list keeps track of ones that
- * will be freed the next time we invoke a C function.
- */
-static std::vector<GjsAutoCallbackTrampoline> completed_trampolines;
-
-GjsCallbackTrampoline* gjs_callback_trampoline_ref(
-    GjsCallbackTrampoline* trampoline) {
-    g_atomic_ref_count_inc(&trampoline->ref_count);
-    return trampoline;
-}
-
-void
-gjs_callback_trampoline_unref(GjsCallbackTrampoline *trampoline)
-{
-    if (g_atomic_ref_count_dec(&trampoline->ref_count))
-        delete trampoline;
-}
-
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 static inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>
 set_ffi_arg(void* result, GIArgument* value) {
@@ -309,10 +290,9 @@ void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
  * getting the return value back.
  */
 void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
-    JSContext *context;
     GITypeInfo ret_type;
 
-    if (G_UNLIKELY(!gjs_closure_is_valid(m_js_function))) {
+    if (G_UNLIKELY(!is_valid())) {
         warn_about_illegal_js_callback(
             "during shutdown",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
@@ -321,7 +301,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         return;
     }
 
-    context = gjs_closure_get_context(m_js_function);
+    JSContext* context = this->context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     if (G_UNLIKELY(gjs->sweeping())) {
         warn_about_illegal_js_callback(
@@ -338,8 +318,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         return;
     }
 
-    JSAutoRealm ar(
-        context, JS_GetFunctionObject(gjs_closure_get_callable(m_js_function)));
+    JSAutoRealm ar(context, JS_GetFunctionObject(callable()));
 
     int n_args = m_param_types.size();
     g_assert(n_args >= 0);
@@ -352,7 +331,9 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             if (trampoline->m_scope == GI_SCOPE_TYPE_ASYNC) {
                 // We don't release the trampoline here as we've an extra ref
                 // that has been set in gjs_marshal_callback_in()
-                completed_trampolines.emplace_back(trampoline);
+                gjs_debug_closure("Saving async closure for gc cleanup %p",
+                                  trampoline);
+                gjs->async_closure_enqueue_for_gc(trampoline);
             }
             gjs->schedule_gc_if_needed();
         }
@@ -400,7 +381,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                 exit(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            JSFunction* fn = gjs_closure_get_callable(m_js_function);
+            JSFunction* fn = callable();
             g_error("Function %s (%s.%s) terminated with uncatchable exception",
                     gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str(),
                     m_info.ns(), m_info.name());
@@ -522,7 +503,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         }
     }
 
-    if (!gjs_closure_invoke(m_js_function, this_object, jsargs, rval))
+    if (!invoke(this_object, jsargs, rval))
         return false;
 
     if (n_outargs == 0 && ret_type_is_void) {
@@ -562,7 +543,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             return false;
 
         if (!is_array) {
-            JSFunction* fn = gjs_closure_get_callable(m_js_function);
+            JSFunction* fn = callable();
             gjs_throw(context,
                       "Function %s (%s.%s) returned unexpected value, "
                       "expecting an Array",
@@ -616,41 +597,45 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     return true;
 }
 
-GjsCallbackTrampoline* gjs_callback_trampoline_new(
-    JSContext* context, JS::HandleFunction function,
-    GICallableInfo* callable_info, GIScopeType scope, bool has_scope_object,
-    bool is_vfunc) {
+GjsCallbackTrampoline* GjsCallbackTrampoline::create(
+    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
+    GIScopeType scope, bool has_scope_object, bool is_vfunc) {
     g_assert(function);
+    auto* trampoline = new GjsCallbackTrampoline(
+        cx, function, callable_info, scope, has_scope_object, is_vfunc);
 
-    GjsAutoCallbackTrampoline trampoline =
-        new GjsCallbackTrampoline(callable_info, scope, is_vfunc);
-
-    if (!trampoline->initialize(context, function, has_scope_object))
+    if (!trampoline->initialize()) {
+        g_closure_unref(trampoline);
         return nullptr;
+    }
 
-    return trampoline.release();
+    return trampoline;
 }
 
-GjsCallbackTrampoline::GjsCallbackTrampoline(GICallableInfo* callable_info,
-                                             GIScopeType scope, bool is_vfunc)
-    : m_info(callable_info, GjsAutoTakeOwnership()),
-      m_scope(scope),
+GjsCallbackTrampoline::GjsCallbackTrampoline(
+    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
+    GIScopeType scope, bool has_scope_object, bool is_vfunc)
+    // The rooting rule is:
+    // - notify callbacks in GObject methods are traced from the scope object
+    // - async and call callbacks, and other notify callbacks, are rooted
+    // - vfuncs are traced from the GObject prototype
+    : Closure(cx, function,
+              scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object,
+              g_base_info_get_name(callable_info)),
+      m_info(callable_info, GjsAutoTakeOwnership()),
       m_param_types(g_callable_info_get_n_args(callable_info), {}),
+      m_scope(scope),
       m_is_vfunc(is_vfunc) {
-    g_atomic_ref_count_init(&ref_count);
+    add_finalize_notifier<GjsCallbackTrampoline>();
 }
 
 GjsCallbackTrampoline::~GjsCallbackTrampoline() {
-    g_assert(g_atomic_ref_count_compare(&ref_count, 0));
-
     if (m_info && m_closure)
         g_callable_info_free_closure(m_info, m_closure);
 }
 
-bool GjsCallbackTrampoline::initialize(JSContext* cx,
-                                       JS::HandleFunction function,
-                                       bool has_scope_object) {
-    g_assert(!m_js_function);
+bool GjsCallbackTrampoline::initialize() {
+    g_assert(is_valid());
     g_assert(!m_closure);
 
     /* Analyze param types and directions, similarly to
@@ -682,7 +667,7 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
                 g_type_info_get_interface(&type_info);
             interface_type = g_base_info_get_type(interface_info);
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
-                gjs_throw(cx,
+                gjs_throw(context(),
                           "%s %s accepts another callback as a parameter. This "
                           "is not supported",
                           m_is_vfunc ? "VFunc" : "Callback", m_info.name());
@@ -702,7 +687,7 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
                     g_callable_info_load_arg(m_info, array_length_pos,
                                              &length_arg_info);
                     if (g_arg_info_get_direction(&length_arg_info) != direction) {
-                        gjs_throw(cx,
+                        gjs_throw(context(),
                                   "%s %s has an array with different-direction "
                                   "length argument. This is not supported",
                                   m_is_vfunc ? "VFunc" : "Callback",
@@ -722,20 +707,14 @@ bool GjsCallbackTrampoline::initialize(JSContext* cx,
         [](ffi_cif*, void* result, void** ffi_args, void* data) {
             auto** args = reinterpret_cast<GIArgument**>(ffi_args);
             g_assert(data && "Trampoline data is not set");
-            GjsAutoCallbackTrampoline trampoline(
+            Gjs::Closure::Ptr trampoline(
                 static_cast<GjsCallbackTrampoline*>(data),
                 GjsAutoTakeOwnership());
 
-            trampoline->callback_closure(args, result);
+            trampoline.as<GjsCallbackTrampoline>()->callback_closure(args,
+                                                                     result);
         },
         this);
-
-    // The rule is:
-    // - notify callbacks in GObject methods are traced from the scope object
-    // - async and call callbacks, and other notify callbacks, are rooted
-    // - vfuncs are traced from the GObject prototype
-    bool should_root = m_scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object;
-    m_js_function = gjs_closure_new(cx, function, m_info.name(), should_root);
 
     return true;
 }
@@ -754,8 +733,6 @@ std::string Gjs::Function::format_name() {
     retval += m_info.name();
     return retval;
 }
-
-void gjs_function_clear_async_closures() { completed_trampolines.clear(); }
 
 namespace Gjs {
 

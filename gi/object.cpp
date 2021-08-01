@@ -74,7 +74,7 @@ class JSTracer;
 #if defined(__x86_64__) && defined(__clang__)
 /* This isn't meant to be comprehensive, but should trip on at least one CI job
  * if sizeof(ObjectInstance) is increased. */
-static_assert(sizeof(ObjectInstance) <= 88,
+static_assert(sizeof(ObjectInstance) <= 64,
               "Think very hard before increasing the size of ObjectInstance. "
               "There can be tens of thousands of them alive in a typical "
               "gnome-shell run.");
@@ -1753,7 +1753,7 @@ bool ObjectInstance::constructor_impl(JSContext* context,
 
 void ObjectInstance::trace_impl(JSTracer* tracer) {
     for (GClosure *closure : m_closures)
-        gjs_closure_trace(closure, tracer);
+        Gjs::Closure::for_gclosure(closure)->trace(tracer);
 }
 
 void ObjectPrototype::trace_impl(JSTracer* tracer) {
@@ -1761,7 +1761,7 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
     m_field_cache.trace(tracer);
     m_unresolvable_cache.trace(tracer);
     for (GClosure* closure : m_vfuncs)
-        gjs_closure_trace(closure, tracer);
+        Gjs::Closure::for_gclosure(closure)->trace(tracer);
 }
 
 void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
@@ -2006,7 +2006,6 @@ ObjectInstance::connect_impl(JSContext          *context,
                              const JS::CallArgs& args,
                              bool                after)
 {
-    GClosure *closure;
     gulong id;
     guint signal_id;
     GQuark signal_detail;
@@ -2042,7 +2041,7 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    closure = gjs_closure_new_for_signal(
+    GClosure* closure = Gjs::Closure::create_for_signal(
         context, JS_GetObjectFunction(callback), "signal callback", signal_id);
     if (closure == NULL)
         return false;
@@ -2253,7 +2252,7 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
                                         nullptr, nullptr);
     } else {
         for (GClosure* candidate : m_closures) {
-            if (gjs_closure_get_callable(candidate) == func) {
+            if (Gjs::Closure::for_gclosure(candidate)->callable() == func) {
                 handler = g_signal_handler_find(m_ptr, mask, signal_id, detail,
                                                 candidate, nullptr, nullptr);
                 if (handler != 0)
@@ -2329,7 +2328,7 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
     } else {
         std::vector<GClosure*> candidates;
         for (GClosure* candidate : m_closures) {
-            if (gjs_closure_get_callable(candidate) == func)
+            if (Gjs::Closure::for_gclosure(candidate)->callable() == func)
                 candidates.push_back(candidate);
         }
         for (GClosure* candidate : candidates) {
@@ -2790,25 +2789,22 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             return false;
         }
         JS::RootedFunction func(cx, JS_GetObjectFunction(function));
-        trampoline = gjs_callback_trampoline_new(
+        trampoline = GjsCallbackTrampoline::create(
             cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
         if (!trampoline)
             return false;
 
         // This is traced, and will be cleared from the list when the closure is
         // invalidated
-        g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(),
-                           trampoline->js_function()) == m_vfuncs.end() &&
+        g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(), trampoline) ==
+                     m_vfuncs.end() &&
                  "This vfunc was already associated with this class");
-        m_vfuncs.push_front(trampoline->js_function());
+        m_vfuncs.push_front(trampoline);
         g_closure_add_invalidate_notifier(
-            trampoline->js_function(), this,
-            &ObjectPrototype::vfunc_invalidated_notify);
+            trampoline, this, &ObjectPrototype::vfunc_invalidated_notify);
         g_closure_add_invalidate_notifier(
-            trampoline->js_function(), trampoline, [](void* data, GClosure*) {
-                auto* trampoline = static_cast<GjsCallbackTrampoline*>(data);
-                gjs_callback_trampoline_unref(trampoline);
-            });
+            trampoline, nullptr,
+            [](void*, GClosure* closure) { g_closure_unref(closure); });
 
         *reinterpret_cast<ffi_closure**>(method_ptr) = trampoline->closure();
     }
