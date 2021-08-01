@@ -638,8 +638,9 @@ valgrind_environment.set('G_DEBUG',
     'fatal-warnings,fatal-criticals,gc-friendly')
 valgrind_environment.set('VALGRIND', 'valgrind')
 
-glib_suppresssions = (glib.get_pkgconfig_variable('prefix') / 'share' /
-    'glib-2.0' / 'valgrind' / 'glib.supp')
+glib_prefix = glib.get_variable(pkgconfig: 'prefix', default_value: '/usr')
+glib_suppresssions = (glib_prefix / 'share' / 'glib-2.0' / 'valgrind' /
+    'glib.supp')
 gjs_suppressions = (meson.current_source_dir() / 'installed-tests' / 'extra' /
     'gjs.supp')
 valgrind_args = [
