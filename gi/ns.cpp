@@ -164,6 +164,13 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
         return gjs_string_from_utf8(cx, priv->get(), args.rval());
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool get_version(JSContext* cx, unsigned argc, JS::Value* vp) {
+        GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
+        const char *version = g_irepository_get_version(nullptr, priv->get());
+        return gjs_string_from_utf8(cx, version, args.rval());
+    }
+
     static constexpr JSClassOps class_ops = {
         nullptr,  // addProperty
         nullptr,  // deleteProperty
@@ -178,6 +185,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
     static constexpr JSPropertySpec proto_props[] = {
         JS_STRING_SYM_PS(toStringTag, "GIRepositoryNamespace", JSPROP_READONLY),
         JS_PSG("__name__", &Ns::get_name, GJS_MODULE_PROP_FLAGS),
+        JS_PSG("__version__", &Ns::get_version, GJS_MODULE_PROP_FLAGS & ~JSPROP_ENUMERATE),
         JS_PS_END};
     // clang-format on
 
