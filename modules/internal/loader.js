@@ -206,12 +206,6 @@ class ModuleLoader extends InternalModuleLoader {
 const moduleLoader = new ModuleLoader(moduleGlobalThis);
 setGlobalModuleLoader(moduleGlobalThis, moduleLoader);
 
-const giVersionMap = new Map([
-    ['GLib', '2.0'],
-    ['Gio', '2.0'],
-    ['GObject', '2.0'],
-]);
-
 /**
  * Creates a module source text to expose a GI namespace via a default export.
  *
@@ -233,16 +227,7 @@ moduleLoader.registerScheme('gi', {
      */
     load(uri) {
         const namespace = uri.host;
-        const alreadyLoadedVersion = giVersionMap.get(namespace);
-        const version = uri.query.version ?? alreadyLoadedVersion;
-
-        if (version) {
-            if (alreadyLoadedVersion !== undefined && version !== alreadyLoadedVersion) {
-                throw new ImportError(`Version ${alreadyLoadedVersion} of GI module ${
-                    namespace} already loaded, cannot load version ${version}`);
-            }
-            giVersionMap.set(namespace, version);
-        }
+        const version = uri.query.version;
 
         return [generateGIModule(namespace, version), true];
     },

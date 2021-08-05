@@ -37,6 +37,10 @@ describe('ES module imports', function () {
         expect(() => gi.require('Gtk', '1.75')).toThrow();
     });
 
+    it('import with another version after a failed import', function () {
+        expect(gi.require('Gtk', '3.0').toString()).toEqual('[object GIRepositoryNamespace]');
+    });
+
     it('import nonexistent module', function () {
         expect(() => gi.require('PLib')).toThrow();
     });
