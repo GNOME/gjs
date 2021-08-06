@@ -31,12 +31,12 @@ Version 1.69.1
     allocator [!625, Marco Trevisan]
   * gjs-test-utils: Be more liberal in comparing values of different types
     [!626, Marco Trevisan]
-  * [regression] gjs master can't build today [#414, !627, Daniel van Vugt]
+  * [regression] gjs main can't build today [#414, !627, Daniel van Vugt]
   * Add memory counter profiling [#292, !629, Philip Chimento]
   * Promisify should complain if the async or finish function doesn't exist
     [#200, !631, Veena Nagar]
   * Add 'S' conversion specifier to gjs_parse_call_args [!638, Philip Chimento]
-  * Fix builds on Windows/Visual Studio with the latest GIT master [!639,
+  * Fix builds on Windows/Visual Studio with the latest GIT main [!639,
     Chun-wei Fan]
   * meson: fix version check for precompiled headers [!640, Jordan Petridis]
   * GjsDBusImplementation.emit_property_changed(..., null): assertion failed
@@ -100,7 +100,7 @@ Version 1.68.1
     Marco Trevisan]
   * testFundamental: Add more tests ensuring we properly handle subtypes [!602,
     Marco Trevisan]
-  * Some simple Visual Studio fixes for master [!612, Chun-wei Fan]
+  * Some simple Visual Studio fixes for main [!612, Chun-wei Fan]
   * Using GFileMonitor crashes GNOME Shell with toggling down object error
     [#297, !613, !617, Marco Trevisan]
   * Deadlock on toggle queue due to GWeakRef [#404, !613, !617, Marco Trevisan]
