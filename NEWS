@@ -52,7 +52,7 @@ Version 1.68.1
     Marco Trevisan]
   * testFundamental: Add more tests ensuring we properly handle subtypes [!602,
     Marco Trevisan]
-  * Some simple Visual Studio fixes for master [!612, Chun-wei Fan]
+  * Some simple Visual Studio fixes for main [!612, Chun-wei Fan]
   * Using GFileMonitor crashes GNOME Shell with toggling down object error
     [#297, !613, !617, Marco Trevisan]
   * Deadlock on toggle queue due to GWeakRef [#404, !613, !617, Marco Trevisan]
