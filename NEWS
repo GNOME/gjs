@@ -1,3 +1,22 @@
+Version 1.68.2
+--------------
+
+- Crash and regression fixes backported from the development branch.
+
+- Build fix to adjust to GLib renaming its main branch.
+
+- Closed bugs and merge requests:
+
+  * Fix crash in ByteArray.fromGBytes / ByteArray.fromString with 0-length input
+    [!628, Philip Chimento]
+  * subprojects: Use GLib main branch [!633, Philip Withnall]
+  * Construct-only properties and GTK Builder. [#422, !635, Carlos Garnacho]
+  * Data corruption when passing a 0-terminated array of GVariant [#269, !636,
+    Evan Welsh]
+  * Fix race condition in dynamic module resolution. [!641, Evan Welsh]
+  * Ensure the correct realm is entered in the async executor [!644, Evan Welsh]
+  * Assertion failure in toggle refs with debug mozjs [#416, !646, Evan Welsh]
+
 Version 1.68.1
 --------------
 
