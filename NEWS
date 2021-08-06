@@ -1,3 +1,51 @@
+Version 1.69.1
+--------------
+
+- Memory usage improvements and bug fixes.
+
+- Progress on TextEncoder/TextDecoder.
+
+- Closed bugs and merge requests:
+
+  * Cleanup gjs_closure_invoke [#382, !592, Philip Chimento]
+  * Various maintenance [!600, !616, !624, !630, Philip Chimento, Marco
+    Trevisan, Evan Welsh]
+  * doc: Add simple sysprof example [!606, Andy Holmes]
+  * examples: add examples of GtkBuilder templates [!607, Andy Holmes]
+  * doc: document shebang for ESModules [!608, Sonny Piers]
+  * Gio.ListStore.insert_sorted's compare_func isn't handled correctly [#326,
+    !610, Veena Nagar]
+  * object: Block access to object only if it is finalized [!611, Marco
+    Trevisan]
+  * tests: Add unit tests for ToggleQueue and ObjectInstance usage of it [!615,
+    Marco Trevisan]
+  * gjs-test-tools: Throw error if we can't create threads [!618, Marco
+    Trevisan]
+  * build: Support meson unity builds [!619, Marco Trevisan]
+  * build: Support building with precompiled headers [!620, Marco Trevisan]
+  * Support GObject properties with GByteArray type [#276, !621, Veena Nagar]
+  * Regression in running tests with log output redirected to file [#410, !622,
+    Philip Chimento]
+  * doc: add Commit and Almond to applications [!623, Sonny Piers]
+  * closure (and trampoline): Reimplement to be a C++ class with custom heap
+    allocator [!625, Marco Trevisan]
+  * gjs-test-utils: Be more liberal in comparing values of different types
+    [!626, Marco Trevisan]
+  * [regression] gjs master can't build today [#414, !627, Daniel van Vugt]
+  * Add memory counter profiling [#292, !629, Philip Chimento]
+  * Promisify should complain if the async or finish function doesn't exist
+    [#200, !631, Veena Nagar]
+  * Add 'S' conversion specifier to gjs_parse_call_args [!638, Philip Chimento]
+  * Fix builds on Windows/Visual Studio with the latest GIT master [!639,
+    Chun-wei Fan]
+  * meson: fix version check for precompiled headers [!640, Jordan Petridis]
+  * GjsDBusImplementation.emit_property_changed(..., null): assertion failed
+    [#427, !642, Andy Holmes]
+  * gi: Only enumerate properties which GJS defines [!643, Evan Welsh]
+  * Add Internship Getting Started documentation [!645, Philip Chimento]
+  * arg-cache: Handle notified callbacks without destroy [!647, Florian Müllner]
+  * esm/gi: Improve check for version conflicts [!650, Florian Müllner]
+
 Version 1.68.2
 --------------
 
