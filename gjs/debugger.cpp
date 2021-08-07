@@ -12,15 +12,6 @@
 #    include <readline/readline.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
-#    include <unistd.h>  // for isatty, STDIN_FILENO
-#elif defined(_WIN32)
-#    include <io.h>
-#    ifndef STDIN_FILENO
-#        define STDIN_FILENO 0
-#    endif
-#endif
-
 #include <glib.h>
 
 #include <js/CallArgs.h>
@@ -38,6 +29,8 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+#include "util/console.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -64,7 +57,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     do {
         const char* real_prompt = prompt ? prompt.get() : "db> ";
 #ifdef HAVE_READLINE_READLINE_H
-        if (isatty(STDIN_FILENO)) {
+        if (gjs_console_is_tty(stdin_fd)) {
             line = readline(real_prompt);
         } else {
 #else
@@ -77,7 +70,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
                 buf[0] = '\0';
             line.reset(g_strdup(g_strchomp(buf)));
 
-            if (!isatty(STDIN_FILENO)) {
+            if (!gjs_console_is_tty(stdin_fd)) {
                 if (feof(stdin)) {
                     g_print("[quit due to end of input]\n");
                     line.reset(g_strdup("quit"));
