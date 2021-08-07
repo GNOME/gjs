@@ -266,7 +266,7 @@ int main(void) {
     name: 'SpiderMonkey sanity check')
 
 recommended_configuration = ''' Check the recommended configuration:
-https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md'''
+https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr91/docs/Building%20SpiderMonkey.md'''
 if not minimal_program.compiled()
     error('''A minimal SpiderMonkey program
 could not be compiled or linked. Most likely you should build it with a

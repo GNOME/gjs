@@ -1,7 +1,7 @@
 # GJS: Javascript Bindings for GNOME
 
-The current stable series is built on Mozilla's SpiderMonkey 78,
-featuring **ECMAScript 2019** and GObject Introspection making most of
+The current stable series is built on Mozilla's SpiderMonkey 91,
+featuring **ECMAScript 2022** and GObject Introspection making most of
 the **GNOME platform API** available.
 
 To find out when a language feature was implemented in GJS, review [NEWS][gjs-news] in the GitLab repository. In many cases older versions of GJS can be supported using [polyfills][mdn-polyfills] and [legacy-style GJS classes](Modules.md#lang).
