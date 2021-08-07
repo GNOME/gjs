@@ -157,4 +157,7 @@ bool gjs_invoke_constructor_from_c(JSContext* cx, GIFunctionInfo* info,
                                    const JS::CallArgs& args,
                                    GIArgument* rvalue);
 
+bool gjs_is_function(JSContext* cx, JS::HandleObject function_object);
+bool gjs_function_to_callback(JSContext* cx, JS::HandleObject function_object,
+                              GICallbackInfo* info, GCallback* func_pointer);
 #endif  // GI_FUNCTION_H_

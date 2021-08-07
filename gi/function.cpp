@@ -29,8 +29,8 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>        // for HandleValueArray, JS_GetElement
-#include <jspubtd.h>      // for JSProtoKey
+#include <jsapi.h>    // for HandleValueArray, JS_GetElement
+#include <jspubtd.h>  // for JSProtoKey
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
@@ -150,6 +150,8 @@ class Function : public CWrapper<Function> {
         &Function::class_spec};
 
  public:
+    GCallback to_callback() { return FFI_FN(m_invoker.native_address); }
+
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* create(JSContext* cx, GType gtype, GICallableInfo* info);
 
@@ -194,44 +196,41 @@ static inline std::enable_if_t<std::is_pointer_v<T>> set_ffi_arg(
         gjs_pointer_to_int<ffi_arg>(gjs_arg_get<T, TAG>(value));
 }
 
-static void
-set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
-                                    void        *result,
-                                    GIArgument  *return_value)
-{
+static void set_return_ffi_arg_from_giargument(GITypeInfo* ret_type,
+                                               void* result,
+                                               GIArgument* return_value) {
     // Be consistent with gjs_value_to_g_argument()
     switch (g_type_info_get_tag(ret_type)) {
-    case GI_TYPE_TAG_VOID:
-        g_assert_not_reached();
-    case GI_TYPE_TAG_INT8:
-        set_ffi_arg<int8_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT8:
-        set_ffi_arg<uint8_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT16:
-        set_ffi_arg<int16_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT16:
-        set_ffi_arg<uint16_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT32:
-        set_ffi_arg<int32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT32:
-        set_ffi_arg<uint32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_BOOLEAN:
-        set_ffi_arg<gboolean, GI_TYPE_TAG_BOOLEAN>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UNICHAR:
-        set_ffi_arg<char32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT64:
-        set_ffi_arg<int64_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INTERFACE:
-        {
+        case GI_TYPE_TAG_VOID:
+            g_assert_not_reached();
+        case GI_TYPE_TAG_INT8:
+            set_ffi_arg<int8_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT8:
+            set_ffi_arg<uint8_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT16:
+            set_ffi_arg<int16_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT16:
+            set_ffi_arg<uint16_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT32:
+            set_ffi_arg<int32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT32:
+            set_ffi_arg<uint32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_BOOLEAN:
+            set_ffi_arg<gboolean, GI_TYPE_TAG_BOOLEAN>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UNICHAR:
+            set_ffi_arg<char32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT64:
+            set_ffi_arg<int64_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INTERFACE: {
             GIInfoType interface_type;
 
             GjsAutoBaseInfo interface_info(g_type_info_get_interface(ret_type));
@@ -242,41 +241,42 @@ set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
                 set_ffi_arg<int, GI_TYPE_TAG_INTERFACE>(result, return_value);
             else
                 set_ffi_arg<void*>(result, return_value);
-        }
-        break;
-    case GI_TYPE_TAG_UINT64:
-        // Other primitive types need to squeeze into 64-bit ffi_arg too
-        set_ffi_arg<uint64_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_FLOAT:
-        set_ffi_arg<float>(result, return_value);
-        break;
-    case GI_TYPE_TAG_DOUBLE:
-        set_ffi_arg<double>(result, return_value);
-        break;
-    case GI_TYPE_TAG_GTYPE:
-        set_ffi_arg<GType, GI_TYPE_TAG_GTYPE>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-        set_ffi_arg<char*>(result, return_value);
-        break;
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
-    default:
-        set_ffi_arg<void*>(result, return_value);
-        break;
+        } break;
+        case GI_TYPE_TAG_UINT64:
+            // Other primitive types need to squeeze into 64-bit ffi_arg too
+            set_ffi_arg<uint64_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            set_ffi_arg<float>(result, return_value);
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            set_ffi_arg<double>(result, return_value);
+            break;
+        case GI_TYPE_TAG_GTYPE:
+            set_ffi_arg<GType, GI_TYPE_TAG_GTYPE>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+            set_ffi_arg<char*>(result, return_value);
+            break;
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+        default:
+            set_ffi_arg<void*>(result, return_value);
+            break;
     }
 }
 
 void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
                                                            const char* reason) {
-    g_critical("Attempting to run a JS callback %s. This is most likely caused "
-               "by %s. Because it would crash the application, it has been "
-               "blocked.", when, reason);
+    g_critical(
+        "Attempting to run a JS callback %s. This is most likely caused "
+        "by %s. Because it would crash the application, it has been "
+        "blocked.",
+        when, reason);
     if (m_info)
         g_critical("The offending callback was %s()%s.", m_info.name(),
                    m_is_vfunc ? ", a vfunc" : "");
@@ -459,7 +459,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             case PARAM_SKIPPED:
                 continue;
             case PARAM_ARRAY: {
-                gint array_length_pos = g_type_info_get_array_length(&type_info);
+                gint array_length_pos =
+                    g_type_info_get_array_length(&type_info);
                 GIArgInfo array_length_arg;
                 GITypeInfo arg_type_info;
 
@@ -686,7 +687,8 @@ bool GjsCallbackTrampoline::initialize() {
 
                     g_callable_info_load_arg(m_info, array_length_pos,
                                              &length_arg_info);
-                    if (g_arg_info_get_direction(&length_arg_info) != direction) {
+                    if (g_arg_info_get_direction(&length_arg_info) !=
+                        direction) {
                         gjs_throw(context(),
                                   "%s %s has an array with different-direction "
                                   "length argument. This is not supported",
@@ -924,8 +926,8 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     // This pointer needs to exist on the stack across the ffi_call() call
     GError** errorp = state.local_error.out();
 
-    /* Did argument conversion fail?  In that case, skip invocation and jump to release
-     * processing. */
+    /* Did argument conversion fail?  In that case, skip invocation and jump to
+     * release processing. */
     if (state.failed)
         return finish_invoke(context, args, &state, r_value);
 
@@ -1118,7 +1120,8 @@ Function::~Function() {
 
 void Function::finalize_impl(JSFreeOp*, Function* priv) {
     if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+        return; /* we are the prototype, not a real instance, so constructor
+                   never called */
     delete priv;
 }
 
@@ -1203,7 +1206,7 @@ const JSFunctionSpec Function::proto_funcs[] = {
 
 bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     guint8 i;
-    GError *error = NULL;
+    GError* error = NULL;
 
     if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
         if (!g_function_info_prep_invoker(m_info, &m_invoker, &error))
@@ -1306,17 +1309,13 @@ JSObject* Function::create(JSContext* context, GType gtype,
 }  // namespace Gjs
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject*
-gjs_define_function(JSContext       *context,
-                    JS::HandleObject in_object,
-                    GType            gtype,
-                    GICallableInfo  *info)
-{
+JSObject* gjs_define_function(JSContext* context, JS::HandleObject in_object,
+                              GType gtype, GICallableInfo* info) {
     GIInfoType info_type;
-    gchar *name;
+    gchar* name;
     bool free_name;
 
-    info_type = g_base_info_get_type((GIBaseInfo *)info);
+    info_type = g_base_info_get_type((GIBaseInfo*)info);
 
     JS::RootedObject function(context,
                               Gjs::Function::create(context, gtype, info));
@@ -1324,13 +1323,14 @@ gjs_define_function(JSContext       *context,
         return NULL;
 
     if (info_type == GI_INFO_TYPE_FUNCTION) {
-        name = (gchar *) g_base_info_get_name((GIBaseInfo*) info);
+        name = (gchar*)g_base_info_get_name((GIBaseInfo*)info);
         free_name = false;
     } else if (info_type == GI_INFO_TYPE_VFUNC) {
-        name = g_strdup_printf("vfunc_%s", g_base_info_get_name((GIBaseInfo*) info));
+        name = g_strdup_printf("vfunc_%s",
+                               g_base_info_get_name((GIBaseInfo*)info));
         free_name = true;
     } else {
-        g_assert_not_reached ();
+        g_assert_not_reached();
     }
 
     if (!JS_DefineProperty(context, in_object, name, function,
@@ -1343,6 +1343,61 @@ gjs_define_function(JSContext       *context,
         g_free(name);
 
     return function;
+}
+
+bool gjs_is_function(JSContext* cx, JS::HandleObject function_object) {
+    return Gjs::Function::typecheck(cx, function_object, nullptr);
+}
+
+bool gjs_function_to_callback(JSContext* cx, JS::HandleObject function_object,
+                              GICallbackInfo* info, GCallback* func_pointer) {
+    Gjs::Function* func;
+
+    if (!Gjs::Function::for_js_typecheck(cx, function_object, &func)) {
+        return false;
+    }
+
+    // auto function_info = func->m_info;
+    // auto function_args_count = g_callable_info_get_n_args(function_info);
+    // auto args_count = g_callable_info_get_n_args(info);
+
+    // if (function_args_count != = args_count) {
+    //     gjs_throw(cx, "Function does not have %i arguments.", args_count);
+    //     return false;
+    // }
+
+    // for (auto i = 0; i < args_count; i++) {
+    //     GIArgInfo function_arg;
+    //     GIArgInfo callback_arg;
+    //     g_callable_info_load_arg(function_info, i, &function_arg);
+    //     g_callable_info_load_arg(info, i, &callback_arg);
+
+    //     GITypeInfo function_arg_type;
+    //     g_arg_info_load_type(function_arg, &function_arg_type);
+    //     GITypeInfo callback_arg_type;
+    //     g_arg_info_load_type(callback_arg,
+    //                                                        &callback_arg_type);
+    //     if (!GI_IS_REGISTERED_TYPE_INFO(&function_arg_type) ||
+    //         !GI_IS_REGISTERED_TYPE_INFO(&callback_arg_type)) {
+    //         gjs_throw(cx, "Callback or function has non-registered type.");
+    //         return false;
+    //     }
+    //     GIRegisteredTypeInfo* rf_arg_type = &function_arg_type;
+    //     GIRegisteredTypeInfo* rc_arg_type = &callback_arg_type;
+
+    //     GType f_type = g_registered_type_info_get_g_type(rf_arg_type);
+    //     GType c_type = g_registered_type_info_get_g_type(rc_arg_type);
+
+    //     if (!g_type_is_a(f_type, c_type)) {
+    //         gjs_throw(cx, "Callback argument %i expected %s but received
+    //         %s.",
+    //                   i, g_type_name(c_type), g_type_name(f_type));
+    //         return false;
+    //     }
+    // }
+
+    *func_pointer = func->to_callback();
+    return true;
 }
 
 bool gjs_invoke_constructor_from_c(JSContext* context, GIFunctionInfo* info,

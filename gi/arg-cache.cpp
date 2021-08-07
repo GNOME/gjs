@@ -284,9 +284,24 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
             return false;
         }
 
-        JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
+        JS::RootedObject obj(cx, &value.toObject());
+        JS::RootedFunction func(cx, JS_GetObjectFunction(obj));
+
         GjsAutoCallableInfo callable_info =
             g_type_info_get_interface(&self->type_info);
+
+        if (!func && gjs_is_function(cx, obj)) {
+            GCallback callback = nullptr;
+            if (!gjs_function_to_callback(cx, obj, callable_info, &callback))
+                return false;
+            gjs_arg_set(arg, callback);
+            // Prevent GJS from attempting to cleanup this argument...
+            self->contents.callback.raw_pointer = true;
+            return true;
+        } else {
+            self->contents.callback.raw_pointer = false;
+        }
+
         bool is_object_method = !!state->instance_object;
         trampoline = GjsCallbackTrampoline::create(
             cx, func, callable_info, self->contents.callback.scope,
@@ -925,12 +940,12 @@ static bool gjs_marshal_caller_allocates_release(JSContext*, GjsArgumentCache*,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_marshal_callback_release(JSContext*, GjsArgumentCache*,
+static bool gjs_marshal_callback_release(JSContext*, GjsArgumentCache* cache,
                                          GjsFunctionCallState*,
                                          GIArgument* in_arg,
                                          GIArgument* out_arg [[maybe_unused]]) {
     auto* closure = gjs_arg_get<ffi_closure*>(in_arg);
-    if (!closure)
+    if (!closure || !!cache->contents.callback.raw_pointer)
         return true;
 
     g_closure_unref(static_cast<GClosure*>(closure->user_data));

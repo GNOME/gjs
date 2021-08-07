@@ -69,6 +69,7 @@ struct GjsArgumentCache {
             uint8_t closure_pos;
             uint8_t destroy_pos;
             GIScopeType scope : 2;
+            bool raw_pointer : 1;
         } callback;
 
         struct {
@@ -116,6 +117,9 @@ struct GjsArgumentCache {
     void set_array_length_pos(int pos) {
         g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
         contents.array.length_pos = pos;
+    }
+    [[nodiscard]] bool has_raw_pointer() {
+        return contents.callback.raw_pointer;
     }
     void set_callback_destroy_pos(int pos) {
         g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
