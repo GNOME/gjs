@@ -13,7 +13,6 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/Object.h>              // for GetClass
-#include <js/PropertyDescriptor.h>  // for JSPROP_GETTER
 #include <js/Realm.h>  // for GetRealmObjectPrototype
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -213,8 +212,6 @@ gjs_define_property_dynamic(JSContext       *cx,
         define_native_accessor_wrapper(cx, setter, 1, setter_name, private_slot));
     if (!setter_obj)
         return false;
-
-    flags |= JSPROP_GETTER | JSPROP_SETTER;
 
     return JS_DefineProperty(cx, proto, prop_name, getter_obj, setter_obj,
                              flags);
