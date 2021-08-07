@@ -533,7 +533,8 @@ static void load_context_module(JSContext* cx, const char* uri,
         g_error("Failed to instantiate %s module.", debug_identifier);
     }
 
-    if (!JS::ModuleEvaluate(cx, loader)) {
+    JS::RootedValue ignore(cx);
+    if (!JS::ModuleEvaluate(cx, loader, &ignore)) {
         gjs_log_exception(cx);
         g_error("Failed to evaluate %s module.", debug_identifier);
     }
@@ -1335,7 +1336,8 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         return false;
     }
 
-    bool ok = JS::ModuleEvaluate(m_cx, obj);
+    JS::RootedValue ignore(m_cx);
+    bool ok = JS::ModuleEvaluate(m_cx, obj, &ignore);
 
     if (ok)
         m_main_loop.spin(this);

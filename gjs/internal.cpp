@@ -93,8 +93,10 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
     JS::RootedId key(cx, gjs_intern_string_to_id(cx, full_path));
 
+    JS::RootedValue ignore(cx);
     if (!gjs_global_registry_set(cx, registry, key, module) ||
-        !JS::ModuleInstantiate(cx, module) || !JS::ModuleEvaluate(cx, module)) {
+        !JS::ModuleInstantiate(cx, module) ||
+        !JS::ModuleEvaluate(cx, module, &ignore)) {
         return false;
     }
 

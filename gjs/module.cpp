@@ -501,7 +501,7 @@ bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
  * @returns whether an error occurred while resolving the specifier.
  */
 JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
-                             JS::HandleString specifier) {
+                             JS::HandleObject module_request) {
     g_assert((gjs_global_is_type(cx, GjsGlobalType::DEFAULT) ||
               gjs_global_is_type(cx, GjsGlobalType::INTERNAL)) &&
              "gjs_module_resolve can only be called from module-enabled "
@@ -509,6 +509,8 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
     g_assert(importingModulePriv.isObject() &&
              "the importing module can't be null, don't add import to the "
              "bootstrap script");
+    JS::RootedString specifier(
+        cx, JS::GetModuleRequestSpecifier(cx, module_request));
 
     JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
     JS::RootedValue v_loader(
@@ -537,7 +539,8 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
 // Can fail in JS::FinishDynamicModuleImport(), but will assert if anything
 // fails in fetching the stashed values, since that would be a serious GJS bug.
 GJS_JSAPI_RETURN_CONVENTION
-static bool finish_import(JSContext* cx, const JS::CallArgs& args) {
+static bool finish_import(JSContext* cx, JS::DynamicImportStatus status,
+                          const JS::CallArgs& args) {
     GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
     priv->main_loop_release();
 
@@ -546,23 +549,24 @@ static bool finish_import(JSContext* cx, const JS::CallArgs& args) {
     JS::RootedObject callback_data(cx, &callback_priv.toObject());
 
     JS::RootedValue importing_module_priv(cx);
-    JS::RootedValue v_specifier(cx);
+    JS::RootedValue v_module_request(cx);
     JS::RootedValue v_internal_promise(cx);
     bool ok GJS_USED_ASSERT =
         JS_GetProperty(cx, callback_data, "priv", &importing_module_priv) &&
         JS_GetProperty(cx, callback_data, "promise", &v_internal_promise) &&
-        JS_GetProperty(cx, callback_data, "specifier", &v_specifier);
+        JS_GetProperty(cx, callback_data, "module_request", &v_module_request);
     g_assert(ok && "Wrong properties on private value");
 
-    g_assert(v_specifier.isString() && "Wrong type for specifier");
+    g_assert(v_module_request.isObject() && "Wrong type for module request");
     g_assert(v_internal_promise.isObject() && "Wrong type for promise");
 
-    JS::RootedString specifier(cx, v_specifier.toString());
+    JS::RootedObject module_request(cx, &v_module_request.toObject());
     JS::RootedObject internal_promise(cx, &v_internal_promise.toObject());
 
     args.rval().setUndefined();
-    return JS::FinishDynamicModuleImport(cx, importing_module_priv, specifier,
-                                         internal_promise);
+
+    return JS::FinishDynamicModuleImport_NoTLA(
+        cx, status, importing_module_priv, module_request, internal_promise);
 }
 
 // Failing a JSAPI function may result either in an exception pending on the
@@ -572,7 +576,7 @@ static bool finish_import(JSContext* cx, const JS::CallArgs& args) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool fail_import(JSContext* cx, const JS::CallArgs& args) {
     if (JS_IsExceptionPending(cx))
-        return finish_import(cx, args);
+        return finish_import(cx, JS::DynamicImportStatus::Failed, args);
     return false;
 }
 
@@ -587,7 +591,7 @@ static bool import_rejected(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS_SetPendingException(cx, args.get(0),
                            JS::ExceptionStackBehavior::DoNotCapture);
 
-    return finish_import(cx, args);
+    return finish_import(cx, JS::DynamicImportStatus::Failed, args);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -602,15 +606,17 @@ static bool import_resolved(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_assert(args[0].isObject());
     JS::RootedObject module(cx, &args[0].toObject());
 
-    if (!JS::ModuleInstantiate(cx, module) || !JS::ModuleEvaluate(cx, module))
+    JS::RootedValue ignore(cx);
+    if (!JS::ModuleInstantiate(cx, module) ||
+        !JS::ModuleEvaluate(cx, module, &ignore))
         return fail_import(cx, args);
 
-    return finish_import(cx, args);
+    return finish_import(cx, JS::DynamicImportStatus::Ok, args);
 }
 
 bool gjs_dynamic_module_resolve(JSContext* cx,
                                 JS::HandleValue importing_module_priv,
-                                JS::HandleString specifier,
+                                JS::HandleObject module_request,
                                 JS::HandleObject internal_promise) {
     g_assert(gjs_global_is_type(cx, GjsGlobalType::DEFAULT) &&
              "gjs_dynamic_module_resolve can only be called from the default "
@@ -623,10 +629,12 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
         cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));
     g_assert(v_loader.isObject());
     JS::RootedObject loader(cx, &v_loader.toObject());
+    JS::RootedString specifier(
+        cx, JS::GetModuleRequestSpecifier(cx, module_request));
 
     JS::RootedObject callback_data(cx, JS_NewPlainObject(cx));
     if (!callback_data ||
-        !JS_DefineProperty(cx, callback_data, "specifier", specifier,
+        !JS_DefineProperty(cx, callback_data, "module_request", module_request,
                            JSPROP_PERMANENT) ||
         !JS_DefineProperty(cx, callback_data, "promise", internal_promise,
                            JSPROP_PERMANENT) ||
@@ -653,8 +661,9 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
 
     JS::RootedValue result(cx);
     if (!JS::Call(cx, loader, "moduleResolveAsyncHook", args, &result))
-        return JS::FinishDynamicModuleImport(cx, importing_module_priv,
-                                             specifier, internal_promise);
+        return JS::FinishDynamicModuleImport_NoTLA(
+            cx, JS::DynamicImportStatus::Failed, importing_module_priv,
+            module_request, internal_promise);
 
     // Release in finish_import
     GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
