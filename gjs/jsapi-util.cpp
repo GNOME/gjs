@@ -26,6 +26,7 @@
 #include <js/Exception.h>
 #include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
 #include <js/GCVector.h>  // for RootedVector
+#include <js/Object.h>    // for GetClass
 #include <js/RootingAPI.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
@@ -195,7 +196,7 @@ void gjs_throw_abstract_constructor_error(JSContext* context,
     JS::RootedObject callee(context, &args.callee());
     JS::RootedValue prototype(context);
     if (JS_GetPropertyById(context, callee, atoms.prototype(), &prototype)) {
-        proto_class = JS_GetClass(&prototype.toObject());
+        proto_class = JS::GetClass(&prototype.toObject());
         name = proto_class->name;
     }
 
@@ -329,7 +330,7 @@ std::string gjs_value_debug_string(JSContext* context, JS::HandleValue value) {
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
              */
-            const JSClass *klass = JS_GetClass(&value.toObject());
+            const JSClass* klass = JS::GetClass(&value.toObject());
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);

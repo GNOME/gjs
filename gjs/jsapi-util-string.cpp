@@ -22,6 +22,7 @@
 #include <js/ErrorReport.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/Id.h>
+#include <js/Object.h>  // for GetClass
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/Symbol.h>
@@ -606,7 +607,7 @@ gjs_debug_object(JSObject * const obj)
         return out.str();
     }
 
-    const JSClass* clasp = JS_GetClass(obj);
+    const JSClass* clasp = JS::GetClass(obj);
     out << "<object " << clasp->name << " at " << obj <<  '>';
     return out.str();
 }

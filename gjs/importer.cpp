@@ -26,6 +26,7 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
 #include <js/Id.h>  // for PropertyKey
+#include <js/Object.h>  // for GetClass
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -65,7 +66,7 @@ importer_to_string(JSContext *cx,
 
     GjsAutoChar output;
 
-    const JSClass* klass = JS_GetClass(importer);
+    const JSClass* klass = JS::GetClass(importer);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue module_path(cx);
     if (!JS_GetPropertyById(cx, importer, atoms.module_path(), &module_path))

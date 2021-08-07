@@ -9,12 +9,11 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
-#include <js/Object.h>
+#include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_GetClass, ...
 
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -133,7 +132,7 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
         return nullptr;
     if (!is_pattern_subclass) {
         gjs_throw(cx, "Expected Cairo.Pattern but got %s",
-                  JS_GetClass(pattern_wrapper)->name);
+                  JS::GetClass(pattern_wrapper)->name);
         return nullptr;
     }
 

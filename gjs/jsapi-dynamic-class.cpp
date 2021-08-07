@@ -12,6 +12,7 @@
 #include <js/CallArgs.h>  // for JSNative
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_GETTER
 #include <js/Realm.h>  // for GetRealmObjectPrototype
 #include <js/RootingAPI.h>
@@ -115,7 +116,7 @@ gjs_typecheck_instance(JSContext       *context,
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
         if (throw_error) {
-            const JSClass *obj_class = JS_GetClass(obj);
+            const JSClass* obj_class = JS::GetClass(obj);
 
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",

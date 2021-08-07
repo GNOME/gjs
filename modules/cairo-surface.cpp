@@ -11,14 +11,13 @@
 #include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
-#include <js/Object.h>
+#include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_GetClass, ...
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -269,7 +268,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         return nullptr;
     if (!is_surface_subclass) {
         gjs_throw(cx, "Expected Cairo.Surface but got %s",
-                  JS_GetClass(surface_wrapper)->name);
+                  JS::GetClass(surface_wrapper)->name);
         return nullptr;
     }
 

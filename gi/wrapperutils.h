@@ -24,7 +24,7 @@
 #include <js/Object.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>       // for JS_Ge...
+#include <jsapi.h>       // for JS_GetPrototype, JS_DefineFunctionById
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/arg-inl.h"
@@ -304,7 +304,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     [[nodiscard]] static Prototype* resolve_prototype(JSContext* cx,
                                                       JS::HandleObject proto) {
-        if (JS_GetClass(proto) != &Base::klass) {
+        if (JS::GetClass(proto) != &Base::klass) {
             gjs_throw(cx, "Tried to construct an object without a GType");
             return nullptr;
         }
@@ -793,7 +793,7 @@ class GIWrapperPrototype : public Base {
                   "Defined class for %s (%s), prototype %p, "
                   "JSClass %p, in object %p",
                   Base::name(), Base::type_name(), prototype.get(),
-                  JS_GetClass(prototype), in_object.get());
+                  JS::GetClass(prototype), in_object.get());
 
         return true;
     }
