@@ -22,6 +22,7 @@
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/experimental/TypedData.h>
@@ -413,7 +414,7 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
             JS::AutoCheckCannotGC nogc;
             size_t len;
 
-            if (JS_StringHasLatin1Chars(str)) {
+            if (JS::StringHasLatin1Chars(str)) {
                 const JS::Latin1Char* chars =
                     JS_GetLatin1StringCharsAndLength(cx, nogc, str, &len);
                 if (!chars)
