@@ -124,13 +124,19 @@ class GjsScriptModule {
         }
 
         JS::CompileOptions options(cx);
-        options.setFileAndLine(filename, 1);
+        options.setFileAndLine(filename, 1).setNonSyntacticScope(true);
 
         JS::RootedObject priv(cx, build_private(cx, uri));
-        options.setPrivateValue(JS::ObjectValue(*priv));
+        if (!priv)
+            return false;
 
+        JS::RootedScript script(cx, JS::Compile(cx, options, buf));
+        if (!script)
+            return false;
+
+        JS::SetScriptPrivate(script, JS::ObjectValue(*priv));
         JS::RootedValue ignored_retval(cx);
-        if (!JS::Evaluate(cx, scope_chain, options, buf, &ignored_retval))
+        if (!JS_ExecuteScript(cx, scope_chain, script, &ignored_retval))
             return false;
 
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
@@ -230,7 +236,8 @@ class GjsScriptModule {
 
  public:
     /*
-     * Creates a JS object to pass to JS::CompileOptions as a script's private.
+     * Creates a JS object to pass to JS::SetScriptPrivate as a script's
+     * private.
      */
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* build_private(JSContext* cx, const char* script_uri) {

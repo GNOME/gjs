@@ -1464,7 +1464,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     }
 
     JS::CompileOptions options(m_cx);
-    options.setFileAndLine(filename, 1);
+    options.setFileAndLine(filename, 1).setNonSyntacticScope(true);
 
     GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
     GjsAutoChar uri = g_file_get_uri(file);
@@ -1472,9 +1472,13 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!priv)
         return false;
 
-    options.setPrivateValue(JS::ObjectValue(*priv));
+    JS::RootedScript script(m_cx);
+    script.set(JS::Compile(m_cx, options, buf));
+    if (!script)
+        return false;
 
-    if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
+    JS::SetScriptPrivate(script, JS::ObjectValue(*priv));
+    if (!JS_ExecuteScript(m_cx, scope_chain, script, retval))
         return false;
 
     schedule_gc_if_needed();
