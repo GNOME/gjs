@@ -7,13 +7,11 @@
 
 #include <algorithm>
 #include <atomic>
-#include <codecvt>
 #include <cstddef>
 #include <deque>
 #include <forward_list>
 #include <functional>
 #include <limits>
-#include <locale>
 #include <memory>
 #include <new>
 #include <sstream>

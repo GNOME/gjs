@@ -4,7 +4,7 @@
 
 SRCDIR=$(pwd)
 
-if [ "$1" == '--help' -o "$1" == '-h' ]; then
+if [ "$1" = '--help' -o "$1" = '-h' ]; then
     echo "usage: $0 [ COMMIT ]"
     echo "Run include-what-you-use on the GJS codebase."
     echo "If COMMIT is given, analyze only the files changed since that commit,"
@@ -43,7 +43,7 @@ fi
 
 echo "files: $files"
 
-IWYU="python3 $(which iwyu_tool) -p ."
+IWYU="python3 $(which iwyu_tool || which iwyu_tool.py) -p ."
 IWYU_RAW="include-what-you-use -xc++ -std=c++17 -Xiwyu --keep=config.h"
 IWYU_RAW_INC="-I. -I.. $(pkg-config --cflags gobject-introspection-1.0 mozjs-78)"
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"

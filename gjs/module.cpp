@@ -96,14 +96,20 @@ class GjsScriptModule {
     bool evaluate_import(JSContext* cx, JS::HandleObject module,
                          const char* script, ssize_t script_len,
                          const char* filename, const char* uri) {
-        std::u16string utf16_string =
-            gjs_utf8_script_to_utf16(script, script_len);
+        long items_written;  // NOLINT(runtime/int) - required by GLib API
+        GError* error;
+        GjsAutoChar16 utf16_string =
+            g_utf8_to_utf16(script, script_len,
+                            /* items_read = */ nullptr, &items_written, &error);
+        if (!utf16_string)
+            return gjs_throw_gerror_message(cx, error);
+
         // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
         // but that messes up code coverage. See bug
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
         JS::SourceText<char16_t> buf;
-        if (!buf.init(cx, utf16_string.c_str(), utf16_string.size(),
-                      JS::SourceOwnership::Borrowed))
+        if (!buf.init(cx, reinterpret_cast<char16_t*>(utf16_string.get()),
+                      items_written, JS::SourceOwnership::Borrowed))
             return false;
 
         JS::RootedObjectVector scope_chain(cx);

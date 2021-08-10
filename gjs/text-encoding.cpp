@@ -59,7 +59,8 @@ static const char* UTF16_CODESET = "UTF-16BE";
         return true;
 
     GjsAutoChar stripped(g_strdup(encoding));
-    return g_ascii_strcasecmp(g_strstrip(stripped), "utf-8") == 0 ||
+    g_strstrip(stripped);  // modifies in place
+    return g_ascii_strcasecmp(stripped, "utf-8") == 0 ||
            g_ascii_strcasecmp(stripped, "utf8") == 0;
 }
 
