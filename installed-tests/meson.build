@@ -72,6 +72,7 @@ debugger_tests = [
     'set',
     'step',
     'throw',
+    'throw-ignored',
     'until',
 ]
 

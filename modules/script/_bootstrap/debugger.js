@@ -21,7 +21,7 @@ var topFrame = null;
 var debuggeeValues = {};
 var nextDebuggeeValueIndex = 1;
 var lastExc = null;
-var options = {pretty: true, colors: true};
+var options = {pretty: true, colors: true, ignoreCaughtExceptions: true};
 var breakpoints = [undefined];  // Breakpoint numbers start at 1
 
 // Cleanup functions to run when we next re-enter the repl.
@@ -308,6 +308,7 @@ PARAMETERS
     · option: option name. Allowed options are:
         · pretty: set print mode to pretty or brief. Allowed value true or false
         · colors: set printing with colors to true or false.
+        · ignoreCaughtExceptions: do not stop on handled exceptions. Allowed value true or false
     · value: option value`;
 
 function splitPrintOptions(s, style) {
@@ -930,6 +931,18 @@ dbg.onDebuggerStatement = function (frame) {
     });
 };
 dbg.onExceptionUnwind = function (frame, value) {
+    const willBeCaught = currentFrame => {
+        while (currentFrame) {
+            if (currentFrame.script.isInCatchScope(currentFrame.offset))
+                return true;
+            currentFrame = currentFrame.older;
+        }
+        return false;
+    };
+
+    if (options.ignoreCaughtExceptions && willBeCaught(frame))
+        return undefined;
+
     return saveExcursion(() => {
         topFrame = focusedFrame = frame;
         print("Unwinding due to exception. (Type 'c' to continue unwinding.)");

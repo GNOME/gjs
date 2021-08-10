@@ -1,0 +1,13 @@
+GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2021 Florian Müllner <fmuellner@gnome.org>
+db> c
+Caught exception: Error: Exception nº 1
+Unwinding due to exception. (Type 'c' to continue unwinding.)
+#0    a() at throw-ignored.debugger.js:7:10
+   7	    throw new Error(`Exception nº ${++count}`);
+Exception value is:
+$1 = [object Error]
+Error: Exception nº 2
+db> q
+Program exited with code 0
