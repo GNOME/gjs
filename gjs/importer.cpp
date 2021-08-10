@@ -327,7 +327,7 @@ import_module_init(JSContext       *context,
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
-                                  const char* full_path) {
+                                  GFile* file) {
     bool found;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
@@ -342,8 +342,9 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
         if (v_module.isObject())
             return &v_module.toObject();
 
+        GjsAutoChar full_path = g_file_get_parse_name(file);
         gjs_throw(cx, "Unexpected non-object module __init__ imported from %s",
-                  full_path);
+                  full_path.get());
         return nullptr;
     }
 
@@ -351,7 +352,6 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
     if (!module_obj)
         return nullptr;
 
-    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(full_path);
     if (!import_module_init(cx, file, module_obj)) {
         JS_ClearPendingException(cx);
         return module_obj;
@@ -367,8 +367,8 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
 GJS_JSAPI_RETURN_CONVENTION
 static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
                                  JS::MutableHandleIdVector prop_ids,
-                                 const char* init_path) {
-    JS::RootedObject module_obj(cx, load_module_init(cx, in_object, init_path));
+                                 GFile* file) {
+    JS::RootedObject module_obj(cx, load_module_init(cx, in_object, file));
     if (!module_obj)
         return false;
 
@@ -388,18 +388,14 @@ static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
  * the value at *result. If found, returns true and sets *result = true.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-import_symbol_from_init_js(JSContext       *cx,
-                           JS::HandleObject importer,
-                           const char      *dirname,
-                           const char      *name,
-                           bool            *result)
-{
+static bool import_symbol_from_init_js(JSContext* cx, JS::HandleObject importer,
+                                       GFile* directory, const char* name,
+                                       bool* result) {
     bool found;
-    GjsAutoChar full_path = g_build_filename(dirname, MODULE_INIT_FILENAME,
-                                             NULL);
+    GjsAutoUnref<GFile> file =
+        g_file_get_child(directory, MODULE_INIT_FILENAME);
 
-    JS::RootedObject module_obj(cx, load_module_init(cx, importer, full_path));
+    JS::RootedObject module_obj(cx, load_module_init(cx, importer, file));
     if (!module_obj || !JS_AlreadyHasOwnProperty(cx, module_obj, name, &found))
         return false;
 
@@ -532,20 +528,23 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
         if (dirname[0] == '\0')
             continue;
 
+        GjsAutoUnref<GFile> directory =
+            g_file_new_for_commandline_arg(dirname.get());
+
         /* Try importing __init__.js and loading the symbol from it */
         bool found = false;
-        if (!import_symbol_from_init_js(context, obj, dirname.get(), name.get(),
+        if (!import_symbol_from_init_js(context, obj, directory, name.get(),
                                         &found))
             return false;
         if (found)
             return true;
 
         /* Second try importing a directory (a sub-importer) */
-        GjsAutoChar full_path =
-            g_build_filename(dirname.get(), name.get(), nullptr);
-        GjsAutoUnref<GFile> gfile = g_file_new_for_commandline_arg(full_path);
+        GjsAutoUnref<GFile> file = g_file_get_child(directory, name.get());
 
-        if (g_file_query_file_type(gfile, (GFileQueryInfoFlags) 0, NULL) == G_FILE_TYPE_DIRECTORY) {
+        if (g_file_query_file_type(file, GFileQueryInfoFlags(0), nullptr) ==
+            G_FILE_TYPE_DIRECTORY) {
+            GjsAutoChar full_path = g_file_get_parse_name(file);
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path.get(), name.get());
@@ -562,17 +561,18 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
             continue;
 
         /* Third, if it's not a directory, try importing a file */
-        full_path = g_build_filename(dirname.get(), filename.get(), nullptr);
-        gfile = g_file_new_for_commandline_arg(full_path);
-        exists = g_file_query_exists(gfile, NULL);
+        file = g_file_get_child(directory, filename.get());
+        exists = g_file_query_exists(file, nullptr);
 
         if (!exists) {
-            gjs_debug(GJS_DEBUG_IMPORTER, "JS import '%s' not found in %s",
-                      name.get(), dirname.get());
+            GjsAutoChar full_path = g_file_get_parse_name(file);
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "JS import '%s' not found in %s at %s", name.get(),
+                      dirname.get(), full_path.get());
             continue;
         }
 
-        if (import_file_on_module(context, obj, id, name.get(), gfile)) {
+        if (import_file_on_module(context, obj, id, name.get(), file)) {
             gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported module '%s'",
                       name.get());
             return true;
@@ -631,8 +631,6 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
     JS::RootedValue elem(context);
     JS::RootedString str(context);
     for (i = 0; i < search_path_len; ++i) {
-        char *init_path;
-
         elem.setUndefined();
         if (!JS_GetElement(context, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
@@ -654,19 +652,18 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         if (!dirname)
             return false;
 
-        init_path =
-            g_build_filename(dirname.get(), MODULE_INIT_FILENAME, nullptr);
+        GjsAutoUnref<GFile> directory =
+            g_file_new_for_commandline_arg(dirname.get());
+        GjsAutoUnref<GFile> file =
+            g_file_get_child(directory, MODULE_INIT_FILENAME);
 
-        if (!load_module_elements(context, object, properties, init_path))
+        if (!load_module_elements(context, object, properties, file))
             return false;
 
-        g_free(init_path);
-
         /* new_for_commandline_arg handles resource:/// paths */
-        GjsAutoUnref<GFile> dir = g_file_new_for_commandline_arg(dirname.get());
-        GjsAutoUnref<GFileEnumerator> direnum =
-            g_file_enumerate_children(dir, "standard::name,standard::type",
-                                      G_FILE_QUERY_INFO_NONE, NULL, NULL);
+        GjsAutoUnref<GFileEnumerator> direnum = g_file_enumerate_children(
+            directory, "standard::name,standard::type", G_FILE_QUERY_INFO_NONE,
+            nullptr, nullptr);
 
         while (true) {
             GFileInfo *info;
