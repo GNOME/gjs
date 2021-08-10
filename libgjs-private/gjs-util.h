@@ -79,6 +79,41 @@ GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
 GJS_EXPORT
 GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
 
+/**
+ * GjsBindingTransformFunc:
+ * @binding:
+ * @from_value:
+ * @to_value: (out):
+ * @user_data:
+ */
+typedef gboolean (*GjsBindingTransformFunc)(GBinding* binding,
+                                            const GValue* from_value,
+                                            GValue* to_value, void* user_data);
+
+/**
+ * gjs_g_object_bind_property_full:
+ * @source:
+ * @source_property:
+ * @target:
+ * @target_property:
+ * @flags:
+ * @to_callback: (scope notified) (nullable):
+ * @to_data: (closure to_callback):
+ * @to_notify: (destroy to_data):
+ * @from_callback: (scope notified) (nullable):
+ * @from_data: (closure from_callback):
+ * @from_notify: (destroy from_data):
+ *
+ * Returns: (transfer none):
+ */
+GJS_EXPORT
+GBinding* gjs_g_object_bind_property_full(
+    GObject* source, const char* source_property, GObject* target,
+    const char* target_property, GBindingFlags flags,
+    GjsBindingTransformFunc to_callback, void* to_data,
+    GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
+    void* from_data, GDestroyNotify from_notify);
+
 /* For imports.overrides.Gtk */
 GJS_EXPORT
 void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
