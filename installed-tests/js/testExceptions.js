@@ -206,16 +206,16 @@ describe('thrown GError', function () {
     });
 });
 
-describe('Returned GError', function () {
-    it('can be nullable', function () {
-        // expect a critical about passing in an invalid error domain, but this
-        // should not crash or log a critical about freeing a null GError
-        GLib.test_expect_message('GLib', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            "g_error_new_literal: assertion 'domain != 0' failed");
-
-        expect(GLib.Error.new_literal(0, 0, 'message')).toBeNull();
-
-        GLib.test_assert_expected_messages_internal('GLib', 'testExceptions.js',
-            0, 'testGErrorMessages');
+describe('GError.new_literal', function () {
+    it('constructs a valid GLib.Error', function () {
+        const e = GLib.Error.new_literal(
+            Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'message');
+        expect(e instanceof GLib.Error).toBeTruthy();
+        expect(e.code).toEqual(Gio.IOErrorEnum.FAILED);
+        expect(e.message).toEqual('message');
+    });
+    it('does not accept invalid domains', function () {
+        expect(() => GLib.Error.new_literal(0, 0, 'message'))
+            .toThrowError(/0 is not a valid domain/);
     });
 });
