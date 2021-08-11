@@ -268,6 +268,16 @@ function _init() {
         return false;
     };
 
+    // Guard against domains that aren't valid quarks and would lead
+    // to a crash
+    const quarkToString = this.quark_to_string;
+    const realNewLiteral = this.Error.new_literal;
+    this.Error.new_literal = function (domain, code, message) {
+        if (quarkToString(domain) === null)
+            throw new TypeError(`Error.new_literal: ${domain} is not a valid domain`);
+        return realNewLiteral(domain, code, message);
+    };
+
     this.Variant._new_internal = function (sig, value) {
         let signature = Array.prototype.slice.call(sig);
 
