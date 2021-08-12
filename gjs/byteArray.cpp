@@ -5,7 +5,6 @@
 #include <config.h>
 
 #include <stdint.h>
-#include <string.h>  // for strcmp, memchr, strlen
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -13,7 +12,6 @@
 
 #include <js/ArrayBuffer.h>
 #include <js/CallArgs.h>
-#include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -31,11 +29,7 @@
 #include "gjs/text-encoding.h"
 #include "util/misc.h"  // for _gjs_memdup2
 
-/* Callbacks to use with JS::NewExternalArrayBuffer() */
-
-static void gfree_arraybuffer_contents(void* contents, void*) {
-    g_free(contents);
-}
+// Callback to use with JS::NewExternalArrayBuffer()
 
 static void bytes_unref_arraybuffer(void* contents [[maybe_unused]],
                                     void* user_data) {
@@ -53,7 +47,15 @@ static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
                              &byte_array, "encoding", &encoding))
         return false;
 
-    return bytearray_to_string(cx, byte_array, encoding.get(), args.rval());
+    const char* actual_encoding = encoding ? encoding.get() : "utf-8";
+    JS::RootedString str(
+        cx, gjs_decode_from_uint8array(cx, byte_array, actual_encoding,
+                                       GjsStringTermination::ZERO_TERMINATED, true));
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
 }
 
 /* Workaround to keep existing code compatible. This function is tacked onto
@@ -71,7 +73,15 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
     if (!gjs_parse_call_args(cx, "toString", args, "|s", "encoding", &encoding))
         return false;
 
-    return bytearray_to_string(cx, this_obj, encoding.get(), args.rval());
+    const char* actual_encoding = encoding ? encoding.get() : "utf-8";
+    JS::RootedString str(
+        cx, gjs_decode_from_uint8array(cx, this_obj, actual_encoding,
+                                       GjsStringTermination::ZERO_TERMINATED, true));
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -83,101 +93,22 @@ static bool define_legacy_tostring(JSContext* cx, JS::HandleObject array) {
 
 /* fromString() function implementation */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-from_string_func(JSContext *context,
-                 unsigned   argc,
-                 JS::Value *vp)
-{
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+static bool from_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedString str(cx);
     JS::UniqueChars encoding;
-    JS::UniqueChars utf8;
-    bool encoding_is_utf8;
-    JS::RootedObject obj(context), array_buffer(context);
-
-    if (!gjs_parse_call_args(context, "fromString", argv, "s|s",
-                             "string", &utf8,
+    if (!gjs_parse_call_args(cx, "fromString", args, "S|s", "string", &str,
                              "encoding", &encoding))
         return false;
 
-    if (argc > 1) {
-        /* maybe we should be smarter about utf8 synonyms here.
-         * doesn't matter much though. encoding_is_utf8 is
-         * just an optimization anyway.
-         */
-        encoding_is_utf8 = (strcmp(encoding.get(), "UTF-8") == 0);
-    } else {
-        encoding_is_utf8 = true;
-    }
-
-    if (encoding_is_utf8) {
-        /* optimization? avoids iconv overhead and runs
-         * libmozjs hardwired utf16-to-utf8.
-         */
-        size_t len = strlen(utf8.get());
-        array_buffer =
-            JS::NewArrayBufferWithContents(context, len, utf8.release());
-    } else {
-        JSString *str = argv[0].toString();  /* Rooted by argv */
-        GError *error = NULL;
-        char *encoded = NULL;
-        gsize bytes_written;
-
-        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered
-         * while we are using the string's chars */
-        {
-            JS::AutoCheckCannotGC nogc;
-            size_t len;
-
-            if (JS_StringHasLatin1Chars(str)) {
-                const JS::Latin1Char *chars =
-                    JS_GetLatin1StringCharsAndLength(context, nogc, str, &len);
-                if (chars == NULL)
-                    return false;
-
-                encoded = g_convert((char *) chars, len,
-                                    encoding.get(),  // to_encoding
-                                    "LATIN1",  /* from_encoding */
-                                    NULL,  /* bytes read */
-                                    &bytes_written, &error);
-            } else {
-                const char16_t *chars =
-                    JS_GetTwoByteStringCharsAndLength(context, nogc, str, &len);
-                if (chars == NULL)
-                    return false;
-
-                encoded = g_convert((char *) chars, len * 2,
-                                    encoding.get(),  // to_encoding
-                                    "UTF-16",  /* from_encoding */
-                                    NULL,  /* bytes read */
-                                    &bytes_written, &error);
-            }
-        }
-
-        if (!encoded)
-            return gjs_throw_gerror_message(context, error);  // frees GError
-
-        if (bytes_written == 0) {
-            g_free(encoded);
-            JS::RootedObject empty_array(context, JS_NewUint8Array(context, 0));
-            if (!empty_array || !define_legacy_tostring(context, empty_array))
-                return false;
-
-            argv.rval().setObject(*empty_array);
-            return true;
-        }
-
-        array_buffer =
-            JS::NewExternalArrayBuffer(context, bytes_written, encoded,
-                                       gfree_arraybuffer_contents, nullptr);
-    }
-
-    if (!array_buffer)
-        return false;
-    obj = JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1);
-    if (!obj || !define_legacy_tostring(context, obj))
+    const char* actual_encoding = encoding ? encoding.get() : "utf-8";
+    JS::RootedObject uint8array(
+        cx, gjs_encode_to_uint8array(cx, str, actual_encoding,
+                                     GjsStringTermination::ZERO_TERMINATED));
+    if (!uint8array || !define_legacy_tostring(cx, uint8array))
         return false;
 
-    argv.rval().setObject(*obj);
+    args.rval().setObject(*uint8array);
     return true;
 }
 

@@ -453,6 +453,14 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report);
 GJS_JSAPI_RETURN_CONVENTION
 JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value string_val);
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* output,
+                          size_t* output_len);
+GJS_JSAPI_RETURN_CONVENTION
+JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string);
+GJS_JSAPI_RETURN_CONVENTION
+JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
+                                       size_t len);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_from_utf8(JSContext             *context,
                           const char            *utf8_string,
                           JS::MutableHandleValue value_p);

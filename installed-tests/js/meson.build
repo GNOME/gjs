@@ -240,7 +240,10 @@ endif
 # tests using ES modules are also separate because they need an extra
 # minijasmine flag
 
-modules_tests = ['ESModules']
+modules_tests = [
+    'ESModules',
+    'Encoding',
+]
 if build_cairo
     modules_tests += 'CairoModule'
 endif

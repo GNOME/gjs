@@ -91,6 +91,88 @@ JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
     return JS_EncodeStringToUTF8(cx, str);
 }
 
+/**
+ * gjs_string_to_utf8_n:
+ * @param cx: the current #JSContext
+ * @param str: a handle to a JSString
+ * @param output a pointer to a JS::UniqueChars
+ * @param output_len a pointer for the length of output
+ *
+ * @brief Converts a JSString to UTF-8 and puts the char array in #output and
+ * its length in #output_len.
+ *
+ * This function handles the boilerblate for unpacking a JSString, determining its
+ * length, and returning the appropriate JS::UniqueChars. This function should generally
+ * be preferred over using JS::DeflateStringToUTF8Buffer directly as it correctly
+ * handles allocation in a JS_Free compatible manner.
+ */
+bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* output,
+                          size_t* output_len) {
+    JSLinearString* linear = JS_EnsureLinearString(cx, str);
+    if (!linear)
+        return false;
+
+    size_t length = JS::GetDeflatedUTF8StringLength(linear);
+    char* bytes = js_pod_arena_malloc<char>(js::StringBufferArena, length + 1);
+    if (!bytes)
+        return false;
+
+    // Append a zero-terminator to the string.
+    bytes[length] = '\0';
+
+    size_t deflated_length [[maybe_unused]] =
+        JS::DeflateStringToUTF8Buffer(linear, mozilla::Span(bytes, length));
+    g_assert(deflated_length == length);
+
+    *output_len = length;
+    *output = JS::UniqueChars(bytes);
+    return true;
+}
+
+/**
+ * gjs_lossy_string_from_utf8:
+ *
+ * @brief Converts an array of UTF-8 characters to a JS string.
+ * Instead of throwing, any invalid characters will be converted
+ * to the UTF-8 invalid character fallback.
+ *
+ * @param cx the current #JSContext
+ * @param utf8_string an array of UTF-8 characters
+ * @param value_p a value to store the resulting string in
+ */
+JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
+    JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
+    size_t outlen;
+    JS::UniqueTwoByteChars twobyte_chars(
+        JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
+                                             js::MallocArena)
+            .get());
+    if (!twobyte_chars)
+        return nullptr;
+
+    return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
+}
+
+/**
+ * gjs_lossy_string_from_utf8_n:
+ *
+ * @brief Provides the same conversion behavior as gjs_lossy_string_from_utf8
+ * with a fixed length. See gjs_lossy_string_from_utf8()
+ */
+JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
+                                       size_t len) {
+    JS::UTF8Chars chars(utf8_string, len);
+    size_t outlen;
+    JS::UniqueTwoByteChars twobyte_chars(
+        JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
+                                             js::MallocArena)
+            .get());
+    if (!twobyte_chars)
+        return nullptr;
+
+    return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
+}
+
 bool
 gjs_string_from_utf8(JSContext             *context,
                      const char            *utf8_string,
