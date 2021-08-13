@@ -48,6 +48,23 @@ GJS_EXPORT
 void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
                          void *user_data);
 
+/**
+ * GjsGLogWriterFunc:
+ * @level: the log level
+ * @fields: a dictionary variant with type a{sms}
+ * @user_data: user data
+ */
+typedef GLogWriterOutput (*GjsGLogWriterFunc)(GLogLevelFlags level,
+                                              const GVariant* fields,
+                                              void* user_data);
+
+GJS_EXPORT
+void gjs_log_set_writer_func(GjsGLogWriterFunc func, gpointer user_data,
+                             GDestroyNotify user_data_free);
+
+GJS_EXPORT
+void gjs_log_set_writer_default();
+
 /* For imports.gettext */
 typedef enum
 {

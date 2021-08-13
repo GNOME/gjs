@@ -304,12 +304,65 @@ function _init() {
         return imports._byteArrayNative.fromGBytes(this);
     };
 
-    this.log_structured = function (logDomain, logLevel, stringFields) {
+    this.log_structured =
+    /**
+     * @param {string} logDomain
+     * @param {GLib.LogLevelFlags} logLevel
+     * @param {Record<string, unknown>} stringFields
+     * @returns {void}
+     */
+    function log_structured(logDomain, logLevel, stringFields) {
+        /** @type {Record<string, GLib.Variant>} */
         let fields = {};
-        for (let key in stringFields)
-            fields[key] = new GLib.Variant('s', stringFields[key]);
+
+        for (let key in stringFields) {
+            const field = stringFields[key];
+
+            if (field instanceof Uint8Array) {
+                fields[key] = new GLib.Variant('ay', field);
+            } else if (typeof field === 'string') {
+                fields[key] = new GLib.Variant('s', field);
+            } else if (field instanceof GLib.Variant) {
+                // GLib.log_variant converts all Variants that are
+                // not 'ay' or 's' type to strings by printing
+                // them.
+                //
+                // https://gitlab.gnome.org/GNOME/glib/-/blob/a380bfdf93cb3bfd3cd4caedc0127c4e5717545b/glib/gmessages.c#L1894
+                fields[key] = field;
+            } else {
+                throw new TypeError(`Unsupported value ${field}, log_structured supports GLib.Variant, Uint8Array, and string values.`);
+            }
+        }
 
         GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
+    };
+
+    // GjsPrivate depends on GLib so we cannot import it
+    // before GLib is fully resolved.
+
+    this.log_set_writer_func_variant = function (...args) {
+        const {log_set_writer_func} = imports.gi.GjsPrivate;
+
+        log_set_writer_func(...args);
+    };
+
+    this.log_set_writer_default = function (...args) {
+        const {log_set_writer_default} = imports.gi.GjsPrivate;
+
+        log_set_writer_default(...args);
+    };
+
+    this.log_set_writer_func = function (writer_func) {
+        const {log_set_writer_func} = imports.gi.GjsPrivate;
+
+        if (typeof writer_func !== 'function') {
+            log_set_writer_func(writer_func);
+        } else {
+            log_set_writer_func(function (logLevel, stringFields) {
+                const stringFieldsObj = {...stringFields.recursiveUnpack()};
+                return writer_func(logLevel, stringFieldsObj);
+            });
+        }
     };
 
     this.VariantDict.prototype.lookup = function (key, variantType = null, deep = false) {
