@@ -98,6 +98,32 @@ gjs_param_spec_get_owner_type(GParamSpec *pspec)
     return pspec->owner_type;
 }
 
+#define G_CLOSURE_NOTIFY(func) ((GClosureNotify)(void (*)(void))func)
+
+GBinding* gjs_g_object_bind_property_full(
+    GObject* source, const char* source_property, GObject* target,
+    const char* target_property, GBindingFlags flags,
+    GjsBindingTransformFunc to_callback, void* to_data,
+    GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
+    void* from_data, GDestroyNotify from_notify) {
+    GClosure* to_closure = NULL;
+    GClosure* from_closure = NULL;
+
+    if (to_callback)
+        to_closure = g_cclosure_new(G_CALLBACK(to_callback), to_data,
+                                    G_CLOSURE_NOTIFY(to_notify));
+
+    if (from_callback)
+        from_closure = g_cclosure_new(G_CALLBACK(from_callback), from_data,
+                                      G_CLOSURE_NOTIFY(from_notify));
+
+    return g_object_bind_property_with_closures(source, source_property, target,
+                                                target_property, flags,
+                                                to_closure, from_closure);
+}
+
+#undef G_CLOSURE_NOTIFY
+
 static GParamSpec* gjs_gtk_container_class_find_child_property(
     GIObjectInfo* container_info, GObject* container, const char* property) {
     GIBaseInfo* class_info = NULL;

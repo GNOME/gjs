@@ -757,6 +757,39 @@ describe('Signal handler matching', function () {
     });
 });
 
+describe('Property bindings', function () {
+    const ObjectWithProperties = GObject.registerClass({
+        Properties: {
+            'string': GObject.ParamSpec.string('string', 'String', 'String property',
+                GObject.ParamFlags.READWRITE, ''),
+            'bool': GObject.ParamSpec.boolean('bool', 'Bool', 'Bool property',
+                GObject.ParamFlags.READWRITE, true),
+        },
+    }, class ObjectWithProperties extends GObject.Object {});
+
+    let a, b;
+    beforeEach(function () {
+        a = new ObjectWithProperties();
+        b = new ObjectWithProperties();
+    });
+
+    it('can bind properties of the same type', function () {
+        a.bind_property('string', b, 'string', GObject.BindingFlags.NONE);
+        a.string = 'foo';
+        expect(a.string).toEqual('foo');
+        expect(b.string).toEqual('foo');
+    });
+
+    it('can use custom mappings to bind properties of different types', function () {
+        a.bind_property_full('bool', b, 'string', GObject.BindingFlags.NONE,
+            (bind, source) => [true, `${source}`],
+            null);
+        a.bool = true;
+        expect(a.bool).toEqual(true);
+        expect(b.string).toEqual('true');
+    });
+});
+
 describe('Auto accessor generation', function () {
     const AutoAccessors = GObject.registerClass({
         Properties: {
