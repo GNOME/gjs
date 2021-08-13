@@ -35,6 +35,7 @@ overrides:
       - testCairoModule.js
       - testESModules.js
       - testEncoding.js
+      - testGLibLogWriter.js
       - modules/importmeta.js
       - modules/exports.js
       - modules/say.js

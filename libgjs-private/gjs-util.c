@@ -6,8 +6,10 @@
 
 #include <config.h>
 
-#include <locale.h>    /* for setlocale */
-#include <stddef.h>    /* for size_t */
+#include <locale.h> /* for setlocale */
+#include <stdbool.h>
+#include <stddef.h> /* for size_t */
+#include <string.h>
 
 #include <glib-object.h>
 #include <girepository.h>
@@ -238,4 +240,92 @@ unsigned int gjs_list_store_insert_sorted(GListStore *store, GObject *item,
 void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
                          void *user_data) {
   g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
+}
+
+typedef struct WriterFuncData {
+    GjsGLogWriterFunc func;
+    void* wrapped_user_data;
+    GDestroyNotify wrapped_user_data_free;
+} WriterFuncData;
+
+static void* log_writer_user_data = NULL;
+static GDestroyNotify log_writer_user_data_free = NULL;
+
+GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
+                                             const GLogField* fields,
+                                             size_t n_fields, void* user_data) {
+    GjsGLogWriterFunc func = (GjsGLogWriterFunc)user_data;
+    GVariantDict dict;
+    g_variant_dict_init(&dict, NULL);
+
+    size_t f;
+    for (f = 0; f < n_fields; f++) {
+        const GLogField* field = &fields[f];
+
+        GVariant* value;
+        if (field->length < 0) {
+            size_t bytes_len = strlen(field->value);
+            GBytes* bytes = g_bytes_new(field->value, bytes_len);
+
+            value = g_variant_new_maybe(
+                G_VARIANT_TYPE_BYTESTRING,
+                g_variant_new_from_bytes(G_VARIANT_TYPE_BYTESTRING, bytes,
+                                         true));
+            g_bytes_unref(bytes);
+        } else if (field->length > 0) {
+            GBytes* bytes = g_bytes_new(field->value, field->length);
+
+            value = g_variant_new_maybe(
+                G_VARIANT_TYPE_BYTESTRING,
+                g_variant_new_from_bytes(G_VARIANT_TYPE_BYTESTRING, bytes,
+                                         true));
+            g_bytes_unref(bytes);
+        } else {
+            value = g_variant_new_maybe(G_VARIANT_TYPE_STRING, NULL);
+        }
+
+        g_variant_dict_insert_value(&dict, field->key, value);
+    }
+
+    GVariant* string_fields = g_variant_dict_end(&dict);
+    g_variant_ref(string_fields);
+
+    GLogWriterOutput output =
+        func(log_level, string_fields, log_writer_user_data);
+
+    g_variant_unref(string_fields);
+    return output;
+}
+
+/**
+ * gjs_log_set_writer_default:
+ *
+ * Sets the structured logging writer function back to the platform default.
+ */
+void gjs_log_set_writer_default() {
+    if (log_writer_user_data_free) {
+        log_writer_user_data_free(log_writer_user_data);
+    }
+
+    g_log_set_writer_func(g_log_writer_default, NULL, NULL);
+    log_writer_user_data_free = NULL;
+    log_writer_user_data = NULL;
+}
+
+/**
+ * gjs_log_set_writer_func:
+ * @func: (scope notified): callback with log data
+ * @user_data: (closure): user data for @func
+ * @user_data_free: (destroy user_data_free): destroy for @user_data
+ *
+ * Sets a given function as the writer function for structured logging,
+ * passing log fields as a variant. If called from JavaScript the application
+ * must call gjs_log_set_writer_default prior to exiting.
+ */
+void gjs_log_set_writer_func(GjsGLogWriterFunc func, void* user_data,
+                             GDestroyNotify user_data_free) {
+    log_writer_user_data = user_data;
+    log_writer_user_data_free = user_data_free;
+
+    g_log_set_writer_func(gjs_log_writer_func_wrapper, func, NULL);
 }
