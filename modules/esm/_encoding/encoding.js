@@ -21,6 +21,12 @@ class TextDecoder {
      */
     fatal;
 
+    /**
+     * @private
+     * @type {string}
+     */
+    _internalEncoding;
+
     get [Symbol.toStringTag]() {
         return 'TextDecoder';
     }
@@ -38,7 +44,6 @@ class TextDecoder {
 
         if (!encodingDefinition)
             throw new RangeError(`Invalid encoding label: '${encoding}'`);
-
 
         if (encodingDefinition.label === 'replacement') {
             throw new RangeError(
@@ -97,17 +102,9 @@ class TextDecoder {
             input = new Uint8Array(bytes);
         } else if (bytes instanceof Uint8Array) {
             input = bytes;
-        } else if (bytes instanceof Object.getPrototypeOf(Uint8Array)) {
-            let {buffer, byteLength, byteOffset} =
-                /** @type {Uint32Array} */ bytes;
-            input = new Uint8Array(buffer, byteOffset, byteLength);
-        } else if (
-            typeof bytes === 'object' &&
-            bytes !== null &&
-            'buffer' in bytes &&
-            bytes.buffer instanceof ArrayBuffer
-        ) {
+        } else if (ArrayBuffer.isView(bytes)) {
             let {buffer, byteLength, byteOffset} = bytes;
+
             input = new Uint8Array(buffer, byteOffset, byteLength);
         } else if (bytes === undefined) {
             input = new Uint8Array(0);
@@ -126,7 +123,6 @@ class TextDecoder {
         ) {
             if (this.encoding !== 'utf-8')
                 throw new Error('Cannot ignore BOM for non-UTF8 encoding.');
-
 
             let {buffer, byteLength, byteOffset} = input;
             input = new Uint8Array(buffer, byteOffset + 3, byteLength - 3);
@@ -156,17 +152,16 @@ class TextEncoder {
     }
 }
 
-Object.defineProperties(globalThis, {
-    TextEncoder: {
-        configurable: false,
-        enumerable: true,
-        writable: false,
-        value: TextEncoder,
-    },
-    TextDecoder: {
-        configurable: false,
-        enumerable: true,
-        writable: false,
-        value: TextDecoder,
-    },
+Object.defineProperty(globalThis, 'TextEncoder', {
+    configurable: false,
+    enumerable: true,
+    writable: false,
+    value: TextEncoder,
+});
+
+Object.defineProperty(globalThis, 'TextDecoder', {
+    configurable: false,
+    enumerable: true,
+    writable: false,
+    value: TextDecoder,
 });
