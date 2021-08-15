@@ -1,3 +1,16 @@
+Version 1.68.3
+--------------
+
+- Crash and bug fixes backported from the development branch.
+
+- Build fixes [Philip Chimento]
+
+- Closed bugs and merge requests:
+
+  * win32: Fix resource-based imports [!652, Evan Welsh]
+  * overrides/GLib: Guard Error.new_literal against invalid domains [!654,
+    Florian Müllner]
+
 Version 1.69.1
 --------------
 
