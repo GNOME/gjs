@@ -8,6 +8,7 @@
 #include <girepository.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
@@ -15,6 +16,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
 
 #include "gi/arg-inl.h"
@@ -106,6 +108,34 @@ static bool setDeviceOffset_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool getDeviceOffset_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+
+    if (argc > 0) {
+        gjs_throw(cx, "Surface.getDeviceOffset() takes no arguments");
+        return false;
+    }
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    double x_offset, y_offset;
+    cairo_surface_get_device_offset(surface, &x_offset, &y_offset);
+    // cannot error
+
+    JS::RootedValueArray<2> elements(cx);
+    elements[0].setNumber(x_offset);
+    elements[1].setNumber(y_offset);
+    JS::RootedObject retval(cx, JS::NewArrayObject(cx, elements));
+    if (!retval)
+        return false;
+
+    args.rval().setObject(*retval);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool setDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, obj);
     double x_scale = 1.0, y_scale = 1.0;
@@ -127,6 +157,34 @@ static bool setDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool getDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+
+    if (argc > 0) {
+        gjs_throw(cx, "Surface.getDeviceScale() takes no arguments");
+        return false;
+    }
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    double x_scale, y_scale;
+    cairo_surface_get_device_scale(surface, &x_scale, &y_scale);
+    // cannot error
+
+    JS::RootedValueArray<2> elements(cx);
+    elements[0].setNumber(x_scale);
+    elements[1].setNumber(y_scale);
+    JS::RootedObject retval(cx, JS::NewArrayObject(cx, elements));
+    if (!retval)
+        return false;
+
+    args.rval().setObject(*retval);
+    return true;
+}
+
 const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // flush
     // getContent
@@ -135,8 +193,9 @@ const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // markDirty
     // markDirtyRectangle
     JS_FN("setDeviceOffset", setDeviceOffset_func, 2, 0),
-    // getDeviceOffset
+    JS_FN("getDeviceOffset", getDeviceOffset_func, 0, 0),
     JS_FN("setDeviceScale", setDeviceScale_func, 2, 0),
+    JS_FN("getDeviceScale", getDeviceScale_func, 0, 0),
     // setFallbackResolution
     // getFallbackResolution
     // copyPage

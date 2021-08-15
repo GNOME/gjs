@@ -244,6 +244,26 @@ describe('Cairo', function () {
             const pattern = new Cairo.SurfacePattern(surface);
             expect(() => new Cairo.Context(pattern)).toThrow();
         });
+
+        it('can access the device scale', function () {
+            let [x, y] = surface.getDeviceScale();
+            expect(x).toEqual(1);
+            expect(y).toEqual(1);
+            surface.setDeviceScale(1.2, 1.2);
+            [x, y] = surface.getDeviceScale();
+            expect(x).toEqual(1.2);
+            expect(y).toEqual(1.2);
+        });
+
+        it('can access the device offset', function () {
+            let [x, y] = surface.getDeviceOffset();
+            expect(x).toEqual(0);
+            expect(y).toEqual(0);
+            surface.setDeviceOffset(50, 50);
+            [x, y] = surface.getDeviceOffset();
+            expect(x).toEqual(50);
+            expect(y).toEqual(50);
+        });
     });
 
     describe('GI test suite', function () {
