@@ -8,6 +8,7 @@
 #include <girepository.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
@@ -15,6 +16,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_GetPrivate, JS_GetClass, ...
 
 #include "gi/arg-inl.h"
@@ -85,6 +87,104 @@ bool CairoSurface::getType_func(JSContext* context, unsigned argc,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool setDeviceOffset_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+    double x_offset = 0.0, y_offset = 0.0;
+    if (!gjs_parse_call_args(cx, "setDeviceOffset", args, "ff", "x_offset",
+                             &x_offset, "y_offset", &y_offset))
+        return false;
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    cairo_surface_set_device_offset(surface, x_offset, y_offset);
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool getDeviceOffset_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+
+    if (argc > 0) {
+        gjs_throw(cx, "Surface.getDeviceOffset() takes no arguments");
+        return false;
+    }
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    double x_offset, y_offset;
+    cairo_surface_get_device_offset(surface, &x_offset, &y_offset);
+    // cannot error
+
+    JS::RootedValueArray<2> elements(cx);
+    elements[0].setNumber(x_offset);
+    elements[1].setNumber(y_offset);
+    JS::RootedObject retval(cx, JS::NewArrayObject(cx, elements));
+    if (!retval)
+        return false;
+
+    args.rval().setObject(*retval);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool setDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+    double x_scale = 1.0, y_scale = 1.0;
+
+    if (!gjs_parse_call_args(cx, "setDeviceScale", args, "ff", "x_scale",
+                             &x_scale, "y_scale", &y_scale))
+        return false;
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    cairo_surface_set_device_scale(surface, x_scale, y_scale);
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface),
+                                "surface"))
+        return false;
+
+    args.rval().setUndefined();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool getDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, args, obj);
+
+    if (argc > 0) {
+        gjs_throw(cx, "Surface.getDeviceScale() takes no arguments");
+        return false;
+    }
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    double x_scale, y_scale;
+    cairo_surface_get_device_scale(surface, &x_scale, &y_scale);
+    // cannot error
+
+    JS::RootedValueArray<2> elements(cx);
+    elements[0].setNumber(x_scale);
+    elements[1].setNumber(y_scale);
+    JS::RootedObject retval(cx, JS::NewArrayObject(cx, elements));
+    if (!retval)
+        return false;
+
+    args.rval().setObject(*retval);
+    return true;
+}
+
 const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // flush
     // getContent
@@ -92,8 +192,10 @@ const JSFunctionSpec CairoSurface::proto_funcs[] = {
     JS_FN("getType", getType_func, 0, 0),
     // markDirty
     // markDirtyRectangle
-    // setDeviceOffset
-    // getDeviceOffset
+    JS_FN("setDeviceOffset", setDeviceOffset_func, 2, 0),
+    JS_FN("getDeviceOffset", getDeviceOffset_func, 0, 0),
+    JS_FN("setDeviceScale", setDeviceScale_func, 2, 0),
+    JS_FN("getDeviceScale", getDeviceScale_func, 0, 0),
     // setFallbackResolution
     // getFallbackResolution
     // copyPage
