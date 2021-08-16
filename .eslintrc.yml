@@ -259,5 +259,6 @@ globals:
   window: readonly
   TextEncoder: readonly
   TextDecoder: readonly
+  console: readonly
 parserOptions:
   ecmaVersion: 2020

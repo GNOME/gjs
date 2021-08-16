@@ -5,3 +5,5 @@
 
 // Bootstrap the Encoding API
 import '_encoding/encoding';
+// Bootstrap the Console API
+import 'console';
