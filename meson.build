@@ -428,6 +428,7 @@ libgjs_jsapi_sources = [
     'gjs/jsapi-util-root.h',
     'gjs/jsapi-util-string.cpp',
     'gjs/jsapi-util.cpp', 'gjs/jsapi-util.h',
+    'util/console.cpp', 'util/console.h',
     'util/log.cpp', 'util/log.h',
     'util/misc.cpp', 'util/misc.h',
 ]

@@ -33,6 +33,7 @@ overrides:
   - files:
       - matchers.js
       - testCairoModule.js
+      - testConsole.js
       - testESModules.js
       - testEncoding.js
       - testGLibLogWriter.js
