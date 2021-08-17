@@ -1,3 +1,50 @@
+Version 1.69.2
+--------------
+
+- The TextEncoder and TextDecoder global objects are now available. In most
+  cases, these will be able to replace usage of the imports.byteArray module. We
+  recommend that new code use TextEncoder and TextDecoder to convert strings to
+  UTF-8 encoded Uint8Arrays and vice versa.
+  MDN is a good source of information on how to use these APIs:
+  https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder
+  https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder
+
+- The 'console' global object is now available. This is for compatibility with
+  Node.js and browser environments, and for familiarity for developers
+  accustomed to them. The previously existing print(), printerr(), log(),
+  logError() functions continue to exist, and are not deprecated. The console
+  methods use GLib structured logging as their backend.
+
+- Cairo.Surface has gained getDeviceScale(), setDeviceScale(),
+  getDeviceOffset(), and setDeviceOffset() methods. These wrap the corresponding
+  C functions.
+
+- GLib.log_set_writer_func() and GObject.Object.bind_property_full() now work.
+  Previously, they had introspection problems.
+
+- There is also a 'console' built-in module which exports functions
+  setConsoleLogDomain() and getConsoleLogDomain(), for controlling the GLib
+  log domain that the console methods use.
+
+- The debugger has gained a 'set ignoreCaughtExceptions (true/false)' option.
+  Previously, when an exception was thrown, the debugger would stop, even if the
+  exception was thrown intentionally in order to be caught. With this option,
+  which is now the default, the debugger will keep going on exceptions that are
+  thrown while inside the scope of a try-catch block.
+
+- Closed bugs and merge requests:
+
+  * Implement WHATWG Encoding specification. [!534, Evan Welsh]
+  * cairo-surface: Add setDevice{Offset,Scale} functions [!605, Daniel van Vugt,
+    Philip Chimento]
+  * WHATWG Console Implementation [!634, Evan Welsh]
+  * Add support for GLib.log_set_writer_func [!637, Evan Welsh]
+  * Various maintenance [!649, Philip Chimento]
+  * examples: improve the gettext example [!651, Sonny Piers]
+  * Unable to use bind_property_full [#241, !653, Florian Müllner]
+  * Allow continuing for handled exceptions [#431, !655, Florian Müllner]
+  * text-encoding.cpp: Fix builds on 64-bit Windows [!656, Chun-wei Fan]
+
 Version 1.68.3
 --------------
 
