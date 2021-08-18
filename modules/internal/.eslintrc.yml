@@ -4,7 +4,7 @@
 extends: ../../.eslintrc.yml
 parserOptions:
   sourceType: 'module'
-  ecmaVersion: 2020
+  ecmaVersion: 2022
 globals:
   ARGV: off
   Debugger: readonly

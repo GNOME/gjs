@@ -270,7 +270,7 @@ function checkSymbol(lib, ver, symbol) {
         return true; // Done
 
     let [klass, sym] = symbol.split('.');
-    if (klass === symbol) // global symbol
+    if (klass === symbol)
         return typeof Lib[symbol] !== 'undefined';
 
     let obj = Lib[klass];

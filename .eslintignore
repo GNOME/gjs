@@ -3,7 +3,4 @@
 
 installed-tests/js/jasmine.js
 installed-tests/js/modules/badOverrides/WarnLib.js
-# Until ESLint merges class fields.
-# https://github.com/eslint/eslint/issues/14343
-modules/esm/_encoding/encoding.js
 modules/script/jsUnit.js

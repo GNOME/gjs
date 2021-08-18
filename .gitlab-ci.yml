@@ -14,7 +14,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2021-05-13.0'
+    FDO_DISTRIBUTION_TAG: '2021-08-18.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
