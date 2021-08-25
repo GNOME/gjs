@@ -756,9 +756,15 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
     } else {
         /* Need to distinguish between negative integers and unsigned integers */
         GjsAutoEnumInfo info = g_irepository_find_by_gtype(nullptr, gtype);
-        g_assert (info);
 
-        v_double = _gjs_enum_from_int(info, v);
+        // Native enums don't have type info, assume
+        // they are signed to avoid crashing when
+        // they are exposed to JS.
+        if (!info) {
+            v_double = int64_t(v);
+        } else {
+            v_double = _gjs_enum_from_int(info, v);
+        }
     }
 
     return JS::NumberValue(v_double);
