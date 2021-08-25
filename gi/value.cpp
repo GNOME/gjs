@@ -423,6 +423,13 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else {
             return throw_expect_type(context, value, "integer");
         }
+    } else if (gtype == G_TYPE_INT64) {
+        gint64 i;
+        if (Gjs::js_value_to_c(context, value, &i)) {
+            g_value_set_int64(gvalue, i);
+        } else {
+            return throw_expect_type(context, value, "64-bit integer");
+        }
     } else if (gtype == G_TYPE_DOUBLE) {
         gdouble d;
         if (Gjs::js_value_to_c(context, value, &d)) {
@@ -446,10 +453,18 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else {
             return throw_expect_type(context, value, "unsigned integer");
         }
+    } else if (gtype == G_TYPE_UINT64) {
+        guint64 i;
+        if (Gjs::js_value_to_c(context, value, &i)) {
+            g_value_set_uint64(gvalue, i);
+        } else {
+            return throw_expect_type(context, value, "unsigned 64-bit integer");
+        }
     } else if (gtype == G_TYPE_BOOLEAN) {
         /* JS::ToBoolean() can't fail */
         g_value_set_boolean(gvalue, JS::ToBoolean(value));
-    } else if (g_type_is_a(gtype, G_TYPE_OBJECT) || g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+    } else if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
+               g_type_is_a(gtype, G_TYPE_INTERFACE)) {
         GObject *gobj;
 
         gobj = NULL;
