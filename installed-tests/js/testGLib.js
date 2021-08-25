@@ -241,4 +241,14 @@ describe('GLib string function overrides', function () {
         expect(GLib.strcanon('1a2b3c4', 'abc', '?')).toEqual('?a?b?c?');
         assertWarnings('strcanon');
     });
+
+    it('GLib.base64_encode', function () {
+        const ascii = 'hello\0world';
+        const base64 = 'aGVsbG8Ad29ybGQ=';
+
+        expect(GLib.base64_encode(ascii)).toBe(base64);
+
+        const encoded = new TextEncoder().encode(ascii);
+        expect(GLib.base64_encode(encoded)).toBe(base64);       
+    });
 });
