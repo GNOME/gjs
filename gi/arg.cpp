@@ -2431,7 +2431,12 @@ gjs_value_from_g_argument (JSContext             *context,
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        value_p.setUndefined(); /* or .setNull() ? */
+        // If the argument is a pointer, convert to null to match our
+        // in handling.
+        if (g_type_info_is_pointer(type_info))
+            value_p.setNull();
+        else
+            value_p.setUndefined();
         break;
 
     case GI_TYPE_TAG_BOOLEAN:
