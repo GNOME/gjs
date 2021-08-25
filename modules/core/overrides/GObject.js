@@ -431,6 +431,14 @@ function _init() {
 
     GObject.registerClass = registerClass;
 
+    GObject.Object.new = function (gtype, props = {}) {
+        const constructor = Gi.lookupConstructor(gtype);
+
+        if (!constructor)
+            throw new Error(`Constructor for gtype ${gtype} not found`);
+        return new constructor(props);
+    };
+
     GObject.Object._classInit = function (klass) {
         let gtypename = _createGTypeName(klass);
         let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
