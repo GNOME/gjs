@@ -249,6 +249,6 @@ describe('GLib string function overrides', function () {
         expect(GLib.base64_encode(ascii)).toBe(base64);
 
         const encoded = new TextEncoder().encode(ascii);
-        expect(GLib.base64_encode(encoded)).toBe(base64);       
+        expect(GLib.base64_encode(encoded)).toBe(base64);
     });
 });
