@@ -777,7 +777,16 @@ describe('GValue', function () {
     xit('enum can be passed into a function and packed', function () {
         expect(() => GIMarshallingTests.gvalue_in_enum(GIMarshallingTests.Enum.VALUE3))
             .not.toThrow();
-    }).pend("GJS doesn't support native enum types");
+    }).pend("we don't know to pack enums in a GValue as enum and not int");
+
+    it('enum can be passed into a function as a boxed type and packed', function () {
+        const value = new GObject.Value();
+        // GIMarshallingTests.Enum is a native enum.
+        value.init(GObject.TYPE_ENUM);
+        value.set_enum(GIMarshallingTests.Enum.VALUE3);
+        expect(() => GIMarshallingTests.gvalue_in_enum(value))
+            .not.toThrow();
+    });
 
     xit('flags can be passed into a function and packed', function () {
         expect(() => GIMarshallingTests.gvalue_in_flags(GIMarshallingTests.Flags.VALUE3))
