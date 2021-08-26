@@ -49,6 +49,7 @@
 #include "gjs/enum-utils.h"
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
+#include "util/misc.h"
 
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
     JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
@@ -693,11 +694,11 @@ gjs_string_to_intarray(JSContext       *context,
     switch (element_type) {
         case GI_TYPE_TAG_INT8:
         case GI_TYPE_TAG_UINT8: {
-            JS::UniqueChars result(JS_EncodeStringToUTF8(context, str));
-            if (!result)
+            JS::UniqueChars result;
+            if (!gjs_string_to_utf8_n(context, str, &result, length))
                 return false;
-            *length = strlen(result.get());
-            *arr_p = g_strdup(result.get());
+
+            *arr_p = _gjs_memdup2(result.get(), *length);
             return true;
         }
 
