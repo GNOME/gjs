@@ -87,7 +87,7 @@ void gjs_test_tools_save_object(GObject* object) {
 
 void gjs_test_tools_save_object_unreffed(GObject* object) {
     GObject* expected = nullptr;
-    g_assert(m_tmp_object.compare_exchange_strong(expected, object));
+    g_assert_true(m_tmp_object.compare_exchange_strong(expected, object));
 }
 
 void gjs_test_tools_clear_saved() {
