@@ -759,9 +759,19 @@ describe('GValue', function () {
 
     it('can be passed into a function and modified', function () {
         expect(() => GIMarshallingTests.gvalue_in_with_modification(42)).not.toThrow();
-        // Let's assume this test doesn't expect that the modified GValue makes
-        // it back to the caller; I don't see how that could be achieved.
-        // See https://gitlab.gnome.org/GNOME/gjs/issues/80
+        // Let's assume this test doesn't expect that the modified number makes
+        // it back to the caller; it is not possible to "modify" a JS primitive.
+        //
+        // See the "as a boxed type" test below for passing an explicit GObject.Value
+    });
+
+    it('can be passed into a function as a boxed type and modified', function () {
+        const value = new GObject.Value();
+        value.init(GObject.TYPE_INT);
+        value.set_int(42);
+
+        expect(() => GIMarshallingTests.gvalue_in_with_modification(value)).not.toThrow();
+        expect(value.get_int()).toBe(24);
     });
 
     xit('enum can be passed into a function and packed', function () {
@@ -773,6 +783,14 @@ describe('GValue', function () {
         expect(() => GIMarshallingTests.gvalue_in_flags(GIMarshallingTests.Flags.VALUE3))
             .not.toThrow();
     }).pend("we don't know to pack flags in a GValue as flags and not gint");
+
+    it('flags can be passed into a function as a boxed type and packed', function () {
+        const value = new GObject.Value();
+        value.init(GIMarshallingTests.Flags);
+        value.set_flags(GIMarshallingTests.Flags.VALUE3);
+        expect(() => GIMarshallingTests.gvalue_in_flags(value))
+            .not.toThrow();
+    });
 
     it('marshals as an int64 out parameter', function () {
         expect(GIMarshallingTests.gvalue_int64_out()).toEqual(Limits.int64.max);
