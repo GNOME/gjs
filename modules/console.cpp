@@ -90,10 +90,10 @@ public:
     }
 };
 
-#ifdef HAVE_SIGNAL_H
 
 // Adapted from https://stackoverflow.com/a/17035073/172999
 class AutoCatchCtrlC {
+#ifdef HAVE_SIGNAL_H
     void (*m_prev_handler)(int);
 
     static void handler(int signal) {
@@ -118,14 +118,12 @@ class AutoCatchCtrlC {
             signal(SIGINT, m_prev_handler);
         raise(SIGINT);
     }
+#endif  // HAVE_SIGNAL_H
 };
+
+#ifdef HAVE_SIGNAL_H
 sigjmp_buf AutoCatchCtrlC::jump_buffer;
-
-#else  // !HAVE_SIGNAL_H
-
-struct AutoCatchCtrlC {};
-
-#endif  // !HAVE_SIGNAL_H
+#endif  // HAVE_SIGNAL_H
 
 [[nodiscard]] static bool gjs_console_readline(char** bufp,
                                                const char* prompt) {

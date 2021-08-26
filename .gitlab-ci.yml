@@ -190,6 +190,7 @@ cppcheck:
     - .gjs-alpine
   stage: source_check
   script:
+    - cppcheck --version
     - cppcheck . -v -f -q -UHAVE_PRINTF_ALTERNATIVE_INT --error-exitcode=1 --inline-suppr --library=gtk,tools/cppcheck.cfg --enable=warning,performance,portability
   except:
     refs:
@@ -197,12 +198,6 @@ cppcheck:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
-  only:
-    changes:
-      - '**/*.c'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hh'
 
 cpplint:
   when: on_success
@@ -213,6 +208,7 @@ cpplint:
   variables:
     TASK_ID: "cpplint"
   script:
+    - cpplint --version
     - test/test-ci.sh CPPLINT
   except:
     refs:
@@ -220,12 +216,6 @@ cpplint:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip cpplint\]/
-  only:
-    changes:
-      - '**/*.c'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hh'
 
 eslint:
   when: on_success
@@ -234,6 +224,7 @@ eslint:
     - .gjs-alpine
   stage: source_check
   script:
+    - ./tools/run_eslint.sh --version
     - ./tools/run_eslint.sh
   except:
     refs:
@@ -241,12 +232,6 @@ eslint:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip eslint\]/
-  only:
-    changes:
-      - '**/*.js'
-      - .eslintignore
-      - .eslintrc.yml
-      - '**/.eslintrc.yml'
 
 pch_check:
   when: on_success
@@ -263,13 +248,6 @@ pch_check:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip pch_check\]/
-  only:
-    changes:
-      - test/check-pch.sh
-      - '**/*.c'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hh'
 
 iwyu:
   when: on_success
@@ -280,15 +258,11 @@ iwyu:
   script:
     - test/test-ci.sh UPSTREAM_BASE
     - meson setup _build
+    - include-what-you-use --version
     - ./tools/run_iwyu.sh ci-upstream-base
   only:
     refs:
       - branches
-    changes:
-      - '**/*.c'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/meson.build'
   except:
     - schedules
     - /^gnome-\d+-\d+$/
@@ -300,6 +274,7 @@ codespell:
     - .gjs-alpine
   stage: source_check
   script:
+    - codespell --version
     - codespell -S "*.png,*.po,*.jpg,*.wrap,.git,LICENSES" -f --builtin "code,usage,clear" --skip="./installed-tests/js/jasmine.js,./README.md,./build/flatpak/*.json" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
   except:
     - schedules
@@ -311,6 +286,7 @@ license-check:
     - .fdo.distribution-image@alpine
     - .gjs-alpine
   script:
+    - reuse --version
     - reuse lint
   except:
     - schedules

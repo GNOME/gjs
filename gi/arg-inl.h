@@ -146,7 +146,7 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 [[nodiscard]] inline T gjs_arg_get(GIArgument* arg) {
     if constexpr (std::is_same_v<T, bool> ||
                   (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN))
-        return !!gjs_arg_member<T, TAG>(arg);
+        return T(!!gjs_arg_member<T, TAG>(arg));
 
     return gjs_arg_member<T, TAG>(arg);
 }
