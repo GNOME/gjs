@@ -313,3 +313,23 @@ describe('Specific class and interface checks', function () {
         })).toThrow();
     });
 });
+
+describe('Interface prototypes', function () {
+    beforeAll(function () {
+        // Use .dup because we are unlikely to use it in this test.
+        // Unfortunately, overriding interface prototypes is not easily
+        // reversed.
+        spyOn(Gio.File.prototype, 'dup');
+    });
+
+    it('overrides are inherited by implementing classes', function () {
+        const file = Gio.File.new_for_path('/');
+
+        expect(file).toBeInstanceOf(Gio.File);
+        expect(file).toBeInstanceOf(Gio._LocalFilePrototype.constructor);
+
+        file.dup();
+
+        expect(Gio.File.prototype.dup).toHaveBeenCalledOnceWith();
+    });
+});

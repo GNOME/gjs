@@ -87,6 +87,10 @@ decltype(ObjectInstance::s_wrapped_gobject_list)
 
 static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
+GJS_JSAPI_RETURN_CONVENTION
+static JSObject* gjs_lookup_object_prototype_from_info(JSContext*,
+                                                       GIObjectInfo*, GType);
+
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
@@ -641,6 +645,46 @@ bool ObjectPrototype::lazy_define_gobject_property(JSContext* cx,
     return true;
 }
 
+static bool copy_interface_method_to_prototype(
+    JSContext* cx, GIObjectInfo* iface_info, const char* method_name,
+    JS::HandleObject target_prototype, bool* found) {
+    GType gtype = g_base_info_get_type(iface_info);
+    JS::RootedObject prototype(
+        cx, gjs_lookup_object_prototype_from_info(cx, iface_info, gtype));
+    if (!prototype)
+        return false;
+
+    JS::RootedId method_name_id(cx, gjs_intern_string_to_id(cx, method_name));
+
+    bool target_has_property;
+    if (!JS_HasPropertyById(cx, target_prototype, method_name_id,
+                            &target_has_property))
+        return false;
+
+    // Don't overwrite an existing method implementation...
+    if (target_has_property) {
+        *found = true;
+        return true;
+    }
+
+    JS::Rooted<JS::PropertyDescriptor> desc(cx);
+    if (!JS_GetPropertyDescriptorById(cx, prototype, method_name_id, &desc))
+        return false;
+
+    if (!desc.object()) {
+        *found = false;
+        return true;
+    }
+
+    JS::Rooted<JS::PropertyDescriptor> target_desc(cx, desc);
+    if (!JS_DefinePropertyById(cx, target_prototype, method_name_id,
+                               target_desc))
+        return false;
+
+    *found = true;
+    return true;
+}
+
 bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name,
@@ -688,7 +732,14 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             g_interface_info_find_method(iface_info, name);
         if (method_info) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (!gjs_define_function(cx, obj, m_gtype, method_info))
+                bool found = false;
+                if (!copy_interface_method_to_prototype(
+                        cx, iface_info, method_info.name(), obj, &found))
+                    return false;
+
+                // Fallback to defining the function from type info...
+                if (!found &&
+                    !gjs_define_function(cx, obj, m_gtype, method_info))
                     return false;
 
                 *resolved = true;
@@ -876,8 +927,10 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
      * introduces the iface)
      */
 
+    GjsAutoBaseInfo implementor_info;
     GjsAutoFunctionInfo method_info =
-        g_object_info_find_method_using_interfaces(m_info, name, nullptr);
+        g_object_info_find_method_using_interfaces(m_info, name,
+                                                   implementor_info.out());
 
     /**
      * Search through any interfaces implemented by the GType;
@@ -896,9 +949,21 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for %s (%s.%s)",
                   method_info.name(), type_name(), ns(), this->name());
+        if (GI_IS_INTERFACE_INFO(implementor_info)) {
+            bool found = false;
+            if (!copy_interface_method_to_prototype(
+                    context, implementor_info, method_info.name(), obj, &found))
+                return false;
 
-        if (!gjs_define_function(context, obj, m_gtype, method_info))
+            // If the method was not found fallback to defining the function
+            // from type info...
+            if (!found &&
+                !gjs_define_function(context, obj, m_gtype, method_info)) {
+                return false;
+            }
+        } else if (!gjs_define_function(context, obj, m_gtype, method_info)) {
             return false;
+        }
 
         *resolved = true; /* we defined the prop in obj */
     } else {
