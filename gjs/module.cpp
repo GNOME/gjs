@@ -628,11 +628,18 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
                            JSPROP_PERMANENT))
         return false;
 
-    gjs_debug(GJS_DEBUG_IMPORTER,
-              "Async module resolve hook for module '%s' (relative to %p), "
-              "global %p",
-              gjs_debug_string(specifier).c_str(),
-              &importing_module_priv.toObject(), global.get());
+    if (importing_module_priv.isObject()) {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Async module resolve hook for module '%s' (relative to %p), "
+                  "global %p",
+                  gjs_debug_string(specifier).c_str(),
+                  &importing_module_priv.toObject(), global.get());
+    } else {
+        gjs_debug(GJS_DEBUG_IMPORTER,
+                  "Async module resolve hook for module '%s' (unknown path), "
+                  "global %p",
+                  gjs_debug_string(specifier).c_str(), global.get());
+    }
 
     JS::RootedValueArray<2> args(cx);
     args[0].set(importing_module_priv);
