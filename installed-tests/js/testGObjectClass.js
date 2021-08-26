@@ -1293,3 +1293,34 @@ describe('GObject class with JSObject signals', function () {
     });
 });
 
+describe('GObject class with int64 properties', function () {
+    const MyInt64Class = GObject.registerClass(class MyInt64Class extends GObject.Object {
+        static [GObject.properties] = {
+            'int64': GObject.ParamSpec.int64('int64', 'int64', 'int64',
+                GObject.ParamFlags.READABLE | GObject.ParamFlags.WRITABLE | GObject.ParamFlags.CONSTRUCT,
+                // GLib.MAXINT64 exceeds JS' ability to safely represent an integer
+                GLib.MININT32 * 2, GLib.MAXINT32 * 2, 0),
+        };
+    });
+
+    it('can set an int64 property', function () {
+        const instance = new MyInt64Class({
+            int64: GLib.MAXINT32,
+        });
+
+        expect(instance.int64).toBe(GLib.MAXINT32);
+
+        instance.int64 = GLib.MAXINT32 + 1;
+
+        expect(instance.int64).toBe(GLib.MAXINT32 + 1);
+    });
+
+
+    it('can construct with int64 property', function () {
+        const instance = new MyInt64Class({
+            int64: GLib.MAXINT32 + 1,
+        });
+
+        expect(instance.int64).toBe(GLib.MAXINT32 + 1);
+    });
+});
