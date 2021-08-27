@@ -137,6 +137,26 @@ function _init() {
             }
             return Gi.build_object_list(values);
         };
+
+        const _update_relation = Gtk.Accessible.prototype.update_relation;
+
+        Gtk.Accessible.prototype.update_relation = function update_relation(relations, values) {
+            const mappedValues = values.map((value, i) => {
+                const relation = relations[i];
+                if (relation === Gtk.AccessibleRelation.LABELLED_BY) {
+                    if (value instanceof GObject.Value)
+                        return value;
+
+
+                    const list = Gtk.AccessibleRelationList(value);
+                    return list;
+                }
+
+                return value;
+            });
+
+            _update_relation.call(this, relations, mappedValues);
+        };
     }
 }
 
