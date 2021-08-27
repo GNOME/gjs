@@ -136,8 +136,6 @@ class GjsContextPrivate : public JS::JobQueue {
     void stop_draining_job_queue(void);
     static gboolean drain_job_queue_idle_handler(void* data);
 
-    void warn_about_unhandled_promise_rejections(void);
-
     uint8_t handle_exit_code(const char* type, const char* identifier,
                              GError** error);
     [[nodiscard]] bool auto_profile_enter(void);
@@ -245,6 +243,7 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(void);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+    void warn_about_unhandled_promise_rejections();
 
     void register_notifier(DestroyNotify notify_func, void* data);
     void unregister_notifier(DestroyNotify notify_func, void* data);
