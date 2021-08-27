@@ -355,6 +355,39 @@ gjs_value_to_g_value_internal(JSContext      *context,
                               GValue         *gvalue,
                               bool            no_copy)
 {
+    if (value.isObject()) {
+        JS::RootedObject obj(context, &value.toObject());
+        GType gtype;
+
+        if (!gjs_gtype_get_actual_gtype(context, obj, &gtype))
+            return false;
+
+        // Don't unbox GValue if the GValue's gtype is GObject.Value
+        if (gtype == G_TYPE_VALUE && G_VALUE_TYPE(gvalue) != G_TYPE_VALUE) {
+            GValue* source = BoxedBase::to_c_ptr<GValue>(context, obj);
+            // Only initialize the value if it doesn't have a type
+            // and our source GValue has been initialized
+            GType source_gtype = G_VALUE_TYPE(source);
+            if (G_VALUE_TYPE(gvalue) == 0) {
+                if (source_gtype == 0) {
+                    gjs_throw(context, "GObject.Value is not initialized with a type");
+                    return false;
+                }
+
+                g_value_init(gvalue, source_gtype);
+            }
+            
+            GType dest_gtype = G_VALUE_TYPE(gvalue);
+            if (!g_value_type_compatible(source_gtype, dest_gtype)) {
+                gjs_throw(context, "GObject.Value expected GType %s, found %s", g_type_name(dest_gtype), g_type_name(source_gtype));
+                return false;
+            }
+
+            g_value_copy(source, gvalue);
+            return true;
+        }
+    }
+
     GType gtype;
     bool out_of_range = false;
 
