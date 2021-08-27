@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -19,6 +20,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <jsapi.h>       // for JS_GetElement
 
+#include "gi/boxed.h"
 #include "gi/gobject.h"
 #include "gi/gtype.h"
 #include "gi/interface.h"
@@ -393,6 +395,62 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_build_object_list(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject object(cx);
+    if (!gjs_parse_call_args(cx, "build_object_list", args, "o", "array",
+                             &object))
+        return false;
+
+    bool is_array;
+    if (!JS::IsArrayObject(cx, object, &is_array))
+        return false;
+
+    if (!is_array) {
+        gjs_throw(cx, "Expected array object.");
+        return false;
+    }
+
+    uint32_t length;
+    if (!JS::GetArrayLength(cx, object, &length))
+        return false;
+
+    GList* list = nullptr;
+    for (uint32_t i = 0; i < length; i++) {
+        JS::RootedValue v_elem(cx);
+        JS_GetElement(cx, object, i, &v_elem);
+        if (!v_elem.isObject()) {
+            gjs_throw(cx, "Unexpected non-object in array.");
+            return false;
+        }
+
+        JS::RootedObject elem(cx, &v_elem.toObject());
+        ObjectInstance* instance = ObjectInstance::for_js(cx, elem);
+        if (!instance) {
+            gjs_throw(cx, "Object does not inherit from GObject.Object");
+            return false;
+        }
+
+        list = g_list_append(list, instance->ptr());
+    }
+
+    GValue value = G_VALUE_INIT;
+    g_value_init(&value, G_TYPE_POINTER);
+    g_value_set_pointer(&value, list);
+
+    GjsAutoBaseInfo boxed_info =
+        g_irepository_find_by_name(nullptr, "GObject", "Value");
+    JS::RootedObject value_obj(
+        cx, BoxedInstance::new_for_c_struct(cx, boxed_info, &value));
+    if (!value_obj)
+        return false;
+
+    args.rval().setObject(*value_obj);
+    return true;
+}
+
 template <GjsSymbolAtom GjsAtoms::*member>
 GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
                                                       unsigned argc,
@@ -409,6 +467,7 @@ static JSFunctionSpec private_module_funcs[] = {
           GJS_MODULE_PROP_FLAGS),
     JS_FN("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
     JS_FN("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
+    JS_FN("build_object_list", gjs_build_object_list, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
 };
 

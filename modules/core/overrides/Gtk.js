@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna
 
 const Legacy = imports._legacy;
+const Gi = imports._gi;
 const {Gio, GjsPrivate, GObject} = imports.gi;
 
 let Gtk;
@@ -125,6 +126,17 @@ function _init() {
                     handlerName, swapped, connectObject);
             }
         });
+    }
+
+    if (Gtk.Accessible.prototype.update_relation) {
+        Gtk.AccessibleRelationList = function AccessibleRelationList(values) {
+            if (Array.isArray(values)) {
+                const incorrectValues = values.filter(value => !(value instanceof Gtk.Accessible));
+                if (incorrectValues.length !== 0)
+                    throw new Error(`Found objects not inheriting from Gtk.Accessible: ${incorrectValues.map(value => `${value}`).join(', ')}.`);
+            }
+            return Gi.build_object_list(values);
+        };
     }
 }
 

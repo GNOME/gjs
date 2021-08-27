@@ -376,10 +376,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
                 g_value_init(gvalue, source_gtype);
             }
-            
+
             GType dest_gtype = G_VALUE_TYPE(gvalue);
             if (!g_value_type_compatible(source_gtype, dest_gtype)) {
-                gjs_throw(context, "GObject.Value expected GType %s, found %s", g_type_name(dest_gtype), g_type_name(source_gtype));
+                gjs_throw(context, "GObject.Value expected GType %s, found %s",
+                          g_type_name(dest_gtype), g_type_name(source_gtype));
                 return false;
             }
 
