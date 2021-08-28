@@ -310,7 +310,8 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
     if (!ObjectPrototype::define_class(cx, module, nullptr, instance_type,
-                                       &constructor, &prototype))
+                                       iface_types, n_interfaces, &constructor,
+                                       &prototype))
         return false;
 
     auto* priv = ObjectPrototype::for_js(cx, prototype);

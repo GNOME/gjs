@@ -368,7 +368,8 @@ gjs_define_info(JSContext       *context,
             } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
                 JS::RootedObject ignored1(context), ignored2(context);
                 if (!ObjectPrototype::define_class(context, in_object, info,
-                                                   gtype, &ignored1, &ignored2))
+                                                   gtype, nullptr, 0, &ignored1,
+                                                   &ignored2))
                     return false;
             } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
                 JS::RootedObject ignored(context);
