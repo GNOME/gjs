@@ -103,6 +103,17 @@ const loop = new GLib.MainLoop(null, false);
 loop.run();
 EOF
 
+# this is similar to exit.js but should exit with an unhandled promise rejection
+cat <<EOF >promiseexit.js
+const {GLib} = imports.gi;
+const System = imports.system;
+const loop = GLib.MainLoop.new(null, false);
+Promise.reject();
+GLib.idle_add(GLib.PRIORITY_LOW, () => System.exit(42));
+GLib.timeout_add_seconds(GLib.PRIORITY_HIGH, 3, () => loop.quit());
+loop.run();
+EOF
+
 total=0
 
 report () {
@@ -156,8 +167,14 @@ if test -z $VALGRIND; then
     ASAN_OPTIONS=detect_leaks=0 $gjs exit.js
     test $? -ne 0
     report "System.exit() should still exit across an FFI boundary"
+
+    # https://gitlab.gnome.org/GNOME/gjs/-/issues/417
+    output="$(ASAN_OPTIONS=detect_leaks=0 $gjs promiseexit.js 2>&1)"
+    test $? -ne 0 && printf '%s' "$output" | grep -q "Unhandled promise rejection"
+    report "Unhandled promise rejections should still be printed when exiting"
 else
     skip "System.exit() should still exit across an FFI boundary" "running under valgrind"
+    skip "Unhandled promise rejections should still be printed when exiting" "running under valgrind"
 fi
 
 # ensure the encoding of argv is being properly handled
@@ -323,6 +340,7 @@ else
     skip "exit after first System.exit call in a signal callback" "running under valgrind"
 fi
 
-rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js signalexit.js
+rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js \
+    signalexit.js promiseexit.js
 
 echo "1..$total"
