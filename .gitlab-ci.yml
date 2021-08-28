@@ -86,7 +86,7 @@ sanitizer_gcc:
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
-    TEST_OPTS: --timeout-multiplier=2
+    TEST_OPTS: --timeout-multiplier=3
   except:
     - schedules
 
@@ -99,7 +99,7 @@ sanitizer_thread_gcc:
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-tsan-check"
     CONFIG_OPTS: -Db_sanitize=thread
-    TEST_OPTS: --timeout-multiplier=2 --suite=thread-safe
+    TEST_OPTS: --timeout-multiplier=3 --suite=thread-safe
   except:
     - schedules
 
@@ -323,7 +323,7 @@ sanitizer_clang:
     CC: clang
     CXX: clang++
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
-    TEST_OPTS: --timeout-multiplier=2
+    TEST_OPTS: --timeout-multiplier=3
   when: manual
   except:
     - schedules
