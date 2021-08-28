@@ -308,12 +308,13 @@ import_module_init(JSContext       *context,
                               &error)) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
-            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+            !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND)) {
             gjs_throw_gerror_message(context, error);
-        else
-            g_error_free(error);
+            return false;
+        }
 
-        return false;
+        g_error_free(error);
+        return true;
     }
     g_assert(script);
 
@@ -350,10 +351,8 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
     if (!module_obj)
         return nullptr;
 
-    if (!import_module_init(cx, file, module_obj)) {
-        JS_ClearPendingException(cx);
-        return module_obj;
-    }
+    if (!import_module_init(cx, file, module_obj))
+        return nullptr;
 
     if (!JS_DefinePropertyById(cx, in_object, atoms.module_init(), module_obj,
                                GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))

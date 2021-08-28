@@ -3,4 +3,5 @@
 
 installed-tests/js/jasmine.js
 installed-tests/js/modules/badOverrides/WarnLib.js
+installed-tests/js/modules/subBadInit/__init__.js
 modules/script/jsUnit.js
