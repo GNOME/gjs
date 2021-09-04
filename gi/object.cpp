@@ -1568,11 +1568,8 @@ ObjectInstance::disassociate_js_gobject(void)
     m_wrapper_finalized = true;
 }
 
-bool
-ObjectInstance::init_impl(JSContext              *context,
-                          const JS::CallArgs&     args,
-                          JS::MutableHandleObject object)
-{
+bool ObjectInstance::init_impl(JSContext* context, const JS::CallArgs& args,
+                               JS::HandleObject object) {
     g_assert(gtype() != G_TYPE_NONE);
 
     if (args.length() > 1 &&
@@ -1622,8 +1619,14 @@ ObjectInstance::init_impl(JSContext              *context,
     ObjectInstance *other_priv = ObjectInstance::for_gobject(gobj);
     if (other_priv && other_priv->m_wrapper != object.get()) {
         /* g_object_new_with_properties() returned an object that's already
-         * tracked by a JS object. Let's assume this is a singleton like
-         * IBus.IBus and return the existing JS wrapper object.
+         * tracked by a JS object.
+         *
+         * This typically occurs in one of two cases:
+         * - This object is a singleton like IBus.IBus
+         * - This object passed itself to JS before g_object_new_* returned
+         *
+         * In these cases, return the existing JS wrapper object instead
+         * of creating a new one.
          *
          * 'object' has a value that was originally created by
          * JS_NewObjectForConstructor in GJS_NATIVE_CONSTRUCTOR_PRELUDE, but
@@ -1642,7 +1645,7 @@ ObjectInstance::init_impl(JSContext              *context,
             toggle_ref_added = m_uses_toggle_ref;
         }
 
-        object.set(other_priv->m_wrapper);
+        args.rval().setObject(*other_priv->m_wrapper);
 
         if (toggle_ref_added)
             g_clear_object(&gobj); /* We already own a reference */
@@ -2331,7 +2334,7 @@ bool ObjectBase::init_gobject(JSContext* context, unsigned argc,
     std::string dynamicString = priv->format_name() + "._init";
     AutoProfilerLabel label(context, "", dynamicString.c_str());
 
-    return priv->to_instance()->init_impl(context, argv, &obj);
+    return priv->to_instance()->init_impl(context, argv, obj);
 }
 
 // clang-format off

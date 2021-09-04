@@ -26,13 +26,15 @@ function _init() {
     }
 
     Gtk.Widget.prototype._init = function (params) {
-        if (this.constructor[Gtk.template]) {
+        let wrapper = this;
+
+        if (wrapper.constructor[Gtk.template]) {
             if (!BuilderScope) {
-                Gtk.Widget.set_connect_func.call(this.constructor,
+                Gtk.Widget.set_connect_func.call(wrapper.constructor,
                     (builder, obj, signalName, handlerName, connectObj, flags) => {
                         const swapped = flags & GObject.ConnectFlags.SWAPPED;
                         const closure = _createClosure(
-                            builder, this, handlerName, swapped, connectObj);
+                            builder, wrapper, handlerName, swapped, connectObj);
 
                         if (flags & GObject.ConnectFlags.AFTER)
                             obj.connect_after(signalName, closure);
@@ -42,21 +44,23 @@ function _init() {
             }
         }
 
-        GObject.Object.prototype._init.call(this, params);
+        wrapper = GObject.Object.prototype._init.call(wrapper, params) ?? wrapper;
 
-        if (this.constructor[Gtk.template]) {
-            let children = this.constructor[Gtk.children] || [];
+        if (wrapper.constructor[Gtk.template]) {
+            let children = wrapper.constructor[Gtk.children] || [];
             for (let child of children) {
-                this[child.replace(/-/g, '_')] =
-                    this.get_template_child(this.constructor, child);
+                wrapper[child.replace(/-/g, '_')] =
+                    wrapper.get_template_child(wrapper.constructor, child);
             }
 
-            let internalChildren = this.constructor[Gtk.internalChildren] || [];
+            let internalChildren = wrapper.constructor[Gtk.internalChildren] || [];
             for (let child of internalChildren) {
-                this[`_${child.replace(/-/g, '_')}`] =
-                    this.get_template_child(this.constructor, child);
+                wrapper[`_${child.replace(/-/g, '_')}`] =
+                    wrapper.get_template_child(wrapper.constructor, child);
             }
         }
+
+        return wrapper;
     };
 
     Gtk.Widget._classInit = function (klass) {
