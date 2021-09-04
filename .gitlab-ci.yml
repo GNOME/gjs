@@ -253,11 +253,9 @@ iwyu:
   when: on_success
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
-  variables:
-    CONFIG_OPTS: -Db_pch=false
   script:
     - test/test-ci.sh UPSTREAM_BASE
-    - meson setup _build
+    - meson setup _build -Db_pch=false
     - include-what-you-use --version
     - ./tools/run_iwyu.sh ci-upstream-base
   only:
