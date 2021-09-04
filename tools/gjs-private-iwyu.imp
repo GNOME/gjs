@@ -13,6 +13,7 @@
   {"include": ["<bits/types/siginfo_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/struct_itimerspec.h>", "private", "<time.h>", "public"]},
   {"include": ["<bits/types/timer_t.h>", "private", "<sys/types.h>", "public"]},
+  {"include": ["@<bits/termios-.*>", "private", "<termios.h>", "public"]},
 
   {"include": ["@<ffi.*>", "private", "<ffi.h>", "public"]},
   {"include": ["@\"gio/.*\"", "private", "<gio/gio.h>", "public"]},

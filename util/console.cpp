@@ -11,6 +11,11 @@
 #    include <io.h>
 #endif
 
+#ifdef HAVE_TERMIOS_H
+#    include <stdlib.h>
+#    include <termios.h>
+#endif
+
 #include <glib.h>
 
 #include "util/console.h"
