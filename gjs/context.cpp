@@ -1325,9 +1325,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         return false;
     }
 
-    bool ok = true;
-    if (!JS::ModuleEvaluate(m_cx, obj))
-        ok = false;
+    bool ok = JS::ModuleEvaluate(m_cx, obj);
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
