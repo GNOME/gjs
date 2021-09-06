@@ -450,7 +450,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
         JSContext* cx, const JS::CallArgs& args);
     GJS_JSAPI_RETURN_CONVENTION
     bool init_impl(JSContext* cx, const JS::CallArgs& args,
-                   JS::MutableHandleObject obj);
+                   JS::HandleObject obj);
     [[nodiscard]] const char* to_string_kind() const;
 
     GJS_JSAPI_RETURN_CONVENTION

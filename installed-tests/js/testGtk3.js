@@ -301,4 +301,21 @@ describe('Gtk overrides', function () {
         win.style_get_property('decoration-button-layout', value);
         expect(value.get_string()).not.toEqual('EMPTY');
     });
+
+    it('can pass a parent object to a child at construction', function () {
+        const frame = new Gtk.Frame();
+        let frameChild = null;
+        frame.connect('add', (_widget, child) => {
+            frameChild = child;
+        });
+        const widget = new Gtk.Label({parent: frame});
+
+        expect(widget).toBe(frameChild);
+        expect(widget instanceof Gtk.Label).toBeTruthy();
+        expect(frameChild instanceof Gtk.Label).toBeTruthy();
+
+        expect(frameChild.visible).toBe(false);
+        expect(() => widget.show()).not.toThrow();
+        expect(frameChild.visible).toBe(true);
+    });
 });
