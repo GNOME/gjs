@@ -1,3 +1,27 @@
+Version 1.69.90
+---------------
+
+- Closed bugs and merge requests:
+
+  * Update ESLint to v8 [!657, Evan Welsh]
+  * gi: Enable pending tests which are now correctly handled [!658, Evan Welsh]
+  * gi: Return null if return argument is a pointer type [!659, Evan Welsh]
+  * gi: Assume native enums are signed, avoid asserting. [!660, Evan Welsh]
+  * Fix cppcheck failure [!661, Philip Chimento]
+  * Strange behavior for strings with NUL character [#285, !662, Evan Welsh]
+  * 64-bit int GObject properties have some problems with values > G_MAXINT32
+    [#92, !663, Evan Welsh]
+  * Crash on dynamic import in interactive interpreter [#429, !666, Evan Welsh]
+  * 1.69.1: gjs test suite is failing when gjs is build with -DG_DISABLE_ASSERT
+    [#436, !667, Evan Welsh]
+  * function: Warn about unhandled promise rejections in System.exit() [!669,
+    Philip Chimento]
+  * attempting to wrap a new GObject mid-construction blows up [#50, !675, Evan
+    Welsh]
+  * Fix IWYU CI job [!676, Evan Welsh]
+
+- Build fixes [Evan Welsh, Philip Chimento]
+
 Version 1.69.2
 --------------
 
