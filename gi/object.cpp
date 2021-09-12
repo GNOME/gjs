@@ -2375,11 +2375,35 @@ JSPropertySpec ObjectBase::proto_properties[] = {
 bool ObjectPrototype::get_parent_proto(JSContext* cx,
                                        JS::MutableHandleObject proto) const {
     GType parent_type = g_type_parent(gtype());
-    if (parent_type != G_TYPE_INVALID) {
-        proto.set(gjs_lookup_object_prototype(cx, parent_type));
-        if (!proto)
-            return false;
+    if (parent_type == G_TYPE_INVALID) {
+        proto.set(nullptr);
+        return true;
     }
+
+    JSObject* prototype = gjs_lookup_object_prototype(cx, parent_type);
+    if (!prototype)
+        return false;
+
+    proto.set(prototype);
+    return true;
+}
+
+bool ObjectPrototype::get_parent_constructor(
+    JSContext* cx, JS::MutableHandleObject constructor) const {
+    GType parent_type = g_type_parent(gtype());
+
+    if (parent_type == G_TYPE_INVALID) {
+        constructor.set(nullptr);
+        return true;
+    }
+
+    JS::RootedValue v_constructor(cx);
+    if (!gjs_lookup_object_constructor(cx, parent_type, &v_constructor))
+        return false;
+
+    g_assert(v_constructor.isObject() &&
+             "gjs_lookup_object_constructor() should always produce an object");
+    constructor.set(&v_constructor.toObject());
     return true;
 }
 
@@ -2400,15 +2424,25 @@ bool ObjectPrototype::define_class(
     JSContext* context, JS::HandleObject in_object, GIObjectInfo* info,
     GType gtype, GType* interface_gtypes, uint32_t n_interface_gtypes,
     JS::MutableHandleObject constructor, JS::MutableHandleObject prototype) {
-    if (!ObjectPrototype::create_class(context, in_object, info, gtype,
-                                       constructor, prototype))
+    ObjectPrototype* priv = ObjectPrototype::create_class(
+        context, in_object, info, gtype, constructor, prototype);
+    if (!priv)
         return false;
 
-    ObjectPrototype* priv = ObjectPrototype::for_js(context, prototype);
     if (interface_gtypes) {
         for (uint32_t n = 0; n < n_interface_gtypes; n++) {
             priv->m_interface_gtypes.push_back(interface_gtypes[n]);
         }
+    }
+
+    JS::RootedObject parent_constructor(context);
+    if (!priv->get_parent_constructor(context, &parent_constructor))
+        return false;
+    // If this is a fundamental constructor (e.g. GObject.Object) the
+    // parent constructor may be null.
+    if (parent_constructor) {
+        if (!JS_SetPrototype(context, constructor, parent_constructor))
+            return false;
     }
 
     // hook_up_vfunc and the signal handler matcher functions can't be included
