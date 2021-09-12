@@ -1706,7 +1706,7 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
 
     case GI_TYPE_TAG_ARRAY: {
         GjsAutoPointer<void> data;
-        gsize length;
+        size_t length;
         GIArrayType array_type = g_type_info_get_array_type(type_info);
 
         /* First, let's handle the case where we're passed an instance
