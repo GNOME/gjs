@@ -1,3 +1,8 @@
+Version 1.68.4
+--------------
+
+- Build fix backported from the development branch. [#436, !667, Evan Welsh]
+
 Version 1.68.3
 --------------
 
