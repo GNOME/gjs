@@ -12,6 +12,8 @@
     <file>modules/badOverrides/Gio.js</file>
     <file>modules/badOverrides/Regress.js</file>
     <file>modules/badOverrides/WarnLib.js</file>
+    <file>modules/subBadInit/__init__.js</file>
+    <file>modules/subErrorInit/__init__.js</file>
     <file>modules/data.txt</file>
     <file>modules/encodings.json</file>
     <file>modules/dynamic.js</file>

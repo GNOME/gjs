@@ -176,6 +176,14 @@ describe('Importer', function () {
         expect(subB.testImporterFunction()).toEqual('__init__ function tested');
     });
 
+    it('throws on an __init__.js file with a syntax error', function () {
+        expect(() => imports.subBadInit.SOMETHING).toThrowError(SyntaxError);
+    });
+
+    it('throws when an __init__.js throws an error', function () {
+        expect(() => imports.subErrorInit.SOMETHING).toThrowError('a bad init!');
+    });
+
     it('accesses a class defined in an __init__.js file', function () {
         let o = new subB.ImporterClass();
         expect(o).not.toBeNull();
