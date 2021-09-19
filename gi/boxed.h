@@ -89,6 +89,7 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     int m_default_constructor;  // -1 if none
     JS::Heap<jsid> m_default_constructor_name;
     std::unique_ptr<FieldMap> m_field_map;
+    bool m_can_allocate_directly_without_pointers : 1;
     bool m_can_allocate_directly : 1;
 
     explicit BoxedPrototype(GIStructInfo* info, GType gtype);
@@ -101,6 +102,9 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     // Accessors
 
  public:
+    [[nodiscard]] bool can_allocate_directly_without_pointers() const {
+        return m_can_allocate_directly_without_pointers;
+    }
     [[nodiscard]] bool can_allocate_directly() const {
         return m_can_allocate_directly;
     }

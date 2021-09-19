@@ -70,4 +70,13 @@ describe('GObject should', function () {
             expect(gtype.name).toEqual(type);
         });
     });
+
+    it('be able to query signals', function () {
+        const query = GObject.signal_query(1);
+
+        expect(query instanceof GObject.SignalQuery).toBeTruthy();
+        expect(query.param_types).not.toBeNull();
+        expect(Array.isArray(query.param_types)).toBeTruthy();
+        expect(query.signal_id).toBe(1);
+    });
 });
