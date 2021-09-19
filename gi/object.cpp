@@ -1823,7 +1823,7 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
         */
         JS::RootedObject ignored(context);
         if (!ObjectPrototype::define_class(context, in_object, nullptr, gtype,
-                                           &constructor, &ignored))
+                                           nullptr, 0, &constructor, &ignored))
             return nullptr;
     } else {
         if (G_UNLIKELY (!value.isObject()))
@@ -2396,14 +2396,20 @@ bool ObjectPrototype::get_parent_proto(JSContext* cx,
  * constructor and prototype objects as out parameters, for convenience
  * elsewhere.
  */
-bool ObjectPrototype::define_class(JSContext* context,
-                                   JS::HandleObject in_object,
-                                   GIObjectInfo* info, GType gtype,
-                                   JS::MutableHandleObject constructor,
-                                   JS::MutableHandleObject prototype) {
+bool ObjectPrototype::define_class(
+    JSContext* context, JS::HandleObject in_object, GIObjectInfo* info,
+    GType gtype, GType* interface_gtypes, uint32_t n_interface_gtypes,
+    JS::MutableHandleObject constructor, JS::MutableHandleObject prototype) {
     if (!ObjectPrototype::create_class(context, in_object, info, gtype,
                                        constructor, prototype))
         return false;
+
+    ObjectPrototype* priv = ObjectPrototype::for_js(context, prototype);
+    if (interface_gtypes) {
+        for (uint32_t n = 0; n < n_interface_gtypes; n++) {
+            priv->m_interface_gtypes.push_back(interface_gtypes[n]);
+        }
+    }
 
     // hook_up_vfunc and the signal handler matcher functions can't be included
     // in gjs_object_instance_proto_funcs because they are custom symbols.
@@ -2692,20 +2698,26 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
      * This is awful, so abort now. */
     g_assert(info != NULL);
 
-    GjsAutoVFuncInfo vfunc = find_vfunc_on_parents(info, name.get(), nullptr);
+    GjsAutoVFuncInfo vfunc = g_object_info_find_vfunc(info, name.get());
+    // Search the parent type chain
+    while (!vfunc && info_gtype != G_TYPE_OBJECT) {
+        info_gtype = g_type_parent(info_gtype);
 
+        info = g_irepository_find_by_gtype(nullptr, info_gtype);
+        if (info)
+            vfunc = g_object_info_find_vfunc(info, name.get());
+    }
+
+    // If the vfunc doesn't exist in the parent
+    // type chain, loop through the explicitly
+    // defined interfaces...
     if (!vfunc) {
-        guint i, n_interfaces;
-        GType *interface_list;
-
-        interface_list = g_type_interfaces(m_gtype, &n_interfaces);
-
-        for (i = 0; i < n_interfaces; i++) {
+        for (GType interface_gtype : m_interface_gtypes) {
             GjsAutoInterfaceInfo interface =
-                g_irepository_find_by_gtype(nullptr, interface_list[i]);
+                g_irepository_find_by_gtype(nullptr, interface_gtype);
 
-            /* The interface doesn't have to exist -- it could be private
-             * or dynamic. */
+            // Private and dynamic interfaces (defined in JS) do not have type
+            // info.
             if (interface) {
                 vfunc = g_interface_info_find_vfunc(interface, name.get());
 
@@ -2713,8 +2725,40 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                     break;
             }
         }
+    }
 
-        g_free(interface_list);
+    // If the vfunc is still not found, it could exist on an interface
+    // implemented by a parent. This is an error, as hooking up the vfunc
+    // would create an implementation on the interface itself. In this
+    // case, print a more helpful error than...
+    // "Could not find definition of virtual function"
+    //
+    // See https://gitlab.gnome.org/GNOME/gjs/-/issues/89
+    if (!vfunc) {
+        unsigned n_interfaces;
+        GjsAutoPointer<GType> interface_list =
+            g_type_interfaces(m_gtype, &n_interfaces);
+
+        for (unsigned i = 0; i < n_interfaces; i++) {
+            GjsAutoInterfaceInfo interface =
+                g_irepository_find_by_gtype(nullptr, interface_list[i]);
+
+            if (interface) {
+                GjsAutoVFuncInfo parent_vfunc =
+                    g_interface_info_find_vfunc(interface, name.get());
+
+                if (parent_vfunc) {
+                    GjsAutoChar identifier = g_strdup_printf(
+                        "%s.%s", interface.ns(), interface.name());
+                    gjs_throw(cx,
+                              "%s does not implement %s, add %s to your "
+                              "implements array",
+                              g_type_name(m_gtype), identifier.get(),
+                              identifier.get());
+                    return false;
+                }
+            }
+        }
     }
 
     if (!vfunc) {

@@ -462,6 +462,53 @@ describe('GObject class with decorator', function () {
         expect(new Derived().toString()).toMatch(
             /\[object instance wrapper GType:Gjs_Derived jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
+
+    it('does not clobber native parent interface vfunc definitions', function () {
+        const resetImplementationSpy = jasmine.createSpy('vfunc_reset');
+        expect(() => {
+            // This is a random interface in Gio with a virtual function
+            GObject.registerClass({
+                // Forgotten interface
+                // Implements: [Gio.Converter],
+            }, class MyZlibConverter extends Gio.ZlibCompressor {
+                vfunc_reset() {
+                    resetImplementationSpy();
+                }
+            });
+        }).toThrowError('Gjs_MyZlibConverter does not implement Gio.Converter, add Gio.Converter to your implements array');
+
+        let potentiallyClobbered = new Gio.ZlibCompressor();
+        potentiallyClobbered.reset();
+
+        expect(resetImplementationSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not clobber dynamic parent interface vfunc definitions', function () {
+        const resetImplementationSpy = jasmine.createSpy('vfunc_reset');
+
+        const MyJSConverter = GObject.registerClass({
+            Implements: [Gio.Converter],
+        }, class MyJSConverter extends GObject.Object {
+            vfunc_reset() {
+            }
+        });
+
+        expect(() => {
+            GObject.registerClass({
+                // Forgotten interface
+                // Implements: [Gio.Converter],
+            }, class MyBadConverter extends MyJSConverter {
+                vfunc_reset() {
+                    resetImplementationSpy();
+                }
+            });
+        }).toThrowError('Gjs_MyBadConverter does not implement Gio.Converter, add Gio.Converter to your implements array');
+
+        let potentiallyClobbered = new MyJSConverter();
+        potentiallyClobbered.reset();
+
+        expect(resetImplementationSpy).not.toHaveBeenCalled();
+    });
 });
 
 describe('GObject virtual function', function () {

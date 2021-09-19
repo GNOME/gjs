@@ -8,6 +8,7 @@
 #include <config.h>
 
 #include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint32_t
 
 #include <forward_list>
 #include <functional>
@@ -198,6 +199,9 @@ class ObjectPrototype
     NegativeLookupCache m_unresolvable_cache;
     // a list of vfunc GClosures installed on this prototype, used when tracing
     std::forward_list<GClosure*> m_vfuncs;
+    // a list of interface types explicitly associated with this prototype,
+    // by gjs_add_interface
+    std::vector<GType> m_interface_gtypes;
 
     ObjectPrototype(GIObjectInfo* info, GType gtype);
     ~ObjectPrototype();
@@ -243,6 +247,8 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext* cx, JS::HandleObject in_object,
                              GIObjectInfo* info, GType gtype,
+                             GType* interface_gtypes,
+                             uint32_t n_interface_gtypes,
                              JS::MutableHandleObject constructor,
                              JS::MutableHandleObject prototype);
 
