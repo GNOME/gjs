@@ -234,7 +234,8 @@ gdbus_test_description = configure_file(
     install_dir: installed_tests_metadir)
 
 if get_option('installed_tests')
-    install_data('testGDBus.js', install_dir: installed_js_tests_dir)
+    install_data('matchers.js', 'testGDBus.js',
+        install_dir: installed_js_tests_dir)
 endif
 
 # tests using ES modules are also separate because they need an extra
