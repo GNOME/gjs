@@ -44,10 +44,8 @@ enum class GjsArgumentFlags : uint8_t {
                                               GjsArgumentType arg_type);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_to_arg(JSContext      *context,
-                      JS::HandleValue value,
-                      GIArgInfo      *arg_info,
-                      GIArgument     *arg);
+bool gjs_value_to_callback_out_arg(JSContext* context, JS::HandleValue value,
+                                   GIArgInfo* arg_info, GIArgument* arg);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
