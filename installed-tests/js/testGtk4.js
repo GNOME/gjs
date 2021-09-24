@@ -184,6 +184,10 @@ describe('Gtk overrides', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
     });
 
+    it('static inheritance works', function () {
+        expect(MyComplexGtkSubclass.get_css_name()).toEqual('complex-subclass');
+    });
+
     it('can create a Gtk.TreeIter with accessible stamp field', function () {
         const iter = new Gtk.TreeIter();
         iter.stamp = 42;

@@ -174,6 +174,10 @@ describe('Gtk overrides', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
     });
 
+    it('static inheritance works', function () {
+        expect(MyComplexGtkSubclass.get_css_name()).toEqual('complex-subclass');
+    });
+
     it('avoid crashing when GTK vfuncs are called in garbage collection', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
             '*during garbage collection*');

@@ -215,6 +215,9 @@ class ObjectPrototype
  private:
     GJS_JSAPI_RETURN_CONVENTION
     bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const;
+    GJS_JSAPI_RETURN_CONVENTION
+    bool get_parent_constructor(JSContext* cx,
+                                JS::MutableHandleObject constructor) const;
 
     [[nodiscard]] bool is_vfunc_unchanged(GIVFuncInfo* info);
     static void vfunc_invalidated_notify(void* data, GClosure* closure);
