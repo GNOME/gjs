@@ -552,9 +552,10 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_IN)
                 continue;
 
-            if (!gjs_value_to_arg(context, rval, &arg_info,
-                                  get_argument_for_arg_info(&arg_info, args,
-                                                            i + c_args_offset)))
+            if (!gjs_value_to_callback_out_arg(
+                    context, rval, &arg_info,
+                    get_argument_for_arg_info(&arg_info, args,
+                                              i + c_args_offset)))
                 return false;
 
             break;
@@ -607,9 +608,10 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 return false;
 
-            if (!gjs_value_to_arg(context, elem, &arg_info,
-                                  get_argument_for_arg_info(&arg_info, args,
-                                                            i + c_args_offset)))
+            if (!gjs_value_to_callback_out_arg(
+                    context, elem, &arg_info,
+                    get_argument_for_arg_info(&arg_info, args,
+                                              i + c_args_offset)))
                 return false;
 
             elem_idx++;
