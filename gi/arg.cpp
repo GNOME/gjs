@@ -1861,16 +1861,30 @@ void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg) {
     }
 }
 
-bool
-gjs_value_to_arg(JSContext      *context,
-                 JS::HandleValue value,
-                 GIArgInfo      *arg_info,
-                 GIArgument     *arg)
-{
+bool gjs_value_to_callback_out_arg(JSContext* context, JS::HandleValue value,
+                                   GIArgInfo* arg_info, GIArgument* arg) {
+    GIDirection direction [[maybe_unused]] = g_arg_info_get_direction(arg_info);
+    g_assert(
+        (direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) &&
+        "gjs_value_to_callback_out_arg does not handle in arguments.");
+
     GjsArgumentFlags flags = GjsArgumentFlags::NONE;
     GITypeInfo type_info;
 
     g_arg_info_load_type(arg_info, &type_info);
+
+    // If the argument is optional and we're passed nullptr,
+    // ignore the GJS value.
+    if (g_arg_info_is_optional(arg_info) && !arg)
+        return true;
+
+    // Otherwise, throw an error to prevent a segfault.
+    if (!arg) {
+        gjs_throw(context,
+                  "Return value %s is not optional but was passed NULL",
+                  g_base_info_get_name(arg_info));
+        return false;
+    }
 
     if (g_arg_info_may_be_null(arg_info))
         flags |= GjsArgumentFlags::MAY_BE_NULL;
