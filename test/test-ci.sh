@@ -116,7 +116,7 @@ fi
 # Show some environment info
 do_Print_Labels  'ENVIRONMENT'
 echo "Running on: $BASE $OS"
-echo "Job: $TASK_ID"
+echo "Job: $CI_JOB_NAME"
 echo "Configure options: ${CONFIG_OPTS-$BUILD_OPTS}"
 echo "Doing: $1 $extra_opts"
 

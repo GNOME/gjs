@@ -33,7 +33,6 @@ build-alpine-image:
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "coverage"
     coverage: '/^  lines.*(\d+\.\d+\%)/'
   script:
     - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
@@ -72,7 +71,6 @@ build_recommended:
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:job-1538227_fedora.mozjs78-debug  # pinned on purpose
   variables:
-    TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
   except:
     - schedules
@@ -84,7 +82,6 @@ sanitizer_gcc:
     - asan # LSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-ubsan_asan-check"
     CONFIG_OPTS: -Db_sanitize=address,undefined
     TEST_OPTS: --timeout-multiplier=3
   except:
@@ -99,7 +96,6 @@ sanitizer_thread_gcc:
     - asan # TSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-tsan-check"
     CONFIG_OPTS: -Db_sanitize=thread
     TEST_OPTS: --timeout-multiplier=3
   except:
@@ -113,7 +109,6 @@ build_maximal:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-clang-default-maximal-check"
     CC: clang
     CXX: clang++
     CONFIG_OPTS: -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
@@ -130,7 +125,6 @@ build_minimal:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
   variables:
-    TASK_ID: "ubuntu-x86_64-gcc-default-minimal-check"
     CONFIG_OPTS: >-
       -Dbuildtype=release
       -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
@@ -142,7 +136,6 @@ build_unity:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-unity-check"
     # unity-size here is forced to use an high number to check whether we can
     # join all the sources together, but should not be used in real world to
     # not to break multi-jobs compilation
@@ -207,8 +200,6 @@ cpplint:
   extends:
     - .fdo.distribution-image@alpine
     - .gjs-alpine
-  variables:
-    TASK_ID: "cpplint"
   script:
     - cpplint --version
     - test/test-ci.sh CPPLINT
@@ -319,7 +310,6 @@ sanitizer_clang:
     - asan # LSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-clang_ubsan_asan-default-default-check"
     CC: clang
     CXX: clang++
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
@@ -333,7 +323,6 @@ installed_tests:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-default-installed_tests"
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
     TEST: skip
   when: manual
@@ -350,7 +339,6 @@ valgrind:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-default-default-valgrind_check"
     TEST_OPTS: --setup=valgrind
   allow_failure: true
   when: manual
@@ -363,7 +351,6 @@ zeal_2:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal2"
     TEST_OPTS: --setup=extra_gc
   when: manual
   except:
@@ -374,7 +361,6 @@ zeal_4:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal4"
     TEST_OPTS: --setup=pre_verify
   when: manual
   except:
@@ -385,7 +371,6 @@ zeal_11:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
-    TASK_ID: "fedora-x86_64-gcc-debug-default-check_zeal11"
     TEST_OPTS: --setup=post_verify
   when: manual
   except:
