@@ -47,4 +47,4 @@ gjs_tests_internal = executable('gjs-tests-internal',
 test('Internal API tests', gjs_tests_internal,
     args: ['--tap', '--keep-going', '--verbose'],
     env: tests_environment, protocol: 'tap',
-    suite: ['C', 'thread-safe'])
+    suite: 'C')

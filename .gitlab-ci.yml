@@ -92,14 +92,16 @@ sanitizer_gcc:
 
 sanitizer_thread_gcc:
   <<: *build
-  stage: test
+  stage: manual
+  when: manual
+  allow_failure: true
   tags:
     - asan # TSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-tsan-check"
     CONFIG_OPTS: -Db_sanitize=thread
-    TEST_OPTS: --timeout-multiplier=3 --suite=thread-safe
+    TEST_OPTS: --timeout-multiplier=3
   except:
     - schedules
 
