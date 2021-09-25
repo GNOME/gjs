@@ -1030,7 +1030,7 @@ describe('Auto accessor generation', function () {
 const MyObjectWithJSObjectProperty = GObject.registerClass({
     Properties: {
         'jsobj-prop': GObject.ParamSpec.jsobject('jsobj-prop', 'jsobj-prop', 'jsobj-prop',
-            GObject.ParamFlags.CONSTRUCT | GObject.ParamFlags.READWRITE, ''),
+            GObject.ParamFlags.CONSTRUCT | GObject.ParamFlags.READWRITE),
     },
 }, class MyObjectWithJSObjectProperty extends GObject.Object {
 });
