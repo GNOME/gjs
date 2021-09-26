@@ -3,7 +3,7 @@
 
 # === Build stage ===
 
-FROM registry.fedoraproject.org/fedora:33 AS build
+FROM registry.fedoraproject.org/fedora:34 AS build
 ARG MOZJS_BRANCH=mozjs78
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
@@ -17,9 +17,9 @@ RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 WORKDIR /root
 
 RUN mkdir -p include-what-you-use/_build
-ADD https://include-what-you-use.org/downloads/include-what-you-use-0.15.src.tar.gz /root/include-what-you-use/
+ADD https://include-what-you-use.org/downloads/include-what-you-use-0.16.src.tar.gz /root/include-what-you-use/
 WORKDIR /root/include-what-you-use
-RUN tar xzf include-what-you-use-0.15.src.tar.gz
+RUN tar xzf include-what-you-use-0.16.src.tar.gz --strip-components=1
 
 WORKDIR /root/include-what-you-use/_build
 
@@ -43,7 +43,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:33
+FROM registry.fedoraproject.org/fedora:34
 
 ENV SHELL=/bin/bash
 
