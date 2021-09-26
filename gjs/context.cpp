@@ -313,14 +313,15 @@ gjs_context_class_init(GjsContextClass *klass)
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
-        char *priv_typelib_dir = g_build_filename (basedir, "lib", "gjs", "girepository-1.0", NULL);
-        g_free (basedir);
+        GjsAutoChar basedir =
+            g_win32_get_package_installation_directory_of_module(gjs_dll);
+        GjsAutoChar priv_typelib_dir = g_build_filename(
+            basedir, "lib", "gjs", "girepository-1.0", nullptr);
 #else
-        char *priv_typelib_dir = g_build_filename (PKGLIBDIR, "girepository-1.0", NULL);
+        GjsAutoChar priv_typelib_dir =
+            g_build_filename(PKGLIBDIR, "girepository-1.0", nullptr);
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
-    g_free (priv_typelib_dir);
     }
 
     gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
