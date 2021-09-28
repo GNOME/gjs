@@ -44,6 +44,7 @@ class PromiseJobDispatcher::Source : public GSource {
     GjsAutoMainContext m_main_context;
     // The cancellable that stops this source.
     GjsAutoUnref<GCancellable> m_cancellable;
+    GjsAutoPointer<GSource, GSource, g_source_unref> m_cancellable_source;
 
     // G_PRIORITY_HIGH is normally -100, we set 10 times that to ensure our
     // source always has the greatest priority. This means our prepare will
@@ -68,8 +69,12 @@ class PromiseJobDispatcher::Source : public GSource {
         // next one to execute. (it will starve the other sources)
         g_source_set_ready_time(this, -1);
 
+        // A reference to the current cancellable is needed in case any
+        // jobs reset PromiseJobDispatcher and thus replace the cancellable.
+        GjsAutoUnref<GCancellable> cancellable(m_cancellable,
+                                               GjsAutoTakeOwnership{});
         // Drain the job queue.
-        m_gjs->runJobs(m_gjs->context(), m_cancellable);
+        m_gjs->runJobs(m_gjs->context(), cancellable);
 
         return G_SOURCE_CONTINUE;
     }
@@ -85,7 +90,8 @@ class PromiseJobDispatcher::Source : public GSource {
     Source(GjsContextPrivate* gjs, GMainContext* main_context)
         : m_gjs(gjs),
           m_main_context(main_context, GjsAutoTakeOwnership()),
-          m_cancellable(g_cancellable_new()) {
+          m_cancellable(g_cancellable_new()),
+          m_cancellable_source(g_cancellable_source_new(m_cancellable)) {
         g_source_set_priority(this, PRIORITY);
 #if GLIB_CHECK_VERSION(2, 70, 0)
         g_source_set_static_name(this, "GjsPromiseJobQueueSource");
@@ -93,18 +99,18 @@ class PromiseJobDispatcher::Source : public GSource {
         g_source_set_name(this, "GjsPromiseJobQueueSource");
 #endif
 
-        GjsAutoPointer<GSource, GSource, g_source_unref> cancellable_source =
-            g_cancellable_source_new(m_cancellable);
         // Add our cancellable source to our main source,
         // this will trigger the main source if our cancellable
         // is cancelled.
-        g_source_add_child_source(this, cancellable_source);
+        g_source_add_child_source(this, m_cancellable_source);
     }
 
     void* operator new(size_t size) {
         return g_source_new(&source_funcs, size);
     }
     void operator delete(void* p) { g_source_unref(static_cast<GSource*>(p)); }
+
+    bool is_running() { return !!g_source_get_context(this); }
 
     /**
      * @brief Trigger the cancellable, detaching our source.
@@ -115,7 +121,21 @@ class PromiseJobDispatcher::Source : public GSource {
      * overriding a previous cancel() call. Called by start() in
      * PromiseJobDispatcher to ensure the custom source will start.
      */
-    void reset() { g_cancellable_reset(m_cancellable); }
+    void reset() {
+        if (!g_cancellable_is_cancelled(m_cancellable))
+            return;
+
+        if (is_running())
+            g_source_remove_child_source(this, m_cancellable_source);
+        else
+            g_source_destroy(m_cancellable_source);
+
+        // Drop the old cancellable and create a new one, as per
+        // https://docs.gtk.org/gio/method.Cancellable.reset.html
+        m_cancellable = g_cancellable_new();
+        m_cancellable_source = g_cancellable_source_new(m_cancellable);
+        g_source_add_child_source(this, m_cancellable_source);
+    }
 };
 
 GSourceFuncs PromiseJobDispatcher::Source::source_funcs = {
@@ -139,9 +159,7 @@ PromiseJobDispatcher::~PromiseJobDispatcher() {
     g_source_destroy(m_source.get());
 }
 
-bool PromiseJobDispatcher::is_running() {
-    return !!g_source_get_context(m_source.get());
-}
+bool PromiseJobDispatcher::is_running() { return m_source->is_running(); }
 
 void PromiseJobDispatcher::start() {
     // Reset the cancellable
