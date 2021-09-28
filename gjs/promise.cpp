@@ -69,7 +69,7 @@ class PromiseJobDispatcher::Source : public GSource {
         g_source_set_ready_time(this, -1);
 
         // Drain the job queue.
-        m_gjs->runJobs(m_gjs->context());
+        m_gjs->runJobs(m_gjs->context(), m_cancellable);
 
         return G_SOURCE_CONTINUE;
     }

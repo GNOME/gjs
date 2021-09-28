@@ -943,10 +943,12 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
 
 // Override of JobQueue::runJobs(). Called by js::RunJobs(), and when execution
 // of the job queue was interrupted by the debugger and is resuming.
-void GjsContextPrivate::runJobs(JSContext* cx) {
+void GjsContextPrivate::runJobs(JSContext* cx) { runJobs(cx, nullptr); }
+
+void GjsContextPrivate::runJobs(JSContext* cx, GCancellable* cancellable) {
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
-    if (!run_jobs_fallible())
+    if (!run_jobs_fallible(cancellable))
         gjs_log_exception(cx);
 }
 
@@ -962,7 +964,7 @@ void GjsContextPrivate::runJobs(JSContext* cx) {
  * Returns: false if one of the jobs threw an uncatchable exception;
  * otherwise true.
  */
-bool GjsContextPrivate::run_jobs_fallible(void) {
+bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
     bool retval = true;
 
     if (m_draining_job_queue || m_should_exit)
@@ -979,7 +981,7 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
      * it's crucial to recheck the queue length during each iteration. */
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         /* A previous job might have set this flag. e.g., System.exit(). */
-        if (m_should_exit)
+        if (m_should_exit || g_cancellable_is_cancelled(cancellable))
             break;
 
         job = m_job_queue[ix];
