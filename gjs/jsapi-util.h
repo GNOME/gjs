@@ -151,12 +151,8 @@ struct GjsAutoPointer {
         m_ptr = ptr;
 
         if constexpr (has_free_function()) {
-            if (old_ptr) {
-                if constexpr (std::is_array_v<T>)
-                    free_func(reinterpret_cast<T*>(old_ptr));
-                else
-                    free_func(old_ptr);
-            }
+            if (old_ptr)
+                free_func(reinterpret_cast<F*>(old_ptr));
         }
     }
 
@@ -172,7 +168,9 @@ struct GjsAutoPointer {
     [[nodiscard]] constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> copy()
         const {
         static_assert(has_ref_function(), "No ref function provided");
-        return m_ptr ? reinterpret_cast<Ptr>(ref_func(m_ptr)) : nullptr;
+        return m_ptr ? reinterpret_cast<Ptr>(
+                           ref_func(reinterpret_cast<F*>(m_ptr)))
+                     : nullptr;
     }
 
     template <typename C>

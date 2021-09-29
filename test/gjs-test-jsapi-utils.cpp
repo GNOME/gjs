@@ -173,6 +173,19 @@ static void test_gjs_autopointer_dtor_no_free_pointer() {
     g_assert_cmpstr(autoptr, ==, "DO NOT FREE ME");
 }
 
+static void gobject_free(GObject* p) { g_object_unref(p); }
+static GObject* gobject_copy(GObject* p) {
+    return static_cast<GObject*>(g_object_ref(p));
+}
+
+static void test_gjs_autopointer_cast_free_func_type() {
+    // No assertions; this test fails to compile if the casts are wrong
+    using TypedAutoPointer =
+        GjsAutoPointer<GjsTestObject, GObject, gobject_free, gobject_copy>;
+    TypedAutoPointer autoptr{gjs_test_object_new()};
+    TypedAutoPointer copy{autoptr.copy()};
+}
+
 static void test_gjs_autopointer_assign_operator() {
     GjsAutoTestObject autoptr;
     auto* ptr = gjs_test_object_new();
@@ -557,6 +570,8 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
     g_test_add_func(
         "/gjs/jsapi-utils/gjs-autopointer/destructor/no_free_pointer",
         test_gjs_autopointer_dtor_no_free_pointer);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/free_and_ref_funcs",
+                    test_gjs_autopointer_cast_free_func_type);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/c++",
                     test_gjs_autopointer_dtor_cpp);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/destructor/c++-array",
