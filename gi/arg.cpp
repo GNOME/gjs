@@ -2755,9 +2755,7 @@ gjs_value_from_g_argument (JSContext             *context,
         } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
             if (g_type_info_is_zero_terminated(type_info)) {
                 GjsAutoBaseInfo param_info =
-                    g_type_info_get_interface(type_info);
-
-                param_info = g_type_info_get_param_type(type_info, 0);
+                    g_type_info_get_param_type(type_info, 0);
                 g_assert(param_info != nullptr);
 
                 return gjs_array_from_zero_terminated_c_array(
