@@ -809,6 +809,8 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 #else
         gjs_search_path.push_back(GJS_JS_DIR);
 #endif
+
+        search_path_initialized = true;
     }
 
     return gjs_search_path;
