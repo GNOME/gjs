@@ -243,12 +243,6 @@ void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
   g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
 }
 
-typedef struct WriterFuncData {
-    GjsGLogWriterFunc func;
-    void* wrapped_user_data;
-    GDestroyNotify wrapped_user_data_free;
-} WriterFuncData;
-
 static void* log_writer_user_data = NULL;
 static GDestroyNotify log_writer_user_data_free = NULL;
 
