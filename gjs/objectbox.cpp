@@ -84,16 +84,14 @@ ObjectBox::ObjectBox(JSObject* obj)
 ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
     ObjectBox* box = nullptr;
 
-    for (auto* b : m_wrappers) {
-        if (b->m_impl->m_root == obj) {
-            box = b;
-            box->m_impl->ref();
-            box->m_impl->debug("Reusing box");
-            break;
-        }
-    }
-
-    if (!box) {
+    ObjectBox** found =
+        std::find_if(m_wrappers.begin(), m_wrappers.end(),
+                     [obj](ObjectBox* b) { return b->m_impl->m_root == obj; });
+    if (found != m_wrappers.end()) {
+        box = *found;
+        box->m_impl->ref();
+        box->m_impl->debug("Reusing box");
+    } else {
         box = new ObjectBox(obj);
         if (!box->m_impl->init(cx))
             return ObjectBox::Ptr(nullptr, [](ObjectBox*) {});
