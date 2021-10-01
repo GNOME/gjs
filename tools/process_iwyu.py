@@ -80,8 +80,6 @@ FALSE_POSITIVES = (
     # https://bugzilla.mozilla.org/show_bug.cgi?id=1713550
     ('gi/function.cpp', '#include <utility>', 'for forward'),
     ('gi/ns.cpp', '#include <utility>', 'for forward'),
-    ('gi/value.cpp', '#include <utility>', 'for forward'),
-    ('gjs/importer.cpp', '#include <utility>', 'for forward'),
     ('gjs/module.cpp', '#include <utility>', 'for forward'),
     ('gjs/objectbox.cpp', '#include <utility>', 'for forward'),
 

@@ -10,7 +10,6 @@ installed_tests_metadir = abs_datadir / 'installed-tests' / meson.project_name()
 # Simple shell script tests #
 
 simple_tests = []
-non_thread_safe = ['CommandLineModules']
 
 # The test scripts need to be ported from shell scripts
 # for clang-cl builds, which do not use BASH-style shells
@@ -24,14 +23,9 @@ endif
 
 foreach test : simple_tests
     test_file = files('scripts' / 'test@0@.sh'.format(test))
-    suite = ['Scripts']
-    if test not in non_thread_safe
-        suite += 'thread-safe'
-    endif
 
     test(test, test_file, env: tests_environment, protocol: 'tap',
-         suite: suite)
-    
+         suite: 'Scripts')
 
     test_description_subst = {
         'name': 'test@0@.sh'.format(test),
@@ -86,7 +80,7 @@ foreach test : debugger_tests
 
     test('@0@ command'.format(test), debugger_test_driver,
         args: test_file, env: tests_environment, protocol: 'tap',
-        suite: ['Debugger', 'thread-safe'])
+        suite: 'Debugger')
 
     test_description_subst = {
         'name': '@0@.debugger'.format(test),

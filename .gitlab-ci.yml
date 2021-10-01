@@ -70,7 +70,7 @@ build-alpine-image:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-1005801_fedora.mozjs78-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-1538227_fedora.mozjs78-debug  # pinned on purpose
   variables:
     TASK_ID: "fedora-x86_64-gcc-debug-default-check"
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
@@ -92,14 +92,16 @@ sanitizer_gcc:
 
 sanitizer_thread_gcc:
   <<: *build
-  stage: test
+  stage: manual
+  when: manual
+  allow_failure: true
   tags:
     - asan # TSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs78-debug
   variables:
     TASK_ID: "fedora-x86_64-gcc-default-tsan-check"
     CONFIG_OPTS: -Db_sanitize=thread
-    TEST_OPTS: --timeout-multiplier=3 --suite=thread-safe
+    TEST_OPTS: --timeout-multiplier=3
   except:
     - schedules
 
