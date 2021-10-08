@@ -1405,19 +1405,19 @@ bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
 /*
  * GjsContextPrivate::eval_with_scope:
  * @scope_object: an object to use as the global scope, or nullptr
- * @script: JavaScript program encoded in UTF-8
- * @script_len: length of @script, or -1 if @script is 0-terminated
- * @filename: filename to use as the origin of @script
- * @retval: location for the return value of @script
+ * @source: JavaScript program encoded in UTF-8
+ * @source_len: length of @source, or -1 if @source is 0-terminated
+ * @filename: filename to use as the origin of @source
+ * @retval: location for the return value of @source
  *
- * Executes @script with a local scope so that nothing from the script leaks out
- * into the global scope.
- * If @scope_object is given, then everything that @script placed in the global
+ * Executes @source with a local scope so that nothing from the source code
+ * leaks out into the global scope.
+ * If @scope_object is given, then everything that @source placed in the global
  * namespace is defined on @scope_object.
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
-                                        const char* script, ssize_t script_len,
+                                        const char* source, ssize_t source_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
     /* log and clear exception if it's set (should not be, normally...) */
@@ -1433,7 +1433,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     long items_written;  // NOLINT(runtime/int) - this type required by GLib API
     GError* error;
     GjsAutoChar16 utf16_string =
-        g_utf8_to_utf16(script, script_len,
+        g_utf8_to_utf16(source, source_len,
                         /* items_read = */ nullptr, &items_written, &error);
     if (!utf16_string)
         return gjs_throw_gerror_message(m_cx, error);
