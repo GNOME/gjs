@@ -190,7 +190,7 @@ JSObject* gjs_byte_array_from_byte_array(JSContext* cx, GByteArray* array) {
 
 GBytes* gjs_byte_array_get_bytes(JSObject* obj) {
     bool is_shared_memory;
-    uint32_t len;
+    size_t len;
     uint8_t* data;
 
     js::GetUint8ArrayLengthAndData(obj, &len, &is_shared_memory, &data);
