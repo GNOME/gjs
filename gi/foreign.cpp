@@ -16,12 +16,13 @@
 #include "gjs/jsapi-util.h"
 
 static struct {
-    char *gi_namespace;
-    char *module; // relative to "imports."
+    const char* gi_namespace;
     bool loaded;
 } foreign_modules[] = {
-    { (char*)"cairo", (char*)"cairo", false },
-    { NULL }
+    // clang-format off
+    {"cairo", false},
+    {nullptr}
+    // clang-format on
 };
 
 static GHashTable* foreign_structs_table = NULL;

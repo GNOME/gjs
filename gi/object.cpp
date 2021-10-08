@@ -2793,9 +2793,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                 }
             }
         }
-    }
 
-    if (!vfunc) {
+        // Fall back to less helpful error message
         gjs_throw(cx, "Could not find definition of virtual function %s",
                   name.get());
         return false;
