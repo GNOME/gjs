@@ -109,6 +109,8 @@ endif
 
 ### Check for required libraries ###############################################
 
+null_dep = dependency('', required : false)
+
 # Note: Notify GNOME release team when adding or updating dependencies
 glib_required_version = '>= 2.66.0'
 glib = dependency('glib-2.0', version: glib_required_version,
@@ -178,6 +180,20 @@ if readline.found() and not cxx.links(readline_code, dependencies: readline)
 readline library. Configure with -Dreadline=disabled to skip the readline
 features.''')
     endif
+endif
+
+if cxx.links('''
+#include <atomic>
+
+int main(void)
+{
+  std::atomic_int64_t value = ATOMIC_VAR_INIT(0);
+  return value.load();
+}
+''', name: '64-bit atomics built-in')
+    libatomic = null_dep
+else
+    libatomic = cc.find_library('atomic', required: false)
 endif
 
 build_profiler = sysprof_capture.found() and not get_option('profiler').disabled()
@@ -458,7 +474,7 @@ module_resource_srcs = gnome.compile_resources('js-resources',
     c_name: 'js_resources')
 
 libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey,
-    readline]
+    readline, libatomic]
 pkg_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey]
 libraries_private = []
 
