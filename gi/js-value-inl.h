@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <config.h>
+
 #include <stdint.h>
 #include <limits>
 #include <type_traits>

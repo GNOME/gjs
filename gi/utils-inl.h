@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <type_traits>  // IWYU pragma: keep
