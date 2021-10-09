@@ -4,9 +4,9 @@
 # === Build stage ===
 
 FROM registry.fedoraproject.org/fedora:34 AS build
-ARG MOZJS_BRANCH=mozjs78
+ARG MOZJS_BRANCH=mozjs91
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
-ARG BUILD_OPTS=AUTOCONF=autoconf
+ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
