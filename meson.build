@@ -524,14 +524,6 @@ if host_machine.system() == 'windows'
     libgjs_cpp_args += ['-DWIN32', '-DXP_WIN', '-DWIN32_LEAN_AND_MEAN']
 endif
 
-pch_headers = ['gjs/gjs_pch.hh']
-if get_option('b_pch') and not meson.version().version_compare('>= 0.59.0')
-    if cxx.get_id() == 'gcc'
-        warning('Precompiled headers not supported with g++ and meson versions earlier than 0.59.0')
-        pch_headers = []
-    endif
-endif
-
 # This dependency should provide everything that is needed to compile gjs except
 # the sources themselves, is used to copmile both the static libraries and the
 # tests
@@ -548,7 +540,7 @@ internal_build_dep = declare_dependency(
 
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
-    cpp_pch: pch_headers,
+    cpp_pch: 'gjs/gjs_pch.hh',
     dependencies: internal_build_dep,
     install: false)
 
@@ -557,7 +549,7 @@ libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
 # library so that we compile its sources just once.
 libgjs_internal = static_library('gjs-internal',
     libgjs_sources, probes_header, probes_objfile,
-    cpp_pch: pch_headers,
+    cpp_pch: 'gjs/gjs_pch.hh',
     dependencies: internal_build_dep,
     link_with: libgjs_jsapi)
 
@@ -770,6 +762,5 @@ message('\n'.join([
     'Use readline for input in interactive shell and debugger: @0@'.format(
         build_readline),
     'Build profiler (Linux only): @0@'.format(build_profiler),
-    'Build with precompiled headers: @0@'.format(get_option('b_pch') and
-        pch_headers.length() > 0),
+    'Build with precompiled headers: @0@'.format(get_option('b_pch')),
 ]))
