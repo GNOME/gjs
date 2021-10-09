@@ -7,11 +7,18 @@
 #include <config.h>
 
 #include <stdint.h>
+
+#include <cmath>  // for isnan
 #include <limits>
-#include <type_traits>
 
 #include <girepository.h>
+#include <glib-object.h>
+#include <glib.h>
+
 #include <js/Conversions.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 
 #include "gi/gtype.h"
 #include "gi/value.h"

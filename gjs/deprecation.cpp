@@ -23,7 +23,6 @@
 #include <jsfriendapi.h>  // for FormatStackDump
 
 #include "gjs/deprecation.h"
-#include "gjs/jsapi-util.h"  // IWYU pragma: keep
 #include "gjs/macros.h"
 
 const char* messages[] = {

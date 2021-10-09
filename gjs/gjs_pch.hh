@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstddef>
 #include <deque>
 #include <forward_list>
