@@ -69,7 +69,7 @@ Note that the wrapped T in `JS::PersistentRooted<T>` is the location of your val
 Here is the trickier part. If you create an object, say:
 
 ```c++
-JSObject *obj = JS_New(cx, whatever, ...);
+JSObject* obj = JS_NewPlainObject(cx);
 ```
 
 `obj` is NOT now referenced by any other object. If the GC ran right away, `obj` would be collected.
@@ -84,7 +84,7 @@ Any SpiderMonkey APIs that can cause a garbage collection will force you to use 
 So instead of the above code, you would write
 
 ```c++
-JS::RootedObject obj(cx, JS_New(cx, whatever, ...));
+JS::RootedObject obj(cx, JS_NewPlainObject(cx));
 ```
 
 ### JSFunctionSpec and extra local roots ###

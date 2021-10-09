@@ -10,7 +10,7 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
-#include <js/Id.h>  // for JSID_IS_STRING
+#include <js/Id.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -80,7 +80,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       bool* resolved) {
-        if (!JSID_IS_STRING(id)) {
+        if (!id.isString()) {
             *resolved = false;
             return true;  // not resolved, but no error
         }

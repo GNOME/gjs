@@ -12,7 +12,6 @@
 
 #include <js/Array.h>  // for JS::GetArrayLength,
 #include <js/CallArgs.h>
-#include <js/Id.h>  // for JSID_TO_SYMBOL
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -400,7 +399,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
                                                       JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    args.rval().setSymbol(JSID_TO_SYMBOL((atoms.*member)()));
+    args.rval().setSymbol((atoms.*member)().toSymbol());
     return true;
 }
 

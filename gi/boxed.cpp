@@ -230,13 +230,13 @@ bool BoxedInstance::init_from_props(JSContext* context, JS::Value props_value) {
 
     JS::RootedValue value(context);
     for (ix = 0, length = ids.length(); ix < length; ix++) {
-        if (!JSID_IS_STRING(ids[ix])) {
+        if (!ids[ix].isString()) {
             gjs_throw(context, "Fields hash contained a non-string field");
             return false;
         }
 
         GIFieldInfo* field_info =
-            get_prototype()->lookup_field(context, JSID_TO_STRING(ids[ix]));
+            get_prototype()->lookup_field(context, ids[ix].toString());
         if (!field_info)
             return false;
 

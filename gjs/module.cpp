@@ -94,12 +94,12 @@ class GjsScriptModule {
     /* Carries out the actual execution of the module code */
     GJS_JSAPI_RETURN_CONVENTION
     bool evaluate_import(JSContext* cx, JS::HandleObject module,
-                         const char* script, ssize_t script_len,
+                         const char* source, ssize_t source_len,
                          const char* filename, const char* uri) {
         long items_written;  // NOLINT(runtime/int) - required by GLib API
         GError* error;
         GjsAutoChar16 utf16_string =
-            g_utf8_to_utf16(script, script_len,
+            g_utf8_to_utf16(source, source_len,
                             /* items_read = */ nullptr, &items_written, &error);
         if (!utf16_string)
             return gjs_throw_gerror_message(cx, error);

@@ -45,6 +45,7 @@ if cc.get_id() == 'msvc'
         '-FImsvc_recommended_pragmas.h',
         '-EHsc',
         '-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS', # Don't worry about the C++17 deprecations
+        '-D__PRETTY_FUNCTION__=__FUNCSIG__',
         '-wd4099',
         '-wd4251',
         '-wd4291',

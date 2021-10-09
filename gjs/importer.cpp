@@ -23,7 +23,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
-#include <js/Id.h>        // for PropertyKey, JSID_IS_STRING
+#include <js/Id.h>  // for PropertyKey
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -714,7 +714,7 @@ importer_resolve(JSContext        *context,
                  JS::HandleId      id,
                  bool             *resolved)
 {
-    if (!JSID_IS_STRING(id)) {
+    if (!id.isString()) {
         *resolved = false;
         return true;
     }
@@ -729,7 +729,7 @@ importer_resolve(JSContext        *context,
     gjs_debug_jsprop(GJS_DEBUG_IMPORTER, "Resolve prop '%s' hook, obj %s",
                      gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
 
-    if (!JSID_IS_STRING(id)) {
+    if (!id.isString()) {
         *resolved = false;
         return true;
     }

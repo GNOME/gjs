@@ -627,7 +627,7 @@ bool ObjectPrototype::lazy_define_gobject_property(JSContext* cx,
 
     debug_jsprop("Defining lazy GObject property", id, obj);
 
-    JS::RootedValue private_id(cx, JS::StringValue(JSID_TO_STRING(id)));
+    JS::RootedValue private_id(cx, JS::StringValue(id.toString()));
     if (!gjs_define_property_dynamic(
             cx, obj, name, "gobject_prop", &ObjectBase::prop_getter,
             &ObjectBase::prop_setter, private_id,
@@ -849,7 +849,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
         if (!(g_field_info_get_flags(field_info) & GI_FIELD_IS_WRITABLE))
             flags |= JSPROP_READONLY;
 
-        JS::RootedString key(context, JSID_TO_STRING(id));
+        JS::RootedString key(context, id.toString());
         if (!m_field_cache.putNew(key, field_info.release())) {
             JS_ReportOutOfMemory(context);
             return false;
@@ -1023,11 +1023,11 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
          * doesn't know that */
         prop_id = ids[ix];
 
-        if (!JSID_IS_STRING(prop_id))
+        if (!prop_id.isString())
             return gjs_wrapper_throw_nonexistent_field(
                 context, m_gtype, gjs_debug_id(prop_id).c_str());
 
-        JS::RootedString js_prop_name(context, JSID_TO_STRING(prop_id));
+        JS::RootedString js_prop_name(context, prop_id.toString());
         GParamSpec *param_spec = find_param_spec_from_id(context, js_prop_name);
         if (!param_spec)
             return false;
