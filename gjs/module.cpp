@@ -144,14 +144,12 @@ class GjsScriptModule {
                 GFile           *file)
     {
         GError *error = nullptr;
-        char *unowned_script;
+        GjsAutoChar script;
         size_t script_len = 0;
 
-        if (!(g_file_load_contents(file, nullptr, &unowned_script, &script_len,
+        if (!(g_file_load_contents(file, nullptr, script.out(), &script_len,
                                    nullptr, &error)))
             return gjs_throw_gerror_message(cx, error);
-
-        GjsAutoChar script = unowned_script;  /* steals ownership */
         g_assert(script);
 
         GjsAutoChar full_path = g_file_get_parse_name(file);
