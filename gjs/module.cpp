@@ -6,7 +6,6 @@
 
 #include <stddef.h>     // for size_t
 #include <string.h>
-#include <sys/types.h>  // for ssize_t
 
 #include <string>  // for u16string
 
@@ -49,6 +48,10 @@
 #include "gjs/native.h"
 #include "util/log.h"
 #include "util/misc.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 class GjsScriptModule {
     char *m_name;
@@ -100,22 +103,10 @@ class GjsScriptModule {
     /* Carries out the actual execution of the module code */
     GJS_JSAPI_RETURN_CONVENTION
     bool evaluate_import(JSContext* cx, JS::HandleObject module,
-                         const char* source, ssize_t source_len,
+                         const char* source, size_t source_len,
                          const char* filename, const char* uri) {
-        long items_written;  // NOLINT(runtime/int) - required by GLib API
-        GError* error;
-        GjsAutoChar16 utf16_string =
-            g_utf8_to_utf16(source, source_len,
-                            /* items_read = */ nullptr, &items_written, &error);
-        if (!utf16_string)
-            return gjs_throw_gerror_message(cx, error);
-
-        // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
-        // but that messes up code coverage. See bug
-        // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
-        JS::SourceText<char16_t> buf;
-        if (!buf.init(cx, reinterpret_cast<char16_t*>(utf16_string.get()),
-                      items_written, JS::SourceOwnership::Borrowed))
+        JS::SourceText<mozilla::Utf8Unit> buf;
+        if (!buf.init(cx, source, source_len, JS::SourceOwnership::Borrowed))
             return false;
 
         JS::RootedObjectVector scope_chain(cx);

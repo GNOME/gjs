@@ -56,7 +56,8 @@ static GHashTable* foreign_structs_table = NULL;
         script = g_strdup_printf("imports.%s;", gi_namespace);
         JS::RootedValue retval(context);
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-        if (!gjs->eval_with_scope(nullptr, script, -1, "<internal>", &retval)) {
+        if (!gjs->eval_with_scope(nullptr, script, strlen(script), "<internal>",
+                                  &retval)) {
             g_critical("ERROR importing foreign module %s\n", gi_namespace);
             g_free(script);
             return false;

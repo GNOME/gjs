@@ -91,6 +91,10 @@
 #include "modules/modules.h"
 #include "util/log.h"
 
+namespace mozilla {
+union Utf8Unit;
+}
+
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
 static void     gjs_context_constructed       (GObject               *object);
@@ -1178,10 +1182,12 @@ gjs_context_eval(GjsContext   *js_context,
 {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
+    size_t real_len = script_len < 0 ? strlen(script) : script_len;
+
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
-    return gjs->eval(script, script_len, filename, exit_status_p, error);
+    return gjs->eval(script, real_len, filename, exit_status_p, error);
 }
 
 bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
@@ -1268,7 +1274,7 @@ bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     return false;
 }
 
-bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
+bool GjsContextPrivate::eval(const char* script, size_t script_len,
                              const char* filename, int* exit_status_p,
                              GError** error) {
     AutoResetExit reset(this);
@@ -1428,7 +1434,7 @@ bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
-                                        const char* source, ssize_t source_len,
+                                        const char* source, size_t source_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
     /* log and clear exception if it's set (should not be, normally...) */
@@ -1441,20 +1447,8 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!eval_obj)
         eval_obj = JS_NewPlainObject(m_cx);
 
-    long items_written;  // NOLINT(runtime/int) - this type required by GLib API
-    GError* error;
-    GjsAutoChar16 utf16_string =
-        g_utf8_to_utf16(source, source_len,
-                        /* items_read = */ nullptr, &items_written, &error);
-    if (!utf16_string)
-        return gjs_throw_gerror_message(m_cx, error);
-
-    // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
-    // but that messes up code coverage. See bug
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
-    JS::SourceText<char16_t> buf;
-    if (!buf.init(m_cx, reinterpret_cast<char16_t*>(utf16_string.get()),
-                  items_written, JS::SourceOwnership::Borrowed))
+    JS::SourceText<mozilla::Utf8Unit> buf;
+    if (!buf.init(m_cx, source, source_len, JS::SourceOwnership::Borrowed))
         return false;
 
     JS::RootedObjectVector scope_chain(m_cx);
