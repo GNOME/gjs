@@ -181,7 +181,10 @@ bool Closure::invoke(JS::HandleObject this_obj,
     }
 
     JS::RootedFunction func(m_cx, m_func);
-    if (!JS::Call(m_cx, this_obj, func, args, retval)) {
+    bool ok = JS::Call(m_cx, this_obj, func, args, retval);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
+    gjs->warn_about_unhandled_promise_rejections();
+    if (!ok) {
         /* Exception thrown... */
         gjs_debug_closure(
             "Closure invocation failed (exception should have been thrown) "
@@ -197,7 +200,6 @@ bool Closure::invoke(JS::HandleObject this_obj,
             m_cx);
     }
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     gjs->schedule_gc_if_needed();
     return true;
 }
