@@ -1,3 +1,67 @@
+NEXT
+----
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 91, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 78.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New syntax
+    + Private class fields and methods are now supported. They start with `#`
+      and are not accessible outside the class in which they are defined.
+    + The `??=` logical nullish assignment operator, which assigns the
+      right-hand side value to the left-hand side variable if the variable is
+      null or undefined.
+    + The `&&=` logical-and assignment operator, which assigns the right-hand
+      side value to the left-hand side variable if the variable is truthy.
+    + The `||=` logical-or assignment operator, which assigns the right-hand
+      side value to the left-hand side variable if the variable is falsey.
+    + `export * as ... from ...` can be used to aggregate modules.
+    + Regular expressions add the `d` flag, which if defined causes the
+      resulting match object to have an `indices` property giving the positions
+      in the string where capturing and named groups matched.
+
+  * New APIs
+    + Arrays, strings, and typed arrays have gained the `at()` method, which
+      does the same thing as indexing with square brackets but also allows
+      negative numbers, which count from the end, as in Python.
+    + `Promise.any()`, which is similar to `Promise.race()` but resolves on the
+      first successful sub-promise, instead of the first to resolve.
+    + `Error()` now takes an options object as its second parameter, which may
+      contain a `cause` property. This option is used to indicate when an error
+      is caused by another error, but the first error is caught during error
+      handling.
+    + `WeakRef`, which allows you to hold a reference to an object while still
+      allowing it to be garbage collected.
+    + `dateStyle`, `timeStyle`, `fractionalSecondDigits`, and `dayPeriod` are
+      now accepted as options in `Intl.DateTimeFormat()` and
+      `Date.prototype.toLocaleString()`.
+    + `collation` is now accepted as an option in `Intl.Collator()`.
+    + `Intl.DisplayNames` has been added, which allows you to get translations
+      of language, region, currency, and script names.
+    + `Intl.DateTimeFormat` has gained the `formatRange()` and
+      `formatRangeToParts()` methods.
+
+  * New behaviour
+    + More numbering systems are supported in `Intl.NumberFormat`.
+    + There are a lot of minor behaviour changes as SpiderMonkey's JS
+      implementation conforms ever closer to existing ECMAScript standards and
+      adopts new ones. For complete information, read the Firefox developer
+      release notes:
+      https://developer.mozilla.org/en-US/Firefox/Releases/79#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/80#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/81#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/82#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/83#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/84#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/85#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/86#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/87#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/88#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/89#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/90#JavaScript
+      https://developer.mozilla.org/en-US/Firefox/Releases/91#JavaScript
+
 Version 1.70.0
 --------------
 
