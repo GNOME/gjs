@@ -70,6 +70,7 @@ if cc.get_argument_syntax() == 'msvc'
     add_project_arguments(cxx.get_supported_arguments([
         '-Dssize_t=gssize',  # Windows SDK/MSVC headers do not come with ssize_t
         '-DNOMINMAX',  # We don't want 'min' or 'max' to interfere
+        '-DSSIZE_MAX=G_MAXSSIZE',  # Windows SDK/MSVC headers do not come with SSIZE_MAX
         ]), language: ['cpp', 'c'])
 else
     if get_option('bsymbolic_functions')
