@@ -302,6 +302,63 @@ describe('GObject interface', function () {
         expect(new GObjectImplementingGObjectInterface().toString()).toMatch(
             /\[object instance wrapper GType:Gjs_GObjectImplementingGObjectInterface jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
+
+    describe('prototype', function () {
+        let file, originalDup;
+
+        beforeAll(function () {
+            file = Gio.File.new_for_path('/');
+            originalDup = Gio.File.prototype.dup;
+        });
+
+        it('overrides are inherited by implementing classes', function () {
+            spyOn(Gio.File.prototype, 'dup');
+
+            expect(file).toBeInstanceOf(Gio.File);
+            expect(file).toBeInstanceOf(Gio._LocalFilePrototype.constructor);
+
+            file.dup();
+            expect(Gio.File.prototype.dup).toHaveBeenCalledOnceWith();
+
+            Gio.File.prototype.dup = originalDup;
+            expect(file.dup).toBe(originalDup);
+        });
+
+        it('unknown properties are inherited by implementing classes', function () {
+            Gio.File.prototype._originalDup = originalDup;
+            expect(file._originalDup).toBe(originalDup);
+
+            Gio.File.prototype._originalDup = 5;
+            expect(file._originalDup).toBe(5);
+
+            delete Gio.File.prototype._originalDup;
+            expect(file._originalDup).not.toBeDefined();
+        });
+
+        it('original property can be shadowed by class prototype property', function () {
+            spyOn(Gio._LocalFilePrototype, 'dup').and.returnValue(5);
+
+            expect(file.dup()).toBe(5);
+            expect(Gio._LocalFilePrototype.dup).toHaveBeenCalled();
+        });
+
+        it('overridden property can be shadowed by class prototype property', function () {
+            spyOn(Gio._LocalFilePrototype, 'dup');
+            spyOn(Gio.File.prototype, 'dup');
+
+            file.dup();
+            expect(Gio._LocalFilePrototype.dup).toHaveBeenCalled();
+            expect(Gio.File.prototype.dup).not.toHaveBeenCalled();
+        });
+
+        it('shadowed property can be restored', function () {
+            Gio._LocalFilePrototype.dup = 5;
+            expect(file.dup).toBe(5);
+
+            delete Gio._LocalFilePrototype.dup;
+            expect(file.dup).toBeInstanceOf(Function);
+        });
+    });
 });
 
 describe('Specific class and interface checks', function () {

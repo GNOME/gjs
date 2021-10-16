@@ -51,6 +51,7 @@ class JSTracer;
     macro(name, "name") \
     macro(new_, "new") \
     macro(new_internal, "_new_internal") \
+    macro(override, "override") \
     macro(overrides, "overrides") \
     macro(param_spec, "ParamSpec") \
     macro(parent_module, "__parentModule__") \

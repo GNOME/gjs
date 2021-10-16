@@ -509,6 +509,10 @@ function _init() {
     // Temporary Gio.File.prototype fix
     Gio._LocalFilePrototype = Gio.File.new_for_path('/').constructor.prototype;
 
+    Gio.File.prototype.replace_contents_async = function replace_contents_async(contents, etag, make_backup, flags, cancellable, callback) {
+        return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
+    };
+
     // Override Gio.Settings and Gio.SettingsSchema - the C API asserts if
     // trying to access a nonexistent schema or key, which is not handy for
     // shell-extension writers

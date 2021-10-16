@@ -87,6 +87,10 @@ decltype(ObjectInstance::s_wrapped_gobject_list)
 
 static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
+GJS_JSAPI_RETURN_CONVENTION
+static JSObject* gjs_lookup_object_prototype_from_info(JSContext*,
+                                                       GIObjectInfo*, GType);
+
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
@@ -641,6 +645,127 @@ bool ObjectPrototype::lazy_define_gobject_property(JSContext* cx,
     return true;
 }
 
+// An object shared by the getter and setter to store the interface' prototype
+// and overrides.
+static constexpr size_t ACCESSOR_SLOT = 0;
+
+static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedValue v_accessor(
+        cx, js::GetFunctionNativeReserved(&args.callee(), ACCESSOR_SLOT));
+    g_assert(v_accessor.isObject() && "accessor must be an object");
+    JS::RootedObject accessor(cx, &v_accessor.toObject());
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+    // Check if an override value has been set
+    bool has_override = false;
+    if (!JS_HasPropertyById(cx, accessor, atoms.override(), &has_override))
+        return false;
+    if (has_override)
+        return JS_GetPropertyById(cx, accessor, atoms.override(), args.rval());
+
+    JS::RootedValue v_prototype(cx);
+    if (!JS_GetPropertyById(cx, accessor, atoms.prototype(), &v_prototype))
+        return false;
+    g_assert(v_prototype.isObject() && "prototype must be an object");
+
+    JS::RootedObject prototype(cx, &v_prototype.toObject());
+    JS::RootedId id(cx, JS::PropertyKey::fromNonIntAtom(JS_GetFunctionId(
+                            JS_GetObjectFunction(&args.callee()))));
+    return JS_GetPropertyById(cx, prototype, id, args.rval());
+}
+
+static bool interface_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedValue v_accessor(
+        cx, js::GetFunctionNativeReserved(&args.callee(), ACCESSOR_SLOT));
+    JS::RootedObject accessor(cx, &v_accessor.toObject());
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    return JS_SetPropertyById(cx, accessor, atoms.override(), args[0]);
+}
+
+static bool resolve_on_interface_prototype(JSContext* cx,
+                                           GIObjectInfo* iface_info,
+                                           JS::HandleId identifier,
+                                           JS::HandleObject class_prototype,
+                                           bool* found) {
+    GType gtype = g_base_info_get_type(iface_info);
+    JS::RootedObject interface_prototype(
+        cx, gjs_lookup_object_prototype_from_info(cx, iface_info, gtype));
+    if (!interface_prototype)
+        return false;
+
+    JS::Rooted<JS::PropertyDescriptor> desc(cx);
+    if (!JS_GetPropertyDescriptorById(cx, interface_prototype, identifier,
+                                      &desc))
+        return false;
+
+    // If the property doesn't exist on the interface prototype, we don't need
+    // to perform this trick.
+    if (!desc.object()) {
+        *found = false;
+        return true;
+    }
+
+    // Lazily define a property on the class prototype if a property
+    // of that name is present on an interface prototype that the class
+    // implements.
+    //
+    // Define a property of the same name on the class prototype, with a
+    // getter and setter. This is so that e.g. file.dup() calls the _current_
+    // value of Gio.File.prototype.dup(), not the original, so that it can be
+    // overridden (or monkeypatched).
+    //
+    // The setter (interface_setter() above) marks the property as overridden if
+    // it is set from user code. The getter (interface_getter() above) proxies
+    // the interface prototype's property, unless it was marked as overridden.
+    //
+    // Store the identifier in the getter and setter function's ID slots for
+    // to enable looking up the original value on the interface prototype.
+    JS::RootedObject getter(
+        cx, JS_GetFunctionObject(js::NewFunctionByIdWithReserved(
+                cx, interface_getter, 0, 0, identifier)));
+    if (!getter)
+        return false;
+
+    JS::RootedObject setter(
+        cx, JS_GetFunctionObject(js::NewFunctionByIdWithReserved(
+                cx, interface_setter, 1, 0, identifier)));
+    if (!setter)
+        return false;
+
+    JS::RootedObject accessor(cx, JS_NewPlainObject(cx));
+    if (!accessor)
+        return false;
+
+    js::SetFunctionNativeReserved(setter, ACCESSOR_SLOT,
+                                  JS::ObjectValue(*accessor));
+    js::SetFunctionNativeReserved(getter, ACCESSOR_SLOT,
+                                  JS::ObjectValue(*accessor));
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedValue v_prototype(cx, JS::ObjectValue(*interface_prototype));
+    if (!JS_SetPropertyById(cx, accessor, atoms.prototype(), v_prototype))
+        return false;
+
+    // Copy the original descriptor and remove any value, instead
+    // adding our getter and setter.
+    JS::Rooted<JS::PropertyDescriptor> target_desc(cx, desc);
+    target_desc.setValue(JS::UndefinedHandleValue);
+    target_desc.setAttributes(JSPROP_SETTER | JSPROP_GETTER);
+    target_desc.setGetterObject(getter);
+    target_desc.setSetterObject(setter);
+
+    if (!JS_DefinePropertyById(cx, class_prototype, identifier, target_desc))
+        return false;
+
+    *found = true;
+    return true;
+}
+
 bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name,
@@ -688,7 +813,14 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             g_interface_info_find_method(iface_info, name);
         if (method_info) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                if (!gjs_define_function(cx, obj, m_gtype, method_info))
+                bool found = false;
+                if (!resolve_on_interface_prototype(cx, iface_info, id, obj,
+                                                    &found))
+                    return false;
+
+                // Fallback to defining the function from type info...
+                if (!found &&
+                    !gjs_define_function(cx, obj, m_gtype, method_info))
                     return false;
 
                 *resolved = true;
@@ -696,13 +828,12 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             }
         }
 
-        if (!canonical_name)
-            continue;
 
         /* If the name refers to a GObject property, lazily define the property
          * in JS as we do below in the real resolve hook. We ignore fields here
          * because I don't think interfaces can have fields */
-        if (is_ginterface_property_name(iface_info, canonical_name)) {
+        if (canonical_name &&
+            is_ginterface_property_name(iface_info, canonical_name)) {
             GjsAutoTypeClass<GObjectClass> oclass(m_gtype);
             // unowned
             GParamSpec* pspec = g_object_class_find_property(
@@ -712,6 +843,9 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                                     name);
             }
         }
+
+        return resolve_on_interface_prototype(cx, iface_info, id, obj,
+                                              resolved);
     }
 
     *resolved = false;
@@ -876,8 +1010,10 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
      * introduces the iface)
      */
 
+    GjsAutoBaseInfo implementor_info;
     GjsAutoFunctionInfo method_info =
-        g_object_info_find_method_using_interfaces(m_info, name, nullptr);
+        g_object_info_find_method_using_interfaces(m_info, name,
+                                                   implementor_info.out());
 
     /**
      * Search through any interfaces implemented by the GType;
@@ -896,13 +1032,23 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for %s (%s.%s)",
                   method_info.name(), type_name(), ns(), this->name());
+        if (GI_IS_INTERFACE_INFO(implementor_info)) {
+            bool found = false;
+            if (!resolve_on_interface_prototype(context, implementor_info, id,
+                                                obj, &found))
+                return false;
 
-        if (!gjs_define_function(context, obj, m_gtype, method_info))
+            // If the method was not found fallback to defining the function
+            // from type info...
+            if (!found &&
+                !gjs_define_function(context, obj, m_gtype, method_info)) {
+                return false;
+            }
+        } else if (!gjs_define_function(context, obj, m_gtype, method_info)) {
             return false;
+        }
 
         *resolved = true; /* we defined the prop in obj */
-    } else {
-        *resolved = false;
     }
 
     return true;
