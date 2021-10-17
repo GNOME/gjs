@@ -189,6 +189,16 @@ struct Nullable {
     }
 };
 
+struct Positioned {
+    void set_arg_pos(int pos) {
+        g_assert(pos <= Argument::MAX_ARGS &&
+                 "No more than 253 arguments allowed");
+        m_arg_pos = pos;
+    }
+
+    uint8_t m_arg_pos = 0;
+};
+
 struct Array : BasicType {
     uint8_t m_length_pos = 0;
 
@@ -299,7 +309,7 @@ struct GenericIn : Generic {
                  GIArgument*) override;
 };
 
-struct GenericInOut : GenericIn {
+struct GenericInOut : GenericIn, Positioned {
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -1478,7 +1488,8 @@ std::unique_ptr<T> Argument::make(uint8_t index, const char* name,
                  "name was ignored in RETURN_VALUE parameter");
         arg->set_return_value();
     } else {
-        arg->set_arg_pos(index);
+        if constexpr (std::is_base_of_v<Arg::Positioned, T>)
+            arg->set_arg_pos(index);
         arg->m_arg_name = name;
     }
 

@@ -15,7 +15,6 @@
 
 #include <girepository.h>
 #include <glib-object.h>
-#include <glib.h>  // for g_assert
 
 #include <js/TypeDecls.h>
 
@@ -99,26 +98,18 @@ struct Argument {
  protected:
     Argument() : m_skip_in(false), m_skip_out(false) {}
 
-    void set_arg_pos(int pos) {
-        g_assert(pos <= MAX_ARGS && "No more than 253 arguments allowed");
-        m_arg_pos = pos;
-    }
-
     void set_instance_parameter() {
-        m_arg_pos = INSTANCE_PARAM;
         m_arg_name = "instance parameter";
         m_skip_out = true;
     }
 
     void set_return_value() {
-        m_arg_pos = RETURN_VALUE;
         m_arg_name = "return value";
     }
 
     bool invalid(JSContext*, const char* func = nullptr) const;
 
     const char* m_arg_name = nullptr;
-    uint8_t m_arg_pos = 0;
     bool m_skip_in : 1;
     bool m_skip_out : 1;
 
