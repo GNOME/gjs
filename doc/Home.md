@@ -52,6 +52,7 @@ Third party applications written in GJS:
 * [Flatseal](https://github.com/tchx84/Flatseal)
 * [Almond](https://github.com/stanford-oval/almond-gnome/)
 * [Commit](https://github.com/sonnyp/commit/)
+* [Junction](https://github.com/sonnyp/Junction)
 
 ## Getting Help
 
