@@ -231,6 +231,7 @@ endif
 # minijasmine flag
 
 modules_tests = [
+    'Async',
     'Console',
     'ESModules',
     'Encoding',

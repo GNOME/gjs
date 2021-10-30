@@ -32,6 +32,7 @@ globals:
 overrides:
   - files:
       - matchers.js
+      - testAsync.js
       - testCairoModule.js
       - testConsole.js
       - testESModules.js
