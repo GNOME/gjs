@@ -85,7 +85,10 @@ rules:
   linebreak-style:
     - error
     - unix
-  lines-between-class-members: error
+  lines-between-class-members:
+    - error
+    - always
+    - exceptAfterSingleLine: true
   max-nested-callbacks: error
   max-statements-per-line: error
   new-parens: error
