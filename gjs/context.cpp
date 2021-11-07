@@ -81,6 +81,7 @@
 #include "gjs/objectbox.h"
 #include "gjs/profiler-private.h"
 #include "gjs/profiler.h"
+#include "gjs/promise.h"
 #include "gjs/text-encoding.h"
 #include "modules/modules.h"
 #include "util/log.h"
@@ -405,6 +406,8 @@ void GjsContextPrivate::unregister_notifier(DestroyNotify notify_func,
 
 void GjsContextPrivate::dispose(void) {
     if (m_cx) {
+        stop_draining_job_queue();
+
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Notifying reference holders of GjsContext dispose");
 
@@ -532,8 +535,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     : m_public_context(public_context),
       m_cx(cx),
       m_owner_thread(std::this_thread::get_id()),
+      m_dispatcher(this),
       m_environment_preparer(cx) {
-
     JS_SetGCCallback(
         cx,
         [](JSContext*, JSGCStatus status, JS::GCReason reason, void* data) {
@@ -654,6 +657,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
             cx, "resource:///org/gnome/gjs/modules/esm/_bootstrap/default.js",
             "ESM bootstrap");
     }
+
+    start_draining_job_queue();
 }
 
 void GjsContextPrivate::set_args(std::vector<std::string>&& args) {
@@ -895,32 +900,15 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
 }
 
 void GjsContextPrivate::start_draining_job_queue(void) {
-    if (!m_idle_drain_handler) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Starting promise job queue handler");
-        m_idle_drain_handler = g_idle_add_full(
-            G_PRIORITY_DEFAULT, drain_job_queue_idle_handler, this, nullptr);
-    }
+    gjs_debug(GJS_DEBUG_CONTEXT, "Starting promise job dispatcher");
+    m_dispatcher.start();
 }
 
 void GjsContextPrivate::stop_draining_job_queue(void) {
     m_draining_job_queue = false;
-    if (m_idle_drain_handler) {
-        gjs_debug(GJS_DEBUG_CONTEXT, "Stopping promise job queue handler");
-        g_source_remove(m_idle_drain_handler);
-        m_idle_drain_handler = 0;
-    }
-}
 
-gboolean GjsContextPrivate::drain_job_queue_idle_handler(void* data) {
-    gjs_debug(GJS_DEBUG_CONTEXT, "Promise job queue handler");
-    auto* gjs = static_cast<GjsContextPrivate*>(data);
-    gjs->runJobs(gjs->context());
-    /* Uncatchable exceptions are swallowed here - no way to get a handle on
-     * the main loop to exit it from this idle handler */
-    gjs_debug(GJS_DEBUG_CONTEXT, "Promise job queue handler finished");
-    g_assert(gjs->empty() && gjs->m_idle_drain_handler == 0 &&
-             "GjsContextPrivate::runJobs() should have emptied queue");
-    return G_SOURCE_REMOVE;
+    gjs_debug(GJS_DEBUG_CONTEXT, "Stopping promise job dispatcher");
+    m_dispatcher.stop();
 }
 
 JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
@@ -943,27 +931,24 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
               gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
               gjs_debug_object(allocation_site).c_str());
 
-    if (m_idle_drain_handler)
-        g_assert(!empty());
-    else
-        g_assert(empty());
-
     if (!m_job_queue.append(job)) {
         JS_ReportOutOfMemory(m_cx);
         return false;
     }
 
     JS::JobQueueMayNotBeEmpty(m_cx);
-    start_draining_job_queue();
+    m_dispatcher.start();
     return true;
 }
 
 // Override of JobQueue::runJobs(). Called by js::RunJobs(), and when execution
 // of the job queue was interrupted by the debugger and is resuming.
-void GjsContextPrivate::runJobs(JSContext* cx) {
+void GjsContextPrivate::runJobs(JSContext* cx) { runJobs(cx, nullptr); }
+
+void GjsContextPrivate::runJobs(JSContext* cx, GCancellable* cancellable) {
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
-    if (!run_jobs_fallible())
+    if (!run_jobs_fallible(cancellable))
         gjs_log_exception(cx);
 }
 
@@ -979,7 +964,7 @@ void GjsContextPrivate::runJobs(JSContext* cx) {
  * Returns: false if one of the jobs threw an uncatchable exception;
  * otherwise true.
  */
-bool GjsContextPrivate::run_jobs_fallible(void) {
+bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
     bool retval = true;
 
     if (m_draining_job_queue || m_should_exit)
@@ -996,7 +981,7 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
      * it's crucial to recheck the queue length during each iteration. */
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         /* A previous job might have set this flag. e.g., System.exit(). */
-        if (m_should_exit)
+        if (m_should_exit || g_cancellable_is_cancelled(cancellable))
             break;
 
         job = m_job_queue[ix];
@@ -1032,8 +1017,8 @@ bool GjsContextPrivate::run_jobs_fallible(void) {
         }
     }
 
+    m_draining_job_queue = false;
     m_job_queue.clear();
-    stop_draining_job_queue();
     JS::JobQueueIsEmpty(m_cx);
     return retval;
 }
@@ -1042,14 +1027,12 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
  private:
     GjsContextPrivate* m_gjs;
     JS::PersistentRooted<JobQueueStorage> m_queue;
-    bool m_idle_was_pending : 1;
     bool m_was_draining : 1;
 
  public:
     explicit SavedQueue(GjsContextPrivate* gjs)
         : m_gjs(gjs),
           m_queue(gjs->m_cx, std::move(gjs->m_job_queue)),
-          m_idle_was_pending(gjs->m_idle_drain_handler != 0),
           m_was_draining(gjs->m_draining_job_queue) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Pausing job queue");
         gjs->stop_draining_job_queue();
@@ -1059,8 +1042,7 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
         gjs_debug(GJS_DEBUG_CONTEXT, "Unpausing job queue");
         m_gjs->m_job_queue = std::move(m_queue.get());
         m_gjs->m_draining_job_queue = m_was_draining;
-        if (m_idle_was_pending)
-            m_gjs->start_draining_job_queue();
+        m_gjs->start_draining_job_queue();
     }
 };
 

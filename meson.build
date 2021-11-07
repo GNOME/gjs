@@ -424,6 +424,7 @@ libgjs_sources = [
     'gjs/objectbox.cpp', 'gjs/objectbox.h',
     'gjs/profiler.cpp', 'gjs/profiler-private.h',
     'gjs/text-encoding.cpp', 'gjs/text-encoding.h',
+    'gjs/promise.cpp', 'gjs/promise.h',
     'gjs/stack.cpp',
     'modules/console.cpp', 'modules/console.h',
     'modules/modules.cpp', 'modules/modules.h',

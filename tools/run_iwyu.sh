@@ -71,7 +71,7 @@ for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
     $SRCDIR/gjs/deprecation.cpp $SRCDIR/gjs/error-types.cpp \
     $SRCDIR/gjs/engine.cpp $SRCDIR/gjs/global.cpp $SRCDIR/gjs/importer.cpp \
     $SRCDIR/gjs/jsapi-util*.cpp $SRCDIR/gjs/module.cpp $SRCDIR/gjs/native.cpp \
-    $SRCDIR/gjs/objectbox.cpp $SRCDIR/gjs/stack.cpp \
+    $SRCDIR/gjs/objectbox.cpp $SRCDIR/gjs/promise.cpp $SRCDIR/gjs/stack.cpp \
     $SRCDIR/modules/cairo-*.cpp $SRCDIR/modules/console.cpp \
     $SRCDIR/modules/print.cpp $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp \
     $SRCDIR/util/*.cpp $SRCDIR/libgjs-private/*.c

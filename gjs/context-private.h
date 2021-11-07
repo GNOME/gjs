@@ -17,6 +17,7 @@
 #include <utility>  // for pair
 #include <vector>
 
+#include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -37,6 +38,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/profiler.h"
+#include "gjs/promise.h"
 
 namespace js {
 class SystemAllocPolicy;
@@ -78,7 +80,7 @@ class GjsContextPrivate : public JS::JobQueue {
     std::vector<std::string> m_args;
 
     JobQueueStorage m_job_queue;
-    unsigned m_idle_drain_handler;
+    Gjs::PromiseJobDispatcher m_dispatcher;
 
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
@@ -134,7 +136,6 @@ class GjsContextPrivate : public JS::JobQueue {
     class SavedQueue;
     void start_draining_job_queue(void);
     void stop_draining_job_queue(void);
-    static gboolean drain_job_queue_idle_handler(void* data);
 
     uint8_t handle_exit_code(const char* type, const char* identifier,
                              GError** error);
@@ -236,11 +237,13 @@ class GjsContextPrivate : public JS::JobQueue {
                            JS::HandleObject allocation_site,
                            JS::HandleObject incumbent_global) override;
     void runJobs(JSContext* cx) override;
+    void runJobs(JSContext* cx, GCancellable* cancellable);
     [[nodiscard]] bool empty() const override { return m_job_queue.empty(); }
     js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
         JSContext* cx) override;
 
-    GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(void);
+    GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(
+        GCancellable* cancellable = nullptr);
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
     void warn_about_unhandled_promise_rejections();

@@ -106,6 +106,8 @@ FALSE_POSITIVES = (
      'for remove_reference<>::type'),
     ('gjs/profiler.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
+    ('gjs/promise.cpp', '#include <type_traits>',
+     'for remove_reference<>::type'),
     ('test/gjs-test-jsapi-utils.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
 
