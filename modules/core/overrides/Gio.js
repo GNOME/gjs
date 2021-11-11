@@ -403,7 +403,8 @@ function* _listModelIterator() {
         yield this.get_item(_index++);
 }
 
-function _promisify(proto, asyncFunc, finishFunc) {
+function _promisify(proto, asyncFunc,
+    finishFunc = `${asyncFunc.replace(/_(begin|async)$/, '')}_finish`) {
     if (proto[asyncFunc] === undefined)
         throw new Error(`${proto} has no method named ${asyncFunc}`);
 

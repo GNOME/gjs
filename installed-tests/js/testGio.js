@@ -71,6 +71,11 @@ describe('Promisify function', function () {
     it("doesn't crash when finish function is not defined", function () {
         expect(() => Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'commuicate_utf8_finish')).toThrowError(/commuicate_utf8_finish/);
     });
+
+    it('can guess the finish function', function () {
+        expect(() => Gio._promisify(Gio._LocalFilePrototype, 'read_async')).not.toThrow();
+        expect(() => Gio._promisify(Gio.DBus, 'get')).not.toThrow();
+    });
 });
 
 describe('Gio.Settings overrides', function () {
