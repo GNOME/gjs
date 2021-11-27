@@ -581,7 +581,7 @@ gjs_private_gir = gnome.generate_gir(libgjs,
     includes: ['GObject-2.0', 'Gio-2.0'], sources: libgjs_private_sources,
     namespace: 'GjsPrivate', nsversion: '1.0', identifier_prefix: 'Gjs',
     symbol_prefix: 'gjs_', extra_args: '--warn-error', install: true,
-    install_dir_gir: false, install_dir_typelib: pkglibdir / 'girepository-1.0')
+    install_dir_gir: [false], install_dir_typelib: pkglibdir / 'girepository-1.0')
 gjs_private_typelib = gjs_private_gir[1]
 
 ### Build gjs-console interpreter ##############################################
