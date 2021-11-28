@@ -2797,7 +2797,8 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
 // Overrides GIWrapperInstance::typecheck_impl()
 bool ObjectInstance::typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
                                     GType expected_type) const {
-    g_assert(m_gobj_disposed || gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
+    g_assert(m_gobj_disposed || !m_ptr ||
+             gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
     return GIWrapperInstance::typecheck_impl(cx, expected_info, expected_type);
 }
 
