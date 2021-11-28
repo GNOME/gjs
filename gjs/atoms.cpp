@@ -15,7 +15,6 @@
 #include <jsapi.h>  // for JS_AtomizeAndPinString
 
 #include "gjs/atoms.h"
-#include "gjs/jsapi-util.h"  // IWYU pragma: keep
 
 bool GjsAtom::init(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);

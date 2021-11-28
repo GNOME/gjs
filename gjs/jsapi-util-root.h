@@ -8,20 +8,19 @@
 
 #include <config.h>
 
-#include <stdint.h>  // for uintptr_t
-
 #include <cstddef>  // for nullptr_t
 #include <memory>
 #include <new>
 #include <type_traits>  // for enable_if_t, is_pointer
 
-#include <glib-object.h>
 #include <glib.h>
 
+#include <js/GCAPI.h>
+#include <js/HeapAPI.h>
+#include <js/RootingAPI.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 
-#include "gjs/macros.h"
 #include "util/log.h"
 
 /* jsapi-util-root.h - Utilities for dealing with the lifetime and ownership of

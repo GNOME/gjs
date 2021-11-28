@@ -14,7 +14,6 @@
 #include <jspubtd.h>  // for JSProtoKey
 
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-util.h"  // IWYU pragma: keep
 #include "modules/cairo-private.h"
 
 namespace JS {
