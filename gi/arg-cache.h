@@ -56,7 +56,7 @@ struct GjsArgumentCache {
 
     uint8_t arg_pos;
     GITransfer transfer : 2;
-    GjsArgumentFlags flags : 5;
+    GjsArgumentFlags flags : 6;
 
     union {
         // for explicit array only
@@ -101,6 +101,9 @@ struct GjsArgumentCache {
     GJS_JSAPI_RETURN_CONVENTION
     bool handle_nullable(JSContext* cx, GIArgument* arg);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    bool handle_optional(JSContext* cx, GIArgument* arg);
+
     // Introspected functions can have up to 253 arguments. 255 is a placeholder
     // for the return value and 254 for the instance parameter. The callback
     // closure or destroy notify parameter may have a value of 255 to indicate
@@ -140,6 +143,8 @@ struct GjsArgumentCache {
         flags = static_cast<GjsArgumentFlags>(GjsArgumentFlags::NONE | GjsArgumentFlags::SKIP_OUT);
     }
 
+    void set_optional() { flags = flags | GjsArgumentFlags::IS_OPTIONAL; }
+
     void set_return_value() {
         arg_pos = RETURN_VALUE;
         arg_name = "return value";
@@ -175,7 +180,8 @@ static_assert(sizeof(GjsArgumentCache) <= 112,
 void gjs_arg_cache_build_arg(GjsArgumentCache* self,
                              GjsArgumentCache* arguments, uint8_t gi_index,
                              GIDirection direction, GIArgInfo* arg,
-                             GICallableInfo* callable, bool* inc_counter_out);
+                             GICallableInfo* callable, bool* inc_counter_out,
+                             bool* is_optional);
 
 void gjs_arg_cache_build_return(GjsArgumentCache* self,
                                 GjsArgumentCache* arguments,

@@ -1424,7 +1424,7 @@ describe('Life, the Universe and Everything', function () {
 
     it('null / undefined callback', function () {
         expect(Regress.test_callback(null)).toEqual(0);
-        expect(() => Regress.test_callback(undefined)).toThrow();
+        expect(Regress.test_callback(undefined)).toEqual(0);
     });
 
     it('callback called more than once', function () {

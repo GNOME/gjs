@@ -38,6 +38,7 @@ enum class GjsArgumentFlags : uint8_t {
     SKIP_ALL = SKIP_IN | SKIP_OUT,
     FILENAME = 1 << 4,  //  Sharing the bit with UNSIGNED, used only for strings
     UNSIGNED = 1 << 4,  //  Sharing the bit with FILENAME, used only for enums
+    IS_OPTIONAL = 1 << 5,
 };
 
 [[nodiscard]] char* gjs_argument_display_name(const char* arg_name,

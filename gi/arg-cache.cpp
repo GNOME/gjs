@@ -139,6 +139,12 @@ static bool report_invalid_null(JSContext* cx, const char* arg_name) {
     return false;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool report_invalid_undefined(JSContext* cx, const char* arg_name) {
+    gjs_throw(cx, "Argument %s is required", arg_name);
+    return false;
+}
+
 // Marshallers:
 //
 // Each argument, irrespective of the direction, is processed in three phases:
@@ -272,7 +278,11 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
     GjsCallbackTrampoline* trampoline;
     ffi_closure* closure;
 
-    if (value.isNull() && (self->flags & GjsArgumentFlags::MAY_BE_NULL)) {
+    if (value.isUndefined() && (self->flags & GjsArgumentFlags::IS_OPTIONAL)) {
+        closure = nullptr;
+        trampoline = nullptr;
+    } else if (value.isNull() &&
+               (self->flags & GjsArgumentFlags::MAY_BE_NULL)) {
         closure = nullptr;
         trampoline = nullptr;
     } else {
@@ -443,6 +453,10 @@ static bool gjs_marshal_gtype_in_in(JSContext* cx, GjsArgumentCache* self,
                                     JS::HandleValue value) {
     if (value.isNull())
         return report_invalid_null(cx, self->arg_name);
+
+    if (value.isUndefined())
+        return report_invalid_undefined(cx, self->arg_name);
+
     if (!value.isObject())
         return report_typeof_mismatch(cx, self->arg_name, value,
                                       ExpectedType::OBJECT);
@@ -460,12 +474,22 @@ bool GjsArgumentCache::handle_nullable(JSContext* cx, GIArgument* arg) {
     return true;
 }
 
+bool GjsArgumentCache::handle_optional(JSContext* cx, GIArgument* arg) {
+    if (!(flags & GjsArgumentFlags::IS_OPTIONAL))
+        return report_invalid_undefined(cx, arg_name);
+    gjs_arg_unset<void*>(arg);
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_marshal_string_in_in(JSContext* cx, GjsArgumentCache* self,
                                      GjsFunctionCallState*, GIArgument* arg,
                                      JS::HandleValue value) {
     if (value.isNull())
         return self->handle_nullable(cx, arg);
+
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
 
     if (!value.isString())
         return report_typeof_mismatch(cx, self->arg_name, value,
@@ -586,6 +610,9 @@ static bool gjs_marshal_boxed_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
+
     GType gtype = self->contents.object.gtype;
 
     if (!value.isObject())
@@ -612,6 +639,9 @@ static bool gjs_marshal_union_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
+
     GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
 
@@ -630,6 +660,9 @@ static bool gjs_marshal_gclosure_in_in(JSContext* cx, GjsArgumentCache* self,
                                        JS::HandleValue value) {
     if (value.isNull())
         return self->handle_nullable(cx, arg);
+
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
 
     if (!(JS_TypeOfValue(cx, value) == JSTYPE_FUNCTION))
         return report_typeof_mismatch(cx, self->arg_name, value,
@@ -650,6 +683,9 @@ static bool gjs_marshal_gbytes_in_in(JSContext* cx, GjsArgumentCache* self,
                                      JS::HandleValue value) {
     if (value.isNull())
         return self->handle_nullable(cx, arg);
+
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
 
     if (!value.isObject())
         return report_gtype_mismatch(cx, self->arg_name, value, G_TYPE_BYTES);
@@ -673,6 +709,9 @@ static bool gjs_marshal_interface_in_in(JSContext* cx, GjsArgumentCache* self,
                                         JS::HandleValue value) {
     if (value.isNull())
         return self->handle_nullable(cx, arg);
+
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
 
     GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
@@ -703,6 +742,9 @@ static bool gjs_marshal_object_in_in(JSContext* cx, GjsArgumentCache* self,
     if (value.isNull())
         return self->handle_nullable(cx, arg);
 
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
+
     GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
 
@@ -721,6 +763,9 @@ static bool gjs_marshal_fundamental_in_in(JSContext* cx, GjsArgumentCache* self,
                                           JS::HandleValue value) {
     if (value.isNull())
         return self->handle_nullable(cx, arg);
+
+    if (value.isUndefined())
+        return self->handle_optional(cx, arg);
 
     GType gtype = self->contents.object.gtype;
     g_assert(gtype != G_TYPE_NONE);
@@ -1622,7 +1667,8 @@ void gjs_arg_cache_build_instance(GjsArgumentCache* self,
 void gjs_arg_cache_build_arg(GjsArgumentCache* self,
                              GjsArgumentCache* arguments, uint8_t gi_index,
                              GIDirection direction, GIArgInfo* arg,
-                             GICallableInfo* callable, bool* inc_counter_out) {
+                             GICallableInfo* callable, bool* inc_counter_out,
+                             bool* is_optional) {
     g_assert(inc_counter_out && "forgot out parameter");
 
     self->set_arg_pos(gi_index);
@@ -1631,8 +1677,10 @@ void gjs_arg_cache_build_arg(GjsArgumentCache* self,
     self->transfer = g_arg_info_get_ownership_transfer(arg);
 
     GjsArgumentFlags flags = GjsArgumentFlags::NONE;
-    if (g_arg_info_may_be_null(arg))
+    if (g_arg_info_may_be_null(arg)) {
         flags |= GjsArgumentFlags::MAY_BE_NULL;
+        *is_optional = true;
+    }
     if (g_arg_info_is_caller_allocates(arg))
         flags |= GjsArgumentFlags::CALLER_ALLOCATES;
 

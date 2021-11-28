@@ -68,6 +68,7 @@ class Function : public CWrapper<Function> {
     GjsArgumentCache* m_arguments;
 
     uint8_t m_js_in_argc;
+    uint8_t m_js_in_optional_argc;
     uint8_t m_js_out_argc;
     GIFunctionInvoker m_invoker;
 
@@ -75,6 +76,7 @@ class Function : public CWrapper<Function> {
         : m_info(info, GjsAutoTakeOwnership()),
           m_arguments(nullptr),
           m_js_in_argc(0),
+          m_js_in_optional_argc(0),
           m_js_out_argc(0),
           m_invoker({}) {
         GJS_INC_COUNTER(function);
@@ -816,16 +818,18 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     // state.gi_argc is the number of arguments the GICallableInfo describes
     // (which does not include "this" or GError**). m_js_in_argc is the number
     // of arguments we expect the JS function to take (which does not include
-    // PARAM_SKIPPED args).
-    // args.length() is the number of arguments that were actually passed.
+    // PARAM_SKIPPED args). m_js_in_optional_argc is the minimum number of
+    // arguments we expect the JS function to take (not including PARAM_SKIPPED
+    // and ALLOW_NONE args) args.length() is the number of arguments that were
+    // actually passed.
     if (args.length() > m_js_in_argc) {
         if (!JS::WarnUTF8(context,
                           "Too many arguments to %s: expected %u, got %u",
                           format_name().c_str(), m_js_in_argc, args.length()))
             return false;
-    } else if (args.length() < m_js_in_argc) {
-        args.reportMoreArgsNeeded(context, format_name().c_str(), m_js_in_argc,
-                                  args.length());
+    } else if (args.length() < m_js_in_optional_argc) {
+        args.reportMoreArgsNeeded(context, format_name().c_str(),
+                                  m_js_in_optional_argc, args.length());
         return false;
     }
 
@@ -1262,6 +1266,8 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     if (inc_counter)
         m_js_out_argc++;
 
+    int in_argc = m_js_in_argc;
+    int in_optional_argc = m_js_in_argc;
     for (i = 0; i < n_args; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
@@ -1272,8 +1278,9 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
         g_callable_info_load_arg(m_info, i, &arg_info);
         direction = g_arg_info_get_direction(&arg_info);
 
+        bool is_optional = false;
         gjs_arg_cache_build_arg(&m_arguments[i], m_arguments, i, direction,
-                                &arg_info, m_info, &inc_counter);
+                                &arg_info, m_info, &inc_counter, &is_optional);
 
         if (inc_counter) {
             switch (direction) {
@@ -1281,7 +1288,7 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
                     m_js_out_argc++;
                     [[fallthrough]];
                 case GI_DIRECTION_IN:
-                    m_js_in_argc++;
+                    in_argc++;
                     break;
                 case GI_DIRECTION_OUT:
                     m_js_out_argc++;
@@ -1289,8 +1296,17 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
                 default:
                     g_assert_not_reached();
             }
+
+            if (!is_optional)
+                in_optional_argc = in_argc;
         }
     }
+
+    m_js_in_argc = in_argc;
+    m_js_in_optional_argc = in_optional_argc;
+
+    for (i = m_js_in_optional_argc; i < m_js_in_argc; i++)
+        m_arguments[i].set_optional();
 
     return true;
 }

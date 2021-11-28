@@ -176,7 +176,7 @@ describe('Exception from function with too few arguments', function () {
 
     it('contains the full method name', function () {
         let file = Gio.File.new_for_path('foo');
-        expect(() => file.read()).toThrowError(/Gio\.File\.read/);
+        expect(() => file.get_child()).toThrowError(/Gio\.File\.get_child/);
     });
 });
 
