@@ -265,11 +265,21 @@ int main(void) {
     args: debug_arg, dependencies: spidermonkey,
     name: 'SpiderMonkey sanity check')
 
-if not minimal_program.compiled() or minimal_program.returncode() != 0
+recommended_configuration = ''' Check the recommended configuration:
+https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md'''
+if not minimal_program.compiled()
     error('''A minimal SpiderMonkey program
-could not be compiled, linked, or run. Most likely you should build it with a
-different configuration. Check the recommended configuration:
-https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md''')
+could not be compiled or linked. Most likely you should build it with a
+different configuration.''' + recommended_configuration)
+elif meson.is_cross_build()
+    warning('''This is a cross build. A check that a minimal
+SpiderMonkey program executes will not be performed. Before shipping GJS, you
+should check that it does not crash on startup, since building SpiderMonkey with
+the wrong configuration may cause that.''' + recommended_configuration)
+elif minimal_program.returncode() != 0
+    error('''A minimal SpiderMonkey program
+failed to execute. Most likely you should build it with a different
+configuration.''' + recommended_configuration)
 endif
 
 have_printf_alternative_int = cc.compiles('''
