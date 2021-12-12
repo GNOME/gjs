@@ -53,6 +53,7 @@ Third party applications written in GJS:
 * [Almond](https://github.com/stanford-oval/almond-gnome/)
 * [Commit](https://github.com/sonnyp/commit/)
 * [Junction](https://github.com/sonnyp/Junction)
+* [Oh My SVG](https://github.com/sonnyp/OhMySVG)
 
 ## Getting Help
 
