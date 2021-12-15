@@ -213,7 +213,7 @@ boxed_new_direct(Boxed       *priv)
 {
     g_assert(priv->can_allocate_directly);
 
-    priv->gboxed = g_slice_alloc0(g_struct_info_get_size (priv->info));
+    priv->gboxed = g_slice_alloc0_with_name(g_struct_info_get_size (priv->info), g_base_info_get_name ((GIBaseInfo *)priv->info));
     priv->allocated_directly = true;
 
     gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
@@ -485,7 +485,7 @@ boxed_finalize(JSFreeOp *fop,
 
     if (priv->gboxed && !priv->not_owning_gboxed) {
         if (priv->allocated_directly) {
-            g_slice_free1(g_struct_info_get_size (priv->info), priv->gboxed);
+            g_slice_free1_with_name(g_struct_info_get_size (priv->info), priv->gboxed, g_base_info_get_name ((GIBaseInfo *)priv->info));
         } else {
             if (g_type_is_a (priv->gtype, G_TYPE_BOXED))
                 g_boxed_free (priv->gtype,  priv->gboxed);

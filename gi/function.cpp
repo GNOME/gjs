@@ -901,12 +901,11 @@ gjs_invoke_c_function(JSContext                             *context,
                         failed = true;
                     }
 
-                    g_base_info_unref((GIBaseInfo*)interface_info);
-
                     if (!failed) {
-                        in_arg_cvalues[c_arg_pos].v_pointer = g_slice_alloc0(size);
+                        in_arg_cvalues[c_arg_pos].v_pointer = g_slice_alloc0_with_name(size, g_base_info_get_name ((GIBaseInfo*)interface_info));
                         out_arg_cvalues[c_arg_pos].v_pointer = in_arg_cvalues[c_arg_pos].v_pointer;
                     }
+                    g_base_info_unref((GIBaseInfo*)interface_info);
                 } else {
                     failed = true;
                 }
@@ -1335,7 +1334,7 @@ release:
                     g_assert_not_reached();
                 }
 
-                g_slice_free1(size, out_arg_cvalues[c_arg_pos].v_pointer);
+                g_slice_free1_with_name(size, out_arg_cvalues[c_arg_pos].v_pointer, g_base_info_get_name ((GIBaseInfo *) interface_info));
                 g_base_info_unref((GIBaseInfo*)interface_info);
             }
 
