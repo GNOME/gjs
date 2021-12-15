@@ -146,6 +146,10 @@ static GList *all_contexts = NULL;
 static GjsAutoChar dump_heap_output;
 static unsigned dump_heap_idle_id = 0;
 
+static GMetricsFile *metrics_file;
+static GMetricsInstanceCounter *instance_counter = NULL;
+static FILE *heap_fp;
+
 static void
 gjs_context_dump_heaps(void)
 {
@@ -434,6 +438,115 @@ gjs_context_finalize(GObject *object)
     G_OBJECT_CLASS(gjs_context_parent_class)->finalize(object);
 }
 
+static gboolean
+on_javascript_dump_timeout (void)
+{
+    FILE *fp;
+    g_autofree char *filename = NULL;
+
+    if (heap_fp != NULL) {
+        return G_SOURCE_CONTINUE;
+    }
+
+    filename = g_build_filename (g_metrics_get_log_dir(),
+                                 "javascript-heap",
+                                 NULL);
+    fp = fopen(filename, "w+");
+    if (!fp) {
+        return G_SOURCE_CONTINUE;
+    }
+
+    g_mutex_lock(&contexts_lock);
+    for (GList *l = all_contexts; l; l = g_list_next(l)) {
+        auto js_context = static_cast<GjsContext *>(l->data);
+
+        JS::GCForReason(js_context->context, GC_SHRINK, JS::gcreason::Reason::API);
+        JS_GC(js_context->context);
+        js::DumpHeap(js_context->context, fp, js::IgnoreNurseryObjects);
+    }
+    g_mutex_unlock(&contexts_lock);
+
+    heap_fp = fp;
+    return G_SOURCE_CONTINUE;
+}
+
+static void
+on_javascript_metrics_timeout (void)
+{
+    char *line = NULL;
+    size_t line_size;
+
+    if (heap_fp == NULL) {
+        g_metrics_file_start_record(metrics_file);
+        g_metrics_file_end_record(metrics_file);
+        return;
+    }
+
+    if (instance_counter == NULL)
+        instance_counter = g_metrics_instance_counter_new();
+
+    g_metrics_instance_counter_start_record(instance_counter);
+    rewind(heap_fp);
+    while (getline(&line, &line_size, heap_fp) >= 0) {
+        char *save_state = NULL, *ignored_field, *name;
+        char *address;
+
+        if (line_size <= 1)
+            continue;
+
+        if (line[0] == '#')
+            continue;
+
+        if (line[0] == '>')
+            continue;
+
+        ignored_field = strtok_r(line, " \n", &save_state);
+
+        if (ignored_field == NULL)
+            continue;
+
+        ignored_field = strtok_r(NULL, " \n", &save_state);
+
+        if (ignored_field == NULL)
+            continue;
+
+        name = strtok_r(NULL, "\n", &save_state);
+
+        if (name == NULL)
+            continue;
+
+        address = strstr (name, " 0x");
+
+        if (address != NULL)
+          *address = '\0';
+
+        g_metrics_instance_counter_add_instance (instance_counter, name, 1);
+    }
+    free (line);
+    g_metrics_instance_counter_end_record(instance_counter);
+
+    GMetricsInstanceCounterIter iter;
+    GMetricsInstanceCounterMetrics *metrics;
+    const char *name = NULL;
+
+    g_metrics_file_start_record(metrics_file);
+    g_metrics_instance_counter_iter_init (&iter, instance_counter);
+    while (g_metrics_instance_counter_iter_next (&iter, &name, &metrics)) {
+        g_metrics_file_add_row (metrics_file,
+                                name,
+                                metrics->instance_count,
+                                metrics->instance_change > 0? "+" : "",
+                                metrics->instance_change,
+                                metrics->instance_watermark,
+                                metrics->average_instance_change > 0? "+" : "",
+                                metrics->average_instance_change);
+    }
+    g_metrics_file_end_record(metrics_file);
+
+    fclose(heap_fp);
+    heap_fp = NULL;
+}
+
 static void
 gjs_context_constructed(GObject *object)
 {
@@ -513,6 +626,21 @@ gjs_context_constructed(GObject *object)
 
     g_mutex_lock (&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
+
+    if (metrics_file == NULL) {
+        if (g_metrics_requested ("javascript")) {
+            metrics_file = g_metrics_file_new ("javascript",
+                                               "name", "%s",
+                                               "count", "%ld",
+                                               "change", "%s%ld",
+                                               "max seen", "%lu",
+                                               "average change", "%s%ld",
+                                               NULL);
+
+            g_metrics_start_timeout (on_javascript_metrics_timeout);
+            g_timeout_add_seconds (60, (GSourceFunc) on_javascript_dump_timeout, NULL);
+        }
+    }
     g_mutex_unlock (&contexts_lock);
 
     setup_dump_heap();
@@ -1080,3 +1208,4 @@ gjs_context_get_profiler(GjsContext *self)
 {
     return self->profiler;
 }
+

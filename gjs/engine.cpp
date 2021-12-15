@@ -262,6 +262,18 @@ public:
 static GjsInit gjs_is_inited;
 #endif
 
+static gboolean
+annotate_stack_trace (char annotation[],
+                      gsize annotation_size,
+                      gpointer user_data)
+{
+  GjsContext *context = (GjsContext *) user_data;
+
+  gjs_context_get_stack_trace (context, annotation, annotation_size);
+
+  return annotation[0] != '\0';
+}
+
 JSContext *
 gjs_create_js_context(GjsContext *js_context)
 {
@@ -292,6 +304,9 @@ gjs_create_js_context(GjsContext *js_context)
 
     /* set ourselves as the private data */
     JS_SetContextPrivate(cx, js_context);
+
+    g_metrics_set_stack_trace_annotation_handler (annotate_stack_trace,
+                                                  js_context);
 
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, js_context);
     JS_SetGCCallback(cx, on_garbage_collect, js_context);

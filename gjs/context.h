@@ -87,6 +87,11 @@ GJS_EXPORT
 void            gjs_context_print_stack_stderr    (GjsContext *js_context);
 
 GJS_EXPORT
+void            gjs_context_get_stack_trace       (GjsContext *context,
+                                                   char       *buffer,
+                                                   gsize       buffer_size);
+
+GJS_EXPORT
 void            gjs_context_maybe_gc              (GjsContext  *context);
 
 GJS_EXPORT

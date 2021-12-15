@@ -57,6 +57,72 @@ gjs_context_print_stack_stderr(GjsContext *context)
 }
 
 void
+gjs_context_get_stack_trace (GjsContext *context,
+                             char *buffer,
+                             gsize buffer_size)
+{
+    FILE *memory_file;
+    char *line = NULL;
+    gsize line_size;
+    char *end = NULL;
+
+    JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
+
+    memory_file = fmemopen(NULL, buffer_size, "w+");
+    js::DumpBacktrace(cx, memory_file);
+
+    rewind(memory_file);
+    while (getline(&line, &line_size, memory_file) >= 0) {
+        char *save_state = NULL;
+        char *frame_number, *ignored_field, *source_line;
+
+        if (line_size <= 1)
+            continue;
+
+        if (line[0] != '#')
+            continue;
+
+        if (end == NULL) {
+            end = buffer;
+        } else {
+            strcpy(end, " -> ");
+            end += strlen (" -> ");
+        }
+
+        frame_number = strtok_r(line, " \t", &save_state);
+
+        if (frame_number == NULL)
+            continue;
+
+        strcpy(end, frame_number);
+        end += strlen(frame_number);
+
+        strcpy(end, " ");
+        end += strlen(" ");
+
+        ignored_field = strtok_r(NULL, " \t", &save_state);
+
+        if (ignored_field == NULL)
+            continue;
+
+        ignored_field = strtok_r(NULL, " \t", &save_state);
+
+        if (ignored_field == NULL)
+            continue;
+
+        source_line = strtok_r(NULL, " \t", &save_state);
+
+        if (source_line == NULL)
+            continue;
+
+        strcpy(end, source_line);
+        end += strlen(source_line);
+    }
+    free (line);
+    fclose (memory_file);
+}
+
+void
 gjs_dumpstack(void)
 {
     GList *contexts = gjs_context_get_all();
