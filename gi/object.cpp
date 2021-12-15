@@ -1428,7 +1428,7 @@ invalidate_all_closures(ObjectInstance *priv)
      * invalidate notifier */
     while (!priv->closures.empty()) {
         /* This will also free cd, through the closure invalidation mechanism */
-        GClosure *closure = *priv->closures.begin();
+        GClosure *closure = g_closure_ref (*priv->closures.begin());
         g_closure_invalidate(closure);
         /* Erase element if not already erased */
         priv->closures.erase(closure);
@@ -2435,6 +2435,14 @@ find_vfunc_info (JSContext *context,
     g_base_info_unref(struct_info);
 }
 
+static void
+free_trampoline (GjsCallbackTrampoline *trampoline,
+                 GClosure *closure)
+{
+    gjs_callback_trampoline_unref(trampoline);
+    g_closure_unref (closure);
+}
+
 static bool
 gjs_hook_up_vfunc(JSContext *cx,
                   unsigned   argc,
@@ -2524,6 +2532,7 @@ gjs_hook_up_vfunc(JSContext *cx,
         trampoline = gjs_callback_trampoline_new(cx, v_function, vfunc,
                                                  GI_SCOPE_TYPE_NOTIFIED,
                                                  object, true);
+        g_closure_add_invalidate_notifier (trampoline->js_function, trampoline, (GClosureNotify) free_trampoline);
 
         *((ffi_closure **)method_ptr) = trampoline->closure;
 
