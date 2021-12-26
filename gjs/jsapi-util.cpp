@@ -270,7 +270,7 @@ JSObject* gjs_define_string_array(JSContext* context,
     const char *remainder, *invalid;
     int remaining_bytes, valid_bytes;
 
-    g_return_val_if_fail (name != NULL, NULL);
+    g_return_val_if_fail (name != NULL, "");
 
     remainder = name;
     remaining_bytes = strlen (name);
