@@ -81,7 +81,7 @@ function _checkAccessors(proto, pspec, GObject, {generateAccessors = true, acces
     const readable = flags & GObject.ParamFlags.READABLE;
     const writable = flags & GObject.ParamFlags.WRITABLE;
     if (!propdesc || (readable && !propdesc.get) || (writable && !propdesc.set))
-        propdesc = _generateAccessors(pspec, propdesc, GObject);
+        propdesc = _generateAccessors(pspec, propdesc, GObject, accessorMappingSymbol);
 
     if (generateAccessors) {
         if (!dashPropdesc)

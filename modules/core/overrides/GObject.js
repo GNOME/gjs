@@ -573,6 +573,25 @@ function _init() {
     const {toString} = GObject.Object.prototype;
 
     Object.assign(GObject.Object.prototype, {
+        bindPropertyFields() {
+            const accessorMap = this.constructor.prototype[_accessorMapping];
+
+            if (!accessorMap)
+                return;
+
+            Object.entries(accessorMap).forEach(([key, accessor]) => {
+                const descriptor = Object.getOwnPropertyDescriptor(this, key);
+
+                if (descriptor && 'value' in descriptor) {
+                    const value = descriptor.value;
+
+                    Object.defineProperty(this, key, accessor);
+                    // Don't override the default value with undefined
+                    if (value !== undefined)
+                        this[key] = value;
+                }
+            });
+        },
         toString() {
             if (!this.constructor)
                 return Object.prototype.toString.call(this);
