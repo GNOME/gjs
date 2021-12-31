@@ -29,8 +29,8 @@ UnionPrototype::UnionPrototype(GIUnionInfo* info, GType gtype)
 
 UnionPrototype::~UnionPrototype(void) { GJS_DEC_COUNTER(union_prototype); }
 
-UnionInstance::UnionInstance(JSContext* cx, JS::HandleObject obj)
-    : GIWrapperInstance(cx, obj) {
+UnionInstance::UnionInstance(UnionPrototype* prototype, JS::HandleObject obj)
+    : GIWrapperInstance(prototype, obj) {
     GJS_INC_COUNTER(union_instance);
 }
 

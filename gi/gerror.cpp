@@ -43,8 +43,8 @@ ErrorPrototype::ErrorPrototype(GIEnumInfo* info, GType gtype)
 
 ErrorPrototype::~ErrorPrototype(void) { GJS_DEC_COUNTER(gerror_prototype); }
 
-ErrorInstance::ErrorInstance(JSContext* cx, JS::HandleObject obj)
-    : GIWrapperInstance(cx, obj) {
+ErrorInstance::ErrorInstance(ErrorPrototype* prototype, JS::HandleObject obj)
+    : GIWrapperInstance(prototype, obj) {
     GJS_INC_COUNTER(gerror_instance);
 }
 

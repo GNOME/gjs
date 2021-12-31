@@ -144,7 +144,8 @@ class FundamentalInstance
     friend class GIWrapperBase<FundamentalBase, FundamentalPrototype,
                                FundamentalInstance>;
 
-    explicit FundamentalInstance(JSContext* cx, JS::HandleObject obj);
+    explicit FundamentalInstance(FundamentalPrototype* prototype,
+                                 JS::HandleObject obj);
     ~FundamentalInstance(void);
 
     // Helper methods

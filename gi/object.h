@@ -236,6 +236,7 @@ class ObjectPrototype
                           const char* name, bool* resolved);
 
  public:
+    void set_interfaces(GType* interface_gtypes, uint32_t n_interface_gtypes);
     void set_type_qdata(void);
     GJS_JSAPI_RETURN_CONVENTION
     GParamSpec* find_param_spec_from_id(JSContext* cx, JS::HandleString key);
@@ -310,7 +311,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* Constructors */
 
  private:
-    ObjectInstance(JSContext* cx, JS::HandleObject obj);
+    ObjectInstance(ObjectPrototype* prototype, JS::HandleObject obj);
     ~ObjectInstance();
 
     GJS_JSAPI_RETURN_CONVENTION

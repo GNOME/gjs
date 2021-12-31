@@ -164,7 +164,7 @@ class BoxedInstance
     bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred
                             // to by m_ptr.
 
-    explicit BoxedInstance(JSContext* cx, JS::HandleObject obj);
+    explicit BoxedInstance(BoxedPrototype* prototype, JS::HandleObject obj);
     ~BoxedInstance(void);
 
     // Don't set GIWrapperBase::m_ptr directly. Instead, use one of these

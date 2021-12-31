@@ -1516,8 +1516,9 @@ void ObjectInstance::prepare_shutdown(void) {
         std::mem_fn(&ObjectInstance::release_native_object));
 }
 
-ObjectInstance::ObjectInstance(JSContext* cx, JS::HandleObject object)
-    : GIWrapperInstance(cx, object),
+ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
+                               JS::HandleObject object)
+    : GIWrapperInstance(prototype, object),
       m_wrapper_finalized(false),
       m_gobj_disposed(false),
       m_gobj_finalized(false),
@@ -2553,6 +2554,15 @@ bool ObjectPrototype::get_parent_constructor(
     return true;
 }
 
+void ObjectPrototype::set_interfaces(GType* interface_gtypes,
+                                     uint32_t n_interface_gtypes) {
+    if (interface_gtypes) {
+        for (uint32_t n = 0; n < n_interface_gtypes; n++) {
+            m_interface_gtypes.push_back(interface_gtypes[n]);
+        }
+    }
+}
+
 /*
  * ObjectPrototype::define_class:
  * @in_object: Object where the constructor is stored, typically a repo object.
@@ -2575,11 +2585,7 @@ bool ObjectPrototype::define_class(
     if (!priv)
         return false;
 
-    if (interface_gtypes) {
-        for (uint32_t n = 0; n < n_interface_gtypes; n++) {
-            priv->m_interface_gtypes.push_back(interface_gtypes[n]);
-        }
-    }
+    priv->set_interfaces(interface_gtypes, n_interface_gtypes);
 
     JS::RootedObject parent_constructor(context);
     if (!priv->get_parent_constructor(context, &parent_constructor))
@@ -2672,11 +2678,17 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
         return nullptr;
 
     JS::RootedObject obj(
-        cx, JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto));
+        cx, JS_NewObjectWithGivenProto(cx, &ObjectBase::klass, proto));
     if (!obj)
         return nullptr;
 
-    ObjectInstance* priv = ObjectInstance::new_for_js_object(cx, obj);
+    ObjectPrototype* prototype = resolve_prototype(cx, proto);
+    if (!prototype)
+        return nullptr;
+
+    ObjectInstance* priv = new ObjectInstance(prototype, obj);
+
+    JS_SetPrivate(obj, priv);
 
     g_object_ref_sink(gobj);
     priv->associate_js_gobject(cx, obj, gobj);
