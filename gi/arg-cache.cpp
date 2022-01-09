@@ -324,12 +324,20 @@ static bool gjs_marshal_callback_in(JSContext* cx, GjsArgumentCache* self,
     }
 
     GIScopeType scope = self->contents.callback.scope;
-    bool keep_forever = scope == GI_SCOPE_TYPE_NOTIFIED &&
-                        !self->has_callback_destroy();
-    if (trampoline && (scope == GI_SCOPE_TYPE_ASYNC || keep_forever)) {
+    if (trampoline && (scope == GI_SCOPE_TYPE_ASYNC)) {
         // Add an extra reference that will be cleared when garbage collecting
         // async calls or never for notified callbacks without destroy
         g_closure_ref(trampoline);
+    }
+
+    bool keep_forever =
+#if GI_CHECK_VERSION(1, 72, 0)
+        scope == GI_SCOPE_TYPE_FOREVER ||
+#endif
+        scope == GI_SCOPE_TYPE_NOTIFIED && !self->has_callback_destroy();
+
+    if (trampoline && keep_forever) {
+        trampoline->mark_forever();
     }
     gjs_arg_set(arg, closure);
 

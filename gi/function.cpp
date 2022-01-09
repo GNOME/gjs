@@ -616,6 +616,9 @@ GjsCallbackTrampoline* GjsCallbackTrampoline::create(
     return trampoline;
 }
 
+decltype(GjsCallbackTrampoline::s_forever_closure_list)
+    GjsCallbackTrampoline::s_forever_closure_list;
+
 GjsCallbackTrampoline::GjsCallbackTrampoline(
     JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
     GIScopeType scope, bool has_scope_object, bool is_vfunc)
@@ -636,6 +639,14 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
 GjsCallbackTrampoline::~GjsCallbackTrampoline() {
     if (m_info && m_closure)
         g_callable_info_free_closure(m_info, m_closure);
+}
+
+void GjsCallbackTrampoline::mark_forever() {
+    s_forever_closure_list.emplace_back(this, GjsAutoTakeOwnership{});
+}
+
+void GjsCallbackTrampoline::prepare_shutdown() {
+    s_forever_closure_list.clear();
 }
 
 bool GjsCallbackTrampoline::initialize() {
