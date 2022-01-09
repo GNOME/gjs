@@ -246,9 +246,10 @@ void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
 static void* log_writer_user_data = NULL;
 static GDestroyNotify log_writer_user_data_free = NULL;
 
-GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
-                                             const GLogField* fields,
-                                             size_t n_fields, void* user_data) {
+static GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
+                                                    const GLogField* fields,
+                                                    size_t n_fields,
+                                                    void* user_data) {
     GjsGLogWriterFunc func = (GjsGLogWriterFunc)user_data;
     GVariantDict dict;
     g_variant_dict_init(&dict, NULL);
