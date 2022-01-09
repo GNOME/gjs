@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
-/* exported _checkAccessors */
+/* exported _checkAccessors, _registerType, definePublicProperties, definePrivateProperties */
 
 // This is a helper module in which to put code that is common between the
 // legacy GObject.Class system and the new GObject.registerClass system.
+
+var _registerType = Symbol('GObject register type hook');
 
 function _generateAccessors(pspec, propdesc, GObject) {
     const {name, flags} = pspec;
@@ -89,4 +91,25 @@ function _checkAccessors(proto, pspec, GObject) {
         if (!camelPropdesc)
             Object.defineProperty(proto, camelName, propdesc);
     }
+}
+
+function definePublicProperties(object, values) {
+    Object.defineProperties(object, Object.getOwnPropertyDescriptors(values));
+}
+
+function definePrivateProperties(object, values) {
+    const propertyKeys = [...Object.getOwnPropertyNames(values), ...Object.getOwnPropertySymbols(values)];
+
+    const privateDescriptors = Object.fromEntries(propertyKeys.map(key => {
+        const descriptor = Object.getOwnPropertyDescriptor(values, key);
+
+        return [key, {
+            ...descriptor,
+            ...'value' in descriptor ? {writable: false} : {},
+            configurable: false,
+            enumerable: false,
+        }];
+    }));
+
+    Object.defineProperties(object, privateDescriptors);
 }

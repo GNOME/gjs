@@ -115,6 +115,112 @@ const MyObject = GObject.registerClass({
     }
 });
 
+const MyObjectWithCustomConstructor = GObject.registerClass({
+    Properties: {
+        'readwrite': GObject.ParamSpec.string('readwrite', 'ParamReadwrite',
+            'A read write parameter', GObject.ParamFlags.READWRITE, ''),
+        'readonly': GObject.ParamSpec.string('readonly', 'ParamReadonly',
+            'A readonly parameter', GObject.ParamFlags.READABLE, ''),
+        'construct': GObject.ParamSpec.string('construct', 'ParamConstructOnly',
+            'A readwrite construct-only parameter',
+            GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
+            ''),
+    },
+    Signals: {
+        'empty': {},
+        'minimal': {param_types: [GObject.TYPE_INT, GObject.TYPE_INT]},
+        'full': {
+            flags: GObject.SignalFlags.RUN_LAST,
+            accumulator: GObject.AccumulatorType.FIRST_WINS,
+            return_type: GObject.TYPE_INT,
+            param_types: [],
+        },
+        'run-last': {flags: GObject.SignalFlags.RUN_LAST},
+        'detailed': {
+            flags: GObject.SignalFlags.RUN_FIRST | GObject.SignalFlags.DETAILED,
+            param_types: [GObject.TYPE_STRING],
+        },
+    },
+}, class MyObjectWithCustomConstructor extends GObject.Object {
+    _readwrite;
+    _readonly;
+    _constructProp;
+
+    constructor({readwrite = 'foo', readonly = 'bar', construct = 'default'} = {}) {
+        super();
+
+        this._constructProp = construct;
+        this._readwrite = readwrite;
+        this._readonly = readonly;
+    }
+
+    get readwrite() {
+        return this._readwrite;
+    }
+
+    set readwrite(val) {
+        if (val === 'ignore')
+            return;
+
+        this._readwrite = val;
+    }
+
+    get readonly() {
+        return this._readonly;
+    }
+
+    set readonly(val) {
+        // this should never be called
+        void val;
+        this._readonly = 'bogus';
+    }
+
+    get construct() {
+        return this._constructProp;
+    }
+
+    notifyProp() {
+        this._readonly = 'changed';
+
+        this.notify('readonly');
+    }
+
+    emitEmpty() {
+        this.emit('empty');
+    }
+
+    emitMinimal(one, two) {
+        this.emit('minimal', one, two);
+    }
+
+    emitFull() {
+        return this.emit('full');
+    }
+
+    emitDetailed() {
+        this.emit('detailed::one');
+        this.emit('detailed::two');
+    }
+
+    emitRunLast(callback) {
+        this._run_last_callback = callback;
+        this.emit('run-last');
+    }
+
+    on_run_last() {
+        this._run_last_callback();
+    }
+
+    on_empty() {
+        this.empty_called = true;
+    }
+
+    on_full() {
+        this.full_default_handler_called = true;
+        return 79;
+    }
+});
+
 const MyAbstractObject = GObject.registerClass({
     GTypeFlags: GObject.TypeFlags.ABSTRACT,
 }, class MyAbstractObject extends GObject.Object {
@@ -143,6 +249,16 @@ const Derived = GObject.registerClass(class Derived extends MyObject {
     _init() {
         super._init({readwrite: 'yes'});
     }
+});
+
+const DerivedWithCustomConstructor = GObject.registerClass(class DerivedWithCustomConstructor extends MyObjectWithCustomConstructor {
+    constructor() {
+        super({readwrite: 'yes'});
+    }
+});
+
+const ObjectWithDefaultConstructor = GObject.registerClass(class ObjectWithDefaultConstructor extends GObject.Object {
+
 });
 
 const Cla$$ = GObject.registerClass(class Cla$$ extends MyObject {});
@@ -187,7 +303,7 @@ describe('GObject class with decorator', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
             '*Too many arguments*');
 
-        new MyObject({readwrite: 'baz'}, 'this is ignored', 123);
+        new ObjectWithDefaultConstructor({}, 'this is ignored', 123);
 
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectClass.js', 0,
             'testGObjectClassTooManyArguments');
@@ -508,6 +624,161 @@ describe('GObject class with decorator', function () {
         potentiallyClobbered.reset();
 
         expect(resetImplementationSpy).not.toHaveBeenCalled();
+    });
+});
+
+describe('GObject class with custom constructor', function () {
+    let myInstance;
+    beforeEach(function () {
+        myInstance = new MyObjectWithCustomConstructor();
+    });
+
+    it('throws an error when not used with a GObject-derived class', function () {
+        class Foo {}
+        expect(() => GObject.registerClass(class Bar extends Foo {})).toThrow();
+    });
+
+    it('constructs with default values for properties', function () {
+        expect(myInstance.readwrite).toEqual('foo');
+        expect(myInstance.readonly).toEqual('bar');
+        expect(myInstance.construct).toEqual('default');
+    });
+
+    it('constructs with a hash of property values', function () {
+        let myInstance2 = new MyObjectWithCustomConstructor({readwrite: 'baz', construct: 'asdf'});
+        expect(myInstance2.readwrite).toEqual('baz');
+        expect(myInstance2.readonly).toEqual('bar');
+        console.log(Object.getOwnPropertyDescriptor(myInstance2, 'construct'));
+        expect(myInstance2.construct).toEqual('asdf');
+    });
+
+    it('accepts a property hash that is not a plain object', function () {
+        expect(() => new MyObjectWithCustomConstructor(new GObject.Object())).not.toThrow();
+    });
+
+    const ui = `<interface>
+                  <object class="Gjs_MyObject" id="MyObject">
+                    <property name="readwrite">baz</property>
+                    <property name="construct">quz</property>
+                  </object>
+                </interface>`;
+
+    it('constructs with property values from Gtk.Builder', function () {
+        let builder = Gtk.Builder.new_from_string(ui, -1);
+        let myInstance3 = builder.get_object('MyObject');
+        expect(myInstance3.readwrite).toEqual('baz');
+        expect(myInstance3.readonly).toEqual('bar');
+        expect(myInstance3.construct).toEqual('quz');
+    });
+
+    it('does not allow changing CONSTRUCT_ONLY properties', function () {
+        myInstance.construct = 'val';
+        expect(myInstance.construct).toEqual('default');
+    });
+
+    it('has a name', function () {
+        expect(MyObjectWithCustomConstructor.name).toEqual('MyObjectWithCustomConstructor');
+    });
+
+    it('has a notify signal', function () {
+        let notifySpy = jasmine.createSpy('notifySpy');
+        myInstance.connect('notify::readonly', notifySpy);
+
+        myInstance.notifyProp();
+        myInstance.notifyProp();
+
+        expect(notifySpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('can define its own signals', function () {
+        let emptySpy = jasmine.createSpy('emptySpy');
+        myInstance.connect('empty', emptySpy);
+        myInstance.emitEmpty();
+
+        expect(emptySpy).toHaveBeenCalled();
+        expect(myInstance.empty_called).toBeTruthy();
+    });
+
+    it('passes emitted arguments to signal handlers', function () {
+        let minimalSpy = jasmine.createSpy('minimalSpy');
+        myInstance.connect('minimal', minimalSpy);
+        myInstance.emitMinimal(7, 5);
+
+        expect(minimalSpy).toHaveBeenCalledWith(myInstance, 7, 5);
+    });
+
+    it('can return values from signals', function () {
+        let fullSpy = jasmine.createSpy('fullSpy').and.returnValue(42);
+        myInstance.connect('full', fullSpy);
+        let result = myInstance.emitFull();
+
+        expect(fullSpy).toHaveBeenCalled();
+        expect(result).toEqual(42);
+    });
+
+    it('does not call first-wins signal handlers after one returns a value', function () {
+        let neverCalledSpy = jasmine.createSpy('neverCalledSpy');
+        myInstance.connect('full', () => 42);
+        myInstance.connect('full', neverCalledSpy);
+        myInstance.emitFull();
+
+        expect(neverCalledSpy).not.toHaveBeenCalled();
+        expect(myInstance.full_default_handler_called).toBeFalsy();
+    });
+
+    it('gets the return value of the default handler', function () {
+        let result = myInstance.emitFull();
+
+        expect(myInstance.full_default_handler_called).toBeTruthy();
+        expect(result).toEqual(79);
+    });
+
+    it('calls run-last default handler last', function () {
+        let stack = [];
+        let runLastSpy = jasmine.createSpy('runLastSpy')
+            .and.callFake(() => {
+                stack.push(1);
+            });
+        myInstance.connect('run-last', runLastSpy);
+        myInstance.emitRunLast(() => {
+            stack.push(2);
+        });
+
+        expect(stack).toEqual([1, 2]);
+    });
+
+
+
+
+    it('can be a subclass', function () {
+        let derived = new DerivedWithCustomConstructor();
+
+        expect(derived instanceof DerivedWithCustomConstructor).toBeTruthy();
+        expect(derived instanceof MyObjectWithCustomConstructor).toBeTruthy();
+
+        expect(derived.readwrite).toEqual('yes');
+    });
+
+
+
+
+    it('can override a property from the parent class', function () {
+        const OverrideObjectWithCustomConstructor = GObject.registerClass({
+            Properties: {
+                'readwrite': GObject.ParamSpec.override('readwrite', MyObjectWithCustomConstructor),
+            },
+        }, class OverrideObjectWithCustomConstructor extends MyObjectWithCustomConstructor {
+            get readwrite() {
+                return this._subclass_readwrite;
+            }
+
+            set readwrite(val) {
+                this._subclass_readwrite = `subclass${val}`;
+            }
+        });
+        let obj = new OverrideObjectWithCustomConstructor();
+        obj.readwrite = 'foo';
+        expect(obj.readwrite).toEqual('subclassfoo');
     });
 });
 

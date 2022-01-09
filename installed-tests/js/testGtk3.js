@@ -54,18 +54,15 @@ const MyComplexGtkSubclass = GObject.registerClass({
     boundCallback(widget) {
         widget.callbackBoundTo = this;
     }
+
+    testChildrenExist() {
+        this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
+        expect(this._internalLabel).toEqual(jasmine.anything());
+
+        expect(this.label_child2).toEqual(jasmine.anything());
+        expect(this._internal_label_child).toEqual(jasmine.anything());
+    }
 });
-
-// Sadly, putting this in the body of the class will prevent calling
-// get_template_child, since MyComplexGtkSubclass will be bound to the ES6
-// class name without the GObject goodies in it
-MyComplexGtkSubclass.prototype.testChildrenExist = function () {
-    this._internalLabel = this.get_template_child(MyComplexGtkSubclass, 'label-child');
-    expect(this._internalLabel).toEqual(jasmine.anything());
-
-    expect(this.label_child2).toEqual(jasmine.anything());
-    expect(this._internal_label_child).toEqual(jasmine.anything());
-};
 
 const MyComplexGtkSubclassFromResource = GObject.registerClass({
     Template: 'resource:///org/gjs/jsunit/complex3.ui',

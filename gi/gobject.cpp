@@ -61,6 +61,7 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 
         if (g_param_spec_get_qdata(pspec, ObjectBase::custom_property_quark())) {
             JS::Rooted<JS::PropertyDescriptor> jsprop(cx);
+            JS::RootedObject getter(cx);
 
             // Ensure to call any associated setter method
             if (!g_str_equal(underscore_name.get(), pspec->name)) {
@@ -69,6 +70,8 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
                 if (jsprop.setter() &&
                     !JS_SetProperty(cx, object, underscore_name, jsvalue))
                     return false;
+                if (jsprop.hasGetterObject())
+                    getter.set(jsprop.getterObject());
             }
 
             if (!g_str_equal(camel_name.get(), pspec->name)) {
@@ -77,6 +80,8 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
                 if (jsprop.setter() &&
                     !JS_SetProperty(cx, object, camel_name, jsvalue))
                     return false;
+                if (!getter && jsprop.hasGetterObject())
+                    getter.set(jsprop.getterObject());
             }
 
             if (!JS_GetPropertyDescriptor(cx, object, pspec->name, &jsprop))
@@ -84,6 +89,21 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
             if (jsprop.setter() &&
                 !JS_SetProperty(cx, object, pspec->name, jsvalue))
                 return false;
+            if (!getter && jsprop.hasGetterObject())
+                getter.set(jsprop.getterObject());
+
+            // If a getter is found, redefine the property with that getter
+            // and no setter.
+            if (getter) {
+                unsigned getter_flags = GJS_MODULE_PROP_FLAGS | JSPROP_GETTER;
+
+                return JS_DefineProperty(cx, object, underscore_name, getter,
+                                         nullptr, getter_flags) &&
+                       JS_DefineProperty(cx, object, camel_name, getter,
+                                         nullptr, getter_flags) &&
+                       JS_DefineProperty(cx, object, pspec->name, getter,
+                                         nullptr, getter_flags);
+            }
         }
 
         return JS_DefineProperty(cx, object, underscore_name, jsvalue, flags) &&
