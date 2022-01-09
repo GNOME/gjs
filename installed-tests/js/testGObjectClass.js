@@ -1642,3 +1642,61 @@ describe('GObject class with int64 properties', function () {
         expect(instance.int64).toBe(GLib.MAXINT32 + 1);
     });
 });
+
+class MyStaticRegisteredObject extends GObject.Object {
+}
+
+MyStaticRegisteredObject.register();
+
+class MyStaticRegisteredInterface extends GObject.Interface {
+    anInterfaceMethod() {}
+}
+
+MyStaticRegisteredInterface.register();
+
+describe('GObject class with decorator', function () {
+    it('throws an error when not used with a GObject-derived class', function () {
+        class Foo { }
+        class Bar extends Foo { }
+        expect(() => Bar.register()).toThrow();
+    });
+});
+
+describe('GObject creation using base classes without registered GType', function () {
+    it('fails when trying to instantiate a class that inherits from a GObject type', function () {
+        const BadInheritance = class extends GObject.Object { };
+        const BadDerivedInheritance = class extends Derived { };
+
+        expect(() => new BadInheritance()).toThrowError(
+            /Tried to construct an object without a GType/
+        );
+        expect(() => new BadDerivedInheritance()).toThrowError(
+            /Tried to construct an object without a GType/
+        );
+    });
+
+    it('fails when trying to register a GObject class that inherits from a non-GObject type', function () {
+        class BadInheritance extends GObject.Object { }
+        class BadInheritanceDerived extends BadInheritance { }
+        expect(() => BadInheritanceDerived.register()).toThrowError(
+            /Object 0x[a-f0-9]+ is not a subclass of GObject_Object, it's a Object/
+        );
+    });
+});
+
+describe('GObject class registered with registerType', function () {
+    class SubObject extends MyStaticRegisteredObject {
+    }
+
+    SubObject.register();
+
+    it('extends class registered with registerClass', function () {
+        expect(() => new SubObject()).not.toThrow();
+
+        const instance = new SubObject();
+
+        expect(instance instanceof SubObject).toBeTrue();
+        expect(instance instanceof GObject.Object).toBeTrue();
+        expect(instance instanceof MyStaticRegisteredObject).toBeTrue();
+    });
+});

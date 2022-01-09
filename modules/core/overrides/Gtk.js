@@ -4,10 +4,47 @@
 
 const Legacy = imports._legacy;
 const {Gio, GjsPrivate, GObject} = imports.gi;
-const {_registerType, definePrivateProperties} = imports._common;
+const {_registerType, definePublicProperties, definePrivateProperties} = imports._common;
 
 let Gtk;
 let BuilderScope;
+
+const _hasTemplateSymbol = Symbol('GTK Widget has template');
+const _defineChildrenAtInitSymbol = Symbol('GTK Widget assign children to properties at init');
+
+function _hasTemplate(constructor) {
+    return constructor.hasOwnProperty(_hasTemplateSymbol) &&
+        constructor[_hasTemplateSymbol];
+}
+
+function _setHasTemplate(klass) {
+    definePrivateProperties(klass, {
+        [_hasTemplateSymbol]: true,
+    });
+}
+
+function _shouldDefineChildrenDuringInit(constructor) {
+    return constructor.hasOwnProperty(_defineChildrenAtInitSymbol) &&
+        constructor[_defineChildrenAtInitSymbol];
+}
+
+function _mapWidgetDefinitionToClass(klass, classDefinition) {
+    if ('CssName' in classDefinition)
+        klass[Gtk.cssName] = classDefinition.CssName;
+    if ('Template' in classDefinition)
+        klass[Gtk.template] = classDefinition.Template;
+    if ('Children' in classDefinition)
+        klass[Gtk.children] = classDefinition.Children;
+    if ('InternalChildren' in classDefinition)
+        klass[Gtk.internalChildren] = classDefinition.InternalChildren;
+}
+
+function _assertDerivesFromWidget(klass, functionName) {
+    if (!Gtk.Widget.prototype.isPrototypeOf(klass.prototype)) {
+        throw new TypeError(`Gtk.${functionName}() used with invalid base ` +
+            `class (is ${Object.getPrototypeOf(klass).name ?? klass})`);
+    }
+}
 
 function defineChildren(instance, constructor, target = instance) {
     let children = constructor[Gtk.children] || [];
@@ -31,7 +68,47 @@ function _init() {
     Gtk.internalChildren = GObject.__gtkInternalChildren__;
     Gtk.template = GObject.__gtkTemplate__;
 
-    let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
+    let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk, _defineChildrenAtInitSymbol);
+
+    // Gtk.Widget instance additions
+    definePublicProperties(Gtk.Widget.prototype, {
+        _instance_init() {
+            if (_hasTemplate(this.constructor))
+                this.init_template();
+        },
+    });
+
+    // Gtk.Widget static overrides
+    const {set_template, set_template_from_resource} = Gtk.Widget;
+
+    Object.assign(Gtk.Widget, {
+        set_template(contents) {
+            set_template.call(this, contents);
+
+            _setHasTemplate(this);
+        },
+        set_template_from_resource(resource) {
+            set_template_from_resource.call(this, resource);
+
+            _setHasTemplate(this);
+        },
+    });
+
+    // Gtk.Widget static additions
+    definePublicProperties(Gtk.Widget, {
+        register(classDefinition) {
+            _assertDerivesFromWidget(this, 'Widget.register()');
+
+            _mapWidgetDefinitionToClass(this, classDefinition);
+
+            definePrivateProperties(this, {
+                [_defineChildrenAtInitSymbol]: false,
+            });
+
+            GObject.Object.register.call(this, classDefinition);
+        },
+    });
+
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
 
     if (Gtk.Container && Gtk.Container.prototype.child_set_property) {
@@ -43,7 +120,7 @@ function _init() {
     Gtk.Widget.prototype._init = function (params) {
         let wrapper = this;
 
-        if (wrapper.constructor[Gtk.template]) {
+        if (_hasTemplate(wrapper.constructor)) {
             if (!BuilderScope) {
                 Gtk.Widget.set_connect_func.call(wrapper.constructor,
                     (builder, obj, signalName, handlerName, connectObj, flags) => {
@@ -61,13 +138,17 @@ function _init() {
 
         wrapper = GObject.Object.prototype._init.call(wrapper, params) ?? wrapper;
 
-        if (wrapper.constructor[Gtk.template])
+        if (_hasTemplate(wrapper.constructor) && _shouldDefineChildrenDuringInit(wrapper.constructor))
             defineChildren(this, wrapper.constructor);
 
         return wrapper;
     };
 
     Gtk.Widget._classInit = function (klass) {
+        definePrivateProperties(klass, {
+            [_defineChildrenAtInitSymbol]: true,
+        });
+
         return GObject.Object._classInit(klass);
     };
 

@@ -646,7 +646,7 @@ function defineGObjectLegacyObjects(GObject) {
     return {GObjectMeta, GObjectInterface};
 }
 
-function defineGtkLegacyObjects(GObject, Gtk) {
+function defineGtkLegacyObjects(GObject, Gtk, defineChildrenAtInitSymbol) {
     const GtkWidgetClass = new Class({
         Name: 'GtkWidgetClass',
         Extends: GObject.Class,
@@ -686,6 +686,13 @@ function defineGtkLegacyObjects(GObject, Gtk) {
             this[Gtk.template] = template;
             this[Gtk.children] = children;
             this[Gtk.internalChildren] = internalChildren;
+
+            Object.defineProperty(this, defineChildrenAtInitSymbol, {
+                value: true,
+                writable: false,
+                enumerable: false,
+                configurable: false,
+            });
 
             if (children) {
                 for (let i = 0; i < children.length; i++)

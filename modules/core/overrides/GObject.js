@@ -23,6 +23,8 @@ var _gtkCssName = Symbol('GTK widget CSS name');
 var _gtkInternalChildren = Symbol('GTK widget template internal children');
 var _gtkTemplate = Symbol('GTK widget template');
 
+const _accessorMapping = Symbol('GObject accessor mapping for class fields');
+
 function _mapWidgetDefinitionToClass(klass, metaInfo) {
     if ('CssName' in metaInfo)
         klass[_gtkCssName] = metaInfo.CssName;
@@ -351,12 +353,12 @@ function _checkInterface(iface, proto) {
     }
 }
 
-function _checkProperties(klass) {
+function _checkProperties(klass, {generateAccessors}) {
     if (!klass.hasOwnProperty(properties))
         return;
 
     for (let pspec of Object.values(klass[properties]))
-        _checkAccessors(klass.prototype, pspec, GObject);
+        _checkAccessors(klass.prototype, pspec, GObject, {generateAccessors, accessorMappingSymbol: _accessorMapping});
 }
 
 function _init() {
@@ -612,6 +614,17 @@ function _init() {
     });
 
     definePublicProperties(GObject.Object, {
+        register(classDefinition = {}) {
+            // Ensure the class derives from GObject.Object or
+            // GObject.Interface
+            _assertDerivesFromGObject(this, [GObject.Object], 'Object.register');
+
+            _mapTypeDefinition(this, classDefinition);
+            _mapClassDefinition(this, classDefinition);
+            _checkProperties(this, {generateAccessors: false});
+
+            this[_registerType]();
+        },
         implements(iface) {
             if (iface.$gtype)
                 return GObject.type_is_a(this, iface.$gtype);
@@ -662,7 +675,7 @@ function _init() {
     });
 
     GObject.Object._classInit = function (klass) {
-        _checkProperties(klass);
+        _checkProperties(klass, {generateAccessors: true});
 
         if (_registerType in klass)
             klass[_registerType]();
@@ -679,6 +692,19 @@ function _init() {
 
         return false;
     }
+
+    definePublicProperties(GObject.Interface, {
+        register(classDefinition = {}) {
+            // Ensure the class derives from GObject.Interface
+            _assertDerivesFromGObject(this, [GObject.Interface], 'Interface.register');
+
+            _mapTypeDefinition(this, classDefinition);
+            _mapInterfaceDefinition(this, classDefinition);
+            _checkProperties(this, {generateAccessors: false});
+
+            this[_registerType]();
+        },
+    });
 
     definePrivateProperties(GObject.Interface, {
         [_registerType]() {

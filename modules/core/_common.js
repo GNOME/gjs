@@ -59,7 +59,7 @@ function _generateAccessors(pspec, propdesc, GObject) {
     return propdesc;
 }
 
-function _checkAccessors(proto, pspec, GObject) {
+function _checkAccessors(proto, pspec, GObject, {generateAccessors = true, accessorMappingSymbol = null} = {}) {
     const {name, flags} = pspec;
     if (flags & GObject.ParamFlags.CONSTRUCT_ONLY)
         return;
@@ -83,13 +83,25 @@ function _checkAccessors(proto, pspec, GObject) {
     if (!propdesc || (readable && !propdesc.get) || (writable && !propdesc.set))
         propdesc = _generateAccessors(pspec, propdesc, GObject);
 
-    if (!dashPropdesc)
-        Object.defineProperty(proto, name, propdesc);
-    if (nameIsCompound) {
-        if (!underscorePropdesc)
-            Object.defineProperty(proto, underscoreName, propdesc);
-        if (!camelPropdesc)
-            Object.defineProperty(proto, camelName, propdesc);
+    if (generateAccessors) {
+        if (!dashPropdesc)
+            Object.defineProperty(proto, name, propdesc);
+        if (nameIsCompound) {
+            if (!underscorePropdesc)
+                Object.defineProperty(proto, underscoreName, propdesc);
+            if (!camelPropdesc)
+                Object.defineProperty(proto, camelName, propdesc);
+        }
+    }
+
+    if (accessorMappingSymbol) {
+        proto[accessorMappingSymbol] = proto[accessorMappingSymbol] ?? {};
+        if (nameIsCompound) {
+            proto[accessorMappingSymbol][underscoreName] = propdesc;
+            proto[accessorMappingSymbol][camelName] = propdesc;
+        } else {
+            proto[accessorMappingSymbol][name] = propdesc;
+        }
     }
 }
 
