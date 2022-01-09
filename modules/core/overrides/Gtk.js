@@ -63,6 +63,7 @@ function defineChildren(instance, constructor, target = instance) {
 function _init() {
     Gtk = this;
 
+    Gtk.defineChildren = defineChildren;
     Gtk.children = GObject.__gtkChildren__;
     Gtk.cssName = GObject.__gtkCssName__;
     Gtk.internalChildren = GObject.__gtkInternalChildren__;
@@ -70,16 +71,35 @@ function _init() {
 
     let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk, _defineChildrenAtInitSymbol);
 
+    // Gtk.Widget instance overrides
+    const {get_template_child} = Gtk.Widget.prototype;
+
+    Object.assign(Gtk.Widget.prototype, {
+        get_template_child(constructorOrName, name) {
+            if (typeof constructorOrName === 'string')
+                return get_template_child.call(this, this.constructor, constructorOrName);
+
+
+            return get_template_child.call(this, constructorOrName, name);
+        },
+    });
+
     // Gtk.Widget instance additions
     definePublicProperties(Gtk.Widget.prototype, {
         _instance_init() {
             if (_hasTemplate(this.constructor))
                 this.init_template();
         },
+        get_template_children() {
+            let children = [this.constructor[Gtk.children] || []];
+            let map = {};
+            for (let child of children)
+                map[child.replace(/-/g, '_')] = map.get_template_child(constructor, child);
+        },
     });
 
     // Gtk.Widget static overrides
-    const {set_template, set_template_from_resource} = Gtk.Widget;
+    const {set_template, set_template_from_resource, bind_template_child_full} = Gtk.Widget;
 
     Object.assign(Gtk.Widget, {
         set_template(contents) {
@@ -92,10 +112,24 @@ function _init() {
 
             _setHasTemplate(this);
         },
+        bind_template_child_full(name, isInternal = false) {
+            bind_template_child_full.call(this, name, isInternal, 0);
+        },
     });
 
     // Gtk.Widget static additions
     definePublicProperties(Gtk.Widget, {
+        set_template_from_uri(template) {
+            if (template.startsWith('resource:///')) {
+                this.set_template_from_resource(template.slice(11));
+            } else if (template.startsWith('file:///')) {
+                let file = Gio.File.new_for_uri(template);
+                let [, contents] = file.load_contents(null);
+                this.set_template(contents);
+            } else {
+                throw new Error(`Invalid template Uri: ${template}`);
+            }
+        },
         register(classDefinition) {
             _assertDerivesFromWidget(this, 'Widget.register()');
 
@@ -106,6 +140,12 @@ function _init() {
             });
 
             GObject.Object.register.call(this, classDefinition);
+        },
+        bind_template_child(name) {
+            bind_template_child_full.call(this, name, false, 0);
+        },
+        bind_template_child_internal(name) {
+            bind_template_child_full.call(this, name, true, 0);
         },
     });
 
@@ -173,18 +213,11 @@ function _init() {
                 Gtk.Widget.set_css_name.call(klass, cssName);
 
             if (template) {
-                if (typeof template === 'string') {
-                    if (template.startsWith('resource:///')) {
-                        Gtk.Widget.set_template_from_resource.call(klass,
-                            template.slice(11));
-                    } else if (template.startsWith('file:///')) {
-                        let file = Gio.File.new_for_uri(template);
-                        let [, contents] = file.load_contents(null);
-                        Gtk.Widget.set_template.call(klass, contents);
-                    }
-                } else {
+                if (typeof template === 'string' &&
+                    (template.startsWith('resource:///') || template.startsWith('file:///')))
+                    Gtk.Widget.set_template_from_uri.call(klass, template);
+                else
                     Gtk.Widget.set_template.call(klass, template);
-                }
 
                 if (BuilderScope)
                     Gtk.Widget.set_template_scope.call(klass, new BuilderScope());
@@ -192,12 +225,12 @@ function _init() {
 
             if (children) {
                 children.forEach(child =>
-                    Gtk.Widget.bind_template_child_full.call(klass, child, false, 0));
+                    Gtk.Widget.bind_template_child_internal.call(klass, child));
             }
 
             if (internalChildren) {
                 internalChildren.forEach(child =>
-                    Gtk.Widget.bind_template_child_full.call(klass, child, true, 0));
+                    Gtk.Widget.bind_template_child.call(klass, child));
             }
         },
     });
