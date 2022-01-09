@@ -65,7 +65,7 @@ class UnionInstance
     friend class GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance>;
     friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
-    explicit UnionInstance(JSContext* cx, JS::HandleObject obj);
+    explicit UnionInstance(UnionPrototype* prototype, JS::HandleObject obj);
     ~UnionInstance(void);
 
     GJS_JSAPI_RETURN_CONVENTION

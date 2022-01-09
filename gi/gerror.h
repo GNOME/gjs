@@ -128,7 +128,7 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
                                    GError>;
     friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
-    explicit ErrorInstance(JSContext* cx, JS::HandleObject obj);
+    explicit ErrorInstance(ErrorPrototype* prototype, JS::HandleObject obj);
     ~ErrorInstance(void);
 
  public:

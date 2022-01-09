@@ -106,8 +106,9 @@ class InterfaceInstance
     friend class GIWrapperBase<InterfaceBase, InterfacePrototype,
                                InterfaceInstance>;
 
-    [[noreturn]] InterfaceInstance(JSContext* cx, JS::HandleObject obj)
-        : GIWrapperInstance(cx, obj) {
+    [[noreturn]] InterfaceInstance(InterfacePrototype* prototype,
+                                   JS::HandleObject obj)
+        : GIWrapperInstance(prototype, obj) {
         g_assert_not_reached();
     }
     [[noreturn]] ~InterfaceInstance(void) { g_assert_not_reached(); }

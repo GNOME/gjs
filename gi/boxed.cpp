@@ -39,8 +39,8 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-BoxedInstance::BoxedInstance(JSContext* cx, JS::HandleObject obj)
-    : GIWrapperInstance(cx, obj),
+BoxedInstance::BoxedInstance(BoxedPrototype* prototype, JS::HandleObject obj)
+    : GIWrapperInstance(prototype, obj),
       m_allocated_directly(false),
       m_owning_ptr(false) {
     GJS_INC_COUNTER(boxed_instance);

@@ -33,8 +33,9 @@ namespace JS {
 class CallArgs;
 }
 
-FundamentalInstance::FundamentalInstance(JSContext* cx, JS::HandleObject obj)
-    : GIWrapperInstance(cx, obj) {
+FundamentalInstance::FundamentalInstance(FundamentalPrototype* prototype,
+                                         JS::HandleObject obj)
+    : GIWrapperInstance(prototype, obj) {
     GJS_INC_COUNTER(fundamental_instance);
 }
 
