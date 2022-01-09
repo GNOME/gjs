@@ -44,6 +44,12 @@ void                   gjs_dbus_implementation_emit_property_changed (GjsDBusImp
 GJS_EXPORT
 void                   gjs_dbus_implementation_emit_signal           (GjsDBusImplementation *self, gchar *signal_name, GVariant *parameters);
 
+GJS_EXPORT
+void gjs_dbus_implementation_unexport(GjsDBusImplementation* self);
+GJS_EXPORT
+void gjs_dbus_implementation_unexport_from_connection(
+    GjsDBusImplementation* self, GDBusConnection* connection);
+
 G_END_DECLS
 
 #endif /* LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_ */
