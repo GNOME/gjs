@@ -51,6 +51,10 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
     constexpr ffi_closure* closure() const { return m_closure; }
 
+    void mark_forever();
+
+    static void prepare_shutdown();
+
  private:
     GJS_JSAPI_RETURN_CONVENTION bool initialize();
     GjsCallbackTrampoline(JSContext* cx, JS::HandleFunction function,
@@ -64,6 +68,8 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
                                 GITypeInfo* ret_type, int n_args,
                                 int c_args_offset, void* result);
     void warn_about_illegal_js_callback(const char* when, const char* reason);
+
+    static std::vector<GjsAutoGClosure> s_forever_closure_list;
 
     GjsAutoCallableInfo m_info;
     ffi_closure* m_closure = nullptr;

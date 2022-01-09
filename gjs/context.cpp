@@ -61,6 +61,7 @@
 #include <mozilla/UniquePtr.h>
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
+#include "gi/function.h"
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
@@ -438,6 +439,7 @@ void GjsContextPrivate::dispose(void) {
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing all native objects");
         ObjectInstance::prepare_shutdown();
+        GjsCallbackTrampoline::prepare_shutdown();
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Disabling auto GC");
         if (m_auto_gc_id > 0) {
