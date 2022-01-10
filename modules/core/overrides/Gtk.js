@@ -71,6 +71,10 @@ function _init() {
         return GObject.Object._classInit(klass);
     };
 
+    definePublicProperties(Gtk, {
+        defineChildren,
+    });
+
     definePrivateProperties(Gtk.Widget, {
         [_registerType]() {
             let klass = this;
