@@ -92,6 +92,11 @@ class InterfacePrototype
     bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                       bool* resolved);
 
+    GJS_JSAPI_RETURN_CONVENTION
+    bool new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+                            JS::MutableHandleIdVector properties,
+                            bool only_enumerable);
+
     // JS methods
 
     GJS_JSAPI_RETURN_CONVENTION

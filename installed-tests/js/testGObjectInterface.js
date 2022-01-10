@@ -148,7 +148,7 @@ describe('GObject interface', function () {
             },
         }, class BadObject extends GObject.Object {});
         expect(() => new BadObject().requiredG())
-           .toThrowError(GObject.NotImplementedError);
+            .toThrowError(GObject.NotImplementedError);
     });
 
     it("doesn't have to have its optional function implemented", function () {
@@ -309,6 +309,34 @@ describe('GObject interface', function () {
         beforeAll(function () {
             file = Gio.File.new_for_path('/');
             originalDup = Gio.File.prototype.dup;
+        });
+
+        it('toString is enumerable and defined', function () {
+            expect(Object.getOwnPropertyNames(Gio.File.prototype)).toContain('toString');
+            expect(Gio.File.prototype.toString).toBeDefined();
+        });
+
+        it('method properties are enumerated', function () {
+            const expectedMethods = [
+                'copy_attributes',
+                'copy_async',
+                'create_async',
+                'create_readwrite_async',
+                'delete_async',
+                'enumerate_children',
+            ];
+
+            const methods = Object.getOwnPropertyNames(Gio.File.prototype);
+            expect(methods).toEqual(jasmine.arrayContaining(expectedMethods));
+        });
+
+        it('method properties are defined', function () {
+            const methods = Object.getOwnPropertyNames(Gio.File.prototype);
+
+            for (const method of methods) {
+                expect(Gio.File.prototype[method]).toBeDefined();
+                expect(Gio.File.prototype[method]).toBeInstanceOf(Function);
+            }
         });
 
         it('overrides are inherited by implementing classes', function () {

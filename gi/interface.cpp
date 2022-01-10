@@ -8,8 +8,12 @@
 #include <girepository.h>
 
 #include <js/Class.h>
+#include <js/Id.h>  // for JSID_VOID, PropertyKey, jsid
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for JS_ReportOutOfMemory
+
+#include <utility>  // for forward
 
 #include "gi/function.h"
 #include "gi/interface.h"
@@ -29,6 +33,57 @@ InterfacePrototype::InterfacePrototype(GIInterfaceInfo* info, GType gtype)
 InterfacePrototype::~InterfacePrototype(void) {
     g_clear_pointer(&m_vtable, g_type_default_interface_unref);
     GJS_DEC_COUNTER(interface);
+}
+
+static bool append_inferface_properties(JSContext* cx,
+                                        JS::MutableHandleIdVector properties,
+                                        GIInterfaceInfo* iface_info) {
+    int n_methods = g_interface_info_get_n_methods(iface_info);
+    if (!properties.reserve(properties.length() + n_methods)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+
+    for (int i = 0; i < n_methods; i++) {
+        GjsAutoFunctionInfo meth_info =
+            g_interface_info_get_method(iface_info, i);
+        GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
+
+        if (flags & GI_FUNCTION_IS_METHOD) {
+            const char* name = meth_info.name();
+            jsid id = gjs_intern_string_to_id(cx, name);
+            if (id == JSID_VOID)
+                return false;
+            properties.infallibleAppend(id);
+        }
+    }
+
+    return true;
+}
+
+bool InterfacePrototype::new_enumerate_impl(
+    JSContext* cx, JS::HandleObject obj [[maybe_unused]],
+    JS::MutableHandleIdVector properties,
+    bool only_enumerable [[maybe_unused]]) {
+    unsigned n_interfaces;
+    GjsAutoPointer<GType, void, &g_free> interfaces =
+        g_type_interfaces(gtype(), &n_interfaces);
+
+    for (unsigned k = 0; k < n_interfaces; k++) {
+        GjsAutoInterfaceInfo iface_info =
+            g_irepository_find_by_gtype(nullptr, interfaces[k]);
+
+        if (!iface_info)
+            continue;
+
+        if (!append_inferface_properties(cx, properties, iface_info))
+            return false;
+    }
+
+    if (!info())
+        return true;
+
+    return append_inferface_properties(cx, properties, info());
 }
 
 // See GIWrapperBase::resolve().
@@ -111,7 +166,7 @@ const struct JSClassOps InterfaceBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
     nullptr,  // enumerate
-    nullptr,  // newEnumerate
+    &InterfaceBase::new_enumerate,
     &InterfaceBase::resolve,
     nullptr,  // mayResolve
     &InterfaceBase::finalize,
