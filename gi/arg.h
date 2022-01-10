@@ -36,8 +36,9 @@ enum class GjsArgumentFlags : uint8_t {
     SKIP_IN = 1 << 2,
     SKIP_OUT = 1 << 3,
     SKIP_ALL = SKIP_IN | SKIP_OUT,
-    FILENAME = 1 << 4,  //  Sharing the bit with UNSIGNED, used only for strings
-    UNSIGNED = 1 << 4,  //  Sharing the bit with FILENAME, used only for enums
+    IN = 1 << 4,
+    OUT = 1 << 5,
+    INOUT = IN | OUT,
 };
 
 [[nodiscard]] char* gjs_argument_display_name(const char* arg_name,
@@ -87,10 +88,14 @@ bool gjs_value_from_explicit_array(JSContext             *context,
                                    int                    length);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release    (JSContext  *context,
-                                GITransfer  transfer,
-                                GITypeInfo *type_info,
-                                GArgument  *arg);
+bool gjs_g_argument_release(JSContext*, GITransfer, GITypeInfo*,
+                            GjsArgumentFlags, GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_g_argument_release(JSContext* cx, GITransfer transfer,
+                                   GITypeInfo* type_info, GIArgument* arg) {
+    return gjs_g_argument_release(cx, transfer, type_info,
+                                  GjsArgumentFlags::NONE, arg);
+}
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release_out_array(JSContext* cx, GITransfer transfer,
                                       GITypeInfo* type_info, unsigned length,
@@ -100,10 +105,15 @@ bool gjs_g_argument_release_in_array(JSContext* cx, GITransfer transfer,
                                      GITypeInfo* type_info, unsigned length,
                                      GIArgument* arg);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_in_arg (JSContext  *context,
-                                    GITransfer  transfer,
-                                    GITypeInfo *type_info,
-                                    GArgument  *arg);
+bool gjs_g_argument_release_in_arg(JSContext*, GITransfer, GITypeInfo*,
+                                   GjsArgumentFlags, GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_g_argument_release_in_arg(JSContext* cx, GITransfer transfer,
+                                          GITypeInfo* type_info,
+                                          GIArgument* arg) {
+    return gjs_g_argument_release_in_arg(cx, transfer, type_info,
+                                         GjsArgumentFlags::IN, arg);
+}
 
 GJS_JSAPI_RETURN_CONVENTION
 bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value);
