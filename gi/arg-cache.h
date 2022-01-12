@@ -72,11 +72,11 @@ struct Argument {
         if (m_skip_in)
             flags |= GjsArgumentFlags::SKIP_IN;
         else
-            flags |= GjsArgumentFlags::IN;
+            flags |= GjsArgumentFlags::ARG_IN;
         if (m_skip_out)
             flags |= GjsArgumentFlags::SKIP_OUT;
         else
-            flags |= GjsArgumentFlags::OUT;
+            flags |= GjsArgumentFlags::ARG_OUT;
 
         return flags;
     }

@@ -36,9 +36,9 @@ enum class GjsArgumentFlags : uint8_t {
     SKIP_IN = 1 << 2,
     SKIP_OUT = 1 << 3,
     SKIP_ALL = SKIP_IN | SKIP_OUT,
-    IN = 1 << 4,
-    OUT = 1 << 5,
-    INOUT = IN | OUT,
+    ARG_IN = 1 << 4,
+    ARG_OUT = 1 << 5,
+    ARG_INOUT = ARG_IN | ARG_OUT,
 };
 
 [[nodiscard]] char* gjs_argument_display_name(const char* arg_name,
@@ -112,7 +112,7 @@ inline bool gjs_g_argument_release_in_arg(JSContext* cx, GITransfer transfer,
                                           GITypeInfo* type_info,
                                           GIArgument* arg) {
     return gjs_g_argument_release_in_arg(cx, transfer, type_info,
-                                         GjsArgumentFlags::IN, arg);
+                                         GjsArgumentFlags::ARG_IN, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION

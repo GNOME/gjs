@@ -2870,7 +2870,7 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
  */
 constexpr static bool is_transfer_in_nothing(GITransfer transfer,
                                              GjsArgumentFlags flags) {
-    return (transfer == GI_TRANSFER_NOTHING) && (flags & GjsArgumentFlags::IN);
+    return (transfer == GI_TRANSFER_NOTHING) && (flags & GjsArgumentFlags::ARG_IN);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -3315,7 +3315,7 @@ bool gjs_g_argument_release_in_array(JSContext* context, GITransfer transfer,
             gjs_arg_set(&elem, array[i]);
             if (!gjs_g_arg_release_internal(context, GI_TRANSFER_NOTHING,
                                             param_type, type_tag,
-                                            GjsArgumentFlags::IN, &elem)) {
+                                            GjsArgumentFlags::ARG_IN, &elem)) {
                 return false;
             }
         }
@@ -3348,7 +3348,7 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
             JS::AutoSaveExceptionState saved_exc(context);
             if (!gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
                                             param_type, type_tag,
-                                            GjsArgumentFlags::OUT, &elem)) {
+                                            GjsArgumentFlags::ARG_OUT, &elem)) {
                 return false;
             }
         }
