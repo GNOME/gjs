@@ -189,6 +189,14 @@ struct Nullable {
     }
 };
 
+// Overload operator| so that Visual Studio won't complain
+// when converting unsigned char to GjsArgumentFlags
+GjsArgumentFlags operator|(
+    GjsArgumentFlags const& v1, GjsArgumentFlags const& v2) {
+    return static_cast<GjsArgumentFlags>(std::underlying_type<GjsArgumentFlags>::type(v1) |
+                                         std::underlying_type<GjsArgumentFlags>::type(v2));
+}
+
 struct Positioned {
     void set_arg_pos(int pos) {
         g_assert(pos <= Argument::MAX_ARGS &&
@@ -225,7 +233,7 @@ struct BaseInfo {
 
 // boxed / union / GObject
 struct RegisteredType {
-    constexpr RegisteredType(GType gtype, GIInfoType info_type)
+    RegisteredType(GType gtype, GIInfoType info_type)
         : m_gtype(gtype), m_info_type(info_type) {}
     explicit RegisteredType(GIBaseInfo* info)
         : m_gtype(g_registered_type_info_get_g_type(info)),
@@ -1707,7 +1715,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
         // do some basic initialization here.
         set_argument<Arg::ArrayLengthOut>(
             length_pos, g_base_info_get_name(&length_arg), &length_type,
-            GI_TRANSFER_NOTHING, flags | GjsArgumentFlags::SKIP_ALL);
+            GI_TRANSFER_NOTHING,
+            static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL));
     }
 
     array->set_array_length(length_pos, g_type_info_get_tag(&length_type));
