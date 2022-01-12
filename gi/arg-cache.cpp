@@ -233,7 +233,7 @@ struct BaseInfo {
 
 // boxed / union / GObject
 struct RegisteredType {
-    constexpr RegisteredType(GType gtype, GIInfoType info_type)
+    RegisteredType(GType gtype, GIInfoType info_type)
         : m_gtype(gtype), m_info_type(info_type) {}
     explicit RegisteredType(GIBaseInfo* info)
         : m_gtype(g_registered_type_info_get_g_type(info)),
