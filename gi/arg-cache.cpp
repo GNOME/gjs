@@ -1715,7 +1715,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
         // do some basic initialization here.
         set_argument<Arg::ArrayLengthOut>(
             length_pos, g_base_info_get_name(&length_arg), &length_type,
-            GI_TRANSFER_NOTHING, flags | GjsArgumentFlags::SKIP_ALL);
+            GI_TRANSFER_NOTHING,
+            static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL));
     }
 
     array->set_array_length(length_pos, g_type_info_get_tag(&length_type));
