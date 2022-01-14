@@ -236,6 +236,7 @@ modules_tests = [
     'ESModules',
     'Encoding',
     'GLibLogWriter',
+    'Timers',
 ]
 if build_cairo
     modules_tests += 'CairoModule'

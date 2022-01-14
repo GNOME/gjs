@@ -19,23 +19,6 @@ function _filterStack(stack) {
         .join('\n');
 }
 
-function _setTimeoutInternal(continueTimeout, func, time) {
-    return GLib.timeout_add(GLib.PRIORITY_DEFAULT, time, function () {
-        func();
-        return continueTimeout;
-    });
-}
-
-function _clearTimeoutInternal(id) {
-    if (id > 0)
-        GLib.source_remove(id);
-}
-
-// Install the browser setTimeout/setInterval API on the global object
-globalThis.setTimeout = _setTimeoutInternal.bind(undefined, GLib.SOURCE_REMOVE);
-globalThis.setInterval = _setTimeoutInternal.bind(undefined, GLib.SOURCE_CONTINUE);
-globalThis.clearTimeout = globalThis.clearInterval = _clearTimeoutInternal;
-
 let jasmineRequire = imports.jasmine.getJasmineRequireObj();
 let jasmineCore = jasmineRequire.core(jasmineRequire);
 globalThis._jasmineEnv = jasmineCore.getEnv();

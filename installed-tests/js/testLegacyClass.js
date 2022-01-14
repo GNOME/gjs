@@ -326,7 +326,7 @@ describe('Class framework', function () {
 
         let instance = new CustomConstruct(1, 2);
 
-        expect(instance instanceof Array).toBeTruthy();
+        expect(Array.isArray(instance)).toBeTruthy();
         expect(instance instanceof CustomConstruct).toBeFalsy();
         expect(instance).toEqual([1, 2]);
     });
