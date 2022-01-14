@@ -76,6 +76,7 @@
 #include "gjs/importer.h"
 #include "gjs/internal.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/mainloop.h"
 #include "gjs/mem.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
@@ -1273,6 +1274,9 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
 
+    if (ok)
+        m_main_loop.spin(this);
+
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks. */
@@ -1327,6 +1331,9 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     }
 
     bool ok = JS::ModuleEvaluate(m_cx, obj);
+
+    if (ok)
+        m_main_loop.spin(this);
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
