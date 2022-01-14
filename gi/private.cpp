@@ -393,6 +393,28 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_lookup_constructor(JSContext* cx, unsigned argc,
+                                   JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject gtype_obj(cx);
+    if (!gjs_parse_call_args(cx, "lookupConstructor", args, "o", "gtype",
+                             &gtype_obj))
+        return false;
+
+    GType gtype;
+    if (!gjs_gtype_get_actual_gtype(cx, gtype_obj, &gtype))
+        return false;
+
+    if (gtype == G_TYPE_NONE) {
+        gjs_throw(cx, "Invalid GType for constructor lookup");
+        return false;
+    }
+
+    return gjs_lookup_object_constructor(cx, gtype, args.rval());
+}
+
 template <GjsSymbolAtom GjsAtoms::*member>
 GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
                                                       unsigned argc,
@@ -409,6 +431,7 @@ static JSFunctionSpec private_module_funcs[] = {
           GJS_MODULE_PROP_FLAGS),
     JS_FN("register_type", gjs_register_type, 4, GJS_MODULE_PROP_FLAGS),
     JS_FN("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
+    JS_FN("lookupConstructor", gjs_lookup_constructor, 1, 0),
     JS_FS_END,
 };
 

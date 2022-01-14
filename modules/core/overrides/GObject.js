@@ -431,6 +431,24 @@ function _init() {
 
     GObject.registerClass = registerClass;
 
+    GObject.Object.new = function (gtype, props = {}) {
+        const constructor = Gi.lookupConstructor(gtype);
+
+        if (!constructor)
+            throw new Error(`Constructor for gtype ${gtype} not found`);
+        return new constructor(props);
+    };
+
+    GObject.Object.new_with_properties = function (gtype, names, values) {
+        if (!Array.isArray(names) || !Array.isArray(values))
+            throw new Error('new_with_properties takes two arrays (names, values)');
+        if (names.length !== values.length)
+            throw new Error('Arrays passed to new_with_properties must be the same length');
+
+        const props = Object.fromEntries(names.map((name, ix) => [name, values[ix]]));
+        return GObject.Object.new(gtype, props);
+    };
+
     GObject.Object._classInit = function (klass) {
         let gtypename = _createGTypeName(klass);
         let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
