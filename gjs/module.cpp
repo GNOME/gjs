@@ -533,6 +533,9 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
 // fails in fetching the stashed values, since that would be a serious GJS bug.
 GJS_JSAPI_RETURN_CONVENTION
 static bool finish_import(JSContext* cx, const JS::CallArgs& args) {
+    GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
+    priv->main_loop_release();
+
     JS::Value callback_priv = js::GetFunctionNativeReserved(&args.callee(), 0);
     g_assert(callback_priv.isObject() && "Wrong private value");
     JS::RootedObject callback_data(cx, &callback_priv.toObject());
@@ -647,6 +650,10 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
     if (!JS::Call(cx, loader, "moduleResolveAsyncHook", args, &result))
         return JS::FinishDynamicModuleImport(cx, importing_module_priv,
                                              specifier, internal_promise);
+
+    // Release in finish_import
+    GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
+    priv->main_loop_hold();
 
     JS::RootedObject resolved(
         cx, JS_GetFunctionObject(js::NewFunctionWithReserved(

@@ -37,6 +37,7 @@
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/mainloop.h"
 #include "gjs/profiler.h"
 #include "gjs/promise.h"
 
@@ -81,6 +82,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     JobQueueStorage m_job_queue;
     Gjs::PromiseJobDispatcher m_dispatcher;
+    Gjs::MainLoop m_main_loop;
 
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
@@ -137,8 +139,9 @@ class GjsContextPrivate : public JS::JobQueue {
     void start_draining_job_queue(void);
     void stop_draining_job_queue(void);
 
-    uint8_t handle_exit_code(const char* type, const char* identifier,
-                             GError** error);
+    bool handle_exit_code(bool no_sync_error_pending, const char* type,
+                          const char* identifier, uint8_t* exit_code,
+                          GError** error);
     [[nodiscard]] bool auto_profile_enter(void);
     void auto_profile_exit(bool status);
 
@@ -176,6 +179,8 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] JSObject* internal_global() const {
         return m_internal_global.get();
     }
+    void main_loop_hold() { m_main_loop.hold(); }
+    void main_loop_release() { m_main_loop.release(); }
     [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
     [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
     [[nodiscard]] bool destroying() const { return m_destroying.load(); }

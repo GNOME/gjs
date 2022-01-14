@@ -39,6 +39,7 @@
 #include "gjs/importer.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/mainloop.h"
 #include "gjs/mem-private.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
@@ -503,7 +504,10 @@ class PromiseData {
 static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
     std::unique_ptr<PromiseData> promise(PromiseData::from_ptr(data));
 
-    JSAutoRealm ac(promise->cx, gjs_get_import_global(promise->cx));
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(promise->cx);
+    gjs->main_loop_release();
+
+    JSAutoRealm ar(promise->cx, gjs->global());
 
     char* contents;
     size_t length;
@@ -551,6 +555,9 @@ static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     auto* data = new PromiseData(cx, JS_GetObjectFunction(resolve),
                                  JS_GetObjectFunction(reject));
+
+    // Hold the main loop until this function resolves...
+    GjsContextPrivate::from_cx(cx)->main_loop_hold();
     g_file_load_contents_async(file, nullptr, load_async_callback, data);
 
     args.rval().setUndefined();

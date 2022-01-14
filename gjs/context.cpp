@@ -76,6 +76,7 @@
 #include "gjs/importer.h"
 #include "gjs/internal.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/mainloop.h"
 #include "gjs/mem.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
@@ -1215,31 +1216,50 @@ void GjsContextPrivate::auto_profile_exit(bool auto_profile) {
         gjs_profiler_stop(m_profiler);
 }
 
-uint8_t GjsContextPrivate::handle_exit_code(const char* type,
-                                            const char* identifier,
-                                            GError** error) {
+bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
+                                         const char* type,
+                                         const char* identifier,
+                                         uint8_t* exit_code, GError** error) {
     uint8_t code;
     if (should_exit(&code)) {
         /* exit_status_p is public API so can't be changed, but should be
          * uint8_t, not int */
         g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
                     "Exit with code %d", code);
-        return code;  // Don't log anything
+
+        *exit_code = code;
+        return false;  // Don't log anything
     }
-    if (!JS_IsExceptionPending(m_cx)) {
-        g_critical("%s %s terminated with an uncatchable exception", type,
-                   identifier);
-        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                    "%s %s terminated with an uncatchable exception", type,
-                    identifier);
-    } else {
+
+    // Once the main loop exits an exception could
+    // be pending even if the script returned
+    // true synchronously
+    if (JS_IsExceptionPending(m_cx)) {
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
                     "%s %s threw an exception", type, identifier);
+        gjs_log_exception_uncaught(m_cx);
+
+        *exit_code = 1;
+        return false;
     }
+
+    // Assume success if no error was thrown and should exit isn't
+    // set
+    if (no_sync_error_pending) {
+        *exit_code = 0;
+        return true;
+    }
+
+    g_critical("%s %s terminated with an uncatchable exception", type,
+               identifier);
+    g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                "%s %s terminated with an uncatchable exception", type,
+                identifier);
 
     gjs_log_exception_uncaught(m_cx);
     /* No exit code from script, but we don't want to exit(0) */
-    return 1;
+    *exit_code = 1;
+    return false;
 }
 
 bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
@@ -1254,6 +1274,9 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
 
+    if (ok)
+        m_main_loop.spin(this);
+
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks. */
@@ -1264,24 +1287,21 @@ bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
 
     auto_profile_exit(auto_profile);
 
-    if (!ok) {
-        *exit_status_p = handle_exit_code("Script", filename, error);
-        return false;
-    }
+    uint8_t out_code;
+    ok = handle_exit_code(ok, "Script", filename, &out_code, error);
 
     if (exit_status_p) {
-        if (retval.isInt32()) {
+        if (ok && retval.isInt32()) {
             int code = retval.toInt32();
             gjs_debug(GJS_DEBUG_CONTEXT,
                       "Script returned integer code %d", code);
             *exit_status_p = code;
         } else {
-            /* Assume success if no integer was returned */
-            *exit_status_p = 0;
+            *exit_status_p = out_code;
         }
     }
 
-    return true;
+    return ok;
 }
 
 bool GjsContextPrivate::eval_module(const char* identifier,
@@ -1312,6 +1332,9 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
     bool ok = JS::ModuleEvaluate(m_cx, obj);
 
+    if (ok)
+        m_main_loop.spin(this);
+
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks.
@@ -1323,14 +1346,12 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
     auto_profile_exit(auto_profile);
 
-    if (!ok) {
-        *exit_status_p = handle_exit_code("Module", identifier, error);
-        return false;
-    }
+    uint8_t out_code;
+    ok = handle_exit_code(ok, "Module", identifier, &out_code, error);
+    if (exit_status_p)
+        *exit_status_p = out_code;
 
-    /* Assume success if no errors were thrown or exit code set. */
-    *exit_status_p = 0;
-    return true;
+    return ok;
 }
 
 bool GjsContextPrivate::register_module(const char* identifier, const char* uri,

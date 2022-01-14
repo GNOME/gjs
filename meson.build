@@ -418,6 +418,7 @@ libgjs_sources = [
     'gjs/global.cpp', 'gjs/global.h',
     'gjs/importer.cpp', 'gjs/importer.h',
     'gjs/internal.cpp', 'gjs/internal.h',
+    'gjs/mainloop.cpp', 'gjs/mainloop.h',
     'gjs/mem.cpp', 'gjs/mem-private.h',
     'gjs/module.cpp', 'gjs/module.h',
     'gjs/native.cpp', 'gjs/native.h',

@@ -61,6 +61,23 @@ EOF
 $gjs doubledynamic.js
 report "ensure dynamic imports load even if the same import resolves elsewhere first"
 
-rm -f doubledynamic.js doubledynamicImportee.js
+cat <<EOF >dynamicImplicitMainloopImportee.js
+export const EXIT_CODE = 21;
+EOF
+
+cat <<EOF >dynamicImplicitMainloop.js
+import("./dynamicImplicitMainloopImportee.js")
+    .then(({ EXIT_CODE }) => {
+      imports.system.exit(EXIT_CODE);
+    });
+EOF
+
+$gjs dynamicImplicitMainloop.js
+test $? -eq 21
+report "ensure dynamic imports resolve without an explicit mainloop"
+
+
+rm -f doubledynamic.js doubledynamicImportee.js \
+      dynamicImplicitMainloop.js dynamicImplicitMainloopImportee.js
 
 echo "1..$total"
