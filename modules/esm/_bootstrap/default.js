@@ -7,3 +7,5 @@
 import '_encoding/encoding';
 // Bootstrap the Console API
 import 'console';
+// Bootstrap the Timers API
+import '_timers';

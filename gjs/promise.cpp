@@ -9,8 +9,15 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include <js/CallArgs.h>
+#include <js/PropertySpec.h>
+#include <js/RootingAPI.h>
+#include <js/TypeDecls.h>
+#include <jsapi.h>  // for JS_DefineFunctions, JS_NewPlainObject
+
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/promise.h"
 
 /**
@@ -175,3 +182,25 @@ void PromiseJobDispatcher::start() {
 void PromiseJobDispatcher::stop() { m_source->cancel(); }
 
 };  // namespace Gjs
+
+GJS_JSAPI_RETURN_CONVENTION
+bool drain_microtask_queue(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    auto* gjs = GjsContextPrivate::from_cx(cx);
+    gjs->runJobs(cx);
+
+    args.rval().setUndefined();
+    return true;
+}
+
+JSFunctionSpec gjs_native_promise_module_funcs[] = {
+    JS_FN("drainMicrotaskQueue", &drain_microtask_queue, 0, 0), JS_FS_END};
+
+bool gjs_define_native_promise_stuff(JSContext* cx,
+                                     JS::MutableHandleObject module) {
+    module.set(JS_NewPlainObject(cx));
+    if (!module)
+        return false;
+    return JS_DefineFunctions(cx, module, gjs_native_promise_module_funcs);
+}

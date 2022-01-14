@@ -13,7 +13,9 @@
     <file>modules/esm/_encoding/encoding.js</file>
     <file>modules/esm/_encoding/encodingMap.js</file>
     <file>modules/esm/_encoding/util.js</file>
-  
+
+    <file>modules/esm/_timers.js</file>
+
     <file>modules/esm/cairo.js</file>
     <file>modules/esm/gettext.js</file>
     <file>modules/esm/console.js</file>

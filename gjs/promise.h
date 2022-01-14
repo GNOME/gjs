@@ -9,6 +9,8 @@
 
 #include <glib.h>
 
+#include <js/TypeDecls.h>
+
 #include "gjs/jsapi-util.h"
 
 class GjsContextPrivate;
@@ -52,3 +54,6 @@ class PromiseJobDispatcher {
 };
 
 };  // namespace Gjs
+
+bool gjs_define_native_promise_stuff(JSContext* cx,
+                                     JS::MutableHandleObject module);

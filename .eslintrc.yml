@@ -262,5 +262,9 @@ globals:
   TextEncoder: readonly
   TextDecoder: readonly
   console: readonly
+  setTimeout: readonly
+  setInterval: readonly
+  clearTimeout: readonly
+  clearInterval: readonly
 parserOptions:
   ecmaVersion: 2022
