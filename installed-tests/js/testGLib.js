@@ -34,7 +34,7 @@ describe('GVariant constructor', function () {
         expect(unpacked[2]).toEqual('asig');
         expect(unpacked[3] instanceof GLib.Variant).toBeTruthy();
         expect(unpacked[3].deepUnpack()).toEqual('variant');
-        expect(unpacked[4] instanceof Array).toBeTruthy();
+        expect(Array.isArray(unpacked[4])).toBeTruthy();
         expect(unpacked[4].length).toEqual(2);
     });
 
