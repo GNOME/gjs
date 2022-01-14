@@ -43,7 +43,7 @@ fi
 
 echo "files: $files"
 
-IWYU="python3 $(which iwyu_tool || which iwyu_tool.py) -p ."
+IWYU="python3 $(which iwyu_tool || which iwyu-tool || which iwyu_tool.py) -p ."
 IWYU_ARGS="-Wno-pragma-once-outside-header"
 IWYU_RAW="include-what-you-use -xc++ -std=c++17 -Xiwyu --keep=config.h $IWYU_ARGS"
 IWYU_RAW_INC="-I. -I.. $(pkg-config --cflags gobject-introspection-1.0 mozjs-78)"
