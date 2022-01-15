@@ -870,10 +870,12 @@ function repl() {
     var cmd;
     for (;;) {
         cmd = readline();
-        if (cmd === null)
-            return null;
-        else if (cmd === '')
+        if (cmd === null /* eof */) {
+            quitCommand();
+            return;
+        } else if (cmd === '') {
             cmd = prevcmd;
+        }
 
         try {
             prevcmd = cmd;

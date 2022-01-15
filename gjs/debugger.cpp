@@ -82,7 +82,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
 
         /* EOF, return null */
         if (!line) {
-            args.rval().setUndefined();
+            args.rval().setNull();
             return true;
         }
     } while (line && line.get()[0] == '\0');
