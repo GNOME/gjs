@@ -440,7 +440,7 @@ bool        gjs_log_exception                (JSContext       *context);
 
 bool gjs_log_exception_uncaught(JSContext* cx);
 
-bool gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
+void gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
                             JS::HandleString message, GLogLevelFlags level);
 
 [[nodiscard]] std::string gjs_value_debug_string(JSContext* cx,
