@@ -846,6 +846,22 @@ describe('GValue', function () {
             .not.toThrow();
     });
 
+    it('array of boxed type GValues can be passed into a function', function () {
+        const value0 = new GObject.Value();
+        value0.init(GObject.TYPE_INT);
+        value0.set_int(42);
+        const value1 = new GObject.Value();
+        value1.init(String);
+        value1.set_string('42');
+        const value2 = new GObject.Value();
+        value2.init(Boolean);
+        value2.set_boolean(true);
+
+        const values = [value0, value1, value2];
+        expect(() => GIMarshallingTests.gvalue_flat_array(values))
+            .not.toThrow();
+    });
+
     it('array can be passed as an out argument and unpacked', function () {
         expect(GIMarshallingTests.return_gvalue_flat_array())
             .toEqual([42, '42', true]);

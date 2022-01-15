@@ -374,6 +374,47 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
     gtype = G_VALUE_TYPE(gvalue);
 
+    if (value.isObject()) {
+        JS::RootedObject obj(context, &value.toObject());
+        GType boxed_gtype;
+
+        if (!gjs_gtype_get_actual_gtype(context, obj, &boxed_gtype))
+            return false;
+
+        // Don't unbox GValue if the GValue's gtype is GObject.Value
+        if (g_type_is_a(boxed_gtype, G_TYPE_VALUE) && gtype != G_TYPE_VALUE) {
+            if (no_copy) {
+                gjs_throw(
+                    context,
+                    "Cannot convert GObject.Value object without copying.");
+                return false;
+            }
+
+            GValue* source = BoxedBase::to_c_ptr<GValue>(context, obj);
+            // Only initialize the value if it doesn't have a type
+            // and our source GValue has been initialized
+            GType source_gtype = G_VALUE_TYPE(source);
+            if (gtype == 0) {
+                if (source_gtype == 0) {
+                    gjs_throw(context,
+                              "GObject.Value is not initialized with a type");
+                    return false;
+                }
+                g_value_init(gvalue, source_gtype);
+            }
+
+            GType dest_gtype = G_VALUE_TYPE(gvalue);
+            if (!g_value_type_compatible(source_gtype, dest_gtype)) {
+                gjs_throw(context, "GObject.Value expected GType %s, found %s",
+                          g_type_name(dest_gtype), g_type_name(source_gtype));
+                return false;
+            }
+
+            g_value_copy(source, gvalue);
+            return true;
+        }
+    }
+
     if (gtype == 0) {
         if (!gjs_value_guess_g_type(context, value, &gtype))
             return false;
