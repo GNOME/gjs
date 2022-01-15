@@ -698,14 +698,13 @@ static bool resolve_on_interface_prototype(JSContext* cx,
     if (!interface_prototype)
         return false;
 
-    JS::Rooted<JS::PropertyDescriptor> desc(cx);
-    if (!JS_GetPropertyDescriptorById(cx, interface_prototype, identifier,
-                                      &desc))
+    bool exists = false;
+    if (!JS_HasPropertyById(cx, interface_prototype, identifier, &exists))
         return false;
 
     // If the property doesn't exist on the interface prototype, we don't need
     // to perform this trick.
-    if (!desc.object()) {
+    if (!exists) {
         *found = false;
         return true;
     }
@@ -753,13 +752,12 @@ static bool resolve_on_interface_prototype(JSContext* cx,
 
     // Copy the original descriptor and remove any value, instead
     // adding our getter and setter.
-    JS::Rooted<JS::PropertyDescriptor> target_desc(cx, desc);
-    target_desc.setValue(JS::UndefinedHandleValue);
-    target_desc.setAttributes(JSPROP_SETTER | JSPROP_GETTER);
-    target_desc.setGetterObject(getter);
-    target_desc.setSetterObject(setter);
+    JS::Rooted<JS::PropertyDescriptor> desc(cx);
+    desc.setAttributes(JSPROP_SETTER | JSPROP_GETTER);
+    desc.setGetterObject(getter);
+    desc.setSetterObject(setter);
 
-    if (!JS_DefinePropertyById(cx, class_prototype, identifier, target_desc))
+    if (!JS_DefinePropertyById(cx, class_prototype, identifier, desc))
         return false;
 
     *found = true;
