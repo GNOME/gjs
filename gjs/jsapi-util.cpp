@@ -367,8 +367,8 @@ static JSString* exception_to_string(JSContext* cx, JS::HandleValue exc) {
     return JS::ToString(cx, exc);
 }
 
-// Helper function: format the file name and line number where a SyntaxError
-// occurred.
+// Helper function: format the file name, line number, and column number where a
+// SyntaxError occurred.
 static std::string format_syntax_error_location(JSContext* cx,
                                                 JS::HandleObject exc) {
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -378,6 +378,13 @@ static std::string format_syntax_error_location(JSContext* cx,
     if (JS_GetPropertyById(cx, exc, atoms.line_number(), &property)) {
         if (property.isInt32())
             line = property.toInt32();
+    }
+    JS_ClearPendingException(cx);
+
+    int32_t column = 0;
+    if (JS_GetPropertyById(cx, exc, atoms.column_number(), &property)) {
+        if (property.isInt32())
+            column = property.toInt32();
     }
     JS_ClearPendingException(cx);
 
@@ -396,7 +403,7 @@ static std::string format_syntax_error_location(JSContext* cx,
         out << utf8_filename.get();
     else
         out << "<unknown>";
-    out << ":" << line;
+    out << ":" << line << ":" << column;
     return out.str();
 }
 
@@ -429,7 +436,7 @@ static std::string format_exception_log_message(JSContext* cx,
     if (JS_InstanceOf(cx, exc_obj, syntax_error, nullptr)) {
         // We log syntax errors differently, because the stack for those
         // includes only the referencing module, but we want to print out the
-        // filename and line number from the exception.
+        // file name, line number, and column number from the exception.
         out << format_syntax_error_location(cx, exc_obj);
         return out.str();
     }
