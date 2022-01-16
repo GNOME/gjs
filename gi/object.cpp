@@ -750,10 +750,10 @@ static bool resolve_on_interface_prototype(JSContext* cx,
     if (!JS_SetPropertyById(cx, accessor, atoms.prototype(), v_prototype))
         return false;
 
-    // Copy the original descriptor and remove any value, instead
-    // adding our getter and setter.
+    // Create a new descriptor with our getter and setter, that is configurable
+    // and enumerable, because GObject may need to redefine it later.
     JS::Rooted<JS::PropertyDescriptor> desc(cx);
-    desc.setAttributes(JSPROP_SETTER | JSPROP_GETTER);
+    desc.setAttributes(JSPROP_ENUMERATE);
     desc.setGetterObject(getter);
     desc.setSetterObject(setter);
 
