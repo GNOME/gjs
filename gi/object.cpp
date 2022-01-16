@@ -754,10 +754,10 @@ static bool resolve_on_interface_prototype(JSContext* cx,
 
     // Create a new descriptor with our getter and setter, that is configurable
     // and enumerable, because GObject may need to redefine it later.
-    JS::Rooted<JS::PropertyDescriptor> desc(cx);
-    desc.setAttributes(JSPROP_ENUMERATE);
-    desc.setGetterObject(getter);
-    desc.setSetterObject(setter);
+    JS::PropertyAttributes attrs{JS::PropertyAttribute::Configurable,
+                                 JS::PropertyAttribute::Enumerable};
+    JS::Rooted<JS::PropertyDescriptor> desc(
+        cx, JS::PropertyDescriptor::Accessor(getter, setter, attrs));
 
     if (!JS_DefinePropertyById(cx, class_prototype, identifier, desc))
         return false;
