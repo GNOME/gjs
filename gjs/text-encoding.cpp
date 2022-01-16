@@ -22,10 +22,12 @@
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
-#include <js/Utility.h>   // for UniqueChars
+#include <js/Utility.h>  // for UniqueChars
+#include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
-#include <jsfriendapi.h>  // for JS_NewUint8ArrayWithBuffer, GetUint...
+#include <jsfriendapi.h>  // for ProtoKeyToClass
 #include <mozilla/Unused.h>
 
 #include "gi/boxed.h"
@@ -190,13 +192,19 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
 GJS_JSAPI_RETURN_CONVENTION
 static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
                                                  const uint8_t* input,
-                                                 uint32_t input_len,
+                                                 size_t input_len,
                                                  const char* encoding,
                                                  bool fatal) {
     // If the decoding is not fatal we use the lossy decoder.
     if (!fatal)
         return gjs_lossy_decode_from_uint8array_slow(cx, input, input_len,
                                                      encoding);
+
+    // g_convert only handles up to SSIZE_MAX bytes, but we may have SIZE_MAX
+    if (G_UNLIKELY(input_len > SSIZE_MAX)) {
+        gjs_throw(cx, "Array too big to decode: %zu bytes", input_len);
+        return nullptr;
+    }
 
     size_t bytes_written, bytes_read;
     GError* error = nullptr;
@@ -235,14 +243,13 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
 }
 
 // Finds the length of a given data array, stopping at the first 0 byte.
-template <class T, class L>
-[[nodiscard]] static L zero_terminated_length(const T* data, L len) {
+template <class T>
+[[nodiscard]] static size_t zero_terminated_length(const T* data, size_t len) {
     if (!data || len == 0)
         return 0;
 
     const T* start = data;
-    auto* found = static_cast<const T*>(
-        std::memchr(start, '\0', static_cast<size_t>(len)));
+    auto* found = static_cast<const T*>(std::memchr(start, '\0', len));
 
     // If a null byte was not found, return the passed length.
     if (!found)
@@ -264,8 +271,7 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
     }
 
     uint8_t* data;
-    // len should be size_t but SpiderMonkey defines it differently in mozjs78
-    uint32_t len;
+    size_t len;
     bool is_shared_memory;
     js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
 
@@ -321,7 +327,7 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
     }
 
     uint8_t* current_data;
-    uint32_t current_len;
+    size_t current_len;
     bool ignore_val;
 
     // If a garbage collection occurs between when we call
@@ -408,7 +414,7 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
             JS::AutoCheckCannotGC nogc;
             size_t len;
 
-            if (JS_StringHasLatin1Chars(str)) {
+            if (JS::StringHasLatin1Chars(str)) {
                 const JS::Latin1Char* chars =
                     JS_GetLatin1StringCharsAndLength(cx, nogc, str, &len);
                 if (!chars)

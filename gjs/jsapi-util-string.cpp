@@ -19,16 +19,19 @@
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ErrorReport.h>
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/Id.h>
+#include <js/Object.h>  // for GetClass
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/Symbol.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>        // for JSID_TO_FLAT_STRING, JS_GetTwoByte...
-#include <jsfriendapi.h>  // for FlatStringToLinearString, GetLatin...
+#include <jsapi.h>        // for JS_GetFunctionDisplayId
+#include <jsfriendapi.h>  // for IdToValue, IsFunctionObject, ...
 #include <mozilla/CheckedInt.h>
 
 #include "gjs/jsapi-util.h"
@@ -290,7 +293,7 @@ gjs_string_get_char16_data(JSContext       *context,
                            char16_t       **data_p,
                            size_t          *len_p)
 {
-    if (JS_StringHasLatin1Chars(str))
+    if (JS::StringHasLatin1Chars(str))
         return from_latin1(context, str, data_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
@@ -336,7 +339,7 @@ gjs_string_to_ucs4(JSContext       *cx,
     size_t len;
     GError *error = NULL;
 
-    if (JS_StringHasLatin1Chars(str))
+    if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, ucs4_string_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
@@ -483,22 +486,22 @@ enum Quotes {
 
 [[nodiscard]] static std::string gjs_debug_linear_string(JSLinearString* str,
                                                          Quotes quotes) {
-    size_t len = js::GetLinearStringLength(str);
+    size_t len = JS::GetLinearStringLength(str);
 
     std::ostringstream out;
     if (quotes == DoubleQuotes)
         out << '"';
 
     JS::AutoCheckCannotGC nogc;
-    if (js::LinearStringHasLatin1Chars(str)) {
-        const JS::Latin1Char *chars = js::GetLatin1LinearStringChars(nogc, str);
+    if (JS::LinearStringHasLatin1Chars(str)) {
+        const JS::Latin1Char* chars = JS::GetLatin1LinearStringChars(nogc, str);
         out << std::string(reinterpret_cast<const char*>(chars), len);
         if (quotes == DoubleQuotes)
             out << '"';
         return out.str();
     }
 
-    const char16_t *chars = js::GetTwoByteLinearStringChars(nogc, str);
+    const char16_t* chars = JS::GetTwoByteLinearStringChars(nogc, str);
     for (size_t ix = 0; ix < len; ix++) {
         char16_t c = chars[ix];
         if (c == '\n')
@@ -605,7 +608,7 @@ gjs_debug_object(JSObject * const obj)
         return out.str();
     }
 
-    const JSClass* clasp = JS_GetClass(obj);
+    const JSClass* clasp = JS::GetClass(obj);
     out << "<object " << clasp->name << " at " << obj <<  '>';
     return out.str();
 }

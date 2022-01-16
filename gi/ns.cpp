@@ -10,13 +10,15 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Id.h>
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for JS_GetPrivate, JS_NewObjectWithGivenProto
+#include <jsapi.h>       // for JS_NewObjectWithGivenProto
 
 #include "gi/cwrapper.h"
 #include "gi/ns.h"
@@ -217,8 +219,8 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             return nullptr;
 
         auto* priv = new Ns(ns_name);
-        g_assert(!JS_GetPrivate(ns));
-        JS_SetPrivate(ns, priv);
+        g_assert(!JS::GetPrivate(ns));
+        JS::SetPrivate(ns, priv);
 
         gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
                             "ns constructor, obj %p priv %p", ns.get(), priv);

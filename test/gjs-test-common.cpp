@@ -8,9 +8,9 @@
 
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
+#include <js/Exception.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>
 
 #include "test/gjs-test-common.h"
 

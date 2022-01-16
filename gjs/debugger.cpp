@@ -16,11 +16,13 @@
 
 #include <js/CallArgs.h>
 #include <js/PropertySpec.h>
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_DefineFunctions, JS_NewStringCopyZ
+#include <jsapi.h>  // for JS_DefineFunctions, JS_SetPropertyById
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

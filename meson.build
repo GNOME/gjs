@@ -70,6 +70,7 @@ if cc.get_argument_syntax() == 'msvc'
     add_project_arguments(cxx.get_supported_arguments([
         '-Dssize_t=gssize',  # Windows SDK/MSVC headers do not come with ssize_t
         '-DNOMINMAX',  # We don't want 'min' or 'max' to interfere
+        '-DSSIZE_MAX=G_MAXSSIZE',  # Windows SDK/MSVC headers do not come with SSIZE_MAX
         ]), language: ['cpp', 'c'])
 else
     if get_option('bsymbolic_functions')
@@ -125,7 +126,7 @@ gio = dependency('gio-2.0', version: glib_required_version,
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
-spidermonkey = dependency('mozjs-78', version: '>= 78.2.0')
+spidermonkey = dependency('mozjs-91', version: '>= 91.3.0')
 
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC/clang-cl builds...
@@ -266,7 +267,7 @@ int main(void) {
     name: 'SpiderMonkey sanity check')
 
 recommended_configuration = ''' Check the recommended configuration:
-https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr78/docs/Building%20SpiderMonkey.md'''
+https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr91/docs/Building%20SpiderMonkey.md'''
 if not minimal_program.compiled()
     error('''A minimal SpiderMonkey program
 could not be compiled or linked. Most likely you should build it with a
@@ -524,14 +525,6 @@ if host_machine.system() == 'windows'
     libgjs_cpp_args += ['-DWIN32', '-DXP_WIN', '-DWIN32_LEAN_AND_MEAN']
 endif
 
-pch_headers = ['gjs/gjs_pch.hh']
-if get_option('b_pch') and not meson.version().version_compare('>= 0.59.0')
-    if cxx.get_id() == 'gcc'
-        warning('Precompiled headers not supported with g++ and meson versions earlier than 0.59.0')
-        pch_headers = []
-    endif
-endif
-
 # This dependency should provide everything that is needed to compile gjs except
 # the sources themselves, is used to copmile both the static libraries and the
 # tests
@@ -548,7 +541,7 @@ internal_build_dep = declare_dependency(
 
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
     libgjs_jsapi_sources, probes_header, probes_objfile,
-    cpp_pch: pch_headers,
+    cpp_pch: 'gjs/gjs_pch.hh',
     dependencies: internal_build_dep,
     install: false)
 
@@ -557,7 +550,7 @@ libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
 # library so that we compile its sources just once.
 libgjs_internal = static_library('gjs-internal',
     libgjs_sources, probes_header, probes_objfile,
-    cpp_pch: pch_headers,
+    cpp_pch: 'gjs/gjs_pch.hh',
     dependencies: internal_build_dep,
     link_with: libgjs_jsapi)
 
@@ -770,6 +763,5 @@ message('\n'.join([
     'Use readline for input in interactive shell and debugger: @0@'.format(
         build_readline),
     'Build profiler (Linux only): @0@'.format(build_profiler),
-    'Build with precompiled headers: @0@'.format(get_option('b_pch') and
-        pch_headers.length() > 0),
+    'Build with precompiled headers: @0@'.format(get_option('b_pch')),
 ]))

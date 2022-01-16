@@ -16,8 +16,8 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>   // for UniqueChars
+#include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
-#include <jsfriendapi.h>  // for JS_NewUint8ArrayWithBuffer, GetUint...
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"
@@ -190,7 +190,7 @@ JSObject* gjs_byte_array_from_byte_array(JSContext* cx, GByteArray* array) {
 
 GBytes* gjs_byte_array_get_bytes(JSObject* obj) {
     bool is_shared_memory;
-    uint32_t len;
+    size_t len;
     uint8_t* data;
 
     js::GetUint8ArrayLengthAndData(obj, &len, &is_shared_memory, &data);

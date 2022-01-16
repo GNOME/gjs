@@ -10,11 +10,12 @@
 
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
+#include <js/Exception.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/ValueArray.h>
-#include <jsapi.h>       // for JS_ReportErrorUTF8, BuildStackString
+#include <jsapi.h>       // for BuildStackString, Construct, JS_GetClassObject
 #include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
 
 #include "gjs/atoms.h"

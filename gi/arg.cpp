@@ -17,15 +17,19 @@
 #include <js/Array.h>
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>
 #include <js/GCVector.h>            // for RootedVector, MutableWrappedPtrOp...
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
+#include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_ReportOutOfMemory, JS_GetElement
-#include <jsfriendapi.h>  // for JS_IsUint8Array, JS_GetObjectFunc...
+#include <jsfriendapi.h>  // for JS_GetObjectFunction
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"

@@ -40,6 +40,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/Context.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>           // for StealPendingExceptionStack
 #include <js/GCAPI.h>               // for JS_GC, JS_AddExtraGCRootsTr...
@@ -49,6 +50,7 @@
 #include <js/Modules.h>
 #include <js/Promise.h>             // for JobQueue::SavedJobQueue
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TracingAPI.h>
@@ -56,8 +58,9 @@
 #include <js/UniquePtr.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_IsExceptionPending, ...
-#include <jsfriendapi.h>  // for DumpHeap, IgnoreNurseryObjects
+#include <js/friend/DumpFunctions.h>
+#include <jsapi.h>        // for Call, CurrentGlobalOrNull
+#include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 #include <mozilla/UniquePtr.h>
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
@@ -87,6 +90,10 @@
 #include "gjs/text-encoding.h"
 #include "modules/modules.h"
 #include "util/log.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
@@ -427,7 +434,7 @@ void GjsContextPrivate::dispose(void) {
         m_gtype_table->clear();
 
         /* Do a full GC here before tearing down, since once we do
-         * that we may not have the JS_GetPrivate() to access the
+         * that we may not have the JS::GetPrivate() to access the
          * context
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Final triggered GC");
@@ -530,7 +537,8 @@ static void load_context_module(JSContext* cx, const char* uri,
         g_error("Failed to instantiate %s module.", debug_identifier);
     }
 
-    if (!JS::ModuleEvaluate(cx, loader)) {
+    JS::RootedValue ignore(cx);
+    if (!JS::ModuleEvaluate(cx, loader, &ignore)) {
         gjs_log_exception(cx);
         g_error("Failed to evaluate %s module.", debug_identifier);
     }
@@ -1003,7 +1011,10 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
             JSAutoRealm ar(m_cx, job);
             gjs_debug(GJS_DEBUG_CONTEXT, "handling job %s",
                       gjs_debug_object(job).c_str());
-            if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
+            bool ok =
+                JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval);
+            warn_about_unhandled_promise_rejections();
+            if (!ok) {
                 /* Uncatchable exception - return false so that
                  * System.exit() works in the interactive shell and when
                  * exiting the interpreter. */
@@ -1174,10 +1185,12 @@ gjs_context_eval(GjsContext   *js_context,
 {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
+    size_t real_len = script_len < 0 ? strlen(script) : script_len;
+
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
-    return gjs->eval(script, script_len, filename, exit_status_p, error);
+    return gjs->eval(script, real_len, filename, exit_status_p, error);
 }
 
 bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
@@ -1264,7 +1277,7 @@ bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     return false;
 }
 
-bool GjsContextPrivate::eval(const char* script, ssize_t script_len,
+bool GjsContextPrivate::eval(const char* script, size_t script_len,
                              const char* filename, int* exit_status_p,
                              GError** error) {
     AutoResetExit reset(this);
@@ -1332,7 +1345,8 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         return false;
     }
 
-    bool ok = JS::ModuleEvaluate(m_cx, obj);
+    JS::RootedValue ignore(m_cx);
+    bool ok = JS::ModuleEvaluate(m_cx, obj, &ignore);
 
     if (ok)
         m_main_loop.spin(this);
@@ -1423,7 +1437,7 @@ bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
-                                        const char* source, ssize_t source_len,
+                                        const char* source, size_t source_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
     /* log and clear exception if it's set (should not be, normally...) */
@@ -1436,20 +1450,8 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!eval_obj)
         eval_obj = JS_NewPlainObject(m_cx);
 
-    long items_written;  // NOLINT(runtime/int) - this type required by GLib API
-    GError* error;
-    GjsAutoChar16 utf16_string =
-        g_utf8_to_utf16(source, source_len,
-                        /* items_read = */ nullptr, &items_written, &error);
-    if (!utf16_string)
-        return gjs_throw_gerror_message(m_cx, error);
-
-    // COMPAT: This could use JS::SourceText<mozilla::Utf8Unit> directly,
-    // but that messes up code coverage. See bug
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1404784
-    JS::SourceText<char16_t> buf;
-    if (!buf.init(m_cx, reinterpret_cast<char16_t*>(utf16_string.get()),
-                  items_written, JS::SourceOwnership::Borrowed))
+    JS::SourceText<mozilla::Utf8Unit> buf;
+    if (!buf.init(m_cx, source, source_len, JS::SourceOwnership::Borrowed))
         return false;
 
     JS::RootedObjectVector scope_chain(m_cx);
@@ -1459,7 +1461,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     }
 
     JS::CompileOptions options(m_cx);
-    options.setFileAndLine(filename, 1);
+    options.setFileAndLine(filename, 1).setNonSyntacticScope(true);
 
     GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
     GjsAutoChar uri = g_file_get_uri(file);
@@ -1467,9 +1469,13 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!priv)
         return false;
 
-    options.setPrivateValue(JS::ObjectValue(*priv));
+    JS::RootedScript script(m_cx);
+    script.set(JS::Compile(m_cx, options, buf));
+    if (!script)
+        return false;
 
-    if (!JS::Evaluate(m_cx, scope_chain, options, buf, retval))
+    JS::SetScriptPrivate(script, JS::ObjectValue(*priv));
+    if (!JS_ExecuteScript(m_cx, scope_chain, script, retval))
         return false;
 
     schedule_gc_if_needed();

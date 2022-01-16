@@ -13,6 +13,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/Exception.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>

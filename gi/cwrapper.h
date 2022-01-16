@@ -17,6 +17,7 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/Id.h>
+#include <js/Object.h>  // for GetClass
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
@@ -116,7 +117,7 @@ class CWrapperPointerOps {
     static bool for_js_typecheck(JSContext* cx, JS::HandleObject wrapper,
                                  Wrapped** out) {
         if (!typecheck(cx, wrapper)) {
-            const JSClass* obj_class = JS_GetClass(wrapper);
+            const JSClass* obj_class = JS::GetClass(wrapper);
             gjs_throw_custom(cx, JSProto_TypeError, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",
                              wrapper.get(), Base::klass.name, obj_class->name);
@@ -134,7 +135,7 @@ class CWrapperPointerOps {
      * (It can return null if no private data has been set yet on the wrapper.)
      */
     [[nodiscard]] static Wrapped* for_js_nocheck(JSObject* wrapper) {
-        return static_cast<Wrapped*>(JS_GetPrivate(wrapper));
+        return static_cast<Wrapped*>(JS::GetPrivate(wrapper));
     }
 };
 
@@ -213,7 +214,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         Wrapped* priv = Base::constructor_impl(cx, args);
         if (!priv)
             return false;
-        JS_SetPrivate(object, priv);
+        JS::SetPrivate(object, priv);
 
         args.rval().setObject(*object);
         return true;
@@ -258,7 +259,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         Base::finalize_impl(fop, priv);
 
         // Remove the pointer from the JSObject
-        JS_SetPrivate(obj, nullptr);
+        JS::SetPrivate(obj, nullptr);
     }
 
     static constexpr JSClassOps class_ops = {
@@ -494,8 +495,8 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         if (!wrapper)
             return nullptr;
 
-        assert(!JS_GetPrivate(wrapper));
-        JS_SetPrivate(wrapper, Base::copy_ptr(ptr));
+        assert(!JS::GetPrivate(wrapper));
+        JS::SetPrivate(wrapper, Base::copy_ptr(ptr));
 
         debug_lifecycle(ptr, wrapper, "from_c_ptr");
 

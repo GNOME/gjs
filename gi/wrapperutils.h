@@ -21,9 +21,10 @@
 #include <js/ComparisonOperators.h>
 #include <js/Id.h>
 #include <js/MemoryFunctions.h>
+#include <js/Object.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>       // for JS_GetPrivate, JS_SetPrivate, JS_Ge...
+#include <jsapi.h>       // for JS_GetPrototype, JS_DefineFunctionById
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/arg-inl.h"
@@ -303,7 +304,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     [[nodiscard]] static Prototype* resolve_prototype(JSContext* cx,
                                                       JS::HandleObject proto) {
-        if (JS_GetClass(proto) != &Base::klass) {
+        if (JS::GetClass(proto) != &Base::klass) {
             gjs_throw(cx, "Tried to construct an object without a GType");
             return nullptr;
         }
@@ -383,7 +384,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             priv->to_instance()->finalize_impl(fop, obj);
 
         // Remove the pointer from the JSObject
-        JS_SetPrivate(obj, nullptr);
+        JS::SetPrivate(obj, nullptr);
     }
 
     /*
@@ -792,7 +793,7 @@ class GIWrapperPrototype : public Base {
                   "Defined class for %s (%s), prototype %p, "
                   "JSClass %p, in object %p",
                   Base::name(), Base::type_name(), prototype.get(),
-                  JS_GetClass(prototype), in_object.get());
+                  JS::GetClass(prototype), in_object.get());
 
         return true;
     }
@@ -876,7 +877,7 @@ class GIWrapperPrototype : public Base {
         // a garbage collection or error happens subsequently, then this object
         // might be traced and we would end up dereferencing a null pointer.
         Prototype* proto = priv.release();
-        JS_SetPrivate(prototype, proto);
+        JS::SetPrivate(prototype, proto);
 
         if (!gjs_wrapper_define_gtype_prop(cx, constructor, gtype))
             return nullptr;
@@ -995,24 +996,24 @@ class GIWrapperInstance : public Base {
      */
     [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
                                                      JS::HandleObject obj) {
-        g_assert(!JS_GetPrivate(obj));
+        g_assert(!JS::GetPrivate(obj));
         Prototype* prototype = Prototype::for_js_prototype(cx, obj);
         auto* priv = new Instance(prototype, obj);
 
         // Init the private variable before we do anything else. If a garbage
         // collection happens when calling the constructor, then this object
         // might be traced and we would end up dereferencing a null pointer.
-        JS_SetPrivate(obj, priv);
+        JS::SetPrivate(obj, priv);
 
         return priv;
     }
 
     [[nodiscard]] static Instance* new_for_js_object(Prototype* prototype,
                                                      JS::HandleObject obj) {
-        g_assert(!JS_GetPrivate(obj));
+        g_assert(!JS::GetPrivate(obj));
         auto* priv = new Instance(prototype, obj);
 
-        JS_SetPrivate(obj, priv);
+        JS::SetPrivate(obj, priv);
 
         return priv;
     }

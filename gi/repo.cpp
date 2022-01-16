@@ -17,9 +17,12 @@
 
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/Exception.h>
 #include <js/Id.h>                  // for JSID_VOID
+#include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
@@ -721,5 +724,5 @@ JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
     if (!proto)
         return nullptr;
 
-    return JS_NewObjectWithGivenProto(cx, JS_GetClass(proto), proto);
+    return JS_NewObjectWithGivenProto(cx, JS::GetClass(proto), proto);
 }

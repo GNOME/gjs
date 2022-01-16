@@ -47,8 +47,8 @@ namespace mozilla {
 union Utf8Unit;
 }
 
-static void gjs_console_warning_reporter(JSContext* cx, JSErrorReport* report) {
-    JS::PrintError(cx, stderr, report, /* reportWarnings = */ true);
+static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
+    JS::PrintError(stderr, report, /* reportWarnings = */ true);
 }
 
 /* Based on js::shell::AutoReportException from SpiderMonkey. */
@@ -75,7 +75,7 @@ public:
 
         g_assert(!report.report()->isWarning());
 
-        JS::PrintError(m_cx, stderr, report, /* reportWarnings = */ false);
+        JS::PrintError(stderr, report, /* reportWarnings = */ false);
 
         if (exnStack.stack()) {
             GjsAutoChar stack_str =

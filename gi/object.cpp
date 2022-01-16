@@ -27,17 +27,19 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/ErrorReport.h>         // for JS_ReportOutOfMemory
 #include <js/GCAPI.h>               // for JS_AddWeakPointerCompartmentCallback
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>        // for JS_ReportOutOfMemory, IsCallable
+#include <jsapi.h>        // for IsCallable
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, IsFunctionO...
 #include <mozilla/HashTable.h>
 
@@ -752,10 +754,10 @@ static bool resolve_on_interface_prototype(JSContext* cx,
 
     // Create a new descriptor with our getter and setter, that is configurable
     // and enumerable, because GObject may need to redefine it later.
-    JS::Rooted<JS::PropertyDescriptor> desc(cx);
-    desc.setAttributes(JSPROP_ENUMERATE);
-    desc.setGetterObject(getter);
-    desc.setSetterObject(setter);
+    JS::PropertyAttributes attrs{JS::PropertyAttribute::Configurable,
+                                 JS::PropertyAttribute::Enumerable};
+    JS::Rooted<JS::PropertyDescriptor> desc(
+        cx, JS::PropertyDescriptor::Accessor(getter, setter, attrs));
 
     if (!JS_DefinePropertyById(cx, class_prototype, identifier, desc))
         return false;
@@ -2686,7 +2688,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     ObjectInstance* priv = new ObjectInstance(prototype, obj);
 
-    JS_SetPrivate(obj, priv);
+    JS::SetPrivate(obj, priv);
 
     g_object_ref_sink(gobj);
     priv->associate_js_gobject(cx, obj, gobj);

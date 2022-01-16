@@ -23,13 +23,16 @@
 #include <js/Class.h>
 #include <js/Conversions.h>
 #include <js/ErrorReport.h>
+#include <js/Exception.h>
 #include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
 #include <js/GCVector.h>  // for RootedVector
+#include <js/Object.h>    // for GetClass
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_GetPropertyById, JS_ClearPendin...
+#include <jsapi.h>        // for JS_GetPropertyById, JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
 
 #include "gjs/atoms.h"
@@ -193,7 +196,7 @@ void gjs_throw_abstract_constructor_error(JSContext* context,
     JS::RootedObject callee(context, &args.callee());
     JS::RootedValue prototype(context);
     if (JS_GetPropertyById(context, callee, atoms.prototype(), &prototype)) {
-        proto_class = JS_GetClass(&prototype.toObject());
+        proto_class = JS::GetClass(&prototype.toObject());
         name = proto_class->name;
     }
 
@@ -327,7 +330,7 @@ std::string gjs_value_debug_string(JSContext* context, JS::HandleValue value) {
             /* Specifically the Call object (see jsfun.c in spidermonkey)
              * does not have a toString; there may be others also.
              */
-            const JSClass *klass = JS_GetClass(&value.toObject());
+            const JSClass* klass = JS::GetClass(&value.toObject());
             if (klass != NULL) {
                 str = JS_NewStringCopyZ(context, klass->name);
                 JS_ClearPendingException(context);
@@ -592,7 +595,7 @@ gjs_gc_if_needed (JSContext *context)
         uint64_t rss_usize = rss_size;
         if (rss_usize > linux_rss_trigger) {
             linux_rss_trigger = MIN(G_MAXUINT32, rss_usize * 1.25);
-            JS::NonIncrementalGC(context, GC_SHRINK,
+            JS::NonIncrementalGC(context, JS::GCOptions::Shrink,
                                  Gjs::GCReason::LINUX_RSS_TRIGGER);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
             /* If we've shrunk by 75%, lower the trigger */

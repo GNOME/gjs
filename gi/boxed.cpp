@@ -15,14 +15,17 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
+#include <js/String.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for IdVector, JS_AtomizeAndPinJSString
+#include <jsapi.h>  // for IdVector
 #include <mozilla/HashTable.h>
 
 #include "gi/arg-cache.h"

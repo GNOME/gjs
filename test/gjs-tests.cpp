@@ -20,8 +20,10 @@
 #include <js/Array.h>
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
+#include <js/Exception.h>
 #include <js/Id.h>
 #include <js/RootingAPI.h>
+#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>

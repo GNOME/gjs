@@ -10,11 +10,13 @@
 
 #include <js/AllocPolicy.h>  // for SystemAllocPolicy
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCHashTable.h>  // for WeakCache
+#include <js/Object.h>       // for GetClass
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>  // for InformalValueTypeName, JS_GetClass
+#include <jsapi.h>       // for InformalValueTypeName
 #include <mozilla/HashTable.h>
 
 #include "gi/arg-inl.h"
@@ -409,7 +411,7 @@ JSObject* FundamentalInstance::object_for_c_ptr(JSContext* context,
         return nullptr;
 
     JS::RootedObject object(context, JS_NewObjectWithGivenProto(
-                                         context, JS_GetClass(proto), proto));
+                                         context, JS::GetClass(proto), proto));
 
     if (!object)
         return nullptr;

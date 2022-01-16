@@ -35,8 +35,9 @@ JSObject* gjs_module_load(JSContext* cx, const char* identifier,
                           const char* uri);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue mod_val,
-                             JS::HandleString specifier);
+JSObject* gjs_module_resolve(JSContext* cx,
+                             JS::HandleValue importing_module_priv,
+                             JS::HandleObject module_request);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
@@ -45,7 +46,7 @@ bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_dynamic_module_resolve(JSContext* cx,
                                 JS::HandleValue importing_module_priv,
-                                JS::HandleString specifier,
+                                JS::HandleObject module_request,
                                 JS::HandleObject internal_promise);
 
 #endif  // GJS_MODULE_H_

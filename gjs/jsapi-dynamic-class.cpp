@@ -12,7 +12,7 @@
 #include <js/CallArgs.h>  // for JSNative
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
-#include <js/PropertyDescriptor.h>  // for JSPROP_GETTER
+#include <js/Object.h>              // for GetClass
 #include <js/Realm.h>  // for GetRealmObjectPrototype
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -115,7 +115,7 @@ gjs_typecheck_instance(JSContext       *context,
 {
     if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
         if (throw_error) {
-            const JSClass *obj_class = JS_GetClass(obj);
+            const JSClass* obj_class = JS::GetClass(obj);
 
             gjs_throw_custom(context, JSProto_TypeError, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",
@@ -212,8 +212,6 @@ gjs_define_property_dynamic(JSContext       *cx,
         define_native_accessor_wrapper(cx, setter, 1, setter_name, private_slot));
     if (!setter_obj)
         return false;
-
-    flags |= JSPROP_GETTER | JSPROP_SETTER;
 
     return JS_DefineProperty(cx, proto, prop_name, getter_obj, setter_obj,
                              flags);

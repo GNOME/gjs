@@ -7,8 +7,8 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for size_t
 #include <stdint.h>
-#include <sys/types.h>  // for ssize_t
 
 #include <atomic>
 #include <string>
@@ -21,6 +21,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Context.h>
 #include <js/GCAPI.h>
 #include <js/GCHashTable.h>
 #include <js/GCVector.h>
@@ -30,7 +31,6 @@
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_GetContextPrivate
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
 #include "gi/closure.h"
@@ -214,12 +214,12 @@ class GjsContextPrivate : public JS::JobQueue {
         return *(from_cx(cx)->m_atoms);
     }
 
-    [[nodiscard]] bool eval(const char* script, ssize_t script_len,
+    [[nodiscard]] bool eval(const char* script, size_t script_len,
                             const char* filename, int* exit_status_p,
                             GError** error);
     GJS_JSAPI_RETURN_CONVENTION
     bool eval_with_scope(JS::HandleObject scope_object, const char* script,
-                         ssize_t script_len, const char* filename,
+                         size_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
     [[nodiscard]] bool eval_module(const char* identifier, uint8_t* exit_code_p,
                                    GError** error);
