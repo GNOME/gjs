@@ -873,7 +873,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
     if (trampoline && m_scope == GI_SCOPE_TYPE_ASYNC) {
         // Add an extra reference that will be cleared when garbage collecting
-        // async calls or never for notified callbacks without destroy
+        // async calls
         g_closure_ref(trampoline);
     }
 

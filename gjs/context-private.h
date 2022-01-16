@@ -139,9 +139,10 @@ class GjsContextPrivate : public JS::JobQueue {
     void start_draining_job_queue(void);
     void stop_draining_job_queue(void);
 
-    bool handle_exit_code(bool no_sync_error_pending, const char* type,
-                          const char* identifier, uint8_t* exit_code,
-                          GError** error);
+    [[nodiscard]] bool handle_exit_code(bool no_sync_error_pending,
+                                        const char* source_type,
+                                        const char* identifier,
+                                        uint8_t* exit_code, GError** error);
     [[nodiscard]] bool auto_profile_enter(void);
     void auto_profile_exit(bool status);
 

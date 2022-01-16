@@ -1219,7 +1219,7 @@ void GjsContextPrivate::auto_profile_exit(bool auto_profile) {
 }
 
 bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
-                                         const char* type,
+                                         const char* source_type,
                                          const char* identifier,
                                          uint8_t* exit_code, GError** error) {
     uint8_t code;
@@ -1238,7 +1238,7 @@ bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     // true synchronously
     if (JS_IsExceptionPending(m_cx)) {
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                    "%s %s threw an exception", type, identifier);
+                    "%s %s threw an exception", source_type, identifier);
         gjs_log_exception_uncaught(m_cx);
 
         *exit_code = 1;
@@ -1252,10 +1252,10 @@ bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
         return true;
     }
 
-    g_critical("%s %s terminated with an uncatchable exception", type,
+    g_critical("%s %s terminated with an uncatchable exception", source_type,
                identifier);
     g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
-                "%s %s terminated with an uncatchable exception", type,
+                "%s %s terminated with an uncatchable exception", source_type,
                 identifier);
 
     gjs_log_exception_uncaught(m_cx);

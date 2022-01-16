@@ -24,6 +24,7 @@ The `Gio` override includes a number of utilities for DBus that will be document
 
     * `export(busConnection, objectPath)`
     * `unexport()`
+    * `unexport_from_connection(busConnection)`
     * `flush()`
     * `emit_signal(name, variant)`
     * `emit_property_changed(name, variant)`

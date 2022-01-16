@@ -698,14 +698,13 @@ static bool resolve_on_interface_prototype(JSContext* cx,
     if (!interface_prototype)
         return false;
 
-    JS::Rooted<JS::PropertyDescriptor> desc(cx);
-    if (!JS_GetPropertyDescriptorById(cx, interface_prototype, identifier,
-                                      &desc))
+    bool exists = false;
+    if (!JS_HasPropertyById(cx, interface_prototype, identifier, &exists))
         return false;
 
     // If the property doesn't exist on the interface prototype, we don't need
     // to perform this trick.
-    if (!desc.object()) {
+    if (!exists) {
         *found = false;
         return true;
     }
@@ -751,15 +750,14 @@ static bool resolve_on_interface_prototype(JSContext* cx,
     if (!JS_SetPropertyById(cx, accessor, atoms.prototype(), v_prototype))
         return false;
 
-    // Copy the original descriptor and remove any value, instead
-    // adding our getter and setter.
-    JS::Rooted<JS::PropertyDescriptor> target_desc(cx, desc);
-    target_desc.setValue(JS::UndefinedHandleValue);
-    target_desc.setAttributes(JSPROP_SETTER | JSPROP_GETTER);
-    target_desc.setGetterObject(getter);
-    target_desc.setSetterObject(setter);
+    // Create a new descriptor with our getter and setter, that is configurable
+    // and enumerable, because GObject may need to redefine it later.
+    JS::Rooted<JS::PropertyDescriptor> desc(cx);
+    desc.setAttributes(JSPROP_ENUMERATE);
+    desc.setGetterObject(getter);
+    desc.setSetterObject(setter);
 
-    if (!JS_DefinePropertyById(cx, class_prototype, identifier, target_desc))
+    if (!JS_DefinePropertyById(cx, class_prototype, identifier, desc))
         return false;
 
     *found = true;
@@ -2797,7 +2795,8 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
 // Overrides GIWrapperInstance::typecheck_impl()
 bool ObjectInstance::typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
                                     GType expected_type) const {
-    g_assert(m_gobj_disposed || gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
+    g_assert(m_gobj_disposed || !m_ptr ||
+             gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
     return GIWrapperInstance::typecheck_impl(cx, expected_info, expected_type);
 }
 

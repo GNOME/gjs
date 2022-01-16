@@ -12,6 +12,7 @@
 #    include <windows.h>
 #endif
 
+#include <sstream>
 #include <string>
 #include <utility>  // for move
 #include <vector>
@@ -347,6 +348,122 @@ std::string gjs_value_debug_string(JSContext* context, JS::HandleValue value) {
     return _gjs_g_utf8_make_valid(bytes.get());
 }
 
+// Helper function: perform ToString on an exception (which may not even be an
+// object), except if it is an InternalError, which would throw in ToString.
+GJS_JSAPI_RETURN_CONVENTION
+static JSString* exception_to_string(JSContext* cx, JS::HandleValue exc) {
+    if (exc.isObject()) {
+        JS::RootedObject exc_obj(cx, &exc.toObject());
+        const JSClass* internal_error =
+            js::ProtoKeyToClass(JSProto_InternalError);
+        if (JS_InstanceOf(cx, exc_obj, internal_error, nullptr)) {
+            JSErrorReport* report = JS_ErrorFromException(cx, exc_obj);
+            if (!report->message())
+                return JS_NewStringCopyZ(cx, "(unknown internal error)");
+            return JS_NewStringCopyUTF8Z(cx, report->message());
+        }
+    }
+
+    return JS::ToString(cx, exc);
+}
+
+// Helper function: format the file name, line number, and column number where a
+// SyntaxError occurred.
+static std::string format_syntax_error_location(JSContext* cx,
+                                                JS::HandleObject exc) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+    JS::RootedValue property(cx);
+    int32_t line = 0;
+    if (JS_GetPropertyById(cx, exc, atoms.line_number(), &property)) {
+        if (property.isInt32())
+            line = property.toInt32();
+    }
+    JS_ClearPendingException(cx);
+
+    int32_t column = 0;
+    if (JS_GetPropertyById(cx, exc, atoms.column_number(), &property)) {
+        if (property.isInt32())
+            column = property.toInt32();
+    }
+    JS_ClearPendingException(cx);
+
+    JS::UniqueChars utf8_filename;
+    if (JS_GetPropertyById(cx, exc, atoms.file_name(), &property)) {
+        if (property.isString()) {
+            JS::RootedString str(cx, property.toString());
+            utf8_filename = JS_EncodeStringToUTF8(cx, str);
+        }
+    }
+    JS_ClearPendingException(cx);
+
+    std::ostringstream out;
+    out << " @ ";
+    if (utf8_filename)
+        out << utf8_filename.get();
+    else
+        out << "<unknown>";
+    out << ":" << line << ":" << column;
+    return out.str();
+}
+
+static std::string format_exception_log_message(JSContext* cx,
+                                                JS::HandleValue exc,
+                                                JS::HandleString message) {
+    std::ostringstream out;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+    if (message) {
+        JS::UniqueChars utf8_message = JS_EncodeStringToUTF8(cx, message);
+        JS_ClearPendingException(cx);
+        if (utf8_message)
+            out << utf8_message.get() << ": ";
+    }
+
+    JS::RootedString exc_str(cx, exception_to_string(cx, exc));
+    if (exc_str) {
+        JS::UniqueChars utf8_exception = JS_EncodeStringToUTF8(cx, exc_str);
+        if (utf8_exception)
+            out << utf8_exception.get();
+    }
+    JS_ClearPendingException(cx);
+
+    if (!exc.isObject())
+        return out.str();
+
+    JS::RootedObject exc_obj(cx, &exc.toObject());
+    const JSClass* syntax_error = js::ProtoKeyToClass(JSProto_SyntaxError);
+    if (JS_InstanceOf(cx, exc_obj, syntax_error, nullptr)) {
+        // We log syntax errors differently, because the stack for those
+        // includes only the referencing module, but we want to print out the
+        // file name, line number, and column number from the exception.
+        out << format_syntax_error_location(cx, exc_obj);
+        return out.str();
+    }
+
+    JS::UniqueChars utf8_stack;
+    // Check both the internal SavedFrame object and the stack property.
+    // GErrors will not have the former, and internal errors will not
+    // have the latter.
+    JS::RootedObject saved_frame(cx, JS::ExceptionStackOrNull(exc_obj));
+    JS::RootedString str(cx);
+    if (saved_frame) {
+        JS::BuildStackString(cx, nullptr, saved_frame, &str, 0);
+    } else {
+        JS::RootedValue stack(cx);
+        if (JS_GetPropertyById(cx, exc_obj, atoms.stack(), &stack) &&
+            stack.isString())
+            str = stack.toString();
+    }
+    if (str)
+        utf8_stack = JS_EncodeStringToUTF8(cx, str);
+    if (utf8_stack)
+        out << '\n' << utf8_stack.get();
+    JS_ClearPendingException(cx);
+
+    return out.str();
+}
+
 /**
  * gjs_log_exception_full:
  * @cx: the #JSContext
@@ -356,119 +473,24 @@ std::string gjs_value_debug_string(JSContext* context, JS::HandleValue value) {
  *
  * Currently, uses %G_LOG_LEVEL_WARNING if the exception is being printed after
  * being caught, and %G_LOG_LEVEL_CRITICAL if it was not caught by user code.
+ */
+void gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
+                            JS::HandleString message, GLogLevelFlags level) {
+    JS::AutoSaveExceptionState saved_exc(cx);
+    std::string log_msg = format_exception_log_message(cx, exc, message);
+    g_log(G_LOG_DOMAIN, level, "JS ERROR: %s", log_msg.c_str());
+    saved_exc.restore();
+}
+
+/**
+ * gjs_log_exception:
+ * @cx: the #JSContext
+ *
+ * Logs the exception pending on @cx, if any, in response to an exception being
+ * thrown that user code cannot catch or has already caught.
  *
  * Returns: %true if an exception was logged, %false if there was none pending.
  */
-bool gjs_log_exception_full(JSContext* context, JS::HandleValue exc,
-                            JS::HandleString message, GLogLevelFlags level) {
-    JS::AutoSaveExceptionState saved_exc(context);
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-
-    JS::RootedObject exc_obj(context);
-    JS::RootedString exc_str(context);
-    bool is_syntax = false, is_internal = false;
-    if (exc.isObject()) {
-        exc_obj = &exc.toObject();
-        const JSClass* syntax_error = js::ProtoKeyToClass(JSProto_SyntaxError);
-        is_syntax = JS_InstanceOf(context, exc_obj, syntax_error, nullptr);
-
-        const JSClass* internal_error =
-            js::ProtoKeyToClass(JSProto_InternalError);
-        is_internal = JS_InstanceOf(context, exc_obj, internal_error, nullptr);
-    }
-
-    if (is_internal) {
-        JSErrorReport* report = JS_ErrorFromException(context, exc_obj);
-        if (!report->message())
-            exc_str = JS_NewStringCopyZ(context, "(unknown internal error)");
-        else
-            exc_str = JS_NewStringCopyUTF8Z(context, report->message());
-    } else {
-        exc_str = JS::ToString(context, exc);
-    }
-    JS::UniqueChars utf8_exception;
-    if (exc_str)
-        utf8_exception = JS_EncodeStringToUTF8(context, exc_str);
-
-    JS::UniqueChars utf8_message;
-    if (message)
-        utf8_message = JS_EncodeStringToUTF8(context, message);
-
-    /* We log syntax errors differently, because the stack for those includes
-       only the referencing module, but we want to print out the filename and
-       line number from the exception.
-    */
-
-    if (is_syntax) {
-        JS::RootedValue js_lineNumber(context), js_fileName(context);
-        unsigned lineNumber;
-
-        JS_GetPropertyById(context, exc_obj, atoms.line_number(),
-                           &js_lineNumber);
-        JS_GetPropertyById(context, exc_obj, atoms.file_name(), &js_fileName);
-
-        JS::UniqueChars utf8_filename;
-        if (js_fileName.isString()) {
-            JS::RootedString str(context, js_fileName.toString());
-            utf8_filename = JS_EncodeStringToUTF8(context, str);
-        }
-
-        lineNumber = js_lineNumber.toInt32();
-
-        if (message) {
-            g_log(G_LOG_DOMAIN, level, "JS ERROR: %s: %s @ %s:%u",
-                  utf8_message.get(), utf8_exception.get(),
-                  utf8_filename ? utf8_filename.get() : "unknown", lineNumber);
-        } else {
-            g_log(G_LOG_DOMAIN, level, "JS ERROR: %s @ %s:%u",
-                  utf8_exception.get(),
-                  utf8_filename ? utf8_filename.get() : "unknown", lineNumber);
-        }
-
-    } else {
-        JS::UniqueChars utf8_stack;
-        if (exc.isObject()) {
-            // Check both the internal SavedFrame object and the stack property.
-            // GErrors will not have the former, and internal errors will not
-            // have the latter.
-            JS::RootedObject saved_frame(context,
-                                         JS::ExceptionStackOrNull(exc_obj));
-            JS::RootedString str(context);
-            if (saved_frame) {
-                JS::BuildStackString(context, nullptr, saved_frame, &str, 0);
-            } else {
-                JS::RootedValue stack(context);
-                JS_GetPropertyById(context, exc_obj, atoms.stack(), &stack);
-                if (stack.isString())
-                    str = stack.toString();
-            }
-            if (str)
-                utf8_stack = JS_EncodeStringToUTF8(context, str);
-        }
-
-        if (message) {
-            if (utf8_stack)
-                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s: %s\n%s",
-                      utf8_message.get(), utf8_exception.get(),
-                      utf8_stack.get());
-            else
-                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s: %s",
-                      utf8_message.get(), utf8_exception.get());
-        } else {
-            if (utf8_stack)
-                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s\n%s",
-                      utf8_exception.get(), utf8_stack.get());
-            else
-                g_log(G_LOG_DOMAIN, level, "JS ERROR: %s",
-                      utf8_exception.get());
-        }
-    }
-
-    saved_exc.restore();
-
-    return true;
-}
-
 bool
 gjs_log_exception(JSContext  *context)
 {
