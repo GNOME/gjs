@@ -9,7 +9,6 @@
 
 #include <memory>  // for unique_ptr
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <ffi.h>
@@ -178,23 +177,15 @@ class Function : public CWrapper<Function> {
 }  // namespace Gjs
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-static inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>
-set_ffi_arg(void* result, GIArgument* value) {
-    *static_cast<ffi_sarg*>(result) = gjs_arg_get<T, TAG>(value);
-}
-
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-static inline std::enable_if_t<std::is_floating_point_v<T> ||
-                               std::is_unsigned_v<T>>
-set_ffi_arg(void* result, GIArgument* value) {
-    *static_cast<ffi_arg*>(result) = gjs_arg_get<T, TAG>(value);
-}
-
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-static inline std::enable_if_t<std::is_pointer_v<T>> set_ffi_arg(
-    void* result, GIArgument* value) {
-    *static_cast<ffi_arg*>(result) =
-        gjs_pointer_to_int<ffi_arg>(gjs_arg_get<T, TAG>(value));
+static inline void set_ffi_arg(void* result, GIArgument* value) {
+    if constexpr (std::is_integral_v<T> && std::is_signed_v<T>) {
+        *static_cast<ffi_sarg*>(result) = gjs_arg_get<T, TAG>(value);
+    } else if constexpr (std::is_floating_point_v<T> && std::is_unsigned_v<T>) {
+        *static_cast<ffi_arg*>(result) = gjs_arg_get<T, TAG>(value);
+    } else if constexpr (std::is_pointer_v<T>) {
+        *static_cast<ffi_arg*>(result) =
+            gjs_pointer_to_int<ffi_arg>(gjs_arg_get<T, TAG>(value));
+    }
 }
 
 static void
