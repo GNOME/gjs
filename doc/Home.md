@@ -28,7 +28,7 @@ There are also a growing number of [examples][gjs-examples] and thorough tests o
 
 It's possible to write standalone applications with GJS for the GNOME Desktop, and infrastructure for Gettext, GSettings and GResources via the `package` import. There is a package specification, template repository available and plans for an in depth tutorial.
 
-* [GJS Package Specification](https://wiki.gnome.org/Projects/Gjs/Package/Specification.md)
+* [GJS Package Specification](https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/doc/Package/Specification.md)
 * [GJS Package Template](https://github.com/gcampax/gtk-js-app)
 
 GNOME Applications written in GJS:
@@ -65,5 +65,5 @@ Third party applications written in GJS:
 ## External Links
 
 * [GObjectIntrospection](https://wiki.gnome.org/action/show/Projects/GObjectIntrospection)
-* [GNOME Developer Platform Demo](https://developer.gnome.org/gnome-devel-demos/stable/js.html) (Some older examples that still might be informative)
-* [Writing GNOME Shell Extensions](https://wiki.gnome.org/Projects/GNOMEShell/Extensions/Writing)
+* [GNOME Developer Platform Demo](https://developer-old.gnome.org/gnome-devel-demos/stable/js.html) (Some older examples that still might be informative)
+* [GNOME Shell Extensions](https://gjs.guide/extensions)
