@@ -153,17 +153,6 @@ const MyCustomInit = GObject.registerClass(class MyCustomInit extends GObject.Ob
     }
 });
 
-const BigIntLimits = {
-    int64: {
-        min: -0x7fff_ffff_ffff_ffffn - 1n,
-        max: 0x7fff_ffff_ffff_ffffn,
-    },
-    uint64: {
-        min: 0n,
-        max: 0xffff_ffff_ffff_ffffn,
-    },
-};
-
 const NoName = GObject.registerClass(class extends GObject.Object {});
 
 describe('GObject class with decorator', function () {
@@ -381,26 +370,26 @@ describe('GObject class with decorator', function () {
             Properties: {
                 'int64': GObject.ParamSpec.int64('int64', 'int64', 'int64',
                     GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                    BigIntLimits.int64.min, BigIntLimits.int64.max, 0),
+                    GLib.MININT64_BIGINT, GLib.MAXINT64_BIGINT, 0),
             },
         }, class PropInt64 extends GObject.Object {});
 
-        let int64 = BigIntLimits.int64.max - 5n;
+        let int64 = GLib.MAXINT64_BIGINT - 5n;
         let obj = new PropInt64({int64});
         expect(obj.int64).toEqual(Number(int64));
 
-        int64 = BigIntLimits.int64.min + 555n;
+        int64 = GLib.MININT64_BIGINT + 555n;
         obj = new PropInt64({int64});
         expect(obj.int64).toEqual(Number(int64));
     });
 
     it('can have a default int64 property', function () {
-        const defaultValue = BigIntLimits.int64.max - 1000n;
+        const defaultValue = GLib.MAXINT64_BIGINT - 1000n;
         const PropInt64Init = GObject.registerClass({
             Properties: {
                 'int64': GObject.ParamSpec.int64('int64', 'int64', 'int64',
                     GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                    BigIntLimits.int64.min, BigIntLimits.int64.max,
+                    GLib.MININT64_BIGINT, GLib.MAXINT64_BIGINT,
                     defaultValue),
             },
         }, class PropDefaultInt64Init extends GObject.Object {});
@@ -414,22 +403,22 @@ describe('GObject class with decorator', function () {
             Properties: {
                 'uint64': GObject.ParamSpec.uint64('uint64', 'uint64', 'uint64',
                     GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                    0, BigIntLimits.uint64.max, 0),
+                    0, GLib.MAXUINT64_BIGINT, 0),
             },
         }, class PropUint64 extends GObject.Object {});
 
-        const uint64 = BigIntLimits.uint64.max - 5n;
+        const uint64 = GLib.MAXUINT64_BIGINT - 5n;
         const obj = new PropUint64({uint64});
         expect(obj.uint64).toEqual(Number(uint64));
     });
 
     it('can have a default uint64 property', function () {
-        const defaultValue = BigIntLimits.uint64.max;
+        const defaultValue = GLib.MAXUINT64_BIGINT;
         const PropUint64Init = GObject.registerClass({
             Properties: {
                 'uint64': GObject.ParamSpec.uint64('uint64', 'uint64', 'uint64',
                     GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
-                    0n, BigIntLimits.uint64.max, defaultValue),
+                    0n, GLib.MAXUINT64_BIGINT, defaultValue),
             },
         }, class PropDefaultUint64Init extends GObject.Object {});
 
