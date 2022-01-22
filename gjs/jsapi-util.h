@@ -560,6 +560,7 @@ bool gjs_object_require_converted_property(JSContext       *context,
                                            JS::HandleId     property_name,
                                            uint32_t        *value);
 
+[[nodiscard]] std::string gjs_debug_bigint(JS::BigInt* bi);
 [[nodiscard]] std::string gjs_debug_string(JSString* str);
 [[nodiscard]] std::string gjs_debug_symbol(JS::Symbol* const sym);
 [[nodiscard]] std::string gjs_debug_object(JSObject* obj);
