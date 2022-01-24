@@ -330,6 +330,10 @@ gjs_js_define_system_stuff(JSContext              *context,
             return false;
     }
 
+    JS::RootedValue v_gjs_version_string(context);
+    if (!gjs_string_from_utf8(context, VERSION, &v_gjs_version_string))
+        return false;
+
     JS::RootedObject program_args_getter(
         context,
         JS_GetFunctionObject(js::NewFunctionByIdWithReserved(
@@ -352,5 +356,8 @@ gjs_js_define_system_stuff(JSContext              *context,
                                  GJS_MODULE_PROP_FLAGS) &&
            JS_DefinePropertyById(context, module, gjs->atoms().version(),
                                  GJS_VERSION,
-                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
+                                 GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
+           JS_DefineProperty(context, module, "versionString",
+                             v_gjs_version_string,
+                             GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
 }

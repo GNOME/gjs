@@ -23,6 +23,12 @@ describe('System.version', function () {
     });
 });
 
+describe('System.versionString', function () {
+    it('gives a correctly formatted string', function () {
+        expect(System.versionString).toMatch(/1.[0-9]{2}.[0-9]/);
+    });
+});
+
 describe('System.refcount()', function () {
     it('gives the correct number', function () {
         let o = new GObject.Object({});
