@@ -300,6 +300,70 @@ static void gjstest_test_func_gjs_context_eval_module_file_fail_instantiate() {
     g_clear_error(&error);
 }
 
+static void gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_warning() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING, "*foo*");
+
+    bool ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/import.js", nullptr,
+        &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+
+    g_test_assert_expected_messages();
+
+    g_clear_error(&error);
+}
+
+static void
+gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_no_warning() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_eval_module_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/default.js", nullptr,
+        &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, "*bad module*");
+
+    bool ok = gjs_context_eval_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/throws.js", nullptr,
+        &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+
+    g_test_assert_expected_messages();
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_eval_file(
+        gjs, "resource:///org/gnome/gjs/mock/test/modules/nothrows.js", nullptr,
+        &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    g_clear_error(&error);
+}
+
 static void gjstest_test_func_gjs_context_register_module_eval_module() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
     GError* error = nullptr;
@@ -366,6 +430,37 @@ static void gjstest_test_func_gjs_context_eval_module_unregistered() {
     g_clear_error(&error);
 }
 
+static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_eval_module(gjs, "foo", nullptr, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    GError* error = nullptr;
+
+    bool ok = gjs_context_register_module(
+        gjs, "lies", "resource:///org/gnome/gjs/mock/test/modules/nothrows.js",
+        &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    ok = gjs_context_eval_module(gjs, "lies", NULL, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    g_clear_error(&error);
+}
+
 #define JS_CLASS "\
 const GObject = imports.gi.GObject; \
 const FooBar = GObject.registerClass(class FooBar extends GObject.Object {}); \
@@ -417,6 +512,39 @@ static void gjstest_test_func_gjs_gobject_without_introspection(void) {
     g_assert_cmpint(val, ==, 1234);
 
 #undef TESTJS
+}
+
+static void gjstest_test_func_gjs_context_eval_exit_code_omitted_throw() {
+    GjsAutoUnref<GjsContext> context = gjs_context_new();
+    GError* error = nullptr;
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, "*wrong code*");
+
+    const char bad_js[] = "throw new Error('wrong code');";
+
+    bool ok = gjs_context_eval(context, bad_js, -1, "<input>", nullptr, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+
+    g_test_assert_expected_messages();
+
+    g_clear_error(&error);
+}
+
+static void gjstest_test_func_gjs_context_eval_exit_code_omitted_no_throw() {
+    GjsAutoUnref<GjsContext> context = gjs_context_new();
+    GError* error = nullptr;
+
+    const char good_js[] = "let num = 77;";
+
+    bool ok =
+        gjs_context_eval(context, good_js, -1, "<input>", nullptr, &error);
+
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
@@ -957,6 +1085,26 @@ main(int    argc,
     g_test_add_func("/gi/args/set-get-unset", gjstest_test_args_set_get_unset);
     g_test_add_func("/gi/args/rounded_values",
                     gjstest_test_args_rounded_values);
+
+    g_test_add_func(
+        "/gjs/context/eval-module-file/exit-code-omitted-warning",
+        gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_warning);
+    g_test_add_func(
+        "/gjs/context/eval-module-file/exit-code-omitted-no-warning",
+        gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_no_warning);
+    g_test_add_func("/gjs/context/eval-file/exit-code-omitted-no-throw",
+                    gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw);
+    g_test_add_func("/gjs/context/eval-file/exit-code-omitted-throw",
+                    gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw);
+    g_test_add_func("/gjs/context/eval/exit-code-omitted-throw",
+                    gjstest_test_func_gjs_context_eval_exit_code_omitted_throw);
+    g_test_add_func("/gjs/context/eval/exit-code-omitted-no-throw",
+                    gjstest_test_func_gjs_context_eval_exit_code_omitted_no_throw);
+    g_test_add_func("/gjs/context/eval-module/exit-code-omitted-throw",
+                    gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw);
+    g_test_add_func(
+        "/gjs/context/eval-module/exit-code-omitted-no-throw",
+        gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
