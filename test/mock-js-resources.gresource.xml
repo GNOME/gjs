@@ -9,5 +9,6 @@
     <file>test/modules/exit0.js</file>
     <file>test/modules/import.js</file>
     <file>test/modules/throws.js</file>
+    <file>test/modules/nothrows.js</file>
   </gresource>
 </gresources>

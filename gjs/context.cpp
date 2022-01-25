@@ -1333,7 +1333,9 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     if (!gjs_global_registry_get(m_cx, registry, key, &obj) || !obj) {
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
                     "Cannot load module with identifier: '%s'", identifier);
-        *exit_status_p = 1;
+
+        if (exit_status_p)
+            *exit_status_p = 1;
         return false;
     }
 
@@ -1341,7 +1343,9 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         gjs_log_exception(m_cx);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
                     "Failed to resolve imports for module: '%s'", identifier);
-        *exit_status_p = 1;
+
+        if (exit_status_p)
+            *exit_status_p = 1;
         return false;
     }
 
