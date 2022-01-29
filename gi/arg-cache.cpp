@@ -285,7 +285,7 @@ struct Callback : Nullable, BaseInfo {
 
     uint8_t m_closure_pos = Argument::ABSENT;
     uint8_t m_destroy_pos = Argument::ABSENT;
-    GIScopeType m_scope : 2;
+    GIScopeType m_scope : 3;
 };
 
 struct Enum {

@@ -76,7 +76,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     std::vector<GjsParamType> m_param_types;
     ffi_cif m_cif;
 
-    GIScopeType m_scope : 2;
+    GIScopeType m_scope : 3;
     bool m_is_vfunc : 1;
 };
 
