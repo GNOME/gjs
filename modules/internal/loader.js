@@ -12,15 +12,18 @@ class ModuleLoader extends InternalModuleLoader {
         super(global, compileModule);
 
         /**
-         * @type {Set<string>}
+         * The set of "module" URI globs (the module search path)
          *
-         * The set of "module" URIs (the module search path)
-         * For example, having "resource:///org/gnome/gjs/modules/esm/" in this
-         * set allows import "system" if
-         * "resource:///org/gnome/gjs/modules/esm/system.js" exists.
+         * For example, having `"resource:///org/gnome/gjs/modules/esm/*.js"` in this
+         * set allows `import "system"` if
+         * `"resource:///org/gnome/gjs/modules/esm/system.js"` exists.
+         *
+         * Only `*` is supported as a replacement character, `**` is not supported.
+         *
+         * @type {Set<string>}
          */
         this.moduleURIs = new Set([
-            'resource:///org/gnome/gjs/modules/esm/',
+            'resource:///org/gnome/gjs/modules/esm/*.js',
         ]);
 
         /**
@@ -40,7 +43,7 @@ class ModuleLoader extends InternalModuleLoader {
         const builtURIs = [];
 
         for (const uri of moduleURIs) {
-            const builtURI = `${uri}/${specifier}.js`;
+            const builtURI = uri.replace('*', specifier);
             builtURIs.push(builtURI);
         }
 
