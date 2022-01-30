@@ -1642,7 +1642,8 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
 
         GIInfoType interface_type = g_base_info_get_type(interface_info);
         if (interface_type == GI_INFO_TYPE_ENUM ||
-            interface_type == GI_INFO_TYPE_FLAGS)
+            interface_type == GI_INFO_TYPE_FLAGS ||
+            arg::is_gdk_atom(interface_info))
             expect_object = false;
 
         if (interface_type == GI_INFO_TYPE_STRUCT &&
