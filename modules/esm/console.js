@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
+import GLib from 'gi://GLib';
+
+const NativeConsole = import.meta.importSync('_consoleNative');
+
 const DEFAULT_LOG_DOMAIN = 'Gjs-Console';
 
 // A line-by-line implementation of https://console.spec.whatwg.org/.
@@ -109,7 +113,7 @@ class Console {
      */
     clear() {
         this.#groupIndentation = '';
-        imports.gi.GjsPrivate.clear_terminal();
+        NativeConsole.clearTerminal();
     }
 
     /**

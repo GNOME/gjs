@@ -60,7 +60,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     do {
         const char* real_prompt = prompt ? prompt.get() : "db> ";
 #ifdef HAVE_READLINE_READLINE_H
-        if (gjs_console_is_tty(stdin_fd)) {
+        if (Gjs::Console::is_tty(Gjs::Console::stdin_fd)) {
             line = readline(real_prompt);
         } else {
 #else
@@ -73,7 +73,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
                 buf[0] = '\0';
             line.reset(g_strdup(g_strchomp(buf)));
 
-            if (!gjs_console_is_tty(stdin_fd)) {
+            if (!Gjs::Console::is_tty(Gjs::Console::stdin_fd)) {
                 if (feof(stdin)) {
                     g_print("[quit due to end of input]\n");
                     line.reset(g_strdup("quit"));

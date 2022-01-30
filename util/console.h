@@ -1,31 +1,28 @@
-/* -*- mode: C; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
- * SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
- */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
 #ifndef UTIL_CONSOLE_H_
 #define UTIL_CONSOLE_H_
 
-/* This file has to be valid C, because it's used in libgjs-private */
+#include <config.h>
 
-#include <stdbool.h> /* IWYU pragma: keep */
-
-#include <glib.h>
-
-#include "gjs/macros.h"
-
-G_BEGIN_DECLS
-
+namespace Gjs {
+namespace Console {
 extern const int stdout_fd;
 extern const int stdin_fd;
 extern const int stderr_fd;
 
-GJS_USE
-bool gjs_console_is_tty(int fd);
+[[nodiscard]] bool is_tty(int fd = stdout_fd);
 
-bool gjs_console_clear(void);
+[[nodiscard]] bool clear();
 
-G_END_DECLS
+[[nodiscard]] bool enable_raw_mode();
+
+[[nodiscard]] bool disable_raw_mode();
+
+[[nodiscard]] bool get_size(int* width, int* height);
+
+};  // namespace Console
+};  // namespace Gjs
 
 #endif  // UTIL_CONSOLE_H_

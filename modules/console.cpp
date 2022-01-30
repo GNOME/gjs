@@ -313,13 +313,34 @@ gjs_console_interact(JSContext *context,
     return true;
 }
 
-bool
-gjs_define_console_stuff(JSContext              *context,
-                         JS::MutableHandleObject module)
-{
-    module.set(JS_NewPlainObject(context));
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefineFunctionById(context, module, atoms.interact(),
-                                 gjs_console_interact, 1,
-                                 GJS_MODULE_PROP_FLAGS);
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_console_clear_terminal(JSContext* cx, unsigned argc,
+                                       JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    if (!gjs_parse_call_args(cx, "clearTerminal", args, ""))
+        return false;
+
+    if (!Gjs::Console::is_tty(Gjs::Console::stdout_fd)) {
+        args.rval().setBoolean(false);
+        return true;
+    }
+
+    args.rval().setBoolean(Gjs::Console::clear());
+    return true;
+}
+
+static JSFunctionSpec console_module_funcs[] = {
+    JS_FN("clearTerminal", gjs_console_clear_terminal, 1,
+          GJS_MODULE_PROP_FLAGS),
+    JS_FN("interact", gjs_console_interact, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END,
+};
+
+bool gjs_define_console_private_stuff(JSContext* cx,
+                                      JS::MutableHandleObject module) {
+    module.set(JS_NewPlainObject(cx));
+    if (!module)
+        return false;
+
+    return JS_DefineFunctions(cx, module, console_module_funcs);
 }
