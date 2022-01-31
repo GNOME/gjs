@@ -58,4 +58,14 @@ describe('SpiderMonkey features check', function () {
     it('WeakRef is enabled', function () {
         expect(WeakRef).toBeDefined();
     });
+
+    it('class static blocks are enabled', function () {
+        class Test {
+            static {
+                Test.x = 4;
+            }
+        }
+
+        expect(Test.x).toBe(4);
+    });
 });
