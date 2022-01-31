@@ -144,10 +144,12 @@ const MyObjectWithCustomConstructor = GObject.registerClass({
 }, class MyObjectWithCustomConstructor extends GObject.Object {
     _readwrite;
     _readonly;
+    _constructProp;
 
     constructor({readwrite = 'foo', readonly = 'bar', construct = 'default'} = {}) {
-        super({construct});
+        super();
 
+        this._constructProp = construct;
         this._readwrite = readwrite;
         this._readonly = readonly;
     }
@@ -171,6 +173,10 @@ const MyObjectWithCustomConstructor = GObject.registerClass({
         // this should never be called
         void val;
         this._readonly = 'bogus';
+    }
+
+    get construct() {
+        return this._constructProp;
     }
 
     notifyProp() {
