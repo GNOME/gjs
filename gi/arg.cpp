@@ -2778,8 +2778,7 @@ gjs_value_from_g_argument (JSContext             *context,
             }
             value_p.setObject(*array);
         } else {
-            /* this assumes the array type is one of GArray, GPtrArray or
-             * GByteArray */
+            // this assumes the array type is GArray or GPtrArray
             GjsAutoTypeInfo param_info =
                 g_type_info_get_param_type(type_info, 0);
             g_assert(param_info != nullptr);
