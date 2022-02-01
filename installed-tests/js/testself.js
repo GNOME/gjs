@@ -54,4 +54,8 @@ describe('SpiderMonkey features check', function () {
     it('Intl API was compiled into SpiderMonkey', function () {
         expect(Intl).toBeDefined();
     });
+
+    it('WeakRef is enabled', function () {
+        expect(WeakRef).toBeDefined();
+    });
 });
