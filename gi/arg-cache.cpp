@@ -576,15 +576,14 @@ struct ForeignStructIn : ForeignStructInstanceIn {
                  GIArgument*) override;
 };
 
-struct FallbackInterfaceIn : RegisteredInterfaceIn, HasTypeInfo {
-    FallbackInterfaceIn(GITypeInfo* type_info, GIRegisteredTypeInfo* info)
-        : RegisteredInterfaceIn(info), HasTypeInfo(type_info) {}
+struct FallbackInterfaceIn : RegisteredInterfaceIn {
+    using RegisteredInterfaceIn::RegisteredInterfaceIn;
 
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
             JS::HandleValue value) override {
-        return gjs_value_to_gi_argument(cx, value, &m_type_info, m_arg_name,
-                                        GJS_ARGUMENT_ARGUMENT, m_transfer,
-                                        flags(), arg);
+        return gjs_value_to_interface_gi_argument(
+            cx, value, m_info, m_transfer, arg, m_arg_name,
+            GJS_ARGUMENT_ARGUMENT, flags());
     }
 };
 
@@ -1734,8 +1733,10 @@ constexpr size_t argument_maximum_size() {
     if constexpr (std::is_same_v<T, Arg::ObjectIn> ||
                   std::is_same_v<T, Arg::BoxedIn>)
         return 40;
-    else
+    if constexpr (std::is_same_v<T, Arg::BoxedCallerAllocatesOut>)
         return 120;
+    else
+        return 112;
 }
 #endif
 
@@ -2076,13 +2077,7 @@ namespace arg_cache {
 
 template <Arg::Kind ArgKind>
 void ArgsCache::build_interface_in_arg(
-    const Argument::Init& base_args, GIBaseInfo* interface_info,
-    std::conditional_t<ArgKind != Arg::Kind::INSTANCE, GITypeInfo*, int>
-        type_info) {
-    if constexpr (ArgKind != Arg::Kind::INSTANCE)
-        g_assert(type_info &&
-                 "type info cannot be null except for instance parameter");
-
+    const Argument::Init& base_args, GIBaseInfo* interface_info) {
     GIInfoType interface_type = g_base_info_get_type(interface_info);
 
     // We do some transfer magic later, so let's ensure we don't mess up.
@@ -2123,7 +2118,7 @@ void ArgsCache::build_interface_in_arg(
                 // Fall back to the generic marshaller
                 if constexpr (ArgKind != Arg::Kind::INSTANCE) {
                     set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(type_info, interface_info),
+                        new Arg::FallbackInterfaceIn(interface_info),
                         base_args);
                     return;
                 }
@@ -2136,7 +2131,7 @@ void ArgsCache::build_interface_in_arg(
                 if constexpr (ArgKind != Arg::Kind::INSTANCE) {
                     // This covers cases such as GTypeInstance
                     set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(type_info, interface_info),
+                        new Arg::FallbackInterfaceIn(interface_info),
                         base_args);
                     return;
                 }
@@ -2193,7 +2188,7 @@ void ArgsCache::build_interface_in_arg(
             if (g_type_is_a(gtype, G_TYPE_PARAM)) {
                 if constexpr (ArgKind != Arg::Kind::INSTANCE) {
                     set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(type_info, interface_info),
+                        new Arg::FallbackInterfaceIn(interface_info),
                         base_args);
                     return;
                 }
@@ -2359,7 +2354,7 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
         case GI_TYPE_TAG_INTERFACE: {
             GI::AutoBaseInfo interface_info{
                 g_type_info_get_interface(type_info)};
-            build_interface_in_arg(common_args, interface_info, type_info);
+            build_interface_in_arg(common_args, interface_info);
             return;
         }
 

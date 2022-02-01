@@ -1001,6 +1001,20 @@ throw_invalid_argument(JSContext      *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool throw_invalid_interface_argument(JSContext* cx,
+                                             JS::HandleValue value,
+                                             GIBaseInfo* interface_info,
+                                             const char* arg_name,
+                                             GjsArgumentType arg_type) {
+    Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
+
+    gjs_throw(cx, "Expected type %s for %s but got type '%s'",
+              g_info_type_to_string(g_base_info_get_type(interface_info)),
+              display_name.get(), JS::InformalValueTypeName(value));
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
                                  GITypeInfo* type_info, const char* arg_name,
                                  GjsArgumentType arg_type, GITransfer transfer,
@@ -1092,12 +1106,12 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
                                               2, nullptr, 0, ret, nullptr);
 }
 
-static bool value_to_interface_gi_argument(
+GJS_JSAPI_RETURN_CONVENTION
+bool value_to_interface_gi_argument_internal(
     JSContext* cx, JS::HandleValue value, GIBaseInfo* interface_info,
     GIInfoType interface_type, GITransfer transfer, bool expect_object,
-    GIArgument* arg, GjsArgumentType arg_type, GjsArgumentFlags flags,
-    bool* report_type_mismatch) {
-    g_assert(report_type_mismatch);
+    GIArgument* arg, const char* arg_name, GjsArgumentType arg_type,
+    GjsArgumentFlags flags) {
     GType gtype;
 
     switch (interface_type) {
@@ -1141,8 +1155,8 @@ static bool value_to_interface_gi_argument(
 
     } else if (arg::is_gdk_atom(interface_info)) {
         if (!value.isNull() && !value.isString()) {
-            *report_type_mismatch = true;
-            return false;
+            return throw_invalid_interface_argument(cx, value, interface_info,
+                                                    arg_name, arg_type);
         } else if (value.isNull()) {
             intern_gdk_atom("NONE", arg);
             return true;
@@ -1157,8 +1171,8 @@ static bool value_to_interface_gi_argument(
         return true;
 
     } else if (expect_object != value.isObjectOrNull()) {
-        *report_type_mismatch = true;
-        return false;
+        return throw_invalid_interface_argument(cx, value, interface_info,
+                                                arg_name, arg_type);
 
     } else if (value.isNull()) {
         gjs_arg_set(arg, nullptr);
@@ -1173,8 +1187,8 @@ static bool value_to_interface_gi_argument(
                 return false;
 
             if (actual_gtype == G_TYPE_NONE) {
-                *report_type_mismatch = true;
-                return false;
+                return throw_invalid_interface_argument(
+                    cx, value, interface_info, arg_name, arg_type);
             }
 
             // We use peek here to simplify reference counting (we just ignore
@@ -1352,8 +1366,8 @@ static bool value_to_interface_gi_argument(
     gjs_debug(GJS_DEBUG_GFUNCTION,
               "JSObject type '%s' is neither null nor an object",
               JS::InformalValueTypeName(value));
-    *report_type_mismatch = true;
-    return false;
+    return throw_invalid_interface_argument(cx, value, interface_info, arg_name,
+                                            arg_type);
 }
 
 template <typename T>
@@ -1398,11 +1412,57 @@ static bool check_nullable_argument(JSContext* cx, const char* arg_name,
     return true;
 }
 
+// Convert a JS value to GIArgument, specifically for arguments with type tag
+// GI_TYPE_TAG_INTERFACE.
+bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
+                                        GIBaseInfo* interface_info,
+                                        GITransfer transfer, GIArgument* arg,
+                                        const char* arg_name,
+                                        GjsArgumentType arg_type,
+                                        GjsArgumentFlags flags) {
+    g_assert(interface_info);
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type interface",
+        arg_name, gjs_debug_value(value).c_str());
+
+    GIInfoType interface_type = g_base_info_get_type(interface_info);
+    if (interface_type == GI_INFO_TYPE_STRUCT &&
+        g_struct_info_is_foreign(interface_info)) {
+        return gjs_struct_foreign_convert_to_gi_argument(
+            cx, value, interface_info, arg_name, arg_type, transfer, flags,
+            arg);
+    }
+
+    bool expect_object = interface_type != GI_INFO_TYPE_ENUM &&
+                         interface_type != GI_INFO_TYPE_FLAGS &&
+                         !arg::is_gdk_atom(interface_info);
+
+    if (!value_to_interface_gi_argument_internal(
+            cx, value, interface_info, interface_type, transfer, expect_object,
+            arg, arg_name, arg_type, flags))
+        return false;
+
+    if (expect_object) {
+        return check_nullable_argument(cx, arg_name, arg_type,
+                                       GI_TYPE_TAG_INTERFACE, flags, arg);
+    }
+    return true;
+}
+
 bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                               GITypeInfo* type_info, const char* arg_name,
                               GjsArgumentType arg_type, GITransfer transfer,
                               GjsArgumentFlags flags, GIArgument* arg) {
     GITypeTag type_tag = g_type_info_get_tag(type_info);
+
+    if (type_tag == GI_TYPE_TAG_INTERFACE) {
+        GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
+        return gjs_value_to_interface_gi_argument(context, value,
+                                                  interface_info, transfer, arg,
+                                                  arg_name, arg_type, flags);
+    }
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
@@ -1541,43 +1601,6 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         return check_nullable_argument(context, arg_name, arg_type, type_tag,
                                        flags, arg);
 
-    case GI_TYPE_TAG_INTERFACE:
-        {
-        bool expect_object = true;
-
-        GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
-        g_assert(interface_info);
-
-        GIInfoType interface_type = interface_info.type();
-        if (interface_type == GI_INFO_TYPE_ENUM ||
-            interface_type == GI_INFO_TYPE_FLAGS ||
-            arg::is_gdk_atom(interface_info))
-            expect_object = false;
-
-        if (interface_type == GI_INFO_TYPE_STRUCT &&
-            g_struct_info_is_foreign(interface_info)) {
-            return gjs_struct_foreign_convert_to_gi_argument(
-                context, value, interface_info, arg_name, arg_type, transfer,
-                flags, arg);
-        }
-
-        bool report_type_mismatch = false;
-        if (!value_to_interface_gi_argument(
-                context, value, interface_info, interface_type, transfer,
-                expect_object, arg, arg_type, flags, &report_type_mismatch)) {
-            if (report_type_mismatch)
-                throw_invalid_argument(context, value, type_info, arg_name,
-                                       arg_type);
-
-            return false;
-        }
-
-        if (expect_object)
-            return check_nullable_argument(context, arg_name, arg_type,
-                                           type_tag, flags, arg);
-        }
-        break;
-
     case GI_TYPE_TAG_GLIST:
         return gjs_array_to_g_list(context, value, type_info, transfer,
                                    arg_name, arg_type,
@@ -1665,6 +1688,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         break;
     }
     default:
+        // INTERFACE handled in gjs_value_to_interface_gi_argument()
         g_warning("Unhandled type %s for JavaScript to GIArgument conversion",
                   g_type_tag_to_string(type_tag));
         throw_invalid_argument(context, value, type_info, arg_name, arg_type);

@@ -185,10 +185,8 @@ struct ArgsCache {
     // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334) but
     // for other parameters, this function additionally takes a GITypeInfo.
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    void build_interface_in_arg(
-        const Argument::Init&, GIBaseInfo*,
-        std::conditional_t<ArgKind != Arg::Kind::INSTANCE, GITypeInfo*, int> =
-            {});
+    void build_interface_in_arg(const Argument::Init&,
+                                GIBaseInfo* interface_info);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);

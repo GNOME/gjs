@@ -78,6 +78,12 @@ bool inline gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_interface_gi_argument(JSContext*, JS::HandleValue,
+                                        GIBaseInfo* interface_info, GITransfer,
+                                        GIArgument*, const char* arg_name,
+                                        GjsArgumentType, GjsArgumentFlags);
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_gi_argument(JSContext*, JS::MutableHandleValue, GITypeInfo*,
                                 GjsArgumentType, GITransfer, GIArgument*);
 
