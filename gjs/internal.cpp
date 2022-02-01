@@ -281,6 +281,7 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     using AutoHashTable =
         GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
     using AutoURI = GjsAutoPointer<GUri, GUri, g_uri_unref>;
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     JS::RootedString string_arg(cx);
@@ -294,6 +295,8 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     GError* error = nullptr;
     AutoURI parsed = g_uri_parse(uri.get(), G_URI_FLAGS_NONE, &error);
     if (!parsed) {
+        JSAutoRealm ar(cx, gjs->global());
+
         gjs_throw_custom(cx, JSProto_Error, "ImportError",
                          "Attempted to import invalid URI: %s (%s)", uri.get(),
                          error->message);
@@ -310,6 +313,8 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
         AutoHashTable query =
             g_uri_parse_params(raw_query, -1, "&", G_URI_PARAMS_NONE, &error);
         if (!query) {
+            JSAutoRealm ar(cx, gjs->global());
+
             gjs_throw_custom(cx, JSProto_Error, "ImportError",
                              "Attempted to import invalid URI: %s (%s)",
                              uri.get(), error->message);
@@ -412,6 +417,9 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
     GError* error = nullptr;
     if (!g_file_load_contents(file, /* cancellable = */ nullptr, &contents,
                               &length, /* etag_out = */ nullptr, &error)) {
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+        JSAutoRealm ar(cx, gjs->global());
+
         gjs_throw_custom(cx, JSProto_Error, "ImportError",
                          "Unable to load file from: %s (%s)", uri.get(),
                          error->message);

@@ -23,7 +23,7 @@
 /**
  * Thrown when there is an error importing a module.
  */
-export class ImportError extends Error {
+export class ImportError extends moduleGlobalThis.Error {
     /**
      * @param {string | undefined} message the import error message
      */
