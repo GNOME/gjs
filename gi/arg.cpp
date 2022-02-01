@@ -1692,14 +1692,6 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
             return false;
         } else {
             GHashTable *ghash;
-            GjsAutoTypeInfo key_param_info =
-                g_type_info_get_param_type(type_info, 0);
-            GjsAutoTypeInfo val_param_info =
-                g_type_info_get_param_type(type_info, 1);
-
-            g_assert(key_param_info != nullptr);
-            g_assert(val_param_info != nullptr);
-
             JS::RootedObject props(context, &value.toObject());
             if (!gjs_object_to_g_hash(context, props, type_info, transfer,
                                       &ghash)) {
