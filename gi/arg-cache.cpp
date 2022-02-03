@@ -159,6 +159,8 @@ struct HasTypeInfo {
         return const_cast<GITypeInfo*>(&m_type_info);
     }
 
+    Maybe<ReturnTag> return_tag() const { return Some(ReturnTag{type_info()}); }
+
     GITypeInfo m_type_info{};
 };
 
@@ -247,6 +249,10 @@ struct RegisteredType : GTypedType {
                  "Use RegisteredInterface for this type");
     }
 
+    Maybe<ReturnTag> return_tag() const {
+        return Some(ReturnTag{GI_TYPE_TAG_INTERFACE, m_info_type, true});
+    }
+
     GIInfoType m_info_type : 5;
 };
 
@@ -254,6 +260,11 @@ struct RegisteredInterface : HasIntrospectionInfo, GTypedType {
     explicit RegisteredInterface(GIRegisteredTypeInfo* info)
         : HasIntrospectionInfo(info, TakeOwnership{}),
           GTypedType(g_registered_type_info_get_g_type(m_info)) {}
+
+    Maybe<ReturnTag> return_tag() const {
+        return Some(ReturnTag{GI_TYPE_TAG_INTERFACE,
+                              g_base_info_get_type(m_info), true});
+    }
 };
 
 struct Callback : Nullable, HasIntrospectionInfo {
@@ -362,12 +373,8 @@ struct GenericOut : GenericInOut {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
-    Maybe<GITypeTag> return_tag() const override {
-        return Some(
-            g_type_info_get_tag(&const_cast<GenericOut*>(this)->m_type_info));
-    }
-    Maybe<const GITypeInfo*> return_type() const override {
-        return Some(&m_type_info);
+    Maybe<ReturnTag> return_tag() const override {
+        return HasTypeInfo::return_tag();
     }
 };
 
@@ -408,7 +415,9 @@ struct NumericReturn : SkipAll {
         return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
                                                   value);
     }
-    Maybe<GITypeTag> return_tag() const override { return Some(TAG); }
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{TAG});
+    }
 };
 
 using BooleanReturn = NumericReturn<gboolean, GI_TYPE_TAG_BOOLEAN>;
@@ -459,6 +468,10 @@ struct ExplicitArrayOut : ExplicitArrayInOut {
     }
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
+
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
+    }
 };
 
 struct ReturnArray : ExplicitArrayOut {
@@ -772,8 +785,8 @@ struct StringReturn : StringOutBase<TRANSFER> {
         return Argument::invalid(cx, G_STRFUNC);
     }
 
-    Maybe<GITypeTag> return_tag() const override {
-        return Some(GI_TYPE_TAG_UTF8);
+    Maybe<ReturnTag> return_tag() const override {
+        return Some(ReturnTag{GI_TYPE_TAG_UTF8});
     }
 };
 
@@ -1836,14 +1849,8 @@ Maybe<GType> ArgsCache::instance_type() const {
         .map(std::mem_fn(&Arg::Instance::gtype));
 }
 
-Maybe<GITypeTag> ArgsCache::return_tag() const {
+Maybe<Arg::ReturnTag> ArgsCache::return_tag() const {
     return return_value().andThen(std::mem_fn(&Argument::return_tag));
-}
-
-Maybe<GITypeInfo*> ArgsCache::return_type() const {
-    return return_value()
-        .andThen(std::mem_fn(&Argument::return_type))
-        .map([](const GITypeInfo* ti) { return const_cast<GITypeInfo*>(ti); });
 }
 
 void ArgsCache::set_skip_all(uint8_t index, const char* name) {
