@@ -4,7 +4,6 @@
 <gresources>
   <gresource prefix="/org/gnome/gjs">
     <!-- Internal modules -->
-    <file>modules/internal/internalLoader.js</file>
     <file>modules/internal/loader.js</file>
 
     <!-- ESM-based modules -->

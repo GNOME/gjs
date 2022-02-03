@@ -523,6 +523,59 @@ gjs_context_constructed(GObject *object)
     setup_dump_heap();
 }
 
+static bool on_context_module_rejected_log_exception(JSContext* cx,
+                                                     unsigned argc,
+                                                     JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::HandleValue error = args.get(0);
+
+    GjsContextPrivate* gjs_cx = GjsContextPrivate::from_cx(cx);
+    gjs_cx->report_unhandled_exception();
+
+    gjs_log_exception_full(cx, error, nullptr, G_LOG_LEVEL_CRITICAL);
+
+    gjs_cx->main_loop_release();
+
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool on_context_module_resolved(JSContext* cx, unsigned argc,
+                                       JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    args.rval().setUndefined();
+
+    GjsContextPrivate::from_cx(cx)->main_loop_release();
+
+    return true;
+}
+
+static bool add_promise_reactions(JSContext* cx, JS::HandleValue promise,
+                                  JSNative resolve, JSNative reject,
+                                  const std::string& debug_tag) {
+    g_assert(promise.isObject() && "got weird value from JS::ModuleEvaluate");
+    JS::RootedObject promise_object(cx, &promise.toObject());
+
+    std::string resolved_tag = debug_tag + " async resolved";
+    std::string rejected_tag = debug_tag + " async rejected";
+
+    JS::RootedFunction on_rejected(
+        cx,
+        js::NewFunctionWithReserved(cx, reject, 1, 0, resolved_tag.c_str()));
+    if (!on_rejected)
+        return false;
+    JS::RootedFunction on_resolved(
+        cx,
+        js::NewFunctionWithReserved(cx, resolve, 1, 0, rejected_tag.c_str()));
+    if (!on_resolved)
+        return false;
+
+    JS::RootedObject resolved(cx, JS_GetFunctionObject(on_resolved));
+    JS::RootedObject rejected(cx, JS_GetFunctionObject(on_rejected));
+
+    return JS::AddPromiseReactions(cx, promise_object, resolved, rejected);
+}
+
 static void load_context_module(JSContext* cx, const char* uri,
                                 const char* debug_identifier) {
     JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri));
@@ -537,10 +590,27 @@ static void load_context_module(JSContext* cx, const char* uri,
         g_error("Failed to instantiate %s module.", debug_identifier);
     }
 
-    JS::RootedValue ignore(cx);
-    if (!JS::ModuleEvaluate(cx, loader, &ignore)) {
+    JS::RootedValue evaluation_promise(cx);
+    if (!JS::ModuleEvaluate(cx, loader, &evaluation_promise)) {
         gjs_log_exception(cx);
         g_error("Failed to evaluate %s module.", debug_identifier);
+    }
+
+    GjsContextPrivate::from_cx(cx)->main_loop_hold();
+    bool ok = add_promise_reactions(
+        cx, evaluation_promise, on_context_module_resolved,
+        [](JSContext* cx, unsigned, JS::Value*) {
+            GjsContextPrivate::from_cx(cx)->main_loop_release();
+
+            // Abort because this module is required.
+            g_error("Failed to load context module.");
+            return false;
+        },
+        "context");
+
+    if (!ok) {
+        gjs_log_exception(cx);
+        g_error("Failed to load %s module.", debug_identifier);
     }
 }
 
@@ -655,14 +725,10 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to define module global in internal global.");
     }
 
-    if (!gjs_load_internal_module(cx, "internalLoader")) {
+    if (!gjs_load_internal_module(cx, "loader")) {
         gjs_log_exception(cx);
         g_error("Failed to load internal module loaders.");
     }
-
-    load_context_module(cx,
-                        "resource:///org/gnome/gjs/modules/internal/loader.js",
-                        "module loader");
 
     {
         JSAutoRealm ar(cx, global);
@@ -670,6 +736,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
             cx, "resource:///org/gnome/gjs/modules/esm/_bootstrap/default.js",
             "ESM bootstrap");
     }
+
+    [[maybe_unused]] bool success = m_main_loop.spin(this);
+    g_assert(success && "bootstrap should not call system.exit()");
 
     start_draining_job_queue();
 }
@@ -1258,6 +1327,13 @@ bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
         return false;
     }
 
+    if (m_unhandled_exception) {
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+                    "%s %s threw an exception", source_type, identifier);
+        *exit_code = 1;
+        return false;
+    }
+
     // Assume success if no error was thrown and should exit isn't
     // set
     if (no_sync_error_pending) {
@@ -1289,13 +1365,15 @@ bool GjsContextPrivate::eval(const char* script, size_t script_len,
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
 
-    if (ok)
-        m_main_loop.spin(this);
-
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
-     * uncaught exceptions have been reported since draining runs callbacks. */
-    {
+     * uncaught exceptions have been reported since draining runs callbacks.
+     *
+     * If the main loop returns false we cannot guarantee the state
+     * of our promise queue (a module promise could be pending) so
+     * instead of draining the queue we instead just exit.
+     */
+    if (!ok || m_main_loop.spin(this)) {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs_fallible() && ok;
     }
@@ -1349,17 +1427,26 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         return false;
     }
 
-    JS::RootedValue ignore(m_cx);
-    bool ok = JS::ModuleEvaluate(m_cx, obj, &ignore);
+    JS::RootedValue evaluation_promise(m_cx);
+    bool ok = JS::ModuleEvaluate(m_cx, obj, &evaluation_promise);
 
-    if (ok)
-        m_main_loop.spin(this);
+    if (ok) {
+        GjsContextPrivate::from_cx(m_cx)->main_loop_hold();
+
+        ok = add_promise_reactions(
+            m_cx, evaluation_promise, on_context_module_resolved,
+            on_context_module_rejected_log_exception, "context");
+    }
 
     /* The promise job queue should be drained even on error, to finish
      * outstanding async tasks before the context is torn down. Drain after
      * uncaught exceptions have been reported since draining runs callbacks.
+     *
+     * If the main loop returns false we cannot guarantee the state
+     * of our promise queue (a module promise could be pending) so
+     * instead of draining the queue we instead just exit.
      */
-    {
+    if (!ok || m_main_loop.spin(this)) {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs_fallible() && ok;
     }
