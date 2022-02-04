@@ -479,6 +479,18 @@ gjs_intern_string_to_id(JSContext  *cx,
     return JS::PropertyKey::fromPinnedString(str);
 }
 
+std::string gjs_debug_bigint(JS::BigInt* bi) {
+    // technically this prints the value % INT64_MAX, cast into an int64_t if
+    // the value is negative, otherwise cast into uint64_t
+    std::ostringstream out;
+    if (JS::BigIntIsNegative(bi))
+        out << JS::ToBigInt64(bi);
+    else
+        out << JS::ToBigUint64(bi);
+    out << "n (modulo 2^64)";
+    return out.str();
+}
+
 enum Quotes {
     DoubleQuotes,
     NoQuotes,
@@ -630,12 +642,8 @@ gjs_debug_value(JS::Value v)
         out << v.toDouble();
         return out.str();
     }
-    if (v.isBigInt()) {
-        std::ostringstream out;
-        // technically this prints v % INT64_MAX
-        out << JS::ToBigInt64(v.toBigInt()) << 'n';
-        return out.str();
-    }
+    if (v.isBigInt())
+        return gjs_debug_bigint(v.toBigInt());
     if (v.isString())
         return gjs_debug_string(v.toString());
     if (v.isSymbol())

@@ -135,17 +135,33 @@ const Limits = {
         utype: 'size',
     },
 };
+const BigIntLimits = {
+    int64: {
+        min: -(2n ** 63n),
+        max: 2n ** 63n - 1n,
+        umax: 2n ** 64n - 1n,
+    },
+    long: {},
+    ssize: {
+        utype: 'size',
+    },
+};
+
 Object.assign(Limits.short, Limits.int16);
 Object.assign(Limits.int, Limits.int32);
 // Platform dependent sizes; expand definitions as needed
-if (GLib.SIZEOF_LONG === 8)
+if (GLib.SIZEOF_LONG === 8) {
     Object.assign(Limits.long, Limits.int64);
-else
+    Object.assign(BigIntLimits.long, BigIntLimits.int64);
+} else {
     Object.assign(Limits.long, Limits.int32);
-if (GLib.SIZEOF_SSIZE_T === 8)
+}
+if (GLib.SIZEOF_SSIZE_T === 8) {
     Object.assign(Limits.ssize, Limits.int64);
-else
+    Object.assign(BigIntLimits.ssize, BigIntLimits.int64);
+} else {
     Object.assign(Limits.ssize, Limits.int32);
+}
 
 // Functions for dealing with tests that require or return unsafe 64-bit ints,
 // until we get BigInts.
@@ -234,6 +250,21 @@ describe('Integer', function () {
             it('marshals unsigned value as an inout parameter', function () {
                 skip64(bit64);
                 expect(GIMarshallingTests[`${utype}_inout`](umax)).toEqual(0);
+            });
+        });
+    });
+});
+
+describe('BigInt', function () {
+    Object.entries(BigIntLimits).forEach(([type, {min, max, umax, utype = `u${type}`}]) => {
+        describe(`${type}-typed`, function () {
+            it('marshals signed value as an in parameter', function () {
+                expect(() => GIMarshallingTests[`${type}_in_max`](max)).not.toThrow();
+                expect(() => GIMarshallingTests[`${type}_in_min`](min)).not.toThrow();
+            });
+
+            it('marshals unsigned value as an in parameter', function () {
+                expect(() => GIMarshallingTests[`${utype}_in`](umax)).not.toThrow();
             });
         });
     });
@@ -744,9 +775,10 @@ describe('GValue', function () {
         },
     });
 
-    xit('marshals as an int64 in parameter', function () {
-        expect(() => GIMarshallingTests.gvalue_int64_in(Limits.int64.max)).not.toThrow();
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/271');
+    it('marshals as an int64 in parameter', function () {
+        expect(() => GIMarshallingTests.gvalue_int64_in(BigIntLimits.int64.max))
+            .not.toThrow();
+    });
 
     it('type objects can be converted from primitive-like types', function () {
         expect(() => GIMarshallingTests.gvalue_in_with_type(42, GObject.Int))
@@ -1699,7 +1731,12 @@ describe('Interface', function () {
             Implements: [GIMarshallingTests.Interface3],
         }, class I3Impl extends GObject.Object {
             vfunc_test_variant_array_in(variantArray) {
-                this.stuff = variantArray.map(v => v.deepUnpack());
+                this.stuff = variantArray.map(v => {
+                    const bit64 = this.bigInt &&
+                        (v.is_of_type(new GLib.VariantType('t')) ||
+                        v.is_of_type(new GLib.VariantType('x')));
+                    return warn64(bit64, () => v.deepUnpack());
+                });
             }
         });
         const i3 = new I3Impl();
@@ -1707,8 +1744,22 @@ describe('Interface', function () {
             new GLib.Variant('b', true),
             new GLib.Variant('s', 'hello'),
             new GLib.Variant('i', 42),
+            new GLib.Variant('t', 43),
+            new GLib.Variant('x', 44),
         ]);
-        expect(i3.stuff).toEqual([true, 'hello', 42]);
+        expect(i3.stuff).toEqual([true, 'hello', 42, 43, 44]);
+
+        i3.bigInt = true;
+        i3.test_variant_array_in([
+            new GLib.Variant('x', BigIntLimits.int64.min),
+            new GLib.Variant('x', BigIntLimits.int64.max),
+            new GLib.Variant('t', BigIntLimits.int64.umax),
+        ]);
+        expect(i3.stuff).toEqual([
+            Limits.int64.min,
+            Limits.int64.max,
+            Limits.int64.umax,
+        ]);
     });
 });
 
@@ -1870,6 +1921,16 @@ describe('GObject properties', function () {
             expect(obj[`some_${type}`]).toEqual(value2);
         });
     }
+
+    function testPropertyGetSetBigInt(type, value1, value2) {
+        it(`gets and sets a ${type} property with a bigint`, function () {
+            obj[`some_${type}`] = value1;
+            expect(obj[`some_${type}`]).toEqual(Number(value1));
+            obj[`some_${type}`] = value2;
+            expect(obj[`some_${type}`]).toEqual(Number(value2));
+        });
+    }
+
     testPropertyGetSet('boolean', true, false);
     testPropertyGetSet('char', 42, 64);
     testPropertyGetSet('uchar', 42, 64);
@@ -1878,9 +1939,36 @@ describe('GObject properties', function () {
     testPropertyGetSet('long', 42, 64);
     testPropertyGetSet('ulong', 42, 64);
     testPropertyGetSet('int64', 42, 64);
+    testPropertyGetSet('int64', Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+    testPropertyGetSetBigInt('int64', BigIntLimits.int64.min, BigIntLimits.int64.max);
     testPropertyGetSet('uint64', 42, 64);
+    testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax);
     testPropertyGetSet('string', 'Gjs', 'is cool!',
         'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+
+    it('get and sets out-of-range values throws', function () {
+        expect(() => {
+            obj.some_int64 = Limits.int64.max;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = BigIntLimits.int64.max + 1n;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = BigIntLimits.int64.min - 1n;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = BigIntLimits.int64.umax;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = -BigIntLimits.int64.umax;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_uint64 = Limits.int64.min;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_uint64 = BigIntLimits.int64.umax + 100n;
+        }).toThrowError(/out of range/);
+    });
 
     it('gets and sets a float property', function () {
         obj.some_float = Math.E;
@@ -1901,8 +1989,13 @@ describe('GObject properties', function () {
         new GIMarshallingTests.BoxedStruct({long_: 42}));
     testPropertyGetSet('boxed_glist', null, null);
     testPropertyGetSet('gvalue', 42, 'foo');
+    testPropertyGetSetBigInt('gvalue', BigIntLimits.int64.umax, BigIntLimits.int64.min);
     testPropertyGetSet('variant', new GLib.Variant('b', true),
         new GLib.Variant('s', 'hello'));
+    testPropertyGetSet('variant', new GLib.Variant('x', BigIntLimits.int64.min),
+        new GLib.Variant('x', BigIntLimits.int64.max));
+    testPropertyGetSet('variant', new GLib.Variant('t', BigIntLimits.int64.max),
+        new GLib.Variant('t', BigIntLimits.int64.umax));
     testPropertyGetSet('object', new GObject.Object(),
         new GIMarshallingTests.Object({int: 42}));
     testPropertyGetSet('flags', GIMarshallingTests.Flags.VALUE2,

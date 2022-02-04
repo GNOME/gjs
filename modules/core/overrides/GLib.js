@@ -261,6 +261,12 @@ function _init() {
 
     GLib = this;
 
+    // For convenience in property min or max values, since GLib.MAXINT64 and
+    // friends will log a warning when used
+    this.MAXINT64_BIGINT = 0x7fff_ffff_ffff_ffffn;
+    this.MININT64_BIGINT = -this.MAXINT64_BIGINT - 1n;
+    this.MAXUINT64_BIGINT = 0xffff_ffff_ffff_ffffn;
+
     // small HACK: we add a matches() method to standard Errors so that
     // you can do "if (e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
     // without checking instanceof

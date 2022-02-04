@@ -10,6 +10,23 @@ const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const GObject = imports.gi.GObject;
 
+function expectWarn64(callable) {
+    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        '*cannot be safely stored*');
+    const ret = callable();
+    GLib.test_assert_expected_messages_internal('Gjs',
+        'testRegress.js', 0, 'Ignore message');
+    return ret;
+}
+
+const bit64Types = ['uint64', 'int64'];
+if (GLib.SIZEOF_LONG === 8)
+    bit64Types.push('long', 'ulong');
+if (GLib.SIZEOF_SIZE_T === 8)
+    bit64Types.push('size');
+if (GLib.SIZEOF_SSIZE_T === 8)
+    bit64Types.push('ssize');
+
 describe('Life, the Universe and Everything', function () {
     it('includes null return value', function () {
         expect(Regress.test_return_allow_none()).toBeNull();
@@ -29,12 +46,25 @@ describe('Life, the Universe and Everything', function () {
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
             expect(Regress[method](undefined)).toBe(0);
+
+            if (bits >= 64) {
+                expect(Regress[method](42n)).toBe(42);
+                expect(Regress[method](-42n)).toBe(-42);
+            } else {
+                expect(() => Regress[method](42n)).toThrow();
+                expect(() => Regress[method](-42n)).toThrow();
+            }
         });
 
         it(`includes unsigned ${bits}-bit integers`, function () {
             const method = `test_uint${bits}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](undefined)).toBe(0);
+
+            if (bits >= 64)
+                expect(Regress[method](42n)).toEqual(42);
+            else
+                expect(() => Regress[method](42n)).toThrow();
         });
     });
 
@@ -48,6 +78,14 @@ describe('Life, the Universe and Everything', function () {
                 expect(Number.isNaN(Regress[method](undefined))).toBeTruthy();
             else
                 expect(Regress[method](undefined)).toBe(0);
+
+            if (bit64Types.includes(type)) {
+                expect(Regress[method](42n)).toBe(42);
+                expect(Regress[method](-42n)).toBe(-42);
+            } else {
+                expect(() => Regress[method](42n)).toThrow();
+                expect(() => Regress[method](-42n)).toThrow();
+            }
         });
     });
 
@@ -56,16 +94,54 @@ describe('Life, the Universe and Everything', function () {
             const method = `test_${type}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](undefined)).toBe(0);
+
+            if (bit64Types.includes(type))
+                expect(Regress[method](42n)).toBe(42);
+            else
+                expect(() => Regress[method](42n)).toThrow();
         });
     });
 
     describe('No implicit conversion to unsigned', function () {
         ['uint8', 'uint16', 'uint32', 'uint64', 'uint', 'size'].forEach(type => {
             it(`for ${type}`, function () {
-                expect(() => Regress[`test_${type}`](-42)).toThrow();
+                expect(() => Regress[`test_${type}`](-42)).toThrowError(/out of range/);
+
+                if (bit64Types.includes(type))
+                    expect(() => Regress[`test_${type}`](-42n)).toThrowError(/out of range/);
+                else
+                    expect(() => Regress[`test_${type}`](-42n)).toThrow();
             });
         });
     });
+
+    describe('(u)int64 numeric values', function () {
+        const minInt64 = -(2n ** 63n);
+        const maxInt64 = 2n ** 63n - 1n;
+        const maxUint64 = 2n ** 64n - 1n;
+
+        ['uint64', 'int64', 'long', 'ulong', 'size', 'ssize'].forEach(type => {
+            if (!bit64Types.includes(type))
+                return;
+            const signed = ['int64', 'long', 'ssize'].includes(type);
+            const limits = {
+                min: signed ? minInt64 : 0n,
+                max: signed ? maxInt64 : maxUint64,
+            };
+            const testFunc = Regress[`test_${type}`];
+
+            it(`can use numeric limits for ${type}`, function () {
+                expect(expectWarn64(() => testFunc(limits.max)))
+                    .toEqual(Number(limits.max));
+
+                if (signed) {
+                    expect(expectWarn64(() => testFunc(limits.min)))
+                        .toEqual(Number(limits.min));
+                }
+            });
+        });
+    });
+
 
     it('includes wide characters', function () {
         expect(Regress.test_unichar('c')).toBe('c');

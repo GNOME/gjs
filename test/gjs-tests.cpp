@@ -33,6 +33,7 @@
 #include <mozilla/Span.h>  // for MakeStringSpan
 
 #include "gi/arg-inl.h"
+#include "gi/js-value-inl.h"
 #include "gjs/context.h"
 #include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
@@ -712,10 +713,14 @@ static void test_gjs_debug_string_quotes(GjsUnitTestFixture* fx, const void*) {
 
 static void test_gjs_debug_value_bigint(GjsUnitTestFixture* fx, const void*) {
     JS::BigInt* bi = JS::NumberToBigInt(fx->cx, 42);
-    JS::Value v = JS::BigIntValue(bi);
-    std::string debug_output = gjs_debug_value(v);
+    std::string debug_output = gjs_debug_bigint(bi);
 
-    g_assert_cmpstr(debug_output.c_str(), ==, "42n");
+    g_assert_cmpstr(debug_output.c_str(), ==, "42n (modulo 2^64)");
+
+    bi = JS::NumberToBigInt(fx->cx, -42);
+    debug_output = gjs_debug_bigint(bi);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "-42n (modulo 2^64)");
 }
 
 static void test_gjs_debug_value_bigint_uint64(GjsUnitTestFixture* fx,
@@ -723,20 +728,25 @@ static void test_gjs_debug_value_bigint_uint64(GjsUnitTestFixture* fx,
     // gjs_debug_value(BigIntValue) prints whatever fits into int64_t, because
     // more complicated operations might be fallible
     JS::BigInt* bi = JS::NumberToBigInt(fx->cx, G_MAXUINT64);
-    JS::Value v = JS::BigIntValue(bi);
-    std::string debug_output = gjs_debug_value(v);
+    std::string debug_output = gjs_debug_bigint(bi);
 
-    g_assert_cmpstr(debug_output.c_str(), ==, "-1n");
+    g_assert_cmpstr(debug_output.c_str(), ==,
+                    "18446744073709551615n (modulo 2^64)");
 }
 
 static void test_gjs_debug_value_bigint_huge(GjsUnitTestFixture* fx,
                                              const void*) {
     JS::BigInt* bi = JS::SimpleStringToBigInt(
         fx->cx, mozilla::MakeStringSpan("10000000000000001"), 16);
-    JS::Value v = JS::BigIntValue(bi);
-    std::string debug_output = gjs_debug_value(v);
+    std::string debug_output = gjs_debug_bigint(bi);
 
-    g_assert_cmpstr(debug_output.c_str(), ==, "1n");
+    g_assert_cmpstr(debug_output.c_str(), ==, "1n (modulo 2^64)");
+
+    bi = JS::SimpleStringToBigInt(
+        fx->cx, mozilla::MakeStringSpan("-10000000000000001"), 16);
+    debug_output = gjs_debug_bigint(bi);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "-1n (modulo 2^64)");
 }
 
 static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
@@ -828,7 +838,8 @@ static void gjstest_test_safe_integer_max(GjsUnitTestFixture* fx, const void*) {
     g_assert_true(JS_GetProperty(fx->cx, number_class_object,
                                  "MAX_SAFE_INTEGER", &safe_value));
 
-    g_assert_cmpint(safe_value.toNumber(), ==, max_safe_big_number<int64_t>());
+    g_assert_cmpint(safe_value.toNumber(), ==,
+                    Gjs::max_safe_big_number<int64_t>());
 }
 
 static void gjstest_test_safe_integer_min(GjsUnitTestFixture* fx, const void*) {
@@ -840,7 +851,8 @@ static void gjstest_test_safe_integer_min(GjsUnitTestFixture* fx, const void*) {
     g_assert_true(JS_GetProperty(fx->cx, number_class_object,
                                  "MIN_SAFE_INTEGER", &safe_value));
 
-    g_assert_cmpint(safe_value.toNumber(), ==, min_safe_big_number<int64_t>());
+    g_assert_cmpint(safe_value.toNumber(), ==,
+                    Gjs::min_safe_big_number<int64_t>());
 }
 
 static void gjstest_test_args_set_get_unset() {
