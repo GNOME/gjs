@@ -962,8 +962,9 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     g_assert_cmpuint(ffi_arg_pos, ==, ffi_argc);
     g_assert_cmpuint(gi_arg_pos, ==, state.gi_argc);
 
-    return_value_p = get_return_ffi_pointer_from_giargument(
-        m_arguments.return_type(), &return_value);
+    GITypeInfo* return_type = m_arguments.return_type();
+    return_value_p =
+        get_return_ffi_pointer_from_giargument(return_type, &return_value);
     ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
              ffi_arg_pointers.get());
 
@@ -973,9 +974,9 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     if (!r_value)
         args.rval().setUndefined();
 
-    if (m_arguments.return_type()) {
-        gi_type_info_extract_ffi_return_value(
-            m_arguments.return_type(), &return_value, state.return_value());
+    if (return_type) {
+        gi_type_info_extract_ffi_return_value(return_type, &return_value,
+                                              state.return_value());
     }
 
     // Process out arguments and return values. This loop is skipped if we fail

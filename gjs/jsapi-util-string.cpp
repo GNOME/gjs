@@ -616,36 +616,32 @@ gjs_debug_object(JSObject * const obj)
 std::string
 gjs_debug_value(JS::Value v)
 {
-    std::ostringstream out;
     if (v.isNull())
         return "null";
     if (v.isUndefined())
         return "undefined";
     if (v.isInt32()) {
+        std::ostringstream out;
         out << v.toInt32();
         return out.str();
     }
     if (v.isDouble()) {
+        std::ostringstream out;
         out << v.toDouble();
         return out.str();
     }
     if (v.isBigInt()) {
+        std::ostringstream out;
         // technically this prints v % INT64_MAX
         out << JS::ToBigInt64(v.toBigInt()) << 'n';
         return out.str();
     }
-    if (v.isString()) {
-        out << gjs_debug_string(v.toString());
-        return out.str();
-    }
-    if (v.isSymbol()) {
-        out << gjs_debug_symbol(v.toSymbol());
-        return out.str();
-    }
-    if (v.isObject()) {
-        out << gjs_debug_object(&v.toObject());
-        return out.str();
-    }
+    if (v.isString())
+        return gjs_debug_string(v.toString());
+    if (v.isSymbol())
+        return gjs_debug_symbol(v.toSymbol());
+    if (v.isObject())
+        return gjs_debug_object(&v.toObject());
     if (v.isBoolean())
         return (v.toBoolean() ? "true" : "false");
     if (v.isMagic())

@@ -18,15 +18,15 @@
 #    include <glib-unix.h> /* for g_unix_open_pipe */
 #endif
 
-static std::atomic<GObject*> m_tmp_object = nullptr;
-static GWeakRef m_tmp_weak;
-static std::unordered_set<GObject*> m_finalized_objects;
-static std::mutex m_finalized_objects_lock;
+static std::atomic<GObject*> s_tmp_object = nullptr;
+static GWeakRef s_tmp_weak;
+static std::unordered_set<GObject*> s_finalized_objects;
+static std::mutex s_finalized_objects_lock;
 
 struct FinalizedObjectsLocked {
-    FinalizedObjectsLocked() : hold(m_finalized_objects_lock) {}
+    FinalizedObjectsLocked() : hold(s_finalized_objects_lock) {}
 
-    std::unordered_set<GObject*>* operator->() { return &m_finalized_objects; }
+    std::unordered_set<GObject*>* operator->() { return &s_finalized_objects; }
     std::lock_guard<std::mutex> hold;
 };
 
@@ -34,7 +34,7 @@ void gjs_test_tools_init() {}
 
 void gjs_test_tools_reset() {
     gjs_test_tools_clear_saved();
-    g_weak_ref_set(&m_tmp_weak, nullptr);
+    g_weak_ref_set(&s_tmp_weak, nullptr);
 
     FinalizedObjectsLocked()->clear();
 }
@@ -87,15 +87,15 @@ void gjs_test_tools_save_object(GObject* object) {
 
 void gjs_test_tools_save_object_unreffed(GObject* object) {
     GObject* expected = nullptr;
-    g_assert_true(m_tmp_object.compare_exchange_strong(expected, object));
+    g_assert_true(s_tmp_object.compare_exchange_strong(expected, object));
 }
 
 void gjs_test_tools_clear_saved() {
-    if (!FinalizedObjectsLocked()->count(m_tmp_object)) {
-        auto* object = m_tmp_object.exchange(nullptr);
+    if (!FinalizedObjectsLocked()->count(s_tmp_object)) {
+        auto* object = s_tmp_object.exchange(nullptr);
         g_clear_object(&object);
     } else {
-        m_tmp_object = nullptr;
+        s_tmp_object = nullptr;
     }
 }
 
@@ -155,7 +155,7 @@ static void* ref_thread_func(void* data) {
             return nullptr;
     }
 
-    if (ref_data->object != m_tmp_object)
+    if (ref_data->object != s_tmp_object)
         g_object_steal_qdata(ref_data->object, finalize_quark());
     g_object_unref(ref_data->object);
     return nullptr;
@@ -223,10 +223,10 @@ void gjs_test_tools_run_dispose_other_thread(GObject* object, GError** error) {
  * Returns: (transfer full)
  */
 GObject* gjs_test_tools_get_saved() {
-    if (FinalizedObjectsLocked()->count(m_tmp_object))
-        m_tmp_object = nullptr;
+    if (FinalizedObjectsLocked()->count(s_tmp_object))
+        s_tmp_object = nullptr;
 
-    return m_tmp_object.exchange(nullptr);
+    return s_tmp_object.exchange(nullptr);
 }
 
 /**
@@ -236,7 +236,7 @@ GObject* gjs_test_tools_get_saved() {
 GObject* gjs_test_tools_steal_saved() { return gjs_test_tools_get_saved(); }
 
 void gjs_test_tools_save_weak(GObject* object) {
-    g_weak_ref_set(&m_tmp_weak, object);
+    g_weak_ref_set(&s_tmp_weak, object);
 }
 
 /**
@@ -244,10 +244,10 @@ void gjs_test_tools_save_weak(GObject* object) {
  * Returns: (transfer none)
  */
 GObject* gjs_test_tools_peek_saved() {
-    if (FinalizedObjectsLocked()->count(m_tmp_object))
+    if (FinalizedObjectsLocked()->count(s_tmp_object))
         return nullptr;
 
-    return m_tmp_object;
+    return s_tmp_object;
 }
 
 int gjs_test_tools_get_saved_ref_count() {
@@ -260,7 +260,7 @@ int gjs_test_tools_get_saved_ref_count() {
  * Returns: (transfer full)
  */
 GObject* gjs_test_tools_get_weak() {
-    return static_cast<GObject*>(g_weak_ref_get(&m_tmp_weak));
+    return static_cast<GObject*>(g_weak_ref_get(&s_tmp_weak));
 }
 
 /**

@@ -251,20 +251,9 @@ describe('Gtk overrides', function () {
     });
 
     it('accepts null in place of GdkAtom as GDK_NONE', function () {
-        /**
-         * When you pass GDK_NONE (an atom, interned from the 'NONE' string)
-         * to Gtk.Clipboard.get(), it throws an error, mentioning null in
-         * its message.
-         */
-        expect(() => Gtk.Clipboard.get('NONE')).toThrowError(/null/);
-
-        /**
-         * Null is converted to GDK_NONE, so you get the same message. If you
-         * know an API function that accepts GDK_NONE without throwing, and
-         * returns something different when passed another atom, consider
-         * adding a less confusing example here.
-         */
-        expect(() => Gtk.Clipboard.get(null)).toThrowError(/null/);
+        const clipboard = Gtk.Clipboard.get('NONE');
+        const clipboard2 = Gtk.Clipboard.get(null);
+        expect(clipboard2).toBe(clipboard);
     });
 
     it('uses the correct GType for null child properties', function () {

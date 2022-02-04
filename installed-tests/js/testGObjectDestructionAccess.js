@@ -714,13 +714,13 @@ describe('GObject with toggle references', function () {
                 threads.forEach(th => th.join());
                 threads = [];
             }
-            return true;
+            return GLib.SOURCE_CONTINUE;
         }));
 
         const loop = new GLib.MainLoop(null, false);
         ids.push(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             expect(GjsTestTools.get_weak()).toEqual(file);
-            return true;
+            return GLib.SOURCE_CONTINUE;
         }));
 
         // We must not timeout due to deadlock #404 and finally not crash per #297

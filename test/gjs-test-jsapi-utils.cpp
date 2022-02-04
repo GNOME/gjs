@@ -290,12 +290,17 @@ static void test_gjs_autopointer_operator_move(Fixture* fx, const void*) {
         g_assert_true(ptr == data);
     };
 
-    test_move_fun(std::move(autoptr));
-    g_assert_nonnull(autoptr);
+    // Accessing a value after moving out of it is bad in general, but here it
+    // is done on purpose, to test that the autoptr's move constructor empties
+    // the old autoptr.
 
+    test_move_fun(std::move(autoptr));
+    g_assert_nonnull(autoptr);  // cppcheck-suppress accessMoved
+
+    // cppcheck-suppress accessMoved
     GjsAutoTestObject autoptr2 = std::move(autoptr);
     g_assert_true(autoptr2 == fx->ptr);
-    g_assert_null(autoptr);
+    g_assert_null(autoptr);  // cppcheck-suppress accessMoved
 }
 
 static void test_gjs_autopointer_operator_swap(Fixture* fx, const void*) {

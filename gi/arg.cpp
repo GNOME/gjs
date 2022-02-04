@@ -1642,7 +1642,8 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
 
         GIInfoType interface_type = g_base_info_get_type(interface_info);
         if (interface_type == GI_INFO_TYPE_ENUM ||
-            interface_type == GI_INFO_TYPE_FLAGS)
+            interface_type == GI_INFO_TYPE_FLAGS ||
+            arg::is_gdk_atom(interface_info))
             expect_object = false;
 
         if (interface_type == GI_INFO_TYPE_STRUCT &&
@@ -1692,14 +1693,6 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
             return false;
         } else {
             GHashTable *ghash;
-            GjsAutoTypeInfo key_param_info =
-                g_type_info_get_param_type(type_info, 0);
-            GjsAutoTypeInfo val_param_info =
-                g_type_info_get_param_type(type_info, 1);
-
-            g_assert(key_param_info != nullptr);
-            g_assert(val_param_info != nullptr);
-
             JS::RootedObject props(context, &value.toObject());
             if (!gjs_object_to_g_hash(context, props, type_info, transfer,
                                       &ghash)) {
@@ -2786,8 +2779,7 @@ gjs_value_from_g_argument (JSContext             *context,
             }
             value_p.setObject(*array);
         } else {
-            /* this assumes the array type is one of GArray, GPtrArray or
-             * GByteArray */
+            // this assumes the array type is GArray or GPtrArray
             GjsAutoTypeInfo param_info =
                 g_type_info_get_param_type(type_info, 0);
             g_assert(param_info != nullptr);
