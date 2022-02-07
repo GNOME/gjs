@@ -540,7 +540,7 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
 // Can fail in JS::FinishDynamicModuleImport(), but will assert if anything
 // fails in fetching the stashed values, since that would be a serious GJS bug.
 GJS_JSAPI_RETURN_CONVENTION
-static bool finish_import(JSContext* cx, JS::DynamicImportStatus status,
+static bool finish_import(JSContext* cx, JS::HandleObject evaluation_promise,
                           const JS::CallArgs& args) {
     GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
     priv->main_loop_release();
@@ -566,8 +566,9 @@ static bool finish_import(JSContext* cx, JS::DynamicImportStatus status,
 
     args.rval().setUndefined();
 
-    return JS::FinishDynamicModuleImport_NoTLA(
-        cx, status, importing_module_priv, module_request, internal_promise);
+    return JS::FinishDynamicModuleImport(cx, evaluation_promise,
+                                         importing_module_priv, module_request,
+                                         internal_promise);
 }
 
 // Failing a JSAPI function may result either in an exception pending on the
@@ -577,7 +578,7 @@ static bool finish_import(JSContext* cx, JS::DynamicImportStatus status,
 GJS_JSAPI_RETURN_CONVENTION
 static bool fail_import(JSContext* cx, const JS::CallArgs& args) {
     if (JS_IsExceptionPending(cx))
-        return finish_import(cx, JS::DynamicImportStatus::Failed, args);
+        return finish_import(cx, nullptr, args);
     return false;
 }
 
@@ -592,7 +593,7 @@ static bool import_rejected(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS_SetPendingException(cx, args.get(0),
                            JS::ExceptionStackBehavior::DoNotCapture);
 
-    return finish_import(cx, JS::DynamicImportStatus::Failed, args);
+    return finish_import(cx, nullptr, args);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -607,12 +608,16 @@ static bool import_resolved(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_assert(args[0].isObject());
     JS::RootedObject module(cx, &args[0].toObject());
 
-    JS::RootedValue ignore(cx);
+    JS::RootedValue evaluation_promise(cx);
     if (!JS::ModuleInstantiate(cx, module) ||
-        !JS::ModuleEvaluate(cx, module, &ignore))
+        !JS::ModuleEvaluate(cx, module, &evaluation_promise))
         return fail_import(cx, args);
 
-    return finish_import(cx, JS::DynamicImportStatus::Ok, args);
+    g_assert(evaluation_promise.isObject() &&
+             "got weird value from JS::ModuleEvaluate");
+    JS::RootedObject evaluation_promise_object(cx,
+                                               &evaluation_promise.toObject());
+    return finish_import(cx, evaluation_promise_object, args);
 }
 
 bool gjs_dynamic_module_resolve(JSContext* cx,

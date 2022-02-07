@@ -76,8 +76,24 @@ $gjs dynamicImplicitMainloop.js
 test $? -eq 21
 report "ensure dynamic imports resolve without an explicit mainloop"
 
+cat <<EOF >dynamicTopLevelAwaitImportee.js
+export const EXIT_CODE = 32;
+EOF
+
+cat <<EOF >dynamicTopLevelAwait.js
+const {EXIT_CODE} = await import("./dynamicTopLevelAwaitImportee.js")
+const system = await import('system');
+
+system.exit(EXIT_CODE);
+EOF
+
+$gjs -m dynamicTopLevelAwait.js
+test $? -eq 32
+report "ensure top level await can import modules"
+
 
 rm -f doubledynamic.js doubledynamicImportee.js \
-      dynamicImplicitMainloop.js dynamicImplicitMainloopImportee.js
+      dynamicImplicitMainloop.js dynamicImplicitMainloopImportee.js \
+      dynamicTopLevelAwait.js dynamicTopLevelAwaitImportee.js
 
 echo "1..$total"

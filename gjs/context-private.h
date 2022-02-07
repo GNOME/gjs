@@ -122,6 +122,7 @@ class GjsContextPrivate : public JS::JobQueue {
     bool m_draining_job_queue : 1;
     bool m_should_profile : 1;
     bool m_exec_as_module : 1;
+    bool m_unhandled_exception : 1;
     bool m_should_listen_sigusr2 : 1;
 
     // If profiling is enabled, we record the durations and reason for GC mark
@@ -231,6 +232,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void schedule_gc(void) { schedule_gc_internal(true); }
     void schedule_gc_if_needed(void);
 
+    void report_unhandled_exception() { m_unhandled_exception = true; }
     void exit(uint8_t exit_code);
     [[nodiscard]] bool should_exit(uint8_t* exit_code_p) const;
 

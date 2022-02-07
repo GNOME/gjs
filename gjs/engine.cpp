@@ -169,7 +169,7 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     }
     JS::ContextOptionsRef(cx)
         .setAsmJS(enable_jit)
-        .setTopLevelAwait(false)
+        .setTopLevelAwait(true)
         .setPrivateClassFields(true)
         .setPrivateClassMethods(true);
 

@@ -88,19 +88,8 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     JS::RootedObject internal_global(cx, gjs_get_internal_global(cx));
     JSAutoRealm ar(cx, internal_global);
 
-    JS::RootedObject module(cx, JS::CompileModule(cx, options, buf));
-    JS::RootedObject registry(cx, gjs_get_module_registry(internal_global));
-
-    JS::RootedId key(cx, gjs_intern_string_to_id(cx, full_path));
-
-    JS::RootedValue ignore(cx);
-    if (!gjs_global_registry_set(cx, registry, key, module) ||
-        !JS::ModuleInstantiate(cx, module) ||
-        !JS::ModuleEvaluate(cx, module, &ignore)) {
-        return false;
-    }
-
-    return true;
+    JS::RootedValue ignored(cx);
+    return JS::Evaluate(cx, options, buf, &ignored);
 }
 
 static bool handle_wrong_args(JSContext* cx) {
