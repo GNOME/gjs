@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
-/* exported _checkAccessors */
+/* exported _checkAccessors, _registerType */
 
 // This is a helper module in which to put code that is common between the
 // legacy GObject.Class system and the new GObject.registerClass system.
+
+var _registerType = Symbol('GObject register type hook');
 
 function _generateAccessors(pspec, propdesc, GObject) {
     const {name, flags} = pspec;

@@ -75,6 +75,7 @@ class JSTracer;
     macro(zone, "zone")
 
 #define FOR_EACH_SYMBOL_ATOM(macro) \
+    macro(gobject_prototype, "__GObject__prototype") \
     macro(hook_up_vfunc, "__GObject__hook_up_vfunc") \
     macro(private_ns_marker, "__gjsPrivateNS") \
     macro(signal_find, "__GObject__signal_find") \

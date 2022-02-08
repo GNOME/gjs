@@ -304,12 +304,37 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     [[nodiscard]] static Prototype* resolve_prototype(JSContext* cx,
                                                       JS::HandleObject proto) {
-        if (JS::GetClass(proto) != &Base::klass) {
+        if (JS::GetClass(proto) == &Base::klass)
+            return Prototype::for_js(cx, proto);
+
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+        bool has_property = false;
+        if (!JS_HasOwnPropertyById(cx, proto, atoms.gobject_prototype(),
+                                   &has_property))
+            return nullptr;
+
+        if (!has_property) {
             gjs_throw(cx, "Tried to construct an object without a GType");
             return nullptr;
         }
 
-        return Prototype::for_js(cx, proto);
+        JS::RootedValue gobject_proto(cx);
+        if (!JS_GetPropertyById(cx, proto, atoms.gobject_prototype(),
+                                &gobject_proto))
+            return nullptr;
+
+        if (!gobject_proto.isObject()) {
+            gjs_throw(cx, "Tried to construct an object without a GType");
+            return nullptr;
+        }
+
+        JS::RootedObject obj(cx, &gobject_proto.toObject());
+        // gobject_prototype is an internal symbol so we can assert that it is
+        // only assigned to objects with &Base::klass definitions
+        g_assert(JS::GetClass(obj) == &Base::klass);
+
+        return Prototype::for_js(cx, obj);
     }
 
     /*
@@ -893,6 +918,45 @@ class GIWrapperPrototype : public Base {
         }
 
         if (!proto->define_static_methods(cx, constructor))
+            return nullptr;
+
+        return proto;
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static Prototype* wrap_class(JSContext* cx, JS::HandleObject in_object,
+                                 Info* info, GType gtype,
+                                 JS::HandleObject constructor,
+                                 JS::MutableHandleObject prototype) {
+        g_assert(in_object);
+
+        GjsAutoPrototype priv = create_prototype(info, gtype);
+        if (!priv->init(cx))
+            return nullptr;
+
+        JS::RootedObject parent_proto(cx);
+        if (!priv->get_parent_proto(cx, &parent_proto))
+            return nullptr;
+
+        if (parent_proto) {
+            prototype.set(
+                JS_NewObjectWithGivenProto(cx, &Base::klass, parent_proto));
+        } else {
+            prototype.set(JS_NewObject(cx, &Base::klass));
+        }
+
+        if (!prototype)
+            return nullptr;
+
+        Prototype* proto = priv.release();
+        JS::SetPrivate(prototype, proto);
+
+        if (!proto->define_static_methods(cx, constructor))
+            return nullptr;
+
+        GjsAutoChar class_name = g_strdup_printf("%s", proto->name());
+        if (!JS_DefineProperty(cx, in_object, class_name, constructor,
+                               GJS_MODULE_PROP_FLAGS))
             return nullptr;
 
         return proto;
