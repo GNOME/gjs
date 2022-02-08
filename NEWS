@@ -1,3 +1,8 @@
+Version 1.68.5
+--------------
+
+- Crash fix backported from the development branch. [#439, !681, Evan Welsh]
+
 Version 1.68.4
 --------------
 
