@@ -62,6 +62,23 @@ NEXT
       https://developer.mozilla.org/en-US/Firefox/Releases/90#JavaScript
       https://developer.mozilla.org/en-US/Firefox/Releases/91#JavaScript
 
+Version 1.70.1
+--------------
+
+- Build and crash fixes backported from the development branch.
+
+- Closed bugs and merge requests:
+
+  * Handle optional out parameters in callbacks [#439, !681, Evan Welsh]
+  * Link fails on Debian armel|mipsel|powerpc: needs more -latomic [#442, !686,
+    Simon McVittie]
+  * gjs/jsapi-util.cpp: fix build on gcc-12 [!697, Sergei Trofimovich]
+
+Version 1.68.5
+--------------
+
+- Crash fix backported from the development branch. [#439, !681, Evan Welsh]
+
 Version 1.70.0
 --------------
 
