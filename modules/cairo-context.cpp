@@ -793,6 +793,39 @@ getGroupTarget_func(JSContext *context,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool textExtents_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, args, this_obj);
+
+    JS::UniqueChars utf8;
+    if (!gjs_parse_call_args(cx, "textExtents", args, "s", "utf8", &utf8))
+        return false;
+
+    cairo_text_extents_t extents;
+    cairo_text_extents(cr, utf8.get(), &extents);
+    if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
+        return false;
+
+    JS::RootedObject extents_obj(cx, JS_NewPlainObject(cx));
+    if (!extents_obj)
+        return false;
+
+    JSPropertySpec properties[] = {
+        JS_DOUBLE_PS("xBearing", extents.x_bearing, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("yBearing", extents.y_bearing, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("width", extents.width, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("height", extents.height, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("xAdvance", extents.x_advance, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("yAdvance", extents.y_advance, JSPROP_ENUMERATE),
+        JS_PS_END};
+
+    if (!JS_DefineProperties(cx, extents_obj, properties))
+        return false;
+
+    args.rval().setObject(*extents_obj);
+    return true;
+}
+
 // clang-format off
 const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("$dispose", dispose_func, 0, 0),
@@ -888,7 +921,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("strokeExtents", strokeExtents_func, 0, 0),
     JS_FN("strokePreserve", strokePreserve_func, 0, 0),
     // textPath
-    // textExtends
+    JS_FN("textExtents", textExtents_func, 1, 0),
     // transform
     JS_FN("translate", translate_func, 0, 0),
     JS_FN("userToDevice", userToDevice_func, 0, 0),
