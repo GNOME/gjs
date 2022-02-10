@@ -247,7 +247,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
             if (value.isBigInt()) {
                 bi = value.toBigInt();
             } else if (value.isNumber()) {
-                bi = JS::NumberToBigInt(cx, value.toNumber());
+                double number = value.toNumber();
+                number = std::trunc(number);
+                bi = JS::NumberToBigInt(cx, number);
                 if (!bi)
                     return false;
             }
