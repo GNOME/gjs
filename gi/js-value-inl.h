@@ -248,6 +248,10 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
                 bi = value.toBigInt();
             } else if (value.isNumber()) {
                 double number = value.toNumber();
+                if (!std::isfinite(number)) {
+                    *out = 0;
+                    return true;
+                }
                 number = std::trunc(number);
                 bi = JS::NumberToBigInt(cx, number);
                 if (!bi)
@@ -264,8 +268,10 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     if constexpr (std::is_same_v<WantedType, T>)
         return js_value_to_c(cx, value, out);
 
+    // JS::ToIntNN() converts undefined, NaN, infinity to 0
     if constexpr (std::is_integral_v<WantedType>) {
-        if (value.isUndefined()) {
+        if (value.isUndefined() ||
+            (value.isDouble() && !std::isfinite(value.toDouble()))) {
             *out = 0;
             return true;
         }
@@ -274,6 +280,15 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     if constexpr (std::is_arithmetic_v<T>) {
         bool ret = js_value_to_c(cx, value, out);
         if (out_of_range) {
+            // Infinity and NaN preserved between floating point types
+            if constexpr (std::is_floating_point_v<WantedType> &&
+                          std::is_floating_point_v<T>) {
+                if (!std::isfinite(*out)) {
+                    *out_of_range = false;
+                    return ret;
+                }
+            }
+
             *out_of_range =
                 (*out >
                      static_cast<T>(std::numeric_limits<WantedType>::max()) ||

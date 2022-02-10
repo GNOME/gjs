@@ -124,6 +124,31 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    describe('Infinity and NaN', function () {
+        ['int8', 'int16', 'int32', 'int64', 'short', 'int', 'long', 'ssize'].forEach(type => {
+            it(`converts to 0 for ${type}`, function () {
+                expect(Regress[`test_${type}`](Infinity)).toBe(0);
+                expect(Regress[`test_${type}`](-Infinity)).toBe(0);
+                expect(Regress[`test_${type}`](NaN)).toBe(0);
+            });
+        });
+
+        ['uint8', 'uint16', 'uint32', 'uint64', 'ushort', 'uint', 'ulong', 'size'].forEach(type => {
+            it(`converts to 0 for ${type}`, function () {
+                expect(Regress[`test_${type}`](Infinity)).toBe(0);
+                expect(Regress[`test_${type}`](NaN)).toBe(0);
+            });
+        });
+
+        ['float', 'double'].forEach(type => {
+            it(`not for ${type}`, function () {
+                expect(Regress[`test_${type}`](Infinity)).toBe(Infinity);
+                expect(Regress[`test_${type}`](-Infinity)).toBe(-Infinity);
+                expect(Regress[`test_${type}`](NaN)).toBeNaN();
+            });
+        });
+    });
+
     describe('(u)int64 numeric values', function () {
         const minInt64 = -(2n ** 63n);
         const maxInt64 = 2n ** 63n - 1n;
