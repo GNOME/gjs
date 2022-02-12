@@ -603,6 +603,36 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
     g_assert_true(&exc.toObject() == &previous.toObject());
 }
 
+static void test_jsapi_util_error_throw_cause(GjsUnitTestFixture* fx,
+                                              const void*) {
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
+                          "JS ERROR: Error: Exception 1\n"
+                          "Caused by: Error: Exception 2\n");
+
+    gjs_throw(fx->cx, "Exception 1");
+    gjs_throw(fx->cx, "Exception 2");
+    gjs_log_exception(fx->cx);
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
+                          "JS ERROR: Error: Exception 1\n"
+                          "Caused by: Error: Exception 2\n"
+                          "Caused by: Error: Exception 3\n");
+
+    gjs_throw(fx->cx, "Exception 1");
+    gjs_throw(fx->cx, "Exception 2");
+    gjs_throw(fx->cx, "Exception 3");
+    gjs_log_exception(fx->cx);
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING, "JS ERROR: 42");
+
+    JS::RootedValue non_object(fx->cx, JS::Int32Value(42));
+    JS_SetPendingException(fx->cx, non_object);
+    gjs_throw(fx->cx, "This exception will be dropped");
+    gjs_log_exception(fx->cx);
+
+    g_test_assert_expected_messages();
+}
+
 static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
                                                      const void*) {
     JS::RootedValue v_out(fx->cx);
@@ -1125,6 +1155,7 @@ main(int    argc,
 
     ADD_JSAPI_UTIL_TEST("error/throw",
                         gjstest_test_func_gjs_jsapi_util_error_throw);
+    ADD_JSAPI_UTIL_TEST("error/throw-cause", test_jsapi_util_error_throw_cause);
     ADD_JSAPI_UTIL_TEST("string/js/string/utf8",
                         gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
     ADD_JSAPI_UTIL_TEST("string/utf8-nchars-to-js",
