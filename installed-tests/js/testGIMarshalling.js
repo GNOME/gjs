@@ -862,6 +862,11 @@ describe('GValue', function () {
             .not.toThrow();
     });
 
+    it('array of uninitialized boxed GValues', function () {
+        const values = Array(3).fill().map(() => new GObject.Value());
+        expect(() => GIMarshallingTests.gvalue_flat_array(values)).toThrow();
+    });
+
     it('array can be passed as an out argument and unpacked', function () {
         expect(GIMarshallingTests.return_gvalue_flat_array())
             .toEqual([42, '42', true]);
@@ -932,6 +937,22 @@ describe('GValue', function () {
         let paramSpec = GObject.ParamSpec.string('my-param', '', '',
             GObject.ParamFlags.READABLE, '');
         expect(() => GIMarshallingTests.gvalue_in_with_type(paramSpec, GObject.TYPE_PARAM))
+            .not.toThrow();
+    });
+
+    it('can deal with a GValue packed in a GValue', function () {
+        const innerValue = new GObject.Value();
+        innerValue.init(Number);
+        innerValue.set_double(42);
+
+        expect(() => GIMarshallingTests.gvalue_in_with_type(innerValue, Number))
+            .not.toThrow();
+
+        const value = new GObject.Value();
+        value.init(GObject.Value);
+        value.set_boxed(innerValue);
+
+        expect(() => GIMarshallingTests.gvalue_in_with_type(value, GObject.Value))
             .not.toThrow();
     });
 
