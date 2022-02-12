@@ -538,7 +538,8 @@ gjs_debug_string(JSString *str)
     if (!str)
         return "<null string>";
     if (!JS_StringIsLinear(str)) {
-        std::ostringstream out("<non-flat string of length ");
+        std::ostringstream out("<non-flat string of length ",
+                               std::ios_base::ate);
         out << JS_GetStringLength(str) << '>';
         return out.str();
     }
