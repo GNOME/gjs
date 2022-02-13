@@ -1551,6 +1551,31 @@ static bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
     }
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_to_gerror_gi_argument(
+    JSContext* cx, JS::HandleValue value, GITransfer transfer, GIArgument* arg,
+    const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags) {
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type error",
+        arg_name, gjs_debug_value(value).c_str());
+
+    if (value.isNull()) {
+        gjs_arg_set(arg, nullptr);
+    } else if (value.isObject()) {
+        JS::RootedObject obj(cx, &value.toObject());
+        if (!ErrorBase::transfer_to_gi_argument(cx, obj, arg, GI_DIRECTION_IN,
+                                                transfer))
+            return false;
+    } else {
+        return throw_invalid_argument_tag(cx, value, GI_TYPE_TAG_ERROR,
+                                          arg_name, arg_type);
+    }
+
+    return check_nullable_argument(cx, arg_name, arg_type, GI_TYPE_TAG_ERROR,
+                                   flags, arg);
+}
+
 // Convert a JS value to GIArgument, specifically for arguments with type tag
 // GI_TYPE_TAG_INTERFACE.
 bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
@@ -1602,6 +1627,11 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                                               arg_name, arg_type, flags);
     }
 
+    if (type_tag == GI_TYPE_TAG_ERROR) {
+        return gjs_value_to_gerror_gi_argument(context, value, transfer, arg,
+                                               arg_name, arg_type, flags);
+    }
+
     if (type_tag == GI_TYPE_TAG_INTERFACE) {
         GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
         return gjs_value_to_interface_gi_argument(context, value,
@@ -1623,23 +1653,6 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         gjs_arg_unset(arg);
         return check_nullable_argument(context, arg_name, arg_type, type_tag,
                                        flags, arg);
-    case GI_TYPE_TAG_ERROR:
-        if (value.isNull()) {
-            gjs_arg_set(arg, nullptr);
-        } else if (value.isObject()) {
-            JS::RootedObject obj(context, &value.toObject());
-            if (!ErrorBase::transfer_to_gi_argument(context, obj, arg,
-                                                    GI_DIRECTION_IN, transfer))
-                return false;
-        } else {
-            throw_invalid_argument(context, value, type_info, arg_name,
-                                   arg_type);
-            return false;
-        }
-
-        return check_nullable_argument(context, arg_name, arg_type, type_tag,
-                                       flags, arg);
-
     case GI_TYPE_TAG_GLIST:
         return gjs_array_to_g_list(context, value, type_info, transfer,
                                    arg_name, arg_type,
@@ -1727,8 +1740,9 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         break;
     }
     default:
-        // basic types handled in gjs_value_to_basic_gi_argument(), and
-        // INTERFACE handled in gjs_value_to_interface_gi_argument()
+        // basic types handled in gjs_value_to_basic_gi_argument(), ERROR
+        // handled in gjs_value_to_gerror_gi_argument(), and INTERFACE handled
+        // in gjs_value_to_interface_gi_argument()
         g_warning("Unhandled type %s for JavaScript to GIArgument conversion",
                   g_type_tag_to_string(type_tag));
         throw_invalid_argument(context, value, type_info, arg_name, arg_type);
