@@ -18,6 +18,7 @@ class JSTracer;
 
 // clang-format off
 #define FOR_EACH_ATOM(macro) \
+    macro(cause, "cause") \
     macro(code, "code") \
     macro(column_number, "columnNumber") \
     macro(connect_after, "connect_after") \

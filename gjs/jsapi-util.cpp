@@ -25,7 +25,9 @@
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
 #include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
+#include <js/GCHashTable.h>  // for GCHashSet
 #include <js/GCVector.h>  // for RootedVector
+#include <js/HashTable.h>  // for DefaultHasher
 #include <js/Object.h>    // for GetClass
 #include <js/RootingAPI.h>
 #include <js/String.h>
@@ -34,10 +36,15 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_GetPropertyById, JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
+#include <mozilla/HashTable.h>  // for HashSet::AddPtr
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
+
+namespace js {
+class SystemAllocPolicy;
+}
 
 static void
 throw_property_lookup_error(JSContext       *cx,
@@ -410,11 +417,72 @@ static std::string format_syntax_error_location(JSContext* cx,
     return out.str();
 }
 
+using CauseSet = JS::GCHashSet<JSObject*, js::DefaultHasher<JSObject*>,
+                               js::SystemAllocPolicy>;
+
+static std::string format_exception_with_cause(
+    JSContext* cx, JS::HandleObject exc_obj,
+    JS::MutableHandle<CauseSet> seen_causes) {
+    std::ostringstream out;
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+    JS::UniqueChars utf8_stack;
+    // Check both the internal SavedFrame object and the stack property.
+    // GErrors will not have the former, and internal errors will not
+    // have the latter.
+    JS::RootedObject saved_frame(cx, JS::ExceptionStackOrNull(exc_obj));
+    JS::RootedString str(cx);
+    if (saved_frame) {
+        JS::BuildStackString(cx, nullptr, saved_frame, &str, 0);
+    } else {
+        JS::RootedValue stack(cx);
+        if (JS_GetPropertyById(cx, exc_obj, atoms.stack(), &stack) &&
+            stack.isString())
+            str = stack.toString();
+    }
+    if (str)
+        utf8_stack = JS_EncodeStringToUTF8(cx, str);
+    if (utf8_stack)
+        out << '\n' << utf8_stack.get();
+    JS_ClearPendingException(cx);
+
+    // COMPAT: use JS::GetExceptionCause, mozjs 91.6 and later, on Error objects
+    // in order to avoid side effects
+    JS::RootedValue v_cause(cx);
+    if (!JS_GetPropertyById(cx, exc_obj, atoms.cause(), &v_cause))
+        JS_ClearPendingException(cx);
+    if (v_cause.isUndefined())
+        return out.str();
+
+    JS::RootedObject cause(cx);
+    if (v_cause.isObject()) {
+        cause = &v_cause.toObject();
+        CauseSet::AddPtr entry = seen_causes.lookupForAdd(cause);
+        if (entry)
+            return out.str();  // cause has been printed already, ref cycle
+        if (!seen_causes.add(entry, cause))
+            return out.str();  // out of memory, just stop here
+    }
+
+    out << "Caused by: ";
+    JS::RootedString exc_str(cx, exception_to_string(cx, v_cause));
+    if (exc_str) {
+        JS::UniqueChars utf8_exception = JS_EncodeStringToUTF8(cx, exc_str);
+        if (utf8_exception)
+            out << utf8_exception.get();
+    }
+    JS_ClearPendingException(cx);
+
+    if (v_cause.isObject())
+        out << format_exception_with_cause(cx, cause, seen_causes);
+
+    return out.str();
+}
+
 static std::string format_exception_log_message(JSContext* cx,
                                                 JS::HandleValue exc,
                                                 JS::HandleString message) {
     std::ostringstream out;
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
     if (message) {
         JS::UniqueChars utf8_message = JS_EncodeStringToUTF8(cx, message);
@@ -440,30 +508,15 @@ static std::string format_exception_log_message(JSContext* cx,
         // We log syntax errors differently, because the stack for those
         // includes only the referencing module, but we want to print out the
         // file name, line number, and column number from the exception.
+        // We assume that syntax errors have no cause property, and are not the
+        // cause of other exceptions, so no recursion.
         out << format_syntax_error_location(cx, exc_obj);
         return out.str();
     }
 
-    JS::UniqueChars utf8_stack;
-    // Check both the internal SavedFrame object and the stack property.
-    // GErrors will not have the former, and internal errors will not
-    // have the latter.
-    JS::RootedObject saved_frame(cx, JS::ExceptionStackOrNull(exc_obj));
-    JS::RootedString str(cx);
-    if (saved_frame) {
-        JS::BuildStackString(cx, nullptr, saved_frame, &str, 0);
-    } else {
-        JS::RootedValue stack(cx);
-        if (JS_GetPropertyById(cx, exc_obj, atoms.stack(), &stack) &&
-            stack.isString())
-            str = stack.toString();
-    }
-    if (str)
-        utf8_stack = JS_EncodeStringToUTF8(cx, str);
-    if (utf8_stack)
-        out << '\n' << utf8_stack.get();
-    JS_ClearPendingException(cx);
-
+    JS::Rooted<CauseSet> seen_causes(cx);
+    seen_causes.putNew(exc_obj);
+    out << format_exception_with_cause(cx, exc_obj, &seen_causes);
     return out.str();
 }
 

@@ -166,6 +166,51 @@ describe('logError', function () {
             logError(e);
         }
     });
+
+    it('logs an error with cause', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: an error\nmarker@*Caused by: Gio.IOErrorEnum: another error\nmarker2@*');
+        function marker2() {
+            return new Gio.IOErrorEnum({message: 'another error', code: 0});
+        }
+        logError(new Error('an error', {cause: marker2()}));
+    });
+
+    it('logs a GError with cause', function marker() {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Gio.IOErrorEnum: an error\nmarker@*Caused by: Error: another error\nmarker2@*');
+        function marker2() {
+            return new Error('another error');
+        }
+        const e = new Gio.IOErrorEnum({message: 'an error', code: 0});
+        e.cause = marker2();
+        logError(e);
+    });
+
+    it('logs an error with non-object cause', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: an error\n*Caused by: 3');
+        logError(new Error('an error', {cause: 3}));
+    });
+
+    it('logs an error with a cause tree', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: one\n*Caused by: Error: two\n*Caused by: Error: three\n*');
+        const three = new Error('three');
+        const two = new Error('two', {cause: three});
+        logError(new Error('one', {cause: two}));
+    });
+
+    it('logs an error with cyclical causes', function () {
+        // We cannot assert here with GLib.test_expect_message that the * at the
+        // end of the string doesn't match more causes, but at least the idea is
+        // that it shouldn't go into an infinite loop
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Error: one\n*Caused by: Error: two\n*');
+        const one = new Error('one');
+        one.cause = new Error('two', {cause: one});
+        logError(one);
+    });
 });
 
 describe('Exception from function with too few arguments', function () {

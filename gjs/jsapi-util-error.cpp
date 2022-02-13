@@ -11,18 +11,68 @@
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
+#include <js/GCHashTable.h>  // for GCHashSet
+#include <js/HashTable.h>    // for DefaultHasher
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/ValueArray.h>
 #include <jsapi.h>       // for BuildStackString, Construct, JS_GetClassObject
 #include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
+#include <mozilla/HashTable.h>  // for HashSet<>::AddPtr
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "util/log.h"
 #include "util/misc.h"
+
+namespace js {
+class SystemAllocPolicy;
+}
+
+using CauseSet = JS::GCHashSet<JSObject*, js::DefaultHasher<JSObject*>,
+                               js::SystemAllocPolicy>;
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool get_last_cause_impl(JSContext* cx, JS::HandleValue v_exc,
+                                JS::MutableHandleObject last_cause,
+                                JS::MutableHandle<CauseSet> seen_causes) {
+    if (!v_exc.isObject()) {
+        last_cause.set(nullptr);
+        return true;
+    }
+    JS::RootedObject exc(cx, &v_exc.toObject());
+    CauseSet::AddPtr entry = seen_causes.lookupForAdd(exc);
+    if (entry) {
+        last_cause.set(nullptr);
+        return true;
+    }
+    if (!seen_causes.add(entry, exc)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+
+    JS::RootedValue v_cause(cx);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_GetPropertyById(cx, exc, atoms.cause(), &v_cause))
+        return false;
+
+    if (v_cause.isUndefined()) {
+        last_cause.set(exc);
+        return true;
+    }
+
+    return get_last_cause_impl(cx, v_cause, last_cause, seen_causes);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
+                           JS::MutableHandleObject last_cause) {
+    JS::Rooted<CauseSet> seen_causes(cx);
+    return get_last_cause_impl(cx, v_exc, last_cause, &seen_causes);
+}
 
 /*
  * See:
@@ -41,22 +91,6 @@
     bool result;
 
     s = g_strdup_vprintf(format, args);
-
-    if (JS_IsExceptionPending(context)) {
-        /* Often it's unclear whether a given jsapi.h function
-         * will throw an exception, so we will throw ourselves
-         * "just in case"; in those cases, we don't want to
-         * overwrite an exception that already exists.
-         * (Do log in case our second exception adds more info,
-         * but don't log as topic ERROR because if the exception is
-         * caught we don't want an ERROR in the logs.)
-         */
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Ignoring second exception: '%s'",
-                  s);
-        g_free(s);
-        return;
-    }
 
     JS::RootedObject constructor(context);
     JS::RootedValue v_constructor(context), exc_val(context);
@@ -90,7 +124,28 @@
     }
 
     exc_val.setObject(*new_exc);
-    JS_SetPendingException(context, exc_val);
+
+    if (JS_IsExceptionPending(context)) {
+        // Often it's unclear whether a given jsapi.h function will throw an
+        // exception, so we will throw ourselves "just in case"; in those cases,
+        // we append the new exception as the cause of the original exception.
+        // The second exception may add more info.
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+        JS::RootedValue pending(context);
+        JS_GetPendingException(context, &pending);
+        JS::RootedObject last_cause(context);
+        if (!get_last_cause(context, pending, &last_cause))
+            goto out;
+        if (last_cause) {
+            if (!JS_SetPropertyById(context, last_cause, atoms.cause(),
+                                    exc_val))
+                goto out;
+        } else {
+            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'", s);
+        }
+    } else {
+        JS_SetPendingException(context, exc_val);
+    }
 
     result = true;
 
