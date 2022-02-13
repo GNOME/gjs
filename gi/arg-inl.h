@@ -261,3 +261,13 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
             g_assert_not_reached();
     }
 }
+
+namespace Gjs {
+
+[[nodiscard]] static inline bool is_basic_type(GITypeTag tag, bool is_pointer) {
+    if (tag == GI_TYPE_TAG_VOID && is_pointer)
+        return false;  // void* is not a basic type
+    return GI_TYPE_TAG_IS_BASIC(tag);
+}
+
+}  // namespace Gjs
