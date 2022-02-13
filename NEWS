@@ -69,7 +69,9 @@ Version 1.70.1
 
 - Closed bugs and merge requests:
 
+  * Fix size_t/gsize conversion errors on 32-bit systems [!680, Evan Miller]
   * Handle optional out parameters in callbacks [#439, !681, Evan Welsh]
+  * installed-tests: Install matchers.js [!682, Simon McVittie]
   * Link fails on Debian armel|mipsel|powerpc: needs more -latomic [#442, !686,
     Simon McVittie]
   * gjs/jsapi-util.cpp: fix build on gcc-12 [!697, Sergei Trofimovich]
