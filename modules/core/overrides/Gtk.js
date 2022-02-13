@@ -26,6 +26,13 @@ function _init() {
         };
     }
 
+    if (Gtk.CustomSorter) {
+        Gtk.CustomSorter.new = GjsPrivate.gtk_custom_sorter_new;
+        Gtk.CustomSorter.prototype.set_sort_func = function (sortFunc) {
+            GjsPrivate.gtk_custom_sorter_set_sort_func(this, sortFunc);
+        };
+    }
+
     Gtk.Widget.prototype._init = function (params) {
         let wrapper = this;
 

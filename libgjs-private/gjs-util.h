@@ -48,6 +48,16 @@ GJS_EXPORT
 void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
                          void *user_data);
 
+GJS_EXPORT
+GObject* gjs_gtk_custom_sorter_new(GjsCompareDataFunc sort_func,
+                                   void* user_data, GDestroyNotify destroy);
+
+GJS_EXPORT
+void gjs_gtk_custom_sorter_set_sort_func(GObject* sorter,
+                                         GjsCompareDataFunc sort_func,
+                                         void* user_data,
+                                         GDestroyNotify destroy);
+
 /**
  * GjsGLogWriterFunc:
  * @level: the log level
