@@ -46,6 +46,8 @@ describe('Life, the Universe and Everything', function () {
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
             expect(Regress[method](undefined)).toBe(0);
+            expect(Regress[method](42.42)).toBe(42);
+            expect(Regress[method](-42.42)).toBe(-42);
 
             if (bits >= 64) {
                 expect(Regress[method](42n)).toBe(42);
@@ -60,6 +62,7 @@ describe('Life, the Universe and Everything', function () {
             const method = `test_uint${bits}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](undefined)).toBe(0);
+            expect(Regress[method](42.42)).toBe(42);
 
             if (bits >= 64)
                 expect(Regress[method](42n)).toEqual(42);
@@ -74,10 +77,15 @@ describe('Life, the Universe and Everything', function () {
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](-42)).toBe(-42);
 
-            if (['float', 'double'].includes(type))
+            if (['float', 'double'].includes(type)) {
                 expect(Number.isNaN(Regress[method](undefined))).toBeTruthy();
-            else
+                expect(Regress[method](42.42)).toBeCloseTo(42.42);
+                expect(Regress[method](-42.42)).toBeCloseTo(-42.42);
+            } else {
                 expect(Regress[method](undefined)).toBe(0);
+                expect(Regress[method](42.42)).toBe(42);
+                expect(Regress[method](-42.42)).toBe(-42);
+            }
 
             if (bit64Types.includes(type)) {
                 expect(Regress[method](42n)).toBe(42);
@@ -94,6 +102,7 @@ describe('Life, the Universe and Everything', function () {
             const method = `test_${type}`;
             expect(Regress[method](42)).toBe(42);
             expect(Regress[method](undefined)).toBe(0);
+            expect(Regress[method](42.42)).toBe(42);
 
             if (bit64Types.includes(type))
                 expect(Regress[method](42n)).toBe(42);
@@ -111,6 +120,31 @@ describe('Life, the Universe and Everything', function () {
                     expect(() => Regress[`test_${type}`](-42n)).toThrowError(/out of range/);
                 else
                     expect(() => Regress[`test_${type}`](-42n)).toThrow();
+            });
+        });
+    });
+
+    describe('Infinity and NaN', function () {
+        ['int8', 'int16', 'int32', 'int64', 'short', 'int', 'long', 'ssize'].forEach(type => {
+            it(`converts to 0 for ${type}`, function () {
+                expect(Regress[`test_${type}`](Infinity)).toBe(0);
+                expect(Regress[`test_${type}`](-Infinity)).toBe(0);
+                expect(Regress[`test_${type}`](NaN)).toBe(0);
+            });
+        });
+
+        ['uint8', 'uint16', 'uint32', 'uint64', 'ushort', 'uint', 'ulong', 'size'].forEach(type => {
+            it(`converts to 0 for ${type}`, function () {
+                expect(Regress[`test_${type}`](Infinity)).toBe(0);
+                expect(Regress[`test_${type}`](NaN)).toBe(0);
+            });
+        });
+
+        ['float', 'double'].forEach(type => {
+            it(`not for ${type}`, function () {
+                expect(Regress[`test_${type}`](Infinity)).toBe(Infinity);
+                expect(Regress[`test_${type}`](-Infinity)).toBe(-Infinity);
+                expect(Regress[`test_${type}`](NaN)).toBeNaN();
             });
         });
     });
