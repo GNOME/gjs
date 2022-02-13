@@ -1,5 +1,5 @@
-NEXT
-----
+Version 1.71.1
+--------------
 
 - New JavaScript features! This version of GJS is based on SpiderMonkey 91, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 78.
@@ -20,6 +20,8 @@ NEXT
     + Regular expressions add the `d` flag, which if defined causes the
       resulting match object to have an `indices` property giving the positions
       in the string where capturing and named groups matched.
+    + `static { ... }` blocks in classes allow initialization of classes at the
+      time of creation of the class.
 
   * New APIs
     + Arrays, strings, and typed arrays have gained the `at()` method, which
@@ -44,6 +46,8 @@ NEXT
 
   * New behaviour
     + More numbering systems are supported in `Intl.NumberFormat`.
+    + Top-level await (https://v8.dev/features/top-level-await) allows you to
+      use `await` statements outside of an `async` function in an ES module.
     + There are a lot of minor behaviour changes as SpiderMonkey's JS
       implementation conforms ever closer to existing ECMAScript standards and
       adopts new ones. For complete information, read the Firefox developer
@@ -61,6 +65,103 @@ NEXT
       https://developer.mozilla.org/en-US/Firefox/Releases/89#JavaScript
       https://developer.mozilla.org/en-US/Firefox/Releases/90#JavaScript
       https://developer.mozilla.org/en-US/Firefox/Releases/91#JavaScript
+
+- It's now possible to pass BigInt values to GObject-introspected functions with
+  64-bit parameters. This way, you can finally work with large numbers that
+  cannot be accurately stored as a JS Number value and pass them correctly into
+  C. For example, `GLib.Variant.new_int64(2n ** 62n)`.
+
+- New API: GJS now has a standards-compliant `setTimeout()` and `setInterval()`.
+  These can now be used as in web browsers, while still integrating with GLib's
+  main loop.
+
+- New API: `Cairo.Context.prototype.textExtents()` which makes the
+  `cairo_text_extents()` C function available to JavaScript.
+
+- New overrides: `GLib.MAXINT64_BIGINT`, `GLib.MININT64_BIGINT`, and
+  `GLib.MAXUINT64_BIGINT` are BigInt-typed versions of `GLib.MAXINT64` etc.
+
+- It's now possible to use a regular `constructor()` in GObject classes instead
+  of an `_init()` method.
+
+- It's now possible to use class fields in GObject classes.
+
+- `Gio._promisify()` now tries to guess the name of the finish function, if it
+  is omitted.
+
+- It's now possible to monkeypatch methods on the prototype of a GObject
+  interface. The most common use case for this is probably promisifying methods
+  on `Gio.File`, so you can now do things like
+  `Gio._promisify(Gio.File.prototype, 'read_async')` without resorting to the
+  `Gio._LocalFilePrototype` workaround.
+
+- GObject interfaces are now enumerable, so you can now do things like
+  `Object.keys(Gio.File.prototype)` and get a list of the methods, like you can
+  with other GObject types.
+
+- Improvements to the performance of promises, making them more predictable
+  under higher load.
+
+- Several performance and type-safety improvements.
+
+- Closed bugs and merge requests:
+
+  * [Mainloop 1/3] Add custom GSource for promise queueing [#1, !557, Evan
+    Welsh, Marco Trevisan]
+  * Upgrade to SpiderMonkey 91 [#413, !632, !687, Evan Welsh, Philip Chimento,
+    Chun-wei Fan]
+  * Promise rejections from signal handlers are silent [#417, !632, Philip
+    Chimento]
+  * Add a binding for GObject.Object.new [#48, !664, Evan Welsh, Philip
+    Chimento]
+  * Object resolve should consider prototypes of GObject interfaces [#189, !665,
+    Evan Welsh, Philip Chimento]
+  * File corruption on file.replace_contents_async [#192, !665, Evan Welsh]
+  * Overriding inherited interface vfuncs clobbers base class implementation
+    [#89, !671, Evan Welsh]
+  * Errors in __init__.js are silenced [#343, !672, Evan Welsh]
+  * Allocate structs which contain pointers [!674, Evan Welsh]
+  * [Mainloop 3/3] WHATWG Timers [!677, Evan Welsh]
+  * [Mainloop 2/3] Implement "implicit" mainloop which only blocks on unresolved
+    imports [!678, Evan Welsh]
+  * Correctly chain constructor prototypes to enable static inheritance [!679,
+    Evan Welsh]
+  * Upgrade CI to Fedora 34 [!683, !684, Philip Chimento]
+  * Various maintenance [!685, !691, !709, !719, Philip Chimento]
+  * doc: Add Junction to applications written in GJS [!688, Sonny Piers]
+  * C++ argument cache [!689, Marco Trevisan, Philip Chimento]
+  * Gio: Make _promisify to guess the finish function by default [!692, Marco
+    Trevisan]
+  * Fails to build with Meson 0.60.2 [#446, !694, !705, Jan Beich, Eli Schwartz]
+  * doc: Add Oh My SVG to standalone applications [!695, Sonny Piers]
+  * ci: Ensure forever callbacks do not leak [!698, Evan Welsh]
+  * gi: Refactor resolving prototypes in GIWrapperInstance constructors [!699,
+    Evan Welsh]
+  * Class fields don't work with GObject classes [#331, !700, Evan Welsh]
+  * gi: Add enumeration hook for Interface prototypes [!701, Evan Welsh]
+  * Fix Visual Studio builds on master [!706, Chun-wei Fan]
+  * tools: Add iwyu-tool as a binary name for iwyu [!707, Evan Welsh]
+  * gi: Allow GObject.Value boxed type in nested contexts [!708, Evan Welsh,
+    Philip Chimento]
+  * Implemented check for null out-params in some functions in context.cpp
+    [!710, Nasah Kuma]
+  * Broken links on the doc/Home.md file [#458, !711, Andy Holmes]
+  * Accept BigInt values as input for 64-bit parameters to introspected
+    functions [!712, Marco Trevisan, Philip Chimento]
+  * Enable top-level await [!713, Evan Welsh]
+  * modules: Remove double '//' from internal module URIs [!714, Evan Welsh]
+  * modules: Ensure ImportError is an instance of globalThis.Error [!715, Evan
+    Welsh]
+  * global: Enable WeakRefs [!716, Evan Welsh]
+  * global: Enable static class blocks [!717, Evan Welsh]
+  * overrides: Allow users to implement construct-only props with getters [!718,
+    Evan Welsh]
+  * cairo: Add binding for cairo_text_extents() [!720, Philip Chimento]
+  * Non-integer numbers can not be converted to (u)int64 [#459, !721, Philip
+    Chimento]
+  * Print error cause when logging an error [#454, !722, Philip Chimento]
+  * GtkCustomSorter callbacks receives undefined params [#460, !723, Philip
+    Chimento]
 
 Version 1.70.1
 --------------
