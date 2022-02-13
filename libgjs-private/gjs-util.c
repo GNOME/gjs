@@ -243,6 +243,79 @@ void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
   g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
 }
 
+/**
+ * gjs_gtk_custom_sorter_new:
+ * @sort_func: (nullable) (scope call): function to sort items
+ * @user_data: (closure): user data for @compare_func
+ * @destroy: destroy notify for @user_data
+ *
+ * Creates a new `GtkSorter` that works by calling @sort_func to compare items.
+ *
+ * If @sort_func is %NULL, all items are considered equal.
+ *
+ * Returns: (transfer full): a new `GtkCustomSorter`
+ */
+GObject* gjs_gtk_custom_sorter_new(GjsCompareDataFunc sort_func,
+                                   void* user_data, GDestroyNotify destroy) {
+    GIObjectInfo* container_info =
+        g_irepository_find_by_name(NULL, "Gtk", "CustomSorter");
+    GIBaseInfo* custom_sorter_new_fun =
+        g_object_info_find_method(container_info, "new");
+
+    GIArgument ret;
+    GIArgument custom_sorter_new_args[3];
+    custom_sorter_new_args[0].v_pointer = sort_func;
+    custom_sorter_new_args[1].v_pointer = user_data;
+    custom_sorter_new_args[2].v_pointer = destroy;
+
+    g_function_info_invoke(custom_sorter_new_fun, custom_sorter_new_args, 3,
+                           NULL, 0, &ret, NULL);
+
+    g_clear_pointer(&container_info, g_base_info_unref);
+    g_clear_pointer(&custom_sorter_new_fun, g_base_info_unref);
+
+    return (GObject*)ret.v_pointer;
+}
+
+/**
+ * gjs_gtk_custom_sorter_set_sort_func:
+ * @sorter: a `GtkCustomSorter`
+ * @sort_func: (nullable) (scope call): function to sort items
+ * @user_data: (closure): user data to pass to @sort_func
+ * @destroy: destroy notify for @user_data
+ *
+ * Sets (or unsets) the function used for sorting items.
+ *
+ * If @sort_func is %NULL, all items are considered equal.
+ *
+ * If the sort func changes its sorting behavior, gtk_sorter_changed() needs to
+ * be called.
+ *
+ * If a previous function was set, its @user_destroy will be called now.
+ */
+void gjs_gtk_custom_sorter_set_sort_func(GObject* sorter,
+                                         GjsCompareDataFunc sort_func,
+                                         void* user_data,
+                                         GDestroyNotify destroy) {
+    GIObjectInfo* container_info =
+        g_irepository_find_by_name(NULL, "Gtk", "CustomSorter");
+    GIBaseInfo* set_sort_func_fun =
+        g_object_info_find_method(container_info, "set_sort_func");
+
+    GIArgument unused_ret;
+    GIArgument set_sort_func_args[4];
+    set_sort_func_args[0].v_pointer = sorter;
+    set_sort_func_args[1].v_pointer = sort_func;
+    set_sort_func_args[2].v_pointer = user_data;
+    set_sort_func_args[3].v_pointer = destroy;
+
+    g_function_info_invoke(set_sort_func_fun, set_sort_func_args, 4, NULL, 0,
+                           &unused_ret, NULL);
+
+    g_clear_pointer(&container_info, g_base_info_unref);
+    g_clear_pointer(&set_sort_func_fun, g_base_info_unref);
+}
+
 static void* log_writer_user_data = NULL;
 static GDestroyNotify log_writer_user_data_free = NULL;
 
