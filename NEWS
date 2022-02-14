@@ -139,7 +139,7 @@ Version 1.71.1
     Evan Welsh]
   * Class fields don't work with GObject classes [#331, !700, Evan Welsh]
   * gi: Add enumeration hook for Interface prototypes [!701, Evan Welsh]
-  * Fix Visual Studio builds on master [!706, Chun-wei Fan]
+  * Fix Visual Studio builds [!706, Chun-wei Fan]
   * tools: Add iwyu-tool as a binary name for iwyu [!707, Evan Welsh]
   * gi: Allow GObject.Value boxed type in nested contexts [!708, Evan Welsh,
     Philip Chimento]
