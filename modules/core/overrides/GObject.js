@@ -591,7 +591,8 @@ function _init() {
     });
 
     function interfaceInstanceOf(instance) {
-        if (GObject.Interface.prototype.isPrototypeOf(this.prototype))
+        if (instance && typeof instance === 'object' &&
+            GObject.Interface.prototype.isPrototypeOf(this.prototype))
             return GObject.type_is_a(instance, this);
 
         return false;

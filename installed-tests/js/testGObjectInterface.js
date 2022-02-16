@@ -303,6 +303,29 @@ describe('GObject interface', function () {
             /\[object instance wrapper GType:Gjs_GObjectImplementingGObjectInterface jsobj@0x[a-f0-9]+ native@0x[a-f0-9]+\]/);
     });
 
+    it('has instance definition', function () {
+        const obj = new GObjectImplementingGObjectInterface();
+        const obj2 = new ImplementationOfTwoInterfaces();
+        const file = Gio.File.new_for_path('/');
+        expect(obj).toBeInstanceOf(AGObjectInterface);
+        expect(obj).not.toBeInstanceOf(InterfaceRequiringGObjectInterface);
+        expect(obj2).toBeInstanceOf(AGObjectInterface);
+        expect(obj2).toBeInstanceOf(InterfaceRequiringGObjectInterface);
+        expect(new GObject.Object()).not.toBeInstanceOf(AGObjectInterface);
+        expect(file).toBeInstanceOf(Gio.File);
+        expect(file).toBeInstanceOf(GObject.Object);
+    });
+
+    it('has instance definition for non-object type', function () {
+        expect(null).not.toBeInstanceOf(AGObjectInterface);
+        expect(true).not.toBeInstanceOf(AGObjectInterface);
+        expect(undefined).not.toBeInstanceOf(AGObjectInterface);
+        expect(123456).not.toBeInstanceOf(AGObjectInterface);
+        expect(54321n).not.toBeInstanceOf(AGObjectInterface);
+        expect('no way!').not.toBeInstanceOf(AGObjectInterface);
+        expect(new Date()).not.toBeInstanceOf(AGObjectInterface);
+    });
+
     describe('prototype', function () {
         let file, originalDup;
 
