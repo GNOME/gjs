@@ -263,11 +263,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject array_obj(cx, &value.toObject());
 
-    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length)) {
-        throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
+    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
         return false;
-    }
-
     if (!found_length) {
         throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
         return false;
@@ -1124,15 +1121,19 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
             return false;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         GITypeTag element_type = g_type_info_get_tag(param_info);
         if (JS_IsUint8Array(array_obj) && (element_type == GI_TYPE_TAG_INT8 ||
                                            element_type == GI_TYPE_TAG_UINT8)) {
             GBytes* bytes = gjs_byte_array_get_bytes(array_obj);
             *contents = g_bytes_unref_to_data(bytes, length_p);
-        } else if (JS_HasPropertyById(context, array_obj, atoms.length(),
-                                      &found_length) &&
-                   found_length) {
+            return true;
+        }
+
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+        if (!JS_HasPropertyById(context, array_obj, atoms.length(),
+                                &found_length))
+            return false;
+        if (found_length) {
             guint32 length;
 
             if (!gjs_object_require_converted_property(
