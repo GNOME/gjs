@@ -326,6 +326,16 @@ describe('GObject interface', function () {
         expect(new Date()).not.toBeInstanceOf(AGObjectInterface);
     });
 
+    it('has instance definition for non-object type for native interface', function () {
+        expect(null).not.toBeInstanceOf(Gio.File);
+        expect(true).not.toBeInstanceOf(Gio.File);
+        expect(undefined).not.toBeInstanceOf(Gio.File);
+        expect(12345).not.toBeInstanceOf(Gio.File);
+        expect(54321n).not.toBeInstanceOf(Gio.File);
+        expect('no way!').not.toBeInstanceOf(Gio.File);
+        expect(new Date()).not.toBeInstanceOf(Gio.File);
+    });
+
     describe('prototype', function () {
         let file, originalDup;
 

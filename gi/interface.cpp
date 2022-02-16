@@ -153,7 +153,12 @@ bool InterfacePrototype::has_instance_impl(JSContext* cx,
                                            const JS::CallArgs& args) {
     // This method is never called directly, so no need for error messages.
     g_assert(args.length() == 1);
-    g_assert(args[0].isObject());
+
+    if (!args[0].isObject()) {
+        args.rval().setBoolean(false);
+        return true;
+    }
+
     JS::RootedObject instance(cx, &args[0].toObject());
     bool isinstance = ObjectBase::typecheck(cx, instance, nullptr, m_gtype,
                                             GjsTypecheckNoThrow());
