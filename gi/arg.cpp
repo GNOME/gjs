@@ -280,8 +280,12 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
     g_assert(param_info);
 
+    GITypeTag element_tag = g_type_info_get_tag(param_info);
+    g_assert(!GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use basic_array_to_linked_list() instead");
+
     if (transfer == GI_TRANSFER_CONTAINER) {
-        if (type_needs_release (param_info, g_type_info_get_tag(param_info))) {
+        if (type_needs_release(param_info, element_tag)) {
             /* FIXME: to make this work, we'd have to keep a list of temporary
              * GIArguments for the function call so we could free them after
              * the surrounding container had been freed by the callee.
@@ -1615,6 +1619,110 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
     return true;
 }
 
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool basic_array_to_linked_list(
+    JSContext* cx, const JS::HandleValue& value, GITypeTag element_tag,
+    const char* arg_name, GjsArgumentType arg_type, T** list_p) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_array_to_g_list() for lists containing non-basic types");
+
+    constexpr GITypeTag list_tag =
+        std::is_same_v<T, GList> ? GI_TYPE_TAG_GLIST : GI_TYPE_TAG_GSLIST;
+
+    // While a list can be NULL in C, that means empty array in JavaScript, it
+    // doesn't mean null in JavaScript.
+    if (!value.isObject())
+        return false;
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject array_obj(cx, &value.toObject());
+
+    bool found_length;
+    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
+        return false;
+    if (!found_length) {
+        return throw_invalid_argument_tag(cx, value, list_tag, arg_name,
+                                          arg_type);
+    }
+
+    uint32_t length;
+    if (!gjs_object_require_converted_property(cx, array_obj, nullptr,
+                                               atoms.length(), &length)) {
+        return throw_invalid_argument_tag(cx, value, list_tag, arg_name,
+                                          arg_type);
+    }
+
+    JS::RootedObject array{cx, value.toObjectOrNull()};
+    JS::RootedValue elem{cx};
+    T* list = nullptr;
+
+    for (size_t i = 0; i < length; ++i) {
+        GIArgument elem_arg = {0};
+
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(cx, array, i, &elem)) {
+            gjs_throw(cx, "Missing array element %zu", i);
+            return false;
+        }
+
+        if (!gjs_value_to_basic_gi_argument(cx, elem, element_tag, &elem_arg,
+                                            arg_name, GJS_ARGUMENT_LIST_ELEMENT,
+                                            GjsArgumentFlags::NONE)) {
+            return false;
+        }
+
+        void* hash_pointer =
+            gi_type_tag_hash_pointer_from_argument(element_tag, &elem_arg);
+
+        if constexpr (std::is_same_v<T, GList>)
+            list = g_list_prepend(list, hash_pointer);
+        else if constexpr (std::is_same_v<T, GSList>)
+            list = g_slist_prepend(list, hash_pointer);
+    }
+
+    if constexpr (std::is_same_v<T, GList>)
+        list = g_list_reverse(list);
+    else if constexpr (std::is_same_v<T, GSList>)
+        list = g_slist_reverse(list);
+
+    *list_p = list;
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_to_basic_glist_gi_argument(
+    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
+    GIArgument* arg, const char* arg_name, GjsArgumentType arg_type) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_array_to_g_list() for lists containing non-basic types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type glist",
+        arg_name, gjs_debug_value(value).c_str());
+
+    return basic_array_to_linked_list(cx, value, element_tag, arg_name,
+                                      arg_type, &gjs_arg_member<GList*>(arg));
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_to_basic_gslist_gi_argument(
+    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
+    GIArgument* arg, const char* arg_name, GjsArgumentType arg_type) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_array_to_g_list() for lists containing non-basic types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type gslist",
+        arg_name, gjs_debug_value(value).c_str());
+
+    return basic_array_to_linked_list(cx, value, element_tag, arg_name,
+                                      arg_type, &gjs_arg_member<GSList*>(arg));
+}
+
 bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                               GITypeInfo* type_info, const char* arg_name,
                               GjsArgumentType arg_type, GITransfer transfer,
@@ -1637,6 +1745,20 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         return gjs_value_to_interface_gi_argument(context, value,
                                                   interface_info, transfer, arg,
                                                   arg_name, arg_type, flags);
+    }
+
+    if (type_tag == GI_TYPE_TAG_GLIST || type_tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            if (type_tag == GI_TYPE_TAG_GLIST)
+                return gjs_value_to_basic_glist_gi_argument(
+                    context, value, element_tag, arg, arg_name, arg_type);
+            return gjs_value_to_basic_gslist_gi_argument(
+                context, value, element_tag, arg, arg_name, arg_type);
+        }
+        // else, fall through to generic marshaller
     }
 
     gjs_debug_marshal(
@@ -2450,6 +2572,60 @@ bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
     return true;
 }
 
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool array_from_basic_linked_list(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    T* list) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(element_tag) &&
+        "use gjs_array_from_g_list() for lists containing non-basic types");
+
+    GIArgument arg;
+    JS::RootedValueVector elems{cx};
+
+    for (size_t i = 0; list; list = list->next, ++i) {
+        // for basic types, type tag == storage type
+        gi_type_tag_argument_from_hash_pointer(element_tag, list->data, &arg);
+
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        if (!gjs_value_from_basic_gi_argument(cx, elems[i], element_tag, &arg))
+            return false;
+    }
+
+    JS::RootedObject obj{cx, JS::NewArrayObject(cx, elems)};
+    if (!obj)
+        return false;
+
+    value_out.setObject(*obj);
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_from_basic_glist_gi_argument(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GArgument glist to JS::Value");
+    return array_from_basic_linked_list(cx, value_out, element_tag,
+                                        gjs_arg_get<GList*>(arg));
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_from_basic_gslist_gi_argument(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GArgument gslist to JS::Value");
+    return array_from_basic_linked_list(cx, value_out, element_tag,
+                                        gjs_arg_get<GSList*>(arg));
+}
+
 bool gjs_value_from_gi_argument(JSContext* context,
                                 JS::MutableHandleValue value_p,
                                 GITypeInfo* type_info,
@@ -2460,6 +2636,30 @@ bool gjs_value_from_gi_argument(JSContext* context,
     if (Gjs::is_basic_type(type_tag, is_pointer)) {
         return gjs_value_from_basic_gi_argument(context, value_p, type_tag,
                                                 arg);
+    }
+
+    if (type_tag == GI_TYPE_TAG_GLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            return gjs_array_from_basic_glist_gi_argument(context, value_p,
+                                                          element_tag, arg);
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            return gjs_array_from_basic_gslist_gi_argument(context, value_p,
+                                                           element_tag, arg);
+        }
+        // else fall through to generic marshaller
     }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -2952,6 +3152,25 @@ static void release_basic_type_internal(GITypeTag type_tag, GIArgument* arg) {
         g_clear_pointer(&gjs_arg_member<char*>(arg), g_free);
 }
 
+template <typename T>
+static void basic_linked_list_release(GITransfer transfer,
+                                      GITypeTag element_tag, GIArgument* arg) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_g_arg_release_g_list() for lists with non-basic types");
+
+    Gjs::SmartPointer<T> list = gjs_arg_steal<T*>(arg);
+
+    if (transfer == GI_TRANSFER_CONTAINER)
+        return;
+
+    GIArgument elem;
+    for (T* l = list; l; l = l->next) {
+        gjs_arg_set(&elem, l->data);
+        release_basic_type_internal(element_tag, &elem);
+    }
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(
     JSContext* context, GITransfer transfer, GITypeInfo* type_info,
@@ -2964,6 +3183,30 @@ static bool gjs_g_arg_release_internal(
     if (Gjs::is_basic_type(type_tag, is_pointer)) {
         release_basic_type_internal(type_tag, arg);
         return true;
+    }
+
+    if (type_tag == GI_TYPE_TAG_GLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            basic_linked_list_release<GList>(transfer, element_tag, arg);
+            return true;
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            basic_linked_list_release<GSList>(transfer, element_tag, arg);
+            return true;
+        }
+        // else fall through to generic marshaller
     }
 
     switch (type_tag) {
