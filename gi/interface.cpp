@@ -8,12 +8,10 @@
 #include <girepository.h>
 
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Id.h>  // for JSID_VOID, PropertyKey, jsid
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for JS_ReportOutOfMemory
-
-#include <utility>  // for forward
 
 #include "gi/function.h"
 #include "gi/interface.h"
