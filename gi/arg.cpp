@@ -336,13 +336,10 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
 }
 
 [[nodiscard]] static GHashTable* create_hash_table_for_key_type(
-    GITypeInfo* key_param_info) {
+    GITypeTag key_type) {
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
      * Rely on the type-aware g_argument_release functions. */
-
-    GITypeTag key_type = g_type_info_get_tag(key_param_info);
-
     if (key_type == GI_TYPE_TAG_UTF8 || key_type == GI_TYPE_TAG_FILENAME)
         return g_hash_table_new(g_str_hash, g_str_equal);
     return g_hash_table_new(NULL, NULL);
@@ -529,8 +526,9 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
     if (!JS_Enumerate(context, props, &ids))
         return false;
 
+    GITypeTag key_tag = g_type_info_get_tag(key_param_info);
     GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result =
-        create_hash_table_for_key_type(key_param_info);
+        create_hash_table_for_key_type(key_tag);
 
     JS::RootedValue key_js(context), val_js(context);
     JS::RootedId cur_id(context);
