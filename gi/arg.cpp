@@ -372,13 +372,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
  * possible, otherwise giving the location of an allocated key in @pointer_out.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-value_to_ghashtable_key(JSContext      *cx,
-                        JS::HandleValue value,
-                        GITypeInfo     *type_info,
-                        gpointer       *pointer_out)
-{
-    GITypeTag type_tag = g_type_info_get_tag((GITypeInfo*) type_info);
+static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
+                                    GITypeTag type_tag, void** pointer_out) {
     bool unsupported = false;
 
     g_assert((value.isString() || value.isInt32()) &&
@@ -546,8 +541,7 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
 
         if (!JS_IdToValue(context, cur_id, &key_js) ||
             // Type check key type.
-            !value_to_ghashtable_key(context, key_js, key_param_info,
-                                     &key_ptr) ||
+            !value_to_ghashtable_key(context, key_js, key_tag, &key_ptr) ||
             !JS_GetPropertyById(context, props, cur_id, &val_js) ||
             // Type check and convert value to a C type
             !gjs_value_to_g_argument(context, val_js, val_param_info, nullptr,
