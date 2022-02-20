@@ -381,7 +381,8 @@ value_to_ghashtable_key(JSContext      *cx,
     GITypeTag type_tag = g_type_info_get_tag((GITypeInfo*) type_info);
     bool unsupported = false;
 
-    g_return_val_if_fail(value.isString() || value.isInt32(), false);
+    g_assert((value.isString() || value.isInt32()) &&
+             "keys from JS_Enumerate must be non-symbol property keys");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GHashTable key %s",

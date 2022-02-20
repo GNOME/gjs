@@ -762,6 +762,17 @@ describe('GHashTable', function () {
         };
         testInParameter('ghashtable_uint64', uint64Dict);
     });
+
+    it('symbol keys are ignored', function () {
+        const symbolDict = {
+            [Symbol('foo')]: 2,
+            '-1': 1,
+            0: 0,
+            1: -1,
+            2: -2,
+        };
+        expect(() => GIMarshallingTests.ghashtable_int_none_in(symbolDict)).not.toThrow();
+    });
 });
 
 describe('GValue', function () {
