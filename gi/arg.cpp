@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen, memcpy
 
+#include <array>
 #include <string>
 #include <utility>  // for move
 
@@ -205,6 +206,11 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
 
 [[nodiscard]] static inline bool is_string_type(GITypeTag tag) {
     return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
+}
+
+[[nodiscard]] static inline bool basic_type_needs_release(GITypeTag tag) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(tag));
+    return is_string_type(tag);
 }
 
 /* Check if an argument of the given needs to be released if we obtained it
@@ -461,9 +467,11 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
     case GI_TYPE_TAG_DOUBLE:
     case GI_TYPE_TAG_INT64:
     case GI_TYPE_TAG_UINT64:
-    /* FIXME: The above four could be supported, but are currently not. The ones
-     * below cannot be key types in a regular JS object; we would need to allow
-     * marshalling Map objects into GHashTables to support those. */
+    // FIXME: The above four could be supported, but are currently not. The ones
+    // below cannot be key types in a regular JS object; we would need to allow
+    // marshalling Map objects into GHashTables to support those, as well as
+    // refactoring this function to take GITypeInfo* and splitting out the
+    // marshalling for basic types into a different function.
     case GI_TYPE_TAG_VOID:
     case GI_TYPE_TAG_GTYPE:
     case GI_TYPE_TAG_ERROR:
@@ -509,6 +517,12 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
 
     GI::AutoTypeInfo key_param_info{g_type_info_get_param_type(type_info, 0)};
     GI::AutoTypeInfo val_param_info{g_type_info_get_param_type(type_info, 1)};
+    GITypeTag key_tag = g_type_info_get_tag(key_param_info);
+    GITypeTag val_type = g_type_info_get_tag(val_param_info);
+
+    g_assert(
+        (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_type)) &&
+        "use gjs_value_to_basic_ghash_gi_argument() instead");
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -529,7 +543,6 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
     if (!JS_Enumerate(context, props, &ids))
         return false;
 
-    GITypeTag key_tag = g_type_info_get_tag(key_param_info);
     Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result{
         create_hash_table_for_key_type(key_tag)};
 
@@ -550,7 +563,6 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
                                       GjsArgumentFlags::MAY_BE_NULL, &val_arg))
             return false;
 
-        GITypeTag val_type = g_type_info_get_tag(val_param_info);
         /* Use heap-allocated values for types that don't fit in a pointer */
         if (val_type == GI_TYPE_TAG_INT64) {
             val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
@@ -1723,6 +1735,95 @@ static bool gjs_value_to_basic_gslist_gi_argument(
                                       arg_type, &gjs_arg_member<GSList*>(arg));
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_value_to_basic_ghash_gi_argument(
+    JSContext* cx, JS::HandleValue value, GITypeTag key_tag,
+    GITypeTag value_tag, GITransfer transfer, GIArgument* arg,
+    const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(key_tag) &&
+             "use gjs_object_to_g_hash() for hashes with non-basic key types");
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(value_tag) &&
+        "use gjs_object_to_g_hash() for hashes with non-basic value types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type ghash",
+        arg_name, gjs_debug_value(value).c_str());
+
+    if (value.isNull()) {
+        if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
+            return throw_invalid_argument_tag(cx, value, GI_TYPE_TAG_GHASH,
+                                              arg_name, arg_type);
+        }
+        gjs_arg_set(arg, nullptr);
+        return true;
+    }
+
+    if (!value.isObject()) {
+        return throw_invalid_argument_tag(cx, value, GI_TYPE_TAG_GHASH,
+                                          arg_name, arg_type);
+    }
+
+    if (transfer == GI_TRANSFER_CONTAINER) {
+        if (basic_type_needs_release(key_tag) ||
+            basic_type_needs_release(value_tag)) {
+            // See comment in gjs_value_to_g_hash()
+            gjs_throw(cx, "Container transfer for in parameters not supported");
+            return false;
+        }
+
+        transfer = GI_TRANSFER_NOTHING;
+    }
+
+    JS::RootedObject props{cx, &value.toObject()};
+    JS::Rooted<JS::IdVector> ids{cx, cx};
+    if (!JS_Enumerate(cx, props, &ids))
+        return false;
+
+    Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result{
+        create_hash_table_for_key_type(key_tag)};
+
+    JS::RootedValue v_key{cx}, v_val{cx};
+    JS::RootedId cur_id{cx};
+    for (size_t id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
+        cur_id = ids[id_ix];
+        void* key_ptr;
+        void* val_ptr;
+        GIArgument val_arg = {0};
+
+        if (!JS_IdToValue(cx, cur_id, &v_key) ||
+            // Type check key type.
+            !value_to_ghashtable_key(cx, v_key, key_tag, &key_ptr) ||
+            !JS_GetPropertyById(cx, props, cur_id, &v_val) ||
+            // Type check and convert value to a C type
+            !gjs_value_to_basic_gi_argument(cx, v_val, value_tag, &val_arg,
+                                            nullptr, GJS_ARGUMENT_HASH_ELEMENT,
+                                            GjsArgumentFlags::MAY_BE_NULL))
+            return false;
+
+        // Use heap-allocated values for types that don't fit in a pointer
+        if (value_tag == GI_TYPE_TAG_INT64) {
+            val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
+        } else if (value_tag == GI_TYPE_TAG_UINT64) {
+            val_ptr = heap_value_new_from_arg<uint64_t>(&val_arg);
+        } else if (value_tag == GI_TYPE_TAG_FLOAT) {
+            val_ptr = heap_value_new_from_arg<float>(&val_arg);
+        } else if (value_tag == GI_TYPE_TAG_DOUBLE) {
+            val_ptr = heap_value_new_from_arg<double>(&val_arg);
+        } else {
+            // Other types are simply stuffed inside the pointer
+            val_ptr =
+                gi_type_tag_hash_pointer_from_argument(value_tag, &val_arg);
+        }
+
+        g_hash_table_insert(result, key_ptr, val_ptr);
+    }
+
+    gjs_arg_set(arg, result.release());
+    return true;
+}
+
 bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                               GITypeInfo* type_info, const char* arg_name,
                               GjsArgumentType arg_type, GITransfer transfer,
@@ -1759,6 +1860,22 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                 context, value, element_tag, arg, arg_name, arg_type);
         }
         // else, fall through to generic marshaller
+
+    } else if (type_tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            return gjs_value_to_basic_ghash_gi_argument(
+                context, value, key_tag, value_tag, transfer, arg, arg_name,
+                arg_type, flags);
+        }
     }
 
     gjs_debug_marshal(
@@ -2529,6 +2646,10 @@ bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
                             GHashTable* hash) {
     GHashTableIter iter;
 
+    g_assert((!GI_TYPE_TAG_IS_BASIC(g_type_info_get_tag(key_param_info)) ||
+              !GI_TYPE_TAG_IS_BASIC(g_type_info_get_tag(val_param_info))) &&
+             "use gjs_value_from_basic_ghash() instead");
+
     // a NULL hash table becomes a null JS value
     if (hash==NULL) {
         value_p.setNull();
@@ -2626,6 +2747,52 @@ static bool gjs_array_from_basic_gslist_gi_argument(
                                         gjs_arg_get<GSList*>(arg));
 }
 
+bool gjs_value_from_basic_ghash(JSContext* cx, JS::MutableHandleValue value_out,
+                                GITypeTag key_tag, GITypeTag value_tag,
+                                GHashTable* hash) {
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(key_tag) &&
+        "use gjs_object_from_g_hash() for hashes with non-basic key types");
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(value_tag) &&
+        "use gjs_object_from_g_hash() for hashes with non-basic value types");
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument ghash to JS::Value");
+
+    // a NULL hash table becomes a null JS value
+    if (!hash) {
+        value_out.setNull();
+        return true;
+    }
+
+    JS::RootedObject obj{cx, JS_NewPlainObject(cx)};
+    if (!obj)
+        return false;
+
+    JS::RootedValue v_key{cx}, v_val{cx};
+    JS::RootedId key{cx};
+    GIArgument key_arg, value_arg;
+    GHashTableIter iter;
+    void* key_pointer;
+    void* val_pointer;
+    g_hash_table_iter_init(&iter, hash);
+    while (g_hash_table_iter_next(&iter, &key_pointer, &val_pointer)) {
+        gi_type_tag_argument_from_hash_pointer(key_tag, key_pointer, &key_arg);
+        gi_type_tag_argument_from_hash_pointer(value_tag, val_pointer,
+                                               &value_arg);
+        if (!gjs_value_from_basic_gi_argument(cx, &v_key, key_tag, &key_arg) ||
+            !JS_ValueToId(cx, v_key, &key) ||
+            !gjs_value_from_basic_gi_argument(cx, &v_val, value_tag,
+                                              &value_arg) ||
+            !JS_DefinePropertyById(cx, obj, key, v_val, JSPROP_ENUMERATE))
+            return false;
+    }
+
+    value_out.setObject(*obj);
+    return true;
+}
+
 bool gjs_value_from_gi_argument(JSContext* context,
                                 JS::MutableHandleValue value_p,
                                 GITypeInfo* type_info,
@@ -2660,6 +2827,23 @@ bool gjs_value_from_gi_argument(JSContext* context,
                                                            element_tag, arg);
         }
         // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            return gjs_value_from_basic_ghash(context, value_p, key_tag,
+                                              value_tag,
+                                              gjs_arg_get<GHashTable*>(arg));
+        }
     }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
@@ -3037,16 +3221,20 @@ struct GHR_closure {
 static gboolean
 gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     GHR_closure *c = (GHR_closure *) user_data;
+
+    GITypeTag key_tag = g_type_info_get_tag(c->key_param_info);
+    GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
+    g_assert(
+        (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_type)) &&
+        "use basic_ghash_release() instead");
+
     GIArgument key_arg, val_arg;
     gjs_arg_set(&key_arg, key);
     gjs_arg_set(&val_arg, val);
     if (!gjs_g_arg_release_internal(c->context, c->transfer, c->key_param_info,
-                                    g_type_info_get_tag(c->key_param_info),
-                                    GJS_ARGUMENT_HASH_ELEMENT, c->flags,
-                                    &key_arg))
+                                    key_tag, GJS_ARGUMENT_HASH_ELEMENT,
+                                    c->flags, &key_arg))
         c->failed = true;
-
-    GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
 
     switch (val_type) {
         case GI_TYPE_TAG_DOUBLE:
@@ -3171,6 +3359,48 @@ static void basic_linked_list_release(GITransfer transfer,
     }
 }
 
+static void basic_ghash_release(GITransfer transfer, GITypeTag key_tag,
+                                GITypeTag value_tag, GIArgument* arg) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(key_tag) && GI_TYPE_TAG_IS_BASIC(value_tag));
+
+    if (!gjs_arg_get<GHashTable*>(arg))
+        return;
+
+    Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> hash_table{
+        gjs_arg_steal<GHashTable*>(arg)};
+    if (transfer == GI_TRANSFER_CONTAINER) {
+        g_hash_table_remove_all(hash_table);
+    } else {
+        std::array<GITypeTag, 2> data{key_tag, value_tag};
+        g_hash_table_foreach_steal(
+            hash_table,
+            [](void* key, void* val, void* user_data) -> gboolean {
+                auto* tags = static_cast<std::array<GITypeTag, 2>*>(user_data);
+                GITypeTag key_tag = (*tags)[0], value_tag = (*tags)[1];
+                GIArgument key_arg, val_arg;
+                gjs_arg_set(&key_arg, key);
+                gjs_arg_set(&val_arg, val);
+                release_basic_type_internal(key_tag, &key_arg);
+
+                switch (value_tag) {
+                    case GI_TYPE_TAG_DOUBLE:
+                    case GI_TYPE_TAG_FLOAT:
+                    case GI_TYPE_TAG_INT64:
+                    case GI_TYPE_TAG_UINT64:
+                        g_clear_pointer(&gjs_arg_member<void*>(&val_arg),
+                                        g_free);
+                        break;
+
+                    default:
+                        release_basic_type_internal(value_tag, &val_arg);
+                }
+
+                return true;
+            },
+            &data);
+    }
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(
     JSContext* context, GITransfer transfer, GITypeInfo* type_info,
@@ -3204,6 +3434,22 @@ static bool gjs_g_arg_release_internal(
 
         if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
             basic_linked_list_release<GSList>(transfer, element_tag, arg);
+            return true;
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            basic_ghash_release(transfer, key_tag, value_tag, arg);
             return true;
         }
         // else fall through to generic marshaller

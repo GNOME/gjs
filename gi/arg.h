@@ -98,6 +98,11 @@ inline bool gjs_value_from_gi_argument(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_ghash(JSContext*, JS::MutableHandleValue,
+                                GITypeTag key_tag, GITypeTag value_tag,
+                                GHashTable*);
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_explicit_array(JSContext* context,
                                    JS::MutableHandleValue value_p,
                                    GITypeInfo* type_info, GITransfer transfer,
