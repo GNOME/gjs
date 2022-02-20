@@ -209,6 +209,10 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
     }
 }
 
+[[nodiscard]] static inline bool is_string_type(GITypeTag tag) {
+    return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
+}
+
 /* Check if an argument of the given needs to be released if we obtained it
  * from out argument (or the return value), and we're transferring ownership
  */
@@ -340,7 +344,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
      * Rely on the type-aware g_argument_release functions. */
-    if (key_type == GI_TYPE_TAG_UTF8 || key_type == GI_TYPE_TAG_FILENAME)
+    if (is_string_type(key_type))
         return g_hash_table_new(g_str_hash, g_str_equal);
     return g_hash_table_new(NULL, NULL);
 }
