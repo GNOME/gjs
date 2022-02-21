@@ -183,7 +183,9 @@ bool Closure::invoke(JS::HandleObject this_obj,
     JS::RootedFunction func(m_cx, m_func);
     bool ok = JS::Call(m_cx, this_obj, func, args, retval);
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
-    gjs->warn_about_unhandled_promise_rejections();
+
+    if (gjs->should_exit(nullptr))
+        gjs->warn_about_unhandled_promise_rejections();
     if (!ok) {
         /* Exception thrown... */
         gjs_debug_closure(
