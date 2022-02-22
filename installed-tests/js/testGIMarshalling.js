@@ -141,10 +141,6 @@ const BigIntLimits = {
         max: 2n ** 63n - 1n,
         umax: 2n ** 64n - 1n,
     },
-    long: {},
-    ssize: {
-        utype: 'size',
-    },
 };
 
 Object.assign(Limits.short, Limits.int16);
@@ -152,13 +148,13 @@ Object.assign(Limits.int, Limits.int32);
 // Platform dependent sizes; expand definitions as needed
 if (GLib.SIZEOF_LONG === 8) {
     Object.assign(Limits.long, Limits.int64);
-    Object.assign(BigIntLimits.long, BigIntLimits.int64);
+    BigIntLimits.long = Object.assign({}, BigIntLimits.int64);
 } else {
     Object.assign(Limits.long, Limits.int32);
 }
 if (GLib.SIZEOF_SSIZE_T === 8) {
     Object.assign(Limits.ssize, Limits.int64);
-    Object.assign(BigIntLimits.ssize, BigIntLimits.int64);
+    BigIntLimits.ssize = Object.assign({utype: 'size'}, BigIntLimits.int64);
 } else {
     Object.assign(Limits.ssize, Limits.int32);
 }
