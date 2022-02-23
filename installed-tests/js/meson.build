@@ -137,6 +137,7 @@ jasmine_tests = [
     'Package',
     'ParamSpec',
     'Print',
+    'Promise',
     'Regress',
     'Signals',
     'System',

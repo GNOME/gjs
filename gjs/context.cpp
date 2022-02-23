@@ -1080,10 +1080,7 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
             JSAutoRealm ar(m_cx, job);
             gjs_debug(GJS_DEBUG_CONTEXT, "handling job %s",
                       gjs_debug_object(job).c_str());
-            bool ok =
-                JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval);
-            warn_about_unhandled_promise_rejections();
-            if (!ok) {
+            if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
                 /* Uncatchable exception - return false so that
                  * System.exit() works in the interactive shell and when
                  * exiting the interpreter. */
@@ -1104,6 +1101,7 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
 
     m_draining_job_queue = false;
     m_job_queue.clear();
+    warn_about_unhandled_promise_rejections();
     JS::JobQueueIsEmpty(m_cx);
     return retval;
 }
@@ -1152,10 +1150,14 @@ void GjsContextPrivate::register_unhandled_promise_rejection(
 }
 
 void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
-    // Return value unused in G_DISABLE_ASSERT case
-    [[maybe_unused]] size_t erased = m_unhandled_rejection_stacks.erase(id);
-    g_assert(((void)"Handler attached to rejected promise that wasn't "
-              "previously marked as unhandled", erased == 1));
+    size_t erased = m_unhandled_rejection_stacks.erase(id);
+    if (erased != 1) {
+        g_critical("Promise %" G_GUINT64_FORMAT
+                   " Handler attached to rejected promise that wasn't "
+                   "previously marked as unhandled or that we wrongly reported "
+                   "as unhandled",
+                   id);
+    }
 }
 
 void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
