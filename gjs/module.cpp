@@ -436,7 +436,7 @@ static bool import_native_module_sync(JSContext* cx, unsigned argc,
     }
 
     JS::RootedObject native_obj(cx);
-    if (!gjs_load_native_module(cx, id.get(), &native_obj)) {
+    if (!Gjs::NativeModuleRegistry::get().load(cx, id.get(), &native_obj)) {
         gjs_throw(cx, "Failed to load native module: %s", id.get());
         return false;
     }

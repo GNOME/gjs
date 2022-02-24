@@ -14,13 +14,12 @@
 #    include "modules/cairo-module.h"
 #endif
 
-void
-gjs_register_static_modules (void)
-{
+void gjs_register_static_modules(void) {
+    Gjs::NativeModuleRegistry& registry = Gjs::NativeModuleRegistry::get();
 #ifdef ENABLE_CAIRO
-    gjs_register_native_module("cairoNative", gjs_js_define_cairo_stuff);
+    registry.add("cairoNative", gjs_js_define_cairo_stuff);
 #endif
-    gjs_register_native_module("system", gjs_js_define_system_stuff);
-    gjs_register_native_module("console", gjs_define_console_stuff);
-    gjs_register_native_module("_print", gjs_define_print_stuff);
+    registry.add("system", gjs_js_define_system_stuff);
+    registry.add("console", gjs_define_console_stuff);
+    registry.add("_print", gjs_define_print_stuff);
 }
