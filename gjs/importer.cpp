@@ -264,7 +264,7 @@ cancel_import(JSContext       *context,
  * @cx: the #JSContext
  * @importer: the root importer
  * @parse_name: Name under which the module was registered with
- *  gjs_register_native_module(), should be in the format as returned by
+ *  add(), should be in the format as returned by
  *  g_file_get_parse_name()
  *
  * Imports a builtin native-code module so that it is available to JS code as
@@ -290,8 +290,9 @@ gjs_import_native_module(JSContext       *cx,
     if (!gjs_global_registry_get(cx, native_registry, id, &module))
         return false;
 
-    if (!module && (!gjs_load_native_module(cx, parse_name, &module) ||
-                    !gjs_global_registry_set(cx, native_registry, id, module)))
+    if (!module &&
+        (!Gjs::NativeModuleRegistry::get().load(cx, parse_name, &module) ||
+         !gjs_global_registry_set(cx, native_registry, id, module)))
         return false;
 
     return define_meta_properties(cx, module, nullptr, parse_name, importer) &&
@@ -493,7 +494,8 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
         return false;
 
     /* First try importing an internal module like gi */
-    if (parent.isNull() && gjs_is_registered_native_module(name.get())) {
+    if (parent.isNull() &&
+        Gjs::NativeModuleRegistry::get().is_registered(name.get())) {
         if (!gjs_import_native_module(context, obj, name.get()))
             return false;
 

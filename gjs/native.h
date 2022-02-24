@@ -6,26 +6,39 @@
 #define GJS_NATIVE_H_
 
 #include <config.h>
+#include <string>
+#include <unordered_map>
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
 
-typedef bool (* GjsDefineModuleFunc) (JSContext              *context,
-                                      JS::MutableHandleObject module_out);
+namespace Gjs {
+class NativeModuleRegistry {
+    NativeModuleRegistry() {}
+    typedef bool (*GjsDefineModuleFunc)(JSContext* context,
+                                        JS::MutableHandleObject module_out);
 
-/* called on context init */
-void   gjs_register_native_module (const char            *module_id,
-                                   GjsDefineModuleFunc  func);
+    std::unordered_map<std::string, GjsDefineModuleFunc> m_modules;
 
-/* called by importer.c to to check for already loaded modules */
-[[nodiscard]] bool gjs_is_registered_native_module(const char* name);
+ public:
+    static NativeModuleRegistry& get() {
+        static NativeModuleRegistry the_singleton;
+        return the_singleton;
+    }
 
-/* called by importer.cpp to load a statically linked native module */
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_load_native_module(JSContext              *cx,
-                            const char             *name,
-                            JS::MutableHandleObject module_out);
+    /* called on context init */
+    void add(const char* module_id, GjsDefineModuleFunc func);
+
+    /* called by importer.c to to check for already loaded modules */
+    [[nodiscard]] bool is_registered(const char* name) const;
+
+    /* called by importer.cpp to load a statically linked native module */
+    GJS_JSAPI_RETURN_CONVENTION
+    bool load(JSContext* cx, const char* name,
+              JS::MutableHandleObject module_out);
+};
+};  // namespace Gjs
 
 #endif  // GJS_NATIVE_H_

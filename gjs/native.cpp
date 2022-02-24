@@ -18,14 +18,10 @@
 #include "gjs/native.h"
 #include "util/log.h"
 
-static std::unordered_map<std::string, GjsDefineModuleFunc> modules;
-
-void
-gjs_register_native_module (const char          *module_id,
-                            GjsDefineModuleFunc  func)
-{
+void Gjs::NativeModuleRegistry::add(const char* module_id,
+                                    GjsDefineModuleFunc func) {
     bool inserted;
-    std::tie(std::ignore, inserted) = modules.insert({module_id, func});
+    std::tie(std::ignore, inserted) = m_modules.insert({module_id, func});
     if (!inserted) {
         g_warning("A second native module tried to register the same id '%s'",
                   module_id);
@@ -38,22 +34,22 @@ gjs_register_native_module (const char          *module_id,
 }
 
 /**
- * gjs_is_registered_native_module:
+ * is_registered:
  * @name: name of the module
  *
  * Checks if a native module corresponding to @name has already
  * been registered. This is used to check to see if a name is a
  * builtin module without starting to try and load it.
  */
-bool gjs_is_registered_native_module(const char* name) {
-    return modules.count(name) > 0;
+bool Gjs::NativeModuleRegistry::is_registered(const char* name) const {
+    return m_modules.count(name) > 0;
 }
 
 /**
- * gjs_load_native_module:
+ * gjs_load:
  * @context: the #JSContext
  * @parse_name: Name under which the module was registered with
- *  gjs_register_native_module(), should be in the format as returned by
+ *  add(), should be in the format as returned by
  *  g_file_get_parse_name()
  * @module_out: Return location for a #JSObject
  *
@@ -61,18 +57,13 @@ bool gjs_is_registered_native_module(const char* name) {
  *
  * Returns: true on success, false if an exception was thrown.
  */
-bool
-gjs_load_native_module(JSContext              *context,
-                       const char             *parse_name,
-                       JS::MutableHandleObject module_out)
-{
-    gjs_debug(GJS_DEBUG_NATIVE,
-              "Defining native module '%s'",
-              parse_name);
+bool Gjs::NativeModuleRegistry::load(JSContext* context, const char* parse_name,
+                                     JS::MutableHandleObject module_out) {
+    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", parse_name);
 
-    const auto& iter = modules.find(parse_name);
+    const auto& iter = m_modules.find(parse_name);
 
-    if (iter == modules.end()) {
+    if (iter == m_modules.end()) {
         gjs_throw(context,
                   "No native module '%s' has registered itself",
                   parse_name);

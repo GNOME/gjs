@@ -126,6 +126,8 @@ struct _GjsContextClass {
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
 
+Gjs::NativeModuleRegistry& registry = Gjs::NativeModuleRegistry::get();
+
 GjsContextPrivate* GjsContextPrivate::from_object(GObject* js_context) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
     return static_cast<GjsContextPrivate*>(
@@ -333,14 +335,11 @@ gjs_context_class_init(GjsContextClass *klass)
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
     }
-
-    gjs_register_native_module("_promiseNative",
-                               gjs_define_native_promise_stuff);
-    gjs_register_native_module("_byteArrayNative", gjs_define_byte_array_stuff);
-    gjs_register_native_module("_encodingNative",
-                               gjs_define_text_encoding_stuff);
-    gjs_register_native_module("_gi", gjs_define_private_gi_stuff);
-    gjs_register_native_module("gi", gjs_define_repo);
+    registry.add("_promiseNative", gjs_define_native_promise_stuff);
+    registry.add("_byteArrayNative", gjs_define_byte_array_stuff);
+    registry.add("_encodingNative", gjs_define_text_encoding_stuff);
+    registry.add("_gi", gjs_define_private_gi_stuff);
+    registry.add("gi", gjs_define_repo);
 
     gjs_register_static_modules();
 }
