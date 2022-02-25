@@ -792,6 +792,14 @@ struct FallbackInterfaceIn : RegisteredInterfaceIn {
     }
 };
 
+struct GdkAtomIn : NullableIn {
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue value) override {
+        return gjs_value_to_gdk_atom_gi_argument(cx, value, arg, m_arg_name,
+                                                 GJS_ARGUMENT_ARGUMENT);
+    }
+};
+
 struct BoxedInTransferNone : RegisteredIn {
     using RegisteredIn::RegisteredIn;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -1932,6 +1940,7 @@ template <typename T>
 constexpr size_t argument_maximum_size() {
     if constexpr (std::is_same_v<T, Arg::BasicTypeReturn> ||
                   std::is_same_v<T, Arg::ErrorIn> ||
+                  std::is_same_v<T, Arg::GdkAtomIn> ||
                   std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
     if constexpr (std::is_same_v<T, Arg::BasicGListIn> ||
@@ -2359,11 +2368,8 @@ void ArgsCache::build_interface_in_arg(
         case GI_INFO_TYPE_INTERFACE:
         case GI_INFO_TYPE_UNION: {
             if (arg_cache::is_gdk_atom(interface_info)) {
-                // Fall back to the generic marshaller
                 if constexpr (ArgKind != Arg::Kind::INSTANCE) {
-                    set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(interface_info),
-                        base_args);
+                    set_argument<ArgKind>(new Arg::GdkAtomIn(), base_args);
                     return;
                 }
             }

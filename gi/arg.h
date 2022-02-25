@@ -97,6 +97,9 @@ bool gjs_value_to_basic_ghash_gi_argument(JSContext*, JS::HandleValue,
                                           GIArgument*, const char* arg_name,
                                           GjsArgumentType, GjsArgumentFlags);
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_gdk_atom_gi_argument(JSContext*, JS::HandleValue, GIArgument*,
+                                       const char* arg_name, GjsArgumentType);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_interface_gi_argument(JSContext*, JS::HandleValue,
                                         GIBaseInfo* interface_info, GITransfer,
                                         GIArgument*, const char* arg_name,

@@ -1277,6 +1277,33 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
                                               2, nullptr, 0, ret, nullptr);
 }
 
+static bool value_to_gdk_atom_gi_argument_internal(JSContext* cx,
+                                                   JS::HandleValue value,
+                                                   GIArgument* arg,
+                                                   const char* arg_name,
+                                                   GjsArgumentType arg_type) {
+    if (!value.isNull() && !value.isString()) {
+        Gjs::AutoChar display_name{
+            gjs_argument_display_name(arg_name, arg_type)};
+        gjs_throw(cx, "Expected type String or null for %s but got type '%s'",
+                  display_name.get(), JS::InformalValueTypeName(value));
+        return false;
+    }
+
+    if (value.isNull()) {
+        intern_gdk_atom("NONE", arg);
+        return true;
+    }
+
+    JS::RootedString str{cx, value.toString()};
+    JS::UniqueChars name{JS_EncodeStringToUTF8(cx, str)};
+    if (!name)
+        return false;
+
+    intern_gdk_atom(name.get(), arg);
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 bool value_to_interface_gi_argument_internal(
     JSContext* cx, JS::HandleValue value, GIBaseInfo* interface_info,
@@ -1284,6 +1311,11 @@ bool value_to_interface_gi_argument_internal(
     GIArgument* arg, const char* arg_name, GjsArgumentType arg_type,
     GjsArgumentFlags flags) {
     GType gtype;
+
+    if (arg::is_gdk_atom(interface_info)) {
+        return value_to_gdk_atom_gi_argument_internal(cx, value, arg, arg_name,
+                                                      arg_type);
+    }
 
     switch (interface_type) {
         case GI_INFO_TYPE_BOXED:
@@ -1322,23 +1354,6 @@ bool value_to_interface_gi_argument_internal(
         }
 
         gjs_arg_set(arg, g_boxed_copy(G_TYPE_VALUE, &gvalue));
-        return true;
-
-    } else if (arg::is_gdk_atom(interface_info)) {
-        if (!value.isNull() && !value.isString()) {
-            return throw_invalid_interface_argument(cx, value, interface_info,
-                                                    arg_name, arg_type);
-        } else if (value.isNull()) {
-            intern_gdk_atom("NONE", arg);
-            return true;
-        }
-
-        JS::RootedString str(cx, value.toString());
-        JS::UniqueChars name(JS_EncodeStringToUTF8(cx, str));
-        if (!name)
-            return false;
-
-        intern_gdk_atom(name.get(), arg);
         return true;
 
     } else if (expect_object != value.isObjectOrNull()) {
@@ -1736,6 +1751,20 @@ bool gjs_value_to_gerror_gi_argument(JSContext* cx, JS::HandleValue value,
                                    flags, arg);
 }
 
+bool gjs_value_to_gdk_atom_gi_argument(JSContext* cx, JS::HandleValue value,
+                                       GIArgument* arg, const char* arg_name,
+                                       GjsArgumentType arg_type) {
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type interface",
+        arg_name, gjs_debug_value(value).c_str());
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is GdkAtom");
+
+    return value_to_gdk_atom_gi_argument_internal(cx, value, arg, arg_name,
+                                                  arg_type);
+}
+
 // Convert a JS value to GIArgument, specifically for arguments with type tag
 // GI_TYPE_TAG_INTERFACE.
 bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
@@ -1745,6 +1774,11 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                                         GjsArgumentType arg_type,
                                         GjsArgumentFlags flags) {
     g_assert(interface_info);
+
+    if (arg::is_gdk_atom(interface_info)) {
+        return gjs_value_to_gdk_atom_gi_argument(cx, value, arg, arg_name,
+                                                 arg_type);
+    }
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
@@ -1760,8 +1794,7 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
     }
 
     bool expect_object = interface_type != GI_INFO_TYPE_ENUM &&
-                         interface_type != GI_INFO_TYPE_FLAGS &&
-                         !arg::is_gdk_atom(interface_info);
+                         interface_type != GI_INFO_TYPE_FLAGS;
 
     if (!value_to_interface_gi_argument_internal(
             cx, value, interface_info, interface_type, transfer, expect_object,
