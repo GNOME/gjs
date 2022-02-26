@@ -407,6 +407,19 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    async function testAsync(value) {
+        let result = await proxy.nonJsonFrobateStuffAsync(value);
+        return result;
+    }
+
+    it('can call a remote method using AWAIT', function () {
+        testAsync(1).then(result => {
+            expect(result[0]).toEqual('Oops');
+            loop.quit();
+        });
+        loop.run();
+    });
+
     it('can call a remote method with no in parameter', function () {
         proxy.noInParameterRemote(([result], excp) => {
             expect(result).toEqual('Yes!');

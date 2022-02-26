@@ -185,8 +185,22 @@ function _addDBusConvenience() {
     let i, methods = info.methods;
     for (i = 0; i < methods.length; i++) {
         var method = methods[i];
-        this[`${method.name}Remote`] = _makeProxyMethod(methods[i], false);
+        let remoteMethod = _makeProxyMethod(methods[i], false);
+        this[`${method.name}Remote`] = remoteMethod;
         this[`${method.name}Sync`] = _makeProxyMethod(methods[i], true);
+        this[`${method.name}Async`] = function (...args) {
+            return new Promise((resolve, reject) => {
+                args.push((result, error, fdList) => {
+                    if (error)
+                        reject(error);
+                    else if (fdList)
+                        resolve([result, fdList]);
+                    else
+                        resolve(result);
+                });
+                remoteMethod.call(this, ...args);
+            });
+        };
     }
 
     let properties = info.properties;
