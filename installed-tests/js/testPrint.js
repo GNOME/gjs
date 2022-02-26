@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
+// SPDX-FileCopyrightText: 2022 Nasah Kuma <nasahnash19@gmail.com>
+
+const GLib = imports.gi.GLib;
 
 describe('print', function () {
     it('can be spied upon', function () {
@@ -30,5 +33,78 @@ describe('logError', function () {
         spyOn(globalThis, 'logError');
         logError('foo', 'bar');
         expect(logError).toHaveBeenCalledWith('foo', 'bar');
+    });
+});
+
+describe('prettyPrint', function () {
+    afterEach(function () {
+        GLib.test_assert_expected_messages_internal('Gjs', 'testPrint.js', 0,
+            'pretty print');
+    });
+
+    it('property value primitive', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { greeting: "hi" }');
+        log({greeting: 'hi'});
+    });
+
+    it('more than one property', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { a: 1, b: 2, c: 3 }');
+        log({a: 1, b: 2, c: 3});
+    });
+
+    it('array', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [1, 2, 3, 4, 5]');
+        log([1, 2, 3, 4, 5]);
+    });
+
+    it('property value array', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { arr: [1, 2, 3, 4, 5] }');
+        log({arr: [1, 2, 3, 4, 5]});
+    });
+
+    it('nested array', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [1, 2, [3, 4], 5]');
+        log([1, 2, [3, 4], 5]);
+    });
+
+    it('property value nested array', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { arr: [1, 2, [3, 4], 5] }');
+        log({arr: [1, 2, [3, 4], 5]});
+    });
+
+    it('function', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [ Function: sum ]');
+        log(function sum(a, b) {
+            return a + b;
+        });
+    });
+
+    it('property value function', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { sum: [ Function: sum ] }');
+        log({
+            sum: function sum(a, b) {
+                return a + b;
+            },
+        });
+    });
+
+    it('date', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: 2018-12-24T10:33:30.000Z');
+        log(new Date(Date.UTC(2018, 11, 24, 10, 33, 30)));
+    });
+
+    it('property value date', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { date: 2018-12-24T10:33:30.000Z }');
+        log({date: new Date(Date.UTC(2018, 11, 24, 10, 33, 30))});
     });
 });
