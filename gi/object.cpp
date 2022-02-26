@@ -34,6 +34,8 @@
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
 #include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
+#include <js/String.h>
+#include <js/Symbol.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
@@ -662,11 +664,32 @@ static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
     // Check if an override value has been set
-    bool has_override = false;
-    if (!JS_HasPropertyById(cx, accessor, atoms.override(), &has_override))
+    bool has_override_symbol = false;
+    if (!JS_HasPropertyById(cx, accessor, atoms.override(),
+                            &has_override_symbol))
         return false;
-    if (has_override)
-        return JS_GetPropertyById(cx, accessor, atoms.override(), args.rval());
+
+    if (has_override_symbol) {
+        JS::RootedValue v_override_symbol(cx);
+        if (!JS_GetPropertyById(cx, accessor, atoms.override(),
+                                &v_override_symbol))
+            return false;
+        g_assert(v_override_symbol.isSymbol() &&
+                 "override symbol must be a symbol");
+        JS::RootedSymbol override_symbol(cx, v_override_symbol.toSymbol());
+        JS::RootedId override_id(cx, SYMBOL_TO_JSID(override_symbol));
+
+        JS::RootedObject this_obj(cx);
+        if (!args.computeThis(cx, &this_obj))
+            return false;
+
+        bool has_override = false;
+        if (!JS_HasPropertyById(cx, this_obj, override_id, &has_override))
+            return false;
+
+        if (has_override)
+            return JS_GetPropertyById(cx, this_obj, override_id, args.rval());
+    }
 
     JS::RootedValue v_prototype(cx);
     if (!JS_GetPropertyById(cx, accessor, atoms.prototype(), &v_prototype))
@@ -684,9 +707,23 @@ static bool interface_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedValue v_accessor(
         cx, js::GetFunctionNativeReserved(&args.callee(), ACCESSOR_SLOT));
     JS::RootedObject accessor(cx, &v_accessor.toObject());
+    JS::RootedString description(
+        cx, JS_AtomizeAndPinString(cx, "Private interface function setter"));
+    JS::RootedSymbol symbol(cx, JS::NewSymbol(cx, description));
+    JS::RootedValue v_symbol(cx, JS::SymbolValue(symbol));
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    return JS_SetPropertyById(cx, accessor, atoms.override(), args[0]);
+    if (!JS_SetPropertyById(cx, accessor, atoms.override(), v_symbol))
+        return false;
+
+    args.rval().setUndefined();
+
+    JS::RootedObject this_obj(cx);
+    if (!args.computeThis(cx, &this_obj))
+        return false;
+    JS::RootedId override_id(cx, SYMBOL_TO_JSID(symbol));
+
+    return JS_SetPropertyById(cx, this_obj, override_id, args[0]);
 }
 
 static bool resolve_on_interface_prototype(JSContext* cx,

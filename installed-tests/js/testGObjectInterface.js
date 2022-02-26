@@ -385,6 +385,20 @@ describe('GObject interface', function () {
             expect(file.dup).toBe(originalDup);
         });
 
+        it('overrides cannot be changed by instances of child classes', function () {
+            spyOn(Gio.File.prototype, 'dup');
+
+            expect(file).toBeInstanceOf(Gio.File);
+            expect(file).toBeInstanceOf(Gio._LocalFilePrototype.constructor);
+
+            file.dup = 5;
+            expect(Gio.File.prototype.dup).not.toBe(5);
+            expect(Gio._LocalFilePrototype.dup).not.toBe(5);
+
+            file.dup = originalDup;
+            expect(file.dup).toBe(originalDup);
+        });
+
         it('unknown properties are inherited by implementing classes', function () {
             Gio.File.prototype._originalDup = originalDup;
             expect(file._originalDup).toBe(originalDup);
