@@ -643,4 +643,28 @@ function _init() {
 
         get_child: createCheckedMethod('get_child', '_checkChild'),
     });
+
+    // ActionMap
+    // add_action_entries is not introspectable
+    // https://gitlab.gnome.org/GNOME/gjs/-/issues/407
+    Gio.ActionMap.prototype.add_action_entries = function add_action_entries(entries) {
+        for (const {name, activate, parameter_type, state, change_state} of entries) {
+            if (typeof parameter_type === 'string' && !GLib.variant_type_string_is_valid(parameter_type))
+                throw new Error(`parameter_type "${parameter_type}" is not a valid VariantType`);
+
+            const action = new Gio.SimpleAction({
+                name,
+                parameter_type: typeof parameter_type === 'string' ? new GLib.VariantType(parameter_type) : null,
+                state: typeof state === 'string' ? GLib.Variant.parse(null, state, null, null) : null,
+            });
+
+            if (typeof activate === 'function')
+                action.connect('activate', activate.bind(action));
+
+            if (typeof change_state === 'function')
+                action.connect('change-state', change_state.bind(action));
+
+            this.add_action(action);
+        }
+    };
 }
