@@ -115,20 +115,7 @@ function init(params) {
     datadir = GLib.build_filenamev([prefix, 'share']);
     let libpath, girpath;
 
-    if (_runningFromSource()) {
-        log('Running from source tree, using local files');
-        // Running from source directory
-        _base = GLib.get_current_dir();
-        _submoduledir = _base;
-        pkglibdir = GLib.build_filenamev([_base, 'lib']);
-        libpath = GLib.build_filenamev([pkglibdir, '.libs']);
-        girpath = pkglibdir;
-        pkgdatadir = GLib.build_filenamev([_base, 'data']);
-        localedir = GLib.build_filenamev([_base, 'po']);
-        moduledir = GLib.build_filenamev([_base, 'src']);
-
-        GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
-    } else if (_runningFromMesonSource()) {
+    if (_runningFromMesonSource()) {
         log('Running from Meson, using local files');
         let bld = GLib.getenv('MESON_BUILD_ROOT');
         let src = GLib.getenv('MESON_SOURCE_ROOT');
@@ -147,6 +134,19 @@ function init(params) {
         } catch (e) {
             moduledir = GLib.build_filenamev([src, 'src']);
         }
+    } else if (_runningFromSource()) {
+        log('Running from source tree, using local files');
+        // Running from source directory
+        _base = GLib.get_current_dir();
+        _submoduledir = _base;
+        pkglibdir = GLib.build_filenamev([_base, 'lib']);
+        libpath = GLib.build_filenamev([pkglibdir, '.libs']);
+        girpath = pkglibdir;
+        pkgdatadir = GLib.build_filenamev([_base, 'data']);
+        localedir = GLib.build_filenamev([_base, 'po']);
+        moduledir = GLib.build_filenamev([_base, 'src']);
+
+        GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
     } else {
         _base = prefix;
         pkglibdir = GLib.build_filenamev([libdir, _pkgname]);
