@@ -675,17 +675,10 @@ gjs_array_to_strv(JSContext   *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_string_to_intarray(JSContext       *context,
-                       JS::HandleString str,
-                       GITypeInfo      *param_info,
-                       void           **arr_p,
-                       size_t          *length)
-{
-    GITypeTag element_type;
+static bool gjs_string_to_intarray(JSContext* context, JS::HandleString str,
+                                   GITypeTag element_type, void** arr_p,
+                                   size_t* length) {
     char16_t *result16;
-
-    element_type = g_type_info_get_tag(param_info);
 
     switch (element_type) {
         case GI_TYPE_TAG_INT8:
@@ -1110,7 +1103,8 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
     } else if (value.isString()) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
         JS::RootedString str(context, value.toString());
-        if (!gjs_string_to_intarray(context, str, param_info, contents, length_p))
+        GITypeTag element_tag = g_type_info_get_tag(param_info);
+        if (!gjs_string_to_intarray(context, str, element_tag, contents, length_p))
             return false;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
