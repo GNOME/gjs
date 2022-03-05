@@ -598,11 +598,14 @@ static void load_context_module(JSContext* cx, const char* uri,
     GjsContextPrivate::from_cx(cx)->main_loop_hold();
     bool ok = add_promise_reactions(
         cx, evaluation_promise, on_context_module_resolved,
-        [](JSContext* cx, unsigned, JS::Value*) {
-            GjsContextPrivate::from_cx(cx)->main_loop_release();
+        [](JSContext* cx, unsigned argc, JS::Value* vp) {
+            JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
+            JS::HandleValue error = args.get(0);
             // Abort because this module is required.
-            g_error("Failed to load context module.");
+            gjs_log_exception_full(cx, error, nullptr, G_LOG_LEVEL_ERROR);
+
+            GjsContextPrivate::from_cx(cx)->main_loop_release();
             return false;
         },
         "context");
