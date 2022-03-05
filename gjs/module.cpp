@@ -667,9 +667,8 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
 
     JS::RootedValue result(cx);
     if (!JS::Call(cx, loader, "moduleResolveAsyncHook", args, &result))
-        return JS::FinishDynamicModuleImport_NoTLA(
-            cx, JS::DynamicImportStatus::Failed, importing_module_priv,
-            module_request, internal_promise);
+        return JS::FinishDynamicModuleImport(cx, nullptr, importing_module_priv,
+                                             module_request, internal_promise);
 
     // Release in finish_import
     GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
