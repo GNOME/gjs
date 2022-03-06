@@ -640,8 +640,13 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
 }
 
 GjsCallbackTrampoline::~GjsCallbackTrampoline() {
-    if (m_info && m_closure)
+    if (m_info && m_closure) {
+#if GI_CHECK_VERSION(1, 71, 0)
+        g_callable_info_destroy_closure(m_info, m_closure);
+#else
         g_callable_info_free_closure(m_info, m_closure);
+#endif
+    }
 }
 
 void GjsCallbackTrampoline::mark_forever() {
@@ -650,6 +655,23 @@ void GjsCallbackTrampoline::mark_forever() {
 
 void GjsCallbackTrampoline::prepare_shutdown() {
     s_forever_closure_list.clear();
+}
+
+ffi_closure* GjsCallbackTrampoline::create_closure() {
+    auto callback = [](ffi_cif*, void* result, void** ffi_args, void* data) {
+        auto** args = reinterpret_cast<GIArgument**>(ffi_args);
+        g_assert(data && "Trampoline data is not set");
+        Gjs::Closure::Ptr trampoline(static_cast<GjsCallbackTrampoline*>(data),
+                                     GjsAutoTakeOwnership());
+
+        trampoline.as<GjsCallbackTrampoline>()->callback_closure(args, result);
+    };
+
+#if GI_CHECK_VERSION(1, 71, 0)
+    return g_callable_info_create_closure(m_info, &m_cif, callback, this);
+#else
+    return g_callable_info_prepare_closure(m_info, &m_cif, callback, this);
+#endif
 }
 
 bool GjsCallbackTrampoline::initialize() {
@@ -720,20 +742,7 @@ bool GjsCallbackTrampoline::initialize() {
         }
     }
 
-    m_closure = g_callable_info_prepare_closure(
-        m_info, &m_cif,
-        [](ffi_cif*, void* result, void** ffi_args, void* data) {
-            auto** args = reinterpret_cast<GIArgument**>(ffi_args);
-            g_assert(data && "Trampoline data is not set");
-            Gjs::Closure::Ptr trampoline(
-                static_cast<GjsCallbackTrampoline*>(data),
-                GjsAutoTakeOwnership());
-
-            trampoline.as<GjsCallbackTrampoline>()->callback_closure(args,
-                                                                     result);
-        },
-        this);
-
+    m_closure = create_closure();
     return true;
 }
 

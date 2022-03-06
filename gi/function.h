@@ -49,13 +49,20 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
     ~GjsCallbackTrampoline();
 
-    constexpr ffi_closure* closure() const { return m_closure; }
+    void* closure() const {
+#if GI_CHECK_VERSION(1, 71, 0)
+        return g_callable_info_get_closure_native_address(m_info, m_closure);
+#else
+        return m_closure;
+#endif
+    }
 
     void mark_forever();
 
     static void prepare_shutdown();
 
  private:
+    ffi_closure* create_closure();
     GJS_JSAPI_RETURN_CONVENTION bool initialize();
     GjsCallbackTrampoline(JSContext* cx, JS::HandleFunction function,
                           GICallableInfo* callable_info, GIScopeType scope,
