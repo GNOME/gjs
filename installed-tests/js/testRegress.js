@@ -78,7 +78,7 @@ describe('Life, the Universe and Everything', function () {
             expect(Regress[method](-42)).toBe(-42);
 
             if (['float', 'double'].includes(type)) {
-                expect(Number.isNaN(Regress[method](undefined))).toBeTruthy();
+                expect(Regress[method](undefined)).toBeNaN();
                 expect(Regress[method](42.42)).toBeCloseTo(42.42);
                 expect(Regress[method](-42.42)).toBeCloseTo(-42.42);
             } else {

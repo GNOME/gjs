@@ -263,11 +263,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject array_obj(cx, &value.toObject());
 
-    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length)) {
-        throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
+    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
         return false;
-    }
-
     if (!found_length) {
         throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
         return false;
@@ -339,13 +336,10 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
 }
 
 [[nodiscard]] static GHashTable* create_hash_table_for_key_type(
-    GITypeInfo* key_param_info) {
+    GITypeTag key_type) {
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
      * Rely on the type-aware g_argument_release functions. */
-
-    GITypeTag key_type = g_type_info_get_tag(key_param_info);
-
     if (key_type == GI_TYPE_TAG_UTF8 || key_type == GI_TYPE_TAG_FILENAME)
         return g_hash_table_new(g_str_hash, g_str_equal);
     return g_hash_table_new(NULL, NULL);
@@ -375,16 +369,12 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
  * possible, otherwise giving the location of an allocated key in @pointer_out.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-value_to_ghashtable_key(JSContext      *cx,
-                        JS::HandleValue value,
-                        GITypeInfo     *type_info,
-                        gpointer       *pointer_out)
-{
-    GITypeTag type_tag = g_type_info_get_tag((GITypeInfo*) type_info);
+static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
+                                    GITypeTag type_tag, void** pointer_out) {
     bool unsupported = false;
 
-    g_return_val_if_fail(value.isString() || value.isInt32(), false);
+    g_assert((value.isString() || value.isInt32()) &&
+             "keys from JS_Enumerate must be non-symbol property keys");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GHashTable key %s",
@@ -536,8 +526,9 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
     if (!JS_Enumerate(context, props, &ids))
         return false;
 
+    GITypeTag key_tag = g_type_info_get_tag(key_param_info);
     GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result =
-        create_hash_table_for_key_type(key_param_info);
+        create_hash_table_for_key_type(key_tag);
 
     JS::RootedValue key_js(context), val_js(context);
     JS::RootedId cur_id(context);
@@ -548,8 +539,7 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
 
         if (!JS_IdToValue(context, cur_id, &key_js) ||
             // Type check key type.
-            !value_to_ghashtable_key(context, key_js, key_param_info,
-                                     &key_ptr) ||
+            !value_to_ghashtable_key(context, key_js, key_tag, &key_ptr) ||
             !JS_GetPropertyById(context, props, cur_id, &val_js) ||
             // Type check and convert value to a C type
             !gjs_value_to_g_argument(context, val_js, val_param_info, nullptr,
@@ -685,17 +675,10 @@ gjs_array_to_strv(JSContext   *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_string_to_intarray(JSContext       *context,
-                       JS::HandleString str,
-                       GITypeInfo      *param_info,
-                       void           **arr_p,
-                       size_t          *length)
-{
-    GITypeTag element_type;
+static bool gjs_string_to_intarray(JSContext* context, JS::HandleString str,
+                                   GITypeTag element_type, void** arr_p,
+                                   size_t* length) {
     char16_t *result16;
-
-    element_type = g_type_info_get_tag(param_info);
 
     switch (element_type) {
         case GI_TYPE_TAG_INT8:
@@ -1120,19 +1103,24 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
     } else if (value.isString()) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
         JS::RootedString str(context, value.toString());
-        if (!gjs_string_to_intarray(context, str, param_info, contents, length_p))
+        GITypeTag element_tag = g_type_info_get_tag(param_info);
+        if (!gjs_string_to_intarray(context, str, element_tag, contents, length_p))
             return false;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         GITypeTag element_type = g_type_info_get_tag(param_info);
         if (JS_IsUint8Array(array_obj) && (element_type == GI_TYPE_TAG_INT8 ||
                                            element_type == GI_TYPE_TAG_UINT8)) {
             GBytes* bytes = gjs_byte_array_get_bytes(array_obj);
             *contents = g_bytes_unref_to_data(bytes, length_p);
-        } else if (JS_HasPropertyById(context, array_obj, atoms.length(),
-                                      &found_length) &&
-                   found_length) {
+            return true;
+        }
+
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+        if (!JS_HasPropertyById(context, array_obj, atoms.length(),
+                                &found_length))
+            return false;
+        if (found_length) {
             guint32 length;
 
             if (!gjs_object_require_converted_property(

@@ -551,9 +551,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
             const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
             JS::RootedObject array_obj(context, &value.toObject());
-            if (JS_HasPropertyById(context, array_obj, atoms.length(),
-                                   &found_length) &&
-                found_length) {
+            if (!JS_HasPropertyById(context, array_obj, atoms.length(),
+                                    &found_length))
+                return false;
+            if (found_length) {
                 guint32 length;
 
                 if (!gjs_object_require_converted_property(

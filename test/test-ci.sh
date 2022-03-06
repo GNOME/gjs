@@ -156,7 +156,7 @@ elif test "$1" = "SH_CHECKS"; then
 elif test "$1" = "CPPLINT"; then
     do_Print_Labels 'C/C++ Linter report '
 
-    cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 >/dev/null | \
+    cpplint --quiet $(find . -name \*.cpp -or -name \*.h | sort) 2>&1 >/dev/null | \
         tee "$save_dir"/analysis/head-report.txt | \
         sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
         > /cwd/head-report.txt
@@ -172,7 +172,7 @@ elif test "$1" = "CPPLINT"; then
         exit 0
     fi
     git checkout ci-upstream-base
-    cpplint --quiet $(find . -name \*.cpp -or -name \*.c -or -name \*.h | sort) 2>&1 >/dev/null | \
+    cpplint --quiet $(find . -name \*.cpp -or -name \*.h | sort) 2>&1 >/dev/null | \
         tee "$save_dir"/analysis/base-report.txt | \
         sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
         > /cwd/base-report.txt
