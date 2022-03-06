@@ -1,3 +1,22 @@
+Version 1.71.90
+---------------
+
+- Closed bugs and merge requests:
+  * Cairo test broken with commit ea52cf92 [#461, !724, Philip Chimento]
+  * native: Convert to singleton class [!725, Nasah Kuma]
+  * Checking `instanceof` for primitive types may lead to a crash or error
+    [#464, !726, Marco Trevisan]
+  * Change the GObject Introspection development branch [!727, Emmanuele Bassi]
+  * gi_marshalling_tests_long_in_max test fails on i686 [#462, !728, Philip
+    Chimento, Evan Welsh]
+  * GNOME Shell crashes at startup with the AppIndicator extension enabled
+    [#466, !729, Marco Trevisan]
+  * Instances of classes implementing interfaces can override functions for all
+    implentations of an interface [#467, !730, Evan Welsh]
+  * package: Reverse order of running-from-source checks [!734, Philip Chimento]
+  * Various maintenance [!735, Philip Chimento]
+  * Various maintenance [!736, Evan Welsh]
+
 Version 1.71.1
 --------------
 
