@@ -17,7 +17,7 @@ Version 1.71.90
   * GNOME Shell crashes at startup with the AppIndicator extension enabled
     [#466, !729, Marco Trevisan]
   * Instances of classes implementing interfaces can override functions for all
-    implentations of an interface [#467, !730, Evan Welsh]
+    implementations of an interface [#467, !730, Evan Welsh]
   * package: Reverse order of running-from-source checks [!734, Philip Chimento]
   * Various maintenance [!735, Philip Chimento]
   * Various maintenance [!736, Evan Welsh]
