@@ -166,7 +166,10 @@ struct String {
 };
 
 struct TypeInfo {
-    constexpr const GITypeInfo* type_info() const { return &m_type_info; }
+    constexpr GITypeInfo* type_info() const {
+        // Should be const GITypeInfo*, but G-I APIs won't accept that
+        return const_cast<GITypeInfo*>(&m_type_info);
+    }
 
     GITypeInfo m_type_info;
 };
