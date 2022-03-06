@@ -28,6 +28,7 @@
 #include <glib/gprintf.h>  // for g_fprintf
 
 #include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>
@@ -35,11 +36,15 @@
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>  // for JS_IsExceptionPending, Exce...
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "modules/console.h"
 
@@ -146,11 +151,26 @@ sigjmp_buf AutoCatchCtrlC::jump_buffer;
     return true;
 }
 
+std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
+    if (!v_string.isString())
+        return "[unexpected result from printing value]";
+
+    JS::RootedString printed_string(cx, v_string.toString());
+    JS::AutoSaveExceptionState exc_state(cx);
+    JS::UniqueChars chars(JS_EncodeStringToUTF8(cx, printed_string));
+    exc_state.restore();
+    if (!chars)
+        return "[error printing value]";
+
+    return chars.get();
+}
+
 /* Return value of false indicates an uncatchable exception, rather than any
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
 [[nodiscard]] static bool gjs_console_eval_and_print(JSContext* cx,
+                                                     JS::HandleObject global,
                                                      const std::string& bytes,
                                                      int lineno) {
     JS::SourceText<mozilla::Utf8Unit> source;
@@ -173,7 +193,23 @@ sigjmp_buf AutoCatchCtrlC::jump_buffer;
     if (result.isUndefined())
         return true;
 
-    g_fprintf(stdout, "%s\n", gjs_value_debug_string(cx, result).c_str());
+    JS::AutoSaveExceptionState exc_state(cx);
+    JS::RootedValue v_printed_string(cx);
+    JS::RootedValue v_pretty_print(
+        cx, gjs_get_global_slot(global, GjsGlobalSlot::PRETTY_PRINT_FUNC));
+    bool ok = JS::Call(cx, global, v_pretty_print, JS::HandleValueArray(result),
+                       &v_printed_string);
+    if (!ok)
+        gjs_log_exception(cx);
+    exc_state.restore();
+
+    if (ok) {
+        g_fprintf(stdout, "%s\n",
+                  print_string_value(cx, v_printed_string).c_str());
+    } else {
+        g_fprintf(stdout, "[error printing value]\n");
+    }
+
     return true;
 }
 
@@ -251,7 +287,7 @@ gjs_console_interact(JSContext *context,
         bool ok;
         {
             AutoReportException are(context);
-            ok = gjs_console_eval_and_print(context, buffer, startline);
+            ok = gjs_console_eval_and_print(context, global, buffer, startline);
         }
         exit_warning = false;
 
