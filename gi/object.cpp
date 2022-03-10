@@ -18,7 +18,6 @@
 #include <utility>      // for move
 #include <vector>
 
-#include <ffi.h>
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -3004,7 +3003,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 
     if (field_info) {
         gint offset;
-        gpointer method_ptr;
+        void* method_ptr;
         GjsCallbackTrampoline *trampoline;
 
         offset = g_field_info_get_offset(field_info);
@@ -3032,7 +3031,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             trampoline, nullptr,
             [](void*, GClosure* closure) { g_closure_unref(closure); });
 
-        *reinterpret_cast<ffi_closure**>(method_ptr) = trampoline->closure();
+        *reinterpret_cast<void**>(method_ptr) = trampoline->closure();
     }
 
     return true;

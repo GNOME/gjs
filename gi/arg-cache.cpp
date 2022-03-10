@@ -826,7 +826,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
                     JS::HandleValue value) {
     GjsCallbackTrampoline* trampoline;
-    ffi_closure* closure;
+    void* closure;
 
     if (value.isNull() && m_nullable) {
         closure = nullptr;
