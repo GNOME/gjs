@@ -3,10 +3,13 @@
 <!-- SPDX-FileCopyrightText: 2014 Red Hat, Inc. -->
 <gresources>
   <gresource prefix="/org/gnome/gjs">
+    <file>modules/common/class.js</file>
+
     <!-- Internal modules -->
     <file>modules/internal/loader.js</file>
 
     <!-- ESM-based modules -->
+    <file>modules/esm/_bootstrap/imports.js</file>
     <file>modules/esm/_bootstrap/default.js</file>
 
     <file>modules/esm/_encoding/encoding.js</file>
@@ -14,27 +17,29 @@
     <file>modules/esm/_encoding/util.js</file>
 
     <file>modules/esm/_timers.js</file>
+    <file>modules/esm/_workers.js</file>
 
     <file>modules/esm/cairo.js</file>
     <file>modules/esm/gettext.js</file>
     <file>modules/esm/console.js</file>
+    <file>modules/esm/events.js</file>
     <file>modules/esm/gi.js</file>
     <file>modules/esm/system.js</file>
 
     <!-- Script-based Modules -->
-    <file>modules/script/_bootstrap/debugger.js</file>
-    <file>modules/script/_bootstrap/default.js</file>
-    <file>modules/script/_bootstrap/coverage.js</file>
+    <file>modules/_bootstrap/debugger.js</file>
+    <file>modules/_bootstrap/default.js</file>
+    <file>modules/_bootstrap/worker.js</file>
+    <file>modules/_bootstrap/coverage.js</file>
 
     <file>modules/script/tweener/equations.js</file>
     <file>modules/script/tweener/tweener.js</file>
     <file>modules/script/tweener/tweenList.js</file>
-
+    <file>modules/script/overrides/__init__.js</file>
     <file>modules/script/byteArray.js</file>
     <file>modules/script/cairo.js</file>
     <file>modules/script/gettext.js</file>
     <file>modules/script/lang.js</file>
-    <file>modules/script/_legacy.js</file>
     <file>modules/script/mainloop.js</file>
     <file>modules/script/jsUnit.js</file>
     <file>modules/script/signals.js</file>
@@ -42,16 +47,15 @@
     <file>modules/script/package.js</file>
 
     <!-- Core Modules -->
-    <file>modules/core/overrides/cairo.js</file>
-    <file>modules/core/overrides/GLib.js</file>
-    <file>modules/core/overrides/Gio.js</file>
-    <file>modules/core/overrides/GObject.js</file>
-    <file>modules/core/overrides/Gtk.js</file>
+    <file>modules/overrides/cairo.js</file>
+    <file>modules/overrides/GLib.js</file>
+    <file>modules/overrides/Gio.js</file>
+    <file>modules/overrides/GObject.js</file>
+    <file>modules/overrides/Gtk.js</file>
 
-    <file>modules/core/_cairo.js</file>
-    <file>modules/core/_common.js</file>
-    <file>modules/core/_format.js</file>
-    <file>modules/core/_gettext.js</file>
-    <file>modules/core/_signals.js</file>
+    <file>modules/deprecated/imports.js</file>
+    <file>modules/deprecated/_legacy.js</file>
+    <file>modules/deprecated/format.js</file>
+    <file>modules/deprecated/signals.js</file>
   </gresource>
 </gresources>

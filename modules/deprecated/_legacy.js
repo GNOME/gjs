@@ -9,6 +9,14 @@ defineGtkLegacyObjects */
 // Adapted from MooTools
 // https://github.com/mootools/mootools-core
 
+import {_checkAccessors} from '../common/class.js';
+
+const Gi = import.meta.importSync('_gi');
+
+
+/**
+ *
+ */
 function _Base() {
     throw new TypeError('Cannot instantiate abstract class _Base');
 }
@@ -24,6 +32,9 @@ _Base.prototype.toString = function () {
     return `[object ${this.__name__}]`;
 };
 
+/**
+ * @param {...any} args
+ */
 function _parent(...args) {
     if (!this.__caller__)
         throw new TypeError("The method 'parent' cannot be called");
@@ -40,6 +51,10 @@ function _parent(...args) {
     return previous.apply(this, args);
 }
 
+/**
+ * @param required
+ * @param proto
+ */
 function _interfacePresent(required, proto) {
     if (!proto.__interfaces__)
         return false;
@@ -49,6 +64,9 @@ function _interfacePresent(required, proto) {
     return _interfacePresent(required, proto.constructor.__super__.prototype);
 }
 
+/**
+ * @param params
+ */
 function getMetaClass(params) {
     if (params.MetaClass)
         return params.MetaClass;
@@ -59,6 +77,10 @@ function getMetaClass(params) {
     return null;
 }
 
+/**
+ * @param params
+ * @param {...any} otherArgs
+ */
 function Class(params, ...otherArgs) {
     let metaClass = getMetaClass(params);
 
@@ -77,6 +99,9 @@ Class.prototype.wrapFunction = function (name, meth) {
     if (meth._origin)
         meth = meth._origin;
 
+    /**
+     * @param {...any} args
+     */
     function wrapper(...args) {
         let prevCaller = this.__caller__;
         this.__caller__ = wrapper;
@@ -106,6 +131,9 @@ Class.prototype._construct = function (params, ...otherArgs) {
     if (!parent)
         parent = _Base;
 
+    /**
+     * @param {...any} args
+     */
     function newClass(...args) {
         if (params.Abstract && new.target.name === name)
             throw new TypeError(`Cannot instantiate abstract class ${name}`);
@@ -237,6 +265,9 @@ Class.prototype._init = function (params) {
 // such as GObject.Class supply their own meta-interface.
 // This is in order to enable creating GObject interfaces with Lang.Interface,
 // much as you can create GObject classes with Lang.Class.
+/**
+ * @param params
+ */
 function _getMetaInterface(params) {
     if (!params.Requires || params.Requires.length === 0)
         return null;
@@ -274,6 +305,10 @@ function _getMetaInterface(params) {
     return metaInterface;
 }
 
+/**
+ * @param params
+ * @param {...any} otherArgs
+ */
 function Interface(params, ...otherArgs) {
     let metaInterface = _getMetaInterface(params);
     if (metaInterface && metaInterface !== this.constructor)
@@ -411,12 +446,16 @@ Interface.prototype._init = function (params) {
 
 // GObject Lang.Class magic
 
-function defineGObjectLegacyObjects(GObject) {
-    const Gi = imports._gi;
-    const {_checkAccessors} = imports._common;
-
+/**
+ * @param GObject
+ */
+export function defineGObjectLegacyObjects(GObject) {
     // Some common functions between GObject.Class and GObject.Interface
 
+    /**
+     * @param gtype
+     * @param signals
+     */
     function _createSignals(gtype, signals) {
         for (let signalName in signals) {
             let obj = signals[signalName];
@@ -433,6 +472,9 @@ function defineGObjectLegacyObjects(GObject) {
         }
     }
 
+    /**
+     * @param params
+     */
     function _createGTypeName(params) {
         if (params.GTypeName)
             return params.GTypeName;
@@ -440,10 +482,16 @@ function defineGObjectLegacyObjects(GObject) {
             return `Gjs_${params.Name.replace(/[^a-z0-9_+-]/gi, '_')}`;
     }
 
+    /**
+     * @param interfaces
+     */
     function _getGObjectInterfaces(interfaces) {
         return interfaces.filter(iface => iface.hasOwnProperty('$gtype'));
     }
 
+    /**
+     * @param params
+     */
     function _propertiesAsArray(params) {
         let propertiesArray = [];
         if (params.Properties) {
@@ -582,6 +630,9 @@ function defineGObjectLegacyObjects(GObject) {
         },
     });
 
+    /**
+     * @param {...any} args
+     */
     function GObjectInterface(...args) {
         return this._construct(...args);
     }
@@ -646,7 +697,11 @@ function defineGObjectLegacyObjects(GObject) {
     return {GObjectMeta, GObjectInterface};
 }
 
-function defineGtkLegacyObjects(GObject, Gtk) {
+/**
+ * @param GObject
+ * @param Gtk
+ */
+export function defineGtkLegacyObjects(GObject, Gtk) {
     const GtkWidgetClass = new Class({
         Name: 'GtkWidgetClass',
         Extends: GObject.Class,
@@ -715,3 +770,6 @@ function defineGtkLegacyObjects(GObject, Gtk) {
 
     return {GtkWidgetClass};
 }
+
+export {Class, Interface, getMetaClass};
+

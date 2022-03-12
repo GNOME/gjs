@@ -13,6 +13,7 @@
 /** @typedef {{ load(uri: Uri): [contents: string, internal: boolean]; }} SchemeHandler */
 /** @typedef {{ [key: string]: string | undefined; }} Query */
 /** @typedef {(uri: string, contents: string) => Module} CompileFunc */
+const {print, logError} = loadNative('_print');
 
 /**
  * Thrown when there is an error importing a module.
@@ -154,12 +155,13 @@ class InternalModuleLoader {
 
     /**
      * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
-     *   triggering this resolve
+     * @param {ModulePrivate} importingModulePriv the private object of the module initiating
+     *     the import triggering this resolve
      *
      * @returns {Module | null}
      */
-    resolveModule(specifier, importingModuleURI) {
+    resolveModule(specifier, importingModulePriv) {
+        const importingModuleURI = importingModulePriv.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded
@@ -180,9 +182,14 @@ class InternalModuleLoader {
             if (!result)
                 return null;
 
-            const [text, internal = false] = result;
-
-            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            const [text, internal] = result;
+            // print('>>');
+            // print(specifier);
+            // print(importingModulePriv.uri);
+            // print(importingModulePriv.internal);
+            // print(internal);
+            // print('<<');
+            const priv = new ModulePrivate(uri.uri, uri.uri, internal ?? importingModulePriv.internal);
             const compiled = this.compileModule(priv, text);
 
             registry.set(uri.uri, compiled);
@@ -193,15 +200,15 @@ class InternalModuleLoader {
     }
 
     moduleResolveHook(importingModulePriv, specifier) {
-        const resolved = this.resolveModule(specifier, importingModulePriv.uri ?? null);
+        const resolved = this.resolveModule(specifier, importingModulePriv ?? null);
         if (!resolved)
             throw new ImportError(`Module not found: ${specifier}`);
 
         return resolved;
     }
 
-    moduleLoadHook(id, uri) {
-        const priv = new ModulePrivate(id, uri);
+    moduleLoadHook(id, uri, internal) {
+        const priv = new ModulePrivate(id, uri, internal);
 
         const result = this.loadURI(parseURI(uri));
         // result can only be null if `this` is InternalModuleLoader. If `this`
@@ -335,7 +342,7 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {import("./internalLoader").Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const module = this.resolveModule(specifier, importingModulePriv.uri);
+        const module = this.resolveModule(specifier, importingModulePriv);
         if (module)
             return module;
 
@@ -348,18 +355,20 @@ class ModuleLoader extends InternalModuleLoader {
         if (!importingModulePriv || !importingModulePriv.uri)
             throw new ImportError('Cannot resolve relative imports from an unknown file.');
 
-        return this.resolveModuleAsync(specifier, importingModulePriv.uri);
+        return this.resolveModuleAsync(specifier, importingModulePriv);
     }
 
     /**
      * Resolves a module import with optional handling for relative imports asynchronously.
      *
      * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
+     * @param {ModulePrivate} importingModulePriv the private object of the module initiating
+     *     the import triggering this resolve
      *   triggering this resolve
      * @returns {import("../types").Module}
      */
-    async resolveModuleAsync(specifier, importingModuleURI) {
+    async resolveModuleAsync(specifier, importingModulePriv) {
+        const importingModuleURI = importingModulePriv.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded
@@ -385,9 +394,9 @@ class ModuleLoader extends InternalModuleLoader {
             if (module)
                 return module;
 
-            const [text, internal = false] = result;
+            const [text, internal] = result;
 
-            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            const priv = new ModulePrivate(uri.uri, uri.uri, internal ?? importingModulePriv.internal);
             const compiled = this.compileModule(priv, text);
 
             registry.set(uri.uri, compiled);
