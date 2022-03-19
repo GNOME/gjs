@@ -1,3 +1,13 @@
+Version 1.68.6
+--------------
+
+- Build and compatibility fixes backported from the development branch.
+
+- Closed bugs and merge requests:
+  * package: Reverse order of running-from-source checks [!734, Philip Chimento]
+
+- Fix build error on Darwin [Evan Miller]
+
 Version 1.68.5
 --------------
 
