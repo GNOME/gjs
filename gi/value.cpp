@@ -479,7 +479,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return throw_expect_type(context, value, "integer");
         }
     } else if (gtype == G_TYPE_INT64) {
-        gint64 i;
+        int64_t i;
         if (Gjs::js_value_to_c_checked<int64_t>(context, value, &i,
                                                 &out_of_range) &&
             !out_of_range) {
@@ -512,7 +512,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return throw_expect_type(context, value, "unsigned integer");
         }
     } else if (gtype == G_TYPE_UINT64) {
-        guint64 i;
+        uint64_t i;
         if (Gjs::js_value_to_c_checked<uint64_t>(context, value, &i,
                                                  &out_of_range) &&
             !out_of_range) {
