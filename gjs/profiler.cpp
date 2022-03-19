@@ -700,8 +700,8 @@ gjs_profiler_set_filename(GjsProfiler *self,
     self->filename = g_strdup(filename);
 }
 
-void _gjs_profiler_add_mark(GjsProfiler* self, gint64 time_nsec,
-                            gint64 duration_nsec, const char* group,
+void _gjs_profiler_add_mark(GjsProfiler* self, int64_t time_nsec,
+                            int64_t duration_nsec, const char* group,
                             const char* name, const char* message) {
     g_return_if_fail(self);
     g_return_if_fail(group);
