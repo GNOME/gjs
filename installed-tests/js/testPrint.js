@@ -48,10 +48,27 @@ describe('prettyPrint', function () {
         log({greeting: 'hi'});
     });
 
+    it('property value is object reference', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { a: 5, b: [Circular] }');
+        let obj = {a: 5};
+        obj.b = obj;
+        log(obj);
+    });
+
     it('more than one property', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
             'JS LOG: { a: 1, b: 2, c: 3 }');
         log({a: 1, b: 2, c: 3});
+    });
+
+    it('add property value after property value object reference', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: { a: 5, b: [Circular], c: 4 }');
+        let obj = {a: 5};
+        obj.b = obj;
+        obj.c = 4;
+        log(obj);
     });
 
     it('array', function () {
@@ -64,6 +81,24 @@ describe('prettyPrint', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
             'JS LOG: { arr: [1, 2, 3, 4, 5] }');
         log({arr: [1, 2, 3, 4, 5]});
+    });
+
+    it('array reference is the only array element', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [[Circular]]');
+        let arr = [];
+        arr.push(arr);
+        log(arr);
+    });
+
+    it('array reference is one of multiple array elements', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [4, [Circular], 5]');
+        let arr = [];
+        arr.push(4);
+        arr.push(arr);
+        arr.push(5);
+        log(arr);
     });
 
     it('nested array', function () {

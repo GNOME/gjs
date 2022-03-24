@@ -24,9 +24,10 @@
     }
 
     function prettyPrint(value) {
+        const printedObjects = new WeakSet();
         switch (typeof value) {
         case 'object':
-            return formatObject(value);
+            return formatObject(value, printedObjects);
         case 'function':
             return formatFunction(value);
         default:
@@ -34,9 +35,11 @@
         }
     }
 
-    function formatObject(obj) {
+    function formatObject(obj, printedObjects) {
+        printedObjects.add(obj);
         if (Array.isArray(obj))
-            return formatArray(obj).toString();
+            return formatArray(obj, printedObjects).toString();
+
         if (obj instanceof Date)
             return formatDate(obj);
 
@@ -44,7 +47,10 @@
         for (const [key, value] of Object.entries(obj)) {
             switch (typeof value) {
             case 'object':
-                formattedObject.push(`${key}: ${formatObject(value)}`);
+                if (printedObjects.has(value))
+                    formattedObject.push(`${key}: [Circular]`);
+                else
+                    formattedObject.push(`${key}: ${formatObject(value, printedObjects)}`);
                 break;
             case 'function':
                 formattedObject.push(`${key}: ${formatFunction(value)}`);
@@ -60,10 +66,14 @@
         return `{ ${formattedObject.join(', ')} }`;
     }
 
-    function formatArray(arr) {
+    function formatArray(arr, printedObjects) {
         const formattedArray = [];
-        for (const [key, value] of arr.entries())
-            formattedArray[key] = prettyPrint(value);
+        for (const [key, value] of arr.entries()) {
+            if (printedObjects.has(value))
+                formattedArray[key] = '[Circular]';
+            else
+                formattedArray[key] = prettyPrint(value);
+        }
         return `[${formattedArray.join(', ')}]`;
     }
 
