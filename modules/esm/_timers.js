@@ -26,7 +26,7 @@ const timeouts = new Map();
  * @param {GLib.Source} source the source to add to our map
  */
 function addSource(source) {
-    const context = GLib.MainContext.get_thread_default() ?? null;
+    const context = GLib.MainContext.get_thread_default() ?? GLib.MainContext.default();
     if (!context)
         throw new Error('No context available');
     const id = source.attach(context);
