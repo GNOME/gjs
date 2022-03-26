@@ -1,6 +1,6 @@
 GJS includes some built-in modules, as well as helpers for some core APIs like DBus like Variants. The headings below are links to the JavaScript source, which are decently documented and informative of usage.
 
-## [Gio](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/Gio.js)
+## [Gio](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/overrides/Gio.js)
 
 **Import with `const Gio = gi.require('Gio');` or `import Gio from 'gi://Gio'`**
 
@@ -31,7 +31,7 @@ The `Gio` override includes a number of utilities for DBus that will be document
 
 [old-dbus-example]: https://wiki.gnome.org/Gjs/Examples/DBusClient
 
-## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/GLib.js)
+## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/overrides/GLib.js)
 
 **Import with `const GLib = gi.require('GLib');` or `import GLib from 'gi://GLib'`**
 
@@ -42,13 +42,13 @@ Mostly GVariant and GBytes compatibility.
 * `GLib.Variant.unpack()`: Unpack a variant to a native type
 * `GLib.Variant.deep_unpack()`: Deep unpack a variant.
 
-## [GObject](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/GObject.js)
+## [GObject](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/overrides/GObject.js)
 
 **Import with `const GObject = gi.require('GObject');` or `import GObject from 'gi://GObject'`**
 
 Mostly GObject implementation (properties, signals, GType mapping). May be useful as a reference.
 
-## [Gtk](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/Gtk.js)
+## [Gtk](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/overrides/Gtk.js)
 
 **Import with `const Gtk = gi.require('Gtk', '3.0');` or `import Gtk from 'gi://Gtk'`**
 

@@ -136,6 +136,15 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     }
 
     context = m_cx;
+
+    // Prevent calling JavaScript functions from the incorrect thread
+    if (!js::CurrentThreadCanAccessZone(js::GetContextZone(context))) {
+        g_critical(
+            "Attempted to call a JavaScript function from an incorrect "
+            "thread.");
+        return;
+    }
+
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     if (G_UNLIKELY(gjs->sweeping())) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;

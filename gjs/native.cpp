@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <mutex>
 #include <string>
 #include <tuple>  // for tie
 #include <unordered_map>
@@ -20,6 +21,8 @@
 
 void Gjs::NativeModuleRegistry::add(const char* module_id,
                                     GjsDefineModuleFunc func) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     bool inserted;
     std::tie(std::ignore, inserted) = m_modules.insert({module_id, func});
     if (!inserted) {
@@ -28,8 +31,7 @@ void Gjs::NativeModuleRegistry::add(const char* module_id,
         return;
     }
 
-    gjs_debug(GJS_DEBUG_NATIVE,
-              "Registered native JS module '%s'",
+    gjs_debug(GJS_DEBUG_NATIVE, "Registered native JS module '%s'\n",
               module_id);
 }
 
@@ -42,6 +44,8 @@ void Gjs::NativeModuleRegistry::add(const char* module_id,
  * builtin module without starting to try and load it.
  */
 bool Gjs::NativeModuleRegistry::is_registered(const char* name) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     return m_modules.count(name) > 0;
 }
 
@@ -59,6 +63,8 @@ bool Gjs::NativeModuleRegistry::is_registered(const char* name) const {
  */
 bool Gjs::NativeModuleRegistry::load(JSContext* context, const char* parse_name,
                                      JS::MutableHandleObject module_out) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+
     gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", parse_name);
 
     const auto& iter = m_modules.find(parse_name);

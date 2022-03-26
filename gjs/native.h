@@ -21,6 +21,7 @@ class NativeModuleRegistry {
                                         JS::MutableHandleObject module_out);
 
     std::unordered_map<std::string, GjsDefineModuleFunc> m_modules;
+    std::mutex m_mutex;
 
  public:
     static NativeModuleRegistry& get() {

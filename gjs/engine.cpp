@@ -79,7 +79,7 @@ class GjsSourceHook : public js::SourceHook {
 
 #ifdef G_OS_WIN32
 HMODULE gjs_dll;
-static bool gjs_is_inited = false;
+static bool _gjs_is_inited = false;
 
 BOOL WINAPI
 DllMain (HINSTANCE hinstDLL,
@@ -90,7 +90,7 @@ LPVOID    lpvReserved)
   {
   case DLL_PROCESS_ATTACH:
     gjs_dll = hinstDLL;
-    gjs_is_inited = JS_Init();
+    _gjs_is_inited = JS_Init();
     break;
 
   case DLL_THREAD_DETACH:
@@ -105,6 +105,7 @@ LPVOID    lpvReserved)
   return TRUE;
 }
 
+static bool gjs_is_inited() { return _gjs_is_inited; }
 #else
 class GjsInit {
 public:
@@ -120,12 +121,28 @@ public:
     explicit operator bool() const { return true; }
 };
 
-static GjsInit gjs_is_inited;
+static bool gjs_is_inited() {
+    static GjsInit gjs_is_inited;
+
+    return !!gjs_is_inited;
+}
 #endif
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
-    g_assert(gjs_is_inited);
-    JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
+    g_assert(gjs_is_inited());
+
+    // Store the first runtime as the "parent" runtime, all future
+    // contexts will inherit from it.
+    static std::thread::id parent_thread = std::this_thread::get_id();
+    static JSRuntime* parent_runtime = nullptr;
+
+    JSContext* cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */,
+                                  (parent_thread != std::this_thread::get_id())
+                                      ? parent_runtime
+                                      : nullptr);
+    if (!parent_runtime) {
+        parent_runtime = JS_GetRuntime(cx);
+    }
     if (!cx)
         return nullptr;
 

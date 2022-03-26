@@ -306,7 +306,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
      * hard ref on the underlying GObject, and may be finalized at will. */
     bool m_uses_toggle_ref : 1;
 
-    static bool s_weak_pointer_callback;
+    static thread_local bool s_weak_pointer_callback;
 
     /* Constructors */
 
@@ -401,7 +401,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* Methods to manipulate the linked list of instances */
 
  private:
-    static std::vector<ObjectInstance*> s_wrapped_gobject_list;
+    static thread_local std::vector<ObjectInstance*> s_wrapped_gobject_list;
     void link(void);
     void unlink(void);
     [[nodiscard]] static size_t num_wrapped_gobjects() {

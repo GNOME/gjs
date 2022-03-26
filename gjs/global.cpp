@@ -36,6 +36,7 @@
 #include "gjs/internal.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/native.h"
+#include "gjs/thread.h"
 
 namespace mozilla {
 union Utf8Unit;
@@ -70,6 +71,27 @@ class GjsBaseGlobal {
     }
 
  protected:
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_registry_properties(JSContext* cx,
+                                           JS::HandleObject global) {
+        JSAutoRealm ar(cx, global);
+
+        JS::RootedObject native_registry(cx, JS::NewMapObject(cx));
+        if (!native_registry)
+            return false;
+
+        gjs_set_global_slot(global, GjsGlobalSlot::NATIVE_REGISTRY,
+                            JS::ObjectValue(*native_registry));
+
+        JS::RootedObject module_registry(cx, JS::NewMapObject(cx));
+        if (!module_registry)
+            return false;
+
+        gjs_set_global_slot(global, GjsGlobalSlot::MODULE_REGISTRY,
+                            JS::ObjectValue(*module_registry));
+        return true;
+    }
+
     [[nodiscard]] static JSObject* create(
         JSContext* cx, const JSClass* clasp,
         JS::RealmCreationOptions options = JS::RealmCreationOptions()) {
@@ -84,11 +106,19 @@ class GjsBaseGlobal {
         return base(cx, clasp, options);
     }
 
+    static void define_realm_name(JSContext*, JS::HandleObject global,
+                                  const char* realm_name) {
+        JS::Realm* realm = JS::GetObjectRealmOrNull(global);
+        g_assert(realm && "Global object must be associated with a realm");
+        // const_cast is allowed here if we never free the realm data
+        JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
+    }
+
     GJS_JSAPI_RETURN_CONVENTION
     static bool run_bootstrap(JSContext* cx, const char* bootstrap_script,
                               JS::HandleObject global) {
         GjsAutoChar uri = g_strdup_printf(
-            "resource:///org/gnome/gjs/modules/script/_bootstrap/%s.js",
+            "resource:///org/gnome/gjs/modules/_bootstrap/%s.js",
             bootstrap_script);
 
         JSAutoRealm ar(cx, global);
@@ -145,7 +175,7 @@ class GjsBaseGlobal {
 
 const JSClassOps defaultclassops = JS::DefaultGlobalClassOps;
 
-class GjsGlobal : GjsBaseGlobal {
+class GjsGlobal : public GjsBaseGlobal {
     static constexpr JSClass klass = {
         // Jasmine depends on the class name "GjsGlobal" to detect GJS' global
         // object.
@@ -161,8 +191,7 @@ class GjsGlobal : GjsBaseGlobal {
         JS_PS_END};
     // clang-format on
 
-    static constexpr JSFunctionSpec static_funcs[] = {
-        JS_FS_END};
+    static constexpr JSFunctionSpec static_funcs[] = {JS_FS_END};
 
  public:
     [[nodiscard]] static JSObject* create(JSContext* cx) {
@@ -185,29 +214,15 @@ class GjsGlobal : GjsBaseGlobal {
             !JS_DefineProperties(cx, global, GjsGlobal::static_props))
             return false;
 
-        JS::Realm* realm = JS::GetObjectRealmOrNull(global);
-        g_assert(realm && "Global object must be associated with a realm");
-        // const_cast is allowed here if we never free the realm data
-        JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
+        define_realm_name(cx, global, realm_name);
 
-        JS::RootedObject native_registry(cx, JS::NewMapObject(cx));
-        if (!native_registry)
+        if (!define_registry_properties(cx, global))
             return false;
-
-        gjs_set_global_slot(global, GjsGlobalSlot::NATIVE_REGISTRY,
-                            JS::ObjectValue(*native_registry));
-
-        JS::RootedObject module_registry(cx, JS::NewMapObject(cx));
-        if (!module_registry)
-            return false;
-
-        gjs_set_global_slot(global, GjsGlobalSlot::MODULE_REGISTRY,
-                            JS::ObjectValue(*module_registry));
 
         JS::Value v_importer =
             gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
-        g_assert(((void) "importer should be defined before passing null "
-                  "importer to GjsGlobal::define_properties",
+        g_assert(((void)"importer should be defined before passing null "
+                        "importer to GjsGlobal::define_properties",
                   v_importer.isObject()));
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
@@ -221,6 +236,56 @@ class GjsGlobal : GjsBaseGlobal {
             if (!run_bootstrap(cx, bootstrap_script, global))
                 return false;
         }
+
+        return true;
+    }
+};
+
+class GjsWorkerGlobal : public GjsGlobal {
+    static constexpr JSClass klass = {
+        "GjsWorkerGlobal",
+        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
+            static_cast<uint32_t>(GjsWorkerGlobalSlot::LAST)),
+        &defaultclassops,
+    };
+
+    // clang-format off
+    static constexpr JSPropertySpec static_props[] = {
+        JS_STRING_SYM_PS(toStringTag, "GjsWorkerGlobal", JSPROP_READONLY),
+        JS_PS_END};
+    // clang-format on
+
+    static constexpr JSFunctionSpec static_funcs[] = {
+        JS_FN("postMessage", Gjs::WorkerGlobal::post_message, 2, 0), JS_FS_END};
+
+ public:
+    [[nodiscard]] static JSObject* create(JSContext* cx) {
+        return GjsBaseGlobal::create(cx, &klass);
+    }
+
+    [[nodiscard]] static JSObject* create_with_compartment(
+        JSContext* cx, JS::HandleObject cmp_global) {
+        return GjsBaseGlobal::create_with_compartment(cx, cmp_global, &klass);
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_properties(JSContext* cx, JS::HandleObject global,
+                                  const char* realm_name) {
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        if (!JS_DefineProperty(
+                cx, global, "self", global,
+                JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT) ||
+            !JS_DefineFunctions(cx, global, GjsWorkerGlobal::static_funcs) ||
+            !JS_DefineProperties(cx, global, GjsWorkerGlobal::static_props))
+            return false;
+
+        define_realm_name(cx, global, realm_name);
+
+        if (!define_registry_properties(cx, global))
+            return false;
+
+        if (!run_bootstrap(cx, "worker", global))
+            return false;
 
         return true;
     }
@@ -258,10 +323,7 @@ class GjsDebuggerGlobal : GjsBaseGlobal {
             !JS_DefineFunctions(cx, global, GjsDebuggerGlobal::static_funcs))
             return false;
 
-        JS::Realm* realm = JS::GetObjectRealmOrNull(global);
-        g_assert(realm && "Global object must be associated with a realm");
-        // const_cast is allowed here if we never free the realm data
-        JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
+        define_realm_name(cx, global, realm_name);
 
         if (bootstrap_script) {
             if (!run_bootstrap(cx, bootstrap_script, global))
@@ -272,7 +334,7 @@ class GjsDebuggerGlobal : GjsBaseGlobal {
     }
 };
 
-class GjsInternalGlobal : GjsBaseGlobal {
+class GjsInternalGlobal : public GjsBaseGlobal {
     static constexpr JSFunctionSpec static_funcs[] = {
         JS_FN("compileModule", gjs_internal_compile_module, 2, 0),
         JS_FN("compileInternalModule", gjs_internal_compile_internal_module, 2,
@@ -288,6 +350,7 @@ class GjsInternalGlobal : GjsBaseGlobal {
               0),
         JS_FN("setModulePrivate", gjs_internal_set_module_private, 2, 0),
         JS_FN("uriExists", gjs_internal_uri_exists, 1, 0),
+        JS_FN("loadNative", &load_native_module, 1, 0),
         JS_FS_END};
 
     static constexpr JSClass klass = {
@@ -311,25 +374,12 @@ class GjsInternalGlobal : GjsBaseGlobal {
                                   const char* realm_name,
                                   const char* bootstrap_script
                                   [[maybe_unused]]) {
-        JS::Realm* realm = JS::GetObjectRealmOrNull(global);
-        g_assert(realm && "Global object must be associated with a realm");
-        // const_cast is allowed here if we never free the realm data
-        JS::SetRealmPrivate(realm, const_cast<char*>(realm_name));
+        define_realm_name(cx, global, realm_name);
 
         JSAutoRealm ar(cx, global);
-        JS::RootedObject native_registry(cx, JS::NewMapObject(cx));
-        if (!native_registry)
+
+        if (!define_registry_properties(cx, global))
             return false;
-
-        gjs_set_global_slot(global, GjsGlobalSlot::NATIVE_REGISTRY,
-                            JS::ObjectValue(*native_registry));
-
-        JS::RootedObject module_registry(cx, JS::NewMapObject(cx));
-        if (!module_registry)
-            return false;
-
-        gjs_set_global_slot(global, GjsGlobalSlot::MODULE_REGISTRY,
-                            JS::ObjectValue(*module_registry));
 
         return JS_DefineFunctions(cx, global, static_funcs);
     }
@@ -350,6 +400,9 @@ JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
         switch (global_type) {
             case GjsGlobalType::DEFAULT:
                 return GjsGlobal::create_with_compartment(cx, current_global);
+            case GjsGlobalType::WORKER:
+                return GjsWorkerGlobal::create_with_compartment(cx,
+                                                                current_global);
             case GjsGlobalType::DEBUGGER:
                 return GjsDebuggerGlobal::create_with_compartment(
                     cx, current_global);
@@ -364,6 +417,9 @@ JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
     switch (global_type) {
         case GjsGlobalType::DEFAULT:
             return GjsGlobal::create(cx);
+        case GjsGlobalType::WORKER:
+            // A worker global cannot be created without an existing global
+            g_assert_not_reached();
         case GjsGlobalType::DEBUGGER:
             return GjsDebuggerGlobal::create(cx);
         case GjsGlobalType::INTERNAL:
@@ -486,7 +542,7 @@ bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
  * @global: a JS global object that has not yet been passed to this function
  * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
- * resource://org/gnome/gjs/modules/script/_bootstrap/@bootstrap_script) or
+ * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or
  * %NULL for none
  *
  * Defines properties on the global object such as 'window' and 'imports', and
@@ -517,6 +573,8 @@ bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
         case GjsGlobalType::DEFAULT:
             return GjsGlobal::define_properties(cx, global, realm_name,
                                                 bootstrap_script);
+        case GjsGlobalType::WORKER:
+            return GjsWorkerGlobal::define_properties(cx, global, realm_name);
         case GjsGlobalType::DEBUGGER:
             return GjsDebuggerGlobal::define_properties(cx, global, realm_name,
                                                         bootstrap_script);
@@ -541,10 +599,14 @@ decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
 decltype(GjsGlobal::static_funcs) constexpr GjsGlobal::static_funcs;
 decltype(GjsGlobal::static_props) constexpr GjsGlobal::static_props;
 
+decltype(GjsWorkerGlobal::klass) constexpr GjsWorkerGlobal::klass;
+decltype(GjsWorkerGlobal::static_funcs) constexpr GjsWorkerGlobal::static_funcs;
+decltype(GjsWorkerGlobal::static_props) constexpr GjsWorkerGlobal::static_props;
+
 decltype(GjsDebuggerGlobal::klass) constexpr GjsDebuggerGlobal::klass;
-decltype(
-    GjsDebuggerGlobal::static_funcs) constexpr GjsDebuggerGlobal::static_funcs;
+decltype(GjsDebuggerGlobal::static_funcs) constexpr GjsDebuggerGlobal::
+    static_funcs;
 
 decltype(GjsInternalGlobal::klass) constexpr GjsInternalGlobal::klass;
-decltype(
-    GjsInternalGlobal::static_funcs) constexpr GjsInternalGlobal::static_funcs;
+decltype(GjsInternalGlobal::static_funcs) constexpr GjsInternalGlobal::
+    static_funcs;

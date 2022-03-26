@@ -58,6 +58,10 @@ using GTypeTable =
     JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
 
+[[nodiscard]] GjsContext* gjs_context_new_worker();
+[[nodiscard]] GjsContext* gjs_context_get_current_thread();
+[[nodiscard]] GjsContext* gjs_context_get_main_thread();
+
 class GjsContextPrivate : public JS::JobQueue {
  public:
     using DestroyNotify = void (*)(JSContext*, void* data);
@@ -114,6 +118,8 @@ class GjsContextPrivate : public JS::JobQueue {
 
     uint8_t m_exit_code;
 
+    void* m_worker;
+
     /* flags */
     std::atomic_bool m_destroying = ATOMIC_VAR_INIT(false);
     bool m_in_gc_sweep : 1;
@@ -168,6 +174,7 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] static GjsContextPrivate* from_object(
         GjsContext* public_context);
     [[nodiscard]] static GjsContextPrivate* from_current_context();
+    [[nodiscard]] static GjsContextPrivate* from_main_thread_context();
 
     GjsContextPrivate(JSContext* cx, GjsContext* public_context);
     ~GjsContextPrivate(void);
@@ -194,6 +201,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
     void set_execute_as_module(bool value) { m_exec_as_module = value; }
+    void set_worker(void* worker) { m_worker = worker; }
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
@@ -201,6 +209,11 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION JSObject* build_args_array();
     [[nodiscard]] bool is_owner_thread() const {
         return m_owner_thread == std::this_thread::get_id();
+    }
+    [[nodiscard]] bool is_main_thread() const {
+        static std::thread::id main_thread = std::this_thread::get_id();
+
+        return main_thread == std::this_thread::get_id();
     }
     [[nodiscard]] JS::WeakCache<FundamentalTable>& fundamental_table() {
         return *m_fundamental_table;

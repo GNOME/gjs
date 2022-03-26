@@ -24,6 +24,7 @@ enum class GjsGlobalType {
     DEFAULT,
     DEBUGGER,
     INTERNAL,
+    WORKER,
 };
 
 enum class GjsBaseGlobalSlot : uint32_t {
@@ -62,11 +63,19 @@ enum class GjsGlobalSlot : uint32_t {
     PROTOTYPE_cairo_surface,
     PROTOTYPE_cairo_surface_pattern,
     PROTOTYPE_cairo_svg_surface,
+    PROTOTYPE_worker,
     LAST,
 };
 
 enum class GjsInternalGlobalSlot : uint32_t {
     LAST = static_cast<uint32_t>(GjsGlobalSlot::LAST),
+};
+
+enum class GjsWorkerGlobalSlot : uint32_t {
+    WORKER = static_cast<uint32_t>(GjsGlobalSlot::LAST),
+    ONMESSAGE,
+    ONERROR,
+    LAST,
 };
 
 bool gjs_global_is_type(JSContext* cx, GjsGlobalType type);
@@ -89,7 +98,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
                                   GjsGlobalType global_type,
                                   const char* realm_name,
-                                  const char* bootstrap_script);
+                                  const char* bootstrap_script = nullptr);
 
 namespace detail {
 void set_global_slot(JSObject* global, uint32_t slot, JS::Value value);
@@ -101,6 +110,7 @@ inline void gjs_set_global_slot(JSObject* global, Slot slot, JS::Value value) {
     static_assert(std::is_same_v<GjsBaseGlobalSlot, Slot> ||
                       std::is_same_v<GjsGlobalSlot, Slot> ||
                       std::is_same_v<GjsInternalGlobalSlot, Slot> ||
+                      std::is_same_v<GjsWorkerGlobalSlot, Slot> ||
                       std::is_same_v<GjsDebuggerGlobalSlot, Slot>,
                   "Must use a GJS global slot enum");
     detail::set_global_slot(global, static_cast<uint32_t>(slot), value);
@@ -111,6 +121,7 @@ inline JS::Value gjs_get_global_slot(JSObject* global, Slot slot) {
     static_assert(std::is_same_v<GjsBaseGlobalSlot, Slot> ||
                       std::is_same_v<GjsGlobalSlot, Slot> ||
                       std::is_same_v<GjsInternalGlobalSlot, Slot> ||
+                      std::is_same_v<GjsWorkerGlobalSlot, Slot> ||
                       std::is_same_v<GjsDebuggerGlobalSlot, Slot>,
                   "Must use a GJS global slot enum");
     return detail::get_global_slot(global, static_cast<uint32_t>(slot));

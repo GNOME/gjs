@@ -88,6 +88,7 @@
 #include "gjs/profiler.h"
 #include "gjs/promise.h"
 #include "gjs/text-encoding.h"
+#include "gjs/thread.h"
 #include "modules/modules.h"
 #include "util/log.h"
 
@@ -141,7 +142,11 @@ GjsContextPrivate* GjsContextPrivate::from_object(GjsContext* js_context) {
 }
 
 GjsContextPrivate* GjsContextPrivate::from_current_context() {
-    return from_object(gjs_context_get_current());
+    return from_object(gjs_context_get_current_thread());
+}
+
+GjsContextPrivate* GjsContextPrivate::from_main_thread_context() {
+    return from_object(gjs_context_get_main_thread());
 }
 
 enum {
@@ -152,6 +157,7 @@ enum {
     PROP_PROFILER_ENABLED,
     PROP_PROFILER_SIGUSR2,
     PROP_EXEC_AS_MODULE,
+    PROP_WORKER_THREAD,
 };
 
 static GMutex contexts_lock;
@@ -227,6 +233,8 @@ setup_dump_heap(void)
         }
     }
 }
+
+void gjs_context_set_thread_context(GjsContext* context);
 
 static void
 gjs_context_init(GjsContext *js_context)
@@ -321,6 +329,13 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class, PROP_EXEC_AS_MODULE, pspec);
     g_param_spec_unref(pspec);
 
+    pspec = g_param_spec_pointer(
+        "worker-thread", "The worker thread for this context",
+        "The worker thread for the context",
+        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    g_object_class_install_property(object_class, PROP_WORKER_THREAD, pspec);
+    g_param_spec_unref(pspec);
+
     /* For GjsPrivate */
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
@@ -338,6 +353,7 @@ gjs_context_class_init(GjsContextClass *klass)
     registry.add("_promiseNative", gjs_define_native_promise_stuff);
     registry.add("_byteArrayNative", gjs_define_byte_array_stuff);
     registry.add("_encodingNative", gjs_define_text_encoding_stuff);
+    registry.add("_workerNative", gjs_define_worker_stuff);
     registry.add("_gi", gjs_define_private_gi_stuff);
     registry.add("gi", gjs_define_repo);
 
@@ -484,8 +500,8 @@ GjsContextPrivate::~GjsContextPrivate(void) {
 static void
 gjs_context_finalize(GObject *object)
 {
-    if (gjs_context_get_current() == (GjsContext*)object)
-        gjs_context_make_current(NULL);
+    if (gjs_context_get_current_thread() == (GjsContext*)object)
+        gjs_context_make_current(nullptr);
 
     g_mutex_lock(&contexts_lock);
     all_contexts = g_list_remove(all_contexts, object);
@@ -577,7 +593,7 @@ static bool add_promise_reactions(JSContext* cx, JS::HandleValue promise,
 
 static void load_context_module(JSContext* cx, const char* uri,
                                 const char* debug_identifier) {
-    JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri));
+    JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri, true));
 
     if (!loader) {
         gjs_log_exception(cx);
@@ -680,8 +696,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     }
 
     JS::RootedObject global(
-        m_cx,
-        gjs_create_global_object(cx, GjsGlobalType::DEFAULT, internal_global));
+        m_cx, gjs_create_global_object(
+                  cx, m_worker ? GjsGlobalType::WORKER : GjsGlobalType::DEFAULT,
+                  internal_global));
 
     if (!global) {
         gjs_log_exception(m_cx);
@@ -710,10 +727,24 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         gjs_set_global_slot(global, GjsGlobalSlot::IMPORTS,
                             JS::ObjectValue(*importer));
 
-        if (!gjs_define_global_properties(m_cx, global, GjsGlobalType::DEFAULT,
-                                          "GJS", "default")) {
-            gjs_log_exception(m_cx);
-            g_error("Failed to define properties on global object");
+        if (!m_worker) {
+            [[maybe_unused]] bool main_thread = is_main_thread();
+            g_assert(main_thread);
+
+            if (!gjs_define_global_properties(
+                    m_cx, global, GjsGlobalType::DEFAULT, "GJS", "default")) {
+                gjs_log_exception(m_cx);
+                g_error("Failed to define properties on global object");
+            }
+        } else {
+            if (!gjs_define_global_properties(m_cx, global,
+                                              GjsGlobalType::WORKER, "GJS")) {
+                gjs_log_exception(m_cx);
+                g_error("Failed to define properties on worker global object");
+            }
+
+            gjs_set_global_slot(global, GjsWorkerGlobalSlot::WORKER,
+                                JS::PrivateValue(m_worker));
         }
     }
 
@@ -732,6 +763,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to load internal module loaders.");
     }
 
+    // if (!m_worker)
     {
         JSAutoRealm ar(cx, global);
         load_context_module(
@@ -801,6 +833,9 @@ gjs_context_set_property (GObject      *object,
     case PROP_EXEC_AS_MODULE:
         gjs->set_execute_as_module(g_value_get_boolean(value));
         break;
+    case PROP_WORKER_THREAD:
+        gjs->set_worker(g_value_get_pointer(value));
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -820,6 +855,11 @@ gjs_context_new_with_search_path(char** search_path)
     return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
                          "search-path", search_path,
                          NULL);
+}
+
+GjsContext* gjs_context_new_worker() {
+    return static_cast<GjsContext*>(
+        g_object_new(GJS_TYPE_CONTEXT, "worker-thread", true, nullptr));
 }
 
 gboolean GjsContextPrivate::trigger_gc_if_needed(void* data) {
@@ -1658,20 +1698,44 @@ void gjs_context_set_argv(GjsContext* js_context, ssize_t array_length,
     gjs->set_args(std::move(args));
 }
 
-static GjsContext *current_context;
+static GjsContext* main_thread_context = nullptr;
+static thread_local GjsContext* current_thread_context = nullptr;
 
-GjsContext *
-gjs_context_get_current (void)
-{
-    return current_context;
+GjsContext* gjs_context_get_main_thread(void) { return main_thread_context; }
+
+[[deprecated]] GjsContext* gjs_context_get_current() {
+    return gjs_context_get_main_thread();
+}
+
+GjsContext* gjs_context_get_current_thread(void) {
+    return current_thread_context;
+}
+
+void gjs_context_set_current_thread(GjsContext* context) {
+    g_assert(context == NULL || current_thread_context == NULL);
+
+    current_thread_context = context;
+}
+
+void gjs_context_set_main_thread(GjsContext* context) {
+    g_assert(context == NULL || main_thread_context == NULL);
+
+    main_thread_context = context;
 }
 
 void
 gjs_context_make_current (GjsContext *context)
 {
-    g_assert (context == NULL || current_context == NULL);
+    static std::thread::id parent_thread = std::this_thread::get_id();
 
-    current_context = context;
+    if (std::this_thread::get_id() == parent_thread) {
+        g_assert(context == nullptr || main_thread_context == nullptr);
+        // Only make this context the parent current if this is the main thread.
+        gjs_context_set_main_thread(context);
+    }
+
+    g_assert(context == nullptr || current_thread_context == nullptr);
+    gjs_context_set_current_thread(context);
 }
 
 /**

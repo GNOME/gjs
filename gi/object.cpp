@@ -84,9 +84,9 @@ static_assert(sizeof(ObjectInstance) <= 48,
               "gnome-shell run.");
 #endif  // x86-64 clang
 
-bool ObjectInstance::s_weak_pointer_callback = false;
-decltype(ObjectInstance::s_wrapped_gobject_list)
-    ObjectInstance::s_wrapped_gobject_list;
+bool thread_local ObjectInstance::s_weak_pointer_callback = false;
+decltype(ObjectInstance::s_wrapped_gobject_list) thread_local ObjectInstance::
+    s_wrapped_gobject_list;
 
 static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
@@ -1285,7 +1285,7 @@ ObjectInstance::gobj_dispose_notify(void)
         m_uses_toggle_ref = false;
     }
 
-    if (GjsContextPrivate::from_current_context()->is_owner_thread())
+    if (GjsContextPrivate::from_main_thread_context()->is_owner_thread())
         discard_wrapper();
 }
 
@@ -1425,7 +1425,7 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
     bool toggle_up_queued, toggle_down_queued;
     auto* self = static_cast<ObjectInstance*>(instance);
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
+    GjsContextPrivate* gjs = GjsContextPrivate::from_main_thread_context();
     if (gjs->destroying()) {
         /* Do nothing here - we're in the process of disassociating
          * the objects.

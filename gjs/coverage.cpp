@@ -31,8 +31,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-static bool s_coverage_enabled = false;
-
 struct _GjsCoverage {
     GObject parent;
 };
@@ -178,9 +176,18 @@ write_line(GOutputStream *out,
     return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
 }
 
+static bool coverage_is_enabled(bool enable_coverage = false) {
+    static bool s_coverage_enabled = false;
+
+    if (enable_coverage)
+        s_coverage_enabled = true;
+
+    return s_coverage_enabled;
+}
+
 [[nodiscard]] static GjsAutoUnref<GFile> write_statistics_internal(
     GjsCoverage* coverage, JSContext* cx, GError** error) {
-    if (!s_coverage_enabled) {
+    if (!coverage_is_enabled()) {
         g_critical(
             "Code coverage requested, but gjs_coverage_enable() was not called."
             " You must call this function before creating any GjsContext.");
@@ -296,7 +303,7 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
 }
 
 static void gjs_coverage_init(GjsCoverage*) {
-    if (!s_coverage_enabled)
+    if (!coverage_is_enabled())
         g_critical(
             "Code coverage requested, but gjs_coverage_enable() was not called."
             " You must call this function before creating any GjsContext.");
@@ -497,5 +504,5 @@ gjs_coverage_new (const char * const *prefixes,
  */
 void gjs_coverage_enable() {
     js::EnableCodeCoverage();
-    s_coverage_enabled = true;
+    coverage_is_enabled(true);
 }
