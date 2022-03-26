@@ -43,7 +43,11 @@ function hasFormatSpecifiers(str) {
  * @param {any} item an item to format
  */
 function formatGenerically(item) {
-    return JSON.stringify(item, null, 4);
+    try {
+        return JSON.stringify(item, null, 4);
+    } catch {
+        return `${item}`;
+    }
 }
 
 /**
@@ -51,19 +55,23 @@ function formatGenerically(item) {
  * @returns {string}
  */
 function formatOptimally(item) {
+    try {
     // Handle optimal error formatting.
-    if (item instanceof Error) {
-        return `${item.toString()}${item.stack ? '\n' : ''}${item.stack
+        if (item instanceof Error) {
+            return `${item.toString()}${item.stack ? '\n' : ''}${item.stack
             ?.split('\n')
             // Pad each stacktrace line.
             .map(line => line.padStart(2, ' '))
             .join('\n')}`;
-    }
+        }
 
-    // TODO: Enhance 'optimal' formatting.
-    // There is a current work on a better object formatter for GJS in
-    // https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/587
-    return JSON.stringify(item, null, 4);
+        // TODO: Enhance 'optimal' formatting.
+        // There is a current work on a better object formatter for GJS in
+        // https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/587
+        return JSON.stringify(item, null, 4);
+    } catch {
+        return `${item}`;
+    }
 }
 
 const propertyAttributes = {
