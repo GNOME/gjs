@@ -142,6 +142,7 @@ jasmine_tests = [
     'Signals',
     'System',
     'Tweener',
+    'Worker'
 ]
 
 if build_cairo

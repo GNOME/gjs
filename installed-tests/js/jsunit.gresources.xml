@@ -29,5 +29,6 @@
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>
+    <file>modules/worker.js</file>
   </gresource>
 </gresources>
