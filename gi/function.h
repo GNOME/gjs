@@ -57,6 +57,10 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 #endif
     }
 
+    ffi_closure* get_ffi_closure() const {
+        return m_closure;
+    }
+
     void mark_forever();
 
     static void prepare_shutdown();

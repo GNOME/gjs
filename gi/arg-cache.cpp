@@ -711,6 +711,8 @@ struct CallbackIn : SkipAll, Callback {
 
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
+ private:
+    ffi_closure *m_ffi_closure;
 };
 
 using CArrayIn = ExplicitArrayIn;
@@ -834,6 +836,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     if (value.isNull() && m_nullable) {
         closure = nullptr;
         trampoline = nullptr;
+        m_ffi_closure = nullptr;
     } else {
         if (JS_TypeOfValue(cx, value) != JSTYPE_FUNCTION) {
             gjs_throw(cx, "Expected function for callback argument %s, got %s",
@@ -858,6 +861,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
                 return false;
         }
         closure = trampoline->closure();
+        m_ffi_closure = trampoline->get_ffi_closure();
     }
 
     if (has_callback_destroy()) {
@@ -1414,7 +1418,7 @@ bool CallerAllocatesOut::release(JSContext*, GjsFunctionCallState*,
 GJS_JSAPI_RETURN_CONVENTION
 bool CallbackIn::release(JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
                          GIArgument* out_arg [[maybe_unused]]) {
-    auto* closure = gjs_arg_get<ffi_closure*>(in_arg);
+    ffi_closure *closure = m_ffi_closure;
     if (!closure)
         return true;
 
