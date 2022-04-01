@@ -330,6 +330,11 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can call a method with async/await', async function () {
+        const [{hello}] = await proxy.frobateStuffAsync({});
+        expect(hello.deepUnpack()).toEqual('world');
+    });
+
     it('can call a remote method when not using makeProxyWrapper', function () {
         let info = Gio.DBusNodeInfo.new_for_xml(TestIface);
         let iface = info.interfaces[0];
@@ -368,6 +373,13 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can handle an exception thrown by a method with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: alwaysThrowException: *');
+
+        await expectAsync(proxy.alwaysThrowExceptionAsync({})).toBeRejected();
+    });
+
     it('can still destructure the return value when an exception is thrown', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Exception in method call: alwaysThrowException: *');
@@ -398,6 +410,11 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('throws an exception when trying to call an async method that does not exist', async function () {
+        delete Test.prototype.thisDoesNotExist;
+        await expectAsync(proxy.thisDoesNotExistAsync()).toBeRejected();
+    });
+
     it('can pass a parameter to a remote method that is not a JSON object', function () {
         proxy.nonJsonFrobateStuffRemote(42, ([result], excp) => {
             expect(result).toEqual('42 it is!');
@@ -407,17 +424,9 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
-    async function testAsync(value) {
-        let result = await proxy.nonJsonFrobateStuffAsync(value);
-        return result;
-    }
-
-    it('can call a remote method using AWAIT', function () {
-        testAsync(1).then(result => {
-            expect(result[0]).toEqual('Oops');
-            loop.quit();
-        });
-        loop.run();
+    it('can pass a parameter to a method with async/await that is not a JSON object', async function () {
+        const [result] = await proxy.nonJsonFrobateStuffAsync(1);
+        expect(result).toEqual('Oops');
     });
 
     it('can call a remote method with no in parameter', function () {
@@ -429,6 +438,11 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can call an async/await method with no in parameter', async function () {
+        const [result] = await proxy.noInParameterAsync();
+        expect(result).toEqual('Yes!');
+    });
+
     it('can call a remote method with multiple in parameters', function () {
         proxy.multipleInArgsRemote(1, 2, 3, 4, 5, ([result], excp) => {
             expect(result).toEqual('1 2 3 4 5');
@@ -438,6 +452,11 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can call an async/await method with multiple in parameters', async function () {
+        const [result] = await proxy.multipleInArgsAsync(1, 2, 3, 4, 5);
+        expect(result).toEqual('1 2 3 4 5');
+    });
+
     it('can call a remote method with no return value', function () {
         proxy.noReturnValueRemote(([result], excp) => {
             expect(result).not.toBeDefined();
@@ -445,6 +464,11 @@ describe('Exported DBus object', function () {
             loop.quit();
         });
         loop.run();
+    });
+
+    it('can call an async/await method with no return value', async function () {
+        const [result] = await proxy.noReturnValueAsync();
+        expect(result).not.toBeDefined();
     });
 
     it('can emit a DBus signal', function () {
@@ -463,6 +487,18 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can emit a DBus signal with async/await', async function () {
+        const handler = jasmine.createSpy('signalFoo');
+        const id = proxy.connectSignal('signalFoo', handler);
+        handler.and.callFake(() => proxy.disconnectSignal(id));
+
+        const [result] = await proxy.emitSignalAsync();
+        expect(result).not.toBeDefined();
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledWith(jasmine.anything(),
+            jasmine.anything(), ['foobar']);
+    });
+
     it('can call a remote method with multiple return values', function () {
         proxy.multipleOutValuesRemote(function (result, excp) {
             expect(result).toEqual(['Hello', 'World', '!']);
@@ -472,6 +508,11 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can call an async/await method with multiple return values', async function () {
+        const results = await proxy.multipleOutValuesAsync();
+        expect(results).toEqual(['Hello', 'World', '!']);
+    });
+
     it('does not coalesce one array into the array of return values', function () {
         proxy.oneArrayOutRemote(([result], excp) => {
             expect(result).toEqual(['Hello', 'World', '!']);
@@ -479,6 +520,11 @@ describe('Exported DBus object', function () {
             loop.quit();
         });
         loop.run();
+    });
+
+    it('does not coalesce one array into the array of return values with async/await', async function () {
+        const [result] = await proxy.oneArrayOutAsync();
+        expect(result).toEqual(['Hello', 'World', '!']);
     });
 
     it('does not coalesce an array of arrays into the array of return values', function () {
@@ -491,6 +537,12 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('does not coalesce an array of arrays into the array of return values with async/await', async function () {
+        const [[a1, a2]] = await proxy.arrayOfArrayOutAsync();
+        expect(a1).toEqual(['Hello', 'World']);
+        expect(a2).toEqual(['World', 'Hello']);
+    });
+
     it('can return multiple arrays from a remote method', function () {
         proxy.multipleArrayOutRemote(([a1, a2], excp) => {
             expect(a1).toEqual(['Hello', 'World']);
@@ -501,12 +553,22 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can return multiple arrays from an async/await method', async function () {
+        const [a1, a2] = await proxy.multipleArrayOutAsync();
+        expect(a1).toEqual(['Hello', 'World']);
+        expect(a2).toEqual(['World', 'Hello']);
+    });
+
     it('handles a bad signature by throwing an exception', function () {
         proxy.arrayOutBadSigRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
         });
         loop.run();
+    });
+
+    it('handles a bad signature in async/await by rejecting the promise', async function () {
+        await expectAsync(proxy.arrayOutBadSigAsync()).toBeRejected();
     });
 
     it('can call a remote method that is implemented asynchronously', function () {
@@ -522,6 +584,14 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
+    it('can call an async/await method that is implemented asynchronously', async function () {
+        const someString = 'Hello world!';
+        const someInt = 42;
+
+        const results = await proxy.echoAsync(someString, someInt);
+        expect(results).toEqual([someString, someInt]);
+    });
+
     it('can send and receive bytes from a remote method', function () {
         let someBytes = [0, 63, 234];
         someBytes.forEach(b => {
@@ -535,6 +605,14 @@ describe('Exported DBus object', function () {
         });
     });
 
+    it('can send and receive bytes from an async/await method', async function () {
+        let someBytes = [0, 63, 234];
+        await Promise.allSettled(someBytes.map(async b => {
+            const [byte] = await proxy.byteEchoAsync(b);
+            expect(byte).toEqual(b);
+        }));
+    });
+
     it('can call a remote method that returns an array of structs', function () {
         proxy.structArrayRemote(([result], excp) => {
             expect(excp).toBeNull();
@@ -542,6 +620,11 @@ describe('Exported DBus object', function () {
             loop.quit();
         });
         loop.run();
+    });
+
+    it('can call an async/await method that returns an array of structs', async function () {
+        const [result] = await proxy.structArrayAsync();
+        expect(result).toEqual([[128, 123456], [42, 654321]]);
     });
 
     it('can send and receive dicts from a remote method', function () {
@@ -569,6 +652,19 @@ describe('Exported DBus object', function () {
             loop.quit();
         });
         loop.run();
+    });
+
+    it('can send and receive dicts from an async/await method', async function () {
+        // See notes in test above
+        const [result] = await proxy.dictEchoAsync({
+            aDouble: new GLib.Variant('d', 10),
+            anInteger: new GLib.Variant('i', 10.5),
+            aDoubleBeforeAndAfter: new GLib.Variant('d', 10.5),
+        });
+        expect(result).not.toBeNull();
+        expect(result['anInteger'].deepUnpack()).toEqual(10);
+        expect(result['aDoubleBeforeAndAfter'].deepUnpack()).toEqual(10.5);
+        expect(result['aDouble'].deepUnpack()).toBe(10.0);
     });
 
     it('can call a remote method with a Unix FD', function (done) {
@@ -611,6 +707,14 @@ describe('Exported DBus object', function () {
         });
     });
 
+    it('can call an async/await method that returns a Unix FD', async function () {
+        const encoder = new TextEncoder();
+        const expectedBytes = encoder.encode('some bytes');
+        const [fdIndex, outFdList] = await proxy.fdOutAsync(expectedBytes);
+        const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
+        expect(bytes).toEqual(expectedBytes);
+    });
+
     it('can call an asynchronously implemented remote method that returns a Unix FD', function (done) {
         const expectedBytes = ByteArray.fromString('some bytes');
         proxy.fdOut2Remote(expectedBytes, ([fdIndex], exc, outFdList) => {
@@ -621,13 +725,30 @@ describe('Exported DBus object', function () {
         });
     });
 
+    it('can call an asynchronously implemented asyc/await method that returns a Unix FD', async function () {
+        const encoder = new TextEncoder();
+        const expectedBytes = encoder.encode('some bytes');
+        const [fdIndex, outFdList] = await proxy.fdOut2Async(expectedBytes);
+        const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
+        expect(bytes).toEqual(expectedBytes);
+    });
+
     it('throws an exception when not passing a Gio.UnixFDList to a method that requires one', function () {
         expect(() => proxy.fdInRemote(0, () => {})).toThrow();
+    });
+
+    it('rejects the promise when not passing a Gio.UnixFDList to an async method that requires one', async function () {
+        await expectAsync(proxy.fdInAsync(0)).toBeRejected();
     });
 
     it('throws an exception when passing a handle out of range of a Gio.UnixFDList', function () {
         const fdList = new Gio.UnixFDList();
         expect(() => proxy.fdInRemote(0, fdList, () => {})).toThrow();
+    });
+
+    it('rejects the promise when async passing a handle out of range of a Gio.UnixFDList', async function () {
+        const fdList = new Gio.UnixFDList();
+        await expectAsync(proxy.fdInAsync(0, fdList)).toBeRejected();
     });
 
     it('Has defined properties', function () {
