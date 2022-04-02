@@ -679,6 +679,16 @@ describe('Exported DBus object', function () {
         });
     });
 
+    it('can call an async/await method with a Unix FD', async function () {
+        const encoder = new TextEncoder();
+        const expectedBytes = encoder.encode('some bytes');
+        const fd = GjsTestTools.open_bytes(expectedBytes);
+        const fdList = Gio.UnixFDList.new_from_array([fd]);
+        const [bytes, outFdList] = await proxy.fdInAsync(0, fdList);
+        expect(outFdList).not.toBeDefined();
+        expect(bytes).toEqual(expectedBytes);
+    });
+
     it('can call an asynchronously implemented remote method with a Unix FD', function (done) {
         const expectedBytes = ByteArray.fromString('some bytes');
         const fd = GjsTestTools.open_bytes(expectedBytes);
@@ -689,6 +699,16 @@ describe('Exported DBus object', function () {
             expect(bytes).toEqual(expectedBytes);
             done();
         });
+    });
+
+    it('can call an asynchronously implemented async/await method with a Unix FD', async function () {
+        const encoder = new TextEncoder();
+        const expectedBytes = encoder.encode('some bytes');
+        const fd = GjsTestTools.open_bytes(expectedBytes);
+        const fdList = Gio.UnixFDList.new_from_array([fd]);
+        const [bytes, outFdList] = await proxy.fdIn2Async(0, fdList);
+        expect(outFdList).not.toBeDefined();
+        expect(bytes).toEqual(expectedBytes);
     });
 
     function readBytesFromFdSync(fd) {
