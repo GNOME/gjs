@@ -31,6 +31,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 FROM registry.fedoraproject.org/fedora:34
 
+ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash
 
 # List is comprised of base dependencies for CI scripts, gjs, and debug packages
@@ -57,6 +58,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     glib2-devel \
     glibc-debuginfo \
     glibc-debuginfo-common \
+    glibc-locale-source \
     gnome-desktop-testing \
     gobject-introspection-debuginfo \
     gobject-introspection-debugsource \
@@ -91,6 +93,12 @@ RUN sed -i -e 's/# %wheel/%wheel/' -e '0,/%wheel/{s/%wheel/# %wheel/}' \
 
 ENV HOST_USER_ID 5555
 RUN useradd -u $HOST_USER_ID -G wheel -ms /bin/bash user
+
+# Enable locales needed for specific tests
+RUN for locale in ${LOCALES}; do \
+        localedef --verbose --force -i "$locale" "$locale" || true; \
+        localedef --verbose --force -i "$locale" -f UTF-8 "$locale".UTF-8 || true; \
+    done
 
 USER user
 WORKDIR /home/user
