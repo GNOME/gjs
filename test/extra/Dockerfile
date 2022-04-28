@@ -31,6 +31,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 FROM registry.fedoraproject.org/fedora:34
 
+ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash
 
 # List is comprised of base dependencies for CI scripts, gjs, and debug packages
@@ -94,7 +95,10 @@ ENV HOST_USER_ID 5555
 RUN useradd -u $HOST_USER_ID -G wheel -ms /bin/bash user
 
 # Enable locales needed for specific tests
-RUN localedef --verbose --force -i tr_TR tr_TR || true
+RUN for locale in ${LOCALES}; do \
+        localedef --verbose --force -i "$locale" "$locale" || true; \
+        localedef --verbose --force -i "$locale" -f UTF-8 "$locale".UTF-8 || true; \
+    done
 
 USER user
 WORKDIR /home/user
