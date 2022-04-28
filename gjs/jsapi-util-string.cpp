@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <ctype.h>  // for toupper
 #include <stdint.h>
 #include <string.h>     // for size_t, strlen
 #include <sys/types.h>  // for ssize_t
@@ -58,7 +59,7 @@ GjsAutoChar gjs_hyphen_to_camel(const char* str) {
         if (*input_iter == '-') {
             uppercase_next = true;
         } else if (uppercase_next) {
-            *output_iter++ = g_ascii_toupper(*input_iter);
+            *output_iter++ = toupper(*input_iter);
             uppercase_next = false;
         } else {
             *output_iter++ = *input_iter;

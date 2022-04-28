@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <ffi.h>
 #include <gio/gio.h>
