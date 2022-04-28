@@ -381,10 +381,7 @@ zeal_11:
 #############################################
 .Docker image template: &create_docker_image
   image: registry.freedesktop.org/freedesktop/ci-templates/x86_64/buildah:2020-10-30.1
-  stage: deploy
-  only:
-    variables:
-      - $CRON_TASK == "BUILD_CI_IMAGES"
+  stage: prepare
 
   script:
     # Newer versions of podman/buildah try to set overlayfs mount options when
@@ -401,10 +398,8 @@ zeal_11:
 
     # Publish (if running on a schedule)
     - |
-      if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
-        buildah push "$CI_REGISTRY_IMAGE:$CI_JOB_NAME"
-        buildah push "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
-      fi
+      buildah push "$CI_REGISTRY_IMAGE:$CI_JOB_NAME"
+      buildah push "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
 
 .Docker variables: &docker_variables
   STORAGE_DRIVER: vfs
