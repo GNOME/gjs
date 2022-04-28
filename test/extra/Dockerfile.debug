@@ -71,6 +71,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     glib2-devel \
     glibc-debuginfo \
     glibc-debuginfo-common \
+    glibc-locale-source \
     gnome-desktop-testing \
     gobject-introspection-debuginfo \
     gobject-introspection-debugsource \
@@ -108,6 +109,9 @@ RUN sed -i -e 's/# %wheel/%wheel/' -e '0,/%wheel/{s/%wheel/# %wheel/}' \
 
 ENV HOST_USER_ID 5555
 RUN useradd -u $HOST_USER_ID -G wheel -ms /bin/bash user
+
+# Enable locales needed for specific tests
+RUN localedef --verbose --force -i tr_TR tr_TR || true
 
 USER user
 WORKDIR /home/user
