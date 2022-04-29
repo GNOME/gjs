@@ -1183,6 +1183,11 @@ describe('Auto accessor generation', function () {
                 'Construct-only property with a setter method',
                 GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
                 0, 100, 80),
+            'construct-only-was-invalid-in-turkish': GObject.ParamSpec.int(
+                'construct-only-was-invalid-in-turkish', 'Camel name in Turkish',
+                'Camel-cased property that was wrongly transformed in Turkish',
+                GObject.ParamFlags.READWRITE | GObject.ParamFlags.CONSTRUCT_ONLY,
+                0, 100, 55),
             'snake-name': GObject.ParamSpec.int('snake-name', 'Snake name',
                 'Snake-cased property', GObject.ParamFlags.READWRITE, 0, 100, 36),
             'camel-name': GObject.ParamSpec.int('camel-name', 'Camel name',
@@ -1300,6 +1305,21 @@ describe('Auto accessor generation', function () {
         expect(a.construct_only_with_setter).toEqual(2);
         expect(a['construct-only-with-setter']).toEqual(2);
         expect(a._constructOnlySetterCalled).toEqual(1);
+    });
+
+    it('set properties at construct time with locale', function () {
+        const {gettext: Gettext} = imports;
+        const prevLocale = Gettext.setlocale(Gettext.LocaleCategory.ALL, null);
+
+        Gettext.setlocale(Gettext.LocaleCategory.ALL, 'tr_TR');
+        a = new AutoAccessors({
+            'construct-only-was-invalid-in-turkish': 35,
+        });
+        Gettext.setlocale(Gettext.LocaleCategory.ALL, prevLocale);
+
+        expect(a.constructOnlyWasInvalidInTurkish).toEqual(35);
+        expect(a.construct_only_was_invalid_in_turkish).toEqual(35);
+        expect(a['construct-only-was-invalid-in-turkish']).toEqual(35);
     });
 
     it('notify when the property changes', function () {

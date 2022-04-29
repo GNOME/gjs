@@ -53,15 +53,50 @@ ENV SHELL=/bin/bash
 # Do everything in one RUN command so that the dnf cache is not cached in the
 # final Docker image.
 RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
-    binutils cairo-debuginfo cairo-debugsource cairo-gobject-devel clang \
-    compiler-rt dbus-daemon dbus-x11 diffutils fontconfig-debuginfo \
-    fontconfig-debugsource gcc-c++ git glib2-debuginfo glib2-debugsource \
-    glib2-devel glibc-debuginfo glibc-debuginfo-common gnome-desktop-testing \
-    gobject-introspection-debuginfo gobject-introspection-debugsource \
-    gobject-introspection-devel gtk3-debuginfo gtk3-debugsource gtk3-devel \
-    gtk4-debuginfo gtk4-debugsource gtk4-devel lcov libasan libubsan libtsan \
-    meson ninja-build pkgconf readline-devel sysprof-devel systemtap-sdt-devel \
-    valgrind which Xvfb xz && \
+    binutils \
+    cairo-debuginfo \
+    cairo-debugsource \
+    cairo-gobject-devel \
+    clang \
+    compiler-rt \
+    dbus-daemon \
+    dbus-x11 \
+    diffutils \
+    fontconfig-debuginfo \
+    fontconfig-debugsource \
+    gcc-c++ \
+    git \
+    glib2-debuginfo \
+    glib2-debugsource \
+    glib2-devel \
+    glibc-debuginfo \
+    glibc-debuginfo-common \
+    glibc-locale-source \
+    gnome-desktop-testing \
+    gobject-introspection-debuginfo \
+    gobject-introspection-debugsource \
+    gobject-introspection-devel \
+    gtk3-debuginfo \
+    gtk3-debugsource \
+    gtk3-devel \
+    gtk4-debuginfo \
+    gtk4-debugsource \
+    gtk4-devel \
+    lcov \
+    libasan \
+    libubsan \
+    libtsan \
+    meson \
+    ninja-build \
+    pkgconf \
+    readline-devel \
+    sysprof-devel \
+    systemtap-sdt-devel \
+    valgrind \
+    which \
+    Xvfb \
+    xz \
+    && \
     dnf clean all && rm -rf /var/cache/dnf
 
 COPY --from=build /root/mozjs-install/usr /usr
@@ -74,6 +109,9 @@ RUN sed -i -e 's/# %wheel/%wheel/' -e '0,/%wheel/{s/%wheel/# %wheel/}' \
 
 ENV HOST_USER_ID 5555
 RUN useradd -u $HOST_USER_ID -G wheel -ms /bin/bash user
+
+# Enable locales needed for specific tests
+RUN localedef --verbose --force -i tr_TR tr_TR || true
 
 USER user
 WORKDIR /home/user
