@@ -3,6 +3,8 @@
 // SPDX-FileCopyrightText: 2022 Nasah Kuma <nasahnash19@gmail.com>
 
 const GLib = imports.gi.GLib;
+imports.gi.versions.Gdk = '3.0';
+const Gdk = imports.gi.Gdk;
 
 describe('print', function () {
     it('can be spied upon', function () {
@@ -141,5 +143,17 @@ describe('prettyPrint', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
             'JS LOG: { date: 2018-12-24T10:33:30.000Z }');
         log({date: new Date(Date.UTC(2018, 11, 24, 10, 33, 30))});
+    });
+
+    it('toString is overridden on object', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [boxed instance wrapper GIName:*]');
+        log(new Gdk.Rectangle());
+    });
+
+    it('string tag supplied', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+            'JS LOG: [object GIRepositoryNamespace]');
+        log(Gdk);
     });
 });
