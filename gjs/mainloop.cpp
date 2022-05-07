@@ -40,6 +40,8 @@ bool MainLoop::spin(GjsContextPrivate* gjs) {
             return false;
         }
     } while (
+        // and there is not a pending main loop hook
+        !gjs->has_main_loop_hook() &&
         // and there are pending sources or the job queue is not empty
         // continue spinning the event loop.
         (can_block() || !gjs->empty()));
