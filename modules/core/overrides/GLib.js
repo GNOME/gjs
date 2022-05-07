@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna
 
 const ByteArray = imports.byteArray;
+const {setMainLoopHook} = imports._promiseNative;
 
 let GLib;
 
@@ -260,6 +261,18 @@ function _init() {
     // this is imports.gi.GLib
 
     GLib = this;
+
+    GLib.MainLoop.prototype.runAsync = function (...args) {
+        return new Promise((resolve, reject) => {
+            setMainLoopHook(() => {
+                try {
+                    resolve(this.run(...args));
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+    };
 
     // For convenience in property min or max values, since GLib.MAXINT64 and
     // friends will log a warning when used

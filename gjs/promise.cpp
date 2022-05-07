@@ -9,6 +9,7 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include <js/CallAndConstruct.h>  // for JS::IsCallable
 #include <js/CallArgs.h>
 #include <js/PropertyAndElement.h>  // for JS_DefineFunctions
 #include <js/PropertySpec.h>
@@ -17,6 +18,7 @@
 #include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/context-private.h"
+#include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/promise.h"
@@ -195,8 +197,36 @@ bool drain_microtask_queue(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+bool set_main_loop_hook(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject callback(cx);
+    if (!gjs_parse_call_args(cx, "setMainLoopHook", args, "o", "callback",
+                             &callback)) {
+        return false;
+    }
+
+    if (!JS::IsCallable(callback)) {
+        gjs_throw(cx, "Main loop hook must be callable");
+        return false;
+    }
+
+    GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
+    if (!priv->set_main_loop_hook(callback)) {
+        gjs_throw(
+            cx,
+            "A mainloop is already running. Did you already call runAsync()?");
+        return false;
+    }
+
+    args.rval().setUndefined();
+    return true;
+}
+
 JSFunctionSpec gjs_native_promise_module_funcs[] = {
-    JS_FN("drainMicrotaskQueue", &drain_microtask_queue, 0, 0), JS_FS_END};
+    JS_FN("drainMicrotaskQueue", &drain_microtask_queue, 0, 0),
+    JS_FN("setMainLoopHook", &set_main_loop_hook, 1, 0), JS_FS_END};
 
 bool gjs_define_native_promise_stuff(JSContext* cx,
                                      JS::MutableHandleObject module) {

@@ -464,6 +464,8 @@ function _warnNotIntrospectable(funcName, replacement) {
 function _init() {
     Gio = this;
 
+    Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
+
     Gio.DBus = {
         // Namespace some functions
         get: Gio.bus_get,
