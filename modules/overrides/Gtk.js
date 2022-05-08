@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna
 
-const Legacy = imports._legacy;
-const {Gio, GjsPrivate, GObject} = imports.gi;
-const {_registerType} = imports._common;
+import * as Legacy from '../deprecated/_legacy.js';
+import {_registerType} from '../common/class.js';
 
-let Gtk;
 let BuilderScope;
 
-function _init() {
-    Gtk = this;
+const {Gtk, Gio, GjsPrivate, GObject} = import.meta.importSync('gi');
 
+(function () {
     Gtk.children = GObject.__gtkChildren__;
     Gtk.cssName = GObject.__gtkCssName__;
     Gtk.internalChildren = GObject.__gtkInternalChildren__;
@@ -58,13 +56,13 @@ function _init() {
             let children = wrapper.constructor[Gtk.children] || [];
             for (let child of children) {
                 wrapper[child.replace(/-/g, '_')] =
-                    wrapper.get_template_child(wrapper.constructor, child);
+                wrapper.get_template_child(wrapper.constructor, child);
             }
 
             let internalChildren = wrapper.constructor[Gtk.internalChildren] || [];
             for (let child of internalChildren) {
                 wrapper[`_${child.replace(/-/g, '_')}`] =
-                    wrapper.get_template_child(wrapper.constructor, child);
+                wrapper.get_template_child(wrapper.constructor, child);
             }
         }
 
@@ -149,7 +147,7 @@ function _init() {
             }
         });
     }
-}
+})();
 
 function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {
     connectObject = connectObject || thisArg;

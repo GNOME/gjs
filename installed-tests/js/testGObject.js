@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 // SPDX-FileCopyrightText: 2018 Red Hat, Inc.
 
-// This is where overrides in modules/core/overrides/GObject.js are tested,
+// This is where overrides in modules/overrides/GObject.js are tested,
 // except for the class machinery, interface machinery, and GObject.ParamSpec,
 // which are big enough to get their own files.
 

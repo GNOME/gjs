@@ -1,12 +1,9 @@
 /* -*- mode: js; indent-tabs-mode: nil; -*- */
-/* exported bind, copyProperties, copyPublicProperties, countProperties, Class,
-getMetaClass, Interface */
+/* exported bind, copyProperties, copyPublicProperties, countProperties */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
 // Utilities that are "meta-language" things like manipulating object props
-
-var {Class, Interface, getMetaClass} = imports._legacy;
 
 function countProperties(obj) {
     let count = 0;

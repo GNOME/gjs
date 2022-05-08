@@ -7,6 +7,7 @@ parserOptions:
   ecmaVersion: 2022
 globals:
   ARGV: off
+  loadNative: readonly
   Debugger: readonly
   GIRepositoryGType: off
   imports: off

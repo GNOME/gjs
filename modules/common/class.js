@@ -8,9 +8,9 @@
 // This is a helper module in which to put code that is common between the
 // legacy GObject.Class system and the new GObject.registerClass system.
 
-var _registerType = Symbol('GObject register type hook');
+export const _registerType = Symbol('GObject register type hook');
 
-function _generateAccessors(pspec, propdesc, GObject) {
+export function _generateAccessors(pspec, propdesc, GObject) {
     const {name, flags} = pspec;
     const readable = flags & GObject.ParamFlags.READABLE;
     const writable = flags & GObject.ParamFlags.WRITABLE;
@@ -59,7 +59,7 @@ function _generateAccessors(pspec, propdesc, GObject) {
     return propdesc;
 }
 
-function _checkAccessors(proto, pspec, GObject) {
+export function _checkAccessors(proto, pspec, GObject) {
     const {name, flags} = pspec;
     if (flags & GObject.ParamFlags.CONSTRUCT_ONLY)
         return;

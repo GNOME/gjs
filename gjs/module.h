@@ -32,7 +32,7 @@ JSObject* gjs_get_module_registry(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_module_load(JSContext* cx, const char* identifier,
-                          const char* uri);
+                          const char* uri, bool internal = false);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_module_resolve(JSContext* cx,

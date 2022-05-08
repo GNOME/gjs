@@ -798,7 +798,6 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
         }
 
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/script/");
-        gjs_search_path.push_back("resource:///org/gnome/gjs/modules/core/");
 
         /* $XDG_DATA_DIRS /gjs-1.0 */
         system_data_dirs = g_get_system_data_dirs();

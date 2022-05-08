@@ -88,7 +88,7 @@ class GjsBaseGlobal {
     static bool run_bootstrap(JSContext* cx, const char* bootstrap_script,
                               JS::HandleObject global) {
         GjsAutoChar uri = g_strdup_printf(
-            "resource:///org/gnome/gjs/modules/script/_bootstrap/%s.js",
+            "resource:///org/gnome/gjs/modules/_bootstrap/%s.js",
             bootstrap_script);
 
         JSAutoRealm ar(cx, global);
@@ -288,6 +288,7 @@ class GjsInternalGlobal : GjsBaseGlobal {
               0),
         JS_FN("setModulePrivate", gjs_internal_set_module_private, 2, 0),
         JS_FN("uriExists", gjs_internal_uri_exists, 1, 0),
+        JS_FN("loadNative", &load_native_module, 1, 0),
         JS_FS_END};
 
     static constexpr JSClass klass = {
@@ -486,7 +487,7 @@ bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
  * @global: a JS global object that has not yet been passed to this function
  * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
- * resource://org/gnome/gjs/modules/script/_bootstrap/@bootstrap_script) or
+ * resource://org/gnome/gjs/modules/_bootstrap/@bootstrap_script) or
  * %NULL for none
  *
  * Defines properties on the global object such as 'window' and 'imports', and

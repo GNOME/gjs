@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna
 
-const ByteArray = imports.byteArray;
-
-let GLib;
+const {GLib} = import.meta.importSync('gi');
 
 const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o', 'g'];
 
@@ -101,10 +99,11 @@ function _packVariant(signature, value) {
             // special case for array of bytes
             let bytes;
             if (typeof value === 'string') {
-                let byteArray = ByteArray.fromString(value);
+                let encoder = new TextEncoder();
+                let byteArray = encoder.encode(value);
                 if (byteArray[byteArray.length - 1] !== 0)
                     byteArray = Uint8Array.of(...byteArray, 0);
-                bytes = ByteArray.toGBytes(byteArray);
+                bytes = new GLib.Bytes(byteArray);
             } else {
                 bytes = new GLib.Bytes(value);
             }
@@ -202,7 +201,7 @@ function _unpackVariant(variant, deep, recursive = false) {
     case 'a':
         if (variant.is_of_type(new GLib.VariantType('a{?*}'))) {
             // special case containers
-            let ret = { };
+            let ret = {};
             let nElements = variant.n_children();
             for (let i = 0; i < nElements; i++) {
                 // always unpack the dictionary entry, and always unpack
@@ -246,6 +245,10 @@ function _notIntrospectableError(funcName, replacement) {
     return new Error(`${funcName} is not introspectable. Use ${replacement} instead.`);
 }
 
+/**
+ * @param funcName
+ * @param replacement
+ */
 function _warnNotIntrospectable(funcName, replacement) {
     logError(_notIntrospectableError(funcName, replacement));
 }
@@ -256,16 +259,12 @@ function _escapeCharacterSetChars(char) {
     return char;
 }
 
-function _init() {
-    // this is imports.gi.GLib
-
-    GLib = this;
-
+(function () {
     // For convenience in property min or max values, since GLib.MAXINT64 and
     // friends will log a warning when used
-    this.MAXINT64_BIGINT = 0x7fff_ffff_ffff_ffffn;
-    this.MININT64_BIGINT = -this.MAXINT64_BIGINT - 1n;
-    this.MAXUINT64_BIGINT = 0xffff_ffff_ffff_ffffn;
+    GLib.MAXINT64_BIGINT = 0x7fff_ffff_ffff_ffffn;
+    GLib.MININT64_BIGINT = -GLib.MAXINT64_BIGINT - 1n;
+    GLib.MAXUINT64_BIGINT = 0xffff_ffff_ffff_ffffn;
 
     // small HACK: we add a matches() method to standard Errors so that
     // you can do "if (e.matches(Ns.FooError, Ns.FooError.SOME_CODE))"
@@ -276,15 +275,15 @@ function _init() {
 
     // Guard against domains that aren't valid quarks and would lead
     // to a crash
-    const quarkToString = this.quark_to_string;
-    const realNewLiteral = this.Error.new_literal;
-    this.Error.new_literal = function (domain, code, message) {
+    const quarkToString = GLib.quark_to_string;
+    const realNewLiteral = GLib.Error.new_literal;
+    GLib.Error.new_literal = function (domain, code, message) {
         if (quarkToString(domain) === null)
             throw new TypeError(`Error.new_literal: ${domain} is not a valid domain`);
         return realNewLiteral(domain, code, message);
     };
 
-    this.Variant._new_internal = function (sig, value) {
+    GLib.Variant._new_internal = function (sig, value) {
         let signature = Array.prototype.slice.call(sig);
 
         let variant = _packVariant(signature, value);
@@ -295,32 +294,32 @@ function _init() {
     };
 
     // Deprecate version of new GLib.Variant()
-    this.Variant.new = function (sig, value) {
+    GLib.Variant.new = function (sig, value) {
         return new GLib.Variant(sig, value);
     };
-    this.Variant.prototype.unpack = function () {
+    GLib.Variant.prototype.unpack = function () {
         return _unpackVariant(this, false);
     };
-    this.Variant.prototype.deepUnpack = function () {
+    GLib.Variant.prototype.deepUnpack = function () {
         return _unpackVariant(this, true);
     };
     // backwards compatibility alias
-    this.Variant.prototype.deep_unpack = this.Variant.prototype.deepUnpack;
+    GLib.Variant.prototype.deep_unpack = GLib.Variant.prototype.deepUnpack;
 
     // Note: discards type information, if the variant contains any 'v' types
-    this.Variant.prototype.recursiveUnpack = function () {
+    GLib.Variant.prototype.recursiveUnpack = function () {
         return _unpackVariant(this, true, true);
     };
 
-    this.Variant.prototype.toString = function () {
-        return `[object variant of type "${this.get_type_string()}"]`;
+    GLib.Variant.prototype.toString = function () {
+        return `[object variant of type "${GLib.get_type_string()}"]`;
     };
 
-    this.Bytes.prototype.toArray = function () {
+    GLib.Bytes.prototype.toArray = function () {
         return imports._byteArrayNative.fromGBytes(this);
     };
 
-    this.log_structured =
+    GLib.log_structured =
     /**
      * @param {string} logDomain
      * @param {GLib.LogLevelFlags} logLevel
@@ -356,19 +355,19 @@ function _init() {
     // GjsPrivate depends on GLib so we cannot import it
     // before GLib is fully resolved.
 
-    this.log_set_writer_func_variant = function (...args) {
-        const {log_set_writer_func} = imports.gi.GjsPrivate;
+    GLib.log_set_writer_func_variant = function (...args) {
+        const {log_set_writer_func} = gi.GjsPrivate;
 
         log_set_writer_func(...args);
     };
 
-    this.log_set_writer_default = function (...args) {
-        const {log_set_writer_default} = imports.gi.GjsPrivate;
+    GLib.log_set_writer_default = function (...args) {
+        const {log_set_writer_default} = gi.GjsPrivate;
 
         log_set_writer_default(...args);
     };
 
-    this.log_set_writer_func = function (writer_func) {
+    GLib.log_set_writer_func = function (writer_func) {
         const {log_set_writer_func} = imports.gi.GjsPrivate;
 
         if (typeof writer_func !== 'function') {
@@ -381,7 +380,7 @@ function _init() {
         }
     };
 
-    this.VariantDict.prototype.lookup = function (key, variantType = null, deep = false) {
+    GLib.VariantDict.prototype.lookup = function (key, variantType = null, deep = false) {
         if (typeof variantType === 'string')
             variantType = new GLib.VariantType(variantType);
 
@@ -401,11 +400,11 @@ function _init() {
     // is useless anyway and GLib.ascii_formatd() which is too complicated to
     // implement here.
 
-    this.stpcpy = function () {
+    GLib.stpcpy = function () {
         throw _notIntrospectableError('GLib.stpcpy()', 'the + operator');
     };
 
-    this.strstr_len = function (haystack, len, needle) {
+    GLib.strstr_len = function (haystack, len, needle) {
         _warnNotIntrospectable('GLib.strstr_len()', 'String.indexOf()');
         let searchString = haystack;
         if (len !== -1)
@@ -416,7 +415,7 @@ function _init() {
         return haystack.slice(index);
     };
 
-    this.strrstr = function (haystack, needle) {
+    GLib.strrstr = function (haystack, needle) {
         _warnNotIntrospectable('GLib.strrstr()', 'String.lastIndexOf()');
         const index = haystack.lastIndexOf(needle);
         if (index === -1)
@@ -424,7 +423,7 @@ function _init() {
         return haystack.slice(index);
     };
 
-    this.strrstr_len = function (haystack, len, needle) {
+    GLib.strrstr_len = function (haystack, len, needle) {
         _warnNotIntrospectable('GLib.strrstr_len()', 'String.lastIndexOf()');
         let searchString = haystack;
         if (len !== -1)
@@ -435,52 +434,52 @@ function _init() {
         return haystack.slice(index);
     };
 
-    this.strup = function (string) {
+    GLib.strup = function (string) {
         _warnNotIntrospectable('GLib.strup()',
             'String.toUpperCase() or GLib.ascii_strup()');
         return string.toUpperCase();
     };
 
-    this.strdown = function (string) {
+    GLib.strdown = function (string) {
         _warnNotIntrospectable('GLib.strdown()',
             'String.toLowerCase() or GLib.ascii_strdown()');
         return string.toLowerCase();
     };
 
-    this.strreverse = function (string) {
+    GLib.strreverse = function (string) {
         _warnNotIntrospectable('GLib.strreverse()',
             'Array.reverse() and String.join()');
         return [...string].reverse().join('');
     };
 
-    this.ascii_dtostr = function (unused, len, number) {
+    GLib.ascii_dtostr = function (unused, len, number) {
         _warnNotIntrospectable('GLib.ascii_dtostr()', 'JS string conversion');
         return `${number}`.slice(0, len);
     };
 
-    this.ascii_formatd = function () {
+    GLib.ascii_formatd = function () {
         throw _notIntrospectableError('GLib.ascii_formatd()',
             'Number.toExponential() and string interpolation');
     };
 
-    this.strchug = function (string) {
+    GLib.strchug = function (string) {
         _warnNotIntrospectable('GLib.strchug()', 'String.trimStart()');
         return string.trimStart();
     };
 
-    this.strchomp = function (string) {
+    GLib.strchomp = function (string) {
         _warnNotIntrospectable('GLib.strchomp()', 'String.trimEnd()');
         return string.trimEnd();
     };
 
     // g_strstrip() is a macro and therefore doesn't even appear in the GIR
     // file, but we may as well include it here since it's trivial
-    this.strstrip = function (string) {
+    GLib.strstrip = function (string) {
         _warnNotIntrospectable('GLib.strstrip()', 'String.trim()');
         return string.trim();
     };
 
-    this.strdelimit = function (string, delimiters, newDelimiter) {
+    GLib.strdelimit = function (string, delimiters, newDelimiter) {
         _warnNotIntrospectable('GLib.strdelimit()', 'String.replace()');
 
         if (delimiters === null)
@@ -494,7 +493,7 @@ function _init() {
         return string.replace(delimiterRegex, newDelimiter);
     };
 
-    this.strcanon = function (string, validChars, substitutor) {
+    GLib.strcanon = function (string, validChars, substitutor) {
         _warnNotIntrospectable('GLib.strcanon()', 'String.replace()');
 
         if (typeof substitutor === 'number')
@@ -505,4 +504,4 @@ function _init() {
         const invalidRegex = new RegExp(`[^${escapedValidArray.join('')}]`, 'g');
         return string.replace(invalidRegex, substitutor);
     };
-}
+})();

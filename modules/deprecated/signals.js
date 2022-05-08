@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-/* exported addSignalMethods */
-
 // A couple principals of this simple signal system:
 // 1) should look just like our GObject signal binding
 // 2) memory and safety matter more than speed of connect/disconnect/emit
@@ -58,6 +56,9 @@ function _disconnect(id) {
     throw new Error(`No signal connection ${id} found`);
 }
 
+/**
+ * @param id
+ */
 function _signalHandlerIsConnected(id) {
     if (!('_signalConnections' in this))
         return false;
@@ -141,3 +142,10 @@ function addSignalMethods(proto) {
     // this one is not in GObject, but useful
     _addSignalMethod(proto, 'disconnectAll', _disconnectAll);
 }
+
+export {
+    // Private API, remains exported for backwards compatibility reasons
+    _connect, _disconnect, _emit, _signalHandlerIsConnected, _disconnectAll,
+    // Public API
+    addSignalMethods
+};

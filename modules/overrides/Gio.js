@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna
 
-var GLib = imports.gi.GLib;
-var GjsPrivate = imports.gi.GjsPrivate;
-var Signals = imports.signals;
-var Gio;
+import * as Signals from '../deprecated/signals.js';
+
+const {Gio, GjsPrivate, GLib} = import.meta.importSync('gi');
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
 // a parameter type that includes 'h' somewhere, actually has entries in it for
@@ -29,7 +28,7 @@ function _validateFDVariant(variant, fdList) {
         const numFds = fdList.get_length();
         if (val >= numFds) {
             throw new Error(`handle ${val} is out of range of Gio.UnixFDList ` +
-                `containing ${numFds} FDs`);
+                    `containing ${numFds} FDs`);
         }
         return;
     }
@@ -72,8 +71,7 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
     var maxNumberArgs = signatureLength + 4;
 
     if (argArray.length < minNumberArgs) {
-        throw new Error(`Not enough arguments passed for method: ${
-            methodName}. Expected ${minNumberArgs}, got ${argArray.length}`);
+        throw new Error(`Not enough arguments passed for method: ${methodName}. Expected ${minNumberArgs}, got ${argArray.length}`);
     } else if (argArray.length > maxNumberArgs) {
         throw new Error(`Too many arguments passed for method ${methodName}. ` +
             `Maximum is ${maxNumberArgs} including one callback, ` +
@@ -168,8 +166,7 @@ function _propertySetter(name, signature, value) {
             try {
                 this.call_finish(result);
             } catch (e) {
-                log(`Could not set property ${name} on remote object ${
-                    this.g_object_path}: ${e.message}`);
+                log(`Could not set property ${name} on remote object ${this.g_object_path}: ${e.message}`);
             }
         });
 }
@@ -453,9 +450,7 @@ function _promisify(proto, asyncFunc,
     };
 }
 
-function _init() {
-    Gio = this;
-
+(function () {
     Gio.DBus = {
         get session() {
             return Gio.bus_get_sync(Gio.BusType.SESSION, null);
@@ -497,6 +492,7 @@ function _init() {
     _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
+
     Gio.DBusProxy.prototype.connectSignal = Signals._connect;
     Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
 
@@ -551,14 +547,14 @@ function _init() {
     Object.assign(Gio.Settings.prototype, {
         _realInit: Gio.Settings.prototype._init,  // add manually, not enumerable
         _init(props = {}) {
-            // 'schema' is a deprecated alias for schema_id
+        // 'schema' is a deprecated alias for schema_id
             const schemaIdProp = ['schema', 'schema-id', 'schema_id',
                 'schemaId'].find(prop => prop in props);
             const settingsSchemaProp = ['settings-schema', 'settings_schema',
                 'settingsSchema'].find(prop => prop in props);
             if (!schemaIdProp && !settingsSchemaProp) {
                 throw new Error('One of property \'schema-id\' or ' +
-                    '\'settings-schema\' are required for Gio.Settings');
+                '\'settings-schema\' are required for Gio.Settings');
             }
 
             const source = Gio.SettingsSchemaSource.get_default();
@@ -572,21 +568,21 @@ function _init() {
             const settingsSchemaPath = settingsSchema.get_path();
             if (props['path'] === undefined && !settingsSchemaPath) {
                 throw new Error('Attempting to create schema ' +
-                    `'${settingsSchema.get_id()}' without a path`);
+                `'${settingsSchema.get_id()}' without a path`);
             }
 
             if (props['path'] !== undefined && settingsSchemaPath &&
-                props['path'] !== settingsSchemaPath) {
+            props['path'] !== settingsSchemaPath) {
                 throw new Error(`GSettings created for path '${props['path']}'` +
-                    `, but schema specifies '${settingsSchemaPath}'`);
+                `, but schema specifies '${settingsSchemaPath}'`);
             }
 
             return this._realInit(props);
         },
 
         _checkKey(key) {
-            // Avoid using has_key(); checking a JS array is faster than calling
-            // through G-I.
+        // Avoid using has_key(); checking a JS array is faster than calling
+        // through G-I.
             if (!this._keys)
                 this._keys = this.settings_schema.list_keys();
 
@@ -635,4 +631,4 @@ function _init() {
 
         get_child: createCheckedMethod('get_child', '_checkChild'),
     });
-}
+})();

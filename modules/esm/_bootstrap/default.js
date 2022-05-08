@@ -9,3 +9,12 @@ import '_encoding/encoding';
 import 'console';
 // Bootstrap the Timers API
 import '_timers';
+
+// Import remaining modules
+import 'gettext';
+
+// Bootstrap the gi module
+import 'gi';
+
+// globalThis.imports compatibility
+import './legacyImports.js';

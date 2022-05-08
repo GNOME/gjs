@@ -1,6 +1,5 @@
 /* -*- mode: js; indent-tabs-mode: nil; -*- */
-/* exported Class, Interface, defineGObjectLegacyObjects,
-defineGtkLegacyObjects */
+/* eslint-disable jsdoc/require-jsdoc, no-invalid-this */
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2011 Jasper St. Pierre
@@ -8,6 +7,10 @@ defineGtkLegacyObjects */
 // Class magic
 // Adapted from MooTools
 // https://github.com/mootools/mootools-core
+
+import {_checkAccessors} from '../common/class.js';
+
+const Gi = import.meta.importSync('_gi');
 
 function _Base() {
     throw new TypeError('Cannot instantiate abstract class _Base');
@@ -411,10 +414,7 @@ Interface.prototype._init = function (params) {
 
 // GObject Lang.Class magic
 
-function defineGObjectLegacyObjects(GObject) {
-    const Gi = imports._gi;
-    const {_checkAccessors} = imports._common;
-
+export function defineGObjectLegacyObjects(GObject) {
     // Some common functions between GObject.Class and GObject.Interface
 
     function _createSignals(gtype, signals) {
@@ -646,7 +646,7 @@ function defineGObjectLegacyObjects(GObject) {
     return {GObjectMeta, GObjectInterface};
 }
 
-function defineGtkLegacyObjects(GObject, Gtk) {
+export function defineGtkLegacyObjects(GObject, Gtk) {
     const GtkWidgetClass = new Class({
         Name: 'GtkWidgetClass',
         Extends: GObject.Class,
@@ -715,3 +715,5 @@ function defineGtkLegacyObjects(GObject, Gtk) {
 
     return {GtkWidgetClass};
 }
+
+export {Class, Interface, getMetaClass};

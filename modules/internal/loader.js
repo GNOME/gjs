@@ -14,6 +14,8 @@
 /** @typedef {{ [key: string]: string | undefined; }} Query */
 /** @typedef {(uri: string, contents: string) => Module} CompileFunc */
 
+const {debug} = loadNative('_print');
+
 /**
  * Thrown when there is an error importing a module.
  */
@@ -32,6 +34,8 @@ class ImportError extends moduleGlobalThis.Error {
  * ModulePrivate is the "private" object of every module.
  */
 class ModulePrivate {
+    #override;
+
     /**
      *
      * @param {string} id the module's identifier
@@ -42,6 +46,17 @@ class ModulePrivate {
         this.id = id;
         this.uri = uri;
         this.internal = internal;
+
+        if (internal) {
+            Object.defineProperty(this, 'override', {
+                get: () => {
+                    return this.#override;
+                },
+                set: override => {
+                    this.#override = override;
+                },
+            });
+        }
     }
 }
 
@@ -108,8 +123,11 @@ class InternalModuleLoader {
         }
 
         if (isRelativePath(specifier)) {
-            if (!parentURI)
-                throw new ImportError('Cannot import relative path when module path is unknown.');
+            if (!parentURI) {
+                throw new ImportError(
+                    'Cannot import relative path when module path is unknown.'
+                );
+            }
 
             return this.resolveRelativePath(specifier, parentURI);
         }
@@ -131,7 +149,10 @@ class InternalModuleLoader {
         parseURI(importingModuleURI);
 
         // Handle relative imports from URI-based modules.
-        const relativeURI = resolveRelativeResourceOrFile(importingModuleURI, relativePath);
+        const relativeURI = resolveRelativeResourceOrFile(
+            importingModuleURI,
+            relativePath
+        );
         if (!relativeURI)
             throw new ImportError('File does not have a valid parent!');
         return parseURI(relativeURI);
@@ -154,12 +175,13 @@ class InternalModuleLoader {
 
     /**
      * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
-     *   triggering this resolve
+     * @param {ModulePrivate} importingModulePriv the private object of the module initiating
+     *     the import triggering this resolve
      *
      * @returns {Module | null}
      */
-    resolveModule(specifier, importingModuleURI) {
+    resolveModule(specifier, importingModulePriv) {
+        const importingModuleURI = importingModulePriv.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded
@@ -180,9 +202,15 @@ class InternalModuleLoader {
             if (!result)
                 return null;
 
-            const [text, internal = false] = result;
+            const [text, internal] = result;
 
-            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            debug(`Importing ${specifier} ${internal ? '(internal)' : ''}`);
+
+            const priv = new ModulePrivate(
+                uri.uri,
+                uri.uri,
+                internal ?? importingModulePriv.internal
+            );
             const compiled = this.compileModule(priv, text);
 
             registry.set(uri.uri, compiled);
@@ -193,15 +221,18 @@ class InternalModuleLoader {
     }
 
     moduleResolveHook(importingModulePriv, specifier) {
-        const resolved = this.resolveModule(specifier, importingModulePriv.uri ?? null);
+        const resolved = this.resolveModule(
+            specifier,
+            importingModulePriv ?? null
+        );
         if (!resolved)
             throw new ImportError(`Module not found: ${specifier}`);
 
         return resolved;
     }
 
-    moduleLoadHook(id, uri) {
-        const priv = new ModulePrivate(id, uri);
+    moduleLoadHook(id, uri, internal) {
+        const priv = new ModulePrivate(id, uri, internal);
 
         const result = this.loadURI(parseURI(uri));
         // result can only be null if `this` is InternalModuleLoader. If `this`
@@ -311,8 +342,11 @@ class ModuleLoader extends InternalModuleLoader {
             throw new ImportError(`Unknown module: '${specifier}'`);
 
         const parsed = parseURI(uri);
-        if (parsed.scheme !== 'file' && parsed.scheme !== 'resource')
-            throw new ImportError('Only file:// and resource:// URIs are currently supported.');
+        if (parsed.scheme !== 'file' && parsed.scheme !== 'resource') {
+            throw new ImportError(
+                'Only file:// and resource:// URIs are currently supported.'
+            );
+        }
 
         const text = loadResourceOrFile(parsed.uri);
         const priv = new ModulePrivate(specifier, uri, true);
@@ -335,7 +369,7 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {import("./internalLoader").Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const module = this.resolveModule(specifier, importingModulePriv.uri);
+        const module = this.resolveModule(specifier, importingModulePriv);
         if (module)
             return module;
 
@@ -345,21 +379,26 @@ class ModuleLoader extends InternalModuleLoader {
     moduleResolveAsyncHook(importingModulePriv, specifier) {
         // importingModulePriv should never be missing. If it is then a JSScript
         // is missing a private object
-        if (!importingModulePriv || !importingModulePriv.uri)
-            throw new ImportError('Cannot resolve relative imports from an unknown file.');
+        if (!importingModulePriv || !importingModulePriv.uri) {
+            throw new ImportError(
+                'Cannot resolve relative imports from an unknown file.'
+            );
+        }
 
-        return this.resolveModuleAsync(specifier, importingModulePriv.uri);
+        return this.resolveModuleAsync(specifier, importingModulePriv);
     }
 
     /**
      * Resolves a module import with optional handling for relative imports asynchronously.
      *
      * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
+     * @param {ModulePrivate} importingModulePriv the private object of the module initiating
+     *     the import triggering this resolve
      *   triggering this resolve
      * @returns {import("../types").Module}
      */
-    async resolveModuleAsync(specifier, importingModuleURI) {
+    async resolveModuleAsync(specifier, importingModulePriv) {
+        const importingModuleURI = importingModulePriv.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded
@@ -385,9 +424,13 @@ class ModuleLoader extends InternalModuleLoader {
             if (module)
                 return module;
 
-            const [text, internal = false] = result;
+            const [text, internal] = result;
 
-            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            const priv = new ModulePrivate(
+                uri.uri,
+                uri.uri,
+                internal ?? importingModulePriv.internal
+            );
             const compiled = this.compileModule(priv, text);
 
             registry.set(uri.uri, compiled);
@@ -436,7 +479,9 @@ setGlobalModuleLoader(moduleGlobalThis, moduleLoader);
 function generateGIModule(namespace, version) {
     return `
     import $$gi from 'gi';
-    export default $$gi.require('${namespace}'${version !== undefined ? `, '${version}'` : ''});
+    export default $$gi.require('${namespace}'${
+    version !== undefined ? `, '${version}'` : ''
+});
     `;
 }
 

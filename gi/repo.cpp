@@ -50,6 +50,8 @@
 #include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool load_override_module(JSContext*, const char* ns_name);
+GJS_JSAPI_RETURN_CONVENTION
 static bool lookup_override_function(JSContext *, JS::HandleId,
                                      JS::MutableHandleValue);
 
@@ -126,6 +128,9 @@ static bool resolve_namespace_object(JSContext* context,
        the override module looks for namespaces that import this */
     if (!JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
                                GJS_MODULE_PROP_FLAGS))
+        return false;
+
+    if (!load_override_module(context, ns_name.get()))
         return false;
 
     JS::RootedValue override(context);
@@ -513,6 +518,125 @@ gjs_lookup_namespace_object(JSContext  *context,
 out:
     saved_exc.restore();
     return retval;
+}
+
+static bool add_promise_reactions(JSContext* cx, JS::HandleValue promise,
+                                  JSNative resolve, JSNative reject,
+                                  const std::string& debug_tag) {
+    g_assert(promise.isObject() && "got weird value from JS::ModuleEvaluate");
+    JS::RootedObject promise_object(cx, &promise.toObject());
+
+    std::string resolved_tag = debug_tag + " async resolved";
+    std::string rejected_tag = debug_tag + " async rejected";
+
+    JS::RootedFunction on_rejected(
+        cx,
+        js::NewFunctionWithReserved(cx, reject, 1, 0, resolved_tag.c_str()));
+    if (!on_rejected)
+        return false;
+    JS::RootedFunction on_resolved(
+        cx,
+        js::NewFunctionWithReserved(cx, resolve, 1, 0, rejected_tag.c_str()));
+    if (!on_resolved)
+        return false;
+
+    JS::RootedObject resolved(cx, JS_GetFunctionObject(on_resolved));
+    JS::RootedObject rejected(cx, JS_GetFunctionObject(on_rejected));
+
+    return JS::AddPromiseReactions(cx, promise_object, resolved, rejected);
+}
+
+static bool on_context_module_resolved(JSContext* cx, unsigned argc,
+                                       JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    args.rval().setUndefined();
+
+    GjsContextPrivate::from_cx(cx)->main_loop_release();
+
+    return true;
+}
+
+static bool load_override_module_(JSContext* cx, const char* uri,
+                                  const char* debug_identifier) {
+    JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri, true));
+
+    if (!loader) {
+        return false;
+    }
+
+    if (!JS::ModuleInstantiate(cx, loader)) {
+        gjs_log_exception(cx);
+        return false;
+    }
+
+    JS::RootedValue evaluation_promise(cx);
+    if (!JS::ModuleEvaluate(cx, loader, &evaluation_promise)) {
+        gjs_log_exception(cx);
+        return false;
+    }
+
+    GjsContextPrivate::from_cx(cx)->main_loop_hold();
+    bool ok = add_promise_reactions(
+        cx, evaluation_promise, on_context_module_resolved,
+        [](JSContext* cx, unsigned argc, JS::Value* vp) {
+            JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+            JS::HandleValue error = args.get(0);
+
+            GjsContextPrivate* gjs_cx = GjsContextPrivate::from_cx(cx);
+            gjs_cx->report_unhandled_exception();
+
+            gjs_log_exception_full(cx, error, nullptr, G_LOG_LEVEL_CRITICAL);
+
+            gjs_cx->main_loop_release();
+
+            args.rval().setUndefined();
+
+            return false;
+        },
+        "overrides");
+
+    if (!ok) {
+        gjs_log_exception(cx);
+        return false;
+    }
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool load_override_module(JSContext* cx, const char* ns_name) {
+    JS::AutoSaveExceptionState saved_exc(cx);
+
+    JS::RootedObject global(cx, gjs_get_import_global(cx));
+    JS::RootedValue importer(
+        cx, gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS));
+    g_assert(importer.isObject());
+
+    JS::RootedObject overridespkg(cx), module(cx);
+    JS::RootedObject importer_obj(cx, &importer.toObject());
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+
+    GjsAutoChar uri = g_strdup_printf(
+        "resource:///org/gnome/gjs/modules/overrides/%s.js", ns_name);
+    if (!load_override_module_(cx, uri, ns_name)) {
+        JS::RootedValue exc(cx);
+        JS_GetPendingException(cx, &exc);
+
+        /* If the exception was an ImportError (i.e., module not found) then
+         * we simply didn't have an override, don't throw an exception */
+        if (error_has_name(cx, exc,
+                           JS_AtomizeAndPinString(cx, "ImportError"))) {
+            saved_exc.restore();
+            return true;
+        }
+        goto fail;
+    }
+
+    return true;
+
+fail:
+    saved_exc.drop();
+    return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION

@@ -577,7 +577,7 @@ static bool add_promise_reactions(JSContext* cx, JS::HandleValue promise,
 
 static void load_context_module(JSContext* cx, const char* uri,
                                 const char* debug_identifier) {
-    JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri));
+    JS::RootedObject loader(cx, gjs_module_load(cx, uri, uri, true));
 
     if (!loader) {
         gjs_log_exception(cx);

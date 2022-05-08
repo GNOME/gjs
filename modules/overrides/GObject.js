@@ -3,12 +3,12 @@
 // SPDX-FileCopyrightText: 2011 Jasper St. Pierre
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>, <philip@endlessm.com>
 
-const Gi = imports._gi;
-const {GjsPrivate, GLib} = imports.gi;
-const {_checkAccessors, _registerType} = imports._common;
-const Legacy = imports._legacy;
+import * as Legacy from '../deprecated/_legacy.js';
+import {_checkAccessors, _registerType} from '../common/class.js';
 
-let GObject;
+const Gi = import.meta.importSync('_gi');
+
+const {GjsPrivate, GLib, GObject} = import.meta.importSync('gi');
 
 var GTypeName = Symbol('GType name');
 var GTypeFlags = Symbol('GType flags');
@@ -23,6 +23,9 @@ var _gtkCssName = Symbol('GTK widget CSS name');
 var _gtkInternalChildren = Symbol('GTK widget template internal children');
 var _gtkTemplate = Symbol('GTK widget template');
 
+/**
+ * @param {...any} args
+ */
 function registerClass(...args) {
     let klass = args[0];
     if (args.length === 2) {
@@ -80,6 +83,7 @@ function registerClass(...args) {
     return klass;
 }
 
+
 function _resolveLegacyClassFunction(klass, func) {
     // Find the "least derived" class with a _classInit static function; there
     // definitely is one, since this class must inherit from GObject
@@ -88,6 +92,7 @@ function _resolveLegacyClassFunction(klass, func) {
         initclass = Object.getPrototypeOf(initclass.prototype).constructor;
     return initclass[func];
 }
+
 
 function _defineGType(klass, giPrototype, registeredType) {
     const config = {
@@ -124,6 +129,7 @@ function _defineGType(klass, giPrototype, registeredType) {
 
 // Some common functions between GObject.Class and GObject.Interface
 
+
 function _createSignals(gtype, sigs) {
     for (let signalName in sigs) {
         let obj = sigs[signalName];
@@ -139,6 +145,7 @@ function _createSignals(gtype, sigs) {
         }
     }
 }
+
 
 function _getCallerBasename() {
     const stackLines = new Error().stack.trim().split('\n');
@@ -281,9 +288,7 @@ function _checkProperties(klass) {
         _checkAccessors(klass.prototype, pspec, GObject);
 }
 
-function _init() {
-    GObject = this;
-
+(function () {
     function _makeDummyClass(obj, name, upperName, gtypeName, actual) {
         let gtype = GObject.type_from_name(gtypeName);
         obj[`TYPE_${upperName}`] = gtype;
@@ -295,7 +300,7 @@ function _init() {
 
     GObject.gtypeNameBasedOnJSPath = false;
 
-    _makeDummyClass(GObject, 'VoidType', 'NONE', 'void', function () {});
+    _makeDummyClass(GObject, 'VoidType', 'NONE', 'void', function () { });
     _makeDummyClass(GObject, 'Char', 'CHAR', 'gchar', Number);
     _makeDummyClass(GObject, 'UChar', 'UCHAR', 'guchar', Number);
     _makeDummyClass(GObject, 'Unichar', 'UNICHAR', 'gint', String);
@@ -751,9 +756,9 @@ function _init() {
      *   a successful match.
      */
     GObject.signal_handler_find = function (instance, match) {
-        // For backwards compatibility
+    // For backwards compatibility
         if (arguments.length === 7)
-            // eslint-disable-next-line prefer-rest-params
+        // eslint-disable-next-line prefer-rest-params
             return GObject._real_signal_handler_find(...arguments);
         return instance[Gi.signal_find_symbol](match);
     };
@@ -778,9 +783,9 @@ function _init() {
      * @returns {number} The number of handlers that matched.
      */
     GObject.signal_handlers_block_matched = function (instance, match) {
-        // For backwards compatibility
+    // For backwards compatibility
         if (arguments.length === 7)
-            // eslint-disable-next-line prefer-rest-params
+        // eslint-disable-next-line prefer-rest-params
             return GObject._real_signal_handlers_block_matched(...arguments);
         return instance[Gi.signals_block_symbol](match);
     };
@@ -808,9 +813,9 @@ function _init() {
      * @returns {number} The number of handlers that matched.
      */
     GObject.signal_handlers_unblock_matched = function (instance, match) {
-        // For backwards compatibility
+    // For backwards compatibility
         if (arguments.length === 7)
-            // eslint-disable-next-line prefer-rest-params
+        // eslint-disable-next-line prefer-rest-params
             return GObject._real_signal_handlers_unblock_matched(...arguments);
         return instance[Gi.signals_unblock_symbol](match);
     };
@@ -836,9 +841,9 @@ function _init() {
      * @returns {number} The number of handlers that matched.
      */
     GObject.signal_handlers_disconnect_matched = function (instance, match) {
-        // For backwards compatibility
+    // For backwards compatibility
         if (arguments.length === 7)
-            // eslint-disable-next-line prefer-rest-params
+        // eslint-disable-next-line prefer-rest-params
             return GObject._real_signal_handlers_disconnect_matched(...arguments);
         return instance[Gi.signals_disconnect_symbol](match);
     };
@@ -882,4 +887,4 @@ function _init() {
         throw new Error('GObject.signal_handlers_disconnect_by_data() is not \
 introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     };
-}
+})();
