@@ -209,6 +209,10 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
     }
 }
 
+[[nodiscard]] static inline bool is_string_type(GITypeTag tag) {
+    return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
+}
+
 /* Check if an argument of the given needs to be released if we obtained it
  * from out argument (or the return value), and we're transferring ownership
  */
@@ -340,7 +344,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     /* Don't use key/value destructor functions here, because we can't
      * construct correct ones in general if the value type is complex.
      * Rely on the type-aware g_argument_release functions. */
-    if (key_type == GI_TYPE_TAG_UTF8 || key_type == GI_TYPE_TAG_FILENAME)
+    if (is_string_type(key_type))
         return g_hash_table_new(g_str_hash, g_str_equal);
     return g_hash_table_new(NULL, NULL);
 }
@@ -967,16 +971,11 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static GArray*
-gjs_g_array_new_for_type(JSContext    *context,
-                         unsigned int  length,
-                         GITypeInfo   *param_info)
-{
+static GArray* garray_new_for_storage_type(unsigned length,
+                                           GITypeTag storage_type) {
     guint element_size;
-    GITypeTag element_type = g_type_info_get_storage_type(param_info);
 
-    switch (element_type) {
+    switch (storage_type) {
     case GI_TYPE_TAG_BOOLEAN:
         element_size = sizeof(gboolean);
         break;
@@ -1020,9 +1019,7 @@ gjs_g_array_new_for_type(JSContext    *context,
         break;
     case GI_TYPE_TAG_VOID:
     default:
-        gjs_throw(context,
-                  "Unhandled GArray element-type %d", element_type);
-        return NULL;
+        g_assert_not_reached();
     }
 
     return g_array_sized_new(true, false, element_size, length);
@@ -1720,10 +1717,8 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
         if (array_type == GI_ARRAY_TYPE_C) {
             gjs_arg_set(arg, data.release());
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
-            GArray *array = gjs_g_array_new_for_type(context, length, param_info);
-
-            if (!array)
-                return false;
+            GITypeTag storage_type = g_type_info_get_storage_type(param_info);
+            GArray* array = garray_new_for_storage_type(length, storage_type);
 
             if (data)
                 g_array_append_vals(array, data, length);

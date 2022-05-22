@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
 project('gjs', 'cpp', 'c', version: '1.73.1', license: ['MIT', 'LGPL2+'],
-    meson_version: '>= 0.52.0',
+    meson_version: '>= 0.54.0',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'c_std=c99',
         'warning_level=2', 'b_pch=true' ])
 
@@ -14,6 +14,7 @@ project('gjs', 'cpp', 'c', version: '1.73.1', license: ['MIT', 'LGPL2+'],
 api_version = '1.0'
 api_name = '@0@-@1@'.format(meson.project_name(), api_version)
 
+fs = import('fs')
 gnome = import('gnome')
 pkg = import('pkgconfig')
 
@@ -756,12 +757,52 @@ endif
 
 ### Summarize options ##########################################################
 
-message('\n'.join([
-    'Optional features',
-    '==========================',
-    'Build Cairo module: @0@'.format(build_cairo),
-    'Use readline for input in interactive shell and debugger: @0@'.format(
-        build_readline),
-    'Build profiler (Linux only): @0@'.format(build_profiler),
-    'Build with precompiled headers: @0@'.format(get_option('b_pch')),
-]))
+prefix = get_option('prefix')
+bindir = get_option('bindir')
+libdir = get_option('libdir')
+datadir = get_option('datadir')
+summary({
+    'prefix': prefix,
+    'bindir': fs.is_absolute(bindir) ? bindir : prefix / bindir,
+    'libdir': fs.is_absolute(libdir) ? libdir : prefix / libdir,
+    'datadir': fs.is_absolute(datadir) ? datadir : prefix / datadir,
+}, section: 'Directories')
+locations = []
+foreach dep: [ffi, glib, gi, spidermonkey, readline, sysprof_capture]
+    if dep.type_name() == 'pkgconfig'
+        locations += 'in @0@'.format(dep.get_pkgconfig_variable('prefix'))
+    else
+        locations += dep.type_name()
+    endif
+endforeach
+summary({
+    'libffi': '@0@ (@1@)'.format(ffi.version(), locations[0]),
+    'GLib': '@0@ (@1@)'.format(glib.version(), locations[1]),
+    'GObject introspection': '@0@ (@1@)'.format(gi.version(), locations[2]),
+    'SpiderMonkey': '@0@ (@1@, @2@ build)'.format(spidermonkey.version(),
+        locations[3], nondebug_spidermonkey ? 'release' : 'debug'),
+}, section: 'Dependencies')
+if build_readline
+    summary('Readline', '(@0@)'.format(locations[4]), section: 'Dependencies')
+endif
+if build_profiler
+    summary('Sysprof',
+        '@0@ (@1@)'.format(sysprof_capture.version(), locations[5]),
+        section: 'Dependencies')
+endif
+summary({
+    'Build type': get_option('buildtype'),
+    'Installed tests': get_option('installed_tests'),
+    '-Bsymbolic-functions': get_option('bsymbolic_functions'),
+    'Skip DBus tests': get_option('skip_dbus_tests'),
+    'Skip GTK tests': get_option('skip_gtk_tests'),
+    'Extra debug logs': get_option('verbose_logs'),
+    'Precompiled headers': get_option('b_pch'),
+}, section: 'Build options')
+summary({
+    'Cairo module': build_cairo,
+    'Use readline for input': build_readline,
+    'Profiler (Linux only)': build_profiler,
+    'Dtrace debugging': get_option('dtrace'),
+    'Systemtap debugging': get_option('systemtap'),
+}, section: 'Optional features')
