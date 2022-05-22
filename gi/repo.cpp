@@ -551,9 +551,10 @@ lookup_override_function(JSContext             *cx,
         goto fail;
     }
 
-    if (!gjs_object_require_property(cx, module, "override module",
-                                     atoms.init(), function) ||
-        !function.isObjectOrNull()) {
+    if (!JS_GetPropertyById(cx, module, atoms.init(), function))
+        return false;
+
+    if (!function.isUndefined() && !function.isObjectOrNull()) {
         gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
     }

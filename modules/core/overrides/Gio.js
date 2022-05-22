@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna
 
-var GLib = imports.gi.GLib;
-var GjsPrivate = imports.gi.GjsPrivate;
-var Signals = imports.signals;
-var Gio;
+const {GLib, Gio, GjsPrivate} = imports.gi;
+const Signals = imports.signals;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
 // a parameter type that includes 'h' somewhere, actually has entries in it for
@@ -453,186 +451,183 @@ function _promisify(proto, asyncFunc,
     };
 }
 
-function _init() {
-    Gio = this;
+Gio.DBus = {
+    get session() {
+        return Gio.bus_get_sync(Gio.BusType.SESSION, null);
+    },
+    get system() {
+        return Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
+    },
 
-    Gio.DBus = {
-        get session() {
-            return Gio.bus_get_sync(Gio.BusType.SESSION, null);
-        },
-        get system() {
-            return Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
-        },
+    // Namespace some functions
+    get: Gio.bus_get,
+    get_finish: Gio.bus_get_finish,
+    get_sync: Gio.bus_get_sync,
 
-        // Namespace some functions
-        get: Gio.bus_get,
-        get_finish: Gio.bus_get_finish,
-        get_sync: Gio.bus_get_sync,
+    own_name: Gio.bus_own_name,
+    own_name_on_connection: Gio.bus_own_name_on_connection,
+    unown_name: Gio.bus_unown_name,
 
-        own_name: Gio.bus_own_name,
-        own_name_on_connection: Gio.bus_own_name_on_connection,
-        unown_name: Gio.bus_unown_name,
+    watch_name: Gio.bus_watch_name,
+    watch_name_on_connection: Gio.bus_watch_name_on_connection,
+    unwatch_name: Gio.bus_unwatch_name,
+};
 
-        watch_name: Gio.bus_watch_name,
-        watch_name_on_connection: Gio.bus_watch_name_on_connection,
-        unwatch_name: Gio.bus_unwatch_name,
+Gio.DBusConnection.prototype.watch_name = function (name, flags, appeared, vanished) {
+    return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
+};
+Gio.DBusConnection.prototype.unwatch_name = function (id) {
+    return Gio.bus_unwatch_name(id);
+};
+Gio.DBusConnection.prototype.own_name = function (name, flags, acquired, lost) {
+    return Gio.bus_own_name_on_connection(this, name, flags, acquired, lost);
+};
+Gio.DBusConnection.prototype.unown_name = function (id) {
+    return Gio.bus_unown_name(id);
+};
+
+_injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
+_injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
+_injectToStaticMethod(Gio.DBusProxy, 'new_sync', _addDBusConvenience);
+_injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
+_injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
+_injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
+Gio.DBusProxy.prototype.connectSignal = Signals._connect;
+Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
+
+Gio.DBusProxy.makeProxyWrapper = _makeProxyWrapper;
+
+// Some helpers
+_wrapFunction(Gio.DBusNodeInfo, 'new_for_xml', _newNodeInfo);
+Gio.DBusInterfaceInfo.new_for_xml = _newInterfaceInfo;
+
+Gio.DBusExportedObject = GjsPrivate.DBusImplementation;
+Gio.DBusExportedObject.wrapJSObject = _wrapJSObject;
+
+// ListStore
+Gio.ListStore.prototype[Symbol.iterator] = _listModelIterator;
+Gio.ListStore.prototype.insert_sorted = function (item, compareFunc) {
+    return GjsPrivate.list_store_insert_sorted(this, item, compareFunc);
+};
+Gio.ListStore.prototype.sort = function (compareFunc) {
+    return GjsPrivate.list_store_sort(this, compareFunc);
+};
+
+// Promisify
+Gio._promisify = _promisify;
+
+// Temporary Gio.File.prototype fix
+Gio._LocalFilePrototype = Gio.File.new_for_path('/').constructor.prototype;
+
+Gio.File.prototype.replace_contents_async = function replace_contents_async(contents, etag, make_backup, flags, cancellable, callback) {
+    return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
+};
+
+// Override Gio.Settings and Gio.SettingsSchema - the C API asserts if
+// trying to access a nonexistent schema or key, which is not handy for
+// shell-extension writers
+
+Gio.SettingsSchema.prototype._realGetKey = Gio.SettingsSchema.prototype.get_key;
+Gio.SettingsSchema.prototype.get_key = function (key) {
+    if (!this.has_key(key))
+        throw new Error(`GSettings key ${key} not found in schema ${this.get_id()}`);
+    return this._realGetKey(key);
+};
+
+Gio.Settings.prototype._realMethods = Object.assign({}, Gio.Settings.prototype);
+
+function createCheckedMethod(method, checkMethod = '_checkKey') {
+    return function (id, ...args) {
+        this[checkMethod](id);
+        return this._realMethods[method].call(this, id, ...args);
     };
-
-    Gio.DBusConnection.prototype.watch_name = function (name, flags, appeared, vanished) {
-        return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
-    };
-    Gio.DBusConnection.prototype.unwatch_name = function (id) {
-        return Gio.bus_unwatch_name(id);
-    };
-    Gio.DBusConnection.prototype.own_name = function (name, flags, acquired, lost) {
-        return Gio.bus_own_name_on_connection(this, name, flags, acquired, lost);
-    };
-    Gio.DBusConnection.prototype.unown_name = function (id) {
-        return Gio.bus_unown_name(id);
-    };
-
-    _injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
-    _injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_sync', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
-    Gio.DBusProxy.prototype.connectSignal = Signals._connect;
-    Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
-
-    Gio.DBusProxy.makeProxyWrapper = _makeProxyWrapper;
-
-    // Some helpers
-    _wrapFunction(Gio.DBusNodeInfo, 'new_for_xml', _newNodeInfo);
-    Gio.DBusInterfaceInfo.new_for_xml = _newInterfaceInfo;
-
-    Gio.DBusExportedObject = GjsPrivate.DBusImplementation;
-    Gio.DBusExportedObject.wrapJSObject = _wrapJSObject;
-
-    // ListStore
-    Gio.ListStore.prototype[Symbol.iterator] = _listModelIterator;
-    Gio.ListStore.prototype.insert_sorted = function (item, compareFunc) {
-        return GjsPrivate.list_store_insert_sorted(this, item, compareFunc);
-    };
-    Gio.ListStore.prototype.sort = function (compareFunc) {
-        return GjsPrivate.list_store_sort(this, compareFunc);
-    };
-
-    // Promisify
-    Gio._promisify = _promisify;
-
-    // Temporary Gio.File.prototype fix
-    Gio._LocalFilePrototype = Gio.File.new_for_path('/').constructor.prototype;
-
-    Gio.File.prototype.replace_contents_async = function replace_contents_async(contents, etag, make_backup, flags, cancellable, callback) {
-        return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
-    };
-
-    // Override Gio.Settings and Gio.SettingsSchema - the C API asserts if
-    // trying to access a nonexistent schema or key, which is not handy for
-    // shell-extension writers
-
-    Gio.SettingsSchema.prototype._realGetKey = Gio.SettingsSchema.prototype.get_key;
-    Gio.SettingsSchema.prototype.get_key = function (key) {
-        if (!this.has_key(key))
-            throw new Error(`GSettings key ${key} not found in schema ${this.get_id()}`);
-        return this._realGetKey(key);
-    };
-
-    Gio.Settings.prototype._realMethods = Object.assign({}, Gio.Settings.prototype);
-
-    function createCheckedMethod(method, checkMethod = '_checkKey') {
-        return function (id, ...args) {
-            this[checkMethod](id);
-            return this._realMethods[method].call(this, id, ...args);
-        };
-    }
-
-    Object.assign(Gio.Settings.prototype, {
-        _realInit: Gio.Settings.prototype._init,  // add manually, not enumerable
-        _init(props = {}) {
-            // 'schema' is a deprecated alias for schema_id
-            const schemaIdProp = ['schema', 'schema-id', 'schema_id',
-                'schemaId'].find(prop => prop in props);
-            const settingsSchemaProp = ['settings-schema', 'settings_schema',
-                'settingsSchema'].find(prop => prop in props);
-            if (!schemaIdProp && !settingsSchemaProp) {
-                throw new Error('One of property \'schema-id\' or ' +
-                    '\'settings-schema\' are required for Gio.Settings');
-            }
-
-            const source = Gio.SettingsSchemaSource.get_default();
-            const settingsSchema = settingsSchemaProp
-                ? props[settingsSchemaProp]
-                : source.lookup(props[schemaIdProp], true);
-
-            if (!settingsSchema)
-                throw new Error(`GSettings schema ${props[schemaIdProp]} not found`);
-
-            const settingsSchemaPath = settingsSchema.get_path();
-            if (props['path'] === undefined && !settingsSchemaPath) {
-                throw new Error('Attempting to create schema ' +
-                    `'${settingsSchema.get_id()}' without a path`);
-            }
-
-            if (props['path'] !== undefined && settingsSchemaPath &&
-                props['path'] !== settingsSchemaPath) {
-                throw new Error(`GSettings created for path '${props['path']}'` +
-                    `, but schema specifies '${settingsSchemaPath}'`);
-            }
-
-            return this._realInit(props);
-        },
-
-        _checkKey(key) {
-            // Avoid using has_key(); checking a JS array is faster than calling
-            // through G-I.
-            if (!this._keys)
-                this._keys = this.settings_schema.list_keys();
-
-            if (!this._keys.includes(key))
-                throw new Error(`GSettings key ${key} not found in schema ${this.schema_id}`);
-        },
-
-        _checkChild(name) {
-            if (!this._children)
-                this._children = this.list_children();
-
-            if (!this._children.includes(name))
-                throw new Error(`Child ${name} not found in GSettings schema ${this.schema_id}`);
-        },
-
-        get_boolean: createCheckedMethod('get_boolean'),
-        set_boolean: createCheckedMethod('set_boolean'),
-        get_double: createCheckedMethod('get_double'),
-        set_double: createCheckedMethod('set_double'),
-        get_enum: createCheckedMethod('get_enum'),
-        set_enum: createCheckedMethod('set_enum'),
-        get_flags: createCheckedMethod('get_flags'),
-        set_flags: createCheckedMethod('set_flags'),
-        get_int: createCheckedMethod('get_int'),
-        set_int: createCheckedMethod('set_int'),
-        get_int64: createCheckedMethod('get_int64'),
-        set_int64: createCheckedMethod('set_int64'),
-        get_string: createCheckedMethod('get_string'),
-        set_string: createCheckedMethod('set_string'),
-        get_strv: createCheckedMethod('get_strv'),
-        set_strv: createCheckedMethod('set_strv'),
-        get_uint: createCheckedMethod('get_uint'),
-        set_uint: createCheckedMethod('set_uint'),
-        get_uint64: createCheckedMethod('get_uint64'),
-        set_uint64: createCheckedMethod('set_uint64'),
-        get_value: createCheckedMethod('get_value'),
-        set_value: createCheckedMethod('set_value'),
-
-        bind: createCheckedMethod('bind'),
-        bind_writable: createCheckedMethod('bind_writable'),
-        create_action: createCheckedMethod('create_action'),
-        get_default_value: createCheckedMethod('get_default_value'),
-        get_user_value: createCheckedMethod('get_user_value'),
-        is_writable: createCheckedMethod('is_writable'),
-        reset: createCheckedMethod('reset'),
-
-        get_child: createCheckedMethod('get_child', '_checkChild'),
-    });
 }
+
+Object.assign(Gio.Settings.prototype, {
+    _realInit: Gio.Settings.prototype._init,  // add manually, not enumerable
+    _init(props = {}) {
+        // 'schema' is a deprecated alias for schema_id
+        const schemaIdProp = ['schema', 'schema-id', 'schema_id',
+            'schemaId'].find(prop => prop in props);
+        const settingsSchemaProp = ['settings-schema', 'settings_schema',
+            'settingsSchema'].find(prop => prop in props);
+        if (!schemaIdProp && !settingsSchemaProp) {
+            throw new Error('One of property \'schema-id\' or ' +
+                    '\'settings-schema\' are required for Gio.Settings');
+        }
+
+        const source = Gio.SettingsSchemaSource.get_default();
+        const settingsSchema = settingsSchemaProp
+            ? props[settingsSchemaProp]
+            : source.lookup(props[schemaIdProp], true);
+
+        if (!settingsSchema)
+            throw new Error(`GSettings schema ${props[schemaIdProp]} not found`);
+
+        const settingsSchemaPath = settingsSchema.get_path();
+        if (props['path'] === undefined && !settingsSchemaPath) {
+            throw new Error('Attempting to create schema ' +
+                    `'${settingsSchema.get_id()}' without a path`);
+        }
+
+        if (props['path'] !== undefined && settingsSchemaPath &&
+                props['path'] !== settingsSchemaPath) {
+            throw new Error(`GSettings created for path '${props['path']}'` +
+                    `, but schema specifies '${settingsSchemaPath}'`);
+        }
+
+        return this._realInit(props);
+    },
+
+    _checkKey(key) {
+        // Avoid using has_key(); checking a JS array is faster than calling
+        // through G-I.
+        if (!this._keys)
+            this._keys = this.settings_schema.list_keys();
+
+        if (!this._keys.includes(key))
+            throw new Error(`GSettings key ${key} not found in schema ${this.schema_id}`);
+    },
+
+    _checkChild(name) {
+        if (!this._children)
+            this._children = this.list_children();
+
+        if (!this._children.includes(name))
+            throw new Error(`Child ${name} not found in GSettings schema ${this.schema_id}`);
+    },
+
+    get_boolean: createCheckedMethod('get_boolean'),
+    set_boolean: createCheckedMethod('set_boolean'),
+    get_double: createCheckedMethod('get_double'),
+    set_double: createCheckedMethod('set_double'),
+    get_enum: createCheckedMethod('get_enum'),
+    set_enum: createCheckedMethod('set_enum'),
+    get_flags: createCheckedMethod('get_flags'),
+    set_flags: createCheckedMethod('set_flags'),
+    get_int: createCheckedMethod('get_int'),
+    set_int: createCheckedMethod('set_int'),
+    get_int64: createCheckedMethod('get_int64'),
+    set_int64: createCheckedMethod('set_int64'),
+    get_string: createCheckedMethod('get_string'),
+    set_string: createCheckedMethod('set_string'),
+    get_strv: createCheckedMethod('get_strv'),
+    set_strv: createCheckedMethod('set_strv'),
+    get_uint: createCheckedMethod('get_uint'),
+    set_uint: createCheckedMethod('set_uint'),
+    get_uint64: createCheckedMethod('get_uint64'),
+    set_uint64: createCheckedMethod('set_uint64'),
+    get_value: createCheckedMethod('get_value'),
+    set_value: createCheckedMethod('set_value'),
+
+    bind: createCheckedMethod('bind'),
+    bind_writable: createCheckedMethod('bind_writable'),
+    create_action: createCheckedMethod('create_action'),
+    get_default_value: createCheckedMethod('get_default_value'),
+    get_user_value: createCheckedMethod('get_user_value'),
+    is_writable: createCheckedMethod('is_writable'),
+    reset: createCheckedMethod('reset'),
+
+    get_child: createCheckedMethod('get_child', '_checkChild'),
+});
+

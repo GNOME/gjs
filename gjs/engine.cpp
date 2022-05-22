@@ -79,7 +79,9 @@ class GjsSourceHook : public js::SourceHook {
 
 #ifdef G_OS_WIN32
 HMODULE gjs_dll;
-static bool gjs_is_inited = false;
+static bool _gjs_is_inited = false;
+
+static bool gjs_is_inited() { return _gjs_is_inited; }
 
 BOOL WINAPI
 DllMain (HINSTANCE hinstDLL,
@@ -90,7 +92,11 @@ LPVOID    lpvReserved)
   {
   case DLL_PROCESS_ATTACH:
     gjs_dll = hinstDLL;
-    gjs_is_inited = JS_Init();
+
+    if (!JS_Init())
+        g_error("Could not initialize Javascript");
+
+    _gjs_is_inited = true;
     break;
 
   case DLL_THREAD_DETACH:
@@ -104,7 +110,6 @@ LPVOID    lpvReserved)
 
   return TRUE;
 }
-
 #else
 class GjsInit {
 public:
@@ -116,15 +121,19 @@ public:
     ~GjsInit() {
         JS_ShutDown();
     }
-
-    explicit operator bool() const { return true; }
 };
 
-static GjsInit gjs_is_inited;
+static bool gjs_is_inited() {
+    // In C++11 static function variables are guaranteed to only be
+    // initialized once.
+    static GjsInit gjs_is_inited;
+
+    return true;
+}
 #endif
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
-    g_assert(gjs_is_inited);
+    g_assert(gjs_is_inited());
     JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
     if (!cx)
         return nullptr;
