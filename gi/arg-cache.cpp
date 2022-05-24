@@ -599,7 +599,7 @@ struct GBytesInTransferNone : GBytesIn {
     using GBytesIn::GBytesIn;
     bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
                  GIArgument* out_arg) override {
-        return BoxedIn::release(cx, state, in_arg, out_arg);
+        return BoxedInTransferNone::release(cx, state, in_arg, out_arg);
     }
 };
 
