@@ -457,13 +457,6 @@ function _init() {
     Gio = this;
 
     Gio.DBus = {
-        get session() {
-            return Gio.bus_get_sync(Gio.BusType.SESSION, null);
-        },
-        get system() {
-            return Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
-        },
-
         // Namespace some functions
         get: Gio.bus_get,
         get_finish: Gio.bus_get_finish,
@@ -477,6 +470,21 @@ function _init() {
         watch_name_on_connection: Gio.bus_watch_name_on_connection,
         unwatch_name: Gio.bus_unwatch_name,
     };
+
+    Object.defineProperties(Gio.DBus, {
+        'session': {
+            get() {
+                return Gio.bus_get_sync(Gio.BusType.SESSION, null);
+            },
+            enumerable: false,
+        },
+        'system': {
+            get() {
+                return Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
+            },
+            enumerable: false,
+        },
+    });
 
     Gio.DBusConnection.prototype.watch_name = function (name, flags, appeared, vanished) {
         return Gio.bus_watch_name_on_connection(this, name, flags, appeared, vanished);
