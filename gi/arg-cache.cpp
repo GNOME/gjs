@@ -259,9 +259,8 @@ struct RegisteredInterface : BaseInfo {
 };
 
 struct Callback : Nullable, BaseInfo {
-    explicit Callback(GITypeInfo* type_info)
-        : BaseInfo(g_type_info_get_interface(type_info)),
-          m_scope(GI_SCOPE_TYPE_INVALID) {}
+    explicit Callback(GIInterfaceInfo* info)
+        : BaseInfo(info), m_scope(GI_SCOPE_TYPE_INVALID) {}
 
     inline void set_callback_destroy_pos(int pos) {
         g_assert(pos <= Argument::MAX_ARGS &&
@@ -2171,8 +2170,8 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     common_args, DESTROY_NOTIFY_NO_CALLBACK);
                 *inc_counter_out = false;
             } else {
-                auto* gjs_arg =
-                    set_argument_auto<Arg::CallbackIn>(common_args, &type_info);
+                auto* gjs_arg = set_argument_auto<Arg::CallbackIn>(
+                    common_args, interface_info);
 
                 int destroy_pos = g_arg_info_get_destroy(arg);
                 int closure_pos = g_arg_info_get_closure(arg);
