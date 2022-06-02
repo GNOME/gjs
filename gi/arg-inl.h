@@ -211,3 +211,29 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
 
     return true;
 }
+
+// A helper function to retrieve array lengths from a GIArgument (letting the
+// compiler generate good instructions in case of big endian machines)
+[[nodiscard]] constexpr size_t gjs_g_argument_get_array_length(
+    GITypeTag tag, GIArgument* arg) {
+    switch (tag) {
+        case GI_TYPE_TAG_INT8:
+            return gjs_arg_get<int8_t>(arg);
+        case GI_TYPE_TAG_UINT8:
+            return gjs_arg_get<uint8_t>(arg);
+        case GI_TYPE_TAG_INT16:
+            return gjs_arg_get<int16_t>(arg);
+        case GI_TYPE_TAG_UINT16:
+            return gjs_arg_get<uint16_t>(arg);
+        case GI_TYPE_TAG_INT32:
+            return gjs_arg_get<int32_t>(arg);
+        case GI_TYPE_TAG_UINT32:
+            return gjs_arg_get<uint32_t>(arg);
+        case GI_TYPE_TAG_INT64:
+            return gjs_arg_get<int64_t>(arg);
+        case GI_TYPE_TAG_UINT64:
+            return gjs_arg_get<uint64_t>(arg);
+        default:
+            g_assert_not_reached();
+    }
+}
