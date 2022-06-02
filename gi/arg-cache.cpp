@@ -229,9 +229,10 @@ struct Array : BasicType {
 };
 
 struct BaseInfo {
-    explicit BaseInfo(GIBaseInfo* info, const GjsAutoTakeOwnership& add_ref)
+    constexpr explicit BaseInfo(GIBaseInfo* info,
+                                const GjsAutoTakeOwnership& add_ref)
         : m_info(info, add_ref) {}
-    explicit BaseInfo(GIBaseInfo* info) : m_info(info) {}
+    constexpr explicit BaseInfo(GIBaseInfo* info) : m_info(info) {}
 
     GjsAutoBaseInfo m_info;
 };
@@ -264,7 +265,7 @@ struct RegisteredInterface : BaseInfo {
 };
 
 struct Callback : Nullable, BaseInfo {
-    explicit Callback(GIInterfaceInfo* info)
+    constexpr explicit Callback(GIInterfaceInfo* info)
         : BaseInfo(info, GjsAutoTakeOwnership{}),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
