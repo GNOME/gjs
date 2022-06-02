@@ -226,8 +226,9 @@ struct Array : BasicType {
 };
 
 struct BaseInfo {
-    explicit BaseInfo(GIBaseInfo* info)
-        : m_info(info ? g_base_info_ref(info) : nullptr) {}
+    explicit BaseInfo(GIBaseInfo* info, const GjsAutoTakeOwnership& add_ref)
+        : m_info(info, add_ref) {}
+    explicit BaseInfo(GIBaseInfo* info) : m_info(info) {}
 
     GjsAutoBaseInfo m_info;
 };
@@ -251,7 +252,8 @@ struct RegisteredType {
 
 struct RegisteredInterface : BaseInfo {
     explicit RegisteredInterface(GIBaseInfo* info)
-        : BaseInfo(info), m_gtype(g_registered_type_info_get_g_type(m_info)) {}
+        : BaseInfo(info, GjsAutoTakeOwnership{}),
+          m_gtype(g_registered_type_info_get_g_type(m_info)) {}
 
     constexpr GType gtype() const { return m_gtype; }
 
@@ -260,7 +262,8 @@ struct RegisteredInterface : BaseInfo {
 
 struct Callback : Nullable, BaseInfo {
     explicit Callback(GIInterfaceInfo* info)
-        : BaseInfo(info), m_scope(GI_SCOPE_TYPE_INVALID) {}
+        : BaseInfo(info, GjsAutoTakeOwnership{}),
+          m_scope(GI_SCOPE_TYPE_INVALID) {}
 
     inline void set_callback_destroy_pos(int pos) {
         g_assert(pos <= Argument::MAX_ARGS &&
@@ -554,7 +557,7 @@ struct UnregisteredBoxedIn : BoxedIn, BaseInfo {
     explicit UnregisteredBoxedIn(GIInterfaceInfo* info)
         : BoxedIn(g_registered_type_info_get_g_type(info),
                   g_base_info_get_type(info)),
-          BaseInfo(info) {}
+          BaseInfo(info, GjsAutoTakeOwnership{}) {}
     // This is a smart argument, no release needed
     GIBaseInfo* info() const override { return m_info; }
 };
