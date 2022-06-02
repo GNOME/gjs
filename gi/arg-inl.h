@@ -39,7 +39,7 @@
 //   appropriate union member for type T and returns the replaced value.
 
 template <auto GIArgument::*member>
-[[nodiscard]] inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+[[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
     return (arg->*member);
 }
 
@@ -47,7 +47,7 @@ template <auto GIArgument::*member>
  * which are in fact typedef's of other generic types.
  * Setting a tag for a type allows to perform proper specialization. */
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+[[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
     if constexpr (TAG == GI_TYPE_TAG_VOID) {
         if constexpr (std::is_same_v<T, bool>)
             return gjs_arg_member<&GIArgument::v_boolean>(arg);
@@ -115,7 +115,7 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline void gjs_arg_set(GIArgument* arg, T v) {
+constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
     if constexpr (std::is_pointer_v<T>) {
         using NonconstPtrT =
             std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
@@ -132,18 +132,18 @@ inline void gjs_arg_set(GIArgument* arg, T v) {
 // Store function pointers as void*. It is a requirement of GLib that your
 // compiler can do this
 template <typename ReturnT, typename... Args>
-inline void gjs_arg_set(GIArgument* arg, ReturnT (*v)(Args...)) {
+constexpr inline void gjs_arg_set(GIArgument* arg, ReturnT (*v)(Args...)) {
     gjs_arg_member<void*>(arg) = reinterpret_cast<void*>(v);
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline std::enable_if_t<std::is_integral_v<T>> gjs_arg_set(GIArgument* arg,
-                                                           void *v) {
+constexpr inline std::enable_if_t<std::is_integral_v<T>> gjs_arg_set(
+    GIArgument* arg, void* v) {
     gjs_arg_set<T, TAG>(arg, gjs_pointer_to_int<T>(v));
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] inline T gjs_arg_get(GIArgument* arg) {
+[[nodiscard]] constexpr inline T gjs_arg_get(GIArgument* arg) {
     if constexpr (std::is_same_v<T, bool> ||
                   (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN))
         return T(!!gjs_arg_member<T, TAG>(arg));
@@ -152,12 +152,12 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
+[[nodiscard]] constexpr inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
     return gjs_int_to_pointer(gjs_arg_get<T, TAG>(arg));
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline void gjs_arg_unset(GIArgument* arg) {
+constexpr inline void gjs_arg_unset(GIArgument* arg) {
     if constexpr (std::is_pointer_v<T>)
         gjs_arg_set<T, TAG>(arg, nullptr);
     else
@@ -165,7 +165,7 @@ inline void gjs_arg_unset(GIArgument* arg) {
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] inline T gjs_arg_steal(GIArgument* arg) {
+[[nodiscard]] constexpr inline T gjs_arg_steal(GIArgument* arg) {
     auto val = gjs_arg_get<T, TAG>(arg);
     gjs_arg_unset<T, TAG>(arg);
     return val;
@@ -174,10 +174,10 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 // Implementation to store rounded (u)int64_t numbers into double
 
 template <typename BigT>
-[[nodiscard]] inline std::enable_if_t<std::is_integral_v<BigT> &&
-                                          (std::numeric_limits<BigT>::max() >
-                                           std::numeric_limits<int32_t>::max()),
-                                      double>
+[[nodiscard]] inline constexpr std::enable_if_t<
+    std::is_integral_v<BigT> && (std::numeric_limits<BigT>::max() >
+                                 std::numeric_limits<int32_t>::max()),
+    double>
 gjs_arg_get_maybe_rounded(GIArgument* arg) {
     BigT val = gjs_arg_get<BigT>(arg);
 
