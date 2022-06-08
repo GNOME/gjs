@@ -126,7 +126,7 @@ class Console {
         if (condition)
             return;
 
-        let message = 'Assertion failed';
+        const message = 'Assertion failed';
 
         if (data.length === 0)
             data.push(message);
@@ -443,7 +443,7 @@ class Console {
         if (args.length === 0)
             return;
 
-        let [first, ...rest] = args;
+        const [first, ...rest] = args;
 
         if (rest.length === 0) {
             Printer(logLevel, [first]);
@@ -478,7 +478,7 @@ class Console {
         if (args.length === 1)
             return target;
 
-        let current = args[1];
+        const current = args[1];
 
         // Find the index of the first format specifier.
         const specifierIndex = specifierTest.exec(target).index;
@@ -525,7 +525,7 @@ class Console {
          *
          * @type {[string, ...any[]]}
          */
-        let result = [target, ...args.slice(2)];
+        const result = [target, ...args.slice(2)];
 
         if (!hasFormatSpecifiers(target))
             return result;
@@ -592,7 +592,7 @@ class Console {
             severity = GLib.LogLevelFlags.LEVEL_MESSAGE;
         }
 
-        let output = args
+        const output = args
             .map(a => {
                 if (a === null)
                     return 'null';
