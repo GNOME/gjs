@@ -4,11 +4,6 @@
 
 const GLib = imports.gi.GLib;
 
-function _removeNewlines(str) {
-    let allNewlines = /\n/g;
-    return str.replace(allNewlines, '\\n');
-}
-
 function _filterStack(stack) {
     if (!stack)
         return 'No stack';
@@ -89,7 +84,9 @@ class TapReporter {
         if (result.status === 'failed' && result.failedExpectations) {
             result.failedExpectations.forEach(failedExpectation => {
                 const output = [];
-                output.push(`Message: ${_removeNewlines(failedExpectation.message)}`);
+                const messageLines = failedExpectation.message.split('\n');
+                output.push(`Message: ${messageLines.shift()}`);
+                output.push(...messageLines.map(str => `  ${str}`));
                 output.push('Stack:');
                 let stackTrace = _filterStack(failedExpectation.stack).trim();
                 output.push(...stackTrace.split('\n').map(str => `  ${str}`));
