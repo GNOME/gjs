@@ -214,6 +214,8 @@ class Console {
     }
 
     /**
+     * Logs a message with severity equal to {@see GLib.LogLevelFlags.WARNING}.
+     *
      * @param  {...any} data formatting substitutions, if applicable
      * @returns {void}
      */
