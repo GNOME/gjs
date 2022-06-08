@@ -25,6 +25,11 @@ do_Get_Upstream_Base () {
     echo '-----------------------------------------'
     echo 'Finding common ancestor'
 
+    if git show-branch ci-upstream-base-branch 2> /dev/null; then
+        echo "Already found"
+        return
+    fi
+
     # We need to add a new remote for the upstream target branch, since this
     # script could be running in a personal fork of the repository which has out
     # of date branches.
