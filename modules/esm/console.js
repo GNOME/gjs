@@ -618,6 +618,7 @@ class Console {
 
         GLib.log_structured(this[sLogDomain], severity, {
             MESSAGE: formattedOutput,
+            ...options?.fields ?? {},
         });
     }
 }
