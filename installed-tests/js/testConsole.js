@@ -12,13 +12,41 @@ import {decodedStringMatching} from './matchers.js';
 function objectContainingLogMessage(
     message,
     domain = DEFAULT_LOG_DOMAIN,
-    fields = {}
+    fields = {},
+    messageMatcher = decodedStringMatching
 ) {
     return jasmine.objectContaining({
-        MESSAGE: decodedStringMatching(message),
+        MESSAGE: messageMatcher(message),
         GLIB_DOMAIN: decodedStringMatching(domain),
         ...fields,
     });
+}
+
+function matchStackTrace(log, sourceFile = null, encoding = 'utf-8') {
+    const matcher = jasmine.stringMatching(log);
+    const stackLineMatcher = jasmine.stringMatching(/^[\w./<]*@.*:\d+:\d+/);
+    const sourceMatcher = sourceFile ? jasmine.stringMatching(RegExp(
+        String.raw`^[\w]*@(file|resource):\/\/\/.*\/${sourceFile}\.js:\d+:\d+$`))
+        : stackLineMatcher;
+
+    return {
+        asymmetricMatch(compareTo) {
+            const decoder = new TextDecoder(encoding);
+            const decoded = decoder.decode(new Uint8Array(Array.from(compareTo)));
+            const lines = decoded.split('\n').filter(l => !!l.length);
+
+            if (!matcher.asymmetricMatch(lines[0]))
+                return false;
+
+            if (!sourceMatcher.asymmetricMatch(lines[1]))
+                return false;
+
+            return lines.slice(2).every(l => stackLineMatcher.asymmetricMatch(l));
+        },
+        jasmineToString() {
+            return `<decodedStringMatching(${log})>`;
+        },
+    };
 }
 
 describe('console', function () {
@@ -100,6 +128,30 @@ describe('console', function () {
             GLib.LogLevelFlags.LEVEL_INFO,
             objectContainingLogMessage('an informative message')
         );
+        writer_func.calls.reset();
+    });
+
+    it('traces a line', function () {
+        console.trace('a trace');
+
+        expect(writer_func).toHaveBeenCalledOnceWith(
+            GLib.LogLevelFlags.LEVEL_MESSAGE,
+            objectContainingLogMessage('a trace', DEFAULT_LOG_DOMAIN, {},
+                message => matchStackTrace(message, 'testConsole'))
+        );
+
+        writer_func.calls.reset();
+    });
+
+    it('traces a empty message', function () {
+        console.trace();
+
+        expect(writer_func).toHaveBeenCalledOnceWith(
+            GLib.LogLevelFlags.LEVEL_MESSAGE,
+            objectContainingLogMessage('Trace', DEFAULT_LOG_DOMAIN,
+                message => matchStackTrace(message, 'testConsole'))
+        );
+
         writer_func.calls.reset();
     });
 

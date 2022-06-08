@@ -209,7 +209,7 @@ class Console {
             stackTrace:
                 // We remove the first line to avoid logging this line as part
                 // of the trace.
-                new Error().stack?.split('\n', 2)?.[1],
+                new Error().stack?.split('\n').slice(1),
         });
     }
 
@@ -538,7 +538,7 @@ class Console {
 
     /**
      * @typedef {object} PrinterOptions
-     * @param {string} [stackTrace] an error stacktrace to append
+     * @param {Array.<string[]>} [stackTrace] an error stacktrace to append
      * @param {Record<string, any>} [fields] fields to include in the structured
      *   logging call
      */
@@ -612,8 +612,13 @@ class Console {
         let formattedOutput = this[sGroupIndentation] + output;
 
         if (logLevel === 'trace') {
-            formattedOutput =
-                `${output}\n${options?.stackTrace}` ?? 'No trace available';
+            if (options?.stackTrace?.length) {
+                formattedOutput += `\n${options.stackTrace.map(s =>
+                    `${this[sGroupIndentation]}${s}`).join('\n')}`;
+            } else {
+                formattedOutput +=
+                    `\n${this[sGroupIndentation]}No trace available`;
+            }
         }
 
         GLib.log_structured(this[sLogDomain], severity, {
