@@ -122,6 +122,9 @@ echo "Doing: $1 $extra_opts"
 
 do_Create_Artifacts_Folder "$1"
 
+# Ignore extra git security checks as we don't care in CI.
+git config --global --add safe.directory "${PWD}"
+
 if test "$1" = "SETUP"; then
     do_Show_Info
     do_Print_Labels 'Show GJS git information'
