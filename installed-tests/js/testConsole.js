@@ -202,6 +202,7 @@ describe('console', function () {
             warn: GLib.LogLevelFlags.LEVEL_WARNING,
             info: GLib.LogLevelFlags.LEVEL_INFO,
             error: GLib.LogLevelFlags.LEVEL_CRITICAL,
+            trace: GLib.LogLevelFlags.LEVEL_MESSAGE,
         };
 
         Object.entries(functions).forEach(([fn, level]) => {

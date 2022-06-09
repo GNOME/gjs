@@ -205,12 +205,8 @@ class Console {
         if (data.length === 0)
             data = ['Trace'];
 
-        this[sPrinter]('trace', data, {
-            stackTrace:
-                // We remove the first line to avoid logging this line as part
-                // of the trace.
-                new Error().stack?.split('\n').slice(1),
-        });
+        const {[sLogger]: Logger} = this;
+        Logger('trace', data);
     }
 
     /**
@@ -612,9 +608,20 @@ class Console {
         let formattedOutput = this[sGroupIndentation] + output;
         const extraFields = {};
 
+        let stackTrace = options?.stackTrace;
+        if (!stackTrace && logLevel === 'trace') {
+            stackTrace = new Error().stack;
+            const currentFile = stackTrace.match(/^[^@]*@(.*):\d+:\d+$/m)?.at(1);
+            const index = stackTrace.lastIndexOf(currentFile) + currentFile.length;
+
+            stackTrace = stackTrace.substring(index).split('\n');
+            // Remove the remainder of the first line
+            stackTrace.shift();
+        }
+
         if (logLevel === 'trace') {
-            if (options?.stackTrace?.length) {
-                formattedOutput += `\n${options.stackTrace.map(s =>
+            if (stackTrace?.length) {
+                formattedOutput += `\n${stackTrace.map(s =>
                     `${this[sGroupIndentation]}${s}`).join('\n')}`;
             } else {
                 formattedOutput +=
@@ -622,8 +629,8 @@ class Console {
             }
         }
 
-        if (options?.stackTrace?.length) {
-            const [stackLine] = options.stackTrace;
+        if (stackTrace?.length) {
+            const [stackLine] = stackTrace;
             const match = stackLine.match(/^([^@]*)@(.*):(\d+):\d+$/);
 
             if (match) {
