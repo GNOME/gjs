@@ -21,6 +21,7 @@ function _connect(name, callback) {
     // gets connected.
     if (this._signalConnections === undefined) {
         this._signalConnections = Object.create(null);
+        this._signalConnectionsByName = Object.create(null);
         this._nextConnectionId = 1;
     }
 
@@ -28,9 +29,15 @@ function _connect(name, callback) {
     this._nextConnectionId += 1;
 
     this._signalConnections[id] = {
-        name,
         callback,
     };
+
+    const connectionsByName = this._signalConnectionsByName[name] ?? [];
+
+    if (!connectionsByName.size)
+        this._signalConnectionsByName[name] = connectionsByName;
+    connectionsByName.push(id);
+
     return id;
 }
 
@@ -45,6 +52,8 @@ function _disconnect(id) {
 
     connection.disconnected = true;
     delete this._signalConnections[id];
+    Object.values(this._signalConnectionsByName).forEach(ids =>
+        ids.splice(ids.indexOf(id, 1)));
 }
 
 function _signalHandlerIsConnected(id) {
@@ -53,24 +62,23 @@ function _signalHandlerIsConnected(id) {
 }
 
 function _disconnectAll() {
-    if (!this._signalConnections)
-        return;
-
-    Object.values(this._signalConnections).forEach(c => (c.disconnected = true));
+    Object.values(this._signalConnections ?? {}).forEach(c => (c.disconnected = true));
     delete this._signalConnections;
+    delete this._signalConnectionsByName;
 }
 
 function _emit(name, ...args) {
+    const connections = this._signalConnectionsByName?.[name];
+
     // may not be any signal handlers at all, if not then return
-    if (this._signalConnections === undefined)
+    if (!connections)
         return;
 
     // To deal with re-entrancy (removal/addition while
     // emitting), we copy out a list of what was connected
     // at emission start; and just before invoking each
     // handler we check its disconnected flag.
-    const handlers = Object.values(this._signalConnections).filter(
-        c => c.name === name);
+    const handlers = connections.map(id => this._signalConnections[id]);
 
     // create arg array which is emitter + everything passed in except
     // signal name. Would be more convenient not to pass emitter to
