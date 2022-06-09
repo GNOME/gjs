@@ -55,7 +55,10 @@ function _disconnect(id) {
     delete this._signalConnections[id];
 
     const ids = this._signalConnectionsByName[connection.name];
-    ids.splice(ids.indexOf(id, 1));
+    ids?.splice(ids.indexOf(id, 1));
+
+    if (ids?.length === 0)
+        delete this._signalConnectionsByName[connection.name];
 }
 
 function _signalHandlerIsConnected(id) {
