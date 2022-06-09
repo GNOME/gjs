@@ -132,12 +132,19 @@ describe('console', function () {
     });
 
     it('traces a line', function () {
-        console.trace('a trace');
+        // eslint-disable-next-line max-statements-per-line
+        console.trace('a trace'); const error = new Error();
+
+        const [_, currentFile, errorLine] = error.stack.split('\n').at(0).match(
+            /^[^@]*@(.*):(\d+):\d+$/);
 
         expect(writer_func).toHaveBeenCalledOnceWith(
             GLib.LogLevelFlags.LEVEL_MESSAGE,
-            objectContainingLogMessage('a trace', DEFAULT_LOG_DOMAIN, {},
-                message => matchStackTrace(message, 'testConsole'))
+            objectContainingLogMessage('a trace', DEFAULT_LOG_DOMAIN, {
+                CODE_FILE: decodedStringMatching(currentFile),
+                CODE_LINE: decodedStringMatching(errorLine),
+            },
+            message => matchStackTrace(message, 'testConsole'))
         );
 
         writer_func.calls.reset();
@@ -146,10 +153,15 @@ describe('console', function () {
     it('traces a empty message', function () {
         console.trace();
 
+        const [_, currentFile] = new Error().stack.split('\n').at(0).match(
+            /^[^@]*@(.*):\d+:\d+$/);
+
         expect(writer_func).toHaveBeenCalledOnceWith(
             GLib.LogLevelFlags.LEVEL_MESSAGE,
-            objectContainingLogMessage('Trace', DEFAULT_LOG_DOMAIN,
-                message => matchStackTrace(message, 'testConsole'))
+            objectContainingLogMessage('Trace', DEFAULT_LOG_DOMAIN, {
+                CODE_FILE: decodedStringMatching(currentFile),
+            },
+            message => matchStackTrace(message, 'testConsole'))
         );
 
         writer_func.calls.reset();

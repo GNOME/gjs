@@ -610,6 +610,7 @@ class Console {
             .join(' ');
 
         let formattedOutput = this[sGroupIndentation] + output;
+        const extraFields = {};
 
         if (logLevel === 'trace') {
             if (options?.stackTrace?.length) {
@@ -621,8 +622,25 @@ class Console {
             }
         }
 
+        if (options?.stackTrace?.length) {
+            const [stackLine] = options.stackTrace;
+            const match = stackLine.match(/^([^@]*)@(.*):(\d+):\d+$/);
+
+            if (match) {
+                const [_, func, file, line] = match;
+
+                if (func)
+                    extraFields.CODE_FUNC = func;
+                if (file)
+                    extraFields.CODE_FILE = file;
+                if (line)
+                    extraFields.CODE_LINE = line;
+            }
+        }
+
         GLib.log_structured(this[sLogDomain], severity, {
             MESSAGE: formattedOutput,
+            ...extraFields,
             ...options?.fields ?? {},
         });
     }
