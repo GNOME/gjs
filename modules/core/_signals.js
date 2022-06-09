@@ -29,6 +29,7 @@ function _connect(name, callback) {
     this._nextConnectionId += 1;
 
     this._signalConnections[id] = {
+        name,
         callback,
     };
 
@@ -52,8 +53,9 @@ function _disconnect(id) {
 
     connection.disconnected = true;
     delete this._signalConnections[id];
-    Object.values(this._signalConnectionsByName).forEach(ids =>
-        ids.splice(ids.indexOf(id, 1)));
+
+    const ids = this._signalConnectionsByName[connection.name];
+    ids.splice(ids.indexOf(id, 1));
 }
 
 function _signalHandlerIsConnected(id) {
