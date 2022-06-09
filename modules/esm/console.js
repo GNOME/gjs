@@ -609,7 +609,8 @@ class Console {
         const extraFields = {};
 
         let stackTrace = options?.stackTrace;
-        if (!stackTrace && logLevel === 'trace') {
+        if (!stackTrace &&
+            (logLevel === 'trace' || severity <= GLib.LogLevelFlags.LEVEL_WARNING)) {
             stackTrace = new Error().stack;
             const currentFile = stackTrace.match(/^[^@]*@(.*):\d+:\d+$/m)?.at(1);
             const index = stackTrace.lastIndexOf(currentFile) + currentFile.length;

@@ -65,6 +65,16 @@ describe('console', function () {
         domain = DEFAULT_LOG_DOMAIN,
         fields = {}
     ) {
+        if (logLevel < GLib.LogLevelFlags.LEVEL_WARNING) {
+            const [_, currentFile] = new Error().stack.split('\n').at(0).match(
+                /^[^@]*@(.*):\d+:\d+$/);
+
+            fields = {
+                ...fields,
+                CODE_FILE: decodedStringMatching(currentFile),
+            };
+        }
+
         expect(writer_func).toHaveBeenCalledOnceWith(
             logLevel,
             objectContainingLogMessage(message, domain, fields)
