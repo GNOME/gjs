@@ -63,6 +63,9 @@ function testSignals(klass) {
         // clean up the last handler
         foo.disconnect(firstId);
 
+        expect(() => foo.disconnect(firstId)).toThrowError(
+            `No signal connection ${firstId} found`);
+
         // poke in private implementation to sanity-check no handlers left
         expect(foo._signalConnections.length).toEqual(0);
     });
