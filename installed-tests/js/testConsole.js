@@ -177,6 +177,29 @@ describe('console', function () {
         writer_func.calls.reset();
     });
 
+    it('asserts a true condition', function () {
+        console.assert(true, 'no printed');
+        expect(writer_func).not.toHaveBeenCalled();
+
+        writer_func.calls.reset();
+    });
+
+    it('asserts a false condition', function () {
+        console.assert(false);
+
+        expectLog('Assertion failed', GLib.LogLevelFlags.LEVEL_CRITICAL);
+
+        writer_func.calls.reset();
+    });
+
+    it('asserts a false condition with message', function () {
+        console.assert(false, 'asserts false is not true');
+
+        expectLog('asserts false is not true', GLib.LogLevelFlags.LEVEL_CRITICAL);
+
+        writer_func.calls.reset();
+    });
+
     describe('clear()', function () {
         it('can be called', function () {
             console.clear();
