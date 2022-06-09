@@ -20,44 +20,43 @@ function _connect(name, callback) {
     // we instantiate the "signal machinery" only on-demand if anything
     // gets connected.
     if (this._signalConnections === undefined) {
-        this._signalConnections = [];
+        this._signalConnections = Object.create(null);
         this._nextConnectionId = 1;
     }
 
     const id = this._nextConnectionId;
     this._nextConnectionId += 1;
 
-    // this makes it O(n) in total connections to emit, but I think
-    // it's right to optimize for low memory and reentrancy-safety
-    // rather than speed
-    this._signalConnections.push({
-        id,
+    this._signalConnections[id] = {
         name,
         callback,
-    });
+    };
     return id;
 }
 
 function _disconnect(id) {
-    const connectionIdx = this._signalConnections?.findIndex(c => c.id === id);
+    const connection = this._signalConnections?.[id];
 
-    if (connectionIdx === undefined || connectionIdx === -1)
+    if (!connection)
         throw new Error(`No signal connection ${id} found`);
 
-    const connection = this._signalConnections[connectionIdx];
     if (connection.disconnected)
         throw new Error(`Signal handler id ${id} already disconnected`);
 
     connection.disconnected = true;
-    this._signalConnections.splice(connectionIdx, 1);
+    delete this._signalConnections[id];
 }
 
 function _signalHandlerIsConnected(id) {
-    return !!this._signalConnections?.some(c => c.id === id && !c.disconnected);
+    const connection = this._signalConnections?.[id];
+    return !!connection && !connection.disconnected;
 }
 
 function _disconnectAll() {
-    this._signalConnections?.forEach(c => (c.disconnected = true));
+    if (!this._signalConnections)
+        return;
+
+    Object.values(this._signalConnections).forEach(c => (c.disconnected = true));
     delete this._signalConnections;
 }
 
@@ -70,7 +69,8 @@ function _emit(name, ...args) {
     // emitting), we copy out a list of what was connected
     // at emission start; and just before invoking each
     // handler we check its disconnected flag.
-    const handlers = this._signalConnections.filter(c => c.name === name);
+    const handlers = Object.values(this._signalConnections).filter(
+        c => c.name === name);
 
     // create arg array which is emitter + everything passed in except
     // signal name. Would be more convenient not to pass emitter to
