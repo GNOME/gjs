@@ -78,7 +78,7 @@ class JSTracer;
 #if defined(__x86_64__) && defined(__clang__)
 /* This isn't meant to be comprehensive, but should trip on at least one CI job
  * if sizeof(ObjectInstance) is increased. */
-static_assert(sizeof(ObjectInstance) <= 48,
+static_assert(sizeof(ObjectInstance) <= 64,
               "Think very hard before increasing the size of ObjectInstance. "
               "There can be tens of thousands of them alive in a typical "
               "gnome-shell run.");
@@ -1697,19 +1697,18 @@ bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     return true;
 }
 
-static void invalidate_closure_list(std::forward_list<GClosure*>* closures,
-                                    void* data, GClosureNotify notify_func) {
+static void invalidate_closure_vector(std::vector<GClosure*>* closures,
+                                      void* data, GClosureNotify notify_func) {
     g_assert(closures);
     g_assert(notify_func);
 
-    auto before = closures->before_begin();
     for (auto it = closures->begin(); it != closures->end();) {
         // This will also free the closure data, through the closure
         // invalidation mechanism, but adding a temporary reference to
         // ensure that the closure is still valid when calling invalidation
         // notify callbacks
-        GjsAutoGClosure closure(closures->front(), GjsAutoTakeOwnership());
-        it = closures->erase_after(before);
+        GjsAutoGClosure closure(*it, GjsAutoTakeOwnership());
+        it = closures->erase(it);
 
         // Only call the invalidate notifiers that won't touch this vector
         g_closure_remove_invalidate_notifier(closure, data, notify_func);
@@ -1967,7 +1966,7 @@ ObjectInstance::~ObjectInstance() {
 }
 
 ObjectPrototype::~ObjectPrototype() {
-    invalidate_closure_list(&m_vfuncs, this, &vfunc_invalidated_notify);
+    invalidate_closure_vector(&m_vfuncs, this, &vfunc_invalidated_notify);
 
     g_type_class_unref(g_type_class_peek(m_gtype));
 
@@ -2104,7 +2103,7 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
 
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
-    m_closures.push_front(closure);
+    m_closures.push_back(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
 
@@ -2114,11 +2113,12 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
     // This callback should *only* touch m_closures
     auto* priv = static_cast<ObjectInstance*>(data);
-    priv->m_closures.remove(closure);
+    Gjs::remove_one_from_unsorted_vector(&priv->m_closures, closure);
 }
 
 void ObjectInstance::invalidate_closures() {
-    invalidate_closure_list(&m_closures, this, &closure_invalidated_notify);
+    invalidate_closure_vector(&m_closures, this, &closure_invalidated_notify);
+    m_closures.shrink_to_fit();
 }
 
 bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -3024,7 +3024,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(), trampoline) ==
                      m_vfuncs.end() &&
                  "This vfunc was already associated with this class");
-        m_vfuncs.push_front(trampoline);
+        m_vfuncs.push_back(trampoline);
         g_closure_add_invalidate_notifier(
             trampoline, this, &ObjectPrototype::vfunc_invalidated_notify);
         g_closure_add_invalidate_notifier(
@@ -3040,7 +3040,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 void ObjectPrototype::vfunc_invalidated_notify(void* data, GClosure* closure) {
     // This callback should *only* touch m_vfuncs
     auto* priv = static_cast<ObjectPrototype*>(data);
-    priv->m_vfuncs.remove(closure);
+    Gjs::remove_one_from_unsorted_vector(&priv->m_vfuncs, closure);
 }
 
 bool
