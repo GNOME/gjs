@@ -10,7 +10,6 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint32_t
 
-#include <forward_list>
 #include <functional>
 #include <vector>
 
@@ -197,7 +196,7 @@ class ObjectPrototype
     FieldCache m_field_cache;
     NegativeLookupCache m_unresolvable_cache;
     // a list of vfunc GClosures installed on this prototype, used when tracing
-    std::forward_list<GClosure*> m_vfuncs;
+    std::vector<GClosure*> m_vfuncs;
     // a list of interface types explicitly associated with this prototype,
     // by gjs_add_interface
     std::vector<GType> m_interface_gtypes;
@@ -295,7 +294,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GjsMaybeOwned<JSObject*> m_wrapper;
     // a list of all GClosures installed on this object (from signal connections
     // and scope-notify callbacks passed to methods), used when tracing
-    std::forward_list<GClosure*> m_closures;
+    std::vector<GClosure*> m_closures;
 
     bool m_wrapper_finalized : 1;
     bool m_gobj_disposed : 1;
