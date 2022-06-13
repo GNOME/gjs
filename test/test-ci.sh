@@ -25,6 +25,11 @@ do_Get_Upstream_Base () {
     echo '-----------------------------------------'
     echo 'Finding common ancestor'
 
+    if git show-branch ci-upstream-base-branch 2> /dev/null; then
+        echo "Already found"
+        return
+    fi
+
     # We need to add a new remote for the upstream target branch, since this
     # script could be running in a personal fork of the repository which has out
     # of date branches.
@@ -121,6 +126,9 @@ echo "Configure options: ${CONFIG_OPTS-$BUILD_OPTS}"
 echo "Doing: $1 $extra_opts"
 
 do_Create_Artifacts_Folder "$1"
+
+# Ignore extra git security checks as we don't care in CI.
+git config --global --add safe.directory "${PWD}"
 
 if test "$1" = "SETUP"; then
     do_Show_Info
