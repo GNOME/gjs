@@ -24,13 +24,17 @@
     }
 
     function prettyPrint(value) {
-        const printedObjects = new WeakSet();
-        switch (typeof value) {
-        case 'object':
-            return formatObject(value, printedObjects);
-        case 'function':
-            return formatFunction(value);
-        default:
+        if (value.toString === Object.prototype.toString || value.toString === Array.prototype.toString || value.toString === Function.prototype.toString || value.toString === Date.prototype.toString) {
+            const printedObjects = new WeakSet();
+            switch (typeof value) {
+            case 'object':
+                return formatObject(value, printedObjects);
+            case 'function':
+                return formatFunction(value);
+            default:
+                return value.toString();
+            }
+        } else {
             return value.toString();
         }
     }
@@ -42,6 +46,9 @@
 
         if (obj instanceof Date)
             return formatDate(obj);
+
+        if (obj[Symbol.toStringTag] === 'GIRepositoryNamespace')
+            return obj.toString();
 
         const formattedObject = [];
         for (const [key, value] of Object.entries(obj)) {
