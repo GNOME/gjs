@@ -74,7 +74,8 @@ class TapReporter {
             tapReport = 'ok';
         }
         tapReport += ` ${this._specCount} ${result.fullName}`;
-        if (result.status === 'pending' || result.status === 'disabled') {
+        if (result.status === 'pending' || result.status === 'disabled' ||
+            result.status === 'excluded') {
             let reason = result.pendingReason || result.status;
             tapReport += ` # SKIP ${reason}`;
         }
