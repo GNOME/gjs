@@ -153,11 +153,9 @@ const struct JSClass UnionBase::klass = {
 };
 // clang-format on
 
-bool
-gjs_define_union_class(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIUnionInfo     *info)
-{
+bool UnionPrototype::define_class(JSContext* context,
+                                  JS::HandleObject in_object,
+                                  GIUnionInfo* info) {
     GType gtype;
     JS::RootedObject prototype(context), constructor(context);
 
@@ -174,11 +172,8 @@ gjs_define_union_class(JSContext       *context,
                                           &constructor, &prototype);
 }
 
-JSObject*
-gjs_union_from_c_union(JSContext    *context,
-                       GIUnionInfo  *info,
-                       void         *gboxed)
-{
+JSObject* UnionInstance::new_for_c_union(JSContext* context, GIUnionInfo* info,
+                                         void* gboxed) {
     GType gtype;
 
     if (!gboxed)

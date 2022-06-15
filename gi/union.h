@@ -58,6 +58,11 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
 
     // Overrides GIWrapperPrototype::constructor_nargs().
     [[nodiscard]] unsigned constructor_nargs(void) const { return 0; }
+
+ public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+                             GIUnionInfo* info);
 };
 
 class UnionInstance
@@ -73,6 +78,10 @@ class UnionInstance
                           const JS::CallArgs& args);
 
  public:
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* new_for_c_union(JSContext* cx, GIUnionInfo* info,
+                                     void* gboxed);
+
     /*
      * UnionInstance::copy_union:
      *
@@ -84,15 +93,5 @@ class UnionInstance
     GJS_JSAPI_RETURN_CONVENTION
     static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
 };
-
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_union_class(JSContext       *context,
-                            JS::HandleObject in_object,
-                            GIUnionInfo     *info);
-
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_union_from_c_union       (JSContext    *context,
-                                        GIUnionInfo  *info,
-                                        void         *gboxed);
 
 #endif  // GI_UNION_H_

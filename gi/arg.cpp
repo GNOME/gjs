@@ -2681,7 +2681,7 @@ gjs_value_from_g_argument (JSContext             *context,
             }
 
             if (interface_type == GI_INFO_TYPE_UNION) {
-                JSObject* obj = gjs_union_from_c_union(
+                JSObject* obj = UnionInstance::new_for_c_union(
                     context, static_cast<GIUnionInfo*>(interface_info),
                     gjs_arg_get<void*>(arg));
                 if (!obj)

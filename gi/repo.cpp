@@ -407,7 +407,8 @@ gjs_define_info(JSContext       *context,
             return false;
         break;
     case GI_INFO_TYPE_UNION:
-        if (!gjs_define_union_class(context, in_object, (GIUnionInfo*) info))
+        if (!UnionPrototype::define_class(context, in_object,
+                                          (GIUnionInfo*)info))
             return false;
         break;
     case GI_INFO_TYPE_ENUM:

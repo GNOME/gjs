@@ -1030,7 +1030,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
             else
                 obj = BoxedInstance::new_for_c_struct(context, info, gboxed);
         } else if (type == GI_INFO_TYPE_UNION) {
-            obj = gjs_union_from_c_union(context, info, gboxed);
+            obj = UnionInstance::new_for_c_union(context, info, gboxed);
         } else {
             gjs_throw(context, "Unexpected introspection type %d for %s",
                       info.type(), g_type_name(gtype));
