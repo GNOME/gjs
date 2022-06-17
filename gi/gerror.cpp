@@ -28,11 +28,11 @@
 #include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
-#include "gi/boxed.h"
 #include "gi/enumeration.h"
 #include "gi/gerror.h"
 #include "gi/info.h"
 #include "gi/repo.h"
+#include "gi/struct.h"
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
@@ -134,11 +134,11 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
 
     Gjs::AutoChar descr;
 
-    // An error created via `new GLib.Error` will have a Boxed* private pointer,
-    // not an Error*, so we can't call regular to_string() on it.
-    if (BoxedBase::typecheck(context, self, G_TYPE_ERROR,
-                             GjsTypecheckNoThrow{})) {
-        auto* gerror = BoxedBase::to_c_ptr<GError>(context, self);
+    // An error created via `new GLib.Error` will have a Struct* private
+    // pointer, not an Error*, so we can't call regular to_string() on it.
+    if (StructBase::typecheck(context, self, G_TYPE_ERROR,
+                              GjsTypecheckNoThrow{})) {
+        auto* gerror = StructBase::to_c_ptr<GError>(context, self);
         if (!gerror)
             return false;
         descr =
@@ -369,7 +369,7 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
         /* Marshal the error as a plain GError */
         GI::AutoStructInfo glib_boxed{
             repo.find_by_name<GI::InfoTag::STRUCT>("GLib", "Error").value()};
-        return BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
+        return StructInstance::new_for_c_struct(context, glib_boxed, gerror);
     }
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct %s with JSObject",
@@ -390,8 +390,8 @@ GError* ErrorBase::to_c_ptr(JSContext* cx, JS::HandleObject obj) {
     /* If this is a plain GBoxed (i.e. a GError without metadata),
        delegate marshalling.
     */
-    if (BoxedBase::typecheck(cx, obj, G_TYPE_ERROR, GjsTypecheckNoThrow{}))
-        return BoxedBase::to_c_ptr<GError>(cx, obj);
+    if (StructBase::typecheck(cx, obj, G_TYPE_ERROR, GjsTypecheckNoThrow{}))
+        return StructBase::to_c_ptr<GError>(cx, obj);
 
     return GIWrapperBase::to_c_ptr<GError>(cx, obj);
 }
@@ -427,14 +427,14 @@ bool ErrorBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
 
 // Overrides GIWrapperBase::typecheck()
 bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj) {
-    if (BoxedBase::typecheck(cx, obj, G_TYPE_ERROR, GjsTypecheckNoThrow{}))
+    if (StructBase::typecheck(cx, obj, G_TYPE_ERROR, GjsTypecheckNoThrow{}))
         return true;
     return GIWrapperBase::typecheck(cx, obj, G_TYPE_ERROR);
 }
 
 bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj,
                           GjsTypecheckNoThrow no_throw) {
-    if (BoxedBase::typecheck(cx, obj, G_TYPE_ERROR, no_throw))
+    if (StructBase::typecheck(cx, obj, G_TYPE_ERROR, no_throw))
         return true;
     return GIWrapperBase::typecheck(cx, obj, G_TYPE_ERROR, no_throw);
 }

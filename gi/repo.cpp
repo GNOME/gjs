@@ -30,7 +30,6 @@
 #include <mozilla/ScopeExit.h>
 
 #include "gi/arg.h"
-#include "gi/boxed.h"
 #include "gi/enumeration.h"
 #include "gi/function.h"
 #include "gi/fundamental.h"
@@ -41,6 +40,7 @@
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/repo.h"
+#include "gi/struct.h"
 #include "gi/union.h"
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
@@ -337,7 +337,8 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
     }
 
     if (struct_info)
-        return BoxedPrototype::define_class(cx, in_object, struct_info.value());
+        return StructPrototype::define_class(cx, in_object,
+                                             struct_info.value());
 
     if (auto union_info = info.as<GI::InfoTag::UNION>())
         return UnionPrototype::define_class(cx, in_object, union_info.value());

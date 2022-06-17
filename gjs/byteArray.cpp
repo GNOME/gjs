@@ -22,7 +22,7 @@
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for JS_NewPlainObject
 
-#include "gi/boxed.h"
+#include "gi/struct.h"
 #include "gjs/atoms.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
@@ -121,10 +121,10 @@ from_gbytes_func(JSContext *context,
                              "bytes", &bytes_obj))
         return false;
 
-    if (!BoxedBase::typecheck(context, bytes_obj, G_TYPE_BYTES))
+    if (!StructBase::typecheck(context, bytes_obj, G_TYPE_BYTES))
         return false;
 
-    gbytes = BoxedBase::to_c_ptr<GBytes>(context, bytes_obj);
+    gbytes = StructBase::to_c_ptr<GBytes>(context, bytes_obj);
     if (!gbytes)
         return false;
 

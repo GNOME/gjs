@@ -423,6 +423,7 @@ libgjs_sources = [
     'gi/param.cpp', 'gi/param.h',
     'gi/private.cpp', 'gi/private.h',
     'gi/repo.cpp', 'gi/repo.h',
+    'gi/struct.cpp', 'gi/struct.h',
     'gi/toggle.cpp', 'gi/toggle.h',
     'gi/union.cpp', 'gi/union.h',
     'gi/utils-inl.h',
