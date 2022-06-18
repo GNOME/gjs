@@ -441,4 +441,42 @@ describe('Gdk Events', function () {
         expect(event.y).toBe(1.2);
         expect(event.window).toBe(win.get_window());
     });
+
+    it('can construct generic with an empty property bag', function () {
+        const e = new Gdk.Event({});
+        expect(e.type).toBe(0);
+        expect(e.any).toEqual(jasmine.any(Gdk.EventAny));
+        expect(e.any.type).toBe(0);
+        expect(e.any.window).toBeNull();
+        expect(e.any.send_event).toBe(0);
+    });
+
+    it('can construct generic with sub-type property', function () {
+        const win = new Gtk.OffscreenWindow();
+        win.realize();
+
+        const keyEvent = new Gdk.EventKey({
+            type: Gdk.EventType.KEY_PRESS,
+            state: 25,
+            send_event: 35,
+            keyval: Gdk.KEY_Return,
+            window: win.get_window(),
+        });
+
+        const event = new Gdk.Event({key: keyEvent});
+        expect(event.type).toBe(Gdk.EventType.KEY_PRESS);
+        expect(event.any.type).toBe(Gdk.EventType.KEY_PRESS);
+        expect(event.any.send_event).toBe(35);
+        expect(event.any.window).toBe(win.get_window());
+        expect(event.key.type).toBe(Gdk.EventType.KEY_PRESS);
+        expect(event.key.state).toBe(25);
+        expect(event.key.send_event).toBe(35);
+        expect(event.key.keyval).toBe(Gdk.KEY_Return);
+        expect(event.key.window).toBe(win.get_window());
+
+        expect(event.get_window()).toBe(win.get_window());
+        expect(event.get_keyval()).toEqual([true, Gdk.KEY_Return]);
+
+        expect(() => new Gdk.Event({motion: new Gdk.EventKey({state: 25})})).toThrow();
+    });
 });

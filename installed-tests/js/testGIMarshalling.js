@@ -1457,6 +1457,55 @@ describe('Structured union', function () {
             expect(() => (invObj ?? member.parent).inv()).not.toThrow();
         });
 
+        it('cannot be constructed with private field', function () {
+            expect(() => new GIMarshallingTests.StructuredUnion({
+                type: unionType,
+            })).toThrow();
+        });
+
+        it(`can be constructed with member value ${memberType}`, function () {
+            if (unionType === GIMarshallingTests.StructuredUnionType.NONE)
+                return;
+
+            const member = new GIMarshallingTests[`StructuredUnion${memberType}`]();
+            if (unionType === GIMarshallingTests.StructuredUnionType.SINGLE_UNION) {
+                expect(member.parent.type).toBe(GIMarshallingTests.StructuredUnionType.NONE);
+                member.parent.type = unionType;
+            } else {
+                expect(member.type).toBe(GIMarshallingTests.StructuredUnionType.NONE);
+                member.type = unionType;
+            }
+
+            const union = new GIMarshallingTests.StructuredUnion({
+                [unionTypeName.toLowerCase()]: member,
+            });
+            expect(union.type()).toBe(unionType);
+        });
+
+        it(`can be constructed from constructed member ${memberType}`, function () {
+            if (unionType === GIMarshallingTests.StructuredUnionType.NONE)
+                return;
+
+            const baseUnion = new GIMarshallingTests.StructuredUnion(unionType);
+            const prop = unionTypeName.toLowerCase();
+            const member = baseUnion[prop];
+
+            const union = new GIMarshallingTests.StructuredUnion({[prop]: member});
+            expect(union.type()).toBe(baseUnion.type());
+            expect(union.type()).toBe(member.type ?? member.parent.type);
+            // expect(union._type).toBe(baseUnion._type);
+        });
+    });
+
+    it('can be constructed from boxed struct property', function () {
+        const member = new GIMarshallingTests.StructuredUnionBoxedStruct();
+        member.parent = GIMarshallingTests.boxed_struct_returnv();
+        const union = new GIMarshallingTests.StructuredUnion({
+            'boxed_struct': member,
+        });
+        expect(union.boxed_struct.parent.long_).toBe(42);
+        expect(union.boxed_struct.parent.string_).toBe('hello');
+        expect(union.boxed_struct.parent.g_strv).toEqual(['0', '1', '2']);
     });
 
     it('can be created with a default constructor', function () {

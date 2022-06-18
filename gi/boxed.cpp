@@ -17,6 +17,7 @@
 #include <glib-object.h>
 
 #include <js/CallArgs.h>
+#include <js/Class.h>        // for ESClass
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashMap
@@ -369,21 +370,35 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
     } else if (proto->can_allocate_directly_without_pointers()) {
         allocate_directly();
     } else if (proto->has_default_constructor()) {
-        /* for simplicity, we simply delegate all the work to the actual JS
-         * constructor function (which we retrieve from the JS constructor,
-         * that is, Namespace.BoxedType, or object.constructor, given that
-         * object was created with the right prototype. */
-        if (!invoke_static_method(context, obj,
-                                  proto->default_constructor_name(), args))
-            return false;
+        js::ESClass es_class = js::ESClass::Other;
+        if (proto->can_allocate_directly() && args.length() == 1 && args[0].isObject()) {
+            JS::RootedObject arg0{context, &args[0].toObject()};
+            if (!JS::GetBuiltinClass(context, arg0, &es_class))
+                return false;
+        }
 
-        // The return value of the JS constructor gets its own BoxedInstance,
-        // and this one is discarded.
-        debug_lifecycle(
-            "Boxed construction delegated to JS constructor, "
-            "boxed object discarded");
+        if (es_class == js::ESClass::Object) {
+            // If one argument is passed and it's a plain object, assume we are
+            // constructing from a property bag. Introspected constructors
+            // should not take a property bag as argument.
+            allocate_directly();
+        } else {
+            // for simplicity, we simply delegate all the work to the actual JS
+            // constructor function (which we retrieve from the JS constructor,
+            // that is, Namespace.BoxedType, or object.constructor, given that
+            // object was created with the right prototype.
+            if (!invoke_static_method(
+                    context, obj, proto->default_constructor_name(), args))
+                return false;
 
-        return true;
+            // The return value of the JS constructor gets its own
+            // BoxedInstance, and this one is discarded.
+            debug_lifecycle(
+                "Boxed construction delegated to JS constructor, boxed object "
+                "discarded");
+
+            return true;
+        }
     } else if (proto->can_allocate_directly()) {
         allocate_directly();
     } else {
