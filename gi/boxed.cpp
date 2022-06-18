@@ -615,21 +615,38 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
         return false;
     }
 
-    JS::RootedObject proto{context,
-                           gjs_lookup_generic_prototype(context, boxed_info)};
-
-    if (!proto)
-        return false;
-
     /* If we can't directly copy from the source object we need
      * to construct a new temporary object.
      */
     FieldBase* source_priv = nullptr;
+    bool field_has_same_info = false;
+
     if constexpr (std::is_same_v<FieldBase, Base>) {
-        if (info() == boxed_info)
-            source_priv = get_copy_source(context, value);
+        field_has_same_info = info() == boxed_info;
+        if (field_has_same_info) {
+            JS::RootedObject object{context, &value.toObject()};
+            source_priv = FieldBase::for_js(context, object);
+        }
     }
+
+    if (!source_priv && !field_has_same_info) {
+        JS::RootedObject object{context, &value.toObject()};
+        source_priv = FieldBase::for_js(context, object);
+
+        if (source_priv && source_priv->info() != boxed_info) {
+            std::string source_name{source_priv->format_name()};
+            gjs_throw(context, "Impossible to associate a %s to a %s.%s field",
+                      source_name.c_str(), name(), field_info.name());
+            return false;
+        }
+    }
+
     if (!source_priv) {
+        JS::RootedObject proto{
+            context, gjs_lookup_generic_prototype(context, boxed_info)};
+        if (!proto)
+            return false;
+
         JS::RootedValueArray<1> args(context);
         args[0].set(value);
         JS::RootedObject tmp_object(context,

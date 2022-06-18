@@ -415,6 +415,7 @@ describe('Gdk Events', function () {
         const key = new Gdk.EventKey();
         event.key = key;
         expect(event.key).toEqual(key);
+        expect(() => (event.key = new Gdk.EventMotion())).toThrowError(/Event.key/);
     });
 
     it('can construct specific with property', function () {
