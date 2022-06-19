@@ -1355,8 +1355,7 @@ gjs_define_function(JSContext       *context,
                     GICallableInfo  *info)
 {
     GIInfoType info_type;
-    gchar *name;
-    bool free_name;
+    std::string name;
 
     info_type = g_base_info_get_type((GIBaseInfo *)info);
 
@@ -1366,23 +1365,18 @@ gjs_define_function(JSContext       *context,
         return NULL;
 
     if (info_type == GI_INFO_TYPE_FUNCTION) {
-        name = (gchar *) g_base_info_get_name((GIBaseInfo*) info);
-        free_name = false;
+        name = g_base_info_get_name(info);
     } else if (info_type == GI_INFO_TYPE_VFUNC) {
-        name = g_strdup_printf("vfunc_%s", g_base_info_get_name((GIBaseInfo*) info));
-        free_name = true;
+        name = "vfunc_" + std::string(g_base_info_get_name(info));
     } else {
         g_assert_not_reached ();
     }
 
-    if (!JS_DefineProperty(context, in_object, name, function,
+    if (!JS_DefineProperty(context, in_object, name.c_str(), function,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");
         function = NULL;
     }
-
-    if (free_name)
-        g_free(name);
 
     return function;
 }
