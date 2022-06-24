@@ -2,9 +2,10 @@
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2022 Nasah Kuma <nasahnash19@gmail.com>
 
-const GLib = imports.gi.GLib;
 imports.gi.versions.Gdk = '3.0';
 const Gdk = imports.gi.Gdk;
+const {getPrettyPrintFunction} = imports._print;
+let prettyPrint = getPrettyPrintFunction(globalThis);
 
 describe('print', function () {
     it('can be spied upon', function () {
@@ -39,121 +40,116 @@ describe('logError', function () {
 });
 
 describe('prettyPrint', function () {
-    afterEach(function () {
-        GLib.test_assert_expected_messages_internal('Gjs', 'testPrint.js', 0,
-            'pretty print');
-    });
-
     it('property value primitive', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { greeting: "hi" }');
-        log({greeting: 'hi'});
+        expect(
+            prettyPrint({greeting: 'hi'})
+        ).toBe('{ greeting: "hi" }');
     });
 
     it('property value is object reference', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { a: 5, b: [Circular] }');
         let obj = {a: 5};
         obj.b = obj;
-        log(obj);
+        expect(
+            prettyPrint(obj)
+        ).toBe('{ a: 5, b: [Circular] }');
     });
 
     it('more than one property', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { a: 1, b: 2, c: 3 }');
-        log({a: 1, b: 2, c: 3});
+        expect(
+            prettyPrint({a: 1, b: 2, c: 3})
+        ).toBe('{ a: 1, b: 2, c: 3 }');
     });
 
     it('add property value after property value object reference', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { a: 5, b: [Circular], c: 4 }');
         let obj = {a: 5};
         obj.b = obj;
         obj.c = 4;
-        log(obj);
+        expect(
+            prettyPrint(obj)
+        ).toBe('{ a: 5, b: [Circular], c: 4 }');
     });
 
     it('array', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [1, 2, 3, 4, 5]');
-        log([1, 2, 3, 4, 5]);
+        expect(
+            prettyPrint([1, 2, 3, 4, 5])
+        ).toBe('[1, 2, 3, 4, 5]');
     });
 
     it('property value array', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { arr: [1, 2, 3, 4, 5] }');
-        log({arr: [1, 2, 3, 4, 5]});
+        expect(
+            prettyPrint({arr: [1, 2, 3, 4, 5]})
+        ).toBe('{ arr: [1, 2, 3, 4, 5] }');
     });
 
     it('array reference is the only array element', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [[Circular]]');
         let arr = [];
         arr.push(arr);
-        log(arr);
+        expect(
+            prettyPrint(arr)
+        ).toBe('[[Circular]]');
     });
 
     it('array reference is one of multiple array elements', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [4, [Circular], 5]');
         let arr = [];
         arr.push(4);
         arr.push(arr);
         arr.push(5);
-        log(arr);
+        expect(
+            prettyPrint(arr)
+        ).toBe('[4, [Circular], 5]');
     });
 
     it('nested array', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [1, 2, [3, 4], 5]');
-        log([1, 2, [3, 4], 5]);
+        expect(
+            prettyPrint([1, 2, [3, 4], 5])
+        ).toBe('[1, 2, [3, 4], 5]');
     });
 
     it('property value nested array', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { arr: [1, 2, [3, 4], 5] }');
-        log({arr: [1, 2, [3, 4], 5]});
+        expect(
+            prettyPrint({arr: [1, 2, [3, 4], 5]})
+        ).toBe('{ arr: [1, 2, [3, 4], 5] }');
     });
 
     it('function', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [ Function: sum ]');
-        log(function sum(a, b) {
-            return a + b;
-        });
+        expect(
+            prettyPrint(function sum(a, b) {
+                return a + b;
+            })
+        ).toBe('[ Function: sum ]');
     });
 
     it('property value function', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { sum: [ Function: sum ] }');
-        log({
-            sum: function sum(a, b) {
-                return a + b;
-            },
-        });
+        expect(
+            prettyPrint({
+                sum: function sum(a, b) {
+                    return a + b;
+                },
+            })
+        ).toBe('{ sum: [ Function: sum ] }');
     });
 
     it('date', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: 2018-12-24T10:33:30.000Z');
-        log(new Date(Date.UTC(2018, 11, 24, 10, 33, 30)));
+        expect(
+            prettyPrint(new Date(Date.UTC(2018, 11, 24, 10, 33, 30)))
+        ).toBe('2018-12-24T10:33:30.000Z');
     });
 
     it('property value date', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: { date: 2018-12-24T10:33:30.000Z }');
-        log({date: new Date(Date.UTC(2018, 11, 24, 10, 33, 30))});
+        expect(
+            prettyPrint({date: new Date(Date.UTC(2018, 11, 24, 10, 33, 30))})
+        ).toBe('{ date: 2018-12-24T10:33:30.000Z }');
     });
 
     it('toString is overridden on object', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [boxed instance wrapper GIName:*]');
-        log(new Gdk.Rectangle());
+        expect(
+            prettyPrint(new Gdk.Rectangle())
+        ).toMatch(/\[boxed instance wrapper GIName:.*\]/);
     });
 
     it('string tag supplied', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
-            'JS LOG: [object GIRepositoryNamespace]');
-        log(Gdk);
+        expect(
+            prettyPrint(Gdk)
+        ).toMatch('[object GIRepositoryNamespace]');
     });
 });
