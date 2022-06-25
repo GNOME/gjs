@@ -162,6 +162,24 @@ static bool set_pretty_print_function(JSContext*, unsigned argc,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool get_pretty_print_function(JSContext*, unsigned argc,
+                                      JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    g_assert(args.length() == 1 && "getPrettyPrintFunction takes 1 arguments");
+
+    JS::Value v_global = args[0];
+
+    g_assert(v_global.isObject() && "argument must be an object");
+
+    JS::Value pretty_print = gjs_get_global_slot(
+        &v_global.toObject(), GjsGlobalSlot::PRETTY_PRINT_FUNC);
+
+    args.rval().set(pretty_print);
+    return true;
+}
+
 // clang-format off
 static constexpr JSFunctionSpec funcs[] = {
     JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
@@ -169,6 +187,7 @@ static constexpr JSFunctionSpec funcs[] = {
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("setPrettyPrintFunction", set_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("getPrettyPrintFunction", get_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 // clang-format on
 
