@@ -59,20 +59,16 @@ union Utf8Unit;
 }
 
 class GjsScriptModule {
-    char *m_name;
+    GjsAutoChar m_name;
 
     // Reserved slots
     static const size_t POINTER = 0;
 
-    GjsScriptModule(const char* name) {
-        m_name = g_strdup(name);
+    GjsScriptModule(const char* name) : m_name(g_strdup(name)) {
         GJS_INC_COUNTER(module);
     }
 
-    ~GjsScriptModule() {
-        g_free(m_name);
-        GJS_DEC_COUNTER(module);
-    }
+    ~GjsScriptModule() { GJS_DEC_COUNTER(module); }
 
     GjsScriptModule(GjsScriptModule&) = delete;
     GjsScriptModule& operator=(GjsScriptModule&) = delete;
@@ -103,7 +99,7 @@ class GjsScriptModule {
         if (!JS_DefinePropertyById(cx, importer, name, module,
                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
             gjs_debug(GJS_DEBUG_IMPORTER, "Failed to define '%s' in importer",
-                      m_name);
+                      m_name.get());
             return false;
         }
 
@@ -144,7 +140,8 @@ class GjsScriptModule {
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
         gjs->schedule_gc_if_needed();
 
-        gjs_debug(GJS_DEBUG_IMPORTER, "Importing module %s succeeded", m_name);
+        gjs_debug(GJS_DEBUG_IMPORTER, "Importing module %s succeeded",
+                  m_name.get());
 
         return true;
     }
@@ -197,14 +194,14 @@ class GjsScriptModule {
          * be supported according to ES6. For compatibility with earlier GJS,
          * we treat it as if it were a real property, but warn about it. */
 
-        g_warning("Some code accessed the property '%s' on the module '%s'. "
-                  "That property was defined with 'let' or 'const' inside the "
-                  "module. This was previously supported, but is not correct "
-                  "according to the ES6 standard. Any symbols to be exported "
-                  "from a module must be defined with 'var'. The property "
-                  "access will work as previously for the time being, but "
-                  "please fix your code anyway.",
-                  gjs_debug_id(id).c_str(), m_name);
+        g_warning(
+            "Some code accessed the property '%s' on the module '%s'. That "
+            "property was defined with 'let' or 'const' inside the module. "
+            "This was previously supported, but is not correct according to "
+            "the ES6 standard. Any symbols to be exported from a module must "
+            "be defined with 'var'. The property access will work as "
+            "previously for the time being, but please fix your code anyway.",
+            gjs_debug_id(id).c_str(), m_name.get());
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx, maybe_desc.value());
         return JS_DefinePropertyById(cx, module, id, desc);
