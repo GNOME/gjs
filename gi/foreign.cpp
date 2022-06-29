@@ -5,6 +5,7 @@
 #include <config.h>
 
 #include <string.h>  // for strcmp
+#include <string>
 
 #include <girepository.h>
 #include <glib.h>
@@ -43,8 +44,6 @@ static GHashTable* foreign_structs_table = NULL;
     int i;
 
     for (i = 0; foreign_modules[i].gi_namespace; ++i) {
-        char *script;
-
         if (strcmp(gi_namespace, foreign_modules[i].gi_namespace) != 0)
             continue;
 
@@ -53,16 +52,14 @@ static GHashTable* foreign_structs_table = NULL;
 
         // FIXME: Find a way to check if a module is imported
         //        and only execute this statement if isn't
-        script = g_strdup_printf("imports.%s;", gi_namespace);
+        std::string script = "imports." + std::string(gi_namespace) + ';';
         JS::RootedValue retval(context);
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-        if (!gjs->eval_with_scope(nullptr, script, strlen(script), "<internal>",
-                                  &retval)) {
+        if (!gjs->eval_with_scope(nullptr, script.c_str(), script.length(),
+                                  "<internal>", &retval)) {
             g_critical("ERROR importing foreign module %s\n", gi_namespace);
-            g_free(script);
             return false;
         }
-        g_free(script);
         foreign_modules[i].loaded = true;
         return true;
     }
@@ -84,28 +81,24 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 
 [[nodiscard]] static GjsForeignInfo* gjs_struct_foreign_lookup(
     JSContext* context, GIBaseInfo* interface_info) {
-    GjsForeignInfo *retval = NULL;
-    GHashTable *hash_table;
-    char *key;
+    GHashTable* hash_table;
 
-    key = g_strdup_printf("%s.%s",
-                          g_base_info_get_namespace(interface_info),
-                          g_base_info_get_name(interface_info));
+    auto key = std::string(g_base_info_get_namespace(interface_info)) + '.' +
+               g_base_info_get_name(interface_info);
     hash_table = get_foreign_structs();
-    retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
+    auto* retval = static_cast<GjsForeignInfo*>(
+        g_hash_table_lookup(hash_table, key.c_str()));
     if (!retval) {
         if (gjs_foreign_load_foreign_module(context, g_base_info_get_namespace(interface_info))) {
-            retval = (GjsForeignInfo*)g_hash_table_lookup(hash_table, key);
+            retval = static_cast<GjsForeignInfo*>(
+                g_hash_table_lookup(hash_table, key.c_str()));
         }
     }
 
     if (!retval) {
-        gjs_throw(context, "Unable to find module implementing foreign type %s.%s",
-                  g_base_info_get_namespace(interface_info),
-                  g_base_info_get_name(interface_info));
+        gjs_throw(context, "Unable to find module implementing foreign type %s",
+                  key.c_str());
     }
-
-    g_free(key);
 
     return retval;
 }
