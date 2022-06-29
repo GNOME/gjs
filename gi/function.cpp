@@ -1278,20 +1278,19 @@ const JSFunctionSpec Function::proto_funcs[] = {
 
 bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     guint8 i;
-    GError *error = NULL;
+    GjsAutoError error;
 
     if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
         if (!g_function_info_prep_invoker(m_info, &m_invoker, &error))
             return gjs_throw_gerror(context, error);
     } else if (m_info.type() == GI_INFO_TYPE_VFUNC) {
         void* addr = g_vfunc_info_get_address(m_info, gtype, &error);
-        if (error != NULL) {
+        if (error) {
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
                 return gjs_throw_gerror(context, error);
 
             gjs_throw(context, "Virtual function not implemented: %s",
                       error->message);
-            g_clear_error(&error);
             return false;
         }
 

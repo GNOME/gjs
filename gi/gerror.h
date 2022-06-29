@@ -163,6 +163,6 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
 
-bool gjs_throw_gerror(JSContext* cx, GError* error);
+bool gjs_throw_gerror(JSContext* cx, GjsAutoError const&);
 
 #endif  // GI_GERROR_H_

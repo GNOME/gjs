@@ -235,13 +235,10 @@ gjs_throw_literal(JSContext       *context,
  * Use this when handling a GError in an internal function, where the error code
  * and domain don't matter. So, for example, don't use it to throw errors
  * around calling from JS into C code.
- *
- * Frees the GError.
  */
-bool gjs_throw_gerror_message(JSContext* cx, GError* error) {
+bool gjs_throw_gerror_message(JSContext* cx, GjsAutoError const& error) {
     g_return_val_if_fail(error, false);
     gjs_throw_literal(cx, error->message);
-    g_error_free(error);
     return false;
 }
 

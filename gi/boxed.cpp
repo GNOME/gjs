@@ -360,11 +360,11 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         GjsAutoFunctionInfo func_info = proto->zero_args_constructor_info();
 
         GIArgument rval_arg;
-        GError *error = NULL;
+        GjsAutoError error;
 
         if (!g_function_info_invoke(func_info, NULL, 0, NULL, 0, &rval_arg, &error)) {
-            gjs_throw(context, "Failed to invoke boxed constructor: %s", error->message);
-            g_clear_error(&error);
+            gjs_throw(context, "Failed to invoke boxed constructor: %s",
+                      error->message);
             return false;
         }
 

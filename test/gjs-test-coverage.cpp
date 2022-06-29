@@ -36,7 +36,7 @@ static void
 replace_file(GFile      *file,
               const char *contents)
 {
-    GError *error = NULL;
+    GjsAutoError error;
     g_file_replace_contents(file, contents, strlen(contents), NULL /* etag */,
                             FALSE /* make backup */, G_FILE_CREATE_NONE,
                             NULL /* etag out */, NULL /* cancellable */, &error);

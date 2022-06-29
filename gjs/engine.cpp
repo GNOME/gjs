@@ -58,7 +58,7 @@ static void on_promise_unhandled_rejection(
 
 bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
                               size_t* length) {
-    GError* error = nullptr;
+    GjsAutoError error;
     const char* path = filename + 11;  // len("resource://")
     GBytes* script_bytes =
         g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);

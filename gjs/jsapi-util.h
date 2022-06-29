@@ -472,7 +472,7 @@ JSObject* gjs_define_string_array(JSContext* cx, JS::HandleObject obj,
                                                     const char* format, ...);
 void        gjs_throw_literal                (JSContext       *context,
                                               const char      *string);
-bool gjs_throw_gerror_message(JSContext* cx, GError* error);
+bool gjs_throw_gerror_message(JSContext* cx, GjsAutoError const&);
 
 bool        gjs_log_exception                (JSContext       *context);
 
