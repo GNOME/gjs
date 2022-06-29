@@ -83,8 +83,10 @@ struct ObjectBox::impl {
 ObjectBox::ObjectBox(JSObject* obj)
     : m_impl(std::make_unique<ObjectBox::impl>(this, obj)) {}
 
+void ObjectBox::destroy(ObjectBox* object) { object->m_impl->unref(); }
+
 ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
-    ObjectBox* box = nullptr;
+    ObjectBox::Ptr box;
 
     ObjectBox** found =
         std::find_if(m_wrappers.begin(), m_wrappers.end(),
@@ -96,10 +98,10 @@ ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
     } else {
         box = new ObjectBox(obj);
         if (!box->m_impl->init(cx))
-            return ObjectBox::Ptr(nullptr, [](ObjectBox*) {});
+            return nullptr;
     }
 
-    return ObjectBox::Ptr(box, [](ObjectBox* b) { b->m_impl->unref(); });
+    return box;
 }
 
 JSObject* ObjectBox::object_for_c_ptr(JSContext* cx, ObjectBox* box) {

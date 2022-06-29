@@ -12,12 +12,16 @@
 
 #include <js/TypeDecls.h>
 
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 class JSTracer;
 
-struct ObjectBox {
-    using Ptr = std::unique_ptr<ObjectBox, void (*)(ObjectBox*)>;
+class ObjectBox {
+    static void destroy(ObjectBox*);
+
+ public:
+    using Ptr = GjsAutoPointer<ObjectBox, ObjectBox, ObjectBox::destroy>;
 
     [[nodiscard]] static GType gtype();
 
