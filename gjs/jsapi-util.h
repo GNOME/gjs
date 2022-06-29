@@ -146,6 +146,7 @@ struct GjsAutoPointer {
 
     constexpr Ptr get() const { return m_ptr; }
     constexpr Ptr* out() { return &m_ptr; }
+    constexpr ConstPtr* out() const { return &m_ptr; }
 
     constexpr Ptr release() {
         auto* ptr = m_ptr;
