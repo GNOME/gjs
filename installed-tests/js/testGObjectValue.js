@@ -95,10 +95,8 @@ describe('GObject value (GValue)', function () {
         if (type === 'gvalue')
             type = 'boxed';
 
-        if (type === 'instance') {
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+        if (type === 'instance')
             return GIMarshallingTests.gvalue_round_trip(gvalue);
-        }
 
         return gvalue[`get_${type}`]();
     }
@@ -153,7 +151,7 @@ describe('GObject value (GValue)', function () {
                 setContent(v, type, randomContent);
                 expect(GIMarshallingTests.gvalue_round_trip(v)).toEqual(randomContent);
                 expect(GIMarshallingTests.gvalue_copy(v)).toEqual(randomContent);
-            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+            });
 
             it(`copies ${type}`, function () {
                 skipUnsupported(type);
@@ -171,14 +169,14 @@ describe('GObject value (GValue)', function () {
                 pending('Not supported - always implicitly converted');
             const content = getDefaultContentByType(type);
             expect(GIMarshallingTests.gvalue_round_trip(content)).toEqual(content);
-        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+        });
     });
 
     ['int', 'uint', 'boolean', 'gtype', ...FLOATING_TYPES].forEach(type => {
         it(`can be marshalled and un-marshalled from JS gtype of ${type}`, function () {
             const gtype = getGType(type);
             expect(GIMarshallingTests.gvalue_round_trip(gtype).constructor.$gtype).toEqual(gtype);
-        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+        });
     });
 
     INSTANCED_TYPES.forEach(type => {
