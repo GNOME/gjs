@@ -6,7 +6,7 @@
 
 #include <locale.h>  // for setlocale, LC_ALL
 #include <stdint.h>
-#include <stdlib.h>  // for exit
+#include <stdlib.h>  // for EXIT_SUCCESS / EXIT_FAILURE
 #include <string.h>  // for strcmp, strlen
 
 #ifdef HAVE_UNISTD_H
@@ -264,19 +264,19 @@ main(int argc, char **argv)
         g_printerr("%s\n\n%s\n", error->message, help_text);
         g_free(help_text);
         g_option_context_free(context);
-        exit(1);
+        return EXIT_FAILURE;
     }
 
     g_option_context_free (context);
 
     if (print_version) {
         g_print("%s\n", PACKAGE_STRING);
-        exit(0);
+        return EXIT_SUCCESS;
     }
 
     if (print_js_version) {
         g_print("%s\n", gjs_get_js_version());
-        exit(0);
+        return EXIT_SUCCESS;
     }
 
     GjsAutoChar program_path = nullptr;
@@ -290,7 +290,7 @@ main(int argc, char **argv)
         if (exec_as_module) {
             g_warning(
                 "'-m' requires a file argument.\nExample: gjs -m main.js");
-            exit(1);
+            return EXIT_FAILURE;
         }
 
         script = g_strdup("const Console = imports.console; Console.interact();");
@@ -306,7 +306,7 @@ main(int argc, char **argv)
         if (!g_file_load_contents(input, nullptr, &script, &len, nullptr,
                                   &error)) {
             g_printerr("%s\n", error->message);
-            exit(1);
+            return EXIT_FAILURE;
         }
         program_path = g_file_get_path(input);
         filename = gjs_argv[1];
@@ -400,5 +400,6 @@ main(int argc, char **argv)
 
     if (debugging)
         g_print("Program exited with code %d\n", code);
-    exit(code);
+
+    return code;
 }
