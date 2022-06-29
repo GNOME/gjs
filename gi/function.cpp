@@ -980,7 +980,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     }
 
     // This pointer needs to exist on the stack across the ffi_call() call
-    GError** errorp = state.local_error.out();
+    GError** errorp = &state.local_error;
 
     /* Did argument conversion fail?  In that case, skip invocation and jump to release
      * processing. */

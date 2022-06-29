@@ -75,6 +75,9 @@ struct GjsAutoPointer {
     using ConstPtr = std::add_pointer_t<std::add_const_t<Tp>>;
     using RvalueRef = std::add_lvalue_reference_t<Tp>;
 
+ protected:
+    using BaseType = GjsAutoPointer<T, F, free_func, ref_func>;
+
  private:
     template <typename FunctionType, FunctionType function>
     static constexpr bool has_function() {
@@ -159,7 +162,7 @@ struct GjsAutoPointer {
 
     constexpr Ptr get() const { return m_ptr; }
     constexpr Ptr* out() { return &m_ptr; }
-    constexpr ConstPtr* out() const { return &m_ptr; }
+    constexpr ConstPtr* out() const { return const_cast<ConstPtr*>(&m_ptr); }
 
     constexpr Ptr release() {
         auto* ptr = m_ptr;
@@ -233,8 +236,20 @@ using GjsAutoChar16 = GjsAutoPointer<uint16_t, void, &g_free>;
 struct GjsAutoErrorFuncs {
     static GError* error_copy(GError* error) { return g_error_copy(error); }
 };
-using GjsAutoError =
-    GjsAutoPointer<GError, GError, g_error_free, GjsAutoErrorFuncs::error_copy>;
+
+struct GjsAutoError : GjsAutoPointer<GError, GError, g_error_free,
+                                     GjsAutoErrorFuncs::error_copy> {
+    using BaseType::BaseType;
+    using BaseType::operator=;
+
+    constexpr BaseType::ConstPtr* operator&()  // NOLINT(runtime/operator)
+        const {
+        return out();
+    }
+    constexpr BaseType::Ptr* operator&() {  // NOLINT(runtime/operator)
+        return out();
+    }
+};
 
 using GjsAutoStrv = GjsAutoPointer<char*, char*, g_strfreev, g_strdupv>;
 
@@ -371,6 +386,8 @@ struct GjsSmartPointer<GIBaseInfo> : GjsAutoBaseInfo {
 template <>
 struct GjsSmartPointer<GError> : GjsAutoError {
     using GjsAutoError::GjsAutoError;
+    using GjsAutoError::operator=;
+    using GjsAutoError::operator&;
 };
 
 template <>

@@ -563,6 +563,27 @@ static void test_gjs_autotypeclass_init() {
         gjs_test_object_get_type());
 }
 
+static void test_gjs_error_init() {
+    GjsAutoError error =
+        g_error_new_literal(G_FILE_ERROR, G_FILE_ERROR_EXIST, "Message");
+
+    g_assert_nonnull(error);
+    g_assert_cmpint(error->domain, ==, G_FILE_ERROR);
+    g_assert_cmpint(error->code, ==, G_FILE_ERROR_EXIST);
+    g_assert_cmpstr(error->message, ==, "Message");
+
+    error = g_error_new_literal(G_FILE_ERROR, G_FILE_ERROR_FAILED, "Other");
+    g_assert_error(error, G_FILE_ERROR, G_FILE_ERROR_FAILED);
+    g_assert_cmpstr(error->message, ==, "Other");
+}
+
+static void test_gjs_error_out() {
+    GjsAutoError error(
+        g_error_new_literal(G_FILE_ERROR, G_FILE_ERROR_EXIST, "Message"));
+    g_clear_error(&error);
+    g_assert_null(error);
+}
+
 #define ADD_AUTOPTRTEST(path, func) \
     g_test_add(path, Fixture, nullptr, setup, func, teardown);
 
@@ -667,4 +688,8 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
 
     g_test_add_func("/gjs/jsapi-utils/gjs-autotypeclass/init",
                     test_gjs_autotypeclass_init);
+
+    g_test_add_func("/gjs/jsapi-utils/gjs-autoerror/init", test_gjs_error_init);
+    g_test_add_func("/gjs/jsapi-utils/gjs-autoerror/as-out-value",
+                    test_gjs_error_out);
 }
