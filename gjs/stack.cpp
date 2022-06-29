@@ -31,8 +31,7 @@ gjs_dumpstack(void)
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
-        GjsContext *context = (GjsContext*)iter->data;
+        GjsAutoUnref<GjsContext> context(static_cast<GjsContext*>(iter->data));
         gjs_context_print_stack_stderr(context);
-        g_object_unref(context);
     }
 }
