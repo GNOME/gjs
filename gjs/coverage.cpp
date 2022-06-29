@@ -129,32 +129,25 @@ static GParamSpec *properties[PROP_N] = { NULL, };
  */
 [[nodiscard]] static char* find_diverging_child_components(GFile* child,
                                                            GFile* parent) {
-    g_object_ref(parent);
-    GFile *ancestor = parent;
-    while (ancestor != NULL) {
+    GjsAutoUnref<GFile> ancestor(parent, GjsAutoTakeOwnership());
+    while (ancestor) {
         char *relpath = g_file_get_relative_path(ancestor, child);
-        if (relpath) {
-            g_object_unref(ancestor);
+        if (relpath)
             return relpath;
-        }
-        GFile *new_ancestor = g_file_get_parent(ancestor);
-        g_object_unref(ancestor);
-        ancestor = new_ancestor;
+
+        ancestor = g_file_get_parent(ancestor);
     }
 
     /* This is a special case of getting the URI below. The difference is that
      * this gives you a regular path name; getting it through the URI would
      * give a URI-encoded path (%20 for spaces, etc.) */
-    GFile *root = g_file_new_for_path("/");
-    char *child_path = g_file_get_relative_path(root, child);
-    g_object_unref(root);
+    GjsAutoUnref<GFile> root = g_file_new_for_path("/");
+    char* child_path = g_file_get_relative_path(root, child);
     if (child_path)
         return child_path;
 
-    char *child_uri = g_file_get_uri(child);
-    char *stripped_uri = strip_uri_scheme(child_uri);
-    g_free(child_uri);
-    return stripped_uri;
+    GjsAutoChar child_uri = g_file_get_uri(child);
+    return strip_uri_scheme(child_uri);
 }
 
 [[nodiscard]] static bool filename_has_coverage_prefixes(GjsCoverage* self,
