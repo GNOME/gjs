@@ -106,7 +106,7 @@ class GjsFunctionCallState {
     GjsAutoError local_error;
     GICallableInfo* info;
     uint8_t gi_argc = 0;
-    unsigned processed_c_args = 0;
+    uint8_t processed_c_args = 0;
     bool failed : 1;
     bool can_throw_gerror : 1;
     bool is_method : 1;
@@ -161,7 +161,7 @@ class GjsFunctionCallState {
 
     constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
 
-    constexpr uint8_t last_processed_index() {
+    constexpr unsigned last_processed_index() {
         return first_arg_offset() + processed_c_args;
     }
 

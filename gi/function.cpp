@@ -7,6 +7,7 @@
 #include <stddef.h>  // for NULL, size_t
 #include <stdint.h>
 
+#include <limits>
 #include <memory>  // for unique_ptr
 #include <sstream>
 #include <string>
@@ -932,6 +933,9 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     dynamicString += '.';
     dynamicString += format_name();
     AutoProfilerLabel label(context, "", dynamicString.c_str());
+
+    g_assert(ffi_arg_pos + state.gi_argc <
+             std::numeric_limits<decltype(state.processed_c_args)>::max());
 
     state.processed_c_args = ffi_arg_pos;
     for (gi_arg_pos = 0; gi_arg_pos < state.gi_argc;
