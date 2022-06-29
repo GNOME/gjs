@@ -26,8 +26,7 @@ gjs_define_enum_value(JSContext       *context,
                       JS::HandleObject in_object,
                       GIValueInfo     *info)
 {
-    const char *value_name;
-    char *fixed_name;
+    const char* value_name;
     gsize i;
     gint64 value_val;
 
@@ -38,7 +37,7 @@ gjs_define_enum_value(JSContext       *context,
      * Gdk.GravityType.south-west (where 'south-west' is value_name)
      * Convert back to all SOUTH_WEST.
      */
-    fixed_name = g_ascii_strup(value_name, -1);
+    GjsAutoChar fixed_name = g_ascii_strup(value_name, -1);
     for (i = 0; fixed_name[i]; ++i) {
         char c = fixed_name[i];
         if (!(('A' <= c && c <= 'Z') ||
@@ -48,17 +47,17 @@ gjs_define_enum_value(JSContext       *context,
 
     gjs_debug(GJS_DEBUG_GENUM,
               "Defining enum value %s (fixed from %s) %" G_GINT64_MODIFIER "d",
-              fixed_name, value_name, value_val);
+              fixed_name.get(), value_name, value_val);
 
     if (!JS_DefineProperty(context, in_object,
                            fixed_name, (double) value_val,
                            GJS_MODULE_PROP_FLAGS)) {
-        gjs_throw(context, "Unable to define enumeration value %s %" G_GINT64_FORMAT " (no memory most likely)",
-                  fixed_name, value_val);
-        g_free(fixed_name);
+        gjs_throw(context,
+                  "Unable to define enumeration value %s %" G_GINT64_FORMAT
+                  " (no memory most likely)",
+                  fixed_name.get(), value_val);
         return false;
     }
-    g_free(fixed_name);
 
     return true;
 }
