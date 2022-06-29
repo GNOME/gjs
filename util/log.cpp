@@ -23,7 +23,7 @@
 #    include <unistd.h>  // for getpid
 #endif
 
-#include <vector>
+#include <array>
 
 #include <glib.h>
 
@@ -35,7 +35,7 @@ static bool s_debug_log_enabled = false;
 static bool s_print_thread = false;
 static std::unique_ptr<LogFile> s_log_file;
 static GjsAutoPointer<GTimer, GTimer, g_timer_destroy> s_timer;
-static std::vector<bool> s_enabled_topics;
+static std::array<bool, GJS_DEBUG_LAST> s_enabled_topics;
 
 static const char* topic_to_prefix(GjsDebugTopic topic) {
     switch (topic) {
@@ -146,7 +146,7 @@ void gjs_log_init() {
 
     if (s_debug_log_enabled) {
         auto* topics = g_getenv("GJS_DEBUG_TOPICS");
-        s_enabled_topics = std::vector<bool>(GJS_DEBUG_LAST, topics == nullptr);
+        s_enabled_topics.fill(topics == nullptr);
         if (topics) {
             GjsAutoStrv prefixes(g_strsplit(topics, ";", -1));
             for (unsigned i = 0; prefixes[i] != NULL; i++) {
@@ -163,7 +163,7 @@ void gjs_log_cleanup() {
         return;
 
     s_timer = nullptr;
-    s_enabled_topics.clear();
+    s_enabled_topics.fill(false);
 }
 
 #define PREFIX_LENGTH 12
