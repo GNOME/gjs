@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include <memory>  // for unique_ptr
 #include <unordered_set>
 #include <vector>
 
@@ -84,7 +85,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
     GjsAutoCallableInfo m_info;
     ffi_closure* m_closure = nullptr;
-    std::vector<GjsParamType> m_param_types;
+    std::unique_ptr<GjsParamType[]> m_param_types;
     ffi_cif m_cif;
 
     GIScopeType m_scope : 3;

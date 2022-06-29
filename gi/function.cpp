@@ -317,7 +317,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     JSAutoRealm ar(context, callable());
 
-    int n_args = m_param_types.size();
+    int n_args = g_callable_info_get_n_args(m_info);
     g_assert(n_args >= 0);
 
     struct AutoCallbackData {
@@ -633,7 +633,8 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
               scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object,
               g_base_info_get_name(callable_info)),
       m_info(callable_info, GjsAutoTakeOwnership()),
-      m_param_types(g_callable_info_get_n_args(callable_info), {}),
+      m_param_types(std::make_unique<GjsParamType[]>(
+          g_callable_info_get_n_args(callable_info))),
       m_scope(scope),
       m_is_vfunc(is_vfunc) {
     add_finalize_notifier<GjsCallbackTrampoline>();
@@ -680,7 +681,8 @@ bool GjsCallbackTrampoline::initialize() {
 
     /* Analyze param types and directions, similarly to
      * init_cached_function_data */
-    for (size_t i = 0; i < m_param_types.size(); i++) {
+    int n_param_types = g_callable_info_get_n_args(m_info);
+    for (int i = 0; i < n_param_types; i++) {
         GIDirection direction;
         GIArgInfo arg_info;
         GITypeInfo type_info;
@@ -720,8 +722,7 @@ bool GjsCallbackTrampoline::initialize() {
                 if (array_length_pos < 0)
                     continue;
 
-                if (static_cast<size_t>(array_length_pos) <
-                    m_param_types.size()) {
+                if (array_length_pos < n_param_types) {
                     GIArgInfo length_arg_info;
 
                     g_callable_info_load_arg(m_info, array_length_pos,
