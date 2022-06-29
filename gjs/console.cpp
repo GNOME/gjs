@@ -55,6 +55,17 @@ static GOptionEntry entries[] = {
 // clang-format on
 
 [[nodiscard]] static char** strndupv(int n, char* const* strv) {
+#if GLIB_CHECK_VERSION(2, 68, 0)
+    GjsAutoPointer<GStrvBuilder, GStrvBuilder, g_strv_builder_unref> builder(
+        g_strv_builder_new());
+
+    for (int i = 0; i < n; ++i)
+        g_strv_builder_add(builder, strv[i]);
+
+    return g_strv_builder_end(builder);
+
+#else
+
     int ix;
     if (n == 0)
         return NULL;
@@ -63,6 +74,7 @@ static GOptionEntry entries[] = {
         retval[ix] = g_strdup(strv[ix]);
     retval[n] = NULL;
     return retval;
+#endif  // GLIB_CHECK_VERSION(2, 68, 0)
 }
 
 [[nodiscard]] static char** strcatv(char** strv1, char** strv2) {
@@ -72,6 +84,17 @@ static GOptionEntry entries[] = {
         return g_strdupv(strv2);
     if (strv2 == NULL)
         return g_strdupv(strv1);
+
+#if GLIB_CHECK_VERSION(2, 70, 0)
+    GjsAutoPointer<GStrvBuilder, GStrvBuilder, g_strv_builder_unref> builder(
+        g_strv_builder_new());
+
+    g_strv_builder_addv(builder, const_cast<const char**>(strv1));
+    g_strv_builder_addv(builder, const_cast<const char**>(strv2));
+
+    return g_strv_builder_end(builder);
+
+#else
 
     unsigned len1 = g_strv_length(strv1);
     unsigned len2 = g_strv_length(strv2);
@@ -85,6 +108,7 @@ static GOptionEntry entries[] = {
     retval[len1 + len2] = NULL;
 
     return retval;
+#endif  // GLIB_CHECK_VERSION(2, 70, 0)
 }
 
 static gboolean parse_profile_arg(const char* option_name [[maybe_unused]],
