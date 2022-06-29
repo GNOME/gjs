@@ -4,7 +4,9 @@
 
 #include <config.h>
 
-#include <vector>
+#include <stddef.h>  // for size_t
+
+#include <memory>
 
 #include <cairo.h>
 #include <girepository.h>
@@ -518,8 +520,8 @@ setDash_func(JSContext *context,
         return false;
     }
 
-    std::vector<double> dashes_c;
-    dashes_c.reserve(len);
+    std::unique_ptr<double[]> dashes_c = std::make_unique<double[]>(len);
+    size_t dashes_c_size = 0;
     JS::RootedValue elem(context);
     for (i = 0; i < len; ++i) {
         double b;
@@ -538,10 +540,10 @@ setDash_func(JSContext *context,
             return false;
         }
 
-        dashes_c.push_back(b);
+        dashes_c[dashes_c_size++] = b;
     }
 
-    cairo_set_dash(cr, dashes_c.data(), dashes_c.size(), offset);
+    cairo_set_dash(cr, dashes_c.get(), dashes_c_size, offset);
     argv.rval().setUndefined();
     return true;
 }
