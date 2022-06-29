@@ -24,9 +24,9 @@
 
 static GjsAutoStrv include_path;
 static GjsAutoStrv coverage_prefixes;
-static char *coverage_output_path = NULL;
-static char *profile_output_path = nullptr;
-static char *command = NULL;
+static GjsAutoChar coverage_output_path;
+static GjsAutoChar profile_output_path;
+static GjsAutoChar command;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
 static gboolean debugging = false;
@@ -35,15 +35,19 @@ static bool enable_profiler = false;
 
 static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
 
+using GjsAutoGOptionContext =
+    GjsAutoPointer<GOptionContext, GOptionContext, g_option_context_free>;
+
 // clang-format off
 static GOptionEntry entries[] = {
     { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
     { "jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
         "Print version of the JS engine and exit" },
-    { "command", 'c', 0, G_OPTION_ARG_STRING, &command, "Program passed in as a string", "COMMAND" },
+    { "command", 'c', 0, G_OPTION_ARG_STRING, command.out(), "Program passed in as a string", "COMMAND" },
     { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, coverage_prefixes.out(),
       "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
-    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, &coverage_output_path, "Write coverage output to a directory DIR. This option is mandatory when using --coverage-prefix", "DIR", },
+    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, coverage_output_path.out(),
+      "Write coverage output to a directory DIR. This option is mandatory when using --coverage-prefix", "DIR", },
     { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(), "Add the directory DIR to the list of directories to search for js files.", "DIR" },
     { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module, "Execute the file as a module." },
     { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
@@ -115,8 +119,7 @@ static GOptionEntry entries[] = {
 static gboolean parse_profile_arg(const char* option_name [[maybe_unused]],
                                   const char* value, void*, GError**) {
     enable_profiler = true;
-    g_free(profile_output_path);
-    profile_output_path = g_strdup(value);
+    profile_output_path = GjsAutoChar(value, GjsAutoTakeOwnership());
     return true;
 }
 
@@ -148,7 +151,7 @@ check_script_args_for_stray_gjs_args(int           argc,
         argv_copy[ix + 1] = g_strdup(argv[ix]);
     argv_copy[argc + 1] = NULL;
 
-    GOptionContext *script_options = g_option_context_new(NULL);
+    GjsAutoGOptionContext script_options = g_option_context_new(NULL);
     g_option_context_set_ignore_unknown_options(script_options, true);
     g_option_context_set_help_enabled(script_options, false);
     g_option_context_add_main_entries(script_options, script_check_entries, NULL);
@@ -173,15 +176,13 @@ check_script_args_for_stray_gjs_args(int           argc,
         include_path = strcatv(include_path, new_include_paths);
     }
     if (new_coverage_output_path) {
-        g_warning("You used the --coverage-output option after the script on "
-                  "the GJS command line. Support for this will be removed in a "
-                  "future version. Place the option before the script or use "
-                  "the GJS_COVERAGE_OUTPUT environment variable.");
-        g_free(coverage_output_path);
+        g_warning(
+            "You used the --coverage-output option after the script on "
+            "the GJS command line. Support for this will be removed in a "
+            "future version. Place the option before the script or use "
+            "the GJS_COVERAGE_OUTPUT environment variable.");
         coverage_output_path = new_coverage_output_path;
     }
-
-    g_option_context_free(script_options);
 }
 
 int define_argv_and_eval_script(GjsContext* js_context, int argc,
@@ -219,14 +220,8 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
     return code;
 }
 
-int
-main(int argc, char **argv)
-{
-    GOptionContext *context;
-    GError *error = NULL;
-    GjsContext *js_context;
-    GjsCoverage *coverage = NULL;
-    char *script;
+int main(int argc, char** argv) {
+    GError* error = NULL;
     const char *filename;
     const char *program_name;
     gsize len;
@@ -237,8 +232,7 @@ main(int argc, char **argv)
 
     setlocale(LC_ALL, "");
 
-    context = g_option_context_new(NULL);
-
+    GjsAutoGOptionContext context = g_option_context_new(NULL);
     g_option_context_set_ignore_unknown_options(context, true);
     g_option_context_set_help_enabled(context, false);
 
@@ -260,8 +254,8 @@ main(int argc, char **argv)
         }
 
         /* Check if -c or --command was given and split after following arg */
-        if (command != NULL &&
-            (strcmp(argv[ix], "-c") == 0 || strcmp(argv[ix], "--command") == 0)) {
+        if (command && (strcmp(argv[ix], "-c") == 0 ||
+                        strcmp(argv[ix], "--command") == 0)) {
             gjs_argc = ix + 2;
             break;
         }
@@ -274,8 +268,8 @@ main(int argc, char **argv)
     /* Parse again, only the GJS options this time */
     include_path.release();
     coverage_prefixes.release();
-    coverage_output_path = NULL;
-    command = NULL;
+    coverage_output_path.release();
+    command.release();
     print_version = false;
     print_js_version = false;
     debugging = false;
@@ -283,14 +277,11 @@ main(int argc, char **argv)
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
     if (!g_option_context_parse_strv(context, &gjs_argv, &error)) {
-        char* help_text = g_option_context_get_help(context, true, nullptr);
-        g_printerr("%s\n\n%s\n", error->message, help_text);
-        g_free(help_text);
-        g_option_context_free(context);
+        GjsAutoChar help_text =
+            g_option_context_get_help(context, true, nullptr);
+        g_printerr("%s\n\n%s\n", error->message, help_text.get());
         return EXIT_FAILURE;
     }
-
-    g_option_context_free (context);
 
     if (print_version) {
         g_print("%s\n", PACKAGE_STRING);
@@ -304,7 +295,8 @@ main(int argc, char **argv)
 
     GjsAutoChar program_path = nullptr;
     gjs_argc = g_strv_length(gjs_argv);
-    if (command != NULL) {
+    GjsAutoChar script;
+    if (command) {
         script = command;
         len = strlen(script);
         filename = "<command line>";
@@ -326,7 +318,7 @@ main(int argc, char **argv)
         g_assert(gjs_argc == 2);
         error = NULL;
         GjsAutoUnref<GFile> input = g_file_new_for_commandline_arg(gjs_argv[1]);
-        if (!g_file_load_contents(input, nullptr, &script, &len, nullptr,
+        if (!g_file_load_contents(input, nullptr, script.out(), &len, nullptr,
                                   &error)) {
             g_printerr("%s\n", error->message);
             return EXIT_FAILURE;
@@ -363,10 +355,10 @@ main(int argc, char **argv)
     if (coverage_prefixes)
         gjs_coverage_enable();
 
-    js_context = GJS_CONTEXT(g_object_new(
+    GjsAutoUnref<GjsContext> js_context(static_cast<GjsContext*>(g_object_new(
         GJS_TYPE_CONTEXT, "search-path", include_path.get(), "program-name",
         program_name, "program-path", program_path.get(), "profiler-enabled",
-        enable_profiler, "exec-as-module", exec_as_module, nullptr));
+        enable_profiler, "exec-as-module", exec_as_module, nullptr)));
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != NULL) {
@@ -374,13 +366,14 @@ main(int argc, char **argv)
         coverage_output_path = g_strdup(env_coverage_output_path);
     }
 
+    GjsAutoUnref<GjsCoverage> coverage;
     if (coverage_prefixes) {
         if (!coverage_output_path)
             g_error("--coverage-output is required when taking coverage statistics");
 
-        GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
+        GjsAutoUnref<GFile> output =
+            g_file_new_for_commandline_arg(coverage_output_path);
         coverage = gjs_coverage_new(coverage_prefixes, js_context, output);
-        g_object_unref(output);
     }
 
     if (enable_profiler && profile_output_path) {
@@ -408,13 +401,6 @@ main(int argc, char **argv)
     /* Probably doesn't make sense to write statistics on failure */
     if (coverage && code == 0)
         gjs_coverage_write_statistics(coverage);
-
-    g_free(coverage_output_path);
-    g_free(profile_output_path);
-    if (coverage)
-        g_object_unref(coverage);
-    g_object_unref(js_context);
-    g_free(script);
 
     if (debugging)
         g_print("Program exited with code %d\n", code);
