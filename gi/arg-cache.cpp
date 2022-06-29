@@ -895,10 +895,11 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     }
 
     bool keep_forever =
+        !has_callback_destroy() && (
 #if GI_CHECK_VERSION(1, 72, 0)
-        m_scope == GI_SCOPE_TYPE_FOREVER ||
+                                       m_scope == GI_SCOPE_TYPE_FOREVER ||
 #endif
-        m_scope == GI_SCOPE_TYPE_NOTIFIED && !has_callback_destroy();
+                                       m_scope == GI_SCOPE_TYPE_NOTIFIED);
 
     if (trampoline && keep_forever) {
         trampoline->mark_forever();
