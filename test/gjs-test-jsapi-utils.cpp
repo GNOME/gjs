@@ -146,6 +146,22 @@ static void test_gjs_autopointer_dtor_cpp_array() {
         g_assert_cmpint(autoptr[0].val, ==, 5);
         g_assert_cmpint(autoptr[1].val, ==, 5);
         g_assert_cmpint(autoptr[2].val, ==, 5);
+
+        autoptr[1].val = 4;
+
+        TestStruct const& const_struct_const_1 = autoptr[1];
+        g_assert_cmpint(const_struct_const_1.val, ==, 4);
+        // const_struct_const_1.val = 3;  // This will would not compile
+
+        TestStruct& test_struct_1 = autoptr[1];
+        test_struct_1.val = 3;
+        g_assert_cmpint(test_struct_1.val, ==, 3);
+
+        int* int_ptrs = new int[3]{5, 6, 7};
+        GjsAutoCppPointer<int[]> int_autoptr(int_ptrs);
+        g_assert_cmpint(int_autoptr[0], ==, 5);
+        g_assert_cmpint(int_autoptr[1], ==, 6);
+        g_assert_cmpint(int_autoptr[2], ==, 7);
     }
 
     g_assert_cmpuint(deleted, ==, 3);

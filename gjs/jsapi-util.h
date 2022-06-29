@@ -73,6 +73,7 @@ struct GjsAutoPointer {
         std::conditional_t<std::is_array_v<T>, std::remove_extent_t<T>, T>;
     using Ptr = std::add_pointer_t<Tp>;
     using ConstPtr = std::add_pointer_t<std::add_const_t<Tp>>;
+    using RvalueRef = std::add_lvalue_reference_t<Tp>;
 
  private:
     template <typename FunctionType, FunctionType function>
@@ -136,6 +137,18 @@ struct GjsAutoPointer {
     constexpr std::enable_if_t<!std::is_array_v<U>, ConstPtr> operator->()
         const {
         return m_ptr;
+    }
+
+    template <typename U = T>
+    constexpr std::enable_if_t<std::is_array_v<U>, RvalueRef> operator[](
+        int index) {
+        return m_ptr[index];
+    }
+
+    template <typename U = T>
+    constexpr std::enable_if_t<std::is_array_v<U>, std::add_const_t<RvalueRef>>
+    operator[](int index) const {
+        return m_ptr[index];
     }
 
     constexpr Tp operator*() const { return *m_ptr; }
