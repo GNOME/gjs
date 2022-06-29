@@ -95,9 +95,9 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
 // Stack allocation only!
 class GjsFunctionCallState {
-    GIArgument* m_in_cvalues;
-    GIArgument* m_out_cvalues;
-    GIArgument* m_inout_original_cvalues;
+    GjsAutoCppPointer<GIArgument[]> m_in_cvalues;
+    GjsAutoCppPointer<GIArgument[]> m_out_cvalues;
+    GjsAutoCppPointer<GIArgument[]> m_inout_original_cvalues;
 
  public:
     std::unordered_set<GIArgument*> ignore_release;
@@ -123,12 +123,6 @@ class GjsFunctionCallState {
         m_in_cvalues = new GIArgument[size];
         m_out_cvalues = new GIArgument[size];
         m_inout_original_cvalues = new GIArgument[size];
-    }
-
-    ~GjsFunctionCallState() {
-        delete[] m_in_cvalues;
-        delete[] m_out_cvalues;
-        delete[] m_inout_original_cvalues;
     }
 
     GjsFunctionCallState(const GjsFunctionCallState&) = delete;
