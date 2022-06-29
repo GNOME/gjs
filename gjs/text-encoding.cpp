@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <iosfwd>    // for nullptr_t
 #include <iterator>  // for distance
+#include <memory>    // for unique_ptr
 #include <string>    // for u16string
-#include <vector>
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -123,13 +123,12 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
 
     do {
         // Create a buffer to convert into.
-        std::vector<char> buffer(buffer_size);
+        std::unique_ptr<char[]> buffer = std::make_unique<char[]>(buffer_size);
         size_t bytes_written = 0, bytes_read = 0;
 
         g_converter_convert(G_CONVERTER(converter.get()), input, input_len,
-                            buffer.data(), buffer.size(),
-                            G_CONVERTER_INPUT_AT_END, &bytes_read,
-                            &bytes_written, &error);
+                            buffer.get(), buffer_size, G_CONVERTER_INPUT_AT_END,
+                            &bytes_read, &bytes_written, &error);
 
         // If bytes were read, adjust input.
         if (bytes_read > 0) {
@@ -140,7 +139,7 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
         // If bytes were written append the buffer contents to our string
         // accumulator
         if (bytes_written > 0) {
-            char16_t* utf16_buffer = reinterpret_cast<char16_t*>(buffer.data());
+            char16_t* utf16_buffer = reinterpret_cast<char16_t*>(buffer.get());
             // std::u16string uses exactly 2 bytes for every character.
             output_str.append(utf16_buffer, bytes_written / 2);
         } else if (error) {
