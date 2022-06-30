@@ -1597,10 +1597,6 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
     return true;
 }
 
-void ArgsCache::clear() {
-    m_args.reset();
-}
-
 template <typename T, Arg::Kind ArgKind, typename... Args>
 constexpr T* ArgsCache::set_argument(uint8_t index, const char* name,
                                      GITypeInfo* type_info, GITransfer transfer,
@@ -1650,25 +1646,11 @@ constexpr T* ArgsCache::set_instance(GITransfer transfer,
                                                 transfer, flags);
 }
 
-Argument* ArgsCache::instance() const {
-    if (!m_is_method)
-        return nullptr;
-
-    return arg_get<Arg::Kind::INSTANCE>().get();
-}
-
 GType ArgsCache::instance_type() const {
     if (!m_is_method)
         return G_TYPE_NONE;
 
     return instance()->as_instance()->gtype();
-}
-
-Argument* ArgsCache::return_value() const {
-    if (!m_has_return)
-        return nullptr;
-
-    return arg_get<Arg::Kind::RETURN_VALUE>().get();
 }
 
 GITypeInfo* ArgsCache::return_type() const {

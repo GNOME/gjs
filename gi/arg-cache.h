@@ -155,11 +155,8 @@ struct ArgsCache {
 
     void build_instance(GICallableInfo* callable);
 
-    Argument* instance() const;
     GType instance_type() const;
-
     GITypeInfo* return_type() const;
-    Argument* return_value() const;
 
  private:
     void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
@@ -221,6 +218,20 @@ struct ArgsCache {
  public:
     constexpr Argument* argument(uint8_t index) const {
         return arg_get(index).get();
+    }
+
+    constexpr Argument* instance() const {
+        if (!m_is_method)
+            return nullptr;
+
+        return arg_get<Arg::Kind::INSTANCE>().get();
+    }
+
+    constexpr Argument* return_value() const {
+        if (!m_has_return)
+            return nullptr;
+
+        return arg_get<Arg::Kind::RETURN_VALUE>().get();
     }
 
  private:
