@@ -93,19 +93,17 @@ struct Argument {
     constexpr bool skip_out() const { return m_skip_out; }
 
  protected:
-    Argument() : m_skip_in(false), m_skip_out(false) {}
+    constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
 
     virtual const Arg::ReturnValue* as_return_value() const { return nullptr; }
     virtual const Arg::Instance* as_instance() const { return nullptr; }
 
-    void set_instance_parameter() {
+    constexpr void set_instance_parameter() {
         m_arg_name = "instance parameter";
         m_skip_out = true;
     }
 
-    void set_return_value() {
-        m_arg_name = "return value";
-    }
+    constexpr void set_return_value() { m_arg_name = "return value"; }
 
     bool invalid(JSContext*, const char* func = nullptr) const;
 
