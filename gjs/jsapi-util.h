@@ -116,12 +116,12 @@ struct GjsAutoPointer {
         return *this;
     }
 
-    GjsAutoPointer& operator=(GjsAutoPointer&& other) {
+    constexpr GjsAutoPointer& operator=(GjsAutoPointer&& other) {
         this->swap(other);
         return *this;
     }
 
-    GjsAutoPointer& operator=(GjsAutoPointer const& other) {
+    constexpr GjsAutoPointer& operator=(GjsAutoPointer const& other) {
         GjsAutoPointer dup(other.get(), GjsAutoTakeOwnership());
         this->swap(dup);
         return *this;
