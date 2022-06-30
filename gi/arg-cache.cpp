@@ -1518,16 +1518,16 @@ constexpr size_t argument_maximum_size() {
 #endif
 
 template <typename T, Arg::Kind ArgKind, typename... Args>
-std::unique_ptr<T> Argument::make(uint8_t index, const char* name,
-                                  GITypeInfo* type_info, GITransfer transfer,
-                                  GjsArgumentFlags flags, Args&&... args) {
+GjsAutoCppPointer<T> Argument::make(uint8_t index, const char* name,
+                                    GITypeInfo* type_info, GITransfer transfer,
+                                    GjsArgumentFlags flags, Args&&... args) {
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
     static_assert(
         sizeof(T) <= argument_maximum_size<T>(),
         "Think very hard before increasing the size of Gjs::Arguments. "
         "One is allocated for every argument to every introspected function.");
 #endif
-    auto arg = std::make_unique<T>(args...);
+    auto arg = new T(args...);
 
     if constexpr (ArgKind == Arg::Kind::INSTANCE) {
         g_assert(index == Argument::ABSENT &&
@@ -1598,7 +1598,7 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
         return false;
     }
 
-    m_args = std::make_unique<Argument::UniquePtr[]>(size);
+    m_args = std::make_unique<ArgumentPtr[]>(size);
     return true;
 }
 
@@ -1610,9 +1610,9 @@ template <typename T, Arg::Kind ArgKind, typename... Args>
 T* ArgsCache::set_argument(uint8_t index, const char* name,
                            GITypeInfo* type_info, GITransfer transfer,
                            GjsArgumentFlags flags, Args&&... args) {
-    std::unique_ptr<T> arg = Argument::make<T, ArgKind>(
+    GjsAutoCppPointer<T> arg = Argument::make<T, ArgKind>(
         index, name, type_info, transfer, flags, args...);
-    arg_get<ArgKind>(index) = std::move(arg);
+    arg_get<ArgKind>(index) = arg.release();
     return static_cast<T*>(arg_get<ArgKind>(index).get());
 }
 

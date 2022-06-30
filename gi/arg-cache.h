@@ -20,6 +20,7 @@
 
 #include "gi/arg.h"
 #include "gjs/enum-utils.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 class GjsFunctionCallState;
@@ -51,7 +52,6 @@ enum class Kind {
 }  // namespace Arg
 
 struct Argument {
-    using UniquePtr = std::unique_ptr<Argument>;
     virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -115,10 +115,12 @@ struct Argument {
     friend struct ArgsCache;
 
     template <typename T, Arg::Kind ArgKind, typename... Args>
-    static std::unique_ptr<T> make(uint8_t index, const char* name,
-                                   GITypeInfo* type_info, GITransfer transfer,
-                                   GjsArgumentFlags flags, Args&&... args);
+    static GjsAutoCppPointer<T> make(uint8_t index, const char* name,
+                                     GITypeInfo* type_info, GITransfer transfer,
+                                     GjsArgumentFlags flags, Args&&... args);
 };
+
+using ArgumentPtr = GjsAutoCppPointer<Argument>;
 
 // This is a trick to print out the sizes of the structs at compile time, in
 // an error message:
@@ -214,13 +216,12 @@ struct ArgsCache {
     }
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    inline Argument::UniquePtr& arg_get(
-        uint8_t index = Argument::MAX_ARGS) const {
+    inline ArgumentPtr& arg_get(uint8_t index = Argument::MAX_ARGS) const {
         return m_args[arg_index<ArgKind>(index)];
     }
 
  private:
-    std::unique_ptr<Argument::UniquePtr[]> m_args;
+    std::unique_ptr<ArgumentPtr[]> m_args;
 
     bool m_is_method : 1;
     bool m_has_return : 1;
