@@ -80,10 +80,11 @@ struct ObjectBox::impl {
     gatomicrefcount m_refcount;
 };
 
-ObjectBox::ObjectBox(JSObject* obj)
-    : m_impl(std::make_unique<ObjectBox::impl>(this, obj)) {}
+ObjectBox::ObjectBox(JSObject* obj) : m_impl(new ObjectBox::impl(this, obj)) {}
 
 void ObjectBox::destroy(ObjectBox* object) { object->m_impl->unref(); }
+
+void ObjectBox::destroy_impl(ObjectBox::impl* impl) { delete impl; }
 
 ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
     ObjectBox::Ptr box;

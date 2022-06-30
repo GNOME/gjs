@@ -6,8 +6,6 @@
 
 #include <config.h>
 
-#include <memory>
-
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>
@@ -40,5 +38,6 @@ class ObjectBox {
     static void boxed_free(void*);
 
     struct impl;
-    std::unique_ptr<impl> m_impl;
+    static void destroy_impl(impl*);
+    GjsAutoPointer<impl, impl, destroy_impl> m_impl;
 };
