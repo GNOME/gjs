@@ -708,6 +708,9 @@ valgrind_args = [
     '--error-exitcode=1'
 ]
 
+add_test_setup('quiet', env: ['GJS_DEBUG_TOPICS='], is_default: true)
+add_test_setup('verbose')
+
 add_test_setup('valgrind', timeout_multiplier: 40, env: valgrind_environment,
     exe_wrapper: ['valgrind'] + valgrind_args)
 

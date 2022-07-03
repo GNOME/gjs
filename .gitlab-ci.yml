@@ -71,7 +71,7 @@ build_recommended:
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:job-1740076_fedora.mozjs91-debug  # pinned on purpose
   variables:
-    TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
+    TEST_OPTS: --verbose --no-stdsplit --print-errorlogs --setup=verbose
   except:
     - schedules
 
@@ -83,7 +83,7 @@ sanitizer_gcc:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     CONFIG_OPTS: -Db_sanitize=address,undefined
-    TEST_OPTS: --timeout-multiplier=3
+    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
   except:
     - schedules
 
@@ -97,7 +97,7 @@ sanitizer_thread_gcc:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs91-debug
   variables:
     CONFIG_OPTS: -Db_sanitize=thread
-    TEST_OPTS: --timeout-multiplier=3
+    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
   except:
     - schedules
 
@@ -128,6 +128,7 @@ build_minimal:
     CONFIG_OPTS: >-
       -Dbuildtype=release
       -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
+    TEST_OPTS: --setup=verbose
   except:
     - schedules
 
@@ -142,6 +143,7 @@ build_unity:
     CONFIG_OPTS: >-
       -Dprofiler=disabled
       --unity on --unity-size=10000
+    TEST_OPTS: --setup=verbose
   except:
     - schedules
 
@@ -313,7 +315,7 @@ sanitizer_clang:
     CC: clang
     CXX: clang++
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
-    TEST_OPTS: --timeout-multiplier=3
+    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
   when: manual
   except:
     - schedules
