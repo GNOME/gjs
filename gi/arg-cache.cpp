@@ -6,6 +6,7 @@
 #include <config.h>
 
 #include <inttypes.h>
+#include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <string.h>
 
@@ -61,34 +62,9 @@ static const char* expected_type_names[] = {"object", "function", "string"};
 static_assert(G_N_ELEMENTS(expected_type_names) == ExpectedType::LAST,
               "Names must match the values in ExpectedType");
 
-// A helper function to retrieve array lengths from a GIArgument (letting the
-// compiler generate good instructions in case of big endian machines)
-[[nodiscard]] size_t gjs_g_argument_get_array_length(GITypeTag tag,
-                                                     GIArgument* arg) {
-    switch (tag) {
-        case GI_TYPE_TAG_INT8:
-            return gjs_arg_get<int8_t>(arg);
-        case GI_TYPE_TAG_UINT8:
-            return gjs_arg_get<uint8_t>(arg);
-        case GI_TYPE_TAG_INT16:
-            return gjs_arg_get<int16_t>(arg);
-        case GI_TYPE_TAG_UINT16:
-            return gjs_arg_get<uint16_t>(arg);
-        case GI_TYPE_TAG_INT32:
-            return gjs_arg_get<int32_t>(arg);
-        case GI_TYPE_TAG_UINT32:
-            return gjs_arg_get<uint32_t>(arg);
-        case GI_TYPE_TAG_INT64:
-            return gjs_arg_get<int64_t>(arg);
-        case GI_TYPE_TAG_UINT64:
-            return gjs_arg_get<uint64_t>(arg);
-        default:
-            g_assert_not_reached();
-    }
-}
-
-static void gjs_g_argument_set_array_length(GITypeTag tag, GIArgument* arg,
-                                            size_t value) {
+static constexpr void gjs_g_argument_set_array_length(GITypeTag tag,
+                                                      GIArgument* arg,
+                                                      size_t value) {
     switch (tag) {
         case GI_TYPE_TAG_INT8:
             gjs_arg_set<int8_t>(arg, value);
@@ -208,7 +184,8 @@ struct Positioned {
         m_arg_pos = pos;
     }
 
-    bool set_out_parameter(GjsFunctionCallState* state, GIArgument* arg) {
+    constexpr bool set_out_parameter(GjsFunctionCallState* state,
+                                     GIArgument* arg) {
         gjs_arg_unset<void*>(&state->out_cvalue(m_arg_pos));
         gjs_arg_set(arg, &gjs_arg_member<void*>(&state->out_cvalue(m_arg_pos)));
         return true;

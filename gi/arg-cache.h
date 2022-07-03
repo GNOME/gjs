@@ -8,7 +8,6 @@
 
 #include <config.h>
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include <limits>
@@ -230,8 +229,5 @@ struct ArgsCache {
 };
 
 }  // namespace Gjs
-
-[[nodiscard]] size_t gjs_g_argument_get_array_length(GITypeTag tag,
-                                                     GIArgument* arg);
 
 #endif  // GI_ARG_CACHE_H_
