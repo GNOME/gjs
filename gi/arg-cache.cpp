@@ -229,8 +229,10 @@ struct Array : BasicType {
 };
 
 struct BaseInfo {
-    explicit BaseInfo(GIBaseInfo* info)
-        : m_info(info ? g_base_info_ref(info) : nullptr) {}
+    constexpr explicit BaseInfo(GIBaseInfo* info,
+                                const GjsAutoTakeOwnership& add_ref)
+        : m_info(info, add_ref) {}
+    constexpr explicit BaseInfo(GIBaseInfo* info) : m_info(info) {}
 
     GjsAutoBaseInfo m_info;
 };
@@ -254,7 +256,8 @@ struct RegisteredType {
 
 struct RegisteredInterface : BaseInfo {
     explicit RegisteredInterface(GIBaseInfo* info)
-        : BaseInfo(info), m_gtype(g_registered_type_info_get_g_type(m_info)) {}
+        : BaseInfo(info, GjsAutoTakeOwnership{}),
+          m_gtype(g_registered_type_info_get_g_type(m_info)) {}
 
     constexpr GType gtype() const { return m_gtype; }
 
@@ -262,8 +265,8 @@ struct RegisteredInterface : BaseInfo {
 };
 
 struct Callback : Nullable, BaseInfo {
-    explicit Callback(GITypeInfo* type_info)
-        : BaseInfo(g_type_info_get_interface(type_info)),
+    constexpr explicit Callback(GIInterfaceInfo* info)
+        : BaseInfo(info, GjsAutoTakeOwnership{}),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
     inline void set_callback_destroy_pos(int pos) {
@@ -558,7 +561,7 @@ struct UnregisteredBoxedIn : BoxedIn, BaseInfo {
     explicit UnregisteredBoxedIn(GIInterfaceInfo* info)
         : BoxedIn(g_registered_type_info_get_g_type(info),
                   g_base_info_get_type(info)),
-          BaseInfo(info) {}
+          BaseInfo(info, GjsAutoTakeOwnership{}) {}
     // This is a smart argument, no release needed
     GIBaseInfo* info() const override { return m_info; }
 };
@@ -2178,8 +2181,8 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     common_args, DESTROY_NOTIFY_NO_CALLBACK);
                 *inc_counter_out = false;
             } else {
-                auto* gjs_arg =
-                    set_argument_auto<Arg::CallbackIn>(common_args, &type_info);
+                auto* gjs_arg = set_argument_auto<Arg::CallbackIn>(
+                    common_args, interface_info);
 
                 int destroy_pos = g_arg_info_get_destroy(arg);
                 int closure_pos = g_arg_info_get_closure(arg);
