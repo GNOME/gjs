@@ -11,10 +11,16 @@
   "sdk": "org.gnome.Sdk",
   "command": "gjs-console",
   "finish-args": [
-    "--socket=x11",
+    "--share=ipc",
+    "--socket=fallback-x11",
     "--socket=wayland",
+    "--device=dri",
     "--share=network",
-    "--filesystem=host"
+    "--filesystem=host",
+    "--filesystem=home",
+    "--socket=session-bus",
+    "--socket=system-bus",
+    "--socket=pulseaudio"
   ],
   "modules": [
     {
