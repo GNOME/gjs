@@ -197,3 +197,96 @@ describe('Gio.Settings overrides', function () {
         });
     });
 });
+
+describe('Gio.add_action_entries override', function () {
+    it('registers each entry as an action', function ()  {
+        const app = new Gio.Application();
+
+        const entries = [
+            {
+                name: 'foo',
+                parameter_type: 's',
+            },
+            {
+                name: 'bar',
+                state: 'false',
+            },
+        ];
+
+        app.add_action_entries(entries);
+
+        expect(app.lookup_action('foo').name).toEqual(entries[0].name);
+        expect(app.lookup_action('foo').parameter_type.dup_string()).toEqual(entries[0].parameter_type);
+
+        expect(app.lookup_action('bar').name).toEqual(entries[1].name);
+        expect(app.lookup_action('bar').state.print(true)).toEqual(entries[1].state);
+    });
+
+    it('connects and binds the activate handler', function (done) {
+        const app = new Gio.Application();
+        let action;
+
+        const entries = [
+            {
+                name: 'foo',
+                parameter_type: 's',
+                activate() {
+                    expect(this).toBe(action);
+                    done();
+                },
+            },
+        ];
+
+        app.add_action_entries(entries);
+        action = app.lookup_action('foo');
+
+        action.activate(new GLib.Variant('s', 'hello'));
+    });
+
+    it('connects and binds the change_state handler', function (done) {
+        const app = new Gio.Application();
+        let action;
+
+        const entries = [
+            {
+                name: 'bar',
+                state: 'false',
+                change_state() {
+                    expect(this).toBe(action);
+                    done();
+                },
+            },
+        ];
+
+        app.add_action_entries(entries);
+        action = app.lookup_action('bar');
+
+        action.change_state(new GLib.Variant('b', 'true'));
+    });
+
+    it('throw an error if the parameter_type is invalid', function () {
+        const app = new Gio.Application();
+
+        const entries = [
+            {
+                name: 'foo',
+                parameter_type: '(((',
+            },
+        ];
+
+        expect(() => app.add_action_entries(entries)).toThrow();
+    });
+
+    it('throw an error if the state is invalid', function () {
+        const app = new Gio.Application();
+
+        const entries = [
+            {
+                name: 'bar',
+                state: 'foo',
+            },
+        ];
+
+        expect(() => app.add_action_entries(entries)).toThrow();
+    });
+});
