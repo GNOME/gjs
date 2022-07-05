@@ -4,11 +4,6 @@
 
 const GLib = imports.gi.GLib;
 
-function _removeNewlines(str) {
-    let allNewlines = /\n/g;
-    return str.replace(allNewlines, '\\n');
-}
-
 function _filterStack(stack) {
     if (!stack)
         return 'No stack';
@@ -27,6 +22,7 @@ globalThis._jasmineEnv.configure({
 });
 globalThis._jasmineMain = GLib.MainLoop.new(null, false);
 globalThis._jasmineRetval = 0;
+globalThis._jasmineErrorsOutput = [];
 
 // Install Jasmine API on the global object
 let jasmineInterface = jasmineRequire.interface(jasmineCore, globalThis._jasmineEnv);
@@ -78,7 +74,8 @@ class TapReporter {
             tapReport = 'ok';
         }
         tapReport += ` ${this._specCount} ${result.fullName}`;
-        if (result.status === 'pending' || result.status === 'disabled') {
+        if (result.status === 'pending' || result.status === 'disabled' ||
+            result.status === 'excluded') {
             let reason = result.pendingReason || result.status;
             tapReport += ` # SKIP ${reason}`;
         }
@@ -87,10 +84,22 @@ class TapReporter {
         // Print additional diagnostic info on failure
         if (result.status === 'failed' && result.failedExpectations) {
             result.failedExpectations.forEach(failedExpectation => {
-                print('# Message:', _removeNewlines(failedExpectation.message));
-                print('# Stack:');
+                const output = [];
+                const messageLines = failedExpectation.message.split('\n');
+                output.push(`Message: ${messageLines.shift()}`);
+                output.push(...messageLines.map(str => `  ${str}`));
+                output.push('Stack:');
                 let stackTrace = _filterStack(failedExpectation.stack).trim();
-                print(stackTrace.split('\n').map(str => `#   ${str}`).join('\n'));
+                output.push(...stackTrace.split('\n').map(str => `  ${str}`));
+
+                if (globalThis._jasmineErrorsOutput.length) {
+                    globalThis._jasmineErrorsOutput.push(
+                        Array(GLib.getenv('COLUMNS') || 80).fill('―').join(''));
+                }
+
+                globalThis._jasmineErrorsOutput.push(`Test: ${result.fullName}`);
+                globalThis._jasmineErrorsOutput.push(...output);
+                print(output.map(l => `# ${l}`).join('\n'));
             });
         }
     }
