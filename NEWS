@@ -1,3 +1,19 @@
+Version 1.72.1
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * Compilation error: call to deleted function 'js_value_to_c' [#473, !738,
+    Evan Miller]
+  * jsapi-util-strings: Ignore locale to compute the upper case of a char (i.e.
+    fix implicit properties on Turkish locale) [!742, Marco Trevisan]
+  * Fix memory leak when passing a "transfer none" GBytes parameter to a native
+    function [!746, msizanoen1]
+  * arg-cache: Do not leak an interface info structures on Callbacks [!751,
+    Marco Trevisan]
+  * test-ci: Ignore safe directory errors on CI [!755, Marco Trevisan]
+
 Version 1.72.0
 --------------
 
