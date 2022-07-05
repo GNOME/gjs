@@ -1,7 +1,14 @@
 GJS includes a number of built-in functions for logging and aiding debugging, in
 addition to those available as a part of the GNOME APIs.
 
-# Built-in Functions
+## `console` Functions
+
+As of GJS 1.70 (GNOME 41), the `console` collection of functions are available
+as described in the WHATWG [Console Standard][console-standard]. The `console`
+object is available globally (i.e. without import) and the implementation source
+is found in [console.js][console-js].
+
+## Built-in Functions
 
 GJS includes four built-in logging functions: `log()`, `logError()`, `print()`
 and `printerr()`. These functions are available globally (ie. without import)
@@ -110,6 +117,8 @@ if (GLib.log_writer_is_journald(2))
     GLib.setenv('G_MESSAGES_DEBUG', LOG_DOMAIN, false);
 ```
 
+[console-js]: https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/modules/esm/console.js
+[console-standard]: https://console.spec.whatwg.org/
 [global-cpp]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/gjs/global.cpp
 [polari]: https://gitlab.gnome.org/GNOME/polari/blob/HEAD/src/main.js
 
