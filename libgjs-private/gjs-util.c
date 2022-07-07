@@ -318,11 +318,19 @@ void gjs_gtk_custom_sorter_set_sort_func(GObject* sorter,
 
 static void* log_writer_user_data = NULL;
 static GDestroyNotify log_writer_user_data_free = NULL;
+static GThread* log_writer_thread = NULL;
 
 static GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
                                                     const GLogField* fields,
                                                     size_t n_fields,
                                                     void* user_data) {
+    g_assert(log_writer_thread);
+
+    // If the wrapper is called from a thread other than the one that set it,
+    // return unhandled so the fallback logger is used.
+    if (g_thread_self() != log_writer_thread)
+        return g_log_writer_default(log_level, fields, n_fields, NULL);
+
     GjsGLogWriterFunc func = (GjsGLogWriterFunc)user_data;
     GVariantDict dict;
     g_variant_dict_init(&dict, NULL);
@@ -363,6 +371,12 @@ static GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
         func(log_level, string_fields, log_writer_user_data);
 
     g_variant_unref(string_fields);
+
+    // If the function did not handle the log, fallback to the default
+    // handler.
+    if (output == G_LOG_WRITER_UNHANDLED)
+        return g_log_writer_default(log_level, fields, n_fields, NULL);
+
     return output;
 }
 
@@ -379,6 +393,7 @@ void gjs_log_set_writer_default() {
     g_log_set_writer_func(g_log_writer_default, NULL, NULL);
     log_writer_user_data_free = NULL;
     log_writer_user_data = NULL;
+    log_writer_thread = NULL;
 }
 
 /**
@@ -395,6 +410,7 @@ void gjs_log_set_writer_func(GjsGLogWriterFunc func, void* user_data,
                              GDestroyNotify user_data_free) {
     log_writer_user_data = user_data;
     log_writer_user_data_free = user_data_free;
+    log_writer_thread = g_thread_self();
 
     g_log_set_writer_func(gjs_log_writer_func_wrapper, func, NULL);
 }
