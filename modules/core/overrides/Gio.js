@@ -417,10 +417,16 @@ function* _listModelIterator() {
         yield this.get_item(_index++);
 }
 
-function _promisify(proto, asyncFunc,
-    finishFunc = `${asyncFunc.replace(/_(begin|async)$/, '')}_finish`) {
+function _promisify(proto, asyncFunc, finishFunc = undefined) {
     if (proto[asyncFunc] === undefined)
         throw new Error(`${proto} has no method named ${asyncFunc}`);
+
+    if (finishFunc === undefined) {
+        if (asyncFunc.endsWith('_begin') || asyncFunc.endsWith('_async'))
+            finishFunc = `${asyncFunc.slice(0, -5)}finish`;
+        else
+            finishFunc = `${asyncFunc}_finish`;
+    }
 
     if (proto[finishFunc] === undefined)
         throw new Error(`${proto} has no method named ${finishFunc}`);
