@@ -433,7 +433,7 @@ function _promisify(proto, asyncFunc,
         if (!args.every(arg => typeof arg !== 'function'))
             return this[originalFuncName](...args);
         return new Promise((resolve, reject) => {
-            const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
+            let {stack: callStack} = new Error();
             this[originalFuncName](...args, function (source, res) {
                 try {
                     const result = source !== null && source[finishFunc] !== undefined
@@ -443,6 +443,8 @@ function _promisify(proto, asyncFunc,
                         result.shift();
                     resolve(result);
                 } catch (error) {
+                    callStack = callStack.split('\n').filter(line =>
+                        line.indexOf('_promisify/') === -1).join('\n');
                     if (error.stack)
                         error.stack += `### Promise created here: ###\n${callStack}`;
                     else
