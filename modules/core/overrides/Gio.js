@@ -430,7 +430,7 @@ function _promisify(proto, asyncFunc,
         return;
     proto[originalFuncName] = proto[asyncFunc];
     proto[asyncFunc] = function (...args) {
-        if (!args.every(arg => typeof arg !== 'function'))
+        if (args.length === this[originalFuncName].length)
             return this[originalFuncName](...args);
         return new Promise((resolve, reject) => {
             let {stack: callStack} = new Error();
