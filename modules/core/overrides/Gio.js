@@ -425,15 +425,16 @@ function _promisify(proto, asyncFunc,
     if (proto[finishFunc] === undefined)
         throw new Error(`${proto} has no method named ${finishFunc}`);
 
-    if (proto[`_original_${asyncFunc}`] !== undefined)
+    const originalFuncName = `_original_${asyncFunc}`;
+    if (proto[originalFuncName] !== undefined)
         return;
-    proto[`_original_${asyncFunc}`] = proto[asyncFunc];
+    proto[originalFuncName] = proto[asyncFunc];
     proto[asyncFunc] = function (...args) {
         if (!args.every(arg => typeof arg !== 'function'))
-            return this[`_original_${asyncFunc}`](...args);
+            return this[originalFuncName](...args);
         return new Promise((resolve, reject) => {
             const callStack = new Error().stack.split('\n').filter(line => !line.match(/promisify/)).join('\n');
-            this[`_original_${asyncFunc}`](...args, function (source, res) {
+            this[originalFuncName](...args, function (source, res) {
                 try {
                     const result = source !== null && source[finishFunc] !== undefined
                         ? source[finishFunc](res)
