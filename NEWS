@@ -1,3 +1,55 @@
+Version 1.73.1
+--------------
+
+- The interactive interpreter now displays its output more intelligently,
+  pretty-printing the properties and values of objects based on their type. This
+  improvement also applies to the log() and logError() functions.
+
+- New API: DBus proxy classes now include methods named with the suffix 'Async',
+  which perform async calls to DBus APIs and return Promises. This is in
+  addition to the existing suffixes 'Sync' (for blocking calls) and 'Remote'
+  (for async calls with callbacks.)
+
+- There is an override for Gio.ActionMap.prototype.add_action_entries().
+  Previously this method wouldn't work because it required an array of
+  Gio.ActionEntry objects, which are not possible to construct in GJS. Now it
+  can be used with an array of plain objects. (e.g. `this.add_action_entries([
+  {name: 'open', activate() { ... }}]);`
+
+- GJS is now compatible with libffi 3.4.2 and later. All earlier versions of GJS
+  are not compatible with libffi 3.4.2 and later unless libffi is built with the
+  --disable-exec-static-tramp flag.
+
+- GJS now requires Meson 0.54 to build.
+
+- Closed bugs and merge requests:
+  * Verbose Object Print Output [#107, !587, Nasah Kuma]
+  * Add support for JS async calls in DBusProxyWrapper [!731, Sergio Costas]
+  * Crash after build against libffi 3.4.2 [#428, !737, Evan Welsh]
+  * Handle reference cycles in new console pretty print function [#469, !739,
+    Nasah Kuma]
+  * Gnome-Shell 42 - crash after login (general protection fault) [#479, !740,
+    Xi Ruoyao]
+  * Various maintenance [!741, Philip Chimento]
+  * jsapi-util-strings: Ignore locale to compute the upper case of a char (i.e.
+    fix implicit properties on Turkish locale) [!742, Marco Trevisan]
+  * Dockerfile: Install Turkish locale in CI for UTF-8 locale too [!743, Marco
+    Trevisan]
+  * Improve pretty-print output for GObject-introspected objects [#476, !744,
+    Nasah Kuma]
+  * Expose pretty print function to tests [!745, Nasah Kuma]
+  * build: track changes to Sysprof meson options [!747, Christian Hergert]
+  * Make Gio.ActionMap.add_action_entries work [#407, !749, Sonny Piers]
+  * Make DBus session and system props non-enumerable [!750, Sonny Piers]
+  * gi/arg-inl: Mark the arg functions as constexpr [!752, Marco Trevisan]
+  * build: Do not use verbose GJS debug logging in tests by default [!753, Marco
+    Trevisan]
+  * minijasmine: Print test JS errors output if any [!754, Marco Trevisan]
+  * doc: document the existence of the console object in GJS [!759, Andy Holmes]
+  * arg-cache: Use a switch to select the not-introspectable error [!762, Marco
+    Trevisan]
+  * log_set_writer_func is not safe to use [#481, !766, Evan Welsh]
+
 Version 1.72.1
 --------------
 
