@@ -72,7 +72,8 @@
                 break;
             }
         }
-        return `{ ${formattedObject.join(', ')} }`;
+        return Object.keys(formattedObject).length === 0 ? '{}'
+            : `{ ${formattedObject.join(', ')} }`;
     }
 
     function formatArray(arr, printedObjects) {
