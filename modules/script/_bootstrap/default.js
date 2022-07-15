@@ -14,13 +14,13 @@
     } = imports._print;
 
     function log(...args) {
-        return nativeLog(args.map(prettyPrint).join(' '));
+        return nativeLog(args.map(arg => typeof arg === 'string' ? arg : prettyPrint(arg)).join(' '));
     }
 
     function logError(e, ...args) {
         if (args.length === 0)
             return nativeLogError(e);
-        return nativeLogError(e, args.map(prettyPrint).join(' '));
+        return nativeLogError(e, args.map(arg => typeof arg === 'string' ? arg : prettyPrint(arg)).join(' '));
     }
 
     function prettyPrint(value) {
@@ -35,6 +35,8 @@
                 return value.toString();
             }
         } else {
+            if (typeof value === 'string')
+                return JSON.stringify(value);
             return value.toString();
         }
     }
