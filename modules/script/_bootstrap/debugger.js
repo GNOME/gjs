@@ -324,10 +324,12 @@ function splitPrintOptions(s, style) {
 
 function doPrint(expr, style) {
     // This is the real deal.
+    expr = `(${expr})`;
     const cv = saveExcursion(
         () => focusedFrame === null
             ? debuggeeGlobalWrapper.executeInGlobalWithBindings(expr, debuggeeValues)
             : focusedFrame.evalWithBindings(expr, debuggeeValues));
+
     if (cv === null) {
         print('Debuggee died.');
     } else if ('return' in cv) {
