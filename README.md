@@ -6,13 +6,16 @@
 [![License](https://img.shields.io/badge/License-LGPL%20v2%2B-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/COPYING)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/COPYING)
 
-JavaScript bindings for GNOME
+GNOME JavaScript
 =============================
 
+GJS is a JavaScript runtime built on
+[Firefox's SpiderMonkey JavaScript engine](https://spidermonkey.dev/) and
+the [GNOME platform libraries](https://developer.gnome.org/).
+
 Use the GNOME platform libraries in your JavaScript programs.
-GJS powers GNOME Shell, Polari, GNOME Documents, and many other apps.
-Under the hood it uses SpiderMonkey, Mozilla's JavaScript engine
-originally developed for Firefox.
+GJS powers GNOME Shell, Maps, Characters, Sound Recorder and
+[many other apps](./doc/Home.md).
 
 ## Installation
 
