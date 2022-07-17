@@ -44,13 +44,19 @@ build-alpine-image:
   artifacts:
     name: log_coverage
     when: always
+    reports:
+      junit: _coverage_build/meson-logs/testlog*.junit.xml
+    expose_as: 'Coverage Report'
     paths:
+      - _coverage/html/index.html
       - _coverage/html
-      - _coverage_build/meson-logs/*log*.txt
+      - _coverage_build/meson-logs
 
 .build: &build
   when: on_success
   artifacts:
+    reports:
+      junit: _build/meson-logs/testlog*.junit.xml
     name: log
     when: always
     paths:
