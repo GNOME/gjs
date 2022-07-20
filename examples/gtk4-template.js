@@ -29,8 +29,8 @@ const ExampleWindow = GObject.registerClass({
         'button',
     ],
 }, class ExampleWindow extends Gtk.Window {
-    _init(params = {}) {
-        super._init(params);
+    constructor(params = {}) {
+        super(params);
 
         // The template has been initialized and you can access the children
         this.box.visible = true;

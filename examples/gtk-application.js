@@ -28,8 +28,8 @@ var ExampleApplication = GObject.registerClass({
     },
     Signals: {'examplesig': {param_types: [GObject.TYPE_INT]}},
 }, class ExampleApplication extends Gtk.Application {
-    _init() {
-        super._init({
+    constructor() {
+        super({
             application_id: 'org.gnome.gjs.ExampleApplication',
             flags: Gio.ApplicationFlags.FLAGS_NONE,
         });
