@@ -36,17 +36,6 @@ function dvToString(v) {
     return typeof v !== 'object' || v === null ? uneval(v) : `[object ${v.class}]`;
 }
 
-function summarizeObject(dv) {
-    const obj = {};
-    for (var name of dv.getOwnPropertyNames()) {
-        var v = dv.getOwnPropertyDescriptor(name).value;
-        if (v instanceof Debugger.Object)
-            v = '(...)';
-        obj[name] = v;
-    }
-    return obj;
-}
-
 function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     // Special sentinel values returned by Debugger.Environment.getVariable()
     if (typeof dv === 'object' && dv !== null) {
@@ -71,10 +60,11 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     }
 
     if (style.brief)
-        return [dvrepr, JSON.stringify(summarizeObject(dv), null, 4)];
+        return [dvrepr, dvrepr];
 
     const str = debuggeeGlobalWrapper.executeInGlobalWithBindings(
-        'JSON.stringify(v, null, 4)', {v: dv});
+        'imports._print.getPrettyPrintFunction(globalThis)(v)', {v: dv});
+
     if ('throw' in str) {
         if (style.noerror)
             return [dvrepr, undefined];
