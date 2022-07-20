@@ -5,17 +5,9 @@ db> c
 Debugger statement, toplevel at keys.debugger.js:8:0
 db> keys a
 $1 = [object Array]
-[
-    "foo",
-    "bar",
-    "tres"
-]
+["foo", "bar", "tres"]
 db> k a
 $2 = [object Array]
-[
-    "foo",
-    "bar",
-    "tres"
-]
+["foo", "bar", "tres"]
 db> c
 Program exited with code 0

@@ -14,6 +14,6 @@ const j = new Set([5, 6, 7]);
 const k = class J {};
 const l = new GObject.Object();
 const m = new Error('message');
-const n = {a:1};
+const n = {a: 1};
 debugger;
 void (a, b, c, d, e, f, g, h, i, j, k, l, m, n);
