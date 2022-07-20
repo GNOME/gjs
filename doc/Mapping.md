@@ -41,10 +41,9 @@ var MyLabel = GObject.registerClass({
     Children: [ 'label-child' ],                // Template children
     InternalChildren: [ 'internal-box' ]        // Template internal (private) children
 }, class MyLabel extends Gtk.Label {
-    // Currently GObjects use _init, not construct
-    _init(params) {
+    constructor(params) {
         // Chaining up
-        super._init(params);
+        super(params);
     }
 });
 ```
@@ -168,8 +167,8 @@ var MyLabel = GObject.registerClass({
         }
     }
 }, class ExampleApplication extends GObject.Object {
-    _init() {
-        super._init();
+    constructor() {
+        super();
         this.emit('my-signal', 'a string parameter');
     }
 });
