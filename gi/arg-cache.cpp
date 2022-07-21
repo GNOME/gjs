@@ -242,7 +242,7 @@ struct RegisteredInterface : BaseInfo {
 };
 
 struct Callback : Nullable, BaseInfo {
-    constexpr explicit Callback(GIInterfaceInfo* info)
+    explicit Callback(GIInterfaceInfo* info)
         : BaseInfo(info, GjsAutoTakeOwnership{}),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
