@@ -48,6 +48,8 @@ var MyLabel = GObject.registerClass({
 });
 ```
 
+Note that before GJS 1.72 (GNOME 42), you had to override `_init()` instead of `constructor()` and chain-up with `super._init()`. This is still supported in GJS 1.72 and later.
+
 ### GType Objects
 
 This is the object that represents a type in the GObject type system. Internally a GType is an integer, but you can't access that integer in GJS.
