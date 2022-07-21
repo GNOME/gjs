@@ -17,8 +17,8 @@ var GjsListStore = GObject.registerClass({
     GTypeName: 'GjsListStore',
     Implements: [Gio.ListModel],
 }, class MyList extends GObject.Object {
-    _init() {
-        super._init();
+    constructor() {
+        super();
 
         /* We'll use a native Array as internal storage for the list model */
         this._items = [];
