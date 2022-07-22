@@ -171,8 +171,7 @@ std::unique_ptr<BoxedPrototype::FieldMap> BoxedPrototype::create_field_map(
 
         // We get the string as a jsid later, which is interned. We intern the
         // string here as well, so it will be the same string pointer
-        JS::RootedString name(cx, JS_NewStringCopyZ(cx, field_info.name()));
-        JSString* atom = JS_AtomizeAndPinJSString(cx, name);
+        JSString* atom = JS_AtomizeAndPinString(cx, field_info.name());
 
         result->putNewInfallible(atom, std::move(field_info));
     }
