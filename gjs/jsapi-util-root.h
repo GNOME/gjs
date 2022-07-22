@@ -178,7 +178,7 @@ class GjsMaybeOwned {
     void root(JSContext* cx, const T& thing) {
         debug("root()");
         g_assert(!m_root);
-        g_assert(m_heap.get() == JS::SafelyInitialized<T>());
+        g_assert(m_heap.get() == JS::SafelyInitialized<T>::create());
         m_heap.~Heap();
         m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
     }
@@ -204,7 +204,7 @@ class GjsMaybeOwned {
     void reset() {
         debug("reset()");
         if (!m_root) {
-            m_heap = JS::SafelyInitialized<T>();
+            m_heap = JS::SafelyInitialized<T>::create();
             return;
         }
 
