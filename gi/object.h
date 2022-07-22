@@ -333,18 +333,19 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void discard_wrapper(void) { m_wrapper.reset(); }
     void switch_to_rooted(JSContext* cx) { m_wrapper.switch_to_rooted(cx); }
     void switch_to_unrooted(JSContext* cx) { m_wrapper.switch_to_unrooted(cx); }
-    [[nodiscard]] bool update_after_gc() { return m_wrapper.update_after_gc(); }
+    [[nodiscard]] bool update_after_gc(JSTracer* trc) {
+        return m_wrapper.update_after_gc(trc);
+    }
     [[nodiscard]] bool wrapper_is_rooted() const { return m_wrapper.rooted(); }
     void release_native_object(void);
     void associate_js_gobject(JSContext* cx, JS::HandleObject obj,
                               GObject* gobj);
     void disassociate_js_gobject(void);
     void handle_context_dispose(void);
-    [[nodiscard]] bool weak_pointer_was_finalized();
+    [[nodiscard]] bool weak_pointer_was_finalized(JSTracer* trc);
     static void ensure_weak_pointer_callback(JSContext* cx);
-    static void update_heap_wrapper_weak_pointers(JSContext* cx,
-                                                  JS::Compartment* compartment,
-                                                  void* data);
+    static void update_heap_wrapper_weak_pointers(JSTracer* trc,
+                                                  JS::Compartment*, void* data);
 
  public:
     void toggle_down(void);

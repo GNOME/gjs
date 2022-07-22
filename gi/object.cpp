@@ -1584,7 +1584,7 @@ ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
  * Private callback, called after the JS engine finishes garbage collection, and
  * notifies when weak pointers need to be either moved or swept.
  */
-void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
+void ObjectInstance::update_heap_wrapper_weak_pointers(JSTracer* trc,
                                                        JS::Compartment*,
                                                        void*) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
@@ -1596,15 +1596,15 @@ void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
     auto locked_queue = ToggleQueue::get_default();
 
     ObjectInstance::remove_wrapped_gobjects_if(
-        std::mem_fn(&ObjectInstance::weak_pointer_was_finalized),
+        [&trc](ObjectInstance* instance) -> bool {
+            return instance->weak_pointer_was_finalized(trc);
+        },
         std::mem_fn(&ObjectInstance::disassociate_js_gobject));
 
     s_wrapped_gobject_list.shrink_to_fit();
 }
 
-bool
-ObjectInstance::weak_pointer_was_finalized(void)
-{
+bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
     if (has_wrapper() && !wrapper_is_rooted()) {
         bool toggle_down_queued, toggle_up_queued;
 
@@ -1615,7 +1615,7 @@ ObjectInstance::weak_pointer_was_finalized(void)
         if (!toggle_down_queued && toggle_up_queued)
             return false;
 
-        if (!update_after_gc())
+        if (!update_after_gc(trc))
             return false;
 
         if (toggle_down_queued)

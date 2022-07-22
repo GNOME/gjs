@@ -19,6 +19,8 @@
 #include "gjs/jsapi-util.h"  // for maybe_get_private
 #include "test/gjs-test-utils.h"
 
+class JSTracer;
+
 // COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
 #ifdef __clang_analyzer__
 void g_assertion_message(const char*, const char*, int, const char*,
@@ -148,10 +150,10 @@ static void test_maybe_owned_rooted_is_collected_after_reset(
     delete obj;
 }
 
-static void update_weak_pointer(JSContext*, JS::Compartment*, void* data) {
+static void update_weak_pointer(JSTracer* trc, JS::Compartment*, void* data) {
     auto* obj = static_cast<GjsMaybeOwned<JSObject*>*>(data);
     if (*obj)
-        obj->update_after_gc();
+        obj->update_after_gc(trc);
 }
 
 static void test_maybe_owned_weak_pointer_is_collected_by_gc(
