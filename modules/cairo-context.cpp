@@ -20,7 +20,6 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_SetElement
 
 #include "gi/arg-inl.h"
@@ -86,9 +85,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
         return false;                                                       \
     cfunc(cr, &arg1, &arg2);                                                \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                         \
-        JS::RootedObject array(                                             \
-            context,                                                        \
-            JS::NewArrayObject(context, JS::HandleValueArray::empty()));    \
+        JS::RootedObject array(context, JS::NewArrayObject(context, 2));    \
         if (!array)                                                         \
             return false;                                                   \
         JS::RootedValue r(context, JS::NumberValue(arg1));                  \
@@ -107,9 +104,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                             \
     cfunc(cr, &arg1, &arg2);                                             \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                      \
-        JS::RootedObject array(                                          \
-            context,                                                     \
-            JS::NewArrayObject(context, JS::HandleValueArray::empty())); \
+        JS::RootedObject array(context, JS::NewArrayObject(context, 2)); \
         if (!array)                                                      \
             return false;                                                \
         JS::RootedValue r(context, JS::NumberValue(arg1));               \
@@ -128,9 +123,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                             \
     cfunc(cr, &arg1, &arg2, &arg3, &arg4);                               \
     {                                                                    \
-        JS::RootedObject array(                                          \
-            context,                                                     \
-            JS::NewArrayObject(context, JS::HandleValueArray::empty())); \
+        JS::RootedObject array(context, JS::NewArrayObject(context, 4)); \
         if (!array)                                                      \
             return false;                                                \
         JS::RootedValue r(context, JS::NumberValue(arg1));               \
