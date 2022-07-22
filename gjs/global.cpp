@@ -107,12 +107,8 @@ class GjsBaseGlobal {
                          JS::SourceOwnership::TakeOwnership))
             return false;
 
-        JS::RootedScript compiled_script(cx, JS::Compile(cx, options, source));
-        if (!compiled_script)
-            return false;
-
         JS::RootedValue ignored(cx);
-        return JS::CloneAndExecuteScript(cx, compiled_script, &ignored);
+        return JS::Evaluate(cx, options, source, &ignored);
     }
 
     GJS_JSAPI_RETURN_CONVENTION
