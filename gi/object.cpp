@@ -2534,7 +2534,6 @@ const struct JSClassOps ObjectBase::class_ops = {
     &ObjectBase::finalize,
     NULL,
     NULL,
-    NULL,
     &ObjectBase::trace,
 };
 

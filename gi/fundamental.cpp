@@ -244,7 +244,6 @@ const struct JSClassOps FundamentalBase::class_ops = {
     nullptr,  // mayResolve
     &FundamentalBase::finalize,
     nullptr,  // call
-    nullptr,  // hasInstance
     nullptr,  // construct
     &FundamentalBase::trace
 };

@@ -764,7 +764,6 @@ const struct JSClassOps BoxedBase::class_ops = {
     nullptr,  // mayResolve
     &BoxedBase::finalize,
     nullptr,  // call
-    nullptr,  // hasInstance
     nullptr,  // construct
     &BoxedBase::trace
 };
