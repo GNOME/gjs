@@ -102,7 +102,7 @@ bool BoxedPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
         if (flags & GI_FUNCTION_IS_METHOD) {
             const char* name = meth_info.name();
             jsid id = gjs_intern_string_to_id(cx, name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             if (!properties.append(id)) {
                 JS_ReportOutOfMemory(cx);
@@ -966,7 +966,7 @@ bool BoxedPrototype::init(JSContext* context) {
                     first_constructor = i;
                     first_constructor_name =
                         gjs_intern_string_to_id(context, func_info.name());
-                    if (first_constructor_name == JSID_VOID)
+                    if (first_constructor_name.isVoid())
                         return false;
                 }
 
@@ -975,7 +975,7 @@ bool BoxedPrototype::init(JSContext* context) {
                     m_zero_args_constructor = i;
                     zero_args_constructor_name =
                         gjs_intern_string_to_id(context, func_info.name());
-                    if (zero_args_constructor_name == JSID_VOID)
+                    if (zero_args_constructor_name.isVoid())
                         return false;
                 }
 

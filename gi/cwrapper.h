@@ -15,7 +15,6 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
-#include <js/ComparisonOperators.h>
 #include <js/Id.h>
 #include <js/Object.h>  // for GetClass
 #include <js/RootingAPI.h>
@@ -466,7 +465,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
                 in_obj = gjs_get_import_global(cx);
             JS::RootedId class_name(
                 cx, gjs_intern_string_to_id(cx, Base::klass.name));
-            if (class_name == JSID_VOID ||
+            if (class_name.isVoid() ||
                 !JS_DefinePropertyById(cx, in_obj, class_name, ctor_obj,
                                        GJS_MODULE_PROP_FLAGS))
                 return nullptr;

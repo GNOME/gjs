@@ -18,7 +18,7 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/Exception.h>
-#include <js/Id.h>                  // for JSID_VOID
+#include <js/Id.h>                  // for PropertyKey
 #include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
 #include <js/RootingAPI.h>
@@ -482,7 +482,7 @@ gjs_lookup_namespace_object(JSContext  *context,
     }
 
     JS::RootedId ns_name(context, gjs_intern_string_to_id(context, ns));
-    if (ns_name == JSID_VOID)
+    if (ns_name.isVoid())
         return nullptr;
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }

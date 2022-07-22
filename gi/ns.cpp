@@ -145,7 +145,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             const char* name = info.name();
 
             jsid id = gjs_intern_string_to_id(cx, name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }

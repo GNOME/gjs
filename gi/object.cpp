@@ -1124,7 +1124,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
                 jsid id = gjs_intern_string_to_id(cx, name);
-                if (id == JSID_VOID)
+                if (id.isVoid())
                     return false;
                 properties.infallibleAppend(id);
             }
@@ -1138,7 +1138,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
 
             jsid id = gjs_intern_string_to_id(cx, js_name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }
@@ -1163,7 +1163,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
                 jsid id = gjs_intern_string_to_id(cx, name);
-                if (id == JSID_VOID)
+                if (id.isVoid())
                     return false;
                 properties.infallibleAppend(id);
             }
@@ -1176,7 +1176,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
             jsid id = gjs_intern_string_to_id(cx, js_name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }
