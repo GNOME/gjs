@@ -148,6 +148,7 @@ sysprof_capture = dependency('sysprof-capture-4',
     required: get_option('profiler'), include_type: 'system',
     fallback: ['sysprof', 'libsysprof_capture_dep'],
     default_options: [
+        'agent=false',
         'examples=false',
         'gtk=false',
         'tests=false',
