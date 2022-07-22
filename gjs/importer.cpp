@@ -174,9 +174,9 @@ define_meta_properties(JSContext       *context,
                                module_path, attrs))
         return false;
 
-    JS::RootedId to_string_tag_name(context,
-        SYMBOL_TO_JSID(JS::GetWellKnownSymbol(context,
-                                              JS::SymbolCode::toStringTag)));
+    JS::RootedId to_string_tag_name(
+        context, JS::PropertyKey::Symbol(JS::GetWellKnownSymbol(
+                     context, JS::SymbolCode::toStringTag)));
     return JS_DefinePropertyById(context, module_obj, to_string_tag_name,
                                  to_string_tag, attrs);
 }

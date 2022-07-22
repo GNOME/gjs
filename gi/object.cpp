@@ -679,7 +679,7 @@ static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
         g_assert(v_override_symbol.isSymbol() &&
                  "override symbol must be a symbol");
         JS::RootedSymbol override_symbol(cx, v_override_symbol.toSymbol());
-        JS::RootedId override_id(cx, SYMBOL_TO_JSID(override_symbol));
+        JS::RootedId override_id(cx, JS::PropertyKey::Symbol(override_symbol));
 
         JS::RootedObject this_obj(cx);
         if (!args.computeThis(cx, &this_obj))
@@ -699,7 +699,7 @@ static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_assert(v_prototype.isObject() && "prototype must be an object");
 
     JS::RootedObject prototype(cx, &v_prototype.toObject());
-    JS::RootedId id(cx, JS::PropertyKey::fromNonIntAtom(JS_GetFunctionId(
+    JS::RootedId id(cx, JS::PropertyKey::NonIntAtom(JS_GetFunctionId(
                             JS_GetObjectFunction(&args.callee()))));
     return JS_GetPropertyById(cx, prototype, id, args.rval());
 }
@@ -723,7 +723,7 @@ static bool interface_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject this_obj(cx);
     if (!args.computeThis(cx, &this_obj))
         return false;
-    JS::RootedId override_id(cx, SYMBOL_TO_JSID(symbol));
+    JS::RootedId override_id(cx, JS::PropertyKey::Symbol(symbol));
 
     return JS_SetPropertyById(cx, this_obj, override_id, args[0]);
 }

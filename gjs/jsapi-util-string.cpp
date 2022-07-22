@@ -438,7 +438,7 @@ bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
         return true;
     }
 
-    JSLinearString* lstr = JSID_TO_LINEAR_STRING(id);
+    JSLinearString* lstr = id.toLinearString();
     JS::RootedString s(cx, JS_FORGET_STRING_LINEARNESS(lstr));
     *name_p = JS_EncodeStringToUTF8(cx, s);
     return !!*name_p;
@@ -475,7 +475,7 @@ gjs_intern_string_to_id(JSContext  *cx,
 {
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     if (!str)
-        return JSID_VOID;
+        return JS::PropertyKey::Void();
     return JS::PropertyKey::fromPinnedString(str);
 }
 
@@ -662,6 +662,6 @@ std::string
 gjs_debug_id(jsid id)
 {
     if (id.isString())
-        return gjs_debug_linear_string(JSID_TO_LINEAR_STRING(id), NoQuotes);
+        return gjs_debug_linear_string(id.toLinearString(), NoQuotes);
     return gjs_debug_value(js::IdToValue(id));
 }

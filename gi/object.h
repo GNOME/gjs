@@ -170,7 +170,7 @@ struct IdHasher {
             return js::DefaultHasher<JSString*>::hash(id.toString());
         if (id.isSymbol())
             return js::DefaultHasher<JS::Symbol*>::hash(id.toSymbol());
-        return mozilla::HashGeneric(JSID_BITS(id));
+        return mozilla::HashGeneric(id.asRawBits());
     }
     static bool match(jsid id1, jsid id2) { return id1 == id2; }
 };

@@ -930,7 +930,7 @@ BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
     : GIWrapperPrototype(info, gtype),
       m_zero_args_constructor(-1),
       m_default_constructor(-1),
-      m_default_constructor_name(JSID_VOID),
+      m_default_constructor_name(JS::PropertyKey::Void()),
       m_can_allocate_directly(struct_is_simple(info)) {
     if (!m_can_allocate_directly) {
         m_can_allocate_directly_without_pointers = false;
@@ -945,8 +945,8 @@ BoxedPrototype::BoxedPrototype(GIStructInfo* info, GType gtype)
 bool BoxedPrototype::init(JSContext* context) {
     int i, n_methods;
     int first_constructor = -1;
-    jsid first_constructor_name = JSID_VOID;
-    jsid zero_args_constructor_name = JSID_VOID;
+    jsid first_constructor_name = JS::PropertyKey::Void();
+    jsid zero_args_constructor_name = JS::PropertyKey::Void();
 
     if (m_gtype != G_TYPE_NONE) {
         /* If the structure is registered as a boxed, we can create a new instance by
