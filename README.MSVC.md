@@ -7,13 +7,13 @@ recent-enough Windows SDK from Microsoft is still required if using
 clang-cl, as we will still use items from the Windows SDK.
 
 Recent official binary installers of CLang (which contains clang-cl)
-from the LLVM website are known to work to build SpiderMonkey 91 and
+from the LLVM website are known to work to build SpiderMonkey 102 and
 GJS.
 
 You will need the following items to build GJS using Visual Studio
 or clang-cl (they can be built with Visual Studio 2015 or later,
 unless otherwise noted):
--SpiderMonkey 91.x (mozjs-91). This must be built with clang-cl as
+-SpiderMonkey 102.x (mozjs-102). This must be built with clang-cl as
  the Visual Studio  compiler is no longer supported for building this.
  Please see the below section carefully on this...
 -GObject-Introspection (G-I) 1.61.2 or later
@@ -44,8 +44,8 @@ for the suitable release series of SpiderMonkey that corresponds to
 the GJS version that is being built, as GJS depends on ESR (Extended 
 Service Release, a.k.a Long-term support) releases of SpiderMonkey.
 
-You may also be able to obtain the SpiderMonkey 91.x sources via the
-FireFox (ESR) or Thunderbird 91.x sources, in $(srcroot)/js.
+You may also be able to obtain the SpiderMonkey 102.x sources via the
+FireFox (ESR) or Thunderbird 102.x sources, in $(srcroot)/js.
 
 Please do note that the build must be done carefully, in addition to the
 official instructions that are posted on the Mozilla website:
@@ -53,7 +53,7 @@ official instructions that are posted on the Mozilla website:
 https://firefox-source-docs.mozilla.org/js/build.html
 
 You will need to create a .mozconfig file that will describe your build
-options for the build in the root directory of the Firefox/ThunderBird 91.x
+options for the build in the root directory of the Firefox/ThunderBird 102.x
 sources.  A sample content of the .mozconfig file can be added as follows:
 
 ```
@@ -66,7 +66,7 @@ ac_add_options --disable-tests
 ac_add_options --enable-optimize
 ac_add_options --disable-debug
 ac_add_options --disable-jemalloc
-ac_add_options --prefix=c:/software.b/mozjs91.bin
+ac_add_options --prefix=c:/software.b/mozjs102.bin
 ```
 
 An explanation of the lines above:
@@ -79,10 +79,10 @@ An explanation of the lines above:
 *  `ac_add_options --enable-optimize`: Use for release builds of SpiderMonkey.  Use `--disable-optimize` instead if building with `--enable-debug`
 *  `ac_add_options --enable-debug`: Include debugging functions, for debug builds.  Use `--disable-debug` instead if building with `--enable-optimize`
 *  `ac_add_options --disable-jemalloc`: This is absolutely needed, otherwise GJS will not build and run correctly
-*  `ac_add_options --prefix=c:/software.b/mozjs91.bin`: Some installation path, change as needed
+*  `ac_add_options --prefix=c:/software.b/mozjs102.bin`: Some installation path, change as needed
 
 If your GJS build crashes upon launch, use Dependency Walker to ensure that
-mozjs-91.dll does not depend on mozglue.dll!  If it does, or if GJS fails to
+mozjs-102.dll does not depend on mozglue.dll!  If it does, or if GJS fails to
 link with missing arena_malloc() and friends symbols, you have built SpiderMoney
 incorrectly and will need to rebuild SpiderMonkey (with the build options as
 noted above) and retry the build.
@@ -119,17 +119,17 @@ $(buildroot)/dist/include.  Note that for PDB files and .lib files,
 you will need to search for them in $(buildroot),
 where the PDB file names match the filenames for the DLLs/EXEs in
 $(buildroot)/dist/bin, and you will need to look for the following .lib files:
--mozjs-91.lib
+-mozjs-102.lib
 -js_static.lib (optional)
 
 You may want to put the .lib's and DLLs/EXEs into $(PREFIX)\lib and 
 $(PREFIX)\bin respectively, and put the headers into
-$(PREFIX)\include\mozjs-91 for convenience.
+$(PREFIX)\include\mozjs-102 for convenience.
 
-You will need to place the generated mozjs-91.pc pkg-config file into
+You will need to place the generated mozjs-102.pc pkg-config file into
 $(PREFIX)\lib\pkgconfig and ensure that pkg-config can find it by
 setting PKG_CONFIG_PATH.  Ensure that the 'includedir' and 'libdir'
-in there is correct so that the mozjs-91.pc can be used correctly in
+in there is correct so that the mozjs-102.pc can be used correctly in
 Visual Studio/clang-cl builds, and replace the `-isystem` with `-I` if
 building GJS with Visual Studio.  You will also need to ensure that the
 existing GObject-Introspection installation (if used) is on the same
