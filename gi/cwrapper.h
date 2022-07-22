@@ -204,7 +204,7 @@ class CWrapperPointerOps {
  *    class_spec's flags member.
  *  - static constexpr unsigned constructor_nargs: number of arguments that the
  *    constructor takes. If you implement constructor_impl() then also add this.
- *  - void finalize_impl(JSFreeOp*, Wrapped*): called when the JS object is
+ *  - void finalize_impl(JS::GCContext*, Wrapped*): called when the JS object is
  *    garbage collected, use this to free the C pointer and do any other cleanup
  *
  * Add optional functionality by setting members of class_spec:
@@ -291,14 +291,14 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
             debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
     }
 
-    static void finalize(JSFreeOp* fop, JSObject* obj) {
+    static void finalize(JS::GCContext* gcx, JSObject* obj) {
         Wrapped* priv = Base::for_js_nocheck(obj);
 
         // Call only CWrapper's original method here, not any overrides; e.g.,
         // we don't want to deal with a read barrier.
         CWrapper::debug_lifecycle(priv, obj, "Finalize");
 
-        Base::finalize_impl(fop, priv);
+        Base::finalize_impl(gcx, priv);
 
         CWrapperPointerOps<Base, Wrapped>::unset_private(obj);
     }

@@ -44,7 +44,7 @@ struct GjsRootingFixture {
     GjsMaybeOwned<JSObject *> *obj;  /* only used in callback test cases */
 };
 
-static void test_obj_finalize(JSFreeOp*, JSObject* obj) {
+static void test_obj_finalize(JS::GCContext*, JSObject* obj) {
     bool* finalized_p = Gjs::maybe_get_private<bool>(obj, POINTER);
     g_assert_false(*finalized_p);
     *finalized_p = true;

@@ -123,7 +123,7 @@ static bool gjs_param_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-static void param_finalize(JSFreeOp*, JSObject* obj) {
+static void param_finalize(JS::GCContext*, JSObject* obj) {
     Param* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);

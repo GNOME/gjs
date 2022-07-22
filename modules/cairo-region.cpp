@@ -220,7 +220,7 @@ cairo_region_t* CairoRegion::constructor_impl(JSContext* context,
     return cairo_region_create();
 }
 
-void CairoRegion::finalize_impl(JSFreeOp*, cairo_region_t* region) {
+void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     if (!region)
         return;
 

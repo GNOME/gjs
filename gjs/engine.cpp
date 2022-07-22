@@ -33,7 +33,7 @@
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
 
-static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
+static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     gjs->set_finalize_status(status);

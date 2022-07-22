@@ -395,7 +395,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      * necessary to include a finalize_impl() function in Prototype or Instance.
      * Any needed finalization should be done in ~Prototype() and ~Instance().
      */
-    static void finalize(JSFreeOp* fop, JSObject* obj) {
+    static void finalize(JS::GCContext* gcx, JSObject* obj) {
         Base* priv = Base::for_js_nocheck(obj);
         if (!priv)
             return;  // construction didn't finish
@@ -405,9 +405,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         static_cast<GIWrapperBase*>(priv)->debug_lifecycle(obj, "Finalize");
 
         if (priv->is_prototype())
-            priv->to_prototype()->finalize_impl(fop, obj);
+            priv->to_prototype()->finalize_impl(gcx, obj);
         else
-            priv->to_instance()->finalize_impl(fop, obj);
+            priv->to_instance()->finalize_impl(gcx, obj);
 
         Base::unset_private(obj);
     }
@@ -1013,7 +1013,7 @@ class GIWrapperPrototype : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp*, JSObject*) { release(); }
+    void finalize_impl(JS::GCContext*, JSObject*) { release(); }
 
     // Override if necessary
     void trace_impl(JSTracer*) {}
@@ -1108,7 +1108,7 @@ class GIWrapperInstance : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JSFreeOp*, JSObject*) {
+    void finalize_impl(JS::GCContext*, JSObject*) {
         delete static_cast<Instance*>(this);
     }
 

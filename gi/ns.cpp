@@ -152,7 +152,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
         return true;
     }
 
-    static void finalize_impl(JSFreeOp* fop [[maybe_unused]], Ns* priv) {
+    static void finalize_impl(JS::GCContext*, Ns* priv) {
         g_assert(priv && "Finalize called on wrong object");
         delete priv;
     }

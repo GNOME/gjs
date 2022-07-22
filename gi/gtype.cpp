@@ -48,7 +48,7 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
 
     // No private data is allocated, it's stuffed directly in the private field
     // of JSObject, so nothing to free
-    static void finalize_impl(JSFreeOp*, void*) {}
+    static void finalize_impl(JS::GCContext*, void*) {}
 
     // Properties
 

@@ -1902,14 +1902,14 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
         Gjs::Closure::for_gclosure(closure)->trace(tracer);
 }
 
-void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
+void ObjectInstance::finalize_impl(JS::GCContext* gcx, JSObject* obj) {
     GTypeQuery query;
     type_query_dynamic_safe(&query);
     if (G_LIKELY(query.type))
         JS::RemoveAssociatedMemory(obj, query.instance_size,
                                    MemoryUse::GObjectInstanceStruct);
 
-    GIWrapperInstance::finalize_impl(fop, obj);
+    GIWrapperInstance::finalize_impl(gcx, obj);
 }
 
 ObjectInstance::~ObjectInstance() {

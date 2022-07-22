@@ -207,14 +207,13 @@ const JSFunctionSpec CairoSurface::proto_funcs[] = {
 
 /**
  * CairoSurface::finalize_impl:
- * @fop: the free op
  * @surface: the pointer to finalize
  *
  * Destroys the resources associated with a surface wrapper.
  *
  * This is mainly used for subclasses.
  */
-void CairoSurface::finalize_impl(JSFreeOp*, cairo_surface_t* surface) {
+void CairoSurface::finalize_impl(JS::GCContext*, cairo_surface_t* surface) {
     if (!surface)
         return;
     cairo_surface_destroy(surface);

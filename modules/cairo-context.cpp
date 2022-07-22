@@ -261,7 +261,7 @@ cairo_t* CairoContext::constructor_impl(JSContext* context,
     return cr;
 }
 
-void CairoContext::finalize_impl(JSFreeOp*, cairo_t* cr) {
+void CairoContext::finalize_impl(JS::GCContext*, cairo_t* cr) {
     if (!cr)
         return;
     cairo_destroy(cr);

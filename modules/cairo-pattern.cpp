@@ -65,14 +65,13 @@ const JSFunctionSpec CairoPattern::proto_funcs[] = {
 
 /**
  * CairoPattern::finalize_impl:
- * @fop: the free op
  * @pattern: pointer to free
  *
  * Destroys the resources associated with a pattern wrapper.
  *
  * This is mainly used for subclasses.
  */
-void CairoPattern::finalize_impl(JSFreeOp*, cairo_pattern_t* pattern) {
+void CairoPattern::finalize_impl(JS::GCContext*, cairo_pattern_t* pattern) {
     if (!pattern)
         return;
     cairo_pattern_destroy(pattern);

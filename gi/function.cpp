@@ -109,7 +109,7 @@ class Function : public CWrapper<Function> {
     GJS_JSAPI_RETURN_CONVENTION
     static bool call(JSContext* cx, unsigned argc, JS::Value* vp);
 
-    static void finalize_impl(JSFreeOp*, Function* priv);
+    static void finalize_impl(JS::GCContext*, Function* priv);
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool get_length(JSContext* cx, unsigned argc, JS::Value* vp);
@@ -1154,7 +1154,7 @@ Function::~Function() {
     GJS_DEC_COUNTER(function);
 }
 
-void Function::finalize_impl(JSFreeOp*, Function* priv) {
+void Function::finalize_impl(JS::GCContext*, Function* priv) {
     if (priv == NULL)
         return; /* we are the prototype, not a real instance, so constructor never called */
     delete priv;

@@ -220,7 +220,9 @@ class GjsScriptModule {
         return priv(module)->resolve_impl(cx, module, id, resolved);
     }
 
-    static void finalize(JSFreeOp*, JSObject* module) { delete priv(module); }
+    static void finalize(JS::GCContext*, JSObject* module) {
+        delete priv(module);
+    }
 
     static constexpr JSClassOps class_ops = {
         nullptr,  // addProperty

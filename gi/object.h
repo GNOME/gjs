@@ -419,7 +419,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool add_property_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                            JS::HandleValue value);
-    void finalize_impl(JSFreeOp* fop, JSObject* obj);
+    void finalize_impl(JS::GCContext*, JSObject* obj);
     void trace_impl(JSTracer* trc);
 
     /* JS property getters/setters */
