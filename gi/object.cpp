@@ -1194,7 +1194,7 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
     size_t ix, length;
     JS::RootedId prop_id(context);
     JS::RootedValue value(context);
-    JS::Rooted<JS::IdVector> ids(context);
+    JS::Rooted<JS::IdVector> ids(context, context);
     std::unordered_set<GParamSpec*> visited_params;
     if (!JS_Enumerate(context, props, &ids)) {
         gjs_throw(context, "Failed to create property iterator for object props hash");
