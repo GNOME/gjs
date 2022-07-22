@@ -168,12 +168,7 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     if (enable_jit) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
     }
-    JS::ContextOptionsRef(cx)
-        .setAsmJS(enable_jit)
-        .setTopLevelAwait(true)
-        .setClassStaticBlocks(true)
-        .setPrivateClassFields(true)
-        .setPrivateClassMethods(true);
+    JS::ContextOptionsRef(cx).setAsmJS(enable_jit);
 
     uint32_t value = enable_jit ? 1 : 0;
 
