@@ -1506,9 +1506,7 @@ template <typename T>
 constexpr size_t argument_maximum_size() {
     if constexpr (std::is_same_v<T, Arg::NumericIn>)
         return 24;
-    // COMPAT: Work around cppcheck bug, fixed in cppcheck 2.6.
-    // https://trac.cppcheck.net/ticket/10015
-    if constexpr (std::is_same<T, Arg::ObjectIn>{} ||
+    if constexpr (std::is_same_v<T, Arg::ObjectIn> ||
                   std::is_same_v<T, Arg::BoxedIn>)
         return 40;
     else
