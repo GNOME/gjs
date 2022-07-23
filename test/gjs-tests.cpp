@@ -73,6 +73,9 @@ T get_random_number() {
     } else if constexpr (std::is_pointer_v<T>) {
         return reinterpret_cast<T>(get_random_number<uintptr_t>());
     }
+
+    // COMPAT: Work around cppcheck bug https://trac.cppcheck.net/ticket/10731
+    g_assert_not_reached();
 }
 
 static void
