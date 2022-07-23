@@ -43,6 +43,7 @@
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "gjs/module.h"
 #include "gjs/native.h"

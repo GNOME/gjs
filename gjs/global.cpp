@@ -35,6 +35,7 @@
 #include "gjs/global.h"
 #include "gjs/internal.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/native.h"
 
 namespace mozilla {

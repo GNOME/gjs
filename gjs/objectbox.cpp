@@ -10,6 +10,7 @@
 
 #include <js/AllocPolicy.h>
 #include <js/ComparisonOperators.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCPolicyAPI.h>  // for GCPolicy (ptr only), NonGCPointe...
 #include <js/GCVector.h>
 #include <js/RootingAPI.h>
@@ -17,6 +18,7 @@
 #include <js/TypeDecls.h>
 
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/objectbox.h"
 #include "util/log.h"
 

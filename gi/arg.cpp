@@ -51,6 +51,7 @@
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/enum-utils.h"
+#include "gjs/macros.h"
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
 #include "util/misc.h"

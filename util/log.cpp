@@ -8,6 +8,7 @@
 #include <type_traits>  // for remove_reference<>::type
 
 #include <errno.h>
+#include <fcntl.h>  // for SEEK_END
 #include <stdarg.h>
 #include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
 #include <string.h>  // for strchr, strcmp

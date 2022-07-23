@@ -33,6 +33,7 @@
 #include "gjs/context-private.h"
 #include "gjs/error-types.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
 

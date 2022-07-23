@@ -48,7 +48,9 @@
 #include "gi/value.h"
 #include "gi/wrapperutils.h"  // for GjsTypecheckNoThrow
 #include "gjs/byteArray.h"
+#include "gjs/enum-utils.h"  // for operator&, operator|=, operator|
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "util/log.h"
 
 enum ExpectedType {

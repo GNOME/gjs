@@ -26,6 +26,7 @@
 #include "gjs/deprecation.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/text-encoding.h"
 #include "util/misc.h"  // for _gjs_memdup2
 
