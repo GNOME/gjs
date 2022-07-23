@@ -3,15 +3,25 @@
 
 # === Build Spidermonkey stage ===
 
-FROM registry.fedoraproject.org/fedora:34 AS mozjs-build
+FROM registry.fedoraproject.org/fedora:36 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs91
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-RUN dnf -y install 'dnf-command(builddep)' autoconf213 git make which llvm-devel \
-    xz clang llvm rust
+# mozjs91 cannot be built with python3.10
+RUN dnf -y install 'dnf-command(builddep)' \
+    autoconf213 \
+    clang \
+    git \
+    llvm \
+    llvm-devel \
+    make \
+    python3.9 \
+    rust \
+    which \
+    xz
 RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root
@@ -21,6 +31,7 @@ RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
 
+ENV PYTHON3=/usr/bin/python3.9
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
     --with-system-zlib --with-intl-api ${BUILD_OPTS}
 RUN make -j$(nproc)
@@ -29,7 +40,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:34
+FROM registry.fedoraproject.org/fedora:36
 
 ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash
@@ -57,7 +68,6 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     glib2-debugsource \
     glib2-devel \
     glibc-debuginfo \
-    glibc-debuginfo-common \
     glibc-locale-source \
     gnome-desktop-testing \
     gobject-introspection-debuginfo \

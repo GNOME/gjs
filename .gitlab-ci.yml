@@ -380,7 +380,7 @@ zeal_11:
 #          Create CI Docker Images          #
 #############################################
 .Docker image template: &create_docker_image
-  image: registry.freedesktop.org/freedesktop/ci-templates/x86_64/buildah:2020-10-30.1
+  image: quay.io/freedesktop.org/ci-templates:container-build-base-2022-05-25.0
   stage: deploy
   only:
     variables:
