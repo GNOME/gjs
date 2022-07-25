@@ -39,6 +39,8 @@ do_Get_Upstream_Base () {
     # should probably be rebased.
     git remote add upstream https://gitlab.gnome.org/GNOME/gjs.git || \
         git remote set-url upstream https://gitlab.gnome.org/GNOME/gjs.git
+    # $CI_MERGE_REQUEST_TARGET_BRANCH_NAME is only defined if we’re running in a
+    # merge request pipeline; fall back to $CI_DEFAULT_BRANCH otherwise.
     base_branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_DEFAULT_BRANCH}}"
     if ! git fetch --shallow-since="28 days ago" --no-tags upstream "$base_branch"; then
         echo "Main branch doesn't have history in the past 28 days, fetching "
@@ -51,9 +53,6 @@ do_Get_Upstream_Base () {
     # Work out the newest common ancestor between the detached HEAD that this CI
     # job has checked out, and the upstream target branch (which will typically
     # be `upstream/master` or `upstream/gnome-nn`).
-    #
-    # $CI_MERGE_REQUEST_TARGET_BRANCH_NAME is only defined if we’re running in a
-    # merge request pipeline; fall back to $CI_DEFAULT_BRANCH otherwise.
     newest_common_ancestor_sha=$(git merge-base ci-upstream-base-branch HEAD)
     if test -z "$newest_common_ancestor_sha"; then
         echo "Couldn’t find common ancestor with the upstream main branch. This"
