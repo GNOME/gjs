@@ -28,7 +28,6 @@
 #include <jsapi.h>  // for IdVector
 #include <mozilla/HashTable.h>
 
-#include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/boxed.h"
@@ -39,6 +38,8 @@
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
 

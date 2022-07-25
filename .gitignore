@@ -1,3 +1,5 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 /tools/node_modules
+# artifact from ci-templates:
+/container-build-report.xml

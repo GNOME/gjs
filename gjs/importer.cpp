@@ -44,6 +44,7 @@
 #include "gjs/global.h"
 #include "gjs/importer.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/module.h"
 #include "gjs/native.h"
 #include "util/log.h"

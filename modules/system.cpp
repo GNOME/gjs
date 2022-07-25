@@ -32,6 +32,7 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/profiler-private.h"
 #include "modules/system.h"
 #include "util/log.h"

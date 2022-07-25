@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 ---
 include:
-  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/7ea696055e322cc7aa4bcbe5422b56a198c4bdff/templates/alpine.yml'
+  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/c5626190ec14b475271288dda7a7dae8dbe0cd76/templates/alpine.yml'
 
 stages:
   - prepare
@@ -14,7 +14,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2021-08-18.0'
+    FDO_DISTRIBUTION_TAG: '2022-07-23.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -388,7 +388,7 @@ zeal_11:
 #          Create CI Docker Images          #
 #############################################
 .Docker image template: &create_docker_image
-  image: registry.freedesktop.org/freedesktop/ci-templates/x86_64/buildah:2020-10-30.1
+  image: quay.io/freedesktop.org/ci-templates:container-build-base-2022-05-25.0
   stage: deploy
   only:
     variables:

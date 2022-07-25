@@ -22,6 +22,7 @@
 
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "modules/print.h"
 
 GJS_JSAPI_RETURN_CONVENTION

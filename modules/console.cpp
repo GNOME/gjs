@@ -46,6 +46,7 @@
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "modules/console.h"
 
 namespace mozilla {

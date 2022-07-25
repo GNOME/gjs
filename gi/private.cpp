@@ -30,6 +30,7 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 
 /* gi/private.cpp - private "imports._gi" module with operations that we need
  * to use from JS in order to create GObject classes, but should not be exposed
