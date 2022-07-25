@@ -2,7 +2,7 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at print.debugger.js:17:0
+Debugger statement, toplevel at print.debugger.js:18:0
 db> # Simple types
 db> print a
 $1 = undefined
@@ -21,67 +21,36 @@ $7 = Symbol("foobar")
 db> # Objects
 db> print h
 $8 = [object Array]
-[
-    1,
-    "money",
-    2,
-    "show",
-    {
-        "three": "to",
-        "get ready": "go cat go"
-    }
-]
+[1, "money", 2, "show", { three: "to", get ready: "go cat go" }]
 db> print/b h
 $9 = [object Array]
-{
-    "0": 1,
-    "1": "money",
-    "2": 2,
-    "3": "show",
-    "4": "(...)",
-    "length": 5
-}
+[object Array]
 db> print/p h
 $10 = [object Array]
-[
-    1,
-    "money",
-    2,
-    "show",
-    {
-        "three": "to",
-        "get ready": "go cat go"
-    }
-]
+[1, "money", 2, "show", { three: "to", get ready: "go cat go" }]
 db> p i
 $11 = [object Object]
-{
-    "some": "plain object",
-    "that": "has keys"
-}
+{ some: "plain object", that: "has keys" }
 db> p/b i
 $12 = [object Object]
-{
-    "some": "plain object",
-    "that": "has keys"
-}
+[object Object]
 db> p j
 $13 = [object Set]
 {}
 db> p k
 $14 = [object Function]
+[ Function: J ]
 db> p/b k
 $15 = [object Function]
-{
-    "prototype": "(...)",
-    "length": 0,
-    "name": "J"
-}
+[object Function]
 db> p l
 $16 = [object GObject_Object]
 [object instance wrapper GIName:GObject.Object jsobj@0xADDR native@0xADDR]
 db> p m
 $17 = [object Error]
 Error: message
+db> p n
+$18 = [object Object]
+{ a: 1 }
 db> c
 Program exited with code 0
