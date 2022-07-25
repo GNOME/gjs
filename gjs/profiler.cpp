@@ -16,7 +16,6 @@
 #    include <stdint.h>
 #    include <stdio.h>      // for sscanf
 #    include <string.h>     // for memcpy, strlen
-#    include <sys/types.h>  // for timer_t
 #    include <syscall.h>    // for __NR_gettid
 #    include <time.h>       // for size_t, CLOCK_MONOTONIC, itimerspec, ...
 #    ifdef HAVE_UNISTD_H

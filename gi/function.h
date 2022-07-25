@@ -14,13 +14,13 @@
 
 #include <ffi.h>
 #include <girepository.h>
+#include <girffi.h>  // for g_callable_info_get_closure_native_address
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/GCVector.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <js/Value.h>  // IWYU pragma: keep
 
 #include "gi/closure.h"
 #include "gjs/jsapi-util.h"

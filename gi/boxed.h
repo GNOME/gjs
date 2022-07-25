@@ -15,6 +15,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/AllocPolicy.h>
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/HashTable.h>    // for DefaultHasher
 #include <js/Id.h>
@@ -32,9 +33,6 @@ class BoxedInstance;
 class JSTracer;
 namespace JS {
 class CallArgs;
-}
-namespace js {
-class SystemAllocPolicy;
 }
 
 /* To conserve memory, we have two different kinds of private data for GBoxed

@@ -21,6 +21,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/AllocPolicy.h>
 #include <js/Context.h>
 #include <js/GCAPI.h>
 #include <js/GCHashTable.h>
@@ -32,6 +33,7 @@
 #include <js/UniquePtr.h>
 #include <js/ValueArray.h>
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
+#include <mozilla/Vector.h>
 
 #include "gi/closure.h"
 #include "gjs/context.h"
@@ -41,9 +43,6 @@
 #include "gjs/profiler.h"
 #include "gjs/promise.h"
 
-namespace js {
-class SystemAllocPolicy;
-}
 class GjsAtoms;
 class JSTracer;
 

@@ -32,6 +32,7 @@
 #include <jsapi.h>        // for JS_GetFunctionDisplayId
 #include <jsfriendapi.h>  // for IdToValue, IsFunctionObject, ...
 #include <mozilla/CheckedInt.h>
+#include <mozilla/Span.h>
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
