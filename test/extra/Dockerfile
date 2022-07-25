@@ -68,6 +68,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     glib2-debugsource \
     glib2-devel \
     glibc-debuginfo \
+    glibc-gconv-extra \
     glibc-locale-source \
     gnome-desktop-testing \
     gobject-introspection-debuginfo \

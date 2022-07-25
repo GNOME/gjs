@@ -25,7 +25,7 @@ do_Get_Upstream_Base () {
     echo '-----------------------------------------'
     echo 'Finding common ancestor'
 
-    if git show-branch ci-upstream-base-branch 2> /dev/null; then
+    if git show-branch ci-upstream-base 2> /dev/null; then
         echo "Already found"
         return
     fi
@@ -139,7 +139,7 @@ elif test "$1" = "BUILD"; then
     do_Set_Env
 
     DEFAULT_CONFIG_OPTS="-Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled \
-        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false --werror"
+        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false"
     meson _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS
     ninja -C _build
 
