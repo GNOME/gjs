@@ -23,8 +23,8 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <jsapi.h>
-#include <jspubtd.h>
+#include <jsapi.h>  // for JSFUN_CONSTRUCTOR, JS_NewPlainObject, JS_GetFuncti...
+#include <jspubtd.h>  // for JSProto_Object, JSProtoKey, JSProto_TypeError
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"

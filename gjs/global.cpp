@@ -30,7 +30,7 @@
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for AutoSaveExceptionState, ...
+#include <jsapi.h>       // for JS_IdToValue, JS_InitReflectParse
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

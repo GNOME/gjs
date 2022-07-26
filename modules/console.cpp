@@ -42,7 +42,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>  // for JS_IsExceptionPending, Exce...
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

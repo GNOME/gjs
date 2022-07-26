@@ -27,7 +27,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>
+#include <jsapi.h>    // for JS_GetClassObject
 #include <jspubtd.h>  // for JSProto_Number
 #include <mozilla/Span.h>  // for MakeStringSpan
 

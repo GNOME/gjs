@@ -25,7 +25,7 @@
 #include <js/TypeDecls.h>
 #include <js/Warnings.h>
 #include <js/experimental/SourceHook.h>
-#include <jsapi.h>  // for InitSelfHostedCode, JS_Destr...
+#include <jsapi.h>  // for JS_SetGlobalJitCompilerOption
 #include <mozilla/UniquePtr.h>
 
 #include "gjs/context-private.h"

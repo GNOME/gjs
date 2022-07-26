@@ -11,7 +11,7 @@
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>
+#include <jsapi.h>  // for JS_NewObjectWithGivenProto
 
 #include "modules/cairo-private.h"
 
