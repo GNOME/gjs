@@ -45,7 +45,7 @@ FWD_DECLS_IN_HEADER = (
     'struct JSRuntime;',
     'class JSScript;',
     'class JSString;',
-    'namespace js { class TempAllocPolicy; }'
+    'namespace js { class TempAllocPolicy; }',
     'namespace JS { struct PropertyKey; }',
     'namespace JS { class Symbol; }',
     'namespace JS { class BigInt; }',
