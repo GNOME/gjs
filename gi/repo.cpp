@@ -15,11 +15,14 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/CallAndConstruct.h>  // for JS_CallFunctionValue
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/Exception.h>
+#include <js/GlobalObject.h>        // for CurrentGlobalOrNull
 #include <js/Id.h>                  // for PropertyKey
 #include <js/Object.h>              // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RESOLVING
 #include <js/RootingAPI.h>
 #include <js/String.h>
@@ -28,7 +31,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>  // for JS_DefinePropertyById, JS_GetProp...
+#include <jsapi.h>  // for JS_NewPlainObject, JS_NewObject
 
 #include "gi/arg.h"
 #include "gi/boxed.h"

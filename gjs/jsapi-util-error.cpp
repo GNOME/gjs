@@ -9,17 +9,20 @@
 #include <glib.h>
 
 #include <js/AllocPolicy.h>
+#include <js/CallAndConstruct.h>
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashSet
 #include <js/HashTable.h>    // for DefaultHasher
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
+#include <js/Stack.h>  // for BuildStackString
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/ValueArray.h>
-#include <jsapi.h>       // for BuildStackString, Construct, JS_GetClassObject
-#include <jspubtd.h>     // for JSProtoKey, JSProto_Error, JSProto...
+#include <jsapi.h>              // for JS_GetClassObject
+#include <jspubtd.h>            // for JSProtoKey, JSProto_Error, JSProto...
 #include <mozilla/HashTable.h>  // for HashSet<>::AddPtr
 
 #include "gjs/atoms.h"

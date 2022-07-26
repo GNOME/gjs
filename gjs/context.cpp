@@ -36,6 +36,7 @@
 #endif
 
 #include <js/AllocPolicy.h>  // for SystemAllocPolicy
+#include <js/CallAndConstruct.h>  // for Call, JS_CallFunctionValue
 #include <js/CallArgs.h>     // for UndefinedHandleValue
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
@@ -46,12 +47,15 @@
 #include <js/GCAPI.h>               // for JS_GC, JS_AddExtraGCRootsTr...
 #include <js/GCHashTable.h>         // for WeakCache
 #include <js/GCVector.h>            // for RootedVector
+#include <js/GlobalObject.h>        // for CurrentGlobalOrNull
 #include <js/Id.h>
 #include <js/Modules.h>
 #include <js/Promise.h>             // for JobQueue::SavedJobQueue
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
+#include <js/ScriptPrivate.h>
 #include <js/SourceText.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
@@ -59,7 +63,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/friend/DumpFunctions.h>
-#include <jsapi.h>        // for Call, CurrentGlobalOrNull
+#include <jsapi.h>        // for JS_GetFunctionObject, JS_Ge...
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 #include <mozilla/UniquePtr.h>
 

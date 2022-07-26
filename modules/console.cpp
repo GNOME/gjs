@@ -27,12 +27,14 @@
 #include <glib.h>
 #include <glib/gprintf.h>  // for g_fprintf
 
+#include <js/CallAndConstruct.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>

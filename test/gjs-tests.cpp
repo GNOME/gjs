@@ -21,6 +21,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/Exception.h>
 #include <js/Id.h>
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>

@@ -10,13 +10,15 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/CallAndConstruct.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_SetProperty, JS_DefineProperty
+#include <jsapi.h>  // for JS_NewPlainObject
 #include <mozilla/Maybe.h>
 
 #include "gi/gobject.h"

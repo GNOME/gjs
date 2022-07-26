@@ -13,13 +13,14 @@
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_SetElement
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"

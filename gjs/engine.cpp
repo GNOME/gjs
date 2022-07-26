@@ -21,6 +21,7 @@
 #include <js/Initialization.h>  // for JS_Init, JS_ShutDown
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
+#include <js/Stack.h>  // for JS_SetNativeStackQuota
 #include <js/TypeDecls.h>
 #include <js/Warnings.h>
 #include <js/experimental/SourceHook.h>

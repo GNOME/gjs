@@ -11,17 +11,20 @@
 #include <girepository.h>
 #include <glib-object.h>
 
+#include <js/CallAndConstruct.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/Exception.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>
+#include <js/Stack.h>  // for BuildStackString, CaptureCurrentStack
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>    // for JS_DefinePropertyById, JS_GetProp...
+#include <jsapi.h>    // for InformalValueTypeName, JS_GetClassObject
 #include <jspubtd.h>  // for JSProtoKey, JSProto_Error, JSProt...
 
 #include "gi/arg-inl.h"

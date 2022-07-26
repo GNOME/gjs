@@ -12,11 +12,12 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/Object.h>  // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>       // for JS_GetPropertyById
+#include <jsapi.h>       // for JS_NewObjectForConstructor, JS_NewObjectWithG...
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/cwrapper.h"

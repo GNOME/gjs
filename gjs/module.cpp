@@ -12,6 +12,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 
+#include <js/CallAndConstruct.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>  // for ConstUTF8CharsZ
 #include <js/Class.h>
@@ -21,21 +22,24 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
+#include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>
 #include <js/Modules.h>
 #include <js/Object.h>
 #include <js/Promise.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
+#include <js/ScriptPrivate.h>
 #include <js/SourceText.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_DefinePropertyById, ...
-#include <jsfriendapi.h>  // for SetFunctionNativeReserved
+#include <jsapi.h>        // for JS_GetFunctionObject, JS_Ne...
+#include <jsfriendapi.h>  // for NewFunctionWithReserved
 #include <mozilla/Maybe.h>
 
 #include "gjs/atoms.h"

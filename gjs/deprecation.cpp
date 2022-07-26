@@ -16,11 +16,11 @@
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
 #include <js/RootingAPI.h>
+#include <js/Stack.h>  // for CaptureCurrentStack, MaxFrames
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/friend/DumpFunctions.h>
-#include <jsapi.h>        // for MaxFrames, CaptureCurrentStack
 
 #include "gjs/deprecation.h"
 #include "gjs/macros.h"

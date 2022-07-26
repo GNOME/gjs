@@ -22,6 +22,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/CallAndConstruct.h>  // for IsCallable, JS_CallFunctionValue
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
@@ -31,6 +32,7 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/String.h>
 #include <js/Symbol.h>
@@ -39,8 +41,8 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>        // for IsCallable
-#include <jsfriendapi.h>  // for JS_GetObjectFunction, IsFunctionO...
+#include <jsapi.h>        // for JS_GetFunctionObject, IdVector
+#include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/HashTable.h>
 
 #include "gi/arg-inl.h"

@@ -10,10 +10,11 @@
 #include <glib-object.h>
 
 #include <js/CallArgs.h>
+#include <js/PropertyAndElement.h>  // for JS_DefineFunctions
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_DefineFunctions, JS_NewPlainObject
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"

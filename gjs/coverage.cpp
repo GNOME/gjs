@@ -14,6 +14,7 @@
 #include <glib-object.h>
 
 #include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer, JS_Remove...
+#include <js/PropertyAndElement.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TracingAPI.h>
@@ -21,7 +22,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/experimental/CodeCoverage.h>  // for EnableCodeCoverage
-#include <jsapi.h>                         // for JS_SetPropertyById
+#include <jsapi.h>                         // for JS_WrapObject
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

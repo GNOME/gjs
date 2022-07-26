@@ -12,11 +12,12 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/GCHashTable.h>         // for WeakCache
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_GetPropertyById, JS_AtomizeString
+#include <jsapi.h>  // for JS_NewObjectWithGivenProto
 #include <mozilla/HashTable.h>
 
 #include "gi/cwrapper.h"

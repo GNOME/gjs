@@ -20,6 +20,7 @@
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
 #include <js/Object.h>       // for SetReservedSlot
+#include <js/PropertyAndElement.h>  // for JS_DefineFunction, JS_Enumerate
 #include <js/String.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>

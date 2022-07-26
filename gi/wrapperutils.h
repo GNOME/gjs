@@ -22,9 +22,10 @@
 #include <js/Id.h>
 #include <js/MemoryFunctions.h>
 #include <js/Object.h>
+#include <js/PropertyAndElement.h>  // for JS_DefineFunctionById
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>       // for JS_GetPrototype, JS_DefineFunctionById
+#include <jsapi.h>       // for JS_GetPrototype
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/arg-inl.h"

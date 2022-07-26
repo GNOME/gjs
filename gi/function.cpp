@@ -22,6 +22,7 @@
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetRealmFunctionPrototype
@@ -31,7 +32,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>        // for HandleValueArray, JS_GetElement
+#include <jsapi.h>        // for HandleValueArray
 #include <jspubtd.h>      // for JSProtoKey
 
 #include "gi/arg-cache.h"

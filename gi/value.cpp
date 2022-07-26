@@ -18,6 +18,7 @@
 #include <js/Conversions.h>
 #include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
+#include <js/PropertyAndElement.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
