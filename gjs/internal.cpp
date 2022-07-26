@@ -4,49 +4,51 @@
 #include "gjs/internal.h"
 
 #include <config.h>
+
+#include <stddef.h>  // for size_t
+#include <string.h>
+
+#include <memory>  // for unique_ptr
+
 #include <gio/gio.h>
-#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
-#include <js/Array.h>
-#include <js/Class.h>
+
+#include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
-#include <js/Conversions.h>
-#include <js/GCVector.h>  // for RootedVector
+#include <js/Exception.h>
+#include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer
 #include <js/Modules.h>
 #include <js/Promise.h>
 #include <js/PropertyDescriptor.h>
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
+#include <js/String.h>
+#include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
-#include <js/Wrapper.h>
+#include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
+#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_DefinePropertyById, ...
 #include <jsfriendapi.h>
-#include <stddef.h>     // for size_t
-#include <sys/types.h>  // for ssize_t
+#include <jspubtd.h>  // for JSProto_Error
 
-#include <memory>   // for unique_ptr
-#include <string>   // for u16string
-#include <vector>
-
-#include "gjs/byteArray.h"
 #include "gjs/context-private.h"
-#include "gjs/context.h"
 #include "gjs/engine.h"
-#include "gjs/error-types.h"
 #include "gjs/global.h"
-#include "gjs/importer.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/mainloop.h"
-#include "gjs/mem-private.h"
+#include "gjs/macros.h"
 #include "gjs/module.h"
-#include "gjs/native.h"
 #include "util/log.h"
 #include "util/misc.h"
 
-#include "gi/repo.h"
+namespace mozilla {
+union Utf8Unit;
+}
 
 // NOTE: You have to be very careful in this file to only do operations within
 // the correct global!

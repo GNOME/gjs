@@ -11,6 +11,8 @@
 #include <cstddef>
 #include <deque>
 #include <functional>
+#include <iosfwd>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <new>
@@ -93,7 +95,6 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <js/Wrapper.h>
 #include <js/experimental/CodeCoverage.h>
 #include <js/experimental/SourceHook.h>
 #include <js/experimental/TypedData.h>
@@ -101,6 +102,7 @@
 #include <jsapi.h>
 #include <jsfriendapi.h>
 #include <jspubtd.h>
+#include <limits.h>
 #include <locale.h>
 #include <mozilla/Atomics.h>
 #include <mozilla/CheckedInt.h>
@@ -109,6 +111,7 @@
 #include <mozilla/Likely.h>
 #include <mozilla/Maybe.h>
 #include <mozilla/Span.h>
+#include <mozilla/Tuple.h>
 #include <mozilla/UniquePtr.h>
 #include <mozilla/Unused.h>
 #include <mozilla/Vector.h>

@@ -6,10 +6,6 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for size_t
-
-#include <glib.h>
-
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"

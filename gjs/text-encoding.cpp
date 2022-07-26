@@ -5,37 +5,45 @@
 
 #include <config.h>
 
+#include <limits.h>  // for SSIZE_MAX
+#include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <string.h>  // for strcmp, memchr, strlen
 
 #include <algorithm>
+#include <iosfwd>    // for nullptr_t
+#include <iterator>  // for distance
+#include <string>    // for u16string
 #include <vector>
 
 #include <gio/gio.h>
-#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/ArrayBuffer.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>    // for JS_ClearPendingException, JS_...
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
 #include <jsfriendapi.h>  // for ProtoKeyToClass
+#include <jspubtd.h>      // for JSProto_TypeError, JSProto_InternalError
+#include <mozilla/Maybe.h>
+#include <mozilla/Span.h>
+#include <mozilla/Tuple.h>
 #include <mozilla/Unused.h>
 
-#include "gi/boxed.h"
-#include "gjs/atoms.h"
-#include "gjs/context-private.h"
-#include "gjs/deprecation.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "gjs/text-encoding.h"
 
 // Callback to use with JS::NewExternalArrayBuffer()
