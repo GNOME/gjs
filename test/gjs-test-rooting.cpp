@@ -8,7 +8,6 @@
 #include <js/Class.h>
 #include <js/GCAPI.h>  // for JS_GC, JS_SetGCCallback, JSGCStatus
 #include <js/Object.h>
-#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_NewObject

@@ -45,7 +45,7 @@ FWD_DECLS_IN_HEADER = (
     'struct JSRuntime;',
     'class JSScript;',
     'class JSString;',
-    'namespace js { class TempAllocPolicy; }'
+    'namespace js { class TempAllocPolicy; }',
     'namespace JS { struct PropertyKey; }',
     'namespace JS { class Symbol; }',
     'namespace JS { class BigInt; }',
@@ -70,22 +70,14 @@ FALSE_POSITIVES = (
     # std::vector::push_back()
     # https://github.com/include-what-you-use/include-what-you-use/issues/908
     ('gi/function.cpp', '#include <algorithm>', 'for max'),
+    ('gi/function.cpp', '#include <algorithm>', 'for fill_n, max'),  # also!
     ('gi/private.cpp', '#include <algorithm>', 'for max'),
-    ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
+    ('gjs/context.cpp', '#include <algorithm>', 'for copy, max, find'),
+    ('gjs/importer.cpp', '#include <algorithm>', 'for max, copy'),
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
-
-    # False positive when using Mozilla vectors' append() and
-    # infallibleAppend()
-    # https://github.com/include-what-you-use/include-what-you-use/issues/926
-    # https://bugzilla.mozilla.org/show_bug.cgi?id=1713550
-    ('gi/function.cpp', '#include <utility>', 'for forward'),
-    ('gi/ns.cpp', '#include <utility>', 'for forward'),
-    ('gjs/module.cpp', '#include <utility>', 'for forward'),
-    ('gjs/objectbox.cpp', '#include <utility>', 'for forward'),
 
     # False positive when using EnumType operators
     # https://github.com/include-what-you-use/include-what-you-use/issues/927
-    ('gi/arg-cache.h', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-context.cpp', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-region.cpp', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-surface.cpp', '#include <type_traits>', 'for enable_if_t'),
@@ -94,8 +86,6 @@ FALSE_POSITIVES = (
     # https://github.com/include-what-you-use/include-what-you-use/issues/927
     ('gi/boxed.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
     ('gi/interface.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('gi/object.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
     ('gi/private.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
@@ -108,13 +98,20 @@ FALSE_POSITIVES = (
      'for remove_reference<>::type'),
     ('gjs/profiler.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
-    ('gjs/promise.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
     ('test/gjs-test-jsapi-utils.cpp', '#include <type_traits>',
      'for remove_reference<>::type'),
 
-    # Weird false positive on some versions of IWYU
-    ('gi/arg.cpp', 'struct _GVariant;', ''),
+    # False positive when constructing JS::GCHashMap
+    ('gi/boxed.h', '#include <utility>', 'for move'),
+    ('gi/object.h', '#include <utility>', 'for move'),
+    ('gjs/jsapi-util-error.cpp', '#include <utility>', 'for move'),
+    ('gjs/jsapi-util-error.h', '#include <utility>', 'for move'),
+
+    # Haven't managed to diagnose this one. It's triggered by replacing log.cpp
+    # with the following code, but not by that code in a standalone file.
+    # #include <vector>
+    # static std::vector<bool> v;
+    # void f() { v = std::vector<bool>(1, true); }
     ('util/log.cpp', '#include <algorithm>', 'for copy'),
 
     # For some reason IWYU wants these with angle brackets when they are

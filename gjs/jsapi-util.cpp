@@ -17,6 +17,7 @@
 #include <utility>  // for move
 #include <vector>
 
+#include <js/AllocPolicy.h>
 #include <js/Array.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
@@ -42,10 +43,6 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-
-namespace js {
-class SystemAllocPolicy;
-}
 
 static void
 throw_property_lookup_error(JSContext       *cx,

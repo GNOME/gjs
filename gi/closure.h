@@ -12,7 +12,6 @@
 #include <glib-object.h>
 #include <stddef.h>
 
-#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/utils-inl.h"

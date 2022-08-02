@@ -7,7 +7,6 @@
 #include <config.h>
 
 #include <js/TypeDecls.h>
-#include <jsapi.h>
 
 #include "gjs/macros.h"
 

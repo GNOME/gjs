@@ -8,6 +8,7 @@
 
 #include <glib.h>
 
+#include <js/AllocPolicy.h>
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
@@ -27,10 +28,6 @@
 #include "gjs/macros.h"
 #include "util/log.h"
 #include "util/misc.h"
-
-namespace js {
-class SystemAllocPolicy;
-}
 
 using CauseSet = JS::GCHashSet<JSObject*, js::DefaultHasher<JSObject*>,
                                js::SystemAllocPolicy>;

@@ -70,14 +70,16 @@ done
 
 for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
     $SRCDIR/gjs/coverage.cpp $SRCDIR/gjs/debugger.cpp \
-    $SRCDIR/gjs/deprecation.cpp $SRCDIR/gjs/error-types.cpp \
-    $SRCDIR/gjs/engine.cpp $SRCDIR/gjs/global.cpp $SRCDIR/gjs/importer.cpp \
+    $SRCDIR/gjs/deprecation.cpp $SRCDIR/gjs/engine.cpp \
+    $SRCDIR/gjs/error-types.cpp $SRCDIR/gjs/global.cpp \
+    $SRCDIR/gjs/internal.cpp $SRCDIR/gjs/importer.cpp \
     $SRCDIR/gjs/jsapi-util*.cpp $SRCDIR/gjs/mainloop.cpp \
     $SRCDIR/gjs/module.cpp $SRCDIR/gjs/native.cpp \
     $SRCDIR/gjs/objectbox.cpp $SRCDIR/gjs/promise.cpp $SRCDIR/gjs/stack.cpp \
-    $SRCDIR/modules/cairo-*.cpp $SRCDIR/modules/console.cpp \
-    $SRCDIR/modules/print.cpp $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp \
-    $SRCDIR/util/*.cpp $SRCDIR/libgjs-private/*.c
+    $SRCDIR/gjs/text-encoding.cpp $SRCDIR/modules/cairo-*.cpp \
+    $SRCDIR/modules/console.cpp $SRCDIR/modules/print.cpp \
+    $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp $SRCDIR/util/*.cpp \
+    $SRCDIR/libgjs-private/*.c
 do
     if should_analyze $FILE; then
         if ! $IWYU $FILE -- $PRIVATE_MAPPING $IWYU_TOOL_ARGS | $POSTPROCESS; then
