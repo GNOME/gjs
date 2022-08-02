@@ -181,7 +181,7 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 static inline void set_ffi_arg(void* result, GIArgument* value) {
     if constexpr (std::is_integral_v<T> && std::is_signed_v<T>) {
         *static_cast<ffi_sarg*>(result) = gjs_arg_get<T, TAG>(value);
-    } else if constexpr (std::is_floating_point_v<T> && std::is_unsigned_v<T>) {
+    } else if constexpr (std::is_floating_point_v<T> || std::is_unsigned_v<T>) {
         *static_cast<ffi_arg*>(result) = gjs_arg_get<T, TAG>(value);
     } else if constexpr (std::is_pointer_v<T>) {
         *static_cast<ffi_arg*>(result) =
