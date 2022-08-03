@@ -1,13 +1,11 @@
-#!/usr/bin/env gjs
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2008 Robert Carr <carrr@rpi.edu>
 
-imports.gi.versions.Gtk = '3.0';
-const {Gtk} = imports.gi;
+import Gtk from 'gi://Gtk?version=3.0';
 
 Gtk.init(null);
 
-var calcVal = '';
+let calcVal = '';
 
 function updateDisplay() {
     label.set_markup(`<span size='30000'>${calcVal}</span>`);
@@ -60,7 +58,7 @@ function randomNum() {
 }
 
 function packButtons(buttons, vbox) {
-    var hbox = new Gtk.HBox();
+    let hbox = new Gtk.HBox();
 
     hbox.homogeneous = true;
 
@@ -71,13 +69,13 @@ function packButtons(buttons, vbox) {
 }
 
 function createButton(str, func) {
-    var btn = new Gtk.Button({label: str});
+    let btn = new Gtk.Button({label: str});
     btn.connect('clicked', func);
     return btn;
 }
 
 function createButtons() {
-    var vbox = new Gtk.VBox({homogeneous: true});
+    let vbox = new Gtk.VBox({homogeneous: true});
 
     packButtons([
         createButton('(', pressedNumber),
@@ -122,7 +120,7 @@ function createButtons() {
     return vbox;
 }
 
-var win = new Gtk.Window({
+let win = new Gtk.Window({
     title: 'Calculator',
     resizable: false,
     opacity: 0.6,
@@ -131,11 +129,11 @@ var win = new Gtk.Window({
 win.resize(250, 250);
 win.connect('destroy', () => Gtk.main_quit());
 
-var label = new Gtk.Label({label: ''});
+let label = new Gtk.Label({label: ''});
 label.set_alignment(1, 0);
 updateDisplay();
 
-var mainvbox = new Gtk.VBox();
+let mainvbox = new Gtk.VBox();
 mainvbox.pack_start(label, false, true, 1);
 mainvbox.pack_start(new Gtk.HSeparator(), false, true, 5);
 mainvbox.pack_start(createButtons(), true, true, 2);

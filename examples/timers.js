@@ -2,7 +2,11 @@
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
 // This example demonstrates that Promises always execute prior
-// to timeouts. It should log "java" then "script".
+// to timeouts. It should log "hello" then "world".
+
+import GLib from 'gi://GLib';
+
+const loop = GLib.MainLoop.new(null, false);
 
 const promise = new Promise(r => {
     let i = 100;
@@ -13,9 +17,11 @@ const promise = new Promise(r => {
 });
 
 setTimeout(() => {
-    promise.then(() => log('java'));
+    promise.then(() => log('hello'));
 });
 
 setTimeout(() => {
-    log('script');
+    log('world');
 });
+
+loop.run();

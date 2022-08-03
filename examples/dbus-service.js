@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Andy Holmes <andrew.g.r.holmes@gmail.com>
 
-'use strict';
-
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
-
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 /*
  * An XML DBus Interface

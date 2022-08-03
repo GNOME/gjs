@@ -3,21 +3,27 @@
 
 /*
  * Make sure you have a non english locale installed, for example fr_FR and run
- * LANGUAGE=fr_FR gjs gettext.js
+ * LANGUAGE=fr_FR gjs -m gettext.js
  * the label should show a translation of 'Print help'
  */
 
-imports.gi.versions.Gtk = '3.0';
-const Gettext = imports.gettext;
-const Gtk = imports.gi.Gtk;
+import Gettext, {gettext as _} from 'gettext';
+import Gtk from 'gi://Gtk?version=4.0';
+import GLib from 'gi://GLib';
+
+Gtk.init();
+
+let loop = GLib.MainLoop.new(null, false);
 
 Gettext.bindtextdomain('gnome-shell', '/usr/share/locale');
 Gettext.textdomain('gnome-shell');
 
-Gtk.init(null);
+let window = new Gtk.Window({title: 'gettext'});
+window.set_child(new Gtk.Label({label: _('Print help')}));
+window.connect('close-request', () => {
+    loop.quit();
+});
 
-let w = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
-w.add(new Gtk.Label({label: Gettext.gettext('Print help')}));
-w.show_all();
+window.present();
 
-Gtk.main();
+loop.run();

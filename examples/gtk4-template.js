@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2021 Andy Holmes <andyholmes@gnome.org>
 
-imports.gi.versions.Gtk = '4.0';
-const {GLib, GObject, Gio, Gtk} = imports.gi;
-
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gio from 'gi://Gio';
+import Gtk from 'gi://Gtk?version=4.0';
 
 Gtk.init();
 
