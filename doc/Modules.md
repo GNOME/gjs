@@ -59,6 +59,8 @@ Mostly GtkBuilder/composite template implementation. May be useful as a referenc
 
 ```js
 import Gtk from 'gi://Gtk?version=3.0';
+// or
+import Gtk from 'gi://Gtk?version=4.0';
 ```
 >>>
 
@@ -276,7 +278,18 @@ The System module offers a number of useful functions and properties for debuggi
 
 [example-application]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/examples/gtk-application.js
 
-## [Tweener](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/script/tweener/)
+
+## [bytearray](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/system.cpp)
+
+**DEPRECATED**
+
+`const byteArray = imports.byteArray;`
+
+See [ByteArray](ByteArray.md).
+
+## [Tweener](https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/modules/script/tweener/tweener.js)
+
+**DEPRECATED**
 
 **Import with `const Tweener = imports.tweener.tweener;`**
 
