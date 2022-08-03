@@ -1164,6 +1164,24 @@ describe('Property bindings', function () {
         expect(a.bool).toEqual(true);
         expect(b.string).toEqual('true');
     });
+
+    it('can be set up as a group', function () {
+        const group = new GObject.BindingGroup({source: a});
+        group.bind('string', b, 'string', GObject.BindingFlags.NONE);
+        a.string = 'foo';
+        expect(a.string).toEqual('foo');
+        expect(b.string).toEqual('foo');
+    });
+
+    it('can be set up as a group with custom mappings', function () {
+        const group = new GObject.BindingGroup({source: a});
+        group.bind_full('bool', b, 'string', GObject.BindingFlags.NONE,
+            (bind, source) => [true, `${source}`],
+            null);
+        a.bool = true;
+        expect(a.bool).toEqual(true);
+        expect(b.string).toEqual('true');
+    });
 });
 
 describe('Auto accessor generation', function () {

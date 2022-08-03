@@ -689,6 +689,10 @@ function _init() {
         return GjsPrivate.g_object_bind_property_full(this, ...args);
     };
 
+    GObject.BindingGroup.prototype.bind_full = function (...args) {
+        return GjsPrivate.g_binding_group_bind_full(this, ...args);
+    };
+
     // fake enum for signal accumulators, keep in sync with gi/object.c
     GObject.AccumulatorType = {
         NONE: 0,

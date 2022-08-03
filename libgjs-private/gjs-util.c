@@ -125,6 +125,28 @@ GBinding* gjs_g_object_bind_property_full(
                                                 to_closure, from_closure);
 }
 
+void gjs_g_binding_group_bind_full(
+    GBindingGroup* source, const char* source_property, GObject* target,
+    const char* target_property, GBindingFlags flags,
+    GjsBindingTransformFunc to_callback, void* to_data,
+    GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
+    void* from_data, GDestroyNotify from_notify) {
+    GClosure* to_closure = NULL;
+    GClosure* from_closure = NULL;
+
+    if (to_callback)
+        to_closure = g_cclosure_new(G_CALLBACK(to_callback), to_data,
+                                    G_CLOSURE_NOTIFY(to_notify));
+
+    if (from_callback)
+        from_closure = g_cclosure_new(G_CALLBACK(from_callback), from_data,
+                                      G_CLOSURE_NOTIFY(from_notify));
+
+    return g_binding_group_bind_with_closures(source, source_property, target,
+                                              target_property, flags,
+                                              to_closure, from_closure);
+}
+
 #undef G_CLOSURE_NOTIFY
 
 static GParamSpec* gjs_gtk_container_class_find_child_property(
