@@ -353,12 +353,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, do
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y")
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-dispose_func(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
+bool CairoContext::dispose(JSContext* context, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(context, argc, vp, rec, obj);
 
     cairo_destroy(cr);
@@ -821,7 +816,7 @@ static bool textExtents_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 // clang-format off
 const JSFunctionSpec CairoContext::proto_funcs[] = {
-    JS_FN("$dispose", dispose_func, 0, 0),
+    JS_FN("$dispose", &CairoContext::dispose, 0, 0),
     JS_FN("appendPath", appendPath_func, 0, 0),
     JS_FN("arc", arc_func, 0, 0),
     JS_FN("arcNegative", arcNegative_func, 0, 0),
