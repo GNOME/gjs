@@ -4,27 +4,27 @@
 // This is an example of a WebSocket client in Gjs using libsoup
 // https://developer.gnome.org/libsoup/stable/libsoup-2.4-WebSockets.html
 
-const Soup = imports.gi.Soup;
-const GLib = imports.gi.GLib;
-const byteArray = imports.byteArray;
+import Soup from 'gi://Soup?version=3.0';
+import GLib from 'gi://GLib';
 
 const loop = GLib.MainLoop.new(null, false);
 
 const session = new Soup.Session();
 const message = new Soup.Message({
     method: 'GET',
-    uri: Soup.URI.new('wss://echo.websocket.org'),
+    uri: GLib.Uri.parse('wss://ws.postman-echo.com/raw', GLib.UriFlags.NONE),
 });
+const decoder = new TextDecoder();
 
-session.websocket_connect_async(message, 'origin', [], null, websocket_connect_async_callback);
+session.websocket_connect_async(message, null, [], null, null, websocket_connect_async_callback);
 
 function websocket_connect_async_callback(_session, res) {
     let connection;
 
     try {
         connection = session.websocket_connect_finish(res);
-    } catch (e) {
-        logError(e);
+    } catch (err) {
+        logError(err);
         loop.quit();
         return;
     }
@@ -43,7 +43,7 @@ function websocket_connect_async_callback(_session, res) {
         if (type !== Soup.WebsocketDataType.TEXT)
             return;
 
-        const str = byteArray.toString(byteArray.fromGBytes(data));
+        const str = decoder.decode(data.toArray());
         log(`message: ${str}`);
         connection.close(Soup.WebsocketCloseCode.NORMAL, null);
     });

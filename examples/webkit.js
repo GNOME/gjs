@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-imports.gi.versions.Gtk = '3.0';
-imports.gi.versions.WebKit2 = '4.0';
-const Gtk = imports.gi.Gtk;
-const WebKit = imports.gi.WebKit2;
+import Gtk from 'gi://Gtk?version=3.0';
+import WebKit from 'gi://WebKit2?version=4.0';
 
 Gtk.init(null);
 
 let win = new Gtk.Window();
 
 let view = new WebKit.WebView();
-view.load_uri('http://www.google.com/');
+view.load_uri('https://www.gnome.org');
 win.add(view);
 
 win.connect('destroy', () => {

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-// Include this in case both GTK3 and GTK4 installed, otherwise an exception
-// will be thrown
-imports.gi.versions.Gtk = '3.0';
-const Gtk = imports.gi.Gtk;
+// Include the version in case both GTK3 and GTK4 installed
+// otherwise an exception will be thrown
+import Gtk from 'gi://Gtk?version=3.0';
 
 // Initialize Gtk before you start calling anything from the import
 Gtk.init(null);

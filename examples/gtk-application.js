@@ -2,21 +2,17 @@
 // SPDX-FileCopyrightText: 2017 Andy Holmes <andrew.g.r.holmes@gmail.com>
 
 // See the note about Application.run() at the bottom of the script
-const System = imports.system;
-
-// Include this in case both GTK3 and GTK4 installed, otherwise an exception
-// will be thrown
-imports.gi.versions.Gtk = '3.0';
-
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
-
+import System from 'system';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+// Include the version in case both GTK3 and GTK4 installed
+// otherwise an exception will be thrown
+import Gtk from 'gi://Gtk?version=4.0';
 
 // An example GtkApplication with a few bells and whistles, see also:
 //     https://wiki.gnome.org/HowDoI/GtkApplication
-var ExampleApplication = GObject.registerClass({
+let ExampleApplication = GObject.registerClass({
     Properties: {
         'exampleprop': GObject.ParamSpec.string(
             'exampleprop',                      // property name
@@ -73,13 +69,13 @@ var ExampleApplication = GObject.registerClass({
         });
 
         let label = new Gtk.Label({label: this.exampleprop});
-        window.add(label);
+        window.set_child(label);
 
-        window.connect('delete-event', () => {
+        window.connect('close-request', () => {
             this.quit();
         });
 
-        window.show_all();
+        window.present();
 
         // Example GNotification, see: https://developer.gnome.org/GNotification/
         let notif = new Gio.Notification();

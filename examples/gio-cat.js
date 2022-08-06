@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2010 litl, LLC
 
-const ByteArray = imports.byteArray;
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 let loop = GLib.MainLoop.new(null, false);
+const decoder = new TextDecoder();
 
 function cat(filename) {
     let f = Gio.file_new_for_path(filename);
@@ -13,12 +13,12 @@ function cat(filename) {
         let contents;
         try {
             contents = obj.load_contents_finish(res)[1];
-        } catch (e) {
-            logError(e);
+        } catch (err) {
+            logError(err);
             loop.quit();
             return;
         }
-        print(ByteArray.toString(contents));
+        print(decoder.decode(contents));
         loop.quit();
     });
 

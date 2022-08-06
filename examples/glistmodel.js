@@ -1,19 +1,14 @@
-/* exported GjsListStore */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Andy Holmes <andrew.g.r.holmes@gmail.com>
 
-'use strict';
-
-const GObject = imports.gi.GObject;
-const Gio = imports.gi.Gio;
-
-
+import GObject from 'gi://GObject';
+import Gio from 'gi://Gio';
 
 /**
  * An example of implementing the GListModel interface in GJS. The only real
  * requirement here is that the class be derived from some GObject.
  */
-var GjsListStore = GObject.registerClass({
+export let GjsListStore = GObject.registerClass({
     GTypeName: 'GjsListStore',
     Implements: [Gio.ListModel],
 }, class MyList extends GObject.Object {

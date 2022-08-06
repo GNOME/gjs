@@ -4,32 +4,32 @@
 // This is a simple example of a HTTP client in Gjs using libsoup
 // https://developer.gnome.org/libsoup/stable/libsoup-client-howto.html
 
-const Soup = imports.gi.Soup;
-const GLib = imports.gi.GLib;
-const byteArray = imports.byteArray;
+import Soup from 'gi://Soup?version=3.0';
+import GLib from 'gi://GLib';
 
 const loop = GLib.MainLoop.new(null, false);
 
 const session = new Soup.Session();
 const message = new Soup.Message({
     method: 'GET',
-    uri: Soup.URI.new('http://localhost:1080/hello?myname=gjs'),
+    uri: GLib.Uri.parse('http://localhost:1080/hello?myname=gjs', GLib.UriFlags.NONE),
 });
+const decoder = new TextDecoder();
 
-session.send_async(message, null, send_async_callback);
+session.send_async(message, null, null, send_async_callback);
 
 function read_bytes_async_callback(inputStream, res) {
     let data;
 
     try {
         data = inputStream.read_bytes_finish(res);
-    } catch (e) {
-        logError(e);
+    } catch (err) {
+        logError(err);
         loop.quit();
         return;
     }
 
-    log(`body:\n${byteArray.toString(byteArray.fromGBytes(data))}`);
+    console.log('body:', decoder.decode(data.toArray()));
 
     loop.quit();
 }
@@ -39,18 +39,20 @@ function send_async_callback(self, res) {
 
     try {
         inputStream = session.send_finish(res);
-    } catch (e) {
-        logError(e);
+    } catch (err) {
+        logError(err);
         loop.quit();
         return;
     }
 
-    log(`status: ${message.status_code} - ${message.reason_phrase}`);
-    message.response_headers.foreach((name, value) => {
-        log(`${name}: ${value}`);
+    console.log('status:', message.status_code, message.reason_phrase);
+
+    const response_headers = message.get_response_headers();
+    response_headers.foreach((name, value) => {
+        console.log(name, ':', value);
     });
 
-    inputStream.read_bytes_async(message.response_headers.get('content-length'), null, null, read_bytes_async_callback);
+    inputStream.read_bytes_async(response_headers.get_one('content-length'), null, null, read_bytes_async_callback);
 }
 
 loop.run();
