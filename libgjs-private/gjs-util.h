@@ -141,6 +141,28 @@ GBinding* gjs_g_object_bind_property_full(
     GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
     void* from_data, GDestroyNotify from_notify);
 
+/**
+ * gjs_g_binding_group_bind_full:
+ * @source:
+ * @source_property:
+ * @target:
+ * @target_property:
+ * @flags:
+ * @to_callback: (scope notified) (nullable):
+ * @to_data: (closure to_callback):
+ * @to_notify: (destroy to_data):
+ * @from_callback: (scope notified) (nullable):
+ * @from_data: (closure from_callback):
+ * @from_notify: (destroy from_data):
+ */
+GJS_EXPORT
+void gjs_g_binding_group_bind_full(
+    GBindingGroup* source, const char* source_property, GObject* target,
+    const char* target_property, GBindingFlags flags,
+    GjsBindingTransformFunc to_callback, void* to_data,
+    GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
+    void* from_data, GDestroyNotify from_notify);
+
 /* For imports.overrides.Gtk */
 GJS_EXPORT
 void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
