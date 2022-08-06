@@ -109,16 +109,22 @@ let baz = Math.PI;
 // Using native template literals (Output: Pi to 2 decimal points: 3.14)
 `${foo} to ${bar*2} decimal points: ${baz.toFixed(bar*2)}`
 
-// Applying format() to the string prototype
 const Format = imports.format;
-String.prototype.format = Format.format;
 
 // Using format() (Output: Pi to 2 decimal points: 3.14)
+Format.format.call("%s to %d decimal points: %.2f", foo, bar * 2, baz);
+
+// Applying format() to the string prototype (this is the old way, but
+// is often considered bad practice now, especially in GNOME Shell
+// extensions where other extensions might overwrite it.
+// Consider not doing this!)
+String.prototype.format = Format.format;
 "%s to %d decimal points: %.2f".format(foo, bar*2, baz);
 
 // Using format() with Gettext
-_("%d:%d").format(11, 59);
-Gettext.ngettext("I have %d apple", "I have %d apples", num).format(num);
+Format.format.call(_("%d:%d"), 11, 59);
+Format.format.call(
+    Gettext.ngettext("I have %d apple", "I have %d apples", num), num);
 
 ```
 
