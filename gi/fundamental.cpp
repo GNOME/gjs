@@ -250,7 +250,7 @@ const struct JSClassOps FundamentalBase::class_ops = {
 
 const struct JSClass FundamentalBase::klass = {
     "GFundamental_Object",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
     &FundamentalBase::class_ops
 };
 // clang-format on

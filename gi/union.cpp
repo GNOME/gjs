@@ -148,7 +148,7 @@ const struct JSClassOps UnionBase::class_ops = {
 
 const struct JSClass UnionBase::klass = {
     "GObject_Union",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
     &UnionBase::class_ops
 };
 // clang-format on

@@ -178,7 +178,7 @@ const struct JSClassOps InterfaceBase::class_ops = {
 
 const struct JSClass InterfaceBase::klass = {
     "GObject_Interface",
-    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
     &InterfaceBase::class_ops
 };
 

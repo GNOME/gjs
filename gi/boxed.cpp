@@ -507,7 +507,8 @@ bool BoxedInstance::get_nested_interface_object(
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
      */
-    JS::SetReservedSlot(obj, 0, JS::ObjectValue(*parent_obj));
+    JS::SetReservedSlot(obj, BoxedInstance::PARENT_OBJECT,
+                        JS::ObjectValue(*parent_obj));
 
     value.setObject(*obj);
     return true;
@@ -774,8 +775,7 @@ const struct JSClassOps BoxedBase::class_ops = {
  */
 const struct JSClass BoxedBase::klass = {
     "GObject_Boxed",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE |
-        JSCLASS_HAS_RESERVED_SLOTS(1),
+    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
     &BoxedBase::class_ops
 };
 // clang-format on

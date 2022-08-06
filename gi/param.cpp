@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for size_t
+
 #include <girepository.h>
 #include <glib.h>
 
@@ -13,6 +15,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <jsapi.h>       // for JS_GetPropertyById
 #include <jspubtd.h>     // for JSProto_TypeError
 
@@ -31,6 +34,9 @@
 
 extern struct JSClass gjs_param_class;
 
+// Reserved slots
+static const size_t POINTER = 0;
+
 struct Param : GjsAutoParam {
     explicit Param(GParamSpec* param)
         : GjsAutoParam(param, GjsAutoTakeOwnership()) {}
@@ -38,8 +44,10 @@ struct Param : GjsAutoParam {
 
 [[nodiscard]] static GParamSpec* param_value(JSContext* cx,
                                              JS::HandleObject obj) {
-    auto* priv = static_cast<Param*>(
-        JS_GetInstancePrivate(cx, obj, &gjs_param_class, nullptr));
+    if (!JS_InstanceOf(cx, obj, &gjs_param_class, nullptr))
+        return nullptr;
+
+    auto* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
     return priv ? priv->get() : nullptr;
 }
 
@@ -115,14 +123,14 @@ static bool gjs_param_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static void param_finalize(JSFreeOp*, JSObject* obj) {
-    Param* priv = static_cast<Param*>(JS::GetPrivate(obj));
+    Param* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);
     if (!priv)
         return; /* wrong class? */
 
     GJS_DEC_COUNTER(param);
-    JS::SetPrivate(obj, nullptr);
+    JS::SetReservedSlot(obj, POINTER, JS::UndefinedValue());
     delete priv;
 }
 
@@ -141,9 +149,8 @@ static const struct JSClassOps gjs_param_class_ops = {
 
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
-    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
-    &gjs_param_class_ops
-};
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+    &gjs_param_class_ops};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
@@ -221,7 +228,7 @@ gjs_param_from_g_param(JSContext    *context,
 
     GJS_INC_COUNTER(param);
     auto* priv = new Param(gparam);
-    JS::SetPrivate(obj, priv);
+    JS::SetReservedSlot(obj, POINTER, JS::PrivateValue(priv));
 
     gjs_debug(GJS_DEBUG_GPARAM,
               "JSObject created with param instance %p type %s", gparam,

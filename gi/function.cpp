@@ -22,7 +22,6 @@
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
-#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetRealmFunctionPrototype
@@ -149,8 +148,8 @@ class Function : public CWrapper<Function> {
 
     static constexpr JSClass klass = {
         "GIRepositoryFunction",
-        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE, &Function::class_ops,
-        &Function::class_spec};
+        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+        &Function::class_ops, &Function::class_spec};
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
@@ -1326,8 +1325,7 @@ JSObject* Function::create(JSContext* context, GType gtype,
 
     auto* priv = new Function(info);
 
-    g_assert(!JS::GetPrivate(function) && "Function should be a fresh object");
-    JS::SetPrivate(function, priv);
+    Function::init_private(function, priv);
 
     debug_lifecycle(function, priv, "Constructor");
 

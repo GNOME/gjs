@@ -31,7 +31,6 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
-#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/String.h>
 #include <js/Symbol.h>
@@ -2539,7 +2538,7 @@ const struct JSClassOps ObjectBase::class_ops = {
 
 const struct JSClass ObjectBase::klass = {
     "GObject_Object",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
     &ObjectBase::class_ops
 };
 
@@ -2726,7 +2725,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     ObjectInstance* priv = new ObjectInstance(prototype, obj);
 
-    JS::SetPrivate(obj, priv);
+    ObjectBase::init_private(obj, priv);
 
     g_object_ref_sink(gobj);
     priv->associate_js_gobject(cx, obj, gobj);

@@ -57,6 +57,9 @@ union Utf8Unit;
 class GjsScriptModule {
     char *m_name;
 
+    // Reserved slots
+    static const size_t POINTER = 0;
+
     GjsScriptModule(const char* name) {
         m_name = g_strdup(name);
         GJS_INC_COUNTER(module);
@@ -73,13 +76,15 @@ class GjsScriptModule {
     /* Private data accessors */
 
     [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
-        return static_cast<GjsScriptModule*>(JS::GetPrivate(module));
+        return Gjs::maybe_get_private<GjsScriptModule>(
+            module, GjsScriptModule::POINTER);
     }
 
     /* Creates a JS module object. Use instead of the class's constructor */
     [[nodiscard]] static JSObject* create(JSContext* cx, const char* name) {
         JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
-        JS::SetPrivate(module, new GjsScriptModule(name));
+        JS::SetReservedSlot(module, GjsScriptModule::POINTER,
+                            JS::PrivateValue(new GjsScriptModule(name)));
         return module;
     }
 
@@ -225,7 +230,7 @@ class GjsScriptModule {
 
     static constexpr JSClass klass = {
         "GjsScriptModule",
-        JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
         &GjsScriptModule::class_ops,
     };
 

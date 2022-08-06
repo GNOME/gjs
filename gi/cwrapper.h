@@ -7,6 +7,7 @@
 #include <config.h>
 
 #include <assert.h>
+#include <stddef.h>  // for size_t
 
 #include <string>
 #include <type_traits>  // for integral_constant
@@ -80,8 +81,10 @@ class CWrapperPointerOps {
      */
     [[nodiscard]] static Wrapped* for_js(JSContext* cx,
                                          JS::HandleObject wrapper) {
-        return static_cast<Wrapped*>(
-            JS_GetInstancePrivate(cx, wrapper, &Base::klass, nullptr));
+        if (!JS_InstanceOf(cx, wrapper, &Base::klass, nullptr))
+            return nullptr;
+
+        return Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
     }
 
     /*
@@ -134,7 +137,45 @@ class CWrapperPointerOps {
      * (It can return null if no private data has been set yet on the wrapper.)
      */
     [[nodiscard]] static Wrapped* for_js_nocheck(JSObject* wrapper) {
-        return static_cast<Wrapped*>(JS::GetPrivate(wrapper));
+        return Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+    }
+
+ protected:
+    // The first reserved slot always stores the private pointer.
+    static const size_t POINTER = 0;
+
+    /*
+     * CWrapperPointerOps::has_private:
+     *
+     * Returns true if a private C pointer has already been associated with the
+     * wrapper object.
+     */
+    [[nodiscard]] static bool has_private(JSObject* wrapper) {
+        return !!Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+    }
+
+    /*
+     * CWrapperPointerOps::init_private:
+     *
+     * Call this to initialize the wrapper object's private C pointer. The
+     * pointer should not be null. This should not be called twice, without
+     * calling unset_private() in between.
+     */
+    static void init_private(JSObject* wrapper, Wrapped* ptr) {
+        assert(!has_private(wrapper) &&
+               "wrapper object should be a fresh object");
+        assert(ptr && "private pointer should not be null, use unset_private");
+        JS::SetReservedSlot(wrapper, POINTER, JS::PrivateValue(ptr));
+    }
+
+    /*
+     * CWrapperPointerOps::unset_private:
+     *
+     * Call this to remove the wrapper object's private C pointer. After calling
+     * this, it's okay to call init_private() again.
+     */
+    static void unset_private(JSObject* wrapper) {
+        JS::SetReservedSlot(wrapper, POINTER, JS::UndefinedValue());
     }
 };
 
@@ -213,7 +254,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         Wrapped* priv = Base::constructor_impl(cx, args);
         if (!priv)
             return false;
-        JS::SetPrivate(object, priv);
+        CWrapperPointerOps<Base, Wrapped>::init_private(object, priv);
 
         args.rval().setObject(*object);
         return true;
@@ -257,8 +298,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
 
         Base::finalize_impl(fop, priv);
 
-        // Remove the pointer from the JSObject
-        JS::SetPrivate(obj, nullptr);
+        CWrapperPointerOps<Base, Wrapped>::unset_private(obj);
     }
 
     static constexpr JSClassOps class_ops = {
@@ -494,8 +534,8 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         if (!wrapper)
             return nullptr;
 
-        assert(!JS::GetPrivate(wrapper));
-        JS::SetPrivate(wrapper, Base::copy_ptr(ptr));
+        CWrapperPointerOps<Base, Wrapped>::init_private(wrapper,
+                                                        Base::copy_ptr(ptr));
 
         debug_lifecycle(ptr, wrapper, "from_c_ptr");
 
