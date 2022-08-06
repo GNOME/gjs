@@ -25,6 +25,10 @@ new `Uint8Array` of the same length as the String, then assigns each
 `Uint8Array` entry the corresponding byte value of the String encoded
 according to the given encoding (or UTF-8 if not given).
 
+**DEPRECATED**
+
+Use `new TextEncoder(encoding).encode(string)` instead.
+
 ### `toString(a:Uint8Array, encoding:String):String` ###
 
 Converts the `Uint8Array` into a literal string. The bytes are
@@ -32,12 +36,24 @@ interpreted according to the given encoding (or UTF-8 if not given).
 
 The resulting string is guaranteed to round-trip back into an identical ByteArray by passing the result to `ByteArray.fromString()`, i.e., `b === ByteArray.fromString(ByteArray.toString(b, encoding), encoding)`.
 
+**DEPRECATED**
+
+Use `new TextDecoder(encoding).decode(string)` instead.
+
 ### `fromGBytes(b:GLib.Bytes):Uint8Array` ###
 
 Convert a `GLib.Bytes` instance into a newly constructed `Uint8Array`.
 The contents are copied.
 
+**DEPRECATED**
+
+Use `GLib.Bytes.prototype.toArray` instead.
+
 ### `toGBytes(a:Uint8Array):GLib.Bytes` ###
 
 Converts the `Uint8Array` into a `GLib.Bytes` instance.
 The contents are copied.
+
+**DEPRECATED**
+
+Use `new GLib.Bytes(a:Uint8Array)` instead.
