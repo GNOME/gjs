@@ -99,7 +99,7 @@ drawingArea.connect("draw", (widget, cr) => {
 
 **Import with `const Format = imports.format;`**
 
-The format import is mostly obsolete, providing `vprintf()`, `printf()` and `format()`. Native [template literals][template-literals] should be preferred now, except in few situations like Gettext (See [Bug #50920][bug-50920]).
+The format import is mostly obsolete, providing `vprintf()`, `printf()` and `format()`. Native [template literals][template-literals] should be preferred now, except in few situations like Gettext (See [Bug #60027][bug-60027]).
 
 ```js
 let foo = "Pi";
@@ -123,7 +123,7 @@ Gettext.ngettext("I have %d apple", "I have %d apples", num).format(num);
 ```
 
 [template-literals]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
-[bug-50920]: https://savannah.gnu.org/bugs/?50920
+[bug-60027]: https://savannah.gnu.org/bugs/?60027
 
 ## [Gettext](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/script/gettext.js)
 
