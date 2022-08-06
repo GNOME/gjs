@@ -19,6 +19,7 @@
 #include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
+#include <js/Object.h>       // for SetReservedSlot
 #include <js/String.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
@@ -506,7 +507,7 @@ bool BoxedInstance::get_nested_interface_object(
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
      */
-    JS_SetReservedSlot(obj, 0, JS::ObjectValue(*parent_obj));
+    JS::SetReservedSlot(obj, 0, JS::ObjectValue(*parent_obj));
 
     value.setObject(*obj);
     return true;
