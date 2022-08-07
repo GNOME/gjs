@@ -9,7 +9,7 @@
 
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
-#include <js/Id.h>  // for JSID_VOID, PropertyKey, jsid
+#include <js/Id.h>           // for PropertyKey, jsid
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 
@@ -51,7 +51,7 @@ static bool append_inferface_properties(JSContext* cx,
         if (flags & GI_FUNCTION_IS_METHOD) {
             const char* name = meth_info.name();
             jsid id = gjs_intern_string_to_id(cx, name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }
@@ -178,7 +178,7 @@ const struct JSClassOps InterfaceBase::class_ops = {
 
 const struct JSClass InterfaceBase::klass = {
     "GObject_Interface",
-    JSCLASS_HAS_PRIVATE | JSCLASS_BACKGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
     &InterfaceBase::class_ops
 };
 

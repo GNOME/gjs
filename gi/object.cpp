@@ -31,7 +31,6 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
-#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/String.h>
 #include <js/Symbol.h>
@@ -1124,7 +1123,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
                 jsid id = gjs_intern_string_to_id(cx, name);
-                if (id == JSID_VOID)
+                if (id.isVoid())
                     return false;
                 properties.infallibleAppend(id);
             }
@@ -1138,7 +1137,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
 
             jsid id = gjs_intern_string_to_id(cx, js_name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }
@@ -1163,7 +1162,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             if (flags & GI_FUNCTION_IS_METHOD) {
                 const char* name = meth_info.name();
                 jsid id = gjs_intern_string_to_id(cx, name);
-                if (id == JSID_VOID)
+                if (id.isVoid())
                     return false;
                 properties.infallibleAppend(id);
             }
@@ -1176,7 +1175,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
             GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
             jsid id = gjs_intern_string_to_id(cx, js_name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }
@@ -1194,7 +1193,7 @@ bool ObjectPrototype::props_to_g_parameters(JSContext* context,
     size_t ix, length;
     JS::RootedId prop_id(context);
     JS::RootedValue value(context);
-    JS::Rooted<JS::IdVector> ids(context);
+    JS::Rooted<JS::IdVector> ids(context, context);
     std::unordered_set<GParamSpec*> visited_params;
     if (!JS_Enumerate(context, props, &ids)) {
         gjs_throw(context, "Failed to create property iterator for object props hash");
@@ -2539,7 +2538,7 @@ const struct JSClassOps ObjectBase::class_ops = {
 
 const struct JSClass ObjectBase::klass = {
     "GObject_Object",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
     &ObjectBase::class_ops
 };
 
@@ -2726,7 +2725,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     ObjectInstance* priv = new ObjectInstance(prototype, obj);
 
-    JS::SetPrivate(obj, priv);
+    ObjectBase::init_private(obj, priv);
 
     g_object_ref_sink(gobj);
     priv->associate_js_gobject(cx, obj, gobj);

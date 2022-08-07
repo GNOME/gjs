@@ -12,7 +12,6 @@
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Id.h>
-#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -145,7 +144,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             const char* name = info.name();
 
             jsid id = gjs_intern_string_to_id(cx, name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
         }
@@ -203,8 +202,8 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
 
     static constexpr JSClass klass = {
         "GIRepositoryNamespace",
-        JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE, &Ns::class_ops,
-        &Ns::class_spec};
+        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+        &Ns::class_ops, &Ns::class_spec};
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
@@ -219,8 +218,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             return nullptr;
 
         auto* priv = new Ns(ns_name);
-        g_assert(!JS::GetPrivate(ns));
-        JS::SetPrivate(ns, priv);
+        Ns::init_private(ns, priv);
 
         gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
                             "ns constructor, obj %p priv %p", ns.get(), priv);

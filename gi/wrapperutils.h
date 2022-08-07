@@ -408,8 +408,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         else
             priv->to_instance()->finalize_impl(fop, obj);
 
-        // Remove the pointer from the JSObject
-        JS::SetPrivate(obj, nullptr);
+        Base::unset_private(obj);
     }
 
     /*
@@ -902,7 +901,7 @@ class GIWrapperPrototype : public Base {
         // a garbage collection or error happens subsequently, then this object
         // might be traced and we would end up dereferencing a null pointer.
         Prototype* proto = priv.release();
-        JS::SetPrivate(prototype, proto);
+        Prototype::init_private(prototype, proto);
 
         if (!gjs_wrapper_define_gtype_prop(cx, constructor, gtype))
             return nullptr;
@@ -949,7 +948,7 @@ class GIWrapperPrototype : public Base {
             return nullptr;
 
         Prototype* proto = priv.release();
-        JS::SetPrivate(prototype, proto);
+        Prototype::init_private(prototype, proto);
 
         if (!proto->define_static_methods(cx, constructor))
             return nullptr;
@@ -1060,24 +1059,22 @@ class GIWrapperInstance : public Base {
      */
     [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
                                                      JS::HandleObject obj) {
-        g_assert(!JS::GetPrivate(obj));
         Prototype* prototype = Prototype::for_js_prototype(cx, obj);
         auto* priv = new Instance(prototype, obj);
 
         // Init the private variable before we do anything else. If a garbage
         // collection happens when calling the constructor, then this object
         // might be traced and we would end up dereferencing a null pointer.
-        JS::SetPrivate(obj, priv);
+        Instance::init_private(obj, priv);
 
         return priv;
     }
 
     [[nodiscard]] static Instance* new_for_js_object(Prototype* prototype,
                                                      JS::HandleObject obj) {
-        g_assert(!JS::GetPrivate(obj));
         auto* priv = new Instance(prototype, obj);
 
-        JS::SetPrivate(obj, priv);
+        Instance::init_private(obj, priv);
 
         return priv;
     }

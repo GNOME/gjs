@@ -15,6 +15,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gi/cwrapper.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -136,5 +137,6 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
         return nullptr;
     }
 
-    return static_cast<cairo_pattern_t*>(JS::GetPrivate(pattern_wrapper));
+    return Gjs::maybe_get_private<cairo_pattern_t>(pattern_wrapper,
+                                                   CairoPattern::POINTER);
 }

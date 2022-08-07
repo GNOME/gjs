@@ -19,6 +19,7 @@
 #include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
+#include <js/Object.h>       // for SetReservedSlot
 #include <js/String.h>
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
@@ -102,7 +103,7 @@ bool BoxedPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
         if (flags & GI_FUNCTION_IS_METHOD) {
             const char* name = meth_info.name();
             jsid id = gjs_intern_string_to_id(cx, name);
-            if (id == JSID_VOID)
+            if (id.isVoid())
                 return false;
             if (!properties.append(id)) {
                 JS_ReportOutOfMemory(cx);
@@ -171,8 +172,7 @@ std::unique_ptr<BoxedPrototype::FieldMap> BoxedPrototype::create_field_map(
 
         // We get the string as a jsid later, which is interned. We intern the
         // string here as well, so it will be the same string pointer
-        JS::RootedString name(cx, JS_NewStringCopyZ(cx, field_info.name()));
-        JSString* atom = JS_AtomizeAndPinJSString(cx, name);
+        JSString* atom = JS_AtomizeAndPinString(cx, field_info.name());
 
         result->putNewInfallible(atom, std::move(field_info));
     }
@@ -507,7 +507,8 @@ bool BoxedInstance::get_nested_interface_object(
     /* We never actually read the reserved slot, but we put the parent object
      * into it to hold onto the parent object.
      */
-    JS_SetReservedSlot(obj, 0, JS::ObjectValue(*parent_obj));
+    JS::SetReservedSlot(obj, BoxedInstance::PARENT_OBJECT,
+                        JS::ObjectValue(*parent_obj));
 
     value.setObject(*obj);
     return true;
@@ -774,8 +775,7 @@ const struct JSClassOps BoxedBase::class_ops = {
  */
 const struct JSClass BoxedBase::klass = {
     "GObject_Boxed",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE |
-        JSCLASS_HAS_RESERVED_SLOTS(1),
+    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
     &BoxedBase::class_ops
 };
 // clang-format on
@@ -966,7 +966,7 @@ bool BoxedPrototype::init(JSContext* context) {
                     first_constructor = i;
                     first_constructor_name =
                         gjs_intern_string_to_id(context, func_info.name());
-                    if (first_constructor_name == JSID_VOID)
+                    if (first_constructor_name.isVoid())
                         return false;
                 }
 
@@ -975,7 +975,7 @@ bool BoxedPrototype::init(JSContext* context) {
                     m_zero_args_constructor = i;
                     zero_args_constructor_name =
                         gjs_intern_string_to_id(context, func_info.name());
-                    if (zero_args_constructor_name == JSID_VOID)
+                    if (zero_args_constructor_name.isVoid())
                         return false;
                 }
 

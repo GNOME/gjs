@@ -7,6 +7,7 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for size_t
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr
@@ -157,6 +158,9 @@ class BoxedInstance
     friend class GIWrapperInstance<BoxedBase, BoxedPrototype, BoxedInstance>;
     friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
     friend class BoxedBase;  // for field_getter, etc.
+
+    // Reserved slots
+    static const size_t PARENT_OBJECT = 1;
 
     bool m_allocated_directly : 1;
     bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred

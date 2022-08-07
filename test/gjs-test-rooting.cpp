@@ -3,6 +3,8 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for size_t
+
 #include <glib.h>
 
 #include <js/Class.h>
@@ -14,6 +16,7 @@
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"
+#include "gjs/jsapi-util.h"  // for maybe_get_private
 #include "test/gjs-test-utils.h"
 
 // COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
@@ -26,6 +29,9 @@ static GMutex gc_lock;
 static GCond gc_finished;
 static int gc_counter;
 
+// TestObj reserved slots
+static const size_t POINTER = 0;
+
 #define PARENT(fx) ((GjsUnitTestFixture *)fx)
 struct GjsRootingFixture {
     GjsUnitTestFixture parent;
@@ -37,7 +43,7 @@ struct GjsRootingFixture {
 };
 
 static void test_obj_finalize(JSFreeOp*, JSObject* obj) {
-    bool* finalized_p = static_cast<bool*>(JS::GetPrivate(obj));
+    bool* finalized_p = Gjs::maybe_get_private<bool>(obj, POINTER);
     g_assert_false(*finalized_p);
     *finalized_p = true;
 }
@@ -52,16 +58,14 @@ static const JSClassOps test_obj_class_ops = {
     test_obj_finalize};
 
 static JSClass test_obj_class = {
-    "TestObj",
-    JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE,
-    &test_obj_class_ops
-};
+    "TestObj", JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+    &test_obj_class_ops};
 
 static JSObject *
 test_obj_new(GjsRootingFixture *fx)
 {
     JSObject *retval = JS_NewObject(PARENT(fx)->cx, &test_obj_class);
-    JS::SetPrivate(retval, &fx->finalized);
+    JS::SetReservedSlot(retval, POINTER, JS::PrivateValue(&fx->finalized));
     return retval;
 }
 

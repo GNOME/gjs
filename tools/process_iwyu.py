@@ -73,7 +73,8 @@ FALSE_POSITIVES = (
     ('gi/function.cpp', '#include <algorithm>', 'for fill_n, max'),  # also!
     ('gi/private.cpp', '#include <algorithm>', 'for max'),
     ('gjs/context.cpp', '#include <algorithm>', 'for copy, max, find'),
-    ('gjs/importer.cpp', '#include <algorithm>', 'for max, copy'),
+    ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
+    ('gjs/importer.cpp', '#include <algorithm>', 'for max, copy'),  # also!
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
 
     # False positive when using EnumType operators

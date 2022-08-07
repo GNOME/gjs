@@ -13,14 +13,12 @@
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
-#include <js/Object.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_SetElement
 
 #include "gi/arg-inl.h"
@@ -86,9 +84,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
         return false;                                                       \
     cfunc(cr, &arg1, &arg2);                                                \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                         \
-        JS::RootedObject array(                                             \
-            context,                                                        \
-            JS::NewArrayObject(context, JS::HandleValueArray::empty()));    \
+        JS::RootedObject array(context, JS::NewArrayObject(context, 2));    \
         if (!array)                                                         \
             return false;                                                   \
         JS::RootedValue r(context, JS::NumberValue(arg1));                  \
@@ -107,9 +103,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                             \
     cfunc(cr, &arg1, &arg2);                                             \
     if (cairo_status(cr) == CAIRO_STATUS_SUCCESS) {                      \
-        JS::RootedObject array(                                          \
-            context,                                                     \
-            JS::NewArrayObject(context, JS::HandleValueArray::empty())); \
+        JS::RootedObject array(context, JS::NewArrayObject(context, 2)); \
         if (!array)                                                      \
             return false;                                                \
         JS::RootedValue r(context, JS::NumberValue(arg1));               \
@@ -128,9 +122,7 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                             \
     cfunc(cr, &arg1, &arg2, &arg3, &arg4);                               \
     {                                                                    \
-        JS::RootedObject array(                                          \
-            context,                                                     \
-            JS::NewArrayObject(context, JS::HandleValueArray::empty())); \
+        JS::RootedObject array(context, JS::NewArrayObject(context, 4)); \
         if (!array)                                                      \
             return false;                                                \
         JS::RootedValue r(context, JS::NumberValue(arg1));               \
@@ -360,16 +352,11 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, do
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y")
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-dispose_func(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
+bool CairoContext::dispose(JSContext* context, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(context, argc, vp, rec, obj);
 
     cairo_destroy(cr);
-    JS::SetPrivate(obj, nullptr);
+    CairoContext::unset_private(obj);
 
     rec.rval().setUndefined();
     return true;
@@ -828,7 +815,7 @@ static bool textExtents_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 // clang-format off
 const JSFunctionSpec CairoContext::proto_funcs[] = {
-    JS_FN("$dispose", dispose_func, 0, 0),
+    JS_FN("$dispose", &CairoContext::dispose, 0, 0),
     JS_FN("appendPath", appendPath_func, 0, 0),
     JS_FN("arc", arc_func, 0, 0),
     JS_FN("arcNegative", arcNegative_func, 0, 0),

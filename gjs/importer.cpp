@@ -284,7 +284,7 @@ gjs_import_native_module(JSContext       *cx,
         cx, gjs_get_native_registry(gjs_get_import_global(cx)));
 
     JS::RootedId id(cx, gjs_intern_string_to_id(cx, parse_name));
-    if (id == JSID_VOID)
+    if (id.isVoid())
         return false;
 
     JS::RootedObject module(cx);
@@ -693,7 +693,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
                 jsid id = gjs_intern_string_to_id(context, filename);
-                if (id == JSID_VOID)
+                if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
                     JS_ReportOutOfMemory(context);
@@ -704,7 +704,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                 GjsAutoChar filename_noext =
                     g_strndup(filename, strlen(filename) - 3);
                 jsid id = gjs_intern_string_to_id(context, filename_noext);
-                if (id == JSID_VOID)
+                if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
                     JS_ReportOutOfMemory(context);
