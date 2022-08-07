@@ -311,3 +311,33 @@ describe('Gio.add_action_entries override', function () {
         expect(() => app.add_action_entries(entries)).toThrow();
     });
 });
+
+describe('Gio.FileEnumerator overrides', function () {
+    it('iterates synchronously', function () {
+        const dir = Gio.File.new_for_path('.');
+        let count = 0;
+        for (const value of dir.enumerate_children(
+            'standard::name',
+            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+            null
+        )) {
+            expect(value).toBeInstanceOf(Gio.FileInfo);
+            count++;
+        }
+        expect(count).toBeGreaterThan(0);
+    });
+
+    it('iterates asynchronously', async function () {
+        const dir = Gio.File.new_for_path('.');
+        let count = 0;
+        for await (const value of dir.enumerate_children(
+            'standard::name',
+            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+            null
+        )) {
+            expect(value).toBeInstanceOf(Gio.FileInfo);
+            count++;
+        }
+        expect(count).toBeGreaterThan(0);
+    });
+});

@@ -545,6 +545,66 @@ function _init() {
         return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
     };
 
+    Gio.FileEnumerator.prototype[Symbol.iterator] = function* FileEnumeratorIterator() {
+        while (true) {
+            try {
+                const info = this.next_file(null);
+                if (info === null)
+                    break;
+                yield info;
+            } catch (err) {
+                this.close(null);
+                throw err;
+            }
+        }
+        this.close(null);
+    };
+
+    Gio.FileEnumerator.prototype[Symbol.asyncIterator] = async function* AsyncFileEnumatorIterator() {
+        const self = this;
+
+        function next() {
+            return new Promise((resolve, reject) => {
+                self.next_files_async(1, Gio.PRIORITY_DEFAULT, null, (_self, res) => {
+                    try {
+                        const files = self.next_files_finish(res);
+                        resolve(files.length === 0 ? null : files[0]);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            });
+        }
+
+        function close() {
+            return new Promise((resolve, reject) => {
+                self.close_async(Gio.PRIORITY_DEFAULT, null, (_self, res) => {
+                    try {
+                        resolve(self.close_finish(res));
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            });
+        }
+
+        while (true) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                const info = await next();
+                if (info === null)
+                    break;
+                yield info;
+            } catch (err) {
+                // eslint-disable-next-line no-await-in-loop
+                await close();
+                throw err;
+            }
+        }
+
+        return close();
+    };
+
     // Override Gio.Settings and Gio.SettingsSchema - the C API asserts if
     // trying to access a nonexistent schema or key, which is not handy for
     // shell-extension writers
