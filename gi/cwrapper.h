@@ -86,7 +86,7 @@ class CWrapperPointerOps {
         if (!JS_InstanceOf(cx, wrapper, &Base::klass, nullptr))
             return nullptr;
 
-        return Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+        return JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
     /*
@@ -139,7 +139,7 @@ class CWrapperPointerOps {
      * (It can return null if no private data has been set yet on the wrapper.)
      */
     [[nodiscard]] static Wrapped* for_js_nocheck(JSObject* wrapper) {
-        return Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+        return JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
  protected:
@@ -153,7 +153,7 @@ class CWrapperPointerOps {
      * wrapper object.
      */
     [[nodiscard]] static bool has_private(JSObject* wrapper) {
-        return !!Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+        return !!JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
     /*

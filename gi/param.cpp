@@ -48,7 +48,7 @@ struct Param : GjsAutoParam {
     if (!JS_InstanceOf(cx, obj, &gjs_param_class, nullptr))
         return nullptr;
 
-    auto* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
+    auto* priv = JS::GetMaybePtrFromReservedSlot<Param>(obj, POINTER);
     return priv ? priv->get() : nullptr;
 }
 
@@ -124,7 +124,7 @@ static bool gjs_param_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static void param_finalize(JS::GCContext*, JSObject* obj) {
-    Param* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
+    Param* priv = JS::GetMaybePtrFromReservedSlot<Param>(obj, POINTER);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);
     if (!priv)

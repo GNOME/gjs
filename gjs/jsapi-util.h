@@ -26,10 +26,8 @@
 #include <js/GCAPI.h>
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <js/Id.h>
-#include <js/Object.h>  // for GetReservedSlot
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <js/Value.h>
 #include <jspubtd.h>     // for JSProtoKey
 
 #include "gjs/macros.h"
@@ -634,18 +632,6 @@ template <typename T>
                       gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>(),
                       std::to_string(*clamped).c_str());
     return true;
-}
-
-/**
- * Helper function, backported from future SpiderMonkey's
- * JS::GetMaybePtrFromReservedSlot(), to get the pointer value (or nullptr if
- * not set) from an object's reserved slot. The slot must contain either a
- * JS::PrivateValue(T*) or JS::UndefinedValue.
- */
-template <typename T>
-inline T* maybe_get_private(JSObject* obj, size_t slot) {
-    JS::Value v = JS::GetReservedSlot(obj, slot);
-    return v.isUndefined() ? nullptr : static_cast<T*>(v.toPrivate());
 }
 
 }  // namespace Gjs

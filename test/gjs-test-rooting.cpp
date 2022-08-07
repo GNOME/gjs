@@ -16,7 +16,6 @@
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/jsapi-util.h"  // for maybe_get_private
 #include "test/gjs-test-utils.h"
 
 class JSTracer;
@@ -45,7 +44,7 @@ struct GjsRootingFixture {
 };
 
 static void test_obj_finalize(JS::GCContext*, JSObject* obj) {
-    bool* finalized_p = Gjs::maybe_get_private<bool>(obj, POINTER);
+    bool* finalized_p = JS::GetMaybePtrFromReservedSlot<bool>(obj, POINTER);
     g_assert_false(*finalized_p);
     *finalized_p = true;
 }

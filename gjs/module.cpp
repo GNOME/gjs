@@ -80,7 +80,7 @@ class GjsScriptModule {
     /* Private data accessors */
 
     [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
-        return Gjs::maybe_get_private<GjsScriptModule>(
+        return JS::GetMaybePtrFromReservedSlot<GjsScriptModule>(
             module, GjsScriptModule::POINTER);
     }
 

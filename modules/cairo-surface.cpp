@@ -271,8 +271,8 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         return nullptr;
     }
 
-    return Gjs::maybe_get_private<cairo_surface_t>(surface_wrapper,
-                                                   CairoSurface::POINTER);
+    return JS::GetMaybePtrFromReservedSlot<cairo_surface_t>(
+        surface_wrapper, CairoSurface::POINTER);
 }
 
 [[nodiscard]] static bool surface_to_g_argument(

@@ -136,6 +136,6 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
         return nullptr;
     }
 
-    return Gjs::maybe_get_private<cairo_pattern_t>(pattern_wrapper,
-                                                   CairoPattern::POINTER);
+    return JS::GetMaybePtrFromReservedSlot<cairo_pattern_t>(
+        pattern_wrapper, CairoPattern::POINTER);
 }
