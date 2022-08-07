@@ -1,3 +1,18 @@
+Version 1.73.2
+--------------
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 102, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 91.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New APIs
+    + The `Object.hasOwn()` static method can be used as an easier replacement
+      for `Object.prototype.hasOwnProperty.call(...)`.
+    + `Intl.supportedValuesOf()` lets you enumerate which calendars, currencies,
+      collation strategies, numbering systems, time zones, and units are
+      available for internationalization.
+
 Version 1.73.1
 --------------
 
