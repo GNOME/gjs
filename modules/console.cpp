@@ -184,11 +184,11 @@ gjs_console_interact(JSContext *context,
                      JS::Value *vp)
 {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    bool eof, exit_warning;
+    volatile bool eof, exit_warning;  // accessed after setjmp()
     JS::RootedObject global(context, gjs_get_import_global(context));
     char* temp_buf;
-    int lineno;
-    int startline;
+    volatile int lineno;     // accessed after setjmp()
+    volatile int startline;  // accessed after setjmp()
 
 #ifndef HAVE_READLINE_READLINE_H
     int rl_end = 0;  // nonzero if using readline and any text is typed in
