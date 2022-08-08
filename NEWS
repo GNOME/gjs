@@ -13,6 +13,35 @@ Version 1.73.2
       collation strategies, numbering systems, time zones, and units are
       available for internationalization.
 
+- It's now possible to use `GObject.BindingGroup.prototype.bind_full()` with JS
+  functions. Previously this method was unusable in JS.
+
+- Gio.FileEnumerator is now iterable, both synchronously (with for-of or array
+  spread syntax) and asynchronously (with for-await-of).
+
+- Performance improvements in the built-in `imports.signals` module.
+
+- Many improvements to the examples and documentation.
+
+- Closed bugs and merge requests:
+  * Spidermonkey 102 [#487, !765, !785, Evan Welsh, Philip Chimento]
+  * Object connections / signal emissions optimizations [#485, !758, Marco
+    Trevisan]
+  * tests/Gio: Cleanup Gio._promisify [!767, Marco Trevisan]
+  * Include JUnit reports in builds [!768, Marco Trevisan]
+  * Integrate pretty print to the debugger [!769, Nasah Kuma]
+  * doc: Edit GJS description [!771, Sonny Piers]
+  * doc: note the version `constructor()` became supported [!774, Andy Holmes]
+  * build: disable sysprof agent for subproject fallback [!775, Christian
+    Hergert]
+  * Update CI images [!776, !777, !778, Philip Chimento]
+  * GListModel.get_n_items returns garbage value [#493, !779, Florian Müllner]
+  * Add override for g_binding_group_bind_full() [!780, Florian Müllner]
+  * doc: Modernize examples [!781, Sonny Piers]
+  * doc: Document byteArray deprecation and migration [!782, Sonny Piers]
+  * doc: add simple Gtk.TickCallback example [!783, Andy Holmes]
+  * Make GFileEnumerator iterable and async iterable [!784, Sonny Piers]
+
 Version 1.72.2
 --------------
 
