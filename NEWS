@@ -13,6 +13,15 @@ Version 1.73.2
       collation strategies, numbering systems, time zones, and units are
       available for internationalization.
 
+Version 1.72.2
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * gi/arg-cache.cpp: Fix building on Visual Studio [!772, Chun-wei Fan]
+  * doc: Reflect support for constructor with GObject [!773, Sonny Piers]
+
 Version 1.73.1
 --------------
 
