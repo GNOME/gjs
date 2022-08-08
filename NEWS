@@ -1,3 +1,12 @@
+Version 1.72.2
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * gi/arg-cache.cpp: Fix building on Visual Studio [!772, Chun-wei Fan]
+  * doc: Reflect support for constructor with GObject [!773, Sonny Piers]
+
 Version 1.72.1
 --------------
 
