@@ -12,11 +12,12 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/Object.h>  // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>       // for JS_GetPropertyById
+#include <jsapi.h>       // for JS_NewObjectForConstructor, JS_NewObjectWithG...
 #include <jspubtd.h>     // for JSProto_TypeError
 
 #include "gi/cwrapper.h"
@@ -47,7 +48,7 @@ struct Param : GjsAutoParam {
     if (!JS_InstanceOf(cx, obj, &gjs_param_class, nullptr))
         return nullptr;
 
-    auto* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
+    auto* priv = JS::GetMaybePtrFromReservedSlot<Param>(obj, POINTER);
     return priv ? priv->get() : nullptr;
 }
 
@@ -122,8 +123,8 @@ static bool gjs_param_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-static void param_finalize(JSFreeOp*, JSObject* obj) {
-    Param* priv = Gjs::maybe_get_private<Param>(obj, POINTER);
+static void param_finalize(JS::GCContext*, JSObject* obj) {
+    Param* priv = JS::GetMaybePtrFromReservedSlot<Param>(obj, POINTER);
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);
     if (!priv)

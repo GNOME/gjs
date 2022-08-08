@@ -9,7 +9,6 @@
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_DefinePropertyById
 
 #include "gi/cwrapper.h"
 #include "gi/gtype.h"

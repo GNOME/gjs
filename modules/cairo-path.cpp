@@ -11,7 +11,7 @@
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>
+#include <jsapi.h>  // for JS_NewObjectWithGivenProto
 
 #include "modules/cairo-private.h"
 
@@ -43,7 +43,7 @@ JSObject* CairoPath::take_c_ptr(JSContext* cx, cairo_path_t* ptr) {
     return wrapper;
 }
 
-void CairoPath::finalize_impl(JSFreeOp*, cairo_path_t* path) {
+void CairoPath::finalize_impl(JS::GCContext*, cairo_path_t* path) {
     if (!path)
         return;
     cairo_path_destroy(path);

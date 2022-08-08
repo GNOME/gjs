@@ -16,9 +16,12 @@
 #include <js/Class.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/Debug.h>         // for JS_DefineDebuggerObject
+#include <js/GlobalObject.h>  // for CurrentGlobalOrNull, JS_NewGlobalObject
 #include <js/Id.h>
 #include <js/MapAndSet.h>
 #include <js/Object.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetObjectRealmOrNull, SetRealmPrivate
@@ -27,7 +30,7 @@
 #include <js/SourceText.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for AutoSaveExceptionState, ...
+#include <jsapi.h>       // for JS_IdToValue, JS_InitReflectParse
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

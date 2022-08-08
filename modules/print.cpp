@@ -13,12 +13,13 @@
 #include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/Conversions.h>
 #include <js/Exception.h>
+#include <js/PropertyAndElement.h>  // for JS_DefineFunctions
 #include <js/PropertySpec.h>  // for JS_FN, JSFunctionSpec, JS_FS_END
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"

@@ -8,11 +8,12 @@
 
 #include <glib.h>  // for g_assert
 
+#include <js/CallAndConstruct.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_IsExceptionPending, Call, JS_Get...
+#include <jsapi.h>  // for JS_GetFunctionObject
 
 #include "gi/closure.h"
 #include "gjs/context-private.h"

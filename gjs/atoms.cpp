@@ -31,7 +31,7 @@ bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
     JS::Symbol* symbol = JS::NewSymbol(cx, descr);
     if (!symbol)
         return false;
-    m_jsid = JS::Heap<jsid>{SYMBOL_TO_JSID(symbol)};
+    m_jsid = JS::Heap<jsid>{JS::PropertyKey::Symbol(symbol)};
     return true;
 }
 

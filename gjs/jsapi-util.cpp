@@ -30,12 +30,14 @@
 #include <js/GCVector.h>  // for RootedVector
 #include <js/HashTable.h>  // for DefaultHasher
 #include <js/Object.h>    // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
+#include <js/Stack.h>  // for BuildStackString
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>        // for JS_GetPropertyById, JS_InstanceOf
+#include <jsapi.h>        // for JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
 #include <mozilla/HashTable.h>  // for HashSet::AddPtr
 

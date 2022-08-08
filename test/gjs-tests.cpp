@@ -21,12 +21,13 @@
 #include <js/CharacterEncoding.h>
 #include <js/Exception.h>
 #include <js/Id.h>
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>
+#include <jsapi.h>    // for JS_GetClassObject
 #include <jspubtd.h>  // for JSProto_Number
 #include <mozilla/Span.h>  // for MakeStringSpan
 

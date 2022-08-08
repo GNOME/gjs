@@ -16,13 +16,15 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>
 #include <js/Object.h>  // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <jsapi.h>
-#include <jspubtd.h>
+#include <jsapi.h>  // for JSFUN_CONSTRUCTOR, JS_NewPlainObject, JS_GetFuncti...
+#include <jspubtd.h>  // for JSProto_Object, JSProtoKey, JSProto_TypeError
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -84,7 +86,7 @@ class CWrapperPointerOps {
         if (!JS_InstanceOf(cx, wrapper, &Base::klass, nullptr))
             return nullptr;
 
-        return Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+        return JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
     /*
@@ -137,7 +139,7 @@ class CWrapperPointerOps {
      * (It can return null if no private data has been set yet on the wrapper.)
      */
     [[nodiscard]] static Wrapped* for_js_nocheck(JSObject* wrapper) {
-        return Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+        return JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
  protected:
@@ -151,7 +153,7 @@ class CWrapperPointerOps {
      * wrapper object.
      */
     [[nodiscard]] static bool has_private(JSObject* wrapper) {
-        return !!Gjs::maybe_get_private<Wrapped>(wrapper, POINTER);
+        return !!JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
     /*
@@ -202,7 +204,7 @@ class CWrapperPointerOps {
  *    class_spec's flags member.
  *  - static constexpr unsigned constructor_nargs: number of arguments that the
  *    constructor takes. If you implement constructor_impl() then also add this.
- *  - void finalize_impl(JSFreeOp*, Wrapped*): called when the JS object is
+ *  - void finalize_impl(JS::GCContext*, Wrapped*): called when the JS object is
  *    garbage collected, use this to free the C pointer and do any other cleanup
  *
  * Add optional functionality by setting members of class_spec:
@@ -289,14 +291,14 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
             debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
     }
 
-    static void finalize(JSFreeOp* fop, JSObject* obj) {
+    static void finalize(JS::GCContext* gcx, JSObject* obj) {
         Wrapped* priv = Base::for_js_nocheck(obj);
 
         // Call only CWrapper's original method here, not any overrides; e.g.,
         // we don't want to deal with a read barrier.
         CWrapper::debug_lifecycle(priv, obj, "Finalize");
 
-        Base::finalize_impl(fop, priv);
+        Base::finalize_impl(gcx, priv);
 
         CWrapperPointerOps<Base, Wrapped>::unset_private(obj);
     }

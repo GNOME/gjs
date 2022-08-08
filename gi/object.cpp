@@ -22,6 +22,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/CallAndConstruct.h>  // for IsCallable, JS_CallFunctionValue
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
@@ -31,6 +32,7 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/String.h>
 #include <js/Symbol.h>
@@ -39,8 +41,8 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>        // for IsCallable
-#include <jsfriendapi.h>  // for JS_GetObjectFunction, IsFunctionO...
+#include <jsapi.h>        // for JS_GetFunctionObject, IdVector
+#include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/HashTable.h>
 
 #include "gi/arg-inl.h"
@@ -677,7 +679,7 @@ static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
         g_assert(v_override_symbol.isSymbol() &&
                  "override symbol must be a symbol");
         JS::RootedSymbol override_symbol(cx, v_override_symbol.toSymbol());
-        JS::RootedId override_id(cx, SYMBOL_TO_JSID(override_symbol));
+        JS::RootedId override_id(cx, JS::PropertyKey::Symbol(override_symbol));
 
         JS::RootedObject this_obj(cx);
         if (!args.computeThis(cx, &this_obj))
@@ -697,7 +699,7 @@ static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_assert(v_prototype.isObject() && "prototype must be an object");
 
     JS::RootedObject prototype(cx, &v_prototype.toObject());
-    JS::RootedId id(cx, JS::PropertyKey::fromNonIntAtom(JS_GetFunctionId(
+    JS::RootedId id(cx, JS::PropertyKey::NonIntAtom(JS_GetFunctionId(
                             JS_GetObjectFunction(&args.callee()))));
     return JS_GetPropertyById(cx, prototype, id, args.rval());
 }
@@ -721,7 +723,7 @@ static bool interface_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject this_obj(cx);
     if (!args.computeThis(cx, &this_obj))
         return false;
-    JS::RootedId override_id(cx, SYMBOL_TO_JSID(symbol));
+    JS::RootedId override_id(cx, JS::PropertyKey::Symbol(symbol));
 
     return JS_SetPropertyById(cx, this_obj, override_id, args[0]);
 }
@@ -1582,7 +1584,7 @@ ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
  * Private callback, called after the JS engine finishes garbage collection, and
  * notifies when weak pointers need to be either moved or swept.
  */
-void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
+void ObjectInstance::update_heap_wrapper_weak_pointers(JSTracer* trc,
                                                        JS::Compartment*,
                                                        void*) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
@@ -1594,15 +1596,15 @@ void ObjectInstance::update_heap_wrapper_weak_pointers(JSContext*,
     auto locked_queue = ToggleQueue::get_default();
 
     ObjectInstance::remove_wrapped_gobjects_if(
-        std::mem_fn(&ObjectInstance::weak_pointer_was_finalized),
+        [&trc](ObjectInstance* instance) -> bool {
+            return instance->weak_pointer_was_finalized(trc);
+        },
         std::mem_fn(&ObjectInstance::disassociate_js_gobject));
 
     s_wrapped_gobject_list.shrink_to_fit();
 }
 
-bool
-ObjectInstance::weak_pointer_was_finalized(void)
-{
+bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
     if (has_wrapper() && !wrapper_is_rooted()) {
         bool toggle_down_queued, toggle_up_queued;
 
@@ -1613,7 +1615,7 @@ ObjectInstance::weak_pointer_was_finalized(void)
         if (!toggle_down_queued && toggle_up_queued)
             return false;
 
-        if (!update_after_gc())
+        if (!update_after_gc(trc))
             return false;
 
         if (toggle_down_queued)
@@ -1900,14 +1902,14 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
         Gjs::Closure::for_gclosure(closure)->trace(tracer);
 }
 
-void ObjectInstance::finalize_impl(JSFreeOp* fop, JSObject* obj) {
+void ObjectInstance::finalize_impl(JS::GCContext* gcx, JSObject* obj) {
     GTypeQuery query;
     type_query_dynamic_safe(&query);
     if (G_LIKELY(query.type))
         JS::RemoveAssociatedMemory(obj, query.instance_size,
                                    MemoryUse::GObjectInstanceStruct);
 
-    GIWrapperInstance::finalize_impl(fop, obj);
+    GIWrapperInstance::finalize_impl(gcx, obj);
 }
 
 ObjectInstance::~ObjectInstance() {
@@ -2530,7 +2532,6 @@ const struct JSClassOps ObjectBase::class_ops = {
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,
-    NULL,
     NULL,
     NULL,
     &ObjectBase::trace,

@@ -20,6 +20,7 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
 #include <js/GCVector.h>            // for RootedVector, MutableWrappedPtrOp...
+#include <js/PropertyAndElement.h>  // for JS_GetElement, JS_HasPropertyById
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>
 #include <js/String.h>
@@ -28,7 +29,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>        // for JS_ReportOutOfMemory, JS_GetElement
+#include <jsapi.h>        // for InformalValueTypeName, IdVector
 #include <jsfriendapi.h>  // for JS_GetObjectFunction
 
 #include "gi/arg-inl.h"

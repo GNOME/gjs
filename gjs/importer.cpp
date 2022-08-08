@@ -24,8 +24,10 @@
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
+#include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>  // for PropertyKey
 #include <js/Object.h>  // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -34,7 +36,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>    // for JS_DefinePropertyById, JS_DefineP...
+#include <jsapi.h>    // for JS_NewPlainObject, IdVector, JS_...
 #include <jspubtd.h>  // for JSProto_Error
 #include <mozilla/Maybe.h>
 #include <mozilla/UniquePtr.h>
@@ -172,9 +174,9 @@ define_meta_properties(JSContext       *context,
                                module_path, attrs))
         return false;
 
-    JS::RootedId to_string_tag_name(context,
-        SYMBOL_TO_JSID(JS::GetWellKnownSymbol(context,
-                                              JS::SymbolCode::toStringTag)));
+    JS::RootedId to_string_tag_name(
+        context, JS::PropertyKey::Symbol(JS::GetWellKnownSymbol(
+                     context, JS::SymbolCode::toStringTag)));
     return JS_DefinePropertyById(context, module_obj, to_string_tag_name,
                                  to_string_tag, attrs);
 }

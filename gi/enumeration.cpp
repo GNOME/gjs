@@ -8,9 +8,10 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
-#include <jsapi.h>  // for JS_DefineProperty, JS_NewPlainObject
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gi/cwrapper.h"
 #include "gi/enumeration.h"

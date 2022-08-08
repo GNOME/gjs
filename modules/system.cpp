@@ -18,13 +18,14 @@
 #include <js/Date.h>                // for ResetTimeZone
 #include <js/GCAPI.h>               // for JS_GC
 #include <js/JSON.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>     // for NullValue
 #include <js/friend/DumpFunctions.h>
-#include <jsapi.h>        // for JS_DefinePropertyById, JS_DefineF...
+#include <jsapi.h>        // for JS_GetFunctionObject, JS_NewPlainObject
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFunctionByIdW...
 
 #include "gi/object.h"

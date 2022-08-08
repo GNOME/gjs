@@ -26,6 +26,7 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>    // for JS_ClearPendingException, JS_...
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
+#include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/String.h>
@@ -33,7 +34,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
+#include <jsapi.h>        // for JS_NewPlainObject, JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
 #include <jspubtd.h>      // for JSProto_TypeError, JSProto_InternalError
 #include <mozilla/Maybe.h>

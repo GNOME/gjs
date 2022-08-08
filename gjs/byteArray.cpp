@@ -11,12 +11,13 @@
 
 #include <js/ArrayBuffer.h>
 #include <js/CallArgs.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>   // for UniqueChars
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>        // for JS_DefineFunctionById, JS_DefineFun...
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"

@@ -14,6 +14,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/CallAndConstruct.h>  // for JS_CallFunction
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
@@ -22,6 +23,7 @@
 #include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer
 #include <js/Modules.h>
 #include <js/Promise.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
@@ -32,8 +34,8 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <jsapi.h>  // for JS_DefinePropertyById, ...
-#include <jsfriendapi.h>
+#include <jsapi.h>        // for JS_NewPlainObject, JS_ObjectIsFunction
+#include <jsfriendapi.h>  // for JS_GetObjectFunction, SetFunctionNativeReserved
 #include <jspubtd.h>  // for JSProto_Error
 
 #include "gjs/context-private.h"

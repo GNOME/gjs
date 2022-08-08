@@ -16,8 +16,9 @@
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/jsapi-util.h"  // for maybe_get_private
 #include "test/gjs-test-utils.h"
+
+class JSTracer;
 
 // COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
 #ifdef __clang_analyzer__
@@ -42,8 +43,8 @@ struct GjsRootingFixture {
     GjsMaybeOwned<JSObject *> *obj;  /* only used in callback test cases */
 };
 
-static void test_obj_finalize(JSFreeOp*, JSObject* obj) {
-    bool* finalized_p = Gjs::maybe_get_private<bool>(obj, POINTER);
+static void test_obj_finalize(JS::GCContext*, JSObject* obj) {
+    bool* finalized_p = JS::GetMaybePtrFromReservedSlot<bool>(obj, POINTER);
     g_assert_false(*finalized_p);
     *finalized_p = true;
 }
@@ -148,10 +149,10 @@ static void test_maybe_owned_rooted_is_collected_after_reset(
     delete obj;
 }
 
-static void update_weak_pointer(JSContext*, JS::Compartment*, void* data) {
+static void update_weak_pointer(JSTracer* trc, JS::Compartment*, void* data) {
     auto* obj = static_cast<GjsMaybeOwned<JSObject*>*>(data);
     if (*obj)
-        obj->update_after_gc();
+        obj->update_after_gc(trc);
 }
 
 static void test_maybe_owned_weak_pointer_is_collected_by_gc(

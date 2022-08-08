@@ -62,8 +62,9 @@ struct GjsHeapOperation {
 
 template<>
 struct GjsHeapOperation<JSObject *> {
-    [[nodiscard]] static bool update_after_gc(JS::Heap<JSObject*>* location) {
-        JS_UpdateWeakPointerAfterGC(location);
+    [[nodiscard]] static bool update_after_gc(JSTracer* trc,
+                                              JS::Heap<JSObject*>* location) {
+        JS_UpdateWeakPointerAfterGC(trc, location);
         return (location->unbarrieredGet() == nullptr);
     }
 
@@ -178,7 +179,7 @@ class GjsMaybeOwned {
     void root(JSContext* cx, const T& thing) {
         debug("root()");
         g_assert(!m_root);
-        g_assert(m_heap.get() == JS::SafelyInitialized<T>());
+        g_assert(m_heap.get() == JS::SafelyInitialized<T>::create());
         m_heap.~Heap();
         m_root = std::make_unique<JS::PersistentRooted<T>>(cx, thing);
     }
@@ -204,7 +205,7 @@ class GjsMaybeOwned {
     void reset() {
         debug("reset()");
         if (!m_root) {
-            m_heap = JS::SafelyInitialized<T>();
+            m_heap = JS::SafelyInitialized<T>::create();
             return;
         }
 
@@ -251,10 +252,10 @@ class GjsMaybeOwned {
     /* If not tracing, then you must call this method during GC in order to
      * update the object's location if it was moved, or null it out if it was
      * finalized. If the object was finalized, returns true. */
-    bool update_after_gc() {
+    bool update_after_gc(JSTracer* trc) {
         debug("update_after_gc()");
         g_assert(!m_root);
-        return GjsHeapOperation<T>::update_after_gc(&m_heap);
+        return GjsHeapOperation<T>::update_after_gc(trc, &m_heap);
     }
 
     [[nodiscard]] constexpr bool rooted() const { return m_root != nullptr; }

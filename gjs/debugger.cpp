@@ -15,6 +15,7 @@
 #include <glib.h>
 
 #include <js/CallArgs.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
@@ -22,7 +23,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_DefineFunctions, JS_SetPropertyById
+#include <jsapi.h>  // for JS_WrapObject
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

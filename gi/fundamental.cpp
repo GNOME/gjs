@@ -13,10 +13,11 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCHashTable.h>  // for WeakCache
 #include <js/Object.h>       // for GetClass
+#include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for InformalValueTypeName
+#include <jsapi.h>       // for InformalValueTypeName, JS_NewObjectWithGivenP...
 #include <mozilla/HashTable.h>
 
 #include "gi/arg-inl.h"
@@ -243,7 +244,6 @@ const struct JSClassOps FundamentalBase::class_ops = {
     nullptr,  // mayResolve
     &FundamentalBase::finalize,
     nullptr,  // call
-    nullptr,  // hasInstance
     nullptr,  // construct
     &FundamentalBase::trace
 };

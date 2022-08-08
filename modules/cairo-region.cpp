@@ -9,12 +9,13 @@
 
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_GetPropertyById, JS_SetPropert...
+#include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -219,7 +220,7 @@ cairo_region_t* CairoRegion::constructor_impl(JSContext* context,
     return cairo_region_create();
 }
 
-void CairoRegion::finalize_impl(JSFreeOp*, cairo_region_t* region) {
+void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     if (!region)
         return;
 

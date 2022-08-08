@@ -26,7 +26,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>        // for JS_TypeOfValue
+#include <jsapi.h>        // for InformalValueTypeName, JS_TypeOfValue
 #include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSTYPE_FUNCTION
 

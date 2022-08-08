@@ -21,10 +21,11 @@
 #include <js/Initialization.h>  // for JS_Init, JS_ShutDown
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
+#include <js/Stack.h>  // for JS_SetNativeStackQuota
 #include <js/TypeDecls.h>
 #include <js/Warnings.h>
 #include <js/experimental/SourceHook.h>
-#include <jsapi.h>  // for InitSelfHostedCode, JS_Destr...
+#include <jsapi.h>  // for JS_SetGlobalJitCompilerOption
 #include <mozilla/UniquePtr.h>
 
 #include "gjs/context-private.h"
@@ -32,7 +33,7 @@
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
 
-static void gjs_finalize_callback(JSFreeOp*, JSFinalizeStatus status,
+static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     gjs->set_finalize_status(status);
@@ -167,12 +168,7 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     if (enable_jit) {
         gjs_debug(GJS_DEBUG_CONTEXT, "Enabling JIT");
     }
-    JS::ContextOptionsRef(cx)
-        .setAsmJS(enable_jit)
-        .setTopLevelAwait(true)
-        .setClassStaticBlocks(true)
-        .setPrivateClassFields(true)
-        .setPrivateClassMethods(true);
+    JS::ContextOptionsRef(cx).setAsmJS(enable_jit);
 
     uint32_t value = enable_jit ? 1 : 0;
 

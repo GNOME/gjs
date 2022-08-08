@@ -11,13 +11,13 @@
 #include <js/CallArgs.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
+#include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jsapi.h>       // for JS_DefineFunctions
 
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
