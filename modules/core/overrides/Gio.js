@@ -462,6 +462,14 @@ function _promisify(proto, asyncFunc, finishFunc = undefined) {
     };
 }
 
+function _notIntrospectableError(funcName, replacement) {
+    return new Error(`${funcName} is not introspectable. Use ${replacement} instead.`);
+}
+
+function _warnNotIntrospectable(funcName, replacement) {
+    logError(_notIntrospectableError(funcName, replacement));
+}
+
 function _init() {
     Gio = this;
 
@@ -543,6 +551,59 @@ function _init() {
 
     Gio.File.prototype.replace_contents_async = function replace_contents_async(contents, etag, make_backup, flags, cancellable, callback) {
         return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
+    };
+
+    // Best-effort attempt to replace set_attribute(), which is not
+    // introspectable due to the pointer argument
+    Gio.File.prototype.set_attribute = function set_attribute(attribute, type, value, flags, cancellable) {
+        _warnNotIntrospectable('Gio.File.prototype.set_attribute', 'set_attribute_{type}');
+
+        switch (type) {
+        case Gio.FileAttributeType.STRING:
+            return this.set_attribute_string(attribute, value, flags, cancellable);
+        case Gio.FileAttributeType.BYTE_STRING:
+            return this.set_attribute_byte_string(attribute, value, flags, cancellable);
+        case Gio.FileAttributeType.UINT32:
+            return this.set_attribute_uint32(attribute, value, flags, cancellable);
+        case Gio.FileAttributeType.INT32:
+            return this.set_attribute_int32(attribute, value, flags, cancellable);
+        case Gio.FileAttributeType.UINT64:
+            return this.set_attribute_uint64(attribute, value, flags, cancellable);
+        case Gio.FileAttributeType.INT64:
+            return this.set_attribute_int64(attribute, value, flags, cancellable);
+        case Gio.FileAttributeType.INVALID:
+        case Gio.FileAttributeType.BOOLEAN:
+        case Gio.FileAttributeType.OBJECT:
+        case Gio.FileAttributeType.STRINGV:
+            throw _notIntrospectableError('This attribute type', 'Gio.FileInfo');
+        }
+    };
+
+    Gio.FileInfo.prototype.set_attribute = function set_attribute(attribute, type, value) {
+        _warnNotIntrospectable('Gio.FileInfo.prototype.set_attribute', 'set_attribute_{type}');
+
+        switch (type) {
+        case Gio.FileAttributeType.INVALID:
+            return this.remove_attribute(attribute);
+        case Gio.FileAttributeType.STRING:
+            return this.set_attribute_string(attribute, value);
+        case Gio.FileAttributeType.BYTE_STRING:
+            return this.set_attribute_byte_string(attribute, value);
+        case Gio.FileAttributeType.BOOLEAN:
+            return this.set_attribute_boolean(attribute, value);
+        case Gio.FileAttributeType.UINT32:
+            return this.set_attribute_uint32(attribute, value);
+        case Gio.FileAttributeType.INT32:
+            return this.set_attribute_int32(attribute, value);
+        case Gio.FileAttributeType.UINT64:
+            return this.set_attribute_uint64(attribute, value);
+        case Gio.FileAttributeType.INT64:
+            return this.set_attribute_int64(attribute, value);
+        case Gio.FileAttributeType.OBJECT:
+            return this.set_attribute_object(attribute, value);
+        case Gio.FileAttributeType.STRINGV:
+            return this.set_attribute_stringv(attribute, value);
+        }
     };
 
     Gio.FileEnumerator.prototype[Symbol.iterator] = function* FileEnumeratorIterator() {
