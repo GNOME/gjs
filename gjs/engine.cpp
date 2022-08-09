@@ -89,10 +89,13 @@ LPVOID    lpvReserved)
 {
   switch (fdwReason)
   {
-  case DLL_PROCESS_ATTACH:
-    gjs_dll = hinstDLL;
-    gjs_is_inited = JS_Init();
-    break;
+      case DLL_PROCESS_ATTACH: {
+          gjs_dll = hinstDLL;
+          const char* reason = JS_InitWithFailureDiagnostic();
+          if (reason)
+              g_error("Could not initialize JavaScript: %s", reason);
+          gjs_is_inited = true;
+      } break;
 
   case DLL_THREAD_DETACH:
     JS_ShutDown ();
@@ -110,8 +113,9 @@ LPVOID    lpvReserved)
 class GjsInit {
 public:
     GjsInit() {
-        if (!JS_Init())
-            g_error("Could not initialize Javascript");
+        const char* reason = JS_InitWithFailureDiagnostic();
+        if (reason)
+            g_error("Could not initialize JavaScript: %s", reason);
     }
 
     ~GjsInit() {

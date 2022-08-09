@@ -99,7 +99,7 @@ drawingArea.connect("draw", (widget, cr) => {
 
 **Import with `const Format = imports.format;`**
 
-The format import is mostly obsolete, providing `vprintf()`, `printf()` and `format()`. Native [template literals][template-literals] should be preferred now, except in few situations like Gettext (See [Bug #50920][bug-50920]).
+The format import is mostly obsolete, providing `vprintf()`, `printf()` and `format()`. Native [template literals][template-literals] should be preferred now, except in few situations like Gettext (See [Bug #60027][bug-60027]).
 
 ```js
 let foo = "Pi";
@@ -109,21 +109,27 @@ let baz = Math.PI;
 // Using native template literals (Output: Pi to 2 decimal points: 3.14)
 `${foo} to ${bar*2} decimal points: ${baz.toFixed(bar*2)}`
 
-// Applying format() to the string prototype
 const Format = imports.format;
-String.prototype.format = Format.format;
 
 // Using format() (Output: Pi to 2 decimal points: 3.14)
+Format.format.call("%s to %d decimal points: %.2f", foo, bar * 2, baz);
+
+// Applying format() to the string prototype (this is the old way, but
+// is often considered bad practice now, especially in GNOME Shell
+// extensions where other extensions might overwrite it.
+// Consider not doing this!)
+String.prototype.format = Format.format;
 "%s to %d decimal points: %.2f".format(foo, bar*2, baz);
 
 // Using format() with Gettext
-_("%d:%d").format(11, 59);
-Gettext.ngettext("I have %d apple", "I have %d apples", num).format(num);
+Format.format.call(_("%d:%d"), 11, 59);
+Format.format.call(
+    Gettext.ngettext("I have %d apple", "I have %d apples", num), num);
 
 ```
 
 [template-literals]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
-[bug-50920]: https://savannah.gnu.org/bugs/?50920
+[bug-60027]: https://savannah.gnu.org/bugs/?60027
 
 ## [Gettext](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/script/gettext.js)
 
