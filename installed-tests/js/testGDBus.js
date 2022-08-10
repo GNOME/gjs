@@ -868,6 +868,33 @@ describe('DBus Proxy wrapper', function () {
         writerFunc.calls.reset();
     });
 
+    it('init failures are reported in sync mode', function () {
+        const cancellable = new Gio.Cancellable();
+        cancellable.cancel();
+        expect(() => new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
+            '/org/gnome/gjs/Test',
+            Gio.DBusProxyFlags.NONE,
+            cancellable)).toThrow();
+    });
+
+    it('init failures are reported in async mode', function () {
+        const cancellable = new Gio.Cancellable();
+        cancellable.cancel();
+        const initDoneSpy = jasmine.createSpy(
+            'init finish func', () => loop.quit());
+        initDoneSpy.and.callThrough();
+        new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
+            '/org/gnome/gjs/Test',
+            initDoneSpy, cancellable, Gio.DBusProxyFlags.NONE);
+        loop.run();
+
+        expect(initDoneSpy).toHaveBeenCalledTimes(1);
+        const {args: callArgs} = initDoneSpy.calls.mostRecent();
+        expect(callArgs.at(0)).toBeNull();
+        expect(callArgs.at(1).matches(
+            Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)).toBeTrue();
+    });
+
     it('can init a proxy asynchronously when promisified', function () {
         new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
             '/org/gnome/gjs/Test',
