@@ -247,19 +247,8 @@ function _makeProxyWrapper(interfaceXml) {
         if (!cancellable)
             cancellable = null;
         if (asyncCallback) {
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable, (initable, result) => {
-                let caughtErrorWhenInitting = null;
-                try {
-                    initable.init_finish(result);
-                } catch (e) {
-                    caughtErrorWhenInitting = e;
-                }
-
-                if (caughtErrorWhenInitting === null)
-                    asyncCallback(initable, null);
-                else
-                    asyncCallback(null, caughtErrorWhenInitting);
-            });
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable).then(
+                () => asyncCallback(obj, null)).catch(e => asyncCallback(null, e));
         } else {
             obj.init(cancellable);
         }
