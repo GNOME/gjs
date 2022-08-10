@@ -341,3 +341,82 @@ describe('Gio.FileEnumerator overrides', function () {
         expect(count).toBeGreaterThan(0);
     });
 });
+
+describe('Non-introspectable file attribute overrides', function () {
+    let numExpectedWarnings, file, info;
+    const flags = [Gio.FileQueryInfoFlags.NONE, null];
+
+    function expectWarnings(count) {
+        numExpectedWarnings = count;
+        for (let c = 0; c < count; c++) {
+            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                '*not introspectable*');
+        }
+    }
+
+    function assertWarnings(testName) {
+        for (let c = 0; c < numExpectedWarnings; c++) {
+            GLib.test_assert_expected_messages_internal('Gjs', 'testGio.js', 0,
+                `test Gio.${testName}`);
+        }
+        numExpectedWarnings = 0;
+    }
+
+    beforeEach(function () {
+        numExpectedWarnings = 0;
+        [file] = Gio.File.new_tmp('XXXXXX');
+        info = file.query_info('standard::*', ...flags);
+    });
+
+    it('invalid means unsetting the attribute', function () {
+        expectWarnings(2);
+        expect(() =>
+            file.set_attribute('custom::remove', Gio.FileAttributeType.INVALID, null, ...flags))
+            .toThrowError(/not introspectable/);
+        expect(() => info.set_attribute('custom::remove', Gio.FileAttributeType.INVALID)).not.toThrow();
+        assertWarnings();
+    });
+
+    it('works for boolean', function () {
+        expectWarnings(2);
+        expect(() =>
+            file.set_attribute(Gio.FILE_ATTRIBUTE_STANDARD_IS_HIDDEN, Gio.FileAttributeType.BOOLEAN, false, ...flags))
+            .toThrowError(/not introspectable/);
+        expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_STANDARD_IS_HIDDEN, Gio.FileAttributeType.BOOLEAN, false))
+            .not.toThrow();
+        assertWarnings();
+    });
+
+    it('works for uint32', function () {
+        expectWarnings(2);
+        expect(() => file.set_attribute(Gio.FILE_ATTRIBUTE_TIME_MODIFIED_USEC, Gio.FileAttributeType.UINT32, 123456, ...flags))
+            .not.toThrow();
+        expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_TIME_MODIFIED_USEC, Gio.FileAttributeType.UINT32, 654321))
+            .not.toThrow();
+        assertWarnings();
+    });
+
+    it('works for uint64', function () {
+        expectWarnings(2);
+        expect(() => file.set_attribute(Gio.FILE_ATTRIBUTE_TIME_MODIFIED, Gio.FileAttributeType.UINT64, Date.now() / 1000, ...flags))
+            .not.toThrow();
+        expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_TIME_MODIFIED, Gio.FileAttributeType.UINT64, Date.now() / 1000))
+            .not.toThrow();
+        assertWarnings();
+    });
+
+    it('works for object', function () {
+        expectWarnings(2);
+        const icon = Gio.ThemedIcon.new_from_names(['list-add-symbolic']);
+        expect(() =>
+            file.set_attribute(Gio.FILE_ATTRIBUTE_STANDARD_ICON, Gio.FileAttributeType.OBJECT, icon, ...flags))
+            .toThrowError(/not introspectable/);
+        expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_STANDARD_ICON, Gio.FileAttributeType.OBJECT, icon))
+            .not.toThrow();
+        assertWarnings();
+    });
+
+    afterEach(function () {
+        file.delete_async(GLib.PRIORITY_DEFAULT, null, (obj, res) => obj.delete_finish(res));
+    });
+});
