@@ -1,8 +1,8 @@
 Instructions for building GJS on Visual Studio or clang-cl
 ==========================================================
 Building the GJS on Windows is now supported using Visual Studio
-versions 2019 or later with or without clang-cl in both 32-bit and
-64-bit (x64) flavors, via Meson.  It should be noted that a
+versions 2019 16.5.x or later with or without clang-cl in both 32-bit
+and 64-bit (x64) flavors, via Meson.  It should be noted that a
 recent-enough Windows SDK from Microsoft is still required if using
 clang-cl, as we will still use items from the Windows SDK.
 

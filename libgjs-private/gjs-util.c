@@ -142,9 +142,9 @@ void gjs_g_binding_group_bind_full(
         from_closure = g_cclosure_new(G_CALLBACK(from_callback), from_data,
                                       G_CLOSURE_NOTIFY(from_notify));
 
-    return g_binding_group_bind_with_closures(source, source_property, target,
-                                              target_property, flags,
-                                              to_closure, from_closure);
+    g_binding_group_bind_with_closures(source, source_property, target,
+                                       target_property, flags,
+                                       to_closure, from_closure);
 }
 
 #undef G_CLOSURE_NOTIFY
