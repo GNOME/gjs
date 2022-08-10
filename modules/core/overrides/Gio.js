@@ -233,7 +233,7 @@ function _addDBusConvenience() {
 function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
-    return function (bus, name, object, asyncCallback, cancellable,
+    function wrapper(bus, name, object, asyncCallback, cancellable,
         flags = Gio.DBusProxyFlags.NONE) {
         var obj = new Gio.DBusProxy({
             g_connection: bus,
@@ -253,7 +253,23 @@ function _makeProxyWrapper(interfaceXml) {
             obj.init(cancellable);
         }
         return obj;
+    }
+    wrapper.newAsync = function newAsync(bus, name, object, cancellable,
+        flags = Gio.DBusProxyFlags.NONE) {
+        const obj = new Gio.DBusProxy({
+            g_connection: bus,
+            g_interface_name: info.name,
+            g_interface_info: info,
+            g_name: name,
+            g_flags: flags,
+            g_object_path: object,
+        });
+
+        return new Promise((resolve, reject) =>
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable ?? null).then(
+                () => resolve(obj)).catch(reject));
     };
+    return wrapper;
 }
 
 

@@ -342,6 +342,14 @@ describe('Exported DBus object', function () {
         expect(hello.deepUnpack()).toEqual('world');
     });
 
+    it('can initiate a proxy with promise and call a method with async/await', async function () {
+        const asyncProxy = await ProxyClass.newAsync(Gio.DBus.session,
+            'org.gnome.gjs.Test', '/org/gnome/gjs/Test');
+        expect(asyncProxy).toBeInstanceOf(Gio.DBusProxy);
+        const [{hello}] = await asyncProxy.frobateStuffAsync({});
+        expect(hello.deepUnpack()).toEqual('world');
+    });
+
     it('can call a remote method when not using makeProxyWrapper', function () {
         let info = Gio.DBusNodeInfo.new_for_xml(TestIface);
         let iface = info.interfaces[0];
@@ -916,6 +924,20 @@ describe('DBus Proxy wrapper', function () {
         loop.run();
 
         expect(writerFunc).not.toHaveBeenCalled();
+    });
+
+    it('can create a proxy from a promise', async function () {
+        const proxyPromise = ProxyClass.newAsync(Gio.DBus.session, 'org.gnome.gjs.Test',
+            '/org/gnome/gjs/Test');
+        await expectAsync(proxyPromise).toBeResolved();
+    });
+
+    it('can create fail a proxy from a promise', async function () {
+        const cancellable = new Gio.Cancellable();
+        cancellable.cancel();
+        const proxyPromise = ProxyClass.newAsync(Gio.DBus.session, 'org.gnome.gjs.Test',
+            '/org/gnome/gjs/Test', cancellable);
+        await expectAsync(proxyPromise).toBeRejected();
     });
 
     afterAll(function () {
