@@ -517,6 +517,7 @@ function _init() {
     };
 
     _injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
+    _promisify(Gio.DBusProxy.prototype, 'init_async');
     _injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_sync', _addDBusConvenience);
     _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
