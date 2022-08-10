@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr
+#include <string>
 
 #include <glib-object.h>
 #include <glib.h>
@@ -162,6 +163,8 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
     static bool define_class_impl(JSContext*, JS::HandleObject in_object,
                                   const BoxedInfo,
                                   JS::MutableHandleObject prototype);
+    static std::string find_unique_js_field_name(const BoxedInfo,
+                                                 const std::string& field_name);
 };
 
 template <class Base, class Prototype, class Instance>

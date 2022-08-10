@@ -1435,6 +1435,12 @@ describe('Structured union', function () {
         it(`can be constructed with default constructor ${memberType}`, function () {
             const union = new GIMarshallingTests.StructuredUnion(unionType);
             expect(union.type()).toBe(unionType);
+            expect(union._type).toBe(unionType);
+        });
+
+        it(`cannot change a private member ${memberType}`, function () {
+            const union = new GIMarshallingTests.StructuredUnion(unionType);
+            expect(() => (union._type = GIMarshallingTests.StructuredUnionType.NONE)).toThrow();
         });
 
         it(`can be constructed and has valid member ${memberType}`, function () {
@@ -1461,6 +1467,9 @@ describe('Structured union', function () {
             expect(() => new GIMarshallingTests.StructuredUnion({
                 type: unionType,
             })).toThrow();
+            expect(() => new GIMarshallingTests.StructuredUnion({
+                _type: unionType,
+            })).toThrow();
         });
 
         it(`can be constructed with member value ${memberType}`, function () {
@@ -1480,6 +1489,7 @@ describe('Structured union', function () {
                 [unionTypeName.toLowerCase()]: member,
             });
             expect(union.type()).toBe(unionType);
+            expect(union._type).toBe(unionType);
         });
 
         it(`can be constructed from constructed member ${memberType}`, function () {

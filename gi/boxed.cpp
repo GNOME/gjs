@@ -17,6 +17,7 @@
 #include <glib-object.h>
 
 #include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/Class.h>        // for ESClass
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
@@ -174,7 +175,10 @@ BoxedPrototype<Base, Prototype, Instance>::create_field_map(
     for (GI::AutoFieldInfo field_info : fields) {
         // We get the string as a jsid later, which is interned. We intern the
         // string here as well, so it will be the same string pointer
-        JSString* atom = JS_AtomizeAndPinString(cx, field_info.name());
+        const std::string& field_name =
+            find_unique_js_field_name(info, field_info.name());
+        JSString* atom = JS_AtomizeAndPinStringN(cx, field_name.c_str(),
+                                                 field_name.length());
 
         result->putNewInfallible(atom, std::move(field_info));
     }
@@ -209,6 +213,16 @@ BoxedPrototype<Base, Prototype, Instance>::lookup_field(JSContext* cx,
                                                         JSString* prop_name) {
     if (!ensure_field_map(cx))
         return {};
+
+    JS::RootedString rooted_name(cx, prop_name);
+    JS::UniqueChars encoded_prop_name = JS_EncodeStringToUTF8(cx, rooted_name);
+    const std::string field_name{
+        find_unique_js_field_name(info(), encoded_prop_name.get())};
+
+    if (field_name != encoded_prop_name.get()) {
+        prop_name = JS_AtomizeAndPinStringN(cx, field_name.c_str(),
+                                            field_name.length());
+    }
 
     auto entry = m_field_map->lookup(prop_name);
     if (!entry) {
@@ -748,6 +762,20 @@ bool BoxedBase<Base, Prototype, Instance>::field_setter(JSContext* cx,
     return true;
 }
 
+template <class Base, class Prototype, class Instance>
+std::string
+BoxedPrototype<Base, Prototype, Instance>::find_unique_js_field_name(
+    const BoxedInfo info, std::string const& c_field_name) {
+    // Give priority to methods that have names equal to fields
+    std::string property_name{c_field_name};
+
+    Maybe<GI::AutoFunctionInfo> method_info;
+    while ((method_info = info.method(property_name.c_str())))
+        property_name.insert(0, "_");
+
+    return property_name;
+}
+
 /*
  * BoxedPrototype::define_boxed_class_fields:
  *
@@ -775,23 +803,23 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
     // At this point methods have already been defined on the prototype, so we
     // may get name conflicts which we need to check for.
     for (GI::AutoFieldInfo field : info().fields()) {
+        const std::string property_name =
+            find_unique_js_field_name(info(), field.name());
         JS::RootedValue private_id{cx, JS::PrivateUint32Value(count++)};
-        JS::RootedId id{cx, gjs_intern_string_to_id(cx, field.name())};
+        JS::RootedId id{cx, gjs_intern_string_to_id(cx, property_name.c_str())};
 
-        bool already_defined;
-        if (!JS_HasOwnPropertyById(cx, proto, id, &already_defined))
-            return false;
-        if (already_defined) {
-            gjs_debug(GJS_DEBUG_GBOXED,
-                      "Field %s.%s overlaps with method of the same name; "
-                      "skipping",
-                      format_name().c_str(), field.name());
-            continue;
-        }
+        gjs_debug_marshal(GJS_DEBUG_GBOXED,
+                          "Defining field %s%s in prototype for %s",
+                          field.name(),
+                          property_name != field.name()
+                              ? (" (as " + property_name + ")").c_str()
+                              : "",
+                          format_name().c_str());
 
-        if (!gjs_define_property_dynamic(
-                cx, proto, field.name(), id, "boxed_field", &Base::field_getter,
-                &Base::field_setter, private_id, GJS_MODULE_PROP_FLAGS))
+        if (!gjs_define_property_dynamic(cx, proto, property_name.c_str(), id,
+                                         "boxed_field", &Base::field_getter,
+                                         &Base::field_setter, private_id,
+                                         GJS_MODULE_PROP_FLAGS))
             return false;
     }
 
