@@ -837,3 +837,54 @@ describe('Exported DBus object', function () {
         expect(invalidatedProps).toContain('PropReadOnly');
     });
 });
+
+
+describe('DBus Proxy wrapper', function () {
+    let loop;
+    let wasPromise;
+    let writerFunc;
+
+    beforeAll(function () {
+        loop = new GLib.MainLoop(null, false);
+
+        wasPromise = Gio.DBusProxy.prototype._original_init_async instanceof Function;
+        Gio._promisify(Gio.DBusProxy.prototype, 'init_async');
+
+        writerFunc = jasmine.createSpy(
+            'log writer func', (level, fields) => {
+                const decoder = new TextDecoder('utf-8');
+                const domain = decoder.decode(fields?.GLIB_DOMAIN);
+                const message = `${decoder.decode(fields?.MESSAGE)}\n`;
+                level |= GLib.LogLevelFlags.FLAG_RECURSION;
+                GLib.log_default_handler(domain, level, message, null);
+                return GLib.LogWriterOutput.HANDLED;
+            });
+
+        writerFunc.and.callThrough();
+        GLib.log_set_writer_func(writerFunc);
+    });
+
+    beforeEach(function () {
+        writerFunc.calls.reset();
+    });
+
+    it('can init a proxy asynchronously when promisified', function () {
+        new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
+            '/org/gnome/gjs/Test',
+            () => loop.quit(),
+            Gio.DBusProxyFlags.NONE);
+        loop.run();
+
+        expect(writerFunc).not.toHaveBeenCalled();
+    });
+
+    afterAll(function () {
+        if (!wasPromise) {
+            // Remove stuff added by Gio._promisify, this can be not needed in future
+            // nor should break other tests, but we didn't want to depend on those.
+            expect(Gio.DBusProxy.prototype._original_init_async).toBeInstanceOf(Function);
+            Gio.DBusProxy.prototype.init_async = Gio.DBusProxy.prototype._original_init_async;
+            delete Gio.DBusProxy.prototype._original_init_async;
+        }
+    });
+});
