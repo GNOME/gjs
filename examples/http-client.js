@@ -6,6 +6,7 @@
 
 import Soup from 'gi://Soup?version=3.0';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 
 const loop = GLib.MainLoop.new(null, false);
 
@@ -18,11 +19,12 @@ const decoder = new TextDecoder();
 
 session.send_async(message, null, null, send_async_callback);
 
-function read_bytes_async_callback(inputStream, res) {
+function splice_callback(outputStream, result) {
     let data;
 
     try {
-        data = inputStream.read_bytes_finish(res);
+        outputStream.splice_finish(outputStream, result);
+        data = outputStream.steal_as_bytes();
     } catch (err) {
         logError(err);
         loop.quit();
@@ -51,8 +53,12 @@ function send_async_callback(self, res) {
     response_headers.foreach((name, value) => {
         console.log(name, ':', value);
     });
+    const contentType_ = response_headers.get_one('content-type');
 
-    inputStream.read_bytes_async(response_headers.get_one('content-length'), null, null, read_bytes_async_callback);
+    const outputStream = Gio.MemoryOutputStream.new_resizable();
+    outputStream.splice_async(inputStream,
+        Gio.OutputStreamSpliceFlags.CLOSE_TARGET,
+        GLib.PRIORITY_DEFAULT, null, splice_callback);
 }
 
 loop.run();
