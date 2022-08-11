@@ -170,7 +170,9 @@ meson <path_to_gjs_sources> --buildtype=... --prefix=<some_prefix> -Dskip_dbus_t
 see the Meson documentation for the values accepted by buildtype)
 
 You may want to view the build options after the configuration succeeds
-by using 'meson configure'
+by using 'meson configure'.  You may need to set the envvar:
+`SETUPTOOLS_USE_DISTUTILS=stdlib` for the introspection step to proceed
+successfully.  A fix for this is being investigated.
 
 When the configuration succeeds, run:
 ninja
