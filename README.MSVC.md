@@ -59,7 +59,6 @@ sources.  A sample content of the .mozconfig file can be added as follows:
 ```
 ac_add_options --enable-application=js
 mk_add_options MOZ_MAKE_FLAGS=-j12
-mk_add_options JS_STANDALONE=1
 ac_add_options --target=x86_64-pc-mingw32
 ac_add_options --host=x86_64-pc-mingw32
 ac_add_options --disable-tests
@@ -72,7 +71,6 @@ ac_add_options --prefix=c:/software.b/mozjs102.bin
 An explanation of the lines above:
 *  `ac_add_options --enable-application=js`: This line is absolutely required, to build SpiderMonkey standalone
 *  `mk_add_options MOZ_MAKE_FLAGS=-j12`:  MOZ_MAKE_FLAGS=-jX means X number of parallel processes for the build
-*  `mk_add_options JS_STANDALONE=1`: Enforce building SpiderMonkey standalone (could be optional)
 *  `ac_add_options --target=x86_64-pc-mingw32`: Target architecture, replace `x86_64` with `aarch64` for ARM64 builds, and with `i686` for 32-bit x86 builds.
 *  `ac_add_options --host=x86_64-pc-mingw32`: Use this as-is, unless building on a 32-bit compiler (replace `x86_64` with `i686`; not recommended)
 *  `ac_add_options --disable-tests`: Save some build time
@@ -85,7 +83,10 @@ If your GJS build crashes upon launch, use Dependency Walker to ensure that
 mozjs-102.dll does not depend on mozglue.dll!  If it does, or if GJS fails to
 link with missing arena_malloc() and friends symbols, you have built SpiderMoney
 incorrectly and will need to rebuild SpiderMonkey (with the build options as
-noted above) and retry the build.
+noted above) and retry the build.  Because SpiderMonkey needs to be built
+without jemalloc, enclose the entire `DllMain()` implementation in 
+`$(srcroot)/js/src/jsapi.cpp` with `#if 0` ... `#endif`, otherwise 
+SpiderMonkey will fail to link.
 
 Please also check that `--enable-optimize` is *not* used with `--enable-debug`.
 You should explicitly enable one and disable the other, as `--enable-debug`
@@ -121,6 +122,17 @@ where the PDB file names match the filenames for the DLLs/EXEs in
 $(buildroot)/dist/bin, and you will need to look for the following .lib files:
 -mozjs-102.lib
 -js_static.lib (optional)
+
+Due to some bugs that are not yet resolved in upstream SpiderMonkey 102.x,
+you may need to do the following after running `./mach build install` and
+before attempting to build GJS itself:
+
+* Copy `$(builddir)/dist/include/js/ProfilingCategoryList.h` to
+  `$(PREFIX)\include\mozjs-102\js`.
+
+* Change `$(PREFIX)\include\mozjs-102\mozilla\EnumSet.h` and change line
+  329 from `static constexpr size_t kMaxBits = EnumSet().MaxBits();`
+  to `size_t kMaxBits = EnumSet().MaxBits();`.
 
 You may want to put the .lib's and DLLs/EXEs into $(PREFIX)\lib and 
 $(PREFIX)\bin respectively, and put the headers into
@@ -158,7 +170,9 @@ meson <path_to_gjs_sources> --buildtype=... --prefix=<some_prefix> -Dskip_dbus_t
 see the Meson documentation for the values accepted by buildtype)
 
 You may want to view the build options after the configuration succeeds
-by using 'meson configure'
+by using 'meson configure'.  You may need to set the envvar:
+`SETUPTOOLS_USE_DISTUTILS=stdlib` for the introspection step to proceed
+successfully.  A fix for this is being investigated.
 
 When the configuration succeeds, run:
 ninja
