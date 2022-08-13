@@ -14,8 +14,9 @@ GJS is a JavaScript runtime built on
 the [GNOME platform libraries](https://developer.gnome.org/).
 
 Use the GNOME platform libraries in your JavaScript programs.
-GJS powers GNOME Shell, Maps, Characters, Sound Recorder and
-[many other apps](./doc/Home.md).
+GJS powers GNOME Shell, Maps, Characters, Sound Recorder and many other apps.
+
+If you would like to learn more or get started with GJS, head over to the [documentation](./doc/Home.md).
 
 ## Installation
 
