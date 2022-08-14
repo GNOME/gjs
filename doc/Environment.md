@@ -1,8 +1,8 @@
-## Environment
+# Environment
 
 GJS allows runtime configuration with a number of environment variables.
 
-### General
+## General
 
 * `GJS_PATH`
 
@@ -17,7 +17,7 @@ GJS allows runtime configuration with a number of environment variables.
   Setting this variable to any value causes GJS to exit when an out-of-memory
   condition is encountered, instead of just printing a warning.
 
-### JavaScript Engine
+## JavaScript Engine
 
 * `JS_GC_ZEAL`
 
@@ -31,7 +31,7 @@ GJS allows runtime configuration with a number of environment variables.
   JavaScript engine.
 
 
-### Debugging
+## Debugging
 
 * `GJS_DEBUG_HEAP_OUTPUT`
 
@@ -75,7 +75,7 @@ GJS allows runtime configuration with a number of environment variables.
   Set this variable to print a timestamp when logging.
 
 
-### Testing
+## Testing
 
 * `GJS_COVERAGE_OUTPUT`
 

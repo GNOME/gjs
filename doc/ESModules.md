@@ -1,4 +1,4 @@
-# Modules: ECMAScript modules
+# ECMAScript Modules
 
 > _This documentation is inspired by [Node.js' documentation](https://github.com/nodejs/node/blob/HEAD/doc/api/esm.md)
 > on ECMAScript modules._
