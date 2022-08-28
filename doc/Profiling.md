@@ -1,6 +1,6 @@
-# Profiling GJS
+# Profiling
 
-## Profiling with Sysprof
+## Sysprof
 
 Typical profiling of JavaScript code is performed by passing the `--gjs` and
 `--no-perf` options:
@@ -22,7 +22,7 @@ Other flags can also be combined with `--gjs` when appropriate:
 sysprof-cli --gjs --gtk -- gjs gtk.js
 ```
 
-### Additional Reading
+#### See Also
 
 * Christian Hergert's [Blog Posts on Sysprof](https://blogs.gnome.org/chergert/category/sysprof/)
 
