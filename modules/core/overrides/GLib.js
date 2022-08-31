@@ -505,4 +505,27 @@ function _init() {
         const invalidRegex = new RegExp(`[^${escapedValidArray.join('')}]`, 'g');
         return string.replace(invalidRegex, substitutor);
     };
+
+    // Prevent user code from calling GThread functions which always crash
+    this.Thread.new = function () {
+        throw _notIntrospectableError('GLib.Thread.new()',
+            'GIO asynchronous methods or Promise()');
+    };
+
+    this.Thread.try_new = function () {
+        throw _notIntrospectableError('GLib.Thread.try_new()',
+            'GIO asynchronous methods or Promise()');
+    };
+
+    this.Thread.exit = function () {
+        throw new Error('\'GLib.Thread.exit()\' may not be called in GJS');
+    };
+
+    this.Thread.prototype.ref = function () {
+        throw new Error('\'GLib.Thread.ref()\' may not be called in GJS');
+    };
+
+    this.Thread.prototype.unref = function () {
+        throw new Error('\'GLib.Thread.unref()\' may not be called in GJS');
+    };
 }
