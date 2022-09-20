@@ -598,6 +598,40 @@ function _init() {
         }
     };
 
+    Gio.InputStream.prototype.createSyncIterator = function* createSyncIterator(count) {
+        while (true) {
+            const bytes = this.read_bytes(count, null);
+            if (bytes.get_size() === 0)
+                return;
+            yield bytes;
+        }
+    };
+
+    Gio.InputStream.prototype.createAsyncIterator = async function* createAsyncIterator(count, ioPriority = Gio.PRIORITY_DEFAULT) {
+        const self = this;
+
+        function next() {
+            return new Promise((resolve, reject) => {
+                self.read_bytes_async(count, ioPriority, null, (_self, res) => {
+                    try {
+                        const bytes = self.read_bytes_finish(res);
+                        resolve(bytes);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            });
+        }
+
+        while (true) {
+            // eslint-disable-next-line no-await-in-loop
+            const bytes = await next(count);
+            if (bytes.get_size() === 0)
+                return;
+            yield bytes;
+        }
+    };
+
     Gio.FileEnumerator.prototype[Symbol.iterator] = function* FileEnumeratorIterator() {
         while (true) {
             try {

@@ -312,6 +312,36 @@ describe('Gio.add_action_entries override', function () {
     });
 });
 
+describe('Gio.InputStream.prototype.createSyncIterator', function () {
+    it('iterates synchronously', function () {
+        const [file] = Gio.File.new_tmp(null);
+        file.replace_contents('hello ㊙ world', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+
+        let totalRead = 0;
+        for (const value of file.read(null).createSyncIterator(2)) {
+            expect(value).toBeInstanceOf(GLib.Bytes);
+            totalRead += value.get_size();
+        }
+
+        expect(totalRead).toBe(15);
+    });
+});
+
+describe('Gio.InputStream.prototype.createAsyncIterator', function () {
+    it('iterates asynchronously', async function () {
+        const [file] = Gio.File.new_tmp(null);
+        file.replace_contents('hello ㊙ world', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+
+        let totalRead = 0;
+        for await (const value of file.read(null).createAsyncIterator(2)) {
+            expect(value).toBeInstanceOf(GLib.Bytes);
+            totalRead += value.get_size();
+        }
+
+        expect(totalRead).toBe(15);
+    });
+});
+
 describe('Gio.FileEnumerator overrides', function () {
     it('iterates synchronously', function () {
         const dir = Gio.File.new_for_path('.');
