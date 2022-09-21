@@ -1,3 +1,37 @@
+Version 1.74.0
+--------------
+
+- Many improvements to the examples and documentation.
+
+- Build fixes for Windows.
+
+- Overrides to certain non-introspectable functions that will now gracefully
+  throw an exception instead of crashing.
+
+- Closed bugs and merge requests:
+  * Various maintenance [!786, Philip Chimento]
+  * http example not reliable, relies on server provided content-length. [#498,
+    !787, Andy Holmes]
+  * Gio set_attribute SIGSEGV (Address boundary error) [#496, !788, Philip
+    Chimento]
+  * Fix Visual Studio builds after migration to SpiderMonkey 102.x [!789,
+    Chun-wei Fan]
+  * Update Visual Studio build instructions [!791, Chun-wei Fan]
+  * doc: reformat for better scraping with DevDocs [!792, Andy Holmes]
+  * doc: Update Home [!793, Sonny Piers]
+  * GLib: override GThread functions [!795, Andy Holmes]
+
+Version 1.73.90
+---------------
+
+- Skipped.
+
+Version 1.72.3
+--------------
+
+- Fix for crash after build against libffi 3.4.2 ported from the development
+  branch.
+
 Version 1.73.2
 --------------
 
