@@ -1,3 +1,9 @@
+Version 1.72.3
+--------------
+
+- Fix for crash after build against libffi 3.4.2 ported from the development
+  branch.
+
 Version 1.72.2
 --------------
 
