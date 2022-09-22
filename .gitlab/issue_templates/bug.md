@@ -25,7 +25,7 @@ messages in the system journal (`sudo journalctl -xb`).
 
 If GJS or GNOME Shell crashed, please include a stack trace.
 For information on how to get a stack trace,
-[read this wiki page](https://wiki.gnome.org/Community/GettingInTouch/Bugzilla/GettingTraces/Details).
+[read this wiki page](https://wiki.gnome.org/GettingInTouch/Bugzilla/GettingTraces/Details).
 
 ## Expected behaviour ##
 What did you expect to see instead?
