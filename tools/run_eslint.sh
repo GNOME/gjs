@@ -3,5 +3,5 @@
 # SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
 cd $(dirname -- "$0")
-yarn install --frozen-lockfile
-yarn lint "$@"
+npm ci
+npm run lint -- "$@"

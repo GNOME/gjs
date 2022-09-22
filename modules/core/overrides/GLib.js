@@ -322,35 +322,35 @@ function _init() {
 
     this.log_structured =
     /**
-     * @param {string} logDomain
-     * @param {GLib.LogLevelFlags} logLevel
-     * @param {Record<string, unknown>} stringFields
+     * @param {string} logDomain Log domain.
+     * @param {GLib.LogLevelFlags} logLevel Log level, either from GLib.LogLevelFlags, or a user-defined level.
+     * @param {Record<string, unknown>} fields Key-value pairs of structured data to add to the log entry.
      * @returns {void}
      */
-    function log_structured(logDomain, logLevel, stringFields) {
+    function log_structured(logDomain, logLevel, fields) {
         /** @type {Record<string, GLib.Variant>} */
-        let fields = {};
+        let variantFields = {};
 
-        for (let key in stringFields) {
-            const field = stringFields[key];
+        for (let key in fields) {
+            const field = fields[key];
 
             if (field instanceof Uint8Array) {
-                fields[key] = new GLib.Variant('ay', field);
+                variantFields[key] = new GLib.Variant('ay', field);
             } else if (typeof field === 'string') {
-                fields[key] = new GLib.Variant('s', field);
+                variantFields[key] = new GLib.Variant('s', field);
             } else if (field instanceof GLib.Variant) {
                 // GLib.log_variant converts all Variants that are
                 // not 'ay' or 's' type to strings by printing
                 // them.
                 //
                 // https://gitlab.gnome.org/GNOME/glib/-/blob/a380bfdf93cb3bfd3cd4caedc0127c4e5717545b/glib/gmessages.c#L1894
-                fields[key] = field;
+                variantFields[key] = field;
             } else {
                 throw new TypeError(`Unsupported value ${field}, log_structured supports GLib.Variant, Uint8Array, and string values.`);
             }
         }
 
-        GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', fields));
+        GLib.log_variant(logDomain, logLevel, new GLib.Variant('a{sv}', variantFields));
     };
 
     // GjsPrivate depends on GLib so we cannot import it

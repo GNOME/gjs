@@ -6,10 +6,10 @@
   "private": true,
   "scripts": {
     "lint": "cd .. && eslint . --format unix --resolve-plugins-relative-to tools",
-    "fix": "yarn lint --fix"
+    "fix": "npm run lint --fix"
   },
   "devDependencies": {
-    "eslint": "^8.10.0",
-    "eslint-plugin-jsdoc": "^37.9.6"
+    "eslint": "^8.26.0",
+    "eslint-plugin-jsdoc": "^39.4.0"
   }
 }
