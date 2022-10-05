@@ -909,6 +909,16 @@ describe('GObject virtual function', function () {
             vfunc_init_async() {}
         })).toThrow();
     });
+
+    it('are defined also for static virtual functions', () => {
+        const CustomEmptyGICon = GObject.registerClass({
+            Implements: [Gio.Icon],
+        }, class CustomEmptyGICon extends GObject.Object {});
+        expect(Gio.Icon.deserialize).toBeInstanceOf(Function);
+        expect(CustomEmptyGICon.deserialize).toBe(Gio.Icon.deserialize);
+        expect(Gio.Icon.new_for_string).toBeInstanceOf(Function);
+        expect(CustomEmptyGICon.new_for_string).toBe(Gio.Icon.new_for_string);
+    });
 });
 
 describe('GObject creation using base classes without registered GType', function () {
