@@ -549,6 +549,8 @@ function _init() {
         // Reverse the interface array to give the last required interface precedence over the first.
         const requiredInterfaces = [...gobjectInterfaces].reverse();
         requiredInterfaces.forEach(iface =>
+            _copyInterfacePrototypeDescriptors(klass, iface));
+        requiredInterfaces.forEach(iface =>
             _copyInterfacePrototypeDescriptors(klass.prototype, iface.prototype));
 
         Object.getOwnPropertyNames(klass.prototype)
