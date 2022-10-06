@@ -3944,8 +3944,9 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                                          const JS::CallArgs& args) {
     JS::UniqueChars name;
     JS::RootedObject callable(cx);
-    if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so", "name", &name,
-                             "callable", &callable))
+    bool is_static = false;
+    if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so|b", "name", &name,
+                             "function", &callable, "is_static", &is_static))
         return false;
 
     args.rval().setUndefined();
@@ -4031,6 +4032,13 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         return false;
     }
 
+    if (g_callable_info_is_method(vfunc) != !is_static) {
+        gjs_throw(cx, "Invalid %s definition of %s virtual function %s",
+                  is_static ? "static" : "non-static",
+                  is_static ? "non-static" : "static", name.get());
+        return false;
+    }
+
     void *implementor_vtable;
     GI::AutoFieldInfo field_info;
     if (!find_vfunc_info(cx, m_gtype, vfunc, name.get(), &implementor_vtable,
@@ -4050,7 +4058,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             return false;
         }
         trampoline = GjsCallbackTrampoline::create(
-            cx, callable, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
+            cx, callable, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, !is_static);
         if (!trampoline)
             return false;
 
