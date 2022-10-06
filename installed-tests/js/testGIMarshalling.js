@@ -2045,6 +2045,72 @@ describe('Wrong virtual functions', function () {
     });
 });
 
+let StaticVFuncTester;
+try {
+    StaticVFuncTester = GObject.registerClass(
+    class StaticVFuncTesterClass extends VFuncTester {
+        static vfunc_vfunc_static_name() {
+            return 'Overridden name';
+        }
+
+        static vfunc_vfunc_static_create_new(int) {
+            return new StaticVFuncTester({int});
+        }
+
+        static vfunc_vfunc_static_create_new_out(int) {
+            return new StaticVFuncTester({int});
+        }
+    });
+} catch (e) {
+    if (!`${e}`.includes('Could not find definition of virtual function'))
+        throw e;
+}
+
+describe('Static virtual functions', function () {
+    beforeEach(function () {
+        if (!StaticVFuncTester) {
+            if (GIMarshallingTests.Object.vfunc_static_name)
+                throw new Error('vfunc_static_name should not be defined, or we have another issue');
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/361');
+        }
+    });
+
+    xit('has static_name', function () {
+        expect(GIMarshallingTests.Object.vfunc_static_name()).toBe(
+            'GIMarshallingTestsObject');
+        expect(StaticVFuncTester.vfunc_static_name()).toBe(
+            'GIMarshallingTestsObject');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+
+    xit('has static_typed_name', function () {
+        expect(GIMarshallingTests.Object.vfunc_static_typed_name(
+            GIMarshallingTests.Object.$gtype)).toBe('GIMarshallingTestsObject');
+        expect(StaticVFuncTester.vfunc_static_typed_name(StaticVFuncTester.$gtype))
+            .toBe('Overridden name');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+
+    ['', '_out'].forEach(suffix => xit(`has static_create_new${suffix}`, function () {
+        const baseObj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
+            GIMarshallingTests.Object.$gtype, 55);
+        expect(baseObj).toBeInstanceOf(GIMarshallingTests.Object);
+        expect(baseObj).not.toBeInstanceOf(StaticVFuncTester);
+        expect(baseObj.int_).toBe(55);
+
+        const middleObj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
+            VFuncTester.$gtype, 35);
+        expect(middleObj).toBeInstanceOf(GIMarshallingTests.Object);
+        expect(middleObj).not.toBeInstanceOf(VFuncTester);
+        expect(middleObj.int_).toBe(35);
+
+        const obj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
+            StaticVFuncTester.$gtype, 85);
+        expect(obj).toBeInstanceOf(GIMarshallingTests.Object);
+        expect(obj).toBeInstanceOf(VFuncTester);
+        expect(obj).toBeInstanceOf(StaticVFuncTester);
+        expect(obj.int_).toBe(85);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802'));
+});
+
 describe('Inherited GObject', function () {
     ['SubObject', 'SubSubObject'].forEach(klass => {
         describe(klass, function () {
