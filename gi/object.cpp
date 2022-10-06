@@ -2067,6 +2067,12 @@ GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
                  "Custom JS class must have parent");
         ObjectPrototype* parent_proto =
             ObjectPrototype::for_gtype(parent_gtype);
+
+        if (!parent_proto) {
+            JS::RootedObject proto(cx, gjs_lookup_object_prototype(cx, parent_gtype));
+            parent_proto = ObjectPrototype::for_js(cx, proto);
+        }
+
         g_assert(parent_proto &&
                  "Custom JS class's parent must have been accessed in JS");
         return parent_proto->lookup_cached_field_info(cx, key);
