@@ -13,15 +13,15 @@ GJS.
 You will need the following items to build GJS using Visual Studio
 or clang-cl (they can be built with Visual Studio 2015 or later,
 unless otherwise noted):
--SpiderMonkey 102.x (mozjs-102). This must be built with clang-cl as
- the Visual Studio  compiler is no longer supported for building this.
- Please see the below section carefully on this...
--GObject-Introspection (G-I) 1.61.2 or later
--GLib 2.58.x or later, (which includes GIO, GObject, and the
- associated tools)
--Cairo including Cairo-GObject support (Optional)
--GTK+-3.20.x or later (Optional)
--and anything that the above items depend on.
+- SpiderMonkey 102.x (mozjs-102). This must be built with clang-cl as
+  the Visual Studio  compiler is no longer supported for building this.
+  Please see the below section carefully on this...
+- GObject-Introspection (G-I) 1.61.2 or later
+- GLib 2.58.x or later, (which includes GIO, GObject, and the
+  associated tools)
+- Cairo including Cairo-GObject support (Optional)
+- GTK+-3.20.x or later (Optional)
+- and anything that the above items depend on.
 
 Note again that SpiderMonkey must be built using Visual Studio with
 clang-cl, and the rest should preferably be built with Visual Studio
