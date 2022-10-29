@@ -1,3 +1,13 @@
+Version 1.74.1
+--------------
+
+- Closed bugs and merge requests:
+  * Problem calling promisified D-Bus wrappers with callback [#494, !790, Marco
+    Trevisan]
+  * docs: Fix link in issue template [!799, Jan Tojnar]
+  * doc: Document Gio.FileEnumerator iteration [!800, Sonny Piers]
+  * doc: Fix Markdown formatting in README.MSVC.md [!803, Kisaragi Hiu]
+
 Version 1.74.0
 --------------
 
