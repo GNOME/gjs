@@ -910,7 +910,7 @@ describe('GObject virtual function', function () {
         })).toThrow();
     });
 
-    it('are defined also for static virtual functions', () => {
+    it('are defined also for static virtual functions', function () {
         const CustomEmptyGICon = GObject.registerClass({
             Implements: [Gio.Icon],
         }, class CustomEmptyGICon extends GObject.Object {});
