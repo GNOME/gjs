@@ -1,3 +1,9 @@
+Version 1.75.1
+--------------
+
+- Static methods on classes from GObject introspection are now present on JS
+  classes that inherit from those classes. [Marco Trevisan]
+
 Version 1.74.1
 --------------
 
