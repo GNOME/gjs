@@ -911,13 +911,13 @@ describe('GObject virtual function', function () {
     });
 
     it('are defined also for static virtual functions', function () {
-        const CustomEmptyGICon = GObject.registerClass({
+        const CustomEmptyGIcon = GObject.registerClass({
             Implements: [Gio.Icon],
-        }, class CustomEmptyGICon extends GObject.Object {});
+        }, class CustomEmptyGIcon extends GObject.Object {});
         expect(Gio.Icon.deserialize).toBeInstanceOf(Function);
-        expect(CustomEmptyGICon.deserialize).toBe(Gio.Icon.deserialize);
+        expect(CustomEmptyGIcon.deserialize).toBe(Gio.Icon.deserialize);
         expect(Gio.Icon.new_for_string).toBeInstanceOf(Function);
-        expect(CustomEmptyGICon.new_for_string).toBe(Gio.Icon.new_for_string);
+        expect(CustomEmptyGIcon.new_for_string).toBe(Gio.Icon.new_for_string);
     });
 });
 
