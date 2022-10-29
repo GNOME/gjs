@@ -50,7 +50,7 @@ const connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
 ```
 
 [gdbusconnection]: https://gjs-docs.gnome.org/gio20/gio.dbusconnection
-    
+
 ### Gio.DBusNodeInfo.new_for_xml(xmlData)
 
 Type:
@@ -93,7 +93,7 @@ This is a convenience wrapper around `Gio.DBusNodeInfo.new_for_xml()` for the
 common case of a [`Gio.DBusNodeInfo`][gdbusnodeinfo] with a single interface.
 
 [gdbusinterfaceinfo]: https://gjs-docs.gnome.org/gio20/gio.dbusinterfaceinfo
-    
+
 ### Gio.DBusProxy.makeProxyWrapper(interfaceInfo)
 
 Type:
@@ -133,7 +133,7 @@ function and the resulting [`Gio.DBusProxy`][gdbusproxy].
 
 [gdbusproxy]: https://gjs-docs.gnome.org/gio20/gio.dbusproxy
 [make-proxy-wrapper]: https://gjs.guide/guides/gio/dbus.html#high-level-proxies
-    
+
 ### Gio.DBusExportedObject.wrapJSObject(interfaceInfo, jsObj)
 
 Type:
@@ -157,7 +157,7 @@ The returned object has two additional methods not normally found on a
 * `emit_property_changed(propertyName, propertyValue)`
   * propertyName (`String`) — A D-Bus property name
   * propertyValue (`GLib.Variant`) — A [`GLib.Variant`][gvariant]
-  
+
 * `emit_signal(signalName, signalParameters)`
   * signalName (`String`) — A D-Bus signal name
   * signalParameters (`GLib.Variant`) — A [`GLib.Variant`][gvariant]
@@ -180,7 +180,7 @@ Parameters:
 * prototype (`Object`) — The prototype of a GObject class
 * startFunc (`Function`) — The "async" or "start" method
 * finishFunc (`Function`) — The "finish" method
-  
+
 Replaces the original `startFunc` on a GObject class prototype, so that it
 returns a `Promise` and can be used as a JavaScript `async` function.
 
@@ -200,6 +200,55 @@ try {
 }
 ```
 
+### Gio.FileEnumerator[Symbol.asyncIterator]
+
+[Gio.FileEnumator](gio-fileenumerator) are [async iterators](async-iterators).
+
+Each iteration returns a [Gio.FileInfo](gio-fileinfo):
+
+```js
+import Gio from "gi://Gio";
+
+const dir = Gio.File.new_for_path("/");
+const enumerator = dir.enumerate_children(
+  "standard::name",
+  Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+  null
+);
+
+for await (const file_info of enumerator) {
+  console.log(file_info.get_name());
+}
+```
+
+[gio-fileenumerator]: https://gjs-docs.gnome.org/gio20/gio.fileenumerator
+[async-iterator]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols
+[gio-fileinfo]: https://gjs-docs.gnome.org/gio20/gio.fileinfo
+
+### Gio.FileEnumerator[Symbol.iterator]
+
+[Gio.FileEnumator](gio-fileenumerator) are [sync iterators](sync-iterators).
+
+Each iteration returns a [Gio.FileInfo](gio-fileinfo):
+
+```js
+import Gio from "gi://Gio";
+
+const dir = Gio.File.new_for_path("/");
+const enumerator = dir.enumerate_children(
+  "standard::name",
+  Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+  null
+);
+
+for (const file_info of enumerator) {
+  console.log(file_info.get_name());
+}
+```
+
+[gio-fileenumerator]: https://gjs-docs.gnome.org/gio20/gio.fileenumerator
+[sync-iterator]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol
+[gio-fileinfo]: https://gjs-docs.gnome.org/gio20/gio.fileinfo
 
 ## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/GLib.js)
 
@@ -720,7 +769,7 @@ const properties = Gtk.Container.list_child_properties.call(box);
 
 for (let pspec of properties)
     log(pspec.name);
-    
+
 // Calling on a widget class
 const properties = Gtk.Container.list_child_properties.call(Gtk.Box);
 
