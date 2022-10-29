@@ -202,7 +202,7 @@ try {
 
 ### Gio.FileEnumerator[Symbol.asyncIterator]
 
-[Gio.FileEnumator](gio-fileenumerator) are [async iterators](async-iterators).
+[Gio.FileEnumerator](gio-fileenumerator) are [async iterators](async-iterators).
 
 Each iteration returns a [Gio.FileInfo](gio-fileinfo):
 
@@ -227,7 +227,7 @@ for await (const file_info of enumerator) {
 
 ### Gio.FileEnumerator[Symbol.iterator]
 
-[Gio.FileEnumator](gio-fileenumerator) are [sync iterators](sync-iterators).
+[Gio.FileEnumerator](gio-fileenumerator) are [sync iterators](sync-iterators).
 
 Each iteration returns a [Gio.FileInfo](gio-fileinfo):
 
