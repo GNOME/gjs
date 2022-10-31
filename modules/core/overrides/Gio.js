@@ -367,7 +367,9 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
 function _handlePropertyGet(info, impl, propertyName) {
     let propInfo = info.lookup_property(propertyName);
     let jsval = this[propertyName];
-    if (jsval !== undefined)
+    if (jsval?.get_type_string?.() === propInfo.signature)
+        return jsval;
+    else if (jsval !== undefined)
         return new GLib.Variant(propInfo.signature, jsval);
     else
         return null;
