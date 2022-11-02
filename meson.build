@@ -61,6 +61,7 @@ else
         '-fno-strict-aliasing',
         '-Wno-variadic-macros',  # GLib uses these in header files
         '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
+        '-Wno-dangling-pointer',  # Root list in JS::Rooted<T> with GCC 12
     ]), language: 'cpp')
 
     add_project_arguments(cc.get_supported_arguments([
