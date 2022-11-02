@@ -21,6 +21,7 @@
 #    ifdef HAVE_UNISTD_H
 #        include <unistd.h>  // for getpid, syscall
 #    endif
+#    include <array>
 #    ifdef G_OS_UNIX
 #        include <glib-unix.h>
 #    endif
@@ -185,7 +186,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
 
     g_assert(self && "Profiler must be set up before defining counters");
 
-    SysprofCaptureCounter counters[GJS_N_COUNTERS];
+    std::array<SysprofCaptureCounter, GJS_N_COUNTERS> counters;
     self->counter_base =
         sysprof_capture_writer_request_counter(self->capture, GJS_N_COUNTERS);
 
@@ -196,10 +197,10 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
 #    undef SETUP_COUNTER
 
     if (!sysprof_capture_writer_define_counters(
-            self->capture, now, -1, self->pid, counters, GJS_N_COUNTERS))
+            self->capture, now, -1, self->pid, counters.data(), GJS_N_COUNTERS))
         return false;
 
-    SysprofCaptureCounter gc_counters[Gjs::GCCounters::N_COUNTERS];
+    std::array<SysprofCaptureCounter, Gjs::GCCounters::N_COUNTERS> gc_counters;
     self->gc_counter_base = sysprof_capture_writer_request_counter(
         self->capture, Gjs::GCCounters::N_COUNTERS);
 
@@ -223,7 +224,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
                description_size, "Malloc bytes owned by tenured GC things");
 
     return sysprof_capture_writer_define_counters(self->capture, now, -1,
-                                                  self->pid, gc_counters,
+                                                  self->pid, gc_counters.data(),
                                                   Gjs::GCCounters::N_COUNTERS);
 }
 
