@@ -611,7 +611,7 @@ function _init() {
         this.close(null);
     };
 
-    Gio.FileEnumerator.prototype[Symbol.asyncIterator] = async function* AsyncFileEnumatorIterator() {
+    Gio.FileEnumerator.prototype[Symbol.asyncIterator] = async function* AsyncFileEnumeratorIterator() {
         const self = this;
 
         function next() {

@@ -910,14 +910,14 @@ describe('GObject virtual function', function () {
         })).toThrow();
     });
 
-    it('are defined also for static virtual functions', () => {
-        const CustomEmptyGICon = GObject.registerClass({
+    it('are defined also for static virtual functions', function () {
+        const CustomEmptyGIcon = GObject.registerClass({
             Implements: [Gio.Icon],
-        }, class CustomEmptyGICon extends GObject.Object {});
+        }, class CustomEmptyGIcon extends GObject.Object {});
         expect(Gio.Icon.deserialize).toBeInstanceOf(Function);
-        expect(CustomEmptyGICon.deserialize).toBe(Gio.Icon.deserialize);
+        expect(CustomEmptyGIcon.deserialize).toBe(Gio.Icon.deserialize);
         expect(Gio.Icon.new_for_string).toBeInstanceOf(Function);
-        expect(CustomEmptyGICon.new_for_string).toBe(Gio.Icon.new_for_string);
+        expect(CustomEmptyGIcon.new_for_string).toBe(Gio.Icon.new_for_string);
     });
 });
 
@@ -1176,6 +1176,8 @@ describe('Property bindings', function () {
     });
 
     it('can be set up as a group', function () {
+        if (GObject.BindingGroup === undefined)
+            pending('GLib version too old');
         const group = new GObject.BindingGroup({source: a});
         group.bind('string', b, 'string', GObject.BindingFlags.NONE);
         a.string = 'foo';
@@ -1184,6 +1186,8 @@ describe('Property bindings', function () {
     });
 
     it('can be set up as a group with custom mappings', function () {
+        if (GObject.BindingGroup === undefined)
+            pending('GLib version too old');
         const group = new GObject.BindingGroup({source: a});
         group.bind_full('bool', b, 'string', GObject.BindingFlags.NONE,
             (bind, source) => [true, `${source}`],

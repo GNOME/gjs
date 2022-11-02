@@ -61,6 +61,7 @@ else
         '-fno-strict-aliasing',
         '-Wno-variadic-macros',  # GLib uses these in header files
         '-Wno-missing-field-initializers',  # SpiderMonkey JSClass, among others
+        '-Wno-dangling-pointer',  # Root list in JS::Rooted<T> with GCC 12
     ]), language: 'cpp')
 
     add_project_arguments(cc.get_supported_arguments([
@@ -641,6 +642,8 @@ tests_environment.set('GJS_DEBUG_OUTPUT', 'stderr')
 tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
     js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
+    js_tests_builddir, libgjs_test_tools_builddir)
+tests_environment.prepend('DYLD_FALLBACK_LIBRARY_PATH', meson.current_build_dir(),
     js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 # Workaround for https://github.com/google/sanitizers/issues/1322
