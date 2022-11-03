@@ -97,6 +97,7 @@ var TestIface = `<node>
 <property name="PropReadOnly" type="d" access="read" />
 <property name="PropWriteOnly" type="s" access="write" />
 <property name="PropReadWrite" type="v" access="readwrite" />
+<property name="PropPrePacked" type="a{sv}" access="read" />
 </interface>
 </node>`;
 
@@ -220,6 +221,12 @@ class Test {
 
     set PropReadWrite(value) {
         this._propReadWrite = value.deepUnpack();
+    }
+
+    get PropPrePacked() {
+        return new GLib.Variant('a{sv}', {
+            member: GLib.Variant.new_string('value'),
+        });
     }
 
     structArray() {
@@ -775,6 +782,7 @@ describe('Exported DBus object', function () {
         expect(proxy.hasOwnProperty('PropReadWrite')).toBeTruthy();
         expect(proxy.hasOwnProperty('PropReadOnly')).toBeTruthy();
         expect(proxy.hasOwnProperty('PropWriteOnly')).toBeTruthy();
+        expect(proxy.hasOwnProperty('PropPrePacked')).toBeTruthy();
     });
 
     it('reading readonly property works', function () {
@@ -818,6 +826,11 @@ describe('Exported DBus object', function () {
         }).toThrowError('Property PropReadOnly is not writable');
 
         expect(proxy.PropReadOnly).toBe(PROP_READ_ONLY_INITIAL_VALUE);
+    });
+
+    it('Reading a property that prepacks the return value works', function () {
+        expect(proxy.PropPrePacked.member).toBeInstanceOf(GLib.Variant);
+        expect(proxy.PropPrePacked.member.get_type_string()).toEqual('s');
     });
 
     it('Marking a property as invalidated works', function () {
