@@ -778,7 +778,7 @@ summary({
 locations = []
 foreach dep: [ffi, glib, gi, spidermonkey, readline, sysprof_capture]
     if dep.type_name() == 'pkgconfig'
-        locations += 'in @0@'.format(dep.get_pkgconfig_variable('prefix'))
+        locations += 'in @0@'.format(dep.get_variable(pkgconfig: 'prefix'))
     else
         locations += dep.type_name()
     endif

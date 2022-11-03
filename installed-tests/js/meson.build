@@ -32,7 +32,7 @@ if gi.type_name() == 'internal'
     gi_tests_include = gi_subproject.get_variable('test_regress_incdirs')
     skip_warnlib = true
 else
-    gidatadir = gi.get_pkgconfig_variable('gidatadir')
+    gidatadir = gi.get_variable(pkgconfig: 'gidatadir')
     gi_tests = gidatadir / 'tests'
     regress_sources = [gi_tests / 'regress.c', gi_tests / 'regress.h']
     warnlib_sources = [gi_tests / 'warnlib.c', gi_tests / 'warnlib.h']
