@@ -14,7 +14,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2022-07-23.0'
+    FDO_DISTRIBUTION_TAG: '2022-11-02.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -23,7 +23,7 @@ build-alpine-image:
     - .gjs-alpine
   stage: prepare
   variables:
-    FDO_DISTRIBUTION_PACKAGES: cppcheck git python3 yarn bash grep
+    FDO_DISTRIBUTION_PACKAGES: cppcheck git python3 npm bash grep
     FDO_DISTRIBUTION_EXEC: |
       python3 -m ensurepip &&
       rm -r /usr/lib/python*/ensurepip &&
@@ -274,7 +274,11 @@ codespell:
   stage: source_check
   script:
     - codespell --version
-    - codespell -S "*.png,*.po,*.jpg,*.wrap,.git,LICENSES" -f --builtin "code,usage,clear" --skip="./installed-tests/js/jasmine.js,./README.md,./build/flatpak/*.json" --ignore-words-list="afterall,befores,files',filetest,gir,inout,stdio,uint,upto,xdescribe"
+    - |
+      codespell -S "*.png,*.po,*.jpg,*.wrap,.git,LICENSES" -f \
+        --builtin "code,usage,clear" \
+        --skip="./installed-tests/js/jasmine.js,./README.md,./build/flatpak/*.json,./tools/package-lock.json" \
+        --ignore-words-list="afterall,deque,falsy,files',filetest,gir,inout,musl,nmake,stdio,uint,upto,xdescribe"
   except:
     - schedules
 

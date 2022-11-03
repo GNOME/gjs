@@ -569,7 +569,7 @@ Version 1.68.1
   * Accessing GLib.ByteArray throws [#386, !590, Philip Chimento]
   * Missing hyphen and camelCase getters for CONSTRUCT_ONLY GObject properties
     defined in JavaScript [#391, !591, Philip Chimento]
-  * gnome-shell crashes on deferencing a destroyed wrapper object [#395, !593,
+  * gnome-shell crashes on dereferencing a destroyed wrapper object [#395, !593,
     !617, Marco Trevisan]
   * GNOME crash "JS object wrapper for GObject 0x563bf88f5f50 (GSettings) is
     being released..." [#294, !593, !617, Marco Trevisan]
@@ -984,7 +984,7 @@ Version 1.65.3
   * CI fixes for new test images [!433, Philip Chimento]
   * Various maintenance [!428, Philip Chimento]
   * Fix dead link [!436, prnsml]
-  * overrides/Gtk: Make GTK4 widgets iteratable [!437, Florian Müllner]
+  * overrides/Gtk: Make GTK4 widgets iterable [!437, Florian Müllner]
   * arg.cpp: Fix building on Visual Studio [!439, Chun-wei Fan]
   * Separate closures and vfuncs [!438, Philip Chimento]
   * Improvements to IWYU script [!435, Philip Chimento]
