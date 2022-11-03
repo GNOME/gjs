@@ -661,7 +661,7 @@ tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
 tests_locale = 'N/A'
 if cxx.get_argument_syntax() != 'msvc'
-    result = run_command('build/choose-tests-locale.sh')
+    result = run_command('build/choose-tests-locale.sh', check: false)
     if result.returncode() == 0
         tests_locale = result.stdout().strip()
         tests_environment.set('LC_ALL', tests_locale)
