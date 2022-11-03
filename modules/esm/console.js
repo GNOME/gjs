@@ -126,7 +126,7 @@ class Console {
         if (condition)
             return;
 
-        let message = 'Assertion failed';
+        const message = 'Assertion failed';
 
         if (data.length === 0)
             data.push(message);
@@ -205,15 +205,13 @@ class Console {
         if (data.length === 0)
             data = ['Trace'];
 
-        this[sPrinter]('trace', data, {
-            stackTrace:
-                // We remove the first line to avoid logging this line as part
-                // of the trace.
-                new Error().stack?.split('\n', 2)?.[1],
-        });
+        const {[sLogger]: Logger} = this;
+        Logger('trace', data);
     }
 
     /**
+     * Logs a message with severity equal to {@see GLib.LogLevelFlags.WARNING}.
+     *
      * @param  {...any} data formatting substitutions, if applicable
      * @returns {void}
      */
@@ -441,7 +439,7 @@ class Console {
         if (args.length === 0)
             return;
 
-        let [first, ...rest] = args;
+        const [first, ...rest] = args;
 
         if (rest.length === 0) {
             Printer(logLevel, [first]);
@@ -476,7 +474,7 @@ class Console {
         if (args.length === 1)
             return target;
 
-        let current = args[1];
+        const current = args[1];
 
         // Find the index of the first format specifier.
         const specifierIndex = specifierTest.exec(target).index;
@@ -523,7 +521,7 @@ class Console {
          *
          * @type {[string, ...any[]]}
          */
-        let result = [target, ...args.slice(2)];
+        const result = [target, ...args.slice(2)];
 
         if (!hasFormatSpecifiers(target))
             return result;
@@ -536,7 +534,7 @@ class Console {
 
     /**
      * @typedef {object} PrinterOptions
-     * @param {string} [stackTrace] an error stacktrace to append
+     * @param {Array.<string[]>} [stackTrace] an error stacktrace to append
      * @param {Record<string, any>} [fields] fields to include in the structured
      *   logging call
      */
@@ -590,7 +588,7 @@ class Console {
             severity = GLib.LogLevelFlags.LEVEL_MESSAGE;
         }
 
-        let output = args
+        const output = args
             .map(a => {
                 if (a === null)
                     return 'null';
@@ -608,14 +606,50 @@ class Console {
             .join(' ');
 
         let formattedOutput = this[sGroupIndentation] + output;
+        const extraFields = {};
+
+        let stackTrace = options?.stackTrace;
+        if (!stackTrace &&
+            (logLevel === 'trace' || severity <= GLib.LogLevelFlags.LEVEL_WARNING)) {
+            stackTrace = new Error().stack;
+            const currentFile = stackTrace.match(/^[^@]*@(.*):\d+:\d+$/m)?.at(1);
+            const index = stackTrace.lastIndexOf(currentFile) + currentFile.length;
+
+            stackTrace = stackTrace.substring(index).split('\n');
+            // Remove the remainder of the first line
+            stackTrace.shift();
+        }
 
         if (logLevel === 'trace') {
-            formattedOutput =
-                `${output}\n${options?.stackTrace}` ?? 'No trace available';
+            if (stackTrace?.length) {
+                formattedOutput += `\n${stackTrace.map(s =>
+                    `${this[sGroupIndentation]}${s}`).join('\n')}`;
+            } else {
+                formattedOutput +=
+                    `\n${this[sGroupIndentation]}No trace available`;
+            }
+        }
+
+        if (stackTrace?.length) {
+            const [stackLine] = stackTrace;
+            const match = stackLine.match(/^([^@]*)@(.*):(\d+):\d+$/);
+
+            if (match) {
+                const [_, func, file, line] = match;
+
+                if (func)
+                    extraFields.CODE_FUNC = func;
+                if (file)
+                    extraFields.CODE_FILE = file;
+                if (line)
+                    extraFields.CODE_LINE = line;
+            }
         }
 
         GLib.log_structured(this[sLogDomain], severity, {
             MESSAGE: formattedOutput,
+            ...extraFields,
+            ...options?.fields ?? {},
         });
     }
 }

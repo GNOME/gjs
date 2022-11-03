@@ -12,13 +12,41 @@ import {decodedStringMatching} from './matchers.js';
 function objectContainingLogMessage(
     message,
     domain = DEFAULT_LOG_DOMAIN,
-    fields = {}
+    fields = {},
+    messageMatcher = decodedStringMatching
 ) {
     return jasmine.objectContaining({
-        MESSAGE: decodedStringMatching(message),
+        MESSAGE: messageMatcher(message),
         GLIB_DOMAIN: decodedStringMatching(domain),
         ...fields,
     });
+}
+
+function matchStackTrace(log, sourceFile = null, encoding = 'utf-8') {
+    const matcher = jasmine.stringMatching(log);
+    const stackLineMatcher = jasmine.stringMatching(/^[\w./<]*@.*:\d+:\d+/);
+    const sourceMatcher = sourceFile ? jasmine.stringMatching(RegExp(
+        String.raw`^[\w]*@(file|resource):\/\/\/.*\/${sourceFile}\.js:\d+:\d+$`))
+        : stackLineMatcher;
+
+    return {
+        asymmetricMatch(compareTo) {
+            const decoder = new TextDecoder(encoding);
+            const decoded = decoder.decode(new Uint8Array(Array.from(compareTo)));
+            const lines = decoded.split('\n').filter(l => !!l.length);
+
+            if (!matcher.asymmetricMatch(lines[0]))
+                return false;
+
+            if (!sourceMatcher.asymmetricMatch(lines[1]))
+                return false;
+
+            return lines.slice(2).every(l => stackLineMatcher.asymmetricMatch(l));
+        },
+        jasmineToString() {
+            return `<decodedStringMatching(${log})>`;
+        },
+    };
 }
 
 describe('console', function () {
@@ -37,6 +65,16 @@ describe('console', function () {
         domain = DEFAULT_LOG_DOMAIN,
         fields = {}
     ) {
+        if (logLevel < GLib.LogLevelFlags.LEVEL_WARNING) {
+            const [_, currentFile] = new Error().stack.split('\n').at(0).match(
+                /^[^@]*@(.*):\d+:\d+$/);
+
+            fields = {
+                ...fields,
+                CODE_FILE: decodedStringMatching(currentFile),
+            };
+        }
+
         expect(writer_func).toHaveBeenCalledOnceWith(
             logLevel,
             objectContainingLogMessage(message, domain, fields)
@@ -103,6 +141,65 @@ describe('console', function () {
         writer_func.calls.reset();
     });
 
+    it('traces a line', function () {
+        // eslint-disable-next-line max-statements-per-line
+        console.trace('a trace'); const error = new Error();
+
+        const [_, currentFile, errorLine] = error.stack.split('\n').at(0).match(
+            /^[^@]*@(.*):(\d+):\d+$/);
+
+        expect(writer_func).toHaveBeenCalledOnceWith(
+            GLib.LogLevelFlags.LEVEL_MESSAGE,
+            objectContainingLogMessage('a trace', DEFAULT_LOG_DOMAIN, {
+                CODE_FILE: decodedStringMatching(currentFile),
+                CODE_LINE: decodedStringMatching(errorLine),
+            },
+            message => matchStackTrace(message, 'testConsole'))
+        );
+
+        writer_func.calls.reset();
+    });
+
+    it('traces a empty message', function () {
+        console.trace();
+
+        const [_, currentFile] = new Error().stack.split('\n').at(0).match(
+            /^[^@]*@(.*):\d+:\d+$/);
+
+        expect(writer_func).toHaveBeenCalledOnceWith(
+            GLib.LogLevelFlags.LEVEL_MESSAGE,
+            objectContainingLogMessage('Trace', DEFAULT_LOG_DOMAIN, {
+                CODE_FILE: decodedStringMatching(currentFile),
+            },
+            message => matchStackTrace(message, 'testConsole'))
+        );
+
+        writer_func.calls.reset();
+    });
+
+    it('asserts a true condition', function () {
+        console.assert(true, 'no printed');
+        expect(writer_func).not.toHaveBeenCalled();
+
+        writer_func.calls.reset();
+    });
+
+    it('asserts a false condition', function () {
+        console.assert(false);
+
+        expectLog('Assertion failed', GLib.LogLevelFlags.LEVEL_CRITICAL);
+
+        writer_func.calls.reset();
+    });
+
+    it('asserts a false condition with message', function () {
+        console.assert(false, 'asserts false is not true');
+
+        expectLog('asserts false is not true', GLib.LogLevelFlags.LEVEL_CRITICAL);
+
+        writer_func.calls.reset();
+    });
+
     describe('clear()', function () {
         it('can be called', function () {
             console.clear();
@@ -138,6 +235,7 @@ describe('console', function () {
             warn: GLib.LogLevelFlags.LEVEL_WARNING,
             info: GLib.LogLevelFlags.LEVEL_INFO,
             error: GLib.LogLevelFlags.LEVEL_CRITICAL,
+            trace: GLib.LogLevelFlags.LEVEL_MESSAGE,
         };
 
         Object.entries(functions).forEach(([fn, level]) => {
