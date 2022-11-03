@@ -250,6 +250,68 @@ for (const file_info of enumerator) {
 [sync-iterator]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol
 [gio-fileinfo]: https://gjs-docs.gnome.org/gio20/gio.fileinfo
 
+### Gio.InputStream.createAsyncIterator(count, priority)
+
+Parameters:
+* count (`Number`) — Number of bytes to read per iteration see [read_bytes]
+* priority (`Number`) — Optional priority (i.e. `GLib.PRIORITY_DEFAULT`)
+
+Returns:
+* (`Object`) — An [asynchronous iterator][async-iterator]
+
+Return an asynchronous iterator for a [`Gio.InputStream`][ginputstream].
+
+Each iteration will return a [`GLib.Bytes`][gbytes] object:
+
+```js
+import Gio from "gi://Gio";
+
+const textDecoder = new TextDecoder("utf-8");
+
+const file = Gio.File.new_for_path("/etc/os-release");
+const inputStream = file.read(null);
+
+for await (const bytes of inputStream.createAsyncIterator(4)) {
+  log(textDecoder.decode(bytes.toArray()));
+}
+```
+
+[read_bytes]: https://gjs-docs.gnome.org/gio20/gio.inputstream#method-read_bytes
+[async-iterator]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols
+[gbytes]: https://gjs-docs.gnome.org/glib20/glib.bytes
+[ginputstream]: https://gjs-docs.gnome.org/gio20/gio.inputstream
+
+### Gio.InputStream.createSyncIterator(count, priority)
+
+Parameters:
+* count (`Number`) — Number of bytes to read per iteration see [read_bytes]
+* priority (`Number`) — Optional priority (i.e. `GLib.PRIORITY_DEFAULT`)
+
+Returns:
+* (`Object`) — An [synchronous iterator][sync-iterator]
+
+Return a synchronous iterator for a [`Gio.InputStream`][ginputstream].
+
+Each iteration will return a [`GLib.Bytes`][gbytes] object:
+
+```js
+import Gio from "gi://Gio";
+
+const textDecoder = new TextDecoder("utf-8");
+
+const file = Gio.File.new_for_path("/etc/os-release");
+const inputStream = file.read(null);
+
+for (const bytes of inputStream.createSyncIterator(4)) {
+  log(textDecoder.decode(bytes.toArray()));
+}
+```
+
+[read_bytes]: https://gjs-docs.gnome.org/gio20/gio.inputstream#method-read_bytes
+[sync-iterator]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol
+[gbytes]: https://gjs-docs.gnome.org/glib20/glib.bytes
+[ginputstream]: https://gjs-docs.gnome.org/gio20/gio.inputstream
+
 ## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/GLib.js)
 
 The `GLib` override includes a number of utilities and conveniences for working
