@@ -55,6 +55,8 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
                                  GjsArgumentFlags flags, void** contents,
                                  size_t* length_p);
 
+size_t gjs_array_get_element_size(GITypeTag element_type);
+
 void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg);
 
 GJS_JSAPI_RETURN_CONVENTION

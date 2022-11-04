@@ -973,11 +973,10 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
     }
 }
 
-static GArray* garray_new_for_storage_type(unsigned length,
-                                           GITypeTag storage_type) {
-    guint element_size;
+size_t gjs_array_get_element_size(GITypeTag element_type) {
+    size_t element_size;
 
-    switch (storage_type) {
+    switch (element_type) {
     case GI_TYPE_TAG_BOOLEAN:
         element_size = sizeof(gboolean);
         break;
@@ -1024,6 +1023,12 @@ static GArray* garray_new_for_storage_type(unsigned length,
         g_assert_not_reached();
     }
 
+    return element_size;
+}
+
+static GArray* garray_new_for_storage_type(unsigned length,
+                                           GITypeTag storage_type) {
+    size_t element_size = gjs_array_get_element_size(storage_type);
     return g_array_sized_new(true, false, element_size, length);
 }
 
