@@ -24,19 +24,23 @@
     }
 
     function prettyPrint(value) {
-        if (value.toString === Object.prototype.toString || value.toString === Array.prototype.toString || value.toString === Function.prototype.toString || value.toString === Date.prototype.toString) {
-            const printedObjects = new WeakSet();
-            switch (typeof value) {
-            case 'object':
+        switch (typeof value) {
+        case 'object':
+            if (value.toString === Object.prototype.toString ||
+                value.toString === Array.prototype.toString ||
+                value.toString === Date.prototype.toString) {
+                const printedObjects = new WeakSet();
                 return formatObject(value, printedObjects);
-            case 'function':
-                return formatFunction(value);
-            default:
-                return value.toString();
             }
-        } else {
-            if (typeof value === 'string')
-                return JSON.stringify(value);
+            // If the object has a nonstandard toString, prefer that
+            return value.toString();
+        case 'function':
+            if (value.toString === Function.prototype.toString)
+                return formatFunction(value);
+            return value.toString();
+        case 'string':
+            return JSON.stringify(value);
+        default:
             return value.toString();
         }
     }
