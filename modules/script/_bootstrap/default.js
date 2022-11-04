@@ -47,6 +47,12 @@
         }
     }
 
+    function formatPropertyKey(key) {
+        if (typeof key === 'symbol')
+            return `[${formatSymbol(key)}]`;
+        return `${key}`;
+    }
+
     function formatObject(obj, printedObjects) {
         printedObjects.add(obj);
         if (Array.isArray(obj))
@@ -59,7 +65,10 @@
             return obj.toString();
 
         const formattedObject = [];
-        for (const [key, value] of Object.entries(obj)) {
+        const keys = Object.getOwnPropertyNames(obj).concat(Object.getOwnPropertySymbols(obj));
+        for (const propertyKey of keys) {
+            const value = obj[propertyKey];
+            const key = formatPropertyKey(propertyKey);
             switch (typeof value) {
             case 'object':
                 if (printedObjects.has(value))
