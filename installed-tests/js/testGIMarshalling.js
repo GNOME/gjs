@@ -357,6 +357,10 @@ describe('Fixed-size C array', function () {
         testReturnValue('array_fixed_int', [-1, 0, 1, 2]);
         testInParameter('array_fixed_int', [-1, 0, 1, 2]);
         testOutParameter('array_fixed', [-1, 0, 1, 2]);
+        testOutParameter('array_fixed_caller_allocated', [-1, 0, 1, 2], {
+            skip: GIMarshallingTests.array_fixed_caller_allocated_out
+                ? false : 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/370',
+        });
         testInoutParameter('array_fixed', [-1, 0, 1, 2], [2, 1, 0, -1]);
     });
 
@@ -369,6 +373,18 @@ describe('Fixed-size C array', function () {
         expect(GIMarshallingTests.array_fixed_out_struct()).toEqual([
             jasmine.objectContaining({long_: 7, int8: 6}),
             jasmine.objectContaining({long_: 6, int8: 7}),
+        ]);
+    });
+
+    it('marshals a fixed-size struct array as caller allocated out param', function () {
+        if (!GIMarshallingTests.array_fixed_caller_allocated_struct_out)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/370');
+
+        expect(GIMarshallingTests.array_fixed_caller_allocated_struct_out()).toEqual([
+            jasmine.objectContaining({long_: -2, int8: -1}),
+            jasmine.objectContaining({long_: 1, int8: 2}),
+            jasmine.objectContaining({long_: 3, int8: 4}),
+            jasmine.objectContaining({long_: 5, int8: 6}),
         ]);
     });
 });
