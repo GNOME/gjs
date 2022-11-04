@@ -348,7 +348,11 @@ expr may also reference the variables $1, $2, ... for already printed
 expressions, or $$ for the most recently printed expression.`;
 
 function keysCommand(rest) {
-    return doPrint(`Object.keys(${rest})`);
+    return doPrint(`
+        (o => Object.getOwnPropertyNames(o)
+            .concat(Object.getOwnPropertySymbols(o)))
+            (${rest})
+    `);
 }
 keysCommand.summary = 'Prints keys of the given object';
 keysCommand.helpText = `USAGE

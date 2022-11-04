@@ -2,12 +2,12 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at keys.debugger.js:8:0
+Debugger statement, toplevel at keys.debugger.js:9:0
 db> keys a
 $1 = [object Array]
-["foo", "bar", "tres"]
+["foo", "bar", "tres", Symbol("s")]
 db> k a
 $2 = [object Array]
-["foo", "bar", "tres"]
+["foo", "bar", "tres", Symbol("s")]
 db> c
 Program exited with code 0

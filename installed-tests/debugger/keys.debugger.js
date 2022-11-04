@@ -4,6 +4,7 @@ const a = {
     foo: 1,
     bar: null,
     tres: undefined,
+    [Symbol('s')]: 'string',
 };
 debugger;
 void a;
