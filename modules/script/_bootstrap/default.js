@@ -40,6 +40,8 @@
             return value.toString();
         case 'string':
             return JSON.stringify(value);
+        case 'symbol':
+            return formatSymbol(value);
         default:
             return value.toString();
         }
@@ -71,6 +73,9 @@
             case 'string':
                 formattedObject.push(`${key}: "${value}"`);
                 break;
+            case 'symbol':
+                formattedObject.push(`${key}: ${formatSymbol(value)}`);
+                break;
             default:
                 formattedObject.push(`${key}: ${value}`);
                 break;
@@ -98,6 +103,23 @@
     function formatFunction(func) {
         let funcOutput = `[ Function: ${func.name} ]`;
         return funcOutput;
+    }
+
+    function formatSymbol(sym) {
+        // Try to format Symbols in the same way that they would be constructed.
+
+        // First check if this is a global registered symbol
+        const globalKey = Symbol.keyFor(sym);
+        if (globalKey !== undefined)
+            return `Symbol.for("${globalKey}")`;
+
+        const descr = sym.description;
+        // Special-case the 'well-known' (built-in) Symbols
+        if (descr.startsWith('Symbol.'))
+            return descr;
+
+        // Otherwise, it's just a regular symbol
+        return `Symbol("${descr}")`;
     }
 
     Object.defineProperties(exports, {

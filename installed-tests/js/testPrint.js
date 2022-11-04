@@ -152,4 +152,31 @@ describe('prettyPrint', function () {
             prettyPrint(Gdk)
         ).toMatch('[object GIRepositoryNamespace]');
     });
+
+    it('symbol', function () {
+        expect(prettyPrint(Symbol('foo'))).toEqual('Symbol("foo")');
+    });
+
+    it('property value symbol', function () {
+        expect(prettyPrint({symbol: Symbol('foo')}))
+            .toEqual('{ symbol: Symbol("foo") }');
+    });
+
+    it('registered symbol', function () {
+        expect(prettyPrint(Symbol.for('foo'))).toEqual('Symbol.for("foo")');
+    });
+
+    it('property value registered symbol', function () {
+        expect(prettyPrint({symbol: Symbol.for('foo')}))
+            .toEqual('{ symbol: Symbol.for("foo") }');
+    });
+
+    it('well-known symbol', function () {
+        expect(prettyPrint(Symbol.hasInstance)).toEqual('Symbol.hasInstance');
+    });
+
+    it('property value well-known symbol', function () {
+        expect(prettyPrint({symbol: Symbol.hasInstance}))
+            .toEqual('{ symbol: Symbol.hasInstance }');
+    });
 });
