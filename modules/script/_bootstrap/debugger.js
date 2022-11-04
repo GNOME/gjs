@@ -69,9 +69,7 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
         if (style.noerror)
             return [dvrepr, undefined];
 
-        const substyle = {};
-        Object.assign(substyle, style);
-        substyle.noerror = true;
+        const substyle = {...style, noerror: true};
         return [dvrepr, debuggeeValueToString(str.throw, substyle)];
     }
 
