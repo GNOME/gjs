@@ -1570,7 +1570,7 @@ describe('Life, the Universe and Everything', function () {
             expect(callback).toHaveBeenCalled();
         });
 
-        it('null simple callback', function () {
+        it(`null ${type} callback`, function () {
             expect(() => Regress[`test_${type}_callback`](null)).not.toThrow();
         });
     });
