@@ -117,7 +117,8 @@ build_maximal:
   variables:
     CC: clang
     CXX: clang++
-    CONFIG_OPTS: -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true
+    CONFIG_OPTS: >-
+      -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true -Db_pch=false
     ENABLE_GTK: "yes"
   except:
     - schedules
