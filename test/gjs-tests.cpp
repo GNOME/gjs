@@ -56,11 +56,29 @@ static unsigned cpp_random_seed = 0;
 using Gjs::Test::assert_equal;
 
 template <typename T>
+struct is_char_helper : public std::false_type {};
+template <>
+struct is_char_helper<char> : public std::true_type {};
+template <>
+struct is_char_helper<wchar_t> : public std::true_type {};
+template <>
+struct is_char_helper<char16_t> : public std::true_type {};
+template <>
+struct is_char_helper<char32_t> : public std::true_type {};
+template <typename T>
+struct is_char : public is_char_helper<std::remove_cv_t<T>>::type {};
+template <typename T>
+inline constexpr bool is_char_v = is_char<T>::value;
+
+template <typename T>
 T get_random_number() {
     std::mt19937_64 gen(cpp_random_seed);
 
     if constexpr (std::is_same_v<T, bool>) {
         return g_random_boolean();
+    } else if constexpr (is_char_v<T>) {
+        return std::char_traits<T>::to_char_type(
+            get_random_number<typename std::char_traits<T>::int_type>());
     } else if constexpr (std::is_integral_v<T>) {
         T lowest_value = std::numeric_limits<T>::lowest();
 
