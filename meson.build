@@ -805,11 +805,11 @@ summary({
     'Skip GTK tests': get_option('skip_gtk_tests'),
     'Extra debug logs': get_option('verbose_logs'),
     'Precompiled headers': get_option('b_pch'),
-}, section: 'Build options')
+}, section: 'Build options', bool_yn: true)
 summary({
     'Cairo module': build_cairo,
     'Use readline for input': build_readline,
     'Profiler (Linux only)': build_profiler,
     'Dtrace debugging': get_option('dtrace'),
     'Systemtap debugging': get_option('systemtap'),
-}, section: 'Optional features')
+}, section: 'Optional features', bool_yn: true)
