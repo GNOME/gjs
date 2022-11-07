@@ -14,7 +14,6 @@ project('gjs', 'cpp', 'c', version: '1.75.1', license: ['MIT', 'LGPL2+'],
 api_version = '1.0'
 api_name = '@0@-@1@'.format(meson.project_name(), api_version)
 
-fs = import('fs')
 gnome = import('gnome')
 pkg = import('pkgconfig')
 
@@ -771,9 +770,9 @@ libdir = get_option('libdir')
 datadir = get_option('datadir')
 summary({
     'prefix': prefix,
-    'bindir': fs.is_absolute(bindir) ? bindir : prefix / bindir,
-    'libdir': fs.is_absolute(libdir) ? libdir : prefix / libdir,
-    'datadir': fs.is_absolute(datadir) ? datadir : prefix / datadir,
+    'bindir': prefix / bindir,
+    'libdir': prefix / libdir,
+    'datadir': prefix / datadir,
 }, section: 'Directories')
 locations = []
 foreach dep: [ffi, glib, gi, spidermonkey, readline, sysprof_capture]
