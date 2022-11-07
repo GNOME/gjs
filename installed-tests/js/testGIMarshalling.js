@@ -1643,7 +1643,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals multiple out parameters', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Function *vfunc_vfunc_multiple_out_parameters*Array*');
+            'JS ERROR: Error: *vfunc_vfunc_multiple_out_parameters*Array*');
 
         expect(tester.vfunc_multiple_out_parameters()).toEqual([0, 0]);
 
@@ -1653,7 +1653,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals a return value and one out parameter', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Function *vfunc_return_value_and_one_out_parameter*Array*');
+            'JS ERROR: Error: *vfunc_return_value_and_one_out_parameter*Array*');
 
         expect(tester.vfunc_return_value_and_one_out_parameter()).toEqual([0, 0]);
 
@@ -1663,7 +1663,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals a return value and multiple out parameters', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Function *vfunc_return_value_and_multiple_out_parameters*Array*');
+            'JS ERROR: Error: *vfunc_return_value_and_multiple_out_parameters*Array*');
 
         expect(tester.vfunc_return_value_and_multiple_out_parameters()).toEqual([0, 0, 0]);
 

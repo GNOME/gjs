@@ -27,7 +27,6 @@
 #include <js/Value.h>
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for InformalValueTypeName, JS_TypeOfValue
-#include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSTYPE_FUNCTION
 
 #include "gi/arg-cache.h"
@@ -844,10 +843,10 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             return false;
         }
 
-        JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
+        JS::RootedObject callable(cx, &value.toObject());
         bool is_object_method = !!state->instance_object;
-        trampoline = GjsCallbackTrampoline::create(cx, func, m_info, m_scope,
-                                                   is_object_method, false);
+        trampoline = GjsCallbackTrampoline::create(
+            cx, callable, m_info, m_scope, is_object_method, false);
         if (!trampoline)
             return false;
         if (m_scope == GI_SCOPE_TYPE_NOTIFIED && is_object_method) {
@@ -1179,8 +1178,8 @@ bool GClosureInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
         return report_typeof_mismatch(cx, m_arg_name, value,
                                       ExpectedType::FUNCTION);
 
-    JS::RootedFunction func(cx, JS_GetObjectFunction(&value.toObject()));
-    GClosure* closure = Gjs::Closure::create_marshaled(cx, func, "boxed");
+    JS::RootedObject callable(cx, &value.toObject());
+    GClosure* closure = Gjs::Closure::create_marshaled(cx, callable, "boxed");
     gjs_arg_set(arg, closure);
     g_closure_ref(closure);
     g_closure_sink(closure);

@@ -18,6 +18,7 @@
 #include <glib.h>
 
 #include <js/Array.h>
+#include <js/CallAndConstruct.h>  // for IsCallable
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
@@ -33,6 +34,7 @@
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for HandleValueArray
+#include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSProtoKey
 
 #include "gi/arg-cache.h"
@@ -313,7 +315,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         return;
     }
 
-    JSAutoRealm ar(context, JS_GetFunctionObject(callable()));
+    JSAutoRealm ar(context, callable());
 
     int n_args = m_param_types.size();
     g_assert(n_args >= 0);
@@ -378,10 +380,12 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             }
 
             // Some other uncatchable exception, e.g. out of memory
-            JSFunction* fn = callable();
-            g_error("Function %s (%s.%s) terminated with uncatchable exception",
-                    gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str(),
-                    m_info.ns(), m_info.name());
+            JSFunction* fn = JS_GetObjectFunction(callable());
+            std::string descr =
+                fn ? "function " + gjs_debug_string(JS_GetFunctionDisplayId(fn))
+                   : "callable object " + gjs_debug_object(callable());
+            g_error("Call to %s (%s.%s) terminated with uncatchable exception",
+                    descr.c_str(), m_info.ns(), m_info.name());
         }
 
         // Fill in the result with some hopefully neutral value
@@ -541,12 +545,14 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             return false;
 
         if (!is_array) {
-            JSFunction* fn = callable();
+            JSFunction* fn = JS_GetObjectFunction(callable());
+            std::string descr =
+                fn ? "function " + gjs_debug_string(JS_GetFunctionDisplayId(fn))
+                   : "callable object " + gjs_debug_object(callable());
             gjs_throw(context,
-                      "Function %s (%s.%s) returned unexpected value, "
-                      "expecting an Array",
-                      gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str(),
-                      m_info.ns(), m_info.name());
+                      "Call to %s (%s.%s) returned unexpected value, expecting "
+                      "an Array",
+                      descr.c_str(), m_info.ns(), m_info.name());
             return false;
         }
 
@@ -597,11 +603,13 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 }
 
 GjsCallbackTrampoline* GjsCallbackTrampoline::create(
-    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
+    JSContext* cx, JS::HandleObject callable, GICallableInfo* callable_info,
     GIScopeType scope, bool has_scope_object, bool is_vfunc) {
-    g_assert(function);
+    g_assert(JS::IsCallable(callable) &&
+             "tried to create a callback trampoline for a non-callable object");
+
     auto* trampoline = new GjsCallbackTrampoline(
-        cx, function, callable_info, scope, has_scope_object, is_vfunc);
+        cx, callable, callable_info, scope, has_scope_object, is_vfunc);
 
     if (!trampoline->initialize()) {
         g_closure_unref(trampoline);
@@ -615,13 +623,13 @@ decltype(GjsCallbackTrampoline::s_forever_closure_list)
     GjsCallbackTrampoline::s_forever_closure_list;
 
 GjsCallbackTrampoline::GjsCallbackTrampoline(
-    JSContext* cx, JS::HandleFunction function, GICallableInfo* callable_info,
+    JSContext* cx, JS::HandleObject callable, GICallableInfo* callable_info,
     GIScopeType scope, bool has_scope_object, bool is_vfunc)
     // The rooting rule is:
     // - notify callbacks in GObject methods are traced from the scope object
     // - async and call callbacks, and other notify callbacks, are rooted
     // - vfuncs are traced from the GObject prototype
-    : Closure(cx, function,
+    : Closure(cx, callable,
               scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object,
               g_base_info_get_name(callable_info)),
       m_info(callable_info, GjsAutoTakeOwnership()),

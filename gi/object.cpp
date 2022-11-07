@@ -2187,7 +2187,7 @@ ObjectInstance::connect_impl(JSContext          *context,
     }
 
     GClosure* closure = Gjs::Closure::create_for_signal(
-        context, JS_GetObjectFunction(callback), "signal callback", signal_id);
+        context, callback, "signal callback", signal_id);
     if (closure == NULL)
         return false;
     if (!associate_closure(context, closure))
@@ -2285,7 +2285,7 @@ ObjectInstance::emit_impl(JSContext          *context,
 bool ObjectInstance::signal_match_arguments_from_object(
     JSContext* cx, JS::HandleObject match_obj, GSignalMatchType* mask_out,
     unsigned* signal_id_out, GQuark* detail_out,
-    JS::MutableHandleFunction func_out) {
+    JS::MutableHandleObject callable_out) {
     g_assert(mask_out && signal_id_out && detail_out && "forgot out parameter");
 
     int mask = 0;
@@ -2328,7 +2328,7 @@ bool ObjectInstance::signal_match_arguments_from_object(
     }
 
     bool has_func;
-    JS::RootedFunction func(cx);
+    JS::RootedObject callable(cx);
     if (!JS_HasOwnPropertyById(cx, match_obj, atoms.func(), &has_func))
         return false;
     if (has_func) {
@@ -2338,12 +2338,12 @@ bool ObjectInstance::signal_match_arguments_from_object(
         if (!JS_GetPropertyById(cx, match_obj, atoms.func(), &value))
             return false;
 
-        if (!value.isObject() || !JS_ObjectIsFunction(&value.toObject())) {
+        if (!value.isObject() || !JS::IsCallable(&value.toObject())) {
             gjs_throw(cx, "'func' property must be a function");
             return false;
         }
 
-        func = JS_GetObjectFunction(&value.toObject());
+        callable = &value.toObject();
     }
 
     if (!has_id && !has_detail && !has_func) {
@@ -2357,7 +2357,7 @@ bool ObjectInstance::signal_match_arguments_from_object(
     if (has_detail)
         *detail_out = detail;
     if (has_func)
-        func_out.set(func);
+        callable_out.set(callable);
     return true;
 }
 
@@ -2386,18 +2386,18 @@ bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
     GSignalMatchType mask;
     unsigned signal_id;
     GQuark detail;
-    JS::RootedFunction func(cx);
+    JS::RootedObject callable(cx);
     if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id,
-                                            &detail, &func))
+                                            &detail, &callable))
         return false;
 
     uint64_t handler = 0;
-    if (!func) {
+    if (!callable) {
         handler = g_signal_handler_find(m_ptr, mask, signal_id, detail, nullptr,
                                         nullptr, nullptr);
     } else {
         for (GClosure* candidate : m_closures) {
-            if (Gjs::Closure::for_gclosure(candidate)->callable() == func) {
+            if (Gjs::Closure::for_gclosure(candidate)->callable() == callable) {
                 handler = g_signal_handler_find(m_ptr, mask, signal_id, detail,
                                                 candidate, nullptr, nullptr);
                 if (handler != 0)
@@ -2461,19 +2461,19 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
     GSignalMatchType mask;
     unsigned signal_id;
     GQuark detail;
-    JS::RootedFunction func(cx);
+    JS::RootedObject callable(cx);
     if (!signal_match_arguments_from_object(cx, match, &mask, &signal_id,
-                                            &detail, &func)) {
+                                            &detail, &callable)) {
         return false;
     }
     unsigned n_matched = 0;
-    if (!func) {
+    if (!callable) {
         n_matched = MatchFunc(m_ptr, mask, signal_id, detail, nullptr, nullptr,
                               nullptr);
     } else {
         std::vector<GClosure*> candidates;
         for (GClosure* candidate : m_closures) {
-            if (Gjs::Closure::for_gclosure(candidate)->callable() == func)
+            if (Gjs::Closure::for_gclosure(candidate)->callable() == callable)
                 candidates.push_back(candidate);
         }
         for (GClosure* candidate : candidates) {
@@ -2914,10 +2914,9 @@ bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                                          const JS::CallArgs& args) {
     JS::UniqueChars name;
-    JS::RootedObject function(cx);
-    if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so",
-                             "name", &name,
-                             "function", &function))
+    JS::RootedObject callable(cx);
+    if (!gjs_parse_call_args(cx, "hook_up_vfunc", args, "so", "name", &name,
+                             "callable", &callable))
         return false;
 
     args.rval().setUndefined();
@@ -3017,13 +3016,12 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         offset = g_field_info_get_offset(field_info);
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
-        if (!js::IsFunctionObject(function)) {
-            gjs_throw(cx, "Tried to deal with a vfunc that wasn't a function");
+        if (!JS::IsCallable(callable)) {
+            gjs_throw(cx, "Tried to deal with a vfunc that wasn't callable");
             return false;
         }
-        JS::RootedFunction func(cx, JS_GetObjectFunction(function));
         trampoline = GjsCallbackTrampoline::create(
-            cx, func, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
+            cx, callable, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, true);
         if (!trampoline)
             return false;
 

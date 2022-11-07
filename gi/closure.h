@@ -28,7 +28,7 @@ namespace Gjs {
 
 class Closure : public GClosure {
  protected:
-    Closure(JSContext*, JSFunction*, bool root, const char* description);
+    Closure(JSContext*, JSObject* callable, bool root, const char* description);
     ~Closure() { unset_context(); }
 
     // Need to call this if inheriting from Closure to call the dtor
@@ -59,7 +59,7 @@ class Closure : public GClosure {
         return static_cast<Closure*>(static_cast<void*>(gclosure));
     }
 
-    [[nodiscard]] static Closure* create(JSContext* cx, JSFunction* callable,
+    [[nodiscard]] static Closure* create(JSContext* cx, JSObject* callable,
                                          const char* description, bool root) {
         auto* self = new Closure(cx, callable, root, description);
         self->add_finalize_notifier<Closure>();
@@ -67,7 +67,7 @@ class Closure : public GClosure {
     }
 
     [[nodiscard]] static Closure* create_marshaled(JSContext* cx,
-                                                   JSFunction* callable,
+                                                   JSObject* callable,
                                                    const char* description) {
         auto* self = new Closure(cx, callable, true /* root */, description);
         self->add_finalize_notifier<Closure>();
@@ -76,7 +76,7 @@ class Closure : public GClosure {
     }
 
     [[nodiscard]] static Closure* create_for_signal(JSContext* cx,
-                                                    JSFunction* callable,
+                                                    JSObject* callable,
                                                     const char* description,
                                                     int signal_id) {
         auto* self = new Closure(cx, callable, false /* root */, description);
@@ -86,7 +86,7 @@ class Closure : public GClosure {
         return self;
     }
 
-    constexpr JSFunction* callable() const { return m_func; }
+    constexpr JSObject* callable() const { return m_callable; }
     [[nodiscard]] constexpr JSContext* context() const { return m_cx; }
     [[nodiscard]] constexpr bool is_valid() const { return !!m_cx; }
     GJS_JSAPI_RETURN_CONVENTION bool invoke(JS::HandleObject,
@@ -94,8 +94,8 @@ class Closure : public GClosure {
                                             JS::MutableHandleValue);
 
     void trace(JSTracer* tracer) {
-        if (m_func)
-            m_func.trace(tracer, "signal connection");
+        if (m_callable)
+            m_callable.trace(tracer, "signal connection");
     }
 
  private:
@@ -103,7 +103,7 @@ class Closure : public GClosure {
 
     void reset() {
         unset_context();
-        m_func.reset();
+        m_callable.reset();
         m_cx = nullptr;
     }
 
@@ -127,7 +127,7 @@ class Closure : public GClosure {
     //  The context could be attached to the default context of the runtime
     //  using if we wanted the closure to survive the context that created it.
     JSContext* m_cx;
-    GjsMaybeOwned<JSFunction*> m_func;
+    GjsMaybeOwned<JSObject*> m_callable;
 };
 
 }  // namespace Gjs

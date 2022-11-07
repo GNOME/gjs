@@ -27,6 +27,7 @@
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for InformalValueTypeName, JS_Get...
+#include <jsfriendapi.h>  // for JS_GetObjectFunction
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -160,8 +161,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         return;
     }
 
-    JSFunction* func = callable();
-    JSAutoRealm ar(context, JS_GetFunctionObject(func));
+    JSAutoRealm ar(context, callable());
 
     if (marshal_data) {
         /* we are used for a signal handler */
@@ -273,9 +273,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                 exit(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            JSFunction* fn = callable();
-            g_error("Function %s terminated with uncatchable exception",
-                    gjs_debug_string(JS_GetFunctionDisplayId(fn)).c_str());
+            JSFunction* fn = JS_GetObjectFunction(callable());
+            std::string descr =
+                fn ? "function " + gjs_debug_string(JS_GetFunctionDisplayId(fn))
+                   : "callable object " + gjs_debug_object(callable());
+            g_error("Call to %s terminated with uncatchable exception",
+                    descr.c_str());
         }
     }
 

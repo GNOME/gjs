@@ -1575,6 +1575,11 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    it('gobject-introspected function as callback parameter', function () {
+        const expected = GLib.get_num_processors();
+        expect(Regress.test_callback(GLib.get_num_processors)).toEqual(expected);
+    });
+
     it('callback with user data', function () {
         const callback = jasmine.createSpy('callback').and.returnValue(7);
         expect(Regress.test_callback_user_data(callback)).toEqual(7);
