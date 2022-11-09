@@ -21,6 +21,7 @@
 #include <js/GCVector.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 
 #include "gi/closure.h"
 #include "gjs/jsapi-util.h"
@@ -100,7 +101,7 @@ class GjsFunctionCallState {
  public:
     std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
-    JS::RootedValueVector return_values;
+    JS::RootedVector<JS::Value> return_values;
     GjsAutoError local_error;
     GICallableInfo* info;
     uint8_t gi_argc = 0;
