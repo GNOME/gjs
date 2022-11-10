@@ -3,14 +3,14 @@
 
 # === Build Spidermonkey stage ===
 
-FROM registry.fedoraproject.org/fedora:36 AS mozjs-build
-ARG MOZJS_BRANCH=mozjs91
+FROM registry.fedoraproject.org/fedora:37 AS mozjs-build
+ARG MOZJS_BRANCH=mozjs102
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-# mozjs91 cannot be built with python3.10
+# mozjs102 cannot be built with python3.11 and possibly 3.10
 RUN dnf -y install 'dnf-command(builddep)' \
     autoconf213 \
     clang \
@@ -40,7 +40,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:36
+FROM registry.fedoraproject.org/fedora:37
 
 ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash
