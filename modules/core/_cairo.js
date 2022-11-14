@@ -54,13 +54,14 @@ var Format = {
     RGB24: 1,
     A8: 2,
     A1: 3,
-    // The value of 4 is reserved by a deprecated enum value
-    RGB16_565: 5,
+    RGB16_565: 4,
 };
 
 var LineCap = {
     BUTT: 0,
     ROUND: 1,
+    SQUARE: 2,
+    /** @deprecated Historical typo of {@link LineCap.Square}, kept for compatibility reasons */
     SQUASH: 2,
 };
 
