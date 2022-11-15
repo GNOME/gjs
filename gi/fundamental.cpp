@@ -17,6 +17,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <jsapi.h>       // for InformalValueTypeName, JS_NewObjectWithGivenP...
 #include <mozilla/HashTable.h>
 

@@ -19,7 +19,6 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_GetFunctionObject, JS_GetPrototype
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
 #include <jspubtd.h>      // for JSProto_TypeError
@@ -31,6 +30,9 @@
 
 struct JSFunctionSpec;
 struct JSPropertySpec;
+namespace JS {
+class HandleValueArray;
+}
 
 /* Reserved slots of JSNative accessor wrappers */
 enum {

@@ -13,7 +13,6 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <js/ValueArray.h>
 
 #include "gi/closure.h"
 #include "gjs/context-private.h"

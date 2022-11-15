@@ -139,7 +139,7 @@
 #include <sys/types.h>
 #ifdef ENABLE_PROFILER
 #include <alloca.h>
-#include <syscall.h>
+#include <sys/syscall.h>
 #include <sysprof-capture.h>
 #endif
 #ifdef HAVE_UNISTD_H

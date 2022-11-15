@@ -25,6 +25,7 @@
 #include <js/PropertyAndElement.h>  // for JS_DefineFunctionById
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 #include <jsapi.h>       // for JS_GetPrototype
 #include <jspubtd.h>     // for JSProto_TypeError
 
