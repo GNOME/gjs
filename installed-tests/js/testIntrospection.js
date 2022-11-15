@@ -140,6 +140,41 @@ describe('Garbage collection of introspected objects', function () {
         System.gc();
         GLib.idle_add(GLib.PRIORITY_LOW, () => done());
     });
+
+    // This tests a race condition that would crash; it should warn instead
+    it('handles setting a property from C on an object whose JS wrapper has been collected', function (done) {
+        class SomeObject extends GObject.Object {
+            static [GObject.properties] = {
+                'screenfull': GObject.ParamSpec.boolean('screenfull', '', '',
+                    GObject.ParamFlags.READWRITE,
+                    false),
+            };
+
+            static {
+                GObject.registerClass(this);
+            }
+        }
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*property screenfull*');
+
+        const settings = new Gio.Settings({schema: 'org.gnome.GjsTest'});
+        let obj = new SomeObject();
+        settings.bind('fullscreen', obj, 'screenfull', Gio.SettingsBindFlags.DEFAULT);
+        const handler = settings.connect('changed::fullscreen', () => {
+            obj.run_dispose();
+            obj = null;
+            settings.disconnect(handler);
+            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                GLib.test_assert_expected_messages_internal('Gjs',
+                    'testIntrospection.js', 0,
+                    'Warn about setting property on disposed JS object');
+                done();
+            });
+        });
+        settings.set_boolean('fullscreen', !settings.get_boolean('fullscreen'));
+        settings.reset('fullscreen');
+    });
 });
 
 describe('Gdk.Atom', function () {
