@@ -1410,9 +1410,9 @@ describe('Virtual function', function () {
         expect(tester.method_int8_out()).toEqual(40);
     });
 
-    xit('marshals a POD out argument', function () {
+    it('marshals a POD out argument', function () {
         expect(tester.method_int8_arg_and_out_caller(39)).toEqual(42);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/263');
+    });
 
     it('marshals a callee-allocated pointer out argument', function () {
         expect(tester.method_int8_arg_and_out_callee(38)).toEqual(42);
@@ -1420,7 +1420,7 @@ describe('Virtual function', function () {
 
     xit('marshals a string out argument and return value', function () {
         expect(tester.method_str_arg_out_ret('a string')).toEqual(['Called with a string', 41]);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/263');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/519');
 
     it('can override a default implementation in JS', function () {
         tester.method_with_default_implementation(40);
@@ -1987,8 +1987,7 @@ describe('GObject properties', function () {
     testPropertyGetSetBigInt('int64', BigIntLimits.int64.min, BigIntLimits.int64.max);
     testPropertyGetSet('uint64', 42, 64);
     testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax);
-    testPropertyGetSet('string', 'Gjs', 'is cool!',
-        'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    testPropertyGetSet('string', 'Gjs', 'is cool!');
 
     it('get and sets out-of-range values throws', function () {
         expect(() => {
@@ -2078,7 +2077,7 @@ xdescribe('GObject signals', function () {
             const signalId = obj.connect(signalName, signalCallback);
             obj[funcName]();
             obj.disconnect(signalId);
-        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/259');
+        });
     }
 
     testSignalEmission('boxed-gptrarray-utf8', ['0', '1', '2']);

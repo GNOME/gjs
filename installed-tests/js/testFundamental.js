@@ -51,7 +51,7 @@ describe('Fundamental type support', function () {
             expect(f.get_data()).toBe('foo'));
         obj.emit('test-fundamental-no-funcs', fund);
         expect(signalSpy).toHaveBeenCalledWith(obj, fund);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 
     it('can marshal a subtype of a custom fundamental type into a GValue if contains a pointer and does not provide setter and getters', function () {
         const fund = new Regress.TestFundamentalSubObjectNoGetSetFunc('foo');
@@ -63,7 +63,7 @@ describe('Fundamental type support', function () {
             expect(f.get_data()).toBe('foo'));
         obj.emit('test-fundamental-no-funcs-subtype', fund);
         expect(signalSpy).toHaveBeenCalledWith(obj, fund);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 
     it('cannot marshal a custom fundamental type into a GValue of different gtype', function () {
         const fund = new Regress.TestFundamentalObjectNoGetSetFunc('foo');
@@ -73,7 +73,7 @@ describe('Fundamental type support', function () {
         obj.connect('test-fundamental-value-funcs', signalSpy);
         expect(() => obj.emit('test-fundamental-value-funcs', fund)).toThrowError(
             / RegressTestFundamentalObjectNoGetSetFunc .* conversion to a GValue.* RegressTestFundamentalObject/);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 
     it('can marshal a custom fundamental type into a GValue of super gtype', function () {
         const fund = new Regress.TestFundamentalSubObjectNoGetSetFunc('foo');
@@ -85,7 +85,7 @@ describe('Fundamental type support', function () {
             expect(f.get_data()).toBe('foo'));
         obj.emit('test-fundamental-no-funcs', fund);
         expect(signalSpy).toHaveBeenCalledWith(obj, fund);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 
     it('cannot marshal a custom fundamental type into a GValue of sub gtype', function () {
         const fund = new Regress.TestFundamentalObjectNoGetSetFunc('foo');
@@ -95,7 +95,7 @@ describe('Fundamental type support', function () {
         obj.connect('test-fundamental-no-funcs-subtype', signalSpy);
         expect(() => obj.emit('test-fundamental-no-funcs-subtype', fund)).toThrowError(
             / RegressTestFundamentalObjectNoGetSetFunc .* conversion to a GValue.* RegressTestFundamentalSubObjectNoGetSetFunc/);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 
     it('can marshal a custom fundamental type into a transformable type', function () {
         Regress.TestFundamentalObjectNoGetSetFunc.make_compatible_with_fundamental_sub_object();
@@ -107,7 +107,7 @@ describe('Fundamental type support', function () {
             expect(f instanceof Regress.TestFundamentalSubObject).toBeTrue());
         obj.emit('test-fundamental-value-funcs-subtype', fund);
         expect(signalSpy).toHaveBeenCalled();
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 
     it('can marshal to a null value', function () {
         const v = new GObject.Value();
@@ -117,5 +117,5 @@ describe('Fundamental type support', function () {
     it('can marshal to a null value if has no getter function', function () {
         const v = new GObject.Value();
         expect(v.init(Regress.TestFundamentalObjectNoGetSetFunc.$gtype)).toBeNull();
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/268');
+    });
 });
