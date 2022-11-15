@@ -670,6 +670,19 @@ bool GjsCallbackTrampoline::initialize() {
     g_assert(is_valid());
     g_assert(!m_closure);
 
+    GITypeInfo return_type;
+    g_callable_info_load_return_type(m_info, &return_type);
+    GITypeTag return_tag = g_type_info_get_tag(&return_type);
+    if (g_callable_info_get_caller_owns(m_info) == GI_TRANSFER_NOTHING &&
+        (return_tag == GI_TYPE_TAG_FILENAME ||
+         return_tag == GI_TYPE_TAG_UTF8)) {
+        gjs_throw(context(),
+                  "%s %s returns a transfer-none string. This is not supported "
+                  "(https://gitlab.gnome.org/GNOME/gjs/-/issues/519)",
+                  m_is_vfunc ? "VFunc" : "Callback", m_info.name());
+        return false;
+    }
+
     /* Analyze param types and directions, similarly to
      * init_cached_function_data */
     for (size_t i = 0; i < m_param_types.size(); i++) {

@@ -1242,9 +1242,10 @@ let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingT
         return i + 4;
     }
 
-    vfunc_method_str_arg_out_ret(s) {
-        return [`Called with ${s}`, 41];
-    }
+    // https://gitlab.gnome.org/GNOME/gjs/-/issues/519
+    // vfunc_method_str_arg_out_ret(s) {
+    //     return [`Called with ${s}`, 41];
+    // }
 
     vfunc_method_with_default_implementation(i) {
         this.int = i + 2;
