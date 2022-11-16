@@ -380,12 +380,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
         const char* for_what) const;
     [[nodiscard]] bool check_gobject_finalized(const char* for_what) const;
     GJS_JSAPI_RETURN_CONVENTION
-    bool signal_match_arguments_from_object(JSContext* cx,
-                                            JS::HandleObject props_obj,
-                                            GSignalMatchType* mask_out,
-                                            unsigned* signal_id_out,
-                                            GQuark* detail_out,
-                                            JS::MutableHandleFunction func_out);
+    bool signal_match_arguments_from_object(
+        JSContext* cx, JS::HandleObject props_obj, GSignalMatchType* mask_out,
+        unsigned* signal_id_out, GQuark* detail_out,
+        JS::MutableHandleObject callable_out);
 
  public:
     static GObject* copy_ptr(JSContext*, GType, void* ptr) {

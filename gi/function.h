@@ -44,9 +44,8 @@ using GjsAutoGClosure =
 
 struct GjsCallbackTrampoline : public Gjs::Closure {
     GJS_JSAPI_RETURN_CONVENTION static GjsCallbackTrampoline* create(
-        JSContext* cx, JS::HandleFunction function,
-        GICallableInfo* callable_info, GIScopeType scope, bool has_scope_object,
-        bool is_vfunc);
+        JSContext* cx, JS::HandleObject callable, GICallableInfo* callable_info,
+        GIScopeType scope, bool has_scope_object, bool is_vfunc);
 
     ~GjsCallbackTrampoline();
 
@@ -69,7 +68,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
  private:
     ffi_closure* create_closure();
     GJS_JSAPI_RETURN_CONVENTION bool initialize();
-    GjsCallbackTrampoline(JSContext* cx, JS::HandleFunction function,
+    GjsCallbackTrampoline(JSContext* cx, JS::HandleObject callable,
                           GICallableInfo* callable_info, GIScopeType scope,
                           bool has_scope_object, bool is_vfunc);
 

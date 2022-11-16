@@ -29,8 +29,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>        // for InformalValueTypeName, IdVector
-#include <jsfriendapi.h>  // for JS_GetObjectFunction
+#include <jsapi.h>  // for InformalValueTypeName, IdVector
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -1337,8 +1336,8 @@ static bool value_to_interface_gi_argument(
 
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    GClosure* closure = Gjs::Closure::create_marshaled(
-                        cx, JS_GetObjectFunction(obj), "boxed");
+                    GClosure* closure =
+                        Gjs::Closure::create_marshaled(cx, obj, "boxed");
                     // GI doesn't know about floating GClosure references. We
                     // guess that if this is a return value going from JS::Value
                     // to GArgument, it's intended to be passed to a C API that
