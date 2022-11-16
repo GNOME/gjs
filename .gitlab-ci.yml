@@ -202,6 +202,12 @@ cppcheck:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
+  only:
+    changes:
+      - "**/*.c"
+      - "**/*.cpp"
+      - "**/*.h"
+      - "**/*.hh"
 
 cpplint:
   when: on_success
@@ -218,6 +224,11 @@ cpplint:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip cpplint\]/
+  only:
+    changes:
+      - "**/*.cpp"
+      - "**/*.h"
+      - "**/*.hh"
 
 eslint:
   when: on_success
@@ -234,6 +245,12 @@ eslint:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip eslint\]/
+  only:
+    changes:
+      - "**/*.js"
+      - .eslintignore
+      - .eslintrc.yml
+      - '**/.eslintrc.yml'
 
 pch_check:
   when: on_success
@@ -250,6 +267,13 @@ pch_check:
       - tags
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip pch_check\]/
+  only:
+    changes:
+      - "**/*.c"
+      - "**/*.cpp"
+      - "**/*.h"
+      - "**/*.hh"
+      - test/check-pch.sh
 
 iwyu:
   when: on_success
