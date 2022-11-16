@@ -20,10 +20,10 @@
 #include <js/Stack.h>  // for BuildStackString
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>              // for JS_GetClassObject
 #include <jspubtd.h>            // for JSProtoKey, JSProto_Error, JSProto...
-#include <mozilla/HashTable.h>  // for HashSet<>::AddPtr
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

@@ -11,6 +11,7 @@
 #include <js/Exception.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 
 #include "test/gjs-test-common.h"
 

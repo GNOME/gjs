@@ -12,8 +12,7 @@
 #include <functional>  // for mem_fn
 #include <limits>
 #include <string>
-#include <tuple>        // for tie
-#include <type_traits>
+#include <tuple>  // for tie
 #include <unordered_set>
 #include <utility>      // for move
 #include <vector>

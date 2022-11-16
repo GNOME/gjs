@@ -65,7 +65,6 @@
 #include <js/friend/DumpFunctions.h>
 #include <jsapi.h>        // for JS_GetFunctionObject, JS_Ge...
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
-#include <mozilla/UniquePtr.h>
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
 #include "gi/function.h"

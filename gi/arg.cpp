@@ -20,6 +20,7 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
 #include <js/GCVector.h>            // for RootedVector, MutableWrappedPtrOp...
+#include <js/Id.h>
 #include <js/PropertyAndElement.h>  // for JS_GetElement, JS_HasPropertyById
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>

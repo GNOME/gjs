@@ -15,7 +15,6 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
-#include "gi/cwrapper.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"

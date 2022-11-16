@@ -5,7 +5,6 @@
 #include <atomic>  // for atomic_bool
 #include <memory>  // for unique_ptr
 #include <string>  // for string
-#include <type_traits>  // for remove_reference<>::type
 
 #include <errno.h>
 #include <fcntl.h>  // for SEEK_END

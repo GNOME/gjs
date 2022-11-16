@@ -44,9 +44,10 @@ FWD_DECLS_IN_HEADER = (
     'struct JSRuntime;',
     'class JSScript;',
     'class JSString;',
+    'struct JSPrincipals;',
     'namespace js { class TempAllocPolicy; }',
     'namespace JS { class GCContext; }',
-    'namespace JS { struct PropertyKey; }',
+    'namespace JS { class PropertyKey; }',
     'namespace JS { class Symbol; }',
     'namespace JS { class BigInt; }',
     'namespace JS { class Value; }',
@@ -72,7 +73,6 @@ FALSE_POSITIVES = (
     ('gi/function.cpp', '#include <algorithm>', 'for max'),
     ('gi/function.cpp', '#include <algorithm>', 'for fill_n, max'),  # also!
     ('gi/private.cpp', '#include <algorithm>', 'for max'),
-    ('gjs/context.cpp', '#include <algorithm>', 'for copy, max, find'),
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('gjs/importer.cpp', '#include <algorithm>', 'for max, copy'),  # also!
     ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
@@ -83,37 +83,10 @@ FALSE_POSITIVES = (
     ('modules/cairo-region.cpp', '#include <type_traits>', 'for enable_if_t'),
     ('modules/cairo-surface.cpp', '#include <type_traits>', 'for enable_if_t'),
 
-    # False positive when using GjsAutoPointer
-    # https://github.com/include-what-you-use/include-what-you-use/issues/927
-    ('gi/boxed.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
-    ('gi/interface.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('gi/private.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('gi/value.cpp', '#include <type_traits>', 'for remove_reference<>::type'),
-    ('gjs/context.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('gjs/debugger.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('gjs/importer.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('gjs/profiler.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-    ('test/gjs-test-jsapi-utils.cpp', '#include <type_traits>',
-     'for remove_reference<>::type'),
-
     # False positive when constructing JS::GCHashMap
     ('gi/boxed.h', '#include <utility>', 'for move'),
     ('gi/object.h', '#include <utility>', 'for move'),
     ('gjs/jsapi-util-error.cpp', '#include <utility>', 'for move'),
-    ('gjs/jsapi-util-error.h', '#include <utility>', 'for move'),
-
-    # Haven't managed to diagnose this one. It's triggered by replacing log.cpp
-    # with the following code, but not by that code in a standalone file.
-    # #include <vector>
-    # static std::vector<bool> v;
-    # void f() { v = std::vector<bool>(1, true); }
-    ('util/log.cpp', '#include <algorithm>', 'for copy'),
 
     # For some reason IWYU wants these with angle brackets when they are
     # already present with quotes
