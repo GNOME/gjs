@@ -67,7 +67,7 @@ function testSignals(klass) {
             `No signal connection ${firstId} found`);
 
         // poke in private implementation to sanity-check no handlers left
-        expect(foo._signalConnections.length).toEqual(0);
+        expect(Object.keys(foo._signalConnections).length).toEqual(0);
     });
 
     it('distinguishes multiple signals', function () {
