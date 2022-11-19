@@ -203,6 +203,12 @@ static void gjs_object_set_gproperty(GObject* object,
                                      unsigned property_id [[maybe_unused]],
                                      const GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
+    if (!priv) {
+        g_warning("Wrapper for GObject %p was disposed, cannot set property %s",
+                  object, g_param_spec_get_name(pspec));
+        return;
+    }
+
     JSContext* cx = current_js_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
@@ -216,6 +222,12 @@ static void gjs_object_get_gproperty(GObject* object,
                                      unsigned property_id [[maybe_unused]],
                                      GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
+    if (!priv) {
+        g_warning("Wrapper for GObject %p was disposed, cannot get property %s",
+                  object, g_param_spec_get_name(pspec));
+        return;
+    }
+
     JSContext* cx = current_js_context();
 
     JS::RootedObject js_obj(cx, priv->wrapper());
