@@ -814,10 +814,8 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
 static void
 gjstest_test_profiler_start_stop(void)
 {
-    GjsAutoUnref<GjsContext> context =
-        static_cast<GjsContext *>(g_object_new(GJS_TYPE_CONTEXT,
-                                               "profiler-enabled", TRUE,
-                                               nullptr));
+    GjsAutoUnref<GjsContext> context = GJS_CONTEXT(
+        g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr));
     GjsProfiler *profiler = gjs_context_get_profiler(context);
 
     gjs_profiler_set_filename(profiler, "dont-conflict-with-other-test.syscap");

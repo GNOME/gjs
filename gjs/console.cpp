@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
     if (coverage_prefixes)
         gjs_coverage_enable();
 
-    GjsAutoUnref<GjsContext> js_context(static_cast<GjsContext*>(g_object_new(
+    GjsAutoUnref<GjsContext> js_context(GJS_CONTEXT(g_object_new(
         GJS_TYPE_CONTEXT, "search-path", include_path.get(), "program-name",
         program_name, "program-path", program_path.get(), "profiler-enabled",
         enable_profiler, "exec-as-module", exec_as_module, nullptr)));

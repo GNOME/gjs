@@ -653,7 +653,7 @@ gjs_profiler_stop(GjsProfiler *self)
 static gboolean
 gjs_profiler_sigusr2(void *data)
 {
-    auto context = static_cast<GjsContext *>(data);
+    GjsContext* context = GJS_CONTEXT(data);
     GjsProfiler *current_profiler = gjs_context_get_profiler(context);
 
     if (current_profiler) {
