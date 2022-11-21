@@ -64,6 +64,54 @@ writeToPNG_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+bool flush_func(JSContext* cx,
+                unsigned argc,
+                JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, argv, obj);
+
+    if (argc > 1) {
+        gjs_throw(cx, "Surface.flush() takes no arguments");
+        return false;
+    }
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    cairo_surface_flush(surface);
+
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
+        return false;
+
+    argv.rval().setUndefined();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool finish_func(JSContext* cx,
+                 unsigned argc,
+                 JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, argv, obj);
+
+    if (argc > 1) {
+        gjs_throw(cx, "Surface.finish() takes no arguments");
+        return false;
+    }
+
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
+    if (!surface)
+        return false;
+
+    cairo_surface_finish(surface);
+
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
+        return false;
+
+    argv.rval().setUndefined();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 bool CairoSurface::getType_func(JSContext* context, unsigned argc,
                                 JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, obj);
@@ -186,7 +234,8 @@ static bool getDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 const JSFunctionSpec CairoSurface::proto_funcs[] = {
-    // flush
+    JS_FN("flush", flush_func, 0, 0),
+    JS_FN("finish", finish_func, 0, 0),
     // getContent
     // getFontOptions
     JS_FN("getType", getType_func, 0, 0),
