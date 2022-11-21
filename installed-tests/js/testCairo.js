@@ -283,6 +283,20 @@ describe('Cairo', function () {
             expect(x).toEqual(50);
             expect(y).toEqual(50);
         });
+
+        it('can be finalized', function () {
+            expect(() => {
+                let _surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 10, 10);
+                let _cr = new Cairo.Context(_surface);
+                _surface.finish();
+                _cr.stroke();
+            }).toThrow();
+            expect(() => {
+                let _surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 10, 10);
+                _surface.finish();
+                _surface.flush();
+            }).not.toThrow();
+        });
     });
 
     describe('GI test suite', function () {
