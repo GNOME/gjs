@@ -2098,6 +2098,21 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
         GjsArgumentFlags::NONE);
 }
 
+static size_t get_type_info_interface_size(GITypeInfo* type_info) {
+    GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
+    g_assert(interface_info);
+
+    GIInfoType interface_type = g_base_info_get_type(interface_info);
+
+    if (interface_type == GI_INFO_TYPE_STRUCT) {
+        return g_struct_info_get_size(interface_info);
+    } else if (interface_type == GI_INFO_TYPE_UNION) {
+        return g_union_info_get_size(interface_info);
+    }
+
+    return 0;
+}
+
 void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                           GIArgInfo* arg, GICallableInfo* callable,
                           bool* inc_counter_out) {
@@ -2126,23 +2141,40 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
     GITypeTag type_tag = g_type_info_get_tag(&type_info);
     if (direction == GI_DIRECTION_OUT &&
         (flags & GjsArgumentFlags::CALLER_ALLOCATES)) {
-        if (type_tag != GI_TYPE_TAG_INTERFACE) {
-            set_argument_auto<Arg::NotIntrospectable>(
-                common_args, OUT_CALLER_ALLOCATES_NON_STRUCT);
-            return;
+        size_t size = 0;
+
+        if (type_tag == GI_TYPE_TAG_ARRAY) {
+            GIArrayType array_type = g_type_info_get_array_type(&type_info);
+
+            switch (array_type) {
+                case GI_ARRAY_TYPE_C: {
+                    GjsAutoTypeInfo param_info;
+                    int n_elements =
+                        g_type_info_get_array_fixed_size(&type_info);
+
+                    if (n_elements <= 0)
+                        break;
+
+                    param_info = g_type_info_get_param_type(&type_info, 0);
+                    GITypeTag param_tag = g_type_info_get_tag(param_info);
+
+                    if (param_tag == GI_TYPE_TAG_INTERFACE) {
+                        size = get_type_info_interface_size(param_info);
+                    } else {
+                        size = gjs_array_get_element_size(param_tag);
+                    }
+
+                    size *= n_elements;
+                    break;
+                }
+                default:
+                    break;
+            }
+        } else if (type_tag == GI_TYPE_TAG_INTERFACE) {
+            size = get_type_info_interface_size(&type_info);
         }
 
-        GjsAutoBaseInfo interface_info = g_type_info_get_interface(&type_info);
-        g_assert(interface_info);
-
-        GIInfoType interface_type = g_base_info_get_type(interface_info);
-
-        size_t size;
-        if (interface_type == GI_INFO_TYPE_STRUCT) {
-            size = g_struct_info_get_size(interface_info);
-        } else if (interface_type == GI_INFO_TYPE_UNION) {
-            size = g_union_info_get_size(interface_info);
-        } else {
+        if (!size) {
             set_argument_auto<Arg::NotIntrospectable>(
                 common_args, OUT_CALLER_ALLOCATES_NON_STRUCT);
             return;
