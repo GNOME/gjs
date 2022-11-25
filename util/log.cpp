@@ -151,7 +151,8 @@ void gjs_log_init() {
             GjsAutoStrv prefixes(g_strsplit(topics, ";", -1));
             for (unsigned i = 0; prefixes[i] != NULL; i++) {
                 GjsDebugTopic topic = prefix_to_topic(prefixes[i]);
-                s_enabled_topics[topic] = topic != GJS_DEBUG_LAST;
+                if (topic != GJS_DEBUG_LAST)
+                    s_enabled_topics[topic] = true;
             }
         }
     }
