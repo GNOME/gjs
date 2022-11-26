@@ -240,6 +240,7 @@ modules_tests = [
     'Async',
     'Console',
     'ESModules',
+    'AsyncMainloop',
     'Encoding',
     'GLibLogWriter',
     'Global',
