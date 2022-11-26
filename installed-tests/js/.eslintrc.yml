@@ -25,7 +25,10 @@ rules:
 overrides:
   - files:
       - matchers.js
+      - minijasmine.js
+      - minijasmine-executor.js
       - testAsync.js
+      - testAsyncMainloop.js
       - testCairoModule.js
       - testConsole.js
       - testESModules.js
