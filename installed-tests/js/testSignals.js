@@ -30,10 +30,34 @@ function testSignals(klass) {
         bar = jasmine.createSpy('bar');
     });
 
+    it('emit works with no connections', function () {
+        expect(() => foo.emit('random-event')).not.toThrow();
+    });
+
     it('calls a signal handler when a signal is emitted', function () {
         foo.connect('bar', bar);
         foo.emit('bar', 'This is a', 'This is b');
         expect(bar).toHaveBeenCalledWith(foo, 'This is a', 'This is b');
+    });
+
+    it('calls remaining handlers after one is disconnected', function () {
+        const id1 = foo.connect('bar', bar);
+
+        const bar2 = jasmine.createSpy('bar2');
+        const id2 = foo.connect('bar', bar2);
+
+        foo.emit('bar');
+        expect(bar).toHaveBeenCalledTimes(1);
+        expect(bar2).toHaveBeenCalledTimes(1);
+
+        foo.disconnect(id1);
+
+        foo.emit('bar');
+
+        expect(bar).toHaveBeenCalledTimes(1);
+        expect(bar2).toHaveBeenCalledTimes(2);
+
+        foo.disconnect(id2);
     });
 
     it('does not call a signal handler after the signal is disconnected', function () {

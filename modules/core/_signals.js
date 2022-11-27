@@ -35,7 +35,7 @@ function _connect(name, callback) {
 
     const connectionsByName = this._signalConnectionsByName[name] ?? [];
 
-    if (!connectionsByName.size)
+    if (!connectionsByName.length)
         this._signalConnectionsByName[name] = connectionsByName;
     connectionsByName.push(id);
 
@@ -55,9 +55,14 @@ function _disconnect(id) {
     delete this._signalConnections[id];
 
     const ids = this._signalConnectionsByName[connection.name];
-    ids?.splice(ids.indexOf(id, 1));
+    if (!ids)
+        return;
 
-    if (ids?.length === 0)
+    const indexOfId = ids.indexOf(id);
+    if (indexOfId !== -1)
+        ids.splice(indexOfId, 1);
+
+    if (ids.length === 0)
         delete this._signalConnectionsByName[connection.name];
 }
 
