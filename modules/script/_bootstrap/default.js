@@ -24,21 +24,33 @@
     }
 
     function prettyPrint(value) {
-        if (value.toString === Object.prototype.toString || value.toString === Array.prototype.toString || value.toString === Function.prototype.toString || value.toString === Date.prototype.toString) {
-            const printedObjects = new WeakSet();
-            switch (typeof value) {
-            case 'object':
+        switch (typeof value) {
+        case 'object':
+            if (value.toString === Object.prototype.toString ||
+                value.toString === Array.prototype.toString ||
+                value.toString === Date.prototype.toString) {
+                const printedObjects = new WeakSet();
                 return formatObject(value, printedObjects);
-            case 'function':
-                return formatFunction(value);
-            default:
-                return value.toString();
             }
-        } else {
-            if (typeof value === 'string')
-                return JSON.stringify(value);
+            // If the object has a nonstandard toString, prefer that
+            return value.toString();
+        case 'function':
+            if (value.toString === Function.prototype.toString)
+                return formatFunction(value);
+            return value.toString();
+        case 'string':
+            return JSON.stringify(value);
+        case 'symbol':
+            return formatSymbol(value);
+        default:
             return value.toString();
         }
+    }
+
+    function formatPropertyKey(key) {
+        if (typeof key === 'symbol')
+            return `[${formatSymbol(key)}]`;
+        return `${key}`;
     }
 
     function formatObject(obj, printedObjects) {
@@ -53,7 +65,10 @@
             return obj.toString();
 
         const formattedObject = [];
-        for (const [key, value] of Object.entries(obj)) {
+        const keys = Object.getOwnPropertyNames(obj).concat(Object.getOwnPropertySymbols(obj));
+        for (const propertyKey of keys) {
+            const value = obj[propertyKey];
+            const key = formatPropertyKey(propertyKey);
             switch (typeof value) {
             case 'object':
                 if (printedObjects.has(value))
@@ -66,6 +81,9 @@
                 break;
             case 'string':
                 formattedObject.push(`${key}: "${value}"`);
+                break;
+            case 'symbol':
+                formattedObject.push(`${key}: ${formatSymbol(value)}`);
                 break;
             default:
                 formattedObject.push(`${key}: ${value}`);
@@ -94,6 +112,23 @@
     function formatFunction(func) {
         let funcOutput = `[ Function: ${func.name} ]`;
         return funcOutput;
+    }
+
+    function formatSymbol(sym) {
+        // Try to format Symbols in the same way that they would be constructed.
+
+        // First check if this is a global registered symbol
+        const globalKey = Symbol.keyFor(sym);
+        if (globalKey !== undefined)
+            return `Symbol.for("${globalKey}")`;
+
+        const descr = sym.description;
+        // Special-case the 'well-known' (built-in) Symbols
+        if (descr.startsWith('Symbol.'))
+            return descr;
+
+        // Otherwise, it's just a regular symbol
+        return `Symbol("${descr}")`;
     }
 
     Object.defineProperties(exports, {

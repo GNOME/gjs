@@ -152,4 +152,46 @@ describe('prettyPrint', function () {
             prettyPrint(Gdk)
         ).toMatch('[object GIRepositoryNamespace]');
     });
+
+    it('symbol', function () {
+        expect(prettyPrint(Symbol('foo'))).toEqual('Symbol("foo")');
+    });
+
+    it('property key symbol', function () {
+        expect(prettyPrint({[Symbol('foo')]: 'symbol'}))
+            .toEqual('{ [Symbol("foo")]: "symbol" }');
+    });
+
+    it('property value symbol', function () {
+        expect(prettyPrint({symbol: Symbol('foo')}))
+            .toEqual('{ symbol: Symbol("foo") }');
+    });
+
+    it('registered symbol', function () {
+        expect(prettyPrint(Symbol.for('foo'))).toEqual('Symbol.for("foo")');
+    });
+
+    it('property key registered symbol', function () {
+        expect(prettyPrint({[Symbol.for('foo')]: 'symbol'}))
+            .toEqual('{ [Symbol.for("foo")]: "symbol" }');
+    });
+
+    it('property value registered symbol', function () {
+        expect(prettyPrint({symbol: Symbol.for('foo')}))
+            .toEqual('{ symbol: Symbol.for("foo") }');
+    });
+
+    it('well-known symbol', function () {
+        expect(prettyPrint(Symbol.hasInstance)).toEqual('Symbol.hasInstance');
+    });
+
+    it('property key well-known symbol', function () {
+        expect(prettyPrint({[Symbol.iterator]: 'symbol'}))
+            .toEqual('{ [Symbol.iterator]: "symbol" }');
+    });
+
+    it('property value well-known symbol', function () {
+        expect(prettyPrint({symbol: Symbol.hasInstance}))
+            .toEqual('{ symbol: Symbol.hasInstance }');
+    });
 });

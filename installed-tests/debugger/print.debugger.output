@@ -2,7 +2,7 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at print.debugger.js:18:0
+Debugger statement, toplevel at print.debugger.js:19:0
 db> # Simple types
 db> print a
 $1 = undefined
@@ -52,5 +52,8 @@ Error: message
 db> p n
 $18 = [object Object]
 { a: 1 }
+db> p o
+$19 = [object Object]
+{ some: "plain object", [Symbol("that")]: "has symbols" }
 db> c
 Program exited with code 0

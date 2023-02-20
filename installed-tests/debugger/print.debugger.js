@@ -15,5 +15,6 @@ const k = class J {};
 const l = new GObject.Object();
 const m = new Error('message');
 const n = {a: 1};
+const o = {some: 'plain object', [Symbol('that')]: 'has symbols'};
 debugger;
-void (a, b, c, d, e, f, g, h, i, j, k, l, m, n);
+void (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o);
