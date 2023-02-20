@@ -11,7 +11,7 @@
 // 3) the expectation is that a given object will have a very small number of
 //    connections, but they may be to different signal names
 
-function _connect(name, callback) {
+function _connectFull(name, callback, after) {
     // be paranoid about callback arg since we'd start to throw from emit()
     // if it was messed up
     if (typeof callback !== 'function')
@@ -31,6 +31,7 @@ function _connect(name, callback) {
     this._signalConnections[id] = {
         name,
         callback,
+        after,
     };
 
     const connectionsByName = this._signalConnectionsByName[name] ?? [];
@@ -40,6 +41,14 @@ function _connect(name, callback) {
     connectionsByName.push(id);
 
     return id;
+}
+
+function _connect(name, callback) {
+    return _connectFull.call(this, name, callback, false);
+}
+
+function _connectAfter(name, callback) {
+    return _connectFull.call(this, name, callback, true);
 }
 
 function _disconnect(id) {
@@ -98,6 +107,20 @@ function _emit(name, ...args) {
     // which would be a cycle.
     const argArray = [this, ...args];
 
+    const afterHandlers = [];
+    const beforeHandlers = handlers.filter(c => {
+        if (!c.after)
+            return true;
+
+        afterHandlers.push(c);
+        return false;
+    });
+
+    if (!_callHandlers(beforeHandlers, argArray))
+        _callHandlers(afterHandlers, argArray);
+}
+
+function _callHandlers(handlers, argArray) {
     for (const handler of handlers) {
         if (handler.disconnected)
             continue;
@@ -109,13 +132,15 @@ function _emit(name, ...args) {
             // if the callback returns true, we don't call the next
             // signal handlers
             if (ret === true)
-                break;
+                return true;
         } catch (e) {
             // just log any exceptions so that callbacks can't disrupt
             // signal emission
             logError(e, `Exception in callback for signal: ${handler.name}`);
         }
     }
+
+    return false;
 }
 
 function _addSignalMethod(proto, functionName, func) {
@@ -127,6 +152,7 @@ function _addSignalMethod(proto, functionName, func) {
 
 function addSignalMethods(proto) {
     _addSignalMethod(proto, 'connect', _connect);
+    _addSignalMethod(proto, 'connectAfter', _connectAfter);
     _addSignalMethod(proto, 'disconnect', _disconnect);
     _addSignalMethod(proto, 'emit', _emit);
     _addSignalMethod(proto, 'signalHandlerIsConnected', _signalHandlerIsConnected);
