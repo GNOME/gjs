@@ -14,7 +14,6 @@ project('gjs', 'cpp', 'c', version: '1.75.1', license: ['MIT', 'LGPL2+'],
 api_version = '1.0'
 api_name = '@0@-@1@'.format(meson.project_name(), api_version)
 
-fs = import('fs')
 gnome = import('gnome')
 pkg = import('pkgconfig')
 
@@ -661,7 +660,7 @@ tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
 
 tests_locale = 'N/A'
 if cxx.get_argument_syntax() != 'msvc'
-    result = run_command('build/choose-tests-locale.sh')
+    result = run_command('build/choose-tests-locale.sh', check: false)
     if result.returncode() == 0
         tests_locale = result.stdout().strip()
         tests_environment.set('LC_ALL', tests_locale)
@@ -771,14 +770,14 @@ libdir = get_option('libdir')
 datadir = get_option('datadir')
 summary({
     'prefix': prefix,
-    'bindir': fs.is_absolute(bindir) ? bindir : prefix / bindir,
-    'libdir': fs.is_absolute(libdir) ? libdir : prefix / libdir,
-    'datadir': fs.is_absolute(datadir) ? datadir : prefix / datadir,
+    'bindir': prefix / bindir,
+    'libdir': prefix / libdir,
+    'datadir': prefix / datadir,
 }, section: 'Directories')
 locations = []
 foreach dep: [ffi, glib, gi, spidermonkey, readline, sysprof_capture]
     if dep.type_name() == 'pkgconfig'
-        locations += 'in @0@'.format(dep.get_pkgconfig_variable('prefix'))
+        locations += 'in @0@'.format(dep.get_variable(pkgconfig: 'prefix'))
     else
         locations += dep.type_name()
     endif
@@ -806,11 +805,11 @@ summary({
     'Skip GTK tests': get_option('skip_gtk_tests'),
     'Extra debug logs': get_option('verbose_logs'),
     'Precompiled headers': get_option('b_pch'),
-}, section: 'Build options')
+}, section: 'Build options', bool_yn: true)
 summary({
     'Cairo module': build_cairo,
     'Use readline for input': build_readline,
     'Profiler (Linux only)': build_profiler,
     'Dtrace debugging': get_option('dtrace'),
     'Systemtap debugging': get_option('systemtap'),
-}, section: 'Optional features')
+}, section: 'Optional features', bool_yn: true)

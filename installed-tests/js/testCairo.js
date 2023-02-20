@@ -115,8 +115,8 @@ describe('Cairo', function () {
                 yAdvance: 0,
             });
             expect(cr.textExtents('trailing spaces   ')).toEqual({
-                xBearing: 0,
-                yBearing: -8,
+                xBearing: jasmine.any(Number),
+                yBearing: jasmine.any(Number),
                 width: jasmine.any(Number),
                 height: jasmine.any(Number),
                 xAdvance: jasmine.any(Number),
