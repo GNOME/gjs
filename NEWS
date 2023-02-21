@@ -1,3 +1,83 @@
+Version 1.75.2
+--------------
+
+- There are new `Gio.Application.prototype.runAsync()` and
+  `GLib.MainLoop.prototype.runAsync()` methods which do the same thing as
+  `run()` but return a Promise which resolves when the main loop ends, instead
+  of blocking while the main loop runs. Use one of these methods (by awaiting
+  it) if you use async operations with Promises in your application. Previously,
+  it was easy to get into a state where Promises never resolved if you didn't
+  run the main loop inside a callback. [Evan Welsh]
+
+- There are new `Gio.InputStream.prototype.createSyncIterator()` and
+  `Gio.InputStream.prototype.createAsyncIterator()` methods which allow easy
+  iteration of input streams in consecutive chunks of bytes, either with a
+  for-of loop or a for-await-of loop. [Sonny Piers]
+
+- DBus proxy wrapper classes now have a static `newAsync()` method, which
+  returns a Promise that resolves to an instance of the proxy wrapper class on
+  which `initAsync()` has completed. [Marco Trevisan]
+
+- DBus property getters can now return GLib.Variant instances directly, if they
+  have the correct type, instead of returning JS values and having them be
+  packed into GLib.Variants. [Andy Holmes]
+
+- Dramatic performance improvements in the legacy `imports.signals` module,
+  which has also gained a `connectAfter()` method that works like the same-named
+  method in GObject signals. (However, the signals module remains legacy, and is
+  mostly there for historical reasons with GNOME Shell. Don't use it in new
+  code.) [Marco Trevisan]
+
+- For years we have had a typo in `Cairo.LineCap.SQUARE`, incorrectly naming it
+  `SQUASH`. This is fixed and the typoed name is retained as an alias. [Vítor
+  Vasconcellos]
+
+- Also in Cairo, the value of `Cairo.Format.RGB16_565` was wrong. This was fixed
+  with a breaking change, because anyone using it was probably already not
+  getting the results they expected. [Vítor Vasconcellos]
+
+- Continuing the Cairo improvements, SVG surfaces have gained
+  `Cairo.SVGSurface.prototype.finish()` and `Cairo.SVGSurface.prototype.flush()`
+  because previously SVG surfaces were only written to disk when the SVGSurface
+  object was garbage collected, making it uncertain to rely on them. [tuberry]
+
+- The debugger now handles Symbol values and Symbol property keys of objects.
+  Previously, these were not displayed correctly. [Philip Chimento]
+
+- Various type-safety refactors [Marco Trevisan]
+
+- Many bug fixes and performance improvements.
+
+- Closed bugs and merge requests:
+  * Promises in application.run do not fullfil until loop exit [#468, !732, Evan
+    Welsh]
+  * console: Various cleanups to tracing functions and increase structured
+    logging metadata [!756, Marco Trevisan]
+  * Legacy signals code optimizations [!757, Marco Trevisan]
+  * meson: Depend on g-i 1.71 and enable newly supported tests [!761, Marco
+    Trevisan]
+  * Gio: Add support for initializing a DBus Proxy via a promise [#494, !794,
+    Marco Trevisan, Philip Chimento]
+  * Make GInputStream iterable and async iterable [!573, !797, Sonny Piers]
+  * Gio: allow D-Bus implementations to return pre-packed variants [!796, Andy
+    Holmes]
+  * Update ESLint tooling [!798, Sonny Piers]
+  * Various maintenance [!804, !814, !820, Philip Chimento]
+  * Add legacy signals connectAfter method [!805, Marco Trevisan]
+  * arg-cache: Add support passing caller-allocated C-arrays [!806, Marco
+    Trevisan]
+  * Crash when passing an introspected function as a callback argument [#518,
+    !809, Philip Chimento]
+  * CI: Upgrade CI images to F37 [!810, Philip Chimento]
+  * Possible errors in cairo enums [#516, !811, Vítor Vasconcellos]
+  * ci: Only run source check jobs if relevant files have been changed [!812,
+    Marco Trevisan]
+  * cairo.SVGSurface need finish() and flush() to finalize painting [#515, !816,
+    tuberry]
+  * signals: Fix bugs when multiple handlers are connected and disconnect is
+    called [!818, Evan Welsh]
+  * Handle Symbol values in pretty-printer and debugger [!819, Philip Chimento]
+
 Version 1.74.2
 --------------
 
