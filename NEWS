@@ -1,3 +1,15 @@
+Version 1.74.2
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * build error with clang [#514, !807, Philip Chimento]
+  * can't compile current version with mozjs 102 [#503, !808, Philip Chimento]
+  * Enabling window-list extension causes gnome-shell to crash when running
+    "dconf update" as root [#510, !813, Philip Chimento]
+  * log: Fix an off-by-one buffer overflow [!817, Valentin David]
+
 Version 1.74.1
 --------------
 
