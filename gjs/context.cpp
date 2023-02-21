@@ -352,6 +352,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     JS::TraceEdge<JSObject*>(trc, &gjs->m_global, "GJS global object");
     JS::TraceEdge<JSObject*>(trc, &gjs->m_internal_global,
                              "GJS internal global object");
+    JS::TraceEdge<JSObject*>(trc, &gjs->m_main_loop_hook, "GJS main loop hook");
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
     gjs->m_object_init_list.trace(trc);
@@ -463,6 +464,7 @@ void GjsContextPrivate::dispose(void) {
         JS_RemoveExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
         m_global = nullptr;
         m_internal_global = nullptr;
+        m_main_loop_hook = nullptr;
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Freeing allocated resources");
         delete m_fundamental_table;
@@ -1360,6 +1362,29 @@ bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     return false;
 }
 
+bool GjsContextPrivate::set_main_loop_hook(JSObject* callable) {
+    g_assert(JS::IsCallable(callable) && "main loop hook must be a callable object");
+
+    if (!callable) {
+        m_main_loop_hook = nullptr;
+        return true;
+    }
+
+    if (m_main_loop_hook)
+        return false;
+
+    m_main_loop_hook = callable;
+    return true;
+}
+
+bool GjsContextPrivate::run_main_loop_hook() {
+    JS::RootedObject hook(m_cx, m_main_loop_hook.get());
+    m_main_loop_hook = nullptr;
+    JS::RootedValue ignored_rval(m_cx);
+    return JS::Call(m_cx, JS::NullHandleValue, hook,
+                    JS::HandleValueArray::empty(), &ignored_rval);
+}
+
 bool GjsContextPrivate::eval(const char* script, size_t script_len,
                              const char* filename, int* exit_status_p,
                              GError** error) {
@@ -1372,15 +1397,38 @@ bool GjsContextPrivate::eval(const char* script, size_t script_len,
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
 
-    /* The promise job queue should be drained even on error, to finish
-     * outstanding async tasks before the context is torn down. Drain after
-     * uncaught exceptions have been reported since draining runs callbacks.
-     *
-     * If the main loop returns false we cannot guarantee the state
-     * of our promise queue (a module promise could be pending) so
-     * instead of draining the queue we instead just exit.
-     */
-    if (!ok || m_main_loop.spin(this)) {
+    // If there are no errors and the mainloop hook is set, call it.
+    if (ok && m_main_loop_hook)
+        ok = run_main_loop_hook();
+
+    bool exiting = false;
+
+    // Spin the internal loop until the main loop hook is set or no holds
+    // remain.
+    // If the main loop returns false we cannot guarantee the state of our
+    // promise queue (a module promise could be pending) so instead of draining
+    // draining the queue we instead just exit.
+    if (ok && !m_main_loop.spin(this)) {
+        exiting = true;
+    }
+
+    // If the hook has been set again, enter a loop until an error is
+    // encountered or the main loop is quit.
+    while (ok && !exiting && m_main_loop_hook) {
+        ok = run_main_loop_hook();
+
+        // Additional jobs could have been enqueued from the
+        // main loop hook
+        if (ok && !m_main_loop.spin(this)) {
+            exiting = true;
+        }
+    }
+
+    // The promise job queue should be drained even on error, to finish
+    // outstanding async tasks before the context is torn down. Drain after
+    // uncaught exceptions have been reported since draining runs callbacks.
+    // We do not drain if we are exiting.
+    if (!ok && !exiting) {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs_fallible() && ok;
     }
@@ -1445,15 +1493,32 @@ bool GjsContextPrivate::eval_module(const char* identifier,
             on_context_module_rejected_log_exception, "context");
     }
 
-    /* The promise job queue should be drained even on error, to finish
-     * outstanding async tasks before the context is torn down. Drain after
-     * uncaught exceptions have been reported since draining runs callbacks.
-     *
-     * If the main loop returns false we cannot guarantee the state
-     * of our promise queue (a module promise could be pending) so
-     * instead of draining the queue we instead just exit.
-     */
-    if (!ok || m_main_loop.spin(this)) {
+    bool exiting = false;
+
+    do {
+        // If there are no errors and the mainloop hook is set, call it.
+        if (ok && m_main_loop_hook)
+            ok = run_main_loop_hook();
+
+        // Spin the internal loop until the main loop hook is set or no holds
+        // remain.
+        //
+        // If the main loop returns false we cannot guarantee the state of our
+        // promise queue (a module promise could be pending) so instead of
+        // draining the queue we instead just exit.
+        //
+        // Additional jobs could have been enqueued from the
+        // main loop hook
+        if (ok && !m_main_loop.spin(this)) {
+            exiting = true;
+        }
+    } while (ok && !exiting && m_main_loop_hook);
+
+    // The promise job queue should be drained even on error, to finish
+    // outstanding async tasks before the context is torn down. Drain after
+    // uncaught exceptions have been reported since draining runs callbacks.
+    // We do not drain if we are exiting.
+    if (!ok && !exiting) {
         JS::AutoSaveExceptionState saved_exc(m_cx);
         ok = run_jobs_fallible() && ok;
     }

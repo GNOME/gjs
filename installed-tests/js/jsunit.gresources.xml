@@ -7,6 +7,7 @@
     <file preprocess="xml-stripblanks">complex4.ui</file>
     <file>jasmine.js</file>
     <file>minijasmine.js</file>
+    <file>minijasmine-executor.js</file>
     <file>modules/alwaysThrows.js</file>
     <file>modules/badOverrides/GIMarshallingTests.js</file>
     <file>modules/badOverrides/Gio.js</file>
