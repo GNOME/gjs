@@ -59,6 +59,7 @@ GNOME Applications written in GJS:
 * [GNOME Weather](https://gitlab.gnome.org/GNOME/gnome-weather)
 * [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
 * [Polari](https://gitlab.gnome.org/GNOME/polari) IRC Client
+* [GNOME Extensions](https://gitlab.gnome.org/GNOME/gnome-shell/-/tree/HEAD/subprojects/extensions-app)
 
 Third party applications written in GJS:
 
@@ -78,6 +79,11 @@ Third party applications written in GJS:
 * [Annex](https://github.com/andyholmes/annex)
 * [Bolso](https://github.com/felipeborges/bolso)
 * [Workbench](https://github.com/sonnyp/Workbench)
+* [Design](https://github.com/dubstar-04/Design)
+* [Capsule](https://gitlab.gnome.org/verdre/Capsule)
+* [Spiel](https://gitlab.gnome.org/feaneron/spiel)
+* [Retro](https://github.com/sonnyp/Retro)
+* [libportal test](https://github.com/flatpak/libportal/tree/main/portal-test/gtk4)
 
 ### GNOME Shell Extensions
 
