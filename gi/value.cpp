@@ -878,7 +878,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
                 return false;
         }
     } else if (gtype == G_TYPE_CHAR) {
-        char v;
+        signed char v;
         v = g_value_get_schar(gvalue);
         value_p.setInt32(v);
     } else if (gtype == G_TYPE_UCHAR) {
