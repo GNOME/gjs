@@ -75,9 +75,9 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     void callback_closure(GIArgument** args, void* result);
     GJS_JSAPI_RETURN_CONVENTION
     bool callback_closure_inner(JSContext* cx, JS::HandleObject this_object,
-                                JS::MutableHandleValue rval, GIArgument** args,
-                                GITypeInfo* ret_type, int n_args,
-                                int c_args_offset, void* result);
+                                GObject* gobject, JS::MutableHandleValue rval,
+                                GIArgument** args, GITypeInfo* ret_type,
+                                int n_args, int c_args_offset, void* result);
     void warn_about_illegal_js_callback(const char* when, const char* reason);
 
     static std::vector<GjsAutoGClosure> s_forever_closure_list;

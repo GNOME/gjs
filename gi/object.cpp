@@ -97,6 +97,7 @@ static JSObject* gjs_lookup_object_prototype_from_info(JSContext*,
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
+G_DEFINE_QUARK(gjs::instance-strings, ObjectBase::instance_strings)
 G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
 // clang-format on
 
@@ -3065,4 +3066,17 @@ gjs_lookup_object_constructor(JSContext             *context,
 
     value_p.setObject(*constructor);
     return true;
+}
+
+void ObjectInstance::associate_string(GObject* obj, char* str) {
+    auto* instance_strings = static_cast<GPtrArray*>(
+        g_object_get_qdata(obj, ObjectBase::instance_strings_quark()));
+
+    if (!instance_strings) {
+        instance_strings = g_ptr_array_new_with_free_func(g_free);
+        g_object_set_qdata_full(
+            obj, ObjectBase::instance_strings_quark(), instance_strings,
+            reinterpret_cast<GDestroyNotify>(g_ptr_array_unref));
+    }
+    g_ptr_array_add(instance_strings, str);
 }
