@@ -49,7 +49,7 @@ Version 1.75.2
 - Many bug fixes and performance improvements.
 
 - Closed bugs and merge requests:
-  * Promises in application.run do not fullfil until loop exit [#468, !732, Evan
+  * Promises in application.run do not fulfill until loop exit [#468, !732, Evan
     Welsh]
   * console: Various cleanups to tracing functions and increase structured
     logging metadata [!756, Marco Trevisan]
