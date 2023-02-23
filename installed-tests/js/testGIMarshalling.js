@@ -1258,10 +1258,9 @@ let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingT
         return i + 4;
     }
 
-    // https://gitlab.gnome.org/GNOME/gjs/-/issues/519
-    // vfunc_method_str_arg_out_ret(s) {
-    //     return [`Called with ${s}`, 41];
-    // }
+    vfunc_method_str_arg_out_ret(s) {
+        return [`Called with ${s}`, 41];
+    }
 
     vfunc_method_with_default_implementation(i) {
         this.int = i + 2;
@@ -1435,9 +1434,10 @@ describe('Virtual function', function () {
         expect(tester.method_int8_arg_and_out_callee(38)).toEqual(42);
     });
 
-    xit('marshals a string out argument and return value', function () {
+    it('marshals a string out argument and return value', function () {
         expect(tester.method_str_arg_out_ret('a string')).toEqual(['Called with a string', 41]);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/519');
+        expect(tester.method_str_arg_out_ret('a 2nd string')).toEqual(['Called with a 2nd string', 41]);
+    });
 
     it('can override a default implementation in JS', function () {
         tester.method_with_default_implementation(40);

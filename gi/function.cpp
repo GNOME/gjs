@@ -342,8 +342,9 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     AutoCallbackData callback_data(this, gjs);
     JS::RootedObject this_object(context);
     int c_args_offset = 0;
+    GObject* gobj = nullptr;
     if (m_is_vfunc) {
-        GObject* gobj = G_OBJECT(gjs_arg_get<GObject*>(args[0]));
+        gobj = G_OBJECT(gjs_arg_get<GObject*>(args[0]));
         if (gobj) {
             this_object = ObjectInstance::wrapper_from_gobject(context, gobj);
             if (!this_object) {
@@ -366,8 +367,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     g_callable_info_load_return_type(m_info, &ret_type);
 
-    if (!callback_closure_inner(context, this_object, &rval, args, &ret_type,
-                                n_args, c_args_offset, result)) {
+    if (!callback_closure_inner(context, this_object, gobj, &rval, args,
+                                &ret_type, n_args, c_args_offset, result)) {
         if (!JS_IsExceptionPending(context)) {
             // "Uncatchable" exception thrown, we have to exit. We may be in a
             // main loop, or maybe not, but there's no way to tell, so we have
@@ -423,7 +424,7 @@ inline GIArgument* get_argument_for_arg_info(GIArgInfo* arg_info,
 }
 
 bool GjsCallbackTrampoline::callback_closure_inner(
-    JSContext* context, JS::HandleObject this_object,
+    JSContext* context, JS::HandleObject this_object, GObject* gobject,
     JS::MutableHandleValue rval, GIArgument** args, GITypeInfo* ret_type,
     int n_args, int c_args_offset, void* result) {
     int n_outargs = 0;
@@ -432,7 +433,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     if (!jsargs.reserve(n_args))
         g_error("Unable to reserve space for vector");
 
-    bool ret_type_is_void = g_type_info_get_tag(ret_type) == GI_TYPE_TAG_VOID;
+    GITypeTag ret_tag = g_type_info_get_tag(ret_type);
+    bool ret_type_is_void = ret_tag == GI_TYPE_TAG_VOID;
 
     for (int i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -575,6 +577,21 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                                          &argument))
                 return false;
 
+            if ((ret_tag == GI_TYPE_TAG_FILENAME ||
+                 ret_tag == GI_TYPE_TAG_UTF8) &&
+                transfer == GI_TRANSFER_NOTHING) {
+                // We duplicated the string so not to leak we need to both
+                // ensure that the string is bound to the object lifetime or
+                // created once
+                if (gobject) {
+                    ObjectInstance::associate_string(
+                        gobject, gjs_arg_get<char*>(&argument));
+                } else {
+                    GjsAutoChar str = gjs_arg_steal<char*>(&argument);
+                    gjs_arg_set<const char*>(&argument, g_intern_string(str));
+                }
+            }
+
             set_return_ffi_arg_from_giargument(ret_type, result, &argument);
 
             elem_idx++;
@@ -678,19 +695,6 @@ ffi_closure* GjsCallbackTrampoline::create_closure() {
 bool GjsCallbackTrampoline::initialize() {
     g_assert(is_valid());
     g_assert(!m_closure);
-
-    GITypeInfo return_type;
-    g_callable_info_load_return_type(m_info, &return_type);
-    GITypeTag return_tag = g_type_info_get_tag(&return_type);
-    if (g_callable_info_get_caller_owns(m_info) == GI_TRANSFER_NOTHING &&
-        (return_tag == GI_TYPE_TAG_FILENAME ||
-         return_tag == GI_TYPE_TAG_UTF8)) {
-        gjs_throw(context(),
-                  "%s %s returns a transfer-none string. This is not supported "
-                  "(https://gitlab.gnome.org/GNOME/gjs/-/issues/519)",
-                  m_is_vfunc ? "VFunc" : "Callback", m_info.name());
-        return false;
-    }
 
     /* Analyze param types and directions, similarly to
      * init_cached_function_data */
