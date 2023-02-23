@@ -157,6 +157,10 @@ class ObjectBase
 
     /* Quarks */
 
+ protected:
+    [[nodiscard]] static GQuark instance_strings_quark();
+
+ public:
     [[nodiscard]] static GQuark custom_type_quark();
     [[nodiscard]] static GQuark custom_property_quark();
     [[nodiscard]] static GQuark disposed_quark();
@@ -395,6 +399,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool init_custom_class_from_gobject(JSContext* cx, JS::HandleObject wrapper,
                                         GObject* gobj);
+
+    static void associate_string(GObject* obj, char* str);
 
     /* Methods to manipulate the linked list of instances */
 
