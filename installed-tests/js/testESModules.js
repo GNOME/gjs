@@ -27,26 +27,32 @@ describe('ES module imports', function () {
 
     it('import with version parameter', function () {
         expect(gi.require('GObject', '2.0')).toBe(gi.require('GObject'));
+        expect(imports.gi.versions['GObject']).toBe('2.0');
     });
 
     it('import again with other version parameter', function () {
         expect(() => gi.require('GObject', '1.75')).toThrow();
+        expect(imports.gi.versions['GObject']).toBe('2.0');
     });
 
     it('import for the first time with wrong version', function () {
         expect(() => gi.require('Gtk', '1.75')).toThrow();
+        expect(imports.gi.versions['Gtk']).not.toBeDefined();
     });
 
     it('import with another version after a failed import', function () {
         expect(gi.require('Gtk', '3.0').toString()).toEqual('[object GIRepositoryNamespace]');
+        expect(imports.gi.versions['Gtk']).toBe('3.0');
     });
 
     it('import nonexistent module', function () {
         expect(() => gi.require('PLib')).toThrow();
+        expect(imports.gi.versions['PLib']).not.toBeDefined();
     });
 
     it('GObject introspection import via URL scheme', function () {
         expect(Gio.toString()).toEqual('[object GIRepositoryNamespace]');
+        expect(imports.gi.versions['Gio']).toBe('2.0');
     });
 
     it('import.meta.url', function () {
