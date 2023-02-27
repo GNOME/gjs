@@ -50,34 +50,44 @@ new project and select `JavaScript` language. There is a also a
 [package specification]: https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/doc/Package/Specification.md
 [template]: https://github.com/gcampax/gtk-js-app
 
-GNOME Applications written in GJS:
+Here is a non-exhaustive list of applications written in GJS:
 
-* [GNOME Characters](https://gitlab.gnome.org/GNOME/gnome-characters)
-* [GNOME Documents](https://gitlab.gnome.org/GNOME/gnome-documents)
-* [GNOME Maps](https://gitlab.gnome.org/GNOME/gnome-maps)
-* [GNOME Sound Recorder](https://gitlab.gnome.org/GNOME/gnome-sound-recorder)
-* [GNOME Weather](https://gitlab.gnome.org/GNOME/gnome-weather)
-* [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
-* [Polari](https://gitlab.gnome.org/GNOME/polari) IRC Client
+GNOME Apps
 
-Third party applications written in GJS:
-
+* [Characters](https://gitlab.gnome.org/GNOME/gnome-characters)
+* [Maps](https://gitlab.gnome.org/GNOME/gnome-maps)
+* [Weather](https://gitlab.gnome.org/GNOME/gnome-weather)
+* [Extensions](https://gitlab.gnome.org/GNOME/gnome-shell/-/tree/HEAD/subprojects/extensions-app)
+* [Polari](https://gitlab.gnome.org/GNOME/polari)
 * [Tangram](https://github.com/sonnyp/Tangram)
-* [Quick Lookup](https://github.com/johnfactotum/quick-lookup)
-* [Foliate](https://github.com/johnfactotum/foliate)
-* [Marker](https://github.com/fabiocolacio/Marker)
-* [Gnomit](https://github.com/small-tech/gnomit)
-* [Clapper](https://github.com/Rafostar/clapper/)
 * [Flatseal](https://github.com/tchx84/Flatseal)
-* [Almond](https://github.com/stanford-oval/almond-gnome/)
 * [Commit](https://github.com/sonnyp/commit/)
 * [Junction](https://github.com/sonnyp/Junction)
 * [Oh My SVG](https://github.com/sonnyp/OhMySVG)
-* [Lobjur](https://github.com/ranfdev/Lobjur)
+* [Workbench](https://github.com/sonnyp/Workbench)
+* [GNOME Sound Recorder](https://gitlab.gnome.org/GNOME/gnome-sound-recorder) (TypeScript)
+
+Others
+
+
+* [Quick Lookup](https://github.com/johnfactotum/quick-lookup)
+* [Foliate](https://github.com/johnfactotum/foliate)
+* [Clapper](https://github.com/Rafostar/clapper/)
+* [Almond](https://github.com/stanford-oval/almond-gnome/)
+* [Lobjur](https://github.com/ranfdev/Lobjur) (Clojure)
 * [Touché](https://github.com/JoseExposito/touche)
 * [Annex](https://github.com/andyholmes/annex)
 * [Bolso](https://github.com/felipeborges/bolso)
-* [Workbench](https://github.com/sonnyp/Workbench)
+* [Design](https://github.com/dubstar-04/Design)
+* [Capsule](https://gitlab.gnome.org/verdre/Capsule)
+* [Spiel](https://gitlab.gnome.org/feaneron/spiel)
+* [Retro](https://github.com/sonnyp/Retro)
+* [libportal test](https://github.com/flatpak/libportal/tree/main/portal-test/gtk4)
+
+Archived
+
+* [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
+* [GNOME Documents](https://gitlab.gnome.org/GNOME/gnome-documents)
 
 ### GNOME Shell Extensions
 
