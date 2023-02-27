@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna
 
-const ByteArray = imports.byteArray;
+const ByteArray = imports._byteArrayNative;
 const {setMainLoopHook} = imports._promiseNative;
 
 let GLib;
@@ -100,15 +100,12 @@ function _packVariant(signature, value) {
         }
         if (arrayType[0] === 'y') {
             // special case for array of bytes
-            let bytes;
             if (typeof value === 'string') {
-                let byteArray = ByteArray.fromString(value);
-                if (byteArray[byteArray.length - 1] !== 0)
-                    byteArray = Uint8Array.of(...byteArray, 0);
-                bytes = ByteArray.toGBytes(byteArray);
-            } else {
-                bytes = new GLib.Bytes(value);
+                value = ByteArray.fromString(value);
+                if (value[value.length - 1] !== 0)
+                    value = Uint8Array.of(...value, 0);
             }
+            const bytes = new GLib.Bytes(value);
             return GLib.Variant.new_from_bytes(new GLib.VariantType('ay'),
                 bytes, true);
         }
