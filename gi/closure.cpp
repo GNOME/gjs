@@ -184,8 +184,6 @@ bool Closure::invoke(JS::HandleObject this_obj,
     bool ok = JS::Call(m_cx, this_obj, v_callable, args, retval);
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
 
-    if (gjs->should_exit(nullptr))
-        gjs->warn_about_unhandled_promise_rejections();
     if (!ok) {
         /* Exception thrown... */
         gjs_debug_closure(
