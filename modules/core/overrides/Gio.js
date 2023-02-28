@@ -625,7 +625,8 @@ function _init() {
         }
     };
 
-    Gio.InputStream.prototype.createAsyncIterator = async function* createAsyncIterator(count, ioPriority = Gio.PRIORITY_DEFAULT) {
+    Gio.InputStream.prototype.createAsyncIterator = async function* createAsyncIterator(
+        count, ioPriority = GLib.PRIORITY_DEFAULT) {
         const self = this;
 
         function next() {
@@ -670,7 +671,7 @@ function _init() {
 
         function next() {
             return new Promise((resolve, reject) => {
-                self.next_files_async(1, Gio.PRIORITY_DEFAULT, null, (_self, res) => {
+                self.next_files_async(1, GLib.PRIORITY_DEFAULT, null, (_self, res) => {
                     try {
                         const files = self.next_files_finish(res);
                         resolve(files.length === 0 ? null : files[0]);
@@ -683,7 +684,7 @@ function _init() {
 
         function close() {
             return new Promise((resolve, reject) => {
-                self.close_async(Gio.PRIORITY_DEFAULT, null, (_self, res) => {
+                self.close_async(GLib.PRIORITY_DEFAULT, null, (_self, res) => {
                     try {
                         resolve(self.close_finish(res));
                     } catch (err) {
