@@ -1,0 +1,8 @@
+---
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
+rules:
+  no-throw-literal: 'off'  # these are intended to be bad code
+  no-unused-vars:
+    - error
+    - varsIgnorePattern: ^_init$

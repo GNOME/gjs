@@ -32,7 +32,7 @@ describe('GI importer', function () {
             expect(() => imports.gi.Regress).toThrow('💩');
         });
 
-        it("throws an exception when the overrides _init isn't a function", function () {
+        it('throws an exception when the overrides _init is a primitive', function () {
             expect(() => imports.gi.Gio).toThrowError(/_init/);
         });
     });

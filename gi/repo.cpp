@@ -556,9 +556,12 @@ lookup_override_function(JSContext             *cx,
         goto fail;
     }
 
+    // If the override module is present, it must have a callable _init(). An
+    // override module without _init() is probably unintentional. (function
+    // being undefined means there was no override module.)
     if (!gjs_object_require_property(cx, module, "override module",
                                      atoms.init(), function) ||
-        !function.isObjectOrNull()) {
+        !function.isObject() || !JS::IsCallable(&function.toObject())) {
         gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
     }
