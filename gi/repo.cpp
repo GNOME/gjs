@@ -126,14 +126,14 @@ static bool resolve_namespace_object(JSContext* context,
     JS::RootedObject gi_namespace(context,
                                   gjs_create_ns(context, ns_name.get()));
 
+    JS::RootedValue override(context);
+    if (!lookup_override_function(context, ns_id, &override))
+        return false;
+
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
     if (!JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
                                GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    JS::RootedValue override(context);
-    if (!lookup_override_function(context, ns_id, &override))
         return false;
 
     JS::RootedValue result(context);
