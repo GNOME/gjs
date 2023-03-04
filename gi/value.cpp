@@ -458,11 +458,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return throw_expect_type(context, value, "string");
         }
     } else if (gtype == G_TYPE_CHAR) {
-        gint32 i;
+        int32_t i;
         if (Gjs::js_value_to_c_checked<signed char>(context, value, &i,
                                                     &out_of_range) &&
             !out_of_range) {
-            g_value_set_schar(gvalue, (signed char)i);
+            g_value_set_schar(gvalue, static_cast<signed char>(i));
         } else {
             return throw_expect_type(context, value, "char", 0, out_of_range);
         }
@@ -881,7 +881,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
                 return false;
         }
     } else if (gtype == G_TYPE_CHAR) {
-        char v;
+        signed char v;
         v = g_value_get_schar(gvalue);
         value_p.setInt32(v);
     } else if (gtype == G_TYPE_UCHAR) {
