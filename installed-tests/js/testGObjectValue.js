@@ -46,8 +46,6 @@ describe('GObject value (GValue)', function () {
                 e !== 'gtype' &&
                 e !== 'instance' &&
                 e !== 'param' &&
-                // Include string when gobject-introspection!268 is merged
-                e !== 'string' &&
                 e !== 'schar').concat([
                 'boxed-struct',
             ]).reduce((ac, a) => ({
