@@ -613,7 +613,7 @@ static void load_context_module(JSContext* cx, const char* uri,
             GjsContextPrivate::from_cx(cx)->main_loop_release();
             return false;
         },
-        "context");
+        debug_identifier);
 
     if (!ok) {
         gjs_log_exception(cx);
@@ -1490,7 +1490,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
         ok = add_promise_reactions(
             m_cx, evaluation_promise, on_context_module_resolved,
-            on_context_module_rejected_log_exception, "context");
+            on_context_module_rejected_log_exception, identifier);
     }
 
     bool exiting = false;
