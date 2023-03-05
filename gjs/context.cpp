@@ -565,12 +565,12 @@ static bool add_promise_reactions(JSContext* cx, JS::HandleValue promise,
 
     JS::RootedFunction on_rejected(
         cx,
-        js::NewFunctionWithReserved(cx, reject, 1, 0, resolved_tag.c_str()));
+        js::NewFunctionWithReserved(cx, reject, 1, 0, rejected_tag.c_str()));
     if (!on_rejected)
         return false;
     JS::RootedFunction on_resolved(
         cx,
-        js::NewFunctionWithReserved(cx, resolve, 1, 0, rejected_tag.c_str()));
+        js::NewFunctionWithReserved(cx, resolve, 1, 0, resolved_tag.c_str()));
     if (!on_resolved)
         return false;
 
