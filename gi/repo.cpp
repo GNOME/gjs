@@ -126,14 +126,14 @@ static bool resolve_namespace_object(JSContext* context,
     JS::RootedObject gi_namespace(context,
                                   gjs_create_ns(context, ns_name.get()));
 
+    JS::RootedValue override(context);
+    if (!lookup_override_function(context, ns_id, &override))
+        return false;
+
     /* Define the property early, to avoid reentrancy issues if
        the override module looks for namespaces that import this */
     if (!JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
                                GJS_MODULE_PROP_FLAGS))
-        return false;
-
-    JS::RootedValue override(context);
-    if (!lookup_override_function(context, ns_id, &override))
         return false;
 
     JS::RootedValue result(context);
@@ -556,9 +556,12 @@ lookup_override_function(JSContext             *cx,
         goto fail;
     }
 
+    // If the override module is present, it must have a callable _init(). An
+    // override module without _init() is probably unintentional. (function
+    // being undefined means there was no override module.)
     if (!gjs_object_require_property(cx, module, "override module",
                                      atoms.init(), function) ||
-        !function.isObjectOrNull()) {
+        !function.isObject() || !JS::IsCallable(&function.toObject())) {
         gjs_throw(cx, "Unexpected value for _init in overrides module");
         goto fail;
     }

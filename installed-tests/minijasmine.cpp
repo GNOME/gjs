@@ -33,7 +33,6 @@ main(int argc, char **argv)
     if (argc < 2)
         g_error("Need a test file");
 
-    /* The fact that this isn't the default is kind of lame... */
     g_setenv("GJS_DEBUG_OUTPUT", "stderr", false);
 
     setlocale(LC_ALL, "");

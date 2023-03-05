@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
-const Encoding = import.meta.importSync('_encodingNative');
-
 import {getEncodingFromLabel} from './encodingMap.js';
 
 class TextDecoder {
@@ -128,6 +126,7 @@ class TextDecoder {
             input = new Uint8Array(buffer, byteOffset + 3, byteLength - 3);
         }
 
+        const Encoding = import.meta.importSync('_encodingNative');
         return Encoding.decode(input, this._internalEncoding, this.fatal);
     }
 }
@@ -142,11 +141,13 @@ class TextEncoder {
     }
 
     encode(input = '') {
+        const Encoding = import.meta.importSync('_encodingNative');
         // The TextEncoder specification only allows for UTF-8 encoding.
         return Encoding.encode(`${input}`, 'utf-8');
     }
 
     encodeInto(input = '', output = new Uint8Array()) {
+        const Encoding = import.meta.importSync('_encodingNative');
         // The TextEncoder specification only allows for UTF-8 encoding.
         return Encoding.encodeInto(`${input}`, output);
     }

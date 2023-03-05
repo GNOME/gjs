@@ -8,17 +8,24 @@ const Gi = {
         if (namespace === 'versions')
             throw new Error('Cannot import namespace "versions", use the version parameter of Gi.require to specify versions.');
 
+        let oldVersion = gi.versions[namespace];
         if (version !== undefined)
             gi.versions[namespace] = version;
 
-        const module = gi[namespace];
+        try {
+            const module = gi[namespace];
 
-        if (version !== undefined && version !== module.__version__) {
-            throw new Error(`Version ${module.__version__} of GI module ${
-                namespace} already loaded, cannot load version ${version}`);
+            if (version !== undefined && version !== module.__version__) {
+                throw new Error(`Version ${module.__version__} of GI module ${
+                    namespace} already loaded, cannot load version ${version}`);
+            }
+
+            return module;
+        } catch (error) {
+            // Roll back change to versions object if import failed
+            gi.versions[namespace] = oldVersion;
+            throw error;
         }
-
-        return module;
     },
 };
 Object.freeze(Gi);

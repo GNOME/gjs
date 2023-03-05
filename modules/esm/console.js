@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 
-import GLib from 'gi://GLib';
-import GjsPrivate from 'gi://GjsPrivate';
-
 const DEFAULT_LOG_DOMAIN = 'Gjs-Console';
 
 // A line-by-line implementation of https://console.spec.whatwg.org/.
@@ -112,7 +109,7 @@ class Console {
      */
     clear() {
         this.#groupIndentation = '';
-        GjsPrivate.clear_terminal();
+        imports.gi.GjsPrivate.clear_terminal();
     }
 
     /**
@@ -268,7 +265,7 @@ class Console {
      * @returns {void}
      */
     time(label) {
-        this.#timeLabels[label] = GLib.get_monotonic_time();
+        this.#timeLabels[label] = imports.gi.GLib.get_monotonic_time();
     }
 
     /**
@@ -288,7 +285,7 @@ class Console {
                 `No time log found for label: '${label}'.`,
             ]);
         } else {
-            const durationMs = (GLib.get_monotonic_time() - startTime) / 1000;
+            const durationMs = (imports.gi.GLib.get_monotonic_time() - startTime) / 1000;
             const concat = `${label}: ${durationMs.toFixed(3)} ms`;
             data.unshift(concat);
 
@@ -314,7 +311,7 @@ class Console {
         } else {
             delete this.#timeLabels[label];
 
-            const durationMs = (GLib.get_monotonic_time() - startTime) / 1000;
+            const durationMs = (imports.gi.GLib.get_monotonic_time() - startTime) / 1000;
             const concat = `${label}: ${durationMs.toFixed(3)} ms`;
 
             this.#printer('timeEnd', [concat]);
@@ -500,6 +497,7 @@ class Console {
      * @returns {void}
      */
     #printer(logLevel, args, options) {
+        const GLib = imports.gi.GLib;
         let severity;
 
         switch (logLevel) {

@@ -531,6 +531,12 @@ static bool on_context_module_rejected_log_exception(JSContext* cx,
                                                      unsigned argc,
                                                      JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JSString* id =
+        JS_GetFunctionDisplayId(JS_GetObjectFunction(&args.callee()));
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise rejected: %s",
+              gjs_debug_string(id).c_str());
+
     JS::HandleValue error = args.get(0);
 
     GjsContextPrivate* gjs_cx = GjsContextPrivate::from_cx(cx);
@@ -547,6 +553,12 @@ static bool on_context_module_rejected_log_exception(JSContext* cx,
 static bool on_context_module_resolved(JSContext* cx, unsigned argc,
                                        JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JSString* id =
+        JS_GetFunctionDisplayId(JS_GetObjectFunction(&args.callee()));
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise resolved: %s",
+              gjs_debug_string(id).c_str());
+
     args.rval().setUndefined();
 
     GjsContextPrivate::from_cx(cx)->main_loop_release();
@@ -565,12 +577,12 @@ static bool add_promise_reactions(JSContext* cx, JS::HandleValue promise,
 
     JS::RootedFunction on_rejected(
         cx,
-        js::NewFunctionWithReserved(cx, reject, 1, 0, resolved_tag.c_str()));
+        js::NewFunctionWithReserved(cx, reject, 1, 0, rejected_tag.c_str()));
     if (!on_rejected)
         return false;
     JS::RootedFunction on_resolved(
         cx,
-        js::NewFunctionWithReserved(cx, resolve, 1, 0, rejected_tag.c_str()));
+        js::NewFunctionWithReserved(cx, resolve, 1, 0, resolved_tag.c_str()));
     if (!on_resolved)
         return false;
 
@@ -606,6 +618,12 @@ static void load_context_module(JSContext* cx, const char* uri,
         [](JSContext* cx, unsigned argc, JS::Value* vp) {
             JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
+            JSString* id =
+                JS_GetFunctionDisplayId(JS_GetObjectFunction(&args.callee()));
+            gjs_debug(GJS_DEBUG_IMPORTER,
+                      "Module evaluation promise rejected: %s",
+                      gjs_debug_string(id).c_str());
+
             JS::HandleValue error = args.get(0);
             // Abort because this module is required.
             gjs_log_exception_full(cx, error, nullptr, G_LOG_LEVEL_ERROR);
@@ -613,7 +631,7 @@ static void load_context_module(JSContext* cx, const char* uri,
             GjsContextPrivate::from_cx(cx)->main_loop_release();
             return false;
         },
-        "context");
+        debug_identifier);
 
     if (!ok) {
         gjs_log_exception(cx);
@@ -988,15 +1006,10 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
     return m_should_exit;
 }
 
-void GjsContextPrivate::start_draining_job_queue(void) {
-    gjs_debug(GJS_DEBUG_CONTEXT, "Starting promise job dispatcher");
-    m_dispatcher.start();
-}
+void GjsContextPrivate::start_draining_job_queue(void) { m_dispatcher.start(); }
 
 void GjsContextPrivate::stop_draining_job_queue(void) {
     m_draining_job_queue = false;
-
-    gjs_debug(GJS_DEBUG_CONTEXT, "Stopping promise job dispatcher");
     m_dispatcher.stop();
 }
 
@@ -1015,7 +1028,7 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
 
-    gjs_debug(GJS_DEBUG_CONTEXT,
+    gjs_debug(GJS_DEBUG_MAINLOOP,
               "Enqueue job %s, promise=%s, allocation site=%s",
               gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
               gjs_debug_object(allocation_site).c_str());
@@ -1032,12 +1045,10 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
 
 // Override of JobQueue::runJobs(). Called by js::RunJobs(), and when execution
 // of the job queue was interrupted by the debugger and is resuming.
-void GjsContextPrivate::runJobs(JSContext* cx) { runJobs(cx, nullptr); }
-
-void GjsContextPrivate::runJobs(JSContext* cx, GCancellable* cancellable) {
+void GjsContextPrivate::runJobs(JSContext* cx) {
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
-    if (!run_jobs_fallible(cancellable))
+    if (!run_jobs_fallible())
         gjs_log_exception(cx);
 }
 
@@ -1053,7 +1064,7 @@ void GjsContextPrivate::runJobs(JSContext* cx, GCancellable* cancellable) {
  * Returns: false if one of the jobs threw an uncatchable exception;
  * otherwise true.
  */
-bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
+bool GjsContextPrivate::run_jobs_fallible() {
     bool retval = true;
 
     if (m_draining_job_queue || m_should_exit)
@@ -1070,8 +1081,11 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
      * it's crucial to recheck the queue length during each iteration. */
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         /* A previous job might have set this flag. e.g., System.exit(). */
-        if (m_should_exit || g_cancellable_is_cancelled(cancellable))
+        if (m_should_exit || !m_dispatcher.is_running()) {
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of %s",
+                      m_should_exit ? "exit" : "main loop cancel");
             break;
+        }
 
         job = m_job_queue[ix];
 
@@ -1085,7 +1099,7 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
         m_job_queue[ix] = nullptr;
         {
             JSAutoRealm ar(m_cx, job);
-            gjs_debug(GJS_DEBUG_CONTEXT, "handling job %s",
+            gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
                       gjs_debug_object(job).c_str());
             if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
                 /* Uncatchable exception - return false so that
@@ -1104,6 +1118,7 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
                 gjs_log_exception_uncaught(m_cx);
             }
         }
+        gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
     }
 
     m_draining_job_queue = false;
@@ -1380,6 +1395,7 @@ bool GjsContextPrivate::set_main_loop_hook(JSObject* callable) {
 bool GjsContextPrivate::run_main_loop_hook() {
     JS::RootedObject hook(m_cx, m_main_loop_hook.get());
     m_main_loop_hook = nullptr;
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Running and clearing main loop hook");
     JS::RootedValue ignored_rval(m_cx);
     return JS::Call(m_cx, JS::NullHandleValue, hook,
                     JS::HandleValueArray::empty(), &ignored_rval);
@@ -1490,7 +1506,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
         ok = add_promise_reactions(
             m_cx, evaluation_promise, on_context_module_resolved,
-            on_context_module_rejected_log_exception, "context");
+            on_context_module_rejected_log_exception, identifier);
     }
 
     bool exiting = false;

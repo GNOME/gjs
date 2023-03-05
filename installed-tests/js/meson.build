@@ -127,6 +127,7 @@ jasmine_tests = [
     'GObjectValue',
     'GTypeClass',
     'Importer',
+    'Importer2',
     'Introspection',
     'Lang',
     'LegacyByteArray',

@@ -6,11 +6,6 @@
 // Note: implicit coercion with + is used to perform the ToNumber algorithm from
 // the timers specification
 
-import GLib from 'gi://GLib';
-import GObject from 'gi://GObject';
-
-const PromiseNative = import.meta.importSync('_promiseNative');
-
 /**
  * @param {number} delay a number value (in milliseconds)
  */
@@ -52,9 +47,9 @@ function checkThis(thisArg) {
  * @returns {GLib.Source}
  */
 function createTimeoutSource(timeout, handler) {
-    const source = GLib.timeout_source_new(timeout);
-    source.set_priority(GLib.PRIORITY_DEFAULT);
-    GObject.source_set_closure(source, handler);
+    const source = imports.gi.GLib.timeout_source_new(timeout);
+    source.set_priority(imports.gi.GLib.PRIORITY_DEFAULT);
+    imports.gi.GObject.source_set_closure(source, handler);
 
     return source;
 }
@@ -72,13 +67,13 @@ function setTimeout(callback, delay = 0, ...args) {
     const boundCallback = callback.bind(globalThis, ...args);
     const source = createTimeoutSource(delay, () => {
         if (!timeouts.has(source))
-            return GLib.SOURCE_REMOVE;
+            return imports.gi.GLib.SOURCE_REMOVE;
 
         boundCallback();
         releaseSource(source);
-        PromiseNative.drainMicrotaskQueue();
+        import.meta.importSync('_promiseNative').drainMicrotaskQueue();
 
-        return GLib.SOURCE_REMOVE;
+        return imports.gi.GLib.SOURCE_REMOVE;
     });
 
     addSource(source);
@@ -98,12 +93,12 @@ function setInterval(callback, delay = 0, ...args) {
     const boundCallback = callback.bind(globalThis, ...args);
     const source = createTimeoutSource(delay, () => {
         if (!timeouts.has(source))
-            return GLib.SOURCE_REMOVE;
+            return imports.gi.GLib.SOURCE_REMOVE;
 
         boundCallback();
-        PromiseNative.drainMicrotaskQueue();
+        import.meta.importSync('_promiseNative').drainMicrotaskQueue();
 
-        return GLib.SOURCE_CONTINUE;
+        return imports.gi.GLib.SOURCE_CONTINUE;
     });
 
     addSource(source);

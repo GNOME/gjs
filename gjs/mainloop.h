@@ -8,6 +8,8 @@
 
 #include <glib.h>
 
+#include "util/log.h"
+
 class GjsContextPrivate;
 
 namespace Gjs {
@@ -19,6 +21,10 @@ class MainLoop {
     // integer overflow for us.
     grefcount m_hold_count;
     bool m_exiting;
+
+    void debug(const char* msg) {
+        gjs_debug(GJS_DEBUG_MAINLOOP, "Main loop instance %p: %s", this, msg);
+    }
 
     [[nodiscard]] bool can_block() {
         // Don't block if exiting
@@ -51,6 +57,7 @@ class MainLoop {
         if (m_exiting)
             return;
 
+        debug("hold");
         g_ref_count_inc(&m_hold_count);
     }
 
@@ -59,6 +66,7 @@ class MainLoop {
         if (m_exiting)
             return;
 
+        debug("release");
         bool zero [[maybe_unused]] = g_ref_count_dec(&m_hold_count);
         g_assert(!zero && "main loop released too many times");
     }
