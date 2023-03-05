@@ -1006,15 +1006,10 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
     return m_should_exit;
 }
 
-void GjsContextPrivate::start_draining_job_queue(void) {
-    gjs_debug(GJS_DEBUG_CONTEXT, "Starting promise job dispatcher");
-    m_dispatcher.start();
-}
+void GjsContextPrivate::start_draining_job_queue(void) { m_dispatcher.start(); }
 
 void GjsContextPrivate::stop_draining_job_queue(void) {
     m_draining_job_queue = false;
-
-    gjs_debug(GJS_DEBUG_CONTEXT, "Stopping promise job dispatcher");
     m_dispatcher.stop();
 }
 
@@ -1033,7 +1028,7 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
     g_assert(cx == m_cx);
     g_assert(from_cx(cx) == this);
 
-    gjs_debug(GJS_DEBUG_CONTEXT,
+    gjs_debug(GJS_DEBUG_MAINLOOP,
               "Enqueue job %s, promise=%s, allocation site=%s",
               gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
               gjs_debug_object(allocation_site).c_str());
@@ -1088,8 +1083,11 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
      * it's crucial to recheck the queue length during each iteration. */
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         /* A previous job might have set this flag. e.g., System.exit(). */
-        if (m_should_exit || g_cancellable_is_cancelled(cancellable))
+        if (m_should_exit || g_cancellable_is_cancelled(cancellable)) {
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of %s",
+                      m_should_exit ? "exit" : "main loop cancel");
             break;
+        }
 
         job = m_job_queue[ix];
 
@@ -1103,7 +1101,7 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
         m_job_queue[ix] = nullptr;
         {
             JSAutoRealm ar(m_cx, job);
-            gjs_debug(GJS_DEBUG_CONTEXT, "handling job %s",
+            gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
                       gjs_debug_object(job).c_str());
             if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
                 /* Uncatchable exception - return false so that
@@ -1122,6 +1120,7 @@ bool GjsContextPrivate::run_jobs_fallible(GCancellable* cancellable) {
                 gjs_log_exception_uncaught(m_cx);
             }
         }
+        gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
     }
 
     m_draining_job_queue = false;
@@ -1398,6 +1397,7 @@ bool GjsContextPrivate::set_main_loop_hook(JSObject* callable) {
 bool GjsContextPrivate::run_main_loop_hook() {
     JS::RootedObject hook(m_cx, m_main_loop_hook.get());
     m_main_loop_hook = nullptr;
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Running and clearing main loop hook");
     JS::RootedValue ignored_rval(m_cx);
     return JS::Call(m_cx, JS::NullHandleValue, hook,
                     JS::HandleValueArray::empty(), &ignored_rval);

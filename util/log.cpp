@@ -53,6 +53,8 @@ static const char* topic_to_prefix(GjsDebugTopic topic) {
             return "JS CAIRO";
         case GJS_DEBUG_KEEP_ALIVE:
             return "JS KP ALV";
+        case GJS_DEBUG_MAINLOOP:
+            return "JS MAINLOOP";
         case GJS_DEBUG_GREPO:
             return "JS G REPO";
         case GJS_DEBUG_GNAMESPACE:

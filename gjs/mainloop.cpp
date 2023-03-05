@@ -20,6 +20,7 @@ bool MainLoop::spin(GjsContextPrivate* gjs) {
     if (gjs->should_exit(nullptr)) {
         // Return false to indicate the loop is exiting due to an exit call,
         // the queue is likely not empty
+        debug("Not spinning loop because System.exit called");
         exit();
         return false;
     }
@@ -27,6 +28,7 @@ bool MainLoop::spin(GjsContextPrivate* gjs) {
     GjsAutoPointer<GMainContext, GMainContext, g_main_context_unref>
         main_context(g_main_context_ref_thread_default());
 
+    debug("Spinning loop until released or hook cleared");
     do {
         bool blocking = can_block();
 
@@ -36,6 +38,7 @@ bool MainLoop::spin(GjsContextPrivate* gjs) {
 
         // If System.exit() has not been called
         if (gjs->should_exit(nullptr)) {
+            debug("Stopped spinning loop because System.exit called");
             exit();
             return false;
         }
