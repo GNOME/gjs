@@ -1,3 +1,18 @@
+Version 1.75.90
+---------------
+
+- Closed bugs and merge requests:
+  * NEWS: fix a typo causing codespell to fail [!824, Marco Trevisan]
+  * doc: Add more apps written in GJS [!822, Sonny Piers]
+  * Gio: Use proper default priority on async generators [!827, Marco Trevisan]
+  * gjs 1.75.2 GObjectValue build test failing on ARM [#529, !825, Marco
+    Trevisan]
+  * testGObjectValue: Enable creating object with a string property [!826, Marco
+    Trevisan]
+  * Handle transfer-none string return value from vfunc implemented in JS [#519,
+    823, Marco Trevisan, Daniel van Vugt]
+  * Various maintenance, performance improvements [!828, Philip Chimento]
+
 Version 1.75.2
 --------------
 
