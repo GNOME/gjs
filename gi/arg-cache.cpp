@@ -1563,7 +1563,8 @@ std::unique_ptr<T> Argument::make(uint8_t index, const char* name,
 }
 
 //  Needed for unique_ptr with incomplete type
-ArgsCache::ArgsCache() = default;
+// COMPAT: in C++20, use default initializers for these bitfields in the header
+ArgsCache::ArgsCache() : m_is_method(false), m_has_return(false) {}
 ArgsCache::~ArgsCache() = default;
 
 bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
