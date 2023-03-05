@@ -17,7 +17,6 @@
 #include <utility>  // for pair
 #include <vector>
 
-#include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -248,13 +247,11 @@ class GjsContextPrivate : public JS::JobQueue {
                            JS::HandleObject allocation_site,
                            JS::HandleObject incumbent_global) override;
     void runJobs(JSContext* cx) override;
-    void runJobs(JSContext* cx, GCancellable* cancellable);
     [[nodiscard]] bool empty() const override { return m_job_queue.empty(); }
     js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
         JSContext* cx) override;
 
-    GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible(
-        GCancellable* cancellable = nullptr);
+    GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible();
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
     void warn_about_unhandled_promise_rejections();

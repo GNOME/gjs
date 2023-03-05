@@ -82,12 +82,8 @@ class PromiseJobDispatcher::Source : public GSource {
         // next one to execute. (it will starve the other sources)
         g_source_set_ready_time(this, -1);
 
-        // A reference to the current cancellable is needed in case any
-        // jobs reset PromiseJobDispatcher and thus replace the cancellable.
-        GjsAutoUnref<GCancellable> cancellable(m_cancellable,
-                                               GjsAutoTakeOwnership{});
         // Drain the job queue.
-        m_gjs->runJobs(m_gjs->context(), cancellable);
+        m_gjs->runJobs(m_gjs->context());
 
         return G_SOURCE_CONTINUE;
     }
