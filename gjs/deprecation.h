@@ -13,6 +13,7 @@ enum GjsDeprecationMessageId {
     None,
     ByteArrayInstanceToString,
     DeprecatedGObjectProperty,
+    ModuleExportedLetOrConst,
 };
 
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,

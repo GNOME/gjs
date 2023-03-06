@@ -44,6 +44,7 @@
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/deprecation.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -194,14 +195,9 @@ class GjsScriptModule {
          * be supported according to ES6. For compatibility with earlier GJS,
          * we treat it as if it were a real property, but warn about it. */
 
-        g_warning(
-            "Some code accessed the property '%s' on the module '%s'. That "
-            "property was defined with 'let' or 'const' inside the module. "
-            "This was previously supported, but is not correct according to "
-            "the ES6 standard. Any symbols to be exported from a module must "
-            "be defined with 'var'. The property access will work as "
-            "previously for the time being, but please fix your code anyway.",
-            gjs_debug_id(id).c_str(), m_name.get());
+        _gjs_warn_deprecated_once_per_callsite(
+            cx, GjsDeprecationMessageId::ModuleExportedLetOrConst,
+            {gjs_debug_id(id).c_str(), m_name});
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx, maybe_desc.value());
         return JS_DefinePropertyById(cx, module, id, desc);

@@ -41,6 +41,14 @@ const char* messages[] = {
 
     // DeprecatedGObjectProperty:
     "The GObject property {}.{} is deprecated.",
+
+    // ModuleExportedLetOrConst:
+    "Some code accessed the property '{}' on the module '{}'. That property "
+    "was defined with 'let' or 'const' inside the module. This was previously "
+    "supported, but is not correct according to the ES6 standard. Any symbols "
+    "to be exported from a module must be defined with 'var'. The property "
+    "access will work as previously for the time being, but please fix your "
+    "code anyway.",
 };
 
 struct DeprecationEntry {
