@@ -65,34 +65,18 @@ static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    GjsArgumentType arg_type);
 
 bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
-    GFlagsValue *v;
-    guint32 tmpval;
+    /* Do proper value check for flags with GType's */
+    if (gtype != G_TYPE_NONE) {
+        GjsAutoTypeClass<GFlagsClass> gflags_class(gtype);
+        uint32_t tmpval = static_cast<uint32_t>(value);
 
-    /* FIXME: Do proper value check for flags with GType's */
-    if (gtype == G_TYPE_NONE)
-        return true;
-
-    GjsAutoTypeClass<GTypeClass> klass(gtype);
-
-    /* check all bits are defined for flags.. not necessarily desired */
-    tmpval = (guint32)value;
-    if (tmpval != value) { /* Not a guint32 */
-        gjs_throw(context,
-                  "0x%" G_GINT64_MODIFIER "x is not a valid value for flags %s",
-                  value, g_type_name(G_TYPE_FROM_CLASS(klass)));
-        return false;
-    }
-
-    while (tmpval) {
-        v = g_flags_get_first_value(klass.as<GFlagsClass>(), tmpval);
-        if (!v) {
+        /* check all bits are valid bits for the flag and is a 32 bit flag*/
+        if ((tmpval &= gflags_class->mask) != value) { /* Not a guint32 with invalid mask values*/
             gjs_throw(context,
-                      "0x%x is not a valid value for flags %s",
-                      (guint32)value, g_type_name(G_TYPE_FROM_CLASS(klass)));
+                    "0x%" G_GINT64_MODIFIER "x is not a valid value for flags %s",
+                    value, g_type_name(gtype));
             return false;
         }
-
-        tmpval &= ~v->value;
     }
 
     return true;
@@ -2573,8 +2557,20 @@ bool gjs_value_from_g_argument(JSContext* context,
                     gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(arg));
 
                 gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
-                if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
-                    return false;
+
+                if (gtype != G_TYPE_NONE) {
+                    /* check make sure 32 bit flag */
+                   if (static_cast<uint32_t>(value_int64) != value_int64) { /* Not a guint32 */
+                        gjs_throw(context,
+                                "0x%" G_GINT64_MODIFIER "x is not a valid value for flags %s",
+                                value_int64, g_type_name(gtype));
+                        return false;
+                    }
+
+                    /* Pass only valid values*/
+                    GjsAutoTypeClass<GFlagsClass> gflags_class(gtype);
+                    value_int64 &= gflags_class->mask;
+                }
 
                 value_p.setNumber(static_cast<double>(value_int64));
                 return true;
