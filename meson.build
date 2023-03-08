@@ -679,10 +679,6 @@ endif
 
 ### Tests and test setups ######################################################
 
-if not get_option('skip_gtk_tests')
-    have_gtk4 = dependency('gtk4', required: false).found()
-endif
-
 subdir('installed-tests')
 
 # Note: The test program in test/ needs to be ported

@@ -203,9 +203,13 @@ endif
 # during build should be run using dbus-run-session
 
 dbus_tests = ['GDBus']
-if have_gtk4 and not get_option('skip_gtk_tests')
-    # FIXME: find out why GTK4 tries to acquire a message bus
-    dbus_tests += 'Gtk4'
+if not get_option('skip_gtk_tests')
+    have_gtk4 = dependency('gtk4', required: false).found()
+
+    if have_gtk4 
+        # FIXME: find out why GTK4 tries to acquire a message bus
+        dbus_tests += 'Gtk4'
+    endif
 endif
 
 bus_config = files('../../test/test-bus.conf')
