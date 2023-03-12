@@ -20,6 +20,6 @@ void gjs_register_static_modules(void) {
     registry.add("cairoNative", gjs_js_define_cairo_stuff);
 #endif
     registry.add("system", gjs_js_define_system_stuff);
-    registry.add("console", gjs_define_console_stuff);
+    registry.add("_consoleNative", gjs_define_console_private_stuff);
     registry.add("_print", gjs_define_print_stuff);
 }

@@ -240,6 +240,7 @@ endforeach
 modules_tests = [
     'Async',
     'Console',
+    'Readline',
     'ESModules',
     'AsyncMainloop',
     'Encoding',

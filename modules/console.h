@@ -12,7 +12,7 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_console_stuff(JSContext              *context,
-                              JS::MutableHandleObject module);
+bool gjs_define_console_private_stuff(JSContext* context,
+                                      JS::MutableHandleObject module);
 
 #endif  // MODULES_CONSOLE_H_

@@ -3,6 +3,8 @@
 
 import GLib from 'gi://GLib';
 
+import { prettyPrint } from './_prettyPrint.js';
+
 const NativeConsole = import.meta.importSync('_consoleNative');
 
 const DEFAULT_LOG_DOMAIN = 'Gjs-Console';
@@ -36,7 +38,15 @@ function hasFormatSpecifiers(str) {
  * @param {any} item an item to format
  */
 function formatGenerically(item) {
-    return JSON.stringify(item, null, 4);
+    if (typeof item === 'string') {
+        return JSON.stringify(item, null, 4);
+    }
+
+    try {
+        return JSON.stringify(item, null, 4);
+    } catch {
+        return `${item}`;
+    }
 }
 
 /**
@@ -44,6 +54,7 @@ function formatGenerically(item) {
  * @returns {string}
  */
 function formatOptimally(item) {
+    try {
     // Handle optimal error formatting.
     if (item instanceof Error) {
         return `${item.toString()}${item.stack ? '\n' : ''}${item.stack
@@ -53,10 +64,12 @@ function formatOptimally(item) {
             .join('\n')}`;
     }
 
-    // TODO: Enhance 'optimal' formatting.
-    // There is a current work on a better object formatter for GJS in
-    // https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/587
-    return JSON.stringify(item, null, 4);
+    
+    return prettyPrint(item);
+} catch {
+}
+
+return formatGenerically(item);
 }
 
 /**
@@ -490,7 +503,7 @@ class Console {
      * https://console.spec.whatwg.org/#printer
      *
      * This implementation of Printer maps WHATWG log severity to
-     * {@see GLib.LogLevelFlags} and outputs using GLib structured logging.
+     * {@link GLib.LogLevelFlags} and outputs using GLib structured logging.
      *
      * @param {string} logLevel the log level (log tag) the args should be
      *   emitted with

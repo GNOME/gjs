@@ -8,6 +8,7 @@
 
     <!-- ESM-based modules -->
     <file>modules/esm/_bootstrap/default.js</file>
+    <file>modules/esm/_bootstrap/repl.js</file>
 
     <file>modules/esm/_encoding/encoding.js</file>
     <file>modules/esm/_encoding/encodingMap.js</file>
@@ -15,10 +16,19 @@
 
     <file>modules/esm/_timers.js</file>
 
+    <file>modules/esm/_readline/utils.js</file>
+    <file>modules/esm/_readline/primordials.js</file>
+    <file>modules/esm/_readline/callbacks.js</file>
+    <file>modules/esm/_readline/terminal.js</file>
+
     <file>modules/esm/cairo.js</file>
+    <file>modules/esm/_prettyPrint.js</file>
+    <file>modules/esm/_legacyGlobal.js</file>
     <file>modules/esm/gettext.js</file>
     <file>modules/esm/console.js</file>
     <file>modules/esm/gi.js</file>
+    <file>modules/esm/repl.js</file>
+    <file>modules/esm/readline.js</file>
     <file>modules/esm/system.js</file>
 
     <!-- Script-based Modules -->
@@ -32,6 +42,7 @@
 
     <file>modules/script/byteArray.js</file>
     <file>modules/script/cairo.js</file>
+    <file>modules/script/console.js</file>
     <file>modules/script/gettext.js</file>
     <file>modules/script/lang.js</file>
     <file>modules/script/_legacy.js</file>

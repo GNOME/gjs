@@ -9,3 +9,9 @@ import '_encoding/encoding';
 import 'console';
 // Bootstrap the Timers API
 import '_timers';
+// Install the Repl constructor for Console.interact()
+import 'repl';
+// Install the pretty printing global function
+import '_prettyPrint';
+// Setup legacy global values
+import '_legacyGlobal';
