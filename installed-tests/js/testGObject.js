@@ -62,7 +62,7 @@ describe('GObject overrides', function () {
 });
 
 describe('GObject should', function () {
-    const types = ['gpointer', 'GBoxed', 'GParam', 'GInterface', 'GObject', 'GVariant'];
+    const types = ['gpointer', 'GBoxed', 'GParam', 'GInterface', 'GObject', 'GVariant', 'GClosure'];
 
     types.forEach(type => {
         it(`be able to create a GType object for ${type}`, function () {

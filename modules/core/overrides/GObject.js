@@ -890,4 +890,18 @@ function _init() {
         throw new Error('GObject.signal_handlers_disconnect_by_data() is not \
 introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     };
+
+    GObject.Closure._new_internal = function (callable) {
+        return Gi.create_closure(callable);
+    };
+
+    GObject.Closure.new_simple = function () {
+        throw new Error('GObject.Closure.new_simple() is not introspectable. \
+Use new GObject.Closure() instead.');
+    };
+
+    GObject.Closure.new_object = function () {
+        throw new Error('GObject.Closure.new_object() is not introspectable. \
+Use new GObject.Closure() instead.');
+    };
 }

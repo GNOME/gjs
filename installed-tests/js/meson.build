@@ -124,7 +124,6 @@ jasmine_tests = [
     'GObject',
     'GObjectClass',
     'GObjectInterface',
-    'GObjectValue',
     'GTypeClass',
     'Importer',
     'Importer2',
@@ -246,6 +245,8 @@ modules_tests = [
     'GLibLogWriter',
     'Global',
     'Timers',
+    'GObjectClosure',
+    'GObjectValue',
 ]
 if build_cairo
     modules_tests += 'CairoModule'

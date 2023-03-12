@@ -328,18 +328,18 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
         }
     }
 
-    if (gtype() == G_TYPE_VARIANT) {
+    if (gtype() == G_TYPE_VARIANT || gtype() == G_TYPE_CLOSURE) {
         /* Short-circuit construction for GVariants by calling into the JS packing
            function */
         const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         if (!boxed_invoke_constructor(context, obj, atoms.new_internal(), args))
             return false;
 
-        // The return value of GLib.Variant.new_internal() gets its own
-        // BoxedInstance, and the one we're setting up in this constructor is
-        // discarded.
+        // The return values of GLib.Variant.new_internal() and
+        // GObject.Closure.new_internal() gets their own BoxedInstance,
+        // and the one we're setting up in this constructor is discarded.
         debug_lifecycle(
-            "Boxed construction delegated to GVariant constructor, "
+            "Boxed construction delegated to JavaScript constructor, "
             "boxed object discarded");
 
         return true;

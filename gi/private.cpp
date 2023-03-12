@@ -7,11 +7,13 @@
 
 #include <stdint.h>
 
+#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/Array.h>  // for JS::GetArrayLength,
 #include <js/CallArgs.h>
+#include <js/ComparisonOperators.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -20,7 +22,9 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_NewPlainObject
-
+#include <jsfriendapi.h>  // for JS_GetObjectFunction
+#include "gi/boxed.h"
+#include "gi/closure.h"
 #include "gi/gobject.h"
 #include "gi/gtype.h"
 #include "gi/interface.h"
@@ -28,6 +32,7 @@
 #include "gi/param.h"
 #include "gi/private.h"
 #include "gi/repo.h"
+#include "gi/value.h"  // for AutoGValueVector, AutoGValue
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
@@ -306,6 +311,61 @@ static inline void gjs_add_interface(GType instance_type,
                                 &interface_vtable);
 }
 
+static bool gjs_value_from_closure(JSContext* cx, Gjs::Closure* closure,
+                                   JS::MutableHandleValue value) {
+    GjsAutoStructInfo info =
+        g_irepository_find_by_gtype(nullptr, G_TYPE_CLOSURE);
+    g_assert(info);
+
+    JS::RootedObject boxed(cx, BoxedInstance::new_for_c_struct(
+                                   cx, info, closure, BoxedInstance::NoCopy()));
+    if (!boxed)
+        return false;
+
+    value.setObject(*boxed);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_create_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject callable(cx);
+
+    if (!gjs_parse_call_args(cx, "create_closure", args, "o", "callable",
+                             &callable))
+        return false;
+
+    if (!JS_ObjectIsFunction(callable)) {
+        gjs_throw(cx, "create_closure() expects a callable function");
+        return false;
+    }
+
+    JS::RootedFunction func(cx, JS_GetObjectFunction(callable));
+
+    Gjs::Closure* closure =
+        Gjs::Closure::create_marshaled(cx, func, "custom callback", false);
+    if (closure == nullptr)
+        return false;
+
+    g_closure_ref(closure);
+    g_closure_sink(closure);
+
+    GjsAutoStructInfo info =
+        g_irepository_find_by_gtype(nullptr, G_TYPE_CLOSURE);
+    g_assert(info);
+
+    JS::RootedObject boxed(cx,
+                           BoxedInstance::new_for_c_struct(cx, info, closure));
+    g_closure_unref(closure);
+
+    if (!boxed)
+        return false;
+
+    args.rval().setObject(*boxed);
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type_impl(JSContext* cx, const char* name,
                                    GTypeFlags type_flags,
@@ -565,6 +625,7 @@ static JSFunctionSpec private_module_funcs[] = {
           GJS_MODULE_PROP_FLAGS),
     JS_FN("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
     JS_FN("lookupConstructor", gjs_lookup_constructor, 1, 0),
+    JS_FN("create_closure", gjs_create_closure, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
 };
 

@@ -27,6 +27,7 @@ overrides:
       - matchers.js
       - minijasmine.js
       - minijasmine-executor.js
+      - dataUtils.js
       - testAsync.js
       - testAsyncMainloop.js
       - testCairoModule.js
@@ -35,6 +36,8 @@ overrides:
       - testEncoding.js
       - testGLibLogWriter.js
       - testTimers.js
+      - testGObjectClosure.js
+      - testGObjectValue.js
       - modules/importmeta.js
       - modules/exports.js
       - modules/say.js

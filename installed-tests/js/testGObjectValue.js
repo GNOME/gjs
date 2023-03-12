@@ -17,29 +17,28 @@ describe('GObject value (GValue)', function () {
         v = new GObject.Value();
     });
 
-    function getDefaultContentByType(type) {
+    function getDefaultContentByType(type, creatingObject = false) {
         if (SIGNED_TYPES.includes(type))
             return -((Math.random() * 100 | 0) + 1);
         if (UNSIGNED_TYPES.includes(type))
-            return -getDefaultContentByType('int') + 2;
+            return -getDefaultContentByType('int', creatingObject) + 2;
         if (FLOATING_TYPES.includes(type))
-            return getDefaultContentByType('uint') + 0.5;
+            return getDefaultContentByType('uint', creatingObject) + 0.5;
         if (type === 'string')
-            return `Hello GValue! ${getDefaultContentByType('uint')}`;
+            return `Hello GValue! ${getDefaultContentByType('uint', creatingObject)}`;
         if (type === 'boolean')
-            return !!(getDefaultContentByType('int') % 2);
+            return !!(getDefaultContentByType('int', creatingObject) % 2);
         if (type === 'gtype')
             return getGType(ALL_TYPES[Math.random() * ALL_TYPES.length | 0]);
 
         if (type === 'boxed' || type === 'boxed-struct') {
             return new GIMarshallingTests.BoxedStruct({
-                long_: getDefaultContentByType('long'),
+                long_: getDefaultContentByType('long', creatingObject),
                 // string_: getDefaultContentByType('string'), not supported
             });
         }
         if (type === 'object') {
-            const wasCreatingObject = this.creatingObject;
-            this.creatingObject = true;
+            const wasCreatingObject = creatingObject;
             const props = ALL_TYPES.filter(e =>
                 (e !== 'object' || !wasCreatingObject) &&
                 e !== 'boxed' &&
@@ -49,31 +48,31 @@ describe('GObject value (GValue)', function () {
                 e !== 'schar').concat([
                 'boxed-struct',
             ]).reduce((ac, a) => ({
-                ...ac, [`some-${a}`]: getDefaultContentByType(a),
+                ...ac, [`some-${a}`]: getDefaultContentByType(a, true),
             }), {});
-            delete this.creatingObject;
+
             return new GIMarshallingTests.PropertiesObject(props);
         }
         if (type === 'param') {
-            return GObject.ParamSpec.string('test-param', '', getDefaultContentByType('string'),
+            return GObject.ParamSpec.string('test-param', '', getDefaultContentByType('string', creatingObject),
                 GObject.ParamFlags.READABLE, '');
         }
         if (type === 'variant') {
             return new GLib.Variant('a{sv}', {
                 pasta: new GLib.Variant('s', 'Carbonara (con guanciale)'),
                 pizza: new GLib.Variant('s', 'Verace'),
-                randomString: new GLib.Variant('s', getDefaultContentByType('string')),
+                randomString: new GLib.Variant('s', getDefaultContentByType('string', creatingObject)),
             });
         }
         if (type === 'gvalue') {
             const value = new GObject.Value();
             const valueType = NUMERIC_TYPES[Math.random() * NUMERIC_TYPES.length | 0];
             value.init(getGType(valueType));
-            setContent(value, valueType, getDefaultContentByType(valueType));
+            setContent(value, valueType, getDefaultContentByType(valueType, creatingObject));
             return value;
         }
         if (type === 'instance')
-            return new Regress.TestFundamentalSubObject(getDefaultContentByType('string'));
+            return new Regress.TestFundamentalSubObject(getDefaultContentByType('string', creatingObject));
 
 
         throw new Error(`No default content set for type ${type}`);

@@ -1342,16 +1342,26 @@ static bool value_to_interface_gi_argument(
 
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    GClosure* closure =
-                        Gjs::Closure::create_marshaled(cx, obj, "boxed");
-                    // GI doesn't know about floating GClosure references. We
-                    // guess that if this is a return value going from JS::Value
-                    // to GArgument, it's intended to be passed to a C API that
-                    // will consume the floating reference.
-                    if (arg_type != GJS_ARGUMENT_RETURN_VALUE) {
-                        g_closure_ref(closure);
-                        g_closure_sink(closure);
+                    if (JS_ObjectIsFunction(obj)) {
+                        GClosure* closure =
+                            Gjs::Closure::create_marshaled(cx, obj, "boxed");
+                        // GI doesn't know about floating GClosure references.
+                        // We guess that if this is a return value going from
+                        // JS::Value to GArgument, it's intended to be passed to
+                        // a C API that will consume the floating reference.
+                        if (arg_type != GJS_ARGUMENT_RETURN_VALUE) {
+                            g_closure_ref(closure);
+                            g_closure_sink(closure);
+                        }
+                        gjs_arg_set(arg, closure);
+                        return true;
                     }
+
+                    Gjs::Closure* closure =
+                        BoxedBase::to_c_ptr<Gjs::Closure>(cx, obj);
+                    if (!closure)
+                        return false;
+
                     gjs_arg_set(arg, closure);
                     return true;
                 }

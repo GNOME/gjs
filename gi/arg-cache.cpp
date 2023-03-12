@@ -1176,6 +1176,20 @@ bool GClosureInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
     if (value.isNull())
         return NullableIn::in(cx, state, arg, value);
 
+    if (value.isObject()) {
+        JS::RootedObject obj(cx, &value.toObject());
+        GType gtype;
+
+        if (!gjs_gtype_get_actual_gtype(cx, obj, &gtype))
+            return false;
+
+        if (gtype == G_TYPE_CLOSURE) {
+            gjs_arg_set(arg, BoxedBase::to_c_ptr<Gjs::Closure>(cx, obj));
+            state->ignore_release.insert(arg);
+            return true;
+        }
+    }
+
     if (!(JS_TypeOfValue(cx, value) == JSTYPE_FUNCTION))
         return report_typeof_mismatch(cx, m_arg_name, value,
                                       ExpectedType::FUNCTION);
