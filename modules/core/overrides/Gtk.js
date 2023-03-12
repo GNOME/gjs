@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna
 
 const Legacy = imports._legacy;
+const Gi = imports._gi;
 const {Gio, GjsPrivate, GObject} = imports.gi;
 const {_registerType} = imports._common;
 
@@ -143,12 +144,19 @@ function _init() {
         }, class extends GObject.Object {
             vfunc_create_closure(builder, handlerName, flags, connectObject) {
                 const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
-                return _createClosure(
+                return _wrapInSignalMeta(connectObject, _createClosure(
                     builder, builder.get_current_object(),
-                    handlerName, swapped, connectObject);
+                    handlerName, swapped, connectObject));
             }
         });
     }
+}
+
+function _wrapInSignalMeta(connectObject, callable) {
+    if (connectObject instanceof GObject.Object)
+        return Gi.create_signal_closure(connectObject, callable, 0);
+    else
+        return callable;
 }
 
 function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {

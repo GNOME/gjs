@@ -165,9 +165,22 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     if (marshal_data) {
         /* we are used for a signal handler */
-        guint signal_id;
+        auto* signal_meta = static_cast<SignalClosureMeta*>(marshal_data);
+        unsigned signal_id = signal_meta->signal_id;
 
-        signal_id = GPOINTER_TO_UINT(marshal_data);
+        if (signal_id == 0) {
+            GSignalInvocationHint* hint =
+                static_cast<GSignalInvocationHint*>(invocation_hint);
+
+            if (!hint) {
+                gjs_debug(GJS_DEBUG_GCLOSURE,
+                          "Closure is not a signal handler but is being "
+                          "handled like one.");
+                return;
+            }
+
+            signal_id = hint->signal_id;
+        }
 
         g_signal_query(signal_id, &signal_query);
 
@@ -798,11 +811,12 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (!FundamentalBase::to_gvalue(context, fundamental_object, gvalue))
             return false;
     } else {
-        gjs_debug(GJS_DEBUG_GCLOSURE, "JS::Value is number %d gtype fundamental %d transformable to int %d from int %d",
-                  value.isNumber(),
-                  G_TYPE_IS_FUNDAMENTAL(gtype),
-                  g_value_type_transformable(gtype, G_TYPE_INT),
-                  g_value_type_transformable(G_TYPE_INT, gtype));
+        gjs_debug(GJS_DEBUG_GCLOSURE,
+                  "JS::Value is number %d\ngtype fundamental %d\ntransformable "
+                  "to int %s\ntransformable from int %s",
+                  value.isNumber(), G_TYPE_IS_FUNDAMENTAL(gtype),
+                  g_value_type_transformable(gtype, G_TYPE_INT) ? "yes" : "no",
+                  g_value_type_transformable(G_TYPE_INT, gtype) ? "yes" : "no");
 
         gjs_throw(context,
                   "Don't know how to convert JavaScript object to GType %s",

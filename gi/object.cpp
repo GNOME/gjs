@@ -2186,7 +2186,7 @@ ObjectInstance::connect_impl(JSContext          *context,
         return false;
     }
 
-    GClosure* closure = Gjs::Closure::create_for_signal(
+    GClosure* closure = Gjs::SignalClosure::create(
         context, callback, "signal callback", signal_id);
     if (closure == NULL)
         return false;

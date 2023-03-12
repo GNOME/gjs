@@ -341,14 +341,13 @@ static bool gjs_create_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    JS::RootedFunction func(cx, JS_GetObjectFunction(callable));
+    Gjs::Closure::Ptr closure(
+        Gjs::Closure::create_marshaled(cx, callable, "custom callback", false),
+        GjsAutoTakeOwnership{});
 
-    Gjs::Closure* closure =
-        Gjs::Closure::create_marshaled(cx, func, "custom callback", false);
     if (closure == nullptr)
         return false;
 
-    g_closure_ref(closure);
     g_closure_sink(closure);
 
     GjsAutoStructInfo info =
@@ -357,13 +356,50 @@ static bool gjs_create_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     JS::RootedObject boxed(cx,
                            BoxedInstance::new_for_c_struct(cx, info, closure));
-    g_closure_unref(closure);
 
     if (!boxed)
         return false;
 
     args.rval().setObject(*boxed);
     return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_create_signal_closure(JSContext* cx, unsigned argc,
+                                      JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject owner(cx), callable(cx);
+    uint32_t signal_id = 0;
+
+    if (!gjs_parse_call_args(cx, "create_signal_closure", args, "oou", "owner",
+                             &owner, "callable", &callable, "signal_id",
+                             &signal_id))
+        return false;
+
+    if (!JS_ObjectIsFunction(callable)) {
+        gjs_throw(cx, "create_signal_closure() expects a callable function");
+        return false;
+    }
+
+    ObjectBase* base;
+    if (!ObjectInstance::for_js_typecheck(cx, owner, &base))
+        return false;
+
+    if (!base->check_is_instance(cx, "signal hookup"))
+        return false;
+
+    ObjectInstance* instance = base->to_instance();
+
+    Gjs::Closure* closure = Gjs::SignalClosure::create(
+        cx, callable, "custom signal callback", signal_id);
+
+    if (closure == nullptr)
+        return false;
+    if (!instance->associate_closure(cx, closure))
+        return false;
+
+    return gjs_value_from_closure(cx, closure, args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -626,6 +662,8 @@ static JSFunctionSpec private_module_funcs[] = {
     JS_FN("signal_new", gjs_signal_new, 6, GJS_MODULE_PROP_FLAGS),
     JS_FN("lookupConstructor", gjs_lookup_constructor, 1, 0),
     JS_FN("create_closure", gjs_create_closure, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("create_signal_closure", gjs_create_signal_closure, 3,
+          GJS_MODULE_PROP_FLAGS),
     JS_FS_END,
 };
 

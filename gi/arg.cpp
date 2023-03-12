@@ -1357,8 +1357,7 @@ static bool value_to_interface_gi_argument(
                         return true;
                     }
 
-                    Gjs::Closure* closure =
-                        BoxedBase::to_c_ptr<Gjs::Closure>(cx, obj);
+                    GClosure* closure = BoxedBase::to_c_ptr<GClosure>(cx, obj);
                     if (!closure)
                         return false;
 
