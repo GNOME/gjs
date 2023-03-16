@@ -58,7 +58,6 @@
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
-#include "gjs/context.h"
 #include "gjs/deprecation.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -165,10 +164,9 @@ bool ObjectInstance::check_gobject_disposed_or_finalized(
         "Object %s.%s (%p), has been already %s — impossible to %s "
         "it. This might be caused by the object having been destroyed from C "
         "code using something such as destroy(), dispose(), or remove() "
-        "vfuncs.",
+        "vfuncs.\n%s",
         ns(), name(), m_ptr.get(), m_gobj_finalized ? "finalized" : "disposed",
-        for_what);
-    gjs_dumpstack();
+        for_what, gjs_dumpstack_string().c_str());
     return false;
 }
 
