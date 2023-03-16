@@ -297,6 +297,14 @@ void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
 void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     GITypeInfo ret_type;
 
+    // Fill in the result with some hopefully neutral value
+    g_callable_info_load_return_type(m_info, &ret_type);
+    if (g_type_info_get_tag(&ret_type) != GI_TYPE_TAG_VOID) {
+        GIArgument argument = {};
+        gjs_gi_argument_init_default(&ret_type, &argument);
+        set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
+    }
+
     if (G_UNLIKELY(!is_valid())) {
         warn_about_illegal_js_callback(
             "during shutdown",
@@ -375,8 +383,6 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     JS::RootedValue rval(context);
 
-    g_callable_info_load_return_type(m_info, &ret_type);
-
     if (!callback_closure_inner(context, this_object, gobj, &rval, args,
                                 &ret_type, n_args, c_args_offset, result)) {
         if (!JS_IsExceptionPending(context)) {
@@ -397,14 +403,6 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                    : "callable object " + gjs_debug_object(callable());
             g_error("Call to %s (%s.%s) terminated with uncatchable exception",
                     descr.c_str(), m_info.ns(), m_info.name());
-        }
-
-        // Fill in the result with some hopefully neutral value
-        if (g_type_info_get_tag(&ret_type) != GI_TYPE_TAG_VOID) {
-            GIArgument argument = {};
-            g_callable_info_load_return_type(m_info, &ret_type);
-            gjs_gi_argument_init_default(&ret_type, &argument);
-            set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
         }
 
         // If the callback has a GError** argument, then make a GError from the
