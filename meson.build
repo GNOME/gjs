@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
-project('gjs', 'cpp', 'c', version: '1.75.90', license: ['MIT', 'LGPL2+'],
+project('gjs', 'cpp', 'c', version: '1.76.0', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 0.54.0',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'c_std=c99',
         'warning_level=2', 'b_pch=true' ])
