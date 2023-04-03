@@ -312,6 +312,19 @@ for (const bytes of inputStream.createSyncIterator(4)) {
 [gbytes]: https://gjs-docs.gnome.org/glib20/glib.bytes
 [ginputstream]: https://gjs-docs.gnome.org/gio20/gio.inputstream
 
+### Gio.Application.runAsync()
+
+Returns:
+* (`Promise`)
+
+Similar to [`Gio.Application.run`][gio-application-run] but return a Promise which resolves when
+the main loop ends, instead of blocking while the main loop runs.
+
+This helps avoid the situation where Promises never resolved if you didn't
+run the application inside a callback.
+
+[gio-application-run]: https://gjs-docs.gnome.org/gio20~2.0/gio.application#method-run
+
 ## [GLib](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/GLib.js)
 
 The `GLib` override includes a number of utilities and conveniences for working
@@ -379,6 +392,18 @@ Note that this method will unpack source values (e.g. `uint32`) to native values
 (e.g. `Number`), so some type information may not be fully represented in the
 result.
 
+### GLib.MainLoop.runAsync()
+
+Returns:
+* (`Promise`)
+
+Similar to [`GLib.MainLoop.run`][glib-mainloop-run] but return a Promise which resolves when
+the main loop ends, instead of blocking while the main loop runs.
+
+This helps avoid the situation where Promises never resolved if you didn't
+run the main loop inside a callback.
+
+[glib-mainloop-run]: https://gjs-docs.gnome.org/glib20/glib.mainloop#method-run
 
 ## [GObject](https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/modules/core/overrides/GObject.js)
 
