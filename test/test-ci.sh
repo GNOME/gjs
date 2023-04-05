@@ -48,7 +48,7 @@ do_Get_Upstream_Base () {
         git fetch --depth=30 --no-tags upstream "$base_branch"
     fi
 
-    git branch ci-upstream-base-branch FETCH_HEAD
+    git branch -f ci-upstream-base-branch FETCH_HEAD
 
     # Work out the newest common ancestor between the detached HEAD that this CI
     # job has checked out, and the upstream target branch (which will typically
