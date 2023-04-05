@@ -164,6 +164,7 @@ gschemas_compiled = gnome.compile_schemas(
 
 tests_dependencies = [
     gschemas_compiled,
+    gjs_private_typelib,
     gjstest_tools_typelib,
     gimarshallingtests_typelib,
     regress_typelib,
