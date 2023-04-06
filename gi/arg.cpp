@@ -753,22 +753,13 @@ gjs_array_to_ptrarray(JSContext   *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_array_to_flat_struct_array(JSContext* cx,
-                                           JS::HandleValue array_value,
-                                           unsigned length,
-                                           GITypeInfo* param_info,
-                                           GIBaseInfo* interface_info,
-                                           GIInfoType info_type, void** arr_p) {
-    g_assert(
-        (info_type == GI_INFO_TYPE_STRUCT || info_type == GI_INFO_TYPE_UNION) &&
-        "Only flat arrays of unboxed structs or unions are supported");
-    size_t struct_size;
-    if (info_type == GI_INFO_TYPE_UNION)
-        struct_size = g_union_info_get_size(interface_info);
-    else
-        struct_size = g_struct_info_get_size(interface_info);
+static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
+                                    unsigned length, GITypeInfo* param_info,
+                                    size_t param_size, void** arr_p) {
+    g_assert((param_size > 0) &&
+             "Only flat arrays of elements of known size are supported");
 
-    GjsAutoPointer<uint8_t> flat_array = g_new0(uint8_t, struct_size * length);
+    GjsAutoPointer<uint8_t> flat_array = g_new0(uint8_t, param_size * length);
 
     JS::RootedObject array(cx, &array_value.toObject());
     JS::RootedValue elem(cx);
@@ -786,8 +777,8 @@ static bool gjs_array_to_flat_struct_array(JSContext* cx,
                                      GI_TRANSFER_NOTHING, &arg))
             return false;
 
-        memcpy(&flat_array[struct_size * i], gjs_arg_get<void*>(&arg),
-               struct_size);
+        memcpy(&flat_array[param_size * i], gjs_arg_get<void*>(&arg),
+               param_size);
     }
 
     *arr_p = flat_array.release();
@@ -886,14 +877,13 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
         if (!g_type_info_is_pointer(param_info)) {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(param_info);
-            GIInfoType info_type = g_base_info_get_type(interface_info);
-            if (info_type == GI_INFO_TYPE_STRUCT ||
-                info_type == GI_INFO_TYPE_UNION) {
-                // Ignore transfer in the case of a flat struct array. Structs
-                // are copied by value.
-                return gjs_array_to_flat_struct_array(
-                    context, array_value, length, param_info, interface_info,
-                    info_type, arr_p);
+
+            size_t element_size = gjs_type_get_element_size(
+                g_type_info_get_tag(param_info), param_info);
+
+            if (element_size) {
+                return gjs_array_to_flat_array(context, array_value, length,
+                                               param_info, element_size, arr_p);
             }
         }
         [[fallthrough]];
