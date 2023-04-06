@@ -510,8 +510,8 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
 
     g_assert(props && "Property bag cannot be null");
 
-    GITypeInfo* key_param_info = g_type_info_get_param_type(type_info, 0);
-    GITypeInfo* val_param_info = g_type_info_get_param_type(type_info, 1);
+    GjsAutoBaseInfo key_param_info = g_type_info_get_param_type(type_info, 0);
+    GjsAutoBaseInfo val_param_info = g_type_info_get_param_type(type_info, 1);
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
