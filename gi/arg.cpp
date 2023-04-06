@@ -803,21 +803,6 @@ static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
     }
 }
 
-[[nodiscard]] static bool is_gvalue_flat_array(GITypeInfo* param_info,
-                                               GITypeTag element_type) {
-    GIInfoType info_type;
-
-    if (element_type != GI_TYPE_TAG_INTERFACE)
-        return false;
-
-    GjsAutoBaseInfo interface_info = g_type_info_get_interface(param_info);
-    info_type = g_base_info_get_type(interface_info);
-
-    /* Special case for GValue "flat arrays" */
-    return (is_gvalue(interface_info, info_type) &&
-            !g_type_info_is_pointer(param_info));
-}
-
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                                size_t length, GITransfer transfer,
@@ -869,14 +854,17 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
 
     /* Everything else is a pointer type */
     case GI_TYPE_TAG_INTERFACE:
-        /* Special case for GValue "flat arrays" */
-        if (is_gvalue_flat_array(param_info, element_type))
-                return gjs_array_to_auto_array<GValue>(context, array_value,
-                                                       length, arr_p);
-
         if (!g_type_info_is_pointer(param_info)) {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(param_info);
+            GIInfoType info_type = g_base_info_get_type(interface_info);
+
+            if (is_gvalue(interface_info, info_type)) {
+                // Special case for GValue "flat arrays", this could also
+                // using the generic case, but if we do so we're leaking atm.
+                return gjs_array_to_auto_array<GValue>(context, array_value,
+                                                       length, arr_p);
+            }
 
             size_t element_size = gjs_type_get_element_size(
                 g_type_info_get_tag(param_info), param_info);
