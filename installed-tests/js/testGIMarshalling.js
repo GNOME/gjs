@@ -2080,8 +2080,7 @@ describe('GObject properties', function () {
 
     if (GLib.getenv('GJS_UNDER_ASAN')) {
         testPropertyGetSet('byte_array', null, null,
-            'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398 ' +
-            'https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/463');
+            'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398');
     } else {
         testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
             ByteArray.fromString('👾'));
