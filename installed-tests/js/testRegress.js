@@ -522,9 +522,6 @@ describe('Life, the Universe and Everything', function () {
         });
 
         it('in GHash', function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-
             Regress.test_ghash_nothing_in(EXPECTED_HASH);
             Regress.test_ghash_nothing_in2(EXPECTED_HASH);
         });
@@ -607,8 +604,6 @@ describe('Life, the Universe and Everything', function () {
             });
 
             it('"copies" an object from a hash of field values', function () {
-                if (GLib.getenv('GJS_UNDER_ASAN'))
-                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
                 expect(struct.some_int).toEqual(42);
                 expect(struct.some_int8).toEqual(43);
                 expect(struct.some_double).toEqual(42.5);
@@ -1679,9 +1674,6 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('hash table passed to callback', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-
         const hashtable = {
             a: 1,
             b: 2,

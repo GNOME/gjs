@@ -38,8 +38,6 @@ function testInParameter(root, value, {omit, skip, funcName = `${root}_in`} = {}
     it('marshals as an in parameter', function () {
         if (skip)
             pending(skip);
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
         expect(() => GIMarshallingTests[funcName](value)).not.toThrow();
     });
 }
@@ -61,8 +59,6 @@ function testInoutParameter(root, inValue, outValue,
     it('marshals as an inout parameter', function () {
         if (skip)
             pending(skip);
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
         expect(GIMarshallingTests[funcName](inValue)).toEqual(outValue);
     });
 }
@@ -735,11 +731,6 @@ describe('GHashTable', function () {
     };
 
     describe('with integer values', function () {
-        beforeEach(function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-        });
-
         const intDict = {
             '-1': 1,
             0: 0,
@@ -751,10 +742,6 @@ describe('GHashTable', function () {
     });
 
     describe('with string values', function () {
-        beforeEach(function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-        });
         const stringDict = {
             '-1': '1',
             0: '0',
@@ -770,26 +757,14 @@ describe('GHashTable', function () {
     });
 
     describe('with double values', function () {
-        beforeEach(function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-        });
         testInParameter('ghashtable_double', numberDict);
     });
 
     describe('with float values', function () {
-        beforeEach(function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-        });
         testInParameter('ghashtable_float', numberDict);
     });
 
     describe('with 64-bit int values', function () {
-        beforeEach(function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-        });
         const int64Dict = {
             '-1': -1,
             0: 0,
@@ -800,10 +775,6 @@ describe('GHashTable', function () {
     });
 
     describe('with unsigned 64-bit int values', function () {
-        beforeEach(function () {
-            if (GLib.getenv('GJS_UNDER_ASAN'))
-                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-        });
         const uint64Dict = {
             '-1': 0x100000000,
             0: 0,
@@ -814,9 +785,6 @@ describe('GHashTable', function () {
     });
 
     it('symbol keys are ignored', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
-
         const symbolDict = {
             [Symbol('foo')]: 2,
             '-1': 1,
