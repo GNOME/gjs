@@ -576,6 +576,8 @@ struct GBytesIn : BoxedIn {
     using BoxedIn::BoxedIn;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg) override;
 };
 
 struct GBytesInTransferNone : GBytesIn {
@@ -1206,6 +1208,7 @@ bool GBytesIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
     JS::RootedObject object(cx, &value.toObject());
     if (JS_IsUint8Array(object)) {
+        state->ignore_release.insert(arg);
         gjs_arg_set(arg, gjs_byte_array_get_bytes(object));
         return true;
     }
@@ -1214,6 +1217,15 @@ bool GBytesIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     // ownership, so we need to do the same here.
     return BoxedBase::transfer_to_gi_argument(
         cx, object, arg, GI_DIRECTION_IN, GI_TRANSFER_EVERYTHING, G_TYPE_BYTES);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool GBytesIn::release(JSContext* cx, GjsFunctionCallState* state,
+                       GIArgument* in_arg, GIArgument* out_arg) {
+    if (state->ignore_release.erase(in_arg))
+        return BoxedIn::release(cx, state, in_arg, out_arg);
+
+    return BoxedInTransferNone::release(cx, state, in_arg, out_arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
