@@ -627,7 +627,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 /* special case GByteArray */
                 JS::RootedObject obj(context, &value.toObject());
                 if (JS_IsUint8Array(obj)) {
-                    g_value_set_boxed(gvalue, gjs_byte_array_get_byte_array(obj));
+                    g_value_take_boxed(gvalue,
+                                       gjs_byte_array_get_byte_array(obj));
                     return true;
                 }
             } else {
