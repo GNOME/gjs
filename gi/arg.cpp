@@ -794,49 +794,6 @@ static bool gjs_array_to_flat_struct_array(JSContext* cx,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_array_from_flat_gvalue_array(JSContext             *context,
-                                 gpointer               array,
-                                 unsigned               length,
-                                 JS::MutableHandleValue value)
-{
-    GValue *values = (GValue *)array;
-
-    // a null array pointer takes precedence over whatever `length` says
-    if (!values) {
-        JSObject* jsarray = JS::NewArrayObject(context, 0);
-        if (!jsarray)
-            return false;
-        value.setObject(*jsarray);
-        return true;
-    }
-
-    unsigned int i;
-    JS::RootedValueVector elems(context);
-    if (!elems.resize(length)) {
-        JS_ReportOutOfMemory(context);
-        return false;
-    }
-
-    bool result = true;
-
-    for (i = 0; i < length; i ++) {
-        GValue *gvalue = &values[i];
-        result = gjs_value_from_g_value(context, elems[i], gvalue);
-        if (!result)
-            break;
-    }
-
-    if (result) {
-        JSObject *jsarray;
-        jsarray = JS::NewArrayObject(context, elems);
-        value.setObjectOrNull(jsarray);
-    }
-
-    return result;
-}
-
 [[nodiscard]] static bool is_gvalue(GIBaseInfo* info, GIInfoType info_type) {
     switch (info_type) {
         case GI_INFO_TYPE_VALUE:
@@ -1963,9 +1920,6 @@ static bool gjs_array_from_carray_internal(
 
     element_type = g_type_info_get_tag(param_info);
 
-    if (is_gvalue_flat_array(param_info, element_type))
-        return gjs_array_from_flat_gvalue_array(context, array, length, value_p);
-
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
         JSObject* obj = gjs_byte_array_from_data(context, length, array);
@@ -2056,7 +2010,8 @@ static bool gjs_array_from_carray_internal(
 
             if (array_type != GI_ARRAY_TYPE_PTR_ARRAY &&
                 (info_type == GI_INFO_TYPE_STRUCT ||
-                 info_type == GI_INFO_TYPE_UNION) &&
+                 info_type == GI_INFO_TYPE_UNION ||
+                 info_type == GI_INFO_TYPE_VALUE) &&
                 !g_type_info_is_pointer(param_info)) {
                 size_t struct_size;
 
