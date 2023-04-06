@@ -323,8 +323,6 @@ describe('Gio.add_action_entries override', function () {
 
 describe('Gio.InputStream.prototype.createSyncIterator', function () {
     it('iterates synchronously', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/539');
         const [file] = Gio.File.new_tmp(null);
         file.replace_contents('hello ㊙ world', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
@@ -340,8 +338,6 @@ describe('Gio.InputStream.prototype.createSyncIterator', function () {
 
 describe('Gio.InputStream.prototype.createAsyncIterator', function () {
     it('iterates asynchronously', async function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/539');
         const [file] = Gio.File.new_tmp(null);
         file.replace_contents('hello ㊙ world', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
