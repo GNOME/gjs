@@ -2372,11 +2372,25 @@ static bool gjs_array_from_zero_terminated_c_array(
                     context, elems, param_info, &arg, c_array))
                 return false;
             break;
+        case GI_TYPE_TAG_INTERFACE: {
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(param_info);
+
+            if (!g_type_info_is_pointer(param_info) &&
+                is_gvalue(interface_info,
+                          g_base_info_get_type(interface_info))) {
+                if (!fill_vector_from_zero_terminated_carray<GValue>(
+                        context, elems, param_info, &arg, c_array))
+                    return false;
+                break;
+            }
+
+            [[fallthrough]];
+        }
         case GI_TYPE_TAG_GTYPE:
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_INTERFACE:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
@@ -3061,28 +3075,6 @@ static bool gjs_g_arg_release_internal(
             GITypeTag element_type;
 
             element_type = g_type_info_get_tag(param_info);
-
-            if (is_gvalue_flat_array(param_info, element_type)) {
-                if (transfer != GI_TRANSFER_CONTAINER) {
-                    gint len = g_type_info_get_array_fixed_size(type_info);
-                    gint i;
-
-                    if (len < 0) {
-                        gjs_throw(context,
-                                  "Releasing a flat GValue array that was not fixed-size or was nested"
-                                  "inside another container. This is not supported (and will leak)");
-                        return false;
-                    }
-
-                    for (i = 0; i < len; i++) {
-                        GValue* v = gjs_arg_get<GValue*>(arg) + i;
-                        g_value_unset(v);
-                    }
-                }
-
-                g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
-                return true;
-            }
 
             switch (element_type) {
             case GI_TYPE_TAG_UTF8:
