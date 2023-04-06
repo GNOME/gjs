@@ -917,62 +917,99 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
     }
 }
 
-size_t gjs_array_get_element_size(GITypeTag element_type) {
-    size_t element_size;
+size_t gjs_type_get_element_size(GITypeTag element_type,
+                                 GITypeInfo* type_info) {
+    if (g_type_info_is_pointer(type_info) &&
+        element_type != GI_TYPE_TAG_ARRAY)
+        return sizeof(void*);
 
     switch (element_type) {
     case GI_TYPE_TAG_BOOLEAN:
-        element_size = sizeof(gboolean);
-        break;
-    case GI_TYPE_TAG_UNICHAR:
-        element_size = sizeof(char32_t);
-        break;
-    case GI_TYPE_TAG_UINT8:
+        return sizeof(gboolean);
     case GI_TYPE_TAG_INT8:
-        element_size = sizeof(uint8_t);
-        break;
-    case GI_TYPE_TAG_UINT16:
+        return sizeof(int8_t);
+    case GI_TYPE_TAG_UINT8:
+        return sizeof(uint8_t);
     case GI_TYPE_TAG_INT16:
-        element_size = sizeof(uint16_t);
-        break;
-    case GI_TYPE_TAG_UINT32:
+        return sizeof(int16_t);
+    case GI_TYPE_TAG_UINT16:
+        return sizeof(uint16_t);
     case GI_TYPE_TAG_INT32:
-        element_size = sizeof(uint32_t);
-        break;
-    case GI_TYPE_TAG_UINT64:
+        return sizeof(int32_t);
+    case GI_TYPE_TAG_UINT32:
+        return sizeof(uint32_t);
     case GI_TYPE_TAG_INT64:
-        element_size = sizeof(uint64_t);
-        break;
+        return sizeof(int64_t);
+    case GI_TYPE_TAG_UINT64:
+        return sizeof(uint64_t);
     case GI_TYPE_TAG_FLOAT:
-        element_size = sizeof(float);
-        break;
+        return sizeof(float);
     case GI_TYPE_TAG_DOUBLE:
-        element_size = sizeof(double);
-        break;
+        return sizeof(double);
     case GI_TYPE_TAG_GTYPE:
-      element_size = sizeof(GType);
-      break;
-    case GI_TYPE_TAG_INTERFACE:
+        return sizeof(GType);
+    case GI_TYPE_TAG_UNICHAR:
+        return sizeof(char32_t);
+    case GI_TYPE_TAG_GLIST:
+        return sizeof(GSList);
+    case GI_TYPE_TAG_GSLIST:
+        return sizeof(GList);
+    case GI_TYPE_TAG_ERROR:
+        return sizeof(GError);
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_FILENAME:
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
-        element_size = sizeof(void*);
-        break;
-    case GI_TYPE_TAG_VOID:
-    default:
-        g_assert_not_reached();
+        return sizeof(char*);
+    case GI_TYPE_TAG_INTERFACE: {
+        GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
+
+        switch (g_base_info_get_type(interface_info)) {
+            case GI_INFO_TYPE_ENUM:
+            case GI_INFO_TYPE_FLAGS:
+                return sizeof(unsigned int);
+
+            case GI_INFO_TYPE_STRUCT:
+                return g_struct_info_get_size(interface_info);
+            case GI_INFO_TYPE_UNION:
+                return g_union_info_get_size(interface_info);
+            case GI_INFO_TYPE_VALUE:
+                return sizeof(GValue);
+            default:
+                return 0;
+        }
     }
 
-    return element_size;
+    case GI_TYPE_TAG_GHASH:
+        return sizeof(void*);
+
+    case GI_TYPE_TAG_ARRAY:
+        if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+            int length = g_type_info_get_array_length(type_info);
+            if (length < 0)
+                return sizeof(void*);
+
+            GjsAutoBaseInfo param_info =
+                g_type_info_get_param_type(type_info, 0);
+            GITypeTag param_tag = g_type_info_get_tag(param_info);
+            size_t param_size =
+                gjs_type_get_element_size(param_tag, param_info);
+
+            if (param_size)
+                return param_size * length;
+        }
+
+        return sizeof(void*);
+
+    case GI_TYPE_TAG_VOID:
+        break;
+    }
+
+    g_return_val_if_reached(0);
 }
 
 static GArray* garray_new_for_storage_type(unsigned length,
-                                           GITypeTag storage_type) {
-    size_t element_size = gjs_array_get_element_size(storage_type);
+                                           GITypeTag storage_type,
+                                           GITypeInfo* type_info) {
+    size_t element_size = gjs_type_get_element_size(storage_type, type_info);
     return g_array_sized_new(true, false, element_size, length);
 }
 
@@ -1669,7 +1706,8 @@ bool gjs_value_to_g_argument(JSContext* context, JS::HandleValue value,
             gjs_arg_set(arg, data.release());
         } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
             GITypeTag storage_type = g_type_info_get_storage_type(param_info);
-            GArray* array = garray_new_for_storage_type(length, storage_type);
+            GArray* array =
+                garray_new_for_storage_type(length, storage_type, param_info);
 
             if (data)
                 g_array_append_vals(array, data, length);
