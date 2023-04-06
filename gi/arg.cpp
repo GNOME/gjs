@@ -876,11 +876,6 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                                GITypeInfo* param_info, void** arr_p) {
     GITypeTag element_type = g_type_info_get_storage_type(param_info);
 
-    /* Special case for GValue "flat arrays" */
-    if (is_gvalue_flat_array(param_info, element_type))
-        return gjs_array_to_auto_array<GValue>(context, array_value, length,
-                                               arr_p);
-
     switch (element_type) {
     case GI_TYPE_TAG_UTF8:
         return gjs_array_to_strv (context, array_value, length, arr_p);
@@ -926,6 +921,11 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
 
     /* Everything else is a pointer type */
     case GI_TYPE_TAG_INTERFACE:
+        /* Special case for GValue "flat arrays" */
+        if (is_gvalue_flat_array(param_info, element_type))
+                return gjs_array_to_auto_array<GValue>(context, array_value,
+                                                       length, arr_p);
+
         if (!g_type_info_is_pointer(param_info)) {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(param_info);
