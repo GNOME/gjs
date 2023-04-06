@@ -9,6 +9,7 @@
 #include <string.h>  // for strcmp, strlen, memcpy
 
 #include <string>
+#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -2266,8 +2267,21 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     GITransfer transfer = GI_TRANSFER_EVERYTHING) {
     T* array = static_cast<T*>(c_array);
 
-    for (size_t i = 0; array[i]; i++) {
-        gjs_arg_set(arg, array[i]);
+    for (size_t i = 0;; i++) {
+        if constexpr (std::is_scalar_v<T>) {
+            if (!array[i])
+                    break;
+
+            gjs_arg_set(arg, array[i]);
+        } else {
+            uint8_t* element_start = reinterpret_cast<uint8_t*>(&array[i]);
+            if (*element_start == 0 &&
+                // cppcheck-suppress pointerSize
+                memcmp(element_start, element_start + 1, sizeof(T) - 1) == 0)
+                    break;
+
+            gjs_arg_set(arg, element_start);
+        }
 
         if (!elems.growBy(1)) {
             JS_ReportOutOfMemory(cx);
