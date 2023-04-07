@@ -543,6 +543,9 @@ describe('Zero-terminated C array', function () {
 
         ['none', 'container', 'full'].forEach(transfer => {
             it(`marshals as a transfer-${transfer} in and out parameter`, function () {
+                if (transfer === 'full')
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/399');
+
                 const returnedArray =
                     GIMarshallingTests[`array_gvariant_${transfer}_in`](variantArray);
                 expect(returnedArray.map(v => v.deepUnpack())).toEqual([27, 'Hello']);
