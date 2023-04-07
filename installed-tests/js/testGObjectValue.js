@@ -59,7 +59,6 @@ describe('GObject value (GValue)', function () {
                 GObject.ParamFlags.READABLE, '');
         }
         if (type === 'variant') {
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
             return new GLib.Variant('a{sv}', {
                 pasta: new GLib.Variant('s', 'Carbonara (con guanciale)'),
                 pizza: new GLib.Variant('s', 'Verace'),

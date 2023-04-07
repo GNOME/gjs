@@ -209,8 +209,6 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('closure with GLib.Variant argument', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const callback = jasmine.createSpy('callback')
             .and.returnValue(new GLib.Variant('s', 'hello'));
         const variant = new GLib.Variant('i', 42);
@@ -240,39 +238,29 @@ describe('Life, the Universe and Everything', function () {
     // Regress.TestObj.emit_sig_with_foreign_struct()
 
     it('integer GLib.Variant', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const ivar = Regress.test_gvariant_i();
         expect(ivar.get_type_string()).toEqual('i');
         expect(ivar.unpack()).toEqual(1);
     });
 
     it('string GLib.Variant', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const svar = Regress.test_gvariant_s();
         expect(String.fromCharCode(svar.classify())).toEqual('s');
         expect(svar.unpack()).toEqual('one');
     });
 
     it('dictionary GLib.Variant', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const asvvar = Regress.test_gvariant_asv();
         expect(asvvar.recursiveUnpack()).toEqual({name: 'foo', timeout: 10});
     });
 
     it('variant GLib.Variant', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const vvar = Regress.test_gvariant_v();
         expect(vvar.unpack()).toEqual(jasmine.any(GLib.Variant));
         expect(vvar.recursiveUnpack()).toEqual('contents');
     });
 
     it('string array GLib.Variant', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const asvar = Regress.test_gvariant_as();
         expect(asvar.deepUnpack()).toEqual(['one', 'two', 'three']);
     });
@@ -1846,8 +1834,6 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('marshals a transfer-floating GLib.Variant', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         expect(Regress.get_variant().unpack()).toEqual(42);
     });
 
