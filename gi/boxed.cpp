@@ -1099,12 +1099,8 @@ bool BoxedInstance::init_from_c_struct(JSContext* cx, void* gboxed) {
         copy_boxed(gboxed);
         return true;
     } else if (gtype() == G_TYPE_VARIANT) {
-        // Sink the reference if it is floating
-        GVariant* temp = g_variant_take_ref(static_cast<GVariant*>(gboxed));
-        // Add an additional reference which will be unref-ed
-        // in the marshaller
-        own_ptr(g_variant_ref(temp));
-        debug_lifecycle("Boxed pointer created by taking GVariant ref");
+        own_ptr(g_variant_ref_sink(static_cast<GVariant*>(gboxed)));
+        debug_lifecycle("Boxed pointer created by sinking GVariant ref");
         return true;
     } else if (get_prototype()->can_allocate_directly()) {
         copy_memory(gboxed);
