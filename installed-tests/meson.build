@@ -10,6 +10,10 @@ installed_tests_metadir = abs_datadir / 'installed-tests' / meson.project_name()
 # Simple shell script tests #
 
 simple_tests = []
+tests_dependencies = [
+    gjs_console,
+    gjs_private_typelib,
+]
 
 # The test scripts need to be ported from shell scripts
 # for clang-cl builds, which do not use BASH-style shells
@@ -25,7 +29,7 @@ foreach test : simple_tests
     test_file = files('scripts' / 'test@0@.sh'.format(test))
 
     test(test, test_file, env: tests_environment, protocol: 'tap',
-         suite: 'Scripts')
+         suite: 'Scripts', depends: tests_dependencies)
 
     test_description_subst = {
         'name': 'test@0@.sh'.format(test),
@@ -80,7 +84,7 @@ foreach test : debugger_tests
 
     test('@0@ command'.format(test), debugger_test_driver,
         args: test_file, env: tests_environment, protocol: 'tap',
-        suite: 'Debugger')
+        suite: 'Debugger', depends: tests_dependencies)
 
     test_description_subst = {
         'name': '@0@.debugger'.format(test),
