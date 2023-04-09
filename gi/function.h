@@ -79,7 +79,8 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
                                 GObject* gobject, JS::MutableHandleValue rval,
                                 GIArgument** args, GITypeInfo* ret_type,
                                 int n_args, int c_args_offset, void* result);
-    void warn_about_illegal_js_callback(const char* when, const char* reason);
+    void warn_about_illegal_js_callback(const char* when, const char* reason,
+                                        bool dump_stack);
 
     static std::vector<GjsAutoGClosure> s_forever_closure_list;
 

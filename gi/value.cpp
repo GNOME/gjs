@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>  // for exit
 
+#include <sstream>
 #include <string>
 
 #include <girepository.h>
@@ -46,7 +47,6 @@
 #include "gjs/atoms.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
-#include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/objectbox.h"
@@ -142,22 +142,26 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     if (G_UNLIKELY(gjs->sweeping())) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
+        std::ostringstream message;
 
-        g_critical("Attempting to call back into JSAPI during the sweeping phase of GC. "
-                   "This is most likely caused by not destroying a Clutter actor or Gtk+ "
-                   "widget with ::destroy signals connected, but can also be caused by "
-                   "using the destroy(), dispose(), or remove() vfuncs. "
-                   "Because it would crash the application, it has been "
-                   "blocked and the JS callback not invoked.");
+        message << "Attempting to call back into JSAPI during the sweeping "
+                   "phase of GC. This is most likely caused by not destroying "
+                   "a Clutter actor or Gtk+ widget with ::destroy signals "
+                   "connected, but can also be caused by using the destroy(), "
+                   "dispose(), or remove() vfuncs. Because it would crash the "
+                   "application, it has been blocked and the JS callback not "
+                   "invoked.";
         if (hint) {
             gpointer instance;
             g_signal_query(hint->signal_id, &signal_query);
 
             instance = g_value_peek_pointer(&param_values[0]);
-            g_critical("The offending signal was %s on %s %p.", signal_query.signal_name,
-                       g_type_name(G_TYPE_FROM_INSTANCE(instance)), instance);
+            message << "\nThe offending signal was " << signal_query.signal_name
+                    << " on " << g_type_name(G_TYPE_FROM_INSTANCE(instance))
+                    << " " << instance << ".";
         }
-        gjs_dumpstack();
+        message << "\n" << gjs_dumpstack_string();
+        g_critical("%s", message.str().c_str());
         return;
     }
 

@@ -271,4 +271,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void free_profiler(void);
     void dispose(void);
 };
+
+std::string gjs_dumpstack_string();
+
 #endif  // GJS_CONTEXT_PRIVATE_H_
