@@ -1904,7 +1904,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
             return false;
         }
 
-        if (!gjs_value_from_g_argument(cx, elems[i], param_info, &arg, true))
+        if (!gjs_value_from_g_argument(cx, elems[i], param_info,
+                                       GJS_ARGUMENT_LIST_ELEMENT,
+                                       GI_TRANSFER_EVERYTHING, &arg))
             return false;
     }
 
@@ -1951,7 +1953,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
     for (size_t i = 0; i < length; i++) {
         gjs_arg_set<T, TAG>(arg, *(static_cast<T*>(array) + i));
 
-        if (!gjs_value_from_g_argument(cx, elems[i], param_info, arg, true))
+        if (!gjs_value_from_g_argument(cx, elems[i], param_info,
+                                       GJS_ARGUMENT_ARRAY_ELEMENT,
+                                       GI_TRANSFER_EVERYTHING, arg))
             return false;
     }
 
@@ -2079,8 +2083,10 @@ gjs_array_from_carray_internal (JSContext             *context,
                     gjs_arg_set(&arg,
                                 static_cast<char*>(array) + (struct_size * i));
 
-                    if (!gjs_value_from_g_argument(context, elems[i], param_info,
-                                                   &arg, true))
+                    if (!gjs_value_from_g_argument(
+                            context, elems[i], param_info,
+                            GJS_ARGUMENT_ARRAY_ELEMENT, GI_TRANSFER_EVERYTHING,
+                            &arg))
                         return false;
                 }
 
@@ -2235,7 +2241,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
             return false;
         }
 
-        if (!gjs_value_from_g_argument(cx, elems[i], param_info, arg, true))
+        if (!gjs_value_from_g_argument(cx, elems[i], param_info,
+                                       GJS_ARGUMENT_ARRAY_ELEMENT,
+                                       GI_TRANSFER_EVERYTHING, arg))
             return false;
     }
 
@@ -2385,10 +2393,10 @@ gjs_object_from_g_hash (JSContext             *context,
     while (g_hash_table_iter_next(&iter, &key_pointer, &val_pointer)) {
         g_type_info_argument_from_hash_pointer(key_param_info, key_pointer,
                                                &keyarg);
-        if (!gjs_value_from_g_argument(context, &keyjs,
-                                       key_param_info, &keyarg,
-                                       true))
-            return false;
+        if (!gjs_value_from_g_argument(context, &keyjs, key_param_info,
+                                       GJS_ARGUMENT_HASH_ELEMENT,
+                                       GI_TRANSFER_EVERYTHING, &keyarg))
+          return false;
 
         keystr = JS::ToString(context, keyjs);
         if (!keystr)
@@ -2400,9 +2408,9 @@ gjs_object_from_g_hash (JSContext             *context,
 
         g_type_info_argument_from_hash_pointer(val_param_info, val_pointer,
                                                &valarg);
-        if (!gjs_value_from_g_argument(context, &valjs,
-                                       val_param_info, &valarg,
-                                       true))
+        if (!gjs_value_from_g_argument(context, &valjs, val_param_info,
+                                       GJS_ARGUMENT_HASH_ELEMENT,
+                                       GI_TRANSFER_EVERYTHING, &valarg))
             return false;
 
         if (!JS_DefineProperty(context, obj, keyutf8.get(), valjs,
@@ -2413,13 +2421,11 @@ gjs_object_from_g_hash (JSContext             *context,
     return true;
 }
 
-bool
-gjs_value_from_g_argument (JSContext             *context,
-                           JS::MutableHandleValue value_p,
-                           GITypeInfo            *type_info,
-                           GArgument             *arg,
-                           bool                   copy_structs)
-{
+bool gjs_value_from_g_argument(JSContext* context,
+                               JS::MutableHandleValue value_p,
+                               GITypeInfo* type_info,
+                               [[maybe_unused]] GjsArgumentType argument_type,
+                               GITransfer transfer, GArgument* arg) {
     GITypeTag type_tag;
 
     type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
@@ -2663,7 +2669,8 @@ gjs_value_from_g_argument (JSContext             *context,
 
                 JSObject *obj;
 
-                if (copy_structs || g_type_is_a(gtype, G_TYPE_VARIANT))
+                if (transfer == GI_TRANSFER_EVERYTHING ||
+                    gtype == G_TYPE_VARIANT)
                     obj = BoxedInstance::new_for_c_struct(
                         context, interface_info, gjs_arg_get<GVariant*>(arg));
                 else

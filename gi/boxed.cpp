@@ -583,7 +583,8 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
         return gjs_value_from_explicit_array(cx, rval, type_info, &arg, length);
     }
 
-    return gjs_value_from_g_argument(cx, rval, type_info, &arg, true);
+    return gjs_value_from_g_argument(cx, rval, type_info, GJS_ARGUMENT_FIELD,
+                                     GI_TRANSFER_EVERYTHING, &arg);
 }
 
 /*
