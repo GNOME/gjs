@@ -951,8 +951,9 @@ gjs_value_from_g_value_internal(JSContext             *context,
         g_arg_info_load_type(arg_info, &type_info);
         GITypeInfo* element_info = g_type_info_get_param_type(&type_info, 0);
 
-        if (!gjs_array_from_g_value_array(context, value_p, element_info,
-                                          gvalue)) {
+        if (!gjs_array_from_g_value_array(
+                context, value_p, element_info,
+                g_arg_info_get_ownership_transfer(arg_info), gvalue)) {
             gjs_throw(context, "Failed to convert array");
             return false;
         }
