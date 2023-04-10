@@ -143,6 +143,7 @@ bool gjs_array_to_strv (JSContext   *context,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
-                                  GITypeInfo* param_info, const GValue* gvalue);
+                                  GITypeInfo* param_info, GITransfer,
+                                  const GValue* gvalue);
 
 #endif  // GI_ARG_H_
