@@ -76,11 +76,21 @@ bool inline gjs_value_to_g_argument(JSContext* cx, JS::HandleValue value,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_from_g_argument(JSContext             *context,
+bool gjs_value_from_g_argument(JSContext* context,
                                JS::MutableHandleValue value_p,
-                               GITypeInfo            *type_info,
-                               GIArgument            *arg,
-                               bool                   copy_structs);
+                               GITypeInfo* type_info,
+                               GjsArgumentType argument_type,
+                               GITransfer transfer, GIArgument* arg);
+
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_value_from_g_argument(JSContext* cx,
+                                      JS::MutableHandleValue value_p,
+                                      GITypeInfo* type_info, GIArgument* arg,
+                                      bool copy_structs) {
+    return gjs_value_from_g_argument(
+        cx, value_p, type_info, GJS_ARGUMENT_ARGUMENT,
+        copy_structs ? GI_TRANSFER_EVERYTHING : GI_TRANSFER_NOTHING, arg);
+}
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_explicit_array(JSContext             *context,
