@@ -648,6 +648,7 @@ tests_environment.set('LSAN_OPTIONS',
 tests_environment.set('TSAN_OPTIONS',
     'history_size=5,force_seq_cst_atomics=1,suppressions=@0@'.format(
         meson.current_source_dir() / 'installed-tests' / 'extra' / 'tsan.supp'))
+tests_environment.set('G_SLICE', 'always-malloc')
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('GSETTINGS_BACKEND', 'memory')
