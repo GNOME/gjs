@@ -485,8 +485,8 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
             Gjs::AutoGValue instance_value;
             g_value_init(&instance_value, instance->gtype());
             g_value_set_instance(&instance_value, instance->m_ptr);
-            g_value_transform(&instance_value, gvalue);
-            return true;
+            if (g_value_transform(&instance_value, gvalue))
+                return true;
         }
 
         gjs_throw(cx,
