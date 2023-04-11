@@ -199,7 +199,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
     if constexpr (Gjs::type_has_js_getter<T>())
         return Gjs::js_value_to_c(cx, value, &gjs_arg_member<T>(arg));
 
-    Gjs::JsValueHolder::Relaxed<T> val;
+    Gjs::JsValueHolder::Relaxed<T> val{};
 
     if (!Gjs::js_value_to_c_checked<T>(cx, value, &val, out_of_range))
         return false;
