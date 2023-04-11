@@ -127,7 +127,7 @@ static void
 check_script_args_for_stray_gjs_args(int           argc,
                                      char * const *argv)
 {
-    GError *error = NULL;
+    GjsAutoError error = NULL;
     GjsAutoStrv new_coverage_prefixes;
     GjsAutoChar new_coverage_output_path;
     GjsAutoStrv new_include_paths;
@@ -155,9 +155,9 @@ check_script_args_for_stray_gjs_args(int           argc,
     g_option_context_set_ignore_unknown_options(script_options, true);
     g_option_context_set_help_enabled(script_options, false);
     g_option_context_add_main_entries(script_options, script_check_entries, NULL);
-    if (!g_option_context_parse_strv(script_options, argv_copy.out(), &error)) {
+    if (!g_option_context_parse_strv(script_options, argv_copy.out(),
+                                     error.out())) {
         g_warning("Scanning script arguments failed: %s", error->message);
-        g_error_free(error);
         return;
     }
 
@@ -221,7 +221,7 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
 }
 
 int main(int argc, char** argv) {
-    GError* error = NULL;
+    GjsAutoError error;
     const char *filename;
     const char *program_name;
     gsize len;
@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
     char** argv_copy = argv_copy_addr;
 
     g_option_context_add_main_entries(context, entries, NULL);
-    if (!g_option_context_parse_strv(context, &argv_copy, &error))
+    if (!g_option_context_parse_strv(context, &argv_copy, error.out()))
         g_error("option parsing failed: %s", error->message);
 
     /* Split options so we pass unknown ones through to the JS script */
@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
     exec_as_module = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
-    if (!g_option_context_parse_strv(context, &gjs_argv, &error)) {
+    if (!g_option_context_parse_strv(context, &gjs_argv, error.out())) {
         GjsAutoChar help_text =
             g_option_context_get_help(context, true, nullptr);
         g_printerr("%s\n\n%s\n", error->message, help_text.get());
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
         error = NULL;
         GjsAutoUnref<GFile> input = g_file_new_for_commandline_arg(gjs_argv[1]);
         if (!g_file_load_contents(input, nullptr, script.out(), &len, nullptr,
-                                  &error)) {
+                                  error.out())) {
             g_printerr("%s\n", error->message);
             return EXIT_FAILURE;
         }
