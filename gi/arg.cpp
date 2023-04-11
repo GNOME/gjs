@@ -3067,9 +3067,8 @@ static bool gjs_g_arg_release_internal(
                         for (array = arg_array; *array; array++) {
                             gjs_arg_set(&elem, *array);
                             if (!gjs_g_arg_release_internal(
-                                    context, GI_TRANSFER_EVERYTHING, param_info,
-                                    element_type, GJS_ARGUMENT_ARRAY_ELEMENT,
-                                    flags, &elem)) {
+                                    context, transfer, param_info, element_type,
+                                    GJS_ARGUMENT_ARRAY_ELEMENT, flags, &elem)) {
                                 return false;
                             }
                         }
@@ -3083,9 +3082,8 @@ static bool gjs_g_arg_release_internal(
                         for (i = 0; i < len; i++) {
                             gjs_arg_set(&elem, arg_array[i]);
                             if (!gjs_g_arg_release_internal(
-                                    context, GI_TRANSFER_EVERYTHING, param_info,
-                                    element_type, GJS_ARGUMENT_ARRAY_ELEMENT,
-                                    flags, &elem)) {
+                                    context, transfer, param_info, element_type,
+                                    GJS_ARGUMENT_ARRAY_ELEMENT, flags, &elem)) {
                                 return false;
                             }
                         }
@@ -3337,8 +3335,8 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
         for (i = 0; i < length; i++) {
             gjs_arg_set(&elem, array[i]);
             JS::AutoSaveExceptionState saved_exc(context);
-            if (!gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
-                                            param_type, type_tag,
+            if (!gjs_g_arg_release_internal(context, transfer, param_type,
+                                            type_tag,
                                             GJS_ARGUMENT_ARRAY_ELEMENT,
                                             GjsArgumentFlags::ARG_OUT, &elem)) {
             return false;
