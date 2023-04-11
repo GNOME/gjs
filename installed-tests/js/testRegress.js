@@ -1459,8 +1459,6 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('marshals a fixed-size array of objects out', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/542');
         expect(Regress.test_array_fixed_out_objects()).toEqual([
             jasmine.any(Regress.TestObj),
             jasmine.any(Regress.TestObj),

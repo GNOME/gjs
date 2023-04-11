@@ -227,6 +227,9 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
                 case GI_INFO_TYPE_UNION:
                     return g_type_info_is_pointer(type_info);
 
+                case GI_INFO_TYPE_OBJECT:
+                    return true;
+
                 default:
                     return false;
             }
