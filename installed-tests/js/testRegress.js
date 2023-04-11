@@ -1686,8 +1686,6 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('owned GError callback', function (done) {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/36');
         Regress.test_owned_gerror_callback(e => {
             expect(e).toEqual(jasmine.any(Gio.IOErrorEnum));
             expect(e.domain).toEqual(Gio.io_error_quark());
