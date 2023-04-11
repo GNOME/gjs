@@ -90,6 +90,8 @@ sanitizer_gcc:
   variables:
     CONFIG_OPTS: -Db_sanitize=address,undefined
     TEST_OPTS: --timeout-multiplier=3 --setup=verbose_leaks
+    # Override these during build, but they are overridden by meson anyways
+    ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
   except:
     - schedules
 
