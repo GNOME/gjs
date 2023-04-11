@@ -24,6 +24,7 @@
 #include "gi/function.h"
 #include "gi/fundamental.h"
 #include "gi/repo.h"
+#include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -481,7 +482,7 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
             return true;
         } else if (g_value_type_transformable(instance->gtype(),
                                               G_VALUE_TYPE(gvalue))) {
-            GValue instance_value = {0};
+            Gjs::AutoGValue instance_value;
             g_value_init(&instance_value, instance->gtype());
             g_value_set_instance(&instance_value, instance->m_ptr);
             g_value_transform(&instance_value, gvalue);
