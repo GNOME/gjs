@@ -58,8 +58,8 @@
 #include "util/misc.h"
 
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
-    JSContext*, GITransfer, GITypeInfo*, GITypeTag, GjsArgumentFlags,
-    GIArgument*);
+    JSContext*, GITransfer, GITypeInfo*, GITypeTag, GjsArgumentType,
+    GjsArgumentFlags, GIArgument*);
 static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    GITypeInfo* arginfo, const char* arg_name,
                                    GjsArgumentType arg_type);
@@ -1924,7 +1924,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
         gjs_arg_set(&elem, l->data);
 
         if (!gjs_g_arg_release_internal(cx, transfer, param_info, type_tag,
-                                        flags, &elem)) {
+                                        GJS_ARGUMENT_LIST_ELEMENT, flags,
+                                        &elem)) {
             return false;
         }
     }
@@ -2828,8 +2829,9 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     gjs_arg_set(&val_arg, val);
     if (!gjs_g_arg_release_internal(c->context, c->transfer, c->key_param_info,
                                     g_type_info_get_tag(c->key_param_info),
-                                    c->flags, &key_arg))
-        c->failed = true;
+                                    GJS_ARGUMENT_HASH_ELEMENT, c->flags,
+                                    &key_arg))
+    c->failed = true;
 
     GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
 
@@ -2842,10 +2844,10 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
             break;
 
         default:
-            if (!gjs_g_arg_release_internal(c->context, c->transfer,
-                                            c->val_param_info, val_type,
-                                            c->flags, &val_arg))
-                c->failed = true;
+            if (!gjs_g_arg_release_internal(
+                    c->context, c->transfer, c->val_param_info, val_type,
+                    GJS_ARGUMENT_HASH_ELEMENT, c->flags, &val_arg))
+            c->failed = true;
     }
 
     return true;
@@ -2861,13 +2863,13 @@ constexpr static bool is_transfer_in_nothing(GITransfer transfer,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_g_arg_release_internal(JSContext* context, GITransfer transfer,
-                                       GITypeInfo* type_info,
-                                       GITypeTag type_tag,
-                                       GjsArgumentFlags flags,
-                                       GIArgument* arg) {
+static bool gjs_g_arg_release_internal(
+    JSContext* context, GITransfer transfer, GITypeInfo* type_info,
+    GITypeTag type_tag, [[maybe_unused]] GjsArgumentType argument_type,
+    GjsArgumentFlags flags, GIArgument* arg) {
     g_assert(transfer != GI_TRANSFER_NOTHING ||
-             flags != GjsArgumentFlags::NONE);
+             flags != GjsArgumentFlags::NONE ||
+             argument_type != GJS_ARGUMENT_ARGUMENT);
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -3067,7 +3069,8 @@ static bool gjs_g_arg_release_internal(JSContext* context, GITransfer transfer,
                             gjs_arg_set(&elem, *array);
                             if (!gjs_g_arg_release_internal(
                                     context, GI_TRANSFER_EVERYTHING, param_info,
-                                    element_type, flags, &elem)) {
+                                    element_type, GJS_ARGUMENT_ARRAY_ELEMENT,
+                                    flags, &elem)) {
                                 return false;
                             }
                         }
@@ -3082,7 +3085,8 @@ static bool gjs_g_arg_release_internal(JSContext* context, GITransfer transfer,
                             gjs_arg_set(&elem, arg_array[i]);
                             if (!gjs_g_arg_release_internal(
                                     context, GI_TRANSFER_EVERYTHING, param_info,
-                                    element_type, flags, &elem)) {
+                                    element_type, GJS_ARGUMENT_ARRAY_ELEMENT,
+                                    flags, &elem)) {
                                 return false;
                             }
                         }
@@ -3144,7 +3148,7 @@ static bool gjs_g_arg_release_internal(JSContext* context, GITransfer transfer,
                                     g_array_index(array, gpointer, i));
                         if (!gjs_g_arg_release_internal(
                                 context, transfer, param_info, element_type,
-                                flags, &arg_iter))
+                                GJS_ARGUMENT_ARRAY_ELEMENT, flags, &arg_iter))
                             return false;
                     }
                 }
@@ -3242,8 +3246,8 @@ bool gjs_g_argument_release(JSContext* cx, GITransfer transfer,
                       "Releasing GArgument %s out param or return value",
                       g_type_tag_to_string(type_tag));
 
-    return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag, flags,
-                                      arg);
+    return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag,
+                                      GJS_ARGUMENT_ARGUMENT, flags, arg);
 }
 
 bool gjs_g_argument_release_in_arg(JSContext* cx, GITransfer transfer,
@@ -3268,7 +3272,7 @@ bool gjs_g_argument_release_in_arg(JSContext* cx, GITransfer transfer,
 
     if (type_needs_release (type_info, type_tag))
         return gjs_g_arg_release_internal(cx, transfer, type_info, type_tag,
-                                          flags, arg);
+                                          GJS_ARGUMENT_ARGUMENT, flags, arg);
 
     return true;
 }
@@ -3302,8 +3306,9 @@ bool gjs_g_argument_release_in_array(JSContext* context, GITransfer transfer,
             gjs_arg_set(&elem, array[i]);
             if (!gjs_g_arg_release_internal(context, GI_TRANSFER_NOTHING,
                                             param_type, type_tag,
+                                            GJS_ARGUMENT_ARRAY_ELEMENT,
                                             GjsArgumentFlags::ARG_IN, &elem)) {
-                return false;
+            return false;
             }
         }
     }
@@ -3335,8 +3340,9 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
             JS::AutoSaveExceptionState saved_exc(context);
             if (!gjs_g_arg_release_internal(context, GI_TRANSFER_EVERYTHING,
                                             param_type, type_tag,
+                                            GJS_ARGUMENT_ARRAY_ELEMENT,
                                             GjsArgumentFlags::ARG_OUT, &elem)) {
-                return false;
+            return false;
             }
         }
     }
