@@ -91,11 +91,19 @@ inline bool gjs_value_from_g_argument(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_from_explicit_array(JSContext             *context,
+bool gjs_value_from_explicit_array(JSContext* context,
                                    JS::MutableHandleValue value_p,
-                                   GITypeInfo            *type_info,
-                                   GIArgument            *arg,
-                                   int                    length);
+                                   GITypeInfo* type_info, GITransfer transfer,
+                                   GIArgument* arg, int length);
+
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_value_from_explicit_array(JSContext* context,
+                                          JS::MutableHandleValue value_p,
+                                          GITypeInfo* type_info,
+                                          GIArgument* arg, int length) {
+    return gjs_value_from_explicit_array(context, value_p, type_info,
+                                         GI_TRANSFER_EVERYTHING, arg, length);
+}
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_g_argument_release(JSContext*, GITransfer, GITypeInfo*,
