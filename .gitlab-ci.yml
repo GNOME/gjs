@@ -89,7 +89,7 @@ sanitizer_gcc:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs102-debug
   variables:
     CONFIG_OPTS: -Db_sanitize=address,undefined
-    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
+    TEST_OPTS: --timeout-multiplier=3 --setup=verbose_leaks
   except:
     - schedules
 
