@@ -98,8 +98,6 @@ describe('Fundamental type support', function () {
     });
 
     it('can marshal a custom fundamental type into a transformable type', function () {
-        if (imports.gi.GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/400');
         Regress.TestFundamentalObjectNoGetSetFunc.make_compatible_with_fundamental_sub_object();
         const fund = new Regress.TestFundamentalObjectNoGetSetFunc('foo');
         const obj = new TestObj();

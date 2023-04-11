@@ -601,8 +601,6 @@ describe('GArray', function () {
     });
 
     it('marshals boxed structs as a transfer-full return value', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398');
         expect(GIMarshallingTests.garray_boxed_struct_full_return().map(e => e.long_))
             .toEqual([42, 43, 44]);
     });
@@ -2067,14 +2065,8 @@ describe('GObject properties', function () {
         GIMarshallingTests.Flags.VALUE1 | GIMarshallingTests.Flags.VALUE2);
     testPropertyGetSet('enum', GIMarshallingTests.GEnum.VALUE2,
         GIMarshallingTests.GEnum.VALUE3);
-
-    if (GLib.getenv('GJS_UNDER_ASAN')) {
-        testPropertyGetSet('byte_array', null, null,
-            'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398');
-    } else {
-        testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
-            ByteArray.fromString('👾'));
-    }
+    testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
+        ByteArray.fromString('👾'));
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);
