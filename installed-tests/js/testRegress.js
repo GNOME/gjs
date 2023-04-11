@@ -1805,8 +1805,6 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('marshals an aliased type', function () {
-        if (GLib.getenv('GJS_UNDER_ASAN'))
-            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/543');
         // GLib.PtrArray is not introspectable, so neither is an alias of it
         // Regress.introspectable_via_alias(new GLib.PtrArray());
         expect(Regress.aliased_caller_alloc()).toEqual(jasmine.any(Regress.TestBoxed));
