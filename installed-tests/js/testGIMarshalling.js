@@ -561,8 +561,6 @@ describe('Zero-terminated C array', function () {
             it(`marshals as a transfer-${transfer} in and out parameter`, function () {
                 if (transfer === 'full')
                     pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/399');
-                else if (transfer === 'none')
-                    pending('https://gitlab.gnome.org/GNOME/gjs/issues/269');
 
                 const returnedArray =
                     GIMarshallingTests[`array_gvariant_${transfer}_in`](variantArray);
