@@ -1012,20 +1012,20 @@ static void gjstest_test_args_rounded_values() {
 
 static void gjstest_test_func_gjs_context_argv_array() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = NULL;
+    GjsAutoError error;
     int status;
 
     const char* argv[1] = {"test"};
-    bool ok = gjs_context_define_string_array(gjs, "ARGV", 1, argv, &error);
+    bool ok =
+        gjs_context_define_string_array(gjs, "ARGV", 1, argv, error.out());
 
     g_assert_no_error(error);
-    g_clear_error(&error);
     g_assert_true(ok);
 
     ok = gjs_context_eval(gjs, R"js(
         imports.system.exit(ARGV[0] === "test" ? 0 : 1)
     )js",
-                          -1, "<main>", &status, &error);
+                          -1, "<main>", &status, error.out());
 
     g_assert_cmpint(status, ==, 0);
     g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
