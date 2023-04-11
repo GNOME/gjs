@@ -38,6 +38,8 @@ function testInParameter(root, value, {omit, skip, funcName = `${root}_in`} = {}
     it('marshals as an in parameter', function () {
         if (skip)
             pending(skip);
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
         expect(() => GIMarshallingTests[funcName](value)).not.toThrow();
     });
 }
@@ -59,6 +61,8 @@ function testInoutParameter(root, inValue, outValue,
     it('marshals as an inout parameter', function () {
         if (skip)
             pending(skip);
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
         expect(GIMarshallingTests[funcName](inValue)).toEqual(outValue);
     });
 }
@@ -551,6 +555,9 @@ describe('Zero-terminated C array', function () {
         let variantArray;
 
         beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+
             variantArray = [
                 new GLib.Variant('i', 27),
                 new GLib.Variant('s', 'Hello'),
@@ -598,6 +605,8 @@ describe('GArray', function () {
     });
 
     it('marshals boxed structs as a transfer-full return value', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398');
         expect(GIMarshallingTests.garray_boxed_struct_full_return().map(e => e.long_))
             .toEqual([42, 43, 44]);
     });
@@ -726,6 +735,11 @@ describe('GHashTable', function () {
     };
 
     describe('with integer values', function () {
+        beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+        });
+
         const intDict = {
             '-1': 1,
             0: 0,
@@ -737,6 +751,10 @@ describe('GHashTable', function () {
     });
 
     describe('with string values', function () {
+        beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+        });
         const stringDict = {
             '-1': '1',
             0: '0',
@@ -752,14 +770,26 @@ describe('GHashTable', function () {
     });
 
     describe('with double values', function () {
+        beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+        });
         testInParameter('ghashtable_double', numberDict);
     });
 
     describe('with float values', function () {
+        beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+        });
         testInParameter('ghashtable_float', numberDict);
     });
 
     describe('with 64-bit int values', function () {
+        beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+        });
         const int64Dict = {
             '-1': -1,
             0: 0,
@@ -770,6 +800,10 @@ describe('GHashTable', function () {
     });
 
     describe('with unsigned 64-bit int values', function () {
+        beforeEach(function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+        });
         const uint64Dict = {
             '-1': 0x100000000,
             0: 0,
@@ -780,6 +814,9 @@ describe('GHashTable', function () {
     });
 
     it('symbol keys are ignored', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+
         const symbolDict = {
             [Symbol('foo')]: 2,
             '-1': 1,
@@ -943,6 +980,8 @@ describe('GValue', function () {
     });
 
     it('can have its type inferred as GVariant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         let variant = GLib.Variant.new('u', 42);
         expect(() => GIMarshallingTests.gvalue_in_with_type(variant, GLib.Variant))
             .not.toThrow();
@@ -1788,6 +1827,9 @@ describe('Interface', function () {
     });
 
     it('can implement a C interface with a vfunc', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+
         const I3Impl = GObject.registerClass({
             Implements: [GIMarshallingTests.Interface3],
         }, class I3Impl extends GObject.Object {
@@ -2050,20 +2092,32 @@ describe('GObject properties', function () {
     testPropertyGetSet('boxed_glist', null, null);
     testPropertyGetSet('gvalue', 42, 'foo');
     testPropertyGetSetBigInt('gvalue', BigIntLimits.int64.umax, BigIntLimits.int64.min);
-    testPropertyGetSet('variant', new GLib.Variant('b', true),
-        new GLib.Variant('s', 'hello'));
-    testPropertyGetSet('variant', new GLib.Variant('x', BigIntLimits.int64.min),
-        new GLib.Variant('x', BigIntLimits.int64.max));
-    testPropertyGetSet('variant', new GLib.Variant('t', BigIntLimits.int64.max),
-        new GLib.Variant('t', BigIntLimits.int64.umax));
+    if (GLib.getenv('GJS_UNDER_ASAN')) {
+        testPropertyGetSet('variant', null, null,
+            'https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+    } else {
+        testPropertyGetSet('variant', new GLib.Variant('b', true),
+            new GLib.Variant('s', 'hello'));
+        testPropertyGetSet('variant', new GLib.Variant('x', BigIntLimits.int64.min),
+            new GLib.Variant('x', BigIntLimits.int64.max));
+        testPropertyGetSet('variant', new GLib.Variant('t', BigIntLimits.int64.max),
+            new GLib.Variant('t', BigIntLimits.int64.umax));
+    }
     testPropertyGetSet('object', new GObject.Object(),
         new GIMarshallingTests.Object({int: 42}));
     testPropertyGetSet('flags', GIMarshallingTests.Flags.VALUE2,
         GIMarshallingTests.Flags.VALUE1 | GIMarshallingTests.Flags.VALUE2);
     testPropertyGetSet('enum', GIMarshallingTests.GEnum.VALUE2,
         GIMarshallingTests.GEnum.VALUE3);
-    testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
-        ByteArray.fromString('👾'));
+
+    if (GLib.getenv('GJS_UNDER_ASAN')) {
+        testPropertyGetSet('byte_array', null, null,
+            'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398 ' +
+            'https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/463');
+    } else {
+        testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
+            ByteArray.fromString('👾'));
+    }
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);

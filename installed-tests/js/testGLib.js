@@ -5,7 +5,13 @@
 const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
 
-describe('GVariant constructor', function () {
+let describeVariantTest = describe;
+if (GLib.getenv('GJS_UNDER_ASAN')) {
+    describeVariantTest = (...args) => xdescribe(...args).pend(
+        'https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+}
+
+describeVariantTest('GVariant constructor', function () {
     it('constructs a string variant', function () {
         let strVariant = new GLib.Variant('s', 'mystring');
         expect(strVariant.get_string()[0]).toEqual('mystring');
@@ -75,7 +81,7 @@ describe('GVariant constructor', function () {
     });
 });
 
-describe('GVariant unpack', function () {
+describeVariantTest('GVariant unpack', function () {
     let v;
     beforeEach(function () {
         v = new GLib.Variant('a{sv}', {foo: new GLib.Variant('s', 'bar')});
@@ -92,7 +98,7 @@ describe('GVariant unpack', function () {
     });
 });
 
-describe('GVariantDict lookup', function () {
+describeVariantTest('GVariantDict lookup', function () {
     let variantDict;
     beforeEach(function () {
         variantDict = new GLib.VariantDict(null);

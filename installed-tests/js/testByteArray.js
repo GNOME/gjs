@@ -65,6 +65,9 @@ describe('Byte array', function () {
     it('deals gracefully with a 0-length array', function () {
         const a = new Uint8Array(0);
         expect(ByteArray.toString(a)).toEqual('');
+
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/539');
         expect(ByteArray.toGBytes(a).get_size()).toEqual(0);
     });
 

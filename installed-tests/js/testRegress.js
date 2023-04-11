@@ -209,6 +209,8 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('closure with GLib.Variant argument', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const callback = jasmine.createSpy('callback')
             .and.returnValue(new GLib.Variant('s', 'hello'));
         const variant = new GLib.Variant('i', 42);
@@ -238,29 +240,39 @@ describe('Life, the Universe and Everything', function () {
     // Regress.TestObj.emit_sig_with_foreign_struct()
 
     it('integer GLib.Variant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const ivar = Regress.test_gvariant_i();
         expect(ivar.get_type_string()).toEqual('i');
         expect(ivar.unpack()).toEqual(1);
     });
 
     it('string GLib.Variant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const svar = Regress.test_gvariant_s();
         expect(String.fromCharCode(svar.classify())).toEqual('s');
         expect(svar.unpack()).toEqual('one');
     });
 
     it('dictionary GLib.Variant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const asvvar = Regress.test_gvariant_asv();
         expect(asvvar.recursiveUnpack()).toEqual({name: 'foo', timeout: 10});
     });
 
     it('variant GLib.Variant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const vvar = Regress.test_gvariant_v();
         expect(vvar.unpack()).toEqual(jasmine.any(GLib.Variant));
         expect(vvar.recursiveUnpack()).toEqual('contents');
     });
 
     it('string array GLib.Variant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const asvar = Regress.test_gvariant_as();
         expect(asvar.deepUnpack()).toEqual(['one', 'two', 'three']);
     });
@@ -510,6 +522,9 @@ describe('Life, the Universe and Everything', function () {
         });
 
         it('in GHash', function () {
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+
             Regress.test_ghash_nothing_in(EXPECTED_HASH);
             Regress.test_ghash_nothing_in2(EXPECTED_HASH);
         });
@@ -592,6 +607,8 @@ describe('Life, the Universe and Everything', function () {
             });
 
             it('"copies" an object from a hash of field values', function () {
+                if (GLib.getenv('GJS_UNDER_ASAN'))
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
                 expect(struct.some_int).toEqual(42);
                 expect(struct.some_int8).toEqual(43);
                 expect(struct.some_double).toEqual(42.5);
@@ -1459,6 +1476,8 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('marshals a fixed-size array of objects out', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/542');
         expect(Regress.test_array_fixed_out_objects()).toEqual([
             jasmine.any(Regress.TestObj),
             jasmine.any(Regress.TestObj),
@@ -1660,6 +1679,9 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('hash table passed to callback', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/541');
+
         const hashtable = {
             a: 1,
             b: 2,
@@ -1686,6 +1708,8 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('owned GError callback', function (done) {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/36');
         Regress.test_owned_gerror_callback(e => {
             expect(e).toEqual(jasmine.any(Gio.IOErrorEnum));
             expect(e.domain).toEqual(Gio.io_error_quark());
@@ -1803,6 +1827,8 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('marshals an aliased type', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/543');
         // GLib.PtrArray is not introspectable, so neither is an alias of it
         // Regress.introspectable_via_alias(new GLib.PtrArray());
         expect(Regress.aliased_caller_alloc()).toEqual(jasmine.any(Regress.TestBoxed));
@@ -1828,6 +1854,8 @@ describe('Life, the Universe and Everything', function () {
     });
 
     it('marshals a transfer-floating GLib.Variant', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         expect(Regress.get_variant().unpack()).toEqual(42);
     });
 

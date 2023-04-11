@@ -625,6 +625,8 @@ describe('GObject class with decorator', function () {
     });
 
     it('resolves properties from interfaces', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         const mon = Gio.NetworkMonitor.get_default();
         expect(mon.network_available).toBeDefined();
         expect(mon.networkAvailable).toBeDefined();
@@ -712,6 +714,8 @@ describe('GObject class with custom constructor', function () {
         let myInstance2 = new MyObjectWithCustomConstructor({readwrite: 'baz', construct: 'asdf'});
         expect(myInstance2.readwrite).toEqual('baz');
         expect(myInstance2.readonly).toEqual('bar');
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
         console.log(Object.getOwnPropertyDescriptor(myInstance2, 'construct'));
         expect(myInstance2.construct).toEqual('asdf');
     });

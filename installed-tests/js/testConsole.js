@@ -9,6 +9,12 @@ import {DEFAULT_LOG_DOMAIN} from 'console';
 
 import {decodedStringMatching} from './matchers.js';
 
+let describeTest = describe;
+if (GLib.getenv('GJS_UNDER_ASAN')) {
+    describeTest = (...args) => xdescribe(...args).pend(
+        'https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+}
+
 function objectContainingLogMessage(
     message,
     domain = DEFAULT_LOG_DOMAIN,
@@ -49,7 +55,7 @@ function matchStackTrace(log, sourceFile = null, encoding = 'utf-8') {
     };
 }
 
-describe('console', function () {
+describeTest('console', function () {
     /** @type {jasmine.Spy<(_level: any, _fields: any) => any>} */
     let writer_func;
 

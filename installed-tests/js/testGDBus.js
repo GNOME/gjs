@@ -4,6 +4,12 @@
 const ByteArray = imports.byteArray;
 const {Gio, GjsTestTools, GLib} = imports.gi;
 
+let describeVariantTest = describe;
+if (GLib.getenv('GJS_UNDER_ASAN')) {
+    describeVariantTest = (...args) => xdescribe(...args).pend(
+        'https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+}
+
 /* The methods list with their signatures.
  *
  * *** NOTE: If you add stuff here, you need to update the Test class below.
@@ -269,7 +275,7 @@ class Test {
 
 const ProxyClass = Gio.DBusProxy.makeProxyWrapper(TestIface);
 
-describe('Exported DBus object', function () {
+describeVariantTest('Exported DBus object', function () {
     let ownNameID;
     var test;
     var proxy;
@@ -860,7 +866,7 @@ describe('Exported DBus object', function () {
 });
 
 
-describe('DBus Proxy wrapper', function () {
+describeVariantTest('DBus Proxy wrapper', function () {
     let loop;
     let wasPromise;
     let writerFunc;

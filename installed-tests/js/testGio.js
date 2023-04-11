@@ -183,6 +183,9 @@ describe('Gio.Settings overrides', function () {
 
             KEYS.forEach(key => expect(settings.is_writable(key)).toBeTruthy());
 
+            if (GLib.getenv('GJS_UNDER_ASAN'))
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+
             expect(() => {
                 settings.set_value('window-size', new GLib.Variant('(ii)', [100, 100]));
                 settings.set_boolean('maximized', true);
@@ -261,6 +264,9 @@ describe('Gio.add_action_entries override', function () {
         app.add_action_entries(entries);
         action = app.lookup_action('foo');
 
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+
         action.activate(new GLib.Variant('s', 'hello'));
     });
 
@@ -281,6 +287,9 @@ describe('Gio.add_action_entries override', function () {
 
         app.add_action_entries(entries);
         action = app.lookup_action('bar');
+
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
 
         action.change_state(new GLib.Variant('b', 'true'));
     });
@@ -314,6 +323,8 @@ describe('Gio.add_action_entries override', function () {
 
 describe('Gio.InputStream.prototype.createSyncIterator', function () {
     it('iterates synchronously', function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/539');
         const [file] = Gio.File.new_tmp(null);
         file.replace_contents('hello ㊙ world', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
@@ -329,6 +340,8 @@ describe('Gio.InputStream.prototype.createSyncIterator', function () {
 
 describe('Gio.InputStream.prototype.createAsyncIterator', function () {
     it('iterates asynchronously', async function () {
+        if (GLib.getenv('GJS_UNDER_ASAN'))
+            pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/539');
         const [file] = Gio.File.new_tmp(null);
         file.replace_contents('hello ㊙ world', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 

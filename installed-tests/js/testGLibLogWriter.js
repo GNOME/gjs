@@ -7,6 +7,12 @@
 import GLib from 'gi://GLib';
 import {arrayLikeWithExactContents} from './matchers.js';
 
+let describeVariantTest = describe;
+if (GLib.getenv('GJS_UNDER_ASAN')) {
+    describeVariantTest = (...args) => xdescribe(...args).pend(
+        'https://gitlab.gnome.org/GNOME/gjs/-/issues/499');
+}
+
 function encodedString(str) {
     const encoder = new TextEncoder();
     const encoded = encoder.encode(str);
@@ -14,7 +20,7 @@ function encodedString(str) {
     return arrayLikeWithExactContents(encoded);
 }
 
-describe('GLib Structured logging handler', function () {
+describeVariantTest('GLib Structured logging handler', function () {
     /** @type {jasmine.Spy<(_level: any, _fields: any) => any>} */
     let writer_func;
 
