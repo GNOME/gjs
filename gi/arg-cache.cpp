@@ -1342,7 +1342,8 @@ bool ExplicitArrayInOut::out(JSContext* cx, GjsFunctionCallState* state,
     GIArgument* length_arg = &(state->out_cvalue(m_length_pos));
     size_t length = gjs_g_argument_get_array_length(m_tag, length_arg);
 
-    return gjs_value_from_explicit_array(cx, value, &m_type_info, arg, length);
+    return gjs_value_from_explicit_array(cx, value, &m_type_info, m_transfer,
+                                         arg, length);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
