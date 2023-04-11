@@ -2652,17 +2652,20 @@ bool gjs_value_from_g_argument(JSContext* context,
 
                 JSObject *obj;
 
-                switch (argument_type) {
-                    case GJS_ARGUMENT_ARRAY_ELEMENT:
-                    case GJS_ARGUMENT_LIST_ELEMENT:
-                    case GJS_ARGUMENT_HASH_ELEMENT:
-                        transfer = GI_TRANSFER_EVERYTHING;
-                    default:
-                        break;
+                if (gtype == G_TYPE_VARIANT) {
+                    transfer = GI_TRANSFER_EVERYTHING;
+                } else if (transfer == GI_TRANSFER_CONTAINER) {
+                    switch (argument_type) {
+                        case GJS_ARGUMENT_ARRAY_ELEMENT:
+                        case GJS_ARGUMENT_LIST_ELEMENT:
+                        case GJS_ARGUMENT_HASH_ELEMENT:
+                            transfer = GI_TRANSFER_EVERYTHING;
+                        default:
+                            break;
+                    }
                 }
 
-                if (transfer == GI_TRANSFER_EVERYTHING ||
-                    gtype == G_TYPE_VARIANT)
+                if (transfer == GI_TRANSFER_EVERYTHING)
                     obj = BoxedInstance::new_for_c_struct(
                         context, interface_info, gjs_arg_get<void*>(arg));
                 else
