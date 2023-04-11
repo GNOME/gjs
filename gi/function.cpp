@@ -478,6 +478,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
                 if (!gjs_value_from_explicit_array(
                         context, jsargs[n_jsargs++], &type_info,
+                        g_arg_info_get_ownership_transfer(&arg_info),
                         args[i + c_args_offset], length))
                     return false;
                 break;

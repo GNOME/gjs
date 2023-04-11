@@ -2137,18 +2137,15 @@ static bool gjs_array_from_fixed_size_array(JSContext* context,
                                           param_info, transfer, length, array);
 }
 
-bool
-gjs_value_from_explicit_array(JSContext             *context,
-                              JS::MutableHandleValue value_p,
-                              GITypeInfo            *type_info,
-                              GIArgument            *arg,
-                              int                    length)
-{
+bool gjs_value_from_explicit_array(JSContext* context,
+                                   JS::MutableHandleValue value_p,
+                                   GITypeInfo* type_info, GITransfer transfer,
+                                   GIArgument* arg, int length) {
     GjsAutoTypeInfo param_info = g_type_info_get_param_type(type_info, 0);
 
     return gjs_array_from_carray_internal(
         context, value_p, g_type_info_get_array_type(type_info), param_info,
-        GI_TRANSFER_EVERYTHING, length, gjs_arg_get<void*>(arg));
+        transfer, length, gjs_arg_get<void*>(arg));
 }
 
 GJS_JSAPI_RETURN_CONVENTION
