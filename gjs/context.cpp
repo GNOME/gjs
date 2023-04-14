@@ -471,6 +471,9 @@ void GjsContextPrivate::dispose(void) {
         delete m_gtype_table;
         delete m_atoms;
 
+        m_job_queue.clear();
+        m_object_init_list.clear();
+
         /* Tear down JS */
         JS_DestroyContext(m_cx);
         m_cx = nullptr;
