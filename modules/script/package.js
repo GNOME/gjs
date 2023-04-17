@@ -115,10 +115,17 @@ function init(params) {
     datadir = GLib.build_filenamev([prefix, 'share']);
     let libpath, girpath;
 
+    const loadResource = (path, baseName) => {
+        const resource = Gio.Resource.load(GLib.build_filenamev([path,
+            `${baseName}.src.gresource`]));
+        resource._register();
+
+        return `resource://${_makeNamePath(baseName)}/js`;
+    };
+
     if (_runningFromMesonSource()) {
         log('Running from Meson, using local files');
         let bld = GLib.getenv('MESON_BUILD_ROOT');
-        let src = GLib.getenv('MESON_SOURCE_ROOT');
 
         pkglibdir = libpath = girpath = GLib.build_filenamev([bld, 'lib']);
         pkgdatadir = GLib.build_filenamev([bld, 'data']);
@@ -126,13 +133,17 @@ function init(params) {
         _submoduledir = GLib.build_filenamev([bld, 'subprojects']);
 
         GLib.setenv('GSETTINGS_SCHEMA_DIR', pkgdatadir, true);
+        const bldPath = GLib.build_filenamev([bld, 'src']);
         try {
-            let resource = Gio.Resource.load(GLib.build_filenamev([bld, 'src',
-                `${name}.src.gresource`]));
-            resource._register();
-            moduledir = `resource://${_makeNamePath(name)}/js`;
+            moduledir = loadResource(bldPath, name);
         } catch (e) {
-            moduledir = GLib.build_filenamev([src, 'src']);
+            try {
+                moduledir = loadResource(bldPath, _pkgname);
+                name = _pkgname;
+            } catch {
+                const src = GLib.getenv('MESON_SOURCE_ROOT');
+                moduledir = GLib.build_filenamev([src, 'src']);
+            }
         }
     } else if (_runningFromSource()) {
         log('Running from source tree, using local files');
@@ -156,13 +167,14 @@ function init(params) {
         localedir = GLib.build_filenamev([datadir, 'locale']);
 
         try {
-            let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
-                `${name}.src.gresource`]));
-            resource._register();
-
-            moduledir = `resource://${_makeNamePath(name)}/js`;
+            moduledir = loadResource(pkgdatadir, name);
         } catch (e) {
-            moduledir = pkgdatadir;
+            try {
+                moduledir = loadResource(pkgdatadir, _pkgname);
+                name = _pkgname;
+            } catch {
+                moduledir = pkgdatadir;
+            }
         }
     }
 
@@ -174,7 +186,13 @@ function init(params) {
         let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
             `${name}.data.gresource`]));
         resource._register();
-    } catch (e) { }
+    } catch (e) {
+        try {
+            let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
+                `${_pkgname}.data.gresource`]));
+            resource._register();
+        } catch {}
+    }
 }
 
 /**
