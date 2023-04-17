@@ -53,10 +53,6 @@ function _runningFromMesonSource() {
            GLib.getenv('MESON_SOURCE_ROOT');
 }
 
-function _makeNamePath(n) {
-    return `/${n.replace(/\./g, '/')}`;
-}
-
 /**
  * Initialize directories and global variables. Must be called
  * before any of other API in Package is used.
@@ -120,7 +116,7 @@ function init(params) {
             `${baseName}.src.gresource`]));
         resource._register();
 
-        return `resource://${_makeNamePath(baseName)}/js`;
+        return `resource:///${baseName.replaceAll('.', '/')}/js`;
     };
 
     if (_runningFromMesonSource()) {
