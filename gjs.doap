@@ -20,7 +20,7 @@
   <license rdf:resource="https://spdx.org/licenses/MIT.html"/>
   <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/gjs/issues"/>
   <download-page rdf:resource="http://download.gnome.org/sources/gjs/" />
-  <mailing-list rdf:resource="mailto:javascript-list@gnome.org" />
+  <developer-forum rdf:resource="https://discourse.gnome.org/tag/gjs" />
 
   <programming-language>C++</programming-language>
 
@@ -45,7 +45,7 @@
     <foaf:Person>
       <foaf:name>Giovanni Campagna</foaf:name>
       <foaf:mbox rdf:resource="mailto:gcampagna@src.gnome.org"/>
-      <gnome:userid>gcampagna</gnome:userid>
+<!--      <gnome:userid>gcampagna</gnome:userid> -->
     </foaf:Person>
   </maintainer>
 </Project>
