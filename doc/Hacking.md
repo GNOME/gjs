@@ -94,11 +94,11 @@ make sure to use the same build prefix for SpiderMonkey with `--prefix`.
 
 To build GJS, change to your `gjs` directory, and run:
 ```sh
-meson _build
+meson setup _build
 ninja -C _build
 ```
 
-Add any options with `-D` arguments to the `meson _build` command.
+Add any options with `-D` arguments to the `meson setup _build` command.
 For a list of available options, run `meson configure`.
 
 That's it! You can now run your build of gjs for testing and hacking with
@@ -201,7 +201,7 @@ the compilers normally fail to detect.
 To build GJS with support for the ASan and UBSan sanitizers, configure
 meson like this:
 ```sh
-meson _build -Db_sanitize=address,undefined
+meson setup _build -Db_sanitize=address,undefined
 ```
 and then run the tests as normal.
 
