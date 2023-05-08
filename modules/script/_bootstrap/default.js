@@ -26,6 +26,10 @@
     function prettyPrint(value) {
         switch (typeof value) {
         case 'object':
+            if (value === null) {
+                return 'null';
+            }
+
             if (value.toString === Object.prototype.toString ||
                 value.toString === Array.prototype.toString ||
                 value.toString === Date.prototype.toString) {
