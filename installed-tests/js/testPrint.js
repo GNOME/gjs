@@ -194,4 +194,12 @@ describe('prettyPrint', function () {
         expect(prettyPrint({symbol: Symbol.hasInstance}))
             .toEqual('{ symbol: Symbol.hasInstance }');
     });
+
+    it('undefined', function () {
+        expect(prettyPrint(undefined)).toEqual('undefined');
+    });
+
+    it('null', function () {
+        expect(prettyPrint(null)).toEqual('null');
+    });
 });
