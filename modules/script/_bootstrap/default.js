@@ -45,6 +45,8 @@
             return JSON.stringify(value);
         case 'symbol':
             return formatSymbol(value);
+        case 'undefined':
+            return 'undefined';
         default:
             return value.toString();
         }
