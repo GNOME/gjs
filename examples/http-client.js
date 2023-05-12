@@ -23,7 +23,7 @@ function splice_callback(outputStream, result) {
     let data;
 
     try {
-        outputStream.splice_finish(outputStream, result);
+        outputStream.splice_finish(result);
         data = outputStream.steal_as_bytes();
     } catch (err) {
         logError(err);
