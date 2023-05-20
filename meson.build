@@ -812,3 +812,10 @@ summary({
     'Dtrace debugging': get_option('dtrace'),
     'Systemtap debugging': get_option('systemtap'),
 }, section: 'Optional features', bool_yn: true)
+
+### Maintainer scripts #########################################################
+
+run_target('maintainer-upload-release',
+  command: ['build/maintainer-upload-release.sh',
+            meson.project_name(),
+            meson.project_version()])

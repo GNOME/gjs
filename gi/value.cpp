@@ -4,8 +4,8 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for NULL
 #include <stdint.h>
-#include <stdlib.h>  // for exit
 
 #include <sstream>
 #include <string>
@@ -274,7 +274,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             // matches the closure exit handling in function.cpp
             uint8_t code;
             if (gjs->should_exit(&code))
-                exit(code);
+                gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
             JSFunction* fn = JS_GetObjectFunction(callable());

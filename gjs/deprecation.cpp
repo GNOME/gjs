@@ -6,10 +6,12 @@
 
 #include <cstddef>        // for size_t
 #include <functional>     // for hash<int>
+#include <sstream>
 #include <string>         // for string
-#include <string_view>    // for hash<string>
+#include <string_view>
 #include <unordered_set>  // for unordered_set
 #include <utility>        // for move
+#include <vector>
 
 #include <glib.h>  // for g_warning
 
@@ -38,7 +40,15 @@ const char* messages[] = {
     "(Note that array.toString() may have been called implicitly.)",
 
     // DeprecatedGObjectProperty:
-    "Some code tried to set a deprecated GObject property.",
+    "The GObject property {}.{} is deprecated.",
+
+    // ModuleExportedLetOrConst:
+    "Some code accessed the property '{}' on the module '{}'. That property "
+    "was defined with 'let' or 'const' inside the module. This was previously "
+    "supported, but is not correct according to the ES6 standard. Any symbols "
+    "to be exported from a module must be defined with 'var'. The property "
+    "access will work as previously for the time being, but please fix your "
+    "code anyway.",
 };
 
 struct DeprecationEntry {
@@ -80,17 +90,57 @@ static JS::UniqueChars get_callsite(JSContext* cx) {
     return JS_EncodeStringToUTF8(cx, frame_string);
 }
 
-/* Note, this can only be called from the JS thread because it uses the full
- * stack dump API and not the "safe" gjs_dumpstack() which can only print to
- * stdout or stderr. Do not use this function during GC, for example. */
-void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
-                                            const GjsDeprecationMessageId id) {
+static void warn_deprecated_unsafe_internal(JSContext* cx,
+                                            const GjsDeprecationMessageId id,
+                                            const char* msg) {
     JS::UniqueChars callsite(get_callsite(cx));
     DeprecationEntry entry(id, callsite.get());
     if (!logged_messages.count(entry)) {
         JS::UniqueChars stack_dump =
             JS::FormatStackDump(cx, false, false, false);
-        g_warning("%s\n%s", messages[id], stack_dump.get());
+        g_warning("%s\n%s", msg, stack_dump.get());
         logged_messages.insert(std::move(entry));
     }
+}
+
+/* Note, this can only be called from the JS thread because it uses the full
+ * stack dump API and not the "safe" gjs_dumpstack() which can only print to
+ * stdout or stderr. Do not use this function during GC, for example. */
+void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
+                                            const GjsDeprecationMessageId id) {
+    warn_deprecated_unsafe_internal(cx, id, messages[id]);
+}
+
+void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
+                                            GjsDeprecationMessageId id,
+                                            std::vector<const char*> args) {
+    // In C++20, use std::format() for this
+    std::string_view format_string{messages[id]};
+    std::stringstream message;
+
+    size_t pos = 0;
+    size_t copied = 0;
+    size_t args_ptr = 0;
+    size_t nargs_given = args.size();
+
+    while ((pos = format_string.find("{}", pos)) != std::string::npos) {
+        if (args_ptr >= nargs_given) {
+            g_critical("Only %zu format args passed for message ID %u",
+                       nargs_given, id);
+            return;
+        }
+
+        message << format_string.substr(copied, pos - copied);
+        message << args[args_ptr++];
+        pos = copied = pos + 2;  // skip over braces
+    }
+    if (args_ptr != nargs_given) {
+        g_critical("Excess %zu format args passed for message ID %u",
+                   nargs_given, id);
+        return;
+    }
+
+    message << format_string.substr(copied, std::string::npos);
+
+    warn_deprecated_unsafe_internal(cx, id, message.str().c_str());
 }

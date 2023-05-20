@@ -7,12 +7,11 @@ import * as system from 'system';
 import GLib from 'gi://GLib';
 import {environment, retval, errorsOutput, mainloop, mainloopLock} from './minijasmine.js';
 
-/* jasmineEnv.execute() queues up all the tests and runs them
- * asynchronously. This should start after the main loop starts, otherwise
- * we will hit the main loop only after several tests have already run. For
- * consistency we should guarantee that there is a main loop running during
- * all tests.
- */
+// environment.execute() queues up all the tests and runs them
+// asynchronously. This should start after the main loop starts, otherwise
+// we will hit the main loop only after several tests have already run. For
+// consistency we should guarantee that there is a main loop running during
+// all tests.
 GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
     try {
         environment.execute();
@@ -27,8 +26,9 @@ GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
     return GLib.SOURCE_REMOVE;
 });
 
-// Keep running the mainloop while mainloopLock
-// is not null and resolves true
+// Keep running the main loop while mainloopLock is not null and resolves true.
+// This happens when testing the main loop itself, in testAsyncMainloop.js. We
+// don't want to exit minijasmine when the inner loop exits.
 do {
     // Run the mainloop
 

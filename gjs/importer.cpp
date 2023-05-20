@@ -701,8 +701,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                     JS_ReportOutOfMemory(context);
                     return false;
                 }
-            } else if (g_str_has_suffix(filename, "." G_MODULE_SUFFIX) ||
-                       g_str_has_suffix(filename, ".js")) {
+            } else if (g_str_has_suffix(filename, ".js")) {
                 GjsAutoChar filename_noext =
                     g_strndup(filename, strlen(filename) - 3);
                 jsid id = gjs_intern_string_to_id(context, filename_noext);

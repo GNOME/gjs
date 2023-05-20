@@ -4,8 +4,8 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for NULL, size_t
 #include <stdint.h>
-#include <stdlib.h>  // for exit
 
 #include <memory>  // for unique_ptr
 #include <sstream>
@@ -391,10 +391,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             // to exit here instead of propagating the exception back to the
             // original calling JS code.
             uint8_t code;
-            if (gjs->should_exit(&code)) {
-                gjs->warn_about_unhandled_promise_rejections();
-                exit(code);
-            }
+            if (gjs->should_exit(&code))
+                gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
             JSFunction* fn = JS_GetObjectFunction(callable());

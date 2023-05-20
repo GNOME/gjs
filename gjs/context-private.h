@@ -139,6 +139,8 @@ class GjsContextPrivate : public JS::JobQueue {
     void start_draining_job_queue(void);
     void stop_draining_job_queue(void);
 
+    void warn_about_unhandled_promise_rejections();
+
     GJS_JSAPI_RETURN_CONVENTION bool run_main_loop_hook();
     [[nodiscard]] bool handle_exit_code(bool no_sync_error_pending,
                                         const char* source_type,
@@ -237,6 +239,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void report_unhandled_exception() { m_unhandled_exception = true; }
     void exit(uint8_t exit_code);
     [[nodiscard]] bool should_exit(uint8_t* exit_code_p) const;
+    [[noreturn]] void exit_immediately(uint8_t exit_code);
 
     // Implementations of JS::JobQueue virtual functions
     GJS_JSAPI_RETURN_CONVENTION
@@ -254,7 +257,6 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible();
     void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
-    void warn_about_unhandled_promise_rejections();
 
     void register_notifier(DestroyNotify notify_func, void* data);
     void unregister_notifier(DestroyNotify notify_func, void* data);

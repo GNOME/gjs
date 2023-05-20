@@ -6,8 +6,9 @@
 
 #include <signal.h>  // for sigaction, SIGUSR1, sa_handler
 #include <stdint.h>
-#include <stdio.h>      // for FILE, fclose, size_t
-#include <string.h>     // for memset
+#include <stdio.h>   // for FILE, fclose, size_t
+#include <stdlib.h>  // for exit
+#include <string.h>  // for memset
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for getpid
@@ -1007,6 +1008,12 @@ bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
     if (exit_code_p != NULL)
         *exit_code_p = m_exit_code;
     return m_should_exit;
+}
+
+void GjsContextPrivate::exit_immediately(uint8_t exit_code) {
+    warn_about_unhandled_promise_rejections();
+
+    ::exit(exit_code);
 }
 
 void GjsContextPrivate::start_draining_job_queue(void) { m_dispatcher.start(); }

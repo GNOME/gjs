@@ -18,9 +18,8 @@
 
 namespace Gjs {
 struct AutoGValue : GValue {
-    AutoGValue() {
+    AutoGValue() : GValue(G_VALUE_INIT) {
         static_assert(sizeof(AutoGValue) == sizeof(GValue));
-        *static_cast<GValue*>(this) = G_VALUE_INIT;
     }
     explicit AutoGValue(GType gtype) : AutoGValue() {
         g_value_init(this, gtype);
