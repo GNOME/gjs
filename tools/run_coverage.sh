@@ -11,7 +11,7 @@ GENHTML_ARGS='--legend --show-details --branch-coverage'
 IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp */gjs/subprojects/*"
 
 rm -rf "$BUILDDIR"
-meson "$BUILDDIR" -Db_coverage=true
+meson setup "$BUILDDIR" -Db_coverage=true
 
 VERSION=$(meson introspect "$BUILDDIR" --projectinfo | python -c 'import json, sys; print(json.load(sys.stdin)["version"])')
 
