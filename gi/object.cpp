@@ -549,21 +549,17 @@ bool ObjectInstance::field_setter_not_impl(JSContext* cx,
 }
 
 bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
+    GjsAutoError error;
     GType ptype = g_type_parent(m_gtype);
-    GError *error = NULL;
     gpointer addr1, addr2;
 
     addr1 = g_vfunc_info_get_address(info, m_gtype, &error);
-    if (error) {
-        g_clear_error(&error);
+    if (error)
         return false;
-    }
 
     addr2 = g_vfunc_info_get_address(info, ptype, &error);
-    if (error) {
-        g_clear_error(&error);
+    if (error)
         return false;
-    }
 
     return addr1 == addr2;
 }

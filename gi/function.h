@@ -95,9 +95,9 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
 // Stack allocation only!
 class GjsFunctionCallState {
-    GIArgument* m_in_cvalues;
-    GIArgument* m_out_cvalues;
-    GIArgument* m_inout_original_cvalues;
+    GjsAutoCppPointer<GIArgument[]> m_in_cvalues;
+    GjsAutoCppPointer<GIArgument[]> m_out_cvalues;
+    GjsAutoCppPointer<GIArgument[]> m_inout_original_cvalues;
 
  public:
     std::unordered_set<GIArgument*> ignore_release;
@@ -106,7 +106,7 @@ class GjsFunctionCallState {
     GjsAutoError local_error;
     GICallableInfo* info;
     uint8_t gi_argc = 0;
-    unsigned processed_c_args = 0;
+    uint8_t processed_c_args = 0;
     bool failed : 1;
     bool can_throw_gerror : 1;
     bool is_method : 1;
@@ -123,12 +123,6 @@ class GjsFunctionCallState {
         m_in_cvalues = new GIArgument[size];
         m_out_cvalues = new GIArgument[size];
         m_inout_original_cvalues = new GIArgument[size];
-    }
-
-    ~GjsFunctionCallState() {
-        delete[] m_in_cvalues;
-        delete[] m_out_cvalues;
-        delete[] m_inout_original_cvalues;
     }
 
     GjsFunctionCallState(const GjsFunctionCallState&) = delete;
@@ -161,7 +155,7 @@ class GjsFunctionCallState {
 
     constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
 
-    constexpr uint8_t last_processed_index() {
+    constexpr unsigned last_processed_index() {
         return first_arg_offset() + processed_c_args;
     }
 

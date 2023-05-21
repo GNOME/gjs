@@ -273,7 +273,7 @@ void
 gjs_coverage_write_statistics(GjsCoverage *coverage)
 {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
-    GError *error = nullptr;
+    GjsAutoError error;
 
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
     JSAutoRealm ar(cx, gjs_get_import_global(cx));
@@ -281,7 +281,6 @@ gjs_coverage_write_statistics(GjsCoverage *coverage)
     GjsAutoUnref<GFile> output_file = write_statistics_internal(coverage, cx, &error);
     if (!output_file) {
         g_critical("Error writing coverage data: %s", error->message);
-        g_error_free(error);
         return;
     }
 

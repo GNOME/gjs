@@ -285,7 +285,7 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!uri)
         return false;
 
-    GError* error = nullptr;
+    GjsAutoError error;
     AutoURI parsed = g_uri_parse(uri.get(), G_URI_FLAGS_NONE, &error);
     if (!parsed) {
         JSAutoRealm ar(cx, gjs->global());
@@ -293,7 +293,6 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
         gjs_throw_custom(cx, JSProto_Error, "ImportError",
                          "Attempted to import invalid URI: %s (%s)", uri.get(),
                          error->message);
-        g_clear_error(&error);
         return false;
     }
 
@@ -311,7 +310,6 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
             gjs_throw_custom(cx, JSProto_Error, "ImportError",
                              "Attempted to import invalid URI: %s (%s)",
                              uri.get(), error->message);
-            g_clear_error(&error);
             return false;
         }
 
@@ -407,7 +405,7 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
 
     char* contents;
     size_t length;
-    GError* error = nullptr;
+    GjsAutoError error;
     if (!g_file_load_contents(file, /* cancellable = */ nullptr, &contents,
                               &length, /* etag_out = */ nullptr, &error)) {
         GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
@@ -416,7 +414,6 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
         gjs_throw_custom(cx, JSProto_Error, "ImportError",
                          "Unable to load file from: %s (%s)", uri.get(),
                          error->message);
-        g_clear_error(&error);
         return false;
     }
 
@@ -514,14 +511,13 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
 
     char* contents;
     size_t length;
-    GError* error = nullptr;
+    GjsAutoError error;
     if (!g_file_load_contents_finish(G_FILE(file), res, &contents, &length,
                                      /* etag_out = */ nullptr, &error)) {
         GjsAutoChar uri = g_file_get_uri(G_FILE(file));
         gjs_throw_custom(promise->cx, JSProto_Error, "ImportError",
                          "Unable to load file from: %s (%s)", uri.get(),
                          error->message);
-        g_clear_error(&error);
         promise->reject_with_pending_exception();
         return;
     }

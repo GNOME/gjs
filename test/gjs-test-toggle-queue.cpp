@@ -82,7 +82,7 @@ static void setup(GjsUnitTestFixture* fx, const void*) {
 
     const char* gi_initializer = "imports.gi;";
     g_assert_true(gjs_context_eval(fx->gjs_context, gi_initializer, -1,
-                                   "<gjs-test-toggle>", &code, error.out()));
+                                   "<gjs-test-toggle>", &code, &error));
     g_assert_no_error(error);
 }
 
@@ -411,7 +411,7 @@ static void test_toggle_queue_object_from_main_thread_already_enqueued(
     GjsAutoError error;
 
     reffed = instance->ptr();
-    gjs_test_tools_ref_other_thread(reffed, error.out());
+    gjs_test_tools_ref_other_thread(reffed, &error);
     g_assert_no_error(error);
 
     assert_equal(ToggleQueue::queue().size(), 1LU);
@@ -436,7 +436,7 @@ static void test_toggle_queue_object_from_main_thread_unref_already_enqueued(
     GjsAutoError error;
 
     reffed = instance->ptr();
-    gjs_test_tools_ref_other_thread(reffed, error.out());
+    gjs_test_tools_ref_other_thread(reffed, &error);
     g_assert_no_error(error);
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
@@ -460,13 +460,13 @@ static void test_toggle_queue_object_from_other_thread_ref_unref(
     auto* instance = new_test_gobject(fx);
 
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
                  ::ToggleQueue::Direction::UP);
 
-    gjs_test_tools_unref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_unref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     g_assert_true(ToggleQueue::queue().empty());
 
@@ -486,7 +486,7 @@ static void test_toggle_queue_object_handle_up(GjsUnitTestFixture* fx,
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     GjsAutoUnref<GObject> reffed(instance->ptr());
     assert_equal(ToggleQueue::queue().size(), 1LU);
@@ -505,13 +505,13 @@ static void test_toggle_queue_object_handle_up_down(GjsUnitTestFixture* fx,
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
                  ::ToggleQueue::Direction::UP);
 
-    gjs_test_tools_unref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_unref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     g_assert_true(ToggleQueue::queue().empty());
 
@@ -527,7 +527,7 @@ static void test_toggle_queue_object_handle_up_down_delayed(
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
@@ -538,7 +538,7 @@ static void test_toggle_queue_object_handle_up_down_delayed(
     ToggleQueue::get_default()->handle_all_toggles(toggles_handler);
     g_assert_true(s_toggle_history.empty());
 
-    gjs_test_tools_unref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_unref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
@@ -555,13 +555,13 @@ static void test_toggle_queue_object_handle_up_down_on_gc(
     auto* instance = new_test_gobject(fx);
 
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
                  ::ToggleQueue::Direction::UP);
 
-    gjs_test_tools_unref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_unref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     g_assert_true(ToggleQueue::queue().empty());
 
@@ -581,7 +581,7 @@ static void test_toggle_queue_object_handle_many_up(GjsUnitTestFixture* fx,
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     GjsAutoUnref<GObject> reffed(instance->ptr());
     // Simulating the case where late threads are causing this...
@@ -607,11 +607,11 @@ static void test_toggle_queue_object_handle_many_up_and_down(
 
     // This is something similar to what is happening on #297
     GjsAutoError error;
-    gjs_test_tools_ref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     ToggleQueue::get_default()->enqueue(instance, ::ToggleQueue::Direction::UP,
                                         ToggleQueue().handler());
-    gjs_test_tools_unref_other_thread(instance->ptr(), error.out());
+    gjs_test_tools_unref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     ToggleQueue::get_default()->enqueue(
         instance, ::ToggleQueue::Direction::DOWN, ToggleQueue().handler());

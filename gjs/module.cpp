@@ -154,7 +154,7 @@ class GjsScriptModule {
                 JS::HandleObject module,
                 GFile           *file)
     {
-        GError *error = nullptr;
+        GjsAutoError error;
         GjsAutoChar script;
         size_t script_len = 0;
 

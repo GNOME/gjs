@@ -117,7 +117,7 @@ gjstest_test_func_gjs_context_construct_eval(void)
 {
     GjsContext *context;
     int estatus;
-    GError *error = NULL;
+    GjsAutoError error;
 
     context = gjs_context_new ();
     if (!gjs_context_eval (context, "1+1", -1, "<input>", &estatus, &error))
@@ -127,7 +127,7 @@ gjstest_test_func_gjs_context_construct_eval(void)
 
 static void gjstest_test_func_gjs_context_eval_dynamic_import() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = NULL;
+    GjsAutoError error;
     int status;
 
     bool ok = gjs_context_eval(gjs, R"js(
@@ -144,7 +144,7 @@ static void gjstest_test_func_gjs_context_eval_dynamic_import() {
 
 static void gjstest_test_func_gjs_context_eval_dynamic_import_relative() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = NULL;
+    GjsAutoError error;
     int status;
 
     bool ok = g_file_set_contents("num.js", "export default 77;", -1, &error);
@@ -172,7 +172,7 @@ static void gjstest_test_func_gjs_context_eval_dynamic_import_relative() {
 
 static void gjstest_test_func_gjs_context_eval_dynamic_import_bad() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = NULL;
+    GjsAutoError error;
     int status;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
@@ -196,13 +196,11 @@ static void gjstest_test_func_gjs_context_eval_dynamic_import_bad() {
     g_assert_cmpuint(status, ==, 10);
 
     g_test_assert_expected_messages();
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = NULL;
+    GjsAutoError error;
     int status;
 
     // This string is invalid JS if it is treated as zero-terminated
@@ -217,7 +215,7 @@ static void
 gjstest_test_func_gjs_context_exit(void)
 {
     GjsContext *context = gjs_context_new();
-    GError *error = NULL;
+    GjsAutoError error;
     int status;
 
     bool ok = gjs_context_eval(context, "imports.system.exit(0);", -1,
@@ -226,7 +224,7 @@ gjstest_test_func_gjs_context_exit(void)
     g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
     g_assert_cmpuint(status, ==, 0);
 
-    g_clear_error(&error);
+    error.reset();
 
     ok = gjs_context_eval(context, "imports.system.exit(42);", -1, "<input>",
                           &status, &error);
@@ -234,14 +232,13 @@ gjstest_test_func_gjs_context_exit(void)
     g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
     g_assert_cmpuint(status, ==, 42);
 
-    g_clear_error(&error);
     g_object_unref(context);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_file() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
     uint8_t exit_status;
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_eval_module_file(
         gjs, "resource:///org/gnome/gjs/mock/test/modules/default.js",
@@ -256,7 +253,7 @@ static void gjstest_test_func_gjs_context_eval_module_file() {
 static void gjstest_test_func_gjs_context_eval_module_file_throw() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
     uint8_t exit_status;
-    GError* error = nullptr;
+    GjsAutoError error;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, "*bad module*");
 
@@ -269,13 +266,11 @@ static void gjstest_test_func_gjs_context_eval_module_file_throw() {
     g_assert_cmpuint(exit_status, ==, 1);
 
     g_test_assert_expected_messages();
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_file_exit() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
     uint8_t exit_status;
 
     bool ok = gjs_context_eval_module_file(
@@ -286,7 +281,7 @@ static void gjstest_test_func_gjs_context_eval_module_file_exit() {
     g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
     g_assert_cmpuint(exit_status, ==, 0);
 
-    g_clear_error(&error);
+    error.reset();
 
     ok = gjs_context_eval_module_file(
         gjs, "resource:///org/gnome/gjs/mock/test/modules/exit.js",
@@ -295,13 +290,11 @@ static void gjstest_test_func_gjs_context_eval_module_file_exit() {
     g_assert_false(ok);
     g_assert_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT);
     g_assert_cmpuint(exit_status, ==, 42);
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_file_fail_instantiate() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
     uint8_t exit_status;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING, "*foo*");
@@ -317,13 +310,11 @@ static void gjstest_test_func_gjs_context_eval_module_file_fail_instantiate() {
     g_assert_cmpuint(exit_status, ==, 1);
 
     g_test_assert_expected_messages();
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_warning() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING, "*foo*");
 
@@ -335,14 +326,12 @@ static void gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_war
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
 
     g_test_assert_expected_messages();
-
-    g_clear_error(&error);
 }
 
 static void
 gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_no_warning() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_eval_module_file(
         gjs, "resource:///org/gnome/gjs/mock/test/modules/default.js", nullptr,
@@ -350,12 +339,11 @@ gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_no_warning() {
 
     g_assert_true(ok);
     g_assert_no_error(error);
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, "*bad module*");
 
@@ -367,13 +355,11 @@ static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw() {
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
 
     g_test_assert_expected_messages();
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_eval_file(
         gjs, "resource:///org/gnome/gjs/mock/test/modules/nothrows.js", nullptr,
@@ -381,13 +367,11 @@ static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw()
 
     g_assert_true(ok);
     g_assert_no_error(error);
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_register_module_eval_module() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_register_module(
         gjs, "foo", "resource:///org/gnome/gjs/mock/test/modules/default.js",
@@ -406,7 +390,7 @@ static void gjstest_test_func_gjs_context_register_module_eval_module() {
 
 static void gjstest_test_func_gjs_context_register_module_eval_module_file() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_register_module(
         gjs, "foo", "resource:///org/gnome/gjs/mock/test/modules/default.js",
@@ -427,19 +411,17 @@ static void gjstest_test_func_gjs_context_register_module_eval_module_file() {
 
 static void gjstest_test_func_gjs_context_register_module_non_existent() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_register_module(gjs, "foo", "nonexist.js", &error);
 
     g_assert_false(ok);
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_unregistered() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
     uint8_t exit_status;
 
     bool ok = gjs_context_eval_module(gjs, "foo", &exit_status, &error);
@@ -447,25 +429,21 @@ static void gjstest_test_func_gjs_context_eval_module_unregistered() {
     g_assert_false(ok);
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
     g_assert_cmpuint(exit_status, ==, 1);
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_eval_module(gjs, "foo", nullptr, &error);
 
     g_assert_false(ok);
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     bool ok = gjs_context_register_module(
         gjs, "lies", "resource:///org/gnome/gjs/mock/test/modules/nothrows.js",
@@ -478,8 +456,6 @@ static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw
 
     g_assert_true(ok);
     g_assert_no_error(error);
-
-    g_clear_error(&error);
 }
 
 #define JS_CLASS "\
@@ -491,7 +467,7 @@ static void
 gjstest_test_func_gjs_gobject_js_defined_type(void)
 {
     GjsContext *context = gjs_context_new();
-    GError *error = NULL;
+    GjsAutoError error;
     int status;
     bool ok = gjs_context_eval(context, JS_CLASS, -1, "<input>", &status, &error);
     g_assert_no_error(error);
@@ -509,7 +485,7 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
 
 static void gjstest_test_func_gjs_gobject_without_introspection(void) {
     GjsAutoUnref<GjsContext> context = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
     int status;
 
     /* Ensure class */
@@ -537,7 +513,7 @@ static void gjstest_test_func_gjs_gobject_without_introspection(void) {
 
 static void gjstest_test_func_gjs_context_eval_exit_code_omitted_throw() {
     GjsAutoUnref<GjsContext> context = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, "*wrong code*");
 
@@ -549,13 +525,11 @@ static void gjstest_test_func_gjs_context_eval_exit_code_omitted_throw() {
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
 
     g_test_assert_expected_messages();
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_context_eval_exit_code_omitted_no_throw() {
     GjsAutoUnref<GjsContext> context = gjs_context_new();
-    GError* error = nullptr;
+    GjsAutoError error;
 
     const char good_js[] = "let num = 77;";
 
@@ -564,8 +538,6 @@ static void gjstest_test_func_gjs_context_eval_exit_code_omitted_no_throw() {
 
     g_assert_true(ok);
     g_assert_no_error(error);
-
-    g_clear_error(&error);
 }
 
 static void gjstest_test_func_gjs_jsapi_util_string_js_string_utf8(
@@ -822,7 +794,7 @@ gjstest_test_profiler_start_stop(void)
     gjs_profiler_start(profiler);
 
     for (size_t ix = 0; ix < 100; ix++) {
-        GError *error = nullptr;
+        GjsAutoError error;
         int estatus;
 
 #define TESTJS "[1,5,7,1,2,3,67,8].sort()"
@@ -1012,14 +984,13 @@ static void gjstest_test_args_rounded_values() {
 
 static void gjstest_test_func_gjs_context_argv_array() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
-    GError* error = NULL;
+    GjsAutoError error;
     int status;
 
     const char* argv[1] = {"test"};
     bool ok = gjs_context_define_string_array(gjs, "ARGV", 1, argv, &error);
 
     g_assert_no_error(error);
-    g_clear_error(&error);
     g_assert_true(ok);
 
     ok = gjs_context_eval(gjs, R"js(

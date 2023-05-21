@@ -209,7 +209,7 @@ gjs_string_to_filename(JSContext      *context,
                        const JS::Value filename_val,
                        GjsAutoChar    *filename_string)
 {
-    GError *error;
+    GjsAutoError error;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -233,7 +233,7 @@ gjs_string_from_filename(JSContext             *context,
                          JS::MutableHandleValue value_p)
 {
     gsize written;
-    GError *error;
+    GjsAutoError error;
 
     error = NULL;
     GjsAutoChar utf8_string = g_filename_to_utf8(filename_string, n_bytes,
@@ -241,9 +241,7 @@ gjs_string_from_filename(JSContext             *context,
     if (error) {
         gjs_throw(context,
                   "Could not convert UTF-8 string '%s' to a filename: '%s'",
-                  filename_string,
-                  error->message);
-        g_error_free(error);
+                  filename_string, error->message);
         return false;
     }
 
@@ -337,7 +335,7 @@ gjs_string_to_ucs4(JSContext       *cx,
         return true;
 
     size_t len;
-    GError *error = NULL;
+    GjsAutoError error;
 
     if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, ucs4_string_p, len_p);
@@ -361,7 +359,6 @@ gjs_string_to_ucs4(JSContext       *cx,
         if (*ucs4_string_p == NULL) {
             gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
                       error->message);
-            g_clear_error(&error);
             return false;
         }
         if (len_p != NULL)
@@ -393,14 +390,13 @@ gjs_string_from_ucs4(JSContext             *cx,
     }
 
     long u16_string_length;
-    GError *error = NULL;
+    GjsAutoError error;
 
     gunichar2* u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, nullptr,
                                             &u16_string_length, &error);
     if (!u16_string) {
         gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
                   error->message);
-        g_error_free(error);
         return false;
     }
 

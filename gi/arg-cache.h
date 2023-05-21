@@ -11,7 +11,6 @@
 #include <stdint.h>
 
 #include <limits>
-#include <memory>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -20,6 +19,7 @@
 
 #include "gi/arg.h"
 #include "gjs/enum-utils.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 class GjsFunctionCallState;
@@ -51,7 +51,6 @@ enum class Kind {
 }  // namespace Arg
 
 struct Argument {
-    using UniquePtr = std::unique_ptr<Argument>;
     virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -115,10 +114,12 @@ struct Argument {
     friend struct ArgsCache;
 
     template <typename T, Arg::Kind ArgKind, typename... Args>
-    static std::unique_ptr<T> make(uint8_t index, const char* name,
-                                   GITypeInfo* type_info, GITransfer transfer,
-                                   GjsArgumentFlags flags, Args&&... args);
+    static GjsAutoCppPointer<T> make(uint8_t index, const char* name,
+                                     GITypeInfo* type_info, GITransfer transfer,
+                                     GjsArgumentFlags flags, Args&&... args);
 };
+
+using ArgumentPtr = GjsAutoCppPointer<Argument>;
 
 // This is a trick to print out the sizes of the structs at compile time, in
 // an error message:
@@ -141,11 +142,11 @@ struct ArgsCache {
     GJS_JSAPI_RETURN_CONVENTION
     bool initialize(JSContext* cx, GICallableInfo* callable);
 
-    ArgsCache();
-    ~ArgsCache();
+    // COMPAT: in C++20, use default initializers for these bitfields
+    ArgsCache() : m_is_method(false), m_has_return(false) {}
 
-    void clear();
-    bool initialized() { return m_args != nullptr; }
+    constexpr bool initialized() { return m_args != nullptr; }
+    constexpr void clear() { m_args.reset(); }
 
     void build_arg(uint8_t gi_index, GIDirection, GIArgInfo*, GICallableInfo*,
                    bool* inc_counter_out);
@@ -154,13 +155,8 @@ struct ArgsCache {
 
     void build_instance(GICallableInfo* callable);
 
-    Argument* argument(uint8_t index) const { return arg_get(index).get(); }
-
-    Argument* instance() const;
     GType instance_type() const;
-
     GITypeInfo* return_type() const;
-    Argument* return_value() const;
 
  private:
     void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
@@ -172,21 +168,22 @@ struct ArgsCache {
 
     template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
               typename... Args>
-    T* set_argument(uint8_t index, const char* name, GITypeInfo*, GITransfer,
-                    GjsArgumentFlags flags, Args&&... args);
+    constexpr T* set_argument(uint8_t index, const char* name, GITypeInfo*,
+                              GITransfer, GjsArgumentFlags flags,
+                              Args&&... args);
 
     template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
               typename... Args>
-    T* set_argument(uint8_t index, const char* name, GITransfer,
-                    GjsArgumentFlags flags, Args&&... args);
+    constexpr T* set_argument(uint8_t index, const char* name, GITransfer,
+                              GjsArgumentFlags flags, Args&&... args);
 
     template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
               typename... Args>
-    T* set_argument_auto(Args&&... args);
+    constexpr T* set_argument_auto(Args&&... args);
 
     template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL, typename Tuple,
               typename... Args>
-    T* set_argument_auto(Tuple&& tuple, Args&&... args);
+    constexpr T* set_argument_auto(Tuple&& tuple, Args&&... args);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
@@ -194,13 +191,13 @@ struct ArgsCache {
                             GjsArgumentFlags flags, int length_pos);
 
     template <typename T>
-    T* set_return(GITypeInfo*, GITransfer, GjsArgumentFlags);
+    constexpr T* set_return(GITypeInfo*, GITransfer, GjsArgumentFlags);
 
     template <typename T>
-    T* set_instance(GITransfer,
-                    GjsArgumentFlags flags = GjsArgumentFlags::NONE);
+    constexpr T* set_instance(GITransfer,
+                              GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
-    void set_skip_all(uint8_t index, const char* name = nullptr);
+    constexpr void set_skip_all(uint8_t index, const char* name = nullptr);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     constexpr uint8_t arg_index(uint8_t index
@@ -214,13 +211,31 @@ struct ArgsCache {
     }
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    inline Argument::UniquePtr& arg_get(
-        uint8_t index = Argument::MAX_ARGS) const {
+    constexpr ArgumentPtr& arg_get(uint8_t index = Argument::MAX_ARGS) const {
         return m_args[arg_index<ArgKind>(index)];
     }
 
+ public:
+    constexpr Argument* argument(uint8_t index) const {
+        return arg_get(index).get();
+    }
+
+    constexpr Argument* instance() const {
+        if (!m_is_method)
+            return nullptr;
+
+        return arg_get<Arg::Kind::INSTANCE>().get();
+    }
+
+    constexpr Argument* return_value() const {
+        if (!m_has_return)
+            return nullptr;
+
+        return arg_get<Arg::Kind::RETURN_VALUE>().get();
+    }
+
  private:
-    std::unique_ptr<Argument::UniquePtr[]> m_args;
+    GjsAutoCppPointer<ArgumentPtr[]> m_args;
 
     bool m_is_method : 1;
     bool m_has_return : 1;

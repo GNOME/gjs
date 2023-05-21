@@ -310,7 +310,7 @@ import_module_init(JSContext       *context,
                    JS::HandleObject module_obj)
 {
     gsize script_len = 0;
-    GError *error = NULL;
+    GjsAutoError error;
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedValue ignored(context);
@@ -325,7 +325,6 @@ import_module_init(JSContext       *context,
             return false;
         }
 
-        g_error_free(error);
         return true;
     }
     g_assert(script);

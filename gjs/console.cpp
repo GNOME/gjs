@@ -127,7 +127,7 @@ static void
 check_script_args_for_stray_gjs_args(int           argc,
                                      char * const *argv)
 {
-    GError *error = NULL;
+    GjsAutoError error;
     GjsAutoStrv new_coverage_prefixes;
     GjsAutoChar new_coverage_output_path;
     GjsAutoStrv new_include_paths;
@@ -157,7 +157,6 @@ check_script_args_for_stray_gjs_args(int           argc,
     g_option_context_add_main_entries(script_options, script_check_entries, NULL);
     if (!g_option_context_parse_strv(script_options, argv_copy.out(), &error)) {
         g_warning("Scanning script arguments failed: %s", error->message);
-        g_error_free(error);
         return;
     }
 
@@ -190,7 +189,7 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
                                 size_t len, const char* filename) {
     gjs_context_set_argv(js_context, argc, const_cast<const char**>(argv));
 
-    GError* error = nullptr;
+    GjsAutoError error;
     /* evaluate the script */
     int code = 0;
     if (exec_as_module) {
@@ -198,7 +197,6 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
         GjsAutoChar uri = g_file_get_uri(output);
         if (!gjs_context_register_module(js_context, uri, uri, &error)) {
             g_critical("%s", error->message);
-            g_clear_error(&error);
             code = 1;
         }
 
@@ -209,19 +207,17 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
 
             if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
                 g_critical("%s", error->message);
-            g_clear_error(&error);
         }
     } else if (!gjs_context_eval(js_context, script, len, filename, &code,
                                  &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
             g_critical("%s", error->message);
-        g_clear_error(&error);
     }
     return code;
 }
 
 int main(int argc, char** argv) {
-    GError* error = NULL;
+    GjsAutoError error;
     const char *filename;
     const char *program_name;
     gsize len;
@@ -316,7 +312,6 @@ int main(int argc, char** argv) {
     } else {
         /* All unprocessed options should be in script_argv */
         g_assert(gjs_argc == 2);
-        error = NULL;
         GjsAutoUnref<GFile> input = g_file_new_for_commandline_arg(gjs_argv[1]);
         if (!g_file_load_contents(input, nullptr, script.out(), &len, nullptr,
                                   &error)) {

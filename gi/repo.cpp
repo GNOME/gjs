@@ -83,8 +83,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool resolve_namespace_object(JSContext* context,
                                      JS::HandleObject repo_obj,
                                      JS::HandleId ns_id) {
-    GError *error;
-
     JS::UniqueChars version;
     if (!get_version_for_ns(context, repo_obj, ns_id, &version))
         return false;
@@ -108,14 +106,12 @@ static bool resolve_namespace_object(JSContext* context,
                       ns_name.get(), nversions))
         return false;
 
-    error = NULL;
+    GjsAutoError error;
     g_irepository_require(nullptr, ns_name.get(), version.get(),
                           GIRepositoryLoadFlags(0), &error);
-    if (error != NULL) {
+    if (error) {
         gjs_throw(context, "Requiring %s, version %s: %s", ns_name.get(),
                   version ? version.get() : "none", error->message);
-
-        g_error_free(error);
         return false;
     }
 

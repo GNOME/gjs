@@ -1518,16 +1518,16 @@ constexpr size_t argument_maximum_size() {
 #endif
 
 template <typename T, Arg::Kind ArgKind, typename... Args>
-std::unique_ptr<T> Argument::make(uint8_t index, const char* name,
-                                  GITypeInfo* type_info, GITransfer transfer,
-                                  GjsArgumentFlags flags, Args&&... args) {
+GjsAutoCppPointer<T> Argument::make(uint8_t index, const char* name,
+                                    GITypeInfo* type_info, GITransfer transfer,
+                                    GjsArgumentFlags flags, Args&&... args) {
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
     static_assert(
         sizeof(T) <= argument_maximum_size<T>(),
         "Think very hard before increasing the size of Gjs::Arguments. "
         "One is allocated for every argument to every introspected function.");
 #endif
-    auto arg = std::make_unique<T>(args...);
+    auto arg = new T(args...);
 
     if constexpr (ArgKind == Arg::Kind::INSTANCE) {
         g_assert(index == Argument::ABSENT &&
@@ -1563,11 +1563,6 @@ std::unique_ptr<T> Argument::make(uint8_t index, const char* name,
     return arg;
 }
 
-//  Needed for unique_ptr with incomplete type
-// COMPAT: in C++20, use default initializers for these bitfields in the header
-ArgsCache::ArgsCache() : m_is_method(false), m_has_return(false) {}
-ArgsCache::~ArgsCache() = default;
-
 bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
     if (!callable) {
         gjs_throw(cx, "Invalid callable provided");
@@ -1598,38 +1593,35 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
         return false;
     }
 
-    m_args = std::make_unique<Argument::UniquePtr[]>(size);
+    m_args = new ArgumentPtr[size]{};
     return true;
 }
 
-void ArgsCache::clear() {
-    m_args.reset();
-}
-
 template <typename T, Arg::Kind ArgKind, typename... Args>
-T* ArgsCache::set_argument(uint8_t index, const char* name,
-                           GITypeInfo* type_info, GITransfer transfer,
-                           GjsArgumentFlags flags, Args&&... args) {
-    std::unique_ptr<T> arg = Argument::make<T, ArgKind>(
+constexpr T* ArgsCache::set_argument(uint8_t index, const char* name,
+                                     GITypeInfo* type_info, GITransfer transfer,
+                                     GjsArgumentFlags flags, Args&&... args) {
+    GjsAutoCppPointer<T> arg = Argument::make<T, ArgKind>(
         index, name, type_info, transfer, flags, args...);
-    arg_get<ArgKind>(index) = std::move(arg);
+    arg_get<ArgKind>(index) = arg.release();
     return static_cast<T*>(arg_get<ArgKind>(index).get());
 }
 
 template <typename T, Arg::Kind ArgKind, typename... Args>
-T* ArgsCache::set_argument(uint8_t index, const char* name, GITransfer transfer,
-                           GjsArgumentFlags flags, Args&&... args) {
+constexpr T* ArgsCache::set_argument(uint8_t index, const char* name,
+                                     GITransfer transfer,
+                                     GjsArgumentFlags flags, Args&&... args) {
     return set_argument<T, ArgKind>(index, name, nullptr, transfer, flags,
                                     args...);
 }
 
 template <typename T, Arg::Kind ArgKind, typename... Args>
-T* ArgsCache::set_argument_auto(Args&&... args) {
+constexpr T* ArgsCache::set_argument_auto(Args&&... args) {
     return set_argument<T, ArgKind>(std::forward<Args>(args)...);
 }
 
 template <typename T, Arg::Kind ArgKind, typename Tuple, typename... Args>
-T* ArgsCache::set_argument_auto(Tuple&& tuple, Args&&... args) {
+constexpr T* ArgsCache::set_argument_auto(Tuple&& tuple, Args&&... args) {
     // TODO(3v1n0): Would be nice to have a simple way to check we're handling a
     // tuple
     return std::apply(
@@ -1641,23 +1633,17 @@ T* ArgsCache::set_argument_auto(Tuple&& tuple, Args&&... args) {
 }
 
 template <typename T>
-T* ArgsCache::set_return(GITypeInfo* type_info, GITransfer transfer,
-                         GjsArgumentFlags flags) {
+constexpr T* ArgsCache::set_return(GITypeInfo* type_info, GITransfer transfer,
+                                   GjsArgumentFlags flags) {
     return set_argument<T, Arg::Kind::RETURN_VALUE>(Argument::ABSENT, nullptr,
                                                     type_info, transfer, flags);
 }
 
 template <typename T>
-T* ArgsCache::set_instance(GITransfer transfer, GjsArgumentFlags flags) {
+constexpr T* ArgsCache::set_instance(GITransfer transfer,
+                                     GjsArgumentFlags flags) {
     return set_argument<T, Arg::Kind::INSTANCE>(Argument::ABSENT, nullptr,
                                                 transfer, flags);
-}
-
-Argument* ArgsCache::instance() const {
-    if (!m_is_method)
-        return nullptr;
-
-    return arg_get<Arg::Kind::INSTANCE>().get();
 }
 
 GType ArgsCache::instance_type() const {
@@ -1665,13 +1651,6 @@ GType ArgsCache::instance_type() const {
         return G_TYPE_NONE;
 
     return instance()->as_instance()->gtype();
-}
-
-Argument* ArgsCache::return_value() const {
-    if (!m_has_return)
-        return nullptr;
-
-    return arg_get<Arg::Kind::RETURN_VALUE>().get();
 }
 
 GITypeInfo* ArgsCache::return_type() const {
@@ -1682,7 +1661,7 @@ GITypeInfo* ArgsCache::return_type() const {
     return const_cast<GITypeInfo*>(rval->as_return_value()->type_info());
 }
 
-void ArgsCache::set_skip_all(uint8_t index, const char* name) {
+constexpr void ArgsCache::set_skip_all(uint8_t index, const char* name) {
     set_argument<Arg::SkipAll>(index, name, GI_TRANSFER_NOTHING,
                                GjsArgumentFlags::SKIP_ALL);
 }
