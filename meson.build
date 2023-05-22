@@ -330,9 +330,6 @@ header_conf.set('HAVE_DTRACE', get_option('dtrace'),
     description: 'Using dtrace probes')
 header_conf.set('HAVE_PRINTF_ALTERNATIVE_INT', have_printf_alternative_int,
     description: 'printf() accepts "%Id" for alternative integer output')
-header_conf.set('HAVE_OPEN_MEMSTREAM',
-    cxx.has_function('open_memstream', prefix : '#include <stdio.h>'),
-    description: 'open_memstream() is available')
 if build_readline
     header_conf.set('HAVE_READLINE_READLINE_H',
         cxx.check_header('readline/readline.h', prefix: '#include <cstdio>',

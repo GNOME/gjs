@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include <stdio.h>  // for stderr, open_memstream
+#include <stdio.h>  // for stderr
 
 #include <sstream>
 #include <string>
@@ -12,7 +12,9 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Printer.h>
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/friend/DumpFunctions.h>
 
 #include "gjs/context-private.h"
@@ -40,48 +42,31 @@ gjs_dumpstack(void)
     }
 }
 
-#ifdef HAVE_OPEN_MEMSTREAM
-static std::string
-stack_trace_string(GjsContext *context) {
-    JSContext *cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
-    std::ostringstream out;
-    FILE *stream;
-    GjsAutoChar buf;
-    size_t len;
-
-    stream = open_memstream(buf.out(), &len);
-    if (!stream) {
-        out << "No stack trace for context " << context << ": "
-               "open_memstream() failed\n\n";
-        return out.str();
-    }
-    js::DumpBacktrace(cx, stream);
-    fclose(stream);
-    out << "== Stack trace for context " << context << " ==\n"
-        << buf.get() << "\n";
-    return out.str();
-}
-#endif
-
 std::string
 gjs_dumpstack_string() {
     std::string out;
     std::ostringstream all_traces;
 
-#ifdef HAVE_OPEN_MEMSTREAM
     GjsSmartPointer<GList> contexts = gjs_context_get_all();
+    js::Sprinter printer;
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
         GjsAutoUnref<GjsContext> context(GJS_CONTEXT(iter->data));
-        all_traces << stack_trace_string(context);
+        if (!printer.init()) {
+            all_traces << "No stack trace for context " << context.get()
+                       << ": out of memory\n\n";
+            break;
+        }
+        auto* cx =
+            static_cast<JSContext*>(gjs_context_get_native_context(context));
+        js::DumpBacktrace(cx, printer);
+        JS::UniqueChars trace = printer.release();
+        all_traces << "== Stack trace for context " << context.get() << " ==\n"
+                   << trace.get() << "\n";
     }
     out = all_traces.str();
     out.resize(MAX(out.size() - 2, 0));
-#else
-    out = "No stack trace: no open_memstream() support. "
-          "See https://bugzilla.mozilla.org/show_bug.cgi?id=1826290";
-#endif
 
     return out;
 }
