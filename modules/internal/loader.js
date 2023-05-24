@@ -303,6 +303,6 @@ moduleLoader.registerScheme('gi', {
      */
     loadAsync(uri) {
         // gi: only does string manipulation, so it is safe to use the same code for sync and async.
-        return this.load(uri);
+        return Promise.resolve(this.load(uri));
     },
 });
