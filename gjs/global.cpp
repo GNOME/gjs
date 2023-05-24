@@ -292,6 +292,7 @@ class GjsInternalGlobal : GjsBaseGlobal {
         JS_FN("getRegistry", gjs_internal_get_registry, 1, 0),
         JS_FN("getSourceMapRegistry", gjs_internal_get_source_map_registry, 1,
               0),
+        JS_FN("internalWarning", gjs_internal_warning, 1, 0),
         JS_FN("loadResourceOrFile", gjs_internal_load_resource_or_file, 1, 0),
         JS_FN("loadResourceOrFileAsync",
               gjs_internal_load_resource_or_file_async, 1, 0),

@@ -28,6 +28,7 @@ static Gjs::AutoStrv include_path;
 static Gjs::AutoStrv coverage_prefixes;
 static Gjs::AutoChar coverage_output_path;
 static Gjs::AutoChar profile_output_path;
+static Gjs::AutoChar import_map;
 static Gjs::AutoChar command;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
@@ -82,6 +83,12 @@ static GOptionEntry entries[] = {
      .arg = G_OPTION_ARG_NONE,
      .arg_data = &exec_as_module,
      .description = "Execute the file as a module"},
+    {.long_name = "import-map",
+     .short_name = 'p',
+     .arg = G_OPTION_ARG_STRING,
+     .arg_data = &import_map,
+     .description = "Read import map from FILE to map imports to real paths",
+     .arg_description = "FILE"},
     {.long_name = "profile",
      .flags = G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
      .arg = G_OPTION_ARG_CALLBACK,
@@ -310,6 +317,7 @@ int main(int argc, char** argv) {
     include_path.release();
     coverage_prefixes.release();
     coverage_output_path.release();
+    import_map.release();
     command.release();
     print_version = false;
     print_js_version = false;
@@ -432,6 +440,26 @@ int main(int argc, char** argv) {
                      "repl-history-path", repl_history_path.get(),
                      // clang-format on
                      nullptr))};
+
+    if (import_map) {
+        Gjs::AutoUnref<GFile> import_map_file{
+            g_file_new_for_commandline_arg(import_map)};
+
+        Gjs::AutoChar import_map_contents;
+        size_t import_map_length;
+        if (!g_file_load_contents(import_map_file, /*cancellable=*/nullptr,
+                                  import_map_contents.out(), &import_map_length,
+                                  /*etag_out=*/nullptr, error.out())) {
+            g_printerr("Failed to load import map: %s\n", error->message);
+            return EXIT_FAILURE;
+        }
+
+        if (!gjs_context_add_import_map(gjs_context, import_map_contents,
+                                        import_map_length, error.out())) {
+            g_printerr("%s\n", error->message);
+            return EXIT_FAILURE;
+        }
+    }
 
     const char* env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != nullptr) {

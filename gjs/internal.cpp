@@ -445,6 +445,19 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
     return gjs_uri_object(cx, output_uri.get(), args.rval());
 }
 
+bool gjs_internal_warning(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::UniqueChars message;
+    if (!gjs_parse_call_args(cx, "internalWarning", args, "s", "message",
+                             &message))
+        return handle_wrong_args(cx);
+
+    gjs_warning("{}", message);
+
+    args.rval().setUndefined();
+    return true;
+}
+
 bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
                                         JS::Value* vp) {
     JS::CallArgs args = CallArgsFromVp(argc, vp);

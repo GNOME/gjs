@@ -38,6 +38,9 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext*, unsigned,
                                                     JS::Value*);
 
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_internal_warning(JSContext*, unsigned, JS::Value*);
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_internal_load_resource_or_file(JSContext*, unsigned, JS::Value*);
 
 GJS_JSAPI_RETURN_CONVENTION

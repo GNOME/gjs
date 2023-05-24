@@ -85,6 +85,7 @@
 #include <js/HeapAPI.h>
 #include <js/Id.h>
 #include <js/Initialization.h>
+#include <js/JSON.h>
 #include <js/MapAndSet.h>
 #include <js/MemoryFunctions.h>
 #include <js/Modules.h>

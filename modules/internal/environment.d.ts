@@ -9,6 +9,7 @@ declare var compileModule: CompileFunc;
 declare var getRegistry: (global: Global) => Map<string, Module>;
 declare var getSourceMapRegistry:
     (global: Global) => Map<string, SourceMapConsumer>;
+declare var internalWarning: (log: string) => void;
 declare var loadResourceOrFile: (uri: string) => string;
 declare var loadResourceOrFileAsync: (uri: string) => Promise<string>;
 declare var parseURI: (uri: string) => Uri;
@@ -40,6 +41,10 @@ declare type CompileFunc = (uri: string, source: string) => Module;
 declare type ResolvedModule = [Module, string, string];
 declare type SourceMapConsumer =
     import('./source-map/source-map-consumer.js').SourceMapConsumer;
+
+declare type ParsedObject = Record<string, any>;
+declare type SpecifierMap = [key: string, value: Uri | null][];
+declare type Scopes = [key: string, value: SpecifierMap][];
 
 declare type Uri = {
     uri: string;

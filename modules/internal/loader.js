@@ -8,10 +8,28 @@
 import {ImportError, InternalModuleLoader, ModulePrivate} from './internalLoader.js';
 import {extractUrl} from './source-map/extractUrl.js';
 import {SourceMapConsumer} from './source-map/source-map-consumer.js';
+import {ImportMap} from './importMaps.js';
 
 const DATA_URI_PREFIX = 'data:application/json;base64,';
 
 class ModuleLoader extends InternalModuleLoader {
+    /**
+     * Initialized by API call.
+     *
+     * @type {ImportMap?}
+     */
+    #importMap = null;
+
+    /** @type {boolean} */
+    #specifiersResolved = false;
+
+    /**
+     * Identifiers of modules registered with gjs_context_register_module().
+     *
+     * @type {Set<string>}
+     */
+    #registeredIdentifiers = new Set();
+
     /**
      * @param {typeof moduleGlobalThis} global the global object to register modules with.
      */
@@ -43,6 +61,17 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     /**
+     * @param {ParsedObject} importMapObject Object returned from JSON.parse
+     */
+    addImportMap(importMapObject) {
+        if (this.#importMap)
+            throw new Error('Import map was already added');
+        if (this.#specifiersResolved)
+            throw new Error('Import map cannot be added after any imports resolved');
+        this.#importMap = new ImportMap(importMapObject, null);
+    }
+
+    /**
      * @param {string} specifier the package specifier
      * @returns {string[]} the possible internal URIs
      */
@@ -71,6 +100,32 @@ class ModuleLoader extends InternalModuleLoader {
                 return true;
         }
         return false;
+    }
+
+    /**
+     * Determines whether an import originated in user code, or GJS internal
+     * code.
+     *
+     * @param {Uri | null} parentURI - URI of the importing module
+     */
+    isUserImport(parentURI) {
+        return !parentURI || !this.isInternal(parentURI);
+    }
+
+    /**
+     * Looks up a module stored in the registry under the specifier itself,
+     * before resolving it. With an import map, only an identifier registered
+     * with gjs_context_register_module() is looked up; anything else must go
+     * through the import map first.
+     *
+     * @param {string} specifier - the import specifier
+     * @param {Uri | null} parentURI - the URI of the importing module
+     */
+    #lookupUnresolvedModule(specifier, parentURI) {
+        if (this.#importMap && this.isUserImport(parentURI) &&
+            !this.#registeredIdentifiers.has(specifier))
+            return undefined;
+        return getRegistry(this.global).get(specifier);
     }
 
     /**
@@ -108,6 +163,25 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Uri}
      */
     resolveSpecifier(specifier, parentURI = null) {
+        // Same as below, but go through the import map for non-internal imports
+        if (this.#importMap && this.isUserImport(parentURI)) {
+            // Without a parent we can't resolve relative paths
+            if (!parentURI && (specifier.startsWith('./') ||
+                specifier.startsWith('../') || specifier.startsWith('/')))
+                throw new ImportError('Cannot import relative path when module path is unknown.');
+
+            const mapped = this.#importMap.resolveModuleSpecifier(parentURI, specifier);
+            if (mapped)
+                return mapped;
+            // Bare specifier not mapped by import map. May be a built-in
+            // module.
+            const realURI = this.buildInternalURIs(specifier).find(uriExists);
+            if (realURI)
+                return parseURI(realURI);
+
+            throw new ImportError(`Module not found: ${specifier}`);
+        }
+
         try {
             return super.resolveSpecifier(specifier, parentURI);
         } catch (error) {
@@ -178,6 +252,15 @@ class ModuleLoader extends InternalModuleLoader {
      */
     moduleResolveHook(importingModulePriv, specifier) {
         const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
+        const isUserImport = this.isUserImport(importingModuleURI);
+
+        if (isUserImport)
+            this.#specifiersResolved = true;
+
+        const registered = this.#lookupUnresolvedModule(specifier, importingModuleURI);
+        if (registered)
+            return registered;
+
         const [module, text, uri] = this.resolveModule(specifier, importingModuleURI);
 
         this.populateSourceMap(text, uri);
@@ -193,9 +276,13 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Module}
      */
     moduleLoadHook(id, uri) {
-        const text = this.loadURI(parseURI(uri));
+        const parsedURI = parseURI(uri);
+        const text = this.loadURI(parsedURI);
         this.populateSourceMap(text, uri);
-        return super.moduleLoadHook(id, uri);
+        const module = super.moduleLoadHook(id, uri);
+        if (!this.isInternal(parsedURI))
+            this.#registeredIdentifiers.add(id);
+        return module;
     }
 
     /**
@@ -211,13 +298,17 @@ class ModuleLoader extends InternalModuleLoader {
     async moduleResolveAsyncHook(importingModulePriv, specifier) {
         const registry = getRegistry(this.global);
 
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
+
+        if (this.isUserImport(importingModuleURI))
+            this.#specifiersResolved = true;
+
         // Check if the module has already been loaded
-        let module = registry.get(specifier);
+        let module = this.#lookupUnresolvedModule(specifier, importingModuleURI);
         if (module)
             return module;
 
         // 1) Resolve path and URI-based imports.
-        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
 
         module = registry.get(uri.uriWithQuery);

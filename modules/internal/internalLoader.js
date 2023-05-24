@@ -136,15 +136,10 @@ export class InternalModuleLoader {
     resolveModule(specifier, importingModuleURI) {
         const registry = getRegistry(this.global);
 
-        // Check if the module has already been loaded
-        let module = registry.get(specifier);
-        if (module)
-            return [module, '', ''];
-
         // 1) Resolve path and URI-based imports.
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
 
-        module = registry.get(uri.uriWithQuery);
+        let module = registry.get(uri.uriWithQuery);
 
         // Check if module is already loaded (relative handling)
         if (module)
@@ -170,6 +165,11 @@ export class InternalModuleLoader {
      * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
+        // Check if the module has already been loaded
+        const module = getRegistry(this.global).get(specifier);
+        if (module)
+            return module;
+
         const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
         const [resolved] = this.resolveModule(specifier, importingModuleURI);
         return resolved;
