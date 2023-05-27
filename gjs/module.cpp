@@ -526,7 +526,7 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
     args[1].setString(specifier);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Module resolve hook for module '%s' (relative to %s), global %p",
+              "Module resolve hook for module %s (relative to %s), global %p",
               gjs_debug_string(specifier).c_str(),
               gjs_debug_value(importingModulePriv).c_str(), global.get());
 
@@ -652,13 +652,13 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
 
     if (importing_module_priv.isObject()) {
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Async module resolve hook for module '%s' (relative to %p), "
+                  "Async module resolve hook for module %s (relative to %p), "
                   "global %p",
                   gjs_debug_string(specifier).c_str(),
                   &importing_module_priv.toObject(), global.get());
     } else {
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Async module resolve hook for module '%s' (unknown path), "
+                  "Async module resolve hook for module %s (unknown path), "
                   "global %p",
                   gjs_debug_string(specifier).c_str(), global.get());
     }
