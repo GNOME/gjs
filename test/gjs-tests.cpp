@@ -530,6 +530,49 @@ static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw
     g_assert_no_error(error);
 }
 
+static void gjstest_test_func_gjs_context_module_eval_jsapi_throws(
+    GjsUnitTestFixture* fx, const void*) {
+    GjsAutoError error;
+
+    bool ok = gjs_context_register_module(
+        fx->gjs_context, "foo",
+        "resource:///org/gnome/gjs/mock/test/modules/throws.js", &error);
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    JS::CompileOptions options{fx->cx};
+    options.setFileAndLine("import.js", 1);
+    static const char* code = R"js(
+        let error;
+        const loop = new imports.gi.GLib.MainLoop(null, false);
+        import('foo')
+        .catch(e => (error = e))
+        .finally(() => loop.quit());
+        loop.run();
+        error;
+    )js";
+    JS::SourceText<mozilla::Utf8Unit> source;
+    ok = source.init(fx->cx, code, strlen(code), JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
+    JS::RootedValue thrown{fx->cx};
+    ok = JS::Evaluate(fx->cx, options, source, &thrown);
+    gjs_log_exception(fx->cx);  // will fail test if exception pending
+
+    g_assert_true(ok);
+
+    g_assert_true(thrown.isObject());
+    JS::RootedObject thrown_obj{fx->cx, &thrown.toObject()};
+    JS::RootedValue message{fx->cx};
+    ok = JS_GetProperty(fx->cx, thrown_obj, "message", &message);
+    g_assert_true(ok);
+    g_assert_true(message.isString());
+    bool match = false;
+    ok = JS_StringEqualsAscii(fx->cx, message.toString(), "bad module", &match);
+    g_assert_true(ok);
+    g_assert_true(match);
+}
+
 static void gjstest_test_func_gjs_context_run_in_realm() {
     GjsAutoUnref<GjsContext> gjs = gjs_context_new();
 
@@ -1208,6 +1251,10 @@ main(int    argc,
     g_test_add_func(
         "/gjs/context/eval-module/exit-code-omitted-no-throw",
         gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw);
+    g_test_add("/gjs/context/eval-module/jsapi-throw", GjsUnitTestFixture,
+               nullptr, gjs_unit_test_fixture_setup,
+               gjstest_test_func_gjs_context_module_eval_jsapi_throws,
+               gjs_unit_test_fixture_teardown);
     g_test_add_func("/gjs/context/run-in-realm",
                     gjstest_test_func_gjs_context_run_in_realm);
 
