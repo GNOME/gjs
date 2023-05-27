@@ -27,17 +27,16 @@
 
 G_BEGIN_DECLS
 
-typedef struct _GjsContext      GjsContext;
-typedef struct _GjsContextClass GjsContextClass;
-
 #define GJS_TYPE_CONTEXT              (gjs_context_get_type ())
-#define GJS_CONTEXT(object)           (G_TYPE_CHECK_INSTANCE_CAST ((object), GJS_TYPE_CONTEXT, GjsContext))
+
+GJS_EXPORT GJS_USE G_DECLARE_FINAL_TYPE(GjsContext, gjs_context, GJS, CONTEXT,
+                                        GObject);
+
+/* These class macros are not defined by G_DECLARE_FINAL_TYPE, but are kept for
+ * backwards compatibility */
 #define GJS_CONTEXT_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), GJS_TYPE_CONTEXT, GjsContextClass))
-#define GJS_IS_CONTEXT(object)        (G_TYPE_CHECK_INSTANCE_TYPE ((object), GJS_TYPE_CONTEXT))
 #define GJS_IS_CONTEXT_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), GJS_TYPE_CONTEXT))
 #define GJS_CONTEXT_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), GJS_TYPE_CONTEXT, GjsContextClass))
-
-GJS_EXPORT GJS_USE GType gjs_context_get_type(void) G_GNUC_CONST;
 
 typedef void (*GjsContextInRealmFunc)(GjsContext*, void*);
 
