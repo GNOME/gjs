@@ -19,10 +19,13 @@
 
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/CompileOptions.h>
 #include <js/Exception.h>
 #include <js/Id.h>
 #include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
+#include <js/SourceText.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -40,6 +43,10 @@
 #include "test/gjs-test-no-introspection-object.h"
 #include "test/gjs-test-utils.h"
 #include "util/misc.h"
+
+namespace mozilla {
+union Utf8Unit;
+}
 
 // COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
 #ifdef __clang_analyzer__
@@ -407,6 +414,70 @@ static void gjstest_test_func_gjs_context_register_module_eval_module_file() {
     g_assert_true(ok);
     g_assert_no_error(error);
     g_assert_cmpuint(exit_status, ==, 0);
+}
+
+static void gjstest_test_func_gjs_context_register_module_eval_jsapi(
+    GjsUnitTestFixture* fx, const void*) {
+    GjsAutoError error;
+
+    bool ok = gjs_context_register_module(
+        fx->gjs_context, "foo",
+        "resource:///org/gnome/gjs/mock/test/modules/default.js", &error);
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    JS::CompileOptions options{fx->cx};
+    options.setFileAndLine("import.js", 1);
+    static const char* code = R"js(
+        let error;
+        const loop = new imports.gi.GLib.MainLoop(null, false);
+        import('foo')
+        .then(module => {
+            if (module.default !== 77)
+                throw new Error('wrong number');
+        })
+        .catch(e => (error = e))
+        .finally(() => loop.quit());
+        loop.run();
+        if (error)
+            throw error;
+    )js";
+    JS::SourceText<mozilla::Utf8Unit> source;
+    ok = source.init(fx->cx, code, strlen(code), JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
+    JS::RootedValue unused{fx->cx};
+    ok = JS::Evaluate(fx->cx, options, source, &unused);
+    gjs_log_exception(fx->cx);  // will fail test if exception pending
+    g_assert_true(ok);
+}
+
+static void gjstest_test_func_gjs_context_register_module_eval_jsapi_rel(
+    GjsUnitTestFixture* fx, const void*) {
+    JS::CompileOptions options{fx->cx};
+    options.setFileAndLine("import.js", 1);
+    static const char* code = R"js(
+        let error;
+        const loop = new imports.gi.GLib.MainLoop(null, false);
+        import('./foo.js')
+        .catch(e => (error = e))
+        .finally(() => loop.quit());
+        loop.run();
+        if (error)
+            throw error;
+    )js";
+    JS::SourceText<mozilla::Utf8Unit> source;
+    bool ok =
+        source.init(fx->cx, code, strlen(code), JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
+    JS::RootedValue unused{fx->cx};
+    ok = JS::Evaluate(fx->cx, options, source, &unused);
+    g_assert_false(ok);
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
+                          "JS ERROR: ImportError*relative*");
+    gjs_log_exception(fx->cx);
+    g_test_assert_expected_messages();
 }
 
 static void gjstest_test_func_gjs_context_register_module_non_existent() {
@@ -1062,6 +1133,14 @@ main(int    argc,
     g_test_add_func(
         "/gjs/context/register-module/eval-module-file",
         gjstest_test_func_gjs_context_register_module_eval_module_file);
+    g_test_add("/gjs/context/register-module/eval-jsapi", GjsUnitTestFixture,
+               nullptr, gjs_unit_test_fixture_setup,
+               gjstest_test_func_gjs_context_register_module_eval_jsapi,
+               gjs_unit_test_fixture_teardown);
+    g_test_add("/gjs/context/register-module/eval-jsapi-relative",
+               GjsUnitTestFixture, nullptr, gjs_unit_test_fixture_setup,
+               gjstest_test_func_gjs_context_register_module_eval_jsapi_rel,
+               gjs_unit_test_fixture_teardown);
     g_test_add_func("/gjs/context/register-module/non-existent",
                     gjstest_test_func_gjs_context_register_module_non_existent);
     g_test_add_func("/gjs/context/eval-module/unregistered",

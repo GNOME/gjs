@@ -329,37 +329,32 @@ class ModuleLoader extends InternalModuleLoader {
      * Resolves a module import with optional handling for relative imports.
      * Overrides InternalModuleLoader.moduleResolveHook
      *
-     * @param {ModulePrivate} importingModulePriv
-     *   the private object of the module initiating the import
+     * @param {ModulePrivate | null} importingModulePriv - the private object of
+     *   the module initiating the import, null if the import is not coming from
+     *   a file that can resolve relative imports
      * @param {string} specifier the module specifier to resolve for an import
      * @returns {import("./internalLoader").Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const module = this.resolveModule(specifier, importingModulePriv.uri);
+        const module = this.resolveModule(specifier, importingModulePriv?.uri);
         if (module)
             return module;
 
         return this.resolveBareSpecifier(specifier);
     }
 
-    moduleResolveAsyncHook(importingModulePriv, specifier) {
-        // importingModulePriv should never be missing. If it is then a JSScript
-        // is missing a private object
-        if (!importingModulePriv || !importingModulePriv.uri)
-            throw new ImportError('Cannot resolve relative imports from an unknown file.');
-
-        return this.resolveModuleAsync(specifier, importingModulePriv.uri);
-    }
-
     /**
      * Resolves a module import with optional handling for relative imports asynchronously.
      *
-     * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
-     *   triggering this resolve
-     * @returns {import("../types").Module}
+     * @param {ModulePrivate | null} importingModulePriv - the private object of
+     *   the module initiating the import, null if the import is not coming from
+     *   a file that can resolve relative imports
+     * @param {string} specifier - the specifier (e.g. relative path, root
+     *   package) to resolve
+     * @returns {Promise<Module>}
      */
-    async resolveModuleAsync(specifier, importingModuleURI) {
+    async moduleResolveAsyncHook(importingModulePriv, specifier) {
+        const importingModuleURI = importingModulePriv?.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded

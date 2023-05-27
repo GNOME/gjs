@@ -501,7 +501,7 @@ bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
  * Hook SpiderMonkey calls to resolve import specifiers.
  *
  * @param importingModulePriv the private value of the #Module object initiating
- *   the import.
+ *   the import, or a JS null value
  * @param specifier the import specifier to resolve
  *
  * @returns whether an error occurred while resolving the specifier.
@@ -512,9 +512,6 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
               gjs_global_is_type(cx, GjsGlobalType::INTERNAL)) &&
              "gjs_module_resolve can only be called from module-enabled "
              "globals.");
-    g_assert(importingModulePriv.isObject() &&
-             "the importing module can't be null, don't add import to the "
-             "bootstrap script");
     JS::RootedString specifier(
         cx, JS::GetModuleRequestSpecifier(cx, module_request));
 
@@ -529,9 +526,9 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
     args[1].setString(specifier);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Module resolve hook for module '%s' (relative to %p), global %p",
+              "Module resolve hook for module '%s' (relative to %s), global %p",
               gjs_debug_string(specifier).c_str(),
-              &importingModulePriv.toObject(), global.get());
+              gjs_debug_value(importingModulePriv).c_str(), global.get());
 
     JS::RootedValue result(cx);
     if (!JS::Call(cx, loader, "moduleResolveHook", args, &result))
