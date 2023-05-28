@@ -24,6 +24,7 @@
 #include <js/Exception.h>
 #include <js/Id.h>
 #include <js/PropertyAndElement.h>
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/String.h>
@@ -527,6 +528,36 @@ static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw
 
     g_assert_true(ok);
     g_assert_no_error(error);
+}
+
+static void gjstest_test_func_gjs_context_run_in_realm() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+
+    auto* cx = static_cast<JSContext*>(gjs_context_get_native_context(gjs));
+    g_assert_null(JS::GetCurrentRealmOrNull(cx));
+
+    struct RunInRealmData {
+        int sentinel;
+        bool has_run;
+    } data{42, false};
+
+    gjs_context_run_in_realm(
+        gjs,
+        [](GjsContext* gjs, void* ptr) {
+            g_assert_true(GJS_IS_CONTEXT(gjs));
+            auto* data = static_cast<RunInRealmData*>(ptr);
+            g_assert_cmpint(data->sentinel, ==, 42);
+
+            auto* cx =
+                static_cast<JSContext*>(gjs_context_get_native_context(gjs));
+            g_assert_nonnull(JS::GetCurrentRealmOrNull(cx));
+
+            data->has_run = true;
+        },
+        &data);
+
+    g_assert_null(JS::GetCurrentRealmOrNull(cx));
+    g_assert_true(data.has_run);
 }
 
 #define JS_CLASS "\
@@ -1177,6 +1208,8 @@ main(int    argc,
     g_test_add_func(
         "/gjs/context/eval-module/exit-code-omitted-no-throw",
         gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw);
+    g_test_add_func("/gjs/context/run-in-realm",
+                    gjstest_test_func_gjs_context_run_in_realm);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \

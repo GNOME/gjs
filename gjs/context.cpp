@@ -1795,3 +1795,25 @@ gjs_get_js_version(void)
 {
     return JS_GetImplementationVersion();
 }
+
+/**
+ * gjs_context_run_in_realm:
+ * @self: the #GjsContext
+ * @func: (scope call): function to run
+ * @user_data: (closure func): pointer to pass to @func
+ *
+ * Runs @func immediately, not asynchronously, after entering the JS context's
+ * main realm. After @func completes, leaves the realm again.
+ *
+ * You only need this if you are using JSAPI calls from the SpiderMonkey API
+ * directly.
+ */
+void gjs_context_run_in_realm(GjsContext* self, GjsContextInRealmFunc func,
+                              void* user_data) {
+    g_return_if_fail(GJS_IS_CONTEXT(self));
+    g_return_if_fail(func);
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
+    JSAutoRealm ar{gjs->context(), gjs->global()};
+    func(self, user_data);
+}
