@@ -1,4 +1,4 @@
-## Signals
+# Signals
 
 The `Signals` module provides a GObject-like signal framework for native
 JavaScript classes and objects.
