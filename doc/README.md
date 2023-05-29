@@ -66,9 +66,9 @@ GNOME Apps
 * [Oh My SVG](https://github.com/sonnyp/OhMySVG)
 * [Workbench](https://github.com/sonnyp/Workbench)
 * [GNOME Sound Recorder](https://gitlab.gnome.org/GNOME/gnome-sound-recorder) (TypeScript)
+* [Zap](https://apps.gnome.org/app/fr.romainvigier.zap/)
 
 Others
-
 
 * [Quick Lookup](https://github.com/johnfactotum/quick-lookup)
 * [Foliate](https://github.com/johnfactotum/foliate)
@@ -83,6 +83,11 @@ Others
 * [Spiel](https://gitlab.gnome.org/feaneron/spiel)
 * [Retro](https://github.com/sonnyp/Retro)
 * [libportal test](https://github.com/flatpak/libportal/tree/main/portal-test/gtk4)
+* [Sticky](https://github.com/vixalien/sticky)
+* [Playhouse](https://github.com/sonnyp/Playhouse)
+* [Flatpak Manifest Editor](https://gitlab.gnome.org/feaneron/flatpak-manifest-editor)
+* [Forge Sparks](https://github.com/rafaelmardojai/forge-sparks)
+* [Diccionario de la Lengua](https://codeberg.org/rafaelmardojai/diccionario-lengua)
 
 Archived
 
