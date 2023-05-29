@@ -55,6 +55,16 @@ RUN make -j$(nproc)
 RUN DESTDIR=/root/mozjs-install make install
 RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
+WORKDIR /root
+
+# Install gnome-introspection from main, so that we can test against it
+RUN dnf -y builddep gobject-introspection
+RUN git clone https://gitlab.gnome.org/GNOME/gobject-introspection.git
+
+WORKDIR /root/gobject-introspection
+RUN meson setup _build . --prefix=/opt/GNOME --buildtype debugoptimized
+RUN DESTDIR=/root/g-i-install ninja -C _build install
+
 # === Actual Docker image ===
 
 FROM registry.fedoraproject.org/fedora:37
@@ -116,6 +126,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
 
 COPY --from=build /root/mozjs-install/usr /usr
 COPY --from=build /root/iwyu-install/usr /usr
+COPY --from=build /root/g-i-install/opt /opt
 RUN ln -s /usr/bin/iwyu_tool.py /usr/bin/iwyu_tool
 
 # Enable sudo for wheel users
