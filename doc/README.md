@@ -25,18 +25,22 @@ libraries. General documentation about built-in modules and APIs is under the
 core GNOME APIs. The repository also has [code examples][gjs-examples] and
 thorough coverage of language features in the [test suite][gjs-tests].
 
-[GTK4 + GJS Book](https://rmnvgr.gitlab.io/gtk4-gjs-book/) is a start to finish
+[GTK4 + GJS Book][gtk4-gjs-book] is a start to finish
 walkthrough for creating GTK4 applications with GJS.
 
 The [GNOME developer portal][gnome-developer] contains examples of a variety of
 GNOME technologies written GJS, alongside other languages you may know.
 
+[Workbench] is a code sandbox for GJS, CSS and GTK.
+It features live preview and a library of examples and demos.
+
 [gjs-docs]: https://gjs-docs.gnome.org/
 [gjs-examples]: https://gitlab.gnome.org/GNOME/gjs/tree/HEAD/examples
 [gjs-tests]: https://gitlab.gnome.org/GNOME/gjs/blob/HEAD/installed-tests/js
 [gjs-guide]: https://gjs.guide
-[gtk4-book]: https://rmnvgr.gitlab.io/gtk4-gjs-book/
+[gtk4-gjs-book]: https://rmnvgr.gitlab.io/gtk4-gjs-book/
 [gnome-developer]: https://developer.gnome.org/
+[workbench]: https://apps.gnome.org/app/re.sonny.Workbench/
 
 ## Applications
 
