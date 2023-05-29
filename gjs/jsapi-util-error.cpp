@@ -23,7 +23,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>              // for JS_GetClassObject
-#include <jspubtd.h>            // for JSProtoKey, JSProto_Error, JSProto...
+#include <jspubtd.h>            // for JSProtoKey, JSProto_Error
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -85,7 +85,7 @@ static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
  * http://egachine.berlios.de/embedding-sm-best-practice/embedding-sm-best-practice.html#error-handling
  */
 [[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
-    JSContext* context, JSProtoKey error_kind, const char* error_name,
+    JSContext* context, JSExnType error_kind, const char* error_name,
     const char* format, va_list args) {
     char *s;
     bool result;
@@ -98,12 +98,17 @@ static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
     JS::RootedValueArray<1> error_args(context);
     result = false;
 
+    // See js::GetExceptionProtoKey() in SpiderMonkey
+    g_assert(JSEXN_ERR <= error_kind);
+    g_assert(error_kind < JSEXN_WARN);
+    JSProtoKey error_proto_key = JSProtoKey(JSProto_Error + int(error_kind));
+
     if (!gjs_string_from_utf8(context, s, error_args[0])) {
         JS_ReportErrorUTF8(context, "Failed to copy exception string");
         goto out;
     }
 
-    if (!JS_GetClassObject(context, error_kind, &constructor))
+    if (!JS_GetClassObject(context, error_proto_key, &constructor))
         goto out;
 
     v_constructor.setObject(*constructor);
@@ -175,7 +180,7 @@ gjs_throw(JSContext       *context,
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, JSProto_Error, nullptr, format, args);
+    gjs_throw_valist(context, JSEXN_ERR, nullptr, format, args);
     va_end(args);
 }
 
@@ -184,28 +189,9 @@ gjs_throw(JSContext       *context,
  * class and 'name' property. Mainly used for throwing TypeError instead of
  * error.
  */
-void
-gjs_throw_custom(JSContext  *cx,
-                 JSProtoKey  kind,
-                 const char *error_name,
-                 const char *format,
-                 ...)
-{
+void gjs_throw_custom(JSContext *cx, JSExnType kind, const char *error_name,
+                      const char *format, ...) {
     va_list args;
-
-    switch (kind) {
-        case JSProto_Error:
-        case JSProto_EvalError:
-        case JSProto_InternalError:
-        case JSProto_RangeError:
-        case JSProto_ReferenceError:
-        case JSProto_SyntaxError:
-        case JSProto_TypeError:
-        case JSProto_URIError:
-            break;
-        default:
-            g_return_if_reached();
-    }
 
     va_start(args, format);
     gjs_throw_valist(cx, kind, error_name, format, args);

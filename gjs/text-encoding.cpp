@@ -23,7 +23,7 @@
 #include <js/ArrayBuffer.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
-#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory, JSEXN_TYPEERR
 #include <js/Exception.h>    // for JS_ClearPendingException, JS_...
 #include <js/GCAPI.h>  // for AutoCheckCannotGC
 #include <js/PropertyAndElement.h>
@@ -36,7 +36,7 @@
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for JS_NewPlainObject, JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
-#include <jspubtd.h>      // for JSProto_TypeError, JSProto_InternalError
+#include <jspubtd.h>      // for JSProto_InternalError
 #include <mozilla/Maybe.h>
 #include <mozilla/Span.h>
 #include <mozilla/Tuple.h>
@@ -56,7 +56,7 @@ static void gfree_arraybuffer_contents(void* contents, void*) {
 static std::nullptr_t gjs_throw_type_error_from_gerror(
     JSContext* cx, GjsAutoError const& error) {
     g_return_val_if_fail(error, nullptr);
-    gjs_throw_custom(cx, JSProto_TypeError, nullptr, "%s", error->message);
+    gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr, "%s", error->message);
     return nullptr;
 }
 
@@ -323,7 +323,7 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
                 // Clear the existing exception.
                 JS_ClearPendingException(cx);
                 gjs_throw_custom(
-                    cx, JSProto_TypeError, nullptr,
+                    cx, JSEXN_TYPEERR, nullptr,
                     "The provided encoded data was not valid UTF-8");
             }
 
@@ -472,7 +472,7 @@ static bool gjs_encode_into_uint8array(JSContext* cx, JS::HandleString str,
                                        JS::HandleObject uint8array,
                                        JS::MutableHandleValue rval) {
     if (!JS_IsUint8Array(uint8array)) {
-        gjs_throw_custom(cx, JSProto_TypeError, nullptr,
+        gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                          "Argument to encodeInto() must be a Uint8Array");
         return false;
     }

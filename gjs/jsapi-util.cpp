@@ -39,6 +39,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
+#include <jspubtd.h>      // for JSProto_InternalError, JSProto_SyntaxError
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
