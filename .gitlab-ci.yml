@@ -355,6 +355,8 @@ sanitizer_clang:
     CC: clang
     CXX: clang++
     USE_UNSTABLE_GNOME_PREFIX: 'true'
+    # Override these during build, but they are overridden by meson anyways
+    ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
     TEST_OPTS: --timeout-multiplier=3 --setup=verbose
   when: manual
