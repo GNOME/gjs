@@ -43,12 +43,9 @@ GNOME technologies written GJS, alongside other languages you may know.
 GJS is a great option to write applications for the GNOME Desktop.
 
 The easiest way to get started is to use [GNOME Builder][gnome-builder], start a
-new project and select `JavaScript` language. There is a also a
-[package specification] and [template repository][template] available.
+new project and select `JavaScript` language.
 
 [gnome-builder]: https://apps.gnome.org/app/org.gnome.Builder/
-[package specification]: https://gitlab.gnome.org/GNOME/gjs/-/blob/HEAD/doc/Package/Specification.md
-[template]: https://github.com/gcampax/gtk-js-app
 
 Here is a non-exhaustive list of applications written in GJS:
 
