@@ -24,6 +24,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>              // for JS_GetClassObject
 #include <jspubtd.h>            // for JSProtoKey, JSProto_Error
+#include <mozilla/ScopeExit.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -101,45 +102,40 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
 [[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
     JSContext* context, JSExnType error_kind, const char* error_name,
     const char* format, va_list args) {
-    char *s;
-    bool result;
-
-    s = g_strdup_vprintf(format, args);
+    GjsAutoChar s = g_strdup_vprintf(format, args);
+    auto fallback = mozilla::MakeScopeExit([context, &s]() {
+        // try just reporting it to error handler? should not
+        // happen though pretty much
+        JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s.get());
+    });
 
     JS::RootedObject constructor(context);
     JS::RootedValue v_constructor(context), exc_val(context);
     JS::RootedObject new_exc(context);
     JS::RootedValueArray<1> error_args(context);
-    result = false;
 
     // See js::GetExceptionProtoKey() in SpiderMonkey
     g_assert(JSEXN_ERR <= error_kind);
     g_assert(error_kind < JSEXN_WARN);
     JSProtoKey error_proto_key = JSProtoKey(JSProto_Error + int(error_kind));
 
-    if (!gjs_string_from_utf8(context, s, error_args[0])) {
-        JS_ReportErrorUTF8(context, "Failed to copy exception string");
-        goto out;
-    }
-
-    if (!JS_GetClassObject(context, error_proto_key, &constructor))
-        goto out;
+    if (!gjs_string_from_utf8(context, s, error_args[0]) ||
+        !JS_GetClassObject(context, error_proto_key, &constructor))
+        return;
 
     v_constructor.setObject(*constructor);
 
     /* throw new Error(message) */
-    if (!JS::Construct(context, v_constructor, error_args, &new_exc))
-        goto out;
-
-    if (!new_exc)
-        goto out;
+    if (!JS::Construct(context, v_constructor, error_args, &new_exc) ||
+        !new_exc)
+        return;
 
     if (error_name) {
         const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue name_value(context);
         if (!gjs_string_from_utf8(context, error_name, &name_value) ||
             !JS_SetPropertyById(context, new_exc, atoms.name(), name_value))
-            goto out;
+            return;
     }
 
     exc_val.setObject(*new_exc);
@@ -156,22 +152,13 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
         if (!append_new_cause(context, pending, exc_val, &appended))
             saved_exc.restore();
         if (!appended)
-            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'", s);
+            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'",
+                      s.get());
     } else {
         JS_SetPendingException(context, exc_val);
     }
 
-    result = true;
-
- out:
-
-    if (!result) {
-        /* try just reporting it to error handler? should not
-         * happen though pretty much
-         */
-        JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s);
-    }
-    g_free(s);
+    fallback.release();
 }
 
 /* Throws an exception, like "throw new Error(message)"
