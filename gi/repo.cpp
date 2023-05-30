@@ -525,7 +525,7 @@ lookup_override_function(JSContext             *cx,
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (!gjs_object_require_property(cx, importer_obj, "importer",
                                      atoms.overrides(), &overridespkg))
-        goto fail;
+        return false;
 
     if (!gjs_object_require_property(cx, overridespkg,
                                      "GI repository object", ns_name,
@@ -540,7 +540,7 @@ lookup_override_function(JSContext             *cx,
             return true;
         }
 
-        goto fail;
+        return false;
     }
 
     // If the override module is present, it must have a callable _init(). An
@@ -550,13 +550,9 @@ lookup_override_function(JSContext             *cx,
                                      atoms.init(), function) ||
         !function.isObject() || !JS::IsCallable(&function.toObject())) {
         gjs_throw(cx, "Unexpected value for _init in overrides module");
-        goto fail;
+        return false;
     }
     return true;
-
-fail:
-    saved_exc.drop();
-    return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
