@@ -36,9 +36,9 @@ using CauseSet = JS::GCHashSet<JSObject*, js::DefaultHasher<JSObject*>,
                                js::SystemAllocPolicy>;
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool get_last_cause_impl(JSContext* cx, JS::HandleValue v_exc,
-                                JS::MutableHandleObject last_cause,
-                                JS::MutableHandle<CauseSet> seen_causes) {
+static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
+                           JS::MutableHandleObject last_cause,
+                           JS::MutableHandle<CauseSet> seen_causes) {
     if (!v_exc.isObject()) {
         last_cause.set(nullptr);
         return true;
@@ -64,14 +64,28 @@ static bool get_last_cause_impl(JSContext* cx, JS::HandleValue v_exc,
         return true;
     }
 
-    return get_last_cause_impl(cx, v_cause, last_cause, seen_causes);
+    return get_last_cause(cx, v_cause, last_cause, seen_causes);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
-                           JS::MutableHandleObject last_cause) {
+static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
+                             JS::HandleValue new_cause, bool* appended) {
+    g_assert(appended && "forgot out parameter");
+    *appended = false;
+
     JS::Rooted<CauseSet> seen_causes(cx);
-    return get_last_cause_impl(cx, v_exc, last_cause, &seen_causes);
+    JS::RootedObject last_cause{cx};
+    if (!get_last_cause(cx, thrown, &last_cause, &seen_causes))
+        return false;
+    if (!last_cause)
+        return true;
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_SetPropertyById(cx, last_cause, atoms.cause(), new_cause))
+        return false;
+
+    *appended = true;
+    return true;
 }
 
 /*
@@ -135,19 +149,14 @@ static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
         // exception, so we will throw ourselves "just in case"; in those cases,
         // we append the new exception as the cause of the original exception.
         // The second exception may add more info.
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
         JS::RootedValue pending(context);
         JS_GetPendingException(context, &pending);
-        JS::RootedObject last_cause(context);
-        if (!get_last_cause(context, pending, &last_cause))
-            goto out;
-        if (last_cause) {
-            if (!JS_SetPropertyById(context, last_cause, atoms.cause(),
-                                    exc_val))
-                goto out;
-        } else {
+        JS::AutoSaveExceptionState saved_exc{context};
+        bool appended;
+        if (!append_new_cause(context, pending, exc_val, &appended))
+            saved_exc.restore();
+        if (!appended)
             gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'", s);
-        }
     } else {
         JS_SetPendingException(context, exc_val);
     }
