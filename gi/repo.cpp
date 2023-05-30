@@ -4,7 +4,6 @@
 
 #include <config.h>
 
-#include <stdint.h>
 #include <string.h>  // for strlen
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -487,31 +486,23 @@ gjs_lookup_namespace_object(JSContext  *context,
     return gjs_lookup_namespace_object_by_name(context, ns_name);
 }
 
-/* Check if an exception's 'name' property is equal to compare_name. Ignores
+/* Check if an exception's 'name' property is equal to ImportError. Ignores
  * all errors that might arise. */
-[[nodiscard]] static bool error_has_name(JSContext* cx,
-                                         JS::HandleValue thrown_value,
-                                         JSString* compare_name) {
+[[nodiscard]] static bool is_import_error(JSContext* cx,
+                                          JS::HandleValue thrown_value) {
     if (!thrown_value.isObject())
         return false;
 
     JS::AutoSaveExceptionState saved_exc(cx);
     JS::RootedObject exc(cx, &thrown_value.toObject());
     JS::RootedValue exc_name(cx);
-    bool retval = false;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    bool eq;
+    bool retval =
+        JS_GetPropertyById(cx, exc, atoms.name(), &exc_name) &&
+        JS_StringEqualsLiteral(cx, exc_name.toString(), "ImportError", &eq) &&
+        eq;
 
-    if (!JS_GetPropertyById(cx, exc, atoms.name(), &exc_name))
-        goto out;
-
-    int32_t cmp_result;
-    if (!JS_CompareStrings(cx, exc_name.toString(), compare_name, &cmp_result))
-        goto out;
-
-    if (cmp_result == 0)
-        retval = true;
-
-out:
     saved_exc.restore();
     return retval;
 }
@@ -544,7 +535,7 @@ lookup_override_function(JSContext             *cx,
 
         /* If the exception was an ImportError (i.e., module not found) then
          * we simply didn't have an override, don't throw an exception */
-        if (error_has_name(cx, exc, JS_AtomizeAndPinString(cx, "ImportError"))) {
+        if (is_import_error(cx, exc)) {
             saved_exc.restore();
             return true;
         }
