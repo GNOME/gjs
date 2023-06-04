@@ -39,6 +39,8 @@ typedef struct _GjsContextClass GjsContextClass;
 
 GJS_EXPORT GJS_USE GType gjs_context_get_type(void) G_GNUC_CONST;
 
+typedef void (*GjsContextInRealmFunc)(GjsContext*, void*);
+
 GJS_EXPORT GJS_USE GjsContext* gjs_context_new(void);
 GJS_EXPORT GJS_USE GjsContext* gjs_context_new_with_search_path(
     char** search_path);
@@ -78,6 +80,10 @@ void            gjs_context_make_current         (GjsContext *js_context);
 
 GJS_EXPORT
 void*           gjs_context_get_native_context   (GjsContext *js_context);
+
+GJS_EXPORT void gjs_context_run_in_realm(GjsContext* gjs,
+                                         GjsContextInRealmFunc func,
+                                         void* user_data);
 
 GJS_EXPORT
 void            gjs_context_print_stack_stderr    (GjsContext *js_context);
