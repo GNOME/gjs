@@ -5,11 +5,12 @@
 #include <config.h>
 
 #include <stdarg.h>
+#include <stdint.h>
+#include <string.h>
 
 #include <glib.h>
 
 #include <js/AllocPolicy.h>
-#include <js/CallAndConstruct.h>
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
@@ -17,13 +18,12 @@
 #include <js/HashTable.h>    // for DefaultHasher
 #include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
+#include <js/SavedFrameAPI.h>
 #include <js/Stack.h>  // for BuildStackString
+#include <js/String.h>  // for JS_NewStringCopyUTF8Z
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <js/ValueArray.h>
-#include <jsapi.h>              // for JS_GetClassObject
-#include <jspubtd.h>            // for JSProtoKey, JSProto_Error
 #include <mozilla/ScopeExit.h>
 
 #include "gjs/atoms.h"
@@ -89,73 +89,64 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
     return true;
 }
 
-/*
- * See:
- * https://bugzilla.mozilla.org/show_bug.cgi?id=166436
- * https://bugzilla.mozilla.org/show_bug.cgi?id=215173
- *
- * Very surprisingly, jsapi.h lacks any way to "throw new Error()"
- *
- * So here is an awful hack inspired by
- * http://egachine.berlios.de/embedding-sm-best-practice/embedding-sm-best-practice.html#error-handling
- */
 [[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
-    JSContext* context, JSExnType error_kind, const char* error_name,
+    JSContext* cx, JSExnType error_kind, const char* error_name,
     const char* format, va_list args) {
     GjsAutoChar s = g_strdup_vprintf(format, args);
-    auto fallback = mozilla::MakeScopeExit([context, &s]() {
+    auto fallback = mozilla::MakeScopeExit([cx, &s]() {
         // try just reporting it to error handler? should not
         // happen though pretty much
-        JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s.get());
+        JS_ReportErrorUTF8(cx, "Failed to throw exception '%s'", s.get());
     });
 
-    JS::RootedObject constructor(context);
-    JS::RootedValue v_constructor(context), exc_val(context);
-    JS::RootedObject new_exc(context);
-    JS::RootedValueArray<1> error_args(context);
-
-    // See js::GetExceptionProtoKey() in SpiderMonkey
-    g_assert(JSEXN_ERR <= error_kind);
-    g_assert(error_kind < JSEXN_WARN);
-    JSProtoKey error_proto_key = JSProtoKey(JSProto_Error + int(error_kind));
-
-    if (!gjs_string_from_utf8(context, s, error_args[0]) ||
-        !JS_GetClassObject(context, error_proto_key, &constructor))
+    JS::ConstUTF8CharsZ chars{s.get(), strlen(s.get())};
+    JS::RootedString message{cx, JS_NewStringCopyUTF8Z(cx, chars)};
+    if (!message)
         return;
 
-    v_constructor.setObject(*constructor);
+    JS::RootedObject saved_frame{cx};
+    if (!JS::CaptureCurrentStack(cx, &saved_frame))
+        return;
 
-    /* throw new Error(message) */
-    if (!JS::Construct(context, v_constructor, error_args, &new_exc) ||
-        !new_exc)
+    JS::RootedString source_string{cx};
+    JS::GetSavedFrameSource(cx, /* principals = */ nullptr, saved_frame,
+                            &source_string);
+    uint32_t line_num;
+    JS::GetSavedFrameLine(cx, nullptr, saved_frame, &line_num);
+    uint32_t column_num;
+    JS::GetSavedFrameColumn(cx, nullptr, saved_frame, &column_num);
+
+    JS::RootedValue v_exc{cx};
+    if (!JS::CreateError(cx, error_kind, saved_frame, source_string, line_num,
+                         column_num, /* report = */ nullptr, message,
+                         /* cause = */ JS::NothingHandleValue, &v_exc))
         return;
 
     if (error_name) {
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-        JS::RootedValue name_value(context);
-        if (!gjs_string_from_utf8(context, error_name, &name_value) ||
-            !JS_SetPropertyById(context, new_exc, atoms.name(), name_value))
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        JS::RootedValue v_name{cx};
+        JS::RootedObject exc{cx, &v_exc.toObject()};
+        if (!gjs_string_from_utf8(cx, error_name, &v_name) ||
+            !JS_SetPropertyById(cx, exc, atoms.name(), v_name))
             return;
     }
 
-    exc_val.setObject(*new_exc);
-
-    if (JS_IsExceptionPending(context)) {
+    if (JS_IsExceptionPending(cx)) {
         // Often it's unclear whether a given jsapi.h function will throw an
         // exception, so we will throw ourselves "just in case"; in those cases,
         // we append the new exception as the cause of the original exception.
         // The second exception may add more info.
-        JS::RootedValue pending(context);
-        JS_GetPendingException(context, &pending);
-        JS::AutoSaveExceptionState saved_exc{context};
+        JS::RootedValue pending(cx);
+        JS_GetPendingException(cx, &pending);
+        JS::AutoSaveExceptionState saved_exc{cx};
         bool appended;
-        if (!append_new_cause(context, pending, exc_val, &appended))
+        if (!append_new_cause(cx, pending, v_exc, &appended))
             saved_exc.restore();
         if (!appended)
             gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'",
                       s.get());
     } else {
-        JS_SetPendingException(context, exc_val);
+        JS_SetPendingException(cx, v_exc);
     }
 
     fallback.release();
