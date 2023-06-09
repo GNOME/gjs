@@ -118,8 +118,10 @@ gjs_value_from_array_and_length_values(JSContext             *context,
 
     gjs_arg_set(&array_arg, g_value_get_pointer(array_value));
 
-    return gjs_value_from_explicit_array(context, value_p, array_type_info,
-                                         &array_arg, array_length.toInt32());
+    return gjs_value_from_explicit_array(
+        context, value_p, array_type_info,
+        no_copy ? GI_TRANSFER_NOTHING : GI_TRANSFER_EVERYTHING, &array_arg,
+        array_length.toInt32());
 }
 
 // FIXME(3v1n0): Move into closure.cpp one day...
@@ -636,7 +638,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 /* special case GByteArray */
                 JS::RootedObject obj(context, &value.toObject());
                 if (JS_IsUint8Array(obj)) {
-                    g_value_set_boxed(gvalue, gjs_byte_array_get_byte_array(obj));
+                    g_value_take_boxed(gvalue,
+                                       gjs_byte_array_get_byte_array(obj));
                     return true;
                 }
             } else {
@@ -957,8 +960,9 @@ gjs_value_from_g_value_internal(JSContext             *context,
         g_arg_info_load_type(arg_info, &type_info);
         GITypeInfo* element_info = g_type_info_get_param_type(&type_info, 0);
 
-        if (!gjs_array_from_g_value_array(context, value_p, element_info,
-                                          gvalue)) {
+        if (!gjs_array_from_g_value_array(
+                context, value_p, element_info,
+                g_arg_info_get_ownership_transfer(arg_info), gvalue)) {
             gjs_throw(context, "Failed to convert array");
             return false;
         }

@@ -10,3 +10,10 @@ leak:libfontconfig.so.1
 # https://bugzilla.mozilla.org/show_bug.cgi?id=1478679
 leak:js::coverage::LCovSource::writeScript
 leak:js/src/util/Text.cpp
+
+# GIO Module instances are created once and they're expected to be "leaked"
+leak:g_io_module_new
+
+# Gtk test may leak because of a Gdk/X11 issue:
+#  https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/6037
+leak:gdk_x11_selection_input_stream_new_async

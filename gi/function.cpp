@@ -442,6 +442,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
     GITypeTag ret_tag = g_type_info_get_tag(ret_type);
     bool ret_type_is_void = ret_tag == GI_TYPE_TAG_VOID;
+    bool in_args_to_cleanup = false;
 
     for (int i = 0, n_jsargs = 0; i < n_args; i++) {
         GIArgInfo arg_info;
@@ -462,6 +463,9 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
         if (g_arg_info_get_direction(&arg_info) == GI_DIRECTION_INOUT)
             n_outargs++;
+
+        if (g_arg_info_get_ownership_transfer(&arg_info) != GI_TRANSFER_NOTHING)
+            in_args_to_cleanup = m_scope != GI_SCOPE_TYPE_FOREVER;
 
         param_type = m_param_types[i];
 
@@ -485,6 +489,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
                 if (!gjs_value_from_explicit_array(
                         context, jsargs[n_jsargs++], &type_info,
+                        g_arg_info_get_ownership_transfer(&arg_info),
                         args[i + c_args_offset], length))
                     return false;
                 break;
@@ -621,6 +626,56 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
             elem_idx++;
         }
+    }
+
+    if (!in_args_to_cleanup)
+        return true;
+
+    for (int i = 0; i < n_args; i++) {
+        GIArgInfo arg_info;
+        g_callable_info_load_arg(m_info, i, &arg_info);
+        GITransfer transfer = g_arg_info_get_ownership_transfer(&arg_info);
+
+        if (transfer == GI_TRANSFER_NOTHING)
+            continue;
+
+        if (g_arg_info_get_direction(&arg_info) != GI_DIRECTION_IN)
+            continue;
+
+        GIArgument* arg = args[i + c_args_offset];
+        if (m_scope == GI_SCOPE_TYPE_CALL) {
+            GITypeInfo type_info;
+            g_arg_info_load_type(&arg_info, &type_info);
+
+            if (!gjs_g_argument_release(context, transfer, &type_info, arg))
+                return false;
+
+            continue;
+        }
+
+        struct InvalidateData {
+            GIArgInfo arg_info;
+            GIArgument arg;
+        };
+
+        auto* data = new InvalidateData({arg_info, *arg});
+        g_closure_add_invalidate_notifier(
+            this, data, [](void* invalidate_data, GClosure* c) {
+                auto* self = static_cast<GjsCallbackTrampoline*>(c);
+                std::unique_ptr<InvalidateData> data(
+                    static_cast<InvalidateData*>(invalidate_data));
+                GITransfer transfer =
+                    g_arg_info_get_ownership_transfer(&data->arg_info);
+
+                GITypeInfo type_info;
+                g_arg_info_load_type(&data->arg_info, &type_info);
+                if (!gjs_g_argument_release(self->context(), transfer,
+                                            &type_info, &data->arg)) {
+                    gjs_throw(self->context(),
+                              "Impossible to release closure argument '%s'",
+                              g_base_info_get_name(&data->arg_info));
+                }
+            });
     }
 
     return true;

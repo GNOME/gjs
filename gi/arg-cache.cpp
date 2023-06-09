@@ -216,30 +216,31 @@ struct BaseInfo {
 };
 
 // boxed / union / GObject
-struct RegisteredType {
+struct GTypedType {
+    explicit GTypedType(GType gtype) : m_gtype(gtype) {}
+    constexpr GType gtype() const { return m_gtype; }
+
+ protected:
+    GType m_gtype;
+};
+
+struct RegisteredType : GTypedType {
     RegisteredType(GType gtype, GIInfoType info_type)
-        : m_gtype(gtype), m_info_type(info_type) {}
+        : GTypedType(gtype), m_info_type(info_type) {}
     explicit RegisteredType(GIBaseInfo* info)
-        : m_gtype(g_registered_type_info_get_g_type(info)),
+        : GTypedType(g_registered_type_info_get_g_type(info)),
           m_info_type(g_base_info_get_type(info)) {
         g_assert(m_gtype != G_TYPE_NONE &&
                  "Use RegisteredInterface for this type");
     }
 
-    constexpr GType gtype() const { return m_gtype; }
-
-    GType m_gtype;
     GIInfoType m_info_type : 5;
 };
 
-struct RegisteredInterface : BaseInfo {
+struct RegisteredInterface : BaseInfo, GTypedType {
     explicit RegisteredInterface(GIBaseInfo* info)
         : BaseInfo(info, GjsAutoTakeOwnership{}),
-          m_gtype(g_registered_type_info_get_g_type(m_info)) {}
-
-    constexpr GType gtype() const { return m_gtype; }
-
-    GType m_gtype;
+          GTypedType(g_registered_type_info_get_g_type(m_info)) {}
 };
 
 struct Callback : Nullable, BaseInfo {
@@ -574,6 +575,8 @@ struct GBytesIn : BoxedIn {
     using BoxedIn::BoxedIn;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument* out_arg) override;
 };
 
 struct GBytesInTransferNone : GBytesIn {
@@ -711,6 +714,12 @@ struct CallerAllocatesOut : GenericOut, CallerAllocates {
     GjsArgumentFlags flags() const override {
         return GenericOut::flags() | GjsArgumentFlags::CALLER_ALLOCATES;
     }
+};
+
+struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
+    using GTypedType::GTypedType;
+    bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
+                 GIArgument*) override;
 };
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1200,6 +1209,7 @@ bool GBytesIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
     JS::RootedObject object(cx, &value.toObject());
     if (JS_IsUint8Array(object)) {
+        state->ignore_release.insert(arg);
         gjs_arg_set(arg, gjs_byte_array_get_bytes(object));
         return true;
     }
@@ -1208,6 +1218,15 @@ bool GBytesIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     // ownership, so we need to do the same here.
     return BoxedBase::transfer_to_gi_argument(
         cx, object, arg, GI_DIRECTION_IN, GI_TRANSFER_EVERYTHING, G_TYPE_BYTES);
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool GBytesIn::release(JSContext* cx, GjsFunctionCallState* state,
+                       GIArgument* in_arg, GIArgument* out_arg) {
+    if (state->ignore_release.erase(in_arg))
+        return BoxedIn::release(cx, state, in_arg, out_arg);
+
+    return BoxedInTransferNone::release(cx, state, in_arg, out_arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1330,7 +1349,8 @@ bool ExplicitArrayInOut::out(JSContext* cx, GjsFunctionCallState* state,
     GIArgument* length_arg = &(state->out_cvalue(m_length_pos));
     size_t length = gjs_g_argument_get_array_length(m_tag, length_arg);
 
-    return gjs_value_from_explicit_array(cx, value, &m_type_info, arg, length);
+    return gjs_value_from_explicit_array(cx, value, &m_type_info, m_transfer,
+                                         arg, length);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1414,6 +1434,13 @@ bool CallerAllocatesOut::release(JSContext*, GjsFunctionCallState*,
                                  GIArgument* in_arg,
                                  GIArgument* out_arg [[maybe_unused]]) {
     g_free(gjs_arg_steal<void*>(in_arg));
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool BoxedCallerAllocatesOut::release(JSContext*, GjsFunctionCallState*,
+                                      GIArgument* in_arg, GIArgument*) {
+    g_boxed_free(m_gtype, gjs_arg_steal<void*>(in_arg));
     return true;
 }
 
@@ -2160,6 +2187,18 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
             set_argument_auto<Arg::NotIntrospectable>(
                 common_args, OUT_CALLER_ALLOCATES_NON_STRUCT);
             return;
+        }
+
+        if (type_tag == GI_TYPE_TAG_INTERFACE) {
+            GjsAutoBaseInfo interface_info =
+                g_type_info_get_interface(&type_info);
+            GType gtype = g_registered_type_info_get_g_type(interface_info);
+            if (g_type_is_a(gtype, G_TYPE_BOXED)) {
+                auto* gjs_arg = set_argument_auto<Arg::BoxedCallerAllocatesOut>(
+                    common_args, gtype);
+                gjs_arg->m_allocates_size = size;
+                return;
+            }
         }
 
         auto* gjs_arg = set_argument_auto<Arg::CallerAllocatesOut>(common_args);

@@ -327,7 +327,8 @@ report "avoid statically importing two versions of the same module"
 # https://gitlab.gnome.org/GNOME/gjs/-/issues/19
 echo "# VALGRIND = $VALGRIND"
 if test -z $VALGRIND; then
-    ASAN_OPTIONS=detect_leaks=0 output=$($gjs -m signalexit.js)
+    output=$(env LSAN_OPTIONS=detect_leaks=0 ASAN_OPTIONS=detect_leaks=0 \
+        $gjs -m signalexit.js)
     test $? -eq 15
     report "exit with correct code from a signal callback"
     test -n "$output" -a -z "${output##*click 1*}"

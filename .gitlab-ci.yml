@@ -89,7 +89,10 @@ sanitizer_gcc:
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs102-debug
   variables:
     CONFIG_OPTS: -Db_sanitize=address,undefined
-    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
+    TEST_OPTS: --timeout-multiplier=3
+    # Override these during build, but they are overridden by meson anyways
+    ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
+    USE_UNSTABLE_GNOME_PREFIX: 'true'
   except:
     - schedules
 
@@ -104,6 +107,7 @@ sanitizer_thread_gcc:
   variables:
     CONFIG_OPTS: -Db_sanitize=thread
     TEST_OPTS: --timeout-multiplier=3 --setup=verbose
+    USE_UNSTABLE_GNOME_PREFIX: 'true'
   except:
     - schedules
 
@@ -117,6 +121,7 @@ build_maximal:
   variables:
     CC: clang
     CXX: clang++
+    USE_UNSTABLE_GNOME_PREFIX: 'true'
     CONFIG_OPTS: >-
       -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true -Db_pch=false
     ENABLE_GTK: "yes"
@@ -349,6 +354,9 @@ sanitizer_clang:
   variables:
     CC: clang
     CXX: clang++
+    USE_UNSTABLE_GNOME_PREFIX: 'true'
+    # Override these during build, but they are overridden by meson anyways
+    ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
     TEST_OPTS: --timeout-multiplier=3 --setup=verbose
   when: manual
@@ -376,6 +384,7 @@ valgrind:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs102-debug
   variables:
+    USE_UNSTABLE_GNOME_PREFIX: 'true'
     TEST_OPTS: --setup=valgrind
   allow_failure: true
   when: manual
