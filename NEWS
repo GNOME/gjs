@@ -1,3 +1,22 @@
+Version 1.76.1
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * gnome-shell crashes on exit in js::gc::Cell::storeBuffer [#472, !834, Daniel
+    van Vugt]
+  * Memory leak with GError [#36, !837, Marco Trevisan]
+  * GVariant return values leaked [#499, !837, Marco Trevisan]
+  * GBytes's are leaked when passed as-is to a function [#539, !837, Marco
+    Trevisan]
+  * Transformated GValues are leaking temporary instances [#540, !837, Marco
+    Trevisan]
+  * GHash value infos are leaked [#541, !837, Marco Trevisan]
+  * "flat" arrays of GObject's are leaked [#542, !837, Marco Trevisan]
+  * Gjs console leaks invalid option errors [#544, !837, Marco Trevisan]
+  * gjs can't print null [#545, !841, Angelo Verlain]
+
 Version 1.76.0
 --------------
 
