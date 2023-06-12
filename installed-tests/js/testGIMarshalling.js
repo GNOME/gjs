@@ -898,6 +898,13 @@ describe('GValue', function () {
             .toEqual([42, '42', true]);
     });
 
+    it('array can be passed as an out argument and unpacked when zero-terminated', function () {
+        if (!GIMarshallingTests.return_gvalue_zero_terminated_array)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/397');
+        expect(GIMarshallingTests.return_gvalue_zero_terminated_array())
+            .toEqual([42, '42', true]);
+    });
+
     xit('array can roundtrip with GValues intact', function () {
         expect(GIMarshallingTests.gvalue_flat_array_round_trip(42, '42', true))
             .toEqual([42, '42', true]);

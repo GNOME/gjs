@@ -2107,21 +2107,6 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
         GjsArgumentFlags::NONE);
 }
 
-static size_t get_type_info_interface_size(GITypeInfo* type_info) {
-    GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
-    g_assert(interface_info);
-
-    GIInfoType interface_type = g_base_info_get_type(interface_info);
-
-    if (interface_type == GI_INFO_TYPE_STRUCT) {
-        return g_struct_info_get_size(interface_info);
-    } else if (interface_type == GI_INFO_TYPE_UNION) {
-        return g_union_info_get_size(interface_info);
-    }
-
-    return 0;
-}
-
 void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                           GIArgInfo* arg, GICallableInfo* callable,
                           bool* inc_counter_out) {
@@ -2167,20 +2152,15 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     param_info = g_type_info_get_param_type(&type_info, 0);
                     GITypeTag param_tag = g_type_info_get_tag(param_info);
 
-                    if (param_tag == GI_TYPE_TAG_INTERFACE) {
-                        size = get_type_info_interface_size(param_info);
-                    } else {
-                        size = gjs_array_get_element_size(param_tag);
-                    }
-
+                    size = gjs_type_get_element_size(param_tag, param_info);
                     size *= n_elements;
                     break;
                 }
                 default:
                     break;
             }
-        } else if (type_tag == GI_TYPE_TAG_INTERFACE) {
-            size = get_type_info_interface_size(&type_info);
+        } else {
+            size = gjs_type_get_element_size(type_tag, &type_info);
         }
 
         if (!size) {
