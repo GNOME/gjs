@@ -13,3 +13,9 @@ leak:js/src/util/Text.cpp
 
 # GIO Module instances are created once and they're expected to be "leaked"
 leak:g_io_module_new
+
+# GMarshalling Tests leaks structures:
+#   https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/398
+leak:gi_marshalling_tests_garray_boxed_struct_full_return
+leak:ObjectInstance::prop_setter_impl
+
