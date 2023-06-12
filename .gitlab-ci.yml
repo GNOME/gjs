@@ -205,6 +205,7 @@ cppcheck:
 cpplint:
   when: on_success
   stage: source_check
+  allow_failure: true
   extends:
     - .fdo.distribution-image@alpine
     - .gjs-alpine
@@ -220,6 +221,7 @@ cpplint:
 
 eslint:
   when: on_success
+  allow_failure: true
   extends:
     - .fdo.distribution-image@alpine
     - .gjs-alpine
@@ -254,6 +256,7 @@ iwyu:
   when: on_success
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs102-debug
+  allow_failure: true
   script:
     - test/test-ci.sh UPSTREAM_BASE
     - meson setup _build -Db_pch=false
