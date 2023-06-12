@@ -10,7 +10,7 @@ Version 1.76.1
   * GVariant return values leaked [#499, !837, Marco Trevisan]
   * GBytes's are leaked when passed as-is to a function [#539, !837, Marco
     Trevisan]
-  * Transformated GValues are leaking temporary instances [#540, !837, Marco
+  * Transformed GValues are leaking temporary instances [#540, !837, Marco
     Trevisan]
   * GHash value infos are leaked [#541, !837, Marco Trevisan]
   * "flat" arrays of GObject's are leaked [#542, !837, Marco Trevisan]
