@@ -1,3 +1,29 @@
+Version 1.74.3
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * Possible errors in cairo enums [#516, !811, !852, Vítor Vasconcellos]
+  * cairo.SVGSurface need finish() and flush() to finalize painting [#515, !816,
+    !852, tuberry]
+  * Handle transfer-none string return value from vfunc implemented in JS [#519,
+    !821, !823, !852, Marco Trevisan, Daniel van Vugt]
+  * GJS freezes, program stops responding, error states Gtk4 EventController
+    GestureClick returns incorrect state- Gdk.ModifierType on mouse button press
+    in X11 [#507, !829, !852, Sundeep Mediratta]
+  * gnome-shell crashes on exit in js::gc::Cell::storeBuffer [#472, !834, !852,
+    Daniel van Vugt]
+  * Memory leak with GError [#36, !837, !852, Marco Trevisan]
+  * GVariant return values leaked [#499, !837, !852, Marco Trevisan]
+  * GBytes's are leaked when passed as-is to a function [#539, !837, !852, Marco
+    Trevisan]
+  * Transformed GValues are leaking temporary instances [#540, !837, !852, Marco
+    Trevisan]
+  * GHash value infos are leaked [#541, !837, !852, Marco Trevisan]
+  * "flat" arrays of GObject's are leaked [#542, !837, !852, Marco Trevisan]
+  * * Gjs console leaks invalid option errors [#544, !837, !852, Marco Trevisan]
+
 Version 1.74.2
 --------------
 
