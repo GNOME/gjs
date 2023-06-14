@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna
 
 const Legacy = imports._legacy;
-const {Gio, GjsPrivate, GObject} = imports.gi;
+const {Gio, GjsPrivate, GObject, GLib} = imports.gi;
 const {_registerType} = imports._common;
 
 let Gtk;
@@ -148,6 +148,91 @@ function _init() {
                     handlerName, swapped, connectObject);
             }
         });
+
+        if (Gtk.Builder) {
+            const BuilderScopeBuild = GObject.registerClass(
+                {
+                    Implements: [Gtk.BuilderScope],
+                },
+                class BuilderScopeBuild extends GObject.Object {
+                    #signal_handlers;
+
+                    constructor() {
+                        super();
+                        this.clear();
+                    }
+
+                    add_signal_handler(name, fn) {
+                        this.#signal_handlers[name] = fn;
+                    }
+
+                    vfunc_create_closure(builder, function_name, flags, object) {
+                        const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
+                        return _createClosure(
+                            builder, this.#signal_handlers,
+                            function_name, swapped, object
+                        );
+                    }
+
+                    clear() {
+                        this.#signal_handlers = Object.create(null);
+                    }
+                }
+            );
+
+            /**
+             * Builds an interface from a URI or XML string.
+             * Signal handlers will automatically be connected
+             * and GObject automatically exposed
+             *
+             * @function
+             * @param {string} uri - the URI to load the interface from or a XML string
+             * @param {object} params - a properties object containing signal handlers and GObjects
+             * @returns {object} an object exposing builder objects
+             */
+            Gtk.build = function build(uri, params = {}) {
+                const builder = new Gtk.Builder();
+
+                const scope = new BuilderScopeBuild();
+                builder.set_scope(scope);
+
+                const handler = {
+                    get(target, prop) {
+                        return builder.get_object(prop);
+                    },
+                };
+
+                for (const [k, v] of Object.entries(params)) {
+                    if (typeof v === 'function')
+                        scope.add_signal_handler(k, v);
+                    else if (v instanceof GObject.Object)
+                        builder.expose_object(k, v);
+                    else
+                        throw new TypeError('Only function and GObject are supported properties.');
+                }
+
+                const scheme = GLib.Uri.peek_scheme(uri);
+                if (!scheme) {
+                    builder.add_from_string(uri, -1);
+                } else {
+                    const g_uri = GLib.Uri.parse(uri, GLib.UriFlags.NONE);
+                    const path = g_uri.get_path();
+                    if (!path)
+                        throw new Error(`Invalid uri \`${uri}\`.`);
+
+                    if (scheme === 'resource')
+                        builder.add_from_resource(path);
+                    else if (scheme === 'file')
+                        builder.add_from_file(path);
+                    else
+                        throw new Error(`Unsuported scheme \`${uri}\`.`);
+                }
+
+                scope.clear();
+
+                return new Proxy({}, handler);
+            };
+        }
     }
 }
 

@@ -225,3 +225,48 @@ describe('Gtk 4 regressions', function () {
         expect(custom.action).toEqual(42);
     }).pend('https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/3796');
 });
+
+describe('Gtk.build', function () {
+    it('builds interface', function () {
+        const app = new Gtk.Application({
+            application_id: 'hello.world',
+        });
+
+        let clicked = false;
+        function onclicked() {
+            clicked = true;
+        }
+
+        const {window, button} = Gtk.build(`
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <interface>
+                <requires lib="gtk" version="4.0" />
+                <object class="GtkWindow" id="window">
+                    <property
+                        name="title"
+                        bind-source="app"
+                        bind-property="application-id"
+                        bind-flags="sync-create"
+                    />
+                    <property name="default-width">400</property>
+                    <property name="default-height">400</property>
+                    <child>
+                        <object class="GtkButton" id="button">
+                            <signal name="clicked" handler="onclicked" />
+                        </object>
+                    </child>
+                </object>
+            </interface>`, {
+            app,
+            onclicked,
+        });
+
+        expect(window).toBeInstanceOf(Gtk.Window);
+        expect(button).toBeInstanceOf(Gtk.Button);
+        expect(window.title).toBe('hello.world');
+
+        expect(clicked).toBe(false);
+        button.emit('clicked');
+        expect(clicked).toBe(true);
+    });
+});

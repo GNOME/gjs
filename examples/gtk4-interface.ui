@@ -1,0 +1,24 @@
+<!-- SPDX-License-Identifier: MIT OR LGPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2023 Sonny Piers <sonnyp@gnome.org> -->
+<?xml version="1.0" encoding="UTF-8" ?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <object class="GtkApplicationWindow" id="window">
+    <property
+      name="title"
+      bind-source="app"
+      bind-property="application-id"
+      bind-flags="sync-create"
+    />
+    <binding name="application">
+      <constant>app</constant>
+    </binding>
+    <property name="default-width">400</property>
+    <property name="default-height">400</property>
+    <child>
+      <object class="GtkButton" id="button">
+        <signal name="clicked" handler="onclicked" />
+      </object>
+    </child>
+  </object>
+</interface>
