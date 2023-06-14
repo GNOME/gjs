@@ -1,3 +1,16 @@
+Version 1.76.2
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * GJS freezes, program stops responding, error states Gtk4 EventController
+    GestureClick returns incorrect state- Gdk.ModifierType on mouse button press
+    in X11 [#507, !829, !850, Sundeep Mediratta]
+  * Caller allocated boxed types or structs are not fully released [#543, !837,
+    !849, Marco Trevisan]
+  * Gjs console leaks invalid option errors [#544, !837, !849, Marco Trevisan]
+
 Version 1.76.1
 --------------
 
@@ -14,7 +27,6 @@ Version 1.76.1
     Trevisan]
   * GHash value infos are leaked [#541, !837, Marco Trevisan]
   * "flat" arrays of GObject's are leaked [#542, !837, Marco Trevisan]
-  * Gjs console leaks invalid option errors [#544, !837, Marco Trevisan]
   * gjs can't print null [#545, !841, Angelo Verlain]
 
 Version 1.76.0
