@@ -88,6 +88,7 @@
 #include <js/PropertySpec.h>
 #include <js/Realm.h>
 #include <js/RealmOptions.h>
+#include <js/Result.h>
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>
 #include <js/ScriptPrivate.h>
@@ -117,6 +118,8 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Likely.h>
 #include <mozilla/Maybe.h>
+#include <mozilla/Result.h>
+#include <mozilla/ResultVariant.h>
 #include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
 #include <mozilla/Tuple.h>
