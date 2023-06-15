@@ -1,3 +1,93 @@
+Version 1.76.2
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * GJS freezes, program stops responding, error states Gtk4 EventController
+    GestureClick returns incorrect state- Gdk.ModifierType on mouse button press
+    in X11 [#507, !829, !850, Sundeep Mediratta]
+  * Caller allocated boxed types or structs are not fully released [#543, !837,
+    !849, Marco Trevisan]
+  * Gjs console leaks invalid option errors [#544, !837, !849, Marco Trevisan]
+
+Version 1.76.1
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * gnome-shell crashes on exit in js::gc::Cell::storeBuffer [#472, !834, Daniel
+    van Vugt]
+  * Memory leak with GError [#36, !837, Marco Trevisan]
+  * GVariant return values leaked [#499, !837, Marco Trevisan]
+  * GBytes's are leaked when passed as-is to a function [#539, !837, Marco
+    Trevisan]
+  * Transformed GValues are leaking temporary instances [#540, !837, Marco
+    Trevisan]
+  * GHash value infos are leaked [#541, !837, Marco Trevisan]
+  * "flat" arrays of GObject's are leaked [#542, !837, Marco Trevisan]
+  * gjs can't print null [#545, !841, Angelo Verlain]
+
+Version 1.74.3
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * Possible errors in cairo enums [#516, !811, !852, Vítor Vasconcellos]
+  * cairo.SVGSurface need finish() and flush() to finalize painting [#515, !816,
+    !852, tuberry]
+  * Handle transfer-none string return value from vfunc implemented in JS [#519,
+    !821, !823, !852, Marco Trevisan, Daniel van Vugt]
+  * GJS freezes, program stops responding, error states Gtk4 EventController
+    GestureClick returns incorrect state- Gdk.ModifierType on mouse button press
+    in X11 [#507, !829, !852, Sundeep Mediratta]
+  * gnome-shell crashes on exit in js::gc::Cell::storeBuffer [#472, !834, !852,
+    Daniel van Vugt]
+  * Memory leak with GError [#36, !837, !852, Marco Trevisan]
+  * GVariant return values leaked [#499, !837, !852, Marco Trevisan]
+  * GBytes's are leaked when passed as-is to a function [#539, !837, !852, Marco
+    Trevisan]
+  * Transformed GValues are leaking temporary instances [#540, !837, !852, Marco
+    Trevisan]
+  * GHash value infos are leaked [#541, !837, !852, Marco Trevisan]
+  * "flat" arrays of GObject's are leaked [#542, !837, !852, Marco Trevisan]
+  * Gjs console leaks invalid option errors [#544, !837, !852, Marco Trevisan]
+
+Version 1.72.4
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * log_set_writer_func is not safe to use [#481, !766, !851, Evan Welsh]
+  * Gnome-Shell 42 - crash after login (general protection fault) [#479, !740,
+    !851, Xi Ruoyao]
+  * Static methods on classes from GObject introspection are now present on JS
+    classes that inherit from those classes. [!851, Marco Trevisan]
+  * Enabling window-list extension causes gnome-shell to crash when running
+    "dconf update" as root [#510, !813, !851, Philip Chimento]
+  * Possible errors in cairo enums [#516, !811, !851, Vítor Vasconcellos]
+  * cairo.SVGSurface need finish() and flush() to finalize painting [#515, !816,
+    !851, tuberry]
+  * Handle transfer-none string return value from vfunc implemented in JS [#519,
+    !821, !823, !851, Marco Trevisan, Daniel van Vugt]
+  * GJS freezes, program stops responding, error states Gtk4 EventController
+    GestureClick returns incorrect state- Gdk.ModifierType on mouse button press
+    in X11 [#507, !829, !851, Sundeep Mediratta]
+  * gnome-shell crashes on exit in js::gc::Cell::storeBuffer [#472, !834, !851,
+    Daniel van Vugt]
+  * Memory leak with GError [#36, !837, !851, Marco Trevisan]
+  * GVariant return values leaked [#499, !837, !851, Marco Trevisan]
+  * GBytes's are leaked when passed as-is to a function [#539, !837, !851, Marco
+    Trevisan]
+  * Transformed GValues are leaking temporary instances [#540, !837, !851, Marco
+    Trevisan]
+  * GHash value infos are leaked [#541, !837, !851, Marco Trevisan]
+  * "flat" arrays of GObject's are leaked [#542, !837, !851, Marco Trevisan]
+  * Gjs console leaks invalid option errors [#544, !837, !851, Marco Trevisan]
+
 Version 1.76.0
 --------------
 
