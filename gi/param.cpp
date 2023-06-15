@@ -11,14 +11,14 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JSEXN_TYPEERR
 #include <js/Object.h>  // for GetClass
 #include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>       // for JS_NewObjectForConstructor, JS_NewObjectWithG...
-#include <jspubtd.h>     // for JSProto_TypeError
+#include <jsapi.h>  // for JS_NewObjectForConstructor, JS_NewObjectWithG...
 
 #include "gi/cwrapper.h"
 #include "gi/function.h"
@@ -262,9 +262,10 @@ gjs_typecheck_param(JSContext       *context,
     GParamSpec* param = param_value(context, object);
     if (!param) {
         if (throw_error) {
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
-                             "Object is GObject.ParamSpec.prototype, not an object instance - "
-                             "cannot convert to a GObject.ParamSpec instance");
+            gjs_throw_custom(context, JSEXN_TYPEERR, nullptr,
+                             "Object is GObject.ParamSpec.prototype, not an "
+                             "object instance - cannot convert to a GObject."
+                             "ParamSpec instance");
         }
 
         return false;
@@ -276,7 +277,7 @@ gjs_typecheck_param(JSContext       *context,
         result = true;
 
     if (!result && throw_error) {
-        gjs_throw_custom(context, JSProto_TypeError, nullptr,
+        gjs_throw_custom(context, JSEXN_TYPEERR, nullptr,
                          "Object is of type %s - cannot convert to %s",
                          g_type_name(G_TYPE_FROM_INSTANCE(param)),
                          g_type_name(expected_type));

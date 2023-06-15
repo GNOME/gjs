@@ -22,7 +22,7 @@
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
-#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory, JSEXN_ERR
 #include <js/Exception.h>
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>  // for PropertyKey
@@ -36,8 +36,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>    // for JS_NewPlainObject, IdVector, JS_...
-#include <jspubtd.h>  // for JSProto_Error
+#include <jsapi.h>  // for JS_NewPlainObject, IdVector, JS_...
 #include <mozilla/Maybe.h>
 #include <mozilla/UniquePtr.h>
 
@@ -606,7 +605,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
     /* If no exception occurred, the problem is just that we got to the
      * end of the path. Be sure an exception is set. */
     g_assert(!JS_IsExceptionPending(context));
-    gjs_throw_custom(context, JSProto_Error, "ImportError",
+    gjs_throw_custom(context, JSEXN_ERR, "ImportError",
                      "No JS module '%s' found in search path", name.get());
     return false;
 }

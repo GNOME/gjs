@@ -450,10 +450,10 @@ bool gjs_global_registry_set(JSContext* cx, JS::HandleObject registry,
 /**
  * gjs_global_registry_get:
  *
- * @brief This function inserts a module object into a global registry.
+ * @brief This function retrieves a module record from the global registry,
+ * or %NULL if the module record is not present.
  * Global registries are JS Map objects for easy reuse and access
- * within internal JS. This function will assert if a module has
- * already been inserted at the given key.
+ * within internal JS.
 
  * @param cx the current #JSContext
  * @param registry a JS Map object

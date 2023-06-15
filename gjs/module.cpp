@@ -526,7 +526,7 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
     args[1].setString(specifier);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Module resolve hook for module '%s' (relative to %s), global %p",
+              "Module resolve hook for module %s (relative to %s), global %p",
               gjs_debug_string(specifier).c_str(),
               gjs_debug_value(importingModulePriv).c_str(), global.get());
 
@@ -536,6 +536,23 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
 
     g_assert(result.isObject() && "resolve hook failed to return an object!");
     return &result.toObject();
+}
+
+// Note: exception is never pending after this function finishes, even if it
+// returns null. The return value is intended to be passed to
+// JS::FinishDynamicModuleImport().
+static JSObject* reject_new_promise_with_pending_exception(JSContext* cx) {
+    JS::ExceptionStack stack{cx};
+    if (!JS::StealPendingExceptionStack(cx, &stack)) {
+        gjs_log_exception(cx);
+        return nullptr;
+    }
+    JS::RootedObject rejected{cx, JS::NewPromiseObject(cx, nullptr)};
+    if (!rejected || !JS::RejectPromise(cx, rejected, stack.exception())) {
+        gjs_log_exception(cx);
+        return nullptr;
+    }
+    return rejected;
 }
 
 // Call JS::FinishDynamicModuleImport() with the values stashed in the function.
@@ -579,9 +596,12 @@ static bool finish_import(JSContext* cx, JS::HandleObject evaluation_promise,
 // case we must not call JS::FinishDynamicModuleImport().
 GJS_JSAPI_RETURN_CONVENTION
 static bool fail_import(JSContext* cx, const JS::CallArgs& args) {
-    if (JS_IsExceptionPending(cx))
-        return finish_import(cx, nullptr, args);
-    return false;
+    if (!JS_IsExceptionPending(cx))
+        return false;
+
+    JS::RootedObject rejected_promise{
+        cx, reject_new_promise_with_pending_exception(cx)};
+    return finish_import(cx, rejected_promise, args);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -590,12 +610,16 @@ static bool import_rejected(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Async import promise rejected");
 
-    // Throw the value that the promise is rejected with, so that
-    // FinishDynamicModuleImport will reject the internal_promise with it.
-    JS_SetPendingException(cx, args.get(0),
-                           JS::ExceptionStackBehavior::DoNotCapture);
+    // Reject a new promise with the rejection value of the async import
+    // promise, so that FinishDynamicModuleImport will reject the
+    // internal_promise with it.
+    JS::RootedObject rejected{cx, JS::NewPromiseObject(cx, nullptr)};
+    if (!rejected || !JS::RejectPromise(cx, rejected, args.get(0))) {
+        gjs_log_exception(cx);
+        return finish_import(cx, nullptr, args);
+    }
 
-    return finish_import(cx, nullptr, args);
+    return finish_import(cx, rejected, args);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -652,13 +676,13 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
 
     if (importing_module_priv.isObject()) {
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Async module resolve hook for module '%s' (relative to %p), "
+                  "Async module resolve hook for module %s (relative to %p), "
                   "global %p",
                   gjs_debug_string(specifier).c_str(),
                   &importing_module_priv.toObject(), global.get());
     } else {
         gjs_debug(GJS_DEBUG_IMPORTER,
-                  "Async module resolve hook for module '%s' (unknown path), "
+                  "Async module resolve hook for module %s (unknown path), "
                   "global %p",
                   gjs_debug_string(specifier).c_str(), global.get());
     }
@@ -668,9 +692,16 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
     args[1].setString(specifier);
 
     JS::RootedValue result(cx);
-    if (!JS::Call(cx, loader, "moduleResolveAsyncHook", args, &result))
-        return JS::FinishDynamicModuleImport(cx, nullptr, importing_module_priv,
+    if (!JS::Call(cx, loader, "moduleResolveAsyncHook", args, &result)) {
+        if (!JS_IsExceptionPending(cx))
+            return false;
+
+        JS::RootedObject rejected_promise{
+            cx, reject_new_promise_with_pending_exception(cx)};
+        return JS::FinishDynamicModuleImport(cx, rejected_promise,
+                                             importing_module_priv,
                                              module_request, internal_promise);
+    }
 
     // Release in finish_import
     GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);

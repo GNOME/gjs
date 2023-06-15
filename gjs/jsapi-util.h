@@ -23,12 +23,12 @@
 #include <glib.h>
 
 #include <js/BigInt.h>
+#include <js/ErrorReport.h>  // for JSExnType
 #include <js/GCAPI.h>
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <js/Id.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <jspubtd.h>     // for JSProtoKey
 
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -37,7 +37,6 @@
 #    include "gi/arg-types-inl.h"  // for static_type_name
 #endif
 
-class JSErrorReport;
 namespace JS {
 class CallArgs;
 
@@ -467,7 +466,7 @@ JSObject* gjs_define_string_array(JSContext* cx, JS::HandleObject obj,
 [[gnu::format(printf, 2, 3)]] void gjs_throw(JSContext* cx, const char* format,
                                              ...);
 [[gnu::format(printf, 4, 5)]] void gjs_throw_custom(JSContext* cx,
-                                                    JSProtoKey error_kind,
+                                                    JSExnType error_kind,
                                                     const char* error_name,
                                                     const char* format, ...);
 void        gjs_throw_literal                (JSContext       *context,

@@ -16,6 +16,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/ErrorReport.h>  // for JSEXN_TYPEERR
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>
 #include <js/Object.h>  // for GetClass
@@ -24,7 +25,7 @@
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <jsapi.h>  // for JSFUN_CONSTRUCTOR, JS_NewPlainObject, JS_GetFuncti...
-#include <jspubtd.h>  // for JSProto_Object, JSProtoKey, JSProto_TypeError
+#include <jspubtd.h>  // for JSProto_Object, JSProtoKey
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -122,7 +123,7 @@ class CWrapperPointerOps {
                                  Wrapped** out) {
         if (!typecheck(cx, wrapper)) {
             const JSClass* obj_class = JS::GetClass(wrapper);
-            gjs_throw_custom(cx, JSProto_TypeError, nullptr,
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",
                              wrapper.get(), Base::klass.name, obj_class->name);
             return false;

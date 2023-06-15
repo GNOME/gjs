@@ -117,6 +117,7 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Likely.h>
 #include <mozilla/Maybe.h>
+#include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
 #include <mozilla/Tuple.h>
 #include <mozilla/UniquePtr.h>

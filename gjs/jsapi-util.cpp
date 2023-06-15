@@ -39,6 +39,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>        // for JS_InstanceOf
 #include <jsfriendapi.h>  // for ProtoKeyToClass
+#include <jspubtd.h>      // for JSProto_InternalError, JSProto_SyntaxError
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -330,8 +331,6 @@ static std::string format_exception_with_cause(
         out << '\n' << utf8_stack.get();
     JS_ClearPendingException(cx);
 
-    // COMPAT: use JS::GetExceptionCause, mozjs 91.6 and later, on Error objects
-    // in order to avoid side effects
     JS::RootedValue v_cause(cx);
     if (!JS_GetPropertyById(cx, exc_obj, atoms.cause(), &v_cause))
         JS_ClearPendingException(cx);

@@ -5,11 +5,12 @@
 #include <config.h>
 
 #include <stdarg.h>
+#include <stdint.h>
+#include <string.h>
 
 #include <glib.h>
 
 #include <js/AllocPolicy.h>
-#include <js/CallAndConstruct.h>
 #include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
@@ -17,13 +18,13 @@
 #include <js/HashTable.h>    // for DefaultHasher
 #include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
+#include <js/SavedFrameAPI.h>
 #include <js/Stack.h>  // for BuildStackString
+#include <js/String.h>  // for JS_NewStringCopyUTF8Z
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <js/ValueArray.h>
-#include <jsapi.h>              // for JS_GetClassObject
-#include <jspubtd.h>            // for JSProtoKey, JSProto_Error, JSProto...
+#include <mozilla/ScopeExit.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -36,9 +37,9 @@ using CauseSet = JS::GCHashSet<JSObject*, js::DefaultHasher<JSObject*>,
                                js::SystemAllocPolicy>;
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool get_last_cause_impl(JSContext* cx, JS::HandleValue v_exc,
-                                JS::MutableHandleObject last_cause,
-                                JS::MutableHandle<CauseSet> seen_causes) {
+static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
+                           JS::MutableHandleObject last_cause,
+                           JS::MutableHandle<CauseSet> seen_causes) {
     if (!v_exc.isObject()) {
         last_cause.set(nullptr);
         return true;
@@ -64,100 +65,91 @@ static bool get_last_cause_impl(JSContext* cx, JS::HandleValue v_exc,
         return true;
     }
 
-    return get_last_cause_impl(cx, v_cause, last_cause, seen_causes);
+    return get_last_cause(cx, v_cause, last_cause, seen_causes);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool get_last_cause(JSContext* cx, JS::HandleValue v_exc,
-                           JS::MutableHandleObject last_cause) {
+static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
+                             JS::HandleValue new_cause, bool* appended) {
+    g_assert(appended && "forgot out parameter");
+    *appended = false;
+
     JS::Rooted<CauseSet> seen_causes(cx);
-    return get_last_cause_impl(cx, v_exc, last_cause, &seen_causes);
+    JS::RootedObject last_cause{cx};
+    if (!get_last_cause(cx, thrown, &last_cause, &seen_causes))
+        return false;
+    if (!last_cause)
+        return true;
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    if (!JS_SetPropertyById(cx, last_cause, atoms.cause(), new_cause))
+        return false;
+
+    *appended = true;
+    return true;
 }
 
-/*
- * See:
- * https://bugzilla.mozilla.org/show_bug.cgi?id=166436
- * https://bugzilla.mozilla.org/show_bug.cgi?id=215173
- *
- * Very surprisingly, jsapi.h lacks any way to "throw new Error()"
- *
- * So here is an awful hack inspired by
- * http://egachine.berlios.de/embedding-sm-best-practice/embedding-sm-best-practice.html#error-handling
- */
 [[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
-    JSContext* context, JSProtoKey error_kind, const char* error_name,
+    JSContext* cx, JSExnType error_kind, const char* error_name,
     const char* format, va_list args) {
-    char *s;
-    bool result;
+    GjsAutoChar s = g_strdup_vprintf(format, args);
+    auto fallback = mozilla::MakeScopeExit([cx, &s]() {
+        // try just reporting it to error handler? should not
+        // happen though pretty much
+        JS_ReportErrorUTF8(cx, "Failed to throw exception '%s'", s.get());
+    });
 
-    s = g_strdup_vprintf(format, args);
+    JS::ConstUTF8CharsZ chars{s.get(), strlen(s.get())};
+    JS::RootedString message{cx, JS_NewStringCopyUTF8Z(cx, chars)};
+    if (!message)
+        return;
 
-    JS::RootedObject constructor(context);
-    JS::RootedValue v_constructor(context), exc_val(context);
-    JS::RootedObject new_exc(context);
-    JS::RootedValueArray<1> error_args(context);
-    result = false;
+    JS::RootedObject saved_frame{cx};
+    if (!JS::CaptureCurrentStack(cx, &saved_frame))
+        return;
 
-    if (!gjs_string_from_utf8(context, s, error_args[0])) {
-        JS_ReportErrorUTF8(context, "Failed to copy exception string");
-        goto out;
-    }
+    JS::RootedString source_string{cx};
+    JS::GetSavedFrameSource(cx, /* principals = */ nullptr, saved_frame,
+                            &source_string);
+    uint32_t line_num;
+    JS::GetSavedFrameLine(cx, nullptr, saved_frame, &line_num);
+    uint32_t column_num;
+    JS::GetSavedFrameColumn(cx, nullptr, saved_frame, &column_num);
 
-    if (!JS_GetClassObject(context, error_kind, &constructor))
-        goto out;
-
-    v_constructor.setObject(*constructor);
-
-    /* throw new Error(message) */
-    if (!JS::Construct(context, v_constructor, error_args, &new_exc))
-        goto out;
-
-    if (!new_exc)
-        goto out;
+    JS::RootedValue v_exc{cx};
+    if (!JS::CreateError(cx, error_kind, saved_frame, source_string, line_num,
+                         column_num, /* report = */ nullptr, message,
+                         /* cause = */ JS::NothingHandleValue, &v_exc))
+        return;
 
     if (error_name) {
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-        JS::RootedValue name_value(context);
-        if (!gjs_string_from_utf8(context, error_name, &name_value) ||
-            !JS_SetPropertyById(context, new_exc, atoms.name(), name_value))
-            goto out;
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        JS::RootedValue v_name{cx};
+        JS::RootedObject exc{cx, &v_exc.toObject()};
+        if (!gjs_string_from_utf8(cx, error_name, &v_name) ||
+            !JS_SetPropertyById(cx, exc, atoms.name(), v_name))
+            return;
     }
 
-    exc_val.setObject(*new_exc);
-
-    if (JS_IsExceptionPending(context)) {
+    if (JS_IsExceptionPending(cx)) {
         // Often it's unclear whether a given jsapi.h function will throw an
         // exception, so we will throw ourselves "just in case"; in those cases,
         // we append the new exception as the cause of the original exception.
         // The second exception may add more info.
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-        JS::RootedValue pending(context);
-        JS_GetPendingException(context, &pending);
-        JS::RootedObject last_cause(context);
-        if (!get_last_cause(context, pending, &last_cause))
-            goto out;
-        if (last_cause) {
-            if (!JS_SetPropertyById(context, last_cause, atoms.cause(),
-                                    exc_val))
-                goto out;
-        } else {
-            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'", s);
-        }
+        JS::RootedValue pending(cx);
+        JS_GetPendingException(cx, &pending);
+        JS::AutoSaveExceptionState saved_exc{cx};
+        bool appended;
+        if (!append_new_cause(cx, pending, v_exc, &appended))
+            saved_exc.restore();
+        if (!appended)
+            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'",
+                      s.get());
     } else {
-        JS_SetPendingException(context, exc_val);
+        JS_SetPendingException(cx, v_exc);
     }
 
-    result = true;
-
- out:
-
-    if (!result) {
-        /* try just reporting it to error handler? should not
-         * happen though pretty much
-         */
-        JS_ReportErrorUTF8(context, "Failed to throw exception '%s'", s);
-    }
-    g_free(s);
+    fallback.release();
 }
 
 /* Throws an exception, like "throw new Error(message)"
@@ -175,7 +167,7 @@ gjs_throw(JSContext       *context,
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, JSProto_Error, nullptr, format, args);
+    gjs_throw_valist(context, JSEXN_ERR, nullptr, format, args);
     va_end(args);
 }
 
@@ -184,28 +176,9 @@ gjs_throw(JSContext       *context,
  * class and 'name' property. Mainly used for throwing TypeError instead of
  * error.
  */
-void
-gjs_throw_custom(JSContext  *cx,
-                 JSProtoKey  kind,
-                 const char *error_name,
-                 const char *format,
-                 ...)
-{
+void gjs_throw_custom(JSContext *cx, JSExnType kind, const char *error_name,
+                      const char *format, ...) {
     va_list args;
-
-    switch (kind) {
-        case JSProto_Error:
-        case JSProto_EvalError:
-        case JSProto_InternalError:
-        case JSProto_RangeError:
-        case JSProto_ReferenceError:
-        case JSProto_SyntaxError:
-        case JSProto_TypeError:
-        case JSProto_URIError:
-            break;
-        default:
-            g_return_if_reached();
-    }
 
     va_start(args, format);
     gjs_throw_valist(cx, kind, error_name, format, args);

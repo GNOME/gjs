@@ -13,6 +13,7 @@
 #include <js/CallArgs.h>  // for JSNative
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
+#include <js/ErrorReport.h>         // for JSEXN_TYPEERR
 #include <js/Object.h>              // for GetClass
 #include <js/PropertyAndElement.h>  // for JS_DefineFunctions, JS_DefinePro...
 #include <js/Realm.h>  // for GetRealmObjectPrototype
@@ -21,7 +22,6 @@
 #include <js/Value.h>
 #include <jsapi.h>        // for JS_GetFunctionObject, JS_GetPrototype
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
-#include <jspubtd.h>      // for JSProto_TypeError
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
@@ -121,7 +121,7 @@ gjs_typecheck_instance(JSContext       *context,
         if (throw_error) {
             const JSClass* obj_class = JS::GetClass(obj);
 
-            gjs_throw_custom(context, JSProto_TypeError, nullptr,
+            gjs_throw_custom(context, JSEXN_TYPEERR, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",
                              obj.get(), static_clasp->name,
                              format_dynamic_class_name(obj_class->name));

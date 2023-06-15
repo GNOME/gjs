@@ -313,7 +313,8 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    std::string fullName{priv->format_name() + "[" + gjs_debug_string(name) +
+                         "]"};
     AutoProfilerLabel label(cx, "property getter", fullName.c_str());
 
     priv->debug_jsprop("Property getter", name, obj);
@@ -450,7 +451,8 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    std::string fullName{priv->format_name() + "[" + gjs_debug_string(name) +
+                         "]"};
     AutoProfilerLabel label(cx, "property setter", fullName.c_str());
 
     priv->debug_jsprop("Property setter", name, obj);
@@ -510,7 +512,8 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    std::string fullName{priv->format_name() + "[" + gjs_debug_string(name) +
+                         "]"};
     AutoProfilerLabel label(cx, "field setter", fullName.c_str());
 
     priv->debug_jsprop("Field setter", name, obj);
@@ -2081,7 +2084,7 @@ GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT,
-                     "Looking up cached field info for '%s' in '%s' prototype",
+                     "Looking up cached field info for %s in '%s' prototype",
                      gjs_debug_string(key).c_str(), g_type_name(m_gtype));
     auto entry = m_field_cache.lookupForAdd(key);
     if (entry)

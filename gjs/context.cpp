@@ -124,10 +124,6 @@ struct _GjsContext {
     GObject parent;
 };
 
-struct _GjsContextClass {
-    GObjectClass parent;
-};
-
 G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
 
 Gjs::NativeModuleRegistry& registry = Gjs::NativeModuleRegistry::get();
