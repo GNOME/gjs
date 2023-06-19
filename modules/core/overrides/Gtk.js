@@ -155,12 +155,7 @@ function _init() {
                     Implements: [Gtk.BuilderScope],
                 },
                 class BuilderScopeBuild extends GObject.Object {
-                    #signal_handlers;
-
-                    constructor() {
-                        super();
-                        this.clear();
-                    }
+                    #signal_handlers = {};
 
                     add_signal_handler(name, fn) {
                         this.#signal_handlers[name] = fn;
@@ -175,7 +170,7 @@ function _init() {
                     }
 
                     clear() {
-                        this.#signal_handlers = Object.create(null);
+                        this.#signal_handlers = {};
                     }
                 }
             );
@@ -218,14 +213,14 @@ function _init() {
                     const g_uri = GLib.Uri.parse(uri, GLib.UriFlags.NONE);
                     const path = g_uri.get_path();
                     if (!path)
-                        throw new Error(`Invalid uri \`${uri}\`.`);
+                        throw new Error(`Invalid URI "${uri}".`);
 
                     if (scheme === 'resource')
                         builder.add_from_resource(path);
                     else if (scheme === 'file')
                         builder.add_from_file(path);
                     else
-                        throw new Error(`Unsuported scheme \`${uri}\`.`);
+                        throw new Error(`Unsupported scheme "${uri}".`);
                 }
 
                 scope.clear();
