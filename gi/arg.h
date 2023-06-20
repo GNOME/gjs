@@ -41,6 +41,10 @@ enum class GjsArgumentFlags : uint8_t {
     ARG_INOUT = ARG_IN | ARG_OUT,
 };
 
+// Overload operator| so that Visual Studio won't complain
+// when converting unsigned char to GjsArgumentFlags
+GjsArgumentFlags operator|(GjsArgumentFlags const& v1, GjsArgumentFlags const& v2);
+
 [[nodiscard]] char* gjs_argument_display_name(const char* arg_name,
                                               GjsArgumentType arg_type);
 

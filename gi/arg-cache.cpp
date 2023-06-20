@@ -121,6 +121,14 @@ static bool report_invalid_null(JSContext* cx, const char* arg_name) {
     return false;
 }
 
+// Overload operator| so that Visual Studio won't complain
+// when converting unsigned char to GjsArgumentFlags
+GjsArgumentFlags operator|(
+    GjsArgumentFlags const& v1, GjsArgumentFlags const& v2) {
+    return static_cast<GjsArgumentFlags>(std::underlying_type<GjsArgumentFlags>::type(v1) |
+                                         std::underlying_type<GjsArgumentFlags>::type(v2));
+}
+
 namespace Gjs {
 namespace Arg {
 
@@ -169,14 +177,6 @@ struct Nullable {
                           : GjsArgumentFlags::NONE;
     }
 };
-
-// Overload operator| so that Visual Studio won't complain
-// when converting unsigned char to GjsArgumentFlags
-GjsArgumentFlags operator|(
-    GjsArgumentFlags const& v1, GjsArgumentFlags const& v2) {
-    return static_cast<GjsArgumentFlags>(std::underlying_type<GjsArgumentFlags>::type(v1) |
-                                         std::underlying_type<GjsArgumentFlags>::type(v2));
-}
 
 struct Positioned {
     void set_arg_pos(int pos) {
