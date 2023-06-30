@@ -635,7 +635,7 @@ static bool import_resolved(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject module(cx, &args[0].toObject());
 
     JS::RootedValue evaluation_promise(cx);
-    if (!JS::ModuleInstantiate(cx, module) ||
+    if (!JS::ModuleLink(cx, module) ||
         !JS::ModuleEvaluate(cx, module, &evaluation_promise))
         return fail_import(cx, args);
 

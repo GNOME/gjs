@@ -601,7 +601,7 @@ static void load_context_module(JSContext* cx, const char* uri,
         g_error("Failed to load %s module.", debug_identifier);
     }
 
-    if (!JS::ModuleInstantiate(cx, loader)) {
+    if (!JS::ModuleLink(cx, loader)) {
         gjs_log_exception(cx);
         g_error("Failed to instantiate %s module.", debug_identifier);
     }
@@ -1494,7 +1494,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
         return false;
     }
 
-    if (!JS::ModuleInstantiate(m_cx, obj)) {
+    if (!JS::ModuleLink(m_cx, obj)) {
         gjs_log_exception(m_cx);
         g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
                     "Failed to resolve imports for module: '%s'", identifier);

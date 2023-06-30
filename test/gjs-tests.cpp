@@ -308,7 +308,7 @@ static void gjstest_test_func_gjs_context_eval_module_file_fail_instantiate() {
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING, "*foo*");
 
     // evaluating this module without registering 'foo' first should make it
-    // fail ModuleInstantiate
+    // fail ModuleLink
     bool ok = gjs_context_eval_module_file(
         gjs, "resource:///org/gnome/gjs/mock/test/modules/import.js",
         &exit_status, &error);
