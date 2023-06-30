@@ -122,7 +122,6 @@
 #include <mozilla/ResultVariant.h>
 #include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
-#include <mozilla/Tuple.h>
 #include <mozilla/UniquePtr.h>
 #include <mozilla/Unused.h>
 #include <mozilla/Vector.h>
