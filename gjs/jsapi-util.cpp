@@ -578,24 +578,6 @@ JSObject* gjs_get_import_global(JSContext* cx) {
     return GjsContextPrivate::from_cx(cx)->global();
 }
 
-/**
- * gjs_get_internal_global:
- *
- * @brief Gets the "internal global" for the context's runtime. The internal
- * global object is the global object used for all "internal" JavaScript
- * code (e.g. the module loader) that should not be accessible from users'
- * code.
- *
- * @param cx a #JSContext
- *
- * @returns the "internal global" for the context's
- *  runtime. Will never return %NULL while GJS has an active context
- *  for the runtime.
- */
-JSObject* gjs_get_internal_global(JSContext* cx) {
-    return GjsContextPrivate::from_cx(cx)->internal_global();
-}
-
 const char* gjs_explain_gc_reason(JS::GCReason reason) {
     if (JS::InternalGCReason(reason))
         return JS::ExplainGCReason(reason);

@@ -685,9 +685,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to initialize internal global object");
     }
 
-    JSAutoRealm ar(m_cx, internal_global);
-
     m_internal_global = internal_global;
+    Gjs::AutoInternalRealm ar{this};
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
 
     if (!m_atoms->init_atoms(m_cx)) {
@@ -1783,6 +1782,22 @@ AutoMainRealm::AutoMainRealm(GjsContextPrivate* gjs)
 AutoMainRealm::AutoMainRealm(JSContext* cx)
     : AutoMainRealm(static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx))) {
 }
+
+/*
+ * Gjs::AutoInternalRealm:
+ * @gjs: a #GjsContextPrivate
+ *
+ * Enters the realm of the "internal global" for the context, and leaves when
+ * the object is destructed at the end of the scope. The internal global is only
+ * used for executing the module loader code, to keep it separate from user
+ * code.
+ */
+AutoInternalRealm::AutoInternalRealm(GjsContextPrivate* gjs)
+    : JSAutoRealm(gjs->context(), gjs->internal_global()) {}
+
+AutoInternalRealm::AutoInternalRealm(JSContext* cx)
+    : AutoInternalRealm(
+          static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx))) {}
 
 }  // namespace Gjs
 

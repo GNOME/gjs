@@ -89,8 +89,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     options.setFileAndLine(full_path, 1);
     options.setSelfHostingMode(false);
 
-    JS::RootedObject internal_global(cx, gjs_get_internal_global(cx));
-    JSAutoRealm ar(cx, internal_global);
+    Gjs::AutoInternalRealm ar{cx};
 
     JS::RootedValue ignored(cx);
     return JS::Evaluate(cx, options, buf, &ignored);
@@ -181,8 +180,7 @@ bool gjs_internal_compile_internal_module(JSContext* cx, unsigned argc,
                                           JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    JS::RootedObject global(cx, gjs_get_internal_global(cx));
-    JSAutoRealm ar(cx, global);
+    Gjs::AutoInternalRealm ar{cx};
 
     JS::UniqueChars uri;
     JS::RootedString source(cx);

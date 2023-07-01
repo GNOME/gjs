@@ -286,6 +286,12 @@ class AutoMainRealm : public JSAutoRealm {
     explicit AutoMainRealm(GjsContextPrivate* gjs);
     explicit AutoMainRealm(JSContext* cx);
 };
+
+class AutoInternalRealm : public JSAutoRealm {
+ public:
+    explicit AutoInternalRealm(GjsContextPrivate* gjs);
+    explicit AutoInternalRealm(JSContext* cx);
+};
 }  // namespace Gjs
 
 #endif  // GJS_CONTEXT_PRIVATE_H_
