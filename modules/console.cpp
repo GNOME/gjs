@@ -34,6 +34,7 @@
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
+#include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
@@ -224,7 +225,7 @@ gjs_console_interact(JSContext *context,
 {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     volatile bool eof, exit_warning;  // accessed after setjmp()
-    JS::RootedObject global(context, gjs_get_import_global(context));
+    JS::RootedObject global{context, JS::CurrentGlobalOrNull(context)};
     char* temp_buf;
     volatile int lineno;     // accessed after setjmp()
     volatile int startline;  // accessed after setjmp()

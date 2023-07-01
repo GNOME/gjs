@@ -422,8 +422,8 @@ static bool import_native_module_sync(JSContext* cx, unsigned argc,
     if (!gjs_parse_call_args(cx, "importSync", args, "s", "identifier", &id))
         return false;
 
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
     Gjs::AutoMainRealm ar{cx};
+    JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
 
     JS::AutoSaveExceptionState exc_state(cx);
 
