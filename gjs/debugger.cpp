@@ -107,24 +107,24 @@ static JSFunctionSpec debugger_funcs[] = {
 };
 // clang-format on
 
-void gjs_context_setup_debugger_console(GjsContext* gjs) {
-    auto cx = static_cast<JSContext*>(gjs_context_get_native_context(gjs));
+void gjs_context_setup_debugger_console(GjsContext* self) {
+    auto* gjs = GjsContextPrivate::from_object(self);
+    JSContext* cx = gjs->context();
 
-    JS::RootedObject debuggee(cx, gjs_get_import_global(cx));
     JS::RootedObject debugger_global(
         cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER));
 
     // Enter realm of the debugger and initialize it with the debuggee
     JSAutoRealm ar(cx, debugger_global);
-    JS::RootedObject debuggee_wrapper(cx, debuggee);
-    if (!JS_WrapObject(cx, &debuggee_wrapper)) {
+    JS::RootedObject debuggee{cx, gjs->global()};
+    if (!JS_WrapObject(cx, &debuggee)) {
         gjs_log_exception(cx);
         return;
     }
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedValue v_wrapper(cx, JS::ObjectValue(*debuggee_wrapper));
-    if (!JS_SetPropertyById(cx, debugger_global, atoms.debuggee(), v_wrapper) ||
+    JS::RootedValue v_debuggee(cx, JS::ObjectValue(*debuggee));
+    if (!JS_SetPropertyById(cx, debugger_global, gjs->atoms().debuggee(),
+                            v_debuggee) ||
         !JS_DefineFunctions(cx, debugger_global, debugger_funcs) ||
         !gjs_define_global_properties(cx, debugger_global,
                                       GjsGlobalType::DEBUGGER, "GJS debugger",

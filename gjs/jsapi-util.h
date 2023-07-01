@@ -444,8 +444,6 @@ struct GCPolicy<GjsAutoParam> : public IgnoreGCPolicy<GjsAutoParam> {};
     if (!args.computeThis(cx, &to))                   \
         return false;
 
-[[nodiscard]] JSObject* gjs_get_import_global(JSContext* cx);
-
 void gjs_throw_constructor_error             (JSContext       *context);
 
 void gjs_throw_abstract_constructor_error(JSContext* cx,

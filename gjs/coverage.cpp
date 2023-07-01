@@ -310,21 +310,20 @@ bootstrap_coverage(GjsCoverage *coverage)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    JSContext *context = (JSContext *) gjs_context_get_native_context(priv->context);
+    auto* gjs = GjsContextPrivate::from_object(priv->context);
+    JSContext* context = gjs->context();
 
-    JSObject *debuggee = gjs_get_import_global(context);
     JS::RootedObject debugger_global(
         context, gjs_create_global_object(context, GjsGlobalType::DEBUGGER));
     {
         JSAutoRealm ar(context, debugger_global);
-        JS::RootedObject debuggeeWrapper(context, debuggee);
-        if (!JS_WrapObject(context, &debuggeeWrapper))
+        JS::RootedObject debuggee{context, gjs->global()};
+        if (!JS_WrapObject(context, &debuggee))
             return false;
 
-        const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-        JS::RootedValue debuggeeWrapperValue(context, JS::ObjectValue(*debuggeeWrapper));
-        if (!JS_SetPropertyById(context, debugger_global, atoms.debuggee(),
-                                debuggeeWrapperValue) ||
+        JS::RootedValue v_debuggee{context, JS::ObjectValue(*debuggee)};
+        if (!JS_SetPropertyById(context, debugger_global,
+                                gjs->atoms().debuggee(), v_debuggee) ||
             !gjs_define_global_properties(context, debugger_global,
                                           GjsGlobalType::DEBUGGER,
                                           "GJS coverage", "coverage"))
