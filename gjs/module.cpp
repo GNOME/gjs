@@ -424,7 +424,7 @@ static bool import_native_module_sync(JSContext* cx, unsigned argc,
         return false;
 
     JS::RootedObject global(cx, gjs_get_import_global(cx));
-    JSAutoRealm ar(cx, global);
+    Gjs::AutoMainRealm ar{cx};
 
     JS::AutoSaveExceptionState exc_state(cx);
 
@@ -628,8 +628,7 @@ static bool import_resolved(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Async import promise resolved");
 
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
-    JSAutoRealm ar(cx, global);
+    Gjs::AutoMainRealm ar{cx};
 
     g_assert(args[0].isObject());
     JS::RootedObject module(cx, &args[0].toObject());
