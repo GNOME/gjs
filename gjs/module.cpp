@@ -29,7 +29,6 @@
 #include <js/Promise.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>
-#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/ScriptPrivate.h>
 #include <js/SourceText.h>
@@ -654,7 +653,7 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
              "global.");
 
     JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
-    JSAutoRealm ar(cx, global);
+    g_assert(global && "gjs_dynamic_module_resolve must be in a realm");
 
     JS::RootedValue v_loader(
         cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));
