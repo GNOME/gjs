@@ -1,3 +1,34 @@
+Version 1.77.1
+--------------
+
+- Includes all fixes from 1.76.1 and 1.76.2.
+
+- Many documentation improvements and cleanups.
+
+- New API for C programs embedding GJS: gjs_context_run_in_realm().
+  This allows using the SpiderMonkey API, for advanced use cases, while having
+  entered the main realm where GJS code runs. Most programs will not need to use
+  this.
+
+- Closed bugs and merge requests:
+  * Cleanups: Use more autopointers [!763, Marco Trevisan]
+  * bug(build, tests): broken dependency cycle associated with the `have_gtk4`
+    variable [#532, !830, Dominik Opyd]
+  * Better handling of callbacks during GC [!832, Sebastian Keller]
+  * doc: Add Gio and GLib runAsync overrides [!833, Sonny Piers]
+  * installed-tests/meson: Add tests dependencies on gjs console and GjsPrivate
+    [!835, Marco Trevisan]
+  * gi/arg: Cleanup handling of C arrays and GValue arrays [!836, Marco
+    Trevisan]
+  * Various maintenance [!838, !848, Philip Chimento]
+  * doc: Fix http-client.js example [!840, Sonny Piers]
+  * use `meson setup` instead of ambiguous `meson` [!842, Angelo Verlain]
+  * docs: document `GObject.gtypeNameBasedOnJSPath` [!844, Andy Holmes]
+  * docs: fix formatting for `Signals.md` [!845, Andy Holmes]
+  * Provide API to get GTypes defined in a module [#536, !846, Philip Chimento]
+  * doc: Update inroduction [!847, Sonny Piers]
+  * gi/args.cpp: Fix build with Visual Studio [!854, Chun-wei Fan]
+
 Version 1.76.2
 --------------
 
