@@ -62,7 +62,6 @@ build-alpine-image:
     paths:
       - _build/compile_commands.json
       - _build/meson-logs/*log*.txt
-      - scripts.log
   script:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
@@ -115,7 +114,7 @@ sanitizer_thread_gcc:
 # These sometimes get invalid expressions in them, leading to annoyance the
 # next time you try to use debug logging.
 build_maximal:
-  <<: *build
+  when: on_success
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs102-debug
   variables:
@@ -131,6 +130,15 @@ build_maximal:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
     - test/test-ci.sh SH_CHECKS
+  artifacts:
+    reports:
+      junit: _build/meson-logs/testlog*.junit.xml
+    name: log
+    when: always
+    paths:
+      - _build/compile_commands.json
+      - _build/meson-logs/*log*.txt
+      - scripts.log
 
 build_minimal:
   <<: *build
