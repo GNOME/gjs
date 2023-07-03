@@ -28,6 +28,8 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
+namespace detail {
+
 [[nodiscard]] GJS_ALWAYS_INLINE static inline bool check_nullable(
     const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
@@ -280,6 +282,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
     return retval;
 }
 
+}  // namespace detail
+
 /* Empty-args version of the template */
 GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
     JSContext* cx, const char* function_name, const JS::CallArgs& args,
@@ -392,8 +396,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     fmt_required = parts.get()[0];
     fmt_optional = parts.get()[1];  // may be null
 
-    return parse_call_args_helper(cx, function_name, args, fmt_required,
-                                  fmt_optional, 0, params...);
+    return detail::parse_call_args_helper(cx, function_name, args, fmt_required,
+                                          fmt_optional, 0, params...);
 }
 
 #endif  // GJS_JSAPI_UTIL_ARGS_H_
