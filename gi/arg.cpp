@@ -3318,6 +3318,6 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
 
     GjsAutoTypeInfo param_type = g_type_info_get_param_type(type_info, 0);
     return gjs_g_argument_release_array_internal(
-        context, GI_TRANSFER_EVERYTHING, GjsArgumentFlags::ARG_OUT, param_type,
+        context, transfer, GjsArgumentFlags::ARG_OUT, param_type,
         length, arg);
 }

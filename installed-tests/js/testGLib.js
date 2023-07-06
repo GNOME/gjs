@@ -92,6 +92,25 @@ describe('GVariant unpack', function () {
     });
 });
 
+describe('GVariant strv', function () {
+    let v;
+    beforeEach(function () {
+        v = new GLib.Variant('as', ['a', 'b', 'c', 'foo']);
+    });
+
+    it('unpacked matches constructed', function () {
+        expect(v.deepUnpack()).toEqual(['a', 'b', 'c', 'foo']);
+    });
+
+    it('getter matches constructed', function () {
+        expect(v.get_strv()).toEqual(['a', 'b', 'c', 'foo']);
+    });
+
+    it('getter (dup) matches constructed', function () {
+        expect(v.dup_strv()).toEqual(['a', 'b', 'c', 'foo']);
+    });
+});
+
 describe('GVariantDict lookup', function () {
     let variantDict;
     beforeEach(function () {
