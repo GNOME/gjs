@@ -986,14 +986,14 @@ static inline bool gjs_g_argument_release_array_internal(
     GjsAutoPointer<uint8_t, void, g_free> arg_array =
         gjs_arg_steal<uint8_t*>(arg);
 
+    if (!arg_array)
+        return true;
+
     if (element_transfer != GI_TRANSFER_EVERYTHING)
         return true;
 
     if constexpr (!zero_terminated) {
         if (length == 0)
-            return true;
-    } else {
-        if (!arg_array)
             return true;
     }
 
