@@ -750,6 +750,70 @@ describe('GStrv', function () {
     testSimpleMarshalling('gstrv', ['0', '1', '2'], ['-1', '0', '1', '2']);
 });
 
+describe('Array of GStrv', function () {
+    ['length', 'fixed', 'zero_terminated'].forEach(arrayKind =>
+        ['none', 'container', 'full'].forEach(transfer => {
+            const testFunction = returnMode => {
+                const commonName = 'array_of_gstrv_transfer';
+                const funcName = [arrayKind, commonName, transfer, returnMode].join('_');
+                const func = GIMarshallingTests[funcName];
+                if (!func)
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+                return func;
+            };
+
+            ['out', 'return'].forEach(returnMode =>
+                it(`${arrayKind} ${returnMode} transfer ${transfer}`, function () {
+                    const func = testFunction(returnMode);
+                    expect(func()).toEqual([
+                        ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
+                    ]);
+                }));
+
+            it(`${arrayKind} in transfer ${transfer}`, function () {
+                const func = testFunction('in');
+                if (transfer === 'container')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+                if (arrayKind === 'length' && transfer === 'full')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/561');
+
+                if (['fixed', 'zero_terminated'].includes(arrayKind) &&
+                    transfer === 'none')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/561');
+
+                expect(() => func([
+                    ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
+                ])).not.toThrow();
+            });
+
+            it(`${arrayKind} inout transfer ${transfer}`, function () {
+                const func = testFunction('inout');
+
+                if (transfer === 'container')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+                if (transfer === 'full')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/562');
+
+                if (['fixed', 'zero_terminated'].includes(arrayKind) &&
+                    transfer === 'none')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/561');
+
+                const expectedReturn = [
+                    ['-1', '0', '1', '2'], ['-1', '3', '4', '5'], ['-1', '6', '7', '8'],
+                ];
+
+                if (arrayKind !== 'fixed')
+                    expectedReturn.push(['-1', '9', '10', '11']);
+
+                expect(func([
+                    ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
+                ])).toEqual(expectedReturn);
+            });
+        }));
+});
+
 ['GList', 'GSList'].forEach(listKind => {
     const list = listKind.toLowerCase();
 
