@@ -197,11 +197,15 @@ struct Positioned {
 
 struct Array : BasicType {
     uint8_t m_length_pos = 0;
+    GIDirection m_length_direction : 2;
 
-    void set_array_length(int pos, GITypeTag tag) {
+    Array() : BasicType(), m_length_direction(GI_DIRECTION_IN) {}
+
+    void set_array_length(int pos, GITypeTag tag, GIDirection direction) {
         g_assert(pos >= 0 && pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
         m_length_pos = pos;
+        m_length_direction = direction;
         m_tag = tag;
     }
 };
@@ -403,6 +407,13 @@ struct ExplicitArrayOut : ExplicitArrayInOut {
 struct ReturnArray : ExplicitArrayOut {
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
+        if (m_length_direction != GI_DIRECTION_OUT) {
+            gjs_throw(cx,
+                      "Using different length argument direction for array %s"
+                      "is not supported for out arrays",
+                      m_arg_name);
+            return false;
+        }
         return GenericOut::in(cx, state, arg, value);
     };
 };
@@ -792,6 +803,13 @@ bool ExplicitArrayIn::in(JSContext* cx, GjsFunctionCallState* state,
     void* data;
     size_t length;
 
+    if (m_length_direction != GI_DIRECTION_INOUT &&
+        m_length_direction != GI_DIRECTION_IN) {
+        gjs_throw(cx, "Using different length argument direction for array %s"
+                  "is not supported for in arrays", m_arg_name);
+        return false;
+    }
+
     if (!gjs_array_to_explicit_array(cx, value, &m_type_info, m_arg_name,
                                      GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
                                      &data, &length))
@@ -822,11 +840,13 @@ bool ExplicitArrayInOut::in(JSContext* cx, GjsFunctionCallState* state,
         gjs_arg_unset<void*>(&state->out_cvalue(ix));
         gjs_arg_unset<void*>(&state->inout_original_cvalue(ix));
     } else {
-        state->out_cvalue(length_pos) =
-            state->inout_original_cvalue(length_pos) =
-                state->in_cvalue(length_pos);
-        gjs_arg_set(&state->in_cvalue(length_pos),
-                    &state->out_cvalue(length_pos));
+        if G_LIKELY (m_length_direction == GI_DIRECTION_INOUT) {
+            state->out_cvalue(length_pos) =
+                state->inout_original_cvalue(length_pos) =
+                    state->in_cvalue(length_pos);
+            gjs_arg_set(&state->in_cvalue(length_pos),
+                        &state->out_cvalue(length_pos));
+        }
 
         state->out_cvalue(ix) = state->inout_original_cvalue(ix) = *arg;
         gjs_arg_set(arg, &state->out_cvalue(ix));
@@ -1346,7 +1366,13 @@ bool GenericInOut::out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
 GJS_JSAPI_RETURN_CONVENTION
 bool ExplicitArrayInOut::out(JSContext* cx, GjsFunctionCallState* state,
                              GIArgument* arg, JS::MutableHandleValue value) {
-    GIArgument* length_arg = &(state->out_cvalue(m_length_pos));
+    GIArgument* length_arg;
+
+    if (m_length_direction != GI_DIRECTION_IN)
+        length_arg = &(state->out_cvalue(m_length_pos));
+    else
+        length_arg = &(state->in_cvalue(m_length_pos));
+
     size_t length = gjs_g_argument_get_array_length(m_tag, length_arg);
 
     return gjs_value_from_explicit_array(cx, value, &m_type_info, m_transfer,
@@ -1704,8 +1730,6 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
     GITypeInfo length_type;
     g_arg_info_load_type(&length_arg, &length_type);
 
-    g_assert(direction == g_arg_info_get_direction(&length_arg));
-
     if constexpr (ArgKind == Arg::Kind::RETURN_VALUE) {
         GITransfer transfer = g_callable_info_get_caller_owns(callable);
         array = set_return<Arg::ReturnArray>(type_info, transfer,
@@ -1736,7 +1760,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
             static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL));
     }
 
-    array->set_array_length(length_pos, g_type_info_get_tag(&length_type));
+    array->set_array_length(length_pos, g_type_info_get_tag(&length_type),
+                            g_arg_info_get_direction(&length_arg));
 }
 
 void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {

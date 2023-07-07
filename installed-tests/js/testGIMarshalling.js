@@ -517,6 +517,52 @@ describe('C array with length', function () {
         expect(array).toEqual([-2, -1, 0, 1, 2]);
     });
 
+    it('can be an in-out argument with in length', function () {
+        if (!GIMarshallingTests.array_inout_length_in)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        const array = GIMarshallingTests.array_inout_length_in([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, -1, 1, 2]);
+    });
+
+    xit('can be an out argument with in-out length', function () {
+        const array = GIMarshallingTests.array_out_length_inout(5);
+        expect(array).toEqual([-2, -4, -6, 8, -10, -12]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
+
+    it('cannot be an out argument with in-out length', function () {
+        // TODO(3v1n0): remove this test when fixing
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
+        if (!GIMarshallingTests.array_out_length_inout)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        expect(() => GIMarshallingTests.array_out_length_inout(5)).toThrow();
+    });
+
+    xit('can be an in-out argument with out length', function () {
+        const array = GIMarshallingTests.array_inout_length_out([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, -1, 0, 1, 2]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
+
+    it('cannot be an in-out argument with out length', function () {
+        // TODO(3v1n0): remove this test when fixing
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
+        if (!GIMarshallingTests.array_inout_length_out)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        expect(() => GIMarshallingTests.array_inout_length_out([-1, 0, 1, 2])).toThrow();
+    });
+
+    xit('can be an out argument with in length', function () {
+        const array = GIMarshallingTests.array_out_length_in([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, 0, -2, -4]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
+
+    it('cannot be an out argument with in length', function () {
+        // TODO(3v1n0): remove this test when fixing
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
+        if (!GIMarshallingTests.array_out_length_in)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        expect(() => GIMarshallingTests.array_out_length_in([-1, 0, 1, 2])).toThrow();
+    });
+
     it('can be an out argument along with other arguments', function () {
         let [array, sum] = GIMarshallingTests.array_out_etc(9, 5);
         expect(sum).toEqual(14);
