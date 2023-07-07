@@ -979,7 +979,12 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
     g_return_val_if_reached(0);
 }
 
-template <bool zero_terminated = false>
+enum class ArrayReleaseType {
+    EXPLICIT_LENGTH,
+    ZERO_TERMINATED,
+};
+
+template <ArrayReleaseType release_type = ArrayReleaseType::EXPLICIT_LENGTH>
 static inline bool gjs_g_argument_release_array_internal(
     JSContext* cx, GITransfer element_transfer, GjsArgumentFlags flags,
     GITypeInfo* param_type, unsigned length, GIArgument* arg) {
@@ -992,7 +997,7 @@ static inline bool gjs_g_argument_release_array_internal(
     if (element_transfer != GI_TRANSFER_EVERYTHING)
         return true;
 
-    if constexpr (!zero_terminated) {
+    if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
         if (length == 0)
             return true;
     }
@@ -1016,7 +1021,7 @@ static inline bool gjs_g_argument_release_array_internal(
         GIArgument elem;
         auto* element_start = &arg_array[i * element_size];
 
-        if constexpr (zero_terminated) {
+        if constexpr (release_type == ArrayReleaseType::ZERO_TERMINATED) {
             if (*element_start == 0 &&
                 memcmp(element_start, element_start + 1, element_size - 1) == 0)
                 break;
@@ -1032,7 +1037,7 @@ static inline bool gjs_g_argument_release_array_internal(
             return false;
         }
 
-        if constexpr (!zero_terminated) {
+        if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
             if (i == length - 1)
                 break;
         }
@@ -3097,11 +3102,13 @@ static bool gjs_g_arg_release_internal(
                     element_transfer = GI_TRANSFER_NOTHING;
 
                 if (g_type_info_is_zero_terminated(type_info)) {
-                    return gjs_g_argument_release_array_internal<true>(
+                    return gjs_g_argument_release_array_internal<
+                        ArrayReleaseType::ZERO_TERMINATED>(
                         context, element_transfer,
                         flags | GjsArgumentFlags::ARG_OUT, param_info, 0, arg);
                 } else {
-                    return gjs_g_argument_release_array_internal<false>(
+                    return gjs_g_argument_release_array_internal<
+                        ArrayReleaseType::EXPLICIT_LENGTH>(
                         context, element_transfer,
                         flags | GjsArgumentFlags::ARG_OUT, param_info,
                         g_type_info_get_array_fixed_size(type_info), arg);
