@@ -341,15 +341,17 @@ describe('In-out array in the style of gtk_init()', function () {
         expect(newArray).toEqual([]);
     });
 
-    xit('marshals an inout empty array', function () {
-        const [, newArray] = GIMarshallingTests.init_function([]);
+    it('marshals an inout empty array', function () {
+        const [ret, newArray] = GIMarshallingTests.init_function([]);
+        expect(ret).toBeTrue();
         expect(newArray).toEqual([]);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/88');
+    });
 
-    xit('marshals an inout array', function () {
-        const [, newArray] = GIMarshallingTests.init_function(['--foo', '--bar']);
+    it('marshals an inout array', function () {
+        const [ret, newArray] = GIMarshallingTests.init_function(['--foo', '--bar']);
+        expect(ret).toBeTrue();
         expect(newArray).toEqual(['--foo']);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/88');
+    });
 });
 
 describe('Fixed-size C array', function () {
@@ -508,6 +510,11 @@ describe('C array with length', function () {
 
     it('marshals an array with an 8-bit length parameter', function () {
         expect(() => GIMarshallingTests.array_in_guint8_len([-1, 0, 1, 2])).not.toThrow();
+    });
+
+    it('can be an in-out argument', function () {
+        const array = GIMarshallingTests.array_inout([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, -1, 0, 1, 2]);
     });
 
     it('can be an out argument along with other arguments', function () {

@@ -1412,7 +1412,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool ExplicitArrayInOut::release(JSContext* cx, GjsFunctionCallState* state,
                                  GIArgument* in_arg [[maybe_unused]],
                                  GIArgument* out_arg) {
-    GIArgument* length_arg = &state->in_cvalue(m_length_pos);
+    GIArgument* length_arg = &state->out_cvalue(m_length_pos);
     size_t length = gjs_g_argument_get_array_length(m_tag, length_arg);
 
     // For inout, transfer refers to what we get back from the function; for
@@ -1703,6 +1703,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
     g_callable_info_load_arg(callable, length_pos, &length_arg);
     GITypeInfo length_type;
     g_arg_info_load_type(&length_arg, &length_type);
+
+    g_assert(direction == g_arg_info_get_direction(&length_arg));
 
     if constexpr (ArgKind == Arg::Kind::RETURN_VALUE) {
         GITransfer transfer = g_callable_info_get_caller_owns(callable);
