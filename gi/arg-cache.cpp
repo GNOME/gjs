@@ -1518,12 +1518,20 @@ bool ExplicitArrayInOut::release(JSContext* cx, GjsFunctionCallState* state,
     // freeing it.
 
     GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
-    if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg) &&
-        !gjs_g_argument_release_in_array(cx, GI_TRANSFER_NOTHING, &m_type_info,
-                                         length, original_out_arg))
-        return false;
+    // Due to https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
+    // Here we've to guess what to do, but in general is "better" to leak than
+    // crash, so let's assume that in/out transfer is matching.
+    if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg)) {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        if (!gjs_g_argument_release_in_array(cx, transfer, &m_type_info, length,
+                                             original_out_arg))
+            return false;
+    }
 
-    return gjs_g_argument_release_out_array(cx, m_transfer, &m_type_info,
+    GITransfer transfer =
+        state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+    return gjs_g_argument_release_out_array(cx, transfer, &m_type_info,
                                             length, out_arg);
 }
 

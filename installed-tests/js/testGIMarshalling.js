@@ -786,9 +786,6 @@ describe('Array of GStrv', function () {
                 if (transfer === 'container')
                     pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
 
-                if (transfer === 'full')
-                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/562');
-
                 const expectedReturn = [
                     ['-1', '0', '1', '2'], ['-1', '3', '4', '5'], ['-1', '6', '7', '8'],
                 ];
