@@ -1020,16 +1020,21 @@ static inline bool gjs_g_argument_release_array_internal(
     for (size_t i = 0;; i++) {
         GIArgument elem;
         auto* element_start = &arg_array[i * element_size];
+        auto* pointer =
+            is_pointer ? *reinterpret_cast<uint8_t**>(element_start) : nullptr;
 
         if constexpr (release_type == ArrayReleaseType::ZERO_TERMINATED) {
-            if (*element_start == 0 &&
-                memcmp(element_start, element_start + 1, element_size - 1) == 0)
+            if (is_pointer) {
+                if (!pointer)
+                    break;
+            } else if (*element_start == 0 &&
+                       memcmp(element_start, element_start + 1,
+                              element_size - 1) == 0) {
                 break;
+            }
         }
 
-        gjs_arg_set(&elem, is_pointer
-                               ? *reinterpret_cast<uint8_t**>(element_start)
-                               : element_start);
+        gjs_arg_set(&elem, is_pointer ? pointer : element_start);
         JS::AutoSaveExceptionState saved_exc(cx);
         if (!gjs_g_arg_release_internal(cx, element_transfer, param_type,
                                         type_tag, GJS_ARGUMENT_ARRAY_ELEMENT,
