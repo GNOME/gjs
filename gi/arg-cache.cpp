@@ -733,6 +733,78 @@ struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
                  GIArgument*) override;
 };
 
+struct ZeroTerminatedArrayInOut : GenericInOut {
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument*,
+                 GIArgument* out_arg) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
+        if (!gjs_g_argument_release_in_array(cx, transfer, &m_type_info,
+                                             original_out_arg))
+            return false;
+
+        transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_EVERYTHING;
+        return gjs_g_argument_release_out_array(cx, transfer, &m_type_info,
+                                                out_arg);
+    }
+};
+
+struct ZeroTerminatedArrayIn : GenericIn, Nullable {
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument*) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        return gjs_g_argument_release_in_array(cx, transfer, &m_type_info,
+                                               in_arg);
+    }
+
+    GjsArgumentFlags flags() const override {
+        return Argument::flags() | Nullable::flags();
+    }
+};
+
+struct FixedSizeArrayIn : GenericIn {
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument*) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        int size = g_type_info_get_array_fixed_size(&m_type_info);
+        return gjs_g_argument_release_in_array(cx, transfer, &m_type_info, size,
+                                               in_arg);
+    }
+};
+
+struct FixedSizeArrayInOut : GenericInOut {
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument*,
+                 GIArgument* out_arg) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
+        int size = g_type_info_get_array_fixed_size(&m_type_info);
+        if (!gjs_g_argument_release_in_array(cx, transfer, &m_type_info, size,
+                                             original_out_arg))
+            return false;
+
+        transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_EVERYTHING;
+        return gjs_g_argument_release_out_array(cx, transfer, &m_type_info,
+                                                size, out_arg);
+    }
+};
+
 GJS_JSAPI_RETURN_CONVENTION
 bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
                            GIArgument*, JS::HandleValue) {
@@ -2290,6 +2362,22 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
             }
 
             return;
+        } else if (g_type_info_is_zero_terminated(&type_info)) {
+            if (direction == GI_DIRECTION_IN) {
+                set_argument_auto<Arg::ZeroTerminatedArrayIn>(common_args);
+                return;
+            } else if (direction == GI_DIRECTION_INOUT) {
+                set_argument_auto<Arg::ZeroTerminatedArrayInOut>(common_args);
+                return;
+            }
+        } else if (g_type_info_get_array_fixed_size(&type_info) >= 0) {
+            if (direction == GI_DIRECTION_IN) {
+                set_argument_auto<Arg::FixedSizeArrayIn>(common_args);
+                return;
+            } else if (direction == GI_DIRECTION_INOUT) {
+                set_argument_auto<Arg::FixedSizeArrayInOut>(common_args);
+                return;
+            }
         }
     }
 

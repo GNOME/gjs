@@ -775,13 +775,6 @@ describe('Array of GStrv', function () {
                 if (transfer === 'container')
                     pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
 
-                if (arrayKind === 'length' && transfer === 'full')
-                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/561');
-
-                if (['fixed', 'zero_terminated'].includes(arrayKind) &&
-                    transfer === 'none')
-                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/561');
-
                 expect(() => func([
                     ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
                 ])).not.toThrow();
@@ -795,10 +788,6 @@ describe('Array of GStrv', function () {
 
                 if (transfer === 'full')
                     pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/562');
-
-                if (['fixed', 'zero_terminated'].includes(arrayKind) &&
-                    transfer === 'none')
-                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/561');
 
                 const expectedReturn = [
                     ['-1', '0', '1', '2'], ['-1', '3', '4', '5'], ['-1', '6', '7', '8'],

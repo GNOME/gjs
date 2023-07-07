@@ -3312,9 +3312,25 @@ bool gjs_g_argument_release_in_array(JSContext* context, GITransfer transfer,
                       "Releasing GArgument array in param");
 
     GjsAutoTypeInfo param_type = g_type_info_get_param_type(type_info, 0);
-    return gjs_g_argument_release_array_internal(
-        context, GI_TRANSFER_EVERYTHING, GjsArgumentFlags::ARG_IN, param_type,
-        length, arg);
+    return gjs_g_argument_release_array_internal<
+        ArrayReleaseType::EXPLICIT_LENGTH>(context, GI_TRANSFER_EVERYTHING,
+                                           GjsArgumentFlags::ARG_IN, param_type,
+                                           length, arg);
+}
+
+bool gjs_g_argument_release_in_array(JSContext* context, GITransfer transfer,
+                                     GITypeInfo* type_info, GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        return true;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GArgument array in param");
+
+    GjsAutoTypeInfo param_type = g_type_info_get_param_type(type_info, 0);
+    return gjs_g_argument_release_array_internal<
+        ArrayReleaseType::ZERO_TERMINATED>(context, GI_TRANSFER_EVERYTHING,
+                                           GjsArgumentFlags::ARG_IN, param_type,
+                                           0, arg);
 }
 
 bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
@@ -3331,7 +3347,27 @@ bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
                                       : GI_TRANSFER_EVERYTHING;
 
     GjsAutoTypeInfo param_type = g_type_info_get_param_type(type_info, 0);
-    return gjs_g_argument_release_array_internal(context, element_transfer,
-                                                 GjsArgumentFlags::ARG_OUT,
-                                                 param_type, length, arg);
+    return gjs_g_argument_release_array_internal<
+        ArrayReleaseType::EXPLICIT_LENGTH>(context, element_transfer,
+                                           GjsArgumentFlags::ARG_OUT,
+                                           param_type, length, arg);
+}
+
+bool gjs_g_argument_release_out_array(JSContext* context, GITransfer transfer,
+                                      GITypeInfo* type_info, GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return true;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GArgument array out param");
+
+    GITransfer element_transfer = transfer == GI_TRANSFER_CONTAINER
+                                      ? GI_TRANSFER_NOTHING
+                                      : GI_TRANSFER_EVERYTHING;
+
+    GjsAutoTypeInfo param_type = g_type_info_get_param_type(type_info, 0);
+    return gjs_g_argument_release_array_internal<
+        ArrayReleaseType::ZERO_TERMINATED>(context, element_transfer,
+                                           GjsArgumentFlags::ARG_OUT,
+                                           param_type, 0, arg);
 }
