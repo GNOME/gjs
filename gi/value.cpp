@@ -615,6 +615,19 @@ gjs_value_to_g_value_internal(JSContext      *context,
                                        gjs_byte_array_get_byte_array(obj));
                     return true;
                 }
+            } else if (gtype == G_TYPE_ARRAY) {
+                gjs_throw(context, "Converting %s to GArray is not supported",
+                          JS::InformalValueTypeName(value));
+                return false;
+            } else if (gtype == G_TYPE_PTR_ARRAY) {
+                gjs_throw(context, "Converting %s to GArray is not supported",
+                          JS::InformalValueTypeName(value));
+                return false;
+            } else if (gtype == G_TYPE_HASH_TABLE) {
+                gjs_throw(context,
+                          "Converting %s to GHashTable is not supported",
+                          JS::InformalValueTypeName(value));
+                return false;
             } else {
                 GjsAutoBaseInfo registered =
                     g_irepository_find_by_gtype(nullptr, gtype);
