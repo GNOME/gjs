@@ -1218,6 +1218,15 @@ describe('Life, the Universe and Everything', function () {
                 o.emit_sig_with_obj();
             });
 
+            it('signal with object with gets correct arguments from JS', function (done) {
+                o.connect('sig-with-obj', (self, objectParam) => {
+                    expect(objectParam.int).toEqual(33);
+                    done();
+                });
+                const testObj = new Regress.TestObj({int: 33});
+                o.emit('sig-with-obj', testObj);
+            });
+
             // See testCairo.js for a test of
             // Regress.TestObj::sig-with-foreign-struct.
 
@@ -1239,6 +1248,26 @@ describe('Life, the Universe and Everything', function () {
                 o.emit_sig_with_uint64();
             }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/271');
 
+            xit('signal with array parameter is properly handled', function (done) {
+                o.connect('sig-with-array-prop', (signalObj, signalArray, shouldBeUndefined) => {
+                    expect(signalObj).toBe(o);
+                    expect(shouldBeUndefined).not.toBeDefined();
+                    expect(signalArray).toEqual([0, 1, 2, 3, 4, 5]);
+                    done();
+                });
+                o.emit('sig-with-array-prop', [0, 1, 2, 3, 4, 5]);
+            }).pend('Not yet implemented');
+
+            xit('signal with hash parameter is properly handled', function (done) {
+                o.connect('sig-with-hash-prop', (signalObj, signalArray, shouldBeUndefined) => {
+                    expect(signalObj).toBe(o);
+                    expect(shouldBeUndefined).not.toBeDefined();
+                    expect(signalArray).toEqual([0, 1, 2, 3, 4, 5]);
+                    done();
+                });
+                o.emit('sig-with-hash-prop', {'0': 1});
+            }).pend('Not yet implemented');
+
             it('signal with array len parameter is not passed correct array and no length arg', function (done) {
                 o.connect('sig-with-array-len-prop', (signalObj, signalArray, shouldBeUndefined) => {
                     expect(shouldBeUndefined).not.toBeDefined();
@@ -1247,6 +1276,29 @@ describe('Life, the Universe and Everything', function () {
                 });
                 o.emit_sig_with_array_len_prop();
             });
+
+            it('signal with GStrv parameter is properly handled', function (done) {
+                o.connect('sig-with-strv', (signalObj, signalArray, shouldBeUndefined) => {
+                    expect(signalObj).toBe(o);
+                    expect(shouldBeUndefined).not.toBeDefined();
+                    expect(signalArray).toEqual(['a', 'bb', 'ccc']);
+                    done();
+                });
+                o.emit('sig-with-strv', ['a', 'bb', 'ccc']);
+            });
+
+            xit('signal with int array ret parameter is properly handled', function (done) {
+                o.connect('sig-with-intarray-ret', (signalObj, signalInt, shouldBeUndefined) => {
+                    expect(signalObj).toBe(o);
+                    expect(shouldBeUndefined).not.toBeDefined();
+                    expect(signalInt).toEqual(5);
+                    const ret = [];
+                    for (let i = 0; i < signalInt; ++i)
+                        ret.push(i);
+                    done();
+                });
+                expect(o.emit('sig-with-intarray-ret', 5)).toBe([0, 1, 2, 3, 4]);
+            }).pend('Not yet implemented');
 
             xit('can pass parameter to signal with array len parameter via emit', function (done) {
                 o.connect('sig-with-array-len-prop', (signalObj, signalArray) => {
@@ -1286,6 +1338,25 @@ describe('Life, the Universe and Everything', function () {
                     done();
                 });
                 o.emit_sig_with_null_error();
+            });
+
+            it('GError signal with no GError set from js', function (done) {
+                o.connect('sig-with-gerror', (obj, e) => {
+                    expect(e).toBeNull();
+                    done();
+                });
+                o.emit('sig-with-gerror', null);
+            });
+
+            it('GError signal with no GError set from js', function (done) {
+                o.connect('sig-with-gerror', (obj, e) => {
+                    expect(e).toEqual(jasmine.any(Gio.IOErrorEnum));
+                    expect(e.domain).toEqual(Gio.io_error_quark());
+                    expect(e.code).toEqual(Gio.IOErrorEnum.EXISTS);
+                    done();
+                });
+                o.emit('sig-with-gerror', new GLib.Error(Gio.IOErrorEnum,
+                    Gio.IOErrorEnum.EXISTS, 'We support this!'));
             });
         });
 
