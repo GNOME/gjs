@@ -2111,4 +2111,13 @@ describe('GObject signals', function () {
         new GIMarshallingTests.BoxedStruct({long_: 43}),
         new GIMarshallingTests.BoxedStruct({long_: 44}),
     ]);
+
+    testSignalEmission('hash-table-utf8-int', {
+        '-1': 1,
+        '0': 0,
+        '1': -1,
+        '2': -2,
+    }, !GIMarshallingTests.SignalsObject.prototype.emit_hash_table_utf8_int
+        ? 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409'
+        : false);
 });

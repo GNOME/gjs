@@ -941,9 +941,21 @@ static bool gjs_value_from_g_value_internal(
             return false;
         }
     } else if (gtype == G_TYPE_HASH_TABLE) {
-        gjs_throw(context,
-                  "Unable to introspect element-type of container in GValue");
-        return false;
+        if (!arg_info) {
+            gjs_throw(context, "Failed to get GValue from Hash Table without"
+                      "signal information");
+            return false;
+        }
+        GjsAutoTypeInfo key_info = g_type_info_get_param_type(type_info, 0);
+        GjsAutoTypeInfo value_info = g_type_info_get_param_type(type_info, 1);
+        GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
+
+        if (!gjs_object_from_g_hash(
+                context, value_p, key_info, value_info, transfer,
+                static_cast<GHashTable*>(g_value_get_boxed(gvalue)))) {
+            gjs_throw(context, "Failed to convert Hash Table");
+            return false;
+        }
     } else if (g_type_is_a(gtype, G_TYPE_BOXED) || gtype == G_TYPE_VARIANT) {
         void *gboxed;
         JSObject *obj;

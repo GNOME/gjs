@@ -2392,12 +2392,10 @@ static bool gjs_array_from_zero_terminated_c_array(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_object_from_g_hash(JSContext* context,
-                                   JS::MutableHandleValue value_p,
-                                   GITypeInfo* key_param_info,
-                                   GITypeInfo* val_param_info,
-                                   GITransfer transfer, GHashTable* hash) {
+bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
+                            GITypeInfo* key_param_info,
+                            GITypeInfo* val_param_info, GITransfer transfer,
+                            GHashTable* hash) {
     GHashTableIter iter;
     GArgument keyarg, valarg;
 
