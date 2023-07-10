@@ -64,29 +64,25 @@ static bool gjs_value_from_g_value_internal(JSContext             *context,
  * only works for signals on introspected GObjects, not signals on GJS-defined
  * GObjects nor standalone closures. The return value must be unreffed.
  */
-[[nodiscard]] static GISignalInfo* get_signal_info_if_available(
+[[nodiscard]] static GjsAutoSignalInfo get_signal_info_if_available(
     GSignalQuery* signal_query) {
-    GIBaseInfo *obj;
     GIInfoType info_type;
-    GISignalInfo *signal_info = NULL;
 
     if (!signal_query->itype)
-        return NULL;
+        return nullptr;
 
-    obj = g_irepository_find_by_gtype(NULL, signal_query->itype);
+    GjsAutoBaseInfo obj =
+        g_irepository_find_by_gtype(nullptr, signal_query->itype);
     if (!obj)
-        return NULL;
+        return nullptr;
 
     info_type = g_base_info_get_type (obj);
     if (info_type == GI_INFO_TYPE_OBJECT)
-      signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
-                                              signal_query->signal_name);
+        return g_object_info_find_signal(obj, signal_query->signal_name);
     else if (info_type == GI_INFO_TYPE_INTERFACE)
-      signal_info = g_interface_info_find_signal((GIInterfaceInfo*)obj,
-                                                 signal_query->signal_name);
-    g_base_info_unref((GIBaseInfo*)obj);
+        return g_interface_info_find_signal(obj, signal_query->signal_name);
 
-    return signal_info;
+    return nullptr;
 }
 
 /*
@@ -130,7 +126,6 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     JSContext *context;
     unsigned i;
     GSignalQuery signal_query = { 0, };
-    GISignalInfo *signal_info;
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
 
@@ -199,14 +194,14 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     GjsAutoPointer<GITypeInfo> type_info_for =
         g_new0(GITypeInfo, n_param_values);
 
-    signal_info = get_signal_info_if_available(&signal_query);
+    GjsAutoSignalInfo signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
         /* Start at argument 1, skip the instance parameter */
         for (i = 1; i < n_param_values; ++i) {
-            GIArgInfo *arg_info;
             int array_len_pos;
 
-            arg_info = g_callable_info_get_arg(signal_info, i - 1);
+            GjsAutoArgInfo arg_info =
+                g_callable_info_get_arg(signal_info, i - 1);
             g_arg_info_load_type(arg_info, &type_info_for[i]);
 
             array_len_pos = g_type_info_get_array_length(&type_info_for[i]);
@@ -214,11 +209,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                 skip[array_len_pos + 1] = true;
                 array_len_indices_for[i] = array_len_pos + 1;
             }
-
-            g_base_info_unref((GIBaseInfo *)arg_info);
         }
-
-        g_base_info_unref((GIBaseInfo *)signal_info);
     }
 
     JS::RootedValueVector argv(context);
@@ -626,7 +617,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
                     return true;
                 }
             } else {
-                GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
+                GjsAutoBaseInfo registered =
+                    g_irepository_find_by_gtype(nullptr, gtype);
 
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
@@ -931,7 +923,8 @@ gjs_value_from_g_value_internal(JSContext             *context,
             return false;
         }
 
-        GISignalInfo* signal_info = get_signal_info_if_available(signal_query);
+        GjsAutoSignalInfo signal_info =
+            get_signal_info_if_available(signal_query);
         if (!signal_info) {
             gjs_throw(context, "Unknown signal");
             return false;
@@ -939,9 +932,11 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         // Look for element-type
         GITypeInfo type_info;
-        GIArgInfo* arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
+        GjsAutoArgInfo arg_info =
+            g_callable_info_get_arg(signal_info, arg_n - 1);
         g_arg_info_load_type(arg_info, &type_info);
-        GITypeInfo* element_info = g_type_info_get_param_type(&type_info, 0);
+        GjsAutoTypeInfo element_info =
+            g_type_info_get_param_type(&type_info, 0);
 
         if (!gjs_array_from_g_value_array(
                 context, value_p, element_info,
@@ -1040,19 +1035,18 @@ gjs_value_from_g_value_internal(JSContext             *context,
         obj = gjs_param_from_g_param(context, gparam);
         value_p.setObjectOrNull(obj);
     } else if (signal_query && g_type_is_a(gtype, G_TYPE_POINTER)) {
-        bool res;
         GArgument arg;
-        GIArgInfo *arg_info;
-        GISignalInfo *signal_info;
         GITypeInfo type_info;
 
-        signal_info = get_signal_info_if_available(signal_query);
+        GjsAutoSignalInfo signal_info =
+            get_signal_info_if_available(signal_query);
         if (!signal_info) {
             gjs_throw(context, "Unknown signal.");
             return false;
         }
 
-        arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
+        GjsAutoArgInfo arg_info =
+            g_callable_info_get_arg(signal_info, arg_n - 1);
         g_arg_info_load_type(arg_info, &type_info);
 
         g_assert(((void) "Check gjs_value_from_array_and_length_values() before"
@@ -1061,11 +1055,8 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         gjs_arg_set(&arg, g_value_get_pointer(gvalue));
 
-        res = gjs_value_from_g_argument(context, value_p, &type_info, &arg, true);
-
-        g_base_info_unref((GIBaseInfo*)arg_info);
-        g_base_info_unref((GIBaseInfo*)signal_info);
-        return res;
+        return gjs_value_from_g_argument(context, value_p, &type_info, &arg,
+                                         true);
     } else if (gtype == G_TYPE_GTYPE) {
         GType gvalue_gtype = g_value_get_gtype(gvalue);
 
