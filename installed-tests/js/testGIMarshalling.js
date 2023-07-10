@@ -2100,7 +2100,7 @@ describe('GObject signals', function () {
             }
 
             const signalName = `some_${type}`;
-            const funcName = `emit_${type}`.replace(/-/g, '_');
+            const funcName = `emit_${type}`.replaceAll('-', '_');
             const signalId = obj.connect(signalName, signalCallback);
             obj[funcName]();
             obj.disconnect(signalId);
