@@ -571,7 +571,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return true;
 
         /* special case GValue */
-        if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+        if (gtype == G_TYPE_VALUE) {
             /* explicitly handle values that are already GValues
                to avoid infinite recursion */
             if (value.isObject()) {
@@ -599,15 +599,15 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (g_type_is_a(gtype, ObjectBox::gtype())) {
+            if (gtype == ObjectBox::gtype()) {
                 g_value_set_boxed(gvalue, ObjectBox::boxed(context, obj).get());
                 return true;
-            } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+            } else if (gtype == G_TYPE_ERROR) {
                 /* special case GError */
                 gboxed = ErrorBase::to_c_ptr(context, obj);
                 if (!gboxed)
                     return false;
-            } else if (g_type_is_a(gtype, G_TYPE_BYTE_ARRAY)) {
+            } else if (gtype == G_TYPE_BYTE_ARRAY) {
                 /* special case GByteArray */
                 JS::RootedObject obj(context, &value.toObject());
                 if (JS_IsUint8Array(obj)) {
@@ -667,7 +667,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             g_value_set_static_boxed(gvalue, gboxed);
         else
             g_value_set_boxed(gvalue, gboxed);
-    } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+    } else if (gtype == G_TYPE_VARIANT) {
         GVariant *variant = NULL;
 
         if (value.isNull()) {
@@ -736,7 +736,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         }
 
         g_value_set_param(gvalue, (GParamSpec*) gparam);
-    } else if (g_type_is_a(gtype, G_TYPE_GTYPE)) {
+    } else if (gtype == G_TYPE_GTYPE) {
         GType type;
 
         if (!value.isObject())
@@ -896,11 +896,9 @@ static bool gjs_value_from_g_value_internal(
             gjs_throw(context, "Failed to convert strv to array");
             return false;
         }
-    } else if (g_type_is_a(gtype, G_TYPE_ARRAY) ||
-               g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
-               g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
-
-        if (g_type_is_a(gtype, G_TYPE_BYTE_ARRAY)) {
+    } else if (gtype == G_TYPE_ARRAY || gtype == G_TYPE_BYTE_ARRAY ||
+               gtype == G_TYPE_PTR_ARRAY) {
+        if (gtype == G_TYPE_BYTE_ARRAY) {
             auto* byte_array = static_cast<GByteArray*>(g_value_get_boxed(gvalue));
             JSObject* array =
                 gjs_byte_array_from_byte_array(context, byte_array);
@@ -925,12 +923,11 @@ static bool gjs_value_from_g_value_internal(
             gjs_throw(context, "Failed to convert array");
             return false;
         }
-    } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE)) {
+    } else if (gtype == G_TYPE_HASH_TABLE) {
         gjs_throw(context,
                   "Unable to introspect element-type of container in GValue");
         return false;
-    } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
-               g_type_is_a(gtype, G_TYPE_VARIANT)) {
+    } else if (g_type_is_a(gtype, G_TYPE_BOXED) || gtype == G_TYPE_VARIANT) {
         void *gboxed;
         JSObject *obj;
 
@@ -946,7 +943,7 @@ static bool gjs_value_from_g_value_internal(
             return true;
         }
 
-        if (g_type_is_a(gtype, ObjectBox::gtype())) {
+        if (gtype == ObjectBox::gtype()) {
             obj = ObjectBox::object_for_c_ptr(context,
                                               static_cast<ObjectBox*>(gboxed));
             if (!obj)
@@ -956,7 +953,7 @@ static bool gjs_value_from_g_value_internal(
         }
 
         /* special case GError */
-        if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+        if (gtype == G_TYPE_ERROR) {
             obj = ErrorInstance::object_for_c_ptr(context,
                                                   static_cast<GError*>(gboxed));
             if (!obj)
@@ -966,7 +963,7 @@ static bool gjs_value_from_g_value_internal(
         }
 
         /* special case GValue */
-        if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+        if (gtype == G_TYPE_VALUE) {
             return gjs_value_from_g_value(context, value_p,
                                           static_cast<GValue *>(gboxed));
         }
