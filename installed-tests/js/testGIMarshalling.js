@@ -2084,7 +2084,7 @@ describe('GObject properties', function () {
     });
 });
 
-xdescribe('GObject signals', function () {
+describe('GObject signals', function () {
     let obj;
     beforeEach(function () {
         obj = new GIMarshallingTests.SignalsObject();
