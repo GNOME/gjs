@@ -3212,7 +3212,7 @@ static bool gjs_g_arg_release_internal(
             GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>
                 hash_table = gjs_arg_steal<GHashTable*>(arg);
             if (transfer == GI_TRANSFER_CONTAINER)
-                g_hash_table_steal_all(hash_table);
+                g_hash_table_remove_all(hash_table);
             else {
                 GHR_closure c = {context,  nullptr, nullptr,
                                  transfer, flags,   false};
