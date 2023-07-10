@@ -306,12 +306,16 @@ struct GjsAutoInfo : GjsAutoBaseInfo {
     // to conform to the interface of std::unique_ptr here.
     GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
         : GjsAutoBaseInfo(ptr) {
+#ifndef G_DISABLE_CAST_CHECKS
         validate();
+#endif
     }
 
     void reset(GIBaseInfo* other = nullptr) {
         GjsAutoBaseInfo::reset(other);
+#ifndef G_DISABLE_CAST_CHECKS
         validate();
+#endif
     }
 
     // You should not need this method, because you already know the answer.
