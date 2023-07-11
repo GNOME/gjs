@@ -7,7 +7,6 @@
 #include <stddef.h>  // for NULL
 #include <stdint.h>
 
-#include <sstream>
 #include <string>
 
 #include <girepository.h>
@@ -126,7 +125,8 @@ gjs_value_from_array_and_length_values(JSContext             *context,
 
 // FIXME(3v1n0): Move into closure.cpp one day...
 void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
-                           const GValue* param_values, void* invocation_hint,
+                           const GValue* param_values,
+                           void* invocation_hint [[maybe_unused]],
                            void* marshal_data) {
     JSContext *context;
     unsigned i;
@@ -142,30 +142,6 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     context = m_cx;
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    if (G_UNLIKELY(gjs->sweeping())) {
-        GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
-        std::ostringstream message;
-
-        message << "Attempting to call back into JSAPI during the sweeping "
-                   "phase of GC. This is most likely caused by not destroying "
-                   "a Clutter actor or Gtk+ widget with ::destroy signals "
-                   "connected, but can also be caused by using the destroy(), "
-                   "dispose(), or remove() vfuncs. Because it would crash the "
-                   "application, it has been blocked and the JS callback not "
-                   "invoked.";
-        if (hint) {
-            gpointer instance;
-            g_signal_query(hint->signal_id, &signal_query);
-
-            instance = g_value_peek_pointer(&param_values[0]);
-            message << "\nThe offending signal was " << signal_query.signal_name
-                    << " on " << g_type_name(G_TYPE_FROM_INSTANCE(instance))
-                    << " " << instance << ".";
-        }
-        message << "\n" << gjs_dumpstack_string();
-        g_critical("%s", message.str().c_str());
-        return;
-    }
 
     JSAutoRealm ar(context, callable());
 

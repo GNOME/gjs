@@ -317,20 +317,28 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     JSContext* context = this->context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    if (G_UNLIKELY(gjs->sweeping())) {
-        warn_about_illegal_js_callback(
-            "during garbage collection",
-            "destroying a Clutter actor or GTK widget with ::destroy signal "
-            "connected, or using the destroy(), dispose(), or remove() vfuncs",
-            true);
-        return;
-    }
-
     if (G_UNLIKELY(!gjs->is_owner_thread())) {
         warn_about_illegal_js_callback("on a different thread",
                                        "an API not intended to be used in JS",
                                        false);
         return;
+    }
+
+    GObject* gobj = nullptr;
+    if (m_is_vfunc) {
+        gobj = G_OBJECT(gjs_arg_get<GObject*>(args[0]));
+
+        // If the first argument is nullptr or no instance wrapper
+        // exists for the GObject, we've started tearing down the
+        // object
+        if (!gobj || !ObjectInstance::for_gobject(gobj)) {
+        warn_about_illegal_js_callback(
+            "while object is tearing down",
+            "destroying a Clutter actor or GTK widget with ::destroy signal "
+            "connected, or using the destroy(), dispose(), or remove() vfuncs",
+            true);
+        return;
+        }
     }
 
     JSAutoRealm ar(context, callable());
@@ -360,21 +368,20 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     AutoCallbackData callback_data(this, gjs);
     JS::RootedObject this_object(context);
     int c_args_offset = 0;
-    GObject* gobj = nullptr;
-    if (m_is_vfunc) {
-        gobj = G_OBJECT(gjs_arg_get<GObject*>(args[0]));
-        if (gobj) {
-            this_object = ObjectInstance::wrapper_from_gobject(context, gobj);
-            if (!this_object) {
-                if (g_object_get_qdata(gobj, ObjectBase::disposed_quark())) {
-                    warn_about_illegal_js_callback(
-                        "on disposed object",
-                        "using the destroy(), dispose(), or remove() vfuncs",
-                        false);
-                }
-                gjs_log_exception(context);
-                return;
+
+    // If gobj is not nullptr, we need to check if there is still an associated
+    // instance wrapper before invoking the callback
+    if (gobj) {
+        this_object = ObjectInstance::wrapper_from_gobject(context, gobj);
+        if (!this_object) {
+            if (g_object_get_qdata(gobj, ObjectBase::disposed_quark())) {
+                warn_about_illegal_js_callback(
+                    "on disposed object",
+                    "using the destroy(), dispose(), or remove() vfuncs",
+                    false);
             }
+            gjs_log_exception(context);
+            return;
         }
 
         /* "this" is not included in the GI signature, but is in the C (and

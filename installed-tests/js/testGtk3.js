@@ -177,7 +177,7 @@ describe('Gtk overrides', function () {
 
     it('avoid crashing when GTK vfuncs are called in garbage collection', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during garbage collection*offending callback was destroy()*');
+            '*while object is tearing down*offending callback was destroy()*');
 
         const BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
             vfunc_destroy() {}
@@ -204,7 +204,7 @@ describe('Gtk overrides', function () {
         expect(spy).toHaveBeenCalledTimes(1);
 
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during garbage collection*offending callback was destroy()*');
+            '*while object is tearing down*offending callback was destroy()*');
         label = null;
         System.gc();
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
@@ -226,6 +226,22 @@ describe('Gtk overrides', function () {
         expect(label.label).toBe('Hello');
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,
             'GTK destroy signal is emitted while disposing objects');
+    });
+
+    it('destroy signal is not emitted when objects are garbage collected', function () {
+        let label = new Gtk.Label({label: 'Hello'});
+        const handleDispose = jasmine.createSpy('handleDispose').and.callFake(() => {
+            expect(label.label).toBe('Hello');
+        });
+        label.connect('destroy', handleDispose);
+
+        label = null;
+
+        System.gc();
+
+        System.gc();
+
+        expect(handleDispose).not.toHaveBeenCalledWith(label);
     });
 
     it('accepts string in place of GdkAtom', function () {
