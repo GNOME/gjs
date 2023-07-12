@@ -2095,15 +2095,13 @@ describe('GObject signals', function () {
             if (skip)
                 pending(skip);
 
-            function signalCallback(o, arg) {
-                expect(value).toEqual(arg);
-            }
-
+            const signalCallback = jasmine.createSpy('signalCallback');
             const signalName = `some_${type}`;
             const funcName = `emit_${type}`.replaceAll('-', '_');
             const signalId = obj.connect(signalName, signalCallback);
             obj[funcName]();
             obj.disconnect(signalId);
+            expect(signalCallback).toHaveBeenCalledOnceWith(obj, value);
         });
     }
 
