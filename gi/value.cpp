@@ -14,12 +14,12 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
 #include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
-#include <js/PropertyAndElement.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -44,7 +44,6 @@
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
-#include "gjs/atoms.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -555,41 +554,25 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
-        if (value.isNull()) {
-            /* do nothing */
-        } else if (value.isObject()) {
-            bool found_length;
+        if (value.isNull())
+            return true;
 
-            const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-            JS::RootedObject array_obj(context, &value.toObject());
-            if (!JS_HasPropertyById(context, array_obj, atoms.length(),
-                                    &found_length))
-                return false;
-            if (found_length) {
-                guint32 length;
-
-                if (!gjs_object_require_converted_property(
-                        context, array_obj, nullptr, atoms.length(), &length)) {
-                    JS_ClearPendingException(context);
-                    return throw_expect_type(context, value, "strv");
-                } else {
-                    void *result;
-                    char **strv;
-
-                    if (!gjs_array_to_strv (context,
-                                            value,
-                                            length, &result))
-                        return false;
-                    /* cast to strv in a separate step to avoid type-punning */
-                    strv = (char**) result;
-                    g_value_take_boxed (gvalue, strv);
-                }
-            } else {
-                return throw_expect_type(context, value, "strv");
-            }
-        } else {
+        bool is_array;
+        if (!JS::IsArrayObject(context, value, &is_array))
+            return false;
+        if (!is_array)
             return throw_expect_type(context, value, "strv");
-        }
+
+        JS::RootedObject array_obj(context, &value.toObject());
+        uint32_t length;
+        if (!JS::GetArrayLength(context, array_obj, &length))
+            return throw_expect_type(context, value, "strv");
+
+        void* result;
+        if (!gjs_array_to_strv(context, value, length, &result))
+            return false;
+
+        g_value_take_boxed(gvalue, static_cast<char**>(result));
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         void *gboxed;
 
