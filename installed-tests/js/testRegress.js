@@ -1227,6 +1227,28 @@ describe('Life, the Universe and Everything', function () {
                 o.emit('sig-with-obj', testObj);
             });
 
+            it('signal with object with full transport gets correct arguments', function (done) {
+                if (!GObject.signal_lookup('sig-with-obj-full', Regress.TestObj.$gtype))
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
+                o.connect('sig-with-obj-full', (self, objectParam) => {
+                    expect(objectParam.int).toEqual(5);
+                    done();
+                });
+                o.emit_sig_with_obj_full();
+            });
+
+            it('signal with object with full transport gets correct arguments from JS', function (done) {
+                if (!GObject.signal_lookup('sig-with-obj-full', Regress.TestObj.$gtype))
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
+
+                o.connect('sig-with-obj-full', (self, objectParam) => {
+                    expect(objectParam.int).toEqual(55);
+                    done();
+                });
+                const testObj = new Regress.TestObj({int: 55});
+                o.emit('sig-with-obj-full', testObj);
+            });
+
             // See testCairo.js for a test of
             // Regress.TestObj::sig-with-foreign-struct.
 
@@ -1286,6 +1308,31 @@ describe('Life, the Universe and Everything', function () {
                 });
                 o.emit('sig-with-strv', ['a', 'bb', 'ccc']);
             });
+
+            it('signal with GStrv parameter and transfer full is properly handled from JS', function (done) {
+                if (!GObject.signal_lookup('sig-with-strv-full', Regress.TestObj.$gtype))
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
+
+                o.connect('sig-with-strv-full', (signalObj, signalArray, shouldBeUndefined) => {
+                    expect(signalObj).toBe(o);
+                    expect(shouldBeUndefined).not.toBeDefined();
+                    expect(signalArray).toEqual(['a', 'bb', 'ccc']);
+                    done();
+                });
+                o.emit('sig-with-strv-full', ['a', 'bb', 'ccc']);
+            });
+
+            xit('signal with GStrv parameter and transfer full is properly handled', function (done) {
+                if (!o.emit_sig_with_gstrv_full)
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
+                o.connect('sig-with-strv-full', (signalObj, signalArray, shouldBeUndefined) => {
+                    expect(signalObj).toBe(o);
+                    expect(shouldBeUndefined).not.toBeDefined();
+                    expect(signalArray).toEqual(['foo', 'bar', 'baz']);
+                    done();
+                });
+                o.emit_sig_with_gstrv_full();
+            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/470');
 
             xit('signal with int array ret parameter is properly handled', function (done) {
                 o.connect('sig-with-intarray-ret', (signalObj, signalInt, shouldBeUndefined) => {

@@ -58,6 +58,111 @@ static bool gjs_value_from_g_value_internal(JSContext*, JS::MutableHandleValue,
                                             GjsAutoArgInfo const& = nullptr,
                                             GITypeInfo* = nullptr);
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
+                                    const GValue* value) {
+    switch (G_VALUE_TYPE(value)) {
+        case G_TYPE_CHAR:
+            gjs_arg_set(arg, g_value_get_schar(value));
+            return true;
+        case G_TYPE_UCHAR:
+            gjs_arg_set(arg, g_value_get_uchar(value));
+            return true;
+        case G_TYPE_BOOLEAN:
+            gjs_arg_set(arg, g_value_get_boolean(value));
+            return true;
+        case G_TYPE_INT:
+            gjs_arg_set(arg, g_value_get_int(value));
+            return true;
+        case G_TYPE_UINT:
+            gjs_arg_set(arg, g_value_get_uint(value));
+            return true;
+        case G_TYPE_LONG:
+            gjs_arg_set(arg, g_value_get_long(value));
+            return true;
+        case G_TYPE_ULONG:
+            gjs_arg_set(arg, g_value_get_ulong(value));
+            return true;
+        case G_TYPE_INT64:
+            gjs_arg_set(arg, g_value_get_int64(value));
+            return true;
+        case G_TYPE_UINT64:
+            gjs_arg_set(arg, g_value_get_uint64(value));
+            return true;
+        case G_TYPE_FLOAT:
+            gjs_arg_set(arg, g_value_get_float(value));
+            return true;
+        case G_TYPE_DOUBLE:
+            gjs_arg_set(arg, g_value_get_double(value));
+            return true;
+        case G_TYPE_STRING:
+            gjs_arg_set(arg, g_value_get_string(value));
+            return true;
+        case G_TYPE_POINTER:
+            gjs_arg_set(arg, g_value_get_pointer(value));
+            return true;
+        case G_TYPE_VARIANT:
+            gjs_arg_set(arg, g_value_get_variant(value));
+            return true;
+        default: {
+            if (g_value_fits_pointer(value)) {
+                gjs_arg_set(arg, g_value_peek_pointer(value));
+                return true;
+            }
+
+            GType gtype = G_VALUE_TYPE(value);
+
+            if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
+                gjs_arg_set(arg, g_value_get_flags(value));
+                return true;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_ENUM)) {
+                gjs_arg_set(arg, g_value_get_enum(value));
+                return true;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_GTYPE)) {
+                gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(arg,
+                                                      g_value_get_gtype(value));
+                return true;
+            }
+
+            if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+                gjs_arg_set(arg, g_value_get_param(value));
+                return true;
+            }
+        }
+    }
+
+    gjs_throw(cx, "No know GArgument conversion for %s",
+              G_VALUE_TYPE_NAME(value));
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool maybe_release_signal_value(JSContext* cx,
+                                       GjsAutoArgInfo const& arg_info,
+                                       GITypeInfo* type_info,
+                                       const GValue* gvalue,
+                                       GITransfer transfer) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return true;
+
+    GIArgument arg;
+    if (!gjs_arg_set_from_gvalue(cx, &arg, gvalue))
+        return false;
+
+    if (!gjs_g_argument_release(cx, transfer, type_info,
+                                GjsArgumentFlags::ARG_OUT, &arg)) {
+        gjs_throw(cx, "Cannot release argument %s value, we're gonna leak!",
+                  arg_info.name());
+        return false;
+    }
+
+    return true;
+}
+
 /*
  * Gets signal introspection info about closure, or NULL if not found. Currently
  * only works for signals on introspected GObjects, not signals on GJS-defined
@@ -189,6 +294,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         GjsAutoArgInfo arg_info;
     };
     std::vector<ArgumentDetails> args_details(n_param_values);
+    bool needs_cleanup = false;
 
     GjsAutoSignalInfo signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
@@ -206,6 +312,11 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                 args_details[array_len_pos + 1].skip = true;
                 arg_details.array_len_index_for = array_len_pos + 1;
             }
+
+            if (!needs_cleanup &&
+                g_arg_info_get_ownership_transfer(arg_details.arg_info) !=
+                    GI_TRANSFER_NOTHING)
+                needs_cleanup = true;
         }
     }
 
@@ -277,6 +388,27 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         }
     }
 
+    if (needs_cleanup) {
+        for (i = 0; i < n_param_values; ++i) {
+            ArgumentDetails& arg_details = args_details[i];
+            if (!arg_details.arg_info)
+                continue;
+
+            GITransfer transfer =
+                g_arg_info_get_ownership_transfer(arg_details.arg_info);
+
+            if (transfer == GI_TRANSFER_NOTHING)
+                continue;
+
+            if (!maybe_release_signal_value(context, arg_details.arg_info,
+                                            &arg_details.type_info,
+                                            &param_values[i], transfer)) {
+                gjs_log_exception(context);
+                return;
+            }
+        }
+    }
+
     // null return_value means the closure wasn't expected to return a value.
     // Discard the JS function's return value in that case.
     if (return_value != NULL) {
@@ -295,6 +427,19 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             return;
         }
     }
+}
+
+GJS_JSAPI_RETURN_CONVENTION GjsAutoArgInfo
+get_signal_arg_info(GSignalQuery* signal_query, int arg_n) {
+    if (!signal_query || arg_n < 1)
+        return nullptr;
+
+    GjsAutoSignalInfo signal_info = get_signal_info_if_available(signal_query);
+
+    if (!signal_info)
+        return nullptr;
+
+    return g_callable_info_get_arg(signal_info, arg_n - 1);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -933,10 +1078,10 @@ static bool gjs_value_from_g_value_internal(
             return false;
         }
 
+        GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
         GjsAutoTypeInfo element_info = g_type_info_get_param_type(type_info, 0);
-        if (!gjs_array_from_g_value_array(
-                context, value_p, element_info,
-                g_arg_info_get_ownership_transfer(arg_info), gvalue)) {
+        if (!gjs_array_from_g_value_array(context, value_p, element_info,
+                                          transfer, gvalue)) {
             gjs_throw(context, "Failed to convert array");
             return false;
         }

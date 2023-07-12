@@ -51,11 +51,12 @@ struct AutoGValue : GValue {
                 break;
             default:
                 // We can't safely move in complex cases, so let's just copy
-                *static_cast<GValue*>(this) = G_VALUE_INIT;
+                this->steal();
                 *this = src;
                 g_value_unset(&src);
         }
     }
+    void steal() { *static_cast<GValue*>(this) = G_VALUE_INIT; }
     ~AutoGValue() { g_value_unset(this); }
 };
 }  // namespace Gjs
