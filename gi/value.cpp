@@ -187,12 +187,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     /* Check if any parameters, such as array lengths, need to be eliminated
      * before we invoke the closure.
      */
-    GjsAutoPointer<bool> skip = g_new0(bool, n_param_values);
-    GjsAutoPointer<int> array_len_indices_for = g_new(int, n_param_values);
-    for(i = 0; i < n_param_values; i++)
-        array_len_indices_for[i] = -1;
-    GjsAutoPointer<GITypeInfo> type_info_for =
-        g_new0(GITypeInfo, n_param_values);
+    struct ArgumentDetails {
+        int array_len_index_for = -1;
+        bool skip = false;
+        GITypeInfo type_info;
+    };
+    std::vector<ArgumentDetails> args_details(n_param_values);
 
     GjsAutoSignalInfo signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
@@ -202,12 +202,15 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
             GjsAutoArgInfo arg_info =
                 g_callable_info_get_arg(signal_info, i - 1);
-            g_arg_info_load_type(arg_info, &type_info_for[i]);
 
-            array_len_pos = g_type_info_get_array_length(&type_info_for[i]);
+            ArgumentDetails& arg_details = args_details[i];
+            g_arg_info_load_type(arg_info, &arg_details.type_info);
+
+            array_len_pos =
+                g_type_info_get_array_length(&arg_details.type_info);
             if (array_len_pos != -1) {
-                skip[array_len_pos + 1] = true;
-                array_len_indices_for[i] = array_len_pos + 1;
+                args_details[array_len_pos + 1].skip = true;
+                arg_details.array_len_index_for = array_len_pos + 1;
             }
         }
     }
@@ -218,12 +221,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         g_error("Unable to reserve space");
     JS::RootedValue argv_to_append(context);
     for (i = 0; i < n_param_values; ++i) {
-        const GValue *gval = &param_values[i];
+        const GValue* gval = &param_values[i];
+        ArgumentDetails& arg_details = args_details[i];
         bool no_copy;
-        int array_len_index;
         bool res;
 
-        if (skip[i])
+        if (arg_details.skip)
             continue;
 
         no_copy = false;
@@ -232,12 +235,13 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
         }
 
-        array_len_index = array_len_indices_for[i];
-        if (array_len_index != -1) {
-            const GValue *array_len_gval = &param_values[array_len_index];
+        if (arg_details.array_len_index_for != -1) {
+            const GValue* array_len_gval =
+                &param_values[arg_details.array_len_index_for];
             res = gjs_value_from_array_and_length_values(
-                context, &argv_to_append, &type_info_for[i], gval,
-                array_len_gval, no_copy, &signal_query, array_len_index);
+                context, &argv_to_append, &arg_details.type_info, gval,
+                array_len_gval, no_copy, &signal_query,
+                arg_details.array_len_index_for);
         } else {
             res = gjs_value_from_g_value_internal(context,
                                                   &argv_to_append,
