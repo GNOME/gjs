@@ -859,6 +859,14 @@ static bool gjs_value_from_g_value_internal(
                       "Converting gtype %s to JS::Value",
                       g_type_name(gtype));
 
+    if (arg_info && g_value_fits_pointer(gvalue) &&
+        g_value_peek_pointer(gvalue) == nullptr &&
+        !g_arg_info_may_be_null(arg_info)) {
+        gjs_throw(cx, "Unexpected null pointer for argument %s of type %s",
+                  arg_info.name(), g_type_name(gtype));
+        return false;
+    }
+
     if (gtype == G_TYPE_STRING) {
         const char *v;
         v = g_value_get_string(gvalue);
