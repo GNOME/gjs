@@ -859,25 +859,21 @@ static bool gjs_value_from_g_value_internal(
                       "Converting gtype %s to JS::Value",
                       g_type_name(gtype));
 
-    if (arg_info && g_value_fits_pointer(gvalue) &&
-        g_value_peek_pointer(gvalue) == nullptr &&
-        !g_arg_info_may_be_null(arg_info)) {
-        gjs_throw(cx, "Unexpected null pointer for argument %s of type %s",
-                  arg_info.name(), g_type_name(gtype));
-        return false;
+    if (gtype != G_TYPE_STRV && g_value_fits_pointer(gvalue) &&
+        g_value_peek_pointer(gvalue) == nullptr) {
+        // In theory here we should throw if !g_arg_info_may_be_null(arg_info)
+        // however most signals don't explicitly mark themselves as nullable,
+        // so better to avoid this.
+        gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
+                          "Converting NULL %s to JS::NullValue()",
+                          g_type_name(gtype));
+        value_p.setNull();
+        return true;
     }
 
     if (gtype == G_TYPE_STRING) {
-        const char *v;
-        v = g_value_get_string(gvalue);
-        if (v == NULL) {
-            gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                              "Converting NULL string to JS::NullValue()");
-            value_p.setNull();
-        } else {
-            if (!gjs_string_from_utf8(context, v, value_p))
-                return false;
-        }
+        return gjs_string_from_utf8(context, g_value_get_string(gvalue),
+                                    value_p);
     } else if (gtype == G_TYPE_CHAR) {
         signed char v;
         v = g_value_get_schar(gvalue);
@@ -956,13 +952,6 @@ static bool gjs_value_from_g_value_internal(
             gboxed = g_value_get_boxed(gvalue);
         else
             gboxed = g_value_get_variant(gvalue);
-
-        if (!gboxed) {
-            gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                              "Converting null boxed pointer to JS::Value");
-            value_p.setNull();
-            return true;
-        }
 
         if (gtype == ObjectBox::gtype()) {
             obj = ObjectBox::object_for_c_ptr(context,
@@ -1064,13 +1053,7 @@ static bool gjs_value_from_g_value_internal(
 
         value_p.setObject(*obj);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
-        gpointer pointer;
-
-        pointer = g_value_get_pointer(gvalue);
-
-        if (pointer == NULL) {
-            value_p.setNull();
-        } else {
+        if (g_value_get_pointer(gvalue) != nullptr) {
             gjs_throw(context,
                       "Can't convert non-null pointer to JS value");
             return false;
