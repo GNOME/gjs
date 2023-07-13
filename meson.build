@@ -462,6 +462,7 @@ libgjs_private_sources = [
 libgjs_jsapi_sources = [
     'gjs/jsapi-class.h',
     'gjs/jsapi-dynamic-class.cpp',
+    'gjs/jsapi-simple-wrapper.cpp', 'gjs/jsapi-simple-wrapper.h',
     'gjs/jsapi-util-args.h',
     'gjs/jsapi-util-error.cpp',
     'gjs/jsapi-util-root.h',
