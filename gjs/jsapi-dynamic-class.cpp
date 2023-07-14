@@ -197,18 +197,20 @@ define_native_accessor_wrapper(JSContext      *cx,
 bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
                                  const char* prop_name, JS::HandleId id,
                                  const char* func_namespace, JSNative getter,
-                                 JSNative setter, JS::HandleValue private_slot,
-                                 unsigned flags) {
+                                 JS::HandleValue getter_slot, JSNative setter,
+                                 JS::HandleValue setter_slot, unsigned flags) {
     GjsAutoChar getter_name = g_strconcat(func_namespace, "_get::", prop_name, nullptr);
     GjsAutoChar setter_name = g_strconcat(func_namespace, "_set::", prop_name, nullptr);
 
-    JS::RootedObject getter_obj(cx,
-        define_native_accessor_wrapper(cx, getter, 0, getter_name, private_slot));
+    JS::RootedObject getter_obj(
+        cx, define_native_accessor_wrapper(cx, getter, 0, getter_name,
+                                           getter_slot));
     if (!getter_obj)
         return false;
 
-    JS::RootedObject setter_obj(cx,
-        define_native_accessor_wrapper(cx, setter, 1, setter_name, private_slot));
+    JS::RootedObject setter_obj(
+        cx, define_native_accessor_wrapper(cx, setter, 1, setter_name,
+                                           setter_slot));
     if (!setter_obj)
         return false;
 
