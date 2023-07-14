@@ -35,14 +35,11 @@ JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
                                        const JS::HandleValueArray& args);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_property_dynamic(JSContext       *cx,
-                                 JS::HandleObject proto,
-                                 const char      *prop_name,
-                                 const char      *func_namespace,
-                                 JSNative         getter,
-                                 JSNative         setter,
-                                 JS::HandleValue  private_slot,
-                                 unsigned         flags);
+bool gjs_define_property_dynamic(JSContext*, JS::HandleObject proto,
+                                 const char* prop_name, JS::HandleId,
+                                 const char* func_namespace, JSNative getter,
+                                 JSNative setter, JS::HandleValue private_slot,
+                                 unsigned flags);
 
 [[nodiscard]] JS::Value gjs_dynamic_property_private_slot(
     JSObject* accessor_obj);

@@ -619,7 +619,7 @@ bool ObjectPrototype::lazy_define_gobject_property(
 
     JS::RootedValue private_value{cx, JS::PrivateValue(pspec)};
     if (!gjs_define_property_dynamic(
-            cx, obj, name, "gobject_prop", &ObjectBase::prop_getter,
+            cx, obj, name, id, "gobject_prop", &ObjectBase::prop_getter,
             &ObjectBase::prop_setter, private_value,
             // Make property configurable so that interface properties can be
             // overridden by GObject.ParamSpec.override in the class that
@@ -1019,8 +1019,9 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
         JS::RootedValue private_id(context, JS::StringValue(key));
         if (!gjs_define_property_dynamic(
-                context, obj, name, "gobject_field", &ObjectBase::field_getter,
-                &ObjectBase::field_setter, private_id, flags))
+                context, obj, name, id, "gobject_field",
+                &ObjectBase::field_getter, &ObjectBase::field_setter,
+                private_id, flags))
             return false;
 
         *resolved = true;
