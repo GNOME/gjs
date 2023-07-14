@@ -318,11 +318,6 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
             cx, DeprecatedGObjectProperty, {class_name.c_str(), param->name});
     }
 
-    if ((param->flags & G_PARAM_READABLE) == 0) {
-        rval.setUndefined();
-        return true;
-    }
-
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
                      param->name);
 
@@ -330,6 +325,13 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     g_object_get_property(m_ptr, param->name, &gvalue);
 
     return gjs_value_from_g_value(cx, rval, &gvalue);
+}
+
+bool ObjectBase::prop_getter_write_only(JSContext*, unsigned argc,
+                                        JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    args.rval().setUndefined();
+    return true;
 }
 
 [[nodiscard]] static GI::AutoFieldInfo lookup_field_info(GIObjectInfo* info,
@@ -445,10 +447,6 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
     if (!check_gobject_finalized("set any property on"))
         return true;
 
-    if (!(param_spec->flags & G_PARAM_WRITABLE))
-        /* prevent setting the prop even in JS */
-        return gjs_wrapper_throw_readonly_field(cx, gtype(), param_spec->name);
-
     if (param_spec->flags & G_PARAM_DEPRECATED) {
         const std::string& class_name = format_name();
         _gjs_warn_deprecated_once_per_callsite(
@@ -466,6 +464,16 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
     g_object_set_property(m_ptr, param_spec->name, &gvalue);
 
     return true;
+}
+
+bool ObjectBase::prop_setter_read_only(JSContext* cx, unsigned argc,
+                                       JS::Value* vp) {
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    auto* pspec = static_cast<GParamSpec*>(
+        gjs_dynamic_property_private_slot(&args.callee()).toPrivate());
+    // Prevent setting the property even in JS
+    return gjs_wrapper_throw_readonly_field(cx, priv->to_instance()->gtype(),
+                                            pspec->name);
 }
 
 bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -600,6 +608,20 @@ bool ObjectPrototype::lazy_define_gobject_property(
 
     debug_jsprop("Defining lazy GObject property", id, obj);
 
+    // Make property configurable so that interface properties can be
+    // overridden by GObject.ParamSpec.override in the class that
+    // implements them
+    unsigned flags = GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT;
+
+    if (!(pspec->flags & (G_PARAM_WRITABLE | G_PARAM_READABLE))) {
+        if (!JS_DefinePropertyById(cx, obj, id, JS::UndefinedHandleValue,
+                                   flags))
+            return false;
+
+        *resolved = true;
+        return true;
+    }
+
     // Do not fetch JS overridden properties from GObject, to avoid
     // infinite recursion.
     if (g_param_spec_get_qdata(pspec, ObjectBase::custom_property_quark())) {
@@ -607,14 +629,20 @@ bool ObjectPrototype::lazy_define_gobject_property(
         return true;
     }
 
-    JS::RootedValue private_value{cx, JS::PrivateValue(pspec)};
-    if (!gjs_define_property_dynamic(
-            cx, obj, name, id, "gobject_prop", &ObjectBase::prop_getter,
-            &ObjectBase::prop_setter, private_value,
-            // Make property configurable so that interface properties can be
-            // overridden by GObject.ParamSpec.override in the class that
-            // implements them
-            GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT))
+    JS::RootedValue getter_priv{cx, pspec->flags & G_PARAM_READABLE
+                                        ? JS::PrivateValue(pspec)
+                                        : JS::UndefinedValue()};
+    JS::RootedValue setter_priv{cx, JS::PrivateValue(pspec)};
+    JSNative js_getter = pspec->flags & G_PARAM_READABLE
+                             ? &ObjectBase::prop_getter
+                             : &ObjectBase::prop_getter_write_only;
+    JSNative js_setter = pspec->flags & G_PARAM_WRITABLE
+                             ? &ObjectBase::prop_setter
+                             : &ObjectBase::prop_setter_read_only;
+
+    if (!gjs_define_property_dynamic(cx, obj, name, id, "gobject_prop",
+                                     js_getter, getter_priv, js_setter,
+                                     setter_priv, flags))
         return false;
 
     *resolved = true;

@@ -127,9 +127,14 @@ class ObjectBase
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_getter_write_only(JSContext*, unsigned argc,
+                                       JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_setter_read_only(JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
