@@ -48,6 +48,7 @@ struct ObjectInstance;
 }
 class ObjectInstance;
 class ObjectPrototype;
+class ObjectPropertyInfoCaller;
 
 /*
  * ObjectBase:
@@ -441,7 +442,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
         JSContext* cx, GParamSpec*, JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_getter_impl(JSContext* cx, const GI::AutoFunctionInfo&,
+    bool prop_getter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
                           JS::CallArgs const& args);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, GI::AutoFieldInfo const&,
@@ -450,7 +451,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(JSContext*, GParamSpec*,
                                                       JS::HandleValue);
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_setter_impl(JSContext* cx, const GI::AutoFunctionInfo&,
+    bool prop_setter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
                           JS::CallArgs const& args);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_not_impl(JSContext* cx, GI::AutoFieldInfo const&);

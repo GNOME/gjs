@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <girepository.h>
+#include <girffi.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -78,7 +79,7 @@
 
 class JSTracer;
 
-using mozilla::Maybe, mozilla::Some;
+using mozilla::Err, mozilla::Maybe, mozilla::Ok, mozilla::Some;
 
 /* This is a trick to print out the sizes of the structs at compile time, in
  * an error message. */
@@ -355,14 +356,34 @@ bool ObjectBase::prop_getter_write_only(JSContext*, unsigned argc,
     return true;
 }
 
+class ObjectPropertyInfoCaller {
+ public:
+    GI::AutoFunctionInfo func_info;
+    void* native_address;
+
+    explicit ObjectPropertyInfoCaller(const GI::AutoFunctionInfo& info)
+        : func_info(info), native_address(nullptr) {}
+
+    Gjs::GErrorResult<> init() {
+        GIFunctionInvoker invoker;
+        Gjs::AutoError error;
+        if (!g_function_info_prep_invoker(func_info, &invoker, &error))
+            return Err(std::move(error));
+        native_address = invoker.native_address;
+        g_function_invoker_destroy(&invoker);
+        return Ok{};
+    }
+};
+
 bool ObjectBase::prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
     JS::RootedObject pspec_obj{
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject()};
-    const auto& func_info =
-        *Gjs::SimpleWrapper::get<GI::AutoFunctionInfo>(cx, pspec_obj);
+    auto* info_caller =
+        Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, pspec_obj);
 
+    const GI::AutoFunctionInfo& func_info = info_caller->func_info;
     GI::AutoPropertyInfo property_info{g_function_info_get_property(func_info)};
     std::string full_name{priv->format_name() + "[\"" + property_info.name() +
                           "\"]"};
@@ -375,17 +396,78 @@ bool ObjectBase::prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (priv->is_prototype())
         return true;
 
-    return priv->to_instance()->prop_getter_impl(cx, func_info, args);
+    return priv->to_instance()->prop_getter_impl(cx, info_caller, args);
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+[[nodiscard]]
+static bool simple_getter_caller(GObject* obj, void* native_address,
+                                 GIArgument* out_arg) {
+    using FuncType = T (*)(GObject*);
+    FuncType func = reinterpret_cast<FuncType>(native_address);
+
+    gjs_arg_set<T, TAG>(out_arg, func(obj));
+    return true;
+}
+
+[[nodiscard]]
+static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
+                                  void* native_address, GIArgument* out_arg) {
+    switch (g_type_info_get_tag(type_info)) {
+        case GI_TYPE_TAG_VOID:
+            return false;
+        case GI_TYPE_TAG_BOOLEAN:
+            return simple_getter_caller<gboolean, GI_TYPE_TAG_BOOLEAN>(
+                obj, native_address, out_arg);
+        case GI_TYPE_TAG_INT8:
+            return simple_getter_caller<int8_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_UINT8:
+            return simple_getter_caller<uint8_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_INT16:
+            return simple_getter_caller<int16_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_UINT16:
+            return simple_getter_caller<uint16_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_INT32:
+            return simple_getter_caller<int32_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_UINT32:
+            return simple_getter_caller<uint32_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_INT64:
+            return simple_getter_caller<int64_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_UINT64:
+            return simple_getter_caller<uint64_t>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_FLOAT:
+            return simple_getter_caller<float>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_DOUBLE:
+            return simple_getter_caller<double>(obj, native_address, out_arg);
+        case GI_TYPE_TAG_GTYPE:
+            return simple_getter_caller<GType, GI_TYPE_TAG_GTYPE>(
+                obj, native_address, out_arg);
+        case GI_TYPE_TAG_UNICHAR:
+            return simple_getter_caller<gunichar>(obj, native_address, out_arg);
+
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+            return simple_getter_caller<void*>(obj, native_address, out_arg);
+    }
+
+    return false;
 }
 
 bool ObjectInstance::prop_getter_impl(JSContext* cx,
-                                      const GI::AutoFunctionInfo& getter,
+                                      ObjectPropertyInfoCaller* info_caller,
                                       JS::CallArgs const& args) {
     if (!check_gobject_finalized("get any property from")) {
         args.rval().setUndefined();
         return true;
     }
 
+    const GI::AutoFunctionInfo& getter = info_caller->func_info;
     GI::AutoPropertyInfo property_info{g_function_info_get_property(getter)};
     GParamFlags flags = g_property_info_get_flags(property_info);
 
@@ -404,17 +486,16 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     std::array<GIArgument, 1> gi_args;
     gjs_arg_set(&gi_args[0], m_ptr.get());
 
-    Gjs::AutoError error;
-    if (!g_function_info_invoke(getter, gi_args.data(), gi_args.size(), nullptr,
-                                0, &ret, &error)) {
+    GITypeInfo type_info;
+    g_callable_info_load_return_type(getter, &type_info);
+    if (!simple_getters_caller(&type_info, m_ptr, info_caller->native_address,
+                               &ret)) {
         const std::string& class_name = format_name();
-        gjs_throw(cx, "Error calling %s::%s getter: %s", class_name.c_str(),
-                  property_info.name(), error->message);
+        gjs_throw(cx, "Wrong type for %s::%s getter", class_name.c_str(),
+                  property_info.name());
         return false;
     }
 
-    GITypeInfo type_info;
-    g_callable_info_load_return_type(getter, &type_info);
     GITransfer transfer = g_callable_info_get_caller_owns(getter);
 
     if (!gjs_value_from_gi_argument(cx, args.rval(), &type_info,
@@ -624,9 +705,10 @@ bool ObjectBase::prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     JS::RootedObject func_obj{
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject()};
-    const auto& func_info =
-        *Gjs::SimpleWrapper::get<GI::AutoFunctionInfo>(cx, func_obj);
+    auto* info_caller =
+        Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, func_obj);
 
+    const GI::AutoFunctionInfo& func_info = info_caller->func_info;
     GI::AutoPropertyInfo property_info{g_function_info_get_property(func_info)};
     std::string full_name{priv->format_name() + "[\"" + property_info.name() +
                           "\"]"};
@@ -639,15 +721,76 @@ bool ObjectBase::prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (priv->is_prototype())
         return true;
 
-    return priv->to_instance()->prop_setter_impl(cx, func_info, args);
+    return priv->to_instance()->prop_setter_impl(cx, info_caller, args);
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+[[nodiscard]]
+static bool simple_setter_caller(GIArgument* arg, GObject* obj,
+                                 void* native_address) {
+    using FuncType = void (*)(GObject*, T);
+    FuncType func = reinterpret_cast<FuncType>(native_address);
+
+    func(obj, gjs_arg_get<T, TAG>(arg));
+    return true;
+}
+
+[[nodiscard]]
+static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
+                                  GObject* obj, void* native_address) {
+    switch (g_type_info_get_tag(type_info)) {
+        case GI_TYPE_TAG_VOID:
+            return false;
+        case GI_TYPE_TAG_BOOLEAN:
+            return simple_setter_caller<gboolean, GI_TYPE_TAG_BOOLEAN>(
+                arg, obj, native_address);
+        case GI_TYPE_TAG_INT8:
+            return simple_setter_caller<int8_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_UINT8:
+            return simple_setter_caller<uint8_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_INT16:
+            return simple_setter_caller<int16_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_UINT16:
+            return simple_setter_caller<uint16_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_INT32:
+            return simple_setter_caller<int32_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_UINT32:
+            return simple_setter_caller<uint32_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_INT64:
+            return simple_setter_caller<int64_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_UINT64:
+            return simple_setter_caller<uint64_t>(arg, obj, native_address);
+        case GI_TYPE_TAG_FLOAT:
+            return simple_setter_caller<float>(arg, obj, native_address);
+        case GI_TYPE_TAG_DOUBLE:
+            return simple_setter_caller<double>(arg, obj, native_address);
+        case GI_TYPE_TAG_GTYPE:
+            return simple_setter_caller<GType, GI_TYPE_TAG_GTYPE>(
+                arg, obj, native_address);
+        case GI_TYPE_TAG_UNICHAR:
+            return simple_setter_caller<gunichar>(arg, obj, native_address);
+
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_INTERFACE:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+            return simple_setter_caller<void*>(arg, obj, native_address);
+    }
+
+    return false;
 }
 
 bool ObjectInstance::prop_setter_impl(JSContext* cx,
-                                      const GI::AutoFunctionInfo& setter,
+                                      ObjectPropertyInfoCaller* info_caller,
                                       JS::CallArgs const& args) {
     if (!check_gobject_finalized("set any property on"))
         return true;
 
+    const GI::AutoFunctionInfo& setter = info_caller->func_info;
     GI::AutoPropertyInfo property_info{g_function_info_get_property(setter)};
     GParamFlags flags = g_property_info_get_flags(property_info);
 
@@ -662,19 +805,17 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter %s",
                      property_info.name());
 
-    std::array<GIArgument, 2> gi_args;
-    gjs_arg_set(&gi_args[0], m_ptr.get());
-
     GIArgInfo arg_info;
     g_callable_info_load_arg(setter, 0, &arg_info);
     GITypeInfo type_info;
     g_arg_info_load_type(&arg_info, &type_info);
     GITransfer transfer = g_arg_info_get_ownership_transfer(&arg_info);
     JS::RootedValue value{cx, args[0]};
+    GIArgument arg;
 
     if (!gjs_value_to_gi_argument(cx, value, &type_info, property_info.name(),
                                   GJS_ARGUMENT_ARGUMENT, transfer,
-                                  GjsArgumentFlags::ARG_IN, &gi_args[1])) {
+                                  GjsArgumentFlags::ARG_IN, &arg)) {
         // Unlikely to happen, but we fallback to gvalue mode, just in case
         JS_ClearPendingException(cx);
         Gjs::AutoTypeClass<GObjectClass> klass{gtype()};
@@ -689,26 +830,15 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         return prop_setter_impl<void>(cx, pspec, value);
     }
 
-    GIArgument ret;
-    Gjs::AutoError error;
-    if (!g_function_info_invoke(setter, gi_args.data(), gi_args.size(), nullptr,
-                                0, &ret, &error)) {
+    if (!simple_setters_caller(&type_info, &arg, m_ptr,
+                               info_caller->native_address)) {
         const std::string& class_name = format_name();
-        gjs_throw(cx, "Error calling %s::%s setter: %s", class_name.c_str(),
-                  property_info.name(), error->message);
-        if (!gjs_gi_argument_release_in_arg(cx, transfer, &type_info,
-                                            &gi_args[1]))
-            return false;
+        gjs_throw(cx, "Wrong type for %s::%s setter", class_name.c_str(),
+                  property_info.name());
         return false;
     }
 
-    if (!gjs_gi_argument_release_in_arg(cx, transfer, &type_info, &gi_args[1]))
-        return false;
-
-    GITypeInfo ret_type;
-    g_callable_info_load_return_type(setter, &ret_type);
-    return gjs_gi_argument_release(cx, transfer, &ret_type,
-                                   GjsArgumentFlags::ARG_OUT, &ret);
+    return gjs_gi_argument_release_in_arg(cx, transfer, &type_info, &arg);
 }
 
 bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -864,10 +994,21 @@ static JSNative get_getter_for_property(
             g_callable_info_get_n_args(prop_getter) == 0 &&
             !g_callable_info_skip_return(prop_getter)) {
             JS::RootedObject getter_wrapper{
-                cx, Gjs::SimpleWrapper::new_for_type<GI::AutoFunctionInfo>(
+                cx, Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
                         cx, prop_getter)};
             if (!getter_wrapper)
                 return nullptr;
+
+            Gjs::GErrorResult<> init_result =
+                Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(
+                    cx, getter_wrapper)
+                    ->init();
+            if (init_result.isErr()) {
+                gjs_throw(cx, "Impossible to create invoker for %s: %s",
+                          prop_getter.name(),
+                          init_result.inspectErr()->message);
+                return nullptr;
+            }
 
             priv_out.setObject(*getter_wrapper);
             return &ObjectBase::prop_getter_func;
@@ -919,10 +1060,21 @@ static JSNative get_setter_for_property(
         if (prop_setter && g_callable_info_is_method(prop_setter) &&
             g_callable_info_get_n_args(prop_setter) == 1) {
             JS::RootedObject setter_wrapper{
-                cx, Gjs::SimpleWrapper::new_for_type<GI::AutoFunctionInfo>(
+                cx, Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
                         cx, prop_setter)};
             if (!setter_wrapper)
                 return nullptr;
+
+            Gjs::GErrorResult<> init_result =
+                Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(
+                    cx, setter_wrapper)
+                    ->init();
+            if (init_result.isErr()) {
+                gjs_throw(cx, "Impossible to create invoker for %s: %s",
+                          prop_setter.name(),
+                          init_result.inspectErr()->message);
+                return nullptr;
+            }
 
             priv_out.setObject(*setter_wrapper);
             return &ObjectBase::prop_setter_func;
