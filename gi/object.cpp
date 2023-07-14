@@ -320,11 +320,6 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
         return true;
     }
 
-    /* Do not fetch JS overridden properties from GObject, to avoid
-     * infinite recursion. */
-    if (g_param_spec_get_qdata(param, ObjectBase::custom_property_quark()))
-        return true;
-
     if (param->flags & G_PARAM_DEPRECATED) {
         const std::string& class_name = format_name();
         _gjs_warn_deprecated_once_per_callsite(
@@ -456,11 +451,6 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
                                       JS::HandleValue value) {
     if (!check_gobject_finalized("set any property on"))
-        return true;
-
-    /* Do not set JS overridden properties through GObject, to avoid
-     * infinite recursion (unless constructing) */
-    if (g_param_spec_get_qdata(param_spec, ObjectBase::custom_property_quark()))
         return true;
 
     if (!(param_spec->flags & G_PARAM_WRITABLE))
@@ -616,6 +606,13 @@ bool ObjectPrototype::lazy_define_gobject_property(
     }
 
     debug_jsprop("Defining lazy GObject property", id, obj);
+
+    // Do not fetch JS overridden properties from GObject, to avoid
+    // infinite recursion.
+    if (g_param_spec_get_qdata(pspec, ObjectBase::custom_property_quark())) {
+        *resolved = false;
+        return true;
+    }
 
     JS::RootedValue private_value{cx, JS::PrivateValue(pspec)};
     if (!gjs_define_property_dynamic(
