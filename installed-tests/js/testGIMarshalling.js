@@ -1983,13 +1983,20 @@ describe('GObject properties', function () {
     });
 
     function testPropertyGetSet(type, value1, value2, skip = false) {
-        it(`gets and sets a ${type} property`, function () {
-            if (skip)
-                pending(skip);
-            obj[`some_${type}`] = value1;
-            expect(obj[`some_${type}`]).toEqual(value1);
-            obj[`some_${type}`] = value2;
-            expect(obj[`some_${type}`]).toEqual(value2);
+        const snakeCase = `some_${type}`;
+        const paramCase = snakeCase.replaceAll('_', '-');
+        const camelCase = snakeCase.replace(/(_\w)/g,
+            match => match.toUpperCase().replace('_', ''));
+
+        [snakeCase, paramCase, camelCase].forEach(propertyName => {
+            it(`gets and sets a ${type} property as ${propertyName}`, function () {
+                if (skip)
+                    pending(skip);
+                obj[propertyName] = value1;
+                expect(obj[propertyName]).toEqual(value1);
+                obj[propertyName] = value2;
+                expect(obj[propertyName]).toEqual(value2);
+            });
         });
     }
 
