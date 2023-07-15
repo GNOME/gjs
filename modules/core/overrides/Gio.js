@@ -425,49 +425,15 @@ function* _listModelIterator() {
         yield this.get_item(_index++);
 }
 
-function _promisify(proto, asyncFunc, finishFunc = undefined) {
-    if (proto[asyncFunc] === undefined)
-        throw new Error(`${proto} has no method named ${asyncFunc}`);
+let _promisifyDeprecationWarning = new WeakMap();
+function _promisify(proto, asyncFunc) {
+    if (!_promisifyDeprecationWarning.get(asyncFunc)?.includes(asyncFunc)) {
+        const previouslyWarnedMethods = _promisifyDeprecationWarning.get(asyncFunc) ?? [];
+        _promisifyDeprecationWarning.set(proto, previouslyWarnedMethods);
 
-    if (finishFunc === undefined) {
-        if (asyncFunc.endsWith('_begin') || asyncFunc.endsWith('_async'))
-            finishFunc = `${asyncFunc.slice(0, -5)}finish`;
-        else
-            finishFunc = `${asyncFunc}_finish`;
+        previouslyWarnedMethods.push(asyncFunc);
+        console.info(`Gio._promisify is deprecated, ${asyncFunc} already supports promises`);
     }
-
-    if (proto[finishFunc] === undefined)
-        throw new Error(`${proto} has no method named ${finishFunc}`);
-
-    const originalFuncName = `_original_${asyncFunc}`;
-    if (proto[originalFuncName] !== undefined)
-        return;
-    proto[originalFuncName] = proto[asyncFunc];
-    proto[asyncFunc] = function (...args) {
-        if (args.length === this[originalFuncName].length)
-            return this[originalFuncName](...args);
-        return new Promise((resolve, reject) => {
-            let {stack: callStack} = new Error();
-            this[originalFuncName](...args, function (source, res) {
-                try {
-                    const result = source !== null && source[finishFunc] !== undefined
-                        ? source[finishFunc](res)
-                        : proto[finishFunc](res);
-                    if (Array.isArray(result) && result.length > 1 && result[0] === true)
-                        result.shift();
-                    resolve(result);
-                } catch (error) {
-                    callStack = callStack.split('\n').filter(line =>
-                        line.indexOf('_promisify/') === -1).join('\n');
-                    if (error.stack)
-                        error.stack += `### Promise created here: ###\n${callStack}`;
-                    else
-                        error.stack = callStack;
-                    reject(error);
-                }
-            });
-        });
-    };
 }
 
 function _notIntrospectableError(funcName, replacement) {

@@ -17,11 +17,18 @@
 #include <utility>
 
 #include <ffi.h>
+#include <gio/gio.h>
 #include <girepository/girepository.h>
 #include <glib.h>
 
 #include <js/Conversions.h>
+#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/Exception.h>    // for AutoSaveExceptionState
+#include <js/GCAPI.h>        // for JS_AddExtraGCRootsTracer
+#include <js/GCVector.h>
+#include <js/Promise.h>
 #include <js/RootingAPI.h>
+#include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
@@ -1477,8 +1484,101 @@ struct CallbackIn : SkipAll, Callback {
 
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
- private:
+
+ protected:
     ffi_closure *m_ffi_closure;
+};
+
+class AsyncCallbackData {
+    JSContext* m_cx;
+    JS::Heap<JSObject*> m_promise;
+
+ public:
+    Maybe<GI::AutoCallableInfo> callable_info;
+
+    static void trace(JSTracer* trc, void* data) {
+        auto* self = AsyncCallbackData::from_ptr(data);
+
+        JS::TraceEdge(trc, &self->m_promise, "promise");
+    }
+
+ public:
+    AsyncCallbackData()
+        : m_cx(nullptr), m_promise(nullptr), callable_info(Nothing{}) {}
+
+    ~AsyncCallbackData() {
+        if (m_promise)
+            JS_RemoveExtraGCRootsTracer(m_cx, &AsyncCallbackData::trace, this);
+        m_promise = nullptr;
+        m_cx = nullptr;
+        callable_info.reset();
+    }
+
+    const Maybe<GI::CallableInfo> callable() {
+        return callable_info.map([](GI::AutoCallableInfo& owned) {
+            return GI::CallableInfo{owned};
+        });
+    }
+
+    JSContext* cx() { return m_cx; }
+
+    JSObject* execute(JSContext* a_cx, const GI::CallableInfo info) {
+        m_cx = a_cx;
+        JS::RootedObject promise{m_cx, JS::NewPromiseObject(m_cx, nullptr)};
+        m_promise = promise;
+
+        JS_AddExtraGCRootsTracer(m_cx, &AsyncCallbackData::trace, this);
+
+        callable_info.reset();
+        callable_info.emplace(info);
+
+        return m_promise;
+    }
+
+    JSObject* promise() { return m_promise.get(); }
+
+    static AsyncCallbackData* from_ptr(void* ptr) {
+        return static_cast<AsyncCallbackData*>(ptr);
+    }
+
+    bool resolve(JS::HandleValue val) {
+        JS::RootedObject promise{m_cx, m_promise.get()};
+
+        return JS::ResolvePromise(m_cx, promise, val);
+    }
+
+    bool reject() {
+        JS::RootedObject o{m_cx, m_promise.get()};
+        JS::RootedValue rejection_value{m_cx};
+
+        // Clear the pending exception and use it to reject the promise
+        if (!JS_GetPendingException(m_cx, &rejection_value))
+            return false;
+        JS_ClearPendingException(m_cx);
+
+        return JS::RejectPromise(m_cx, o, rejection_value);
+    }
+};
+
+struct AsyncCallbackIn : CallbackIn {
+    explicit AsyncCallbackIn(const GI::CallbackInfo callback_info,
+                             const GI::CallableInfo finish_info,
+                             Maybe<unsigned> closure_pos,
+                             Maybe<unsigned> destroy_pos, GIScopeType scope)
+        : CallbackIn(callback_info, closure_pos, destroy_pos, scope),
+          m_finish_info(finish_info) {}
+
+    bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
+            JS::HandleValue) override;
+
+    using CallbackIn::release;
+
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override;
+
+ private:
+    AsyncCallbackData m_data;
+    GI::AutoCallableInfo m_finish_info;
 };
 
 struct BasicExplicitCArrayOut : ExplicitArrayBase, BasicCArray, Positioned {
@@ -1905,6 +2005,72 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     }
     gjs_arg_set(arg, closure);
 
+    return true;
+}
+
+static void promisified_callback(GObject* ObjectBase, GAsyncResult* res,
+                                 void* data) {
+    auto* promise = AsyncCallbackData::from_ptr(data);
+
+    const GI::CallableInfo finish = promise->callable().value();
+
+    JS::RootedValue ret{promise->cx()};
+    JS::RootedObject this_obj{promise->cx(),
+                              ObjectBase ? ObjectInstance::wrapper_from_gobject(
+                                               promise->cx(), ObjectBase)
+                                         : nullptr};
+    JS::AutoSaveExceptionState saved_exc{promise->cx()};
+    if (!gjs_invoke_finish_from_c(promise->cx(), finish, this_obj, res, &ret)) {
+        if (!promise->reject())
+            g_error("Failed to reject promise for async function");
+
+        return;
+    }
+
+    if (!promise->resolve(ret)) {
+        // TODO(ewlsh): Move logging into promise utility class
+        gjs_log_exception(promise->cx());
+        return;
+    }
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool AsyncCallbackIn::in(JSContext* cx, GjsFunctionCallState* state,
+                         GIArgument* arg, JS::HandleValue value) {
+    if (value.isNullOrUndefined()) {
+        m_ffi_closure = nullptr;
+
+        if (has_callback_closure()) {
+            state->mark_async();
+            m_data.execute(cx, m_finish_info);
+
+            gjs_arg_set(arg, promisified_callback);
+            gjs_arg_set(&state->in_cvalue(m_closure_pos), &m_data);
+        }
+
+        return true;
+    }
+
+    return CallbackIn::in(cx, state, arg, value);
+}
+
+bool AsyncCallbackIn::out(JSContext* cx, GjsFunctionCallState* state,
+                          GIArgument*, JS::MutableHandleValue) {
+    // TODO(ewlsh): Should this ever be false?
+    if (!has_callback_closure())
+        return true;
+
+    if (!state->is_async())
+        return true;
+
+    // TODO(ewlsh): Clean this up
+    g_assert(m_data.callable() && "Async callback missing callable info.");
+
+    JS::RootedObject promise{cx, m_data.promise()};
+    if (!state->return_values.append(JS::ObjectValue(*promise))) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
     return true;
 }
 
@@ -2563,6 +2729,8 @@ constexpr size_t argument_maximum_size() {
         return 48;
     if constexpr (std::is_same_v<T, Arg::CallbackIn>)
         return 56;
+    if constexpr (std::is_same_v<T, Arg::AsyncCallbackIn>)
+        return 96;
     if constexpr (std::is_same_v<T, Arg::CArrayIn> ||
                   std::is_same_v<T, Arg::CArrayInOut> ||
                   std::is_same_v<T, Arg::CArrayInOut> ||
@@ -3749,9 +3917,23 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     return;
                 }
 
-                set_argument(new Arg::CallbackIn(*callback_info, closure_pos,
-                                                 destroy_pos, arg.scope()),
-                             common_args);
+                Maybe<GI::AutoCallableInfo> finish_callable{
+                    callable.get_finish_function()};
+                bool is_async =
+                    finish_callable.isSome() &&
+                    strcmp(interface_info.name(), "AsyncReadyCallback") == 0 &&
+                    strcmp(interface_info.ns(), "Gio") == 0;
+                if (is_async) {
+                    set_argument(new Arg::AsyncCallbackIn(
+                                     *callback_info, *finish_callable,
+                                     closure_pos, destroy_pos, arg.scope()),
+                                 common_args);
+                } else {
+                    set_argument(
+                        new Arg::CallbackIn(*callback_info, closure_pos,
+                                            destroy_pos, arg.scope()),
+                        common_args);
+                }
             }
 
             return;

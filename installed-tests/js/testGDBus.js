@@ -850,14 +850,10 @@ describe('Exported DBus object', function () {
 
 describe('DBus Proxy wrapper', function () {
     let loop;
-    let wasPromise;
     let writerFunc;
 
     beforeAll(function () {
         loop = new GLib.MainLoop(null, false);
-
-        wasPromise = Gio.DBusProxy.prototype._original_init_async instanceof Function;
-        Gio._promisify(Gio.DBusProxy.prototype, 'init_async');
 
         writerFunc = jasmine.createSpy(
             'log writer func', (level, fields) => {
@@ -930,15 +926,5 @@ describe('DBus Proxy wrapper', function () {
         const proxyPromise = ProxyClass.newAsync(Gio.DBus.session, 'org.gnome.gjs.Test',
             '/org/gnome/gjs/Test', cancellable);
         await expectAsync(proxyPromise).toBeRejected();
-    });
-
-    afterAll(function () {
-        if (!wasPromise) {
-            // Remove stuff added by Gio._promisify, this can be not needed in future
-            // nor should break other tests, but we didn't want to depend on those.
-            expect(Gio.DBusProxy.prototype._original_init_async).toBeInstanceOf(Function);
-            Gio.DBusProxy.prototype.init_async = Gio.DBusProxy.prototype._original_init_async;
-            delete Gio.DBusProxy.prototype._original_init_async;
-        }
     });
 });

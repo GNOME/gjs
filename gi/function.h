@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <ffi.h>
+#include <gio/gio.h>
 #include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -103,6 +104,7 @@ class GjsFunctionCallState {
     uint8_t gi_argc = 0;
     uint8_t processed_c_args = 0;
     bool failed : 1;
+    bool has_async_return : 1;
     bool can_throw_gerror : 1;
     bool is_method : 1;
 
@@ -112,6 +114,7 @@ class GjsFunctionCallState {
           info(callable),
           gi_argc(callable.n_args()),
           failed(false),
+          has_async_return(false),
           can_throw_gerror(callable.can_throw_gerror()),
           is_method(callable.is_method()) {
         int size = gi_argc + first_arg_offset();
@@ -154,6 +157,10 @@ class GjsFunctionCallState {
         return first_arg_offset() + processed_c_args;
     }
 
+    [[nodiscard]] bool is_async() { return has_async_return; }
+
+    void mark_async() { has_async_return = true; }
+
     [[nodiscard]] Gjs::AutoChar display_name() {
         mozilla::Maybe<const GI::BaseInfo> container = info.container();
         if (container) {
@@ -172,5 +179,10 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_constructor_from_c(JSContext*, const GI::FunctionInfo,
                                    JS::HandleObject this_obj,
                                    const JS::CallArgs&, GIArgument* rvalue);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_invoke_finish_from_c(JSContext* cx, const GI::CallableInfo info,
+                              JS::HandleObject this_obj, GAsyncResult* result,
+                              JS::MutableHandleValue rvalue);
 
 #endif  // GI_FUNCTION_H_

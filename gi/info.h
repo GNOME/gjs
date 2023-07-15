@@ -895,6 +895,11 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
         gi_callable_info_destroy_closure(ptr(), closure);
     }
     [[nodiscard]]
+    mozilla::Maybe<AutoCallableInfo> get_finish_function() const {
+        return detail::Pointer::nullable<InfoTag::CALLABLE>(
+            gi_callable_info_get_finish_function(ptr()));
+    }
+    [[nodiscard]]
     Gjs::GErrorResult<> init_function_invoker(
         void* address, GIFunctionInvoker* invoker) const {
         GError* error = nullptr;
@@ -905,6 +910,10 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
     [[nodiscard]]
     GITransfer instance_ownership_transfer() const {
         return gi_callable_info_get_instance_ownership_transfer(ptr());
+    }
+    [[nodiscard]]
+    bool is_async() const {
+        return gi_callable_info_is_async(ptr());
     }
     [[nodiscard]]
     bool is_method() const {

@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <ffi.h>
+#include <gio/gio.h>
 #include <girepository/girepository.h>
 #include <girepository/girffi.h>
 #include <glib-object.h>
@@ -181,6 +182,30 @@ class Function : public CWrapper<Function> {
         if (!function.init(cx))
             return false;
         return function.invoke(cx, args, obj, rvalue);
+    }
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool invoke_finish_uncached(JSContext* cx,
+                                       const GI::CallableInfo info,
+                                       JS::HandleObject obj,
+                                       GAsyncResult* result,
+                                       JS::MutableHandleValue rval) {
+        Function function{info};
+        if (!function.init(cx))
+            return false;
+        JS::RootedValueArray<3> values{cx};
+        values[0].setUndefined();
+        values[1].setObject(*obj);
+        values[2].setObject(
+            *ObjectInstance::wrapper_from_gobject(cx, G_OBJECT(result)));
+        JS::CallArgs args = JS::CallArgsFromVp(1, values.begin());
+        args.setThis(JS::ObjectValue(*obj));
+
+        if (!function.invoke(cx, args))
+            return false;
+
+        rval.set(args.rval());
+        return true;
     }
 };
 
@@ -893,6 +918,16 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
                           "Too many arguments to %s: expected %u, got %u",
                           format_name().c_str(), m_js_in_argc, args.length()))
             return false;
+        // Until https://gitlab.gnome.org/GNOME/gjs/-/issues/53 is resolved, we
+        // need to create a special case for async functions.
+    } else if (m_info.is_async()) {
+        uint8_t in_argc_async = m_js_in_argc - 1u;
+        if (args.length() < in_argc_async) {
+            args.reportMoreArgsNeeded(context, format_name().c_str(),
+                                      in_argc_async, args.length());
+            return false;
+        }
+
     } else if (args.length() < m_js_in_argc) {
         args.reportMoreArgsNeeded(context, format_name().c_str(), m_js_in_argc,
                                   args.length());
@@ -1167,11 +1202,14 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
 
     g_assert(ffi_arg_pos == state->last_processed_index());
 
-    if (!r_value && m_js_out_argc > 0 && state->call_completed()) {
+    if (!r_value && (m_js_out_argc > 0 || state->is_async()) &&
+        state->call_completed()) {
         // If we have one return value or out arg, return that item on its
         // own, otherwise return a JavaScript array with [return value,
         // out arg 1, out arg 2, ...]
-        if (m_js_out_argc == 1) {
+        if (state->is_async()) {
+            args.rval().set(state->return_values[0]);
+        } else if (m_js_out_argc == 1) {
             args.rval().set(state->return_values[0]);
         } else {
             JSObject* array = JS::NewArrayObject(cx, state->return_values);
@@ -1428,4 +1466,11 @@ bool gjs_invoke_constructor_from_c(JSContext* context,
                                    GIArgument* rvalue) {
     return Gjs::Function::invoke_constructor_uncached(context, info, obj, args,
                                                       rvalue);
+}
+
+bool gjs_invoke_finish_from_c(JSContext* context, const GI::CallableInfo info,
+                              JS::HandleObject obj, GAsyncResult* result,
+                              JS::MutableHandleValue rvalue) {
+    return Gjs::Function::invoke_finish_uncached(context, info, obj, result,
+                                                 rvalue);
 }
