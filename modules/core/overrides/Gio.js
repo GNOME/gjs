@@ -5,7 +5,7 @@ var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
 const Signals = imports._signals;
 const {_createWrappersForPlatformSpecificNamespace} = imports._common;
-const {warnDeprecatedOncePerCallsite, MAKE_PROXY_WRAPPER_FUNCTION_CALL} = imports._print;
+const {warnDeprecatedOncePerCallsite, MAKE_PROXY_WRAPPER_FUNCTION_CALL, PROMISIFY} = imports._print;
 const {setMainLoopHook} = imports._promiseNative;
 var Gio;
 
@@ -467,49 +467,8 @@ function* _listModelIterator() {
         yield this.get_item(_index++);
 }
 
-function _promisify(proto, asyncFunc, finishFunc = undefined) {
-    if (proto[asyncFunc] === undefined)
-        throw new Error(`${proto} has no method named ${asyncFunc}`);
-
-    if (finishFunc === undefined) {
-        if (asyncFunc.endsWith('_begin') || asyncFunc.endsWith('_async'))
-            finishFunc = `${asyncFunc.slice(0, -5)}finish`;
-        else
-            finishFunc = `${asyncFunc}_finish`;
-    }
-
-    if (proto[finishFunc] === undefined)
-        throw new Error(`${proto} has no method named ${finishFunc}`);
-
-    const originalFuncName = `_original_${asyncFunc}`;
-    if (proto[originalFuncName] !== undefined)
-        return;
-    proto[originalFuncName] = proto[asyncFunc];
-    proto[asyncFunc] = function (...args) {
-        if (args.length === this[originalFuncName].length)
-            return this[originalFuncName](...args);
-        return new Promise((resolve, reject) => {
-            let {stack: callStack} = new Error();
-            this[originalFuncName](...args, function (source, res) {
-                try {
-                    const result = source !== null && source[finishFunc] !== undefined
-                        ? source[finishFunc](res)
-                        : proto[finishFunc](res);
-                    if (Array.isArray(result) && result.length > 1 && result[0] === true)
-                        result.shift();
-                    resolve(result);
-                } catch (error) {
-                    callStack = callStack.split('\n').filter(line =>
-                        line.indexOf('_promisify/') === -1).join('\n');
-                    if (error.stack)
-                        error.stack += `### Promise created here: ###\n${callStack}`;
-                    else
-                        error.stack = callStack;
-                    reject(error);
-                }
-            });
-        });
-    };
+function _promisify(_, asyncFunc) {
+    warnDeprecatedOncePerCallsite(PROMISIFY, asyncFunc);
 }
 
 function _notIntrospectableError(funcName, replacement) {
@@ -583,7 +542,6 @@ function _init() {
     };
 
     _injectToMethod(Gio.DBusProxy.prototype, 'init');
-    _promisify(Gio.DBusProxy.prototype, 'init_async');
     _injectToMethod(Gio.DBusProxy.prototype, 'init_async');
     _injectToStaticMethod(Gio.DBusProxy, 'new_sync');
     _injectToStaticMethod(Gio.DBusProxy, 'new_finish');

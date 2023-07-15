@@ -70,17 +70,8 @@ describe('Sorting in ListStore', function () {
     });
 });
 
-describe('Promisify function', function () {
-    it("doesn't crash when async function is not defined", function () {
-        expect(() => Gio._promisify(Gio.Subprocess.prototype, 'commuicate_utf8_async', 'communicate_utf8_finish')).toThrowError(/commuicate_utf8_async/);
-    });
-
-    it("doesn't crash when finish function is not defined", function () {
-        expect(() => Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'commuicate_utf8_finish')).toThrowError(/commuicate_utf8_finish/);
-    });
-
-    it('promisifies functions', async function () {
-        Gio._promisify(Gio.File.prototype, 'query_info_async');
+describe('Automatically-promisified function', function () {
+    it('is promisified', async function () {
         const file = Gio.File.new_for_path('.');
 
         const fileInfo = await file.query_info_async(Gio.FILE_ATTRIBUTE_STANDARD_TYPE,
@@ -89,7 +80,6 @@ describe('Promisify function', function () {
     });
 
     it('preserves old behavior', function (done) {
-        Gio._promisify(Gio.File.prototype, 'query_info_async');
         const file = Gio.File.new_for_path('.');
 
         file.query_info_async(Gio.FILE_ATTRIBUTE_STANDARD_TYPE,
@@ -98,11 +88,6 @@ describe('Promisify function', function () {
                 expect(fileInfo.get_file_type()).not.toBe(Gio.FileType.UNKNOWN);
                 done();
             });
-    });
-
-    it('can guess the finish function', function () {
-        expect(() => Gio._promisify(Gio._LocalFilePrototype, 'read_async')).not.toThrow();
-        expect(() => Gio._promisify(Gio.DBus, 'get')).not.toThrow();
     });
 });
 
@@ -758,11 +743,6 @@ describe('GioUnix compatibility fallback', function () {
 });
 
 describe('Gio.File.replace_contents_async override', function () {
-    beforeAll(function () {
-        // Check that it works with promisify as well
-        Gio._promisify(Gio.File.prototype, 'replace_contents_async');
-    });
-
     const expectedContents = new TextEncoder().encode('replace_contents_async');
     let file;
     beforeEach(function () {

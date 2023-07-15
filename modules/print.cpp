@@ -312,6 +312,8 @@ static constexpr JSPropertySpec props[] = {
     JSPropertySpec::int32Value(
         "MAKE_PROXY_WRAPPER_FUNCTION_CALL", GJS_MODULE_PROP_FLAGS,
         GjsDeprecationMessageId::MakeProxyWrapperFunctionCall),
+    JSPropertySpec::int32Value("PROMISIFY", GJS_MODULE_PROP_FLAGS,
+                               GjsDeprecationMessageId::Promisify),
     JS_PS_END};
 
 bool gjs_define_print_stuff(JSContext* cx, JS::MutableHandleObject module) {

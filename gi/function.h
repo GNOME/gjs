@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <ffi.h>
+#include <gio/gio.h>
 #include <girepository/girepository.h>
 #include <glib-object.h>
 
@@ -108,6 +109,7 @@ class GjsFunctionCallState {
     uint8_t gi_argc = 0;
     uint8_t processed_c_args = 0;
     bool failed : 1 = false;
+    bool has_async_return : 1 = false;
     bool can_throw_gerror : 1;
     bool is_method : 1;
 
@@ -159,6 +161,10 @@ class GjsFunctionCallState {
     constexpr unsigned last_processed_index() const {
         return first_arg_offset() + processed_c_args;
     }
+
+    [[nodiscard]] bool is_async() const { return has_async_return; }
+
+    void mark_async() { has_async_return = true; }
 };
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -169,3 +175,8 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_constructor_from_c(JSContext*, const GI::FunctionInfo&,
                                    JS::HandleObject this_obj,
                                    const JS::CallArgs&, GIArgument* rvalue);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_invoke_finish_from_c(JSContext*, const GI::CallableInfo&,
+                              JS::HandleObject this_obj, GAsyncResult*,
+                              JS::MutableHandleValue rvalue);

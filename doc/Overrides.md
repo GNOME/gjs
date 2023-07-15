@@ -169,53 +169,6 @@ function and the resulting [`Gio.DBusInterfaceSkeleton`][gdbusinterfaceskeleton]
 [gvariant]: https://gjs-docs.gnome.org/glib20/glib.variant
 [wrap-js-object]: https://gjs.guide/guides/gio/dbus.html#exporting-interfaces
 
-### Gio._promisify(prototype, startFunc, finishFunc)
-
-> Warning: This is a tech-preview and not guaranteed to be stable
-
-Type:
-* Static
-
-Parameters:
-* prototype (`Object`) — The prototype of a GObject class
-* startFunc (`Function`) — The "async" or "start" method
-* finishFunc (`Function`) — The "finish" method
-
-Replaces the original `startFunc` on a GObject class prototype, so that it
-returns a `Promise` and can be used as a JavaScript `async` function.
-
-The function may then be used like any other `Promise` without the need for a
-customer wrapper, simply by invoking `startFunc` without the callback argument:
-
-```js
-Gio._promisify(Gio.InputStream.prototype, 'read_bytes_async',
-    'read_bytes_finish');
-
-try {
-    const inputBytes = new GLib.Bytes('content');
-    const inputStream = Gio.MemoryInputStream.new_from_bytes(inputBytes);
-    const result = await inputStream.read_bytes_async(inputBytes.get_size(),
-        GLib.PRIORITY_DEFAULT, null);
-} catch (e) {
-    logError(e, 'Failed to read bytes');
-}
-```
-
-Note that for "finish" methods that normally return an array with a success
-boolean, a wrapped function will automatically remove it from the return value:
-
-```js
-Gio._promisify(Gio.File.prototype, 'load_contents_async',
-    'load_contents_finish');
-
-try {
-    const file = Gio.File.new_for_path('file.txt');
-    const [contents, etag] = await file.load_contents_async(null);
-} catch (e) {
-    logError(e, 'Failed to load file contents');
-}
-```
-
 ### Gio.FileEnumerator[Symbol.asyncIterator]
 
 [Gio.FileEnumerator](gio-fileenumerator) are [async iterators](async-iterators).
@@ -1013,4 +966,3 @@ Note that any variable, function and class declared at the top level, except
 those declared by `let` or `const`, are exported as properties of the module
 object, and one js file is executed only once at most even if it is imported
 multiple times.
-

@@ -25,6 +25,7 @@ enum GjsDeprecationMessageId : uint8_t {
     PlatformSpecificTypelib,
     Renamed,
     MakeProxyWrapperFunctionCall,
+    Promisify,
     LastValue,  // insert new elements before this one
 };
 
@@ -63,6 +64,9 @@ inline constexpr const std::string_view messages[] = {
     // MakeProxyWrapperFunctionCall:
     "Gio.DBusProxy.makeProxyWrapper for '{}' returns a class expression. Do "
     "not call it as a function without 'new'.",
+
+    // Promisify:
+    "Gio._promisify is deprecated, {} already supports promises.",
 };
 static_assert(std::size(messages) == GjsDeprecationMessageId::LastValue);
 
