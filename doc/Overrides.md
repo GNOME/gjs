@@ -200,6 +200,21 @@ try {
 }
 ```
 
+Note that for "finish" methods that normally return an array with a success
+boolean, a wrapped function will automatically remove it from the return value:
+
+```js
+Gio._promisify(Gio.File.prototype, 'load_contents_async',
+    'load_contents_finish');
+
+try {
+    const file = Gio.File.new_for_path('file.txt');
+    const [contents, len, etag] = await file.load_contents_async(null);
+} catch (e) {
+    logError(e, 'Failed to load file contents');
+}
+```
+
 ### Gio.FileEnumerator[Symbol.asyncIterator]
 
 [Gio.FileEnumerator](gio-fileenumerator) are [async iterators](async-iterators).
