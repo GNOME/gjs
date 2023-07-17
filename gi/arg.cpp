@@ -2480,8 +2480,6 @@ bool gjs_value_from_g_argument(JSContext* context,
                       "Converting GArgument %s to JS::Value",
                       g_type_tag_to_string(type_tag));
 
-    value_p.setNull();
-
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
         // If the argument is a pointer, convert to null to match our
@@ -2539,8 +2537,10 @@ bool gjs_value_from_g_argument(JSContext* context,
     case GI_TYPE_TAG_GTYPE:
     {
         GType gtype = gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(arg);
-        if (gtype == 0)
-            return true;  /* value_p is set to JS null */
+        if (gtype == 0) {
+            value_p.setNull();
+            return true;
+        }
 
         JS::RootedObject obj(context, gjs_gtype_create_gtype_wrapper(context, gtype));
         if (!obj)
@@ -2572,10 +2572,10 @@ bool gjs_value_from_g_argument(JSContext* context,
     case GI_TYPE_TAG_FILENAME:
     case GI_TYPE_TAG_UTF8: {
         const char* str = gjs_arg_get<const char*>(arg);
-        // For nullptr we'll return JS::NullValue(), which is already set
-        // in *value_p
-        if (!str)
+        if (!str) {
+            value_p.setNull();
             return true;
+        }
 
         if (type_tag == GI_TYPE_TAG_FILENAME)
             return gjs_string_from_filename(context, str, -1, value_p);
@@ -2585,8 +2585,10 @@ bool gjs_value_from_g_argument(JSContext* context,
 
     case GI_TYPE_TAG_ERROR: {
         GError* ptr = gjs_arg_get<GError*>(arg);
-        if (!ptr)
+        if (!ptr) {
+            value_p.setNull();
             return true;
+        }
 
         JSObject* obj = ErrorInstance::object_for_c_ptr(context, ptr);
         if (!obj)
@@ -2815,8 +2817,11 @@ bool gjs_value_from_g_argument(JSContext* context,
 
     case GI_TYPE_TAG_ARRAY:
         if (!gjs_arg_get<void*>(arg)) {
-            /* OK, but no conversion to do */
-        } else if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+            value_p.setNull();
+            return true;
+        }
+
+        if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
             if (g_type_info_is_zero_terminated(type_info)) {
                 GjsAutoBaseInfo param_info =
                     g_type_info_get_param_type(type_info, 0);
