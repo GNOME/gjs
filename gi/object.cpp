@@ -340,6 +340,12 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, JS::HandleString name,
     if (g_param_spec_get_qdata(param, ObjectBase::custom_property_quark()))
         return true;
 
+    if (param->flags & G_PARAM_DEPRECATED) {
+        const std::string& class_name = format_name();
+        _gjs_warn_deprecated_once_per_callsite(
+            cx, DeprecatedGObjectProperty, {class_name.c_str(), param->name});
+    }
+
     if ((param->flags & G_PARAM_READABLE) == 0) {
         rval.setUndefined();
         return true;

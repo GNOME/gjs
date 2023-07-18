@@ -2236,6 +2236,24 @@ describe('GObject properties', function () {
     it('throws when setting a read-only property', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
     });
+
+    it('allows to set/get deprecated properties', function () {
+        if (!GObject.Object.find_property.call(
+            GIMarshallingTests.PropertiesObject, 'some-deprecated-int'))
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GObject property*.some-deprecated-int is deprecated*');
+        obj.some_deprecated_int = 35;
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testAllowToSetGetDeprecatedProperties');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GObject property*.some-deprecated-int is deprecated*');
+        expect(obj.some_deprecated_int).toBe(35);
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testAllowToSetGetDeprecatedProperties');
+    });
 });
 
 describe('GObject signals', function () {
