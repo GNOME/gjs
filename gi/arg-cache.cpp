@@ -145,11 +145,6 @@ struct BasicType {
     GITypeTag m_tag : 5;
 };
 
-struct String {
-    constexpr String() : m_filename(false) {}
-    bool m_filename : 1;
-};
-
 struct TypeInfo {
     constexpr GITypeInfo* type_info() const {
         // Should be const GITypeInfo*, but G-I APIs won't accept that
@@ -716,26 +711,24 @@ struct GTypeIn : SkipAll {
             JS::HandleValue) override;
 };
 
-struct StringInTransferNone : NullableIn, String {
+template <GITypeTag TAG = GI_TYPE_TAG_UTF8>
+struct StringInTransferNone : NullableIn {
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 };
 
-struct StringIn : StringInTransferNone {
+struct StringIn : StringInTransferNone<GI_TYPE_TAG_UTF8> {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override {
         return skip();
     }
 };
 
-struct FilenameInTransferNone : StringInTransferNone {
-    FilenameInTransferNone() { m_filename = true; }
-};
+using FilenameInTransferNone = StringInTransferNone<GI_TYPE_TAG_FILENAME>;
 
 struct FilenameIn : FilenameInTransferNone {
-    FilenameIn() { m_filename = true; }
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override {
         return skip();
@@ -1149,9 +1142,10 @@ bool Nullable::handle_nullable(JSContext* cx, GIArgument* arg,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-bool StringInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
-                              GIArgument* arg, JS::HandleValue value) {
+template <GITypeTag TAG>
+GJS_JSAPI_RETURN_CONVENTION bool StringInTransferNone<TAG>::in(
+    JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+    JS::HandleValue value) {
     if (value.isNull())
         return NullableIn::in(cx, state, arg, value);
 
@@ -1159,19 +1153,21 @@ bool StringInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
         return report_typeof_mismatch(cx, m_arg_name, value,
                                       ExpectedType::STRING);
 
-    if (m_filename) {
+    if constexpr (TAG == GI_TYPE_TAG_FILENAME) {
         GjsAutoChar str;
         if (!gjs_string_to_filename(cx, value, &str))
             return false;
         gjs_arg_set(arg, str.release());
         return true;
+    } else if constexpr (TAG == GI_TYPE_TAG_UTF8) {
+        JS::UniqueChars str = gjs_string_to_utf8(cx, value);
+        if (!str)
+            return false;
+        gjs_arg_set(arg, g_strdup(str.get()));
+        return true;
+    } else {
+        return invalid(cx, G_STRFUNC);
     }
-
-    JS::UniqueChars str = gjs_string_to_utf8(cx, value);
-    if (!str)
-        return false;
-    gjs_arg_set(arg, g_strdup(str.get()));
-    return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1597,10 +1593,10 @@ bool CallbackIn::release(JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-bool StringInTransferNone::release(JSContext*, GjsFunctionCallState*,
-                                   GIArgument* in_arg,
-                                   GIArgument* out_arg [[maybe_unused]]) {
+template <GITypeTag TAG>
+GJS_JSAPI_RETURN_CONVENTION bool StringInTransferNone<TAG>::release(
+    JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
+    GIArgument* out_arg [[maybe_unused]]) {
     g_free(gjs_arg_get<void*>(in_arg));
     return true;
 }
@@ -2284,7 +2280,8 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 
         case GI_TYPE_TAG_UTF8:
             if (transfer == GI_TRANSFER_NOTHING)
-                set_argument_auto<Arg::StringInTransferNone>(common_args);
+                set_argument_auto<Arg::StringInTransferNone<GI_TYPE_TAG_UTF8>>(
+                    common_args);
             else
                 set_argument_auto<Arg::StringIn>(common_args);
             break;
