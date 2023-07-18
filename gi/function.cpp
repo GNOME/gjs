@@ -836,12 +836,10 @@ std::string Gjs::Function::format_name() {
 namespace Gjs {
 
 static void* get_return_ffi_pointer_from_gi_argument(
-    GITypeInfo* return_type, GIFFIReturnValue* return_value) {
-    // This should be the inverse of gi_type_info_extract_ffi_return_value().
-    if (!return_type)
-        return nullptr;
-
-    switch (g_type_info_get_tag(return_type)) {
+    GITypeTag tag, GITypeInfo* return_type, GIFFIReturnValue* return_value) {
+    switch (tag) {
+        case GI_TYPE_TAG_VOID:
+            return nullptr;
         case GI_TYPE_TAG_INT8:
             return &gjs_arg_member<int8_t>(return_value);
         case GI_TYPE_TAG_INT16:
@@ -867,6 +865,9 @@ static void* get_return_ffi_pointer_from_gi_argument(
         case GI_TYPE_TAG_DOUBLE:
             return &gjs_arg_member<double>(return_value);
         case GI_TYPE_TAG_INTERFACE: {
+            if (!return_type)
+                return nullptr;
+
             GjsAutoBaseInfo info = g_type_info_get_interface(return_type);
 
             switch (info.type()) {
@@ -1046,9 +1047,10 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     g_assert_cmpuint(ffi_arg_pos, ==, ffi_argc);
     g_assert_cmpuint(gi_arg_pos, ==, state.gi_argc);
 
+    GITypeTag return_tag = m_arguments.return_tag();
     GITypeInfo* return_type = m_arguments.return_type();
-    return_value_p =
-        get_return_ffi_pointer_from_gi_argument(return_type, &return_value);
+    return_value_p = get_return_ffi_pointer_from_gi_argument(
+        return_tag, return_type, &return_value);
     ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
              ffi_arg_pointers.get());
 
@@ -1061,6 +1063,11 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     if (return_type) {
         gi_type_info_extract_ffi_return_value(return_type, &return_value,
                                               state.return_value());
+    } else if (return_tag != GI_TYPE_TAG_VOID) {
+        g_assert(GI_TYPE_TAG_IS_BASIC(return_tag));
+        gi_type_tag_extract_ffi_return_value(return_tag, GI_INFO_TYPE_INVALID,
+                                             &return_value,
+                                             state.return_value());
     }
 
     // Process out arguments and return values. This loop is skipped if we fail

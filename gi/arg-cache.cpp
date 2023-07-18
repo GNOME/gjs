@@ -359,7 +359,10 @@ struct GenericOut : GenericInOut {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
-    const ReturnValue* as_return_value() const override { return this; }
+    GITypeTag return_tag() const override {
+        return g_type_info_get_tag(&const_cast<GenericOut*>(this)->m_type_info);
+    }
+    const GITypeInfo* return_type() const override { return &m_type_info; }
 };
 
 struct GenericReturn : ReturnValue {
@@ -387,13 +390,18 @@ struct NumericOut : SkipAll, Positioned {
 using BooleanOut = NumericOut<gboolean, GI_TYPE_TAG_BOOLEAN>;
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-struct NumericReturn : GenericReturn {
+struct NumericReturn : SkipAll {
     static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
+            JS::HandleValue) override {
+        return invalid(cx, G_STRFUNC);
+    }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
         return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
                                                   value);
     }
+    GITypeTag return_tag() const override { return TAG; }
 };
 
 using BooleanReturn = NumericReturn<gboolean, GI_TYPE_TAG_BOOLEAN>;
@@ -1810,12 +1818,20 @@ GType ArgsCache::instance_type() const {
     return instance()->as_instance()->gtype();
 }
 
+GITypeTag ArgsCache::return_tag() const {
+    Argument* rval = return_value();
+    if (!rval)
+        return GI_TYPE_TAG_VOID;
+
+    return rval->return_tag();
+}
+
 GITypeInfo* ArgsCache::return_type() const {
     Argument* rval = return_value();
     if (!rval)
         return nullptr;
 
-    return const_cast<GITypeInfo*>(rval->as_return_value()->type_info());
+    return const_cast<GITypeInfo*>(rval->return_type());
 }
 
 constexpr void ArgsCache::set_skip_all(uint8_t index, const char* name) {
@@ -1890,50 +1906,53 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
             return;
 
         case GI_TYPE_TAG_INT8:
-            set_return<Arg::NumericReturn<int8_t>>(&type_info, transfer, flags);
+            set_return<Arg::NumericReturn<int8_t, GI_TYPE_TAG_INT8>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT16:
-            set_return<Arg::NumericReturn<int16_t>>(&type_info, transfer,
-                                                    flags);
+            set_return<Arg::NumericReturn<int16_t, GI_TYPE_TAG_INT16>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT32:
-            set_return<Arg::NumericReturn<int32_t>>(&type_info, transfer,
-                                                    flags);
+            set_return<Arg::NumericReturn<int32_t, GI_TYPE_TAG_INT32>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT8:
-            set_return<Arg::NumericReturn<uint8_t>>(&type_info, transfer,
-                                                    flags);
+            set_return<Arg::NumericReturn<uint8_t, GI_TYPE_TAG_UINT8>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT16:
-            set_return<Arg::NumericReturn<uint16_t>>(&type_info, transfer,
-                                                     flags);
+            set_return<Arg::NumericReturn<uint16_t, GI_TYPE_TAG_UINT16>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT32:
-            set_return<Arg::NumericReturn<uint32_t>>(&type_info, transfer,
-                                                     flags);
+            set_return<Arg::NumericReturn<uint32_t, GI_TYPE_TAG_UINT32>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT64:
-            set_return<Arg::NumericReturn<int64_t>>(&type_info, transfer,
-                                                    flags);
+            set_return<Arg::NumericReturn<int64_t, GI_TYPE_TAG_INT64>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT64:
-            set_return<Arg::NumericReturn<uint64_t>>(&type_info, transfer,
-                                                     flags);
+            set_return<Arg::NumericReturn<uint64_t, GI_TYPE_TAG_UINT64>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_FLOAT:
-            set_return<Arg::NumericReturn<float>>(&type_info, transfer, flags);
+            set_return<Arg::NumericReturn<float, GI_TYPE_TAG_FLOAT>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_DOUBLE:
-            set_return<Arg::NumericReturn<double>>(&type_info, transfer, flags);
+            set_return<Arg::NumericReturn<double, GI_TYPE_TAG_DOUBLE>>(
+                &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_ARRAY: {
