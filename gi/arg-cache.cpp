@@ -192,6 +192,14 @@ struct Positioned {
         return true;
     }
 
+    constexpr bool set_inout_parameter(GjsFunctionCallState* state,
+                                       GIArgument* arg) {
+        state->out_cvalue(m_arg_pos) = state->inout_original_cvalue(m_arg_pos) =
+            *arg;
+        gjs_arg_set(arg, &state->out_cvalue(m_arg_pos));
+        return true;
+    }
+
     uint8_t m_arg_pos = 0;
 };
 
@@ -671,6 +679,25 @@ struct NumericIn : SkipAll {
             JS::HandleValue) override;
 };
 
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+struct NumericInOut : NumericIn<T>, Positioned {
+    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+    bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue value) override {
+        if (!NumericIn<T>::in(cx, state, arg, value))
+            return false;
+
+        return set_inout_parameter(state, arg);
+    }
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
+                                                  value);
+    }
+};
+
+using BooleanInOut = NumericInOut<gboolean, GI_TYPE_TAG_BOOLEAN>;
+
 struct UnicharIn : SkipAll {
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
@@ -892,10 +919,7 @@ bool GenericInOut::in(JSContext* cx, GjsFunctionCallState* state,
     if (!GenericIn::in(cx, state, arg, value))
         return false;
 
-    state->out_cvalue(m_arg_pos) = state->inout_original_cvalue(m_arg_pos) =
-        *arg;
-    gjs_arg_set(arg, &state->out_cvalue(m_arg_pos));
-    return true;
+    return set_inout_parameter(state, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -2323,6 +2347,64 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index, GITypeInfo* type_info,
     }
 }
 
+void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
+                                       GIArgInfo* arg, GjsArgumentFlags flags) {
+    const char* name = g_base_info_get_name(arg);
+    GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
+    auto common_args =
+        std::make_tuple(gi_index, name, type_info, transfer, flags);
+    GITypeTag tag = g_type_info_get_tag(type_info);
+
+    switch (tag) {
+        case GI_TYPE_TAG_BOOLEAN:
+            set_argument_auto<Arg::BooleanInOut>(common_args);
+            break;
+
+        case GI_TYPE_TAG_INT8:
+            set_argument_auto<Arg::NumericInOut<int8_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_INT16:
+            set_argument_auto<Arg::NumericInOut<int16_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_INT32:
+            set_argument_auto<Arg::NumericInOut<int32_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_UINT8:
+            set_argument_auto<Arg::NumericInOut<uint8_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_UINT16:
+            set_argument_auto<Arg::NumericInOut<uint16_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_UINT32:
+            set_argument_auto<Arg::NumericInOut<uint32_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_INT64:
+            set_argument_auto<Arg::NumericInOut<int64_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_UINT64:
+            set_argument_auto<Arg::NumericInOut<uint64_t>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_FLOAT:
+            set_argument_auto<Arg::NumericInOut<float>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_DOUBLE:
+            set_argument_auto<Arg::NumericInOut<double>>(common_args);
+            return;
+
+        default:
+            set_argument_auto<Arg::FallbackInOut>(common_args);
+    }
+}
+
 void ArgsCache::build_instance(GICallableInfo* callable) {
     if (!m_is_method)
         return;
@@ -2535,7 +2617,7 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
     if (direction == GI_DIRECTION_IN)
         build_normal_in_arg(gi_index, &type_info, arg, flags);
     else if (direction == GI_DIRECTION_INOUT)
-        set_argument_auto<Arg::FallbackInOut>(common_args);
+        build_normal_inout_arg(gi_index, &type_info, arg, flags);
     else
         build_normal_out_arg(gi_index, &type_info, arg, flags);
 
