@@ -726,6 +726,43 @@ struct StringIn : StringInTransferNone<GI_TYPE_TAG_UTF8> {
     }
 };
 
+template <GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+struct StringOutBase : SkipAll {
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return Gjs::c_value_to_js(cx, gjs_arg_get<char*>(arg), value);
+    }
+    bool release(JSContext* cx, GjsFunctionCallState*, GIArgument*,
+                 GIArgument* out_arg [[maybe_unused]]) override {
+        if constexpr (TRANSFER == GI_TRANSFER_NOTHING) {
+            return skip();
+        } else if constexpr (TRANSFER == GI_TRANSFER_EVERYTHING) {
+            g_clear_pointer(&gjs_arg_member<char*>(out_arg), g_free);
+            return true;
+        } else {
+            return invalid(cx, G_STRFUNC);
+        }
+    }
+};
+
+template <GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+struct StringReturn : StringOutBase<TRANSFER> {
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
+            JS::HandleValue) override {
+        return Argument::invalid(cx, G_STRFUNC);
+    }
+
+    GITypeTag return_tag() const override { return GI_TYPE_TAG_UTF8; }
+};
+
+template <GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+struct StringOut : StringOutBase<TRANSFER>, Positioned {
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
+    }
+};
+
 using FilenameInTransferNone = StringInTransferNone<GI_TYPE_TAG_FILENAME>;
 
 struct FilenameIn : FilenameInTransferNone {
@@ -1896,6 +1933,9 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
     *inc_counter_out = true;
     GjsArgumentFlags flags = GjsArgumentFlags::SKIP_IN;
 
+    if (g_callable_info_may_return_null(callable))
+        flags |= GjsArgumentFlags::MAY_BE_NULL;
+
     switch (tag) {
         case GI_TYPE_TAG_BOOLEAN:
             set_return<Arg::BooleanReturn>(&type_info, transfer, flags);
@@ -1950,6 +1990,17 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
             set_return<Arg::NumericReturn<double, GI_TYPE_TAG_DOUBLE>>(
                 &type_info, transfer, flags);
             return;
+
+        case GI_TYPE_TAG_UTF8:
+            if (transfer == GI_TRANSFER_NOTHING) {
+                set_return<Arg::StringReturn<GI_TRANSFER_NOTHING>>(
+                    &type_info, transfer, flags);
+                return;
+            } else {
+                set_return<Arg::StringReturn<GI_TRANSFER_EVERYTHING>>(
+                    &type_info, transfer, flags);
+                return;
+            }
 
         case GI_TYPE_TAG_ARRAY: {
             int length_pos = g_type_info_get_array_length(&type_info);
@@ -2356,6 +2407,16 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index, GITypeInfo* type_info,
 
         case GI_TYPE_TAG_DOUBLE:
             set_argument_auto<Arg::NumericOut<double>>(common_args);
+            return;
+
+        case GI_TYPE_TAG_UTF8:
+            if (transfer == GI_TRANSFER_NOTHING) {
+                set_argument_auto<Arg::StringOut<GI_TRANSFER_NOTHING>>(
+                    common_args);
+            } else {
+                set_argument_auto<Arg::StringOut<GI_TRANSFER_EVERYTHING>>(
+                    common_args);
+            }
             return;
 
         default:
