@@ -362,6 +362,18 @@ struct GenericReturn : ReturnValue {
     }
 };
 
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+struct NumericReturn : GenericReturn {
+    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+             JS::MutableHandleValue value) override {
+        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
+                                                  value);
+    }
+};
+
+using BooleanReturn = NumericReturn<gboolean, GI_TYPE_TAG_BOOLEAN>;
+
 struct SimpleOut : SkipAll, Positioned {
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue) override {
@@ -1832,14 +1844,72 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
     *inc_counter_out = true;
     GjsArgumentFlags flags = GjsArgumentFlags::SKIP_IN;
 
-    if (tag == GI_TYPE_TAG_ARRAY) {
-        int length_pos = g_type_info_get_array_length(&type_info);
-        if (length_pos >= 0) {
-            set_array_argument<Arg::Kind::RETURN_VALUE>(
-                callable, 0, &type_info, GI_DIRECTION_OUT, nullptr, flags,
-                length_pos);
+    switch (tag) {
+        case GI_TYPE_TAG_BOOLEAN:
+            set_return<Arg::BooleanReturn>(&type_info, transfer, flags);
             return;
+
+        case GI_TYPE_TAG_INT8:
+            set_return<Arg::NumericReturn<int8_t>>(&type_info, transfer, flags);
+            return;
+
+        case GI_TYPE_TAG_INT16:
+            set_return<Arg::NumericReturn<int16_t>>(&type_info, transfer,
+                                                    flags);
+            return;
+
+        case GI_TYPE_TAG_INT32:
+            set_return<Arg::NumericReturn<int32_t>>(&type_info, transfer,
+                                                    flags);
+            return;
+
+        case GI_TYPE_TAG_UINT8:
+            set_return<Arg::NumericReturn<uint8_t>>(&type_info, transfer,
+                                                    flags);
+            return;
+
+        case GI_TYPE_TAG_UINT16:
+            set_return<Arg::NumericReturn<uint16_t>>(&type_info, transfer,
+                                                     flags);
+            return;
+
+        case GI_TYPE_TAG_UINT32:
+            set_return<Arg::NumericReturn<uint32_t>>(&type_info, transfer,
+                                                     flags);
+            return;
+
+        case GI_TYPE_TAG_INT64:
+            set_return<Arg::NumericReturn<int64_t>>(&type_info, transfer,
+                                                    flags);
+            return;
+
+        case GI_TYPE_TAG_UINT64:
+            set_return<Arg::NumericReturn<uint64_t>>(&type_info, transfer,
+                                                     flags);
+            return;
+
+        case GI_TYPE_TAG_FLOAT:
+            set_return<Arg::NumericReturn<float>>(&type_info, transfer, flags);
+            return;
+
+        case GI_TYPE_TAG_DOUBLE:
+            set_return<Arg::NumericReturn<double>>(&type_info, transfer, flags);
+            return;
+
+        case GI_TYPE_TAG_ARRAY: {
+            int length_pos = g_type_info_get_array_length(&type_info);
+            if (length_pos >= 0) {
+                set_array_argument<Arg::Kind::RETURN_VALUE>(
+                    callable, 0, &type_info, GI_DIRECTION_OUT, nullptr, flags,
+                    length_pos);
+                return;
+            }
+
+            [[fallthrough]];
         }
+
+        default:
+            break;
     }
 
     // in() is ignored for the return value, but skip_in is not (it is used

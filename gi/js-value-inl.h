@@ -10,6 +10,7 @@
 
 #include <cmath>  // for isnan
 #include <limits>
+#include <string>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -20,6 +21,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>    // for CanonicalizeNaN
 
 #include "gi/gtype.h"
 #include "gi/value.h"
@@ -319,6 +321,63 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     *out = TypeWrapper<WantedType>{wanted_out};
 
     return true;
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
+    JSContext* cx [[maybe_unused]], T value,
+    JS::MutableHandleValue js_value_p) {
+    if constexpr (std::is_same_v<T, bool>) {
+        js_value_p.setBoolean(value);
+        return true;
+    } else if constexpr (std::is_same_v<  // NOLINT(readability/braces)
+                             T, gboolean> &&
+                         TAG == GI_TYPE_TAG_BOOLEAN) {
+        js_value_p.setBoolean(value);
+        return true;
+    } else if constexpr (std::is_arithmetic_v<T>) {
+        if constexpr (std::is_same_v<T, int64_t> ||
+                      std::is_same_v<T, uint64_t>) {
+            if (value < Gjs::min_safe_big_number<T>() ||
+                value > Gjs::max_safe_big_number<T>()) {
+                js_value_p.setDouble(value);
+                return true;
+            }
+        }
+        if constexpr (std::is_floating_point_v<T>) {
+            js_value_p.setDouble(JS::CanonicalizeNaN(double{value}));
+            return true;
+        }
+        js_value_p.setNumber(value);
+        return true;
+    } else if constexpr (std::is_same_v<T,  // NOLINT(readability/braces)
+                                        char*> ||
+                         std::is_same_v<T, const char*>) {
+        if (!value) {
+            js_value_p.setNull();
+            return true;
+        }
+        return gjs_string_from_utf8(cx, value, js_value_p);
+    } else {
+        static_assert(std::is_arithmetic_v<T>, "Unsupported type");
+    }
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
+    JSContext* cx [[maybe_unused]], T value,
+    JS::MutableHandleValue js_value_p) {
+    if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
+        if (value < Gjs::min_safe_big_number<T>() ||
+            value > Gjs::max_safe_big_number<T>()) {
+            g_warning(
+                "Value %s cannot be safely stored in a JS Number "
+                "and may be rounded",
+                std::to_string(value).c_str());
+        }
+    }
+
+    return c_value_to_js<T, TAG>(cx, value, js_value_p);
 }
 
 }  // namespace Gjs
