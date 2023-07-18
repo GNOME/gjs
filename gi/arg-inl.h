@@ -218,22 +218,22 @@ gjs_arg_get_maybe_rounded(GIArgument* arg) {
     return static_cast<double>(val);
 }
 
-template <typename T>
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
     JSContext* cx, const JS::HandleValue& value, GIArgument* arg,
     bool* out_of_range) {
     if constexpr (Gjs::type_has_js_getter<T>())
-        return Gjs::js_value_to_c(cx, value, &gjs_arg_member<T>(arg));
+        return Gjs::js_value_to_c<TAG>(cx, value, &gjs_arg_member<T, TAG>(arg));
 
     Gjs::JsValueHolder::Relaxed<T> val{};
 
-    if (!Gjs::js_value_to_c_checked<T>(cx, value, &val, out_of_range))
+    if (!Gjs::js_value_to_c_checked<T, TAG>(cx, value, &val, out_of_range))
         return false;
 
     if (*out_of_range)
         return false;
 
-    gjs_arg_set<T>(arg, val);
+    gjs_arg_set<T, TAG>(arg, val);
 
     return true;
 }

@@ -231,7 +231,7 @@ template <typename BigT>
     return std::numeric_limits<BigT>::lowest();
 }
 
-template <typename WantedType, typename T>
+template <typename WantedType, GITypeTag TAG = GI_TYPE_TAG_VOID, typename T>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     JSContext* cx, const JS::HandleValue& value, T* out, bool* out_of_range) {
     static_assert(std::numeric_limits<T>::max() >=
@@ -268,7 +268,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     }
 
     if constexpr (std::is_same_v<WantedType, T>)
-        return js_value_to_c(cx, value, out);
+        return js_value_to_c<TAG>(cx, value, out);
 
     // JS::ToIntNN() converts undefined, NaN, infinity to 0
     if constexpr (std::is_integral_v<WantedType>) {
@@ -280,7 +280,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     }
 
     if constexpr (std::is_arithmetic_v<T>) {
-        bool ret = js_value_to_c(cx, value, out);
+        bool ret = js_value_to_c<TAG>(cx, value, out);
         if (out_of_range) {
             // Infinity and NaN preserved between floating point types
             if constexpr (std::is_floating_point_v<WantedType> &&
@@ -307,15 +307,15 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     }
 }
 
-template <typename WantedType>
+template <typename WantedType, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     JSContext* cx, const JS::HandleValue& value, TypeWrapper<WantedType>* out,
     bool* out_of_range) {
     static_assert(std::is_integral_v<WantedType>);
 
     WantedType wanted_out;
-    if (!js_value_to_c_checked<WantedType>(cx, value, &wanted_out,
-                                           out_of_range))
+    if (!js_value_to_c_checked<WantedType, TAG>(cx, value, &wanted_out,
+                                                out_of_range))
         return false;
 
     *out = TypeWrapper<WantedType>{wanted_out};
