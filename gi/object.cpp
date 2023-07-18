@@ -44,11 +44,13 @@
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 
 #include "gi/arg-inl.h"
+#include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/closure.h"
 #include "gi/cwrapper.h"
 #include "gi/function.h"
 #include "gi/gjs_gi_trace.h"
+#include "gi/js-value-inl.h"  // for Relaxed, c_value_to_js_checked
 #include "gi/object.h"
 #include "gi/repo.h"
 #include "gi/toggle.h"
@@ -286,6 +288,7 @@ bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
+template <typename T, GITypeTag TAG>
 bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
@@ -302,9 +305,11 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    return priv->to_instance()->prop_getter_impl(cx, pspec, args.rval());
+    return priv->to_instance()->prop_getter_impl<T, TAG>(cx, pspec,
+                                                         args.rval());
 }
 
+template <typename T, GITypeTag TAG>
 bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
                                       JS::MutableHandleValue rval) {
     if (!check_gobject_finalized("get any property from")) {
@@ -324,7 +329,18 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param));
     g_object_get_property(m_ptr, param->name, &gvalue);
 
-    return gjs_value_from_g_value(cx, rval, &gvalue);
+    if constexpr (!std::is_same_v<T, void>) {
+        if (Gjs::c_value_to_js<T, TAG>(cx, Gjs::gvalue_get<T, TAG>(&gvalue),
+                                       rval))
+            return true;
+
+        gjs_throw(cx, "Can't convert value %s got from %s.%s::%s property",
+                  Gjs::gvalue_to_string<void*, TAG>(&gvalue).c_str(), ns(),
+                  name(), param->name);
+        return false;
+    } else {
+        return gjs_value_from_g_value(cx, rval, &gvalue);
+    }
 }
 
 bool ObjectBase::prop_getter_write_only(JSContext*, unsigned argc,
@@ -420,6 +436,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
 
 /* Dynamic setter for GObject properties. Returns false on OOM/exception.
  * args.rval() becomes the "stored value" for the property. */
+template <typename T, GITypeTag TAG>
 bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
@@ -439,9 +456,10 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* Clear the JS stored value, to avoid keeping additional references */
     args.rval().setUndefined();
 
-    return priv->to_instance()->prop_setter_impl(cx, pspec, args[0]);
+    return priv->to_instance()->prop_setter_impl<T, TAG>(cx, pspec, args[0]);
 }
 
+template <typename T, GITypeTag TAG>
 bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
                                       JS::HandleValue value) {
     if (!check_gobject_finalized("set any property on"))
@@ -458,8 +476,47 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
                      param_spec->name);
 
     Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param_spec));
-    if (!gjs_value_to_g_value(cx, value, &gvalue))
-        return false;
+
+    if constexpr (std::is_same_v<T, void>) {
+        if (!gjs_value_to_g_value(cx, value, &gvalue))
+            return false;
+    } else if constexpr (std::is_arithmetic_v<  // NOLINT(readability/braces)
+                             T> &&
+                         !Gjs::type_has_js_getter<T>()) {
+        bool out_of_range = false;
+
+        Gjs::JsValueHolder::Relaxed<T> val{};
+        if (!Gjs::js_value_to_c_checked<T, TAG>(cx, value, &val,
+                                                &out_of_range)) {
+            gjs_throw(cx, "Can't convert value %s to set %s.%s::%s property",
+                      gjs_debug_value(value).c_str(), ns(), name(),
+                      param_spec->name);
+            return false;
+        }
+
+        if (out_of_range) {
+            gjs_throw(cx, "value %s is out of range for %s (type %s)",
+                      std::to_string(val).c_str(), param_spec->name,
+                      Gjs::static_type_name<T, TAG>());
+            return false;
+        }
+
+        Gjs::gvalue_set<T, TAG>(&gvalue, val);
+    } else {
+        T native_value;
+        if (!Gjs::js_value_to_c<TAG>(cx, value, &native_value)) {
+            gjs_throw(cx, "Can't convert %s value to set %s.%s::%s property",
+                      gjs_debug_value(value).c_str(), ns(), name(),
+                      param_spec->name);
+            return false;
+        }
+
+        if constexpr (std::is_pointer_v<T>) {
+            Gjs::gvalue_take<T, TAG>(&gvalue, g_steal_pointer(&native_value));
+        } else {
+            Gjs::gvalue_set<T, TAG>(&gvalue, native_value);
+        }
+    }
 
     g_object_set_property(m_ptr, param_spec->name, &gvalue);
 
@@ -593,6 +650,64 @@ static void canonicalize_key(const Gjs::AutoChar& key) {
     return !!prop_info;
 }
 
+[[nodiscard]] static JSNative get_getter_for_type(GType gtype) {
+    switch (gtype) {
+        case G_TYPE_BOOLEAN:
+            return &ObjectBase::prop_getter<gboolean, GI_TYPE_TAG_BOOLEAN>;
+        case G_TYPE_INT:
+            return &ObjectBase::prop_getter<int>;
+        case G_TYPE_UINT:
+            return &ObjectBase::prop_getter<unsigned int>;
+        case G_TYPE_CHAR:
+            return &ObjectBase::prop_getter<signed char>;
+        case G_TYPE_UCHAR:
+            return &ObjectBase::prop_getter<unsigned char>;
+        case G_TYPE_INT64:
+            return &ObjectBase::prop_getter<int64_t>;
+        case G_TYPE_UINT64:
+            return &ObjectBase::prop_getter<uint64_t>;
+        case G_TYPE_FLOAT:
+            return &ObjectBase::prop_getter<float>;
+        case G_TYPE_DOUBLE:
+            return &ObjectBase::prop_getter<double>;
+        case G_TYPE_STRING:
+            return &ObjectBase::prop_getter<char*>;
+        default:
+            // TODO(ptomato): Handle G_TYPE_LONG and G_TYPE_ULONG with ExtraTag
+            // to prevent collision with (u)int64_t on MacOS
+            return &ObjectBase::prop_getter<>;
+    }
+}
+
+[[nodiscard]] static JSNative get_setter_for_type(GType gtype) {
+    switch (gtype) {
+        case G_TYPE_BOOLEAN:
+            return &ObjectBase::prop_setter<gboolean, GI_TYPE_TAG_BOOLEAN>;
+        case G_TYPE_INT:
+            return &ObjectBase::prop_setter<int>;
+        case G_TYPE_UINT:
+            return &ObjectBase::prop_setter<unsigned int>;
+        case G_TYPE_CHAR:
+            return &ObjectBase::prop_setter<signed char>;
+        case G_TYPE_UCHAR:
+            return &ObjectBase::prop_setter<unsigned char>;
+        case G_TYPE_INT64:
+            return &ObjectBase::prop_setter<int64_t>;
+        case G_TYPE_UINT64:
+            return &ObjectBase::prop_setter<uint64_t>;
+        case G_TYPE_FLOAT:
+            return &ObjectBase::prop_setter<float>;
+        case G_TYPE_DOUBLE:
+            return &ObjectBase::prop_setter<double>;
+        case G_TYPE_STRING:
+            return &ObjectBase::prop_setter<char*>;
+        default:
+            // TODO(ptomato): Handle G_TYPE_LONG and G_TYPE_ULONG with ExtraTag
+            // to prevent collision with (u)int64_t on MacOS
+            return &ObjectBase::prop_setter<>;
+    }
+}
+
 bool ObjectPrototype::lazy_define_gobject_property(
     JSContext* cx, JS::HandleObject obj, JS::HandleId id, GParamSpec* pspec,
     bool* resolved, const char* name) {
@@ -634,10 +749,10 @@ bool ObjectPrototype::lazy_define_gobject_property(
                                         : JS::UndefinedValue()};
     JS::RootedValue setter_priv{cx, JS::PrivateValue(pspec)};
     JSNative js_getter = pspec->flags & G_PARAM_READABLE
-                             ? &ObjectBase::prop_getter
+                             ? get_getter_for_type(pspec->value_type)
                              : &ObjectBase::prop_getter_write_only;
     JSNative js_setter = pspec->flags & G_PARAM_WRITABLE
-                             ? &ObjectBase::prop_setter
+                             ? get_setter_for_type(pspec->value_type)
                              : &ObjectBase::prop_setter_read_only;
 
     if (!gjs_define_property_dynamic(cx, obj, name, id, "gobject_prop",

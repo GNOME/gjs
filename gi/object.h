@@ -124,15 +124,17 @@ class ObjectBase
     /* JS property getters/setters */
 
  public:
-    GJS_JSAPI_RETURN_CONVENTION
-    static bool prop_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_getter(JSContext*, unsigned,
+                                                        JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter_write_only(JSContext*, unsigned argc,
                                        JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
-    GJS_JSAPI_RETURN_CONVENTION
-    static bool prop_setter(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_setter(JSContext*, unsigned,
+                                                        JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_read_only(JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
@@ -429,14 +431,15 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* JS property getters/setters */
 
  private:
-    GJS_JSAPI_RETURN_CONVENTION
-    bool prop_getter_impl(JSContext* cx, GParamSpec*,
-                          JS::MutableHandleValue rval);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
+        JSContext* cx, GParamSpec*, JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, GI::AutoFieldInfo const&,
                            JS::MutableHandleValue rval);
-    GJS_JSAPI_RETURN_CONVENTION
-    bool prop_setter_impl(JSContext* cx, GParamSpec*, JS::HandleValue value);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(JSContext*, GParamSpec*,
+                                                      JS::HandleValue);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_not_impl(JSContext* cx, GI::AutoFieldInfo const&);
 

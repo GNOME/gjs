@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include <sstream>  // for ostringstream
+#include <string>   // for string
 #include <utility>  // for move, swap
 #include <vector>   // for vector
 
@@ -19,6 +21,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/utils-inl.h"
+#include "gjs/auto.h"
 #include "gjs/macros.h"
 
 namespace Gjs {
@@ -160,6 +163,48 @@ void gvalue_set(GValue* gvalue, T value) {
     } else {
         static_assert(!std::is_pointer_v<T>, "Not a known pointer type");
     }
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+void gvalue_take(GValue* gvalue, T value) {
+    if constexpr (!std::is_pointer_v<T>) {
+        return gvalue_set<T, TAG>(gvalue, value);
+    }
+
+    if constexpr (std::is_same_v<T, char*>) {
+        g_clear_pointer(&gvalue->data[0].v_pointer, g_free);
+        gvalue->data[0].v_pointer = g_steal_pointer(&value);
+    } else if constexpr (std::is_same_v<T, GObject*>) {
+        g_clear_object(&gvalue->data[0].v_pointer);
+        gvalue->data[0].v_pointer = g_steal_pointer(&value);
+    } else if constexpr (std::is_same_v<T, GVariant*>) {
+        g_clear_pointer(reinterpret_cast<T*>(&gvalue->data[0].v_pointer),
+                        g_variant_unref);
+        gvalue->data[0].v_pointer = value;
+    } else {
+        static_assert(!std::is_pointer_v<T>, "Not a known pointer type");
+    }
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+std::string gvalue_to_string(GValue* gvalue) {
+    auto str =
+        std::string("GValue of type ") + G_VALUE_TYPE_NAME(gvalue) + ": ";
+
+    if constexpr (std::is_same_v<T, char*>) {
+        str += '"' + Gjs::gvalue_get<T, TAG>(gvalue) + '"';
+    } else if constexpr (std::is_same_v<T, GVariant*>) {
+        AutoChar variant{
+            g_variant_print(Gjs::gvalue_get<T, TAG>(gvalue), true)};
+        str += '<' + variant + '>';
+    } else if constexpr (std::is_arithmetic_v<T>) {
+        str += std::to_string(Gjs::gvalue_get<T, TAG>(gvalue));
+    } else {
+        std::ostringstream out;
+        out << Gjs::gvalue_get<T, TAG>(gvalue);
+        str += out.str();
+    }
+    return str;
 }
 
 }  // namespace Gjs
