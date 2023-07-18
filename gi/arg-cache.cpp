@@ -636,8 +636,9 @@ struct BooleanIn : SkipAll {
             JS::HandleValue) override;
 };
 
-struct NumericIn : SkipAll, BasicType {
-    explicit NumericIn(GITypeTag tag) : BasicType(tag) {}
+template <typename T>
+struct NumericIn : SkipAll {
+    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
 };
@@ -1030,58 +1031,29 @@ bool BooleanIn::in(JSContext*, GjsFunctionCallState*, GIArgument* arg,
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
-    JSContext* cx, const JS::HandleValue& value, GArgument* arg,
-    Argument* gjs_arg) {
+GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T>::in(JSContext* cx,
+                                                  GjsFunctionCallState*,
+                                                  GIArgument* arg,
+                                                  JS::HandleValue value) {
     bool out_of_range = false;
 
     if (!gjs_arg_set_from_js_value<T>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
             gjs_throw(cx, "Argument %s: value is out of range for %s",
-                      gjs_arg->arg_name(), Gjs::static_type_name<T>());
+                      arg_name(), Gjs::static_type_name<T>());
         }
 
         return false;
     }
 
-    gjs_debug_marshal(
-        GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
-        GjsAutoChar(gjs_argument_display_name(gjs_arg->arg_name(),
-                                              GJS_ARGUMENT_ARGUMENT))
-            .get(),
-        std::to_string(gjs_arg_get<T>(arg)).c_str(),
-        Gjs::static_type_name<T>());
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
+                      GjsAutoChar{gjs_argument_display_name(
+                                      arg_name(), GJS_ARGUMENT_ARGUMENT)}
+                          .get(),
+                      std::to_string(gjs_arg_get<T>(arg)).c_str(),
+                      Gjs::static_type_name<T>());
 
     return true;
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-bool NumericIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
-                   JS::HandleValue value) {
-    switch (m_tag) {
-        case GI_TYPE_TAG_INT8:
-            return gjs_arg_set_from_js_value<int8_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_UINT8:
-            return gjs_arg_set_from_js_value<uint8_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_INT16:
-            return gjs_arg_set_from_js_value<int16_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_UINT16:
-            return gjs_arg_set_from_js_value<uint16_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_INT32:
-            return gjs_arg_set_from_js_value<int32_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_DOUBLE:
-            return gjs_arg_set_from_js_value<double>(cx, value, arg, this);
-        case GI_TYPE_TAG_FLOAT:
-            return gjs_arg_set_from_js_value<float>(cx, value, arg, this);
-        case GI_TYPE_TAG_INT64:
-            return gjs_arg_set_from_js_value<int64_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_UINT64:
-            return gjs_arg_set_from_js_value<uint64_t>(cx, value, arg, this);
-        case GI_TYPE_TAG_UINT32:
-            return gjs_arg_set_from_js_value<uint32_t>(cx, value, arg, this);
-        default:
-            g_assert_not_reached();
-    }
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1640,7 +1612,7 @@ bool Argument::release(JSContext*, GjsFunctionCallState*, GIArgument*,
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
 template <typename T>
 constexpr size_t argument_maximum_size() {
-    if constexpr (std::is_same_v<T, Arg::NumericIn>)
+    if constexpr (std::is_same_v<T, Arg::NumericIn<int>>)
         return 24;
     if constexpr (std::is_same_v<T, Arg::ObjectIn> ||
                   std::is_same_v<T, Arg::BoxedIn>)
@@ -2127,17 +2099,44 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             break;
 
         case GI_TYPE_TAG_INT8:
+            set_argument_auto<Arg::NumericIn<int8_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_INT16:
+            set_argument_auto<Arg::NumericIn<int16_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_INT32:
+            set_argument_auto<Arg::NumericIn<int32_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_UINT8:
+            set_argument_auto<Arg::NumericIn<uint8_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_UINT16:
+            set_argument_auto<Arg::NumericIn<uint16_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_UINT32:
+            set_argument_auto<Arg::NumericIn<uint32_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_INT64:
+            set_argument_auto<Arg::NumericIn<int64_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_UINT64:
+            set_argument_auto<Arg::NumericIn<uint64_t>>(common_args);
+            return;
+
         case GI_TYPE_TAG_FLOAT:
+            set_argument_auto<Arg::NumericIn<float>>(common_args);
+            return;
+
         case GI_TYPE_TAG_DOUBLE:
-            set_argument_auto<Arg::NumericIn>(common_args, tag);
-            break;
+            set_argument_auto<Arg::NumericIn<double>>(common_args);
+            return;
 
         case GI_TYPE_TAG_UNICHAR:
             set_argument_auto<Arg::UnicharIn>(common_args);
