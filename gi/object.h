@@ -49,6 +49,7 @@ struct ObjectInstance;
 class ObjectInstance;
 class ObjectPrototype;
 class ObjectPropertyInfoCaller;
+class ObjectPropertyPspecCaller;
 
 /*
  * ObjectBase:
@@ -134,6 +135,10 @@ class ObjectBase
                                        JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_getter_simple_type_func(
+        JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
     template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
@@ -143,6 +148,10 @@ class ObjectBase
     static bool prop_setter_read_only(JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_setter_simple_type_func(
+        JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
@@ -444,6 +453,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_getter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
                           JS::CallArgs const& args);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
+        JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, GI::AutoFieldInfo const&,
                            JS::MutableHandleValue rval);
@@ -453,6 +466,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_setter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
                           JS::CallArgs const& args);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(
+        JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_not_impl(JSContext* cx, GI::AutoFieldInfo const&);
 
