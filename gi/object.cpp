@@ -330,8 +330,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     g_object_get_property(m_ptr, param->name, &gvalue);
 
     if constexpr (!std::is_same_v<T, void>) {
-        if (Gjs::c_value_to_js<T, TAG>(cx, Gjs::gvalue_get<T, TAG>(&gvalue),
-                                       rval))
+        if (Gjs::c_value_to_js_checked<T, TAG>(
+                cx, Gjs::gvalue_get<T, TAG>(&gvalue), rval))
             return true;
 
         gjs_throw(cx, "Can't convert value %s got from %s.%s::%s property",

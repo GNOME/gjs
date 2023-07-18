@@ -1030,10 +1030,10 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
                 Gjs::gvalue_get<unsigned long>(gvalue),  // NOLINT(runtime/int)
                 value_p);
         case G_TYPE_INT64:
-            return Gjs::c_value_to_js(context, Gjs::gvalue_get<int64_t>(gvalue),
-                                      value_p);
+            return Gjs::c_value_to_js_checked(
+                context, Gjs::gvalue_get<int64_t>(gvalue), value_p);
         case G_TYPE_UINT64:
-            return Gjs::c_value_to_js(
+            return Gjs::c_value_to_js_checked(
                 context, Gjs::gvalue_get<uint64_t>(gvalue), value_p);
         case G_TYPE_DOUBLE:
             return Gjs::c_value_to_js(context, Gjs::gvalue_get<double>(gvalue),
