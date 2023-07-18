@@ -161,6 +161,8 @@ struct ArgsCache {
  private:
     void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
                              GjsArgumentFlags);
+    void build_normal_out_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
+                              GjsArgumentFlags);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void build_interface_in_arg(uint8_t gi_index, GITypeInfo*, GIBaseInfo*,
