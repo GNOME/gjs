@@ -42,6 +42,7 @@
 #include <js/Warnings.h>
 #include <jsapi.h>        // for JS_GetFunctionObject, IdVector
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -711,16 +712,42 @@ static void canonicalize_key(const Gjs::AutoChar& key) {
 bool ObjectPrototype::lazy_define_gobject_property(
     JSContext* cx, JS::HandleObject obj, JS::HandleId id, GParamSpec* pspec,
     bool* resolved, const char* name) {
-    debug_jsprop("Defining lazy GObject property", id, obj);
+    JS::RootedId canonical_id{cx};
+    JS::Rooted<JS::PropertyDescriptor> canonical_desc{cx};
 
     // Make property configurable so that interface properties can be
     // overridden by GObject.ParamSpec.override in the class that
     // implements them
     unsigned flags = GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT;
 
+    if (!g_str_equal(pspec->name, name)) {
+        canonical_id = gjs_intern_string_to_id(cx, pspec->name);
+
+        JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> desc{cx};
+        if (!JS_GetOwnPropertyDescriptorById(cx, obj, canonical_id, &desc))
+            return false;
+
+        if (desc.isSome()) {
+            debug_jsprop("Defining alias GObject property", id, obj);
+            canonical_desc = *desc;
+            if (!JS_DefinePropertyById(cx, obj, id, canonical_desc))
+                return false;
+
+            *resolved = true;
+            return true;
+        }
+    }
+
+    debug_jsprop("Defining lazy GObject property", id, obj);
+
     if (!(pspec->flags & (G_PARAM_WRITABLE | G_PARAM_READABLE))) {
         if (!JS_DefinePropertyById(cx, obj, id, JS::UndefinedHandleValue,
                                    flags))
+            return false;
+
+        if (!canonical_id.isVoid() &&
+            !JS_DefinePropertyById(cx, obj, canonical_id,
+                                   JS::UndefinedHandleValue, flags))
             return false;
 
         *resolved = true;
@@ -749,6 +776,13 @@ bool ObjectPrototype::lazy_define_gobject_property(
                                      js_getter, getter_priv, js_setter,
                                      setter_priv, flags))
         return false;
+
+    if G_UNLIKELY (!canonical_id.isVoid()) {
+        debug_jsprop("Defining alias GObject property", canonical_id, obj);
+
+        if (!JS_DefinePropertyById(cx, obj, canonical_id, canonical_desc))
+            return false;
+    }
 
     *resolved = true;
     return true;
