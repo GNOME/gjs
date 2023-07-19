@@ -711,16 +711,6 @@ static void canonicalize_key(const Gjs::AutoChar& key) {
 bool ObjectPrototype::lazy_define_gobject_property(
     JSContext* cx, JS::HandleObject obj, JS::HandleId id, GParamSpec* pspec,
     bool* resolved, const char* name) {
-    bool found = false;
-    if (!JS_AlreadyHasOwnPropertyById(cx, obj, id, &found))
-        return false;
-    if (found) {
-        /* Already defined, so *resolved = false because we didn't just
-         * define it */
-        *resolved = false;
-        return true;
-    }
-
     debug_jsprop("Defining lazy GObject property", id, obj);
 
     // Make property configurable so that interface properties can be
@@ -1077,6 +1067,17 @@ bool ObjectPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
                                        JS::HandleId id, const char* name,
                                        bool* resolved) {
+    bool found = false;
+    if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
+        return false;
+
+    if (found) {
+        // Already defined, so *resolved = false because we didn't just define
+        // it
+        *resolved = false;
+        return true;
+    }
+
     // If we have no GIRepository information (we're a JS GObject subclass or an
     // internal non-introspected class such as GLocalFile), we need to look at
     // exposing interfaces. Look up our interfaces through GType data, and then
@@ -1133,14 +1134,6 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
     GI::AutoFieldInfo field_info{lookup_field_info(m_info, name)};
     if (field_info) {
-        bool found = false;
-        if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
-            return false;
-        if (found) {
-            *resolved = false;
-            return true;
-        }
-
         debug_jsprop("Defining lazy GObject field", id, obj);
 
         unsigned flags = GJS_MODULE_PROP_FLAGS;
