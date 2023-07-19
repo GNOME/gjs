@@ -2254,6 +2254,96 @@ describe('GObject properties', function () {
         GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
             'testAllowToSetGetDeprecatedProperties');
     });
+
+    const JSOverridingProperty = GObject.registerClass(
+        class Overriding extends GIMarshallingTests.PropertiesObject {
+            constructor(params) {
+                super(params);
+                this.intValue = 55;
+                this.stringValue = 'a string';
+            }
+
+            set some_int(v) {
+                this.intValue = v;
+            }
+
+            get someInt() {
+                return this.intValue;
+            }
+
+            set someString(v) {
+                this.stringValue = v;
+            }
+
+            get someString() {
+                return this.stringValue;
+            }
+        });
+
+    it('can be overridden from JS', function () {
+        const intHandler = jasmine.createSpy('handle-some-int');
+        const stringHandler = jasmine.createSpy('handle-some-string');
+        const overriding = new JSOverridingProperty({
+            'someInt': 45,
+            'someString': 'other string',
+        });
+        const ids = [];
+        ids.push(overriding.connect('notify::some-int', intHandler));
+        ids.push(overriding.connect('notify::some-string', stringHandler));
+
+        expect(overriding['some-int']).toBe(45);
+        expect(overriding.someInt).toBe(55);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.intValue).toBe(55);
+        expect(overriding.someString).toBe('a string');
+        expect(overriding.some_string).toBe('other string');
+        expect(intHandler).not.toHaveBeenCalled();
+        expect(stringHandler).not.toHaveBeenCalled();
+
+        overriding.some_int = 35;
+        expect(overriding['some-int']).toBe(45);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.someInt).toBe(35);
+        expect(overriding.intValue).toBe(35);
+        expect(intHandler).not.toHaveBeenCalled();
+
+        overriding.someInt = 85;
+        expect(overriding['some-int']).toBe(45);
+        expect(overriding.someInt).toBe(35);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.intValue).toBe(35);
+        expect(intHandler).not.toHaveBeenCalled();
+
+        overriding['some-int'] = 123;
+        expect(overriding['some-int']).toBe(123);
+        expect(overriding.someInt).toBe(35);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.intValue).toBe(35);
+        expect(intHandler).toHaveBeenCalledTimes(1);
+
+        overriding['some-string'] = '🐧';
+        expect(overriding['some-string']).toBe('🐧');
+        expect(overriding.some_string).toBe('🐧');
+        expect(overriding.someString).toBe('a string');
+        expect(overriding.stringValue).toBe('a string');
+        expect(stringHandler).toHaveBeenCalledTimes(1);
+
+        overriding.some_string = '🍕';
+        expect(overriding['some-string']).toBe('🍕');
+        expect(overriding.some_string).toBe('🍕');
+        expect(overriding.someString).toBe('a string');
+        expect(overriding.stringValue).toBe('a string');
+        expect(stringHandler).toHaveBeenCalledTimes(2);
+
+        overriding.someString = '🍝';
+        expect(overriding['some-string']).toBe('🍕');
+        expect(overriding.some_string).toBe('🍕');
+        expect(overriding.someString).toBe('🍝');
+        expect(overriding.stringValue).toBe('🍝');
+        expect(stringHandler).toHaveBeenCalledTimes(2);
+
+        ids.forEach(id => overriding.disconnect(id));
+    });
 });
 
 describe('GObject signals', function () {
