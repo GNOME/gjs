@@ -2262,6 +2262,7 @@ describe('GObject properties', function () {
         GIMarshallingTests.GEnum.VALUE3);
     testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
         ByteArray.fromString('👾'));
+    testPropertyGetSet('byte_array', Uint8Array.of(3, 2, 1), null);
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);
