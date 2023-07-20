@@ -1216,7 +1216,7 @@ GJS_JSAPI_RETURN_CONVENTION bool StringInTransferNone<TAG>::in(
         JS::UniqueChars str = gjs_string_to_utf8(cx, value);
         if (!str)
             return false;
-        gjs_arg_set(arg, g_strdup(str.get()));
+        gjs_arg_set(arg, js_chars_to_glib(std::move(str)).release());
         return true;
     } else {
         return invalid(cx, G_STRFUNC);
