@@ -183,7 +183,7 @@ var MyLabel = GObject.registerClass({
 
 ## GType Objects
 
-> See also: [`GObject.Object.$gtype`][gobject-gtype] and
+> See also: [`GObject.Object.$gtype`][gobject-object-gtype] and
 > [`GObject.registerClass()`][gobject-registerclass]
 
 This is the object that represents a type in the GObject type system. Internally
@@ -228,7 +228,7 @@ if (labelInstance instance of Gtk.Label)
     log(true);
 ```
 
-[gobject-gtype]: https://gjs-docs.gnome.org/gjs/overrides.md#gobject-gtype
+[gobject-object-gtype]: https://gjs-docs.gnome.org/gjs/overrides.md#gobject-object-gtype
 [gobject-registerclass]: https://gjs-docs.gnome.org/gjs/overrides.md#gobject-registerclass
 [mdn-instanceof]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/instanceof
 
