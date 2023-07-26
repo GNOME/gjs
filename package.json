@@ -1,0 +1,22 @@
+{
+  "name": "gjs-scripts",
+  "version": "0.0.0",
+  "repository": "https://gitlab.gnome.org/GNOME/gjs",
+  "license": "MIT OR LGPL-2.0-or-later",
+  "private": true,
+  "scripts": {
+    "lint": "cd .. && eslint . --format unix --resolve-plugins-relative-to tools",
+    "fix": "yarn lint --fix",
+    "tsc": "tsc"
+  },
+  "devDependencies": {
+    "@gi-types/base-types": "^1.0.0",
+    "@gi-types/gjs-environment": "^1.1.0",
+    "@gi-types/gtk3": "^3.24.1",
+    "@gi-types/gtk3-types": "^1.0.0",
+    "@types/jasmine": "^3.10.3",
+    "eslint": "^8.26.0",
+    "eslint-plugin-jsdoc": "^39.4.0",
+    "typescript": "5.2.0-beta"
+  }
+}

@@ -22,6 +22,7 @@ RUN dnf -y install 'dnf-command(builddep)' \
     rust \
     which \
     xz
+RUN dnf module install nodejs:18/common
 RUN dnf -y builddep ${MOZJS_BUILDDEPS}
 
 WORKDIR /root

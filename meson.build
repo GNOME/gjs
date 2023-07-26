@@ -130,6 +130,8 @@ gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
 spidermonkey = dependency('mozjs-102')
 
+yarn = find_program('yarn', required: true)
+
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC/clang-cl builds...
 cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_argument_syntax() != 'msvc')

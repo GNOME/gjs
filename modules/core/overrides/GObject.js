@@ -80,6 +80,187 @@ function registerClass(...args) {
     return klass;
 }
 
+
+/**
+ * @template {abstract new () => any} C
+ * @param {*} definition
+ */
+const gobject = (definition = {}) =>
+/**
+ * @param {C} target
+ * @param { ClassDecoratorContext<C>} context
+ */
+    (target, context) => {
+        const {'implements': _interfaces = [], signals: _signals = {}, GTypeName: typename, GTypeFlags: flags} = definition;
+
+        context.addInitializer(
+        /**
+         * @this {C}
+         */
+            function () {
+                this[GTypeName] = typename ?? this[GTypeName] ?? undefined;
+                this[GTypeFlags] = flags ?? this[GTypeFlags] ?? undefined;
+
+                this[properties] = {
+                    ...this[properties],
+                    ...context.metadata?.[properties],
+                };
+
+                this[signals] = {
+                    ...this[signals],
+                    ..._signals,
+                    ...context.metadata?.[signals],
+                };
+
+                this[interfaces] = [
+                    ...this[interfaces] ?? [],
+                    ..._interfaces ?? [],
+                    ...context.metadata?.[interfaces] ?? [],
+                ];
+
+                // Register the class/type
+                this._classInit();
+            }
+        );
+    };
+
+/**
+ * @template C
+ * @template V
+ * @param {*} definition
+ */
+const property = (definition = {}) =>
+/**
+ * @param {ClassAccessorDecoratorTarget<C, V>} target
+ * @param {ClassAccessorDecoratorContext<C, V>} context
+ */
+    (
+        target,
+        context) => {
+        if (context.metadata) {
+            // Break metadata inheritance
+            if (!Object.hasOwn(context.metadata, properties))
+                context.metadata[properties] = {};
+            console.warn(definition.get_name());
+
+            const props = context.metadata[properties];
+            const name = definition.get_name() ?? context.name;
+            props[name] = definition;
+        }
+
+        return {
+        /**
+         * @this {C}
+         */
+            get() {
+                return target.get.call(this);
+            },
+            /**
+             * @this {C}
+             * @param {V} v
+             */
+            set(v) {
+                target.set.call(this, v);
+            },
+        };
+    };
+/**
+ * @template C
+ * @template V
+ * @param {*} _definition
+ */
+property.setter = (_definition = {}) =>
+/**
+ * @param {(value: V) => void} target
+ * @param { ClassSetterDecoratorContext<C, V>} context
+ */
+    (target, context) => {
+        if (context.metadata) {
+            // Break metadata inheritance
+            if (!Object.hasOwn(context.metadata, properties))
+                context.metadata[properties] = {};
+        }
+
+        /**
+         * @this {C}
+         * @param {V} value
+         */
+        return function (value) {
+            target.call(this, value);
+        };
+    };
+/**
+ * @template C
+ * @template V
+ * @param {*} definition
+ */
+property.getter = (definition = {}) =>
+/**
+ * @param {() => V} target
+ * @param {ClassGetterDecoratorContext<C, V>} context
+ */
+    (target, context) => {
+        if (context.metadata) {
+            // Break metadata inheritance
+            if (!Object.hasOwn(context.metadata, properties))
+                context.metadata[properties] = {};
+            console.warn(definition.get_name());
+            const props = context.metadata[properties];
+            const name = definition.get_name() ?? context.name;
+            props[name] = {...definition};
+        }
+
+        /**
+         * @this {C}
+         */
+        return function () {
+            return target.call(this);
+        };
+    };
+
+/**
+ * @template C
+ * @template { (this: C, ...args: any) => any} V
+ * @param {*} definition
+ */
+const signal = (definition = {}) =>
+/**
+ * @param {V} target
+ * @param {ClassMethodDecoratorContext<C, V>} context
+ * @returns
+ */
+    (target, context) => {
+        if (context.metadata) {
+            // Break metadata inheritance
+            if (!Object.hasOwn(context.metadata, signals))
+                context.metadata[signals] = {};
+
+
+            const sigs = context.metadata[signals];
+            const name = definition.name ?? String(context.name).split('emit_')[1];
+            sigs[name] = {...definition};
+        }
+
+        const name = context.name;
+
+        return {
+        /**
+         *
+         * @param {C} this
+         * @param  {Parameters<V>} args
+         * @returns {ReturnType<V>}
+         */
+            [name](...args) {
+                return target.call(this, ...args);
+            },
+        }[name];
+    };
+
+
+
+
+
+
 function _resolveLegacyClassFunction(klass, func) {
     // Find the "least derived" class with a _classInit static function; there
     // definitely is one, since this class must inherit from GObject
@@ -179,7 +360,7 @@ function _getCallerBasename() {
 function _createGTypeName(klass) {
     const sanitizeGType = s => s.replace(/[^a-z0-9+_-]/gi, '_');
 
-    if (klass.hasOwnProperty(GTypeName)) {
+    if (klass.hasOwnProperty(GTypeName) && klass[GTypeName] !== undefined) {
         let sanitized = sanitizeGType(klass[GTypeName]);
         if (sanitized !== klass[GTypeName]) {
             logError(new RangeError(`Provided GType name '${klass[GTypeName]}' ` +
@@ -509,6 +690,8 @@ function _init() {
     };
 
     GObject.Object._classInit = function (klass) {
+        klass ??= this;
+
         _checkProperties(klass);
 
         if (_registerType in klass)
@@ -629,6 +812,8 @@ function _init() {
     });
 
     GObject.Interface._classInit = function (klass) {
+        klass ??= this;
+
         if (_registerType in klass)
             klass[_registerType]();
         else
@@ -890,4 +1075,8 @@ function _init() {
         throw new Error('GObject.signal_handlers_disconnect_by_data() is not \
 introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     };
+
+    GObject.gobject = gobject;
+    GObject.property = property;
+    GObject.signal = signal;
 }

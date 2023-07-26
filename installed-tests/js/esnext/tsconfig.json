@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "lib": ["esnext"],
+        "target": "es2022",
+        "types": [
+            "jasmine",
+            "@gi-types/base-types",
+            "@gi-types/gtk3-types",
+            "@gi-types/gjs-environment"
+        ],
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "Node"
+    },
+    "include": [
+        "testDecorators.ts"
+    ]
+}

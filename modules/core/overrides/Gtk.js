@@ -9,6 +9,85 @@ const {_registerType} = imports._common;
 let Gtk;
 let BuilderScope;
 
+/**
+ * @template {new () => Widget} C
+ * @param {{type?: any; name: string;}} definition
+ */
+const _template = (definition = {}) =>
+/**
+ * @param {C} target
+ * @param {ClassDecoratorContext<C>} context
+ */
+    (target, context) => {
+        target[_gtkTemplate] = `${definition}`;
+
+        context.addInitializer(function () {
+            console.log('metadata children >',  target[Symbol.metadata][_gtkChildren]);
+        });
+    };
+
+
+/**
+ * @template {Widget} C
+ * @template V
+ * @param {string | {type?: any; name: string;}} definition
+ */
+const _child = definition =>
+/**
+ * @param {ClassAccessorDecoratorTarget<C, V>} target
+ * @param {ClassAccessorDecoratorContext<C, V>} context
+ */
+    (target, context) => {
+        let name;
+        if (context.metadata) {
+            // Break metadata inheritance
+            if (!Object.hasOwn(context.metadata, _gtkChildren))
+                context.metadata[_gtkChildren] = {};
+
+
+            const children = context.metadata[_gtkChildren];
+            let contextName = String(context.name);
+
+            if (context.private)
+                contextName = contextName.slice(1);
+
+            let definitionName = typeof definition === 'string' ? definition : definition?.name;
+            name = definitionName ?? contextName;
+
+            children[name] = typeof definition === 'object' ? definition?.type ?? undefined : undefined;
+        }
+
+        return {
+        /**
+         * @this {C}
+         */
+            get() {
+                return target.get.call(this);
+            },
+            /**
+             * @this {C}
+             * @param {V} v
+             */
+            set(v) {
+                target.set.call(this, v);
+            },
+            /**
+             * @this {C}
+             * @param {V} initialValue
+             */
+            init(initialValue) {
+                if (initialValue !== undefined)
+                    throw new Error('@template.child() accessors cannot have a default value');
+
+
+                return this.get_template_child(this.constructor, name);
+            },
+        };
+    };
+
+_template.child = _child;
+
+
 function _init() {
     Gtk = this;
 
@@ -16,6 +95,8 @@ function _init() {
     Gtk.cssName = GObject.__gtkCssName__;
     Gtk.internalChildren = GObject.__gtkInternalChildren__;
     Gtk.template = GObject.__gtkTemplate__;
+
+    Gtk.widget = _template;
 
     let {GtkWidgetClass} = Legacy.defineGtkLegacyObjects(GObject, Gtk);
     Gtk.Widget.prototype.__metaclass__ = GtkWidgetClass;
@@ -72,6 +153,8 @@ function _init() {
     };
 
     Gtk.Widget._classInit = function (klass) {
+        klass ??= this;
+
         return GObject.Object._classInit(klass);
     };
 

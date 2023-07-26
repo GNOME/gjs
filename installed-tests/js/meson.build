@@ -281,3 +281,5 @@ endforeach
 if get_option('installed_tests')
     install_data('matchers.js', install_dir: installed_js_tests_dir)
 endif
+
+subdir('esnext')

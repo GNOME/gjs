@@ -142,6 +142,10 @@ do_Create_Artifacts_Folder "$1"
 git config --global --add safe.directory "${PWD}"
 
 if test "$1" = "SETUP"; then
+    sudo dnf -y module install nodejs:18/common
+    sudo npm install -g yarn
+    yarn install
+    sudo npm install -g typescript@5.2.0-beta
     do_Show_Info
     do_Print_Labels 'Show GJS git information'
     git log --pretty=format:"%h %cd %s" -1
