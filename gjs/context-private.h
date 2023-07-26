@@ -17,6 +17,7 @@
 #include <utility>  // for pair
 #include <vector>
 
+#include <gio/gio.h>  // for GMemoryMonitor
 #include <glib-object.h>
 #include <glib.h>
 
@@ -82,6 +83,7 @@ class GjsContextPrivate : public JS::JobQueue {
     JobQueueStorage m_job_queue;
     Gjs::PromiseJobDispatcher m_dispatcher;
     Gjs::MainLoop m_main_loop;
+    GjsAutoUnref<GMemoryMonitor> m_memory_monitor;
 
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;

@@ -560,10 +560,13 @@ const char* gjs_explain_gc_reason(JS::GCReason reason) {
         return JS::ExplainGCReason(reason);
 
     static const char* reason_strings[] = {
+        // clang-format off
         "RSS above threshold",
         "GjsContext disposed",
         "Big Hammer hit",
         "gjs_context_gc() called",
+        "Memory usage is low",
+        // clang-format on
     };
     static_assert(G_N_ELEMENTS(reason_strings) == Gjs::GCReason::N_REASONS,
                   "Explanations must match the values in Gjs::GCReason");

@@ -613,7 +613,8 @@ bool gjs_object_require_converted_property(JSContext       *context,
     macro(LINUX_RSS_TRIGGER, 0)   \
     macro(GJS_CONTEXT_DISPOSE, 1) \
     macro(BIG_HAMMER, 2)          \
-    macro(GJS_API_CALL, 3)
+    macro(GJS_API_CALL, 3)        \
+    macro(LOW_MEMORY, 4)
 // clang-format on
 
 namespace Gjs {
