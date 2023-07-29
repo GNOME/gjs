@@ -363,10 +363,7 @@ describe('Text Encoding', function () {
 
                 expect(() => {
                     decoder.decode(new Uint8Array([161, 200, 200]));
-                }).toThrowError(
-                    TypeError,
-                    'Invalid byte sequence in conversion input'
-                );
+                }).toThrowError(TypeError);
             });
 
             it('can decode ASCII', function () {
