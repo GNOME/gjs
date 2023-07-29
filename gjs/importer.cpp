@@ -282,7 +282,7 @@ gjs_import_native_module(JSContext       *cx,
     gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", parse_name);
 
     JS::RootedObject native_registry(
-        cx, gjs_get_native_registry(gjs_get_import_global(cx)));
+        cx, gjs_get_native_registry(JS::CurrentGlobalOrNull(cx)));
 
     JS::RootedId id(cx, gjs_intern_string_to_id(cx, parse_name));
     if (id.isVoid())

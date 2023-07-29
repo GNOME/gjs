@@ -8,10 +8,11 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Context.h>  // for JS_GetContextPrivate
 #include <js/Realm.h>
-#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "test/gjs-test-common.h"
@@ -21,8 +22,8 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
     fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
 
-    JS::RootedObject global(fx->cx, gjs_get_import_global(fx->cx));
-    fx->realm = JS::EnterRealm(fx->cx, global);
+    auto* gjs = static_cast<GjsContextPrivate*>(JS_GetContextPrivate(fx->cx));
+    fx->realm = JS::EnterRealm(fx->cx, gjs->global());
 }
 
 void

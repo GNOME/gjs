@@ -29,7 +29,6 @@
 #include <js/Promise.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>
-#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/ScriptPrivate.h>
 #include <js/SourceText.h>
@@ -423,8 +422,8 @@ static bool import_native_module_sync(JSContext* cx, unsigned argc,
     if (!gjs_parse_call_args(cx, "importSync", args, "s", "identifier", &id))
         return false;
 
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
-    JSAutoRealm ar(cx, global);
+    Gjs::AutoMainRealm ar{cx};
+    JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
 
     JS::AutoSaveExceptionState exc_state(cx);
 
@@ -628,8 +627,7 @@ static bool import_resolved(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Async import promise resolved");
 
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
-    JSAutoRealm ar(cx, global);
+    Gjs::AutoMainRealm ar{cx};
 
     g_assert(args[0].isObject());
     JS::RootedObject module(cx, &args[0].toObject());
@@ -655,7 +653,7 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
              "global.");
 
     JS::RootedObject global(cx, JS::CurrentGlobalOrNull(cx));
-    JSAutoRealm ar(cx, global);
+    g_assert(global && "gjs_dynamic_module_resolve must be in a realm");
 
     JS::RootedValue v_loader(
         cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));

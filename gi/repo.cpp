@@ -515,7 +515,7 @@ lookup_override_function(JSContext             *cx,
 {
     JS::AutoSaveExceptionState saved_exc(cx);
 
-    JS::RootedObject global(cx, gjs_get_import_global(cx));
+    JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
     JS::RootedValue importer(
         cx, gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS));
     g_assert(importer.isObject());

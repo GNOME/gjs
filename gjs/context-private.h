@@ -27,6 +27,7 @@
 #include <js/GCVector.h>
 #include <js/HashTable.h>  // for DefaultHasher
 #include <js/Promise.h>
+#include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
@@ -218,6 +219,9 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] static const GjsAtoms& atoms(JSContext* cx) {
         return *(from_cx(cx)->m_atoms);
     }
+    [[nodiscard]] static JSObject* global(JSContext* cx) {
+        return from_cx(cx)->global();
+    }
 
     [[nodiscard]] bool eval(const char* script, size_t script_len,
                             const char* filename, int* exit_status_p,
@@ -275,5 +279,19 @@ class GjsContextPrivate : public JS::JobQueue {
 };
 
 std::string gjs_dumpstack_string();
+
+namespace Gjs {
+class AutoMainRealm : public JSAutoRealm {
+ public:
+    explicit AutoMainRealm(GjsContextPrivate* gjs);
+    explicit AutoMainRealm(JSContext* cx);
+};
+
+class AutoInternalRealm : public JSAutoRealm {
+ public:
+    explicit AutoInternalRealm(GjsContextPrivate* gjs);
+    explicit AutoInternalRealm(JSContext* cx);
+};
+}  // namespace Gjs
 
 #endif  // GJS_CONTEXT_PRIVATE_H_

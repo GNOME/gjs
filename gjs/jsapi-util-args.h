@@ -18,12 +18,17 @@
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
 #include <js/Exception.h>
+#include <js/Result.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <mozilla/Result.h>  // for GenericErrorResult
+#include <mozilla/ResultVariant.h>  // IWYU pragma: keep
 
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+namespace detail {
 
 [[nodiscard]] GJS_ALWAYS_INLINE static inline bool check_nullable(
     const char*& fchar, const char*& fmt_string) {
@@ -37,157 +42,165 @@
     return true;
 }
 
+class ParseArgsErr {
+    GjsAutoChar m_message;
+
+ public:
+    explicit ParseArgsErr(const char* literal_msg)
+        : m_message(literal_msg, GjsAutoTakeOwnership{}) {}
+    template <typename F>
+    ParseArgsErr(const char* format_string, F param)
+        : m_message(g_strdup_printf(format_string, param)) {}
+
+    const char* message() const { return m_message.get(); }
+};
+
+template <typename... Args>
+inline constexpr auto Err(Args... args) {
+    return mozilla::GenericErrorResult{
+        ParseArgsErr{std::forward<Args>(args)...}};
+}
+
+using ParseArgsResult = JS::Result<JS::Ok, ParseArgsErr>;
+
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to use JS::ToBoolean instead? */
 GJS_ALWAYS_INLINE
-static inline void assign(JSContext*, char c, bool nullable,
-                          JS::HandleValue value, bool* ref) {
+static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
+                                     JS::HandleValue value, bool* ref) {
     if (c != 'b')
-        throw g_strdup_printf("Wrong type for %c, got bool*", c);
+        return Err("Wrong type for %c, got bool*", c);
     if (!value.isBoolean())
-        throw g_strdup("Not a boolean");
+        return Err("Not a boolean");
     if (nullable)
-        throw g_strdup("Invalid format string combination ?b");
+        return Err("Invalid format string combination ?b");
     *ref = value.toBoolean();
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void assign(JSContext*, char c, bool nullable,
-                          JS::HandleValue value, JS::MutableHandleObject ref) {
+static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
+                                     JS::HandleValue value,
+                                     JS::MutableHandleObject ref) {
     if (c != 'o')
-        throw g_strdup_printf("Wrong type for %c, got JS::MutableHandleObject", c);
+        return Err("Wrong type for %c, got JS::MutableHandleObject", c);
     if (nullable && value.isNull()) {
         ref.set(nullptr);
-        return;
+        return JS::Ok();
     }
     if (!value.isObject())
-        throw g_strdup("Not an object");
+        return Err("Not an object");
     ref.set(&value.toObject());
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void assign(JSContext* cx, char c, bool nullable,
-                          JS::HandleValue value, JS::UniqueChars* ref) {
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value,
+                                     JS::UniqueChars* ref) {
     if (c != 's')
-        throw g_strdup_printf("Wrong type for %c, got JS::UniqueChars*", c);
+        return Err("Wrong type for %c, got JS::UniqueChars*", c);
     if (nullable && value.isNull()) {
         ref->reset();
-        return;
+        return JS::Ok();
     }
     JS::UniqueChars tmp = gjs_string_to_utf8(cx, value);
     if (!tmp)
-        throw g_strdup("Couldn't convert to string");
+        return Err("Couldn't convert to string");
     *ref = std::move(tmp);
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       GjsAutoChar    *ref)
-{
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value, GjsAutoChar* ref) {
     if (c != 'F')
-        throw g_strdup_printf("Wrong type for %c, got GjsAutoChar*", c);
+        return Err("Wrong type for %c, got GjsAutoChar*", c);
     if (nullable && value.isNull()) {
         ref->release();
-        return;
+        return JS::Ok();
     }
     if (!gjs_string_to_filename(cx, value, ref))
-        throw g_strdup("Couldn't convert to filename");
+        return Err("Couldn't convert to filename");
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void assign(JSContext*, char c, bool nullable,
-                          JS::HandleValue value, JS::MutableHandleString ref) {
+static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
+                                     JS::HandleValue value,
+                                     JS::MutableHandleString ref) {
     if (c != 'S')
-        throw g_strdup_printf("Wrong type for %c, got JS::MutableHandleString",
-                              c);
+        return Err("Wrong type for %c, got JS::MutableHandleString", c);
     if (nullable && value.isNull()) {
         ref.set(nullptr);
-        return;
+        return JS::Ok();
     }
     if (!value.isString())
-        throw g_strdup("Not a string");
+        return Err("Not a string");
     ref.set(value.toString());
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       int32_t        *ref)
-{
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value, int32_t* ref) {
     if (c != 'i')
-        throw g_strdup_printf("Wrong type for %c, got int32_t*", c);
+        return Err("Wrong type for %c, got int32_t*", c);
     if (nullable)
-        throw g_strdup("Invalid format string combination ?i");
+        return Err("Invalid format string combination ?i");
     if (!JS::ToInt32(cx, value, ref))
-        throw g_strdup("Couldn't convert to integer");
+        return Err("Couldn't convert to integer");
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       uint32_t       *ref)
-{
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value, uint32_t* ref) {
     double num;
 
     if (c != 'u')
-        throw g_strdup_printf("Wrong type for %c, got uint32_t*", c);
+        return Err("Wrong type for %c, got uint32_t*", c);
     if (nullable)
-        throw g_strdup("Invalid format string combination ?u");
+        return Err("Invalid format string combination ?u");
     if (!value.isNumber() || !JS::ToNumber(cx, value, &num))
-        throw g_strdup("Couldn't convert to unsigned integer");
+        return Err("Couldn't convert to unsigned integer");
     if (num > G_MAXUINT32 || num < 0)
-        throw g_strdup_printf("Value %f is out of range", num);
+        return Err("Value %f is out of range", num);
     *ref = num;
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       int64_t        *ref)
-{
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value, int64_t* ref) {
     if (c != 't')
-        throw g_strdup_printf("Wrong type for %c, got int64_t*", c);
+        return Err("Wrong type for %c, got int64_t*", c);
     if (nullable)
-        throw g_strdup("Invalid format string combination ?t");
+        return Err("Invalid format string combination ?t");
     if (!JS::ToInt64(cx, value, ref))
-        throw g_strdup("Couldn't convert to 64-bit integer");
+        return Err("Couldn't convert to 64-bit integer");
+    return JS::Ok();
 }
 
 GJS_ALWAYS_INLINE
-static inline void
-assign(JSContext      *cx,
-       char            c,
-       bool            nullable,
-       JS::HandleValue value,
-       double         *ref)
-{
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value, double* ref) {
     if (c != 'f')
-        throw g_strdup_printf("Wrong type for %c, got double*", c);
+        return Err("Wrong type for %c, got double*", c);
     if (nullable)
-        throw g_strdup("Invalid format string combination ?f");
+        return Err("Invalid format string combination ?f");
     if (!JS::ToNumber(cx, value, ref))
-        throw g_strdup("Couldn't convert to double");
+        return Err("Couldn't convert to double");
+    return JS::Ok();
 }
 
 /* Special case: treat pointer-to-enum as pointer-to-int, but use enable_if to
  * prevent instantiation for any other types besides pointer-to-enum */
 template <typename T, typename std::enable_if_t<std::is_enum_v<T>, int> = 0>
-GJS_ALWAYS_INLINE static inline void assign(JSContext* cx, char c,
-                                            bool nullable,
-                                            JS::HandleValue value, T* ref) {
+GJS_ALWAYS_INLINE static inline ParseArgsResult assign(JSContext* cx, char c,
+                                                       bool nullable,
+                                                       JS::HandleValue value,
+                                                       T* ref) {
     /* Sadly, we cannot use std::underlying_type<T> here; the underlying type of
      * an enum is implementation-defined, so it would not be clear what letter
      * to use in the format string. For the same reason, we can only support
@@ -196,7 +209,7 @@ GJS_ALWAYS_INLINE static inline void assign(JSContext* cx, char c,
      * value was in range for the enum, but that is not possible (yet?) */
     static_assert(sizeof(T) == sizeof(int),
                   "Short or wide enum types not supported");
-    assign(cx, c, nullable, value, (int *)ref);
+    return assign(cx, c, nullable, value, reinterpret_cast<int*>(ref));
 }
 
 template <typename T>
@@ -236,15 +249,15 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
         fmt_optional++;
     }
 
-    try {
+    ParseArgsResult res =
         assign(cx, *fchar, nullable, args[param_ix], param_ref);
-    } catch (char *message) {
+    if (res.isErr()) {
         /* Our error messages are going to be more useful than whatever was
          * thrown by the various conversion functions */
+        const char* message = res.inspectErr().message();
         JS_ClearPendingException(cx);
         gjs_throw(cx, "Error invoking %s, at argument %d (%s): %s",
                   function_name, param_ix, param_name, message);
-        g_free(message);
         return false;
     }
 
@@ -268,6 +281,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
         free_if_necessary(param_ref);
     return retval;
 }
+
+}  // namespace detail
 
 /* Empty-args version of the template */
 GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
@@ -381,8 +396,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     fmt_required = parts.get()[0];
     fmt_optional = parts.get()[1];  // may be null
 
-    return parse_call_args_helper(cx, function_name, args, fmt_required,
-                                  fmt_optional, 0, params...);
+    return detail::parse_call_args_helper(cx, function_name, args, fmt_required,
+                                          fmt_optional, 0, params...);
 }
 
 #endif  // GJS_JSAPI_UTIL_ARGS_H_

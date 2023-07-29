@@ -505,7 +505,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         if (ctor_obj) {
             JS::RootedObject in_obj(cx, module);
             if (!in_obj)
-                in_obj = gjs_get_import_global(cx);
+                in_obj = global;
             JS::RootedId class_name(
                 cx, gjs_intern_string_to_id(cx, Base::klass.name));
             if (class_name.isVoid() ||

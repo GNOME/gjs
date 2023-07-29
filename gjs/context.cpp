@@ -685,9 +685,8 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to initialize internal global object");
     }
 
-    JSAutoRealm ar(m_cx, internal_global);
-
     m_internal_global = internal_global;
+    Gjs::AutoInternalRealm ar{this};
     JS_AddExtraGCRootsTracer(m_cx, &GjsContextPrivate::trace, this);
 
     if (!m_atoms->init_atoms(m_cx)) {
@@ -714,7 +713,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_global = global;
 
     {
-        JSAutoRealm ar(cx, global);
+        Gjs::AutoMainRealm ar{this};
 
         std::vector<std::string> paths;
         if (m_search_path)
@@ -756,7 +755,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     }
 
     {
-        JSAutoRealm ar(cx, global);
+        Gjs::AutoMainRealm ar{this};
         load_context_module(
             cx, "resource:///org/gnome/gjs/modules/esm/_bootstrap/default.js",
             "ESM bootstrap");
@@ -1317,7 +1316,7 @@ bool GjsContextPrivate::auto_profile_enter() {
         (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
         auto_profile = false;
 
-    JSAutoRealm ar(m_cx, m_global);
+    Gjs::AutoMainRealm ar{this};
 
     if (auto_profile)
         gjs_profiler_start(m_profiler);
@@ -1414,7 +1413,7 @@ bool GjsContextPrivate::eval(const char* script, size_t script_len,
 
     bool auto_profile = auto_profile_enter();
 
-    JSAutoRealm ar(m_cx, m_global);
+    Gjs::AutoMainRealm ar{this};
 
     JS::RootedValue retval(m_cx);
     bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
@@ -1480,7 +1479,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
     bool auto_profile = auto_profile_enter();
 
-    JSAutoRealm ac(m_cx, m_global);
+    Gjs::AutoMainRealm ar{this};
 
     JS::RootedObject registry(m_cx, gjs_get_module_registry(m_global));
     JS::RootedId key(m_cx, gjs_intern_string_to_id(m_cx, identifier));
@@ -1557,7 +1556,7 @@ bool GjsContextPrivate::eval_module(const char* identifier,
 
 bool GjsContextPrivate::register_module(const char* identifier, const char* uri,
                                         GError** error) {
-    JSAutoRealm ar(m_cx, m_global);
+    Gjs::AutoMainRealm ar{this};
 
     if (gjs_module_load(m_cx, identifier, uri))
         return true;
@@ -1710,7 +1709,7 @@ gjs_context_define_string_array(GjsContext  *js_context,
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
-    JSAutoRealm ar(gjs->context(), gjs->global());
+    Gjs::AutoMainRealm ar{gjs};
 
     std::vector<std::string> strings;
     if (array_values) {
@@ -1764,6 +1763,44 @@ gjs_context_make_current (GjsContext *context)
     current_context = context;
 }
 
+namespace Gjs {
+/*
+ * Gjs::AutoMainRealm:
+ * @gjs: a #GjsContextPrivate
+ *
+ * Enters the realm of the "main global" for the context, and leaves when the
+ * object is destructed at the end of the scope. The main global is the global
+ * object under which all user JS code is executed. It is used as the root
+ * object for the scope of modules loaded by GJS in this context.
+ *
+ * Only code in a different realm, such as the debugger code or the module
+ * loader code, uses a different global object.
+ */
+AutoMainRealm::AutoMainRealm(GjsContextPrivate* gjs)
+    : JSAutoRealm(gjs->context(), gjs->global()) {}
+
+AutoMainRealm::AutoMainRealm(JSContext* cx)
+    : AutoMainRealm(static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx))) {
+}
+
+/*
+ * Gjs::AutoInternalRealm:
+ * @gjs: a #GjsContextPrivate
+ *
+ * Enters the realm of the "internal global" for the context, and leaves when
+ * the object is destructed at the end of the scope. The internal global is only
+ * used for executing the module loader code, to keep it separate from user
+ * code.
+ */
+AutoInternalRealm::AutoInternalRealm(GjsContextPrivate* gjs)
+    : JSAutoRealm(gjs->context(), gjs->internal_global()) {}
+
+AutoInternalRealm::AutoInternalRealm(JSContext* cx)
+    : AutoInternalRealm(
+          static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx))) {}
+
+}  // namespace Gjs
+
 /**
  * gjs_context_get_profiler:
  * @self: the #GjsContext
@@ -1810,6 +1847,6 @@ void gjs_context_run_in_realm(GjsContext* self, GjsContextInRealmFunc func,
     g_return_if_fail(func);
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
-    JSAutoRealm ar{gjs->context(), gjs->global()};
+    Gjs::AutoMainRealm ar{gjs};
     func(self, user_data);
 }

@@ -161,7 +161,7 @@ static GObject* gjs_object_constructor(
      * Construct the JS object from the constructor, then use the GObject
      * that was associated in gjs_object_custom_init()
      */
-    JSAutoRealm ar(cx, gjs_get_import_global(cx));
+    Gjs::AutoMainRealm ar{gjs};
 
     JS::RootedObject constructor(
         cx, gjs_lookup_object_constructor_from_info(cx, nullptr, type));
