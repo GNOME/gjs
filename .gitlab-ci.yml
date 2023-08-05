@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 ---
 include:
-  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/c5626190ec14b475271288dda7a7dae8dbe0cd76/templates/alpine.yml'
+  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/b791bd48996e3ced9ca13f1c5ee82be8540b8adb/templates/alpine.yml'
 
 stages:
   - prepare
@@ -434,7 +434,7 @@ zeal_11:
 #          Create CI Docker Images          #
 #############################################
 .Docker image template: &create_docker_image
-  image: quay.io/freedesktop.org/ci-templates:container-build-base-2022-05-25.0
+  image: quay.io/freedesktop.org/ci-templates:container-build-base-2023-06-27.1
   stage: deploy
   only:
     variables:
