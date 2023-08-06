@@ -48,25 +48,21 @@ bool Gjs::NativeModuleRegistry::is_registered(const char* name) const {
 /**
  * gjs_load:
  * @context: the #JSContext
- * @parse_name: Name under which the module was registered with
- *  add(), should be in the format as returned by
- *  g_file_get_parse_name()
+ * @id: Name under which the module was registered with add()
  * @module_out: Return location for a #JSObject
  *
  * Loads a builtin native-code module called @name into @module_out.
  *
  * Returns: true on success, false if an exception was thrown.
  */
-bool Gjs::NativeModuleRegistry::load(JSContext* context, const char* parse_name,
+bool Gjs::NativeModuleRegistry::load(JSContext* context, const char* id,
                                      JS::MutableHandleObject module_out) {
-    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", parse_name);
+    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", id);
 
-    const auto& iter = m_modules.find(parse_name);
+    const auto& iter = m_modules.find(id);
 
     if (iter == m_modules.end()) {
-        gjs_throw(context,
-                  "No native module '%s' has registered itself",
-                  parse_name);
+        gjs_throw(context, "No native module '%s' has registered itself", id);
         return false;
     }
 

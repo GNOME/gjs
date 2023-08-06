@@ -265,26 +265,21 @@ cancel_import(JSContext       *context,
  * gjs_import_native_module:
  * @cx: the #JSContext
  * @importer: the root importer
- * @parse_name: Name under which the module was registered with
- *  add(), should be in the format as returned by
- *  g_file_get_parse_name()
+ * @id_str: Name under which the module was registered with add()
  *
  * Imports a builtin native-code module so that it is available to JS code as
- * `imports[parse_name]`.
+ * `imports[id_str]`.
  *
  * Returns: true on success, false if an exception was thrown.
  */
-bool
-gjs_import_native_module(JSContext       *cx,
-                         JS::HandleObject importer,
-                         const char      *parse_name)
-{
-    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", parse_name);
+bool gjs_import_native_module(JSContext* cx, JS::HandleObject importer,
+                              const char* id_str) {
+    gjs_debug(GJS_DEBUG_IMPORTER, "Importing '%s'", id_str);
 
     JS::RootedObject native_registry(
         cx, gjs_get_native_registry(JS::CurrentGlobalOrNull(cx)));
 
-    JS::RootedId id(cx, gjs_intern_string_to_id(cx, parse_name));
+    JS::RootedId id(cx, gjs_intern_string_to_id(cx, id_str));
     if (id.isVoid())
         return false;
 
@@ -293,12 +288,12 @@ gjs_import_native_module(JSContext       *cx,
         return false;
 
     if (!module &&
-        (!Gjs::NativeModuleRegistry::get().load(cx, parse_name, &module) ||
+        (!Gjs::NativeModuleRegistry::get().load(cx, id_str, &module) ||
          !gjs_global_registry_set(cx, native_registry, id, module)))
         return false;
 
-    return define_meta_properties(cx, module, nullptr, parse_name, importer) &&
-           JS_DefineProperty(cx, importer, parse_name, module,
+    return define_meta_properties(cx, module, nullptr, id_str, importer) &&
+           JS_DefineProperty(cx, importer, id_str, module,
                              GJS_MODULE_PROP_FLAGS);
 }
 
