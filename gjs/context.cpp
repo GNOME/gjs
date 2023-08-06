@@ -93,8 +93,13 @@
 #include "gjs/profiler.h"
 #include "gjs/promise.h"
 #include "gjs/text-encoding.h"
-#include "modules/modules.h"
+#include "modules/console.h"
+#include "modules/print.h"
+#include "modules/system.h"
 #include "util/log.h"
+#ifdef ENABLE_CAIRO
+#    include "modules/cairo-module.h"
+#endif
 
 namespace mozilla {
 union Utf8Unit;
@@ -126,8 +131,6 @@ struct _GjsContext {
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
-
-Gjs::NativeModuleRegistry& registry = Gjs::NativeModuleRegistry::get();
 
 GjsContextPrivate* GjsContextPrivate::from_object(GObject* js_context) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
@@ -336,13 +339,18 @@ gjs_context_class_init(GjsContextClass *klass)
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
     }
+    Gjs::NativeModuleRegistry& registry = Gjs::NativeModuleRegistry::get();
     registry.add("_promiseNative", gjs_define_native_promise_stuff);
     registry.add("_byteArrayNative", gjs_define_byte_array_stuff);
     registry.add("_encodingNative", gjs_define_text_encoding_stuff);
     registry.add("_gi", gjs_define_private_gi_stuff);
     registry.add("gi", gjs_define_repo);
-
-    gjs_register_static_modules();
+#ifdef ENABLE_CAIRO
+    registry.add("cairoNative", gjs_js_define_cairo_stuff);
+#endif
+    registry.add("system", gjs_js_define_system_stuff);
+    registry.add("console", gjs_define_console_stuff);
+    registry.add("_print", gjs_define_print_stuff);
 }
 
 void GjsContextPrivate::trace(JSTracer* trc, void* data) {

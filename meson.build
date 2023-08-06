@@ -442,7 +442,6 @@ libgjs_sources = [
     'gjs/promise.cpp', 'gjs/promise.h',
     'gjs/stack.cpp',
     'modules/console.cpp', 'modules/console.h',
-    'modules/modules.cpp', 'modules/modules.h',
     'modules/print.cpp', 'modules/print.h',
     'modules/system.cpp', 'modules/system.h',
 ]
