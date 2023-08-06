@@ -743,6 +743,8 @@ function _init() {
                 throw new Error('One of property \'schema-id\' or ' +
                     '\'settings-schema\' are required for Gio.Settings');
             }
+            if (settingsSchemaProp !== undefined && !(settingsSchemaProp instanceof Gio.SettingsSchema))
+                throw new Error(`Value of property '${settingsSchemaProp}' is not of type Gio.SettingsSchema`);
 
             const source = Gio.SettingsSchemaSource.get_default();
             const settingsSchema = settingsSchemaProp
