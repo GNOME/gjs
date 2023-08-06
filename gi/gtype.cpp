@@ -12,6 +12,7 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/GCHashTable.h>         // for WeakCache
+#include <js/HashTable.h>           // for DefaultHasher via WeakCache
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>

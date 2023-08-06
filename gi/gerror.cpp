@@ -6,8 +6,6 @@
 
 #include <stdint.h>
 
-#include <string>
-
 #include <girepository.h>
 #include <glib-object.h>
 

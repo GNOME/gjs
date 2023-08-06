@@ -33,7 +33,6 @@
 #include <js/UniquePtr.h>
 #include <js/ValueArray.h>
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
-#include <mozilla/Vector.h>
 
 #include "gi/closure.h"
 #include "gjs/context.h"

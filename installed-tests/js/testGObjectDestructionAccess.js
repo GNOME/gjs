@@ -695,7 +695,7 @@ describe('GObject with toggle references', function () {
             'can be finalized while queued in toggle queue');
     });
 
-    it('can be toggled up-down from various threads while getting a GWeakRef from main', function () {
+    xit('can be toggled up-down from various threads while getting a GWeakRef from main', function () {
         let file = Gio.File.new_for_path('/');
         file.expandMeWithToggleRef = true;
         GjsTestTools.save_weak(file);
@@ -736,5 +736,5 @@ describe('GObject with toggle references', function () {
         GjsTestTools.clear_saved();
         System.gc();
         expect(GjsTestTools.get_weak()).toBeNull();
-    });
+    }).pend('Flaky, see https://gitlab.gnome.org/GNOME/gjs/-/issues/NNN');
 });

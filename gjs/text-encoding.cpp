@@ -15,6 +15,7 @@
 #include <iterator>  // for distance
 #include <memory>    // for unique_ptr
 #include <string>    // for u16string
+#include <tuple>     // for tuple
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -39,7 +40,6 @@
 #include <jspubtd.h>      // for JSProto_InternalError
 #include <mozilla/Maybe.h>
 #include <mozilla/Span.h>
-#include <mozilla/Tuple.h>
 #include <mozilla/Unused.h>
 
 #include "gjs/jsapi-util-args.h"
@@ -485,7 +485,7 @@ static bool gjs_encode_into_uint8array(JSContext* cx, JS::HandleString str,
         return false;
     }
 
-    mozilla::Maybe<mozilla::Tuple<size_t, size_t>> results;
+    mozilla::Maybe<std::tuple<size_t, size_t>> results;
 
     {
         JS::AutoCheckCannotGC nogc(cx);
@@ -504,7 +504,7 @@ static bool gjs_encode_into_uint8array(JSContext* cx, JS::HandleString str,
     }
 
     size_t read, written;
-    mozilla::Tie(read, written) = *results;
+    std::tie(read, written) = *results;
 
     g_assert(written <= len);
 

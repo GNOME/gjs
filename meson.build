@@ -39,7 +39,7 @@ if cc.get_id() == 'msvc'
     add_project_arguments(cxx.get_supported_arguments([
         '-utf-8',  # Use UTF-8 mode
         '/Zc:externConstexpr',  # Required for 'extern constexpr' on MSVC
-        '/Zc:preprocessor',     # Required to consume the mozjs-102 headers on MSVC
+        '/Zc:preprocessor',     # Required to consume the mozjs-115 headers on MSVC
 
         # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
         # header files commonly do
@@ -128,7 +128,7 @@ gio = dependency('gio-2.0', version: glib_required_version,
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
-spidermonkey = dependency('mozjs-102')
+spidermonkey = dependency('mozjs-115')
 
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC/clang-cl builds...

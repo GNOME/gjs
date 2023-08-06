@@ -4,8 +4,6 @@
 
 #include <stdint.h>
 
-#include <atomic>  // for atomic_int64_t
-
 #include <glib.h>
 
 #include "gjs/mem-private.h"
