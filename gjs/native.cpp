@@ -18,8 +18,8 @@
 #include "gjs/native.h"
 #include "util/log.h"
 
-void Gjs::NativeModuleRegistry::add(const char* module_id,
-                                    GjsDefineModuleFunc func) {
+void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
+                                       GjsDefineModuleFunc func) {
     bool inserted;
     std::tie(std::ignore, inserted) = m_modules.insert({module_id, func});
     if (!inserted) {
@@ -41,22 +41,23 @@ void Gjs::NativeModuleRegistry::add(const char* module_id,
  * been registered. This is used to check to see if a name is a
  * builtin module without starting to try and load it.
  */
-bool Gjs::NativeModuleRegistry::is_registered(const char* name) const {
+bool Gjs::NativeModuleDefineFuncs::is_registered(const char* name) const {
     return m_modules.count(name) > 0;
 }
 
 /**
- * gjs_load:
+ * define:
  * @context: the #JSContext
  * @id: Name under which the module was registered with add()
  * @module_out: Return location for a #JSObject
  *
- * Loads a builtin native-code module called @name into @module_out.
+ * Loads a builtin native-code module called @name into @module_out by calling
+ * the function to define it.
  *
  * Returns: true on success, false if an exception was thrown.
  */
-bool Gjs::NativeModuleRegistry::load(JSContext* context, const char* id,
-                                     JS::MutableHandleObject module_out) {
+bool Gjs::NativeModuleDefineFuncs::define(JSContext* context, const char* id,
+                                          JS::MutableHandleObject module_out) {
     gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", id);
 
     const auto& iter = m_modules.find(id);

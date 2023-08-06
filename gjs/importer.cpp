@@ -288,7 +288,7 @@ bool gjs_import_native_module(JSContext* cx, JS::HandleObject importer,
         return false;
 
     if (!module &&
-        (!Gjs::NativeModuleRegistry::get().load(cx, id_str, &module) ||
+        (!Gjs::NativeModuleDefineFuncs::get().define(cx, id_str, &module) ||
          !gjs_global_registry_set(cx, native_registry, id, module)))
         return false;
 
@@ -491,7 +491,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
 
     /* First try importing an internal module like gi */
     if (parent.isNull() &&
-        Gjs::NativeModuleRegistry::get().is_registered(name.get())) {
+        Gjs::NativeModuleDefineFuncs::get().is_registered(name.get())) {
         if (!gjs_import_native_module(context, obj, name.get()))
             return false;
 

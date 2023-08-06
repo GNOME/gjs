@@ -339,7 +339,7 @@ gjs_context_class_init(GjsContextClass *klass)
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
     }
-    Gjs::NativeModuleRegistry& registry = Gjs::NativeModuleRegistry::get();
+    auto& registry = Gjs::NativeModuleDefineFuncs::get();
     registry.add("_promiseNative", gjs_define_native_promise_stuff);
     registry.add("_byteArrayNative", gjs_define_byte_array_stuff);
     registry.add("_encodingNative", gjs_define_text_encoding_stuff);
