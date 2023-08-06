@@ -124,7 +124,6 @@
 #include <mozilla/Span.h>
 #include <mozilla/UniquePtr.h>
 #include <mozilla/Unused.h>
-#include <mozilla/Vector.h>
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/history.h>
 #include <readline/readline.h>

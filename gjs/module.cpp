@@ -7,8 +7,6 @@
 #include <stddef.h>     // for size_t
 #include <string.h>
 
-#include <string>  // for u16string
-
 #include <gio/gio.h>
 #include <glib.h>
 

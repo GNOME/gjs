@@ -76,13 +76,7 @@ FALSE_POSITIVES = (
     ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
     ('gjs/importer.cpp', '#include <algorithm>', 'for max, copy'),  # also!
     ('gjs/module.cpp', '#include <algorithm>', 'for copy'),
-    ('modules/cairo-context.cpp', '#include <algorithm>', 'for max'),
-
-    # False positive when using EnumType operators
-    # https://github.com/include-what-you-use/include-what-you-use/issues/927
-    ('modules/cairo-context.cpp', '#include <type_traits>', 'for enable_if_t'),
-    ('modules/cairo-region.cpp', '#include <type_traits>', 'for enable_if_t'),
-    ('modules/cairo-surface.cpp', '#include <type_traits>', 'for enable_if_t'),
+    ('util/log.cpp', '#include <algorithm>', 'for fill_n'),
 
     # False positive when constructing JS::GCHashMap
     ('gi/boxed.h', '#include <utility>', 'for move'),

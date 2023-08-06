@@ -19,7 +19,6 @@
 #ifdef DEBUG
 #    include <algorithm>  // for find
 #endif
-#include <atomic>
 #include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
@@ -49,6 +48,7 @@
 #include <js/GCHashTable.h>         // for WeakCache
 #include <js/GCVector.h>            // for RootedVector
 #include <js/GlobalObject.h>        // for CurrentGlobalOrNull
+#include <js/HashTable.h>           // for DefaultHasher via WeakCache
 #include <js/Id.h>
 #include <js/Modules.h>
 #include <js/Promise.h>             // for JobQueue::SavedJobQueue
@@ -61,6 +61,7 @@
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
+#include <js/Utility.h>  // for DeletePolicy via WeakCache
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/friend/DumpFunctions.h>

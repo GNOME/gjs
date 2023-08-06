@@ -6,8 +6,6 @@
 
 #include <stddef.h>  // for size_t
 
-#include <string>
-
 #include <gio/gio.h>
 #include <glib-object.h>
 
