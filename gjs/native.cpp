@@ -56,8 +56,9 @@ bool Gjs::NativeModuleDefineFuncs::is_registered(const char* name) const {
  *
  * Returns: true on success, false if an exception was thrown.
  */
-bool Gjs::NativeModuleDefineFuncs::define(JSContext* context, const char* id,
-                                          JS::MutableHandleObject module_out) {
+bool Gjs::NativeModuleDefineFuncs::define(
+    JSContext* context, const char* id,
+    JS::MutableHandleObject module_out) const {
     gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", id);
 
     const auto& iter = m_modules.find(id);

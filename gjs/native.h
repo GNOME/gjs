@@ -37,7 +37,7 @@ class NativeModuleDefineFuncs {
     // called by importer.cpp to load a built-in native module
     GJS_JSAPI_RETURN_CONVENTION
     bool define(JSContext* cx, const char* name,
-                JS::MutableHandleObject module_out);
+                JS::MutableHandleObject module_out) const;
 };
 };  // namespace Gjs
 
