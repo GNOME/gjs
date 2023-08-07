@@ -645,6 +645,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
       m_cx(cx),
       m_owner_thread(std::this_thread::get_id()),
       m_dispatcher(this),
+      m_memory_monitor(g_memory_monitor_dup_default()),
       m_environment_preparer(cx) {
     JS_SetGCCallback(
         cx,
@@ -764,6 +765,19 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     [[maybe_unused]] bool success = m_main_loop.spin(this);
     g_assert(success && "bootstrap should not call system.exit()");
+
+    g_signal_connect_object(
+        m_memory_monitor, "low-memory-warning",
+        G_CALLBACK(+[](GjsContext* js_cx, GMemoryMonitorWarningLevel level) {
+            auto* cx =
+                static_cast<JSContext*>(gjs_context_get_native_context(js_cx));
+            JS::PrepareForFullGC(cx);
+            JS::GCOptions gc_strength = JS::GCOptions::Normal;
+            if (level > G_MEMORY_MONITOR_WARNING_LEVEL_LOW)
+                gc_strength = JS::GCOptions::Shrink;
+            JS::NonIncrementalGC(cx, gc_strength, Gjs::GCReason::LOW_MEMORY);
+        }),
+        m_public_context, G_CONNECT_SWAPPED);
 
     start_draining_job_queue();
 }
