@@ -249,23 +249,18 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
 
     // While a list can be NULL in C, that means empty array in JavaScript, it
     // doesn't mean null in JavaScript.
-    if (!value.isObject())
+    bool is_array;
+    if (!JS::IsArrayObject(cx, value, &is_array))
         return false;
-
-    bool found_length;
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedObject array_obj(cx, &value.toObject());
-
-    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
-        return false;
-    if (!found_length) {
+    if (!is_array) {
         throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
         return false;
     }
 
+    JS::RootedObject array_obj(cx, &value.toObject());
+
     uint32_t length;
-    if (!gjs_object_require_converted_property(cx, array_obj, nullptr,
-                                               atoms.length(), &length)) {
+    if (!JS::GetArrayLength(cx, array_obj, &length)) {
         throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
         return false;
     }

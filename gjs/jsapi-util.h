@@ -306,12 +306,16 @@ struct GjsAutoInfo : GjsAutoBaseInfo {
     // to conform to the interface of std::unique_ptr here.
     GjsAutoInfo(GIBaseInfo* ptr = nullptr)  // NOLINT(runtime/explicit)
         : GjsAutoBaseInfo(ptr) {
+#ifndef G_DISABLE_CAST_CHECKS
         validate();
+#endif
     }
 
     void reset(GIBaseInfo* other = nullptr) {
         GjsAutoBaseInfo::reset(other);
+#ifndef G_DISABLE_CAST_CHECKS
         validate();
+#endif
     }
 
     // You should not need this method, because you already know the answer.
@@ -324,6 +328,7 @@ struct GjsAutoInfo : GjsAutoBaseInfo {
     }
 };
 
+using GjsAutoArgInfo = GjsAutoInfo<GI_INFO_TYPE_ARG>;
 using GjsAutoEnumInfo = GjsAutoInfo<GI_INFO_TYPE_ENUM>;
 using GjsAutoFieldInfo = GjsAutoInfo<GI_INFO_TYPE_FIELD>;
 using GjsAutoFunctionInfo = GjsAutoInfo<GI_INFO_TYPE_FUNCTION>;
@@ -331,6 +336,7 @@ using GjsAutoInterfaceInfo = GjsAutoInfo<GI_INFO_TYPE_INTERFACE>;
 using GjsAutoObjectInfo = GjsAutoInfo<GI_INFO_TYPE_OBJECT>;
 using GjsAutoPropertyInfo = GjsAutoInfo<GI_INFO_TYPE_PROPERTY>;
 using GjsAutoStructInfo = GjsAutoInfo<GI_INFO_TYPE_STRUCT>;
+using GjsAutoSignalInfo = GjsAutoInfo<GI_INFO_TYPE_SIGNAL>;
 using GjsAutoTypeInfo = GjsAutoInfo<GI_INFO_TYPE_TYPE>;
 using GjsAutoValueInfo = GjsAutoInfo<GI_INFO_TYPE_VALUE>;
 using GjsAutoVFuncInfo = GjsAutoInfo<GI_INFO_TYPE_VFUNC>;

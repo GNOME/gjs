@@ -14,12 +14,12 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/Array.h>
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
 #include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
-#include <js/PropertyAndElement.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -44,7 +44,6 @@
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
-#include "gjs/atoms.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -53,41 +52,36 @@
 #include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_g_value_internal(JSContext             *context,
-                                            JS::MutableHandleValue value_p,
-                                            const GValue          *gvalue,
-                                            bool                   no_copy,
-                                            GSignalQuery          *signal_query,
-                                            int                    arg_n);
+static bool gjs_value_from_g_value_internal(JSContext*, JS::MutableHandleValue,
+                                            const GValue*, bool no_copy = false,
+                                            GjsAutoSignalInfo const& = nullptr,
+                                            GjsAutoArgInfo const& = nullptr,
+                                            GITypeInfo* = nullptr);
 
 /*
  * Gets signal introspection info about closure, or NULL if not found. Currently
  * only works for signals on introspected GObjects, not signals on GJS-defined
  * GObjects nor standalone closures. The return value must be unreffed.
  */
-[[nodiscard]] static GISignalInfo* get_signal_info_if_available(
+[[nodiscard]] static GjsAutoSignalInfo get_signal_info_if_available(
     GSignalQuery* signal_query) {
-    GIBaseInfo *obj;
     GIInfoType info_type;
-    GISignalInfo *signal_info = NULL;
 
     if (!signal_query->itype)
-        return NULL;
+        return nullptr;
 
-    obj = g_irepository_find_by_gtype(NULL, signal_query->itype);
+    GjsAutoBaseInfo obj =
+        g_irepository_find_by_gtype(nullptr, signal_query->itype);
     if (!obj)
-        return NULL;
+        return nullptr;
 
     info_type = g_base_info_get_type (obj);
     if (info_type == GI_INFO_TYPE_OBJECT)
-      signal_info = g_object_info_find_signal((GIObjectInfo*)obj,
-                                              signal_query->signal_name);
+        return g_object_info_find_signal(obj, signal_query->signal_name);
     else if (info_type == GI_INFO_TYPE_INTERFACE)
-      signal_info = g_interface_info_find_signal((GIInterfaceInfo*)obj,
-                                                 signal_query->signal_name);
-    g_base_info_unref((GIBaseInfo*)obj);
+        return g_interface_info_find_signal(obj, signal_query->signal_name);
 
-    return signal_info;
+    return nullptr;
 }
 
 /*
@@ -95,25 +89,21 @@ static bool gjs_value_from_g_value_internal(JSContext             *context,
  * in array_value, with its length stored in array_length_value.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_value_from_array_and_length_values(JSContext             *context,
-                                       JS::MutableHandleValue value_p,
-                                       GITypeInfo            *array_type_info,
-                                       const GValue          *array_value,
-                                       const GValue          *array_length_value,
-                                       bool                   no_copy,
-                                       GSignalQuery          *signal_query,
-                                       int                    array_length_arg_n)
-{
+static bool gjs_value_from_array_and_length_values(
+    JSContext* context, GjsAutoSignalInfo const& signal_info,
+    JS::MutableHandleValue value_p, GITypeInfo* array_type_info,
+    const GValue* array_value, GjsAutoArgInfo const& array_length_arg_info,
+    GITypeInfo* array_length_type_info, const GValue* array_length_value,
+    bool no_copy) {
     JS::RootedValue array_length(context);
     GArgument array_arg;
 
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
     g_assert(G_VALUE_HOLDS_INT(array_length_value));
 
-    if (!gjs_value_from_g_value_internal(context, &array_length,
-                                         array_length_value, no_copy,
-                                         signal_query, array_length_arg_n))
+    if (!gjs_value_from_g_value_internal(
+            context, &array_length, array_length_value, no_copy, signal_info,
+            array_length_arg_info, array_length_type_info))
         return false;
 
     gjs_arg_set(&array_arg, g_value_get_pointer(array_value));
@@ -131,7 +121,6 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     JSContext *context;
     unsigned i;
     GSignalQuery signal_query = { 0, };
-    GISignalInfo *signal_info;
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
 
@@ -193,33 +182,31 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     /* Check if any parameters, such as array lengths, need to be eliminated
      * before we invoke the closure.
      */
-    GjsAutoPointer<bool> skip = g_new0(bool, n_param_values);
-    GjsAutoPointer<int> array_len_indices_for = g_new(int, n_param_values);
-    for(i = 0; i < n_param_values; i++)
-        array_len_indices_for[i] = -1;
-    GjsAutoPointer<GITypeInfo> type_info_for =
-        g_new0(GITypeInfo, n_param_values);
+    struct ArgumentDetails {
+        int array_len_index_for = -1;
+        bool skip = false;
+        GITypeInfo type_info;
+        GjsAutoArgInfo arg_info;
+    };
+    std::vector<ArgumentDetails> args_details(n_param_values);
 
-    signal_info = get_signal_info_if_available(&signal_query);
+    GjsAutoSignalInfo signal_info = get_signal_info_if_available(&signal_query);
     if (signal_info) {
         /* Start at argument 1, skip the instance parameter */
         for (i = 1; i < n_param_values; ++i) {
-            GIArgInfo *arg_info;
             int array_len_pos;
 
-            arg_info = g_callable_info_get_arg(signal_info, i - 1);
-            g_arg_info_load_type(arg_info, &type_info_for[i]);
+            ArgumentDetails& arg_details = args_details[i];
+            arg_details.arg_info = g_callable_info_get_arg(signal_info, i - 1);
+            g_arg_info_load_type(arg_details.arg_info, &arg_details.type_info);
 
-            array_len_pos = g_type_info_get_array_length(&type_info_for[i]);
+            array_len_pos =
+                g_type_info_get_array_length(&arg_details.type_info);
             if (array_len_pos != -1) {
-                skip[array_len_pos + 1] = true;
-                array_len_indices_for[i] = array_len_pos + 1;
+                args_details[array_len_pos + 1].skip = true;
+                arg_details.array_len_index_for = array_len_pos + 1;
             }
-
-            g_base_info_unref((GIBaseInfo *)arg_info);
         }
-
-        g_base_info_unref((GIBaseInfo *)signal_info);
     }
 
     JS::RootedValueVector argv(context);
@@ -228,12 +215,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         g_error("Unable to reserve space");
     JS::RootedValue argv_to_append(context);
     for (i = 0; i < n_param_values; ++i) {
-        const GValue *gval = &param_values[i];
+        const GValue* gval = &param_values[i];
+        ArgumentDetails& arg_details = args_details[i];
         bool no_copy;
-        int array_len_index;
         bool res;
 
-        if (skip[i])
+        if (arg_details.skip)
             continue;
 
         no_copy = false;
@@ -242,17 +229,19 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
         }
 
-        array_len_index = array_len_indices_for[i];
-        if (array_len_index != -1) {
-            const GValue *array_len_gval = &param_values[array_len_index];
+        if (arg_details.array_len_index_for != -1) {
+            const GValue* array_len_gval =
+                &param_values[arg_details.array_len_index_for];
+            ArgumentDetails& array_len_details =
+                args_details[arg_details.array_len_index_for];
             res = gjs_value_from_array_and_length_values(
-                context, &argv_to_append, &type_info_for[i], gval,
-                array_len_gval, no_copy, &signal_query, array_len_index);
+                context, signal_info, &argv_to_append, &arg_details.type_info,
+                gval, array_len_details.arg_info, &array_len_details.type_info,
+                array_len_gval, no_copy);
         } else {
-            res = gjs_value_from_g_value_internal(context,
-                                                  &argv_to_append,
-                                                  gval, no_copy, &signal_query,
-                                                  i);
+            res = gjs_value_from_g_value_internal(
+                context, &argv_to_append, gval, no_copy, signal_info,
+                arg_details.arg_info, &arg_details.type_info);
         }
 
         if (!res) {
@@ -555,41 +544,25 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         g_value_set_object(gvalue, gobj);
     } else if (gtype == G_TYPE_STRV) {
-        if (value.isNull()) {
-            /* do nothing */
-        } else if (value.isObject()) {
-            bool found_length;
+        if (value.isNull())
+            return true;
 
-            const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-            JS::RootedObject array_obj(context, &value.toObject());
-            if (!JS_HasPropertyById(context, array_obj, atoms.length(),
-                                    &found_length))
-                return false;
-            if (found_length) {
-                guint32 length;
-
-                if (!gjs_object_require_converted_property(
-                        context, array_obj, nullptr, atoms.length(), &length)) {
-                    JS_ClearPendingException(context);
-                    return throw_expect_type(context, value, "strv");
-                } else {
-                    void *result;
-                    char **strv;
-
-                    if (!gjs_array_to_strv (context,
-                                            value,
-                                            length, &result))
-                        return false;
-                    /* cast to strv in a separate step to avoid type-punning */
-                    strv = (char**) result;
-                    g_value_take_boxed (gvalue, strv);
-                }
-            } else {
-                return throw_expect_type(context, value, "strv");
-            }
-        } else {
+        bool is_array;
+        if (!JS::IsArrayObject(context, value, &is_array))
+            return false;
+        if (!is_array)
             return throw_expect_type(context, value, "strv");
-        }
+
+        JS::RootedObject array_obj(context, &value.toObject());
+        uint32_t length;
+        if (!JS::GetArrayLength(context, array_obj, &length))
+            return throw_expect_type(context, value, "strv");
+
+        void* result;
+        if (!gjs_array_to_strv(context, value, length, &result))
+            return false;
+
+        g_value_take_boxed(gvalue, static_cast<char**>(result));
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         void *gboxed;
 
@@ -598,7 +571,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             return true;
 
         /* special case GValue */
-        if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+        if (gtype == G_TYPE_VALUE) {
             /* explicitly handle values that are already GValues
                to avoid infinite recursion */
             if (value.isObject()) {
@@ -626,15 +599,15 @@ gjs_value_to_g_value_internal(JSContext      *context,
         if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (g_type_is_a(gtype, ObjectBox::gtype())) {
+            if (gtype == ObjectBox::gtype()) {
                 g_value_set_boxed(gvalue, ObjectBox::boxed(context, obj).get());
                 return true;
-            } else if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+            } else if (gtype == G_TYPE_ERROR) {
                 /* special case GError */
                 gboxed = ErrorBase::to_c_ptr(context, obj);
                 if (!gboxed)
                     return false;
-            } else if (g_type_is_a(gtype, G_TYPE_BYTE_ARRAY)) {
+            } else if (gtype == G_TYPE_BYTE_ARRAY) {
                 /* special case GByteArray */
                 JS::RootedObject obj(context, &value.toObject());
                 if (JS_IsUint8Array(obj)) {
@@ -642,8 +615,22 @@ gjs_value_to_g_value_internal(JSContext      *context,
                                        gjs_byte_array_get_byte_array(obj));
                     return true;
                 }
+            } else if (gtype == G_TYPE_ARRAY) {
+                gjs_throw(context, "Converting %s to GArray is not supported",
+                          JS::InformalValueTypeName(value));
+                return false;
+            } else if (gtype == G_TYPE_PTR_ARRAY) {
+                gjs_throw(context, "Converting %s to GArray is not supported",
+                          JS::InformalValueTypeName(value));
+                return false;
+            } else if (gtype == G_TYPE_HASH_TABLE) {
+                gjs_throw(context,
+                          "Converting %s to GHashTable is not supported",
+                          JS::InformalValueTypeName(value));
+                return false;
             } else {
-                GIBaseInfo *registered = g_irepository_find_by_gtype (NULL, gtype);
+                GjsAutoBaseInfo registered =
+                    g_irepository_find_by_gtype(nullptr, gtype);
 
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
@@ -693,7 +680,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             g_value_set_static_boxed(gvalue, gboxed);
         else
             g_value_set_boxed(gvalue, gboxed);
-    } else if (g_type_is_a(gtype, G_TYPE_VARIANT)) {
+    } else if (gtype == G_TYPE_VARIANT) {
         GVariant *variant = NULL;
 
         if (value.isNull()) {
@@ -762,7 +749,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         }
 
         g_value_set_param(gvalue, (GParamSpec*) gparam);
-    } else if (g_type_is_a(gtype, G_TYPE_GTYPE)) {
+    } else if (gtype == G_TYPE_GTYPE) {
         GType type;
 
         if (!value.isObject())
@@ -860,14 +847,10 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_value_from_g_value_internal(JSContext             *context,
-                                JS::MutableHandleValue value_p,
-                                const GValue          *gvalue,
-                                bool                   no_copy,
-                                GSignalQuery          *signal_query,
-                                int                    arg_n)
-{
+static bool gjs_value_from_g_value_internal(
+    JSContext* context, JS::MutableHandleValue value_p, const GValue* gvalue,
+    bool no_copy, GjsAutoSignalInfo const& signal_info,
+    GjsAutoArgInfo const& arg_info, GITypeInfo* type_info) {
     GType gtype;
 
     gtype = G_VALUE_TYPE(gvalue);
@@ -876,17 +859,21 @@ gjs_value_from_g_value_internal(JSContext             *context,
                       "Converting gtype %s to JS::Value",
                       g_type_name(gtype));
 
+    if (gtype != G_TYPE_STRV && g_value_fits_pointer(gvalue) &&
+        g_value_peek_pointer(gvalue) == nullptr) {
+        // In theory here we should throw if !g_arg_info_may_be_null(arg_info)
+        // however most signals don't explicitly mark themselves as nullable,
+        // so better to avoid this.
+        gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
+                          "Converting NULL %s to JS::NullValue()",
+                          g_type_name(gtype));
+        value_p.setNull();
+        return true;
+    }
+
     if (gtype == G_TYPE_STRING) {
-        const char *v;
-        v = g_value_get_string(gvalue);
-        if (v == NULL) {
-            gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                              "Converting NULL string to JS::NullValue()");
-            value_p.setNull();
-        } else {
-            if (!gjs_string_from_utf8(context, v, value_p))
-                return false;
-        }
+        return gjs_string_from_utf8(context, g_value_get_string(gvalue),
+                                    value_p);
     } else if (gtype == G_TYPE_CHAR) {
         signed char v;
         v = g_value_get_schar(gvalue);
@@ -926,11 +913,9 @@ gjs_value_from_g_value_internal(JSContext             *context,
             gjs_throw(context, "Failed to convert strv to array");
             return false;
         }
-    } else if (g_type_is_a(gtype, G_TYPE_ARRAY) ||
-               g_type_is_a(gtype, G_TYPE_BYTE_ARRAY) ||
-               g_type_is_a(gtype, G_TYPE_PTR_ARRAY)) {
-
-        if (g_type_is_a(gtype, G_TYPE_BYTE_ARRAY)) {
+    } else if (gtype == G_TYPE_ARRAY || gtype == G_TYPE_BYTE_ARRAY ||
+               gtype == G_TYPE_PTR_ARRAY) {
+        if (gtype == G_TYPE_BYTE_ARRAY) {
             auto* byte_array = static_cast<GByteArray*>(g_value_get_boxed(gvalue));
             JSObject* array =
                 gjs_byte_array_from_byte_array(context, byte_array);
@@ -943,35 +928,23 @@ gjs_value_from_g_value_internal(JSContext             *context,
             return true;
         }
 
-        if (!signal_query) {
-            gjs_throw(context, "Can't convert untyped array to JS value");
-            return false;
-        }
-
-        GISignalInfo* signal_info = get_signal_info_if_available(signal_query);
-        if (!signal_info) {
+        if (!signal_info || !arg_info) {
             gjs_throw(context, "Unknown signal");
             return false;
         }
 
-        // Look for element-type
-        GITypeInfo type_info;
-        GIArgInfo* arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
-        g_arg_info_load_type(arg_info, &type_info);
-        GITypeInfo* element_info = g_type_info_get_param_type(&type_info, 0);
-
+        GjsAutoTypeInfo element_info = g_type_info_get_param_type(type_info, 0);
         if (!gjs_array_from_g_value_array(
                 context, value_p, element_info,
                 g_arg_info_get_ownership_transfer(arg_info), gvalue)) {
             gjs_throw(context, "Failed to convert array");
             return false;
         }
-    } else if (g_type_is_a(gtype, G_TYPE_HASH_TABLE)) {
+    } else if (gtype == G_TYPE_HASH_TABLE) {
         gjs_throw(context,
                   "Unable to introspect element-type of container in GValue");
         return false;
-    } else if (g_type_is_a(gtype, G_TYPE_BOXED) ||
-               g_type_is_a(gtype, G_TYPE_VARIANT)) {
+    } else if (g_type_is_a(gtype, G_TYPE_BOXED) || gtype == G_TYPE_VARIANT) {
         void *gboxed;
         JSObject *obj;
 
@@ -980,14 +953,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
         else
             gboxed = g_value_get_variant(gvalue);
 
-        if (!gboxed) {
-            gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                              "Converting null boxed pointer to JS::Value");
-            value_p.setNull();
-            return true;
-        }
-
-        if (g_type_is_a(gtype, ObjectBox::gtype())) {
+        if (gtype == ObjectBox::gtype()) {
             obj = ObjectBox::object_for_c_ptr(context,
                                               static_cast<ObjectBox*>(gboxed));
             if (!obj)
@@ -997,7 +963,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
         }
 
         /* special case GError */
-        if (g_type_is_a(gtype, G_TYPE_ERROR)) {
+        if (gtype == G_TYPE_ERROR) {
             obj = ErrorInstance::object_for_c_ptr(context,
                                                   static_cast<GError*>(gboxed));
             if (!obj)
@@ -1007,7 +973,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
         }
 
         /* special case GValue */
-        if (g_type_is_a(gtype, G_TYPE_VALUE)) {
+        if (gtype == G_TYPE_VALUE) {
             return gjs_value_from_g_value(context, value_p,
                                           static_cast<GValue *>(gboxed));
         }
@@ -1056,33 +1022,22 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         obj = gjs_param_from_g_param(context, gparam);
         value_p.setObjectOrNull(obj);
-    } else if (signal_query && g_type_is_a(gtype, G_TYPE_POINTER)) {
-        bool res;
+    } else if (signal_info && g_type_is_a(gtype, G_TYPE_POINTER)) {
         GArgument arg;
-        GIArgInfo *arg_info;
-        GISignalInfo *signal_info;
-        GITypeInfo type_info;
 
-        signal_info = get_signal_info_if_available(signal_query);
-        if (!signal_info) {
+        if (!arg_info) {
             gjs_throw(context, "Unknown signal.");
             return false;
         }
 
-        arg_info = g_callable_info_get_arg(signal_info, arg_n - 1);
-        g_arg_info_load_type(arg_info, &type_info);
-
-        g_assert(((void) "Check gjs_value_from_array_and_length_values() before"
-                  " calling gjs_value_from_g_value_internal()",
-                  g_type_info_get_array_length(&type_info) == -1));
+        g_assert(((void)"Check gjs_value_from_array_and_length_values() before"
+                        " calling gjs_value_from_g_value_internal()",
+                  g_type_info_get_array_length(type_info) == -1));
 
         gjs_arg_set(&arg, g_value_get_pointer(gvalue));
 
-        res = gjs_value_from_g_argument(context, value_p, &type_info, &arg, true);
-
-        g_base_info_unref((GIBaseInfo*)arg_info);
-        g_base_info_unref((GIBaseInfo*)signal_info);
-        return res;
+        return gjs_value_from_g_argument(context, value_p, type_info, &arg,
+                                         true);
     } else if (gtype == G_TYPE_GTYPE) {
         GType gvalue_gtype = g_value_get_gtype(gvalue);
 
@@ -1098,13 +1053,7 @@ gjs_value_from_g_value_internal(JSContext             *context,
 
         value_p.setObject(*obj);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
-        gpointer pointer;
-
-        pointer = g_value_get_pointer(gvalue);
-
-        if (pointer == NULL) {
-            value_p.setNull();
-        } else {
+        if (g_value_get_pointer(gvalue) != nullptr) {
             gjs_throw(context,
                       "Can't convert non-null pointer to JS value");
             return false;
@@ -1147,5 +1096,5 @@ gjs_value_from_g_value(JSContext             *context,
                        JS::MutableHandleValue value_p,
                        const GValue          *gvalue)
 {
-    return gjs_value_from_g_value_internal(context, value_p, gvalue, false, NULL, 0);
+    return gjs_value_from_g_value_internal(context, value_p, gvalue, false);
 }
