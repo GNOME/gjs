@@ -2392,12 +2392,10 @@ static bool gjs_array_from_zero_terminated_c_array(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_object_from_g_hash(JSContext* context,
-                                   JS::MutableHandleValue value_p,
-                                   GITypeInfo* key_param_info,
-                                   GITypeInfo* val_param_info,
-                                   GITransfer transfer, GHashTable* hash) {
+bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
+                            GITypeInfo* key_param_info,
+                            GITypeInfo* val_param_info, GITransfer transfer,
+                            GHashTable* hash) {
     GHashTableIter iter;
     GArgument keyarg, valarg;
 
@@ -3214,7 +3212,7 @@ static bool gjs_g_arg_release_internal(
             GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>
                 hash_table = gjs_arg_steal<GHashTable*>(arg);
             if (transfer == GI_TRANSFER_CONTAINER)
-                g_hash_table_steal_all(hash_table);
+                g_hash_table_remove_all(hash_table);
             else {
                 GHR_closure c = {context,  nullptr, nullptr,
                                  transfer, flags,   false};
