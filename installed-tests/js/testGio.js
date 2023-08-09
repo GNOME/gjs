@@ -121,6 +121,12 @@ describe('Gio.Settings overrides', function () {
         })).toThrowError(/schema/);
     });
 
+    it('can construct with a settings schema object', function () {
+        const source = Gio.SettingsSchemaSource.get_default();
+        const settingsSchema = source.lookup('org.gnome.GjsTest', false);
+        expect(() => new Gio.Settings({settingsSchema})).not.toThrow();
+    });
+
     it('throws proper error message when settings schema is specified with a wrong type', function () {
         expect(() => new Gio.Settings({
             settings_schema: 'string.path',
