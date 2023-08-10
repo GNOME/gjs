@@ -2017,7 +2017,10 @@ describe('GError', function () {
     });
 
     it('marshals a GError** at the end of the signature as an exception', function () {
-        expect(() => GIMarshallingTests.gerror_array_in([-1, 0, 1, 2])).toThrow();
+        expect(() => GIMarshallingTests.gerror_array_in([-1, 0, 1, 2])).toThrowMatching(e =>
+            e.matches(GLib.quark_from_static_string(GIMarshallingTests.CONSTANT_GERROR_DOMAIN),
+                GIMarshallingTests.CONSTANT_GERROR_CODE) &&
+            e.message === GIMarshallingTests.CONSTANT_GERROR_MESSAGE);
     });
 
     it('marshals a GError** elsewhere in the signature as an out parameter', function () {
