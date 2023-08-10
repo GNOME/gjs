@@ -1,3 +1,41 @@
+Version 1.77.2
+--------------
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 115, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 102.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New APIs
+    + Arrays and typed arrays have gained `findLast()` and `findLastIndex()`
+      methods, which act like `find()` and `findIndex()` respectively, but start
+      searching at the end of the array.
+    + Arrays and typed arrays have gained the `with()` method, which returns a
+      copy of the array with one element replaced.
+    + Arrays and typed arrays have gained `toReversed()`, `toSorted()`, and
+      `toSpliced()` methods, which act like `reverse()`, `sort()`, and
+      `splice()` respectively, but return a copy of the array instead of
+      modifying it in-place.
+    + The `Array.fromAsync()` static method acts like `Array.from()` but with
+      async iterables, and returns a Promise that fulfills to the new Array.
+
+- It is now possible to build GJS with -fno-exceptions, by invoking Meson with
+  -Dcpp_eh=none.
+
+- Closed bugs and merge requests:
+  * Port to mozjs115 [#556, !855, !871, !874, Xi Ruoyao, Philip Chimento]
+  * Various maintenance [!856, Philip Chimento]
+  * arg: Preserve transfer when freeing out arrays [!857, Marco Trevisan]
+  * Some values leak fixes and cleanups [!860, Marco Trevisan]
+  * Does not parse hash tables in signals [#488, !861, Marco Trevisan]
+  * docs: fix minor URL mistakes and behavioural omissions [!865, Andy Holmes]
+  * gjs: Listen to GMemoryMonitor::low-memory-warning to trigger GC [!870, Marco
+    Trevisan]
+  * GSettings override in Gio.js may fail on construction [#418, !873, Onur
+    Şahin]
+  * Gio: Fix constructing Settings with a SettingsSchema object [!876, James
+    Westman, Philip Chimento]
+
 Version 1.77.1
 --------------
 
