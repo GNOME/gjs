@@ -2114,13 +2114,12 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
         array_type = g_type_is_a(value_gtype, G_TYPE_BYTE_ARRAY)
                          ? GI_ARRAY_TYPE_BYTE_ARRAY
                          : GI_ARRAY_TYPE_ARRAY;
-        auto* array = reinterpret_cast<GArray*>(g_value_get_boxed(gvalue));
+        auto* array = Gjs::gvalue_get<GArray*>(gvalue);
         data = array->data;
         length = array->len;
     } else if (g_type_is_a(value_gtype, G_TYPE_PTR_ARRAY)) {
         array_type = GI_ARRAY_TYPE_PTR_ARRAY;
-        auto* ptr_array =
-            reinterpret_cast<GPtrArray*>(g_value_get_boxed(gvalue));
+        auto* ptr_array = Gjs::gvalue_get<GPtrArray*>(gvalue);
         data = ptr_array->pdata;
         length = ptr_array->len;
     } else {
