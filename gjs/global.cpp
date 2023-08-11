@@ -132,8 +132,8 @@ class GjsBaseGlobal {
 
         JS::RootedObject native_obj(m_cx);
 
-        if (!Gjs::NativeModuleRegistry::get().load(m_cx, id.get(),
-                                                   &native_obj)) {
+        if (!Gjs::NativeModuleDefineFuncs::get().define(m_cx, id.get(),
+                                                        &native_obj)) {
             gjs_throw(m_cx, "Failed to load native module: %s", id.get());
             return false;
         }

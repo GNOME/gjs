@@ -80,6 +80,7 @@
 #include <js/MemoryFunctions.h>
 #include <js/Modules.h>
 #include <js/Object.h>
+#include <js/Printer.h>
 #include <js/ProfilingCategory.h>
 #include <js/ProfilingStack.h>
 #include <js/Promise.h>

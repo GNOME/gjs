@@ -4,8 +4,8 @@
 
 project('gjs', 'cpp', 'c', version: '1.77.90', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 0.54.0',
-    default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'c_std=c99',
-        'warning_level=2', 'b_pch=true' ])
+    default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
+        'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
 # cpp_rtti: SpiderMonkey can be compiled with or without runtime type
 # information, and the default is without. We must match that option because we
@@ -330,9 +330,6 @@ header_conf.set('HAVE_DTRACE', get_option('dtrace'),
     description: 'Using dtrace probes')
 header_conf.set('HAVE_PRINTF_ALTERNATIVE_INT', have_printf_alternative_int,
     description: 'printf() accepts "%Id" for alternative integer output')
-header_conf.set('HAVE_OPEN_MEMSTREAM',
-    cxx.has_function('open_memstream', prefix : '#include <stdio.h>'),
-    description: 'open_memstream() is available')
 if build_readline
     header_conf.set('HAVE_READLINE_READLINE_H',
         cxx.check_header('readline/readline.h', prefix: '#include <cstdio>',
@@ -445,7 +442,6 @@ libgjs_sources = [
     'gjs/promise.cpp', 'gjs/promise.h',
     'gjs/stack.cpp',
     'modules/console.cpp', 'modules/console.h',
-    'modules/modules.cpp', 'modules/modules.h',
     'modules/print.cpp', 'modules/print.h',
     'modules/system.cpp', 'modules/system.h',
 ]

@@ -768,7 +768,7 @@ const struct JSClassOps BoxedBase::class_ops = {
     &BoxedBase::trace
 };
 
-/* We allocate 1 reserved slot; this is typically unused, but if the
+/* We allocate 1 extra reserved slot; this is typically unused, but if the
  * boxed is for a nested structure inside a parent structure, the
  * reserved slot is used to hold onto the parent Javascript object and
  * make sure it doesn't get freed.

@@ -15,29 +15,29 @@
 #include "gjs/macros.h"
 
 namespace Gjs {
-class NativeModuleRegistry {
-    NativeModuleRegistry() {}
+class NativeModuleDefineFuncs {
+    NativeModuleDefineFuncs() {}
     typedef bool (*GjsDefineModuleFunc)(JSContext* context,
                                         JS::MutableHandleObject module_out);
 
     std::unordered_map<std::string, GjsDefineModuleFunc> m_modules;
 
  public:
-    static NativeModuleRegistry& get() {
-        static NativeModuleRegistry the_singleton;
+    static NativeModuleDefineFuncs& get() {
+        static NativeModuleDefineFuncs the_singleton;
         return the_singleton;
     }
 
     /* called on context init */
     void add(const char* module_id, GjsDefineModuleFunc func);
 
-    /* called by importer.c to to check for already loaded modules */
+    // called by importer.cpp to to check for already loaded modules
     [[nodiscard]] bool is_registered(const char* name) const;
 
-    /* called by importer.cpp to load a statically linked native module */
+    // called by importer.cpp to load a built-in native module
     GJS_JSAPI_RETURN_CONVENTION
-    bool load(JSContext* cx, const char* name,
-              JS::MutableHandleObject module_out);
+    bool define(JSContext* cx, const char* name,
+                JS::MutableHandleObject module_out) const;
 };
 };  // namespace Gjs
 

@@ -30,7 +30,6 @@
 #include <js/PropertySpec.h>
 #include <js/Realm.h>  // for GetRealmFunctionPrototype
 #include <js/RootingAPI.h>
-#include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
@@ -132,8 +131,7 @@ class Function : public CWrapper<Function> {
     static JSObject* inherit_builtin_function(JSContext* cx, JSProtoKey) {
         JS::RootedObject builtin_function_proto(
             cx, JS::GetRealmFunctionPrototype(cx));
-        return JS_NewObjectWithGivenProto(cx, &Function::klass,
-                                          builtin_function_proto);
+        return JS_NewObjectWithGivenProto(cx, nullptr, builtin_function_proto);
     }
 
     static const JSClassOps class_ops;
@@ -1234,9 +1232,7 @@ bool Function::call(JSContext* context, unsigned js_argc, JS::Value* vp) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p",
                       callee.get(), priv);
 
-    if (priv == NULL)
-        return true;  // we are the prototype
-
+    g_assert(priv);
     return priv->invoke(context, js_argv);
 }
 
@@ -1246,8 +1242,7 @@ Function::~Function() {
 }
 
 void Function::finalize_impl(JS::GCContext*, Function* priv) {
-    if (priv == NULL)
-        return; /* we are the prototype, not a real instance, so constructor never called */
+    g_assert(priv);
     delete priv;
 }
 
@@ -1262,15 +1257,6 @@ bool Function::get_length(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool Function::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(context, argc, vp, rec, this_obj, Function, priv);
-
-    if (priv == NULL) {
-        JSString* retval = JS_NewStringCopyZ(context, "function () {\n}");
-        if (!retval)
-            return false;
-        rec.rval().setString(retval);
-        return true;
-    }
-
     return priv->to_string_impl(context, rec.rval());
 }
 
