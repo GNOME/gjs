@@ -57,6 +57,7 @@ using FundamentalTable =
 using GTypeTable =
     JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
+using FunctionVector = JS::GCVector<JSFunction*, 0, js::SystemAllocPolicy>;
 
 class GjsContextPrivate : public JS::JobQueue {
  public:
@@ -89,6 +90,7 @@ class GjsContextPrivate : public JS::JobQueue {
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
     std::unordered_map<uint64_t, JS::UniqueChars> m_unhandled_rejection_stacks;
+    FunctionVector m_cleanup_tasks;
 
     GjsProfiler* m_profiler;
 
@@ -264,6 +266,9 @@ class GjsContextPrivate : public JS::JobQueue {
     void register_unhandled_promise_rejection(uint64_t id,
                                               JS::UniqueChars&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
+    GJS_JSAPI_RETURN_CONVENTION bool queue_finalization_registry_cleanup(
+        JSFunction* cleanup_task);
+    GJS_JSAPI_RETURN_CONVENTION bool run_finalization_registry_cleanup();
 
     void register_notifier(DestroyNotify notify_func, void* data);
     void unregister_notifier(DestroyNotify notify_func, void* data);
