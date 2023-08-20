@@ -16,6 +16,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for JS_NewPlainObject
+#include <jsfriendapi.h>  // for RunJobs
 
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
@@ -81,7 +82,7 @@ class PromiseJobDispatcher::Source : public GSource {
         g_source_set_ready_time(this, -1);
 
         // Drain the job queue.
-        m_gjs->runJobs(m_gjs->context());
+        js::RunJobs(m_gjs->context());
 
         return G_SOURCE_CONTINUE;
     }
@@ -193,8 +194,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool drain_microtask_queue(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    auto* gjs = GjsContextPrivate::from_cx(cx);
-    gjs->runJobs(cx);
+    js::RunJobs(cx);
 
     args.rval().setUndefined();
     return true;
