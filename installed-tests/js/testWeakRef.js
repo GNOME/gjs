@@ -21,3 +21,59 @@ describe('WeakRef', function () {
         expect(weakRef.deref()).not.toBeDefined();
     });
 });
+
+describe('FinalizationRegistry', function () {
+    let registry, callback;
+    beforeEach(function () {
+        callback = jasmine.createSpy('FinalizationRegistry callback');
+        registry = new FinalizationRegistry(callback);
+    });
+
+    it('works', function () {
+        let obj = {};
+        registry.register(obj, 'marker');
+        obj = null;
+        System.gc();
+        PromiseInternal.drainMicrotaskQueue();
+        expect(callback).toHaveBeenCalledOnceWith('marker');
+    });
+
+    it('works if a microtask is enqueued from the callback', function () {
+        let obj = {};
+        let secondCallback = jasmine.createSpy('async callback');
+        callback.and.callFake(function () {
+            return Promise.resolve().then(secondCallback);
+        });
+        registry.register(obj);
+        obj = null;
+        System.gc();
+        PromiseInternal.drainMicrotaskQueue();
+        expect(callback).toHaveBeenCalled();
+        expect(secondCallback).toHaveBeenCalled();
+    });
+
+    it('works if the object is collected in a microtask', async function () {
+        let obj = {};
+        registry.register(obj, 'marker');
+        await Promise.resolve();
+        obj = null;
+        System.gc();
+        await Promise.resolve();
+        expect(callback).toHaveBeenCalled();
+    });
+
+    it('works if another collection is queued from the callback', function () {
+        let obj = {};
+        let obj2 = {};
+        callback.and.callFake(function () {
+            obj2 = null;
+            System.gc();
+        });
+        registry.register(obj, 'marker');
+        registry.register(obj2, 'marker2');
+        obj = null;
+        System.gc();
+        PromiseInternal.drainMicrotaskQueue();
+        expect(callback).toHaveBeenCalledTimes(2);
+    });
+});

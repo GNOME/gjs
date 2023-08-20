@@ -49,6 +49,7 @@
 #include <js/GCVector.h>            // for RootedVector
 #include <js/GlobalObject.h>        // for CurrentGlobalOrNull
 #include <js/HashTable.h>           // for DefaultHasher via WeakCache
+#include <js/HeapAPI.h>             // for ExposeObjectToActiveJS
 #include <js/Id.h>
 #include <js/Modules.h>
 #include <js/Promise.h>             // for JobQueue::SavedJobQueue
@@ -361,6 +362,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     JS::TraceEdge<JSObject*>(trc, &gjs->m_main_loop_hook, "GJS main loop hook");
     gjs->m_atoms->trace(trc);
     gjs->m_job_queue.trace(trc);
+    gjs->m_cleanup_tasks.trace(trc);
     gjs->m_object_init_list.trace(trc);
 }
 
@@ -1104,6 +1106,14 @@ bool GjsContextPrivate::run_jobs_fallible() {
     JS::HandleValueArray args(JS::HandleValueArray::empty());
     JS::RootedValue rval(m_cx);
 
+    if (m_job_queue.length() == 0) {
+        // Check FinalizationRegistry cleanup tasks at least once if there are
+        // no microtasks queued. This may enqueue more microtasks, which will be
+        // appended to m_job_queue.
+        if (!run_finalization_registry_cleanup())
+            retval = false;
+    }
+
     /* Execute jobs in a loop until we've reached the end of the queue.
      * Since executing a job can trigger enqueueing of additional jobs,
      * it's crucial to recheck the queue length during each iteration. */
@@ -1147,12 +1157,55 @@ bool GjsContextPrivate::run_jobs_fallible() {
             }
         }
         gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
+
+        // Run FinalizationRegistry cleanup tasks after each job. Cleanup tasks
+        // may enqueue more microtasks, which will be appended to m_job_queue.
+        if (!run_finalization_registry_cleanup())
+            retval = false;
     }
 
     m_draining_job_queue = false;
     m_job_queue.clear();
     warn_about_unhandled_promise_rejections();
     JS::JobQueueIsEmpty(m_cx);
+    return retval;
+}
+
+bool GjsContextPrivate::run_finalization_registry_cleanup() {
+    bool retval = true;
+
+    JS::Rooted<FunctionVector> tasks{m_cx};
+    std::swap(tasks.get(), m_cleanup_tasks);
+    g_assert(m_cleanup_tasks.empty());
+
+    JS::RootedFunction task{m_cx};
+    JS::RootedValue unused_rval{m_cx};
+    for (JSFunction* func : tasks) {
+        gjs_debug(GJS_DEBUG_MAINLOOP,
+                  "Running FinalizationRegistry cleanup callback");
+
+        task.set(func);
+        JS::ExposeObjectToActiveJS(JS_GetFunctionObject(func));
+
+        JSAutoRealm ar{m_cx, JS_GetFunctionObject(func)};
+        if (!JS_CallFunction(m_cx, nullptr, task, JS::HandleValueArray::empty(),
+                             &unused_rval)) {
+            // Same logic as above
+            if (!JS_IsExceptionPending(m_cx)) {
+                if (!should_exit(nullptr))
+                    g_critical(
+                        "FinalizationRegistry callback terminated with "
+                        "uncatchable exception");
+                retval = false;
+                continue;
+            }
+            gjs_log_exception_uncaught(m_cx);
+        }
+
+        gjs_debug(GJS_DEBUG_MAINLOOP,
+                  "Completed FinalizationRegistry cleanup callback");
+    }
+
     return retval;
 }
 
@@ -1208,6 +1261,11 @@ void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
                    "as unhandled",
                    id);
     }
+}
+
+bool GjsContextPrivate::queue_finalization_registry_cleanup(
+    JSFunction* cleanup_task) {
+    return m_cleanup_tasks.append(cleanup_task);
 }
 
 void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
