@@ -7,7 +7,6 @@ const System = imports.system;
 imports.gi.versions.Gtk = '3.0';
 
 const Gio = imports.gi.Gio;
-const GjsTestTools = imports.gi.GjsTestTools;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
@@ -353,7 +352,16 @@ describe('GObject class with decorator', function () {
         expect(notifySpy).toHaveBeenCalledTimes(2);
     });
 
-    it('disconnects connect_object signals on destruction', function () {
+    function asyncIdle() {
+        return new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                resolve();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+    }
+
+    it('disconnects connect_object signals on destruction', async function () {
         let callback = jasmine.createSpy('callback');
         callback.myInstance = myInstance;
         const instance2 = new MyObject();
@@ -364,14 +372,14 @@ describe('GObject class with decorator', function () {
 
         expect(callback).toHaveBeenCalledTimes(2);
 
-        GjsTestTools.save_weak(myInstance);
+        const weakRef = new WeakRef(myInstance);
         myInstance = null;
         callback = null;
 
-        System.gc();
+        await asyncIdle();
         System.gc();
 
-        expect(GjsTestTools.get_weak()).toBeNull();
+        expect(weakRef.deref()).toBeUndefined();
     });
 
     it('can define its own signals', function () {
