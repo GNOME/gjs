@@ -2107,6 +2107,11 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
         GjsArgumentFlags::NONE);
 }
 
+static constexpr bool type_tag_is_scalar(GITypeTag tag) {
+    return GI_TYPE_TAG_IS_NUMERIC(tag) || tag == GI_TYPE_TAG_BOOLEAN ||
+           tag == GI_TYPE_TAG_GTYPE;
+}
+
 void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                           GIArgInfo* arg, GICallableInfo* callable,
                           bool* inc_counter_out) {
@@ -2159,7 +2164,11 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                 default:
                     break;
             }
-        } else {
+        } else if (!type_tag_is_scalar(type_tag) &&
+                   !g_type_info_is_pointer(&type_info)) {
+            // Scalar out parameters should not be annotated with
+            // caller-allocates, which is for structured types that need to be
+            // allocated in order for the function to fill them in.
             size = gjs_type_get_element_size(type_tag, &type_info);
         }
 
