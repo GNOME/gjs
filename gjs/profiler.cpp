@@ -89,6 +89,10 @@ struct _GjsProfiler {
     GSource* periodic_flush;
 
     SysprofCaptureWriter* target_capture;
+
+    // Cache previous values of counters so that we don't overrun the output
+    // with counters that don't change very often
+    uint64_t last_counter_values[GJS_N_COUNTERS];
 #endif  /* ENABLE_PROFILER */
 
     /* The filename to write to */
@@ -435,15 +439,24 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
 
     unsigned ids[GJS_N_COUNTERS];
     SysprofCaptureCounterValue values[GJS_N_COUNTERS];
+    size_t new_counts = 0;
 
-#    define FETCH_COUNTERS(name, ix)       \
-        ids[ix] = self->counter_base + ix; \
-        values[ix].v64 = GJS_GET_COUNTER(name);
+#    define FETCH_COUNTERS(name, ix)                       \
+        {                                                  \
+            uint64_t count = GJS_GET_COUNTER(name);        \
+            if (count != self->last_counter_values[ix]) {  \
+                ids[new_counts] = self->counter_base + ix; \
+                values[new_counts].v64 = count;            \
+                new_counts++;                              \
+            }                                              \
+            self->last_counter_values[ix] = count;         \
+        }
     GJS_FOR_EACH_COUNTER(FETCH_COUNTERS);
 #    undef FETCH_COUNTERS
 
-    if (!sysprof_capture_writer_set_counters(self->capture, now, -1, self->pid,
-                                             ids, values, GJS_N_COUNTERS))
+    if (new_counts > 0 &&
+        !sysprof_capture_writer_set_counters(self->capture, now, -1, self->pid,
+                                             ids, values, new_counts))
         gjs_profiler_stop(self);
 }
 
