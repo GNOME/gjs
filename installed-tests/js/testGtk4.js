@@ -5,7 +5,7 @@ imports.gi.versions.Gdk = '4.0';
 imports.gi.versions.Gtk = '4.0';
 
 const ByteArray = imports.byteArray;
-const {Gdk, Gio, GObject, Gtk} = imports.gi;
+const {Gdk, Gio, GObject, Gtk, GLib} = imports.gi;
 
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
@@ -224,4 +224,11 @@ describe('Gtk 4 regressions', function () {
         custom.activate_action('custom.action', null);
         expect(custom.action).toEqual(42);
     }).pend('https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/3796');
+
+    it('Gdk.NoSelection section returns valid start/end values', function () {
+        if (!Gtk.NoSelection.prototype.get_section)
+            pending('Gtk 4.12 is required');
+
+        expect(new Gtk.NoSelection().get_section(0)).toEqual([0, GLib.MAXUINT32]);
+    });
 });
