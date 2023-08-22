@@ -220,7 +220,8 @@ foreach test : dbus_tests
     if not get_option('skip_dbus_tests')
         test(test, dbus_run_session,
             args: ['--config-file', bus_config, '--', minijasmine, test_file],
-            env: tests_environment, protocol: 'tap', suite: 'dbus')
+            env: tests_environment, protocol: 'tap', suite: 'dbus',
+            depends: tests_dependencies)
     endif
 
     dbus_test_description_subst = {
