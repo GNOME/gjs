@@ -5,7 +5,13 @@
 import * as system from 'system';
 
 import GLib from 'gi://GLib';
-import {environment, retval, errorsOutput, mainloop, mainloopLock} from './minijasmine.js';
+import {
+    environment,
+    retval,
+    errorsOutput,
+    mainloop,
+    mainloopLock,
+} from './minijasmine.js';
 
 // environment.execute() queues up all the tests and runs them
 // asynchronously. This should start after the main loop starts, otherwise
