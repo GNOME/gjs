@@ -133,6 +133,17 @@ describe('GVariantDict lookup', function () {
     });
 });
 
+describe('GLib spawn processes', function () {
+    it('sync with null envp', function () {
+        const [ret, stdout, stderr, exit_status] = GLib.spawn_sync(
+            null, ['true'], null, GLib.SpawnFlags.SEARCH_PATH, null);
+        expect(ret).toBe(true);
+        expect(stdout).toEqual(new Uint8Array());
+        expect(stderr).toEqual(new Uint8Array());
+        expect(exit_status).toBe(0);
+    }).pend('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/3523');
+});
+
 describe('GLib string function overrides', function () {
     let numExpectedWarnings;
 

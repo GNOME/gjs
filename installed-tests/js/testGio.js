@@ -231,6 +231,12 @@ describe('Gio.Settings overrides', function () {
     });
 });
 
+describe('Gio.content_type_set_mime_dirs', function () {
+    it('can be called with NULL argument', function () {
+        expect(() => Gio.content_type_set_mime_dirs(null)).not.toThrow();
+    });
+});
+
 describe('Gio.add_action_entries override', function () {
     it('registers each entry as an action', function ()  {
         const app = new Gio.Application();

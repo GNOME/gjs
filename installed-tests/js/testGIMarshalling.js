@@ -341,15 +341,17 @@ describe('In-out array in the style of gtk_init()', function () {
         expect(newArray).toEqual([]);
     });
 
-    xit('marshals an inout empty array', function () {
-        const [, newArray] = GIMarshallingTests.init_function([]);
+    it('marshals an inout empty array', function () {
+        const [ret, newArray] = GIMarshallingTests.init_function([]);
+        expect(ret).toBeTrue();
         expect(newArray).toEqual([]);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/88');
+    });
 
-    xit('marshals an inout array', function () {
-        const [, newArray] = GIMarshallingTests.init_function(['--foo', '--bar']);
+    it('marshals an inout array', function () {
+        const [ret, newArray] = GIMarshallingTests.init_function(['--foo', '--bar']);
+        expect(ret).toBeTrue();
         expect(newArray).toEqual(['--foo']);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/88');
+    });
 });
 
 describe('Fixed-size C array', function () {
@@ -508,6 +510,57 @@ describe('C array with length', function () {
 
     it('marshals an array with an 8-bit length parameter', function () {
         expect(() => GIMarshallingTests.array_in_guint8_len([-1, 0, 1, 2])).not.toThrow();
+    });
+
+    it('can be an in-out argument', function () {
+        const array = GIMarshallingTests.array_inout([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, -1, 0, 1, 2]);
+    });
+
+    it('can be an in-out argument with in length', function () {
+        if (!GIMarshallingTests.array_inout_length_in)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        const array = GIMarshallingTests.array_inout_length_in([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, -1, 1, 2]);
+    });
+
+    xit('can be an out argument with in-out length', function () {
+        const array = GIMarshallingTests.array_out_length_inout(5);
+        expect(array).toEqual([-2, -4, -6, 8, -10, -12]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
+
+    it('cannot be an out argument with in-out length', function () {
+        // TODO(3v1n0): remove this test when fixing
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
+        if (!GIMarshallingTests.array_out_length_inout)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        expect(() => GIMarshallingTests.array_out_length_inout(5)).toThrow();
+    });
+
+    xit('can be an in-out argument with out length', function () {
+        const array = GIMarshallingTests.array_inout_length_out([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, -1, 0, 1, 2]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
+
+    it('cannot be an in-out argument with out length', function () {
+        // TODO(3v1n0): remove this test when fixing
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
+        if (!GIMarshallingTests.array_inout_length_out)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        expect(() => GIMarshallingTests.array_inout_length_out([-1, 0, 1, 2])).toThrow();
+    });
+
+    xit('can be an out argument with in length', function () {
+        const array = GIMarshallingTests.array_out_length_in([-1, 0, 1, 2]);
+        expect(array).toEqual([-2, 0, -2, -4]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
+
+    it('cannot be an out argument with in length', function () {
+        // TODO(3v1n0): remove this test when fixing
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
+        if (!GIMarshallingTests.array_out_length_in)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+        expect(() => GIMarshallingTests.array_out_length_in([-1, 0, 1, 2])).toThrow();
     });
 
     it('can be an out argument along with other arguments', function () {
@@ -695,6 +748,56 @@ describe('GBytes', function () {
 
 describe('GStrv', function () {
     testSimpleMarshalling('gstrv', ['0', '1', '2'], ['-1', '0', '1', '2']);
+});
+
+describe('Array of GStrv', function () {
+    ['length', 'fixed', 'zero_terminated'].forEach(arrayKind =>
+        ['none', 'container', 'full'].forEach(transfer => {
+            const testFunction = returnMode => {
+                const commonName = 'array_of_gstrv_transfer';
+                const funcName = [arrayKind, commonName, transfer, returnMode].join('_');
+                const func = GIMarshallingTests[funcName];
+                if (!func)
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
+                return func;
+            };
+
+            ['out', 'return'].forEach(returnMode =>
+                it(`${arrayKind} ${returnMode} transfer ${transfer}`, function () {
+                    const func = testFunction(returnMode);
+                    expect(func()).toEqual([
+                        ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
+                    ]);
+                }));
+
+            it(`${arrayKind} in transfer ${transfer}`, function () {
+                const func = testFunction('in');
+                if (transfer === 'container')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+                expect(() => func([
+                    ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
+                ])).not.toThrow();
+            });
+
+            it(`${arrayKind} inout transfer ${transfer}`, function () {
+                const func = testFunction('inout');
+
+                if (transfer === 'container')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+                const expectedReturn = [
+                    ['-1', '0', '1', '2'], ['-1', '3', '4', '5'], ['-1', '6', '7', '8'],
+                ];
+
+                if (arrayKind !== 'fixed')
+                    expectedReturn.push(['-1', '9', '10', '11']);
+
+                expect(func([
+                    ['0', '1', '2'], ['3', '4', '5'], ['6', '7', '8'],
+                ])).toEqual(expectedReturn);
+            });
+        }));
 });
 
 ['GList', 'GSList'].forEach(listKind => {
@@ -1900,7 +2003,10 @@ describe('GError', function () {
     });
 
     it('marshals a GError** at the end of the signature as an exception', function () {
-        expect(() => GIMarshallingTests.gerror_array_in([-1, 0, 1, 2])).toThrow();
+        expect(() => GIMarshallingTests.gerror_array_in([-1, 0, 1, 2])).toThrowMatching(e =>
+            e.matches(GLib.quark_from_static_string(GIMarshallingTests.CONSTANT_GERROR_DOMAIN),
+                GIMarshallingTests.CONSTANT_GERROR_CODE) &&
+            e.message === GIMarshallingTests.CONSTANT_GERROR_MESSAGE);
     });
 
     it('marshals a GError** elsewhere in the signature as an out parameter', function () {

@@ -197,11 +197,15 @@ struct Positioned {
 
 struct Array : BasicType {
     uint8_t m_length_pos = 0;
+    GIDirection m_length_direction : 2;
 
-    void set_array_length(int pos, GITypeTag tag) {
+    Array() : BasicType(), m_length_direction(GI_DIRECTION_IN) {}
+
+    void set_array_length(int pos, GITypeTag tag, GIDirection direction) {
         g_assert(pos >= 0 && pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
         m_length_pos = pos;
+        m_length_direction = direction;
         m_tag = tag;
     }
 };
@@ -403,6 +407,13 @@ struct ExplicitArrayOut : ExplicitArrayInOut {
 struct ReturnArray : ExplicitArrayOut {
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
+        if (m_length_direction != GI_DIRECTION_OUT) {
+            gjs_throw(cx,
+                      "Using different length argument direction for array %s"
+                      "is not supported for out arrays",
+                      m_arg_name);
+            return false;
+        }
         return GenericOut::in(cx, state, arg, value);
     };
 };
@@ -722,6 +733,78 @@ struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
                  GIArgument*) override;
 };
 
+struct ZeroTerminatedArrayInOut : GenericInOut {
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument*,
+                 GIArgument* out_arg) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
+        if (!gjs_g_argument_release_in_array(cx, transfer, &m_type_info,
+                                             original_out_arg))
+            return false;
+
+        transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_EVERYTHING;
+        return gjs_g_argument_release_out_array(cx, transfer, &m_type_info,
+                                                out_arg);
+    }
+};
+
+struct ZeroTerminatedArrayIn : GenericIn, Nullable {
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument*) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        return gjs_g_argument_release_in_array(cx, transfer, &m_type_info,
+                                               in_arg);
+    }
+
+    GjsArgumentFlags flags() const override {
+        return Argument::flags() | Nullable::flags();
+    }
+};
+
+struct FixedSizeArrayIn : GenericIn {
+    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
+             JS::MutableHandleValue) override {
+        return skip();
+    }
+
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument* in_arg,
+                 GIArgument*) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+
+        int size = g_type_info_get_array_fixed_size(&m_type_info);
+        return gjs_g_argument_release_in_array(cx, transfer, &m_type_info, size,
+                                               in_arg);
+    }
+};
+
+struct FixedSizeArrayInOut : GenericInOut {
+    bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument*,
+                 GIArgument* out_arg) override {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
+        int size = g_type_info_get_array_fixed_size(&m_type_info);
+        if (!gjs_g_argument_release_in_array(cx, transfer, &m_type_info, size,
+                                             original_out_arg))
+            return false;
+
+        transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_EVERYTHING;
+        return gjs_g_argument_release_out_array(cx, transfer, &m_type_info,
+                                                size, out_arg);
+    }
+};
+
 GJS_JSAPI_RETURN_CONVENTION
 bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
                            GIArgument*, JS::HandleValue) {
@@ -792,6 +875,13 @@ bool ExplicitArrayIn::in(JSContext* cx, GjsFunctionCallState* state,
     void* data;
     size_t length;
 
+    if (m_length_direction != GI_DIRECTION_INOUT &&
+        m_length_direction != GI_DIRECTION_IN) {
+        gjs_throw(cx, "Using different length argument direction for array %s"
+                  "is not supported for in arrays", m_arg_name);
+        return false;
+    }
+
     if (!gjs_array_to_explicit_array(cx, value, &m_type_info, m_arg_name,
                                      GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
                                      &data, &length))
@@ -822,11 +912,13 @@ bool ExplicitArrayInOut::in(JSContext* cx, GjsFunctionCallState* state,
         gjs_arg_unset<void*>(&state->out_cvalue(ix));
         gjs_arg_unset<void*>(&state->inout_original_cvalue(ix));
     } else {
-        state->out_cvalue(length_pos) =
-            state->inout_original_cvalue(length_pos) =
-                state->in_cvalue(length_pos);
-        gjs_arg_set(&state->in_cvalue(length_pos),
-                    &state->out_cvalue(length_pos));
+        if G_LIKELY (m_length_direction == GI_DIRECTION_INOUT) {
+            state->out_cvalue(length_pos) =
+                state->inout_original_cvalue(length_pos) =
+                    state->in_cvalue(length_pos);
+            gjs_arg_set(&state->in_cvalue(length_pos),
+                        &state->out_cvalue(length_pos));
+        }
 
         state->out_cvalue(ix) = state->inout_original_cvalue(ix) = *arg;
         gjs_arg_set(arg, &state->out_cvalue(ix));
@@ -1346,7 +1438,13 @@ bool GenericInOut::out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
 GJS_JSAPI_RETURN_CONVENTION
 bool ExplicitArrayInOut::out(JSContext* cx, GjsFunctionCallState* state,
                              GIArgument* arg, JS::MutableHandleValue value) {
-    GIArgument* length_arg = &(state->out_cvalue(m_length_pos));
+    GIArgument* length_arg;
+
+    if (m_length_direction != GI_DIRECTION_IN)
+        length_arg = &(state->out_cvalue(m_length_pos));
+    else
+        length_arg = &(state->in_cvalue(m_length_pos));
+
     size_t length = gjs_g_argument_get_array_length(m_tag, length_arg);
 
     return gjs_value_from_explicit_array(cx, value, &m_type_info, m_transfer,
@@ -1412,7 +1510,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool ExplicitArrayInOut::release(JSContext* cx, GjsFunctionCallState* state,
                                  GIArgument* in_arg [[maybe_unused]],
                                  GIArgument* out_arg) {
-    GIArgument* length_arg = &state->in_cvalue(m_length_pos);
+    GIArgument* length_arg = &state->out_cvalue(m_length_pos);
     size_t length = gjs_g_argument_get_array_length(m_tag, length_arg);
 
     // For inout, transfer refers to what we get back from the function; for
@@ -1420,12 +1518,20 @@ bool ExplicitArrayInOut::release(JSContext* cx, GjsFunctionCallState* state,
     // freeing it.
 
     GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
-    if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg) &&
-        !gjs_g_argument_release_in_array(cx, GI_TRANSFER_NOTHING, &m_type_info,
-                                         length, original_out_arg))
-        return false;
+    // Due to https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
+    // Here we've to guess what to do, but in general is "better" to leak than
+    // crash, so let's assume that in/out transfer is matching.
+    if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg)) {
+        GITransfer transfer =
+            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+        if (!gjs_g_argument_release_in_array(cx, transfer, &m_type_info, length,
+                                             original_out_arg))
+            return false;
+    }
 
-    return gjs_g_argument_release_out_array(cx, m_transfer, &m_type_info,
+    GITransfer transfer =
+        state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
+    return gjs_g_argument_release_out_array(cx, transfer, &m_type_info,
                                             length, out_arg);
 }
 
@@ -1734,7 +1840,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
             static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL));
     }
 
-    array->set_array_length(length_pos, g_type_info_get_tag(&length_type));
+    array->set_array_length(length_pos, g_type_info_get_tag(&length_type),
+                            g_arg_info_get_direction(&length_arg));
 }
 
 void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
@@ -2263,6 +2370,22 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
             }
 
             return;
+        } else if (g_type_info_is_zero_terminated(&type_info)) {
+            if (direction == GI_DIRECTION_IN) {
+                set_argument_auto<Arg::ZeroTerminatedArrayIn>(common_args);
+                return;
+            } else if (direction == GI_DIRECTION_INOUT) {
+                set_argument_auto<Arg::ZeroTerminatedArrayInOut>(common_args);
+                return;
+            }
+        } else if (g_type_info_get_array_fixed_size(&type_info) >= 0) {
+            if (direction == GI_DIRECTION_IN) {
+                set_argument_auto<Arg::FixedSizeArrayIn>(common_args);
+                return;
+            } else if (direction == GI_DIRECTION_INOUT) {
+                set_argument_auto<Arg::FixedSizeArrayInOut>(common_args);
+                return;
+            }
         }
     }
 
