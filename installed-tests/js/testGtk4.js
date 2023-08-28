@@ -177,6 +177,15 @@ describe('Gtk overrides', function () {
     validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
     validateTemplate('Class inheriting from template class', SubclassSubclass, true);
 
+    it('UI template from invalid string throws', function () {
+        expect(() => {
+            GObject.registerClass({
+                Template: '<fail/>',
+            }, class GtkTemplateInvalid extends Gtk.Widget {
+            });
+        }).toThrowError(TypeError, /Invalid template value/);
+    });
+
     it('sets CSS names on classes', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
     });
