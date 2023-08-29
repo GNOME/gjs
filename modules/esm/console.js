@@ -40,8 +40,9 @@ function formatGenerically(item) {
  * @returns {string}
  */
 function formatOptimally(item) {
+    const GLib = imports.gi.GLib;
     // Handle optimal error formatting.
-    if (item instanceof Error) {
+    if (item instanceof Error || item instanceof GLib.Error) {
         return `${item.toString()}${item.stack ? '\n' : ''}${item.stack
             ?.split('\n')
             // Pad each stacktrace line.
