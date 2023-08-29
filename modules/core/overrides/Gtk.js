@@ -103,6 +103,8 @@ function _init() {
                     let file = Gio.File.new_for_uri(template);
                     let [, contents] = file.load_contents(null);
                     Gtk.Widget.set_template.call(klass, contents);
+                } else {
+                    throw new TypeError(`Invalid template value: ${template}`);
                 }
             } else {
                 Gtk.Widget.set_template.call(klass, template);
