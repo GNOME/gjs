@@ -53,6 +53,10 @@ function formatOptimally(item) {
     // TODO: Enhance 'optimal' formatting.
     // There is a current work on a better object formatter for GJS in
     // https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/587
+    if (typeof item === 'object' && item !== null) {
+        if (item.constructor?.name !== 'Object')
+            return `${item.constructor?.name} ${JSON.stringify(item, null, 4)}`;
+    }
     return JSON.stringify(item, null, 4);
 }
 
