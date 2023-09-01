@@ -51,8 +51,9 @@ class GjsBaseGlobal {
         // Enable WeakRef without the cleanupSome specification
         // Re-evaluate if cleanupSome is standardized
         // See: https://github.com/tc39/proposal-cleanup-some
-        options.setWeakRefsEnabled(
-            JS::WeakRefSpecifier::EnabledWithoutCleanupSome);
+        options
+            .setWeakRefsEnabled(JS::WeakRefSpecifier::EnabledWithoutCleanupSome)
+            .setChangeArrayByCopyEnabled(true);
 
         JS::RealmBehaviors behaviors;
         JS::RealmOptions compartment_options(options, behaviors);
