@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna
 
 const Legacy = imports._legacy;
-const {Gio, GjsPrivate, GObject} = imports.gi;
+const {Gio, GjsPrivate, GLib, GObject} = imports.gi;
 const {_registerType} = imports._common;
 
 let Gtk;
@@ -96,15 +96,26 @@ function _init() {
 
         if (template) {
             if (typeof template === 'string') {
-                if (template.startsWith('resource:///')) {
-                    Gtk.Widget.set_template_from_resource.call(klass,
-                        template.slice(11));
-                } else if (template.startsWith('file:///')) {
-                    let file = Gio.File.new_for_uri(template);
-                    let [, contents] = file.load_contents(null);
+                try {
+                    const uri = GLib.Uri.parse(template, GLib.UriFlags.NONE);
+                    const scheme = uri.get_scheme();
+
+                    if (scheme === 'resource') {
+                        Gtk.Widget.set_template_from_resource.call(klass,
+                            uri.get_path());
+                    } else if (scheme === 'file') {
+                        let file = Gio.File.new_for_uri(template);
+                        let [, contents] = file.load_contents(null);
+                        Gtk.Widget.set_template.call(klass, contents);
+                    } else {
+                        throw new TypeError(`Invalid template URI: ${template}`);
+                    }
+                } catch (err) {
+                    if (!(err instanceof GLib.UriError))
+                        throw err;
+
+                    let contents = new TextEncoder().encode(template);
                     Gtk.Widget.set_template.call(klass, contents);
-                } else {
-                    throw new TypeError(`Invalid template value: ${template}`);
                 }
             } else {
                 Gtk.Widget.set_template.call(klass, template);
