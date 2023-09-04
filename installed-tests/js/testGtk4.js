@@ -80,6 +80,26 @@ const MyComplexGtkSubclassFromResource = GObject.registerClass({
     }
 });
 
+const MyComplexGtkSubclassFromString = GObject.registerClass({
+    Template: createTemplate('Gjs_MyComplexGtkSubclassFromString'),
+    Children: ['label-child', 'label-child2'],
+    InternalChildren: ['internal-label-child'],
+}, class MyComplexGtkSubclassFromString extends Gtk.Grid {
+    testChildrenExist() {
+        expect(this.label_child).toEqual(jasmine.anything());
+        expect(this.label_child2).toEqual(jasmine.anything());
+        expect(this._internal_label_child).toEqual(jasmine.anything());
+    }
+
+    templateCallback(widget) {
+        this.callbackEmittedBy = widget;
+    }
+
+    boundCallback(widget) {
+        widget.callbackBoundTo = this;
+    }
+});
+
 const [templateFile, stream] = Gio.File.new_tmp(null);
 const baseStream = stream.get_output_stream();
 const out = new Gio.DataOutputStream({baseStream});
@@ -174,16 +194,17 @@ describe('Gtk overrides', function () {
 
     validateTemplate('UI template', MyComplexGtkSubclass);
     validateTemplate('UI template from resource', MyComplexGtkSubclassFromResource);
+    validateTemplate('UI template from string', MyComplexGtkSubclassFromString);
     validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
     validateTemplate('Class inheriting from template class', SubclassSubclass, true);
 
-    it('UI template from invalid string throws', function () {
+    it('rejects unsupported template URIs', function () {
         expect(() => {
-            GObject.registerClass({
-                Template: '<fail/>',
+            return GObject.registerClass({
+                Template: 'https://gnome.org',
             }, class GtkTemplateInvalid extends Gtk.Widget {
             });
-        }).toThrowError(TypeError, /Invalid template value/);
+        }).toThrowError(TypeError, /Invalid template URI/);
     });
 
     it('sets CSS names on classes', function () {
