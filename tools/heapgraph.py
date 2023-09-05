@@ -99,6 +99,7 @@ filt_opts.add_argument('--hide-node', '-hn', dest='hide_nodes', action='append',
                                                  'GIRepositoryNamespace',
                                                  'GjsFileImporter',
                                                  'GjsGlobal',
+                                                 'GjsInternalGlobal',
                                                  'GjsModule'],
                        help='Don\'t show nodes with labels containing LABEL')
 
@@ -116,12 +117,12 @@ GraphAttribs = namedtuple('GraphAttribs',
 WeakMapEntry = namedtuple('WeakMapEntry', 'weakMap key keyDelegate value')
 
 
-addr_regex = re.compile('[A-F0-9]+$|0x[a-f0-9]+$')
-node_regex = re.compile ('((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
-edge_regex = re.compile ('> ((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
+addr_regex = re.compile(r'[A-F0-9]+$|0x[a-f0-9]+$')
+node_regex = re.compile(r'((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
+edge_regex = re.compile(r'> ((?:0x)?[a-fA-F0-9]+) (?:(B|G|W) )?([^\r\n]*)\r?$')
 wme_regex = re.compile(r'WeakMapEntry map=((?:0x)?[a-zA-Z0-9]+|\(nil\)) key=((?:0x)?[a-zA-Z0-9]+|\(nil\)) keyDelegate=((?:0x)?[a-zA-Z0-9]+|\(nil\)) value=((?:0x)?[a-zA-Z0-9]+)')
 
-func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
+func_regex = re.compile(r'Function(?: ([^/]+)(?:/([<|\w]+))?)?')
 priv_regex = re.compile(r'([^ ]+) (0x[a-fA-F0-9]+$)')
 atom_regex = re.compile(r'^string <atom: length (?:\d+)> (.*)\r?$')
 
@@ -214,6 +215,11 @@ def parse_graph(fobj):
                 node_addr = node.group(1)
                 node_color = node.group(2)
                 node_label = node.group(3)
+
+                # Don't hide atoms matching hide_nodes, as they may be labels
+                if atom_regex.match(node_label) is not None:
+                    addNode(node_addr, node_label)
+                    continue
 
                 # Use this opportunity to map hide_nodes to addresses
                 for hide_node in args.hide_nodes:
@@ -667,6 +673,7 @@ if __name__ == "__main__":
     # Node and Root Filtering
     if args.show_global:
         args.hide_nodes.remove('GjsGlobal')
+        args.hide_nodes.remove('GjsInternalGlobal')
     if args.show_imports:
         args.hide_nodes.remove('GjsFileImporter')
         args.hide_nodes.remove('GjsModule')
