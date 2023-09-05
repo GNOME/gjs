@@ -1,3 +1,34 @@
+Version 1.77.90
+---------------
+
+- Building GJS with -fno-exceptions is now the default. To retain the previous
+  behaviour, invoke Meson with -Dcpp_eh=default.
+
+- Closed bugs and merge requests:
+  * testEverything fails make check [#95, !858, Marco Trevisan]
+  * Using a Gio.Appinfo().launch with context may crash gjs [#553, !858, Marco
+    Trevisan]
+  * Fixed-size and Zero-terminated arrays are leaked when used as in or inout
+    arguments with transfer none [#561, !858, Marco Trevisan]
+  * Crash due to bad memory usage when calling a function taking an inout array
+    with length parameter and transfer full [#562, !858, Marco Trevisan]
+  * Various maintenance [!875, !888, Philip Chimento, Marco Trevisan, Andy
+    Holmes]
+  * README.MSVC.md: Update for SpiderMonkey-115.x [!877, Chun-wei Fan]
+  * GJS returns pointers instead of numbers for function with output parameters
+    [#570, !878, Philip Chimento, Marco Trevisan]
+  * Profiler spuriously records GJS.boxed_instance and GJS.boxed_prototype
+    [#551, !879, Philip Chimento]
+  * installed-tests/js/meson: Add tests dependencies to dbus tests [!880, Marco
+    Trevisan]
+  * eslint: Make multi-line imports to always include a trailing comma [!881,
+    Marco Trevisan]
+  * Make console.error format GError correctly [#572, !883, Sriyansh Shivam]
+  * Gtk: Throw an error for an invalid Template string [!884, Andy Holmes]
+  * Gtk: Attempt to load Template from a string, if it appears valid [!885, Andy
+    Holmes]
+  * global: Really enable non-mutating Array methods [!887, Philip Chimento]
+
 Version 1.77.2
 --------------
 
