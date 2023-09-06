@@ -121,6 +121,25 @@ describe('console', function () {
         writer_func.calls.reset();
     });
 
+    it('logs an empty object correctly', function () {
+        const emptyObject = {};
+        console.log(emptyObject);
+        expectLog('{}');
+    });
+
+    it('logs an object with custom constructor name', function () {
+        function CustomObject() {}
+        const customInstance = new CustomObject();
+        console.log(customInstance);
+        expectLog('CustomObject {}');
+    });
+
+    it('logs an object with undefined constructor', function () {
+        const objectWithUndefinedConstructor = Object.create(null);
+        console.log(objectWithUndefinedConstructor);
+        expectLog('{}');
+    });
+
     it('logs a warning', function () {
         console.warn('a warning');
 
