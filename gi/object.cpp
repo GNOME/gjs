@@ -2148,14 +2148,22 @@ bool ObjectBase::connect_after(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->connect_impl(cx, args, true);
 }
 
-bool
-ObjectInstance::connect_impl(JSContext          *context,
-                             const JS::CallArgs& args,
-                             bool                after)
-{
+bool ObjectBase::connect_object(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
+    if (!priv->check_is_instance(cx, "connect to signals"))
+        return false;
+
+    return priv->to_instance()->connect_impl(cx, args, false, true);
+}
+
+bool ObjectInstance::connect_impl(JSContext* context, const JS::CallArgs& args,
+                                  bool after, bool object) {
     gulong id;
     guint signal_id;
     GQuark signal_detail;
+    const char* func_name = object  ? "connect_object"
+                            : after ? "connect_after"
+                                    : "connect";
 
     gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
 
@@ -2166,14 +2174,29 @@ ObjectInstance::connect_impl(JSContext          *context,
 
     JS::UniqueChars signal_name;
     JS::RootedObject callback(context);
-    if (!gjs_parse_call_args(context, after ? "connect_after" : "connect", args, "so",
-                             "signal name", &signal_name,
-                             "callback", &callback))
-        return false;
+    JS::RootedObject associate_obj(context);
+    GConnectFlags flags;
+    if (object) {
+        if (!gjs_parse_call_args(context, func_name, args, "sooi",
+                                 "signal name", &signal_name, "callback",
+                                 &callback, "gobject", &associate_obj,
+                                 "connect_flags", &flags))
+            return false;
 
-    std::string dynamicString = format_name() + '.' +
-                                (after ? "connect_after" : "connect") + "('" +
-                                signal_name.get() + "')";
+        if (flags & G_CONNECT_SWAPPED) {
+            gjs_throw(context, "Unsupported connect flag G_CONNECT_SWAPPED");
+            return false;
+        }
+
+        after = flags & G_CONNECT_AFTER;
+    } else {
+        if (!gjs_parse_call_args(context, func_name, args, "so", "signal name",
+                                 &signal_name, "callback", &callback))
+            return false;
+    }
+
+    std::string dynamicString =
+        format_name() + '.' + func_name + "('" + signal_name.get() + "')";
     AutoProfilerLabel label(context, "", dynamicString.c_str());
 
     if (!JS::IsCallable(callback)) {
@@ -2192,8 +2215,17 @@ ObjectInstance::connect_impl(JSContext          *context,
         context, callback, "signal callback", signal_id);
     if (closure == NULL)
         return false;
-    if (!associate_closure(context, closure))
+
+    if (associate_obj.get() != nullptr) {
+        ObjectInstance* obj = ObjectInstance::for_js(context, associate_obj);
+        if (!obj)
+            return false;
+
+        if (!obj->associate_closure(context, closure))
+            return false;
+    } else if (!associate_closure(context, closure)) {
         return false;
+    }
 
     id = g_signal_connect_closure_by_id(m_ptr, signal_id, signal_detail,
                                         closure, after);
@@ -2555,6 +2587,7 @@ JSFunctionSpec ObjectBase::proto_methods[] = {
     JS_FN("_init", &ObjectBase::init_gobject, 0, 0),
     JS_FN("connect", &ObjectBase::connect, 0, 0),
     JS_FN("connect_after", &ObjectBase::connect_after, 0, 0),
+    JS_FN("connect_object", &ObjectBase::connect_object, 0, 0),
     JS_FN("emit", &ObjectBase::emit, 0, 0),
     JS_FS_END
 };

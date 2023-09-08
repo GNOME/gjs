@@ -7,6 +7,7 @@ const System = imports.system;
 imports.gi.versions.Gtk = '3.0';
 
 const Gio = imports.gi.Gio;
+const GjsTestTools = imports.gi.GjsTestTools;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
@@ -350,6 +351,27 @@ describe('GObject class with decorator', function () {
         myInstance.notifyProp();
 
         expect(notifySpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('disconnects connect_object signals on destruction', function () {
+        let callback = jasmine.createSpy('callback');
+        callback.myInstance = myInstance;
+        const instance2 = new MyObject();
+        instance2.connect_object('empty', callback, myInstance, 0);
+
+        instance2.emitEmpty();
+        instance2.emitEmpty();
+
+        expect(callback).toHaveBeenCalledTimes(2);
+
+        GjsTestTools.save_weak(myInstance);
+        myInstance = null;
+        callback = null;
+
+        System.gc();
+        System.gc();
+
+        expect(GjsTestTools.get_weak()).toBeNull();
     });
 
     it('can define its own signals', function () {
