@@ -5,6 +5,7 @@
 const Legacy = imports._legacy;
 const {Gio, GjsPrivate, GLib, GObject} = imports.gi;
 const {_registerType} = imports._common;
+const Gi = imports._gi;
 
 let Gtk;
 let BuilderScope;
@@ -156,16 +157,18 @@ function _init() {
         }, class extends GObject.Object {
             vfunc_create_closure(builder, handlerName, flags, connectObject) {
                 const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
-                return _createClosure(
-                    builder, builder.get_current_object(),
-                    handlerName, swapped, connectObject);
+                const thisArg = builder.get_current_object();
+                return Gi.associateClosure(
+                    connectObject ?? thisArg,
+                    _createClosure(builder, thisArg, handlerName, swapped, connectObject)
+                );
             }
         });
     }
 }
 
 function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {
-    connectObject = connectObject || thisArg;
+    connectObject = connectObject ?? thisArg;
 
     if (swapped) {
         throw new Error('Unsupported template signal flag "swapped"');
