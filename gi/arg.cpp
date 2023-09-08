@@ -1368,6 +1368,13 @@ static bool value_to_interface_gi_argument(
 
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
+                    if (BoxedBase::typecheck(cx, obj, interface_info, gtype,
+                                             GjsTypecheckNoThrow())) {
+                        return BoxedBase::transfer_to_gi_argument(
+                            cx, obj, arg, GI_DIRECTION_IN, transfer, gtype,
+                            interface_info);
+                    }
+
                     GClosure* closure =
                         Gjs::Closure::create_marshaled(cx, obj, "boxed");
                     // GI doesn't know about floating GClosure references. We
