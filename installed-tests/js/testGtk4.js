@@ -259,6 +259,14 @@ describe('Gtk 4 regressions', function () {
         if (!Gtk.NoSelection.prototype.get_section)
             pending('Gtk 4.12 is required');
 
-        expect(new Gtk.NoSelection().get_section(0)).toEqual([0, GLib.MAXUINT32]);
+        let result;
+        try {
+            result = new Gtk.NoSelection().get_section(0);
+        } catch (err) {
+            if (err.message.includes('not introspectable'))
+                pending('This version of GTK has the annotation bug');
+            throw err;
+        }
+        expect(result).toEqual([0, GLib.MAXUINT32]);
     });
 });
