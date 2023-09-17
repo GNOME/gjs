@@ -31,6 +31,8 @@
     <file>modules/mutualImport/b.js</file>
     <file>modules/overrides/GIMarshallingTests.js</file>
     <file>modules/say.js</file>
+    <file>modules/sideEffect.js</file>
+    <file>modules/sideEffect2.js</file>
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>
