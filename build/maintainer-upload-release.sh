@@ -54,4 +54,4 @@ popd
 
 scp "$tarball_path" "master.gnome.org:"
 # shellcheck disable=SC2029
-ssh -t "master.gnome.org" ftpadmin install "$tarball_basename"
+ssh -t "master.gnome.org" ftpadmin install --unattended "$tarball_basename"
