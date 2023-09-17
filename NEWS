@@ -1,3 +1,11 @@
+Version 1.78.0
+--------------
+
+- Closed bugs and merge requests:
+  * Improved Console.log Output [!886, Sriyansh Shivam]
+  * `gjs:dbus / Gtk4` unit test fails: Function Gtk.SectionModel.get_section()
+    cannot be called [#575, !889, Matt Turner]
+
 Version 1.77.90
 ---------------
 
