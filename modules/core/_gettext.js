@@ -24,7 +24,7 @@ const GjsPrivate = imports.gi.GjsPrivate;
 var LocaleCategory = GjsPrivate.LocaleCategory;
 
 function setlocale(category, locale) {
-    return GjsPrivate.setlocale(category, locale);
+    return GjsPrivate.set_thread_locale(category, locale);
 }
 
 function textdomain(dom) {

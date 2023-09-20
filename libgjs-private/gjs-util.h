@@ -88,8 +88,8 @@ typedef enum
 } GjsLocaleCategory;
 
 GJS_EXPORT
-const char *gjs_setlocale                (GjsLocaleCategory category,
-                                          const char       *locale);
+const char* gjs_set_thread_locale(GjsLocaleCategory category,
+                                  const char* locale);
 GJS_EXPORT
 void        gjs_textdomain               (const char *domain);
 GJS_EXPORT

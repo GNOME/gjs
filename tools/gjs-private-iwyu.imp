@@ -9,6 +9,7 @@
   {"include": ["<bits/siginfo-consts.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/signum-arch.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/signum-generic.h>", "private", "<signal.h>", "public"]},
+  {"include": ["<bits/types/locale_t.h>", "private", "<locale.h>", "public"]},
   {"include": ["<bits/types/sigevent_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/siginfo_t.h>", "private", "<signal.h>", "public"]},
   {"include": ["<bits/types/struct_itimerspec.h>", "private", "<time.h>", "public"]},
