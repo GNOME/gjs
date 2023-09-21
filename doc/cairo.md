@@ -122,17 +122,41 @@ Prototype hierarchy
 * `Cairo.Surface` (abstract)
   * `Cairo.ImageSurface`
   * `Cairo.PDFSurface`
+  * `Cairo.PSSurface`
   * `Cairo.SVGSurface`
-  * `Cairo.PostScriptSurface`
 
 The native surfaces (win32, quartz, xlib) are not supported at this time.
 
 Methods manipulating a surface are present in the surface class. For example,
-creating a `Cairo.ImageSurface` from a PNG is done by calling a static method:
+creating a `Cairo.ImageSurface` from a PNG is done by calling a static method.
+
+### Examples
+
+Creating an empty image surface can be done by passing a [`Cairo.Format`]:
 
 ```js
-const surface = Cairo.ImageSurface.createFromPNG('filename.png');
+/* Creating a surface from a PDF (format, width, height) */
+const imageSurface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 10, 10);
 ```
+
+Creating a `Cairo.ImageSurface` from a file differs somewhat depending on the
+file type:
+
+```js
+/* Creating a surface from a PNG */
+const pngSurface = Cairo.ImageSurface.createFromPNG('filename.png');
+
+/* Creating a surface from a PDF (filename, width, height) */
+const pdfSurface = new Cairo.PDFSurface('filename.pdf', 32, 32);
+
+/* Creating a surface from a PostScript file (filename, width, height) */
+const psSurface = new Cairo.PSSurface('filename.ps', 32, 32);
+
+/* Creating a surface from a SVG (filename, width, height) */
+const svgSurface = new Cairo.SVGSurface('filename.svg', 32, 32);
+```
+
+[`Cairo.Format`]: https://gjs-docs.gnome.org/cairo10/cairo.format
 
 ## To-do List
 
