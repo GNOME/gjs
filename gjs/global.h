@@ -6,8 +6,6 @@
 #ifndef GJS_GLOBAL_H_
 #define GJS_GLOBAL_H_
 
-#include <config.h>
-
 #include <js/RootingAPI.h>  // for Handle
 #include <js/TypeDecls.h>
 #include <js/Value.h>

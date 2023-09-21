@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2013 Intel Corporation
 // SPDX-FileCopyrightText: 2008-2010 litl, LLC
 
-#include <config.h>
-
 #include <girepository.h>
 #include <glib.h>
 

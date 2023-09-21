@@ -5,8 +5,6 @@
 #ifndef GJS_IMPORTER_H_
 #define GJS_IMPORTER_H_
 
-#include <config.h>
-
 #include <string>
 #include <vector>
 

@@ -6,8 +6,6 @@
 #ifndef GI_WRAPPERUTILS_H_
 #define GI_WRAPPERUTILS_H_
 
-#include <config.h>
-
 #include <stdint.h>
 
 #include <new>

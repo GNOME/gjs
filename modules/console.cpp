@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-1.1 OR GPL-2.0-or-later OR LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 1998 Netscape Communications Corporation
 
-#include <config.h>  // for HAVE_READLINE_READLINE_H
+  // for HAVE_READLINE_READLINE_H
 
 #ifdef HAVE_SIGNAL_H
 #    include <setjmp.h>

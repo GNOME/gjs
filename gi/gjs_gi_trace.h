@@ -6,8 +6,6 @@
 #ifndef GI_GJS_GI_TRACE_H_
 #define GI_GJS_GI_TRACE_H_
 
-#include <config.h>
-
 #ifdef HAVE_DTRACE
 
 /* include the generated probes header and put markers in code */

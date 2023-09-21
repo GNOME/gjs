@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2009 Red Hat, Inc.
 
-#include <config.h>
-
 #include <stdio.h>   // for sscanf
 #include <string.h>  // for strlen
 

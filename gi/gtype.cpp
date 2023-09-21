@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2012 Red Hat, Inc.
 
-#include <config.h>
-
 #include <glib-object.h>
 #include <glib.h>
 

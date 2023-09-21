@@ -3,8 +3,6 @@
 
 #include "gjs/internal.h"
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 #include <string.h>
 

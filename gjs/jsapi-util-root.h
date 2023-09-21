@@ -6,8 +6,6 @@
 #ifndef GJS_JSAPI_UTIL_ROOT_H_
 #define GJS_JSAPI_UTIL_ROOT_H_
 
-#include <config.h>
-
 #include <cstddef>  // for nullptr_t
 #include <memory>
 #include <new>

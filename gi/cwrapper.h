@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <config.h>
-
 #include <assert.h>
 #include <stddef.h>  // for size_t
 

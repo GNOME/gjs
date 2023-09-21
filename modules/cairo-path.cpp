@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2010 Red Hat, Inc.
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
-#include <config.h>
-
 #include <cairo.h>
 
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY

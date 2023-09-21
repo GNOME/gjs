@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <config.h>
-
 #include <stdint.h>
 
 #include <cmath>  // for isnan

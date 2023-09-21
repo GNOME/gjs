@@ -5,7 +5,7 @@
 // SPDX-FileCopyrightText: 2019 Endless Mobile, Inc.
 // SPDX-FileCopyrightText: 2021 Philip Chimento <philip.chimento@gmail.com>
 
-#include <config.h>  // for GJS_VERSION
+  // for GJS_VERSION
 
 #include <stdint.h>
 #include <stdio.h>

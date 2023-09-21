@@ -5,8 +5,6 @@
 #ifndef GI_PARAM_H_
 #define GI_PARAM_H_
 
-#include <config.h>
-
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>

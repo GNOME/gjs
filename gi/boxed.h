@@ -5,8 +5,6 @@
 #ifndef GI_BOXED_H_
 #define GI_BOXED_H_
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 

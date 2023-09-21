@@ -4,8 +4,6 @@
 // SPDX-FileCopyrightText: 2021 Canonical Ltd.
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
-#include <config.h>
-
 #include <glib.h>  // for g_assert
 
 #include <js/CallAndConstruct.h>

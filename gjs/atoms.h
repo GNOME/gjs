@@ -6,8 +6,6 @@
 #ifndef GJS_ATOMS_H_
 #define GJS_ATOMS_H_
 
-#include <config.h>
-
 #include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>

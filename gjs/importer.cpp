@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008-2010 litl, LLC
 
-#include <config.h>
-
 #include <string.h>  // for size_t, strcmp, strlen
 
 #ifdef _WIN32

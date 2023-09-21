@@ -5,7 +5,6 @@
 #ifndef GJS_NATIVE_H_
 #define GJS_NATIVE_H_
 
-#include <config.h>
 #include <string>
 #include <unordered_map>
 

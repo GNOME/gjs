@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#include <config.h>
-
 #include <stddef.h>  // for NULL, size_t
 #include <stdint.h>
 

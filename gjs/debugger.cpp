@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileContributor: Philip Chimento <philip.chimento@gmail.com>
 
-#include <config.h>  // for HAVE_READLINE_READLINE_H, HAVE_UNISTD_H
+  // for HAVE_READLINE_READLINE_H, HAVE_UNISTD_H
 
 #include <stdint.h>
 #include <stdio.h>  // for feof, fflush, fgets, stdin, stdout

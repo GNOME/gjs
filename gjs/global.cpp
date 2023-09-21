@@ -5,8 +5,6 @@
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 
 #include <glib.h>

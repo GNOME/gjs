@@ -4,8 +4,6 @@
 #ifndef GJS_INTERNAL_H_
 #define GJS_INTERNAL_H_
 
-#include <config.h>
-
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"

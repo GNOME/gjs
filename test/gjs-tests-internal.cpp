@@ -3,7 +3,6 @@
 // SPDX-FileCopyrightText: 2021 Canonical, Ltd.
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
-#include <config.h>
 #include <glib.h>
 
 #include "test/gjs-test-utils.h"

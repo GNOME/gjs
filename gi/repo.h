@@ -5,8 +5,6 @@
 #ifndef GI_REPO_H_
 #define GI_REPO_H_
 
-#include <config.h>
-
 #include <girepository.h>
 
 #include <js/TypeDecls.h>

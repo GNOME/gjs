@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2014 Endless Mobile, Inc.
 // SPDX-FileContributor: Authored By: Sam Spilsbury <sam@endlessm.com>
 
-#include <config.h>
-
 #include <stdlib.h>  // for free, size_t
 #include <string.h>  // for strcmp, strlen
 

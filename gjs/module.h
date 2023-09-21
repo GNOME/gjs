@@ -5,8 +5,6 @@
 #ifndef GJS_MODULE_H_
 #define GJS_MODULE_H_
 
-#include <config.h>
-
 #include <gio/gio.h>
 
 #include <js/TypeDecls.h>

@@ -6,8 +6,6 @@
 #ifndef GI_GTYPE_H_
 #define GI_GTYPE_H_
 
-#include <config.h>
-
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>

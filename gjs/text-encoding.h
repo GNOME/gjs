@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <config.h>
-
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"

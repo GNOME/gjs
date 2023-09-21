@@ -6,8 +6,6 @@
 #ifndef GJS_JSAPI_UTIL_H_
 #define GJS_JSAPI_UTIL_H_
 
-#include <config.h>
-
 #include <stdint.h>
 #include <stdlib.h>     // for free
 #include <sys/types.h>  // for ssize_t

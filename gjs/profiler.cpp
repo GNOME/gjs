@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2016 Christian Hergert <christian@hergert.me>
 
-#include <config.h>  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
+  // for ENABLE_PROFILER, HAVE_SYS_SYSCALL_H, HAVE_UNISTD_H
 
 #ifdef HAVE_SIGNAL_H
 #    include <signal.h>  // for siginfo_t, sigevent, sigaction, SIGPROF, ...

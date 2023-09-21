@@ -5,8 +5,6 @@
 #ifndef MODULES_PRINT_H_
 #define MODULES_PRINT_H_
 
-#include <config.h>
-
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"

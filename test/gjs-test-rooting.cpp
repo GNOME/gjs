@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Endless Mobile, Inc.
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 
 #include <glib.h>

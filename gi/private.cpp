@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 
-#include <config.h>
-
 #include <stdint.h>
 
 #include <glib-object.h>

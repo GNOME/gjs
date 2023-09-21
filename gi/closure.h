@@ -7,8 +7,6 @@
 #ifndef GI_CLOSURE_H_
 #define GI_CLOSURE_H_
 
-#include <config.h>
-
 #include <glib-object.h>
 #include <stddef.h>
 

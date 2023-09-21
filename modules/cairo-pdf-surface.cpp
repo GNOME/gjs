@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2010 litl, LLC.
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
-#include <config.h>
-
 #include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE
 #include <cairo.h>
 

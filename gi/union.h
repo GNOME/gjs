@@ -5,8 +5,6 @@
 #ifndef GI_UNION_H_
 #define GI_UNION_H_
 
-#include <config.h>
-
 #include <girepository.h>
 #include <glib-object.h>
 

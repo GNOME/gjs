@@ -6,8 +6,6 @@
 #ifndef TEST_GJS_TEST_UTILS_H_
 #define TEST_GJS_TEST_UTILS_H_
 
-#include <config.h>
-
 #include <stdint.h>  // for uintptr_t
 
 #include <iterator>  // for pair

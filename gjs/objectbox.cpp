@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2019 Marco Trevisan <marco.trevisan@canonical.com>
 
-#include <config.h>
-
 #include <algorithm>  // for find
 
 #include <glib.h>

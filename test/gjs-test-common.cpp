@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2018 Philip Chimento
 
-#include <config.h>
-
 #include <glib.h>
 
 #include <js/CharacterEncoding.h>

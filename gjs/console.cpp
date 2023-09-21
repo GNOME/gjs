@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#include <config.h>  // for PACKAGE_STRING
+  // for PACKAGE_STRING
 
 #include <locale.h>  // for setlocale, LC_ALL
 #include <stdint.h>

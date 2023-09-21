@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <config.h>
-
 #include <memory>
 
 #include <glib.h>

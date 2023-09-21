@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2010 litl, LLC
 // SPDX-FileCopyrightText: 2021 Evan Welsh
 
-#include <config.h>
-
 #include <limits.h>  // for SSIZE_MAX
 #include <stddef.h>  // for size_t
 #include <stdint.h>

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#include <config.h>
-
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>

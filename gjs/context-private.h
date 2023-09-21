@@ -5,8 +5,6 @@
 #ifndef GJS_CONTEXT_PRIVATE_H_
 #define GJS_CONTEXT_PRIVATE_H_
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 

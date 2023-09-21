@@ -5,8 +5,6 @@
 #ifndef GI_OBJECT_H_
 #define GI_OBJECT_H_
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint32_t
 

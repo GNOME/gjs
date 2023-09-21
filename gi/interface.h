@@ -6,8 +6,6 @@
 #ifndef GI_INTERFACE_H_
 #define GI_INTERFACE_H_
 
-#include <config.h>
-
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>

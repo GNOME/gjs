@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2020 Canonical, Ltd.
 
-#include <config.h>
-
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen, memcpy
 

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 
-#include <config.h>
-
 #include <stddef.h>     // for size_t
 #include <string.h>
 

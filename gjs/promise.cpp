@@ -2,8 +2,6 @@
 // SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
 // SPDX-FileCopyrightText: 2021 Marco Trevisan <mail@3v1n0.net>
 
-#include <config.h>
-
 #include <stddef.h>  // for size_t
 
 #include <gio/gio.h>

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2009 Red Hat, Inc.
 
-#include <config.h>
-
 #include <stdio.h>  // for stderr
 
 #include <sstream>

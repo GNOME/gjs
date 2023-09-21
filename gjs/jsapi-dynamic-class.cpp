@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
 
-#include <config.h>
-
 #include <string.h>  // for strlen
 
 #include <glib.h>

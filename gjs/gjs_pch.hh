@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2021 Canonical Ltd.
 // SPDX-FileContributor: Authored by: Marco Trevisan <marco.trevisan@canonical.com>
 
-#include "config.h"
-
 #include <algorithm>
 #include <array>
 #include <atomic>

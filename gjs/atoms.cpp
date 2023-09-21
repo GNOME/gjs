@@ -5,8 +5,6 @@
 
 #define GJS_USE_ATOM_FOREACH
 
-#include <config.h>
-
 #include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/String.h>

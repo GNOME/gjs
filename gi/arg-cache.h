@@ -6,8 +6,6 @@
 #ifndef GI_ARG_CACHE_H_
 #define GI_ARG_CACHE_H_
 
-#include <config.h>
-
 #include <stdint.h>
 
 #include <limits>

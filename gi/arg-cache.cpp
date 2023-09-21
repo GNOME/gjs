@@ -3,8 +3,6 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <scampa.giovanni@gmail.com>
 // SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
-#include <config.h>
-
 #include <inttypes.h>
 #include <stddef.h>  // for size_t
 #include <stdint.h>

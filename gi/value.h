@@ -5,8 +5,6 @@
 #ifndef GI_VALUE_H_
 #define GI_VALUE_H_
 
-#include <config.h>
-
 #include <utility>  // for move, swap
 #include <vector>   // for vector
 

@@ -404,7 +404,6 @@ else.
 
 Headers should be included in the following order:
 
-- `<config.h>`
 - C system headers
 - C++ system headers
 - GNOME library headers
@@ -414,9 +413,6 @@ Headers should be included in the following order:
 Each of these groups must be separated by blank lines.
 Within each group, all the headers should be alphabetized.
 The first five groups should use angle brackets for the includes.
-
-Note that the header `<config.h>` must be included before any
-SpiderMonkey headers.
 
 GJS headers should use quotes, _except_ in public header files (any
 header file included from `<gjs/gjs.h>`.)
@@ -432,8 +428,6 @@ its functionality is no longer used in the file.
 Here is an example of all of the above rules together:
 
 ```c++
-#include <config.h>  // for ENABLE_CAIRO
-
 #include <string.h>  // for strlen
 
 #ifdef _WIN32

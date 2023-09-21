@@ -5,8 +5,6 @@
 #ifndef GI_FUNCTION_H_
 #define GI_FUNCTION_H_
 
-#include <config.h>
-
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr

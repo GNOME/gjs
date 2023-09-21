@@ -4,8 +4,6 @@
  * SPDX-FileCopyrightText: 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
  */
 
-#include <config.h>
-
 #include <locale.h> /* for setlocale */
 #include <stdbool.h>
 #include <stddef.h> /* for size_t */

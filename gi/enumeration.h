@@ -5,8 +5,6 @@
 #ifndef GI_ENUMERATION_H_
 #define GI_ENUMERATION_H_
 
-#include <config.h>
-
 #include <girepository.h>
 
 #include <js/TypeDecls.h>

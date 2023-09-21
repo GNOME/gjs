@@ -5,8 +5,6 @@
 #ifndef GJS_JSAPI_CLASS_H_
 #define GJS_JSAPI_CLASS_H_
 
-#include <config.h>
-
 #include <glib-object.h>
 #include <glib.h>
 

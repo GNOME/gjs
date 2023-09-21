@@ -6,8 +6,6 @@
 #ifndef GJS_JSAPI_UTIL_ARGS_H_
 #define GJS_JSAPI_UTIL_ARGS_H_
 
-#include <config.h>
-
 #include <stdint.h>
 
 #include <type_traits>  // for enable_if, is_enum, is_same

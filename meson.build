@@ -346,6 +346,12 @@ header_conf.set('_GNU_SOURCE', 1)
 
 configure_file(output: 'config.h', configuration: header_conf)
 
+if cc.get_id() == 'msvc'
+    add_project_arguments('/FI', 'config.h', language: ['cpp', 'c'])
+else
+    add_project_arguments('-include', 'config.h', language: ['cpp', 'c'])
+endif
+
 ### Check for environment ######################################################
 
 gjsjsdir = get_option('datadir') / api_name
