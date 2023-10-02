@@ -73,9 +73,10 @@ libregress = library('regress', regress_sources,
 regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
     sources: regress_sources, namespace: 'Regress', nsversion: '1.0',
     identifier_prefix: 'Regress', symbol_prefix: 'regress_',
-    extra_args: ['--warn-all', '--warn-error'] + regress_gir_c_args,
+    extra_args: ['--warn-all'] + regress_gir_c_args,
     install: get_option('installed_tests'), install_dir_gir: false,
-    install_dir_typelib: installed_tests_execdir)
+    install_dir_typelib: installed_tests_execdir,
+    fatal_warnings: get_option('werror'))
 regress_typelib = regress_gir[1]
 
 if not skip_warnlib
@@ -104,7 +105,7 @@ libgimarshallingtests = library('gimarshallingtests',
 gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
     namespace: 'GIMarshallingTests', nsversion: '1.0',
-    symbol_prefix: 'gi_marshalling_tests_', extra_args: '--warn-error',
+    symbol_prefix: 'gi_marshalling_tests_', fatal_warnings: get_option('werror'),
     install: get_option('installed_tests'), install_dir_gir: false,
     install_dir_typelib: installed_tests_execdir)
 gimarshallingtests_typelib = gimarshallingtests_gir[1]
