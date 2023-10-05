@@ -1730,8 +1730,8 @@ ObjectInstance::disassociate_js_gobject(void)
 {
     bool had_toggle_down, had_toggle_up;
 
-    auto locked_queue = ToggleQueue::get_default();
-    std::tie(had_toggle_down, had_toggle_up) = locked_queue->cancel(this);
+    std::tie(had_toggle_down, had_toggle_up) =
+        ToggleQueue::get_default()->cancel(this);
     if (had_toggle_up && !had_toggle_down) {
         g_error(
             "JS object wrapper for GObject %p (%s) is being released while "
