@@ -12,6 +12,11 @@ import $ from 'resource:///org/gjs/jsunit/modules/exports.js';
 import {NamedExport, data} from 'resource:///org/gjs/jsunit/modules/exports.js';
 import metaProperties from 'resource:///org/gjs/jsunit/modules/importmeta.js';
 
+// These imports should all refer to the same module and import it only once
+import 'resource:///org/gjs/jsunit/modules/sideEffect.js';
+import 'resource://org/gjs/jsunit/modules/sideEffect.js';
+import 'resource:///org/gjs/jsunit/modules/../modules/sideEffect.js';
+
 describe('ES module imports', function () {
     it('default import', function () {
         expect($).toEqual(5);
@@ -66,6 +71,10 @@ describe('ES module imports', function () {
 
     it('does not expose internal import.meta properties to userland modules', function () {
         expect(metaProperties).toEqual(['url']);
+    });
+
+    it('treats equivalent URIs as equal and does not load the module again', function () {
+        expect(globalThis.leakyState).toEqual(1);
     });
 });
 
@@ -129,5 +138,13 @@ describe('Dynamic imports', function () {
 
     it('dynamic gi import matches static', async function () {
         expect((await import('gi://Gio')).default).toEqual(Gio);
+    });
+
+    it('treats equivalent URIs as equal and does not load the module again', async function () {
+        delete globalThis.leakyState;
+        await import('resource:///org/gjs/jsunit/modules/sideEffect2.js');
+        await import('resource://org/gjs/jsunit/modules/sideEffect2.js');
+        await import('resource:///org/gjs/jsunit/modules/../modules/sideEffect2.js');
+        expect(globalThis.leakyState).toEqual(1);
     });
 });

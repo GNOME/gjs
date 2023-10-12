@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include <gio/gio.h>
+#include <glib-object.h>
 #include <glib.h>
 
 #include <js/CallAndConstruct.h>
@@ -493,6 +494,25 @@ bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
     return true;
 }
 
+// Canonicalize specifier so that differently-spelled specifiers referring to
+// the same module don't result in duplicate entries in the registry
+static bool canonicalize_specifier(JSContext* cx,
+                                   JS::MutableHandleString specifier) {
+    JS::UniqueChars specifier_utf8 = JS_EncodeStringToUTF8(cx, specifier);
+    if (!specifier_utf8)
+        return false;
+
+    GjsAutoUnref<GFile> file = g_file_new_for_uri(specifier_utf8.get());
+    GjsAutoChar canonical_specifier = g_file_get_uri(file);
+    JS::ConstUTF8CharsZ chars{canonical_specifier, strlen(canonical_specifier)};
+    JS::RootedString new_specifier{cx, JS_NewStringCopyUTF8Z(cx, chars)};
+    if (!new_specifier)
+        return false;
+
+    specifier.set(new_specifier);
+    return true;
+}
+
 /**
  * gjs_module_resolve:
  *
@@ -518,6 +538,9 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
         cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER));
     g_assert(v_loader.isObject());
     JS::RootedObject loader(cx, &v_loader.toObject());
+
+    if (!canonicalize_specifier(cx, &specifier))
+        return nullptr;
 
     JS::RootedValueArray<2> args(cx);
     args[0].set(importingModulePriv);
@@ -636,6 +659,9 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
     JS::RootedObject loader(cx, &v_loader.toObject());
     JS::RootedString specifier(
         cx, JS::GetModuleRequestSpecifier(cx, module_request));
+
+    if (!canonicalize_specifier(cx, &specifier))
+        return false;
 
     JS::RootedObject callback_data(cx, JS_NewPlainObject(cx));
     if (!callback_data ||
