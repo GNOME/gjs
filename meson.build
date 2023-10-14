@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
 project('gjs', 'cpp', 'c', version: '1.79.1', license: ['MIT', 'LGPL2+'],
-    meson_version: '>= 0.54.0',
+    meson_version: '>= 0.58.0',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
@@ -809,6 +809,10 @@ summary({
     'Dtrace debugging': get_option('dtrace'),
     'Systemtap debugging': get_option('systemtap'),
 }, section: 'Optional features', bool_yn: true)
+
+### Development environment ####################################################
+
+meson.add_devenv({'GJS_USE_UNINSTALLED_FILES': '1'})
 
 ### Maintainer scripts #########################################################
 
