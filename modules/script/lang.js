@@ -16,7 +16,7 @@ function countProperties(obj) {
 }
 
 function getPropertyDescriptor(obj, property) {
-    if (obj.hasOwnProperty(property))
+    if (Object.hasOwn(obj, property))
         return Object.getOwnPropertyDescriptor(obj, property);
     return getPropertyDescriptor(Object.getPrototypeOf(obj), property);
 }

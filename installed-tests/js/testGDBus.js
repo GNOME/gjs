@@ -787,10 +787,10 @@ describe('Exported DBus object', function () {
     });
 
     it('Has defined properties', function () {
-        expect(proxy.hasOwnProperty('PropReadWrite')).toBeTruthy();
-        expect(proxy.hasOwnProperty('PropReadOnly')).toBeTruthy();
-        expect(proxy.hasOwnProperty('PropWriteOnly')).toBeTruthy();
-        expect(proxy.hasOwnProperty('PropPrePacked')).toBeTruthy();
+        expect(Object.hasOwn(proxy, 'PropReadWrite')).toBeTruthy();
+        expect(Object.hasOwn(proxy, 'PropReadOnly')).toBeTruthy();
+        expect(Object.hasOwn(proxy, 'PropWriteOnly')).toBeTruthy();
+        expect(Object.hasOwn(proxy, 'PropPrePacked')).toBeTruthy();
     });
 
     it('reading readonly property works', function () {

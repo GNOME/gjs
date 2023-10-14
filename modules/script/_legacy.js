@@ -246,7 +246,7 @@ function _getMetaInterface(params) {
             return req.__super__;
         for (let metaclass = req.prototype.__metaclass__; metaclass;
             metaclass = metaclass.__super__) {
-            if (metaclass.hasOwnProperty('MetaInterface'))
+            if (Object.hasOwn(metaclass, 'MetaInterface'))
                 return metaclass.MetaInterface;
         }
         return null;
@@ -441,7 +441,7 @@ function defineGObjectLegacyObjects(GObject) {
     }
 
     function _getGObjectInterfaces(interfaces) {
-        return interfaces.filter(iface => iface.hasOwnProperty('$gtype'));
+        return interfaces.filter(iface => Object.hasOwn(iface, '$gtype'));
     }
 
     function _propertiesAsArray(params) {

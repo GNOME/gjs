@@ -179,7 +179,7 @@ function _getCallerBasename() {
 function _createGTypeName(klass) {
     const sanitizeGType = s => s.replace(/[^a-z0-9+_-]/gi, '_');
 
-    if (klass.hasOwnProperty(GTypeName)) {
+    if (Object.hasOwn(klass, GTypeName)) {
         let sanitized = sanitizeGType(klass[GTypeName]);
         if (sanitized !== klass[GTypeName]) {
             logError(new RangeError(`Provided GType name '${klass[GTypeName]}' ` +
@@ -203,7 +203,7 @@ function _createGTypeName(klass) {
 
 function _propertiesAsArray(klass) {
     let propertiesArray = [];
-    if (klass.hasOwnProperty(properties)) {
+    if (Object.hasOwn(klass, properties)) {
         for (let prop in klass[properties])
             propertiesArray.push(klass[properties][prop]);
     }
@@ -218,7 +218,7 @@ function _copyInterfacePrototypeDescriptors(targetPrototype, sourceInterface) {
             // Ignore properties starting with __
             (typeof key !== 'string' || !key.startsWith('__')) &&
             // Don't override an implementation on the target
-            !targetPrototype.hasOwnProperty(key) &&
+            !Object.hasOwn(targetPrototype, key) &&
             descriptor &&
             // Only copy if the descriptor has a getter, is a function, or is enumerable.
             (typeof descriptor.value === 'function' || descriptor.get || descriptor.enumerable))
@@ -274,7 +274,7 @@ function _checkInterface(iface, proto) {
 }
 
 function _checkProperties(klass) {
-    if (!klass.hasOwnProperty(properties))
+    if (!Object.hasOwn(klass, properties))
         return;
 
     for (let pspec of Object.values(klass[properties]))
@@ -530,11 +530,11 @@ function _init() {
         let klass = this;
 
         let gtypename = _createGTypeName(klass);
-        let gflags = klass.hasOwnProperty(GTypeFlags) ? klass[GTypeFlags] : 0;
-        let gobjectInterfaces = klass.hasOwnProperty(interfaces) ? klass[interfaces] : [];
+        let gflags = Object.hasOwn(klass, GTypeFlags) ? klass[GTypeFlags] : 0;
+        let gobjectInterfaces = Object.hasOwn(klass, interfaces) ? klass[interfaces] : [];
         let propertiesArray = _propertiesAsArray(klass);
         let parent = Object.getPrototypeOf(klass);
-        let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
+        let gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
 
         // Default to the GObject-specific prototype, fallback on the JS prototype for GI native classes.
         const parentPrototype = parent.prototype[Gi.gobject_prototype_symbol] ?? parent.prototype;
@@ -604,9 +604,9 @@ function _init() {
         let klass = this;
 
         let gtypename = _createGTypeName(klass);
-        let gobjectInterfaces = klass.hasOwnProperty(requires) ? klass[requires] : [];
+        let gobjectInterfaces = Object.hasOwn(klass, requires) ? klass[requires] : [];
         let props = _propertiesAsArray(klass);
-        let gobjectSignals = klass.hasOwnProperty(signals) ? klass[signals] : [];
+        let gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
 
         const [giPrototype, registeredType] = Gi.register_interface_with_class(klass, gtypename, gobjectInterfaces,
             props);
