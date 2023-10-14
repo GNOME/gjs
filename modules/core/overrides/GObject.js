@@ -617,8 +617,6 @@ function _init() {
         Object.defineProperty(klass, Symbol.hasInstance, {
             value: interfaceInstanceOf,
         });
-
-        return klass;
     }
 
     Object.defineProperty(GObject.Interface, _registerType, {
