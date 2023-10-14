@@ -512,9 +512,9 @@ function _init() {
         _checkProperties(klass);
 
         if (_registerType in klass)
-            klass[_registerType]();
+            klass[_registerType](klass);
         else
-            _resolveLegacyClassFunction(klass, _registerType).call(klass);
+            _resolveLegacyClassFunction(klass, _registerType)(klass);
 
         return klass;
     };
@@ -526,9 +526,7 @@ function _init() {
         return false;
     };
 
-    function registerGObjectType() {
-        let klass = this;
-
+    function registerGObjectType(klass) {
         let gtypename = _createGTypeName(klass);
         let gflags = Object.hasOwn(klass, GTypeFlags) ? klass[GTypeFlags] : 0;
         let gobjectInterfaces = Object.hasOwn(klass, interfaces) ? klass[interfaces] : [];
@@ -600,9 +598,7 @@ function _init() {
         return false;
     }
 
-    function registerInterfaceType() {
-        let klass = this;
-
+    function registerInterfaceType(klass) {
         let gtypename = _createGTypeName(klass);
         let gobjectInterfaces = Object.hasOwn(klass, requires) ? klass[requires] : [];
         let props = _propertiesAsArray(klass);
@@ -628,9 +624,9 @@ function _init() {
 
     GObject.Interface._classInit = function (klass) {
         if (_registerType in klass)
-            klass[_registerType]();
+            klass[_registerType](klass);
         else
-            _resolveLegacyClassFunction(klass, _registerType).call(klass);
+            _resolveLegacyClassFunction(klass, _registerType)(klass);
 
         Object.getOwnPropertyNames(klass.prototype)
         .filter(key => key !== 'constructor')

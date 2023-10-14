@@ -59,9 +59,7 @@ function _init() {
         return GObject.Object._classInit(klass);
     };
 
-    function registerWidgetType() {
-        let klass = this;
-
+    function registerWidgetType(klass) {
         let template = klass[Gtk.template];
         let cssName = klass[Gtk.cssName];
         let children = klass[Gtk.children];
@@ -73,7 +71,7 @@ function _init() {
             };
         }
 
-        GObject.Object[_registerType].call(klass);
+        GObject.Object[_registerType](klass);
 
         if (cssName)
             Gtk.Widget.set_css_name.call(klass, cssName);
