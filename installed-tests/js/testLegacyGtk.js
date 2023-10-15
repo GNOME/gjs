@@ -6,8 +6,9 @@
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;
-const Gtk = imports.gi.Gtk;
+const {GjsTestTools, Gtk} = imports.gi;
 const Lang = imports.lang;
+const System = imports.system;
 
 const template = `
 <interface>
@@ -111,5 +112,30 @@ describe('Legacy Gtk overrides', function () {
 
     it('sets CSS names on classes', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
+    });
+
+    it('does not leak instance when connecting template signal', function () {
+        const LeakTestWidget = new Lang.Class({
+            Name: 'LeakTestWidget',
+            Extends: Gtk.Button,
+            Template: ByteArray.fromString(`
+                <interface>
+                    <template class="Gjs_LeakTestWidget" parent="GtkButton">
+                        <signal name="clicked" handler="buttonClicked"/>
+                    </template>
+                </interface>`),
+
+            buttonClicked() {},
+        });
+
+        let widget = new LeakTestWidget();
+        GjsTestTools.save_weak(widget);
+        widget = null;
+        // It takes two GC cycles to free the widget, because of the tardy sweep
+        // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
+        System.gc();
+        System.gc();
+
+        expect(GjsTestTools.get_weak()).toBeNull();
     });
 });
