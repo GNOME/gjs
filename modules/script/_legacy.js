@@ -647,6 +647,8 @@ function defineGObjectLegacyObjects(GObject) {
 }
 
 function defineGtkLegacyObjects(GObject, Gtk) {
+    const {_createBuilderConnectFunc} = imports._common;
+
     const GtkWidgetClass = new Class({
         Name: 'GtkWidgetClass',
         Extends: GObject.Class,
@@ -682,6 +684,8 @@ function defineGtkLegacyObjects(GObject, Gtk) {
                 else
                     Gtk.Widget.set_template.call(this, template);
             }
+
+            Gtk.Widget.set_connect_func.call(this, _createBuilderConnectFunc(this));
 
             this[Gtk.template] = template;
             this[Gtk.children] = children;

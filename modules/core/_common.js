@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
-/* exported _checkAccessors, _registerType */
+/* exported _checkAccessors, _createBuilderConnectFunc, _createClosure,
+_registerType */
 
 // This is a helper module in which to put code that is common between the
 // legacy GObject.Class system and the new GObject.registerClass system.
@@ -91,4 +92,33 @@ function _checkAccessors(proto, pspec, GObject) {
         if (!camelPropdesc)
             Object.defineProperty(proto, camelName, propdesc);
     }
+}
+
+function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {
+    connectObject ??= thisArg;
+
+    if (swapped) {
+        throw new Error('Unsupported template signal flag "swapped"');
+    } else if (typeof thisArg[handlerName] === 'undefined') {
+        throw new Error(`A handler called ${handlerName} was not ` +
+            `defined on ${thisArg}`);
+    }
+
+    return thisArg[handlerName].bind(connectObject);
+}
+
+function _createBuilderConnectFunc(klass) {
+    const {GObject} = imports.gi;
+    return function (builder, obj, signalName, handlerName, connectObj, flags) {
+        const objects = builder.get_objects();
+        const thisObj = objects.find(o => o instanceof klass);
+        const swapped = flags & GObject.ConnectFlags.SWAPPED;
+        const closure = _createClosure(builder, thisObj, handlerName, swapped,
+            connectObj);
+
+        if (flags & GObject.ConnectFlags.AFTER)
+            obj.connect_after(signalName, closure);
+        else
+            obj.connect(signalName, closure);
+    };
 }

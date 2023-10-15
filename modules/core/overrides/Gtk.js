@@ -4,7 +4,7 @@
 
 const Legacy = imports._legacy;
 const {Gio, GjsPrivate, GLib, GObject} = imports.gi;
-const {_registerType} = imports._common;
+const {_createBuilderConnectFunc, _createClosure, _registerType} = imports._common;
 const Gi = imports._gi;
 
 let Gtk;
@@ -35,28 +35,8 @@ function _init() {
     }
 
     Gtk.Widget.prototype._init = function (params) {
-        let wrapper = this;
         const klass = this.constructor;
-
-        if (klass[Gtk.template]) {
-            if (!BuilderScope) {
-                Gtk.Widget.set_connect_func.call(klass,
-                    (builder, obj, signalName, handlerName, connectObj, flags) => {
-                        const objects = builder.get_objects();
-                        const thisObj = objects.find(o => o instanceof klass);
-                        const swapped = flags & GObject.ConnectFlags.SWAPPED;
-                        const closure = _createClosure(
-                            builder, thisObj, handlerName, swapped, connectObj);
-
-                        if (flags & GObject.ConnectFlags.AFTER)
-                            obj.connect_after(signalName, closure);
-                        else
-                            obj.connect(signalName, closure);
-                    });
-            }
-        }
-
-        wrapper = GObject.Object.prototype._init.call(wrapper, params) ?? wrapper;
+        const wrapper = GObject.Object.prototype._init.call(this, params) ?? this;
 
         if (klass[Gtk.template]) {
             let children = klass[Gtk.children] ?? [];
@@ -127,6 +107,8 @@ function _init() {
 
             if (BuilderScope)
                 Gtk.Widget.set_template_scope.call(klass, new BuilderScope());
+            else
+                Gtk.Widget.set_connect_func.call(klass, _createBuilderConnectFunc(klass));
         }
 
         if (children) {
@@ -168,17 +150,4 @@ function _init() {
             }
         });
     }
-}
-
-function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {
-    connectObject = connectObject ?? thisArg;
-
-    if (swapped) {
-        throw new Error('Unsupported template signal flag "swapped"');
-    } else if (typeof thisArg[handlerName] === 'undefined') {
-        throw new Error(`A handler called ${handlerName} was not ` +
-            `defined on ${thisArg}`);
-    }
-
-    return thisArg[handlerName].bind(connectObject);
 }
