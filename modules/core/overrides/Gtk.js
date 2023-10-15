@@ -35,14 +35,17 @@ function _init() {
 
     Gtk.Widget.prototype._init = function (params) {
         let wrapper = this;
+        const klass = this.constructor;
 
-        if (wrapper.constructor[Gtk.template]) {
+        if (klass[Gtk.template]) {
             if (!BuilderScope) {
-                Gtk.Widget.set_connect_func.call(wrapper.constructor,
+                Gtk.Widget.set_connect_func.call(klass,
                     (builder, obj, signalName, handlerName, connectObj, flags) => {
+                        const objects = builder.get_objects();
+                        const thisObj = objects.find(o => o instanceof klass);
                         const swapped = flags & GObject.ConnectFlags.SWAPPED;
                         const closure = _createClosure(
-                            builder, wrapper, handlerName, swapped, connectObj);
+                            builder, thisObj, handlerName, swapped, connectObj);
 
                         if (flags & GObject.ConnectFlags.AFTER)
                             obj.connect_after(signalName, closure);
@@ -54,17 +57,17 @@ function _init() {
 
         wrapper = GObject.Object.prototype._init.call(wrapper, params) ?? wrapper;
 
-        if (wrapper.constructor[Gtk.template]) {
-            let children = wrapper.constructor[Gtk.children] || [];
+        if (klass[Gtk.template]) {
+            let children = klass[Gtk.children] ?? [];
             for (let child of children) {
                 wrapper[child.replace(/-/g, '_')] =
-                    wrapper.get_template_child(wrapper.constructor, child);
+                    wrapper.get_template_child(klass, child);
             }
 
-            let internalChildren = wrapper.constructor[Gtk.internalChildren] || [];
+            let internalChildren = klass[Gtk.internalChildren] ?? [];
             for (let child of internalChildren) {
                 wrapper[`_${child.replace(/-/g, '_')}`] =
-                    wrapper.get_template_child(wrapper.constructor, child);
+                    wrapper.get_template_child(klass, child);
             }
         }
 
