@@ -894,6 +894,11 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
     m_auto_gc_id = g_timeout_add_seconds_full(G_PRIORITY_LOW, 10,
                                               trigger_gc_if_needed, this,
                                               nullptr);
+
+    if (force_gc)
+        g_source_set_name_by_id(m_auto_gc_id, "[gjs] Garbage Collection (Big Hammer)");
+    else
+        g_source_set_name_by_id(m_auto_gc_id, "[gjs] Garbage Collection");
 }
 
 /*
