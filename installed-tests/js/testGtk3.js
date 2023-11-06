@@ -4,7 +4,7 @@
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;
-const {GLib, Gio, GObject, Gtk} = imports.gi;
+const {GLib, Gio, GjsTestTools, GObject, Gtk} = imports.gi;
 const System = imports.system;
 
 // This is ugly here, but usually it would be in a resource
@@ -303,5 +303,28 @@ describe('Gtk overrides', function () {
         expect(frameChild.visible).toBe(false);
         expect(() => widget.show()).not.toThrow();
         expect(frameChild.visible).toBe(true);
+    });
+
+    it('does not leak instance when connecting template signal', function () {
+        const LeakTestWidget = GObject.registerClass({
+            Template: ByteArray.fromString(`
+                <interface>
+                    <template class="Gjs_LeakTestWidget" parent="GtkButton">
+                        <signal name="clicked" handler="buttonClicked"/>
+                    </template>
+                </interface>`),
+        }, class LeakTestWidget extends Gtk.Button {
+            buttonClicked() {}
+        });
+
+        let widget = new LeakTestWidget();
+        GjsTestTools.save_weak(widget);
+        widget = null;
+        // It takes two GC cycles to free the widget, because of the tardy sweep
+        // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
+        System.gc();
+        System.gc();
+
+        expect(GjsTestTools.get_weak()).toBeNull();
     });
 });
