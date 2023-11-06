@@ -619,6 +619,35 @@ signal.
 
 [gobject-signals-tutorial]: https://gjs.guide/guides/gobject/basics.html#signals
 
+### GObject.Object.connect_object(name, callback, gobject, flags)
+
+> See also: [GObject Signals Tutorial][gobject-signals-tutorial]
+
+Parameters:
+* name (`String`) — A detailed signal name
+* callback (`Function`) — A callback function
+* gobject (`GObject.Object`) — A [`GObject.Object`][gobject] instance
+* flags (`GObject.ConnectFlags`) — Flags
+
+Returns:
+* (`Number`) — A signal handler ID
+
+Connects a callback function to a signal for a particular object.
+
+The `gobject` parameter is used to limit the lifetime of the connection. When the
+object is destroyed, the callback will be disconnected automatically. The
+`gobject` parameter is not otherwise used.
+
+The first argument of the callback will be the object emitting the signal, while
+the remaining arguments are the signal parameters.
+
+If `GObject.ConnectFlags.AFTER` is specified in `flags`, the handler will be
+called after the default handler of the signal. Otherwise, it will be called
+before. `GObject.ConnectFlags.SWAPPED` is not supported and its use will
+throw an exception.
+
+[gobject-signals-tutorial]: https://gjs.guide/guides/gobject/basics.html#signals
+
 ### GObject.Object.disconnect(id)
 
 > See also: [GObject Signals Tutorial][gobject-signals-tutorial]

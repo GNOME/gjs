@@ -141,6 +141,8 @@ class ObjectBase
     GJS_JSAPI_RETURN_CONVENTION
     static bool connect_after(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
+    static bool connect_object(JSContext* cx, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool emit(JSContext* cx, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool signal_find(JSContext* cx, unsigned argc, JS::Value* vp);
@@ -451,7 +453,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
  private:
     GJS_JSAPI_RETURN_CONVENTION
-    bool connect_impl(JSContext* cx, const JS::CallArgs& args, bool after);
+    bool connect_impl(JSContext* cx, const JS::CallArgs& args, bool after,
+                      bool object = false);
     GJS_JSAPI_RETURN_CONVENTION
     bool emit_impl(JSContext* cx, const JS::CallArgs& args);
     GJS_JSAPI_RETURN_CONVENTION

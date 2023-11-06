@@ -5,7 +5,8 @@ imports.gi.versions.Gdk = '4.0';
 imports.gi.versions.Gtk = '4.0';
 
 const ByteArray = imports.byteArray;
-const {Gdk, Gio, GObject, Gtk, GLib} = imports.gi;
+const {Gdk, Gio, GObject, Gtk, GLib, GjsTestTools} = imports.gi;
+const System = imports.system;
 
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
@@ -268,5 +269,38 @@ describe('Gtk 4 regressions', function () {
             throw err;
         }
         expect(result).toEqual([0, GLib.MAXUINT32]);
+    });
+});
+
+class LeakTestWidget extends Gtk.Button {
+    buttonClicked() {}
+}
+
+GObject.registerClass({
+    Template: ByteArray.fromString(`
+<interface>
+    <template class="Gjs_LeakTestWidget" parent="GtkButton">
+        <signal name="clicked" handler="buttonClicked"/>
+    </template>
+</interface>`),
+}, LeakTestWidget);
+
+
+describe('Gtk template signal', function () {
+    beforeAll(function () {
+        Gtk.init();
+    });
+
+    it('does not leak', function () {
+        let widget = new LeakTestWidget();
+        GjsTestTools.save_weak(widget);
+        widget = null;
+
+        // It takes two GC cycles to free the widget, because of the tardy sweep
+        // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
+        System.gc();
+        System.gc();
+
+        expect(GjsTestTools.get_weak()).toBeNull();
     });
 });
