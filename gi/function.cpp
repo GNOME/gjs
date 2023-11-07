@@ -6,6 +6,7 @@
 
 #include <stddef.h>  // for NULL, size_t
 #include <stdint.h>
+#include <string.h>  // for strlen
 
 #include <limits>
 #include <memory>  // for unique_ptr
@@ -18,6 +19,8 @@
 #include <girffi.h>
 #include <glib-object.h>
 #include <glib.h>
+
+#include <tracy/TracyC.h>
 
 #include <js/Array.h>
 #include <js/CallAndConstruct.h>  // for IsCallable
@@ -1040,8 +1043,31 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     // C function has a non-void return type
     void* return_value_p =
         get_return_ffi_pointer_from_gi_argument(return_tag, &return_value);
-    ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
-             ffi_arg_pointers.get());
+
+    {
+        TracyCZone(ctx, 0);
+
+        if (TracyCIsStarted && TracyCIsConnected) {
+            std::ostringstream out;
+
+            bool is_method = g_callable_info_is_method(m_info);
+            out << m_info.ns() << "::";
+            if (is_method) {
+                out << g_base_info_get_name(g_base_info_get_container(m_info)) << "::";
+            }
+            out << m_info.name();
+
+            auto name = out.str();
+            auto srcloc = ___tracy_alloc_srcloc(TracyLine, TracyFile, strlen(TracyFile), name.c_str(), name.length(), 0);
+            ctx = ___tracy_emit_zone_begin_alloc(srcloc, 1);
+            ___tracy_emit_zone_color(ctx, 0x551a8b);
+        }
+
+        ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
+                 ffi_arg_pointers.get());
+
+        TracyCZoneEnd(ctx);
+    }
 
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
