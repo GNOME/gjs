@@ -3310,10 +3310,27 @@ ObjectInstance::emit_impl(JSContext          *context,
         }
     }
 
+    TracyCZone(ctx, 0);
+    if (TracyCIsStarted && TracyCIsConnected) {
+        std::ostringstream out;
+        out << ns();
+        if (out.tellp() != 0)
+            out << "::";
+        out << name() << "::" << "emit[" << signal_name.get() << ']';
+
+        auto name = out.str();
+        auto srcloc = ___tracy_alloc_srcloc(TracyLine, TracyFile, strlen(TracyFile), name.c_str(), name.length(), 0);
+        ctx = ___tracy_emit_zone_begin_alloc(srcloc, 1);
+        ___tracy_emit_zone_color(ctx, 0x551a8b);
+    }
+
     if (signal_query.return_type == G_TYPE_NONE) {
         g_signal_emitv(instance_and_args.data(), signal_id, signal_detail,
                        nullptr);
         argv.rval().setUndefined();
+
+        TracyCZoneEnd(ctx);
+
         std::for_each(args_to_steal.begin(), args_to_steal.end(),
                       [](Gjs::AutoGValue* value) { value->steal(); });
         return true;
@@ -3322,6 +3339,8 @@ ObjectInstance::emit_impl(JSContext          *context,
     GType gtype = signal_query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE;
     Gjs::AutoGValue rvalue(gtype);
     g_signal_emitv(instance_and_args.data(), signal_id, signal_detail, &rvalue);
+
+    TracyCZoneEnd(ctx);
 
     std::for_each(args_to_steal.begin(), args_to_steal.end(),
                   [](Gjs::AutoGValue* value) { value->steal(); });
