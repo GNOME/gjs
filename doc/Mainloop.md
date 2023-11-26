@@ -187,7 +187,7 @@ Creates a new timeout source.
 The scheduling granularity/accuracy of this source will be in milliseconds. If
 not given, `priority` defaults to `GLib.PRIORITY_DEFAULT`.
 
-[gtimeoutadd]: https://gjs-docs.gnome.org/glib20/glib.timeout_source_new
+[gtimeoutsourcenew]: https://gjs-docs.gnome.org/glib20/glib.timeout_source_new
 
 ### Mainloop.timeout_seconds_source(timeout, handler, priority)
 
