@@ -18,14 +18,7 @@
  * Thrown when there is an error importing a module.
  */
 class ImportError extends moduleGlobalThis.Error {
-    /**
-     * @param {string | undefined} message the import error message
-     */
-    constructor(message) {
-        super(message);
-
-        this.name = 'ImportError';
-    }
+    name = 'ImportError';
 }
 
 /**

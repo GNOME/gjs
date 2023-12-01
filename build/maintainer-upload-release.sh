@@ -24,6 +24,9 @@ case $project_version in
     1.7[34].*) gnome_series=43 ;;
     1.7[56].*) gnome_series=44 ;;
     1.7[78].*) gnome_series=45 ;;
+    1.79.* | 1.80.*) gnome_series=46 ;;
+    1.8[12].*) gnome_series=47 ;;
+    1.8[34].*) gnome_series=48 ;;
     *)
         echo "Version $project_version not handled by this script"
         exit 1
@@ -54,4 +57,4 @@ popd
 
 scp "$tarball_path" "master.gnome.org:"
 # shellcheck disable=SC2029
-ssh -t "master.gnome.org" ftpadmin install "$tarball_basename"
+ssh -t "master.gnome.org" ftpadmin install --unattended "$tarball_basename"

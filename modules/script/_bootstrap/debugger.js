@@ -838,7 +838,7 @@ function runcmd(cmd) {
         return undefined;
 
     var first = pieces[0], rest = pieces[1];
-    if (!commands.hasOwnProperty(first)) {
+    if (!Object.hasOwn(commands, first)) {
         print(`unrecognized command '${first}'`);
         return undefined;
     }

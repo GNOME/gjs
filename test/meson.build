@@ -28,7 +28,7 @@ gjs_tests = executable('gjs-tests', gjs_tests_sources, mock_js_resources_files,
 
 test('API tests', gjs_tests, args: ['--tap', '--keep-going', '--verbose'],
     depends: gjs_private_typelib, env: tests_environment, protocol: 'tap',
-    suite: 'C', timeout: 60)
+    suite: 'C', timeout: 60, priority: 10)
 
 gjs_tests_internal = executable('gjs-tests-internal',
     sources: [
@@ -47,4 +47,4 @@ gjs_tests_internal = executable('gjs-tests-internal',
 test('Internal API tests', gjs_tests_internal,
     args: ['--tap', '--keep-going', '--verbose'],
     env: tests_environment, protocol: 'tap',
-    suite: 'C')
+    suite: 'C', priority: 10)

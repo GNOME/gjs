@@ -49,6 +49,10 @@ targ_opts.add_argument('--string', '-s', dest='string_targets',
                        action='append', default=[],
                        help='Add a string literal or String() to the list of targets')
 
+targ_opts.add_argument('--annotation', '-a', dest='annotation_targets',
+                       action='append', default=[],
+                       help=f'Add a {NAME_ANNOTATION} annotation to the list of targets')
+
 ### Output Options
 out_opts = parser.add_argument_group('Output Options')
 
@@ -124,7 +128,7 @@ wme_regex = re.compile(r'WeakMapEntry map=((?:0x)?[a-zA-Z0-9]+|\(nil\)) key=((?:
 
 func_regex = re.compile(r'Function(?: ([^/]+)(?:/([<|\w]+))?)?')
 priv_regex = re.compile(r'([^ ]+) (0x[a-fA-F0-9]+$)')
-atom_regex = re.compile(r'^string <atom: length (?:\d+)> (.*)\r?$')
+string_regex = re.compile(r'^(?:sub)?string <(?:dependent|(?:permanent )?atom|(?:fat )?inline|linear): length (?:\d+)> (.*)\r?$')
 
 ###############################################################################
 # Heap Parsing
@@ -194,16 +198,48 @@ def parse_graph(fobj):
             edge_labels[source].setdefault(target, []).append(edge_label)
 
     node_addr = None
+    second_pass_lines = []
 
     for line in fobj:
+        if edge_regex.match(line):
+            second_pass_lines.append(line)
+            continue
+
+        node = node_regex.match(line)
+
+        if node:
+            second_pass_lines.append(line)
+            node_addr = node.group(1)
+            node_color = node.group(2)
+            node_label = node.group(3)
+
+            # Don't hide strings matching hide_nodes, as they may be labels
+            if string_regex.match(node_label) is not None:
+                addNode(node_addr, node_label)
+                continue
+
+            # Use this opportunity to map hide_nodes to addresses
+            for hide_node in args.hide_nodes:
+                if hide_node in node_label:
+                    args.hide_addrs.append(node_addr)
+                    break
+            else:
+                addNode(node_addr, node_label)
+        # Skip comments, arenas, realms and zones
+        elif line[0] == '#':
+            continue
+        else:
+            sys.stderr.write('Error: Unknown line: {}\n'.format(line[:-1]))
+
+    for line in second_pass_lines:
         e = edge_regex.match(line)
 
         if e:
             target, edge_label = e.group(1, 3)
             if edge_label == NAME_ANNOTATION:
-                a = atom_regex.match(node_labels[target])
-                if a:
-                    annotations[node_addr] = a.group(1)
+                s = string_regex.match(node_labels[target])
+                if s:
+                    annotations[node_addr] = s.group(1)
 
             if (node_addr not in args.hide_addrs and
                     edge_label not in args.hide_edges):
@@ -213,26 +249,6 @@ def parse_graph(fobj):
 
             if node:
                 node_addr = node.group(1)
-                node_color = node.group(2)
-                node_label = node.group(3)
-
-                # Don't hide atoms matching hide_nodes, as they may be labels
-                if atom_regex.match(node_label) is not None:
-                    addNode(node_addr, node_label)
-                    continue
-
-                # Use this opportunity to map hide_nodes to addresses
-                for hide_node in args.hide_nodes:
-                    if hide_node in node_label:
-                        args.hide_addrs.append(node_addr)
-                        break
-                else:
-                    addNode(node_addr, node_label)
-            # Skip comments, arenas, realms and zones
-            elif line[0] == '#':
-                continue
-            else:
-                sys.stderr.write('Error: Unknown line: {}\n'.format(line[:-1]))
 
     # yar, should pass the root crud in and wedge it in here, or somewhere
     return [edges, edge_labels, node_labels, annotations]
@@ -643,6 +659,14 @@ def target_type(graph, target):
     return targets
 
 
+def target_annotation(graph, target):
+    targets = {addr for addr, label in graph.annotations.items()
+                    if label == target}
+
+    sys.stderr.write(f'Found {len(targets)} targets with annotation "{target}"\n')
+    return targets
+
+
 def select_targets(args, edges, graph):
     targets = set()
     for target in args.targets:
@@ -663,6 +687,8 @@ def select_targets(args, edges, graph):
         targets.update(target_func(graph, target))
     for target in args.string_targets:
         targets.update(target_string(graph, target))
+    for target in args.annotation_targets:
+        targets.update(target_annotation(graph, target))
 
     return list(targets)
 

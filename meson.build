@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
 project('gjs', 'cpp', 'c', version: '1.79.1', license: ['MIT', 'LGPL2+'],
-    meson_version: '>= 0.54.0',
+    meson_version: '>= 0.58.0',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
@@ -586,7 +586,7 @@ libgjs_dep = declare_dependency(link_with: [libgjs, libgjs_jsapi],
 gjs_private_gir = gnome.generate_gir(libgjs,
     includes: ['GObject-2.0', 'Gio-2.0'], sources: libgjs_private_sources,
     namespace: 'GjsPrivate', nsversion: '1.0', identifier_prefix: 'Gjs',
-    symbol_prefix: 'gjs_', extra_args: '--warn-error', install: true,
+    symbol_prefix: 'gjs_', fatal_warnings: get_option('werror'), install: true,
     install_dir_gir: false, install_dir_typelib: pkglibdir / 'girepository-1.0')
 gjs_private_typelib = gjs_private_gir[1]
 
@@ -633,7 +633,7 @@ js_tests_builddir = meson.current_build_dir() / 'installed-tests' / 'js'
 libgjs_test_tools_builddir = js_tests_builddir / 'libgjstesttools'
 # GJS_PATH is empty here since we want to force the use of our own
 # resources. G_FILENAME_ENCODING ensures filenames are not UTF-8
-tests_environment.set('TOP_BUILDDIR', meson.build_root())
+tests_environment.set('TOP_BUILDDIR', meson.project_build_root())
 tests_environment.set('GJS_USE_UNINSTALLED_FILES', '1')
 tests_environment.set('GJS_PATH', '')
 tests_environment.set('GJS_DEBUG_OUTPUT', 'stderr')
@@ -809,6 +809,10 @@ summary({
     'Dtrace debugging': get_option('dtrace'),
     'Systemtap debugging': get_option('systemtap'),
 }, section: 'Optional features', bool_yn: true)
+
+### Development environment ####################################################
+
+meson.add_devenv({'GJS_USE_UNINSTALLED_FILES': '1'})
 
 ### Maintainer scripts #########################################################
 

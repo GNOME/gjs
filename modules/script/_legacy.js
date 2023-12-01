@@ -246,7 +246,7 @@ function _getMetaInterface(params) {
             return req.__super__;
         for (let metaclass = req.prototype.__metaclass__; metaclass;
             metaclass = metaclass.__super__) {
-            if (metaclass.hasOwnProperty('MetaInterface'))
+            if (Object.hasOwn(metaclass, 'MetaInterface'))
                 return metaclass.MetaInterface;
         }
         return null;
@@ -441,7 +441,7 @@ function defineGObjectLegacyObjects(GObject) {
     }
 
     function _getGObjectInterfaces(interfaces) {
-        return interfaces.filter(iface => iface.hasOwnProperty('$gtype'));
+        return interfaces.filter(iface => Object.hasOwn(iface, '$gtype'));
     }
 
     function _propertiesAsArray(params) {
@@ -647,6 +647,8 @@ function defineGObjectLegacyObjects(GObject) {
 }
 
 function defineGtkLegacyObjects(GObject, Gtk) {
+    const {_createBuilderConnectFunc} = imports._common;
+
     const GtkWidgetClass = new Class({
         Name: 'GtkWidgetClass',
         Extends: GObject.Class,
@@ -682,6 +684,8 @@ function defineGtkLegacyObjects(GObject, Gtk) {
                 else
                     Gtk.Widget.set_template.call(this, template);
             }
+
+            Gtk.Widget.set_connect_func.call(this, _createBuilderConnectFunc(this));
 
             this[Gtk.template] = template;
             this[Gtk.children] = children;
