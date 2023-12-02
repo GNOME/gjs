@@ -19,20 +19,25 @@
 #include <js/ContextOptions.h>
 #include <js/GCAPI.h>           // for JS_SetGCParameter, JS_AddFin...
 #include <js/Initialization.h>  // for JS_Init, JS_ShutDown
+#include <js/Principals.h>
 #include <js/Promise.h>
 #include <js/RootingAPI.h>
 #include <js/Stack.h>  // for JS_SetNativeStackQuota
+#include <js/StructuredClone.h>  // for JS_WriteUint32Pair
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
 #include <js/experimental/SourceHook.h>
 #include <jsapi.h>  // for JS_SetGlobalJitCompilerOption
+#include <mozilla/Atomics.h>  // for Atomic in JSPrincipals
 #include <mozilla/UniquePtr.h>
 
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/jsapi-util.h"
 #include "util/log.h"
+
+struct JSStructuredCloneWriter;
 
 static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {
@@ -129,6 +134,49 @@ public:
 static GjsInit gjs_is_inited;
 #endif
 
+// JSPrincipals (basically a weird name for security callbacks) which are in
+// effect in the module loader's realm (GjsInternalGlobal). This prevents module
+// loader stack frames from showing up in public stack traces.
+class ModuleLoaderPrincipals final : public JSPrincipals {
+    static constexpr uint32_t STRUCTURED_CLONE_TAG = JS_SCTAG_USER_MIN;
+
+    bool write(JSContext* cx [[maybe_unused]],
+               JSStructuredCloneWriter* writer) override {
+        g_assert_not_reached();
+        return JS_WriteUint32Pair(writer, STRUCTURED_CLONE_TAG, 1);
+    }
+
+    bool isSystemOrAddonPrincipal() override { return true; }
+
+ public:
+    static bool subsumes(JSPrincipals* first, JSPrincipals* second) {
+        if (first != &the_principals && second == &the_principals)
+            return false;
+        return true;
+    }
+
+    static void destroy(JSPrincipals* principals [[maybe_unused]]) {
+        g_assert(principals == &the_principals &&
+                 "Should not create other instances of ModuleLoaderPrinciples");
+        g_assert(principals->refcount == 0 &&
+                 "Mismatched JS_HoldPrincipals/JS_DropPrincipals");
+    }
+
+    // Singleton
+    static ModuleLoaderPrincipals the_principals;
+};
+
+ModuleLoaderPrincipals ModuleLoaderPrincipals::the_principals{};
+
+JSPrincipals* get_internal_principals() {
+    return &ModuleLoaderPrincipals::the_principals;
+}
+
+static const JSSecurityCallbacks security_callbacks = {
+    /* contentSecurityPolicyAllows = */ nullptr,
+    &ModuleLoaderPrincipals::subsumes,
+};
+
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     g_assert(gjs_is_inited);
     JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
@@ -150,6 +198,8 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     /* set ourselves as the private data */
     JS_SetContextPrivate(cx, uninitialized_gjs);
 
+    JS_SetSecurityCallbacks(cx, &security_callbacks);
+    JS_InitDestroyPrincipalsCallback(cx, &ModuleLoaderPrincipals::destroy);
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, uninitialized_gjs);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
     JS::SetJobQueue(cx, dynamic_cast<JS::JobQueue*>(uninitialized_gjs));

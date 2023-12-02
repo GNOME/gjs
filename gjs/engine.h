@@ -9,10 +9,13 @@
 
 class GjsContextPrivate;
 struct JSContext;
+struct JSPrincipals;
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs);
 
 bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
                               size_t* length);
+
+JSPrincipals* get_internal_principals();
 
 #endif  // GJS_ENGINE_H_
