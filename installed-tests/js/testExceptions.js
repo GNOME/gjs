@@ -157,14 +157,30 @@ describe('logError', function () {
         }
     });
 
-    it('logs a SyntaxError', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            'JS ERROR: SyntaxError:*');
-        try {
+    describe('Syntax Error', function () {
+        function throwSyntaxError() {
             Reflect.parse('!@#$%^&');
-        } catch (e) {
-            logError(e);
         }
+
+        it('logs a SyntaxError', function () {
+            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                'JS ERROR: SyntaxError:*');
+            try {
+                throwSyntaxError();
+            } catch (e) {
+                logError(e);
+            }
+        });
+
+        it('logs a stack trace with the SyntaxError', function () {
+            GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+                'JS ERROR: SyntaxError:*throwSyntaxError@*');
+            try {
+                throwSyntaxError();
+            } catch (e) {
+                logError(e);
+            }
+        });
     });
 
     it('logs an error with cause', function marker() {

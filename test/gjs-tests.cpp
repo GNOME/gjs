@@ -744,7 +744,7 @@ static void test_jsapi_util_error_throw_cause(GjsUnitTestFixture* fx,
                                               const void*) {
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
                           "JS ERROR: Error: Exception 1\n"
-                          "Caused by: Error: Exception 2\n");
+                          "Caused by: Error: Exception 2");
 
     gjs_throw(fx->cx, "Exception 1");
     gjs_throw(fx->cx, "Exception 2");
@@ -753,7 +753,7 @@ static void test_jsapi_util_error_throw_cause(GjsUnitTestFixture* fx,
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
                           "JS ERROR: Error: Exception 1\n"
                           "Caused by: Error: Exception 2\n"
-                          "Caused by: Error: Exception 3\n");
+                          "Caused by: Error: Exception 3");
 
     gjs_throw(fx->cx, "Exception 1");
     gjs_throw(fx->cx, "Exception 2");
