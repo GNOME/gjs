@@ -1,3 +1,16 @@
+Version 1.78.1
+--------------
+
+- Closed bugs and merge requests:
+  * Gtk template signals cause a reference cycle that is not detected [#576,
+    !891, James Westman]
+  * Modules from resources may get loaded twice [#577, !892, Philip Chimento]
+  * docs: add examples for creating cairo image surfaces [!894, Andy Holmes]
+  * Deadlocks between GJS GC and dconf gsettings when a setting value is changed
+    [#558, !895, msizanoen]
+  * Gtk3: Fix leak in GtkBuilder template signal connections [!896, Philip
+    Chimento]
+
 Version 1.78.0
 --------------
 
