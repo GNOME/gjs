@@ -87,12 +87,18 @@ public:
         JS::PrintError(stderr, report, /* reportWarnings = */ false);
 
         if (exnStack.stack()) {
-            GjsAutoChar stack_str =
-                gjs_format_stack_trace(m_cx, exnStack.stack());
-            if (!stack_str)
+            JS::UniqueChars stack_str{
+                format_saved_frame(m_cx, exnStack.stack(), 2)};
+            if (!stack_str) {
                 g_printerr("(Unable to print stack trace)\n");
-            else
-                g_printerr("%s", stack_str.get());
+            } else {
+                GjsAutoChar encoded_stack_str{g_filename_from_utf8(
+                    stack_str.get(), -1, nullptr, nullptr, nullptr)};
+                if (!encoded_stack_str)
+                    g_printerr("(Unable to print stack trace)\n");
+                else
+                    g_printerr("%s", stack_str.get());
+            }
         }
 
         JS_ClearPendingException(m_cx);

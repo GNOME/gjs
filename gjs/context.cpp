@@ -67,6 +67,7 @@
 #include <js/friend/DumpFunctions.h>
 #include <jsapi.h>        // for JS_GetFunctionObject, JS_Ge...
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
+#include <mozilla/UniquePtr.h>  // for UniquePtr::get
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
 #include "gi/function.h"
@@ -366,7 +367,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
     for (auto& kv : m_unhandled_rejection_stacks) {
-        const char *stack = kv.second;
+        const char* stack = kv.second.get();
         g_warning("Unhandled promise rejection. To suppress this warning, add "
                   "an error handler to your promise chain with .catch() or a "
                   "try-catch block around your await expression. %s%s",
@@ -1200,7 +1201,7 @@ js::UniquePtr<JS::JobQueue::SavedJobQueue> GjsContextPrivate::saveJobQueue(
 }
 
 void GjsContextPrivate::register_unhandled_promise_rejection(
-    uint64_t id, GjsAutoChar&& stack) {
+    uint64_t id, JS::UniqueChars&& stack) {
     m_unhandled_rejection_stacks[id] = std::move(stack);
 }
 

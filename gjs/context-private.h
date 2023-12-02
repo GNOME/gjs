@@ -32,6 +32,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
+#include <js/Utility.h>  // for UniqueChars, FreePolicy
 #include <js/ValueArray.h>
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
@@ -87,7 +88,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
-    std::unordered_map<uint64_t, GjsAutoChar> m_unhandled_rejection_stacks;
+    std::unordered_map<uint64_t, JS::UniqueChars> m_unhandled_rejection_stacks;
 
     GjsProfiler* m_profiler;
 
@@ -260,7 +261,8 @@ class GjsContextPrivate : public JS::JobQueue {
         JSContext* cx) override;
 
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible();
-    void register_unhandled_promise_rejection(uint64_t id, GjsAutoChar&& stack);
+    void register_unhandled_promise_rejection(uint64_t id,
+                                              JS::UniqueChars&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
 
     void register_notifier(DestroyNotify notify_func, void* data);

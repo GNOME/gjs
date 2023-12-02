@@ -23,6 +23,7 @@
 #include <js/RootingAPI.h>
 #include <js/Stack.h>  // for JS_SetNativeStackQuota
 #include <js/TypeDecls.h>
+#include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
 #include <js/experimental/SourceHook.h>
 #include <jsapi.h>  // for JS_SetGlobalJitCompilerOption
@@ -52,7 +53,7 @@ static void on_promise_unhandled_rejection(
     }
 
     JS::RootedObject allocation_site(cx, JS::GetPromiseAllocationSite(promise));
-    GjsAutoChar stack = gjs_format_stack_trace(cx, allocation_site);
+    JS::UniqueChars stack = format_saved_frame(cx, allocation_site);
     gjs->register_unhandled_promise_rejection(id, std::move(stack));
 }
 
