@@ -6,15 +6,27 @@
 
 #include <config.h>
 
+#include <stdint.h>
+#include <string.h>
+
+#include <sstream>
+#include <string>
+
 #include <glib.h>  // for g_assert
 
 #include <js/CallAndConstruct.h>
+#include <js/Exception.h>
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <jsapi.h>
+#include <jsfriendapi.h>
+
+#include <tracy/TracyC.h>
 
 #include "gi/closure.h"
+#include "gi/gtype.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
@@ -181,7 +193,74 @@ bool Closure::invoke(JS::HandleObject this_obj,
     }
 
     JS::RootedValue v_callable{m_cx, JS::ObjectValue(*m_callable.get())};
-    bool ok = JS::Call(m_cx, this_obj, v_callable, args, retval);
+    bool ok;
+    {
+        TracyCZone(ctx, 0);
+
+        if (TracyCIsStarted && TracyCIsConnected) {
+            uint64_t srcloc = 0;
+            std::string user_text;
+
+            std::ostringstream out;
+            out << "JS::";
+
+            if (this_obj) {
+                JS::AutoSaveExceptionState saved_exc(m_cx);
+
+                GType gtype;
+                if (gjs_gtype_get_actual_gtype(m_cx, this_obj, &gtype) &&
+                    gtype != G_TYPE_INVALID) {
+                    const char* text = g_type_name(gtype);
+                    if (text)
+                        out << text << "::";
+                }
+
+                saved_exc.restore();
+            }
+
+            JSObject* obj = m_callable.get();
+            if (JS_ObjectIsBoundFunction(obj))
+                obj = JS_GetBoundFunctionTarget(obj);
+
+            if (js::IsFunctionObject(obj)) {
+                JSFunction* fun = JS_GetObjectFunction(obj);
+                JSString* display_name = JS_GetMaybePartialFunctionDisplayId(fun);
+                if (display_name && JS_GetStringLength(display_name))
+                    out << gjs_debug_string(display_name);
+                else
+                    out << "<anonymous>";
+
+                JS::RootedFunction rooted_fun(m_cx, fun);
+                JSScript* script = JS_GetFunctionScript(m_cx, rooted_fun);
+                if (script) {
+                    const char* filename = JS_GetScriptFilename(script);
+                    auto line = JS_GetScriptBaseLineNumber(m_cx, script);
+
+                    auto function = out.str();
+                    srcloc = ___tracy_alloc_srcloc(line, filename, strlen(filename), function.c_str(), function.length(), 0);
+                }
+            } else {
+                out << "<non-function>";
+
+                user_text = gjs_debug_object(obj);
+            }
+
+            if (srcloc == 0) {
+                auto name = out.str();
+                srcloc = ___tracy_alloc_srcloc(TracyLine, TracyFile, strlen(TracyFile), name.c_str(), name.length(), 0);
+            }
+
+            ctx = ___tracy_emit_zone_begin_alloc(srcloc, 1);
+            ___tracy_emit_zone_color(ctx, 0x008b8b);
+
+            if (!user_text.empty())
+                ___tracy_emit_zone_text(ctx, user_text.c_str(), user_text.length());
+        }
+
+        ok = JS::Call(m_cx, this_obj, v_callable, args, retval);
+
+        TracyCZoneEnd(ctx);
+    }
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
 
     if (!ok) {
