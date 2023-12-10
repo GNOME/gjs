@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
-// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
+// SPDX-FileCopyrightText: 2019, 2023 Philip Chimento <philip.chimento@gmail.com>
 
 const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
@@ -280,5 +280,118 @@ describe('GLib string function overrides', function () {
 
         const encoded = new TextEncoder().encode(ascii);
         expect(GLib.base64_encode(encoded)).toBe(base64);
+    });
+});
+
+describe('GLib.MatchInfo', function () {
+    let shouldBePatchedProtoype;
+    beforeAll(function () {
+        shouldBePatchedProtoype = GLib.MatchInfo.prototype;
+    });
+
+    let regex;
+    beforeEach(function () {
+        regex = new GLib.Regex('h(?<foo>el)lo', 0, 0);
+    });
+
+    it('cannot be constructed', function () {
+        expect(() => new GLib.MatchInfo()).toThrow();
+        expect(() => new shouldBePatchedProtoype.constructor()).toThrow();
+    });
+
+    it('is returned from GLib.Regex.match', function () {
+        const [, match] = regex.match('foo', 0);
+        expect(match).toBeInstanceOf(GLib.MatchInfo);
+        expect(match.toString()).toContain('GjsPrivate.MatchInfo');
+    });
+
+    it('stores the string that was matched', function () {
+        const [, match] = regex.match('foo', 0);
+        expect(match.get_string()).toEqual('foo');
+    });
+
+    it('truncates the string when it has zeroes as g_match_info_get_string() would', function () {
+        const [, match] = regex.match_full('ab\0cd', 0, 0);
+        expect(match.get_string()).toEqual('ab');
+    });
+
+    it('is returned from GLib.Regex.match_all', function () {
+        const [, match] = regex.match_all('foo', 0);
+        expect(match).toBeInstanceOf(GLib.MatchInfo);
+        expect(match.toString()).toContain('GjsPrivate.MatchInfo');
+    });
+
+    it('is returned from GLib.Regex.match_all_full', function () {
+        const [, match] = regex.match_all_full('foo', 0, 0);
+        expect(match).toBeInstanceOf(GLib.MatchInfo);
+        expect(match.toString()).toContain('GjsPrivate.MatchInfo');
+    });
+
+    it('is returned from GLib.Regex.match_full', function () {
+        const [, match] = regex.match_full('foo', 0, 0);
+        expect(match).toBeInstanceOf(GLib.MatchInfo);
+        expect(match.toString()).toContain('GjsPrivate.MatchInfo');
+    });
+
+    describe('method', function () {
+        let match;
+        beforeEach(function () {
+            [, match] = regex.match('hello hello world', 0);
+        });
+
+        it('expand_references', function () {
+            expect(match.expand_references('\\0-\\1')).toBe('hello-el');
+            expect(shouldBePatchedProtoype.expand_references.call(match, '\\0-\\1')).toBe('hello-el');
+        });
+
+        it('fetch', function () {
+            expect(match.fetch(0)).toBe('hello');
+            expect(shouldBePatchedProtoype.fetch.call(match, 0)).toBe('hello');
+        });
+
+        it('fetch_all', function () {
+            expect(match.fetch_all()).toEqual(['hello', 'el']);
+            expect(shouldBePatchedProtoype.fetch_all.call(match)).toEqual(['hello', 'el']);
+        });
+
+        it('fetch_named', function () {
+            expect(match.fetch_named('foo')).toBe('el');
+            expect(shouldBePatchedProtoype.fetch_named.call(match, 'foo')).toBe('el');
+        });
+
+        it('fetch_named_pos', function () {
+            expect(match.fetch_named_pos('foo')).toEqual([true, 1, 3]);
+            expect(shouldBePatchedProtoype.fetch_named_pos.call(match, 'foo')).toEqual([true, 1, 3]);
+        });
+
+        it('fetch_pos', function () {
+            expect(match.fetch_pos(1)).toEqual([true, 1, 3]);
+            expect(shouldBePatchedProtoype.fetch_pos.call(match, 1)).toEqual([true, 1, 3]);
+        });
+
+        it('get_match_count', function () {
+            expect(match.get_match_count()).toBe(2);
+            expect(shouldBePatchedProtoype.get_match_count.call(match)).toBe(2);
+        });
+
+        it('get_string', function () {
+            expect(match.get_string()).toBe('hello hello world');
+            expect(shouldBePatchedProtoype.get_string.call(match)).toBe('hello hello world');
+        });
+
+        it('is_partial_match', function () {
+            expect(match.is_partial_match()).toBeFalse();
+            expect(shouldBePatchedProtoype.is_partial_match.call(match)).toBeFalse();
+        });
+
+        it('matches', function () {
+            expect(match.matches()).toBeTrue();
+            expect(shouldBePatchedProtoype.matches.call(match)).toBeTrue();
+        });
+
+        it('next', function () {
+            expect(match.next()).toBeTrue();
+            expect(shouldBePatchedProtoype.next.call(match)).toBeFalse();
+        });
     });
 });

@@ -456,6 +456,7 @@ libgjs_sources = [
 # GjsPrivate introspection sources
 libgjs_private_sources = [
     'libgjs-private/gjs-gdbus-wrapper.c', 'libgjs-private/gjs-gdbus-wrapper.h',
+    'libgjs-private/gjs-match-info.c', 'libgjs-private/gjs-match-info.h',
     'libgjs-private/gjs-util.c', 'libgjs-private/gjs-util.h',
 ]
 
