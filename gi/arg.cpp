@@ -2527,11 +2527,11 @@ bool gjs_value_from_g_argument(JSContext* context,
         break;
 
     case GI_TYPE_TAG_FLOAT:
-        value_p.setNumber(gjs_arg_get<float>(arg));
+        value_p.setNumber(JS::CanonicalizeNaN(gjs_arg_get<float>(arg)));
         break;
 
     case GI_TYPE_TAG_DOUBLE:
-        value_p.setNumber(gjs_arg_get<double>(arg));
+        value_p.setNumber(JS::CanonicalizeNaN(gjs_arg_get<double>(arg)));
         break;
 
     case GI_TYPE_TAG_GTYPE:
