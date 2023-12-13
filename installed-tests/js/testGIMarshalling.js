@@ -52,6 +52,18 @@ function testOutParameter(root, value, {omit, skip, funcName = `${root}_out`} = 
     });
 }
 
+function testUninitializedOutParameter(root, defaultValue, {omit, skip, funcName = `${root}_out_uninitialized`} = {}) {
+    if (omit)
+        return;
+    xit("picks a reasonable default value when the function doesn't set the out parameter", function () {
+        if (skip)
+            pending(skip);
+        const [success, defaultVal] = GIMarshallingTests[funcName]();
+        expect(success).toBeFalse();
+        expect(defaultVal).toEqual(defaultValue);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
+}
+
 function testInoutParameter(root, inValue, outValue,
     {omit, skip, funcName = `${root}_inout`} = {}) {
     if (omit)
@@ -63,16 +75,17 @@ function testInoutParameter(root, inValue, outValue,
     });
 }
 
-function testSimpleMarshalling(root, value, inoutValue, options = {}) {
+function testSimpleMarshalling(root, value, inoutValue, defaultValue, options = {}) {
     testReturnValue(root, value, options.returnv);
     testInParameter(root, value, options.in);
     testOutParameter(root, value, options.out);
+    testUninitializedOutParameter(root, defaultValue, options.uninitOut);
     testInoutParameter(root, value, inoutValue, options.inout);
 }
 
-function testTransferMarshalling(root, value, inoutValue, options = {}) {
+function testTransferMarshalling(root, value, inoutValue, defaultValue, options = {}) {
     describe('with transfer none', function () {
-        testSimpleMarshalling(`${root}_none`, value, inoutValue, options.none);
+        testSimpleMarshalling(`${root}_none`, value, inoutValue, defaultValue, options.none);
     });
     describe('with transfer full', function () {
         const fullOptions = {
@@ -84,12 +97,12 @@ function testTransferMarshalling(root, value, inoutValue, options = {}) {
             },
         };
         Object.assign(fullOptions, options.full);
-        testSimpleMarshalling(`${root}_full`, value, inoutValue, fullOptions);
+        testSimpleMarshalling(`${root}_full`, value, inoutValue, defaultValue, fullOptions);
     });
 }
 
-function testContainerMarshalling(root, value, inoutValue, options = {}) {
-    testTransferMarshalling(root, value, inoutValue, options);
+function testContainerMarshalling(root, value, inoutValue, defaultValue, options = {}) {
+    testTransferMarshalling(root, value, inoutValue, defaultValue, options);
     describe('with transfer container', function () {
         const containerOptions = {
             in: {
@@ -100,7 +113,7 @@ function testContainerMarshalling(root, value, inoutValue, options = {}) {
             },
         };
         Object.assign(containerOptions, options.container);
-        testSimpleMarshalling(`${root}_container`, value, inoutValue, containerOptions);
+        testSimpleMarshalling(`${root}_container`, value, inoutValue, defaultValue, containerOptions);
     });
 }
 
@@ -187,7 +200,7 @@ function skip64(is64bit) {
 describe('Boolean', function () {
     [true, false].forEach(bool => {
         describe(`${bool}`, function () {
-            testSimpleMarshalling('boolean', bool, !bool, {
+            testSimpleMarshalling('boolean', bool, !bool, false, {
                 returnv: {
                     funcName: `boolean_return_${bool}`,
                 },
@@ -197,12 +210,17 @@ describe('Boolean', function () {
                 out: {
                     funcName: `boolean_out_${bool}`,
                 },
+                uninitOut: {
+                    omit: true,
+                },
                 inout: {
                     funcName: `boolean_inout_${bool}_${!bool}`,
                 },
             });
         });
     });
+
+    testUninitializedOutParameter('boolean', false);
 });
 
 describe('Integer', function () {
@@ -224,6 +242,8 @@ describe('Integer', function () {
                 expect(warn64(bit64, GIMarshallingTests[`${type}_out_min`])).toEqual(min);
             });
 
+            testUninitializedOutParameter(type, 0);
+
             it('marshals as an inout parameter', function () {
                 skip64(bit64);
                 expect(GIMarshallingTests[`${type}_inout_max_min`](max)).toEqual(min);
@@ -242,6 +262,8 @@ describe('Integer', function () {
             it('marshals unsigned value as an out parameter', function () {
                 expect(warn64(bit64, GIMarshallingTests[`${utype}_out`])).toEqual(umax);
             });
+
+            testUninitializedOutParameter(utype, 0);
 
             it('marshals unsigned value as an inout parameter', function () {
                 skip64(bit64);
@@ -292,6 +314,8 @@ describe('Floating point', function () {
                 expect(GIMarshallingTests[`${type}_out`]()).toBeCloseTo(max, 10);
             });
 
+            testUninitializedOutParameter(type, 0);
+
             it('marshals value as an inout parameter', function () {
                 expect(GIMarshallingTests[`${type}_inout`](max)).toBeCloseTo(min, 10);
             });
@@ -300,17 +324,18 @@ describe('Floating point', function () {
 });
 
 describe('time_t', function () {
-    testSimpleMarshalling('time_t', 1234567890, 0);
+    testSimpleMarshalling('time_t', 1234567890, 0, 0);
 });
 
 describe('GType', function () {
     describe('void', function () {
-        testSimpleMarshalling('gtype', GObject.TYPE_NONE, GObject.TYPE_INT);
+        testSimpleMarshalling('gtype', GObject.TYPE_NONE, GObject.TYPE_INT, null);
     });
 
     describe('string', function () {
-        testSimpleMarshalling('gtype_string', GObject.TYPE_STRING, null, {
+        testSimpleMarshalling('gtype_string', GObject.TYPE_STRING, null, null, {
             inout: {omit: true},
+            uninitOut: {omit: true},
         });
     });
 
@@ -324,7 +349,11 @@ describe('GType', function () {
 });
 
 describe('UTF-8 string', function () {
-    testTransferMarshalling('utf8', 'const ♥ utf8', '');
+    testTransferMarshalling('utf8', 'const ♥ utf8', '', null, {
+        full: {
+            uninitOut: {omit: true}, // covered by utf8_dangling_out() test below
+        },
+    });
 
     it('marshals value as a byte array', function () {
         expect(() => GIMarshallingTests.utf8_as_uint8array_in('const ♥ utf8')).not.toThrow();
@@ -400,7 +429,7 @@ describe('C array with length', function () {
         });
     }
 
-    testSimpleMarshalling('array', [-1, 0, 1, 2], [-2, -1, 0, 1, 2]);
+    testSimpleMarshalling('array', [-1, 0, 1, 2], [-2, -1, 0, 1, 2], []);
 
     it('can be returned along with other arguments', function () {
         let [array, sum] = GIMarshallingTests.array_return_etc(9, 5);
@@ -583,7 +612,7 @@ describe('C array with length', function () {
 describe('Zero-terminated C array', function () {
     describe('of strings', function () {
         testSimpleMarshalling('array_zero_terminated', ['0', '1', '2'],
-            ['-1', '0', '1', '2']);
+            ['-1', '0', '1', '2'], null);
     });
 
     it('marshals null as a zero-terminated array return value', function () {
@@ -635,7 +664,7 @@ describe('GArray', function () {
     });
 
     describe('of strings', function () {
-        testContainerMarshalling('garray_utf8', ['0', '1', '2'], ['-2', '-1', '0', '1']);
+        testContainerMarshalling('garray_utf8', ['0', '1', '2'], ['-2', '-1', '0', '1'], null);
 
         it('marshals as a transfer-full caller-allocated out parameter', function () {
             expect(GIMarshallingTests.garray_utf8_full_out_caller_allocated())
@@ -674,7 +703,7 @@ describe('GArray', function () {
 
 describe('GPtrArray', function () {
     describe('of strings', function () {
-        testContainerMarshalling('gptrarray_utf8', ['0', '1', '2'], ['-2', '-1', '0', '1']);
+        testContainerMarshalling('gptrarray_utf8', ['0', '1', '2'], ['-2', '-1', '0', '1'], null);
     });
 
     describe('of structs', function () {
@@ -747,7 +776,7 @@ describe('GBytes', function () {
 });
 
 describe('GStrv', function () {
-    testSimpleMarshalling('gstrv', ['0', '1', '2'], ['-1', '0', '1', '2']);
+    testSimpleMarshalling('gstrv', ['0', '1', '2'], ['-1', '0', '1', '2'], null);
 });
 
 describe('Array of GStrv', function () {
@@ -818,7 +847,7 @@ describe('Array of GStrv', function () {
 
         describe('of strings', function () {
             testContainerMarshalling(`${list}_utf8`, ['0', '1', '2'],
-                ['-2', '-1', '0', '1']);
+                ['-2', '-1', '0', '1'], []);
         });
     });
 });
@@ -854,7 +883,7 @@ describe('GHashTable', function () {
             0: '0',
             1: '1',
         };
-        testContainerMarshalling('ghashtable_utf8', stringDict, stringDictOut);
+        testContainerMarshalling('ghashtable_utf8', stringDict, stringDictOut, null);
     });
 
     describe('with double values', function () {
@@ -898,7 +927,7 @@ describe('GHashTable', function () {
 });
 
 describe('GValue', function () {
-    testSimpleMarshalling('gvalue', 42, '42', {
+    testSimpleMarshalling('gvalue', 42, '42', null, {
         inout: {
             skip: 'https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192',
         },
@@ -1159,7 +1188,7 @@ describe('Raw pointers', function () {
 
 describe('Registered enum type', function () {
     testSimpleMarshalling('genum', GIMarshallingTests.GEnum.VALUE3,
-        GIMarshallingTests.GEnum.VALUE1, {
+        GIMarshallingTests.GEnum.VALUE1, 0, {
             returnv: {
                 funcName: 'genum_returnv',
             },
@@ -1168,7 +1197,7 @@ describe('Registered enum type', function () {
 
 describe('Bare enum type', function () {
     testSimpleMarshalling('enum', GIMarshallingTests.Enum.VALUE3,
-        GIMarshallingTests.Enum.VALUE1, {
+        GIMarshallingTests.Enum.VALUE1, 0, {
             returnv: {
                 funcName: 'enum_returnv',
             },
@@ -1177,7 +1206,7 @@ describe('Bare enum type', function () {
 
 describe('Registered flags type', function () {
     testSimpleMarshalling('flags', GIMarshallingTests.Flags.VALUE2,
-        GIMarshallingTests.Flags.VALUE1, {
+        GIMarshallingTests.Flags.VALUE1, 0, {
             returnv: {
                 funcName: 'flags_returnv',
             },
@@ -1190,7 +1219,7 @@ describe('Registered flags type', function () {
 
 describe('Bare flags type', function () {
     testSimpleMarshalling('no_type_flags', GIMarshallingTests.NoTypeFlags.VALUE2,
-        GIMarshallingTests.NoTypeFlags.VALUE1, {
+        GIMarshallingTests.NoTypeFlags.VALUE1, 0, {
             returnv: {
                 funcName: 'no_type_flags_returnv',
             },
