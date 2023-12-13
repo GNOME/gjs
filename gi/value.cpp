@@ -893,11 +893,11 @@ static bool gjs_value_from_g_value_internal(
     } else if (gtype == G_TYPE_DOUBLE) {
         double d;
         d = g_value_get_double(gvalue);
-        value_p.setNumber(d);
+        value_p.setNumber(JS::CanonicalizeNaN(d));
     } else if (gtype == G_TYPE_FLOAT) {
         double d;
         d = g_value_get_float(gvalue);
-        value_p.setNumber(d);
+        value_p.setNumber(JS::CanonicalizeNaN(d));
     } else if (gtype == G_TYPE_BOOLEAN) {
         bool v;
         v = g_value_get_boolean(gvalue);

@@ -319,6 +319,10 @@ describe('Floating point', function () {
             it('marshals value as an inout parameter', function () {
                 expect(GIMarshallingTests[`${type}_inout`](max)).toBeCloseTo(min, 10);
             });
+
+            xit('can handle noncanonical NaN', function () {
+                expect(GIMarshallingTests[`${type}_noncanonical_nan_out`]()).toBeNaN();
+            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
         });
     });
 });
@@ -932,6 +936,14 @@ describe('GValue', function () {
             skip: 'https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192',
         },
     });
+
+    xit('can handle noncanonical float NaN', function () {
+        expect(GIMarshallingTests.gvalue_noncanonical_nan_float()).toBeNaN();
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
+
+    xit('can handle noncanonical double NaN', function () {
+        expect(GIMarshallingTests.gvalue_noncanonical_nan_double()).toBeNaN();
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
 
     it('marshals as an int64 in parameter', function () {
         expect(() => GIMarshallingTests.gvalue_int64_in(BigIntLimits.int64.max))
