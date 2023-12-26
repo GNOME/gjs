@@ -56,6 +56,8 @@ function formatOptimally(item) {
     if (typeof item === 'object' && item !== null) {
         if (item.constructor?.name !== 'Object')
             return `${item.constructor?.name} ${JSON.stringify(item, null, 4)}`;
+        else if (item[Symbol.toStringTag] === 'GIRepositoryNamespace')
+            return `[${item[Symbol.toStringTag]} ${item.__name__}]`;
     }
     return JSON.stringify(item, null, 4);
 }
