@@ -140,6 +140,11 @@ describe('console', function () {
         expectLog('{}');
     });
 
+    it('logs an object with Symbol.toStringTag and __name__', function () {
+        console.log(GLib);
+        expectLog('[GIRepositoryNamespace GLib]');
+    });
+
     it('logs a warning', function () {
         console.warn('a warning');
 
