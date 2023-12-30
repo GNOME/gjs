@@ -43,13 +43,9 @@ function helloHandler(_server, msg, path, query) {
     `);
 }
 
-function main() {
-    let server = new Soup.Server();
-    server.add_handler('/', handler);
-    server.add_handler('/hello', helloHandler);
-    server.listen_local(1080, Soup.ServerListenOptions.IPV4_ONLY);
-}
-
-main();
+let server = new Soup.Server();
+server.add_handler('/', handler);
+server.add_handler('/hello', helloHandler);
+server.listen_local(1080, Soup.ServerListenOptions.IPV4_ONLY);
 
 loop.run();
