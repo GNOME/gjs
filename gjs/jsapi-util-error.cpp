@@ -216,33 +216,30 @@ bool gjs_throw_gerror_message(JSContext* cx, GjsAutoError const& error) {
 }
 
 /**
- * gjs_format_stack_trace:
+ * format_saved_frame:
  * @cx: the #JSContext
  * @saved_frame: a SavedFrame #JSObject
+ * @indent: (optional): spaces of indentation
  *
- * Formats a stack trace as a string in filename encoding, suitable for
- * printing to stderr. Ignores any errors.
+ * Formats a stack trace as a UTF-8 string. If there are errors, ignores them
+ * and returns null.
+ * If you print this to stderr, you will need to re-encode it in filename
+ * encoding with g_filename_from_utf8().
  *
- * Returns: unique string in filename encoding, or nullptr if no stack trace
+ * Returns (nullable) (transfer full): unique string
  */
-GjsAutoChar
-gjs_format_stack_trace(JSContext       *cx,
-                       JS::HandleObject saved_frame)
-{
+JS::UniqueChars format_saved_frame(JSContext* cx, JS::HandleObject saved_frame,
+                                   size_t indent /* = 0 */) {
     JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedString stack_trace(cx);
     JS::UniqueChars stack_utf8;
-    if (JS::BuildStackString(cx, nullptr, saved_frame, &stack_trace, 2))
+    if (JS::BuildStackString(cx, nullptr, saved_frame, &stack_trace, indent))
         stack_utf8 = JS_EncodeStringToUTF8(cx, stack_trace);
 
     saved_exc.restore();
 
-    if (!stack_utf8)
-        return nullptr;
-
-    return g_filename_from_utf8(stack_utf8.get(), -1, nullptr, nullptr,
-                                nullptr);
+    return stack_utf8;
 }
 
 void gjs_warning_reporter(JSContext*, JSErrorReport* report) {

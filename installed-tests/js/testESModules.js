@@ -147,4 +147,35 @@ describe('Dynamic imports', function () {
         await import('resource:///org/gjs/jsunit/modules/../modules/sideEffect2.js');
         expect(globalThis.leakyState).toEqual(1);
     });
+
+    it('does not show internal stack frames in an import error', async function () {
+        try {
+            await import('resource:///org/gjs/jsunit/modules/doesNotExist.js');
+            fail('should not be reached');
+        } catch (e) {
+            expect(e.name).toBe('ImportError');
+            expect(e.stack).not.toMatch('internal/');
+        }
+    });
+
+    it('does not show internal stack frames in a module that throws an error', async function () {
+        try {
+            await import('resource:///org/gjs/jsunit/modules/alwaysThrows.js');
+            fail('should not be reached');
+        } catch (e) {
+            expect(e.constructor).toBe(Error);
+            expect(e.stack).not.toMatch('internal/');
+        }
+    });
+
+    it('does not show internal stack frames in a module that fails to parse', async function () {
+        try {
+            // invalid JS
+            await import('resource:///org/gjs/jsunit/modules/data.txt');
+            fail('should not be reached');
+        } catch (e) {
+            expect(e.constructor).toBe(SyntaxError);
+            expect(e.stack).not.toMatch('internal/');
+        }
+    });
 });

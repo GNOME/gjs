@@ -47,7 +47,8 @@ union Utf8Unit;
 
 class GjsBaseGlobal {
     static JSObject* base(JSContext* cx, const JSClass* clasp,
-                          JS::RealmCreationOptions options) {
+                          JS::RealmCreationOptions options,
+                          JSPrincipals* principals = nullptr) {
         // Enable WeakRef without the cleanupSome specification
         // Re-evaluate if cleanupSome is standardized
         // See: https://github.com/tc39/proposal-cleanup-some
@@ -58,10 +59,9 @@ class GjsBaseGlobal {
         JS::RealmBehaviors behaviors;
         JS::RealmOptions compartment_options(options, behaviors);
 
-        JS::RootedObject global(
-            cx, JS_NewGlobalObject(cx, clasp, nullptr, JS::FireOnNewGlobalHook,
-                                   compartment_options));
-
+        JS::RootedObject global{cx, JS_NewGlobalObject(cx, clasp, principals,
+                                                       JS::FireOnNewGlobalHook,
+                                                       compartment_options)};
         if (!global)
             return nullptr;
 
@@ -77,16 +77,18 @@ class GjsBaseGlobal {
  protected:
     [[nodiscard]] static JSObject* create(
         JSContext* cx, const JSClass* clasp,
-        JS::RealmCreationOptions options = JS::RealmCreationOptions()) {
+        JS::RealmCreationOptions options = JS::RealmCreationOptions(),
+        JSPrincipals* principals = nullptr) {
         options.setNewCompartmentAndZone();
-        return base(cx, clasp, options);
+        return base(cx, clasp, options, principals);
     }
 
     [[nodiscard]] static JSObject* create_with_compartment(
         JSContext* cx, JS::HandleObject existing, const JSClass* clasp,
-        JS::RealmCreationOptions options = JS::RealmCreationOptions()) {
+        JS::RealmCreationOptions options = JS::RealmCreationOptions(),
+        JSPrincipals* principals = nullptr) {
         options.setExistingCompartment(existing);
-        return base(cx, clasp, options);
+        return base(cx, clasp, options, principals);
     }
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -300,12 +302,13 @@ class GjsInternalGlobal : GjsBaseGlobal {
 
  public:
     [[nodiscard]] static JSObject* create(JSContext* cx) {
-        return GjsBaseGlobal::create(cx, &klass);
+        return GjsBaseGlobal::create(cx, &klass, {}, get_internal_principals());
     }
 
     [[nodiscard]] static JSObject* create_with_compartment(
         JSContext* cx, JS::HandleObject cmp_global) {
-        return GjsBaseGlobal::create_with_compartment(cx, cmp_global, &klass);
+        return GjsBaseGlobal::create_with_compartment(
+            cx, cmp_global, &klass, {}, get_internal_principals());
     }
 
     static bool define_properties(JSContext* cx, JS::HandleObject global,
