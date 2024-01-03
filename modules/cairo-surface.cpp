@@ -173,8 +173,8 @@ static bool getDeviceOffset_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     // cannot error
 
     JS::RootedValueArray<2> elements(cx);
-    elements[0].setNumber(x_offset);
-    elements[1].setNumber(y_offset);
+    elements[0].setNumber(JS::CanonicalizeNaN(x_offset));
+    elements[1].setNumber(JS::CanonicalizeNaN(y_offset));
     JS::RootedObject retval(cx, JS::NewArrayObject(cx, elements));
     if (!retval)
         return false;
@@ -223,8 +223,8 @@ static bool getDeviceScale_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     // cannot error
 
     JS::RootedValueArray<2> elements(cx);
-    elements[0].setNumber(x_scale);
-    elements[1].setNumber(y_scale);
+    elements[0].setNumber(JS::CanonicalizeNaN(x_scale));
+    elements[1].setNumber(JS::CanonicalizeNaN(y_scale));
     JS::RootedObject retval(cx, JS::NewArrayObject(cx, elements));
     if (!retval)
         return false;
