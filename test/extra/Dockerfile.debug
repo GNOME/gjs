@@ -4,13 +4,13 @@
 # === Build stage ===
 
 FROM registry.fedoraproject.org/fedora:38 AS build
-ARG MOZJS_BRANCH=mozjs102
+ARG MOZJS_BRANCH=mozjs115
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-# mozjs102 cannot be built with python3.11 and possibly 3.10
+# mozjs115 cannot be built with python3.11
 RUN dnf -y install 'dnf-command(builddep)' \
     autoconf213 \
     clang \
@@ -21,7 +21,7 @@ RUN dnf -y install 'dnf-command(builddep)' \
     llvm-devel \
     make \
     ninja-build \
-    python3.9 \
+    python3.10 \
     rust \
     which \
     xz
@@ -47,7 +47,7 @@ RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
 
-ENV PYTHON3=/usr/bin/python3.9
+ENV PYTHON3=/usr/bin/python3.10
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
     --with-system-zlib --with-intl-api --enable-debug \
     ${BUILD_OPTS}
