@@ -263,7 +263,7 @@ bool ErrorPrototype::define_class(JSContext* context,
 
     /* last attempt: load GIRepository (for invoke errors, rarely
        needed) */
-    g_irepository_require(nullptr, "GIRepository", "1.0",
+    g_irepository_require(nullptr, "GIRepository", "2.0",
                           GIRepositoryLoadFlags(0), nullptr);
     info = g_irepository_find_by_error_domain(nullptr, domain);
 
