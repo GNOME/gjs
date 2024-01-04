@@ -2244,6 +2244,8 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
         length = ptr_array->len;
     } else {
         g_assert_not_reached();
+        gjs_throw(cx, "%s is not an array type", g_type_name(value_gtype));
+        return false;
     }
 
     return gjs_array_from_carray_internal(cx, value_p, array_type, param_info,
