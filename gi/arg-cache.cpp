@@ -156,7 +156,7 @@ struct TypeInfo {
         return const_cast<GITypeInfo*>(&m_type_info);
     }
 
-    GITypeInfo m_type_info;
+    GITypeInfo m_type_info{};
 };
 
 struct Transferable {
