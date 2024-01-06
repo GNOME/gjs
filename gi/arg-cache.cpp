@@ -924,7 +924,7 @@ bool GenericInOut::in(JSContext* cx, GjsFunctionCallState* state,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool ExplicitArrayIn::in(JSContext* cx, GjsFunctionCallState* state,
-                         GArgument* arg, JS::HandleValue value) {
+                         GIArgument* arg, JS::HandleValue value) {
     void* data;
     size_t length;
 

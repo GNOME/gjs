@@ -892,7 +892,7 @@ static void* get_return_ffi_pointer_from_giargument(
 
 // This function can be called in two different ways. You can either use it to
 // create JavaScript objects by calling it without @r_value, or you can decide
-// to keep the return values in #GArgument format by providing a @r_value
+// to keep the return values in GIArgument format by providing a @r_value
 // argument.
 bool Function::invoke(JSContext* context, const JS::CallArgs& args,
                       JS::HandleObject this_obj /* = nullptr */,

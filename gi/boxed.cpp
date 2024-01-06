@@ -647,7 +647,6 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
 bool BoxedInstance::field_setter_impl(JSContext* context,
                                       GIFieldInfo* field_info,
                                       JS::HandleValue value) {
-    GArgument arg;
     GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
 
     if (!g_type_info_is_pointer (type_info) &&
@@ -661,6 +660,7 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
         }
     }
 
+    GIArgument arg;
     if (!gjs_value_to_g_argument(context, value, type_info,
                                  g_base_info_get_name(field_info),
                                  GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING,

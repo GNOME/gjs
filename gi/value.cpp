@@ -203,7 +203,6 @@ static bool gjs_value_from_array_and_length_values(
     GITypeInfo* array_length_type_info, const GValue* array_length_value,
     bool no_copy) {
     JS::RootedValue array_length(context);
-    GArgument array_arg;
 
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
     g_assert(G_VALUE_HOLDS_INT(array_length_value));
@@ -213,6 +212,7 @@ static bool gjs_value_from_array_and_length_values(
             array_length_arg_info, array_length_type_info))
         return false;
 
+    GIArgument array_arg;
     gjs_arg_set(&array_arg, g_value_get_pointer(array_value));
 
     return gjs_value_from_explicit_array(
@@ -786,7 +786,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
                     if (info_type == GI_INFO_TYPE_STRUCT &&
                         g_struct_info_is_foreign ((GIStructInfo*)registered)) {
-                        GArgument arg;
+                        GIArgument arg;
 
                         if (!gjs_struct_foreign_convert_to_g_argument(
                                 context, value, registered, nullptr,
@@ -1182,8 +1182,6 @@ static bool gjs_value_from_g_value_internal(
         obj = gjs_param_from_g_param(context, gparam);
         value_p.setObjectOrNull(obj);
     } else if (signal_info && g_type_is_a(gtype, G_TYPE_POINTER)) {
-        GArgument arg;
-
         if (!arg_info) {
             gjs_throw(context, "Unknown signal.");
             return false;
@@ -1193,6 +1191,7 @@ static bool gjs_value_from_g_value_internal(
                         " calling gjs_value_from_g_value_internal()",
                   g_type_info_get_array_length(type_info) == -1));
 
+        GIArgument arg;
         gjs_arg_set(&arg, g_value_get_pointer(gvalue));
 
         return gjs_value_from_g_argument(context, value_p, type_info, &arg,

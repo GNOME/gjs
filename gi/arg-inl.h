@@ -218,7 +218,7 @@ gjs_arg_get_maybe_rounded(GIArgument* arg) {
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
-    JSContext* cx, const JS::HandleValue& value, GArgument* arg,
+    JSContext* cx, const JS::HandleValue& value, GIArgument* arg,
     bool* out_of_range) {
     if constexpr (Gjs::type_has_js_getter<T>())
         return Gjs::js_value_to_c(cx, value, &gjs_arg_member<T>(arg));

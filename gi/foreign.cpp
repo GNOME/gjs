@@ -106,7 +106,7 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 bool gjs_struct_foreign_convert_to_g_argument(
     JSContext* context, JS::Value value, GIBaseInfo* interface_info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
-    GjsArgumentFlags flags, GArgument* arg) {
+    GjsArgumentFlags flags, GIArgument* arg) {
     GjsForeignInfo *foreign;
 
     foreign = gjs_struct_foreign_lookup(context, interface_info);
@@ -138,12 +138,10 @@ gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
     return true;
 }
 
-bool
-gjs_struct_foreign_release_g_argument(JSContext  *context,
-                                      GITransfer  transfer,
-                                      GIBaseInfo *interface_info,
-                                      GArgument  *arg)
-{
+bool gjs_struct_foreign_release_g_argument(JSContext* context,
+                                           GITransfer transfer,
+                                           GIBaseInfo* interface_info,
+                                           GIArgument* arg) {
     GjsForeignInfo *foreign;
 
     foreign = gjs_struct_foreign_lookup(context, interface_info);
@@ -158,4 +156,3 @@ gjs_struct_foreign_release_g_argument(JSContext  *context,
 
     return true;
 }
-
