@@ -38,19 +38,20 @@ void gjs_struct_foreign_register(const char* gi_namespace,
                                  const char* type_name, GjsForeignInfo* info);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_struct_foreign_convert_to_g_argument(
-    JSContext* context, JS::Value value, GIBaseInfo* interface_info,
-    const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
-    GjsArgumentFlags, GIArgument*);
+bool gjs_struct_foreign_convert_to_gi_argument(JSContext*, JS::Value,
+                                               GIBaseInfo* interface_info,
+                                               const char* arg_name,
+                                               GjsArgumentType, GITransfer,
+                                               GjsArgumentFlags, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
-                                                JS::MutableHandleValue value_p,
-                                                GIBaseInfo            *interface_info,
-                                                GIArgument            *arg);
+bool gjs_struct_foreign_convert_from_gi_argument(JSContext*,
+                                                 JS::MutableHandleValue,
+                                                 GIBaseInfo* interface_info,
+                                                 GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_struct_foreign_release_g_argument(JSContext*, GITransfer,
-                                           GIBaseInfo* interface_info,
-                                           GIArgument*);
+bool gjs_struct_foreign_release_gi_argument(JSContext*, GITransfer,
+                                            GIBaseInfo* interface_info,
+                                            GIArgument*);
 
 #endif  // GI_FOREIGN_H_

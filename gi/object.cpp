@@ -418,8 +418,8 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
         return false;
     }
 
-    return gjs_value_from_g_argument(cx, rval, type, GJS_ARGUMENT_FIELD,
-                                     GI_TRANSFER_EVERYTHING, &arg);
+    return gjs_value_from_gi_argument(cx, rval, type, GJS_ARGUMENT_FIELD,
+                                      GI_TRANSFER_EVERYTHING, &arg);
     /* transfer is irrelevant because g_field_info_get_field() doesn't
      * handle boxed types */
 }

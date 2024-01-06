@@ -65,34 +65,30 @@ size_t gjs_type_get_element_size(GITypeTag element_type, GITypeInfo* type_info);
 void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_to_g_argument(JSContext* cx, JS::HandleValue value,
-                             GITypeInfo* type_info, const char* arg_name,
-                             GjsArgumentType argument_type, GITransfer transfer,
-                             GjsArgumentFlags flags, GIArgument* arg);
+bool gjs_value_to_gi_argument(JSContext*, JS::HandleValue, GITypeInfo*,
+                              const char* arg_name, GjsArgumentType, GITransfer,
+                              GjsArgumentFlags, GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool inline gjs_value_to_g_argument(JSContext* cx, JS::HandleValue value,
-                                    GITypeInfo* type_info,
-                                    GjsArgumentType argument_type,
-                                    GITransfer transfer, GIArgument* arg) {
-    return gjs_value_to_g_argument(cx, value, type_info, nullptr /* arg_name */,
-                                   argument_type, transfer,
-                                   GjsArgumentFlags::NONE, arg);
+bool inline gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
+                                     GITypeInfo* type_info,
+                                     GjsArgumentType argument_type,
+                                     GITransfer transfer, GIArgument* arg) {
+    return gjs_value_to_gi_argument(cx, value, type_info,
+                                    nullptr /* arg_name */, argument_type,
+                                    transfer, GjsArgumentFlags::NONE, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_from_g_argument(JSContext* context,
-                               JS::MutableHandleValue value_p,
-                               GITypeInfo* type_info,
-                               GjsArgumentType argument_type,
-                               GITransfer transfer, GIArgument* arg);
+bool gjs_value_from_gi_argument(JSContext*, JS::MutableHandleValue, GITypeInfo*,
+                                GjsArgumentType, GITransfer, GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
-inline bool gjs_value_from_g_argument(JSContext* cx,
-                                      JS::MutableHandleValue value_p,
-                                      GITypeInfo* type_info, GIArgument* arg,
-                                      bool copy_structs) {
-    return gjs_value_from_g_argument(
+inline bool gjs_value_from_gi_argument(JSContext* cx,
+                                       JS::MutableHandleValue value_p,
+                                       GITypeInfo* type_info, GIArgument* arg,
+                                       bool copy_structs) {
+    return gjs_value_from_gi_argument(
         cx, value_p, type_info, GJS_ARGUMENT_ARGUMENT,
         copy_structs ? GI_TRANSFER_EVERYTHING : GI_TRANSFER_NOTHING, arg);
 }
@@ -113,37 +109,35 @@ inline bool gjs_value_from_explicit_array(JSContext* context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release(JSContext*, GITransfer, GITypeInfo*,
-                            GjsArgumentFlags, GIArgument*);
+bool gjs_gi_argument_release(JSContext*, GITransfer, GITypeInfo*,
+                             GjsArgumentFlags, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-inline bool gjs_g_argument_release(JSContext* cx, GITransfer transfer,
-                                   GITypeInfo* type_info, GIArgument* arg) {
-    return gjs_g_argument_release(cx, transfer, type_info,
-                                  GjsArgumentFlags::NONE, arg);
+inline bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
+                                    GITypeInfo* type_info, GIArgument* arg) {
+    return gjs_gi_argument_release(cx, transfer, type_info,
+                                   GjsArgumentFlags::NONE, arg);
 }
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_out_array(JSContext* cx, GITransfer transfer,
-                                      GITypeInfo* type_info, unsigned length,
-                                      GIArgument* arg);
+bool gjs_gi_argument_release_out_array(JSContext*, GITransfer, GITypeInfo*,
+                                       unsigned length, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_out_array(JSContext* cx, GITransfer transfer,
-                                      GITypeInfo* type_info, GIArgument* arg);
+bool gjs_gi_argument_release_out_array(JSContext*, GITransfer, GITypeInfo*,
+                                       GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_in_array(JSContext* cx, GITransfer transfer,
-                                     GITypeInfo* type_info, unsigned length,
-                                     GIArgument* arg);
+bool gjs_gi_argument_release_in_array(JSContext*, GITransfer, GITypeInfo*,
+                                      unsigned length, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_in_array(JSContext* cx, GITransfer transfer,
-                                     GITypeInfo* type_info, GIArgument* arg);
+bool gjs_gi_argument_release_in_array(JSContext*, GITransfer, GITypeInfo*,
+                                      GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_g_argument_release_in_arg(JSContext*, GITransfer, GITypeInfo*,
-                                   GjsArgumentFlags, GIArgument*);
+bool gjs_gi_argument_release_in_arg(JSContext*, GITransfer, GITypeInfo*,
+                                    GjsArgumentFlags, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
-inline bool gjs_g_argument_release_in_arg(JSContext* cx, GITransfer transfer,
-                                          GITypeInfo* type_info,
-                                          GIArgument* arg) {
-    return gjs_g_argument_release_in_arg(cx, transfer, type_info,
-                                         GjsArgumentFlags::ARG_IN, arg);
+inline bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
+                                           GITypeInfo* type_info,
+                                           GIArgument* arg) {
+    return gjs_gi_argument_release_in_arg(cx, transfer, type_info,
+                                          GjsArgumentFlags::ARG_IN, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION

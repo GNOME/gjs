@@ -190,12 +190,10 @@ static inline void set_ffi_arg(void* result, GIArgument* value) {
     }
 }
 
-static void
-set_return_ffi_arg_from_giargument (GITypeInfo  *ret_type,
-                                    void        *result,
-                                    GIArgument  *return_value)
-{
-    // Be consistent with gjs_value_to_g_argument()
+static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
+                                                void* result,
+                                                GIArgument* return_value) {
+    // Be consistent with gjs_value_to_gi_argument()
     switch (g_type_info_get_tag(ret_type)) {
     case GI_TYPE_TAG_VOID:
         g_assert_not_reached();
@@ -301,7 +299,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     if (g_type_info_get_tag(&ret_type) != GI_TYPE_TAG_VOID) {
         GIArgument argument = {};
         gjs_gi_argument_init_default(&ret_type, &argument);
-        set_return_ffi_arg_from_giargument(&ret_type, result, &argument);
+        set_return_ffi_arg_from_gi_argument(&ret_type, result, &argument);
     }
 
     if (G_UNLIKELY(!is_valid())) {
@@ -478,7 +476,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 g_callable_info_load_arg(m_info, array_length_pos,
                                          &array_length_arg);
                 g_arg_info_load_type(&array_length_arg, &arg_type_info);
-                size_t length = gjs_g_argument_get_array_length(
+                size_t length = gjs_gi_argument_get_array_length(
                     g_type_info_get_tag(&arg_type_info),
                     args[array_length_pos + c_args_offset]);
 
@@ -501,8 +499,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                     !g_arg_info_is_caller_allocates(&arg_info))
                     arg = *reinterpret_cast<GIArgument**>(arg);
 
-                if (!gjs_value_from_g_argument(context, jsargs[n_jsargs++],
-                                               &type_info, arg, false))
+                if (!gjs_value_from_gi_argument(context, jsargs[n_jsargs++],
+                                                &type_info, arg, false))
                     return false;
                 break;
             }
@@ -528,12 +526,12 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         transfer = g_callable_info_get_caller_owns(m_info);
         /* non-void return value, no out args. Should
          * be a single return value. */
-        if (!gjs_value_to_g_argument(context, rval, ret_type, "callback",
-                                     GJS_ARGUMENT_RETURN_VALUE, transfer,
-                                     GjsArgumentFlags::MAY_BE_NULL, &argument))
+        if (!gjs_value_to_gi_argument(context, rval, ret_type, "callback",
+                                      GJS_ARGUMENT_RETURN_VALUE, transfer,
+                                      GjsArgumentFlags::MAY_BE_NULL, &argument))
             return false;
 
-        set_return_ffi_arg_from_giargument(ret_type, result, &argument);
+        set_return_ffi_arg_from_gi_argument(ret_type, result, &argument);
     } else if (n_outargs == 1 && ret_type_is_void) {
         /* void return value, one out args. Should
          * be a single return value. */
@@ -581,10 +579,10 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             if (!JS_GetElement(context, out_array, elem_idx, &elem))
                 return false;
 
-            if (!gjs_value_to_g_argument(context, elem, ret_type, "callback",
-                                         GJS_ARGUMENT_RETURN_VALUE, transfer,
-                                         GjsArgumentFlags::MAY_BE_NULL,
-                                         &argument))
+            if (!gjs_value_to_gi_argument(context, elem, ret_type, "callback",
+                                          GJS_ARGUMENT_RETURN_VALUE, transfer,
+                                          GjsArgumentFlags::MAY_BE_NULL,
+                                          &argument))
                 return false;
 
             if ((ret_tag == GI_TYPE_TAG_FILENAME ||
@@ -602,7 +600,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 }
             }
 
-            set_return_ffi_arg_from_giargument(ret_type, result, &argument);
+            set_return_ffi_arg_from_gi_argument(ret_type, result, &argument);
 
             elem_idx++;
         }
@@ -645,7 +643,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             GITypeInfo type_info;
             g_arg_info_load_type(&arg_info, &type_info);
 
-            if (!gjs_g_argument_release(context, transfer, &type_info, arg))
+            if (!gjs_gi_argument_release(context, transfer, &type_info, arg))
                 return false;
 
             continue;
@@ -667,8 +665,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
                 GITypeInfo type_info;
                 g_arg_info_load_type(&data->arg_info, &type_info);
-                if (!gjs_g_argument_release(self->context(), transfer,
-                                            &type_info, &data->arg)) {
+                if (!gjs_gi_argument_release(self->context(), transfer,
+                                             &type_info, &data->arg)) {
                     gjs_throw(self->context(),
                               "Impossible to release closure argument '%s'",
                               g_base_info_get_name(&data->arg_info));
@@ -841,7 +839,7 @@ std::string Gjs::Function::format_name() {
 
 namespace Gjs {
 
-static void* get_return_ffi_pointer_from_giargument(
+static void* get_return_ffi_pointer_from_gi_argument(
     GITypeInfo* return_type, GIFFIReturnValue* return_value) {
     // This should be the inverse of gi_type_info_extract_ffi_return_value().
     if (!return_type)
@@ -1054,7 +1052,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
     GITypeInfo* return_type = m_arguments.return_type();
     return_value_p =
-        get_return_ffi_pointer_from_giargument(return_type, &return_value);
+        get_return_ffi_pointer_from_gi_argument(return_type, &return_value);
     ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
              ffi_arg_pointers.get());
 

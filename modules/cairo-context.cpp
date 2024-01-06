@@ -922,7 +922,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FS_END};
 // clang-format on
 
-[[nodiscard]] static bool context_to_g_argument(
+[[nodiscard]] static bool context_to_gi_argument(
     JSContext* context, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
@@ -950,11 +950,9 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-context_from_g_argument(JSContext             *context,
-                        JS::MutableHandleValue value_p,
-                        GIArgument            *arg)
-{
+static bool context_from_gi_argument(JSContext* context,
+                                     JS::MutableHandleValue value_p,
+                                     GIArgument* arg) {
     JSObject* obj = CairoContext::from_c_ptr(
         context, static_cast<cairo_t*>(arg->v_pointer));
     if (!obj) {
@@ -974,8 +972,8 @@ static bool context_release_argument(JSContext*, GITransfer transfer,
 }
 
 void gjs_cairo_context_init(void) {
-    static GjsForeignInfo foreign_info = {context_to_g_argument,
-                                          context_from_g_argument,
+    static GjsForeignInfo foreign_info = {context_to_gi_argument,
+                                          context_from_gi_argument,
                                           context_release_argument};
 
     gjs_struct_foreign_register("cairo", "Context", &foreign_info);

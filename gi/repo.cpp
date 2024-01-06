@@ -249,7 +249,7 @@ static bool gjs_value_from_constant_info(JSContext* cx, GIConstantInfo* info,
 
     GjsAutoTypeInfo type_info = g_constant_info_get_type(info);
 
-    bool ok = gjs_value_from_g_argument(cx, value, type_info, &garg, true);
+    bool ok = gjs_value_from_gi_argument(cx, value, type_info, &garg, true);
 
     g_constant_info_free_value(info, &garg);
     return ok;

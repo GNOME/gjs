@@ -155,8 +155,8 @@ static bool maybe_release_signal_value(JSContext* cx,
     if (!gjs_arg_set_from_gvalue(cx, &arg, gvalue))
         return false;
 
-    if (!gjs_g_argument_release(cx, transfer, type_info,
-                                GjsArgumentFlags::ARG_OUT, &arg)) {
+    if (!gjs_gi_argument_release(cx, transfer, type_info,
+                                 GjsArgumentFlags::ARG_OUT, &arg)) {
         gjs_throw(cx, "Cannot release argument %s value, we're gonna leak!",
                   arg_info.name());
         return false;
@@ -788,7 +788,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                         g_struct_info_is_foreign ((GIStructInfo*)registered)) {
                         GIArgument arg;
 
-                        if (!gjs_struct_foreign_convert_to_g_argument(
+                        if (!gjs_struct_foreign_convert_to_gi_argument(
                                 context, value, registered, nullptr,
                                 GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
                                 GjsArgumentFlags::MAY_BE_NULL, &arg))
@@ -1151,8 +1151,8 @@ static bool gjs_value_from_g_value_internal(
             g_struct_info_is_foreign(info)) {
             GIArgument arg;
             gjs_arg_set(&arg, gboxed);
-            return gjs_struct_foreign_convert_from_g_argument(context, value_p,
-                                                              info, &arg);
+            return gjs_struct_foreign_convert_from_gi_argument(context, value_p,
+                                                               info, &arg);
         }
 
         GIInfoType type = info.type();
@@ -1194,8 +1194,8 @@ static bool gjs_value_from_g_value_internal(
         GIArgument arg;
         gjs_arg_set(&arg, g_value_get_pointer(gvalue));
 
-        return gjs_value_from_g_argument(context, value_p, type_info, &arg,
-                                         true);
+        return gjs_value_from_gi_argument(context, value_p, type_info, &arg,
+                                          true);
     } else if (gtype == G_TYPE_GTYPE) {
         GType gvalue_gtype = g_value_get_gtype(gvalue);
 
