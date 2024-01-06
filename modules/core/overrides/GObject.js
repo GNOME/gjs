@@ -273,6 +273,88 @@ function _checkInterface(iface, proto) {
     }
 }
 
+function _registerGObjectType(klass) {
+    const gtypename = _createGTypeName(klass);
+    const gflags = Object.hasOwn(klass, GTypeFlags) ? klass[GTypeFlags] : 0;
+    const gobjectInterfaces = Object.hasOwn(klass, interfaces) ? klass[interfaces] : [];
+    const propertiesArray = _propertiesAsArray(klass);
+    const parent = Object.getPrototypeOf(klass);
+    const gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
+
+    // Default to the GObject-specific prototype, fallback on the JS prototype
+    // for GI native classes.
+    const parentPrototype = parent.prototype[Gi.gobject_prototype_symbol] ?? parent.prototype;
+
+    const [giPrototype, registeredType] = Gi.register_type_with_class(klass,
+        parentPrototype, gtypename, gflags, gobjectInterfaces, propertiesArray);
+
+    _defineGType(klass, giPrototype, registeredType);
+    _createSignals(klass.$gtype, gobjectSignals);
+
+    // Reverse the interface array to give the last required interface
+    // precedence over the first.
+    const requiredInterfaces = [...gobjectInterfaces].reverse();
+    requiredInterfaces.forEach(iface =>
+        _copyInterfacePrototypeDescriptors(klass, iface));
+    requiredInterfaces.forEach(iface =>
+        _copyInterfacePrototypeDescriptors(klass.prototype, iface.prototype));
+
+    Object.getOwnPropertyNames(klass.prototype)
+    .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
+    .forEach(name => {
+        let descr = Object.getOwnPropertyDescriptor(klass.prototype, name);
+        if (typeof descr.value !== 'function')
+            return;
+
+        let func = klass.prototype[name];
+
+        if (name.startsWith('vfunc_')) {
+            giPrototype[Gi.hook_up_vfunc_symbol](name.slice(6), func);
+        } else if (name.startsWith('on_')) {
+            let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
+                klass.$gtype);
+            if (id !== 0) {
+                GObject.signal_override_class_closure(id, klass.$gtype, function (...argArray) {
+                    let emitter = argArray.shift();
+
+                    return func.apply(emitter, argArray);
+                });
+            }
+        }
+    });
+
+    gobjectInterfaces.forEach(iface => _checkInterface(iface, klass.prototype));
+
+    // Lang.Class parent classes don't support static inheritance
+    if (!('implements' in klass))
+        klass.implements = GObject.Object.implements;
+}
+
+function _interfaceInstanceOf(instance) {
+    if (instance && typeof instance === 'object' &&
+        GObject.Interface.prototype.isPrototypeOf(this.prototype))
+        return GObject.type_is_a(instance, this);
+
+    return false;
+}
+
+function _registerInterfaceType(klass) {
+    const gtypename = _createGTypeName(klass);
+    const gobjectInterfaces = Object.hasOwn(klass, requires) ? klass[requires] : [];
+    const props = _propertiesAsArray(klass);
+    const gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
+
+    const [giPrototype, registeredType] = Gi.register_interface_with_class(
+        klass, gtypename, gobjectInterfaces, props);
+
+    _defineGType(klass, giPrototype, registeredType);
+    _createSignals(klass.$gtype, gobjectSignals);
+
+    Object.defineProperty(klass, Symbol.hasInstance, {
+        value: _interfaceInstanceOf,
+    });
+}
+
 function _checkProperties(klass) {
     if (!Object.hasOwn(klass, properties))
         return;
@@ -512,9 +594,9 @@ function _init() {
         _checkProperties(klass);
 
         if (_registerType in klass)
-            klass[_registerType]();
+            klass[_registerType](klass);
         else
-            _resolveLegacyClassFunction(klass, _registerType).call(klass);
+            _resolveLegacyClassFunction(klass, _registerType)(klass);
 
         return klass;
     };
@@ -526,101 +608,15 @@ function _init() {
         return false;
     };
 
-    function registerGObjectType() {
-        let klass = this;
-
-        let gtypename = _createGTypeName(klass);
-        let gflags = Object.hasOwn(klass, GTypeFlags) ? klass[GTypeFlags] : 0;
-        let gobjectInterfaces = Object.hasOwn(klass, interfaces) ? klass[interfaces] : [];
-        let propertiesArray = _propertiesAsArray(klass);
-        let parent = Object.getPrototypeOf(klass);
-        let gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
-
-        // Default to the GObject-specific prototype, fallback on the JS prototype for GI native classes.
-        const parentPrototype = parent.prototype[Gi.gobject_prototype_symbol] ?? parent.prototype;
-
-        const [giPrototype, registeredType] = Gi.register_type_with_class(
-            klass, parentPrototype, gtypename, gflags,
-            gobjectInterfaces, propertiesArray);
-
-        _defineGType(klass, giPrototype, registeredType);
-        _createSignals(klass.$gtype, gobjectSignals);
-
-        // Reverse the interface array to give the last required interface precedence over the first.
-        const requiredInterfaces = [...gobjectInterfaces].reverse();
-        requiredInterfaces.forEach(iface =>
-            _copyInterfacePrototypeDescriptors(klass, iface));
-        requiredInterfaces.forEach(iface =>
-            _copyInterfacePrototypeDescriptors(klass.prototype, iface.prototype));
-
-        Object.getOwnPropertyNames(klass.prototype)
-        .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
-        .forEach(name => {
-            let descr = Object.getOwnPropertyDescriptor(klass.prototype, name);
-            if (typeof descr.value !== 'function')
-                return;
-
-            let func = klass.prototype[name];
-
-            if (name.startsWith('vfunc_')) {
-                giPrototype[Gi.hook_up_vfunc_symbol](name.slice(6), func);
-            } else if (name.startsWith('on_')) {
-                let id = GObject.signal_lookup(name.slice(3).replace('_', '-'),
-                    klass.$gtype);
-                if (id !== 0) {
-                    GObject.signal_override_class_closure(id, klass.$gtype, function (...argArray) {
-                        let emitter = argArray.shift();
-
-                        return func.apply(emitter, argArray);
-                    });
-                }
-            }
-        });
-
-        gobjectInterfaces.forEach(iface =>
-            _checkInterface(iface, klass.prototype));
-
-        // Lang.Class parent classes don't support static inheritance
-        if (!('implements' in klass))
-            klass.implements = GObject.Object.implements;
-    }
-
     Object.defineProperty(GObject.Object, _registerType, {
-        value: registerGObjectType,
+        value: _registerGObjectType,
         writable: false,
         configurable: false,
         enumerable: false,
     });
 
-    function interfaceInstanceOf(instance) {
-        if (instance && typeof instance === 'object' &&
-            GObject.Interface.prototype.isPrototypeOf(this.prototype))
-            return GObject.type_is_a(instance, this);
-
-        return false;
-    }
-
-    function registerInterfaceType() {
-        let klass = this;
-
-        let gtypename = _createGTypeName(klass);
-        let gobjectInterfaces = Object.hasOwn(klass, requires) ? klass[requires] : [];
-        let props = _propertiesAsArray(klass);
-        let gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
-
-        const [giPrototype, registeredType] = Gi.register_interface_with_class(klass, gtypename, gobjectInterfaces,
-            props);
-
-        _defineGType(klass, giPrototype, registeredType);
-        _createSignals(klass.$gtype, gobjectSignals);
-
-        Object.defineProperty(klass, Symbol.hasInstance, {
-            value: interfaceInstanceOf,
-        });
-    }
-
     Object.defineProperty(GObject.Interface, _registerType, {
-        value: registerInterfaceType,
+        value: _registerInterfaceType,
         writable: false,
         configurable: false,
         enumerable: false,
@@ -628,9 +624,9 @@ function _init() {
 
     GObject.Interface._classInit = function (klass) {
         if (_registerType in klass)
-            klass[_registerType]();
+            klass[_registerType](klass);
         else
-            _resolveLegacyClassFunction(klass, _registerType).call(klass);
+            _resolveLegacyClassFunction(klass, _registerType)(klass);
 
         Object.getOwnPropertyNames(klass.prototype)
         .filter(key => key !== 'constructor')

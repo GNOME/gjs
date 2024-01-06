@@ -59,71 +59,8 @@ function _init() {
         return GObject.Object._classInit(klass);
     };
 
-    function registerWidgetType() {
-        let klass = this;
-
-        let template = klass[Gtk.template];
-        let cssName = klass[Gtk.cssName];
-        let children = klass[Gtk.children];
-        let internalChildren = klass[Gtk.internalChildren];
-
-        if (template) {
-            klass.prototype._instance_init = function () {
-                this.init_template();
-            };
-        }
-
-        GObject.Object[_registerType].call(klass);
-
-        if (cssName)
-            Gtk.Widget.set_css_name.call(klass, cssName);
-
-        if (template) {
-            if (typeof template === 'string') {
-                try {
-                    const uri = GLib.Uri.parse(template, GLib.UriFlags.NONE);
-                    const scheme = uri.get_scheme();
-
-                    if (scheme === 'resource') {
-                        Gtk.Widget.set_template_from_resource.call(klass,
-                            uri.get_path());
-                    } else if (scheme === 'file') {
-                        let file = Gio.File.new_for_uri(template);
-                        let [, contents] = file.load_contents(null);
-                        Gtk.Widget.set_template.call(klass, contents);
-                    } else {
-                        throw new TypeError(`Invalid template URI: ${template}`);
-                    }
-                } catch (err) {
-                    if (!(err instanceof GLib.UriError))
-                        throw err;
-
-                    let contents = new TextEncoder().encode(template);
-                    Gtk.Widget.set_template.call(klass, contents);
-                }
-            } else {
-                Gtk.Widget.set_template.call(klass, template);
-            }
-
-            if (BuilderScope)
-                Gtk.Widget.set_template_scope.call(klass, new BuilderScope());
-            else
-                Gtk.Widget.set_connect_func.call(klass, _createBuilderConnectFunc(klass));
-        }
-
-        if (children) {
-            children.forEach(child =>
-                Gtk.Widget.bind_template_child_full.call(klass, child, false, 0));
-        }
-
-        if (internalChildren) {
-            internalChildren.forEach(child =>
-                Gtk.Widget.bind_template_child_full.call(klass, child, true, 0));
-        }
-    }
-
     Object.defineProperty(Gtk.Widget, _registerType, {
-        value: registerWidgetType,
+        value: _registerWidgetType,
         writable: false,
         configurable: false,
         enumerable: false,
@@ -149,5 +86,65 @@ function _init() {
                 );
             }
         });
+    }
+}
+
+function _registerWidgetType(klass) {
+    const template = klass[Gtk.template];
+    const cssName = klass[Gtk.cssName];
+    const children = klass[Gtk.children];
+    const internalChildren = klass[Gtk.internalChildren];
+
+    if (template) {
+        klass.prototype._instance_init = function () {
+            this.init_template();
+        };
+    }
+
+    GObject.Object[_registerType](klass);
+
+    if (cssName)
+        Gtk.Widget.set_css_name.call(klass, cssName);
+
+    if (template) {
+        if (typeof template === 'string') {
+            try {
+                const uri = GLib.Uri.parse(template, GLib.UriFlags.NONE);
+                const scheme = uri.get_scheme();
+
+                if (scheme === 'resource') {
+                    Gtk.Widget.set_template_from_resource.call(klass, uri.get_path());
+                } else if (scheme === 'file') {
+                    const file = Gio.File.new_for_uri(template);
+                    const [, contents] = file.load_contents(null);
+                    Gtk.Widget.set_template.call(klass, contents);
+                } else {
+                    throw new TypeError(`Invalid template URI: ${template}`);
+                }
+            } catch (err) {
+                if (!(err instanceof GLib.UriError))
+                    throw err;
+
+                const contents = new TextEncoder().encode(template);
+                Gtk.Widget.set_template.call(klass, contents);
+            }
+        } else {
+            Gtk.Widget.set_template.call(klass, template);
+        }
+
+        if (BuilderScope)
+            Gtk.Widget.set_template_scope.call(klass, new BuilderScope());
+        else
+            Gtk.Widget.set_connect_func.call(klass, _createBuilderConnectFunc(klass));
+    }
+
+    if (children) {
+        children.forEach(child =>
+            Gtk.Widget.bind_template_child_full.call(klass, child, false, 0));
+    }
+
+    if (internalChildren) {
+        internalChildren.forEach(child =>
+            Gtk.Widget.bind_template_child_full.call(klass, child, true, 0));
     }
 }
