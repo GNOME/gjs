@@ -270,6 +270,17 @@ describe('Gtk 4 regressions', function () {
         }
         expect(result).toEqual([0, GLib.MAXUINT32]);
     });
+
+    function createSurface() {
+        // Create a Gdk.Surface that is unreachable after this function ends
+        const display = Gdk.Display.get_default();
+        void Gdk.Surface.new_toplevel(display);
+    }
+
+    it('Gdk.Surface is destroyed properly', function () {
+        createSurface();
+        System.gc();
+    });
 });
 
 class LeakTestWidget extends Gtk.Button {
