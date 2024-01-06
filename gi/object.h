@@ -191,7 +191,7 @@ class ObjectPrototype
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using FieldCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GI_INFO_TYPE_FIELD>,
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using NegativeLookupCache =
         JS::GCHashSet<JS::Heap<jsid>, IdHasher, js::SystemAllocPolicy>;
