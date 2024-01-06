@@ -50,11 +50,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     ~GjsCallbackTrampoline();
 
     void* closure() const {
-#if GI_CHECK_VERSION(1, 71, 0)
         return g_callable_info_get_closure_native_address(m_info, m_closure);
-#else
-        return m_closure;
-#endif
     }
 
     ffi_closure* get_ffi_closure() const {
