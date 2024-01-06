@@ -567,7 +567,7 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
             get_field_info(cx, length_field_ix);
         if (!length_field_info) {
             gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                      g_base_info_get_name(length_field_info));
+                      g_base_info_get_name(field_info));
             return false;
         }
 
