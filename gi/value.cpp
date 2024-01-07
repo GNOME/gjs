@@ -54,7 +54,7 @@
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(JSContext*, JS::MutableHandleValue,
                                             const GValue*, bool no_copy = false,
-                                            GjsAutoSignalInfo const& = nullptr,
+                                            bool is_introspected_signal = false,
                                             GjsAutoArgInfo const& = nullptr,
                                             GITypeInfo* = nullptr);
 
@@ -197,18 +197,18 @@ static bool maybe_release_signal_value(JSContext* cx,
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_array_and_length_values(
-    JSContext* context, GjsAutoSignalInfo const& signal_info,
-    JS::MutableHandleValue value_p, GITypeInfo* array_type_info,
-    const GValue* array_value, GjsAutoArgInfo const& array_length_arg_info,
+    JSContext* context, JS::MutableHandleValue value_p,
+    GITypeInfo* array_type_info, const GValue* array_value,
+    GjsAutoArgInfo const& array_length_arg_info,
     GITypeInfo* array_length_type_info, const GValue* array_length_value,
-    bool no_copy) {
+    bool no_copy, bool is_introspected_signal) {
     JS::RootedValue array_length(context);
 
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
     g_assert(G_VALUE_HOLDS_INT(array_length_value));
 
     if (!gjs_value_from_g_value_internal(
-            context, &array_length, array_length_value, no_copy, signal_info,
+            context, &array_length, array_length_value, no_copy, is_introspected_signal,
             array_length_arg_info, array_length_type_info))
         return false;
 
@@ -327,6 +327,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     if (!argv.reserve(n_param_values))
         g_error("Unable to reserve space");
     JS::RootedValue argv_to_append(context);
+    bool is_introspected_signal = !!signal_info;
     for (i = 0; i < n_param_values; ++i) {
         const GValue* gval = &param_values[i];
         ArgumentDetails& arg_details = args_details[i];
@@ -348,12 +349,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             ArgumentDetails& array_len_details =
                 args_details[arg_details.array_len_index_for];
             res = gjs_value_from_array_and_length_values(
-                context, signal_info, &argv_to_append, &arg_details.type_info,
-                gval, array_len_details.arg_info, &array_len_details.type_info,
-                array_len_gval, no_copy);
+                context, &argv_to_append, &arg_details.type_info, gval,
+                array_len_details.arg_info, &array_len_details.type_info,
+                array_len_gval, no_copy, is_introspected_signal);
         } else {
             res = gjs_value_from_g_value_internal(
-                context, &argv_to_append, gval, no_copy, signal_info,
+                context, &argv_to_append, gval, no_copy, is_introspected_signal,
                 arg_details.arg_info, &arg_details.type_info);
         }
 
@@ -996,7 +997,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(
     JSContext* context, JS::MutableHandleValue value_p, const GValue* gvalue,
-    bool no_copy, GjsAutoSignalInfo const& signal_info,
+    bool no_copy, bool is_introspected_signal,
     GjsAutoArgInfo const& arg_info, GITypeInfo* type_info) {
     GType gtype;
 
@@ -1075,7 +1076,7 @@ static bool gjs_value_from_g_value_internal(
             return true;
         }
 
-        if (!signal_info || !arg_info) {
+        if (!is_introspected_signal || !arg_info) {
             gjs_throw(context, "Unknown signal");
             return false;
         }
@@ -1181,7 +1182,7 @@ static bool gjs_value_from_g_value_internal(
 
         obj = gjs_param_from_g_param(context, gparam);
         value_p.setObjectOrNull(obj);
-    } else if (signal_info && g_type_is_a(gtype, G_TYPE_POINTER)) {
+    } else if (is_introspected_signal && g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (!arg_info) {
             gjs_throw(context, "Unknown signal.");
             return false;
