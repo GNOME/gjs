@@ -126,7 +126,7 @@ void _gjs_warn_deprecated_once_per_callsite(
     while ((pos = format_string.find("{}", pos)) != std::string::npos) {
         if (args_ptr >= nargs_given) {
             g_critical("Only %zu format args passed for message ID %u",
-                       nargs_given, id);
+                       nargs_given, unsigned{id});
             return;
         }
 
@@ -136,7 +136,7 @@ void _gjs_warn_deprecated_once_per_callsite(
     }
     if (args_ptr != nargs_given) {
         g_critical("Excess %zu format args passed for message ID %u",
-                   nargs_given, id);
+                   nargs_given, unsigned{id});
         return;
     }
 
