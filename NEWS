@@ -1,3 +1,13 @@
+Version 1.78.2
+--------------
+
+- Closed bugs and merge requests:
+  * Uninitialized memory in float out values can lead to crashes in mozjs gc
+    code later on [#591, !902, Philip Chimento]
+  * Garbage collection of Gdk surfaces [#592, !905, Philip Chimento]
+  * gi/gerror: Fix version of the GIRepository typelib import [!906, Jordan
+    Petridis]
+
 Version 1.78.1
 --------------
 
