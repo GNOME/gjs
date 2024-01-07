@@ -64,7 +64,7 @@ do_Get_Upstream_Base () {
 
     # Work out the newest common ancestor between the detached HEAD that this CI
     # job has checked out, and the upstream target branch (which will typically
-    # be `upstream/master` or `upstream/gnome-nn`).
+    # be `upstream/main` or `upstream/gnome-nn`).
     newest_common_ancestor_sha=$(git merge-base ci-upstream-base-branch HEAD)
     if test -z "$newest_common_ancestor_sha"; then
         echo "Couldn’t find common ancestor with the upstream main branch. This"

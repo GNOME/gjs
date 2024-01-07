@@ -3,14 +3,14 @@
 
 # === Build stage ===
 
-FROM registry.fedoraproject.org/fedora:38 AS build
-ARG MOZJS_BRANCH=mozjs102
+FROM registry.fedoraproject.org/fedora:39 AS build
+ARG MOZJS_BRANCH=mozjs115
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-# mozjs102 cannot be built with python3.11 and possibly 3.10
+# mozjs115 cannot be built with python3.11
 RUN dnf -y install 'dnf-command(builddep)' \
     autoconf213 \
     clang \
@@ -21,18 +21,19 @@ RUN dnf -y install 'dnf-command(builddep)' \
     llvm-devel \
     make \
     ninja-build \
-    python3.9 \
+    python3.10 \
+    python3-packaging \
     rust \
     which \
     xz
-RUN dnf -y builddep ${MOZJS_BUILDDEPS}
+RUN dnf -y builddep ${MOZJS_BUILDDEPS} gobject-introspection
 
 WORKDIR /root
 
 RUN mkdir -p include-what-you-use/_build
-ADD https://include-what-you-use.org/downloads/include-what-you-use-0.20.src.tar.gz /root/include-what-you-use/
+ADD https://include-what-you-use.org/downloads/include-what-you-use-0.21.src.tar.gz /root/include-what-you-use/
 WORKDIR /root/include-what-you-use
-RUN tar xzf include-what-you-use-0.20.src.tar.gz --strip-components=1
+RUN tar xzf include-what-you-use-0.21.src.tar.gz --strip-components=1
 
 WORKDIR /root/include-what-you-use/_build
 
@@ -47,7 +48,7 @@ RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
 
-ENV PYTHON3=/usr/bin/python3.9
+ENV PYTHON3=/usr/bin/python3.10
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
     --with-system-zlib --with-intl-api --enable-debug \
     ${BUILD_OPTS}
@@ -58,7 +59,6 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 WORKDIR /root
 
 # Install gnome-introspection from main, so that we can test against it
-RUN dnf -y builddep gobject-introspection
 RUN git clone https://gitlab.gnome.org/GNOME/gobject-introspection.git
 
 WORKDIR /root/gobject-introspection
@@ -67,7 +67,7 @@ RUN DESTDIR=/root/g-i-install ninja -C _build install
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:38
+FROM registry.fedoraproject.org/fedora:39
 
 ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash

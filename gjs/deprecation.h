@@ -19,8 +19,8 @@ enum GjsDeprecationMessageId {
 void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
                                             GjsDeprecationMessageId message);
 
-void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
-                                            GjsDeprecationMessageId id,
-                                            std::vector<const char*> args);
+void _gjs_warn_deprecated_once_per_callsite(
+    JSContext* cx, GjsDeprecationMessageId id,
+    const std::vector<const char*>& args);
 
 #endif  // GJS_DEPRECATION_H_

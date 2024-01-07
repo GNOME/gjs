@@ -93,7 +93,7 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
     // this is typical for ASCII and non-supplementary characters.
     // Because we are converting from an unknown encoding
     // technically a single byte could be supplementary in
-    // Unicode (4 bytes) or even represen multiple Unicode characters.
+    // Unicode (4 bytes) or even represent multiple Unicode characters.
     //
     // std::u16string does not care about these implementation
     // details, its only concern is that is consists of byte pairs.
@@ -165,7 +165,7 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
                     // Append the unicode fallback character to the output
                     output_str.append(u"\ufffd", 1);
                 }
-            } else if (g_error_matches(error, G_IO_ERROR,
+            } else if (g_error_matches(local_error, G_IO_ERROR,
                                        G_IO_ERROR_NO_SPACE)) {
                 // If the buffer was full increase the buffer
                 // size and re-try the conversion.
@@ -180,15 +180,12 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
                 } else {
                     buffer_size += bytes_len;
                 }
+            } else {
+                // Stop decoding if an unknown error occurs.
+                return gjs_throw_type_error_from_gerror(cx, local_error);
             }
         }
-
-        // Stop decoding if an unknown error occurs.
-    } while (input_len > 0 && !error);
-
-    // An unexpected error occurred.
-    if (error)
-        return gjs_throw_type_error_from_gerror(cx, error);
+    } while (input_len > 0);
 
     // Copy the accumulator's data into a JSString of Unicode (UTF-16) chars.
     return JS_NewUCStringCopyN(cx, output_str.c_str(), output_str.size());

@@ -29,7 +29,7 @@ static struct {
 static GHashTable* foreign_structs_table = NULL;
 
 [[nodiscard]] static GHashTable* get_foreign_structs() {
-    // FIXME: look into hasing on GITypeInfo instead.
+    // FIXME: look into hashing on GITypeInfo instead.
     if (!foreign_structs_table) {
         foreign_structs_table = g_hash_table_new_full(g_str_hash, g_str_equal,
                                      (GDestroyNotify)g_free,

@@ -300,6 +300,8 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
                 *out_of_range |= std::isnan(*out);
         }
         return ret;
+        // https://trac.cppcheck.net/ticket/10731
+        // cppcheck-suppress missingReturn
     }
 }
 

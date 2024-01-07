@@ -18,10 +18,6 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
 # When building gobject-introspection as a subproject, use the variables
 # exported by the subproject to find the locations of the test sources.
 # Otherwise, get the locations from the pkgconfig file.
-#
-# The subproject does not yet export variables for warnlib's sources.
-# See https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/287
-skip_warnlib = false
 if gi.type_name() == 'internal'
     gi_subproject = subproject('gobject-introspection')
     regress_sources = (gi_subproject.get_variable('test_regress_sources') +
@@ -29,8 +25,9 @@ if gi.type_name() == 'internal'
     gimarshallingtests_sources = (
         gi_subproject.get_variable('test_marshalling_sources') +
         gi_subproject.get_variable('test_marshalling_headers'))
+    warnlib_sources = (gi_subproject.get_variable('test_warnlib_sources') +
+        gi_subproject.get_variable('test_warnlib_headers'))
     gi_tests_include = gi_subproject.get_variable('test_regress_incdirs')
-    skip_warnlib = true
 else
     gidatadir = gi.get_variable(pkgconfig: 'gidatadir')
     gi_tests = gidatadir / 'tests'
@@ -79,23 +76,20 @@ regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
     fatal_warnings: get_option('werror'))
 regress_typelib = regress_gir[1]
 
-if not skip_warnlib
-    libwarnlib = library('warnlib', warnlib_sources,
-        c_args: test_gir_warning_c_args + test_gir_extra_c_args,
-        include_directories: gi_tests_include,
-        dependencies: [glib, gobject, gio],
-        install: get_option('installed_tests'),
-        install_dir: installed_tests_execdir)
-    # This should have --warn-all turned off, but there is currently no way to
-    # do so in gnome.generate_gir().
-    # See https://github.com/mesonbuild/meson/issues/5876
-    warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
-        sources: warnlib_sources, namespace: 'WarnLib', nsversion: '1.0',
-        symbol_prefix: 'warnlib_', header: 'warnlib.h',
-        install: get_option('installed_tests'), install_dir_gir: false,
-        install_dir_typelib: installed_tests_execdir)
-    warnlib_typelib = warnlib_gir[1]
-endif
+libwarnlib = library('warnlib', warnlib_sources,
+    c_args: test_gir_warning_c_args + test_gir_extra_c_args,
+    include_directories: gi_tests_include,
+    dependencies: [glib, gobject, gio],
+    install: get_option('installed_tests'),
+    install_dir: installed_tests_execdir)
+# This should have --warn-all turned off, but there is currently no way to do so
+# in gnome.generate_gir(). See https://github.com/mesonbuild/meson/issues/5876
+warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
+    sources: warnlib_sources, namespace: 'WarnLib', nsversion: '1.0',
+    symbol_prefix: 'warnlib_', header: 'warnlib.h',
+    install: get_option('installed_tests'), install_dir_gir: false,
+    install_dir_typelib: installed_tests_execdir)
+warnlib_typelib = warnlib_gir[1]
 
 libgimarshallingtests = library('gimarshallingtests',
     gimarshallingtests_sources, dependencies: [glib, gobject, gio],
@@ -144,6 +138,7 @@ jasmine_tests = [
     'Signals',
     'System',
     'Tweener',
+    'WarnLib',
 ]
 
 if build_cairo
@@ -169,12 +164,8 @@ tests_dependencies = [
     gjstest_tools_typelib,
     gimarshallingtests_typelib,
     regress_typelib,
+    warnlib_typelib,
 ]
-
-if not skip_warnlib
-    jasmine_tests += 'WarnLib'
-    tests_dependencies += warnlib_typelib
-endif
 
 foreach test : jasmine_tests
     test_file = files('test@0@.js'.format(test))

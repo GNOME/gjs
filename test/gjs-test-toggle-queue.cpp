@@ -116,8 +116,7 @@ static ::ObjectInstance* new_test_gobject(GjsUnitTestFixture* fx) {
     GjsAutoUnref<GObject> gobject(
         G_OBJECT(g_object_new(G_TYPE_OBJECT, nullptr)));
     auto* object = ObjectInstance::new_for_gobject(fx->cx, gobject);
-    g_assert_true(
-        static_cast<ObjectInstance*>(object)->ensure_uses_toggle_ref(fx->cx));
+    static_cast<ObjectInstance*>(object)->ensure_uses_toggle_ref(fx->cx);
     return object;
 }
 

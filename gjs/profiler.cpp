@@ -49,7 +49,7 @@
  * However, we do use a Linux'ism that allows us to deliver the signal
  * to only a single thread. Doing this in a generic fashion would
  * require thread-registration so that we can mask SIGPROF from all
- * threads execpt the JS thread. The gecko engine uses tgkill() to do
+ * threads except the JS thread. The gecko engine uses tgkill() to do
  * this with a secondary thread instead of using POSIX timers. We could
  * do this too, but it would still be Linux-only.
  *

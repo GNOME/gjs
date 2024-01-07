@@ -528,7 +528,7 @@ if host_machine.system() == 'windows'
 endif
 
 # This dependency should provide everything that is needed to compile gjs except
-# the sources themselves, is used to copmile both the static libraries and the
+# the sources themselves, is used to compile both the static libraries and the
 # tests
 base_build_dep = declare_dependency(
     compile_args: libgjs_cpp_args,

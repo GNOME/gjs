@@ -2244,6 +2244,8 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
         length = ptr_array->len;
     } else {
         g_assert_not_reached();
+        gjs_throw(cx, "%s is not an array type", g_type_name(value_gtype));
+        return false;
     }
 
     return gjs_array_from_carray_internal(cx, value_p, array_type, param_info,
@@ -2904,7 +2906,7 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
                                     g_type_info_get_tag(c->key_param_info),
                                     GJS_ARGUMENT_HASH_ELEMENT, c->flags,
                                     &key_arg))
-    c->failed = true;
+        c->failed = true;
 
     GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
 

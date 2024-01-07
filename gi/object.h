@@ -191,7 +191,7 @@ class ObjectPrototype
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using FieldCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoInfo<GI_INFO_TYPE_FIELD>,
+        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using NegativeLookupCache =
         JS::GCHashSet<JS::Heap<jsid>, IdHasher, js::SystemAllocPolicy>;
@@ -381,7 +381,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void track_gobject_finalization();
     void ignore_gobject_finalization();
     void check_js_object_finalized(void);
-    GJS_JSAPI_RETURN_CONVENTION bool ensure_uses_toggle_ref(JSContext* cx);
+    void ensure_uses_toggle_ref(JSContext*);
     [[nodiscard]] bool check_gobject_disposed_or_finalized(
         const char* for_what) const;
     [[nodiscard]] bool check_gobject_finalized(const char* for_what) const;

@@ -214,7 +214,7 @@ GIFieldInfo* BoxedPrototype::lookup_field(JSContext* cx, JSString* prop_name) {
 }
 
 /* Initialize a newly created Boxed from an object that is a "hash" of
- * properties to set as fieds of the object. We don't require that every field
+ * properties to set as fields of the object. We don't require that every field
  * of the object be set.
  */
 bool BoxedInstance::init_from_props(JSContext* context, JS::Value props_value) {
@@ -567,7 +567,7 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
             get_field_info(cx, length_field_ix);
         if (!length_field_info) {
             gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                      g_base_info_get_name(length_field_info));
+                      g_base_info_get_name(field_info));
             return false;
         }
 

@@ -88,31 +88,26 @@ class GjsSourceHook : public js::SourceHook {
 HMODULE gjs_dll;
 static bool gjs_is_inited = false;
 
-BOOL WINAPI
-DllMain (HINSTANCE hinstDLL,
-DWORD     fdwReason,
-LPVOID    lpvReserved)
-{
-  switch (fdwReason)
-  {
-      case DLL_PROCESS_ATTACH: {
-          gjs_dll = hinstDLL;
-          const char* reason = JS_InitWithFailureDiagnostic();
-          if (reason)
-              g_error("Could not initialize JavaScript: %s", reason);
-          gjs_is_inited = true;
-      } break;
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
+    switch (fdwReason) {
+        case DLL_PROCESS_ATTACH: {
+            gjs_dll = hinstDLL;
+            const char* reason = JS_InitWithFailureDiagnostic();
+            if (reason)
+                g_error("Could not initialize JavaScript: %s", reason);
+            gjs_is_inited = true;
+        } break;
 
-  case DLL_THREAD_DETACH:
-    JS_ShutDown ();
-    break;
+        case DLL_THREAD_DETACH:
+            JS_ShutDown();
+            break;
 
-  default:
-    /* do nothing */
-    ;
+        default:
+            /* do nothing */
+            ;
     }
 
-  return TRUE;
+    return TRUE;
 }
 
 #else

@@ -26,7 +26,7 @@ const ifaceXml = `
 
 
 
-// Pass the XML string to make a re-usable proxy class for an interface proxies.
+// Pass the XML string to make a reusable proxy class for an interface proxies.
 const TestProxy = Gio.DBusProxy.makeProxyWrapper(ifaceXml);
 
 

@@ -111,9 +111,9 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
     warn_deprecated_unsafe_internal(cx, id, messages[id]);
 }
 
-void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
-                                            GjsDeprecationMessageId id,
-                                            std::vector<const char*> args) {
+void _gjs_warn_deprecated_once_per_callsite(
+    JSContext* cx, GjsDeprecationMessageId id,
+    const std::vector<const char*>& args) {
     // In C++20, use std::format() for this
     std::string_view format_string{messages[id]};
     std::stringstream message;
@@ -126,7 +126,7 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
     while ((pos = format_string.find("{}", pos)) != std::string::npos) {
         if (args_ptr >= nargs_given) {
             g_critical("Only %zu format args passed for message ID %u",
-                       nargs_given, id);
+                       nargs_given, unsigned{id});
             return;
         }
 
@@ -136,7 +136,7 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
     }
     if (args_ptr != nargs_given) {
         g_critical("Excess %zu format args passed for message ID %u",
-                   nargs_given, id);
+                   nargs_given, unsigned{id});
         return;
     }
 
