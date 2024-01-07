@@ -172,8 +172,6 @@ static bool maybe_release_signal_value(JSContext* cx,
  */
 [[nodiscard]] static GjsAutoSignalInfo get_signal_info_if_available(
     GSignalQuery* signal_query) {
-    GIInfoType info_type;
-
     if (!signal_query->itype)
         return nullptr;
 
@@ -182,7 +180,7 @@ static bool maybe_release_signal_value(JSContext* cx,
     if (!obj)
         return nullptr;
 
-    info_type = g_base_info_get_type (obj);
+    GIInfoType info_type = obj.type();
     if (info_type == GI_INFO_TYPE_OBJECT)
         return g_object_info_find_signal(obj, signal_query->signal_name);
     else if (info_type == GI_INFO_TYPE_INTERFACE)
@@ -783,10 +781,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
                 if (registered) {
-                    GIInfoType info_type = g_base_info_get_type (registered);
+                    GIInfoType info_type = registered.type();
 
                     if (info_type == GI_INFO_TYPE_STRUCT &&
-                        g_struct_info_is_foreign ((GIStructInfo*)registered)) {
+                        g_struct_info_is_foreign(
+                            registered.as<GIStructInfo>())) {
                         GIArgument arg;
 
                         if (!gjs_struct_foreign_convert_to_gi_argument(

@@ -163,7 +163,7 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
                 g_type_info_get_interface(type_info);
             g_assert(interface_info != nullptr);
 
-            switch (g_base_info_get_type(interface_info)) {
+            switch (interface_info.type()) {
                 case GI_INFO_TYPE_STRUCT:
                 case GI_INFO_TYPE_ENUM:
                 case GI_INFO_TYPE_FLAGS:
@@ -218,7 +218,7 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
 
-            switch (g_base_info_get_type(interface_info)) {
+            switch (interface_info.type()) {
                 case GI_INFO_TYPE_ENUM:
                 case GI_INFO_TYPE_FLAGS:
                     return false;
@@ -931,7 +931,7 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
     case GI_TYPE_TAG_INTERFACE: {
         GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
 
-        switch (g_base_info_get_type(interface_info)) {
+        switch (interface_info.type()) {
             case GI_INFO_TYPE_ENUM:
             case GI_INFO_TYPE_FLAGS:
                 return sizeof(unsigned int);
@@ -1082,7 +1082,7 @@ char* gjs_argument_display_name(const char* arg_name,
 
     if (tag == GI_TYPE_TAG_INTERFACE) {
         GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
-        return g_info_type_to_string(g_base_info_get_type(interface));
+        return g_info_type_to_string(interface.type());
     } else {
         return g_type_tag_to_string(tag);
     }
@@ -1658,7 +1658,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
         g_assert(interface_info);
 
-        GIInfoType interface_type = g_base_info_get_type(interface_info);
+        GIInfoType interface_type = interface_info.type();
         if (interface_type == GI_INFO_TYPE_ENUM ||
             interface_type == GI_INFO_TYPE_FLAGS ||
             arg::is_gdk_atom(interface_info))
@@ -1849,13 +1849,11 @@ void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg) {
             gjs_arg_unset<void*>(arg);
             break;
         case GI_TYPE_TAG_INTERFACE: {
-            GIInfoType interface_type;
-
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
             g_assert(interface_info != nullptr);
 
-            interface_type = g_base_info_get_type(interface_info);
+            GIInfoType interface_type = interface_info.type();
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
                 interface_type == GI_INFO_TYPE_FLAGS)
@@ -2089,7 +2087,7 @@ static bool gjs_array_from_carray_internal(
         case GI_TYPE_TAG_INTERFACE: {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(param_info);
-            GIInfoType info_type = g_base_info_get_type (interface_info);
+            GIInfoType info_type = interface_info.type();
 
             if (array_type != GI_ARRAY_TYPE_PTR_ARRAY &&
                 (info_type == GI_INFO_TYPE_STRUCT ||
@@ -2592,14 +2590,11 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIInfoType interface_type;
-            GType gtype;
-
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
             g_assert(interface_info);
 
-            interface_type = g_base_info_get_type(interface_info);
+            GIInfoType interface_type = interface_info.type();
 
             if (interface_type == GI_INFO_TYPE_UNRESOLVED) {
                 gjs_throw(context,
@@ -2627,7 +2622,8 @@ bool gjs_value_from_gi_argument(JSContext* context,
                     interface_info,
                     gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(arg));
 
-                gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+                GType gtype = g_registered_type_info_get_g_type(
+                    interface_info.as<GIRegisteredTypeInfo>());
 
                 if (gtype != G_TYPE_NONE) {
                     /* check make sure 32 bit flag */
@@ -2648,7 +2644,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT &&
-                g_struct_info_is_foreign((GIStructInfo*)interface_info)) {
+                g_struct_info_is_foreign(interface_info.as<GIStructInfo>())) {
                 return gjs_struct_foreign_convert_from_gi_argument(
                     context, value_p, interface_info, arg);
             }
@@ -2660,12 +2656,13 @@ bool gjs_value_from_gi_argument(JSContext* context,
             }
 
             if (interface_type == GI_INFO_TYPE_STRUCT &&
-                g_struct_info_is_gtype_struct((GIStructInfo*)interface_info)) {
+                g_struct_info_is_gtype_struct(
+                    interface_info.as<GIStructInfo>())) {
                 /* XXX: here we make the implicit assumption that GTypeClass is the same
                    as GTypeInterface. This is true for the GType field, which is what we
                    use, but not for the rest of the structure!
                 */
-                gtype = G_TYPE_FROM_CLASS(gjs_arg_get<GTypeClass*>(arg));
+                GType gtype = G_TYPE_FROM_CLASS(gjs_arg_get<GTypeClass*>(arg));
 
                 if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
                     return gjs_lookup_interface_constructor(context, gtype,
@@ -2674,7 +2671,8 @@ bool gjs_value_from_gi_argument(JSContext* context,
                 return gjs_lookup_object_constructor(context, gtype, value_p);
             }
 
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+            GType gtype = g_registered_type_info_get_g_type(
+                interface_info.as<GIRegisteredTypeInfo>());
             if (G_TYPE_IS_INSTANTIATABLE(gtype) ||
                 G_TYPE_IS_INTERFACE(gtype))
                 gtype = G_TYPE_FROM_INSTANCE(gjs_arg_get<GTypeInstance*>(arg));
@@ -2751,7 +2749,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
             if (interface_type == GI_INFO_TYPE_UNION) {
                 JSObject* obj = UnionInstance::new_for_c_union(
-                    context, static_cast<GIUnionInfo*>(interface_info),
+                    context, interface_info.as<GIUnionInfo>(),
                     gjs_arg_get<void*>(arg));
                 if (!obj)
                     return false;
@@ -2973,17 +2971,14 @@ static bool gjs_g_arg_release_internal(
 
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIInfoType interface_type;
-            GType gtype;
-
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(type_info);
             g_assert(interface_info);
 
-            interface_type = g_base_info_get_type(interface_info);
+            GIInfoType interface_type = interface_info.type();
 
             if (interface_type == GI_INFO_TYPE_STRUCT &&
-                g_struct_info_is_foreign((GIStructInfo*)interface_info))
+                g_struct_info_is_foreign(interface_info.as<GIStructInfo>()))
                 return gjs_struct_foreign_release_gi_argument(
                     context, transfer, interface_info, arg);
 
@@ -2994,7 +2989,8 @@ static bool gjs_g_arg_release_internal(
             if (!gjs_arg_get<void*>(arg))
                 return true;
 
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)interface_info);
+            GType gtype = g_registered_type_info_get_g_type(
+                interface_info.as<GIRegisteredTypeInfo>());
             if (G_TYPE_IS_INSTANTIATABLE(gtype) ||
                 G_TYPE_IS_INTERFACE(gtype))
                 gtype = G_TYPE_FROM_INSTANCE(gjs_arg_get<GTypeInstance*>(arg));
@@ -3096,7 +3092,7 @@ static bool gjs_g_arg_release_internal(
                 if (!g_type_info_is_pointer(param_info)) {
                     GjsAutoBaseInfo interface_info =
                         g_type_info_get_interface(param_info);
-                    GIInfoType info_type = g_base_info_get_type(interface_info);
+                    GIInfoType info_type = interface_info.type();
                     if (info_type == GI_INFO_TYPE_STRUCT ||
                         info_type == GI_INFO_TYPE_UNION) {
                         g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);

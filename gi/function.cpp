@@ -226,10 +226,8 @@ static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
         break;
     case GI_TYPE_TAG_INTERFACE:
         {
-            GIInfoType interface_type;
-
             GjsAutoBaseInfo interface_info(g_type_info_get_interface(ret_type));
-            interface_type = g_base_info_get_type(interface_info);
+            GIInfoType interface_type = interface_info.type();
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
                 interface_type == GI_INFO_TYPE_FLAGS)
@@ -778,11 +776,9 @@ bool GjsCallbackTrampoline::initialize() {
         }
 
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
-            GIInfoType interface_type;
-
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(&type_info);
-            interface_type = g_base_info_get_type(interface_info);
+            GIInfoType interface_type = interface_info.type();
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
                 gjs_throw(context(),
                           "%s %s accepts another callback as a parameter. This "
@@ -873,7 +869,7 @@ static void* get_return_ffi_pointer_from_gi_argument(
         case GI_TYPE_TAG_INTERFACE: {
             GjsAutoBaseInfo info = g_type_info_get_interface(return_type);
 
-            switch (g_base_info_get_type(info)) {
+            switch (info.type()) {
                 case GI_INFO_TYPE_ENUM:
                 case GI_INFO_TYPE_FLAGS:
                     return &gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
@@ -1098,8 +1094,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
                     "to pass to the out '%s' argument. It may be that the "
                     "function is unsupported, or there may be a bug in "
                     "its annotations.",
-                    g_base_info_get_namespace(m_info),
-                    g_base_info_get_name(m_info),
+                    m_info.ns(), m_info.name(),
                     g_base_info_get_name(&arg_info));
                 state.failed = true;
                 break;
@@ -1277,7 +1272,7 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
     }
 
     GjsAutoChar descr;
-    if (g_base_info_get_type(m_info) == GI_INFO_TYPE_FUNCTION) {
+    if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
         descr = g_strdup_printf(
             "%s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
             format_name().c_str(), arg_names.c_str(),

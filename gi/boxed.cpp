@@ -574,7 +574,7 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
         GIArgument length_arg;
         if (!g_field_info_get_field(length_field_info, m_ptr, &length_arg)) {
             gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                      g_base_info_get_name(length_field_info));
+                      length_field_info.name());
             return false;
         }
 
@@ -799,7 +799,7 @@ const struct JSClass BoxedBase::klass = {
         case GI_TYPE_TAG_INTERFACE:
             {
             GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
-            switch (g_base_info_get_type(interface)) {
+            switch (interface.type()) {
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
                     return struct_is_simple(interface.as<GIStructInfo>());
