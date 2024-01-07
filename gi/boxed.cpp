@@ -214,7 +214,7 @@ GIFieldInfo* BoxedPrototype::lookup_field(JSContext* cx, JSString* prop_name) {
 }
 
 /* Initialize a newly created Boxed from an object that is a "hash" of
- * properties to set as fieds of the object. We don't require that every field
+ * properties to set as fields of the object. We don't require that every field
  * of the object be set.
  */
 bool BoxedInstance::init_from_props(JSContext* context, JS::Value props_value) {

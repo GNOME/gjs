@@ -63,7 +63,7 @@ Returns:
 * (`Number`) — A handler ID
 
 Connects a callback to a signal for an object. Pass the returned ID to
-`disconect()` to remove the handler.
+`disconnect()` to remove the handler.
 
 If `callback` returns `true`, emission will stop and no other handlers will be
 invoked.

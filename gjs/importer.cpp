@@ -891,7 +891,7 @@ static JSObject* gjs_create_importer(
     /* API users can replace this property from JS, is the idea */
     if (!gjs_define_string_array(
             context, importer, "searchPath", search_paths,
-            /* settable (no READONLY) but not deleteable (PERMANENT) */
+            // settable (no READONLY) but not deletable (PERMANENT)
             JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 

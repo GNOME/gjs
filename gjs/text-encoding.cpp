@@ -93,7 +93,7 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
     // this is typical for ASCII and non-supplementary characters.
     // Because we are converting from an unknown encoding
     // technically a single byte could be supplementary in
-    // Unicode (4 bytes) or even represen multiple Unicode characters.
+    // Unicode (4 bytes) or even represent multiple Unicode characters.
     //
     // std::u16string does not care about these implementation
     // details, its only concern is that is consists of byte pairs.
