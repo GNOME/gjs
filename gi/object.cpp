@@ -298,12 +298,7 @@ bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
     if (is_custom_js_class())
         return true;
 
-    if (!ensure_uses_toggle_ref(cx)) {
-        gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
-                  m_gobj_disposed ? "disposed " : "", m_ptr.get());
-        return false;
-    }
-
+    ensure_uses_toggle_ref(cx);
     return true;
 }
 
@@ -1695,12 +1690,12 @@ ObjectInstance::associate_js_gobject(JSContext       *context,
         g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
 }
 
-bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
+void ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     if (m_uses_toggle_ref)
-        return true;
+        return;
 
     if (!check_gobject_disposed_or_finalized("add toggle reference on"))
-        return true;
+        return;
 
     debug_lifecycle("Switching object instance to toggle ref");
 
@@ -1725,8 +1720,6 @@ bool ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
      * This may immediately remove the GC root we just added, since refcount
      * may drop to 1. */
     g_object_unref(m_ptr);
-
-    return true;
 }
 
 static void invalidate_closure_vector(std::vector<GClosure*>* closures,
@@ -1849,13 +1842,7 @@ bool ObjectInstance::init_impl(JSContext* context, const JS::CallArgs& args,
          * */
         bool toggle_ref_added = false;
         if (!m_uses_toggle_ref) {
-            if (!other_priv->ensure_uses_toggle_ref(context)) {
-                gjs_throw(context,
-                          "Impossible to set toggle references on %sobject %p",
-                          other_priv->m_gobj_disposed ? "disposed " : "", gobj);
-                return false;
-            }
-
+            other_priv->ensure_uses_toggle_ref(context);
             toggle_ref_added = m_uses_toggle_ref;
         }
 
@@ -2127,13 +2114,8 @@ GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
 }
 
 bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
-    if (!is_prototype()) {
-        if (!to_instance()->ensure_uses_toggle_ref(cx)) {
-            gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
-                      m_gobj_disposed ? "disposed " : "", to_instance()->ptr());
-            return false;
-        }
-    }
+    if (!is_prototype())
+        to_instance()->ensure_uses_toggle_ref(cx);
 
     g_assert(std::find(m_closures.begin(), m_closures.end(), closure) ==
                  m_closures.end() &&
@@ -2742,7 +2724,8 @@ bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
 
     // Custom JS objects will most likely have visible state, so just do this
     // from the start.
-    if (!ensure_uses_toggle_ref(cx) || !m_uses_toggle_ref) {
+    ensure_uses_toggle_ref(cx);
+    if (!m_uses_toggle_ref) {
         gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
                   m_gobj_disposed ? "disposed " : "", gobj);
         return false;
