@@ -778,8 +778,8 @@ static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
     return true;
 }
 
-[[nodiscard]] static bool is_gvalue(GIBaseInfo* info, GIInfoType info_type) {
-    switch (info_type) {
+[[nodiscard]] static bool is_gvalue(GIBaseInfo* info) {
+    switch (g_base_info_get_type(info)) {
         case GI_INFO_TYPE_VALUE:
             return true;
 
@@ -850,9 +850,7 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
         if (!g_type_info_is_pointer(param_info)) {
             GjsAutoBaseInfo interface_info =
                 g_type_info_get_interface(param_info);
-            GIInfoType info_type = g_base_info_get_type(interface_info);
-
-            if (is_gvalue(interface_info, info_type)) {
+            if (is_gvalue(interface_info)) {
                 // Special case for GValue "flat arrays", this could also
                 // using the generic case, but if we do so we're leaking atm.
                 return gjs_array_to_auto_array<GValue>(context, array_value,
@@ -2364,8 +2362,7 @@ static bool gjs_array_from_zero_terminated_c_array(
                 g_type_info_get_interface(param_info);
 
             if (!g_type_info_is_pointer(param_info) &&
-                is_gvalue(interface_info,
-                          g_base_info_get_type(interface_info))) {
+                is_gvalue(interface_info)) {
                 if (!fill_vector_from_zero_terminated_carray<GValue>(
                         context, elems, param_info, &arg, c_array))
                     return false;
