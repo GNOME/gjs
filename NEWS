@@ -1,3 +1,17 @@
+Version 1.79.1
+--------------
+
+- Closed bugs and merge requests:
+  * Improve console output [#511, !890, Sriyansh Shivam]
+  * Name the GC source [!897, Ivan Molodetskikh]
+  * Various maintenance [!898, !907, Philip Chimento]
+  * build: Fix meson deprecations [Rick Calixte]
+  * doc: fix broken link in Mainloop.md [!899, Andy Holmes]
+  * overrides: Make class object a parameter of register type hooks [!900,
+    Philip Chimento]
+  * Display correct stack trace on SyntaxError [#584, !901, Philip Chimento]
+  * HTTP server stops listening [#569, !904, Akshay Warrier]
+
 Version 1.78.2
 --------------
 
