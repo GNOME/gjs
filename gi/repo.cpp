@@ -662,11 +662,9 @@ JSObject *
 gjs_lookup_generic_constructor(JSContext  *context,
                                GIBaseInfo *info)
 {
-    const char *constructor_name;
-
-    JS::RootedObject in_object(context,
-        gjs_lookup_namespace_object(context, (GIBaseInfo*) info));
-    constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+    JS::RootedObject in_object{context,
+        gjs_lookup_namespace_object(context, info)};
+    const char* constructor_name = g_base_info_get_name(info);
 
     if (G_UNLIKELY (!in_object))
         return NULL;

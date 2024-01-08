@@ -1994,8 +1994,8 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
     const char *constructor_name;
 
     if (info) {
-        in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+        in_object = gjs_lookup_namespace_object(context, info);
+        constructor_name = g_base_info_get_name(info);
     } else {
         in_object = gjs_lookup_private_namespace(context);
         constructor_name = g_type_name(gtype);

@@ -1793,9 +1793,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
  * has a fixed size large enough for the union of all types.)
  */
 void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg) {
-    GITypeTag type_tag;
-
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    GITypeTag type_tag = g_type_info_get_tag(type_info);
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -2462,9 +2460,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
                                 GITypeInfo* type_info,
                                 GjsArgumentType argument_type,
                                 GITransfer transfer, GIArgument* arg) {
-    GITypeTag type_tag;
-
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    GITypeTag type_tag = g_type_info_get_tag(type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument %s to JS::Value",
@@ -3264,13 +3260,11 @@ static bool gjs_g_arg_release_internal(
 bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
                              GITypeInfo* type_info, GjsArgumentFlags flags,
                              GIArgument* arg) {
-    GITypeTag type_tag;
-
     if (transfer == GI_TRANSFER_NOTHING &&
         !is_transfer_in_nothing(transfer, flags))
         return true;
 
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    GITypeTag type_tag = g_type_info_get_tag(type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Releasing GIArgument %s out param or return value",
@@ -3283,8 +3277,6 @@ bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
 bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
                                     GITypeInfo* type_info,
                                     GjsArgumentFlags flags, GIArgument* arg) {
-    GITypeTag type_tag;
-
     /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
      * GI_TRANSFER_CONTAINER:
      * - non-containers: treated as GI_TRANSFER_EVERYTHING
@@ -3294,7 +3286,7 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
     if (transfer != GI_TRANSFER_NOTHING)
         return true;
 
-    type_tag = g_type_info_get_tag( (GITypeInfo*) type_info);
+    GITypeTag type_tag = g_type_info_get_tag(type_info);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument %s in param",
                       g_type_tag_to_string(type_tag));
