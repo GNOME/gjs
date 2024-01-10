@@ -10,7 +10,7 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/Array.h>  // for JS::GetArrayLength,
+#include <js/Array.h>  // for JS::GetArrayLength
 #include <js/CallArgs.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
