@@ -5,6 +5,8 @@
 #ifndef GJS_PROFILER_PRIVATE_H_
 #define GJS_PROFILER_PRIVATE_H_
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <js/ProfilingCategory.h>
