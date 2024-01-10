@@ -60,7 +60,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
-#include "util/misc.h"
 
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
     JSContext*, GITransfer, GITypeInfo*, GITypeTag, GjsArgumentType,
@@ -673,7 +672,7 @@ static bool gjs_string_to_intarray(JSContext* context, JS::HandleString str,
             if (!gjs_string_to_utf8_n(context, str, &result, length))
                 return false;
 
-            *arr_p = _gjs_memdup2(result.get(), *length);
+            *arr_p = g_memdup2(result.get(), *length);
             return true;
         }
 

@@ -38,7 +38,6 @@
 #include "gjs/gerror-result.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
-#include "util/misc.h"  // for _gjs_memdup2
 
 class JSLinearString;
 
@@ -310,7 +309,7 @@ gjs_string_get_char16_data(JSContext       *context,
         return false;
     }
 
-    *data_p = static_cast<char16_t*>(_gjs_memdup2(js_data, len_bytes.value()));
+    *data_p = static_cast<char16_t*>(g_memdup2(js_data, len_bytes.value()));
 
     return true;
 }
