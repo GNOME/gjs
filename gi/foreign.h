@@ -39,19 +39,17 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_convert_to_gi_argument(JSContext*, JS::Value,
-                                               GIBaseInfo* interface_info,
+                                               GIStructInfo*,
                                                const char* arg_name,
                                                GjsArgumentType, GITransfer,
                                                GjsArgumentFlags, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_convert_from_gi_argument(JSContext*,
                                                  JS::MutableHandleValue,
-                                                 GIBaseInfo* interface_info,
-                                                 GIArgument*);
+                                                 GIStructInfo*, GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_release_gi_argument(JSContext*, GITransfer,
-                                            GIBaseInfo* interface_info,
-                                            GIArgument*);
+                                            GIStructInfo*, GIArgument*);
 
 #endif  // GI_FOREIGN_H_

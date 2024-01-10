@@ -234,7 +234,7 @@ struct GTypedType {
 struct RegisteredType : GTypedType {
     RegisteredType(GType gtype, GIInfoType info_type)
         : GTypedType(gtype), m_info_type(info_type) {}
-    explicit RegisteredType(GIBaseInfo* info)
+    explicit RegisteredType(GIRegisteredTypeInfo* info)
         : GTypedType(g_registered_type_info_get_g_type(info)),
           m_info_type(g_base_info_get_type(info)) {
         g_assert(m_gtype != G_TYPE_NONE &&
@@ -245,13 +245,13 @@ struct RegisteredType : GTypedType {
 };
 
 struct RegisteredInterface : BaseInfo, GTypedType {
-    explicit RegisteredInterface(GIBaseInfo* info)
+    explicit RegisteredInterface(GIRegisteredTypeInfo* info)
         : BaseInfo(info, GjsAutoTakeOwnership{}),
           GTypedType(g_registered_type_info_get_g_type(m_info)) {}
 };
 
 struct Callback : Nullable, BaseInfo {
-    explicit Callback(GIInterfaceInfo* info)
+    explicit Callback(GICallbackInfo* info)
         : BaseInfo(info, GjsAutoTakeOwnership{}),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
@@ -587,7 +587,7 @@ struct BoxedIn : BoxedInTransferNone {
 };
 
 struct UnregisteredBoxedIn : BoxedIn, BaseInfo {
-    explicit UnregisteredBoxedIn(GIInterfaceInfo* info)
+    explicit UnregisteredBoxedIn(GIStructInfo* info)
         : BoxedIn(g_registered_type_info_get_g_type(info),
                   g_base_info_get_type(info)),
           BaseInfo(info, GjsAutoTakeOwnership{}) {}

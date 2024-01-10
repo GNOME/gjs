@@ -92,8 +92,8 @@ decltype(ObjectInstance::s_wrapped_gobject_list)
 static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject* gjs_lookup_object_prototype_from_info(JSContext*,
-                                                       GIObjectInfo*, GType);
+static JSObject* gjs_lookup_object_prototype_from_info(JSContext*, GIBaseInfo*,
+                                                       GType);
 
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
@@ -707,7 +707,7 @@ static bool interface_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static bool resolve_on_interface_prototype(JSContext* cx,
-                                           GIObjectInfo* iface_info,
+                                           GIInterfaceInfo* iface_info,
                                            JS::HandleId identifier,
                                            JS::HandleObject class_prototype,
                                            bool* found) {
@@ -1990,8 +1990,11 @@ ObjectPrototype::~ObjectPrototype() {
 }
 
 JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
-                                                  GIObjectInfo* info,
+                                                  GIBaseInfo* info,
                                                   GType gtype) {
+    g_return_val_if_fail(
+        !info || GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info), NULL);
+
     JS::RootedObject in_object(context);
     const char *constructor_name;
 
@@ -2036,11 +2039,12 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-gjs_lookup_object_prototype_from_info(JSContext    *context,
-                                      GIObjectInfo *info,
-                                      GType         gtype)
-{
+static JSObject* gjs_lookup_object_prototype_from_info(JSContext* context,
+                                                       GIBaseInfo* info,
+                                                       GType gtype) {
+    g_return_val_if_fail(
+        !info || GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info), NULL);
+
     JS::RootedObject constructor(context,
         gjs_lookup_object_constructor_from_info(context, info, gtype));
 

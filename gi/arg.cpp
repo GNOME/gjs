@@ -491,8 +491,8 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
 
     g_assert(props && "Property bag cannot be null");
 
-    GjsAutoBaseInfo key_param_info = g_type_info_get_param_type(type_info, 0);
-    GjsAutoBaseInfo val_param_info = g_type_info_get_param_type(type_info, 1);
+    GjsAutoTypeInfo key_param_info = g_type_info_get_param_type(type_info, 0);
+    GjsAutoTypeInfo val_param_info = g_type_info_get_param_type(type_info, 1);
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -956,7 +956,7 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
             if (length < 0)
                 return sizeof(void*);
 
-            GjsAutoBaseInfo param_info =
+            GjsAutoTypeInfo param_info =
                 g_type_info_get_param_type(type_info, 0);
             GITypeTag param_tag = g_type_info_get_tag(param_info);
             size_t param_size =
@@ -2819,7 +2819,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
         if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
             if (g_type_info_is_zero_terminated(type_info)) {
-                GjsAutoBaseInfo param_info =
+                GjsAutoTypeInfo param_info =
                     g_type_info_get_param_type(type_info, 0);
                 g_assert(param_info != nullptr);
 

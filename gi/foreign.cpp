@@ -80,16 +80,17 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 }
 
 [[nodiscard]] static GjsForeignInfo* gjs_struct_foreign_lookup(
-    JSContext* context, GIBaseInfo* interface_info) {
+    JSContext* context, GIStructInfo* info) {
     GHashTable* hash_table;
 
-    auto key = std::string(g_base_info_get_namespace(interface_info)) + '.' +
-               g_base_info_get_name(interface_info);
+    auto key = std::string{g_base_info_get_namespace(info)} + '.' +
+               g_base_info_get_name(info);
     hash_table = get_foreign_structs();
     auto* retval = static_cast<GjsForeignInfo*>(
         g_hash_table_lookup(hash_table, key.c_str()));
     if (!retval) {
-        if (gjs_foreign_load_foreign_module(context, g_base_info_get_namespace(interface_info))) {
+        if (gjs_foreign_load_foreign_module(context,
+                                            g_base_info_get_namespace(info))) {
             retval = static_cast<GjsForeignInfo*>(
                 g_hash_table_lookup(hash_table, key.c_str()));
         }
@@ -104,12 +105,12 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 }
 
 bool gjs_struct_foreign_convert_to_gi_argument(
-    JSContext* context, JS::Value value, GIBaseInfo* interface_info,
+    JSContext* context, JS::Value value, GIStructInfo* info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
     GjsArgumentFlags flags, GIArgument* arg) {
     GjsForeignInfo *foreign;
 
-    foreign = gjs_struct_foreign_lookup(context, interface_info);
+    foreign = gjs_struct_foreign_lookup(context, info);
     if (!foreign)
         return false;
 
@@ -122,11 +123,9 @@ bool gjs_struct_foreign_convert_to_gi_argument(
 
 bool gjs_struct_foreign_convert_from_gi_argument(JSContext* context,
                                                  JS::MutableHandleValue value_p,
-                                                 GIBaseInfo* interface_info,
+                                                 GIStructInfo* info,
                                                  GIArgument* arg) {
-    GjsForeignInfo *foreign;
-
-    foreign = gjs_struct_foreign_lookup(context, interface_info);
+    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(context, info);
     if (!foreign)
         return false;
 
@@ -138,11 +137,9 @@ bool gjs_struct_foreign_convert_from_gi_argument(JSContext* context,
 
 bool gjs_struct_foreign_release_gi_argument(JSContext* context,
                                             GITransfer transfer,
-                                            GIBaseInfo* interface_info,
+                                            GIStructInfo* info,
                                             GIArgument* arg) {
-    GjsForeignInfo *foreign;
-
-    foreign = gjs_struct_foreign_lookup(context, interface_info);
+    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(context, info);
     if (!foreign)
         return false;
 
