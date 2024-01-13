@@ -1524,8 +1524,9 @@ ObjectInstance::release_native_object(void)
             GObject* ptr = m_ptr.release();
 
             // Workaround for https://gitlab.gnome.org/GNOME/gtk/-/issues/6289
-            GjsAutoBaseInfo surface_info =
+            GjsAutoObjectInfo surface_info =
                 g_irepository_find_by_gtype(nullptr, gdksurface_type);
+            g_assert(surface_info && "Could not find introspected GdkSurface info");
             GjsAutoFunctionInfo destroy_func =
                 g_object_info_find_method(surface_info, "destroy");
             GIArgument destroy_args[1] = {{.v_pointer = ptr}};
