@@ -365,7 +365,8 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    std::string fullName{priv->format_name() + "[" + gjs_debug_string(name) +
+                         "]"};
     AutoProfilerLabel label(cx, "field getter", fullName.c_str());
 
     priv->debug_jsprop("Field getter", name, obj);
