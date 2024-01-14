@@ -1989,9 +1989,9 @@ ObjectPrototype::~ObjectPrototype() {
     GJS_DEC_COUNTER(object_prototype);
 }
 
-JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
-                                                  GIBaseInfo* info,
-                                                  GType gtype) {
+static JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
+                                                         GIBaseInfo* info,
+                                                         GType gtype) {
     g_return_val_if_fail(
         !info || GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info), NULL);
 
