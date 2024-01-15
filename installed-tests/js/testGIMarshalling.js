@@ -2139,20 +2139,38 @@ describe('GObject properties', function () {
             it(`gets and sets a ${type} property as ${propertyName}`, function () {
                 if (skip)
                     pending(skip);
+                const handler = jasmine.createSpy(`handle-${paramCase}`);
+                const id = obj.connect(`notify::${paramCase}`, handler);
+
                 obj[propertyName] = value1;
                 expect(obj[propertyName]).toEqual(value1);
+                expect(handler).toHaveBeenCalledTimes(1);
+
                 obj[propertyName] = value2;
                 expect(obj[propertyName]).toEqual(value2);
+                expect(handler).toHaveBeenCalledTimes(2);
+
+                obj.disconnect(id);
             });
         });
     }
 
     function testPropertyGetSetBigInt(type, value1, value2) {
+        const snakeCase = `some_${type}`;
+        const paramCase = snakeCase.replaceAll('_', '-');
         it(`gets and sets a ${type} property with a bigint`, function () {
-            obj[`some_${type}`] = value1;
-            expect(obj[`some_${type}`]).toEqual(Number(value1));
-            obj[`some_${type}`] = value2;
-            expect(obj[`some_${type}`]).toEqual(Number(value2));
+            const handler = jasmine.createSpy(`handle-${paramCase}`);
+            const id = obj.connect(`notify::${paramCase}`, handler);
+
+            obj[snakeCase] = value1;
+            expect(handler).toHaveBeenCalledTimes(1);
+            expect(obj[snakeCase]).toEqual(Number(value1));
+
+            obj[snakeCase] = value2;
+            expect(handler).toHaveBeenCalledTimes(2);
+            expect(obj[snakeCase]).toEqual(Number(value2));
+
+            obj.disconnect(id);
         });
     }
 
@@ -2195,17 +2213,33 @@ describe('GObject properties', function () {
     });
 
     it('gets and sets a float property', function () {
+        const handler = jasmine.createSpy('handle-some-float');
+        const id = obj.connect('notify::some-float', handler);
+
         obj.some_float = Math.E;
+        expect(handler).toHaveBeenCalledTimes(1);
         expect(obj.some_float).toBeCloseTo(Math.E);
+
         obj.some_float = Math.PI;
+        expect(handler).toHaveBeenCalledTimes(2);
         expect(obj.some_float).toBeCloseTo(Math.PI);
+
+        obj.disconnect(id);
     });
 
     it('gets and sets a double property', function () {
+        const handler = jasmine.createSpy('handle-some-double');
+        const id = obj.connect('notify::some-double', handler);
+
         obj.some_double = Math.E;
+        expect(handler).toHaveBeenCalledTimes(1);
         expect(obj.some_double).toBeCloseTo(Math.E);
+
         obj.some_double = Math.PI;
+        expect(handler).toHaveBeenCalledTimes(2);
         expect(obj.some_double).toBeCloseTo(Math.PI);
+
+        obj.disconnect(id);
     });
 
     testPropertyGetSet('strv', ['0', '1', '2'], []);
@@ -2235,6 +2269,114 @@ describe('GObject properties', function () {
 
     it('throws when setting a read-only property', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
+    });
+
+    it('allows to set/get deprecated properties', function () {
+        if (!GObject.Object.find_property.call(
+            GIMarshallingTests.PropertiesObject, 'some-deprecated-int'))
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GObject property*.some-deprecated-int is deprecated*');
+        obj.some_deprecated_int = 35;
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testAllowToSetGetDeprecatedProperties');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GObject property*.some-deprecated-int is deprecated*');
+        expect(obj.some_deprecated_int).toBe(35);
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testAllowToSetGetDeprecatedProperties');
+    });
+
+    const JSOverridingProperty = GObject.registerClass(
+        class Overriding extends GIMarshallingTests.PropertiesObject {
+            constructor(params) {
+                super(params);
+                this.intValue = 55;
+                this.stringValue = 'a string';
+            }
+
+            set some_int(v) {
+                this.intValue = v;
+            }
+
+            get someInt() {
+                return this.intValue;
+            }
+
+            set someString(v) {
+                this.stringValue = v;
+            }
+
+            get someString() {
+                return this.stringValue;
+            }
+        });
+
+    it('can be overridden from JS', function () {
+        const intHandler = jasmine.createSpy('handle-some-int');
+        const stringHandler = jasmine.createSpy('handle-some-string');
+        const overriding = new JSOverridingProperty({
+            'someInt': 45,
+            'someString': 'other string',
+        });
+        const ids = [];
+        ids.push(overriding.connect('notify::some-int', intHandler));
+        ids.push(overriding.connect('notify::some-string', stringHandler));
+
+        expect(overriding['some-int']).toBe(45);
+        expect(overriding.someInt).toBe(55);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.intValue).toBe(55);
+        expect(overriding.someString).toBe('a string');
+        expect(overriding.some_string).toBe('other string');
+        expect(intHandler).not.toHaveBeenCalled();
+        expect(stringHandler).not.toHaveBeenCalled();
+
+        overriding.some_int = 35;
+        expect(overriding['some-int']).toBe(45);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.someInt).toBe(35);
+        expect(overriding.intValue).toBe(35);
+        expect(intHandler).not.toHaveBeenCalled();
+
+        overriding.someInt = 85;
+        expect(overriding['some-int']).toBe(45);
+        expect(overriding.someInt).toBe(35);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.intValue).toBe(35);
+        expect(intHandler).not.toHaveBeenCalled();
+
+        overriding['some-int'] = 123;
+        expect(overriding['some-int']).toBe(123);
+        expect(overriding.someInt).toBe(35);
+        expect(overriding.some_int).toBeUndefined();
+        expect(overriding.intValue).toBe(35);
+        expect(intHandler).toHaveBeenCalledTimes(1);
+
+        overriding['some-string'] = '🐧';
+        expect(overriding['some-string']).toBe('🐧');
+        expect(overriding.some_string).toBe('🐧');
+        expect(overriding.someString).toBe('a string');
+        expect(overriding.stringValue).toBe('a string');
+        expect(stringHandler).toHaveBeenCalledTimes(1);
+
+        overriding.some_string = '🍕';
+        expect(overriding['some-string']).toBe('🍕');
+        expect(overriding.some_string).toBe('🍕');
+        expect(overriding.someString).toBe('a string');
+        expect(overriding.stringValue).toBe('a string');
+        expect(stringHandler).toHaveBeenCalledTimes(2);
+
+        overriding.someString = '🍝';
+        expect(overriding['some-string']).toBe('🍕');
+        expect(overriding.some_string).toBe('🍕');
+        expect(overriding.someString).toBe('🍝');
+        expect(overriding.stringValue).toBe('🍝');
+        expect(stringHandler).toHaveBeenCalledTimes(2);
+
+        ids.forEach(id => overriding.disconnect(id));
     });
 });
 

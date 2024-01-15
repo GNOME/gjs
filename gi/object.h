@@ -187,16 +187,12 @@ class ObjectPrototype
                                     ObjectInstance>;
     friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
-    using PropertyCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoParam,
-                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using FieldCache =
         JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using NegativeLookupCache =
         JS::GCHashSet<JS::Heap<jsid>, IdHasher, js::SystemAllocPolicy>;
 
-    PropertyCache m_property_cache;
     FieldCache m_field_cache;
     NegativeLookupCache m_unresolvable_cache;
     // a list of vfunc GClosures installed on this prototype, used when tracing
@@ -226,8 +222,8 @@ class ObjectPrototype
 
     GJS_JSAPI_RETURN_CONVENTION
     bool lazy_define_gobject_property(JSContext* cx, JS::HandleObject obj,
-                                      JS::HandleId id, bool* resolved,
-                                      const char* name);
+                                      JS::HandleId id, GParamSpec*,
+                                      bool* resolved, const char* name);
 
     enum ResolveWhat { ConsiderOnlyMethods, ConsiderMethodsAndProperties };
     GJS_JSAPI_RETURN_CONVENTION
@@ -242,11 +238,15 @@ class ObjectPrototype
     void set_interfaces(GType* interface_gtypes, uint32_t n_interface_gtypes);
     void set_type_qdata(void);
     GJS_JSAPI_RETURN_CONVENTION
-    GParamSpec* find_param_spec_from_id(JSContext* cx, JS::HandleString key);
+    GParamSpec* find_param_spec_from_id(JSContext*,
+                                        GjsAutoTypeClass<GObjectClass> const&,
+                                        JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
     GIFieldInfo* lookup_cached_field_info(JSContext* cx, JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
-    bool props_to_g_parameters(JSContext* cx, JS::HandleObject props,
+    bool props_to_g_parameters(JSContext*,
+                               GjsAutoTypeClass<GObjectClass> const&,
+                               JS::HandleObject props,
                                std::vector<const char*>* names,
                                AutoGValueVector* values);
 
@@ -432,14 +432,13 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
  private:
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_getter_impl(JSContext* cx, JS::HandleString name,
+    bool prop_getter_impl(JSContext* cx, GParamSpec*,
                           JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, JS::HandleString name,
                            JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_setter_impl(JSContext* cx, JS::HandleString name,
-                          JS::HandleValue value);
+    bool prop_setter_impl(JSContext* cx, GParamSpec*, JS::HandleValue value);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_not_impl(JSContext* cx, JS::HandleString name);
 

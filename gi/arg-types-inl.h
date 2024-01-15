@@ -102,4 +102,14 @@ inline const char* static_type_name<char*>() {
     return "string";
 }
 
+template <>
+inline const char* static_type_name<const char*>() {
+    return "constant string";
+}
+
+template <>
+inline const char* static_type_name<void>() {
+    return "void";
+}
+
 }  // namespace Gjs

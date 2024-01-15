@@ -736,10 +736,11 @@ bool BoxedPrototype::define_boxed_class_fields(JSContext* cx,
     for (i = 0; i < n_fields; i++) {
         GjsAutoFieldInfo field = g_struct_info_get_field(info(), i);
         JS::RootedValue private_id(cx, JS::PrivateUint32Value(i));
-        if (!gjs_define_property_dynamic(cx, proto, field.name(), "boxed_field",
-                                         &BoxedBase::field_getter,
-                                         &BoxedBase::field_setter, private_id,
-                                         GJS_MODULE_PROP_FLAGS))
+        JS::RootedId id{cx, gjs_intern_string_to_id(cx, field.name())};
+        if (!gjs_define_property_dynamic(
+                cx, proto, field.name(), id, "boxed_field",
+                &BoxedBase::field_getter, &BoxedBase::field_setter, private_id,
+                GJS_MODULE_PROP_FLAGS))
             return false;
     }
 
