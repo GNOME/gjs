@@ -271,15 +271,24 @@ describe('Gtk 4 regressions', function () {
         expect(result).toEqual([0, GLib.MAXUINT32]);
     });
 
-    function createSurface() {
+    function createSurface(shouldStash) {
         // Create a Gdk.Surface that is unreachable after this function ends
         const display = Gdk.Display.get_default();
-        void Gdk.Surface.new_toplevel(display);
+        const surface = Gdk.Surface.new_toplevel(display);
+        if (shouldStash)
+            GjsTestTools.save_object(surface);
     }
 
     it('Gdk.Surface is destroyed properly', function () {
-        createSurface();
+        createSurface(false);
         System.gc();
+    });
+
+    it('Gdk.Surface is not destroyed if a ref is held from C', function () {
+        createSurface(true);
+        System.gc();
+        const surface = GjsTestTools.steal_saved();
+        expect(surface.is_destroyed()).toBeFalsy();
     });
 });
 

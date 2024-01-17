@@ -1487,6 +1487,8 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
 void
 ObjectInstance::release_native_object(void)
 {
+    static GType gdksurface_type = 0;
+
     discard_wrapper();
 
     if (m_gobj_finalized) {
@@ -1512,31 +1514,32 @@ ObjectInstance::release_native_object(void)
     }
 
     // Unref the object. Handle any special cases for destruction here
+    if (m_ptr->ref_count == 1) {
+        // Quickest way to check for GdkSurface if Gdk has been loaded?
+        // surface_type may be 0 if Gdk not loaded. The type may be a private
+        // type and not have introspection info.
+        if (!gdksurface_type)
+            gdksurface_type = g_type_from_name("GdkSurface");
+        if (gdksurface_type && g_type_is_a(gtype(), gdksurface_type)) {
+            GObject* ptr = m_ptr.release();
 
-    // Quickest way to check for GdkSurface if Gdk has been loaded?
-    // surface_type may be G_TYPE_NONE if Gdk not loaded. The type may be a
-    // private type and not have introspection info.
-    GType surface_type = g_type_from_name("GdkSurface");
-    if (surface_type && g_type_is_a(gtype(), surface_type)) {
-        GObject* ptr = m_ptr.release();
+            // Workaround for https://gitlab.gnome.org/GNOME/gtk/-/issues/6289
+            GjsAutoBaseInfo surface_info =
+                g_irepository_find_by_gtype(nullptr, gdksurface_type);
+            GjsAutoFunctionInfo destroy_func =
+                g_object_info_find_method(surface_info, "destroy");
+            GIArgument destroy_args[1] = {{.v_pointer = ptr}};
+            GIArgument unused_return;
 
-        // Workaround for https://gitlab.gnome.org/GNOME/gtk/-/issues/6289
-        GjsAutoBaseInfo surface_info =
-            g_irepository_find_by_gtype(nullptr, surface_type);
-        GjsAutoFunctionInfo destroy_func =
-            g_object_info_find_method(surface_info, "destroy");
-        GIArgument destroy_args[1] = {{.v_pointer = ptr}};
-        GIArgument unused_return;
-
-        GjsAutoError err;
-        if (!g_function_info_invoke(destroy_func, destroy_args, 1, nullptr, 0,
-                                    &unused_return, err.out()))
-            g_critical("Error destroying GdkSurface %p: %s", ptr, err->message);
-    } else {
-        m_ptr = nullptr;
+            GjsAutoError err;
+            if (!g_function_info_invoke(destroy_func, destroy_args, 1, nullptr,
+                                        0, &unused_return, err.out()))
+                g_critical("Error destroying GdkSurface %p: %s", ptr,
+                           err->message);
+        }
     }
 
-    g_assert(!m_ptr && "Forgot to release GObject pointer in special case");
+    m_ptr = nullptr;
 }
 
 /* At shutdown, we need to ensure we've cleared the context of any
