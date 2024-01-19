@@ -1,3 +1,15 @@
+Version 1.79.2
+--------------
+
+- Progress towards some performance improvements in accessing GObject
+  properties [Marco Trevisan]
+
+- Regression fix also released in 1.78.3 [Philip Chimento]
+
+- Closed bugs and merge requests:
+  * value, object: Honor signal arguments transfer annotation [!862,
+    Marco Trevisan]
+
 Version 1.78.3
 --------------
 
