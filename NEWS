@@ -1,3 +1,10 @@
+Version 1.78.3
+--------------
+
+- Closed bugs and merge requests:
+  * GJS 1.78.2 causes all Gnome extensions preference settings windows
+    to disappears after 3-7 seconds [#598, !909, Philip Chimento]
+
 Version 1.78.2
 --------------
 
