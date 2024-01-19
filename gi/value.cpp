@@ -78,10 +78,12 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
             gjs_arg_set(arg, g_value_get_uint(value));
             return true;
         case G_TYPE_LONG:
-            gjs_arg_set(arg, g_value_get_long(value));
+            gjs_arg_set<long, GJS_TYPE_TAG_LONG>(  // NOLINT(runtime/int)
+                arg, g_value_get_long(value));
             return true;
         case G_TYPE_ULONG:
-            gjs_arg_set(arg, g_value_get_ulong(value));
+            gjs_arg_set<unsigned long,  // NOLINT(runtime/int)
+                        GJS_TYPE_TAG_LONG>(arg, g_value_get_ulong(value));
             return true;
         case G_TYPE_INT64:
             gjs_arg_set(arg, g_value_get_int64(value));

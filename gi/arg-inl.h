@@ -114,6 +114,20 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
     }
 }
 
+typedef enum {
+    GJS_TYPE_TAG_LONG = 0,
+} ExtraTag;
+
+template <typename T, ExtraTag TAG>
+[[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+    if constexpr (TAG == GJS_TYPE_TAG_LONG &&
+                  std::is_same_v<T, long>)  // NOLINT(runtime/int)
+        return gjs_arg_member<&GIArgument::v_long>(arg);
+    else if constexpr (TAG == GJS_TYPE_TAG_LONG &&
+                       std::is_same_v<T, unsigned long>)  // NOLINT(runtime/int)
+        return gjs_arg_member<&GIArgument::v_ulong>(arg);
+}
+
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
     if constexpr (std::is_pointer_v<T>) {
@@ -127,6 +141,11 @@ constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
 
         gjs_arg_member<T, TAG>(arg) = v;
     }
+}
+
+template <typename T, ExtraTag TAG>
+constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
+    gjs_arg_member<T, TAG>(arg) = v;
 }
 
 // Store function pointers as void*. It is a requirement of GLib that your
@@ -148,6 +167,11 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
                   (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN))
         return T(!!gjs_arg_member<T, TAG>(arg));
 
+    return gjs_arg_member<T, TAG>(arg);
+}
+
+template <typename T, ExtraTag TAG>
+[[nodiscard]] constexpr inline T gjs_arg_get(GIArgument* arg) {
     return gjs_arg_member<T, TAG>(arg);
 }
 
