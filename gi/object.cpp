@@ -2291,6 +2291,7 @@ ObjectInstance::emit_impl(JSContext          *context,
 
     AutoGValueVector instance_and_args;
     instance_and_args.reserve(signal_query.n_params + 1);
+    std::vector<Gjs::AutoGValue*> args_to_steal;
     Gjs::AutoGValue& instance = instance_and_args.emplace_back(gtype());
     g_value_set_instance(&instance, m_ptr);
 
@@ -2304,18 +2305,40 @@ ObjectInstance::emit_impl(JSContext          *context,
             if (!gjs_value_to_g_value(context, argv[i + 1], &value))
                 return false;
         }
+
+        if (!ObjectBase::info())
+            continue;
+
+        GjsAutoSignalInfo signal_info = g_object_info_find_signal(
+            ObjectBase::info(), signal_query.signal_name);
+        if (!signal_info)
+            continue;
+
+        GjsAutoArgInfo arg_info = g_callable_info_get_arg(signal_info, i);
+        if (g_arg_info_get_ownership_transfer(arg_info) !=
+            GI_TRANSFER_NOTHING) {
+            // FIXME(3v1n0): As it happens in many places in gjs, we can't track
+            // (yet) containers content, so in case of transfer container we
+            // can only leak.
+            args_to_steal.push_back(&value);
+        }
     }
 
     if (signal_query.return_type == G_TYPE_NONE) {
         g_signal_emitv(instance_and_args.data(), signal_id, signal_detail,
                        nullptr);
         argv.rval().setUndefined();
+        std::for_each(args_to_steal.begin(), args_to_steal.end(),
+                      [](Gjs::AutoGValue* value) { value->steal(); });
         return true;
     }
 
     GType gtype = signal_query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE;
     Gjs::AutoGValue rvalue(gtype);
     g_signal_emitv(instance_and_args.data(), signal_id, signal_detail, &rvalue);
+
+    std::for_each(args_to_steal.begin(), args_to_steal.end(),
+                  [](Gjs::AutoGValue* value) { value->steal(); });
 
     return gjs_value_from_g_value(context, argv.rval(), &rvalue);
 }

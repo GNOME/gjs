@@ -2386,14 +2386,20 @@ describe('GObject signals', function () {
         obj = new GIMarshallingTests.SignalsObject();
     });
 
-    function testSignalEmission(type, value, skip = false) {
-        it(`checks emission of signal with ${type} argument`, function () {
+    function testSignalEmission(type, transfer, value, skip = false) {
+        it(`checks emission of signal with ${type} argument and transfer ${transfer}`, function () {
             if (skip)
                 pending(skip);
 
             const signalCallback = jasmine.createSpy('signalCallback');
+
+            if (transfer !== 'none')
+                type += `-${transfer}`;
+
             const signalName = `some_${type}`;
             const funcName = `emit_${type}`.replaceAll('-', '_');
+            if (!obj[funcName])
+                pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
             const signalId = obj.connect(signalName, signalCallback);
             obj[funcName]();
             obj.disconnect(signalId);
@@ -2401,19 +2407,48 @@ describe('GObject signals', function () {
         });
     }
 
-    testSignalEmission('boxed-gptrarray-utf8', ['0', '1', '2']);
-    testSignalEmission('boxed-gptrarray-boxed-struct', [
-        new GIMarshallingTests.BoxedStruct({long_: 42}),
-        new GIMarshallingTests.BoxedStruct({long_: 43}),
-        new GIMarshallingTests.BoxedStruct({long_: 44}),
-    ]);
+    ['none', 'container', 'none'].forEach(transfer => {
+        testSignalEmission('boxed-gptrarray-utf8', transfer, ['0', '1', '2']);
+        testSignalEmission('boxed-gptrarray-boxed-struct', transfer, [
+            new GIMarshallingTests.BoxedStruct({long_: 42}),
+            new GIMarshallingTests.BoxedStruct({long_: 43}),
+            new GIMarshallingTests.BoxedStruct({long_: 44}),
+        ]);
 
-    testSignalEmission('hash-table-utf8-int', {
-        '-1': 1,
-        '0': 0,
-        '1': -1,
-        '2': -2,
-    }, !GIMarshallingTests.SignalsObject.prototype.emit_hash_table_utf8_int
-        ? 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409'
-        : false);
+        testSignalEmission('hash-table-utf8-int', transfer, {
+            '-1': 1,
+            '0': 0,
+            '1': -1,
+            '2': -2,
+        }, !GIMarshallingTests.SignalsObject.prototype.emit_hash_table_utf8_int
+            ? 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409'
+            : false);
+    });
+
+    ['none', 'full'].forEach(transfer => {
+        let skip = false;
+        if (transfer === 'full')
+            skip = 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/470';
+
+        testSignalEmission('boxed-struct', transfer, jasmine.objectContaining({
+            long_: 99,
+            string_: 'a string',
+            g_strv: ['foo', 'bar', 'baz'],
+        }), skip);
+    });
+
+    it('with not-ref-counted boxed types with transfer full are properly handled', function () {
+        // When using JS side only we can handle properly the problems of
+        // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/470
+        if (!GObject.signal_lookup('some-boxed-struct-full', GIMarshallingTests.SignalsObject.$gtype))
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
+
+        const callbackFunc = jasmine.createSpy('callbackFunc');
+        const signalId = obj.connect('some-boxed-struct-full', callbackFunc);
+        obj.emit('some-boxed-struct-full',
+            new GIMarshallingTests.BoxedStruct({long_: 44}));
+        obj.disconnect(signalId);
+        expect(callbackFunc).toHaveBeenCalledOnceWith(obj,
+            new GIMarshallingTests.BoxedStruct({long_: 44}));
+    });
 });
