@@ -8,6 +8,11 @@ const ByteArray = imports.byteArray;
 const {Gdk, Gio, GObject, Gtk, GLib, GjsTestTools} = imports.gi;
 const System = imports.system;
 
+// Set up log writer for tests to override
+const writerFunc = jasmine.createSpy('log writer', () => GLib.LogWriterOutput.UNHANDLED);
+writerFunc.and.callThrough();
+GLib.log_set_writer_func(writerFunc);
+
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
     return `
@@ -198,6 +203,37 @@ describe('Gtk overrides', function () {
     validateTemplate('UI template from string', MyComplexGtkSubclassFromString);
     validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
     validateTemplate('Class inheriting from template class', SubclassSubclass, true);
+
+    it('ensures signal handlers are callable', function () {
+        const ClassWithUncallableHandler = GObject.registerClass({
+            Template: createTemplate('Gjs_ClassWithUncallableHandler'),
+            Children: ['label-child', 'label-child2'],
+            InternalChildren: ['internal-label-child'],
+        }, class ClassWithUncallableHandler extends Gtk.Grid {
+            templateCallback() {}
+            get boundCallback() {
+                return 'who ya gonna call?';
+            }
+        });
+
+        // The exception is thrown inside a vfunc with a GError out parameter,
+        // and Gtk logs a critical.
+        writerFunc.calls.reset();
+        writerFunc.and.callFake((level, fields) => {
+            const decoder = new TextDecoder('utf-8');
+            const domain = decoder.decode(fields?.GLIB_DOMAIN);
+            const message = decoder.decode(fields?.MESSAGE);
+            expect(level).toBe(GLib.LogLevelFlags.LEVEL_CRITICAL);
+            expect(domain).toBe('Gtk');
+            expect(message).toMatch('is not a function');
+            return GLib.LogWriterOutput.HANDLED;
+        });
+
+        void new ClassWithUncallableHandler();
+
+        expect(writerFunc).toHaveBeenCalled();
+        writerFunc.and.callThrough();
+    });
 
     it('rejects unsupported template URIs', function () {
         expect(() => {
