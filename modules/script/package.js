@@ -9,6 +9,7 @@ requireSymbol, run, start, version */
  * This module provides a set of convenience APIs for building packaged
  * applications.
  */
+imports.gi.versions.GIRepository = '2.0';
 
 const GLib = imports.gi.GLib;
 const GIRepository = imports.gi.GIRepository;
