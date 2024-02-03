@@ -3,14 +3,14 @@
 
 # === Build Spidermonkey stage ===
 
-FROM registry.fedoraproject.org/fedora:38 AS mozjs-build
-ARG MOZJS_BRANCH=mozjs102
+FROM registry.fedoraproject.org/fedora:39 AS mozjs-build
+ARG MOZJS_BRANCH=mozjs115
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
 
 ENV SHELL=/bin/bash
 
-# mozjs102 cannot be built with python3.11 and possibly 3.10
+# mozjs115 cannot be built with python3.11
 RUN dnf -y install 'dnf-command(builddep)' \
     autoconf213 \
     clang \
@@ -18,7 +18,8 @@ RUN dnf -y install 'dnf-command(builddep)' \
     llvm \
     llvm-devel \
     make \
-    python3.9 \
+    python3.10 \
+    python-packaging \
     rust \
     which \
     xz
@@ -31,7 +32,7 @@ RUN mkdir -p mozjs/_build
 
 WORKDIR /root/mozjs/_build
 
-ENV PYTHON3=/usr/bin/python3.9
+ENV PYTHON3=/usr/bin/python3.10
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
     --with-system-zlib --with-intl-api ${BUILD_OPTS}
 RUN make -j$(nproc)
@@ -40,7 +41,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:38
+FROM registry.fedoraproject.org/fedora:39
 
 ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash
