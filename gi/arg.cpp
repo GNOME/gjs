@@ -959,11 +959,7 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
             GjsAutoTypeInfo param_info =
                 g_type_info_get_param_type(type_info, 0);
             GITypeTag param_tag = g_type_info_get_tag(param_info);
-            size_t param_size =
-                gjs_type_get_element_size(param_tag, param_info);
-
-            if (param_size)
-                return param_size * length;
+            return gjs_type_get_element_size(param_tag, param_info);
         }
 
         return sizeof(void*);
