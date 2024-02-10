@@ -249,7 +249,7 @@ static bool gjs_value_from_constant_info(JSContext* cx, GIConstantInfo* info,
 
     GjsAutoTypeInfo type_info = g_constant_info_get_type(info);
 
-    bool ok = gjs_value_from_g_argument(cx, value, type_info, &garg, true);
+    bool ok = gjs_value_from_gi_argument(cx, value, type_info, &garg, true);
 
     g_constant_info_free_value(info, &garg);
     return ok;
@@ -662,11 +662,9 @@ JSObject *
 gjs_lookup_generic_constructor(JSContext  *context,
                                GIBaseInfo *info)
 {
-    const char *constructor_name;
-
-    JS::RootedObject in_object(context,
-        gjs_lookup_namespace_object(context, (GIBaseInfo*) info));
-    constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+    JS::RootedObject in_object{context,
+        gjs_lookup_namespace_object(context, info)};
+    const char* constructor_name = g_base_info_get_name(info);
 
     if (G_UNLIKELY (!in_object))
         return NULL;

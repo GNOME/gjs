@@ -16,6 +16,8 @@
 #include <glib.h>
 
 #include <js/GCAPI.h>
+#include <js/HeapAPI.h>     // for ExposeObjectToActiveJS, GetGCThingZone
+#include <js/RootingAPI.h>  // for SafelyInitialized
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 

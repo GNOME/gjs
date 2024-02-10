@@ -10,9 +10,10 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include <js/CallArgs.h>  // for JSNative
 #include <js/TypeDecls.h>
+#include <js/ValueArray.h>
 
-#include "gi/wrapperutils.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"

@@ -365,7 +365,8 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedString name(cx,
         gjs_dynamic_property_private_slot(&args.callee()).toString());
 
-    std::string fullName = priv->format_name() + "." + gjs_debug_string(name);
+    std::string fullName{priv->format_name() + "[" + gjs_debug_string(name) +
+                         "]"};
     AutoProfilerLabel label(cx, "field getter", fullName.c_str());
 
     priv->debug_jsprop("Field getter", name, obj);
@@ -418,8 +419,8 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
         return false;
     }
 
-    return gjs_value_from_g_argument(cx, rval, type, GJS_ARGUMENT_FIELD,
-                                     GI_TRANSFER_EVERYTHING, &arg);
+    return gjs_value_from_gi_argument(cx, rval, type, GJS_ARGUMENT_FIELD,
+                                      GI_TRANSFER_EVERYTHING, &arg);
     /* transfer is irrelevant because g_field_info_get_field() doesn't
      * handle boxed types */
 }
@@ -1524,8 +1525,9 @@ ObjectInstance::release_native_object(void)
             GObject* ptr = m_ptr.release();
 
             // Workaround for https://gitlab.gnome.org/GNOME/gtk/-/issues/6289
-            GjsAutoBaseInfo surface_info =
+            GjsAutoObjectInfo surface_info =
                 g_irepository_find_by_gtype(nullptr, gdksurface_type);
+            g_assert(surface_info && "Could not find introspected GdkSurface info");
             GjsAutoFunctionInfo destroy_func =
                 g_object_info_find_method(surface_info, "destroy");
             GIArgument destroy_args[1] = {{.v_pointer = ptr}};
@@ -1994,8 +1996,8 @@ JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
     const char *constructor_name;
 
     if (info) {
-        in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
+        in_object = gjs_lookup_namespace_object(context, info);
+        constructor_name = g_base_info_get_name(info);
     } else {
         in_object = gjs_lookup_private_namespace(context);
         constructor_name = g_type_name(gtype);

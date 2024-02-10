@@ -200,7 +200,7 @@ bool FundamentalInstance::invoke_constructor(JSContext* context,
 bool FundamentalInstance::constructor_impl(JSContext* cx,
                                            JS::HandleObject object,
                                            const JS::CallArgs& argv) {
-    GArgument ret_value;
+    GIArgument ret_value;
     GITypeInfo return_info;
 
     if (!invoke_constructor(cx, object, argv, &ret_value) ||
@@ -210,7 +210,7 @@ bool FundamentalInstance::constructor_impl(JSContext* cx,
     GICallableInfo* constructor_info = get_prototype()->constructor_info();
     g_callable_info_load_return_type(constructor_info, &return_info);
 
-    return gjs_g_argument_release(
+    return gjs_gi_argument_release(
         cx, g_callable_info_get_caller_owns(constructor_info), &return_info,
         &ret_value);
 }

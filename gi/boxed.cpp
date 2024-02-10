@@ -574,19 +574,19 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
         GIArgument length_arg;
         if (!g_field_info_get_field(length_field_info, m_ptr, &length_arg)) {
             gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                      g_base_info_get_name(length_field_info));
+                      length_field_info.name());
             return false;
         }
 
         GjsAutoTypeInfo length_type_info =
             g_field_info_get_type(length_field_info);
-        size_t length = gjs_g_argument_get_array_length(
+        size_t length = gjs_gi_argument_get_array_length(
             g_type_info_get_tag(length_type_info), &length_arg);
         return gjs_value_from_explicit_array(cx, rval, type_info, &arg, length);
     }
 
-    return gjs_value_from_g_argument(cx, rval, type_info, GJS_ARGUMENT_FIELD,
-                                     GI_TRANSFER_EVERYTHING, &arg);
+    return gjs_value_from_gi_argument(cx, rval, type_info, GJS_ARGUMENT_FIELD,
+                                      GI_TRANSFER_EVERYTHING, &arg);
 }
 
 /*
@@ -647,7 +647,6 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
 bool BoxedInstance::field_setter_impl(JSContext* context,
                                       GIFieldInfo* field_info,
                                       JS::HandleValue value) {
-    GArgument arg;
     GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
 
     if (!g_type_info_is_pointer (type_info) &&
@@ -661,10 +660,11 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
         }
     }
 
-    if (!gjs_value_to_g_argument(context, value, type_info,
-                                 g_base_info_get_name(field_info),
-                                 GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING,
-                                 GjsArgumentFlags::MAY_BE_NULL, &arg))
+    GIArgument arg;
+    if (!gjs_value_to_gi_argument(context, value, type_info,
+                                  g_base_info_get_name(field_info),
+                                  GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING,
+                                  GjsArgumentFlags::MAY_BE_NULL, &arg))
         return false;
 
     bool success = true;
@@ -675,7 +675,7 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
     }
 
     JS::AutoSaveExceptionState saved_exc(context);
-    if (!gjs_g_argument_release(context, GI_TRANSFER_NOTHING, type_info, &arg))
+    if (!gjs_gi_argument_release(context, GI_TRANSFER_NOTHING, type_info, &arg))
         gjs_log_exception(context);
     saved_exc.restore();
 
@@ -799,7 +799,7 @@ const struct JSClass BoxedBase::klass = {
         case GI_TYPE_TAG_INTERFACE:
             {
             GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
-            switch (g_base_info_get_type(interface)) {
+            switch (interface.type()) {
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
                     return struct_is_simple(interface.as<GIStructInfo>());

@@ -10,7 +10,8 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/Array.h>  // for JS::GetArrayLength,
+#include <js/Array.h>  // for JS::GetArrayLength
+#include <js/CallAndConstruct.h>  // for IsCallable
 #include <js/CallArgs.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
@@ -569,6 +570,9 @@ static bool gjs_associate_closure(JSContext* context, unsigned argc,
     if (!gjs_parse_call_args(context, "associateClosure", argv, "oo", "object",
                              &target_obj, "func", &func_obj))
         return false;
+
+    g_assert(JS::IsCallable(func_obj) &&
+             "associateClosure's function must be callable");
 
     obj = ObjectInstance::for_js(context, target_obj);
     if (!obj)

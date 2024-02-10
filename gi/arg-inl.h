@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <config.h>
+
 #include <stdint.h>
 
 #include <cstddef>  // for nullptr_t
@@ -218,7 +220,7 @@ gjs_arg_get_maybe_rounded(GIArgument* arg) {
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
-    JSContext* cx, const JS::HandleValue& value, GArgument* arg,
+    JSContext* cx, const JS::HandleValue& value, GIArgument* arg,
     bool* out_of_range) {
     if constexpr (Gjs::type_has_js_getter<T>())
         return Gjs::js_value_to_c(cx, value, &gjs_arg_member<T>(arg));
@@ -238,7 +240,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
 
 // A helper function to retrieve array lengths from a GIArgument (letting the
 // compiler generate good instructions in case of big endian machines)
-[[nodiscard]] constexpr size_t gjs_g_argument_get_array_length(
+[[nodiscard]] constexpr size_t gjs_gi_argument_get_array_length(
     GITypeTag tag, GIArgument* arg) {
     switch (tag) {
         case GI_TYPE_TAG_INT8:

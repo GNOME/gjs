@@ -54,7 +54,7 @@
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(JSContext*, JS::MutableHandleValue,
                                             const GValue*, bool no_copy = false,
-                                            GjsAutoSignalInfo const& = nullptr,
+                                            bool is_introspected_signal = false,
                                             GjsAutoArgInfo const& = nullptr,
                                             GITypeInfo* = nullptr);
 
@@ -155,8 +155,8 @@ static bool maybe_release_signal_value(JSContext* cx,
     if (!gjs_arg_set_from_gvalue(cx, &arg, gvalue))
         return false;
 
-    if (!gjs_g_argument_release(cx, transfer, type_info,
-                                GjsArgumentFlags::ARG_OUT, &arg)) {
+    if (!gjs_gi_argument_release(cx, transfer, type_info,
+                                 GjsArgumentFlags::ARG_OUT, &arg)) {
         gjs_throw(cx, "Cannot release argument %s value, we're gonna leak!",
                   arg_info.name());
         return false;
@@ -172,8 +172,6 @@ static bool maybe_release_signal_value(JSContext* cx,
  */
 [[nodiscard]] static GjsAutoSignalInfo get_signal_info_if_available(
     GSignalQuery* signal_query) {
-    GIInfoType info_type;
-
     if (!signal_query->itype)
         return nullptr;
 
@@ -182,7 +180,7 @@ static bool maybe_release_signal_value(JSContext* cx,
     if (!obj)
         return nullptr;
 
-    info_type = g_base_info_get_type (obj);
+    GIInfoType info_type = obj.type();
     if (info_type == GI_INFO_TYPE_OBJECT)
         return g_object_info_find_signal(obj, signal_query->signal_name);
     else if (info_type == GI_INFO_TYPE_INTERFACE)
@@ -197,22 +195,22 @@ static bool maybe_release_signal_value(JSContext* cx,
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_array_and_length_values(
-    JSContext* context, GjsAutoSignalInfo const& signal_info,
-    JS::MutableHandleValue value_p, GITypeInfo* array_type_info,
-    const GValue* array_value, GjsAutoArgInfo const& array_length_arg_info,
+    JSContext* context, JS::MutableHandleValue value_p,
+    GITypeInfo* array_type_info, const GValue* array_value,
+    GjsAutoArgInfo const& array_length_arg_info,
     GITypeInfo* array_length_type_info, const GValue* array_length_value,
-    bool no_copy) {
+    bool no_copy, bool is_introspected_signal) {
     JS::RootedValue array_length(context);
-    GArgument array_arg;
 
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
     g_assert(G_VALUE_HOLDS_INT(array_length_value));
 
     if (!gjs_value_from_g_value_internal(
-            context, &array_length, array_length_value, no_copy, signal_info,
+            context, &array_length, array_length_value, no_copy, is_introspected_signal,
             array_length_arg_info, array_length_type_info))
         return false;
 
+    GIArgument array_arg;
     gjs_arg_set(&array_arg, g_value_get_pointer(array_value));
 
     return gjs_value_from_explicit_array(
@@ -327,6 +325,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     if (!argv.reserve(n_param_values))
         g_error("Unable to reserve space");
     JS::RootedValue argv_to_append(context);
+    bool is_introspected_signal = !!signal_info;
     for (i = 0; i < n_param_values; ++i) {
         const GValue* gval = &param_values[i];
         ArgumentDetails& arg_details = args_details[i];
@@ -348,12 +347,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             ArgumentDetails& array_len_details =
                 args_details[arg_details.array_len_index_for];
             res = gjs_value_from_array_and_length_values(
-                context, signal_info, &argv_to_append, &arg_details.type_info,
-                gval, array_len_details.arg_info, &array_len_details.type_info,
-                array_len_gval, no_copy);
+                context, &argv_to_append, &arg_details.type_info, gval,
+                array_len_details.arg_info, &array_len_details.type_info,
+                array_len_gval, no_copy, is_introspected_signal);
         } else {
             res = gjs_value_from_g_value_internal(
-                context, &argv_to_append, gval, no_copy, signal_info,
+                context, &argv_to_append, gval, no_copy, is_introspected_signal,
                 arg_details.arg_info, &arg_details.type_info);
         }
 
@@ -782,13 +781,14 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
                 if (registered) {
-                    GIInfoType info_type = g_base_info_get_type (registered);
+                    GIInfoType info_type = registered.type();
 
                     if (info_type == GI_INFO_TYPE_STRUCT &&
-                        g_struct_info_is_foreign ((GIStructInfo*)registered)) {
-                        GArgument arg;
+                        g_struct_info_is_foreign(
+                            registered.as<GIStructInfo>())) {
+                        GIArgument arg;
 
-                        if (!gjs_struct_foreign_convert_to_g_argument(
+                        if (!gjs_struct_foreign_convert_to_gi_argument(
                                 context, value, registered, nullptr,
                                 GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
                                 GjsArgumentFlags::MAY_BE_NULL, &arg))
@@ -996,7 +996,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(
     JSContext* context, JS::MutableHandleValue value_p, const GValue* gvalue,
-    bool no_copy, GjsAutoSignalInfo const& signal_info,
+    bool no_copy, bool is_introspected_signal,
     GjsAutoArgInfo const& arg_info, GITypeInfo* type_info) {
     GType gtype;
 
@@ -1075,7 +1075,7 @@ static bool gjs_value_from_g_value_internal(
             return true;
         }
 
-        if (!signal_info || !arg_info) {
+        if (!is_introspected_signal || !arg_info) {
             gjs_throw(context, "Unknown signal");
             return false;
         }
@@ -1151,8 +1151,8 @@ static bool gjs_value_from_g_value_internal(
             g_struct_info_is_foreign(info)) {
             GIArgument arg;
             gjs_arg_set(&arg, gboxed);
-            return gjs_struct_foreign_convert_from_g_argument(context, value_p,
-                                                              info, &arg);
+            return gjs_struct_foreign_convert_from_gi_argument(context, value_p,
+                                                               info, &arg);
         }
 
         GIInfoType type = info.type();
@@ -1181,9 +1181,7 @@ static bool gjs_value_from_g_value_internal(
 
         obj = gjs_param_from_g_param(context, gparam);
         value_p.setObjectOrNull(obj);
-    } else if (signal_info && g_type_is_a(gtype, G_TYPE_POINTER)) {
-        GArgument arg;
-
+    } else if (is_introspected_signal && g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (!arg_info) {
             gjs_throw(context, "Unknown signal.");
             return false;
@@ -1193,10 +1191,11 @@ static bool gjs_value_from_g_value_internal(
                         " calling gjs_value_from_g_value_internal()",
                   g_type_info_get_array_length(type_info) == -1));
 
+        GIArgument arg;
         gjs_arg_set(&arg, g_value_get_pointer(gvalue));
 
-        return gjs_value_from_g_argument(context, value_p, type_info, &arg,
-                                         true);
+        return gjs_value_from_gi_argument(context, value_p, type_info, &arg,
+                                          true);
     } else if (gtype == G_TYPE_GTYPE) {
         GType gvalue_gtype = g_value_get_gtype(gvalue);
 

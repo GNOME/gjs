@@ -227,7 +227,7 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     cairo_region_destroy(region);
 }
 
-[[nodiscard]] static bool region_to_g_argument(
+[[nodiscard]] static bool region_to_gi_argument(
     JSContext* context, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
@@ -256,11 +256,9 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-region_from_g_argument(JSContext             *context,
-                       JS::MutableHandleValue value_p,
-                       GIArgument            *arg)
-{
+static bool region_from_gi_argument(JSContext* context,
+                                    JS::MutableHandleValue value_p,
+                                    GIArgument* arg) {
     JSObject* obj =
         CairoRegion::from_c_ptr(context, gjs_arg_get<cairo_region_t*>(arg));
     if (!obj)
@@ -279,8 +277,9 @@ static bool region_release_argument(JSContext*, GITransfer transfer,
 
 
 void gjs_cairo_region_init(void) {
-    static GjsForeignInfo foreign_info = {
-        region_to_g_argument, region_from_g_argument, region_release_argument};
+    static GjsForeignInfo foreign_info = {region_to_gi_argument,
+                                          region_from_gi_argument,
+                                          region_release_argument};
 
     gjs_struct_foreign_register("cairo", "Region", &foreign_info);
 }

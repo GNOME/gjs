@@ -103,10 +103,10 @@ void gjs_struct_foreign_register(const char* gi_namespace,
     return retval;
 }
 
-bool gjs_struct_foreign_convert_to_g_argument(
+bool gjs_struct_foreign_convert_to_gi_argument(
     JSContext* context, JS::Value value, GIBaseInfo* interface_info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
-    GjsArgumentFlags flags, GArgument* arg) {
+    GjsArgumentFlags flags, GIArgument* arg) {
     GjsForeignInfo *foreign;
 
     foreign = gjs_struct_foreign_lookup(context, interface_info);
@@ -120,12 +120,10 @@ bool gjs_struct_foreign_convert_to_g_argument(
     return true;
 }
 
-bool
-gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
-                                           JS::MutableHandleValue value_p,
-                                           GIBaseInfo            *interface_info,
-                                           GIArgument            *arg)
-{
+bool gjs_struct_foreign_convert_from_gi_argument(JSContext* context,
+                                                 JS::MutableHandleValue value_p,
+                                                 GIBaseInfo* interface_info,
+                                                 GIArgument* arg) {
     GjsForeignInfo *foreign;
 
     foreign = gjs_struct_foreign_lookup(context, interface_info);
@@ -138,12 +136,10 @@ gjs_struct_foreign_convert_from_g_argument(JSContext             *context,
     return true;
 }
 
-bool
-gjs_struct_foreign_release_g_argument(JSContext  *context,
-                                      GITransfer  transfer,
-                                      GIBaseInfo *interface_info,
-                                      GArgument  *arg)
-{
+bool gjs_struct_foreign_release_gi_argument(JSContext* context,
+                                            GITransfer transfer,
+                                            GIBaseInfo* interface_info,
+                                            GIArgument* arg) {
     GjsForeignInfo *foreign;
 
     foreign = gjs_struct_foreign_lookup(context, interface_info);
@@ -158,4 +154,3 @@ gjs_struct_foreign_release_g_argument(JSContext  *context,
 
     return true;
 }
-

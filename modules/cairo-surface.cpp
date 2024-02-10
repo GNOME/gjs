@@ -324,7 +324,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         surface_wrapper, CairoSurface::POINTER);
 }
 
-[[nodiscard]] static bool surface_to_g_argument(
+[[nodiscard]] static bool surface_to_gi_argument(
     JSContext* context, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
@@ -359,9 +359,9 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool surface_from_g_argument(JSContext* cx,
-                                    JS::MutableHandleValue value_p,
-                                    GIArgument* arg) {
+static bool surface_from_gi_argument(JSContext* cx,
+                                     JS::MutableHandleValue value_p,
+                                     GIArgument* arg) {
     JSObject* obj =
         CairoSurface::from_c_ptr(cx, gjs_arg_get<cairo_surface_t*>(arg));
     if (!obj)
@@ -379,8 +379,8 @@ static bool surface_release_argument(JSContext*, GITransfer transfer,
 }
 
 void gjs_cairo_surface_init(void) {
-    static GjsForeignInfo foreign_info = {surface_to_g_argument,
-                                          surface_from_g_argument,
+    static GjsForeignInfo foreign_info = {surface_to_gi_argument,
+                                          surface_from_gi_argument,
                                           surface_release_argument};
     gjs_struct_foreign_register("cairo", "Surface", &foreign_info);
 }
