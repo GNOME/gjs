@@ -1,3 +1,13 @@
+Version 1.76.3
+--------------
+
+- Various fixes ported from the development branch.
+
+- Closed bugs and merge requests:
+  * gi/gerror: Fix version of the GIRepository typelib import [!906, Jordan
+    Petridis]
+  * package: Specify GIRepository version [!910, !911, Florian Müllner]
+
 Version 1.76.2
 --------------
 
