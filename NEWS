@@ -1,3 +1,9 @@
+Version 1.78.4
+--------------
+
+- Closed bugs and merge requests:
+  * package: Specify GIRepository version [!910, !911, Florian Müllner]
+
 Version 1.78.3
 --------------
 
