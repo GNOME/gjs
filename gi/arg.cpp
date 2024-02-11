@@ -175,9 +175,6 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
                     // cast is safe
                     gtype = g_registered_type_info_get_g_type(interface_info);
                     break;
-                case GI_INFO_TYPE_VALUE:
-                    // Special case for GValues
-                    return true;
                 default:
                     gtype = G_TYPE_NONE;
             }
@@ -780,9 +777,6 @@ static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
 
 [[nodiscard]] static bool is_gvalue(GIBaseInfo* info) {
     switch (g_base_info_get_type(info)) {
-        case GI_INFO_TYPE_VALUE:
-            return true;
-
         case GI_INFO_TYPE_STRUCT:
         case GI_INFO_TYPE_OBJECT:
         case GI_INFO_TYPE_INTERFACE:
@@ -940,8 +934,6 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
                 return g_struct_info_get_size(interface_info);
             case GI_INFO_TYPE_UNION:
                 return g_union_info_get_size(interface_info);
-            case GI_INFO_TYPE_VALUE:
-                return sizeof(GValue);
             default:
                 return 0;
         }
@@ -1212,11 +1204,6 @@ static bool value_to_interface_gi_argument(
             // These are subtypes of GIRegisteredTypeInfo for which the cast is
             // safe
             gtype = g_registered_type_info_get_g_type(interface_info);
-            break;
-
-        case GI_INFO_TYPE_VALUE:
-            // Special case for GValues
-            gtype = G_TYPE_VALUE;
             break;
 
         default:
@@ -2085,8 +2072,7 @@ static bool gjs_array_from_carray_internal(
 
             if (array_type != GI_ARRAY_TYPE_PTR_ARRAY &&
                 (info_type == GI_INFO_TYPE_STRUCT ||
-                 info_type == GI_INFO_TYPE_UNION ||
-                 info_type == GI_INFO_TYPE_VALUE) &&
+                 info_type == GI_INFO_TYPE_UNION) &&
                 !g_type_info_is_pointer(param_info)) {
                 size_t struct_size;
 
