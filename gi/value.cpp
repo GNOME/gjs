@@ -55,7 +55,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(JSContext*, JS::MutableHandleValue,
                                             const GValue*, bool no_copy = false,
                                             bool is_introspected_signal = false,
-                                            GjsAutoArgInfo const& = nullptr,
+                                            GIArgInfo* = nullptr,
                                             GITypeInfo* = nullptr);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -197,9 +197,9 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_array_and_length_values(
     JSContext* context, JS::MutableHandleValue value_p,
     GITypeInfo* array_type_info, const GValue* array_value,
-    GjsAutoArgInfo const& array_length_arg_info,
-    GITypeInfo* array_length_type_info, const GValue* array_length_value,
-    bool no_copy, bool is_introspected_signal) {
+    GIArgInfo* array_length_arg_info, GITypeInfo* array_length_type_info,
+    const GValue* array_length_value, bool no_copy,
+    bool is_introspected_signal) {
     JS::RootedValue array_length(context);
 
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
@@ -994,10 +994,12 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_g_value_internal(
-    JSContext* context, JS::MutableHandleValue value_p, const GValue* gvalue,
-    bool no_copy, bool is_introspected_signal,
-    GjsAutoArgInfo const& arg_info, GITypeInfo* type_info) {
+static bool gjs_value_from_g_value_internal(JSContext* context,
+                                            JS::MutableHandleValue value_p,
+                                            const GValue* gvalue, bool no_copy,
+                                            bool is_introspected_signal,
+                                            GIArgInfo* arg_info,
+                                            GITypeInfo* type_info) {
     GType gtype;
 
     gtype = G_VALUE_TYPE(gvalue);
