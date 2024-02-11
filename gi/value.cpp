@@ -430,19 +430,6 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     }
 }
 
-GJS_JSAPI_RETURN_CONVENTION GjsAutoArgInfo
-get_signal_arg_info(GSignalQuery* signal_query, int arg_n) {
-    if (!signal_query || arg_n < 1)
-        return nullptr;
-
-    GjsAutoSignalInfo signal_info = get_signal_info_if_available(signal_query);
-
-    if (!signal_info)
-        return nullptr;
-
-    return g_callable_info_get_arg(signal_info, arg_n - 1);
-}
-
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_guess_g_type(JSContext* context, JS::Value value,
                                    GType* gtype_out) {
