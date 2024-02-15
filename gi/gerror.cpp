@@ -25,6 +25,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>    // for InformalValueTypeName, JS_GetClassObject
 #include <jspubtd.h>  // for JSProtoKey, JSProto_Error, JSProt...
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
 #include "gi/boxed.h"
@@ -42,9 +43,11 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-ErrorPrototype::ErrorPrototype(GIEnumInfo* info, GType gtype)
+using mozilla::Maybe;
+
+ErrorPrototype::ErrorPrototype(const GI::EnumInfo info, GType gtype)
     : GIWrapperPrototype(info, gtype),
-      m_domain(g_quark_from_string(g_enum_info_get_error_domain(info))) {
+      m_domain(g_quark_from_string(info.error_domain())) {
     GJS_INC_COUNTER(gerror_prototype);
 }
 
@@ -220,17 +223,19 @@ JSFunctionSpec ErrorBase::static_methods[] = {
 // Overrides GIWrapperPrototype::get_parent_proto().
 bool ErrorPrototype::get_parent_proto(JSContext* cx,
                                       JS::MutableHandleObject proto) const {
-    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
-                          nullptr);
-    GI::AutoStructInfo glib_error_info{
-        g_irepository_find_by_name(nullptr, "GLib", "Error")};
+    GI::Repository repo{};
+    repo.require("GLib", "2.0").unwrap();
+
+    GI::AutoBaseInfo glib_error_info{
+        repo.find_by_name("GLib", "Error").value()};
+
     proto.set(gjs_lookup_generic_prototype(cx, glib_error_info));
     return !!proto;
 }
 
 bool ErrorPrototype::define_class(JSContext* context,
                                   JS::HandleObject in_object,
-                                  GIEnumInfo* info) {
+                                  const GI::EnumInfo info) {
     JS::RootedObject prototype(context), constructor(context);
     if (!ErrorPrototype::create_class(context, in_object, info, G_TYPE_ERROR,
                                       &constructor, &prototype))
@@ -246,32 +251,26 @@ bool ErrorPrototype::define_class(JSContext* context,
            gjs_define_enum_values(context, constructor, info);
 }
 
-[[nodiscard]] static GIEnumInfo* find_error_domain_info(GQuark domain) {
-    GIEnumInfo *info;
-
+[[nodiscard]]
+static Maybe<const GI::EnumInfo> find_error_domain_info(
+    const GI::Repository& repo, GQuark domain) {
     /* first an attempt without loading extra libraries */
-    info = g_irepository_find_by_error_domain(nullptr, domain);
+    Maybe<GI::AutoEnumInfo> info = repo.find_by_error_domain(domain);
     if (info)
         return info;
 
     /* load standard stuff */
-    g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
-                          nullptr);
-    g_irepository_require(nullptr, "GObject", "2.0", GIRepositoryLoadFlags(0),
-                          nullptr);
-    g_irepository_require(nullptr, "Gio", "2.0", GIRepositoryLoadFlags(0),
-                          nullptr);
-    info = g_irepository_find_by_error_domain(nullptr, domain);
+    repo.require("GLib", "2.0").unwrap();
+    repo.require("GObject", "2.0").unwrap();
+    repo.require("Gio", "2.0").unwrap();
+    info = repo.find_by_error_domain(domain);
     if (info)
         return info;
 
     /* last attempt: load GIRepository (for invoke errors, rarely
        needed) */
-    g_irepository_require(nullptr, "GIRepository", "2.0",
-                          GIRepositoryLoadFlags(0), nullptr);
-    info = g_irepository_find_by_error_domain(nullptr, domain);
-
-    return info;
+    repo.require("GIRepository", "2.0").unwrap();
+    return repo.find_by_error_domain(domain);
 }
 
 /* define properties that JS Error() expose, such as
@@ -355,30 +354,28 @@ gjs_error_from_js_gerror(JSContext *cx,
 }
 
 JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
-    GIEnumInfo *info;
-
     if (!gerror)
         return nullptr;
 
     if (gerror->domain == GJS_JS_ERROR)
         return gjs_error_from_js_gerror(context, gerror);
 
-    info = find_error_domain_info(gerror->domain);
+    GI::Repository repo;
+    Maybe<GI::AutoEnumInfo> info = find_error_domain_info(repo, gerror->domain);
 
     if (!info) {
         /* We don't have error domain metadata */
         /* Marshal the error as a plain GError */
-        GI::AutoBaseInfo glib_boxed{
-            g_irepository_find_by_name(nullptr, "GLib", "Error")};
+        GI::AutoStructInfo glib_boxed{
+            repo.find_by_name<GI::InfoTag::STRUCT>("GLib", "Error").value()};
         return BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GBOXED,
-                      "Wrapping struct %s with JSObject",
-                      g_base_info_get_name((GIBaseInfo *)info));
+    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct %s with JSObject",
+                      info->name());
 
-    JS::RootedObject obj(context,
-                         gjs_new_object_with_generic_prototype(context, info));
+    JS::RootedObject obj{context,
+                         gjs_new_object_with_generic_prototype(context, *info)};
     if (!obj)
         return nullptr;
 

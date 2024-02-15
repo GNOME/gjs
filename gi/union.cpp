@@ -12,6 +12,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Warnings.h>
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
 #include "gi/function.h"
@@ -23,7 +24,9 @@
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
-UnionPrototype::UnionPrototype(GIUnionInfo* info, GType gtype)
+using mozilla::Maybe;
+
+UnionPrototype::UnionPrototype(const GI::UnionInfo info, GType gtype)
     : GIWrapperPrototype(info, gtype) {
     GJS_INC_COUNTER(union_prototype);
 }
@@ -55,20 +58,17 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     }
 
     // Look for methods and other class properties
-    GI::AutoFunctionInfo method_info{
-        g_union_info_find_method(info(), prop_name.get())};
+    Maybe<GI::AutoFunctionInfo> method_info{info().method(prop_name.get())};
 
     if (method_info) {
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-        _gjs_log_info_usage(method_info);
-#endif
-        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+        method_info->log_usage();
+        if (method_info->is_method()) {
             gjs_debug(GJS_DEBUG_GBOXED,
                       "Defining method %s in prototype for %s",
-                      method_info.name(), format_name().c_str());
+                      method_info->name(), format_name().c_str());
 
             /* obj is union proto */
-            if (!gjs_define_function(context, obj, gtype(), method_info))
+            if (!gjs_define_function(context, obj, gtype(), method_info.ref()))
                 return false;
 
             *resolved = true; /* we defined the prop in object_proto */
@@ -84,22 +84,10 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 
 GJS_JSAPI_RETURN_CONVENTION
 static void* union_new(JSContext* context, JS::HandleObject this_obj,
-                       const JS::CallArgs& args, GIUnionInfo* info) {
-    int n_methods;
-    int i;
-
+                       const JS::CallArgs& args, const GI::UnionInfo info) {
     /* Find a zero-args constructor and call it */
-
-    n_methods = g_union_info_get_n_methods(info);
-
-    for (i = 0; i < n_methods; ++i) {
-        GIFunctionInfoFlags flags;
-
-        GI::AutoFunctionInfo func_info{g_union_info_get_method(info, i)};
-
-        flags = g_function_info_get_flags(func_info);
-        if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&
-            g_callable_info_get_n_args((GICallableInfo*) func_info) == 0) {
+    for (GI::AutoFunctionInfo func_info : info.methods()) {
+        if (func_info.is_constructor() && func_info.n_args() == 0) {
             GIArgument rval;
             if (!gjs_invoke_constructor_from_c(context, func_info, this_obj,
                                                args, &rval))
@@ -109,7 +97,7 @@ static void* union_new(JSContext* context, JS::HandleObject this_obj,
                 gjs_throw(context,
                           "Unable to construct union type %s as its"
                           "constructor function returned null",
-                          g_base_info_get_name(info));
+                          info.name());
                 return nullptr;
             }
 
@@ -117,8 +105,10 @@ static void* union_new(JSContext* context, JS::HandleObject this_obj,
         }
     }
 
-    gjs_throw(context, "Unable to construct union type %s since it has no zero-args <constructor>, can only wrap an existing one",
-              g_base_info_get_name((GIBaseInfo*) info));
+    gjs_throw(context,
+              "Unable to construct union type %s since it has no zero-args "
+              "<constructor>, can only wrap an existing one",
+              info.name());
 
     return nullptr;
 }
@@ -156,14 +146,13 @@ const struct JSClass UnionBase::klass = {
 
 bool UnionPrototype::define_class(JSContext* context,
                                   JS::HandleObject in_object,
-                                  GIUnionInfo* info) {
-    GType gtype;
+                                  const GI::UnionInfo info) {
     JS::RootedObject prototype(context), constructor(context);
 
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
      */
-    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
+    GType gtype = info.gtype();
     if (gtype == G_TYPE_NONE) {
         gjs_throw(context, "Unions must currently be registered as boxed types");
         return false;
@@ -173,25 +162,22 @@ bool UnionPrototype::define_class(JSContext* context,
                                           &constructor, &prototype);
 }
 
-JSObject* UnionInstance::new_for_c_union(JSContext* context, GIUnionInfo* info,
+JSObject* UnionInstance::new_for_c_union(JSContext* context,
+                                         const GI::UnionInfo info,
                                          void* gboxed) {
-    GType gtype;
-
     if (!gboxed)
         return nullptr;
 
     /* For certain unions, we may be able to relax this in the future by
      * directly allocating union memory, as we do for structures in boxed.c
      */
-    gtype = g_registered_type_info_get_g_type( (GIRegisteredTypeInfo*) info);
-    if (gtype == G_TYPE_NONE) {
+    if (info.gtype() == G_TYPE_NONE) {
         gjs_throw(context, "Unions must currently be registered as boxed types");
         return nullptr;
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GBOXED,
-                      "Wrapping union %s %p with JSObject",
-                      g_base_info_get_name((GIBaseInfo *)info), gboxed);
+    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping union %s %p with JSObject",
+                      info.name(), gboxed);
 
     JS::RootedObject obj(context,
                          gjs_new_object_with_generic_prototype(context, info));

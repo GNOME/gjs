@@ -13,6 +13,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/cwrapper.h"
+#include "gi/info.h"
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -41,15 +42,14 @@ class UnionBase
     static const JSClass klass;
 };
 
-class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
-                                                 UnionInstance, GIUnionInfo> {
+class UnionPrototype
+    : public GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
+                                GI::AutoUnionInfo, GI::UnionInfo> {
     friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
-                                    GIUnionInfo>;
+                                    GI::AutoUnionInfo, GI::UnionInfo>;
     friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
-    static constexpr InfoType::Tag info_type_tag = InfoType::Union;
-
-    explicit UnionPrototype(GIUnionInfo* info, GType gtype);
+    explicit UnionPrototype(const GI::UnionInfo info, GType gtype);
     ~UnionPrototype(void);
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -62,7 +62,7 @@ class UnionPrototype : public GIWrapperPrototype<UnionBase, UnionPrototype,
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext* cx, JS::HandleObject in_object,
-                             GIUnionInfo* info);
+                             const GI::UnionInfo);
 };
 
 class UnionInstance
@@ -79,7 +79,7 @@ class UnionInstance
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* new_for_c_union(JSContext* cx, GIUnionInfo* info,
+    static JSObject* new_for_c_union(JSContext*, const GI::UnionInfo,
                                      void* gboxed);
 
     /*

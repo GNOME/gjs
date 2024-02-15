@@ -60,14 +60,13 @@ class ReturnTag {
     constexpr explicit ReturnTag(GITypeTag tag, GIInfoType info_type,
                                  bool is_pointer)
         : m_tag(tag), m_info_type(info_type), m_is_pointer(is_pointer) {}
-    explicit ReturnTag(GITypeInfo* type_info)
-        : m_tag(g_type_info_get_tag(type_info)),
+    explicit ReturnTag(const GI::TypeInfo type_info)
+        : m_tag(type_info.tag()),
           m_info_type(GI_INFO_TYPE_INVALID),
-          m_is_pointer(g_type_info_is_pointer(type_info)) {
+          m_is_pointer(type_info.is_pointer()) {
         if (m_tag == GI_TYPE_TAG_INTERFACE) {
-            GI::AutoBaseInfo interface_info{
-                g_type_info_get_interface(type_info)};
-            m_info_type = g_base_info_get_type(interface_info);
+            GI::AutoBaseInfo interface_info{type_info.interface()};
+            m_info_type = interface_info.type();
         }
     }
 
@@ -186,7 +185,7 @@ static_assert(sizeof(Argument) <= 24,
 
 struct ArgsCache {
     GJS_JSAPI_RETURN_CONVENTION
-    bool initialize(JSContext* cx, GICallableInfo* callable);
+    bool initialize(JSContext*, const GI::CallableInfo);
 
     // COMPAT: in C++20, use default initializers for these bitfields
     ArgsCache() : m_is_method(false), m_has_return(false) {}
@@ -194,42 +193,42 @@ struct ArgsCache {
     constexpr bool initialized() { return m_args != nullptr; }
     constexpr void clear() { m_args.reset(); }
 
-    void build_arg(uint8_t gi_index, GIDirection, GIArgInfo*, GICallableInfo*,
-                   bool* inc_counter_out);
+    void build_arg(uint8_t gi_index, GIDirection, const GI::ArgInfo,
+                   const GI::CallableInfo, bool* inc_counter_out);
 
-    void build_return(GICallableInfo* callable, bool* inc_counter_out);
+    void build_return(const GI::CallableInfo, bool* inc_counter_out);
 
-    void build_instance(GICallableInfo* callable);
+    void build_instance(const GI::CallableInfo);
 
     mozilla::Maybe<GType> instance_type() const;
     mozilla::Maybe<Arg::ReturnTag> return_tag() const;
 
  private:
-    void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
-                             GjsArgumentFlags);
-    void build_normal_out_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
-                              GjsArgumentFlags);
-    void build_normal_inout_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
-                                GjsArgumentFlags);
+    void build_normal_in_arg(uint8_t gi_index, const GI::TypeInfo,
+                             const GI::ArgInfo, GjsArgumentFlags);
+    void build_normal_out_arg(uint8_t gi_index, const GI::TypeInfo,
+                              const GI::ArgInfo, GjsArgumentFlags);
+    void build_normal_inout_arg(uint8_t gi_index, const GI::TypeInfo,
+                                const GI::ArgInfo, GjsArgumentFlags);
 
     // GITypeInfo is not available for instance parameters (see
     // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334) but
     // for other parameters, this function additionally takes a GITypeInfo.
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void build_interface_in_arg(const Argument::Init&,
-                                GIBaseInfo* interface_info);
+                                const GI::BaseInfo interface_info);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);
 
-    void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
-                            GITypeInfo*, GIDirection, GIArgInfo*,
-                            GjsArgumentFlags flags, int length_pos);
+    void set_array_argument(const GI::CallableInfo, uint8_t gi_index,
+                            const GI::TypeInfo, GIDirection, const GI::ArgInfo,
+                            GjsArgumentFlags, int length_pos);
 
-    void set_array_return(GICallableInfo*, GITypeInfo*, GjsArgumentFlags,
-                          int length_pos);
+    void set_array_return(const GI::CallableInfo, const GI::TypeInfo,
+                          GjsArgumentFlags, int length_pos);
 
-    void init_out_array_length_argument(GIArgInfo*, GjsArgumentFlags,
+    void init_out_array_length_argument(const GI::ArgInfo, GjsArgumentFlags,
                                         int length_pos);
 
     template <typename T>

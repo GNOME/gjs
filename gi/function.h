@@ -15,7 +15,6 @@
 
 #include <ffi.h>
 #include <girepository.h>
-#include <girffi.h>  // for g_callable_info_get_closure_native_address
 #include <glib-object.h>
 #include <glib.h>
 
@@ -23,6 +22,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <mozilla/Maybe.h>
 
 #include "gi/closure.h"
 #include "gi/info.h"
@@ -43,15 +43,14 @@ typedef enum {
 } GjsParamType;
 
 struct GjsCallbackTrampoline : public Gjs::Closure {
-    GJS_JSAPI_RETURN_CONVENTION static GjsCallbackTrampoline* create(
-        JSContext* cx, JS::HandleObject callable, GICallableInfo* callable_info,
-        GIScopeType scope, bool has_scope_object, bool is_vfunc);
+    GJS_JSAPI_RETURN_CONVENTION
+    static GjsCallbackTrampoline* create(JSContext*, JS::HandleObject callable,
+                                         const GI::CallableInfo, GIScopeType,
+                                         bool has_scope_object, bool is_vfunc);
 
     ~GjsCallbackTrampoline();
 
-    void* closure() const {
-        return g_callable_info_get_closure_native_address(m_info, m_closure);
-    }
+    void* closure() const { return m_info.closure_native_address(m_closure); }
 
     ffi_closure* get_ffi_closure() const {
         return m_closure;
@@ -64,15 +63,15 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
  private:
     ffi_closure* create_closure();
     GJS_JSAPI_RETURN_CONVENTION bool initialize();
-    GjsCallbackTrampoline(JSContext* cx, JS::HandleObject callable,
-                          GICallableInfo* callable_info, GIScopeType scope,
+    GjsCallbackTrampoline(JSContext*, JS::HandleObject callable,
+                          const GI::CallableInfo, GIScopeType,
                           bool has_scope_object, bool is_vfunc);
 
     void callback_closure(GIArgument** args, void* result);
     GJS_JSAPI_RETURN_CONVENTION
     bool callback_closure_inner(JSContext* cx, JS::HandleObject this_object,
                                 GObject* gobject, JS::MutableHandleValue rval,
-                                GIArgument** args, GITypeInfo* ret_type,
+                                GIArgument** args, const GI::TypeInfo ret_type,
                                 int n_args, int c_args_offset, void* result);
     void warn_about_illegal_js_callback(const char* when, const char* reason,
                                         bool dump_stack);
@@ -99,21 +98,21 @@ class GjsFunctionCallState {
     JS::RootedObject instance_object;
     JS::RootedVector<JS::Value> return_values;
     Gjs::AutoError local_error;
-    GICallableInfo* info;
+    const GI::CallableInfo info;
     uint8_t gi_argc = 0;
     uint8_t processed_c_args = 0;
     bool failed : 1;
     bool can_throw_gerror : 1;
     bool is_method : 1;
 
-    GjsFunctionCallState(JSContext* cx, GICallableInfo* callable)
+    GjsFunctionCallState(JSContext* cx, const GI::CallableInfo callable)
         : instance_object(cx),
           return_values(cx),
           info(callable),
-          gi_argc(g_callable_info_get_n_args(callable)),
+          gi_argc(callable.n_args()),
           failed(false),
-          can_throw_gerror(g_callable_info_can_throw_gerror(callable)),
-          is_method(g_callable_info_is_method(callable)) {
+          can_throw_gerror(callable.can_throw_gerror()),
+          is_method(callable.is_method()) {
         int size = gi_argc + first_arg_offset();
         m_in_cvalues = new GIArgument[size];
         m_out_cvalues = new GIArgument[size];
@@ -155,27 +154,22 @@ class GjsFunctionCallState {
     }
 
     [[nodiscard]] Gjs::AutoChar display_name() {
-        GIBaseInfo* container = g_base_info_get_container(info);  // !owned
+        mozilla::Maybe<const GI::BaseInfo> container = info.container();
         if (container) {
-            return g_strdup_printf(
-                "%s.%s.%s", g_base_info_get_namespace(container),
-                g_base_info_get_name(container), g_base_info_get_name(info));
+            return g_strdup_printf("%s.%s.%s", container->ns(),
+                                   container->name(), info.name());
         }
-        return g_strdup_printf("%s.%s", g_base_info_get_namespace(info),
-                               g_base_info_get_name(info));
+        return g_strdup_printf("%s.%s", info.ns(), info.name());
     }
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_define_function(JSContext       *context,
-                              JS::HandleObject in_object,
-                              GType            gtype,
-                              GICallableInfo  *info);
+JSObject* gjs_define_function(JSContext*, JS::HandleObject in_object, GType,
+                              const GI::CallableInfo);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_invoke_constructor_from_c(JSContext* cx, GIFunctionInfo* info,
+bool gjs_invoke_constructor_from_c(JSContext*, const GI::FunctionInfo,
                                    JS::HandleObject this_obj,
-                                   const JS::CallArgs& args,
-                                   GIArgument* rvalue);
+                                   const JS::CallArgs&, GIArgument* rvalue);
 
 #endif  // GI_FUNCTION_H_

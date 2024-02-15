@@ -17,6 +17,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/foreign.h"
+#include "gi/info.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -65,12 +66,11 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 
 GJS_JSAPI_RETURN_CONVENTION
 static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
-                                                 GIStructInfo* info) {
-    const char* ns = g_base_info_get_namespace(info);
-    StructID key{ns, g_base_info_get_name(info)};
+                                                 const GI::StructInfo info) {
+    StructID key{info.ns(), info.name()};
     auto entry = foreign_structs_table.find(key);
     if (entry == foreign_structs_table.end()) {
-        if (gjs_foreign_load_foreign_module(cx, ns))
+        if (gjs_foreign_load_foreign_module(cx, info.ns()))
             entry = foreign_structs_table.find(key);
     }
 
@@ -84,7 +84,7 @@ static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
 }
 
 bool gjs_struct_foreign_convert_to_gi_argument(
-    JSContext* context, JS::Value value, GIStructInfo* info,
+    JSContext* context, JS::Value value, const GI::StructInfo info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
     GjsArgumentFlags flags, GIArgument* arg) {
     GjsForeignInfo *foreign;
@@ -102,7 +102,7 @@ bool gjs_struct_foreign_convert_to_gi_argument(
 
 bool gjs_struct_foreign_convert_from_gi_argument(JSContext* context,
                                                  JS::MutableHandleValue value_p,
-                                                 GIStructInfo* info,
+                                                 const GI::StructInfo info,
                                                  GIArgument* arg) {
     GjsForeignInfo* foreign = gjs_struct_foreign_lookup(context, info);
     if (!foreign)
@@ -116,7 +116,7 @@ bool gjs_struct_foreign_convert_from_gi_argument(JSContext* context,
 
 bool gjs_struct_foreign_release_gi_argument(JSContext* context,
                                             GITransfer transfer,
-                                            GIStructInfo* info,
+                                            const GI::StructInfo info,
                                             GIArgument* arg) {
     GjsForeignInfo* foreign = gjs_struct_foreign_lookup(context, info);
     if (!foreign)

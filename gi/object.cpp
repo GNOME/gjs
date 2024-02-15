@@ -47,6 +47,8 @@
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
+#include <mozilla/Span.h>
+#include <mozilla/Try.h>
 #include <mozilla/Unused.h>
 
 #include "gi/arg-inl.h"
@@ -81,7 +83,8 @@
 
 class JSTracer;
 
-using mozilla::Err, mozilla::Maybe, mozilla::Ok, mozilla::Some;
+using mozilla::Err, mozilla::Maybe, mozilla::Nothing, mozilla::Ok,
+    mozilla::Result, mozilla::Some;
 
 /* This is a trick to print out the sizes of the structs at compile time, in
  * an error message. */
@@ -105,8 +108,8 @@ decltype(ObjectInstance::s_wrapped_gobject_list)
 static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject* gjs_lookup_object_prototype_from_info(JSContext*, GIBaseInfo*,
-                                                       GType);
+static JSObject* gjs_lookup_object_prototype_from_info(
+    JSContext*, Maybe<const GI::BaseInfo>, GType);
 
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
@@ -346,14 +349,12 @@ class ObjectPropertyInfoCaller {
     GI::AutoFunctionInfo func_info;
     void* native_address;
 
-    explicit ObjectPropertyInfoCaller(GIFunctionInfo* info)
-        : func_info(info, Gjs::TakeOwnership{}), native_address(nullptr) {}
+    explicit ObjectPropertyInfoCaller(const GI::FunctionInfo info)
+        : func_info(info), native_address(nullptr) {}
 
     Gjs::GErrorResult<> init() {
         GIFunctionInvoker invoker;
-        Gjs::AutoError error;
-        if (!g_function_info_prep_invoker(func_info, &invoker, &error))
-            return Err(std::move(error));
+        MOZ_TRY(func_info.prep_invoker(&invoker));
         native_address = invoker.native_address;
         g_function_invoker_destroy(&invoker);
         return Ok{};
@@ -369,7 +370,7 @@ bool ObjectBase::prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, pspec_obj);
 
     const GI::AutoFunctionInfo& func_info = info_caller->func_info;
-    GI::AutoPropertyInfo property_info{g_function_info_get_property(func_info)};
+    GI::AutoPropertyInfo property_info{func_info.property().value()};
     std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
         cx, priv->format_name() + "[\"" + property_info.name() + "\"]")};
     AutoProfilerLabel label{cx, "property getter", full_name};
@@ -397,11 +398,11 @@ static bool simple_getter_caller(GObject* obj, void* native_address,
 }
 
 [[nodiscard]]
-static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
+static bool simple_getters_caller(const GI::TypeInfo type_info, GObject* obj,
                                   void* native_address, GIArgument* out_arg) {
-    switch (g_type_info_get_tag(type_info)) {
+    switch (type_info.tag()) {
         case GI_TYPE_TAG_VOID:
-            if (g_type_info_is_pointer(type_info))
+            if (type_info.is_pointer())
                 return simple_getter_caller<void*>(obj, native_address,
                                                    out_arg);
             return false;
@@ -436,10 +437,9 @@ static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
 
         case GI_TYPE_TAG_INTERFACE:
             {
-                GI::AutoBaseInfo interface_info{
-                    g_type_info_get_interface(type_info)};
+                GI::AutoBaseInfo interface_info{type_info.interface()};
 
-                if (GI_IS_ENUM_INFO(interface_info)) {
+                if (interface_info.is_enum_or_flags()) {
                     return simple_getter_caller<Gjs::Tag::Enum>(obj, native_address, out_arg);
                 }
                 return simple_getter_caller<void*>(obj, native_address, out_arg);
@@ -467,12 +467,10 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     }
 
     const GI::AutoFunctionInfo& getter = info_caller->func_info;
-    GI::AutoPropertyInfo property_info{g_function_info_get_property(getter)};
-    GParamFlags flags = g_property_info_get_flags(property_info);
+    GI::AutoPropertyInfo property_info{getter.property().value()};
 
-    if (flags & G_PARAM_DEPRECATED ||
-        g_base_info_is_deprecated(property_info) ||
-        g_base_info_is_deprecated(getter)) {
+    if (property_info.has_deprecated_param_flag() ||
+        property_info.is_deprecated() || getter.is_deprecated()) {
         _gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty,
             {format_name(), property_info.name()});
@@ -485,9 +483,9 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     std::array<GIArgument, 1> gi_args;
     gjs_arg_set(&gi_args[0], m_ptr.get());
 
-    GITypeInfo type_info;
-    g_callable_info_load_return_type(getter, &type_info);
-    if (!simple_getters_caller(&type_info, m_ptr, info_caller->native_address,
+    GI::StackTypeInfo type_info;
+    getter.load_return_type(&type_info);
+    if (!simple_getters_caller(type_info, m_ptr, info_caller->native_address,
                                &ret)) {
         const std::string& class_name = format_name();
         gjs_throw(cx, "Wrong type for %s::%s getter", class_name.c_str(),
@@ -495,9 +493,9 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
         return false;
     }
 
-    GITransfer transfer = g_callable_info_get_caller_owns(getter);
+    GITransfer transfer = getter.caller_owns();
 
-    if (!gjs_value_from_gi_argument(cx, args.rval(), &type_info,
+    if (!gjs_value_from_gi_argument(cx, args.rval(), type_info,
                                     GJS_ARGUMENT_RETURN_VALUE, transfer,
                                     &ret)) {
         // Unlikely to happen, but we fallback to gvalue mode, just in case
@@ -514,7 +512,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
         return prop_getter_impl<void>(cx, pspec, args[0]);
     }
 
-    return gjs_gi_argument_release(cx, transfer, &type_info,
+    return gjs_gi_argument_release(cx, transfer, type_info,
                                    GjsArgumentFlags::ARG_OUT, &ret);
 }
 
@@ -526,11 +524,9 @@ class ObjectPropertyPspecCaller {
     explicit ObjectPropertyPspecCaller(GParamSpec* param)
         : pspec(param), native_address(nullptr) {}
 
-    Gjs::GErrorResult<> init(GIFunctionInfo* info) {
+    Gjs::GErrorResult<> init(const GI::FunctionInfo info) {
         GIFunctionInvoker invoker;
-        Gjs::AutoError error;
-        if (!g_function_info_prep_invoker(info, &invoker, &error))
-            return Err(std::move(error));
+        MOZ_TRY(info.prep_invoker(&invoker));
         native_address = invoker.native_address;
         g_function_invoker_destroy(&invoker);
         return Ok{};
@@ -596,23 +592,14 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     return true;
 }
 
-[[nodiscard]] static GI::AutoFieldInfo lookup_field_info(GIObjectInfo* info,
-                                                         const char* name) {
-    int n_fields = g_object_info_get_n_fields(info);
-    int ix;
-    GI::AutoFieldInfo retval;
-
-    for (ix = 0; ix < n_fields; ix++) {
-        retval = g_object_info_get_field(info, ix);
+[[nodiscard]]
+static Maybe<GI::AutoFieldInfo> lookup_field_info(const GI::ObjectInfo info,
+                                                  const char* name) {
+    for (GI::AutoFieldInfo retval : info.fields()) {
         if (strcmp(name, retval.name()) == 0)
-            break;
-        retval.reset();
+            return Some(retval);
     }
-
-    if (!retval || !(g_field_info_get_flags(retval) & GI_FIELD_IS_READABLE))
-        return nullptr;
-
-    return retval;
+    return {};
 }
 
 bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -643,16 +630,13 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
     if (!check_gobject_finalized("get any property from"))
         return true;
 
-    GITypeTag tag;
     GIArgument arg = { 0 };
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
                      field.name());
 
-    GI::AutoTypeInfo type{g_field_info_get_type(field)};
-    tag = g_type_info_get_tag(type);
-
-    switch (tag) {
+    GI::AutoTypeInfo type{field.type_info()};
+    switch (type.tag()) {
         case GI_TYPE_TAG_ARRAY:
         case GI_TYPE_TAG_ERROR:
         case GI_TYPE_TAG_GHASH:
@@ -662,14 +646,14 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
             gjs_throw(cx,
                       "Can't get field %s; GObject introspection supports only "
                       "fields with simple types, not %s",
-                      field.name(), g_type_tag_to_string(tag));
+                      field.name(), type.display_string());
             return false;
 
         default:
             break;
     }
 
-    if (!g_field_info_get_field(field, m_ptr, &arg)) {
+    if (field.read(m_ptr, &arg).isErr()) {
         gjs_throw(cx, "Error getting field %s from object", field.name());
         return false;
     }
@@ -789,7 +773,7 @@ bool ObjectBase::prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, func_obj);
 
     const GI::AutoFunctionInfo& func_info = info_caller->func_info;
-    GI::AutoPropertyInfo property_info{g_function_info_get_property(func_info)};
+    GI::AutoPropertyInfo property_info{func_info.property().value()};
     std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
         cx, priv->format_name() + "[\"" + property_info.name() + "\"]")};
     AutoProfilerLabel label{cx, "property setter", full_name};
@@ -816,11 +800,11 @@ static bool simple_setter_caller(GIArgument* arg, GObject* obj,
 }
 
 [[nodiscard]]
-static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
+static bool simple_setters_caller(const GI::TypeInfo type_info, GIArgument* arg,
                                   GObject* obj, void* native_address) {
-    switch (g_type_info_get_tag(type_info)) {
+    switch (type_info.tag()) {
         case GI_TYPE_TAG_VOID:
-            if (g_type_info_is_pointer(type_info))
+            if (type_info.is_pointer())
                 return simple_setter_caller<void*>(arg, obj, native_address);
             return false;
         case GI_TYPE_TAG_BOOLEAN:
@@ -854,10 +838,9 @@ static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
 
         case GI_TYPE_TAG_INTERFACE:
             {
-                GI::AutoBaseInfo interface_info{
-                    g_type_info_get_interface(type_info)};
+                GI::AutoBaseInfo interface_info{type_info.interface()};
 
-                if (GI_IS_ENUM_INFO(interface_info)) {
+                if (interface_info.is_enum_or_flags()) {
                     return simple_setter_caller<Gjs::Tag::Enum>(arg, obj, native_address);
                 }
                 return simple_setter_caller<void*>(arg, obj, native_address);
@@ -883,12 +866,10 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         return true;
 
     const GI::AutoFunctionInfo& setter = info_caller->func_info;
-    GI::AutoPropertyInfo property_info{g_function_info_get_property(setter)};
-    GParamFlags flags = g_property_info_get_flags(property_info);
+    GI::AutoPropertyInfo property_info{setter.property().value()};
 
-    if (flags & G_PARAM_DEPRECATED ||
-        g_base_info_is_deprecated(property_info) ||
-        g_base_info_is_deprecated(setter)) {
+    if (property_info.has_deprecated_param_flag() ||
+        property_info.is_deprecated() || setter.is_deprecated()) {
         _gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty,
             {format_name(), property_info.name()});
@@ -897,15 +878,15 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter %s",
                      property_info.name());
 
-    GIArgInfo arg_info;
-    g_callable_info_load_arg(setter, 0, &arg_info);
-    GITypeInfo type_info;
-    g_arg_info_load_type(&arg_info, &type_info);
-    GITransfer transfer = g_arg_info_get_ownership_transfer(&arg_info);
+    GI::StackArgInfo arg_info;
+    setter.load_arg(0, &arg_info);
+    GI::StackTypeInfo type_info;
+    arg_info.load_type(&type_info);
+    GITransfer transfer = arg_info.ownership_transfer();
     JS::RootedValue value{cx, args[0]};
     GIArgument arg;
 
-    if (!gjs_value_to_gi_argument(cx, value, &type_info, property_info.name(),
+    if (!gjs_value_to_gi_argument(cx, value, type_info, property_info.name(),
                                   GJS_ARGUMENT_ARGUMENT, transfer,
                                   GjsArgumentFlags::ARG_IN, &arg)) {
         // Unlikely to happen, but we fallback to gvalue mode, just in case
@@ -922,7 +903,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         return prop_setter_impl<void>(cx, pspec, value);
     }
 
-    if (!simple_setters_caller(&type_info, &arg, m_ptr,
+    if (!simple_setters_caller(type_info, &arg, m_ptr,
                                info_caller->native_address)) {
         const std::string& class_name = format_name();
         gjs_throw(cx, "Wrong type for %s::%s setter", class_name.c_str(),
@@ -930,7 +911,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         return false;
     }
 
-    return gjs_gi_argument_release_in_arg(cx, transfer, &type_info, &arg);
+    return gjs_gi_argument_release_in_arg(cx, transfer, type_info, &arg);
 }
 
 template <typename TAG, GITransfer TRANSFER>
@@ -1047,7 +1028,7 @@ bool ObjectInstance::field_setter_not_impl(JSContext* cx,
 
     /* As far as I know, GI never exposes GObject instance struct fields as
      * writable, so no need to implement this for the time being */
-    if (g_field_info_get_flags(field) & GI_FIELD_IS_WRITABLE) {
+    if (field.is_writable()) {
         g_message(
             "Field %s of a GObject is writable, but setting it is not "
             "implemented",
@@ -1055,43 +1036,42 @@ bool ObjectInstance::field_setter_not_impl(JSContext* cx,
         return true;
     }
 
-    return gjs_wrapper_throw_readonly_field(cx, gtype(),
-                                            g_base_info_get_name(field));
+    return gjs_wrapper_throw_readonly_field(cx, gtype(), field.name());
 }
 
-bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
-    Gjs::AutoError error;
+bool ObjectPrototype::is_vfunc_unchanged(const GI::VFuncInfo info) const {
     GType ptype = g_type_parent(m_gtype);
-    gpointer addr1, addr2;
 
-    addr1 = g_vfunc_info_get_address(info, m_gtype, &error);
-    if (error)
+    Gjs::GErrorResult<void*> addr1 = info.address(m_gtype);
+    if (addr1.isErr())
         return false;
 
-    addr2 = g_vfunc_info_get_address(info, ptype, &error);
-    if (error)
+    Gjs::GErrorResult<void*> addr2 = info.address(ptype);
+    if (addr2.isErr())
         return false;
 
-    return addr1 == addr2;
+    return addr1.unwrap() == addr2.unwrap();
 }
 
-[[nodiscard]] static GI::AutoVFuncInfo find_vfunc_on_parents(
-    GIObjectInfo* info, const char* name, bool* out_defined_by_parent) {
+[[nodiscard]]
+static Maybe<GI::AutoVFuncInfo> find_vfunc_on_parents(
+    const GI::ObjectInfo info, const char* name, bool* out_defined_by_parent) {
     bool defined_by_parent = false;
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
-    GI::AutoObjectInfo parent{info, Gjs::TakeOwnership{}};
+    Maybe<GI::AutoObjectInfo> parent{Some(info)};
 
     /* Since it isn't possible to override a vfunc on
      * an interface without reimplementing it, we don't need
      * to search the parent types when looking for a vfunc. */
-    GI::AutoVFuncInfo vfunc{
-        g_object_info_find_vfunc_using_interfaces(parent, name, nullptr)};
+    Maybe<GI::AutoVFuncInfo> vfunc =
+        parent->find_vfunc_using_interfaces(name).map(
+            [](auto&& pair) { return std::move(pair.first); });
     while (!vfunc && parent) {
-        parent = g_object_info_get_parent(parent);
+        parent = parent->parent();
         if (parent)
-            vfunc = g_object_info_find_vfunc(parent, name);
+            vfunc = parent->vfunc(name);
 
         defined_by_parent = true;
     }
@@ -1116,31 +1096,24 @@ static void canonicalize_key(const Gjs::AutoChar& key) {
 /* @name must already be canonicalized */
 [[nodiscard]]
 static Maybe<GI::AutoPropertyInfo> get_ginterface_property_by_name(
-    GIInterfaceInfo* info, const char* name) {
-    int n_props = g_interface_info_get_n_properties(info);
-
-    for (int ix = 0; ix < n_props; ix++) {
-        GI::AutoPropertyInfo prop_info{g_interface_info_get_property(info, ix)};
+    const GI::InterfaceInfo info, const char* name) {
+    for (GI::AutoPropertyInfo prop_info : info.properties()) {
         if (strcmp(name, prop_info.name()) == 0)
-            return Some(prop_info);
+            return Some(std::move(prop_info));
     }
 
     return {};
 }
 
 [[nodiscard]]
-static Maybe<GI::AutoPropertyInfo> get_gobject_property_info(GIObjectInfo* info,
-                                                             const char* name) {
-    int n_props = g_object_info_get_n_properties(info);
-    for (int ix = 0; ix < n_props; ix++) {
-        GI::AutoPropertyInfo prop_info{g_object_info_get_property(info, ix)};
+static Maybe<GI::AutoPropertyInfo> get_gobject_property_info(
+    const GI::ObjectInfo info, const char* name) {
+    for (GI::AutoPropertyInfo prop_info : info.properties()) {
         if (strcmp(name, prop_info.name()) == 0)
-            return Some(prop_info);
+            return Some(std::move(prop_info));
     }
 
-    int n_ifaces = g_object_info_get_n_interfaces(info);
-    for (int ix = 0; ix < n_ifaces; ix++) {
-        GI::AutoInterfaceInfo iface_info{g_object_info_get_interface(info, ix)};
+    for (GI::AutoInterfaceInfo iface_info : info.interfaces()) {
         if (Maybe<GI::AutoPropertyInfo> prop_info =
                 get_ginterface_property_by_name(iface_info, name))
             return prop_info;
@@ -1149,9 +1122,9 @@ static Maybe<GI::AutoPropertyInfo> get_gobject_property_info(GIObjectInfo* info,
 }
 
 [[nodiscard]]
-static JSNative get_getter_for_type(GITypeInfo* type_info,
+static JSNative get_getter_for_type(const GI::TypeInfo type_info,
                                     GITransfer transfer) {
-    switch (g_type_info_get_tag(type_info)) {
+    switch (type_info.tag()) {
         case GI_TYPE_TAG_BOOLEAN:
             return ObjectBase::prop_getter_simple_type_func<Gjs::Tag::GBoolean>;
         case GI_TYPE_TAG_INT8:
@@ -1192,9 +1165,9 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
     }
 }
 
-[[nodiscard]] static JSNative get_setter_for_type(GITypeInfo* type_info,
+[[nodiscard]] static JSNative get_setter_for_type(const GI::TypeInfo type_info,
                                                   GITransfer transfer) {
-    switch (g_type_info_get_tag(type_info)) {
+    switch (type_info.tag()) {
         case GI_TYPE_TAG_BOOLEAN:
             return ObjectBase::prop_setter_simple_type_func<Gjs::Tag::GBoolean>;
         case GI_TYPE_TAG_INT8:
@@ -1237,11 +1210,12 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
-                                      GIFunctionInfo* getter, GITypeInfo* type,
+                                      const GI::FunctionInfo getter,
+                                      const GI::TypeInfo type,
                                       JS::MutableHandleValue wrapper_out) {
     JS::RootedObject wrapper{cx};
 
-    GITransfer transfer = g_callable_info_get_caller_owns(getter);
+    GITransfer transfer = getter.caller_owns();
     JSNative js_getter = get_getter_for_type(type, transfer);
 
     Gjs::GErrorResult<> init_result{Ok{}};
@@ -1265,8 +1239,7 @@ static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
     }
 
     if (init_result.isErr()) {
-        gjs_throw(cx, "Impossible to create invoker for %s: %s",
-                  g_base_info_get_name(getter),
+        gjs_throw(cx, "Impossible to create invoker for %s: %s", getter.name(),
                   init_result.inspectErr()->message);
         return nullptr;
     }
@@ -1282,13 +1255,13 @@ static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
 // is only int and long, whereas the corresponding getter may return a specific
 // width of integer.
 [[nodiscard]]
-static bool type_info_compatible(GITypeInfo* func_type, GITypeInfo* prop_type) {
-    GITypeTag tag = g_type_info_get_tag(prop_type);
-    GITypeTag func_tag = g_type_info_get_tag(func_type);
+static bool type_info_compatible(const GI::TypeInfo func_type,
+                                 const GI::TypeInfo prop_type) {
+    GITypeTag tag = prop_type.tag();
+    GITypeTag func_tag = func_type.tag();
 
     if (GI_TYPE_TAG_IS_BASIC(tag)) {
-        if (g_type_info_is_pointer(func_type) !=
-            g_type_info_is_pointer(prop_type))
+        if (func_type.is_pointer() != prop_type.is_pointer())
             return false;
     }
     switch (tag) {
@@ -1324,47 +1297,24 @@ static bool type_info_compatible(GITypeInfo* func_type, GITypeInfo* prop_type) {
             g_return_val_if_reached(false);  // never occurs as GParamSpec type
         // everything else
         case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST: {
-            if (func_tag != tag)
-                return false;
-            GI::AutoBaseInfo func_elem{
-                g_type_info_get_param_type(func_type, 0)};
-            GI::AutoBaseInfo prop_elem{
-                g_type_info_get_param_type(func_type, 0)};
-            return g_base_info_equal(func_elem, prop_elem);
-        }
-        case GI_TYPE_TAG_ARRAY: {
-            if (func_tag != tag)
-                return false;
-            GI::AutoBaseInfo func_elem{
-                g_type_info_get_param_type(func_type, 0)};
-            GI::AutoBaseInfo prop_elem{
-                g_type_info_get_param_type(func_type, 0)};
-            return g_base_info_equal(func_elem, prop_elem) &&
-                   g_type_info_is_zero_terminated(func_type) ==
-                       g_type_info_is_zero_terminated(prop_type) &&
-                   g_type_info_get_array_fixed_size(func_type) ==
-                       g_type_info_get_array_fixed_size(prop_type) &&
-                   g_type_info_get_array_type(func_type) ==
-                       g_type_info_get_array_type(prop_type);
-        }
-        case GI_TYPE_TAG_GHASH: {
-            if (func_tag != tag)
-                return false;
-            GI::AutoBaseInfo func_key{g_type_info_get_param_type(func_type, 0)};
-            GI::AutoBaseInfo prop_key{g_type_info_get_param_type(func_type, 0)};
-            GI::AutoBaseInfo func_val{g_type_info_get_param_type(func_type, 0)};
-            GI::AutoBaseInfo prop_val{g_type_info_get_param_type(func_type, 0)};
-            return g_base_info_equal(func_key, prop_key) &&
-                   g_base_info_equal(func_val, prop_val);
-        }
-        case GI_TYPE_TAG_INTERFACE: {
-            if (func_tag != tag)
-                return false;
-            GI::AutoBaseInfo func_iface{g_type_info_get_interface(func_type)};
-            GI::AutoBaseInfo prop_iface{g_type_info_get_interface(prop_type)};
-            return g_base_info_equal(func_iface, prop_iface);
-        }
+        case GI_TYPE_TAG_GSLIST:
+            return func_tag == tag &&
+                   func_type.element_type() == prop_type.element_type();
+        case GI_TYPE_TAG_ARRAY:
+            return func_tag == tag &&
+                   func_type.element_type() == prop_type.element_type() &&
+                   func_type.is_zero_terminated() ==
+                       prop_type.is_zero_terminated() &&
+                   func_type.array_fixed_size() ==
+                       prop_type.array_fixed_size() &&
+                   func_type.array_type() == prop_type.array_type();
+        case GI_TYPE_TAG_GHASH:
+            return func_tag == tag &&
+                   func_type.key_type() == prop_type.key_type() &&
+                   func_type.value_type() == prop_type.value_type();
+        case GI_TYPE_TAG_INTERFACE:
+            return func_tag == tag &&
+                   func_type.interface() == prop_type.interface();
     }
     g_return_val_if_reached(false);
 }
@@ -1379,30 +1329,25 @@ static JSNative get_getter_for_property(
     }
 
     if (property_info) {
-        GI::AutoFunctionInfo prop_getter{
-            g_property_info_get_getter(*property_info)};
+        Maybe<GI::AutoFunctionInfo> prop_getter{property_info->getter()};
 
-        if (prop_getter && g_callable_info_is_method(prop_getter) &&
-            g_callable_info_get_n_args(prop_getter) == 0 &&
-            !g_callable_info_skip_return(prop_getter)) {
-            GI::AutoTypeInfo return_type{
-                g_callable_info_get_return_type(prop_getter)};
-            GI::AutoTypeInfo prop_type{
-                g_property_info_get_type(*property_info)};
+        if (prop_getter && prop_getter->is_method() &&
+            prop_getter->n_args() == 0 && !prop_getter->skip_return()) {
+            GI::StackTypeInfo return_type;
+            prop_getter->load_return_type(&return_type);
+            GI::AutoTypeInfo prop_type{property_info->type_info()};
 
             if (G_LIKELY(type_info_compatible(return_type, prop_type))) {
-                return create_getter_invoker(cx, pspec, prop_getter,
+                return create_getter_invoker(cx, pspec, *prop_getter,
                                              return_type, priv_out);
             } else {
-                GIBaseInfo* container = g_base_info_get_container(prop_getter);
+                Maybe<GI::BaseInfo> container = prop_getter->container();
                 g_warning(
                     "Type %s of property %s.%s::%s does not match return type "
                     "%s of getter %s. Falling back to slow path",
-                    g_type_tag_to_string(g_type_info_get_tag(prop_type)),
-                    g_base_info_get_namespace(container),
-                    g_base_info_get_name(container), property_info->name(),
-                    g_type_tag_to_string(g_type_info_get_tag(return_type)),
-                    prop_getter.name());
+                    prop_type.type_string(), container->ns(), container->name(),
+                    property_info->name(), return_type.type_string(),
+                    prop_getter->name());
                 // fall back to GValue below
             }
         }
@@ -1441,12 +1386,13 @@ static JSNative get_getter_for_property(
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSNative create_setter_invoker(JSContext* cx, GParamSpec* pspec,
-                                      GIFunctionInfo* setter,
-                                      GIArgInfo* value_arg, GITypeInfo* type,
+                                      const GI::FunctionInfo setter,
+                                      const GI::ArgInfo value_arg,
+                                      const GI::TypeInfo type,
                                       JS::MutableHandleValue wrapper_out) {
     JS::RootedObject wrapper{cx};
 
-    GITransfer transfer = g_arg_info_get_ownership_transfer(value_arg);
+    GITransfer transfer = value_arg.ownership_transfer();
     JSNative js_setter = get_setter_for_type(type, transfer);
 
     Gjs::GErrorResult<> init_result{Ok{}};
@@ -1470,8 +1416,7 @@ static JSNative create_setter_invoker(JSContext* cx, GParamSpec* pspec,
     }
 
     if (init_result.isErr()) {
-        gjs_throw(cx, "Impossible to create invoker for %s: %s",
-                  g_base_info_get_name(setter),
+        gjs_throw(cx, "Impossible to create invoker for %s: %s", setter.name(),
                   init_result.inspectErr()->message);
         return nullptr;
     }
@@ -1490,31 +1435,27 @@ static JSNative get_setter_for_property(
     }
 
     if (property_info) {
-        GI::AutoFunctionInfo prop_setter{
-            g_property_info_get_setter(*property_info)};
+        Maybe<GI::AutoFunctionInfo> prop_setter{property_info->setter()};
 
-        if (prop_setter && g_callable_info_is_method(prop_setter) &&
-            g_callable_info_get_n_args(prop_setter) == 1) {
-            GIArgInfo value_arg;
-            g_callable_info_load_arg(prop_setter, 0, &value_arg);
-            GITypeInfo type_info;
-            g_arg_info_load_type(&value_arg, &type_info);
-            GI::AutoTypeInfo prop_type{
-                g_property_info_get_type(*property_info)};
+        if (prop_setter && prop_setter->is_method() &&
+            prop_setter->n_args() == 1) {
+            GI::StackArgInfo value_arg;
+            prop_setter->load_arg(0, &value_arg);
+            GI::StackTypeInfo type_info;
+            value_arg.load_type(&type_info);
+            GI::AutoTypeInfo prop_type{property_info->type_info()};
 
-            if (G_LIKELY(type_info_compatible(&type_info, prop_type))) {
-                return create_setter_invoker(cx, pspec, prop_setter, &value_arg,
-                                             &type_info, priv_out);
+            if (G_LIKELY(type_info_compatible(type_info, prop_type))) {
+                return create_setter_invoker(cx, pspec, *prop_setter, value_arg,
+                                             type_info, priv_out);
             } else {
-                GIBaseInfo* container = g_base_info_get_container(prop_setter);
+                Maybe<GI::BaseInfo> container = prop_setter->container();
                 g_warning(
                     "Type %s of property %s.%s::%s does not match type %s of "
                     "first argument of setter %s. Falling back to slow path",
-                    g_type_tag_to_string(g_type_info_get_tag(prop_type)),
-                    g_base_info_get_namespace(container),
-                    g_base_info_get_name(container), property_info->name(),
-                    g_type_tag_to_string(g_type_info_get_tag(&type_info)),
-                    prop_setter.name());
+                    prop_type.type_string(), container->ns(), container->name(),
+                    property_info->name(), type_info.type_string(),
+                    prop_setter->name());
                 // fall back to GValue below
             }
         }
@@ -1713,13 +1654,14 @@ static bool interface_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static bool resolve_on_interface_prototype(JSContext* cx,
-                                           GIInterfaceInfo* iface_info,
+                                           const GI::InterfaceInfo iface_info,
                                            JS::HandleId identifier,
                                            JS::HandleObject class_prototype,
                                            bool* found) {
-    GType gtype = g_base_info_get_type(iface_info);
+    // FIXME: erroneously used g_base_info_get_type here. fix in separate commit
     JS::RootedObject interface_prototype(
-        cx, gjs_lookup_object_prototype_from_info(cx, iface_info, gtype));
+        cx, gjs_lookup_object_prototype_from_info(cx, Some(iface_info),
+                                                  iface_info.gtype()));
     if (!interface_prototype)
         return false;
 
@@ -1793,9 +1735,6 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name,
                                       ResolveWhat resolve_props) {
-    guint n_interfaces;
-    guint i;
-
     Gjs::AutoChar canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
         // Optimization: GObject property names must start with a letter
@@ -1805,9 +1744,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         }
     }
 
-    GIInterfaceInfo** interfaces;
-    g_irepository_get_object_gtype_interfaces(nullptr, m_gtype, &n_interfaces,
-        &interfaces);
+    mozilla::Span<const GI::InterfaceInfo> interfaces =
+        GI::Repository{}.object_get_gtype_interfaces(m_gtype);
 
     /* Fallback to GType system for non custom GObjects with no GI information
      */
@@ -1819,9 +1757,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             return lazy_define_gobject_property(cx, obj, id, pspec, resolved,
                                                 name);
 
-        for (i = 0; i < n_interfaces; i++) {
-            GType iface_gtype =
-                g_registered_type_info_get_g_type(interfaces[i]);
+        for (const GI::InterfaceInfo& iface_info : interfaces) {
+            GType iface_gtype = iface_info.gtype();
             if (!G_TYPE_IS_CLASSED(iface_gtype))
                 continue;
 
@@ -1831,33 +1768,28 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                     g_object_class_find_property(iclass, canonical_name)) {
                 return lazy_define_gobject_property(
                     cx, obj, id, pspec, resolved, name,
-                    get_ginterface_property_by_name(interfaces[i],
+                    get_ginterface_property_by_name(iface_info,
                                                     canonical_name));
             }
         }
     }
 
-    for (i = 0; i < n_interfaces; i++) {
-        GIInterfaceInfo* iface_info = interfaces[i];
-        GI::AutoFunctionInfo method_info{
-            g_interface_info_find_method(iface_info, name)};
-        if (method_info) {
-            if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
-                bool found = false;
-                if (!resolve_on_interface_prototype(cx, iface_info, id, obj,
-                                                    &found))
-                    return false;
+    for (const GI::InterfaceInfo& iface_info : interfaces) {
+        Maybe<GI::AutoFunctionInfo> method_info{iface_info.method(name)};
+        if (method_info && method_info->is_method()) {
+            bool found = false;
+            if (!resolve_on_interface_prototype(cx, iface_info, id, obj,
+                                                &found))
+                return false;
 
-                // Fallback to defining the function from type info...
-                if (!found &&
-                    !gjs_define_function(cx, obj, m_gtype, method_info))
-                    return false;
+            // Fallback to defining the function from type info...
+            if (!found &&
+                !gjs_define_function(cx, obj, m_gtype, method_info.ref()))
+                return false;
 
-                *resolved = true;
-                return true;
-            }
+            *resolved = true;
+            return true;
         }
-
 
         /* If the name refers to a GObject property, lazily define the property
          * in JS as we do below in the real resolve hook. We ignore fields here
@@ -1890,7 +1822,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
 [[nodiscard]]
 static Maybe<GI::AutoPropertyInfo> find_gobject_property_info(
-    GIObjectInfo* info, const char* name) {
+    const GI::ObjectInfo info, const char* name) {
     // Optimization: GObject property names must start with a letter
     if (!g_ascii_isalpha(name[0]))
         return {};
@@ -1976,17 +1908,17 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
         const char *name_without_vfunc_ = &(name[6]);  /* lifetime tied to name */
         bool defined_by_parent;
-        GI::AutoVFuncInfo vfunc{find_vfunc_on_parents(
-            m_info, name_without_vfunc_, &defined_by_parent)};
+        Maybe<GI::AutoVFuncInfo> vfunc{find_vfunc_on_parents(
+            m_info.ref(), name_without_vfunc_, &defined_by_parent)};
         if (vfunc) {
             /* In the event that the vfunc is unchanged, let regular
              * prototypal inheritance take over. */
-            if (defined_by_parent && is_vfunc_unchanged(vfunc)) {
+            if (defined_by_parent && is_vfunc_unchanged(vfunc.ref())) {
                 *resolved = false;
                 return true;
             }
 
-            if (!gjs_define_function(context, obj, m_gtype, vfunc))
+            if (!gjs_define_function(context, obj, m_gtype, vfunc.ref()))
                 return false;
 
             *resolved = true;
@@ -1998,7 +1930,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
     }
 
     if (Maybe<GI::AutoPropertyInfo> property_info =
-            find_gobject_property_info(m_info, name)) {
+            find_gobject_property_info(m_info.ref(), name)) {
         Gjs::AutoTypeClass<GObjectClass> gobj_class{m_gtype};
         if (GParamSpec* pspec =
                 g_object_class_find_property(gobj_class, property_info->name()))
@@ -2006,17 +1938,17 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
                                                 resolved, name, property_info);
     }
 
-    GI::AutoFieldInfo field_info{lookup_field_info(m_info, name)};
+    Maybe<GI::AutoFieldInfo> field_info{lookup_field_info(m_info.ref(), name)};
     if (field_info) {
         debug_jsprop("Defining lazy GObject field", id, obj);
 
         unsigned flags = GJS_MODULE_PROP_FLAGS;
-        if (!(g_field_info_get_flags(field_info) & GI_FIELD_IS_WRITABLE))
+        if (!field_info->is_writable())
             flags |= JSPROP_READONLY;
 
         JS::RootedObject rooted_field{
             context, Gjs::SimpleWrapper::new_for_type<GI::AutoFieldInfo>(
-                         context, field_info)};
+                         context, field_info.extract())};
         JS::RootedValue private_value{context, JS::ObjectValue(*rooted_field)};
         if (!gjs_define_property_dynamic(
                 context, obj, name, id, "gobject_field",
@@ -2039,30 +1971,29 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
      * introduces the iface)
      */
 
-    GI::AutoBaseInfo implementor_info;
-    GI::AutoFunctionInfo method_info{g_object_info_find_method_using_interfaces(
-        m_info, name, implementor_info.out())};
+    auto result = m_info->find_method_using_interfaces(name);
 
     /**
      * Search through any interfaces implemented by the GType;
      * See https://bugzilla.gnome.org/show_bug.cgi?id=632922
      * for background on why we need to do this.
      */
-    if (!method_info)
+    if (!result)
         return resolve_no_info(context, obj, id, resolved, name,
                                ConsiderOnlyMethods);
 
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-    _gjs_log_info_usage(method_info);
-#endif
+    GI::AutoFunctionInfo method_info{result->first};
+    GI::AutoRegisteredTypeInfo implementor_info{result->second};
 
-    if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+    method_info.log_usage();
+
+    if (method_info.is_method()) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for %s (%s)",
                   method_info.name(), type_name(), format_name().c_str());
-        if (GI_IS_INTERFACE_INFO(implementor_info)) {
+        if (auto iface_info = implementor_info.as<GI::InfoTag::INTERFACE>()) {
             bool found = false;
-            if (!resolve_on_interface_prototype(context, implementor_info, id,
+            if (!resolve_on_interface_prototype(context, iface_info.value(), id,
                                                 obj, &found))
                 return false;
 
@@ -2088,30 +2019,26 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                          [[maybe_unused]]) {
     unsigned n_interfaces;
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
+    GI::Repository repo;
 
     for (unsigned k = 0; k < n_interfaces; k++) {
-        GI::AutoInterfaceInfo iface_info{
-            g_irepository_find_by_gtype(nullptr, interfaces[k])};
-
-        if (!iface_info) {
+        Maybe<GI::AutoInterfaceInfo> iface_info{
+            repo.find_by_gtype<GI::InfoTag::INTERFACE>(interfaces[k])};
+        if (!iface_info)
             continue;
-        }
 
-        int n_methods = g_interface_info_get_n_methods(iface_info);
-        int n_properties = g_interface_info_get_n_properties(iface_info);
-        if (!properties.reserve(properties.length() + n_methods +
-                                n_properties)) {
+        GI::InterfaceInfo::MethodsIterator meth_iter = iface_info->methods();
+        GI::InterfaceInfo::PropertiesIterator props_iter =
+            iface_info->properties();
+        if (!properties.reserve(properties.length() + meth_iter.size() +
+                                props_iter.size())) {
             JS_ReportOutOfMemory(cx);
             return false;
         }
 
         // Methods
-        for (int i = 0; i < n_methods; i++) {
-            GI::AutoFunctionInfo meth_info{
-                g_interface_info_get_method(iface_info, i)};
-            GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
-
-            if (flags & GI_FUNCTION_IS_METHOD) {
+        for (GI::AutoFunctionInfo meth_info : meth_iter) {
+            if (meth_info.is_method()) {
                 const char* name = meth_info.name();
                 jsid id = gjs_intern_string_to_id(cx, name);
                 if (id.isVoid())
@@ -2121,10 +2048,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
         }
 
         // Properties
-        for (int i = 0; i < n_properties; i++) {
-            GI::AutoPropertyInfo prop_info{
-                g_interface_info_get_property(iface_info, i)};
-
+        for (GI::AutoPropertyInfo prop_info : props_iter) {
             Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
 
             jsid id = gjs_intern_string_to_id(cx, js_name);
@@ -2137,20 +2061,17 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
     g_free(interfaces);
 
     if (info()) {
-        int n_methods = g_object_info_get_n_methods(info());
-        int n_properties = g_object_info_get_n_properties(info());
-        if (!properties.reserve(properties.length() + n_methods +
-                                n_properties)) {
+        GI::ObjectInfo::MethodsIterator meth_iter = info()->methods();
+        GI::ObjectInfo::PropertiesIterator props_iter = info()->properties();
+        if (!properties.reserve(properties.length() + meth_iter.size() +
+                                props_iter.size())) {
             JS_ReportOutOfMemory(cx);
             return false;
         }
 
         // Methods
-        for (int i = 0; i < n_methods; i++) {
-            GI::AutoFunctionInfo meth_info{g_object_info_get_method(info(), i)};
-            GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
-
-            if (flags & GI_FUNCTION_IS_METHOD) {
+        for (GI::AutoFunctionInfo meth_info : meth_iter) {
+            if (meth_info.is_method()) {
                 const char* name = meth_info.name();
                 jsid id = gjs_intern_string_to_id(cx, name);
                 if (id.isVoid())
@@ -2160,10 +2081,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
         }
 
         // Properties
-        for (int i = 0; i < n_properties; i++) {
-            GI::AutoPropertyInfo prop_info{
-                g_object_info_get_property(info(), i)};
-
+        for (GI::AutoPropertyInfo prop_info : props_iter) {
             Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id.isVoid())
@@ -2523,20 +2441,21 @@ ObjectInstance::release_native_object(void)
             GObject* ptr = m_ptr.release();
 
             // Workaround for https://gitlab.gnome.org/GNOME/gtk/-/issues/6289
+            GI::Repository repo;
             GI::AutoObjectInfo surface_info{
-                g_irepository_find_by_gtype(nullptr, gdksurface_type)};
-            g_assert(surface_info && "Could not find introspected GdkSurface info");
+                repo.find_by_gtype<GI::InfoTag::OBJECT>(gdksurface_type)
+                    .value()};
             GI::AutoFunctionInfo destroy_func{
-                g_object_info_find_method(surface_info, "destroy")};
+                surface_info.method("destroy").value()};
             GIArgument destroy_args;
             gjs_arg_set(&destroy_args, ptr);
             GIArgument unused_return;
 
-            Gjs::AutoError err;
-            if (!g_function_info_invoke(destroy_func, &destroy_args, 1, nullptr,
-                                        0, &unused_return, err.out()))
+            auto result =
+                destroy_func.invoke({{destroy_args}}, {}, &unused_return);
+            if (result.isErr())
                 g_critical("Error destroying GdkSurface %p: %s", ptr,
-                           err->message);
+                           result.inspectErr()->message);
         }
     }
 
@@ -2590,7 +2509,7 @@ ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
     GJS_INC_COUNTER(object_instance);
 }
 
-ObjectPrototype::ObjectPrototype(GIObjectInfo* info, GType gtype)
+ObjectPrototype::ObjectPrototype(Maybe<GI::ObjectInfo> info, GType gtype)
     : GIWrapperPrototype(info, gtype) {
     g_type_class_ref(gtype);
 
@@ -2993,18 +2912,17 @@ ObjectPrototype::~ObjectPrototype() {
     GJS_DEC_COUNTER(object_prototype);
 }
 
-static JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
-                                                         GIBaseInfo* info,
-                                                         GType gtype) {
-    g_return_val_if_fail(
-        !info || GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info), NULL);
+static JSObject* gjs_lookup_object_constructor_from_info(
+    JSContext* context, Maybe<const GI::BaseInfo> info, GType gtype) {
+    g_return_val_if_fail(!info || info->is_object() || info->is_interface(),
+                         nullptr);
 
     JS::RootedObject in_object(context);
     const char *constructor_name;
 
     if (info) {
-        in_object = gjs_lookup_namespace_object(context, info);
-        constructor_name = g_base_info_get_name(info);
+        in_object = gjs_lookup_namespace_object(context, info.value());
+        constructor_name = info->name();
     } else {
         in_object = gjs_lookup_private_namespace(context);
         constructor_name = g_type_name(gtype);
@@ -3027,7 +2945,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
            we need to define it first.
         */
         JS::RootedObject ignored(context);
-        if (!ObjectPrototype::define_class(context, in_object, nullptr, gtype,
+        if (!ObjectPrototype::define_class(context, in_object, Nothing{}, gtype,
                                            nullptr, 0, &constructor, &ignored))
             return nullptr;
     } else {
@@ -3043,11 +2961,10 @@ static JSObject* gjs_lookup_object_constructor_from_info(JSContext* context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject* gjs_lookup_object_prototype_from_info(JSContext* context,
-                                                       GIBaseInfo* info,
-                                                       GType gtype) {
-    g_return_val_if_fail(
-        !info || GI_IS_OBJECT_INFO(info) || GI_IS_INTERFACE_INFO(info), NULL);
+static JSObject* gjs_lookup_object_prototype_from_info(
+    JSContext* context, Maybe<const GI::BaseInfo> info, GType gtype) {
+    g_return_val_if_fail(!info || info->is_object() || info->is_interface(),
+                         nullptr);
 
     JS::RootedObject constructor(context,
         gjs_lookup_object_constructor_from_info(context, info, gtype));
@@ -3069,7 +2986,10 @@ static JSObject *
 gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
 {
-    GI::AutoObjectInfo info{gjs_lookup_gtype(nullptr, gtype)};
+    GI::Repository repo;
+    Maybe<GI::AutoRegisteredTypeInfo> result{gjs_lookup_gtype(repo, gtype)};
+    Maybe<const GI::ObjectInfo> info = result.andThen(
+        std::mem_fn(&GI::AutoRegisteredTypeInfo::as<GI::InfoTag::OBJECT>));
     return gjs_lookup_object_prototype_from_info(context, info, gtype);
 }
 
@@ -3276,14 +3196,13 @@ ObjectInstance::emit_impl(JSContext          *context,
         if (!ObjectBase::info())
             continue;
 
-        GI::AutoSignalInfo signal_info{g_object_info_find_signal(
-            ObjectBase::info(), signal_query.signal_name)};
+        Maybe<GI::AutoSignalInfo> signal_info =
+            ObjectBase::info()->signal(signal_query.signal_name);
         if (!signal_info)
             continue;
 
-        GI::AutoArgInfo arg_info{g_callable_info_get_arg(signal_info, i)};
-        if (g_arg_info_get_ownership_transfer(arg_info) !=
-            GI_TRANSFER_NOTHING) {
+        GI::AutoArgInfo arg_info{signal_info->arg(i)};
+        if (arg_info.ownership_transfer() != GI_TRANSFER_NOTHING) {
             // FIXME(3v1n0): As it happens in many places in gjs, we can't track
             // (yet) containers content, so in case of transfer container we
             // can only leak.
@@ -3650,10 +3569,13 @@ void ObjectPrototype::set_interfaces(GType* interface_gtypes,
  * constructor and prototype objects as out parameters, for convenience
  * elsewhere.
  */
-bool ObjectPrototype::define_class(
-    JSContext* context, JS::HandleObject in_object, GIObjectInfo* info,
-    GType gtype, GType* interface_gtypes, uint32_t n_interface_gtypes,
-    JS::MutableHandleObject constructor, JS::MutableHandleObject prototype) {
+bool ObjectPrototype::define_class(JSContext* context,
+                                   JS::HandleObject in_object,
+                                   Maybe<const GI::ObjectInfo> info,
+                                   GType gtype, GType* interface_gtypes,
+                                   uint32_t n_interface_gtypes,
+                                   JS::MutableHandleObject constructor,
+                                   JS::MutableHandleObject prototype) {
     ObjectPrototype* priv = ObjectPrototype::create_class(
         context, in_object, info, gtype, constructor, prototype);
     if (!priv)
@@ -3868,59 +3790,52 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
+// Returns pair of implementor_vtable pointer, maybe field info
 GJS_JSAPI_RETURN_CONVENTION
-static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
-                            GIBaseInfo* vfunc_info, const char* vfunc_name,
-                            void** implementor_vtable_ret,
-                            GI::AutoFieldInfo* field_info_ret) {
-    GType ancestor_gtype;
-    int length, i;
-    GIBaseInfo *ancestor_info;
-    GI::AutoStructInfo struct_info;
+static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
+    JSContext* context, GType implementor_gtype, const GI::VFuncInfo vfunc_info,
+    const char* vfunc_name) {
+    Maybe<GI::AutoStructInfo> struct_info;
+    void* implementor_vtable_ret = nullptr;
 
-    field_info_ret->reset();
-    *implementor_vtable_ret = NULL;
-
-    ancestor_info = g_base_info_get_container(vfunc_info);
-    ancestor_gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)ancestor_info);
+    const GI::RegisteredTypeInfo ancestor_info =
+        vfunc_info.container<GI::InfoTag::REGISTERED_TYPE>().value();
+    GType ancestor_gtype = ancestor_info.gtype();
 
     Gjs::AutoTypeClass<GTypeClass> implementor_class{implementor_gtype};
-    if (GI_IS_INTERFACE_INFO(ancestor_info)) {
+    if (auto iface_info = ancestor_info.as<GI::InfoTag::INTERFACE>()) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
                                                         ancestor_gtype);
         if (implementor_iface_class == NULL) {
             gjs_throw (context, "Couldn't find GType of implementor of interface %s.",
                        g_type_name(ancestor_gtype));
-            return false;
+            return Nothing{};
         }
 
-        *implementor_vtable_ret = implementor_iface_class;
+        implementor_vtable_ret = implementor_iface_class;
 
-        struct_info = g_interface_info_get_iface_struct((GIInterfaceInfo*)ancestor_info);
+        struct_info = iface_info->iface_struct();
     } else {
-        struct_info = g_object_info_get_class_struct((GIObjectInfo*)ancestor_info);
-        *implementor_vtable_ret = implementor_class;
+        struct_info = ancestor_info.as<GI::InfoTag::OBJECT>()->class_struct();
+        implementor_vtable_ret = implementor_class;
     }
 
-    length = g_struct_info_get_n_fields(struct_info);
-    for (i = 0; i < length; i++) {
-        GI::AutoFieldInfo field_info{g_struct_info_get_field(struct_info, i)};
+    for (GI::AutoFieldInfo field_info : struct_info->fields()) {
         if (strcmp(field_info.name(), vfunc_name) != 0)
             continue;
 
-        GI::AutoTypeInfo type_info{g_field_info_get_type(field_info)};
-        if (g_type_info_get_tag(type_info) != GI_TYPE_TAG_INTERFACE) {
+        GI::AutoTypeInfo type_info{field_info.type_info()};
+        if (type_info.tag() != GI_TYPE_TAG_INTERFACE) {
             /* We have a field with the same name, but it's not a callback.
              * There's no hope of being another field with a correct name,
              * so just abort early. */
-            return true;
-        } else {
-            *field_info_ret = std::move(field_info);
-            return true;
+            return Some(std::make_pair(implementor_vtable_ret, Nothing{}));
         }
+        return Some(std::make_pair(implementor_vtable_ret,
+                                   Some(std::move(field_info))));
     }
-    return true;
+    return Some(std::make_pair(implementor_vtable_ret, Nothing{}));
 }
 
 bool ObjectBase::hook_up_vfunc(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -3942,26 +3857,27 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     args.rval().setUndefined();
 
     /* find the first class that actually has repository information */
-    GIObjectInfo *info = m_info;
+    GI::Repository repo;
+    Maybe<GI::AutoObjectInfo> info = m_info;
     GType info_gtype = m_gtype;
     while (!info && info_gtype != G_TYPE_OBJECT) {
         info_gtype = g_type_parent(info_gtype);
 
-        info = g_irepository_find_by_gtype(nullptr, info_gtype);
+        info = repo.find_by_gtype<GI::InfoTag::OBJECT>(info_gtype);
     }
 
     /* If we don't have 'info', we don't have the base class (GObject).
      * This is awful, so abort now. */
-    g_assert(info != NULL);
+    g_assert(info);
 
-    GI::AutoVFuncInfo vfunc{g_object_info_find_vfunc(info, name.get())};
+    Maybe<GI::AutoVFuncInfo> vfunc{info->vfunc(name.get())};
     // Search the parent type chain
     while (!vfunc && info_gtype != G_TYPE_OBJECT) {
         info_gtype = g_type_parent(info_gtype);
 
-        info = g_irepository_find_by_gtype(nullptr, info_gtype);
+        info = repo.find_by_gtype<GI::InfoTag::OBJECT>(info_gtype);
         if (info)
-            vfunc = g_object_info_find_vfunc(info, name.get());
+            vfunc = info->vfunc(name.get());
     }
 
     // If the vfunc doesn't exist in the parent
@@ -3969,14 +3885,13 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     // defined interfaces...
     if (!vfunc) {
         for (GType interface_gtype : m_interface_gtypes) {
-            GI::AutoInterfaceInfo interface{
-                g_irepository_find_by_gtype(nullptr, interface_gtype)};
+            Maybe<GI::AutoInterfaceInfo> interface{
+                repo.find_by_gtype<GI::InfoTag::INTERFACE>(interface_gtype)};
 
             // Private and dynamic interfaces (defined in JS) do not have type
             // info.
             if (interface) {
-                vfunc = g_interface_info_find_vfunc(interface, name.get());
-
+                vfunc = interface->vfunc(name.get());
                 if (vfunc)
                     break;
             }
@@ -3996,23 +3911,23 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             g_type_interfaces(m_gtype, &n_interfaces)};
 
         for (unsigned i = 0; i < n_interfaces; i++) {
-            GI::AutoInterfaceInfo interface{
-                g_irepository_find_by_gtype(nullptr, interface_list[i])};
+            Maybe<GI::AutoInterfaceInfo> interface{
+                repo.find_by_gtype<GI::InfoTag::INTERFACE>(interface_list[i])};
 
-            if (interface) {
-                GI::AutoVFuncInfo parent_vfunc{
-                    g_interface_info_find_vfunc(interface, name.get())};
+            if (!interface)
+                continue;
 
-                if (parent_vfunc) {
-                    Gjs::AutoChar identifier{g_strdup_printf(
-                        "%s.%s", interface.ns(), interface.name())};
-                    gjs_throw(cx,
-                              "%s does not implement %s, add %s to your "
-                              "implements array",
-                              g_type_name(m_gtype), identifier.get(),
-                              identifier.get());
-                    return false;
-                }
+            Maybe<GI::AutoVFuncInfo> parent_vfunc{interface->vfunc(name.get())};
+
+            if (parent_vfunc) {
+                Gjs::AutoChar identifier{g_strdup_printf(
+                    "%s.%s", interface->ns(), interface->name())};
+                gjs_throw(cx,
+                          "%s does not implement %s, add %s to your "
+                          "implements array",
+                          g_type_name(m_gtype), identifier.get(),
+                          identifier.get());
+                return false;
             }
         }
 
@@ -4022,25 +3937,24 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         return false;
     }
 
-    if (g_callable_info_is_method(vfunc) != !is_static) {
+    if (vfunc->is_method() != !is_static) {
         gjs_throw(cx, "Invalid %s definition of %s virtual function %s",
                   is_static ? "static" : "non-static",
                   is_static ? "non-static" : "static", name.get());
         return false;
     }
 
-    void *implementor_vtable;
-    GI::AutoFieldInfo field_info;
-    if (!find_vfunc_info(cx, m_gtype, vfunc, name.get(), &implementor_vtable,
-                         &field_info))
+    auto result = find_vfunc_info(cx, m_gtype, vfunc.ref(), name.get());
+    if (!result)
         return false;
 
+    void* implementor_vtable = result->first;
+    Maybe<GI::AutoFieldInfo> field_info = result->second;
     if (field_info) {
-        gint offset;
         void* method_ptr;
         GjsCallbackTrampoline *trampoline;
 
-        offset = g_field_info_get_offset(field_info);
+        int offset = field_info->offset();
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
         if (!JS::IsCallable(callable)) {
@@ -4048,7 +3962,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             return false;
         }
         trampoline = GjsCallbackTrampoline::create(
-            cx, callable, vfunc, GI_SCOPE_TYPE_NOTIFIED, true, !is_static);
+            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true, !is_static);
         if (!trampoline)
             return false;
 
@@ -4083,7 +3997,10 @@ gjs_lookup_object_constructor(JSContext             *context,
 {
     JSObject *constructor;
 
-    GI::AutoObjectInfo object_info{gjs_lookup_gtype(nullptr, gtype)};
+    GI::Repository repo;
+    Maybe<GI::AutoBaseInfo> result{gjs_lookup_gtype(repo, gtype)};
+    Maybe<const GI::ObjectInfo> object_info =
+        result.andThen(std::mem_fn(&GI::AutoBaseInfo::as<GI::InfoTag::OBJECT>));
 
     constructor = gjs_lookup_object_constructor_from_info(context, object_info, gtype);
 

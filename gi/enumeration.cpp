@@ -25,17 +25,13 @@
 #include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_define_enum_value(JSContext       *context,
-                      JS::HandleObject in_object,
-                      GIValueInfo     *info)
-{
-    const char* value_name;
+static bool gjs_define_enum_value(JSContext* context,
+                                  JS::HandleObject in_object,
+                                  const GI::ValueInfo info) {
     gsize i;
-    gint64 value_val;
 
-    value_name = g_base_info_get_name( (GIBaseInfo*) info);
-    value_val = g_value_info_get_value(info);
+    const char* value_name = info.name();
+    int64_t value_val = info.value();
 
     /* g-i converts enum members such as GDK_GRAVITY_SOUTH_WEST to
      * Gdk.GravityType.south-west (where 'south-west' is value_name)
@@ -66,33 +62,20 @@ gjs_define_enum_value(JSContext       *context,
     return true;
 }
 
-bool
-gjs_define_enum_values(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIEnumInfo      *info)
-{
-    int i, n_values;
-
+bool gjs_define_enum_values(JSContext* context, JS::HandleObject in_object,
+                            const GI::EnumInfo info) {
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
      */
-    n_values = g_enum_info_get_n_values(info);
-    for (i = 0; i < n_values; ++i) {
-        GI::AutoBaseInfo value_info{g_enum_info_get_value(info, i)};
-
+    for (GI::AutoValueInfo value_info : info.values()) {
         if (!gjs_define_enum_value(context, in_object, value_info))
             return false;
     }
     return true;
 }
 
-bool
-gjs_define_enumeration(JSContext       *context,
-                       JS::HandleObject in_object,
-                       GIEnumInfo      *info)
-{
-    const char *enum_name;
-
+bool gjs_define_enumeration(JSContext* context, JS::HandleObject in_object,
+                            const GI::EnumInfo info) {
     /* An enumeration is simply an object containing integer attributes for
      * each enum value. It does not have a special JSClass.
      *
@@ -102,27 +85,24 @@ gjs_define_enumeration(JSContext       *context,
      * be more complicated in general. I think this is fine.
      */
 
-    enum_name = g_base_info_get_name( (GIBaseInfo*) info);
+    const char* enum_name = info.name();
 
     JS::RootedObject enum_obj(context, JS_NewPlainObject(context));
     if (!enum_obj) {
-        gjs_throw(context, "Could not create enumeration %s.%s",
-                  g_base_info_get_namespace(info), enum_name);
+        gjs_throw(context, "Could not create enumeration %s.%s", info.ns(),
+                  enum_name);
         return false;
     }
 
-    GType gtype = g_registered_type_info_get_g_type(info);
+    GType gtype = info.gtype();
 
     if (!gjs_define_enum_values(context, enum_obj, info) ||
-        !gjs_define_static_methods<InfoType::Enum>(context, enum_obj, gtype,
-                                                   info) ||
+        !gjs_define_static_methods(context, enum_obj, gtype, info) ||
         !gjs_wrapper_define_gtype_prop(context, enum_obj, gtype))
         return false;
 
-    gjs_debug(GJS_DEBUG_GENUM,
-              "Defining %s.%s as %p",
-              g_base_info_get_namespace( (GIBaseInfo*) info),
-              enum_name, enum_obj.get());
+    gjs_debug(GJS_DEBUG_GENUM, "Defining %s.%s as %p", info.ns(), enum_name,
+              enum_obj.get());
 
     if (!JS_DefineProperty(context, in_object, enum_name, enum_obj,
                            GJS_MODULE_PROP_FLAGS)) {

@@ -7,20 +7,17 @@
 
 #include <config.h>
 
-#include <girepository.h>
-
 #include <js/TypeDecls.h>
 
+#include "gi/info.h"
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_enum_values(JSContext       *context,
-                            JS::HandleObject in_object,
-                            GIEnumInfo      *info);
+bool gjs_define_enum_values(JSContext*, JS::HandleObject in_object,
+                            const GI::EnumInfo);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_enumeration(JSContext       *context,
-                            JS::HandleObject in_object,
-                            GIEnumInfo      *info);
+bool gjs_define_enumeration(JSContext*, JS::HandleObject in_object,
+                            const GI::EnumInfo);
 
 #endif  // GI_ENUMERATION_H_

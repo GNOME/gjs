@@ -13,6 +13,7 @@
 #include <js/Value.h>
 
 #include "gi/arg.h"
+#include "gi/info.h"
 #include "gjs/macros.h"
 
 typedef bool (*GjsArgOverrideToGIArgumentFunc)(JSContext*, JS::Value,
@@ -38,17 +39,18 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_convert_to_gi_argument(JSContext*, JS::Value,
-                                               GIStructInfo*,
+                                               const GI::StructInfo,
                                                const char* arg_name,
                                                GjsArgumentType, GITransfer,
                                                GjsArgumentFlags, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_convert_from_gi_argument(JSContext*,
                                                  JS::MutableHandleValue,
-                                                 GIStructInfo*, GIArgument*);
+                                                 const GI::StructInfo,
+                                                 GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_release_gi_argument(JSContext*, GITransfer,
-                                            GIStructInfo*, GIArgument*);
+                                            const GI::StructInfo, GIArgument*);
 
 #endif  // GI_FOREIGN_H_

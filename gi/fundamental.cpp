@@ -40,6 +40,8 @@ namespace JS {
 class CallArgs;
 }
 
+using mozilla::Maybe, mozilla::Some;
+
 FundamentalInstance::FundamentalInstance(FundamentalPrototype* prototype,
                                          JS::HandleObject obj)
     : GIWrapperInstance(prototype, obj) {
@@ -72,24 +74,15 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
 /**/
 
 /* Find the first constructor */
-[[nodiscard]] static GIFunctionInfo* find_fundamental_constructor(
-    GIObjectInfo* info) {
-    int i, n_methods;
-
-    n_methods = g_object_info_get_n_methods(info);
-
-    for (i = 0; i < n_methods; ++i) {
-        GI::AutoFunctionInfo func_info;
-        GIFunctionInfoFlags flags;
-
-        func_info = g_object_info_get_method(info, i);
-
-        flags = g_function_info_get_flags(func_info);
-        if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0)
-            return func_info.release();
+[[nodiscard]]
+static Maybe<GI::AutoFunctionInfo> find_fundamental_constructor(
+    const GI::ObjectInfo info) {
+    for (GI::AutoFunctionInfo func_info : info.methods()) {
+        if (func_info.is_constructor())
+            return Some(func_info);
     }
 
-    return nullptr;
+    return {};
 }
 
 /**/
@@ -104,19 +97,17 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
 
     ret = true;
     interfaces = g_type_interfaces(gtype(), &n_interfaces);
+    GI::Repository repo;
     for (i = 0; i < n_interfaces; i++) {
-        GI::AutoInterfaceInfo iface_info{
-            g_irepository_find_by_gtype(nullptr, interfaces[i])};
-
+        Maybe<GI::AutoInterfaceInfo> iface_info{
+            repo.find_by_gtype<GI::InfoTag::INTERFACE>(interfaces[i])};
         if (!iface_info)
             continue;
 
-        GI::AutoFunctionInfo method_info{
-            g_interface_info_find_method(iface_info, name)};
+        Maybe<GI::AutoFunctionInfo> method_info{iface_info->method(name)};
 
-        if (method_info &&
-            g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
-            if (gjs_define_function(cx, obj, gtype(), method_info)) {
+        if (method_info && method_info->is_method()) {
+            if (gjs_define_function(cx, obj, gtype(), method_info.ref())) {
                 *resolved = true;
             } else {
                 ret = false;
@@ -140,29 +131,26 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     }
 
     /* We are the prototype, so look for methods and other class properties */
-    GI::AutoFunctionInfo method_info{
-        g_object_info_find_method(info(), prop_name.get())};
+    Maybe<GI::AutoFunctionInfo> method_info{info().method(prop_name.get())};
 
     if (method_info) {
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-        _gjs_log_info_usage(method_info);
-#endif
-        if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+        method_info->log_usage();
+        if (method_info->is_method()) {
             /* we do not define deprecated methods in the prototype */
-            if (g_base_info_is_deprecated(method_info)) {
+            if (method_info->is_deprecated()) {
                 gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                           "Ignoring definition of deprecated method %s in "
                           "prototype %s",
-                          method_info.name(), format_name().c_str());
+                          method_info->name(), format_name().c_str());
                 *resolved = false;
                 return true;
             }
 
             gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                       "Defining method %s in prototype for %s",
-                      method_info.name(), format_name().c_str());
+                      method_info->name(), format_name().c_str());
 
-            if (!gjs_define_function(cx, obj, gtype(), method_info))
+            if (!gjs_define_function(cx, obj, gtype(), *method_info))
                 return false;
 
             *resolved = true;
@@ -185,14 +173,15 @@ bool FundamentalInstance::invoke_constructor(JSContext* context,
                                              JS::HandleObject obj,
                                              const JS::CallArgs& args,
                                              GIArgument* rvalue) {
-    GIFunctionInfo* constructor_info = get_prototype()->constructor_info();
+    Maybe<const GI::FunctionInfo> constructor_info =
+        get_prototype()->constructor_info();
     if (!constructor_info) {
         gjs_throw(context, "Couldn't find a constructor for type %s",
                   format_name().c_str());
         return false;
     }
 
-    return gjs_invoke_constructor_from_c(context, constructor_info, obj, args,
+    return gjs_invoke_constructor_from_c(context, *constructor_info, obj, args,
                                          rvalue);
 }
 
@@ -201,18 +190,20 @@ bool FundamentalInstance::constructor_impl(JSContext* cx,
                                            JS::HandleObject object,
                                            const JS::CallArgs& argv) {
     GIArgument ret_value;
-    GITypeInfo return_info;
 
     if (!invoke_constructor(cx, object, argv, &ret_value) ||
         !associate_js_instance(cx, object, gjs_arg_get<void*>(&ret_value)))
         return false;
 
-    GICallableInfo* constructor_info = get_prototype()->constructor_info();
-    g_callable_info_load_return_type(constructor_info, &return_info);
+    Maybe<const GI::FunctionInfo> constructor_info =
+        get_prototype()->constructor_info();
+    g_assert(constructor_info);
 
-    return gjs_gi_argument_release(
-        cx, g_callable_info_get_caller_owns(constructor_info), &return_info,
-        &ret_value);
+    GI::StackTypeInfo return_info;
+    constructor_info->load_return_type(&return_info);
+
+    return gjs_gi_argument_release(cx, constructor_info->caller_owns(),
+                                   return_info, &ret_value);
 }
 
 FundamentalInstance::~FundamentalInstance(void) {
@@ -223,12 +214,13 @@ FundamentalInstance::~FundamentalInstance(void) {
     GJS_DEC_COUNTER(fundamental_instance);
 }
 
-FundamentalPrototype::FundamentalPrototype(GIObjectInfo* info, GType gtype)
+FundamentalPrototype::FundamentalPrototype(const GI::ObjectInfo info,
+                                           GType gtype)
     : GIWrapperPrototype(info, gtype),
-      m_ref_function(g_object_info_get_ref_function_pointer(info)),
-      m_unref_function(g_object_info_get_unref_function_pointer(info)),
-      m_get_value_function(g_object_info_get_get_value_function_pointer(info)),
-      m_set_value_function(g_object_info_get_set_value_function_pointer(info)),
+      m_ref_function(info.ref_function_pointer()),
+      m_unref_function(info.unref_function_pointer()),
+      m_get_value_function(info.get_value_function_pointer()),
+      m_set_value_function(info.set_value_function_pointer()),
       m_constructor_info(find_fundamental_constructor(info)) {
     GJS_INC_COUNTER(fundamental_prototype);
 }
@@ -258,22 +250,14 @@ const struct JSClass FundamentalBase::klass = {
 };
 // clang-format on
 
+// FIXME: assume info is non-null on main? Is it possible to have hidden
+// fundamental types?
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-gjs_lookup_fundamental_prototype(JSContext    *context,
-                                 GIObjectInfo *info,
-                                 GType         gtype)
-{
-    JS::RootedObject in_object(context);
-    const char *constructor_name;
-
-    if (info) {
-        in_object = gjs_lookup_namespace_object(context, (GIBaseInfo*) info);
-        constructor_name = g_base_info_get_name((GIBaseInfo*) info);
-    } else {
-        in_object = gjs_lookup_private_namespace(context);
-        constructor_name = g_type_name(gtype);
-    }
+static JSObject* gjs_lookup_fundamental_prototype(JSContext* context,
+                                                  const GI::ObjectInfo info) {
+    JS::RootedObject in_object{context,
+                               gjs_lookup_namespace_object(context, info)};
+    const char* constructor_name = info.name();
 
     if (G_UNLIKELY (!in_object))
         return nullptr;
@@ -317,20 +301,19 @@ gjs_lookup_fundamental_prototype(JSContext    *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject*
-gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
-                                            GType      gtype)
-{
-    GI::AutoObjectInfo info;
+static JSObject* gjs_lookup_fundamental_prototype_from_gtype(JSContext* cx,
+                                                             GType gtype) {
+    Maybe<GI::AutoObjectInfo> info;
+    GI::Repository repo;
 
     /* A given gtype might not have any definition in the introspection
      * data. If that's the case, try to look for a definition of any of the
      * parent type. */
     while (gtype != G_TYPE_INVALID &&
-           !(info = g_irepository_find_by_gtype(nullptr, gtype)))
+           !(info = repo.find_by_gtype<GI::InfoTag::OBJECT>(gtype)))
         gtype = g_type_parent(gtype);
 
-    return gjs_lookup_fundamental_prototype(context, info, gtype);
+    return gjs_lookup_fundamental_prototype(cx, info.ref());
 }
 
 // Overrides GIWrapperPrototype::get_parent_proto().
@@ -349,7 +332,7 @@ bool FundamentalPrototype::get_parent_proto(
 // Overrides GIWrapperPrototype::constructor_nargs().
 unsigned FundamentalPrototype::constructor_nargs(void) const {
     if (m_constructor_info)
-        return g_callable_info_get_n_args(m_constructor_info);
+        return m_constructor_info->n_args();
     return 0;
 }
 
@@ -365,19 +348,15 @@ unsigned FundamentalPrototype::constructor_nargs(void) const {
  */
 bool FundamentalPrototype::define_class(JSContext* cx,
                                         JS::HandleObject in_object,
-                                        GIObjectInfo* info,
+                                        const GI::ObjectInfo info,
                                         JS::MutableHandleObject constructor) {
-    GType gtype;
-
-    gtype = g_registered_type_info_get_g_type (info);
-
     JS::RootedObject prototype(cx);
     FundamentalPrototype* priv = FundamentalPrototype::create_class(
-        cx, in_object, info, gtype, constructor, &prototype);
+        cx, in_object, info, info.gtype(), constructor, &prototype);
     if (!priv)
         return false;
 
-    if (g_object_info_get_n_fields(info) > 0) {
+    if (info.fields().size() > 0) {
         gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                   "Fundamental type '%s' apparently has accessible fields. GJS "
                   "has no support for this yet, ignoring these.",

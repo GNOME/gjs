@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -21,6 +22,7 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_NewPlainObject
+#include <mozilla/Maybe.h>
 
 #include "gi/closure.h"
 #include "gi/gobject.h"
@@ -37,6 +39,8 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+using mozilla::Nothing;
 
 /* gi/private.cpp - private "imports._gi" module with operations that we need
  * to use from JS in order to create GObject classes, but should not be exposed
@@ -265,7 +269,7 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
         return false;  // error will have been thrown already
 
     JS::RootedObject constructor(cx), ignored_prototype(cx);
-    if (!InterfacePrototype::create_class(cx, module, nullptr, interface_type,
+    if (!InterfacePrototype::create_class(cx, module, Nothing{}, interface_type,
                                           &constructor, &ignored_prototype))
         return false;
 
@@ -296,7 +300,7 @@ static bool gjs_register_interface_with_class(JSContext* cx, unsigned argc,
         return false;  // error will have been thrown already
 
     JS::RootedObject prototype(cx);
-    if (!InterfacePrototype::wrap_class(cx, module, nullptr, interface_type,
+    if (!InterfacePrototype::wrap_class(cx, module, Nothing{}, interface_type,
                                         klass, &prototype))
         return false;
 
@@ -403,7 +407,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* create a custom JSClass */
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
-    if (!ObjectPrototype::define_class(cx, module, nullptr, instance_type,
+    if (!ObjectPrototype::define_class(cx, module, Nothing{}, instance_type,
                                        iface_types, n_interfaces, &constructor,
                                        &prototype))
         return false;
@@ -445,7 +449,7 @@ static bool gjs_register_type_with_class(JSContext* cx, unsigned argc,
 
     JS::RootedObject prototype(cx);
     ObjectPrototype* priv = ObjectPrototype::wrap_class(
-        cx, module, nullptr, instance_type, klass, &prototype);
+        cx, module, Nothing{}, instance_type, klass, &prototype);
     if (!priv)
         return false;
 
