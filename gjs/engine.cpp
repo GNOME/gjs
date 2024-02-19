@@ -62,6 +62,15 @@ static void on_promise_unhandled_rejection(
     gjs->register_unhandled_promise_rejection(id, std::move(stack));
 }
 
+static void on_cleanup_finalization_registry(JSFunction* cleanup_task,
+                                             JSObject* incumbent_global
+                                             [[maybe_unused]],
+                                             void* data) {
+    auto* gjs = static_cast<GjsContextPrivate*>(data);
+    if (!gjs->queue_finalization_registry_cleanup(cleanup_task))
+        g_critical("Out of memory queueing FinalizationRegistry cleanup task");
+}
+
 bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
                               size_t* length) {
     GjsAutoError error;
@@ -200,6 +209,8 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS::SetJobQueue(cx, dynamic_cast<JS::JobQueue*>(uninitialized_gjs));
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
                                            uninitialized_gjs);
+    JS::SetHostCleanupFinalizationRegistryCallback(
+        cx, on_cleanup_finalization_registry, uninitialized_gjs);
 
     // We use this to handle "lazy sources" that SpiderMonkey doesn't need to
     // keep in memory. Most sources should be kept in memory, but we can skip

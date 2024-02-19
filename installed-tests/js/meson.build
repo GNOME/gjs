@@ -244,6 +244,7 @@ modules_tests = [
     'GLibLogWriter',
     'Global',
     'Timers',
+    'WeakRef',
 ]
 if build_cairo
     modules_tests += 'CairoModule'

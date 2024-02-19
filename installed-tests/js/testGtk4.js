@@ -347,16 +347,24 @@ describe('Gtk template signal', function () {
         Gtk.init();
     });
 
-    it('does not leak', function () {
-        let widget = new LeakTestWidget();
-        GjsTestTools.save_weak(widget);
-        widget = null;
+    function asyncIdle() {
+        return new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                resolve();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+    }
 
+    it('does not leak', async function () {
+        const weakRef = new WeakRef(new LeakTestWidget());
+
+        await asyncIdle();
         // It takes two GC cycles to free the widget, because of the tardy sweep
         // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
         System.gc();
         System.gc();
 
-        expect(GjsTestTools.get_weak()).toBeNull();
+        expect(weakRef.deref()).toBeUndefined();
     });
 });

@@ -6,7 +6,7 @@
 imports.gi.versions.Gtk = '3.0';
 
 const ByteArray = imports.byteArray;
-const {GjsTestTools, Gtk} = imports.gi;
+const {GLib, Gtk} = imports.gi;
 const Lang = imports.lang;
 const System = imports.system;
 
@@ -114,7 +114,16 @@ describe('Legacy Gtk overrides', function () {
         expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
     });
 
-    it('does not leak instance when connecting template signal', function () {
+    function asyncIdle() {
+        return new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                resolve();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+    }
+
+    it('does not leak instance when connecting template signal', async function () {
         const LeakTestWidget = new Lang.Class({
             Name: 'LeakTestWidget',
             Extends: Gtk.Button,
@@ -128,14 +137,14 @@ describe('Legacy Gtk overrides', function () {
             buttonClicked() {},
         });
 
-        let widget = new LeakTestWidget();
-        GjsTestTools.save_weak(widget);
-        widget = null;
+        const weakRef = new WeakRef(new LeakTestWidget());
+
+        await asyncIdle();
         // It takes two GC cycles to free the widget, because of the tardy sweep
         // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
         System.gc();
         System.gc();
 
-        expect(GjsTestTools.get_weak()).toBeNull();
+        expect(weakRef.deref()).toBeUndefined();
     });
 });
