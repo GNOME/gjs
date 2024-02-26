@@ -2187,6 +2187,7 @@ describe('GObject properties', function () {
     testPropertyGetSet('uint64', 42, 64);
     testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax);
     testPropertyGetSet('string', 'Gjs', 'is cool!');
+    testPropertyGetSet('string', 'and supports', null);
 
     it('get and sets out-of-range values throws', function () {
         expect(() => {
@@ -2245,6 +2246,8 @@ describe('GObject properties', function () {
     testPropertyGetSet('strv', ['0', '1', '2'], []);
     testPropertyGetSet('boxed_struct', new GIMarshallingTests.BoxedStruct(),
         new GIMarshallingTests.BoxedStruct({long_: 42}));
+    testPropertyGetSet('boxed_struct', new GIMarshallingTests.BoxedStruct(),
+        null);
     testPropertyGetSet('boxed_glist', null, null);
     testPropertyGetSet('gvalue', 42, 'foo');
     testPropertyGetSetBigInt('gvalue', BigIntLimits.int64.umax, BigIntLimits.int64.min);
@@ -2256,12 +2259,16 @@ describe('GObject properties', function () {
         new GLib.Variant('t', BigIntLimits.int64.umax));
     testPropertyGetSet('object', new GObject.Object(),
         new GIMarshallingTests.Object({int: 42}));
+    testPropertyGetSet('object', new GIMarshallingTests.PropertiesObject({
+        'some-int': 23, 'some-string': '👾',
+    }), null);
     testPropertyGetSet('flags', GIMarshallingTests.Flags.VALUE2,
         GIMarshallingTests.Flags.VALUE1 | GIMarshallingTests.Flags.VALUE2);
     testPropertyGetSet('enum', GIMarshallingTests.GEnum.VALUE2,
         GIMarshallingTests.GEnum.VALUE3);
     testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
         ByteArray.fromString('👾'));
+    testPropertyGetSet('byte_array', Uint8Array.of(3, 2, 1), null);
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);

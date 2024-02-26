@@ -94,7 +94,8 @@ struct Argument {
  protected:
     constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
 
-    virtual const Arg::ReturnValue* as_return_value() const { return nullptr; }
+    virtual GITypeTag return_tag() const { return GI_TYPE_TAG_VOID; }
+    virtual const GITypeInfo* return_type() const { return nullptr; }
     virtual const Arg::Instance* as_instance() const { return nullptr; }
 
     constexpr void set_instance_parameter() {
@@ -156,6 +157,7 @@ struct ArgsCache {
     void build_instance(GICallableInfo* callable);
 
     GType instance_type() const;
+    GITypeTag return_tag() const;
     GITypeInfo* return_type() const;
 
  private:
