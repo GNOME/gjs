@@ -2365,6 +2365,14 @@ static bool gjs_array_from_zero_terminated_c_array(
                 break;
             }
 
+            if (!g_type_info_is_pointer(param_info)) {
+                gjs_throw(context,
+                          "Flat C array of %s.%s not supported (see "
+                          "https://gitlab.gnome.org/GNOME/gjs/-/issues/603)",
+                          interface_info.ns(), interface_info.name());
+                return false;
+            }
+
             [[fallthrough]];
         }
         case GI_TYPE_TAG_GTYPE:
