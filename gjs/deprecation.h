@@ -14,6 +14,7 @@ enum GjsDeprecationMessageId {
     ByteArrayInstanceToString,
     DeprecatedGObjectProperty,
     ModuleExportedLetOrConst,
+    PlatformSpecificTypelib,
     LastValue,  // insert new elements before this one
 };
 

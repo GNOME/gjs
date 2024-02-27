@@ -4,6 +4,16 @@
 const ByteArray = imports.byteArray;
 const {Gio, GjsTestTools, GLib} = imports.gi;
 
+// Adapter for compatibility with pre-GLib-2.80
+let GioUnix;
+if (imports.gi.versions.GioUnix === '2.0') {
+    GioUnix = imports.gi.GioUnix;
+} else {
+    GioUnix = {
+        InputStream: Gio.UnixInputStream,
+    };
+}
+
 /* The methods list with their signatures.
  *
  * *** NOTE: If you add stuff here, you need to update the Test class below.
@@ -235,7 +245,7 @@ class Test {
 
     fdIn(fdIndex, fdList) {
         const fd = fdList.get(fdIndex);
-        const stream = new Gio.UnixInputStream({fd, closeFd: true});
+        const stream = new GioUnix.InputStream({fd, closeFd: true});
         const bytes = stream.read_bytes(4096, null);
         return bytes;
     }
@@ -243,7 +253,7 @@ class Test {
     // Same as fdIn(), but implemented asynchronously
     fdIn2Async([fdIndex], invocation, fdList) {
         const fd = fdList.get(fdIndex);
-        const stream = new Gio.UnixInputStream({fd, closeFd: true});
+        const stream = new GioUnix.InputStream({fd, closeFd: true});
         stream.read_bytes_async(4096, GLib.PRIORITY_DEFAULT, null, (obj, res) => {
             const bytes = obj.read_bytes_finish(res);
             invocation.return_value(new GLib.Variant('(ay)', [bytes]));
@@ -727,7 +737,7 @@ describe('Exported DBus object', function () {
     });
 
     function readBytesFromFdSync(fd) {
-        const stream = new Gio.UnixInputStream({fd, closeFd: true});
+        const stream = new GioUnix.InputStream({fd, closeFd: true});
         const bytes = stream.read_bytes(4096, null);
         return ByteArray.fromGBytes(bytes);
     }

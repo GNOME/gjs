@@ -49,6 +49,10 @@ const char* messages[] = {
     "to be exported from a module must be defined with 'var'. The property "
     "access will work as previously for the time being, but please fix your "
     "code anyway.",
+
+    // PlatformSpecificTypelib:
+    ("{} has been moved to a separate platform-specific library. Please update "
+     "your code to use {} instead."),
 };
 
 static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
