@@ -51,6 +51,8 @@ const char* messages[] = {
     "code anyway.",
 };
 
+static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
+
 struct DeprecationEntry {
     GjsDeprecationMessageId id;
     std::string loc;
