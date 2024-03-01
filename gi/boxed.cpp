@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
+#include <string>
 #include <utility>  // for move, forward
 
 #include <girepository.h>

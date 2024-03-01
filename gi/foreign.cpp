@@ -13,6 +13,7 @@
 #include <girepository.h>
 #include <glib.h>
 
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/foreign.h"
