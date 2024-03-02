@@ -485,10 +485,6 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_object_constructor(JSContext             *context,
                                    GType                  gtype,
                                    JS::MutableHandleValue value_p);
-GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_lookup_object_constructor_from_info(JSContext* cx,
-                                                  GIObjectInfo* info,
-                                                  GType gtype);
 
 void gjs_object_clear_toggles(void);
 void gjs_object_shutdown_toggle_queue(void);

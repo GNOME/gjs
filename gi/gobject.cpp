@@ -163,12 +163,10 @@ static GObject* gjs_object_constructor(
      */
     Gjs::AutoMainRealm ar{gjs};
 
-    JS::RootedObject constructor(
-        cx, gjs_lookup_object_constructor_from_info(cx, nullptr, type));
-    if (!constructor)
+    JS::RootedValue constructor{cx};
+    if (!gjs_lookup_object_constructor(cx, type, &constructor))
         return nullptr;
 
-    JS::RootedValue v_constructor(cx, JS::ObjectValue(*constructor));
     JS::RootedObject object(cx);
     if (n_construct_properties) {
         JS::RootedObject props_hash(cx, JS_NewPlainObject(cx));
@@ -182,9 +180,9 @@ static GObject* gjs_object_constructor(
         JS::RootedValueArray<1> args(cx);
         args[0].set(JS::ObjectValue(*props_hash));
 
-        if (!JS::Construct(cx, v_constructor, args, &object))
+        if (!JS::Construct(cx, constructor, args, &object))
             return nullptr;
-    } else if (!JS::Construct(cx, v_constructor, JS::HandleValueArray::empty(),
+    } else if (!JS::Construct(cx, constructor, JS::HandleValueArray::empty(),
                               &object)) {
         return nullptr;
     }

@@ -213,11 +213,11 @@ struct Array : BasicType {
     }
 };
 
-struct BaseInfo {
-    constexpr explicit BaseInfo(GIBaseInfo* info,
-                                const GjsAutoTakeOwnership& add_ref)
+struct HasIntrospectionInfo {
+    constexpr explicit HasIntrospectionInfo(GIBaseInfo* info,
+                                            const GjsAutoTakeOwnership& add_ref)
         : m_info(info, add_ref) {}
-    constexpr explicit BaseInfo(GIBaseInfo* info) : m_info(info) {}
+    constexpr explicit HasIntrospectionInfo(GIBaseInfo* info) : m_info(info) {}
 
     GjsAutoBaseInfo m_info;
 };
@@ -234,7 +234,7 @@ struct GTypedType {
 struct RegisteredType : GTypedType {
     RegisteredType(GType gtype, GIInfoType info_type)
         : GTypedType(gtype), m_info_type(info_type) {}
-    explicit RegisteredType(GIBaseInfo* info)
+    explicit RegisteredType(GIRegisteredTypeInfo* info)
         : GTypedType(g_registered_type_info_get_g_type(info)),
           m_info_type(g_base_info_get_type(info)) {
         g_assert(m_gtype != G_TYPE_NONE &&
@@ -244,15 +244,15 @@ struct RegisteredType : GTypedType {
     GIInfoType m_info_type : 5;
 };
 
-struct RegisteredInterface : BaseInfo, GTypedType {
-    explicit RegisteredInterface(GIBaseInfo* info)
-        : BaseInfo(info, GjsAutoTakeOwnership{}),
+struct RegisteredInterface : HasIntrospectionInfo, GTypedType {
+    explicit RegisteredInterface(GIRegisteredTypeInfo* info)
+        : HasIntrospectionInfo(info, GjsAutoTakeOwnership{}),
           GTypedType(g_registered_type_info_get_g_type(m_info)) {}
 };
 
-struct Callback : Nullable, BaseInfo {
-    explicit Callback(GIInterfaceInfo* info)
-        : BaseInfo(info, GjsAutoTakeOwnership{}),
+struct Callback : Nullable, HasIntrospectionInfo {
+    explicit Callback(GICallbackInfo* info)
+        : HasIntrospectionInfo(info, GjsAutoTakeOwnership{}),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
     inline void set_callback_destroy_pos(int pos) {
@@ -586,11 +586,11 @@ struct BoxedIn : BoxedInTransferNone {
     }
 };
 
-struct UnregisteredBoxedIn : BoxedIn, BaseInfo {
-    explicit UnregisteredBoxedIn(GIInterfaceInfo* info)
+struct UnregisteredBoxedIn : BoxedIn, HasIntrospectionInfo {
+    explicit UnregisteredBoxedIn(GIStructInfo* info)
         : BoxedIn(g_registered_type_info_get_g_type(info),
                   g_base_info_get_type(info)),
-          BaseInfo(info, GjsAutoTakeOwnership{}) {}
+          HasIntrospectionInfo(info, GjsAutoTakeOwnership{}) {}
     // This is a smart argument, no release needed
     GIBaseInfo* info() const override { return m_info; }
 };

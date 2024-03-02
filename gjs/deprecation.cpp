@@ -51,6 +51,8 @@ const char* messages[] = {
     "code anyway.",
 };
 
+static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
+
 struct DeprecationEntry {
     GjsDeprecationMessageId id;
     std::string loc;
@@ -142,5 +144,6 @@ void _gjs_warn_deprecated_once_per_callsite(
 
     message << format_string.substr(copied, std::string::npos);
 
-    warn_deprecated_unsafe_internal(cx, id, message.str().c_str());
+    std::string message_formatted = message.str();
+    warn_deprecated_unsafe_internal(cx, id, message_formatted.c_str());
 }

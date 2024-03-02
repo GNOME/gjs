@@ -198,11 +198,11 @@ class BoxedInstance
     GJS_JSAPI_RETURN_CONVENTION
     bool get_nested_interface_object(JSContext* cx, JSObject* parent_obj,
                                      GIFieldInfo* field_info,
-                                     GIBaseInfo* interface_info,
+                                     GIStructInfo* interface_info,
                                      JS::MutableHandleValue value) const;
     GJS_JSAPI_RETURN_CONVENTION
     bool set_nested_interface_object(JSContext* cx, GIFieldInfo* field_info,
-                                     GIBaseInfo* interface_info,
+                                     GIStructInfo* interface_info,
                                      JS::HandleValue value);
 
     GJS_JSAPI_RETURN_CONVENTION

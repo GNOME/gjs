@@ -158,7 +158,7 @@ describe('Garbage collection of introspected objects', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*property screenfull*');
 
-        const settings = new Gio.Settings({schema: 'org.gnome.GjsTest'});
+        const settings = new Gio.Settings({schemaId: 'org.gnome.GjsTest'});
         let obj = new SomeObject();
         settings.bind('fullscreen', obj, 'screenfull', Gio.SettingsBindFlags.DEFAULT);
         const handler = settings.connect('changed::fullscreen', () => {

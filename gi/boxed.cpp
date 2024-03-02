@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
+#include <string>
 #include <utility>  // for move, forward
 
 #include <girepository.h>
@@ -480,10 +481,10 @@ GIFieldInfo* BoxedBase::get_field_info(JSContext* cx, uint32_t id) const {
  */
 bool BoxedInstance::get_nested_interface_object(
     JSContext* context, JSObject* parent_obj, GIFieldInfo* field_info,
-    GIBaseInfo* interface_info, JS::MutableHandleValue value) const {
+    GIStructInfo* struct_info, JS::MutableHandleValue value) const {
     int offset;
 
-    if (!struct_is_simple(reinterpret_cast<GIStructInfo*>(interface_info))) {
+    if (!struct_is_simple(struct_info)) {
         gjs_throw(context, "Reading field %s.%s is not supported", name(),
                   g_base_info_get_name(field_info));
 
@@ -492,8 +493,8 @@ bool BoxedInstance::get_nested_interface_object(
 
     offset = g_field_info_get_offset (field_info);
 
-    JS::RootedObject obj(context, gjs_new_object_with_generic_prototype(
-                                      context, interface_info));
+    JS::RootedObject obj{
+        context, gjs_new_object_with_generic_prototype(context, struct_info)};
     if (!obj)
         return false;
 
@@ -603,19 +604,19 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
  */
 bool BoxedInstance::set_nested_interface_object(JSContext* context,
                                                 GIFieldInfo* field_info,
-                                                GIBaseInfo* interface_info,
+                                                GIStructInfo* struct_info,
                                                 JS::HandleValue value) {
     int offset;
 
-    if (!struct_is_simple(reinterpret_cast<GIStructInfo*>(interface_info))) {
+    if (!struct_is_simple(struct_info)) {
         gjs_throw(context, "Writing field %s.%s is not supported", name(),
                   g_base_info_get_name(field_info));
 
         return false;
     }
 
-    JS::RootedObject proto(
-        context, gjs_lookup_generic_prototype(context, interface_info));
+    JS::RootedObject proto{context,
+                           gjs_lookup_generic_prototype(context, struct_info)};
 
     if (!proto)
         return false;
@@ -788,7 +789,7 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
             g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
-            GjsAutoBaseInfo param_info =
+            GjsAutoTypeInfo param_info =
                 g_type_info_get_param_type(type_info, 0);
             return type_can_be_allocated_directly(param_info);
         }
@@ -868,7 +869,7 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
             g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
-            GjsAutoBaseInfo param_info =
+            GjsAutoTypeInfo param_info =
                 g_type_info_get_param_type(type_info, 0);
             return direct_allocation_has_pointers(param_info);
         }
@@ -901,8 +902,8 @@ const struct JSClass BoxedBase::klass = {
         return false;
 
     for (i = 0; i < n_fields && is_simple; i++) {
-        GjsAutoBaseInfo field_info = g_struct_info_get_field(info, i);
-        GjsAutoBaseInfo type_info = g_field_info_get_type(field_info);
+        GjsAutoFieldInfo field_info = g_struct_info_get_field(info, i);
+        GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
 
         is_simple = type_can_be_allocated_directly(type_info);
     }
@@ -918,8 +919,8 @@ const struct JSClass BoxedBase::klass = {
     g_assert(n_fields > 0);
 
     for (int i = 0; i < n_fields; i++) {
-        GjsAutoBaseInfo field_info = g_struct_info_get_field(info, i);
-        GjsAutoBaseInfo type_info = g_field_info_get_type(field_info);
+        GjsAutoFieldInfo field_info = g_struct_info_get_field(info, i);
+        GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
         if (direct_allocation_has_pointers(type_info))
             return true;
     }
