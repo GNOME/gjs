@@ -208,7 +208,7 @@ else
     libatomic = cc.find_library('atomic', required: false)
 endif
 
-build_profiler = sysprof_capture.found() and not get_option('profiler').disabled()
+build_profiler = sysprof_capture.found()
 profiler_deps = [sysprof_capture]
 if build_profiler and not cxx.has_function('timer_settime')
     extra_timer_libs = ['rt', 'posix4']
@@ -232,8 +232,8 @@ it on other platforms.''')
     endif
 endif
 
-build_cairo = cairo.found() and not get_option('cairo').disabled()
-build_readline = readline.found() and not get_option('readline').disabled()
+build_cairo = cairo.found()
+build_readline = readline.found()
 
 ### Check for library features #################################################
 
