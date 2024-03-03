@@ -132,11 +132,18 @@ spidermonkey = dependency('mozjs-115')
 
 # We might need to look for the headers and lib's for Cairo
 # manually on MSVC/clang-cl builds...
-cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_argument_syntax() != 'msvc')
-cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_argument_syntax() != 'msvc')
-cairo_xlib = dependency('cairo-xlib', required: false)
+if get_option('cairo').disabled()
+    # dummy not-found dependency since we break the tristate feature in the else block
+    cairo = dependency('', required: false)
+    cairo_gobject = cairo
+    cairo_xlib = cairo
+else
+    cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_argument_syntax() != 'msvc')
+    cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_argument_syntax() != 'msvc')
+    cairo_xlib = dependency('cairo-xlib', required: false)
+endif
 
-if cxx.get_argument_syntax() == 'msvc'
+if cxx.get_argument_syntax() == 'msvc' and not get_option('cairo').disabled()
     if not cairo.found()
         cairo = cc.find_library('cairo', has_headers: ['cairo.h'], required: get_option('cairo').enabled())
     endif
