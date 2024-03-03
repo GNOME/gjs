@@ -1,3 +1,18 @@
+Version 1.79.90
+---------------
+
+- You may have noticed that WeakRef and FinalizationRegistry... never
+  actually worked as they were supposed to. They work now!
+
+- Closed bugs and merge requests:
+  * Workspace switching performance degradation due to leaked WeakRefs
+    in JS [#600, !913, Philip Chimento]
+  * GTop.glibtop_get_mountlist invocation causes GNOME Shell Crash
+    [#601, !914, Philip Chimento]
+  * Progress towards some performance improvements in accessing GObject
+    properties [!915, Marco Trevisan]
+  * Various maintenance [!916, Philip Chimento]
+
 Version 1.79.3
 --------------
 
