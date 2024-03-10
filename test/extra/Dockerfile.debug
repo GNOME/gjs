@@ -26,7 +26,7 @@ RUN dnf -y install 'dnf-command(builddep)' \
     rust \
     which \
     xz
-RUN dnf -y builddep ${MOZJS_BUILDDEPS} gobject-introspection
+RUN dnf -y builddep ${MOZJS_BUILDDEPS} glib2 gobject-introspection
 
 WORKDIR /root
 
@@ -59,11 +59,27 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 WORKDIR /root
 
 # Install gnome-introspection from main, so that we can test against it
+# Temporarily, we can only build gobject-introspection with a GLib that's new
+# enough to generate its own GIRs
+RUN git clone https://gitlab.gnome.org/GNOME/glib.git
 RUN git clone https://gitlab.gnome.org/GNOME/gobject-introspection.git
 
+ENV PATH=/opt/GNOME/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/GNOME/lib64:$LD_LIBRARY_PATH
+ENV PKG_CONFIG_PATH=/opt/GNOME/lib64/pkgconfig:$PKG_CONFIG_PATH
+
+WORKDIR /root/glib
+RUN meson setup _build . --prefix=/opt/GNOME --buildtype debugoptimized -Dintrospection=disabled
+RUN ninja -C _build install
+
 WORKDIR /root/gobject-introspection
-RUN meson setup _build . --prefix=/opt/GNOME --buildtype debugoptimized
+RUN meson setup _build . --prefix=/opt/GNOME --buildtype debugoptimized -Dbuild_introspection_data=false
 RUN DESTDIR=/root/g-i-install ninja -C _build install
+RUN ninja -C _build install
+
+WORKDIR /root/glib
+RUN meson configure _build -Dintrospection=enabled
+RUN DESTDIR=/root/glib-install ninja -C _build install
 
 # === Actual Docker image ===
 
@@ -126,6 +142,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
 
 COPY --from=build /root/mozjs-install/usr /usr
 COPY --from=build /root/iwyu-install/usr /usr
+COPY --from=build /root/glib-install/opt /opt
 COPY --from=build /root/g-i-install/opt /opt
 RUN ln -s /usr/bin/iwyu_tool.py /usr/bin/iwyu_tool
 
