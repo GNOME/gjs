@@ -295,7 +295,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     // GIWrapperInstance::m_ptr may be null in ObjectInstance.
 
-    GjsMaybeOwned<JSObject*> m_wrapper;
+    GjsMaybeOwned m_wrapper;
     // a list of all GClosures installed on this object (from signal connections
     // and scope-notify callbacks passed to methods), used when tracing
     std::vector<GClosure*> m_closures;
@@ -331,7 +331,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     [[nodiscard]] bool has_wrapper() const { return !!m_wrapper; }
 
  public:
-    [[nodiscard]] JSObject* wrapper() const { return m_wrapper; }
+    [[nodiscard]] JSObject* wrapper() const { return m_wrapper.get(); }
 
     /* Methods to manipulate the JS object wrapper */
 

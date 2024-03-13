@@ -1852,7 +1852,7 @@ bool ObjectInstance::init_impl(JSContext* context, const JS::CallArgs& args,
             toggle_ref_added = m_uses_toggle_ref;
         }
 
-        args.rval().setObject(*other_priv->m_wrapper);
+        args.rval().setObject(*other_priv->m_wrapper.get());
 
         if (toggle_ref_added)
             g_clear_object(&gobj); /* We already own a reference */

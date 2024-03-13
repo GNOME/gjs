@@ -88,7 +88,8 @@ class Closure : public GClosure {
         return self;
     }
 
-    constexpr JSObject* callable() const { return m_callable; }
+    // COMPAT: constexpr in C++23
+    JSObject* callable() const { return m_callable.get(); }
     [[nodiscard]] constexpr JSContext* context() const { return m_cx; }
     [[nodiscard]] constexpr bool is_valid() const { return !!m_cx; }
     GJS_JSAPI_RETURN_CONVENTION bool invoke(JS::HandleObject,
@@ -129,7 +130,7 @@ class Closure : public GClosure {
     //  The context could be attached to the default context of the runtime
     //  using if we wanted the closure to survive the context that created it.
     JSContext* m_cx;
-    GjsMaybeOwned<JSObject*> m_callable;
+    GjsMaybeOwned m_callable;
 };
 
 }  // namespace Gjs

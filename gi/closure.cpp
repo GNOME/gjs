@@ -171,7 +171,7 @@ bool Closure::invoke(JS::HandleObject this_obj,
         return false;
     }
 
-    JSAutoRealm ar(m_cx, m_callable);
+    JSAutoRealm ar{m_cx, m_callable.get()};
 
     if (gjs_log_exception(m_cx)) {
         gjs_debug_closure(
@@ -180,7 +180,7 @@ bool Closure::invoke(JS::HandleObject this_obj,
             this);
     }
 
-    JS::RootedValue v_callable(m_cx, JS::ObjectValue(*m_callable));
+    JS::RootedValue v_callable{m_cx, JS::ObjectValue(*m_callable.get())};
     bool ok = JS::Call(m_cx, this_obj, v_callable, args, retval);
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
 
