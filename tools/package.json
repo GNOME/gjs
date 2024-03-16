@@ -9,7 +9,7 @@
     "fix": "npm run lint --fix"
   },
   "devDependencies": {
-    "eslint": "^8.26.0",
-    "eslint-plugin-jsdoc": "^39.4.0"
+    "eslint": "^8.57.0",
+    "eslint-plugin-jsdoc": "^48.2.1"
   }
 }
