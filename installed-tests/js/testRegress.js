@@ -947,6 +947,12 @@ describe('Life, the Universe and Everything', function () {
                 expect(() => new Regress.TestBoxedD()).toThrow();
             });
         });
+
+        xit('methods take priority over fields in a name conflict', function () {
+            const boxed = new Regress.TestBoxedC({name_conflict: true});
+            expect(boxed.name_conflict).not.toBeTrue();
+            expect(boxed.name_conflict()).toBeTrue();
+        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/454');
     });
 
     describe('wrong type for GBoxed', function () {
