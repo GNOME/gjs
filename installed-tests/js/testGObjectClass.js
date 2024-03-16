@@ -311,8 +311,8 @@ describe('GObject class with decorator', function () {
         expect(() => new MyObject('this is wrong')).toThrow();
     });
 
-    it('accepts a property hash that is not a plain object', function () {
-        expect(() => new MyObject(new GObject.Object())).not.toThrow();
+    it('does not accept a property hash that is not a plain object', function () {
+        expect(() => new MyObject(new GObject.Object())).toThrow();
     });
 
     const ui = `<interface>

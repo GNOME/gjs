@@ -1789,13 +1789,21 @@ bool ObjectInstance::init_impl(JSContext* context, const JS::CallArgs& args,
     if (args.length() > 0 && !args[0].isUndefined()) {
         if (!args[0].isObject()) {
             gjs_throw(context,
-                      "Argument to the constructor of %s should be an object "
-                      "with properties to set",
+                      "Argument to the constructor of %s should be a plain JS "
+                      "object with properties to set",
                       name());
             return false;
         }
 
         JS::RootedObject props(context, &args[0].toObject());
+        if (ObjectInstance::typecheck(context, props, nullptr, G_TYPE_NONE,
+                                      GjsTypecheckNoThrow{})) {
+            gjs_throw(context,
+                      "Argument to the constructor of %s should be a plain JS "
+                      "object with properties to set",
+                      name());
+            return false;
+        }
         if (!m_proto->props_to_g_parameters(context, object_class, props,
                                             &names, &values))
             return false;
