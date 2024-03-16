@@ -48,7 +48,6 @@
 #include <js/GCHashTable.h>         // for WeakCache
 #include <js/GCVector.h>            // for RootedVector
 #include <js/GlobalObject.h>        // for CurrentGlobalOrNull
-#include <js/HashTable.h>           // for DefaultHasher via WeakCache
 #include <js/HeapAPI.h>             // for ExposeObjectToActiveJS
 #include <js/Id.h>
 #include <js/Modules.h>

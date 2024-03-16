@@ -106,6 +106,27 @@ static bool resolve_namespace_object(JSContext* context,
         return false;
 
     GjsAutoError error;
+    // If resolving Gio, load the platform-specific typelib first, so that
+    // GioUnix/GioWin32 GTypes get looked up in there with higher priority,
+    // instead of in Gio.
+#if GLIB_CHECK_VERSION(2, 79, 2) && (defined(G_OS_UNIX) || defined(G_OS_WIN32))
+    if (strcmp(ns_name.get(), "Gio") == 0) {
+#    ifdef G_OS_UNIX
+        const char* platform = "Unix";
+#    else   // G_OS_WIN32
+        const char* platform = "Win32";
+#    endif  // G_OS_UNIX/G_OS_WIN32
+        GjsAutoChar platform_specific =
+            g_strconcat(ns_name.get(), platform, nullptr);
+        if (!g_irepository_require(nullptr, platform_specific, version.get(),
+                                   GIRepositoryLoadFlags(0), &error)) {
+            gjs_throw(context, "Failed to require %s %s: %s",
+                      platform_specific.get(), version.get(), error->message);
+            return false;
+        }
+    }
+#endif  // GLib >= 2.79.2
+
     g_irepository_require(nullptr, ns_name.get(), version.get(),
                           GIRepositoryLoadFlags(0), &error);
     if (error) {
@@ -224,6 +245,22 @@ repo_new(JSContext *context)
     if (!JS_DefinePropertyById(context, versions, atoms.gio(), two_point_oh,
                                JSPROP_PERMANENT))
         return nullptr;
+
+#if GLIB_CHECK_VERSION(2, 79, 2)
+#    if defined(G_OS_UNIX)
+    if (!JS_DefineProperty(context, versions, "GLibUnix", two_point_oh,
+                           JSPROP_PERMANENT) ||
+        !JS_DefineProperty(context, versions, "GioUnix", two_point_oh,
+                           JSPROP_PERMANENT))
+        return nullptr;
+#    elif defined(G_OS_WIN32)
+    if (!JS_DefineProperty(context, versions, "GLibWin32", two_point_oh,
+                           JSPROP_PERMANENT) ||
+        !JS_DefineProperty(context, versions, "GioWin32", two_point_oh,
+                           JSPROP_PERMANENT))
+        return nullptr;
+#    endif  // G_OS_UNIX/G_OS_WIN32
+#endif      // GLib >= 2.79.2
 
     JS::RootedObject private_ns(context, JS_NewPlainObject(context));
     if (!JS_DefinePropertyById(context, repo, atoms.private_ns_marker(),

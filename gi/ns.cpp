@@ -11,6 +11,7 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
+#include <js/GCVector.h>     // for MutableHandleIdVector
 #include <js/Id.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
@@ -29,6 +30,10 @@
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
+
+#if GLIB_CHECK_VERSION(2, 79, 2)
+#    include "gjs/deprecation.h"
+#endif  // GLib >= 2.79.2
 
 [[nodiscard]] static bool type_is_enumerable(GIInfoType info_type) {
     switch (info_type) {
@@ -64,15 +69,50 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
 
+#if GLIB_CHECK_VERSION(2, 79, 2)
+    bool m_is_gio_or_glib : 1;
+#endif  // GLib >= 2.79.2
+
     static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_ns;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
 
     explicit Ns(const char* ns_name)
         : GjsAutoChar(const_cast<char*>(ns_name), GjsAutoTakeOwnership()) {
         GJS_INC_COUNTER(ns);
+#if GLIB_CHECK_VERSION(2, 79, 2)
+        m_is_gio_or_glib =
+            strcmp(ns_name, "Gio") == 0 || strcmp(ns_name, "GLib") == 0;
+#endif  // GLib >= 2.79.2
     }
 
     ~Ns() { GJS_DEC_COUNTER(ns); }
+
+#if GLIB_CHECK_VERSION(2, 79, 2)
+    // helper function
+    void platform_specific_warning(JSContext* cx, const char* prefix,
+                                   const char* platform,
+                                   const char* resolved_name,
+                                   const char** exceptions = nullptr) {
+        if (!g_str_has_prefix(resolved_name, prefix))
+            return;
+
+        const char* base_name = resolved_name + strlen(prefix);
+        GjsAutoChar old_name =
+            g_strdup_printf("%s.%s", this->get(), resolved_name);
+        if (exceptions) {
+            for (const char** exception = exceptions; *exception; exception++) {
+                if (strcmp(old_name, *exception) == 0)
+                    return;
+            }
+        }
+
+        GjsAutoChar new_name =
+            g_strdup_printf("%s%s.%s", this->get(), platform, base_name);
+        _gjs_warn_deprecated_once_per_callsite(
+            cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
+            {old_name.get(), new_name.get()});
+    }
+#endif  // GLib >= 2.79.2
 
     // JSClass operations
 
@@ -111,6 +151,24 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
         gjs_debug(GJS_DEBUG_GNAMESPACE,
                   "Found info type %s for '%s' in namespace '%s'",
                   gjs_info_type_name(info.type()), info.name(), info.ns());
+
+#if GLIB_CHECK_VERSION(2, 79, 2)
+        static const char* unix_types_exceptions[] = {
+            "Gio.UnixConnection",
+            "Gio.UnixCredentialsMessage",
+            "Gio.UnixFDList",
+            "Gio.UnixSocketAddress",
+            "Gio.UnixSocketAddressType",
+            nullptr};
+
+        if (m_is_gio_or_glib) {
+            platform_specific_warning(cx, "Unix", "Unix", name.get(),
+                                      unix_types_exceptions);
+            platform_specific_warning(cx, "unix_", "Unix", name.get());
+            platform_specific_warning(cx, "Win32", "Win32", name.get());
+            platform_specific_warning(cx, "win32_", "Win32", name.get());
+        }
+#endif  // GLib >= 2.79.2
 
         bool defined;
         if (!gjs_define_info(cx, obj, info, &defined)) {
