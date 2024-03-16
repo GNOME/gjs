@@ -155,3 +155,18 @@ describe('GObject.Object.new_with_properties()', function () {
         expect(o.constructor.$gtype.name).toBe('GObject');
     });
 });
+
+describe('Unsupported methods', function () {
+    let o;
+    beforeEach(function () {
+        o = new GObject.Object();
+    });
+
+    it('throws on data stashing methods', function () {
+        expect(() => o.get_data('foo')).toThrow();
+        expect(() => o.get_qdata(1)).toThrow();
+        expect(() => o.set_data('foo', 'bar')).toThrow();
+        expect(() => o.steal_data('foo')).toThrow();
+        expect(() => o.steal_qdata(1)).toThrow();
+    });
+});

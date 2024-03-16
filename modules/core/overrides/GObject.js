@@ -884,4 +884,13 @@ function _init() {
         throw new Error('GObject.signal_handlers_disconnect_by_data() is not \
 introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     };
+
+    function unsupportedDataMethod() {
+        throw new Error('Data access methods are unsupported. Use normal JS properties instead.');
+    }
+    GObject.Object.prototype.get_data = unsupportedDataMethod;
+    GObject.Object.prototype.get_qdata = unsupportedDataMethod;
+    GObject.Object.prototype.set_data = unsupportedDataMethod;
+    GObject.Object.prototype.steal_data = unsupportedDataMethod;
+    GObject.Object.prototype.steal_qdata = unsupportedDataMethod;
 }
