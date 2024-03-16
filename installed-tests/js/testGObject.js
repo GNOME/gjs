@@ -169,4 +169,17 @@ describe('Unsupported methods', function () {
         expect(() => o.steal_data('foo')).toThrow();
         expect(() => o.steal_qdata(1)).toThrow();
     });
+
+    it('throws on refcounting methods', function () {
+        const refcount = System.refcount(o);
+        const floating = o.is_floating();
+
+        expect(() => o.ref()).toThrow();
+        expect(() => o.unref()).toThrow();
+        expect(() => o.ref_sink()).toThrow();
+        expect(() => o.force_floating()).toThrow();
+
+        expect(System.refcount(o)).toBe(refcount);
+        expect(o.is_floating()).toBe(floating);
+    });
 });

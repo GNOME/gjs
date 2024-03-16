@@ -23,6 +23,12 @@ _GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_reset(void);
 
 _GJS_TEST_TOOL_EXTERN
+void gjs_test_tools_ref(GObject* object);
+
+_GJS_TEST_TOOL_EXTERN
+void gjs_test_tools_unref(GObject* object);
+
+_GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_delayed_ref(GObject* object, int interval);
 
 _GJS_TEST_TOOL_EXTERN

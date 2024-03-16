@@ -39,6 +39,10 @@ void gjs_test_tools_reset() {
     FinalizedObjectsLocked()->clear();
 }
 
+void gjs_test_tools_ref(GObject* object) { g_object_ref(object); }
+
+void gjs_test_tools_unref(GObject* object) { g_object_unref(object); }
+
 // clang-format off
 static G_DEFINE_QUARK(gjs-test-utils::finalize, finalize);
 // clang-format on

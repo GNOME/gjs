@@ -893,4 +893,12 @@ introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     GObject.Object.prototype.set_data = unsupportedDataMethod;
     GObject.Object.prototype.steal_data = unsupportedDataMethod;
     GObject.Object.prototype.steal_qdata = unsupportedDataMethod;
+
+    function unsupportedRefcountingMethod() {
+        throw new Error("Don't modify an object's reference count in JS.");
+    }
+    GObject.Object.prototype.force_floating = unsupportedRefcountingMethod;
+    GObject.Object.prototype.ref = unsupportedRefcountingMethod;
+    GObject.Object.prototype.ref_sink = unsupportedRefcountingMethod;
+    GObject.Object.prototype.unref = unsupportedRefcountingMethod;
 }
