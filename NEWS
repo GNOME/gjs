@@ -1,3 +1,30 @@
+Version 1.80.0
+--------------
+
+- In GNOME 46 and later, platform-specific GLib and Gio APIs have moved
+  to the separate libraries GLibUnix, GioUnix, GLibWin32, and GioWin32.
+  They are still available in the main GLib and Gio libraries, so your
+  code will continue to work, but you will get a deprecation message.
+
+  To migrate your code, import the new libraries (e.g.,
+  `import GioUnix from 'gi://GioUnix';`) and consider the 'Unix' or
+  'Win32' prefix part of the namespace, rather than class or function
+  name: e.g.,
+  * Gio.UnixInputStream -> GioUnix.InputStream
+  * GLib.unix_open_pipe -> GLibUnix.open_pipe
+
+  Exceptions to the above rule are Gio.UnixConnection,
+  Gio.UnixCredentialsMessage, Gio.UnixFDList, Gio.UnixSocketAddress, and
+  Gio.UnixSocketAddressType. These remain in Gio, because they are
+  actually cross-platform despite being named "Unix".
+
+- Closed bugs and merge requests:
+  * meson: fix automagic dependency lookup for cairo [!917, Eli
+    Schwartz]
+  * Deprecate accessing GLibUnix/GLibWin32 APIs through GLib [#599,
+    !918, Philip Chimento]
+  * CI: Build newer GLib in debug Docker image [!919, Philip Chimento]
+
 Version 1.79.90
 ---------------
 
