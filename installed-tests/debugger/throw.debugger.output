@@ -4,7 +4,7 @@ db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> set ignoreCaughtExceptions false
 db> c
 Debugger statement, a() at throw.debugger.js:4:4
-db> throw 'foobar' + 3.14;
+db> throw 'foobar' + 3.14
 Unwinding due to exception. (Type 'c' to continue unwinding.)
 #0    a() at throw.debugger.js:4:4
    4	    debugger;
