@@ -380,7 +380,7 @@ continueCommand.helpText = `USAGE
 
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
-        print("To throw, you must select the newest frame (use 'frame 0').");
+        print(`To ${action}, you must select the newest frame (use 'frame 0')`);
         return;
     }
     if (focusedFrame === null) {

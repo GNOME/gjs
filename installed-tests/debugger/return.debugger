@@ -4,6 +4,9 @@ b 4
 b 8
 b 12
 c
+f 1
+return
+f 0
 return
 ret 5
 ret `${4 * 10 + 2} is the answer`
