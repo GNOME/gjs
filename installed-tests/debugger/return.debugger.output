@@ -23,6 +23,10 @@ Breakpoint 2, func2() at return.debugger.js:8:4
 db> ret 5
 5
 Breakpoint 3, func3() at return.debugger.js:12:4
-db> ret `${4 * 10 + 2} is the answer`
+db> ret foo
+Exception caught while evaluating foo: [object ReferenceError]
+db> p 2
+$1 = 2
+db> ret `${4 * 10 + $1} is the answer`
 42 is the answer
 Program exited with code 0

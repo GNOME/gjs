@@ -5,6 +5,8 @@ c
 f 1
 throw {}
 f 0
-throw 'foobar' + 3.14
+p 3.14
+throw 'foobar' + $1
 fin
+throw foo
 throw

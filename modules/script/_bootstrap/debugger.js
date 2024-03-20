@@ -23,6 +23,7 @@ var nextDebuggeeValueIndex = 1;
 var lastExc = null;
 var options = {pretty: true, colors: true, ignoreCaughtExceptions: true};
 var breakpoints = [undefined];  // Breakpoint numbers start at 1
+var skipUnwindHandler = false;
 
 // Cleanup functions to run when we next re-enter the repl.
 var replCleanups = [];
@@ -181,6 +182,36 @@ function saveExcursion(fn) {
         topFrame = tf;
         focusedFrame = ff;
     }
+}
+
+// Evaluate @expr in the current frame, logging and suppressing any exceptions
+function evalInFrame(expr) {
+    if (!focusedFrame) {
+        print('No stack');
+        return;
+    }
+
+    skipUnwindHandler = true;
+    let cv;
+    try {
+        cv = saveExcursion(
+            () => focusedFrame.evalWithBindings(`(${expr})`, debuggeeValues));
+    } finally {
+        skipUnwindHandler = false;
+    }
+
+    if (cv === null) {
+        print(`Debuggee died while evaluating ${expr}`);
+        return;
+    }
+
+    const {throw: exc, return: dv} = cv;
+    if (exc) {
+        print(`Exception caught while evaluating ${expr}: ${dvToString(exc)}`);
+        return;
+    }
+
+    return {value: dv};
 }
 
 // Accept debugger commands starting with '#' so that scripting the debugger
@@ -383,22 +414,12 @@ function throwOrReturn(rest, action, defaultCompletion) {
         print(`To ${action}, you must select the newest frame (use 'frame 0')`);
         return;
     }
-    if (focusedFrame === null) {
-        print('No stack.');
-        return;
-    }
     if (rest === '')
         return [defaultCompletion];
 
-    const cv = saveExcursion(() => focusedFrame.eval(rest));
-    if (cv === null) {
-        print(`Debuggee died while determining what to ${action}. Stopped.`);
-        return;
-    }
-    if ('return' in cv)
-        return [{[action]: cv['return']}];
-    print(`Exception determining what to ${action}. Stopped.`);
-    showDebuggeeValue(cv.throw);
+    const result = evalInFrame(rest);
+    if (result)
+        return [{[action]: result.value}];
 }
 
 function throwCommand(rest) {
@@ -927,6 +948,9 @@ dbg.onDebuggerStatement = function (frame) {
     });
 };
 dbg.onExceptionUnwind = function (frame, value) {
+    if (skipUnwindHandler)
+        return undefined;
+
     const willBeCaught = currentFrame => {
         while (currentFrame) {
             if (currentFrame.script.isInCatchScope(currentFrame.offset))

@@ -9,5 +9,7 @@ return
 f 0
 return
 ret 5
-ret `${4 * 10 + 2} is the answer`
+ret foo
+p 2
+ret `${4 * 10 + $1} is the answer`
 c
