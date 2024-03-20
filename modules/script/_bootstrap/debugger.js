@@ -377,13 +377,32 @@ expr may also reference the variables $1, $2, ... for already printed
 expressions, or $$ for the most recently printed expression.`;
 
 function keysCommand(rest) {
-    return doPrint(`
-        (o => Object.getOwnPropertyNames(o)
-            .concat(Object.getOwnPropertySymbols(o)))
-            (${rest})
-    `);
+    if (!rest) {
+        print("Missing argument. See 'help keys'");
+        return;
+    }
+
+    const result = evalInFrame(rest);
+    if (!result)
+        return;
+
+    const dv = result.value;
+    if (!(dv instanceof Debugger.Object)) {
+        print(`${rest} is ${dvToString(dv)}, not an object`);
+        return;
+    }
+    const names = dv.getOwnPropertyNames();
+    const symbols = dv.getOwnPropertySymbols();
+    const keys = [
+        ...names.map(s => `"${s}"`),
+        ...symbols.map(s => `Symbol("${s.description}")`),
+    ];
+    if (keys.length === 0)
+        print('No own properties');
+    else
+        print(keys.join(', '));
 }
-keysCommand.summary = 'Prints keys of the given object';
+keysCommand.summary = 'Prints own properties of the given object';
 keysCommand.helpText = `USAGE
     keys <obj>
 

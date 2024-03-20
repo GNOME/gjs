@@ -3,4 +3,9 @@
 c
 keys a
 k a
+keys a.foo
+keys {}
+keys bar
+keys ['a', 'b', 'c']
+keys
 c
