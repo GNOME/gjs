@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <inttypes.h>
+
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -46,7 +48,7 @@ gjs_define_enum_value(JSContext       *context,
     }
 
     gjs_debug(GJS_DEBUG_GENUM,
-              "Defining enum value %s (fixed from %s) %" G_GINT64_MODIFIER "d",
+              "Defining enum value %s (fixed from %s) %" PRId64,
               fixed_name.get(), value_name, value_val);
 
     if (!JS_DefineProperty(context, in_object,
