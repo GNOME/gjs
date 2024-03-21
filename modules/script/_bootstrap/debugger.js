@@ -32,9 +32,12 @@ var replCleanups = [];
 function dvToString(v) {
     if (typeof v === 'undefined')
         return 'undefined';  // uneval(undefined) === '(void 0)', confusing
-    if (v === null)
-        return 'null';  // typeof null === 'object', so avoid that case
-    return typeof v !== 'object' || v === null ? uneval(v) : `[object ${v.class}]`;
+    if (typeof v === 'object' && v !== null)
+        return `[object ${v.class}]`;
+    const s = uneval(v);
+    if (s.length > 400)
+        return `${s.substr(0, 400)}...<${s.length - 400} more bytes>...`;
+    return s;
 }
 
 function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
@@ -51,21 +54,20 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     }
 
     const dvrepr = dvToString(dv);
-    if (!style.pretty || dv === null || typeof dv !== 'object')
+    if (!style.pretty || (typeof dv !== 'object') || (dv === null))
         return [dvrepr, undefined];
 
+    const exec = debuggeeGlobalWrapper.executeInGlobalWithBindings.bind(debuggeeGlobalWrapper);
+
     if (['TypeError', 'Error', 'GIRespositoryNamespace', 'GObject_Object'].includes(dv.class)) {
-        const errval = debuggeeGlobalWrapper.executeInGlobalWithBindings(
-            'v.toString()', {v: dv});
+        const errval = exec('v.toString()', {v: dv});
         return [dvrepr, errval['return']];
     }
 
     if (style.brief)
         return [dvrepr, dvrepr];
 
-    const str = debuggeeGlobalWrapper.executeInGlobalWithBindings(
-        'imports._print.getPrettyPrintFunction(globalThis)(v)', {v: dv});
-
+    const str = exec('imports._print.getPrettyPrintFunction(globalThis)(v)', {v: dv});
     if ('throw' in str) {
         if (style.noerror)
             return [dvrepr, undefined];
