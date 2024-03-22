@@ -639,7 +639,7 @@ gjs_array_from_strv(JSContext             *context,
             return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JSObject* obj = JS::NewArrayObject(context, elems);
     if (!obj)
         return false;
 
@@ -1917,7 +1917,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
             return false;
     }
 
-    JS::RootedObject obj(cx, JS::NewArrayObject(cx, elems));
+    JSObject* obj = JS::NewArrayObject(cx, elems);
     if (!obj)
         return false;
 
@@ -2112,7 +2112,7 @@ static bool gjs_array_from_carray_internal(
           return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JSObject* obj = JS::NewArrayObject(context, elems);
     if (!obj)
         return false;
 
@@ -2379,7 +2379,7 @@ static bool gjs_array_from_zero_terminated_c_array(
           return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JSObject* obj = JS::NewArrayObject(context, elems);
     if (!obj)
         return false;
 
@@ -2517,7 +2517,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
             return true;
         }
 
-        JS::RootedObject obj(context, gjs_gtype_create_gtype_wrapper(context, gtype));
+        JSObject* obj = gjs_gtype_create_gtype_wrapper(context, gtype);
         if (!obj)
             return false;
 
