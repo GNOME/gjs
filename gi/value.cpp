@@ -86,10 +86,10 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
                         GJS_TYPE_TAG_LONG>(arg, g_value_get_ulong(value));
             return true;
         case G_TYPE_INT64:
-            gjs_arg_set(arg, g_value_get_int64(value));
+            gjs_arg_set(arg, int64_t{g_value_get_int64(value)});
             return true;
         case G_TYPE_UINT64:
-            gjs_arg_set(arg, g_value_get_uint64(value));
+            gjs_arg_set(arg, uint64_t{g_value_get_uint64(value)});
             return true;
         case G_TYPE_FLOAT:
             gjs_arg_set(arg, g_value_get_float(value));
