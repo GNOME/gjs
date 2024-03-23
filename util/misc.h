@@ -5,6 +5,8 @@
 #ifndef UTIL_MISC_H_
 #define UTIL_MISC_H_
 
+#include <config.h>
+
 #include <errno.h>
 #include <stdio.h>  // for FILE, stdout
 #include <string.h>  // for memcpy

@@ -276,7 +276,7 @@ eslint:
       - .eslintrc.yml
       - '**/.eslintrc.yml'
 
-pch_check:
+headers_check:
   when: on_success
   stage: source_check
   extends:
@@ -284,13 +284,15 @@ pch_check:
     - .gjs-alpine
   script:
     - env SELFTEST=1 test/check-pch.sh
+    - env SELFTEST=1 test/check-headers.sh
     - test/check-pch.sh
+    - test/check-headers.sh
   except:
     refs:
       - schedules
       - tags
     variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip pch_check\]/
+      - $CI_COMMIT_MESSAGE =~ /\[skip headers_check\]/
   only:
     changes:
       - "**/*.c"
@@ -298,6 +300,7 @@ pch_check:
       - "**/*.h"
       - "**/*.hh"
       - test/check-pch.sh
+      - test/check-headers.sh
 
 iwyu:
   when: on_success

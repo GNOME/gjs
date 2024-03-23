@@ -6,6 +6,8 @@
 #ifndef GJS_MEM_PRIVATE_H_
 #define GJS_MEM_PRIVATE_H_
 
+#include <config.h>
+
 #include <stddef.h>  // for size_t
 
 #include <atomic>

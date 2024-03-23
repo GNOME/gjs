@@ -4,6 +4,8 @@
  * SPDX-FileCopyrightText: 2011 Giovanni Campagna
  */
 
+#include <config.h>
+
 #include <string.h>  // for strcmp
 
 #include <gio/gio.h>

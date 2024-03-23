@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-#include "gjs/internal.h"
-
 #include <config.h>
+
+#include "gjs/internal.h"
 
 #include <stddef.h>  // for size_t
 #include <string.h>

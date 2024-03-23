@@ -5,6 +5,8 @@
 #ifndef TEST_GJS_TEST_NO_INTROSPECTION_OBJECT_H_
 #define TEST_GJS_TEST_NO_INTROSPECTION_OBJECT_H_
 
+#include <config.h>
+
 #include <glib-object.h>
 
 #define GJSTEST_TYPE_NO_INTROSPECTION_OBJECT \

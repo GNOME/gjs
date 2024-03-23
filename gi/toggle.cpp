@@ -6,6 +6,8 @@
 // SPDX-FileContributor: Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
+#include <config.h>
+
 #include <algorithm>  // for find_if
 #include <atomic>
 #include <deque>

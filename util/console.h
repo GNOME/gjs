@@ -7,6 +7,8 @@
 #ifndef UTIL_CONSOLE_H_
 #define UTIL_CONSOLE_H_
 
+#include <config.h>
+
 /* This file has to be valid C, because it's used in libgjs-private */
 
 #include <stdbool.h> /* IWYU pragma: keep */

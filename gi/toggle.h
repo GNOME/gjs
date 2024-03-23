@@ -9,6 +9,8 @@
 #ifndef GI_TOGGLE_H_
 #define GI_TOGGLE_H_
 
+#include <config.h>
+
 #include <glib.h>  // for gboolean
 
 #include <atomic>

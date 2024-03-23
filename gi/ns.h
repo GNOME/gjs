@@ -5,6 +5,8 @@
 #ifndef GI_NS_H_
 #define GI_NS_H_
 
+#include <config.h>
+
 #include "gjs/macros.h"
 
 class JSObject;

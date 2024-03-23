@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
+#include <config.h>
+
 #include <atomic>  // for atomic_bool
 #include <memory>  // for unique_ptr
 #include <string>  // for string

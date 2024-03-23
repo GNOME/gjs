@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Endless Mobile Inc.
 
+#include <config.h>
+
 #include "test/gjs-test-no-introspection-object.h"
 
 struct _GjsTestNoIntrospectionObject {

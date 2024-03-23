@@ -5,6 +5,8 @@
 #ifndef GI_GOBJECT_H_
 #define GI_GOBJECT_H_
 
+#include <config.h>
+
 #include <vector>
 
 #include <glib-object.h>

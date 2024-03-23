@@ -3,6 +3,8 @@
 // SPDX-FileCopyrightText: 2014 Endless Mobile, Inc.
 // SPDX-FileContributor: Authored By: Sam Spilsbury <sam@endlessm.com>
 
+#include <config.h>
+
 #include <errno.h>   // for errno
 #include <stdio.h>   // for sscanf, size_t
 #include <stdlib.h>  // for strtol, atoi, mkdtemp

@@ -5,6 +5,8 @@
  * Copyright (c) 2020 Marco Trevisan <marco.trevisan@canonical.com>
  */
 
+#include <config.h>
+
 #include <glib-object.h>
 #include <glib.h>
 #include <stddef.h>  // for NULL

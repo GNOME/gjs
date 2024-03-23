@@ -5,6 +5,8 @@
 #ifndef GJS_DEPRECATION_H_
 #define GJS_DEPRECATION_H_
 
+#include <config.h>
+
 #include <vector>
 
 struct JSContext;
