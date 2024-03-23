@@ -719,25 +719,37 @@ bool BoxedPrototype::define_boxed_class_fields(JSContext* cx,
     int n_fields = g_struct_info_get_n_fields(info());
     int i;
 
-    /* We define all fields as read/write so that the user gets an
-     * error message. If we omitted fields or defined them read-only
-     * we'd:
-     *
-     *  - Store a new property for a non-accessible field
-     *  - Silently do nothing when writing a read-only field
-     *
-     * Which is pretty confusing if the only reason a field isn't
-     * writable is language binding or memory-management restrictions.
-     *
-     * We just go ahead and define the fields immediately for the
-     * class; doing it lazily in boxed_resolve() would be possible
-     * as well if doing it ahead of time caused to much start-up
-     * memory overhead.
-     */
+    // We define all fields as read/write so that the user gets an error
+    // message. If we omitted fields or defined them read-only we'd:
+    //
+    //  - Store a new property for a non-accessible field
+    //  - Silently do nothing when writing a read-only field
+    //
+    // Which is pretty confusing if the only reason a field isn't writable is
+    // language binding or memory-management restrictions.
+    //
+    // We just go ahead and define the fields immediately for the class; doing
+    // it lazily in boxed_resolve() would be possible as well if doing it ahead
+    // of time caused too much start-up memory overhead.
+    //
+    // At this point methods have already been defined on the prototype, so we
+    // may get name conflicts which we need to check for.
     for (i = 0; i < n_fields; i++) {
         GjsAutoFieldInfo field = g_struct_info_get_field(info(), i);
         JS::RootedValue private_id(cx, JS::PrivateUint32Value(i));
         JS::RootedId id{cx, gjs_intern_string_to_id(cx, field.name())};
+
+        bool already_defined;
+        if (!JS_HasOwnPropertyById(cx, proto, id, &already_defined))
+            return false;
+        if (already_defined) {
+            gjs_debug(GJS_DEBUG_GBOXED,
+                      "Field %s.%s.%s overlaps with method of the same name; "
+                      "skipping",
+                      ns(), name(), field.name());
+            continue;
+        }
+
         if (!gjs_define_property_dynamic(
                 cx, proto, field.name(), id, "boxed_field",
                 &BoxedBase::field_getter, &BoxedBase::field_setter, private_id,
