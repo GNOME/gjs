@@ -18,9 +18,9 @@
 
 #include <glib.h>  // for g_assert_...
 
-#include "gjs/context.h"
-
 #include <js/TypeDecls.h>
+
+#include "gjs/context.h"
 
 struct GjsUnitTestFixture {
     GjsContext *gjs_context;

@@ -7,21 +7,25 @@
 #    include <signal.h>  // for siginfo_t, sigevent, sigaction, SIGPROF, ...
 #endif
 
-#include <glib-object.h>
-#include <glib.h>
-
 #ifdef ENABLE_PROFILER
 #    include <alloca.h>
 #    include <errno.h>
 #    include <stdint.h>
-#    include <stdio.h>      // for sscanf
-#    include <string.h>     // for memcpy, strlen
+#    include <stdio.h>        // for sscanf
+#    include <string.h>       // for memcpy, strlen
 #    include <sys/syscall.h>  // for __NR_gettid
+#    include <sys/types.h>    // for timer_t
 #    include <time.h>         // for size_t, CLOCK_MONOTONIC, itimerspec, ...
 #    ifdef HAVE_UNISTD_H
 #        include <unistd.h>  // for getpid, syscall
 #    endif
 #    include <array>
+#endif
+
+#include <glib-object.h>
+#include <glib.h>
+
+#ifdef ENABLE_PROFILER
 #    ifdef G_OS_UNIX
 #        include <glib-unix.h>
 #    endif

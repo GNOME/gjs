@@ -7,10 +7,12 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for NULL
+
+#include <utility>   // for move, swap
+
 #include <glib-object.h>
 #include <glib.h>
-#include <stddef.h>  // for NULL
-#include <utility>   // for move, swap
 
 #include "gjs/jsapi-util.h"
 

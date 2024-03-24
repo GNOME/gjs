@@ -8,19 +8,23 @@
 #include <cairo-features.h>  // for CAIRO_HAS_PS_SURFACE
 #include <cairo.h>
 
+#if CAIRO_HAS_PS_SURFACE
+#    include <cairo-ps.h>
+#endif
+
 #include <js/TypeDecls.h>
+
+#if CAIRO_HAS_PS_SURFACE
+#    include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
+#    include <js/PropertySpec.h>
+#    include <js/RootingAPI.h>
+#    include <jsapi.h>    // for JS_NewObjectWithGivenProto
+#    include <jspubtd.h>  // for JSProtoKey
+#endif
 
 #include "gjs/jsapi-util.h"
 
 #if CAIRO_HAS_PS_SURFACE
-#    include <cairo-ps.h>
-
-#    include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
-#    include <js/PropertySpec.h>
-#    include <js/RootingAPI.h>
-#    include <jsapi.h>  // for JS_NewObjectWithGivenProto
-#    include <jspubtd.h>  // for JSProtoKey
-
 #    include "gjs/jsapi-util-args.h"
 #    include "modules/cairo-private.h"
 

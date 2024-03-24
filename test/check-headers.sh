@@ -78,10 +78,52 @@ EOF
 EOF
     expect_failure
 
+    # header blocks in right order
+    test_env
+    cat > gjs/program.c <<EOF
+#include <config.h>
+#include <stdint.h>
+#include <memory>
+#include <glib.h>
+#include <js/TypeDecls.h>
+#include "program.h"
+EOF
+    expect_success
+
+    # header blocks in wrong order
+    test_env
+    cat > gjs/program.c <<EOF
+#include <config.h>
+#include <memory>
+#include <glib.h>
+#include <js/TypeDecls.h>
+#include "program.h"
+#include <stdint.h>
+EOF
+    expect_failure
+
     exit 0
 fi
 
 failed=0
+
+function report_out_of_order {
+    file="$1"
+    shift
+    include="$1"
+    shift
+    descr="$1"
+    shift
+    headers=("$@")
+
+    if [[ ${#headers[@]} -ne 0 ]]; then
+        echo "Error: $file: include $include before $descr header ${headers[0]}"
+        failed=1
+        return 1
+    fi
+    return 0
+}
+
 function check_config_header {
     file="$1"
     included_files=($(sed -nE 's/^#[[:space:]]*include[[:space:]]*([<"][^>"]+[>"]).*/\1/p' "$file"))
@@ -89,6 +131,38 @@ function check_config_header {
         echo "Error: $file: include <config.h> as the first #include directive"
         failed=1
     fi
+
+    c_headers=()
+    cpp_headers=()
+    gnome_headers=()
+    moz_headers=()
+    gjs_headers=()
+    for include in "${included_files[@]:1}"; do
+        if [[ "$include" =~ \".*\.h\" ]]; then
+            gjs_headers+=("$include")
+            continue
+        fi
+        report_out_of_order "$file" "$include" "GJS" "${gjs_headers[@]}" || continue
+        if [[ "$include" =~ \<(js|mozilla).*\.h\> ]]; then
+            moz_headers+=("$include")
+            continue
+        fi
+        report_out_of_order "$file" "$include" "Mozilla" "${moz_headers[@]}" || continue
+        if [[ "$include" =~ \<(ffi|sysprof.*|cairo.*|g.*)\.h\> ]]; then
+            gnome_headers+=("$include")
+            continue
+        fi
+        report_out_of_order "$file" "$include" "GNOME platform" "${gnome_headers[@]}" || continue
+        if [[ "$include" =~ \<.*\.h\> ]]; then
+            report_out_of_order "$file" "$include" "C++ standard library" "${cpp_headers[@]}" || continue
+            c_headers+=("$include")
+        elif [[ "$include" =~ \<.*\> ]]; then
+            cpp_headers+=("$include")
+        else
+            echo "Error: Need to fix your regex to handle $include."
+            failed=1
+        fi
+    done
 }
 
 files=$(find gi gjs libgjs-private modules test util \

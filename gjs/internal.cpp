@@ -3,8 +3,6 @@
 
 #include <config.h>
 
-#include "gjs/internal.h"
-
 #include <stddef.h>  // for size_t
 #include <string.h>
 
@@ -41,6 +39,7 @@
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/global.h"
+#include "gjs/internal.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"

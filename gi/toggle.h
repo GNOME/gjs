@@ -11,12 +11,12 @@
 
 #include <config.h>
 
-#include <glib.h>  // for gboolean
-
 #include <atomic>
 #include <deque>
 #include <thread>
 #include <utility>  // for pair
+
+#include <glib.h>  // for gboolean
 
 class ObjectInstance;
 namespace Gjs {

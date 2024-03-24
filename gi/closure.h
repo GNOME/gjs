@@ -9,8 +9,9 @@
 
 #include <config.h>
 
-#include <glib-object.h>
 #include <stddef.h>
+
+#include <glib-object.h>
 
 #include <js/TypeDecls.h>
 
