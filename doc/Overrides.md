@@ -192,8 +192,9 @@ Gio._promisify(Gio.InputStream.prototype, 'read_bytes_async',
     'read_bytes_finish');
 
 try {
-    const inputStream = new Gio.UnixInputStream({fd: 0});
-    const bytes = await inputStream.read_bytes_async(4096,
+    const inputBytes = new GLib.Bytes('content');
+    const inputStream = Gio.MemoryInputStream.new_from_bytes(inputBytes);
+    const result = await inputStream.read_bytes_async(inputBytes.get_size(),
         GLib.PRIORITY_DEFAULT, null);
 } catch (e) {
     logError(e, 'Failed to read bytes');
