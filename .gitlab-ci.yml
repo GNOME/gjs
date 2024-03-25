@@ -315,8 +315,11 @@ iwyu:
     refs:
       - branches
   except:
-    - schedules
-    - /^gnome-\d+-\d+$/
+    refs:
+      - schedules
+      - /^gnome-\d+-\d+$/
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
 
 codespell:
   when: on_success
