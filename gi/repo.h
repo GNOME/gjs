@@ -8,6 +8,7 @@
 #include <config.h>
 
 #include <girepository.h>
+#include <glib-object.h>
 
 #include <js/TypeDecls.h>
 
@@ -46,6 +47,8 @@ bool gjs_define_info(JSContext       *context,
                      bool            *defined);
 
 [[nodiscard]] char* gjs_hyphen_from_camel(const char* camel_name);
+
+[[nodiscard]] GIBaseInfo* gjs_lookup_gtype(GIRepository*, GType);
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
 void _gjs_log_info_usage(GIBaseInfo *info);

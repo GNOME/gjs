@@ -195,24 +195,17 @@ gjs_lookup_interface_constructor(JSContext             *context,
                                  JS::MutableHandleValue value_p)
 {
     JSObject *constructor;
-    GIBaseInfo *interface_info;
 
-    interface_info = g_irepository_find_by_gtype(nullptr, gtype);
-
+    GjsAutoInterfaceInfo interface_info = gjs_lookup_gtype(nullptr, gtype);
     if (!interface_info) {
         gjs_throw(context, "Cannot expose non introspectable interface %s",
                   g_type_name(gtype));
         return false;
     }
 
-    g_assert(g_base_info_get_type(interface_info) ==
-             GI_INFO_TYPE_INTERFACE);
-
     constructor = gjs_lookup_generic_constructor(context, interface_info);
     if (G_UNLIKELY(!constructor))
         return false;
-
-    g_base_info_unref(interface_info);
 
     value_p.setObject(*constructor);
     return true;

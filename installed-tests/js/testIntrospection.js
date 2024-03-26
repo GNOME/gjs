@@ -232,6 +232,18 @@ describe('Backwards compatibility for GLib/Gio platform specific GIRs', function
             'Expected deprecation message for Gio.Unix -> GioUnix');
     });
 
+    it("doesn't print the message if the type isn't resolved directly", function () {
+        if (skip) {
+            pending('GioUnix required for this test');
+            return;
+        }
+
+        const launcher = new Gio.SubprocessLauncher({flags: Gio.SubprocessFlags.STDOUT_PIPE});
+        const proc = launcher.spawnv(['ls', '/dev/null']);
+
+        expect(proc.get_stdout_pipe().toString()).toContain('GIName:GioUnix.InputStream');
+    });
+
     it('has some exceptions', function () {
         expect(Gio.UnixConnection.toString()).toContain('Gio_UnixConnection');
 

@@ -2073,7 +2073,7 @@ static JSObject *
 gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
 {
-    GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, gtype);
+    GjsAutoObjectInfo info = gjs_lookup_gtype(nullptr, gtype);
     return gjs_lookup_object_prototype_from_info(context, info, gtype);
 }
 
@@ -3133,7 +3133,7 @@ gjs_lookup_object_constructor(JSContext             *context,
 {
     JSObject *constructor;
 
-    GjsAutoObjectInfo object_info = g_irepository_find_by_gtype(nullptr, gtype);
+    GjsAutoObjectInfo object_info = gjs_lookup_gtype(nullptr, gtype);
 
     constructor = gjs_lookup_object_constructor_from_info(context, object_info, gtype);
 
