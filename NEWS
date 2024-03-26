@@ -1,3 +1,11 @@
+Version 1.80.2
+--------------
+
+- Quick follow-up release to fix crash on ppc64.
+
+- Closed bugs and merge requests:
+  * 1.79.90 failing tests on ppc64 [#605, !927, Daniel Kolesa]
+
 Version 1.80.1
 --------------
 
