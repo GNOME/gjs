@@ -106,6 +106,8 @@ class TextDecoder {
             input = new Uint8Array(buffer, byteOffset, byteLength);
         } else if (bytes === undefined) {
             input = new Uint8Array(0);
+        } else if (bytes instanceof import.meta.importSync('gi').GLib.Bytes) {
+            input = bytes.toArray();
         } else {
             throw new Error(
                 'Provided input cannot be converted to ArrayBufferView or ArrayBuffer'

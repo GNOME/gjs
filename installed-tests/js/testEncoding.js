@@ -4,6 +4,7 @@
 // Some test inputs are derived from https://github.com/denoland/deno/blob/923214c53725651792f6d55c5401bf6b475622ea/op_crates/web/08_text_encoding.js
 // Data originally from https://encoding.spec.whatwg.org/encodings.json
 
+import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
 import {arrayLikeWithExactContents} from './matchers.js';
@@ -180,6 +181,13 @@ describe('Text Encoding', function () {
             it('decodes UTF-8 byte array (Uint8Array)', function () {
                 const decoder = new TextDecoder();
                 const input = new Uint8Array([...encodedMultibyteCharArray()]);
+
+                expect(decoder.decode(input)).toBe('𝓽𝓮𝔁𝓽');
+            });
+
+            it('decodes GLib.Bytes', function () {
+                const decoder = new TextDecoder();
+                const input = new GLib.Bytes(encodedMultibyteCharArray());
 
                 expect(decoder.decode(input)).toBe('𝓽𝓮𝔁𝓽');
             });
