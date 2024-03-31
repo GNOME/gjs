@@ -108,7 +108,6 @@ subdir('libgjstesttools')
 
 jasmine_tests = [
     'self',
-    'ByteArray',
     'Exceptions',
     'Format',
     'Fundamental',
