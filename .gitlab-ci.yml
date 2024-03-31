@@ -317,7 +317,7 @@ iwyu:
   except:
     refs:
       - schedules
-      - /^gnome-\d+-\d+$/
+      - /^gnome-[-\d]+$/
     variables:
       - $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
 
