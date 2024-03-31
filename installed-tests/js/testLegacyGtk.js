@@ -5,7 +5,6 @@
 
 imports.gi.versions.Gtk = '3.0';
 
-const ByteArray = imports.byteArray;
 const {GLib, Gtk} = imports.gi;
 const Lang = imports.lang;
 const System = imports.system;
@@ -42,7 +41,7 @@ const template = `
 const MyComplexGtkSubclass = new Lang.Class({
     Name: 'MyComplexGtkSubclass',
     Extends: Gtk.Grid,
-    Template: ByteArray.fromString(template),
+    Template: new TextEncoder().encode(template),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
@@ -127,7 +126,7 @@ describe('Legacy Gtk overrides', function () {
         const LeakTestWidget = new Lang.Class({
             Name: 'LeakTestWidget',
             Extends: Gtk.Button,
-            Template: ByteArray.fromString(`
+            Template: new TextEncoder().encode(`
                 <interface>
                     <template class="Gjs_LeakTestWidget" parent="GtkButton">
                         <signal name="clicked" handler="buttonClicked"/>
