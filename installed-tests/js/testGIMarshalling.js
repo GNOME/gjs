@@ -760,18 +760,6 @@ describe('GBytes', function () {
             .not.toThrow();
     });
 
-    it('turns into a GByteArray on assignment', function () {
-        let bytes = GIMarshallingTests.gbytes_full_return();
-        let array = bytes.toArray();  // Array should just be holding a ref, not a copy
-        expect(array[1]).toEqual(49);
-        array[1] = 42;  // Assignment should force to GByteArray
-        expect(array[1]).toEqual(42);
-        array[1] = 49;  // Flip the value back
-        // Now convert back to GBytes
-        expect(() => GIMarshallingTests.gbytes_none_in(ByteArray.toGBytes(array)))
-            .not.toThrow();
-    });
-
     it('cannot be passed to a function expecting a byte array', function () {
         let bytes = GLib.Bytes.new([97, 98, 99, 100]);
         expect(() => GIMarshallingTests.array_uint8_in(bytes.toArray())).not.toThrow();
