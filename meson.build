@@ -649,7 +649,7 @@ tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
     js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
     js_tests_builddir, libgjs_test_tools_builddir)
-tests_environment.prepend('DYLD_FALLBACK_LIBRARY_PATH', meson.current_build_dir(),
+tests_environment.prepend('DYLD_LIBRARY_PATH', meson.current_build_dir(),
     js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 # Workaround for https://github.com/google/sanitizers/issues/1322
