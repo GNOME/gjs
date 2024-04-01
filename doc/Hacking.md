@@ -144,6 +144,20 @@ source /path/to/spidermonkey/js/src/_build/js/src/shell/js-gdb.py
 (replace `/path/to/spidermonkey` with the path to your SpiderMonkey
 sources)
 
+## Getting a stack trace ##
+
+Run your program with `gdb --args gjs myfile.js`.
+This will drop you into the GDB debugger interface.
+
+Enter `r` to start the program.
+
+When it segfaults, enter `bt full` to get the C++ stack trace, and enter
+`call gjs_dumpstack()` to get the JS stack trace.
+(It may need to be `call (void) gjs_dumpstack()` if you don't have debugging
+symbols installed.)
+
+Enter `q` to quit.
+
 ## Checking Things More Thoroughly Before A Release ##
 
 ### GC Zeal ###
