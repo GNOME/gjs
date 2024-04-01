@@ -2,16 +2,12 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#include <atomic>  // for atomic_bool
-#include <memory>  // for unique_ptr
-#include <string>  // for string
+#include <config.h>
 
 #include <errno.h>
-#include <fcntl.h>  // for SEEK_END
 #include <stdarg.h>
 #include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
 #include <string.h>  // for strchr, strcmp
-#include "gjs/jsapi-util.h"
 
 #ifdef _WIN32
 # include <io.h>
@@ -24,9 +20,13 @@
 #endif
 
 #include <array>
+#include <atomic>  // for atomic_bool
+#include <memory>  // for unique_ptr
+#include <string>  // for string
 
 #include <glib.h>
 
+#include "gjs/jsapi-util.h"
 #include "util/log.h"
 #include "util/misc.h"
 

@@ -9,12 +9,14 @@
 #ifndef GI_TOGGLE_H_
 #define GI_TOGGLE_H_
 
-#include <glib.h>  // for gboolean
+#include <config.h>
 
 #include <atomic>
 #include <deque>
 #include <thread>
 #include <utility>  // for pair
+
+#include <glib.h>  // for gboolean
 
 class ObjectInstance;
 namespace Gjs {

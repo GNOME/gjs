@@ -12,8 +12,11 @@
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>  // for getpid
-#elif defined (_WIN32)
+#endif
+
+#ifdef G_OS_WIN32
 #    include <process.h>
+#    include <windows.h>
 #endif
 
 #ifdef DEBUG
@@ -30,10 +33,6 @@
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
-
-#ifdef G_OS_WIN32
-#include <windows.h>
-#endif
 
 #include <js/AllocPolicy.h>  // for SystemAllocPolicy
 #include <js/CallAndConstruct.h>  // for Call, JS_CallFunctionValue

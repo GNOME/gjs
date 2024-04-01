@@ -5,6 +5,8 @@
 #ifndef UTIL_LOG_H_
 #define UTIL_LOG_H_
 
+#include <config.h>
+
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app
  * should have its own entry in the enum. Be sure to add new enum entries

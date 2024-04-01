@@ -7,6 +7,13 @@
 #include <cairo-features.h>  // for CAIRO_HAS_PDF_SURFACE, CAIRO_HAS_PS_SURFA...
 #include <cairo.h>
 
+#ifdef CAIRO_HAS_XLIB_SURFACE
+#    include <cairo-xlib.h>
+#    undef None
+// X11 defines a global None macro. Rude! This conflicts with None used as an
+// enum member in SpiderMonkey headers, e.g. JS::ExceptionStatus::None.
+#endif
+
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for JS_NewPlainObject
@@ -15,8 +22,6 @@
 #include "modules/cairo-private.h"
 
 #ifdef CAIRO_HAS_XLIB_SURFACE
-#    include <cairo-xlib.h>
-
 class XLibConstructor {
  public:
     XLibConstructor() {

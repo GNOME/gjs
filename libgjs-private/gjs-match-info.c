@@ -4,6 +4,8 @@
  * SPDX-FileCopyrightText: 2023 Philip Chimento <philip.chimento@gmail.com>
  */
 
+#include <config.h>
+
 #include <stdbool.h>
 #include <stddef.h>    /* for NULL */
 #include <stdint.h>
