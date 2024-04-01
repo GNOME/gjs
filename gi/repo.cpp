@@ -752,3 +752,39 @@ JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
 
     return JS_NewObjectWithGivenProto(cx, JS::GetClass(proto), proto);
 }
+
+// Handle the case where g_irepository_find_by_gtype() returns a type in Gio
+// that should be in GioUnix or GioWin32. This may be an interface, class, or
+// boxed. This function only needs to be called if you are going to do something
+// with the GIBaseInfo that involves handing a JS object to the user. Otherwise,
+// use g_irepository_find_by_gtype() directly.
+GIBaseInfo* gjs_lookup_gtype(GIRepository* repo, GType gtype) {
+    GjsAutoBaseInfo retval = g_irepository_find_by_gtype(repo, gtype);
+    if (!retval)
+        return nullptr;
+
+#if GLIB_CHECK_VERSION(2, 79, 2) && (defined(G_OS_UNIX) || defined(G_OS_WIN32))
+#    ifdef G_OS_UNIX
+    static const char* c_prefix = "GUnix";
+    static const char* new_ns = "GioUnix";
+#    else  // G_OS_WIN32
+    static const char* c_prefix = "GWin32";
+    static const char* new_ns = "GioWin32";
+#    endif
+
+    const char* ns = g_base_info_get_namespace(retval);
+    if (strcmp(ns, "Gio") != 0)
+        return retval.release();
+
+    const char* gtype_name = g_type_name(gtype);
+    if (!g_str_has_prefix(gtype_name, c_prefix))
+        return retval.release();
+
+    const char* new_name = gtype_name + strlen(c_prefix);
+    GIBaseInfo* new_info = g_irepository_find_by_name(repo, new_ns, new_name);
+    if (new_info)
+        return new_info;
+#endif  // GLib >= 2.79.2
+
+    return retval.release();
+}
