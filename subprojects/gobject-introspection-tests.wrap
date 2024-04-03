@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
+
+[wrap-git]
+directory=gobject-introspection-tests
+url=https://gitlab.gnome.org/GNOME/gobject-introspection-tests.git
+revision=7adb7396928a0964a9d3ef7626f8d2b9639be50d
+depth=1
+
+[provide]
+dependency_names = gimarshallingtests_typelib, regress_typelib, utility_typelib, warnlib_typelib

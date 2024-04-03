@@ -27,9 +27,7 @@ cppcheck --project=compile_commands.json --check-level=exhaustive \
     --suppress=duplInheritedMember --suppress=incorrectStringBooleanError \
     --suppress=nullPointerArithmeticRedundantCheck \
     --suppress=nullPointerRedundantCheck \
-    --suppress=*:*/gobject-introspection-1.0/tests/regress.c \
-    --suppress=*:*/gobject-introspection-1.0/tests/gimarshallingtests.c \
-    --suppress=*:*/gobject-introspection-1.0/tests/warnlib.c \
-    --suppress=*:js-resources.c --suppress=*:test/mock-js-resources.c \
+    --suppress=*:subprojects/* --suppress=*:js-resources.c \
+    --suppress=*:test/mock-js-resources.c \
     --suppress=*:installed-tests/js/jsunit-resources.c \
     --library=gtk,cairo,posix,../tools/cppcheck.cfg $@
