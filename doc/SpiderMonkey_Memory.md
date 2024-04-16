@@ -1,16 +1,16 @@
-# Memory management in SpiderMonkey #
+# Memory management in SpiderMonkey
 
 When writing JavaScript extensions in C++, we have to understand and be careful about memory management.
 
 This document only applies to C++ code using the jsapi.h API. If you simply write a GObject-style library and describe it via gobject-introspection typelib, there is no need to understand garbage collection details.
 
-## Mark-and-sweep collector ##
+## Mark-and-sweep collector
 
 As background, SpiderMonkey uses mark-and-sweep garbage collection. (see [this page][1] for one explanation, if not familiar with this.)
 
 This is a good approach for "embeddable" interpreters, because unlike say the Boehm GC, it doesn't rely on any weird hacks like scanning the entire memory or stack of the process. The collector only has to know about stuff that the language runtime created itself. Also, mark-and-sweep is simple to understand when working with the embedding API.
 
-## Representation of objects ##
+## Representation of objects
 
 An object has two forms.
 * `JS::Value` is a type-tagged version, think of `GValue` (though it is much more efficient)
@@ -28,7 +28,7 @@ The methods `val.toObject()`, `val.toInt32()`, etc. are just accessing the appro
 The jsapi.h header is pretty readable, if you want to learn more. Types you see in there not mentioned above, such as `JSFunction*`, would show up as an object - `val.isObject()` would return true.
 From a `JS::Value` perspective, everything is one of object, string, symbol, double, int, boolean, null, or undefined.
 
-## Value types vs. allocated types; "gcthing" ##
+## Value types vs. allocated types; "gcthing"
 
 For integers, booleans, doubles, null, and undefined there is no pointer. The value is just part of the `JS::Value` union. So there is no way to "free" these, and no way for them to be finalized or become dangling.
 
@@ -41,7 +41,7 @@ The API refers to these allocated types as "GC things."
 The macro `val.toGCThing()` returns the value part of the union as a pointer.
 `val.isGCThing()` returns true for string, object, symbol, null; and false for void, boolean, double, integer.
 
-## Tracing ##
+## Tracing
 
 The general rule is that SpiderMonkey has a set of GC roots. To do the garbage collection, it finds all objects accessible from those roots, and finalizes all objects that are not.
 
@@ -53,7 +53,7 @@ If you reference JavaScript objects from your custom object, you have to use `JS
 Tracing doesn't add a GC thing to the GC root set!
 It just notifies the interpreter that a thing is reachable from another thing.
 
-## Global roots ##
+## Global roots
 
 The GC roots include anything you have declared with `JS::Rooted<T>` and the global object set on each `JSContext*`.
 You can also manually add roots with [`JS::PersistentRooted<T>()`][3]. Anything reachable from any of these root objects will not be collected.
@@ -64,7 +64,7 @@ Note that the wrapped T in `JS::PersistentRooted<T>` is the location of your val
 * the location can't go away (don't use a stack address that will vanish before the `JS::PersistentRooted<T>` is destructed, for example)
 * the root is keeping "whatever is at the location" from being collected, not "whatever was originally at the location"
 
-## Local roots ##
+## Local roots
 
 Here is the trickier part. If you create an object, say:
 
@@ -87,13 +87,13 @@ So instead of the above code, you would write
 JS::RootedObject obj(cx, JS_NewPlainObject(cx));
 ```
 
-### JSFunctionSpec and extra local roots ###
+### JSFunctionSpec and extra local roots
 
 When SpiderMonkey is calling a native function, it will pass in an argv of `JS::Value`. It already has to add all the argv values as GC roots. The "extra local roots" feature tells SpiderMonkey to stick some extra slots on the end of argv that are also GC roots. You can then assign to `argv[MAX(min_args, actual_argc)]` and whatever you put in there won't get garbage collected.
 
 This is kind of a confusing and unreadable hack IMO, though it is probably efficient and thus justified in certain cases. I don't know really.
 
-## More tips ##
+## More tips
 
 For another attempt to explain all this, see [Rooting Guide from Mozilla.org][4].
 

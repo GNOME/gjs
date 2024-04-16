@@ -1,6 +1,6 @@
-# Hacking on GJS #
+# Hacking on GJS
 
-## Quick start ##
+## Quick start
 
 If you are looking to get started quickly, then you can clone GJS using
 GNOME Builder and choose the `org.gnome.GjsConsole` build configuration.
@@ -11,7 +11,7 @@ If you need to issue any of the Meson commands manually, make sure to do
 so in a runtime terminal (Ctrl+Alt+T) rather than a build terminal or a
 regular terminal.
 
-## Setting up ##
+## Setting up
 
 First of all, download the GJS source code using Git.
 Go to [GJS on GitLab](https://gitlab.gnome.org/GNOME/gjs), and click
@@ -90,7 +90,7 @@ To build SpiderMonkey, follow the instructions on [this page](https://github.com
 If you are using `-Dprefix` to build GJS into a different path, then
 make sure to use the same build prefix for SpiderMonkey with `--prefix`.
 
-## First build ##
+## First build
 
 To build GJS, change to your `gjs` directory, and run:
 ```sh
@@ -112,7 +112,7 @@ To install GJS into the path you chose with `-Dprefix`, (or into
 `/usr/local` if you didn't choose a path), run
 `ninja -C _build install`, adding `sudo` if necessary.
 
-## Making Sure Your Stuff Doesn't Break Anything Else ##
+## Making Sure Your Stuff Doesn't Break Anything Else
 
 Make your changes in your `gjs` directory, then run
 `ninja -C _build` to build a modified copy of GJS.
@@ -129,7 +129,7 @@ it with `jhbuild run gnome-shell --replace`.
 You need to be logged into an Xorg session, not Wayland, for this to
 work.
 
-## Debugging ##
+## Debugging
 
 Mozilla has some pretty-printers that make debugging JSAPI code easier.
 Unfortunately they're not included in most packaged distributions of
@@ -144,7 +144,7 @@ source /path/to/spidermonkey/js/src/_build/js/src/shell/js-gdb.py
 (replace `/path/to/spidermonkey` with the path to your SpiderMonkey
 sources)
 
-## Getting a stack trace ##
+## Getting a stack trace
 
 Run your program with `gdb --args gjs myfile.js`.
 This will drop you into the GDB debugger interface.
@@ -158,9 +158,9 @@ symbols installed.)
 
 Enter `q` to quit.
 
-## Checking Things More Thoroughly Before A Release ##
+## Checking Things More Thoroughly Before A Release
 
-### GC Zeal ###
+### GC Zeal
 
 Run the test suite with "GC zeal" to make non-deterministic GC errors
 more likely to show up.
@@ -183,7 +183,7 @@ traced when it should have been.
 Failures in mode `post_verify` usually point to a weak pointer's
 location not being updated after GC moved it.
 
-### Valgrind ###
+### Valgrind
 
 Valgrind catches memory leak errors in the C++ code.
 It's a good idea to run the test suite under Valgrind before each
@@ -201,7 +201,7 @@ Note that LeakSanitizer, part of ASan (see below) can catch many, but
 not all, errors that Valgrind can catch.
 LSan executes faster than Valgrind, however.
 
-### Static Code Analysis ###
+### Static Code Analysis
 
 To execute cppcheck, a static code analysis tool for the C and C++, run:
 ```sh
@@ -211,7 +211,7 @@ It is a versatile tool that can check non-standard code, including: variable
 checking, bounds checking, leaks, etc. It can detect the types of bugs that
 the compilers normally fail to detect.
 
-### Sanitizers ###
+### Sanitizers
 
 To build GJS with support for the ASan and UBSan sanitizers, configure
 meson like this:
@@ -220,7 +220,7 @@ meson setup _build -Db_sanitize=address,undefined
 ```
 and then run the tests as normal.
 
-### Test Coverage ###
+### Test Coverage
 
 To generate a test coverage report, run this script:
 ```sh

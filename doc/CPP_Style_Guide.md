@@ -1,6 +1,6 @@
-# C++ Coding Standards #
+# C++ Coding Standards
 
-## Introduction ##
+## Introduction
 
 This guide attempts to describe a few coding standards that are being
 used in GJS.
@@ -36,7 +36,7 @@ at <https://gitlab.gnome.org/GNOME/gjs>.
 [llvm]: https://llvm.org/docs/CodingStandards.html
 [llvm-source]: https://raw.githubusercontent.com/llvm-mirror/llvm/HEAD/docs/CodingStandards.rst
 
-## Languages, Libraries, and Standards ##
+## Languages, Libraries, and Standards
 
 Most source code in GJS using these coding standards is C++ code.
 There are some places where C code is used due to environment
@@ -44,7 +44,7 @@ restrictions or historical reasons.
 Generally, our preference is for standards conforming, modern, and
 portable C++ code as the implementation language of choice.
 
-### C++ Standard Versions ###
+### C++ Standard Versions
 
 GJS is currently written using C++17 conforming code, although we
 restrict ourselves to features which are available in the major
@@ -55,7 +55,7 @@ reasonable) be standard, portable, and modern C++17 code.
 We avoid unnecessary vendor-specific extensions, etc., including
 `g_autoptr()` and friends.
 
-### C++ Standard Library ###
+### C++ Standard Library
 
 Use the C++ standard library facilities whenever they are available for
 a particular task.
@@ -65,14 +65,14 @@ and friends, for their type safety and memory management.
 There are some exceptions such as the standard I/O streams library which
 is avoided, and use in space-constrained situations.
 
-### Supported C++17 Language and Library Features ###
+### Supported C++17 Language and Library Features
 
 While GJS and SpiderMonkey use C++17, not all features are available in
 all of the toolchains which we support.
 A good rule of thumb is to check whether SpiderMonkey uses the feature.
 If so, it's okay to use in GJS.
 
-### Other Languages ###
+### Other Languages
 
 Any code written in JavaScript is not subject to the formatting rules
 below.
@@ -81,7 +81,7 @@ Instead, we adopt the formatting rules enforced by the
 
 [eslint]: https://eslint.org/
 
-## Mechanical Source Issues ##
+## Mechanical Source Issues
 
 All source code formatting should follow the
 [Google C++ Style Guide][google] with a few exceptions:
@@ -100,9 +100,9 @@ the tools reject.
 
 [google]: https://google.github.io/styleguide/cppguide.html
 
-### Source Code Formatting ###
+### Source Code Formatting
 
-#### Commenting ####
+#### Commenting
 
 Comments are one critical part of readability and maintainability.
 Everyone knows they should comment their code, and so should you.
@@ -112,7 +112,7 @@ Aim to describe what the code is trying to do and why, not *how* it does
 it at a micro level.
 Here are a few critical things to document:
 
-##### File Headers ######
+##### File Headers
 
 Every source file should have a header on it that describes the basic
 purpose of the file.
@@ -153,14 +153,14 @@ code to watch out for.
 
 [reuse]: https://reuse.software/
 
-##### Class overviews ######
+##### Class overviews
 
 Classes are one fundamental part of a good object oriented design.
 As such, a class definition should have a comment block that explains
 what the class is used for and how it works.
 Every non-trivial class is expected to have such a comment block.
 
-##### Method information ######
+##### Method information
 
 Methods defined in a class (as well as any global functions) should also
 be documented properly.
@@ -170,7 +170,7 @@ tricky or insidious is going on).
 The hope is that people can figure out how to use your interfaces
 without reading the code itself.
 
-#### Comment Formatting ####
+#### Comment Formatting
 
 Either C++ style comments (`//`) or C style (`/* */`) comments are
 acceptable.
@@ -191,9 +191,9 @@ comments.
 
 [gtk-doc style]: https://developer.gnome.org/gtk-doc-manual/unstable/documenting.html.en
 
-### Language and Compiler Issues ###
+### Language and Compiler Issues
 
-#### Treat Compiler Warnings Like Errors ####
+#### Treat Compiler Warnings Like Errors
 
 If your code has compiler warnings in it, something is wrong — you
 aren't casting values correctly, you have questionable constructs in
@@ -212,7 +212,7 @@ the arbiter.
 
 [ax-compiler-flags]: https://www.gnu.org/software/autoconf-archive/ax_compiler_flags.html#ax_compiler_flags
 
-#### Write Portable Code ####
+#### Write Portable Code
 
 In almost all cases, it is possible and within reason to write
 completely portable code.
@@ -222,7 +222,7 @@ isolate it behind a well defined (and well documented) interface.
 In practice, this means that you shouldn't assume much about the host
 compiler (and Visual Studio tends to be the lowest common denominator).
 
-#### Use of `class` and `struct` Keywords ####
+#### Use of `class` and `struct` Keywords
 
 In C++, the `class` and `struct` keywords can be used almost
 interchangeably.
@@ -269,7 +269,7 @@ This can lead to problems at link time.
     };
     ```
 
-#### Use `auto` Type Deduction to Make Code More Readable ####
+#### Use `auto` Type Deduction to Make Code More Readable
 
 Some are advocating a policy of "almost always `auto`" in C++11 and
 later, but GJS uses a more moderate stance.
@@ -282,7 +282,7 @@ Another time when `auto` works well for these purposes is when the type
 would have been abstracted away anyway, often behind a container's
 typedef such as `std::vector<T>::iterator`.
 
-#### Beware unnecessary copies with ``auto`` ####
+#### Beware unnecessary copies with ``auto``
 
 The convenience of `auto` makes it easy to forget that its default
 behaviour is a copy.
@@ -311,7 +311,7 @@ for (auto* ptr : container)
     ptr->change();
 ```
 
-#### Beware of non-determinism due to ordering of pointers ####
+#### Beware of non-determinism due to ordering of pointers
 
 In general, there is no relative ordering among pointers.
 As a result, when unordered containers like sets and maps are used with
@@ -328,18 +328,18 @@ sort an unordered container before iteration.
 Or use ordered containers like `std::vector` if you want to iterate
 pointer keys.
 
-#### Beware of non-deterministic sorting order of equal elements ####
+#### Beware of non-deterministic sorting order of equal elements
 
 `std::sort` uses a non-stable sorting algorithm in which the order of
 equal elements is not guaranteed to be preserved.
 Thus using `std::sort` for a container having equal elements may result
 in non-determinstic behaviour.
 
-## Style Issues ##
+## Style Issues
 
-### The High-Level Issues ###
+### The High-Level Issues
 
-#### Self-contained Headers ####
+#### Self-contained Headers
 
 Header files should be self-contained (compile on their own) and end in
 `.h`.
@@ -361,7 +361,7 @@ prerequisites.
 Name such files with the `.inc` extension.
 Use sparingly, and prefer self-contained headers when possible.
 
-#### `#include` as Little as Possible ####
+#### `#include` as Little as Possible
 
 `#include` hurts compile time performance.
 Don't do it unless you have to, especially in header files.
@@ -400,7 +400,7 @@ else.
 
 [iwyu]: https://include-what-you-use.org/
 
-#### Header inclusion order ####
+#### Header inclusion order
 
 Headers should be included in the following order:
 
@@ -455,7 +455,7 @@ Here is an example of all of the above rules together:
 #include "gjs/jsapi-util.h"
 ```
 
-#### Keep "Internal" Headers Private ####
+#### Keep "Internal" Headers Private
 
 Many modules have a complex implementation that causes them to use more
 than one implementation (`.cpp`) file.  It is often tempting to put
@@ -471,7 +471,7 @@ by outsiders.
 It's okay to put extra implementation methods in a public class itself.
 Just make them private (or protected) and all is well.
 
-#### Use Early Exits and `continue` to Simplify Code ####
+#### Use Early Exits and `continue` to Simplify Code
 
 When reading code, keep in mind how much state and how many previous
 decisions have to be remembered by the reader to understand a block of
@@ -574,7 +574,7 @@ are true, and it makes it obvious to the reader that there is no `else`
 coming up that they have to push context into their brain for.
 If a loop is large, this can be a big understandability win.
 
-#### Don't use `else` after a `return` ####
+#### Don't use `else` after a `return`
 
 For similar reasons above (reduction of indentation and easier reading),
 please do not use `else` or `else if` after something that interrupts
@@ -642,7 +642,7 @@ case 'J':
 The idea is to reduce indentation and the amount of code you have to
 keep track of when reading the code.
 
-#### Turn Predicate Loops into Predicate Functions #####
+#### Turn Predicate Loops into Predicate Functions
 
 It is very common to write small loops that just compute a boolean
 value.
@@ -696,9 +696,9 @@ Instead of being faced with the in-line details of how we check to see
 if the `bar_list` contains a foo, we can trust the function name and
 continue reading with better locality.
 
-### The Low-Level Issues ###
+### The Low-Level Issues
 
-#### Name Types, Functions, Variables, and Enumerators Properly ####
+#### Name Types, Functions, Variables, and Enumerators Properly
 
 Poorly-chosen names can mislead the reader and cause bugs.
 We cannot stress enough how important it is to use *descriptive* names.
@@ -768,7 +768,7 @@ Vehicle make_vehicle(VehicleType Type) {
 }
 ```
 
-#### Assert Liberally ####
+#### Assert Liberally
 
 Use the `g_assert()` macro to its fullest.
 Check all of your preconditions and assumptions, you never know when a
@@ -841,7 +841,7 @@ bool new_to_set = my_set.insert(value);
 g_assert(new_to_set && "The value shouldn't be in the set yet");
 ```
 
-#### Do Not Use `using namespace std` ####
+#### Do Not Use `using namespace std`
 
 In GJS, we prefer to explicitly prefix all identifiers from the standard
 namespace with an `std::` prefix, rather than rely on `using namespace
@@ -876,7 +876,7 @@ The general form of this rule is that any `.cpp` file that implements
 code in any namespace may use that namespace (and its parents'), but
 should not use any others.
 
-#### Provide a Virtual Method Anchor for Classes in Headers ####
+#### Provide a Virtual Method Anchor for Classes in Headers
 
 If a class is defined in a header file and has a vtable (either it has
 virtual methods or it derives from classes with virtual methods), it
@@ -885,7 +885,7 @@ Without this, the compiler will copy the vtable and RTTI into every `.o`
 file that `#include`s the header, bloating `.o` file sizes and
 increasing link times.
 
-#### Don't use default labels in fully covered switches over enumerations ####
+#### Don't use default labels in fully covered switches over enumerations
 
 `-Wswitch` warns if a switch, without a default label, over an
 enumeration, does not cover every enumeration value.
@@ -901,7 +901,7 @@ switch-over-enum because GCC assumes that the enum expression may take
 any representable value, not just those of individual enumerators.
 To suppress this warning, use `g_assert_not_reached()` after the switch.
 
-#### Use range-based `for` loops wherever possible ####
+#### Use range-based `for` loops wherever possible
 
 The introduction of range-based `for` loops in C++11 means that explicit
 manipulation of iterators is rarely necessary. We use range-based `for`
@@ -912,7 +912,7 @@ for (GClosure* closure : m_closures)
     ... use closure ...;
 ```
 
-#### Don't evaluate `end()` every time through a loop ####
+#### Don't evaluate `end()` every time through a loop
 
 In cases where range-based `for` loops can't be used and it is necessary
 to write an explicit iterator-based loop, pay close attention to whether
@@ -968,7 +968,7 @@ what it does.
 While the second form of the loop is a few extra keystrokes, we do
 strongly prefer it.
 
-#### Avoid `std::endl` ####
+#### Avoid `std::endl`
 
 The `std::endl` modifier, when used with `iostreams`, outputs a newline
 to the output stream specified.
@@ -983,7 +983,7 @@ std::cout << '\n' << std::flush;
 Most of the time, you probably have no reason to flush the output
 stream, so it's better to use a literal `'\n'`.
 
-#### Don't use `inline` when defining a function in a class definition ####
+#### Don't use `inline` when defining a function in a class definition
 
 A member function defined in a class definition is implicitly inline, so
 don't put the `inline` keyword in this case.
