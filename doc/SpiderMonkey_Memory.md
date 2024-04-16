@@ -97,7 +97,7 @@ This is kind of a confusing and unreadable hack IMO, though it is probably effic
 
 For another attempt to explain all this, see [Rooting Guide from Mozilla.org][4].
 
-[1] http://www.brpreiss.com/books/opus5/html/page424.html
-[2] http://developer.mozilla.org/en/docs/JSTraceOp
-[3] https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::PersistentRooted
-[4] https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/GC_Rooting_Guide GC
+[1]: http://www.brpreiss.com/books/opus5/html/page424.html
+[2]: http://developer.mozilla.org/en/docs/JSTraceOp
+[3]: https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::PersistentRooted
+[4]: https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/GC_Rooting_Guide "GC"

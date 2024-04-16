@@ -118,4 +118,4 @@ If your usage of an object is like a hash table (and thus conceptually the keys 
 - When you assign a module to an alias to avoid typing `imports.foo.bar` all the time, the alias should be `const TitleCase` so `const Bar = imports.foo.bar;`
 - If you need to name a variable something weird to avoid a namespace collision, add a trailing `_` (not leading, leading `_` means private).
 
-[1] http://developer.mozilla.org/en/docs/index.php?title=New_in_JavaScript_1.7&printable=yes#Block_scope_with_let
+[1]: http://developer.mozilla.org/en/docs/index.php?title=New_in_JavaScript_1.7&printable=yes#Block_scope_with_let
