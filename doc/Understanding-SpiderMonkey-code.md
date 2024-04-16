@@ -1,5 +1,4 @@
-Basics
-------
+## Basics
 
 - SpiderMonkey is the Javascript engine from Mozilla Firefox. It's also known as "mozjs" in most Linux distributions, and sometimes as "JSAPI" in code.
 - Like most browsers' JS engines, SpiderMonkey works standalone, which is what allows GJS to work. In Mozilla terminology, this is known as "embedding", and GJS is an "embedder."
@@ -10,8 +9,7 @@ Basics
 - When reading GJS code, to quickly find out what a SpiderMonkey API function does, you can go to https://searchfox.org/ and search for it. This is literally faster than opening `jsapi.h` in your editor, and you can click through to other functions, and find everywhere a function is used.
 - Don't trust the wiki on MDN as documentation for SpiderMonkey, as it is mostly out of date and can be quite misleading.
 
-Coding conventions
-------------------
+## Coding conventions
 
 - Most API functions take a `JSContext *` as their first parameter. This context contains the state of the JS engine.
 - `cx` stands for "context."

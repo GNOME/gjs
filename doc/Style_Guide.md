@@ -1,10 +1,10 @@
-# Coding style #
+# Coding style
 
 Our goal is to have all JavaScript code in GNOME follow a consistent style. In a dynamic language like
 JavaScript, it is essential to be rigorous about style (and unit tests), or you rapidly end up
 with a spaghetti-code mess.
 
-## Linter ##
+## Linter
 
 GJS includes an eslint configuration file, `.eslintrc.yml`.
 There is an additional one that applies to test code in
@@ -21,7 +21,7 @@ The style guide for JS code in GJS is, by definition, the eslint config
 file.
 This file only contains conventions that the linter can't catch.
 
-## Imports ##
+## Imports
 
 Use CamelCase when importing modules to distinguish them from ordinary variables, e.g.
 
@@ -30,7 +30,7 @@ const Big = imports.big;
 const {GLib} = imports.gi;
 ```
 
-## Variable declaration ##
+## Variable declaration
 
 Always use `const` or `let` when block scope is intended.
 In almost all cases `const` is correct if you don't reassign the
@@ -64,7 +64,7 @@ for (let i = 0; i < 10; ++i) {
 
 If you used `var` instead of `let` it would print "10" a bunch of times.
 
-## `this` in closures ##
+## `this` in closures
 
 `this` will not be captured in a closure; `this` is relative to how the closure is invoked, not to
 the value of this where the closure is created, because `this` is a keyword with a value passed
@@ -93,7 +93,7 @@ const MyPrototype = {
 };
 ```
 
-## Object literal syntax ##
+## Object literal syntax
 
 JavaScript allows equivalently:
 ```js
@@ -110,7 +110,7 @@ If your usage of an object is like an object, then you're defining "member varia
 
 If your usage of an object is like a hash table (and thus conceptually the keys can have special chars in them), don't use quotes, but use brackets, `{bar: 42}`, `foo['bar']`.
 
-## Variable naming ##
+## Variable naming
 
 - We use javaStyle variable names, with CamelCase for type names and lowerCamelCase for variable and method names. However, when calling a C method with underscore-based names via introspection, we just keep them looking as they do in C for simplicity.
 - Private variables, whether object member variables or module-scoped variables, should begin with `_`.
@@ -118,4 +118,4 @@ If your usage of an object is like a hash table (and thus conceptually the keys 
 - When you assign a module to an alias to avoid typing `imports.foo.bar` all the time, the alias should be `const TitleCase` so `const Bar = imports.foo.bar;`
 - If you need to name a variable something weird to avoid a namespace collision, add a trailing `_` (not leading, leading `_` means private).
 
-[1] http://developer.mozilla.org/en/docs/index.php?title=New_in_JavaScript_1.7&printable=yes#Block_scope_with_let
+[1]: http://developer.mozilla.org/en/docs/index.php?title=New_in_JavaScript_1.7&printable=yes#Block_scope_with_let
