@@ -32,7 +32,7 @@ foreach test : simple_tests
         'name': 'test@0@.sh'.format(test),
         'installed_tests_execdir': prefix / installed_tests_execdir,
     }
-    test_description = configure_file(configuration: test_description_subst,
+    configure_file(configuration: test_description_subst,
         input: 'script.test.in', output: 'test@0@.sh.test'.format(test),
         install: get_option('installed_tests'),
         install_dir: installed_tests_metadir)
@@ -87,7 +87,7 @@ foreach test : debugger_tests
         'name': '@0@.debugger'.format(test),
         'installed_tests_execdir': prefix / installed_tests_execdir,
     }
-    test_description = configure_file(configuration: test_description_subst,
+    configure_file(configuration: test_description_subst,
         input: 'debugger.test.in',
         output: '@0@.test'.format(test),
         install: get_option('installed_tests'),
