@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
 project('gjs', 'cpp', 'c', version: '1.81.1', license: ['MIT', 'LGPL2+'],
-    meson_version: '>= 0.58.0',
+    meson_version: '>= 0.62.0',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
@@ -567,13 +567,13 @@ libgjs_internal = static_library('gjs-internal',
     link_with: libgjs_jsapi)
 
 link_args = []
-symbol_map = files('libgjs.map')
-symbol_list = files('libgjs.symbols')
+symbol_map = 'libgjs.map'
+symbol_list = 'libgjs.symbols'
 link_args += cxx.get_supported_link_arguments([
     '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_map[0]),
+        symbol_map),
     '-Wl,-exported_symbols_list,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_list[0]),  # macOS linker
+        symbol_list),  # macOS linker
 ])
 
 libgjs = shared_library(meson.project_name(),
@@ -597,7 +597,7 @@ gjs_private_gir = gnome.generate_gir(libgjs,
     includes: ['GObject-2.0', 'Gio-2.0'], sources: libgjs_private_sources,
     namespace: 'GjsPrivate', nsversion: '1.0', identifier_prefix: 'Gjs',
     symbol_prefix: 'gjs_', fatal_warnings: get_option('werror'), install: true,
-    install_dir_gir: false, install_dir_typelib: pkglibdir / 'girepository-1.0')
+    install_gir: false, install_dir_typelib: pkglibdir / 'girepository-1.0')
 gjs_private_typelib = gjs_private_gir[1]
 
 ### Build gjs-console interpreter ##############################################
@@ -628,9 +628,7 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
-        'bindir=${exec_prefix}' / bindir,
-        'datarootdir=${prefix}' / datadir,
-        'datadir=${datarootdir}',
+        'datarootdir=${datadir}',
         'gjs_console=${bindir}/gjs-console',
     ])
 

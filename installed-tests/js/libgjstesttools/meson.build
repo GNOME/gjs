@@ -20,7 +20,7 @@ gjstest_tools_gir = gnome.generate_gir(libgjstesttools,
     includes: ['GObject-2.0', 'Gio-2.0'], sources: gjstest_tools_sources,
     namespace: 'GjsTestTools', nsversion: '1.0',
     symbol_prefix: 'gjs_test_tools_', fatal_warnings: get_option('werror'),
-    install: get_option('installed_tests'), install_dir_gir: false,
+    install: get_option('installed_tests'), install_gir: false,
     install_dir_typelib: installed_tests_execdir)
 gjstest_tools_typelib = gjstest_tools_gir[1]
 libgjstesttools_dep = declare_dependency(
