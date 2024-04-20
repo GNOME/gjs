@@ -617,7 +617,7 @@ install_data('installed-tests/extra/lsan.supp', install_dir: gjsjsdir / 'lsan')
 if get_option('installed_tests')
     schemadir = datadir / 'glib-2.0' / 'schemas'
     install_data('installed-tests/js/org.gnome.GjsTest.gschema.xml', install_dir: schemadir)
-    meson.add_install_script('build/compile-gschemas.py', prefix / schemadir)
+    meson.add_install_script(glib_compile_schemas, prefix / schemadir, skip_if_destdir: true)
 endif
 
 ### Generate pkg-config file ###################################################
