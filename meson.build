@@ -18,6 +18,15 @@ gnome = import('gnome')
 pkg = import('pkgconfig')
 
 top_include = include_directories('.')
+prefix = get_option('prefix')
+bindir = get_option('bindir')
+libdir = get_option('libdir')
+datadir = get_option('datadir')
+libexecdir = get_option('libexecdir')
+gjsjsdir = datadir / api_name
+pkglibdir = libdir / meson.project_name()
+installed_tests_execdir = libexecdir / 'installed-tests' / meson.project_name()
+installed_tests_metadir = datadir / 'installed-tests' / meson.project_name()
 
 ### Check for conflicting build options ########################################
 
@@ -353,12 +362,6 @@ header_conf.set('_GNU_SOURCE', 1)
 
 configure_file(output: 'config.h', configuration: header_conf)
 
-### Check for environment ######################################################
-
-gjsjsdir = get_option('datadir') / api_name
-abs_datadir = get_option('prefix') / get_option('datadir')
-pkglibdir = get_option('libdir') / meson.project_name()
-
 ### Build dtrace probes ########################################################
 
 if get_option('dtrace')
@@ -373,21 +376,18 @@ else
     probes_objfile = []
 endif
 
-tapset_subst = configuration_data({
-    'EXPANDED_LIBDIR': get_option('libdir'),
-})
+tapset_subst = configuration_data({'EXPANDED_LIBDIR': libdir})
 tapset = configure_file(input: 'gjs/gjs.stp.in', output: 'gjs.stp',
     configuration: tapset_subst)
 if get_option('systemtap')
-    install_data(tapset,
-        install_dir: get_option('datadir') / 'systemtap/tapset')
+    install_data(tapset, install_dir: datadir / 'systemtap' / 'tapset')
 endif
 
 ### Build library ##############################################################
 
 directory_defines = [
-    '-DGJS_JS_DIR="@0@"'.format(get_option('prefix') / gjsjsdir),
-    '-DPKGLIBDIR="@0@"'.format(get_option('prefix') / pkglibdir),
+    '-DGJS_JS_DIR="@0@"'.format(prefix / gjsjsdir),
+    '-DPKGLIBDIR="@0@"'.format(prefix / pkglibdir),
 ]
 
 gjs_public_headers = [
@@ -607,19 +607,17 @@ gjs_console_srcs = ['gjs/console.cpp']
 gjs_console = executable('gjs-console', gjs_console_srcs,
     dependencies: libgjs_dep, install: true)
 
-meson.add_install_script('build/symlink-gjs.py', get_option('bindir'))
+meson.add_install_script('build/symlink-gjs.py', bindir)
 
 ### Install data files #########################################################
 
-install_data('installed-tests/extra/gjs.supp',
-    install_dir: get_option('datadir') / api_name / 'valgrind')
-install_data('installed-tests/extra/lsan.supp',
-    install_dir: get_option('datadir') / api_name / 'lsan')
+install_data('installed-tests/extra/gjs.supp', install_dir: gjsjsdir / 'valgrind')
+install_data('installed-tests/extra/lsan.supp', install_dir: gjsjsdir / 'lsan')
 
 if get_option('installed_tests')
-    schemadir = abs_datadir / 'glib-2.0' / 'schemas'
+    schemadir = datadir / 'glib-2.0' / 'schemas'
     install_data('installed-tests/js/org.gnome.GjsTest.gschema.xml', install_dir: schemadir)
-    meson.add_install_script('build/compile-gschemas.py', schemadir)
+    meson.add_install_script('build/compile-gschemas.py', prefix / schemadir)
 endif
 
 ### Generate pkg-config file ###################################################
@@ -630,8 +628,8 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
-        'bindir=${exec_prefix}' / get_option('bindir'),
-        'datarootdir=${prefix}' / get_option('datadir'),
+        'bindir=${exec_prefix}' / bindir,
+        'datarootdir=${prefix}' / datadir,
         'datadir=${datarootdir}',
         'gjs_console=${bindir}/gjs-console',
     ])
@@ -770,15 +768,12 @@ endif
 
 ### Summarize options ##########################################################
 
-prefix = get_option('prefix')
-bindir = get_option('bindir')
-libdir = get_option('libdir')
-datadir = get_option('datadir')
 summary({
     'prefix': prefix,
     'bindir': prefix / bindir,
     'libdir': prefix / libdir,
     'datadir': prefix / datadir,
+    'libexecdir': prefix / libexecdir,
 }, section: 'Directories')
 locations = []
 foreach dep: [ffi, glib, gi, spidermonkey, readline, sysprof_capture]
