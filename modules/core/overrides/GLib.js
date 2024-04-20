@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna
 // SPDX-FileCopyrightText: 2023 Philip Chimento <philip.chimento@gmail.com>
 
-const ByteArray = imports._byteArrayNative;
 const {setMainLoopHook} = imports._promiseNative;
 
 let GLib;
@@ -101,11 +100,8 @@ function _packVariant(signature, value) {
         }
         if (arrayType[0] === 'y') {
             // special case for array of bytes
-            if (typeof value === 'string') {
-                value = ByteArray.fromString(value);
-                if (value[value.length - 1] !== 0)
-                    value = Uint8Array.of(...value, 0);
-            }
+            if (typeof value === 'string')
+                value = Uint8Array.of(...new TextEncoder().encode(value), 0);
             const bytes = new GLib.Bytes(value);
             return GLib.Variant.new_from_bytes(new GLib.VariantType('ay'),
                 bytes, true);

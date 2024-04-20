@@ -143,12 +143,10 @@ static bool resolve_namespace_object(JSContext* context,
                                   gjs_create_ns(context, ns_name.get()));
 
     JS::RootedValue override(context);
-    if (!lookup_override_function(context, ns_id, &override))
-        return false;
-
-    /* Define the property early, to avoid reentrancy issues if
-       the override module looks for namespaces that import this */
-    if (!JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
+    if (!lookup_override_function(context, ns_id, &override) ||
+        // Define the property early, to avoid reentrancy issues if the override
+        // module looks for namespaces that import this
+        !JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
@@ -237,12 +235,10 @@ repo_new(JSContext *context)
      */
     JS::RootedString two_point_oh(context, JS_NewStringCopyZ(context, "2.0"));
     if (!JS_DefinePropertyById(context, versions, atoms.glib(), two_point_oh,
-                               JSPROP_PERMANENT))
-        return nullptr;
-    if (!JS_DefinePropertyById(context, versions, atoms.gobject(), two_point_oh,
-                               JSPROP_PERMANENT))
-        return nullptr;
-    if (!JS_DefinePropertyById(context, versions, atoms.gio(), two_point_oh,
+                               JSPROP_PERMANENT) ||
+        !JS_DefinePropertyById(context, versions, atoms.gobject(), two_point_oh,
+                               JSPROP_PERMANENT) ||
+        !JS_DefinePropertyById(context, versions, atoms.gio(), two_point_oh,
                                JSPROP_PERMANENT))
         return nullptr;
 

@@ -3,7 +3,6 @@
 
 imports.gi.versions.Gtk = '3.0';
 
-const ByteArray = imports.byteArray;
 const {GLib, Gio, GObject, Gtk} = imports.gi;
 const System = imports.system;
 
@@ -42,7 +41,7 @@ function createTemplate(className) {
 }
 
 const MyComplexGtkSubclass = GObject.registerClass({
-    Template: ByteArray.fromString(createTemplate('Gjs_MyComplexGtkSubclass')),
+    Template: new TextEncoder().encode(createTemplate('Gjs_MyComplexGtkSubclass')),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
@@ -316,7 +315,7 @@ describe('Gtk overrides', function () {
 
     it('does not leak instance when connecting template signal', async function () {
         const LeakTestWidget = GObject.registerClass({
-            Template: ByteArray.fromString(`
+            Template: new TextEncoder().encode(`
                 <interface>
                     <template class="Gjs_LeakTestWidget" parent="GtkButton">
                         <signal name="clicked" handler="buttonClicked"/>

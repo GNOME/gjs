@@ -4,7 +4,6 @@
 imports.gi.versions.Gdk = '4.0';
 imports.gi.versions.Gtk = '4.0';
 
-const ByteArray = imports.byteArray;
 const {Gdk, Gio, GObject, Gtk, GLib, GjsTestTools} = imports.gi;
 const System = imports.system;
 
@@ -44,7 +43,7 @@ function createTemplate(className) {
 }
 
 const MyComplexGtkSubclass = GObject.registerClass({
-    Template: ByteArray.fromString(createTemplate('Gjs_MyComplexGtkSubclass')),
+    Template: new TextEncoder().encode(createTemplate('Gjs_MyComplexGtkSubclass')),
     Children: ['label-child', 'label-child2'],
     InternalChildren: ['internal-label-child'],
     CssName: 'complex-subclass',
@@ -333,7 +332,7 @@ class LeakTestWidget extends Gtk.Button {
 }
 
 GObject.registerClass({
-    Template: ByteArray.fromString(`
+    Template: new TextEncoder().encode(`
 <interface>
     <template class="Gjs_LeakTestWidget" parent="GtkButton">
         <signal name="clicked" handler="buttonClicked"/>

@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
 // SPDX-FileCopyrightText: 2019, 2023 Philip Chimento <philip.chimento@gmail.com>
 
-const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
 
 describe('GVariant constructor', function () {
@@ -47,16 +46,16 @@ describe('GVariant constructor', function () {
     });
 
     it('constructs a byte array variant', function () {
-        const byteArray = Uint8Array.from('pizza', c => c.charCodeAt(0));
+        const byteArray = new TextEncoder().encode('pizza');
         const byteArrayVariant = new GLib.Variant('ay', byteArray);
-        expect(ByteArray.toString(byteArrayVariant.deepUnpack()))
+        expect(new TextDecoder().decode(byteArrayVariant.deepUnpack()))
             .toEqual('pizza');
     });
 
     it('constructs a byte array variant from a string', function () {
         const byteArrayVariant = new GLib.Variant('ay', 'pizza');
-        expect(ByteArray.toString(byteArrayVariant.deepUnpack()))
-            .toEqual('pizza');
+        expect(new TextDecoder().decode(byteArrayVariant.deepUnpack()))
+            .toEqual('pizza\0');
     });
 
     it('0-terminates a byte array variant constructed from a string', function () {
@@ -67,7 +66,7 @@ describe('GVariant constructor', function () {
     });
 
     it('does not 0-terminate a byte array variant constructed from a Uint8Array', function () {
-        const byteArray = Uint8Array.from('pizza', c => c.charCodeAt(0));
+        const byteArray = new TextEncoder().encode('pizza');
         const byteArrayVariant = new GLib.Variant('ay', byteArray);
         const a = byteArrayVariant.deepUnpack();
         [112, 105, 122, 122, 97].forEach((val, ix) =>

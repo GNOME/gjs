@@ -5,6 +5,7 @@
 
 #include <config.h>
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen, memcpy
 
@@ -65,7 +66,7 @@ static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    GITypeInfo* arginfo, const char* arg_name,
                                    GjsArgumentType arg_type);
 
-bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
+bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
     /* Do proper value check for flags with GType's */
     if (gtype != G_TYPE_NONE) {
         GjsAutoTypeClass<GFlagsClass> gflags_class(gtype);
@@ -73,9 +74,8 @@ bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
 
         /* check all bits are valid bits for the flag and is a 32 bit flag*/
         if ((tmpval &= gflags_class->mask) != value) { /* Not a guint32 with invalid mask values*/
-            gjs_throw(context,
-                    "0x%" G_GINT64_MODIFIER "x is not a valid value for flags %s",
-                    value, g_type_name(gtype));
+            gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
+                      value, g_type_name(gtype));
             return false;
         }
     }
@@ -84,7 +84,7 @@ bool _gjs_flags_value_is_valid(JSContext* context, GType gtype, int64_t value) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
+static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
                                      int64_t value) {
     bool found;
     int n_values;
@@ -104,9 +104,8 @@ static bool _gjs_enum_value_is_valid(JSContext* context, GIEnumInfo* enum_info,
     }
 
     if (!found) {
-        gjs_throw(context,
-                  "%" G_GINT64_MODIFIER "d is not a valid value for enumeration %s",
-                  value, g_base_info_get_name((GIBaseInfo *)enum_info));
+        gjs_throw(cx, "%" PRId64 " is not a valid value for enumeration %s",
+                  value, g_base_info_get_name(enum_info));
     }
 
     return found;
@@ -640,7 +639,7 @@ gjs_array_from_strv(JSContext             *context,
             return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JSObject* obj = JS::NewArrayObject(context, elems);
     if (!obj)
         return false;
 
@@ -1918,7 +1917,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
             return false;
     }
 
-    JS::RootedObject obj(cx, JS::NewArrayObject(cx, elems));
+    JSObject* obj = JS::NewArrayObject(cx, elems);
     if (!obj)
         return false;
 
@@ -2113,7 +2112,7 @@ static bool gjs_array_from_carray_internal(
           return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JSObject* obj = JS::NewArrayObject(context, elems);
     if (!obj)
         return false;
 
@@ -2380,7 +2379,7 @@ static bool gjs_array_from_zero_terminated_c_array(
           return false;
     }
 
-    JS::RootedObject obj(context, JS::NewArrayObject(context, elems));
+    JSObject* obj = JS::NewArrayObject(context, elems);
     if (!obj)
         return false;
 
@@ -2518,7 +2517,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
             return true;
         }
 
-        JS::RootedObject obj(context, gjs_gtype_create_gtype_wrapper(context, gtype));
+        JSObject* obj = gjs_gtype_create_gtype_wrapper(context, gtype);
         if (!obj)
             return false;
 
@@ -2613,10 +2612,12 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
                 if (gtype != G_TYPE_NONE) {
                     /* check make sure 32 bit flag */
-                   if (static_cast<uint32_t>(value_int64) != value_int64) { /* Not a guint32 */
+                    if (static_cast<uint32_t>(value_int64) != value_int64) {
+                        // Not a 32-bit integer
                         gjs_throw(context,
-                                "0x%" G_GINT64_MODIFIER "x is not a valid value for flags %s",
-                                value_int64, g_type_name(gtype));
+                                  "0x%" PRIx64
+                                  " is not a valid value for flags %s",
+                                  value_int64, g_type_name(gtype));
                         return false;
                     }
 

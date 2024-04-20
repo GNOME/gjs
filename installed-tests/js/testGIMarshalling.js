@@ -9,7 +9,6 @@
 // Load overrides for GIMarshallingTests
 imports.overrides.searchPath.unshift('resource:///org/gjs/jsunit/modules/overrides');
 
-const ByteArray = imports.byteArray;
 const GIMarshallingTests = imports.gi.GIMarshallingTests;
 
 // We use Gio and GLib to have some objects that we know exist
@@ -458,7 +457,7 @@ describe('C array with length', function () {
     it('marshals a byte array as an in parameter', function () {
         expect(() => GIMarshallingTests.array_uint8_in('abcd')).not.toThrow();
         expect(() => GIMarshallingTests.array_uint8_in([97, 98, 99, 100])).not.toThrow();
-        expect(() => GIMarshallingTests.array_uint8_in(ByteArray.fromString('abcd')))
+        expect(() => GIMarshallingTests.array_uint8_in(new TextEncoder().encode('abcd')))
             .not.toThrow();
     });
 
@@ -749,7 +748,7 @@ describe('GBytes', function () {
         expect(bytes.toArray()).toEqual(refByteArray);
     });
 
-    it('can be implicitly converted from a ByteArray', function () {
+    it('can be implicitly converted from a Uint8Array', function () {
         expect(() => GIMarshallingTests.gbytes_none_in(refByteArray))
             .not.toThrow();
     });
@@ -757,18 +756,6 @@ describe('GBytes', function () {
     it('can be created from a string and is encoded in UTF-8', function () {
         let bytes = GLib.Bytes.new('const \u2665 utf8');
         expect(() => GIMarshallingTests.utf8_as_uint8array_in(bytes.toArray()))
-            .not.toThrow();
-    });
-
-    it('turns into a GByteArray on assignment', function () {
-        let bytes = GIMarshallingTests.gbytes_full_return();
-        let array = bytes.toArray();  // Array should just be holding a ref, not a copy
-        expect(array[1]).toEqual(49);
-        array[1] = 42;  // Assignment should force to GByteArray
-        expect(array[1]).toEqual(42);
-        array[1] = 49;  // Flip the value back
-        // Now convert back to GBytes
-        expect(() => GIMarshallingTests.gbytes_none_in(ByteArray.toGBytes(array)))
             .not.toThrow();
     });
 
@@ -2267,7 +2254,7 @@ describe('GObject properties', function () {
     testPropertyGetSet('enum', GIMarshallingTests.GEnum.VALUE2,
         GIMarshallingTests.GEnum.VALUE3);
     testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
-        ByteArray.fromString('👾'));
+        new TextEncoder().encode('👾'));
     testPropertyGetSet('byte_array', Uint8Array.of(3, 2, 1), null);
 
     it('gets a read-only property', function () {

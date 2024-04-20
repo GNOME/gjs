@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-const ByteArray = imports.byteArray;
 const {Gio, GjsTestTools, GLib} = imports.gi;
 
 // Adapter for compatibility with pre-GLib-2.80
@@ -284,6 +283,7 @@ describe('Exported DBus object', function () {
     var test;
     var proxy;
     let loop;
+    const expectedBytes = new TextEncoder().encode('some bytes');
 
     function waitForServerProperty(property, value = undefined, timeout = 500) {
         let waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
@@ -693,7 +693,6 @@ describe('Exported DBus object', function () {
     });
 
     it('can call a remote method with a Unix FD', function (done) {
-        const expectedBytes = ByteArray.fromString('some bytes');
         const fd = GjsTestTools.open_bytes(expectedBytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         proxy.fdInRemote(0, fdList, ([bytes], exc, outFdList) => {
@@ -705,8 +704,6 @@ describe('Exported DBus object', function () {
     });
 
     it('can call an async/await method with a Unix FD', async function () {
-        const encoder = new TextEncoder();
-        const expectedBytes = encoder.encode('some bytes');
         const fd = GjsTestTools.open_bytes(expectedBytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         const [bytes, outFdList] = await proxy.fdInAsync(0, fdList);
@@ -715,7 +712,6 @@ describe('Exported DBus object', function () {
     });
 
     it('can call an asynchronously implemented remote method with a Unix FD', function (done) {
-        const expectedBytes = ByteArray.fromString('some bytes');
         const fd = GjsTestTools.open_bytes(expectedBytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         proxy.fdIn2Remote(0, fdList, ([bytes], exc, outFdList) => {
@@ -727,8 +723,6 @@ describe('Exported DBus object', function () {
     });
 
     it('can call an asynchronously implemented async/await method with a Unix FD', async function () {
-        const encoder = new TextEncoder();
-        const expectedBytes = encoder.encode('some bytes');
         const fd = GjsTestTools.open_bytes(expectedBytes);
         const fdList = Gio.UnixFDList.new_from_array([fd]);
         const [bytes, outFdList] = await proxy.fdIn2Async(0, fdList);
@@ -739,11 +733,10 @@ describe('Exported DBus object', function () {
     function readBytesFromFdSync(fd) {
         const stream = new GioUnix.InputStream({fd, closeFd: true});
         const bytes = stream.read_bytes(4096, null);
-        return ByteArray.fromGBytes(bytes);
+        return bytes.toArray();
     }
 
     it('can call a remote method that returns a Unix FD', function (done) {
-        const expectedBytes = ByteArray.fromString('some bytes');
         proxy.fdOutRemote(expectedBytes, ([fdIndex], exc, outFdList) => {
             expect(exc).toBeNull();
             const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
@@ -753,15 +746,12 @@ describe('Exported DBus object', function () {
     });
 
     it('can call an async/await method that returns a Unix FD', async function () {
-        const encoder = new TextEncoder();
-        const expectedBytes = encoder.encode('some bytes');
         const [fdIndex, outFdList] = await proxy.fdOutAsync(expectedBytes);
         const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
         expect(bytes).toEqual(expectedBytes);
     });
 
     it('can call an asynchronously implemented remote method that returns a Unix FD', function (done) {
-        const expectedBytes = ByteArray.fromString('some bytes');
         proxy.fdOut2Remote(expectedBytes, ([fdIndex], exc, outFdList) => {
             expect(exc).toBeNull();
             const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
@@ -771,8 +761,6 @@ describe('Exported DBus object', function () {
     });
 
     it('can call an asynchronously implemented asyc/await method that returns a Unix FD', async function () {
-        const encoder = new TextEncoder();
-        const expectedBytes = encoder.encode('some bytes');
         const [fdIndex, outFdList] = await proxy.fdOut2Async(expectedBytes);
         const bytes = readBytesFromFdSync(outFdList.get(fdIndex));
         expect(bytes).toEqual(expectedBytes);

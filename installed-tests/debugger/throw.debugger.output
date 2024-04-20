@@ -4,22 +4,34 @@ db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> set ignoreCaughtExceptions false
 db> c
 Debugger statement, a() at throw.debugger.js:4:4
-db> throw 'foobar' + 3.14;
+db> f 1
+#1    toplevel at throw.debugger.js:9:4
+   9	    a();
+db> throw {}
+To throw, you must select the newest frame (use 'frame 0')
+db> f 0
+#0    a() at throw.debugger.js:4:4
+   4	    debugger;
+db> p 3.14
+$1 = 3.14
+db> throw 'foobar' + $1
 Unwinding due to exception. (Type 'c' to continue unwinding.)
 #0    a() at throw.debugger.js:4:4
    4	    debugger;
 Exception value is:
-$1 = "foobar3.14"
+$2 = "foobar3.14"
 db> fin
 Run till exit from a() at throw.debugger.js:4:4
 Frame terminated by exception:
-$2 = "foobar3.14"
+$3 = "foobar3.14"
 (To rethrow it, type 'throw'.)
 Unwinding due to exception. (Type 'c' to continue unwinding.)
 #0    toplevel at throw.debugger.js:9:4
    9	    a();
 Exception value is:
-$3 = "foobar3.14"
+$4 = "foobar3.14"
+db> throw foo
+Exception caught while evaluating foo: [object ReferenceError]
 db> throw
 Exception: foobar3.14
 Program exited with code 0

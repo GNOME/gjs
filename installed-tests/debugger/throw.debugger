@@ -2,6 +2,11 @@
 # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 set ignoreCaughtExceptions false
 c
-throw 'foobar' + 3.14;
+f 1
+throw {}
+f 0
+p 3.14
+throw 'foobar' + $1
 fin
+throw foo
 throw

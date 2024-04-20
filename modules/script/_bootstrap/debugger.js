@@ -23,6 +23,7 @@ var nextDebuggeeValueIndex = 1;
 var lastExc = null;
 var options = {pretty: true, colors: true, ignoreCaughtExceptions: true};
 var breakpoints = [undefined];  // Breakpoint numbers start at 1
+var skipUnwindHandler = false;
 
 // Cleanup functions to run when we next re-enter the repl.
 var replCleanups = [];
@@ -31,9 +32,12 @@ var replCleanups = [];
 function dvToString(v) {
     if (typeof v === 'undefined')
         return 'undefined';  // uneval(undefined) === '(void 0)', confusing
-    if (v === null)
-        return 'null';  // typeof null === 'object', so avoid that case
-    return typeof v !== 'object' || v === null ? uneval(v) : `[object ${v.class}]`;
+    if (typeof v === 'object' && v !== null)
+        return `[object ${v.class}]`;
+    const s = uneval(v);
+    if (s.length > 400)
+        return `${s.substr(0, 400)}...<${s.length - 400} more bytes>...`;
+    return s;
 }
 
 function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
@@ -50,21 +54,20 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     }
 
     const dvrepr = dvToString(dv);
-    if (!style.pretty || dv === null || typeof dv !== 'object')
+    if (!style.pretty || (typeof dv !== 'object') || (dv === null))
         return [dvrepr, undefined];
 
+    const exec = debuggeeGlobalWrapper.executeInGlobalWithBindings.bind(debuggeeGlobalWrapper);
+
     if (['TypeError', 'Error', 'GIRespositoryNamespace', 'GObject_Object'].includes(dv.class)) {
-        const errval = debuggeeGlobalWrapper.executeInGlobalWithBindings(
-            'v.toString()', {v: dv});
+        const errval = exec('v.toString()', {v: dv});
         return [dvrepr, errval['return']];
     }
 
     if (style.brief)
         return [dvrepr, dvrepr];
 
-    const str = debuggeeGlobalWrapper.executeInGlobalWithBindings(
-        'imports._print.getPrettyPrintFunction(globalThis)(v)', {v: dv});
-
+    const str = exec('imports._print.getPrettyPrintFunction(globalThis)(v)', {v: dv});
     if ('throw' in str) {
         if (style.noerror)
             return [dvrepr, undefined];
@@ -181,6 +184,36 @@ function saveExcursion(fn) {
         topFrame = tf;
         focusedFrame = ff;
     }
+}
+
+// Evaluate @expr in the current frame, logging and suppressing any exceptions
+function evalInFrame(expr) {
+    if (!focusedFrame) {
+        print('No stack');
+        return;
+    }
+
+    skipUnwindHandler = true;
+    let cv;
+    try {
+        cv = saveExcursion(
+            () => focusedFrame.evalWithBindings(`(${expr})`, debuggeeValues));
+    } finally {
+        skipUnwindHandler = false;
+    }
+
+    if (cv === null) {
+        print(`Debuggee died while evaluating ${expr}`);
+        return;
+    }
+
+    const {throw: exc, return: dv} = cv;
+    if (exc) {
+        print(`Exception caught while evaluating ${expr}: ${dvToString(exc)}`);
+        return;
+    }
+
+    return {value: dv};
 }
 
 // Accept debugger commands starting with '#' so that scripting the debugger
@@ -346,13 +379,32 @@ expr may also reference the variables $1, $2, ... for already printed
 expressions, or $$ for the most recently printed expression.`;
 
 function keysCommand(rest) {
-    return doPrint(`
-        (o => Object.getOwnPropertyNames(o)
-            .concat(Object.getOwnPropertySymbols(o)))
-            (${rest})
-    `);
+    if (!rest) {
+        print("Missing argument. See 'help keys'");
+        return;
+    }
+
+    const result = evalInFrame(rest);
+    if (!result)
+        return;
+
+    const dv = result.value;
+    if (!(dv instanceof Debugger.Object)) {
+        print(`${rest} is ${dvToString(dv)}, not an object`);
+        return;
+    }
+    const names = dv.getOwnPropertyNames();
+    const symbols = dv.getOwnPropertySymbols();
+    const keys = [
+        ...names.map(s => `"${s}"`),
+        ...symbols.map(s => `Symbol("${s.description}")`),
+    ];
+    if (keys.length === 0)
+        print('No own properties');
+    else
+        print(keys.join(', '));
 }
-keysCommand.summary = 'Prints keys of the given object';
+keysCommand.summary = 'Prints own properties of the given object';
 keysCommand.helpText = `USAGE
     keys <obj>
 
@@ -380,25 +432,15 @@ continueCommand.helpText = `USAGE
 
 function throwOrReturn(rest, action, defaultCompletion) {
     if (focusedFrame !== topFrame) {
-        print("To throw, you must select the newest frame (use 'frame 0').");
-        return;
-    }
-    if (focusedFrame === null) {
-        print('No stack.');
+        print(`To ${action}, you must select the newest frame (use 'frame 0')`);
         return;
     }
     if (rest === '')
         return [defaultCompletion];
 
-    const cv = saveExcursion(() => focusedFrame.eval(rest));
-    if (cv === null) {
-        print(`Debuggee died while determining what to ${action}. Stopped.`);
-        return;
-    }
-    if ('return' in cv)
-        return [{[action]: cv['return']}];
-    print(`Exception determining what to ${action}. Stopped.`);
-    showDebuggeeValue(cv.throw);
+    const result = evalInFrame(rest);
+    if (result)
+        return [{[action]: result.value}];
 }
 
 function throwCommand(rest) {
@@ -927,6 +969,9 @@ dbg.onDebuggerStatement = function (frame) {
     });
 };
 dbg.onExceptionUnwind = function (frame, value) {
+    if (skipUnwindHandler)
+        return undefined;
+
     const willBeCaught = currentFrame => {
         while (currentFrame) {
             if (currentFrame.script.isInCatchScope(currentFrame.offset))
