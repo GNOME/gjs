@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
 project('gjs', 'cpp', 'c', version: '1.83.3', license: ['MIT', 'LGPL2+'],
-    meson_version: '>= 0.62.0',
+    meson_version: '>= 1.4',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
@@ -521,13 +521,11 @@ libgjs_internal = static_library('gjs-internal',
     link_with: libgjs_jsapi)
 
 link_args = []
-symbol_map = 'libgjs.map'
-symbol_list = 'libgjs.symbols'
+symbol_map = files('libgjs.map')
+symbol_list = files('libgjs.symbols')  # macOS linker
 link_args += cxx.get_supported_link_arguments([
-    '-Wl,--version-script,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_map),
-    '-Wl,-exported_symbols_list,@0@/@1@'.format(meson.current_source_dir(),
-        symbol_list),  # macOS linker
+    '-Wl,--version-script,@0@'.format(symbol_map[0].full_path()),
+    '-Wl,-exported_symbols_list,@0@'.format(symbol_list[0].full_path()),
 ])
 
 libgjs = shared_library(meson.project_name(),
@@ -606,12 +604,14 @@ tests_environment.prepend('DYLD_LIBRARY_PATH', meson.current_build_dir(),
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 # Workaround for https://github.com/google/sanitizers/issues/1322
 tests_environment.set('ASAN_OPTIONS', 'intercept_tls_get_addr=0')
+lsan_suppressions = files('installed-tests/extra/lsan.supp')
 tests_environment.set('LSAN_OPTIONS',
     'fast_unwind_on_malloc=0,exitcode=23,suppressions=@0@'.format(
-        meson.current_source_dir() / 'installed-tests' / 'extra' / 'lsan.supp'))
+        lsan_suppressions[0].full_path()))
+tsan_suppressions = files('installed-tests/extra/tsan.supp')
 tests_environment.set('TSAN_OPTIONS',
     'history_size=5,force_seq_cst_atomics=1,suppressions=@0@'.format(
-        meson.current_source_dir() / 'installed-tests' / 'extra' / 'tsan.supp'))
+        tsan_suppressions[0].full_path()))
 tests_environment.set('G_SLICE', 'always-malloc')
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
@@ -661,11 +661,10 @@ valgrind_environment.set('VALGRIND', 'valgrind')
 glib_prefix = glib.get_variable(pkgconfig: 'prefix', default_value: '/usr')
 glib_suppresssions = (glib_prefix / 'share' / 'glib-2.0' / 'valgrind' /
     'glib.supp')
-gjs_suppressions = (meson.current_source_dir() / 'installed-tests' / 'extra' /
-    'gjs.supp')
+gjs_suppressions = files('installed-tests/extra/gjs.supp')
 valgrind_args = [
     '--suppressions=@0@'.format(glib_suppresssions),
-    '--suppressions=@0@'.format(gjs_suppressions),
+    '--suppressions=@0@'.format(gjs_suppressions[0].full_path()),
     '--leak-check=full',
     '--num-callers=15',
     '--trace-children=yes',
