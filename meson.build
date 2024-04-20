@@ -496,6 +496,8 @@ module_cairo_srcs = [
 module_resource_srcs = gnome.compile_resources('js-resources',
     'js.gresource.xml',
     c_name: 'js_resources')
+module_resource_lib = static_library('js-resources', module_resource_srcs,
+    dependencies: gio, override_options: ['unity=off'])
 
 libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey,
     readline, libatomic]
@@ -575,9 +577,9 @@ link_args += cxx.get_supported_link_arguments([
 ])
 
 libgjs = shared_library(meson.project_name(),
-    sources: [ libgjs_private_sources, module_resource_srcs ],
+    sources: libgjs_private_sources,
     link_args: link_args, link_depends: [symbol_map, symbol_list],
-    link_whole: libgjs_internal,
+    link_whole: [libgjs_internal, module_resource_lib],
     dependencies: base_build_dep,
     version: '0.0.0', soversion: '0',
     gnu_symbol_visibility: 'hidden',
