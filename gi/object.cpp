@@ -1530,11 +1530,12 @@ ObjectInstance::release_native_object(void)
             g_assert(surface_info && "Could not find introspected GdkSurface info");
             GjsAutoFunctionInfo destroy_func =
                 g_object_info_find_method(surface_info, "destroy");
-            GIArgument destroy_args[1] = {{.v_pointer = ptr}};
+            GIArgument destroy_args;
+            gjs_arg_set(&destroy_args, ptr);
             GIArgument unused_return;
 
             GjsAutoError err;
-            if (!g_function_info_invoke(destroy_func, destroy_args, 1, nullptr,
+            if (!g_function_info_invoke(destroy_func, &destroy_args, 1, nullptr,
                                         0, &unused_return, err.out()))
                 g_critical("Error destroying GdkSurface %p: %s", ptr,
                            err->message);
