@@ -11,7 +11,7 @@
 
 struct JSContext;
 
-enum GjsDeprecationMessageId {
+enum GjsDeprecationMessageId : unsigned {
     None,
     ByteArrayInstanceToString,
     DeprecatedGObjectProperty,
