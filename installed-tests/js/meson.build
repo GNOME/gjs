@@ -71,7 +71,7 @@ regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
     sources: regress_sources, namespace: 'Regress', nsversion: '1.0',
     identifier_prefix: 'Regress', symbol_prefix: 'regress_',
     extra_args: ['--warn-all'] + regress_gir_c_args,
-    install: get_option('installed_tests'), install_dir_gir: false,
+    install: get_option('installed_tests'), install_gir: false,
     install_dir_typelib: installed_tests_execdir,
     fatal_warnings: get_option('werror'))
 regress_typelib = regress_gir[1]
@@ -87,7 +87,7 @@ libwarnlib = library('warnlib', warnlib_sources,
 warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
     sources: warnlib_sources, namespace: 'WarnLib', nsversion: '1.0',
     symbol_prefix: 'warnlib_', header: 'warnlib.h',
-    install: get_option('installed_tests'), install_dir_gir: false,
+    install: get_option('installed_tests'), install_gir: false,
     install_dir_typelib: installed_tests_execdir)
 warnlib_typelib = warnlib_gir[1]
 
@@ -100,7 +100,7 @@ gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
     includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
     namespace: 'GIMarshallingTests', nsversion: '1.0',
     symbol_prefix: 'gi_marshalling_tests_', fatal_warnings: get_option('werror'),
-    install: get_option('installed_tests'), install_dir_gir: false,
+    install: get_option('installed_tests'), install_gir: false,
     install_dir_typelib: installed_tests_execdir)
 gimarshallingtests_typelib = gimarshallingtests_gir[1]
 
@@ -176,7 +176,7 @@ foreach test : jasmine_tests
         'name': 'test@0@.js'.format(test),
         'installed_tests_execdir': installed_tests_execdir,
     }
-    test_description = configure_file(configuration: test_description_subst,
+    configure_file(configuration: test_description_subst,
         input: '../minijasmine.test.in',
         output: 'test@0@.test'.format(test),
         install: get_option('installed_tests'),
@@ -198,7 +198,7 @@ dbus_tests = ['GDBus']
 if not get_option('skip_gtk_tests')
     have_gtk4 = dependency('gtk4', required: false).found()
 
-    if have_gtk4 
+    if have_gtk4
         # FIXME: find out why GTK4 tries to acquire a message bus
         dbus_tests += 'Gtk4'
     endif
@@ -219,7 +219,7 @@ foreach test : dbus_tests
         'name': 'test@0@.js'.format(test),
         'installed_tests_execdir': installed_tests_execdir,
     }
-    dbus_test_description = configure_file(
+    configure_file(
         configuration: dbus_test_description_subst,
         input: '../minijasmine.test.in',
         output: 'test@0@.test'.format(test),
@@ -259,8 +259,7 @@ foreach test : modules_tests
         'name': 'test@0@.js'.format(test),
         'installed_tests_execdir': installed_tests_execdir,
     }
-    esm_test_description = configure_file(
-        configuration: esm_test_description_subst,
+    configure_file(configuration: esm_test_description_subst,
         input: '../minijasmine-module.test.in',
         output: 'test@0@.test'.format(test),
         install: get_option('installed_tests'),
