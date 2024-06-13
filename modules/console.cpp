@@ -200,9 +200,6 @@ std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     gjs->schedule_gc_if_needed();
 
-    if (result.isUndefined())
-        return true;
-
     JS::AutoSaveExceptionState exc_state(cx);
     JS::RootedValue v_printed_string(cx);
     JS::RootedValue v_pretty_print(
