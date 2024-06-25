@@ -66,7 +66,7 @@
         if (obj instanceof Date)
             return formatDate(obj);
 
-        if (obj[Symbol.toStringTag] === 'GIRepositoryNamespace')
+        if (obj[Symbol.toStringTag] === 'GIRepositoryNamespace' || obj[Symbol.toStringTag] === 'GObject_ParamSpec')
             return obj.toString();
 
         const formattedObject = [];
