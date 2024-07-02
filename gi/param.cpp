@@ -12,8 +12,10 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JSEXN_TYPEERR
-#include <js/Object.h>  // for GetClass
+#include <js/Object.h>       // for GetClass
 #include <js/PropertyAndElement.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
+#include <js/PropertySpec.h>        // for JSPropertySpec, JS_PS_END, JS_STR...
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -148,10 +150,24 @@ static const struct JSClassOps gjs_param_class_ops = {
     nullptr,  // mayResolve
     param_finalize};
 
+static JSPropertySpec proto_props[] = {
+    JS_STRING_SYM_PS(toStringTag, "GObject_ParamSpec", JSPROP_READONLY),
+    JS_PS_END};
+
+static constexpr js::ClassSpec class_spec = {
+    nullptr,      // createConstructor
+    nullptr,      // createPrototype
+    nullptr,      // constructorFunctions
+    nullptr,      // constructorProperties
+    nullptr,      // prototypeFunctions
+    proto_props,  // prototypeProperties
+    nullptr       // finishInit
+};
+
 struct JSClass gjs_param_class = {
     "GObject_ParamSpec",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-    &gjs_param_class_ops};
+    &gjs_param_class_ops, &class_spec};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject*
@@ -187,10 +203,10 @@ gjs_define_param_class(JSContext       *context,
     if (!gjs_init_class_dynamic(
             context, in_object, nullptr, "GObject", "ParamSpec",
             &gjs_param_class, gjs_param_constructor, 0,
-            nullptr,  // props of prototype
-            nullptr,  // funcs of prototype
-            nullptr,  // props of constructor, MyConstructor.myprop
-            nullptr,  // funcs of constructor
+            proto_props,  // props of prototype
+            nullptr,      // funcs of prototype
+            nullptr,      // props of constructor, MyConstructor.myprop
+            nullptr,      // funcs of constructor
             &prototype, &constructor))
         return false;
 

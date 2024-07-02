@@ -49,4 +49,9 @@ describe('GObject.ParamSpec object', function () {
         let paramSpec = GObject.ParamSpec.string(name, nick, blurb, flags, '');
         expect(paramSpec[0]).not.toBeDefined();
     });
+
+    it('has correct object tag', function () {
+        const paramSpec = GObject.ParamSpec.string(name, nick, blurb, flags, '');
+        expect(paramSpec.toString()).toEqual('[object GObject_ParamSpec]');
+    });
 });
