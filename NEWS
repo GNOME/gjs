@@ -55,7 +55,7 @@ Version 1.81.1
   * Incorrect UnixOutputStream warning [#610, !928, Philip Chimento]
   * Various maintenance [!929, !931, Philip Chimento]
   * Docs: Various markdown fixes [!930, Frank Dana]
-  * Some build fixes for the master (and gnome-46) branches for Visual
+  * Some build fixes for the main (and gnome-46) branches for Visual
     Studio [!932, Chun-wei Fan]
   * GJS doesn't log undefined values [#621, !933, Gary Li]
   * property objects are printed as empty js objects [#622, !934, Gary
