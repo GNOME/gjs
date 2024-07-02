@@ -1,3 +1,66 @@
+Version 1.81.1
+--------------
+
+- Breaking change: When creating a GObject with the `new` operator, the
+  constructor takes a single argument consisting of a property bag with
+  GObject construct properties and their values.
+  This was often confused with the `new` static method that may take
+  arguments that are not interpreted as property bags.
+  For example, Gio.FileIcon was one of the many affected APIs:
+
+      new Gio.FileIcon({file: myFile})
+
+  vs
+   
+      Gio.FileIcon.new(myFile)
+
+  Confusion between the two often lead to bug reports when confusing
+  these two and calling `new Gio.FileIcon(myFile)` - the constructor
+  would look for a nonexistent `file` property on `myFile`, causing an
+  improperly initialized object.
+
+  This is now no longer allowed. The argument to `new Gio.FileIcon(...)`
+  must be a plain JS object, not a GObject.
+
+  It's possible that existing code legitimately used a GObject here. If
+  your code does this and a quick migration is impractical, please get
+  in touch and we will revert this change before 1.82.0 in favour of a
+  longer deprecation period.
+
+- The `get_data()`, `get_qdata()`, `set_data()`, `steal_data()`,
+  `steal_qdata()`, `ref()`, `unref()`, `ref_sink()`, and
+  `force_floating()` methods of GObject now throw if called.
+  These methods never worked, but sometimes they would silently appear
+  to succeed, then cause crashes or memory leaks later.
+
+  If you were trying to use the `get_data()` family of methods, just set
+  a JS property instead. If you were trying to modify the refcount of a
+  GObject in JS, instead set the object as the value of a JS property on
+  some other object.
+
+- Closed bugs and merge requests:
+  * doc: Document how to get a stack trace [!864, Sonny Piers]
+  * TextDecoder should accept GBytes [#587, !903, Sriyansh Shivam]
+  * Possible use-after-free with GLib.Regex.match/GLib.MatchInfo [#589,
+    !920, Philip Chimento]
+  * method `get_line` of `Pango.Layout` doesn't work. [#547, !921,
+    Philip Chimento]
+  * Block calls to g_object_get_data and friends [#423, !922, Philip
+    Chimento]
+  * Crash when calling Pango.Layout.get_pixel_size() with a badly
+    init:ed Pango.Layout [#580, !923, Philip Chimento]
+  * doc: avoid reference to Gio.UnixInputStream [!925, Andy Holmes]
+  * Add a CI check for config.h, and some other useful checks [#447,
+    !926, Philip Chimento]
+  * Incorrect UnixOutputStream warning [#610, !928, Philip Chimento]
+  * Various maintenance [!929, !931, Philip Chimento]
+  * Docs: Various markdown fixes [!930, Frank Dana]
+  * Some build fixes for the master (and gnome-46) branches for Visual
+    Studio [!932, Chun-wei Fan]
+  * GJS doesn't log undefined values [#621, !933, Gary Li]
+  * property objects are printed as empty js objects [#622, !934, Gary
+    Li]
+
 Version 1.80.2
 --------------
 
