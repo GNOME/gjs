@@ -23,15 +23,19 @@
         return nativeLogError(e, args.map(arg => typeof arg === 'string' ? arg : prettyPrint(arg)).join(' '));
     }
 
+    function _hasStandardToString(value) {
+        return value.toString === Object.prototype.toString ||
+                value.toString === Array.prototype.toString ||
+                value.toString === Date.prototype.toString;
+    }
+
     function prettyPrint(value) {
         switch (typeof value) {
         case 'object':
             if (value === null)
                 return 'null';
 
-            if (value.toString === Object.prototype.toString ||
-                value.toString === Array.prototype.toString ||
-                value.toString === Date.prototype.toString) {
+            if (_hasStandardToString(value)) {
                 const printedObjects = new WeakSet();
                 return formatObject(value, printedObjects);
             }
@@ -66,9 +70,6 @@
         if (obj instanceof Date)
             return formatDate(obj);
 
-        if (obj[Symbol.toStringTag] === 'GIRepositoryNamespace' || obj[Symbol.toStringTag] === 'GObject_ParamSpec')
-            return obj.toString();
-
         const formattedObject = [];
         const keys = Object.getOwnPropertyNames(obj).concat(Object.getOwnPropertySymbols(obj));
         for (const propertyKey of keys) {
@@ -78,8 +79,12 @@
             case 'object':
                 if (printedObjects.has(value))
                     formattedObject.push(`${key}: [Circular]`);
-                else
+                else if (value === null)
+                    formattedObject.push(`${key}: null`);
+                else if (_hasStandardToString(value))
                     formattedObject.push(`${key}: ${formatObject(value, printedObjects)}`);
+                else
+                    formattedObject.push(`${key}: ${value.toString()}`);
                 break;
             case 'function':
                 formattedObject.push(`${key}: ${formatFunction(value)}`);
