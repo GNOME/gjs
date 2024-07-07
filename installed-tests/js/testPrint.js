@@ -202,4 +202,13 @@ describe('prettyPrint', function () {
     it('null', function () {
         expect(prettyPrint(null)).toEqual('null');
     });
+
+    it('nested null', function () {
+        expect(prettyPrint({'foo': null})).toEqual('{ foo: null }');
+    });
+
+    it('imports root in object', function () {
+        expect(prettyPrint({'foo': imports}))
+            .toEqual('{ foo: [GjsFileImporter root] }');
+    });
 });
