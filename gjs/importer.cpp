@@ -24,9 +24,10 @@
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory, JSEXN_ERR
 #include <js/Exception.h>
+#include <js/GCVector.h>      // for StackGCVector
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
-#include <js/Id.h>  // for PropertyKey
-#include <js/Object.h>  // for GetClass
+#include <js/Id.h>            // for PropertyKey
+#include <js/Object.h>        // for GetClass
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>
 #include <js/PropertySpec.h>
@@ -671,7 +672,8 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         while (true) {
             GFileInfo *info;
             GFile *file;
-            if (!g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
+            if (!direnum ||
+                !g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
                 break;
             if (info == NULL || file == NULL)
                 break;
