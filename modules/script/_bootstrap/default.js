@@ -23,9 +23,18 @@
         return nativeLogError(e, args.map(arg => typeof arg === 'string' ? arg : prettyPrint(arg)).join(' '));
     }
 
+    // compare against the %TypedArray% intrinsic object all typed array constructors inherit from
+    function _isTypedArray(value) {
+        return value instanceof Object.getPrototypeOf(Uint8Array);
+    }
+
     function _hasStandardToString(value) {
         return value.toString === Object.prototype.toString ||
                 value.toString === Array.prototype.toString ||
+                // although TypedArrays have a standard Array.prototype.toString, we currently enforce an override to warn
+                // for legacy behaviour, making the toString non-standard for
+                // "any Uint8Array instances created in situations where previously a ByteArray would have been created"
+                _isTypedArray(value) ||
                 value.toString === Date.prototype.toString;
     }
 
@@ -64,7 +73,7 @@
 
     function formatObject(obj, printedObjects) {
         printedObjects.add(obj);
-        if (Array.isArray(obj))
+        if (Array.isArray(obj) || _isTypedArray(obj))
             return formatArray(obj, printedObjects).toString();
 
         if (obj instanceof Date)
