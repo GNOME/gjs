@@ -4,6 +4,7 @@
 
 imports.gi.versions.Gdk = '3.0';
 const Gdk = imports.gi.Gdk;
+const ByteArray = imports.byteArray;
 const {getPrettyPrintFunction} = imports._print;
 let prettyPrint = getPrettyPrintFunction(globalThis);
 
@@ -210,5 +211,39 @@ describe('prettyPrint', function () {
     it('imports root in object', function () {
         expect(prettyPrint({'foo': imports}))
             .toEqual('{ foo: [GjsFileImporter root] }');
+    });
+
+    describe('TypedArrays', () => {
+        [
+            Int8Array,
+            Uint8Array,
+            Uint16Array,
+            Uint8ClampedArray,
+            Int16Array,
+            Uint16Array,
+            Int32Array,
+            Uint32Array,
+            Float32Array,
+            Float64Array,
+        ].forEach(constructor => {
+            it(constructor.name, function () {
+                const arr = new constructor([1, 2, 3]);
+                expect(prettyPrint(arr))
+                    .toEqual('[1, 2, 3]');
+            });
+        });
+
+        [BigInt64Array, BigUint64Array].forEach(constructor => {
+            it(constructor.name, function () {
+                const arr = new constructor([1n, 2n, 3n]);
+                expect(prettyPrint(arr))
+                    .toEqual('[1, 2, 3]');
+            });
+        });
+    });
+
+    it('Uint8Array returned from introspected function', function () {
+        let a = ByteArray.fromString('⅜');
+        expect(prettyPrint(a)).toEqual('[226, 133, 156]');
     });
 });
