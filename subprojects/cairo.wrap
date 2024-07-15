@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
+
+[wrap-git]
+directory = cairo
+url = https://gitlab.freedesktop.org/cairo/cairo.git
+push-url = git@gitlab.freedesktop.org:cairo/cairo.git
+revision = master
+depth = 1
+
+[provide]
+cairo = libcairo_dep
+cairo-gobject = libcairogobject_dep

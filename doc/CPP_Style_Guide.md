@@ -432,7 +432,7 @@ its functionality is no longer used in the file.
 Here is an example of all of the above rules together:
 
 ```c++
-#include <config.h>  // for ENABLE_CAIRO
+#include <config.h>  // for ENABLE_PROFILER
 
 #include <string.h>  // for strlen
 
