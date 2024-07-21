@@ -35,7 +35,6 @@
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>        // for HandleValueArray
-#include <jsfriendapi.h>  // for JS_GetObjectFunction
 #include <jspubtd.h>      // for JSProtoKey
 
 #include "gi/arg-cache.h"
@@ -390,12 +389,9 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                 gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            JSFunction* fn = JS_GetObjectFunction(callable());
-            std::string descr =
-                fn ? "function " + gjs_debug_string(JS_GetFunctionDisplayId(fn))
-                   : "callable object " + gjs_debug_object(callable());
             g_error("Call to %s (%s.%s) terminated with uncatchable exception",
-                    descr.c_str(), m_info.ns(), m_info.name());
+                    gjs_debug_callable(callable()).c_str(), m_info.ns(),
+                    m_info.name());
         }
 
         // If the callback has a GError** argument, then make a GError from the
@@ -553,14 +549,11 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             return false;
 
         if (!is_array) {
-            JSFunction* fn = JS_GetObjectFunction(callable());
-            std::string descr =
-                fn ? "function " + gjs_debug_string(JS_GetFunctionDisplayId(fn))
-                   : "callable object " + gjs_debug_object(callable());
             gjs_throw(context,
                       "Call to %s (%s.%s) returned unexpected value, expecting "
                       "an Array",
-                      descr.c_str(), m_info.ns(), m_info.name());
+                      gjs_debug_callable(callable()).c_str(), m_info.ns(),
+                      m_info.name());
             return false;
         }
 

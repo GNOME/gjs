@@ -542,10 +542,8 @@ static bool on_context_module_rejected_log_exception(JSContext* cx,
                                                      JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    JSString* id =
-        JS_GetFunctionDisplayId(JS_GetObjectFunction(&args.callee()));
     gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise rejected: %s",
-              gjs_debug_string(id).c_str());
+              gjs_debug_callable(&args.callee()).c_str());
 
     JS::HandleValue error = args.get(0);
 
@@ -564,10 +562,8 @@ static bool on_context_module_resolved(JSContext* cx, unsigned argc,
                                        JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    JSString* id =
-        JS_GetFunctionDisplayId(JS_GetObjectFunction(&args.callee()));
     gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise resolved: %s",
-              gjs_debug_string(id).c_str());
+              gjs_debug_callable(&args.callee()).c_str());
 
     args.rval().setUndefined();
 
@@ -628,11 +624,9 @@ static void load_context_module(JSContext* cx, const char* uri,
         [](JSContext* cx, unsigned argc, JS::Value* vp) {
             JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-            JSString* id =
-                JS_GetFunctionDisplayId(JS_GetObjectFunction(&args.callee()));
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Module evaluation promise rejected: %s",
-                      gjs_debug_string(id).c_str());
+                      gjs_debug_callable(&args.callee()).c_str());
 
             JS::HandleValue error = args.get(0);
             // Abort because this module is required.

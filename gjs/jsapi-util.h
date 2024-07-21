@@ -600,6 +600,7 @@ bool gjs_object_require_converted_property(JSContext       *context,
 [[nodiscard]] std::string gjs_debug_string(JSString* str);
 [[nodiscard]] std::string gjs_debug_symbol(JS::Symbol* const sym);
 [[nodiscard]] std::string gjs_debug_object(JSObject* obj);
+[[nodiscard]] std::string gjs_debug_callable(JSObject* callable);
 [[nodiscard]] std::string gjs_debug_value(JS::Value v);
 [[nodiscard]] std::string gjs_debug_id(jsid id);
 
