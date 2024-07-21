@@ -93,13 +93,11 @@
 #include "gjs/profiler.h"
 #include "gjs/promise.h"
 #include "gjs/text-encoding.h"
+#include "modules/cairo-module.h"
 #include "modules/console.h"
 #include "modules/print.h"
 #include "modules/system.h"
 #include "util/log.h"
-#ifdef ENABLE_CAIRO
-#    include "modules/cairo-module.h"
-#endif
 
 namespace mozilla {
 union Utf8Unit;
@@ -345,9 +343,7 @@ gjs_context_class_init(GjsContextClass *klass)
     registry.add("_encodingNative", gjs_define_text_encoding_stuff);
     registry.add("_gi", gjs_define_private_gi_stuff);
     registry.add("gi", gjs_define_repo);
-#ifdef ENABLE_CAIRO
     registry.add("cairoNative", gjs_js_define_cairo_stuff);
-#endif
     registry.add("system", gjs_js_define_system_stuff);
     registry.add("console", gjs_define_console_stuff);
     registry.add("_print", gjs_define_print_stuff);

@@ -150,9 +150,7 @@ build_minimal:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115
   variables:
-    CONFIG_OPTS: >-
-      -Dbuildtype=release
-      -Dcairo=disabled -Dreadline=disabled -Dprofiler=disabled
+    CONFIG_OPTS: -Dbuildtype=release -Dreadline=disabled -Dprofiler=disabled
     TEST_OPTS: --setup=verbose
   except:
     - schedules

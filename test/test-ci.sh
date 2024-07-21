@@ -149,8 +149,8 @@ if test "$1" = "SETUP"; then
 elif test "$1" = "BUILD"; then
     do_Set_Env
 
-    DEFAULT_CONFIG_OPTS="-Dcairo=enabled -Dreadline=enabled -Dprofiler=enabled \
-        -Ddtrace=false -Dsystemtap=false -Dverbose_logs=false --werror"
+    DEFAULT_CONFIG_OPTS="-Dreadline=enabled -Dprofiler=enabled -Ddtrace=false \
+        -Dsystemtap=false -Dverbose_logs=false --werror"
     meson setup _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS
     ninja -C _build
 

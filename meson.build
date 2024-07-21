@@ -137,29 +137,11 @@ gio = dependency('gio-2.0', version: glib_required_version,
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
 gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
+cairo = dependency('cairo', fallback: ['cairo', 'libcairo_dep'])
+cairo_gobject = dependency('cairo-gobject',
+    fallback: ['cairo', 'libcairogobject_dep'])
+cairo_xlib = dependency('cairo-xlib', required: false)
 spidermonkey = dependency('mozjs-115')
-
-# We might need to look for the headers and lib's for Cairo
-# manually on MSVC/clang-cl builds...
-if get_option('cairo').disabled()
-    # dummy not-found dependency since we break the tristate feature in the else block
-    cairo = dependency('', required: false)
-    cairo_gobject = cairo
-    cairo_xlib = cairo
-else
-    cairo = dependency('cairo', required: get_option('cairo').enabled() and cxx.get_argument_syntax() != 'msvc')
-    cairo_gobject = dependency('cairo-gobject', required: cairo.found() and cxx.get_argument_syntax() != 'msvc')
-    cairo_xlib = dependency('cairo-xlib', required: false)
-endif
-
-if cxx.get_argument_syntax() == 'msvc' and not get_option('cairo').disabled()
-    if not cairo.found()
-        cairo = cc.find_library('cairo', has_headers: ['cairo.h'], required: get_option('cairo').enabled())
-    endif
-    if not cairo_gobject.found()
-        cairo_gobject = cc.find_library('cairo-gobject', has_headers: ['cairo-gobject.h'], required: cairo.found())
-    endif
-endif
 
 sysprof_capture = dependency('sysprof-capture-4',
     required: get_option('profiler'), include_type: 'system',
@@ -241,7 +223,6 @@ it on other platforms.''')
     endif
 endif
 
-build_cairo = cairo.found()
 build_readline = readline.found()
 
 ### Check for library features #################################################
@@ -334,8 +315,6 @@ header_conf.set('GJS_VERSION', int_version,
 header_conf.set_quoted('PACKAGE_STRING', '@0@ @1@'.format(meson.project_name(),
     meson.project_version()))
 
-header_conf.set('ENABLE_CAIRO', build_cairo,
-    description: 'Build with Cairo support')
 header_conf.set('ENABLE_PROFILER', build_profiler,
     description: 'Build the profiler')
 # COMPAT: SpiderMonkey headers in some places use DEBUG instead of JS_DEBUG
@@ -451,6 +430,23 @@ libgjs_sources = [
     'modules/console.cpp', 'modules/console.h',
     'modules/print.cpp', 'modules/print.h',
     'modules/system.cpp', 'modules/system.h',
+    'modules/cairo-private.h',
+    'modules/cairo-module.h',
+    'modules/cairo-region.cpp',
+    'modules/cairo-context.cpp',
+    'modules/cairo-path.cpp',
+    'modules/cairo-surface.cpp',
+    'modules/cairo-image-surface.cpp',
+    'modules/cairo-ps-surface.cpp',
+    'modules/cairo-pdf-surface.cpp',
+    'modules/cairo-svg-surface.cpp',
+    'modules/cairo-pattern.cpp',
+    'modules/cairo-gradient.cpp',
+    'modules/cairo-linear-gradient.cpp',
+    'modules/cairo-radial-gradient.cpp',
+    'modules/cairo-surface-pattern.cpp',
+    'modules/cairo-solid-pattern.cpp',
+    'modules/cairo.cpp',
 ]
 
 # GjsPrivate introspection sources
@@ -473,54 +469,20 @@ libgjs_jsapi_sources = [
     'util/misc.cpp', 'util/misc.h',
 ]
 
-module_cairo_srcs = [
-    'modules/cairo-private.h',
-    'modules/cairo-module.h',
-    'modules/cairo-region.cpp',
-    'modules/cairo-context.cpp',
-    'modules/cairo-path.cpp',
-    'modules/cairo-surface.cpp',
-    'modules/cairo-image-surface.cpp',
-    'modules/cairo-ps-surface.cpp',
-    'modules/cairo-pdf-surface.cpp',
-    'modules/cairo-svg-surface.cpp',
-    'modules/cairo-pattern.cpp',
-    'modules/cairo-gradient.cpp',
-    'modules/cairo-linear-gradient.cpp',
-    'modules/cairo-radial-gradient.cpp',
-    'modules/cairo-surface-pattern.cpp',
-    'modules/cairo-solid-pattern.cpp',
-    'modules/cairo.cpp',
-]
-
 module_resource_srcs = gnome.compile_resources('js-resources',
     'js.gresource.xml',
     c_name: 'js_resources')
 module_resource_lib = static_library('js-resources', module_resource_srcs,
     dependencies: gio, override_options: ['unity=off'])
 
-libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey,
-    readline, libatomic]
-pkg_dependencies = [glib, gobject, gthread, gio, gi, ffi, spidermonkey]
-libraries_private = []
+libgjs_dependencies = [glib, gobject, gthread, gio, gi, ffi, cairo,
+    cairo_gobject, spidermonkey, readline, libatomic]
+pkg_dependencies = [glib, gobject, gthread, gio, gi, ffi, cairo, cairo_gobject,
+    spidermonkey]
 
-if build_cairo
-    libgjs_sources += module_cairo_srcs
-    libgjs_dependencies += [cairo, cairo_gobject]
-    if cairo.type_name() == 'pkgconfig'
-        pkg_dependencies += [cairo]
-    elif cairo.type_name() == 'library'
-        libraries_private += cairo
-    endif
-    if cairo_gobject.type_name() == 'pkgconfig'
-        pkg_dependencies += [cairo_gobject]
-    elif cairo_gobject.type_name() == 'library'
-        libraries_private += cairo_gobject
-    endif
-    if cairo_xlib.found()
-        libgjs_dependencies += cairo_xlib
-        pkg_dependencies += cairo_xlib
-    endif
+if cairo_xlib.found()
+    libgjs_dependencies += cairo_xlib
+    pkg_dependencies += cairo_xlib
 endif
 
 if build_readline
@@ -624,7 +586,6 @@ endif
 
 pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
     requires: [glib, gobject, gio], requires_private: pkg_dependencies,
-    libraries_private: libraries_private,
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
@@ -752,10 +713,6 @@ building a debug or debugoptimized build. This will make development more
 difficult. Consider reconfiguring SpiderMonkey with --enable-debug.''')
 endif
 
-if not build_cairo
-    warning('Building without Cairo support, not all tests will be run.')
-endif
-
 if get_option('skip_gtk_tests')
     warning('Not using GTK, not all tests will be run.')
 endif
@@ -806,7 +763,6 @@ summary({
     'Precompiled headers': get_option('b_pch'),
 }, section: 'Build options', bool_yn: true)
 summary({
-    'Cairo module': build_cairo,
     'Use readline for input': build_readline,
     'Profiler (Linux only)': build_profiler,
     'Dtrace debugging': get_option('dtrace'),

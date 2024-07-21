@@ -52,15 +52,9 @@ else
   test_gir_warning_c_args += ['-Wno-error']
 endif
 
-regress_dependencies = [glib, gobject, gio]
-regress_gir_includes = ['Gio-2.0']
+regress_dependencies = [glib, gobject, gio, cairo, cairo_gobject]
+regress_gir_includes = ['Gio-2.0', 'cairo-1.0']
 regress_gir_c_args = test_gir_extra_c_args
-if build_cairo
-    regress_gir_includes += 'cairo-1.0'
-    regress_dependencies += [cairo, cairo_gobject]
-else
-    regress_gir_c_args += ['-D_GI_DISABLE_CAIRO']
-endif
 
 libregress = library('regress', regress_sources,
     c_args: regress_gir_c_args + test_gir_warning_c_args,
@@ -108,6 +102,7 @@ subdir('libgjstesttools')
 
 jasmine_tests = [
     'self',
+    'Cairo',
     'Exceptions',
     'Format',
     'Fundamental',
@@ -139,10 +134,6 @@ jasmine_tests = [
     'Tweener',
     'WarnLib',
 ]
-
-if build_cairo
-    jasmine_tests += 'Cairo'
-endif
 
 if not get_option('skip_gtk_tests')
     jasmine_tests += [
@@ -236,6 +227,7 @@ endforeach
 
 modules_tests = [
     'Async',
+    'CairoModule',
     'Console',
     'ESModules',
     'AsyncMainloop',
@@ -245,9 +237,6 @@ modules_tests = [
     'Timers',
     'WeakRef',
 ]
-if build_cairo
-    modules_tests += 'CairoModule'
-endif
 
 foreach test : modules_tests
     test_file = files('test@0@.js'.format(test))

@@ -3,8 +3,6 @@
 
 # Features
 
-option('cairo', type: 'feature', value: 'auto',
-    description: 'Build cairo module')
 option('readline', type: 'feature', value: 'auto',
     description: 'Use readline for input in interactive shell and debugger')
 option('profiler', type: 'feature', value: 'auto',
