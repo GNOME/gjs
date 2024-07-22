@@ -590,7 +590,7 @@ gjs_debug_object(JSObject * const obj)
 
     if (js::IsFunctionObject(obj)) {
         JSFunction* fun = JS_GetObjectFunction(obj);
-        JSString* display_name = JS_GetFunctionDisplayId(fun);
+        JSString* display_name = JS_GetMaybePartialFunctionDisplayId(fun);
         if (display_name && JS_GetStringLength(display_name))
             out << "<function " << gjs_debug_string(display_name);
         else
@@ -624,7 +624,7 @@ gjs_debug_object(JSObject * const obj)
 
 std::string gjs_debug_callable(JSObject* callable) {
     if (JSFunction* fn = JS_GetObjectFunction(callable)) {
-        if (JSString* display_id = JS_GetFunctionDisplayId(fn))
+        if (JSString* display_id = JS_GetMaybePartialFunctionDisplayId(fn))
             return {"function " + gjs_debug_string(display_id)};
         return {"unnamed function"};
     }

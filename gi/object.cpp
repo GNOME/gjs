@@ -677,8 +677,11 @@ static bool interface_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_assert(v_prototype.isObject() && "prototype must be an object");
 
     JS::RootedObject prototype(cx, &v_prototype.toObject());
-    JS::RootedId id(cx, JS::PropertyKey::NonIntAtom(JS_GetFunctionId(
-                            JS_GetObjectFunction(&args.callee()))));
+    JS::RootedFunction fn_obj{cx, JS_GetObjectFunction(&args.callee())};
+    JS::RootedString fn_name{cx};
+    if (!JS_GetFunctionId(cx, fn_obj, &fn_name))
+        return false;
+    JS::RootedId id{cx, JS::PropertyKey::NonIntAtom(fn_name)};
     return JS_GetPropertyById(cx, prototype, id, args.rval());
 }
 
