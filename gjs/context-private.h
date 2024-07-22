@@ -259,6 +259,9 @@ class GjsContextPrivate : public JS::JobQueue {
                            JS::HandleObject incumbent_global) override;
     void runJobs(JSContext* cx) override;
     [[nodiscard]] bool empty() const override { return m_job_queue.empty(); }
+    [[nodiscard]] bool isDrainingStopped() const override {
+        return !m_draining_job_queue;
+    }
     js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
         JSContext* cx) override;
 
