@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include <utility>  // for move
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -18,6 +20,7 @@
 #include <js/Utility.h>   // for UniqueChars
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for JS_NewPlainObject
+#include <mozilla/UniquePtr.h>
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"
@@ -145,12 +148,11 @@ from_gbytes_func(JSContext *context,
         return true;
     }
 
-    JS::RootedObject array_buffer(
-        context,
-        JS::NewExternalArrayBuffer(
-            context, len,
-            const_cast<void*>(data),  // the ArrayBuffer won't modify the data
-            bytes_unref_arraybuffer, gbytes));
+    mozilla::UniquePtr<void, JS::BufferContentsDeleter> contents{
+        const_cast<void*>(data),  // the ArrayBuffer won't modify the data
+        {bytes_unref_arraybuffer, gbytes}};
+    JS::RootedObject array_buffer{
+        context, JS::NewExternalArrayBuffer(context, len, std::move(contents))};
     if (!array_buffer)
         return false;
     g_bytes_ref(gbytes);  // now owned by both ArrayBuffer and BoxedBase
@@ -167,11 +169,15 @@ from_gbytes_func(JSContext *context,
 JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
     JS::RootedObject array_buffer(cx);
     // a null data pointer takes precedence over whatever `nbytes` says
-    if (data)
-        array_buffer = JS::NewArrayBufferWithContents(
-            cx, nbytes, _gjs_memdup2(data, nbytes));
-    else
+    if (data) {
+        mozilla::UniquePtr<void, JS::BufferContentsDeleter> data_copy{
+            _gjs_memdup2(data, nbytes),
+            {[](void* contents, void*) { g_free(contents); }}};
+        array_buffer =
+            JS::NewExternalArrayBuffer(cx, nbytes, std::move(data_copy));
+    } else {
         array_buffer = JS::NewArrayBuffer(cx, 0);
+    }
     if (!array_buffer)
         return nullptr;
 
