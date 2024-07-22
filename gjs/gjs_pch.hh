@@ -58,6 +58,7 @@
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ColumnNumber.h>
 #include <js/ComparisonOperators.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>

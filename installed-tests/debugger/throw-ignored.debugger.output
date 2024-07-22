@@ -4,7 +4,7 @@ db> # SPDX-FileCopyrightText: 2021 Florian Müllner <fmuellner@gnome.org>
 db> c
 Caught exception: Error: Exception nº 1
 Unwinding due to exception. (Type 'c' to continue unwinding.)
-#0    a() at throw-ignored.debugger.js:7:10
+#0    a() at throw-ignored.debugger.js:7:11
    7	    throw new Error(`Exception nº ${++count}`);
 Exception value is:
 $1 = [object Error]

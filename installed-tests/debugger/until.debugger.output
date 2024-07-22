@@ -2,18 +2,18 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> until 5
-toplevel at until.debugger.js:3:0
+toplevel at until.debugger.js:3:1
 1
 2
 db> upto 7
-toplevel at until.debugger.js:5:0
+toplevel at until.debugger.js:5:1
 3
-entered frame: <anonymous>() at until.debugger.js:7:4
+entered frame: <anonymous>() at until.debugger.js:7:5
 db> u 9
-<anonymous>() at until.debugger.js:7:4
+<anonymous>() at until.debugger.js:7:5
 4
 No value returned.
-toplevel at until.debugger.js:9:0
+toplevel at until.debugger.js:9:1
 db> c
 5
 Program exited with code 0

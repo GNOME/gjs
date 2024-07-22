@@ -2,27 +2,27 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> b 4
-Breakpoint 1 at return.debugger.js:4:4
+Breakpoint 1 at return.debugger.js:4:5
 db> b 8
-Breakpoint 2 at return.debugger.js:8:4
+Breakpoint 2 at return.debugger.js:8:5
 db> b 12
-Breakpoint 3 at return.debugger.js:12:4
+Breakpoint 3 at return.debugger.js:12:5
 db> c
-Breakpoint 1, func1() at return.debugger.js:4:4
+Breakpoint 1, func1() at return.debugger.js:4:5
 db> f 1
-#1    toplevel at return.debugger.js:15:6
+#1    toplevel at return.debugger.js:15:7
    15	print(func1());
 db> return
 To return, you must select the newest frame (use 'frame 0')
 db> f 0
-#0    func1() at return.debugger.js:4:4
+#0    func1() at return.debugger.js:4:5
    4	    return 1;
 db> return
 undefined
-Breakpoint 2, func2() at return.debugger.js:8:4
+Breakpoint 2, func2() at return.debugger.js:8:5
 db> ret 5
 5
-Breakpoint 3, func3() at return.debugger.js:12:4
+Breakpoint 3, func3() at return.debugger.js:12:5
 db> ret foo
 Exception caught while evaluating foo: [object ReferenceError]
 db> p 2

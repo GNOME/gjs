@@ -12,6 +12,7 @@
 #include <js/CallAndConstruct.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/ColumnNumber.h>
 #include <js/Exception.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
@@ -278,7 +279,8 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
     JS::RootedObject frame(cx);
     JS::RootedString stack(cx);
     JS::RootedString source(cx);
-    uint32_t line, column;
+    uint32_t line;
+    JS::TaggedColumnNumberOneOrigin tagged_column;
 
     if (!JS::CaptureCurrentStack(cx, &frame) ||
         !JS::BuildStackString(cx, nullptr, frame, &stack))
@@ -287,7 +289,7 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
     auto ok = JS::SavedFrameResult::Ok;
     if (JS::GetSavedFrameSource(cx, nullptr, frame, &source) != ok ||
         JS::GetSavedFrameLine(cx, nullptr, frame, &line) != ok ||
-        JS::GetSavedFrameColumn(cx, nullptr, frame, &column) != ok) {
+        JS::GetSavedFrameColumn(cx, nullptr, frame, &tagged_column) != ok) {
         gjs_throw(cx, "Error getting saved frame information");
         return false;
     }
@@ -299,7 +301,8 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
                                  JSPROP_ENUMERATE) &&
            JS_DefinePropertyById(cx, obj, atoms.line_number(), line,
                                  JSPROP_ENUMERATE) &&
-           JS_DefinePropertyById(cx, obj, atoms.column_number(), column,
+           JS_DefinePropertyById(cx, obj, atoms.column_number(),
+                                 tagged_column.oneOriginValue(),
                                  JSPROP_ENUMERATE);
 }
 

@@ -2,8 +2,8 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> continue
-Debugger statement, toplevel at continue.debugger.js:3:0
+Debugger statement, toplevel at continue.debugger.js:3:1
 db> cont
-Debugger statement, toplevel at continue.debugger.js:4:0
+Debugger statement, toplevel at continue.debugger.js:4:1
 db> c
 Program exited with code 0
