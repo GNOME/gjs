@@ -1,0 +1,49 @@
+GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2024 Gary Li <gary.li1@uwaterloo.ca>
+db> set colors false
+db> list
+   1	interface FancyNumber {
+   2	    n: number;
+   3	}
+   4	
+  *5	let a: FancyNumber = {n: null};
+   6	const b = a.n.toString(42);
+   7	
+   8	
+db> bt
+#0    toplevel at sourcemap-inlined.debugger.js:1:1 -> noModule.ts:5:1
+db> frame
+#0    toplevel at sourcemap-inlined.debugger.js:1:1 -> noModule.ts:5:1
+   1	var a = { n: null };
+db> c
+Unwinding due to exception. (Type 'c' to continue unwinding.)
+#0    toplevel at sourcemap-inlined.debugger.js:2:9 -> noModule.ts:6:12
+   2	var b = a.n.toString(42);
+Exception value is:
+$1 = [object TypeError]
+TypeError: a.n is null
+db> list
+   1	interface FancyNumber {
+   2	    n: number;
+   3	}
+   4	
+   5	let a: FancyNumber = {n: null};
+  *6	const b = a.n.toString(42);
+   7	
+   8	
+db> up
+Initial frame selected; you cannot go up.
+db> list
+   1	interface FancyNumber {
+   2	    n: number;
+   3	}
+   4	
+   5	let a: FancyNumber = {n: null};
+  *6	const b = a.n.toString(42);
+   7	
+   8	
+db> bt
+#0    toplevel at sourcemap-inlined.debugger.js:2:9 -> noModule.ts:6:12
+db> [quit due to end of input]
+Program exited with code 0

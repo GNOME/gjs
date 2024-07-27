@@ -1,0 +1,1 @@
+{"version":3,"file":"numberWork.js","sourceRoot":"","sources":["numberWork.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,aAAa,CAAC;AAE3C,YAAY,CAAC,CAAC,EAAC,CAAC,EAAC,CAAC,EAAC,EAAE,EAAC,CAAC,EAAE,IAAI,EAAC,CAAC,CAAC,CAAC","sourcesContent":["import { get2ndNumber } from \"./number.js\";\n\nget2ndNumber([{n:1}, {n: null}]);"]}
