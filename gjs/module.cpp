@@ -407,7 +407,7 @@ JSObject* gjs_module_load(JSContext* cx, const char* identifier,
     args[1].setString(uri);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
-              "Module resolve hook for module '%s' (%s), global %p", identifier,
+              "Module load hook for module '%s' (%s), global %p", identifier,
               file_uri, global.get());
 
     JS::RootedValue result(cx);

@@ -15,10 +15,10 @@
 #include <js/CallAndConstruct.h>  // for JS_CallFunction
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
-#include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>  // for JSEXN_ERR
 #include <js/Exception.h>
+#include <js/Id.h>  // for PropertyKey
 #include <js/Modules.h>
 #include <js/Promise.h>
 #include <js/PropertyAndElement.h>
@@ -87,9 +87,26 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     options.setSelfHostingMode(false);
 
     Gjs::AutoInternalRealm ar{cx};
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    JS::RootedObject internal_global{cx, gjs->internal_global()};
+    JS::RootedObject module{cx, JS::CompileModule(cx, options, buf)};
+    if (!module)
+        return false;
 
-    JS::RootedValue ignored(cx);
-    return JS::Evaluate(cx, options, buf, &ignored);
+    JS::RootedObject registry{cx, gjs_get_module_registry(internal_global)};
+
+    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path)};
+    if (key.isVoid())
+        return false;
+
+    JS::RootedValue ignore{cx};
+    if (!gjs_global_registry_set(cx, registry, key, module) ||
+        !JS::ModuleLink(cx, module) ||
+        !JS::ModuleEvaluate(cx, module, &ignore)) {
+        return false;
+    }
+
+    return true;
 }
 
 static bool handle_wrong_args(JSContext* cx) {
