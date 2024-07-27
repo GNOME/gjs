@@ -464,6 +464,26 @@ bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::UniqueChars text;
+    size_t result_len;
+    if (!gjs_parse_call_args(cx, "atob", args, "!s", "text", &text))
+        return handle_wrong_args(cx);
+
+    GjsAutoChar decoded =
+        reinterpret_cast<char*>(g_base64_decode(text.get(), &result_len));
+    JS::ConstUTF8CharsZ contents_chars{decoded, result_len};
+    JS::RootedString contents_str{cx,
+                                  JS_NewStringCopyUTF8Z(cx, contents_chars)};
+
+    if (!contents_str)
+        return false;
+
+    args.rval().setString(contents_str);
+    return true;
+}
+
 class PromiseData {
  public:
     JSContext* cx;

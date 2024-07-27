@@ -301,6 +301,7 @@ class GjsInternalGlobal : GjsBaseGlobal {
               0),
         JS_FN("setModulePrivate", gjs_internal_set_module_private, 2, 0),
         JS_FN("uriExists", gjs_internal_uri_exists, 1, 0),
+        JS_FN("atob", gjs_internal_atob, 1, 0),
         JS_FS_END};
 
     static constexpr JSClass klass = {
