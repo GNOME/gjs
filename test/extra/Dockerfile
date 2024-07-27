@@ -3,7 +3,7 @@
 
 # === Build Spidermonkey stage ===
 
-FROM registry.fedoraproject.org/fedora:39 AS mozjs-build
+FROM registry.fedoraproject.org/fedora:40 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs115
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
@@ -41,7 +41,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:39
+FROM registry.fedoraproject.org/fedora:40
 
 ARG LOCALES=tr_TR
 ENV SHELL=/bin/bash
