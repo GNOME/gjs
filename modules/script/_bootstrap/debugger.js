@@ -1,5 +1,5 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
-/* global debuggee, quit, loadNative, readline, uneval */
+/* global debuggee, quit, loadNative, readline, uneval, getSourceMapRegistry */
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2011 Mozilla Foundation and contributors
 
@@ -137,10 +137,34 @@ Object.defineProperty(Debugger.Frame.prototype, 'line', {
     },
 });
 
+Object.defineProperty(Debugger.Frame.prototype, 'column', {
+    configurable: true,
+    enumerable: false,
+    get() {
+        return this.script?.getOffsetLocation(this.offset).columnNumber ?? null;
+    },
+});
+
 Debugger.Script.prototype.describeOffset = function describeOffset(offset) {
     const {lineNumber, columnNumber} = this.getOffsetLocation(offset);
     const url = this.url || '<unknown>';
-    return `${url}:${lineNumber}:${columnNumber}`;
+    const registry = getSourceMapRegistry();
+    const consumer = registry.get(url);
+
+    let description = `${url}:${lineNumber}:${columnNumber}`;
+    const original = consumer?.originalPositionFor({line: lineNumber, column: columnNumber});
+
+    if (original?.source || Number.isInteger(original?.line) || Number.isInteger(original?.column))
+        description += ' -> ';
+
+    if (original?.source)
+        description += original.source;
+    if (Number.isInteger(original?.line))
+        description += `:${original.line}`;
+    if (Number.isInteger(original?.column))
+        description += `:${original.column + 1}`;
+
+    return description;
 };
 
 function showFrame(f, n, option = {btCommand: false, fullOption: false}) {
@@ -262,9 +286,9 @@ function listCommand(option) {
         print('No frame to list from');
         return;
     }
-    let lineNumber = focusedFrame.line;
+    let lineNumber = focusedFrame.line, columnNumber = focusedFrame.column;
     if (option === '') {
-        printSurroundingLines(lineNumber);
+        printSurroundingLines(lineNumber, columnNumber);
         return;
     }
     let currentLine = Number(option);
@@ -275,11 +299,23 @@ function listCommand(option) {
         print('Unknown option');
 }
 
-function printSurroundingLines(currentLine = 1) {
-    let sourceLines = focusedFrame.script.source.text.split('\n');
-    let lastLine = sourceLines.length - 1;
+function printSurroundingLines(currentLine = 1, columnNumber = 1) {
+    const registry = getSourceMapRegistry();
+    const sourceUrl = focusedFrame.script.source.url;
+    const consumer = registry.get(sourceUrl);
+    const originalObj = consumer?.originalPositionFor({line: currentLine, column: columnNumber - 1});
+    const sourceMapContents = originalObj?.source ? consumer?.sourceContentFor(originalObj.source, true) : null;
+    let sourceLines;
+    if (sourceMapContents) {
+        sourceLines = sourceMapContents.split('\n');
+        currentLine = originalObj?.line ?? 1;
+    } else {
+        sourceLines = focusedFrame.script.source.text.split('\n');
+    }
+    const lastLine = sourceLines.length;
     let maxLineLimit = Math.min(lastLine, currentLine + 5);
     let minLineLimit = Math.max(1, currentLine - 5);
+
     for (let i = minLineLimit; i < maxLineLimit + 1; i++) {
         if (i === currentLine) {
             const code = colorCode('1');
@@ -940,6 +976,9 @@ function onInitialEnterFrame(frame) {
 
 var dbg = new Debugger();
 dbg.onNewPromise = function ({promiseID, promiseAllocationSite}) {
+    // if the promise was not allocated by the script, allocation site is null
+    if (!promiseAllocationSite)
+        return undefined;
     const site = promiseAllocationSite.toString().split('\n')[0];
     print(`Promise ${promiseID} started from ${site}`);
     return undefined;
