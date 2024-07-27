@@ -1285,8 +1285,9 @@ gjs_context_eval(GjsContext   *js_context,
     size_t real_len = script_len < 0 ? strlen(script) : script_len;
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
-
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+
+    gjs->register_non_module_sourcemap(script, filename);
     return gjs->eval(script, real_len, filename, exit_status_p, error);
 }
 
@@ -1403,6 +1404,40 @@ bool GjsContextPrivate::run_main_loop_hook() {
     JS::RootedValue ignored_rval(m_cx);
     return JS::Call(m_cx, JS::NullHandleValue, hook,
                     JS::HandleValueArray::empty(), &ignored_rval);
+}
+
+// source maps parsing is built upon hooks for resolving or loading modules
+// for non-module runs we need to invoke this logic manually
+void GjsContextPrivate::register_non_module_sourcemap(const char* script,
+                                                      const char* filename) {
+    using AutoURI = GjsAutoPointer<GUri, GUri, g_uri_unref>;
+    Gjs::AutoMainRealm ar{this};
+
+    JS::RootedObject global{m_cx, JS::CurrentGlobalOrNull(m_cx)};
+    JS::RootedValue v_loader{
+        m_cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER)};
+    g_assert(v_loader.isObject());
+    JS::RootedObject v_loader_obj{m_cx, &v_loader.toObject()};
+
+    JS::RootedValueArray<3> args{m_cx};
+    JS::RootedString script_str{m_cx, JS_NewStringCopyZ(m_cx, script)};
+    JS::RootedString file_name_str{m_cx, JS_NewStringCopyZ(m_cx, filename)};
+    args[0].setString(script_str);
+    args[1].setString(file_name_str);
+
+    // if the file uri is not an absolute uri with a scheme, build one assuming
+    // file:// this parameter is used to help locate non-inlined source map file
+    AutoURI uri = g_uri_parse(filename, G_URI_FLAGS_NONE, nullptr);
+    if (!uri) {
+        GjsAutoUnref<GFile> file = g_file_new_for_path(filename);
+        GjsAutoChar file_uri = g_file_get_uri(file);
+        JS::RootedString abs_filename_scheme_str{
+            m_cx, JS_NewStringCopyZ(m_cx, file_uri.get())};
+        args[2].setString(abs_filename_scheme_str);
+    }
+
+    JS::RootedValue ignored{m_cx};
+    JS::Call(m_cx, v_loader_obj, "populateSourceMap", args, &ignored);
 }
 
 bool GjsContextPrivate::eval(const char* script, size_t script_len,
