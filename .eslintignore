@@ -9,3 +9,4 @@ modules/script/jsUnit.js
 /builddir
 modules/internal/source-map/
 installed-tests/debugger/sourcemap*
+test/source-maps/

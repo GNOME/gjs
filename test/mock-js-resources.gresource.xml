@@ -10,5 +10,16 @@
     <file>test/modules/import.js</file>
     <file>test/modules/throws.js</file>
     <file>test/modules/nothrows.js</file>
+
+    <file>test/source-maps/separate/number.js</file>
+    <file>test/source-maps/separate/number.js.map</file>
+    <file>test/source-maps/separate/numberWork.js</file>
+    <file>test/source-maps/separate/numberWork.js.map</file>
+    <file>test/source-maps/separate/noModule.js</file>
+    <file>test/source-maps/separate/noModule.js.map</file>
+    
+    <file>test/source-maps/inlined/number.js</file>
+    <file>test/source-maps/inlined/numberWork.js</file>
+    <file>test/source-maps/inlined/noModule.js</file>
   </gresource>
 </gresources>
