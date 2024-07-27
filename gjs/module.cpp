@@ -354,6 +354,25 @@ JSObject* gjs_get_module_registry(JSObject* global) {
 }
 
 /**
+ * gjs_get_source_map_registry:
+ *
+ * @brief Retrieves a global's source map registry from the SOURCE_MAP_REGISTRY
+ * slot. Registries are JS Maps.
+ *
+ * @param cx the current #JSContext
+ * @param global a global #JSObject
+ *
+ * @returns the registry map as a #JSObject
+ */
+JSObject* gjs_get_source_map_registry(JSObject* global) {
+    JS::Value source_map_registry =
+        gjs_get_global_slot(global, GjsGlobalSlot::SOURCE_MAP_REGISTRY);
+
+    g_assert(source_map_registry.isObject());
+    return &source_map_registry.toObject();
+}
+
+/**
  * gjs_module_load:
  *
  * Loads and registers a module given a specifier and

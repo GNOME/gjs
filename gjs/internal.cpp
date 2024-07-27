@@ -264,6 +264,32 @@ bool gjs_internal_get_registry(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+/**
+ * gjs_internal_get_source_map_registry:
+ *
+ * @brief Retrieves the source map registry for the passed global object.
+ *
+ * @param cx the current JSContext
+ * @param argc
+ * @param vp
+ *
+ * @returns whether an error occurred while retrieving the registry.
+ */
+bool gjs_internal_get_source_map_registry(JSContext* cx, unsigned argc,
+                                          JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedObject global{cx};
+    if (!gjs_parse_call_args(cx, "getSourceMapRegistry", args, "o", "global",
+                             &global))
+        return handle_wrong_args(cx);
+
+    JSAutoRealm ar{cx, global};
+
+    JSObject* registry = gjs_get_source_map_registry(global);
+    args.rval().setObject(*registry);
+    return true;
+}
+
 bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     using AutoHashTable =
         GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;

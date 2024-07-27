@@ -31,6 +31,9 @@ GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_get_module_registry(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
+JSObject* gjs_get_source_map_registry(JSObject* global);
+
+GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_module_load(JSContext* cx, const char* identifier,
                           const char* uri);
 
