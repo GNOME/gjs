@@ -23,6 +23,8 @@
 
 #include "util/log.h"
 
+namespace JS { template <typename T> struct GCPolicy; }
+
 /* jsapi-util-root.h - Utilities for dealing with the lifetime and ownership of
  * JS Objects and other things that can be collected by the garbage collector
  * (collectively called "GC things.")
@@ -220,5 +222,37 @@ class GjsMaybeOwned {
     // COMPAT: constexpr in C++23
     [[nodiscard]] bool rooted() const { return m_root != nullptr; }
 };
+
+namespace Gjs {
+
+template <typename T>
+class WeakPtr : public JS::Heap<T> {
+ public:
+    using JS::Heap<T>::Heap;
+    using JS::Heap<T>::operator=;
+};
+
+}  // namespace Gjs
+
+namespace JS {
+
+template <typename T>
+struct GCPolicy<Gjs::WeakPtr<T>> {
+    static void trace(JSTracer* trc, Gjs::WeakPtr<T>* thingp,
+                      const char* name) {
+        return JS::TraceEdge(trc, thingp, name);
+    }
+
+    static bool traceWeak(JSTracer* trc, Gjs::WeakPtr<T>* thingp) {
+        return js::gc::TraceWeakEdge(trc, thingp);
+    }
+
+    static bool needsSweep(JSTracer* trc, const Gjs::WeakPtr<T>* thingp) {
+        Gjs::WeakPtr<T> thing{*thingp};
+        return !js::gc::TraceWeakEdge(trc, &thing);
+    }
+};
+
+}  // namespace JS
 
 #endif  // GJS_JSAPI_UTIL_ROOT_H_

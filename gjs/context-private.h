@@ -39,6 +39,7 @@
 #include "gi/closure.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/jsapi-util-root.h"
 #include "gjs/macros.h"
 #include "gjs/mainloop.h"
 #include "gjs/profiler.h"
@@ -52,10 +53,10 @@ using JobQueueStorage =
 using ObjectInitList =
     JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
-    JS::GCHashMap<void*, JS::Heap<JSObject*>, js::DefaultHasher<void*>,
+    JS::GCHashMap<void*, Gjs::WeakPtr<JSObject*>, js::DefaultHasher<void*>,
                   js::SystemAllocPolicy>;
 using GTypeTable =
-    JS::GCHashMap<GType, JS::Heap<JSObject*>, js::DefaultHasher<GType>,
+    JS::GCHashMap<GType, Gjs::WeakPtr<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
 using FunctionVector = JS::GCVector<JSFunction*, 0, js::SystemAllocPolicy>;
 
