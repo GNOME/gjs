@@ -22,6 +22,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <js/Value.h>
 #include <mozilla/Result.h>  // for GenericErrorResult
 #include <mozilla/ResultVariant.h>  // IWYU pragma: keep
 

@@ -5,7 +5,6 @@
 
 #include <config.h>
 
-#include <algorithm>  // for copy
 #include <atomic>
 #include <chrono>
 #include <deque>

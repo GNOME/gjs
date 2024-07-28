@@ -14,7 +14,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2023-01-06.0'
+    FDO_DISTRIBUTION_TAG: '2024-07-28.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -23,10 +23,11 @@ build-alpine-image:
     - .gjs-alpine
   stage: prepare
   variables:
-    FDO_DISTRIBUTION_PACKAGES: bash cppcheck git grep npm python3 reuse
+    FDO_DISTRIBUTION_PACKAGES: |
+      bash cppcheck git grep npm py3-codespell python3 reuse
     FDO_DISTRIBUTION_EXEC: |
       mkdir -p /cwd &&
-      apk add cpplint py3-codespell \
+      apk add cpplint \
         --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
 
 .coverage: &coverage
@@ -79,7 +80,7 @@ build-alpine-image:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-3012153_fedora.mozjs115-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-4126932_fedora.mozjs115-debug  # pinned on purpose
   variables:
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs --setup=verbose
   except:

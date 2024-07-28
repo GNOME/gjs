@@ -20,6 +20,7 @@
 #include <js/CallArgs.h>
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>  // for JSEXN_TYPEERR
+#include <js/GCVector.h>     // for MutableHandleIdVector
 #include <js/Id.h>
 #include <js/MemoryFunctions.h>
 #include <js/Object.h>
