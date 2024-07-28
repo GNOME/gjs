@@ -79,7 +79,7 @@ build-alpine-image:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-3012153_fedora.mozjs115-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-4126932_fedora.mozjs115-debug  # pinned on purpose
   variables:
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs --setup=verbose
   except:
