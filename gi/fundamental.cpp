@@ -8,11 +8,9 @@
 #include <girepository.h>
 #include <glib.h>
 
-#include <js/AllocPolicy.h>  // for SystemAllocPolicy
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCHashTable.h>  // for WeakCache
-#include <js/HashTable.h>    // for DefaultHasher via WeakCache
 #include <js/Object.h>       // for GetClass
 #include <js/PropertyAndElement.h>
 #include <js/RootingAPI.h>

@@ -10,7 +10,6 @@
 #include <string.h>  // for strcmp, strlen, memcpy
 
 #include <string>
-#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>

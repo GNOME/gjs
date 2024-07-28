@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 
+#include <algorithm>    // IWYU pragma: keep (for find)
 #include <utility>      // IWYU pragma: keep (for swap)
 #include <vector>
 

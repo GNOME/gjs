@@ -16,6 +16,7 @@
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JSEXN_TYPEERR
+#include <js/GCVector.h>     // for MutableHandleIdVector
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>
 #include <js/Object.h>  // for GetClass

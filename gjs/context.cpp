@@ -19,9 +19,6 @@
 #    include <windows.h>
 #endif
 
-#ifdef DEBUG
-#    include <algorithm>  // for find
-#endif
 #include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id

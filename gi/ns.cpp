@@ -4,6 +4,10 @@
 
 #include <config.h>
 
+#include <string.h>
+
+#include <vector>
+
 #include <girepository.h>
 #include <glib.h>
 

@@ -66,17 +66,7 @@ FALSE_POSITIVES = (
     # we don't need to have forward declarations of them as well
     ('gjs/atoms.h', 'class GjsAtoms;', ''),
     ('gjs/atoms.h', 'struct GjsSymbolAtom;', ''),
-
-    # IWYU weird false positive when using std::vector::emplace_back() or
-    # std::vector::push_back()
-    # https://github.com/include-what-you-use/include-what-you-use/issues/908
-    ('gi/function.cpp', '#include <algorithm>', 'for max'),
-    ('gi/function.cpp', '#include <algorithm>', 'for fill_n, max'),  # also!
-    ('gi/private.cpp', '#include <algorithm>', 'for max'),
-    ('gjs/importer.cpp', '#include <algorithm>', 'for max'),
-    ('gjs/importer.cpp', '#include <algorithm>', 'for max, copy'),  # also!
-    ('gjs/module.cpp', '#include <algorithm>', 'for copy'),
-    ('util/log.cpp', '#include <algorithm>', 'for fill_n'),
+    ('gjs/mem-private.h', 'namespace Gjs { namespace Memory { struct Counter; } }', ''),
 
     # False positive when constructing JS::GCHashMap
     ('gi/boxed.h', '#include <utility>', 'for move'),
@@ -97,15 +87,6 @@ FALSE_POSITIVES = (
 
 def output():
     global file, state, add_fwd_header, there_were_errors
-
-    # Workaround for
-    # https://github.com/include-what-you-use/include-what-you-use/issues/226
-    if CSTDINT in add:
-        why = add.pop(CSTDINT, None)
-        if STDINTH in remove:
-            remove.pop(STDINTH, None)
-        elif STDINTH not in all_includes:
-            add[STDINTH] = why
 
     if add_fwd_header:
         if FWD_HEADER not in all_includes:
