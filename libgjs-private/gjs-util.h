@@ -124,11 +124,11 @@ typedef gboolean (*GjsBindingTransformFunc)(GBinding* binding,
  * @target:
  * @target_property:
  * @flags:
- * @to_callback: (scope notified) (nullable):
- * @to_data: (closure to_callback):
+ * @to_callback: (scope notified) (nullable) (closure to_data):
+ * @to_data:
  * @to_notify: (destroy to_data):
- * @from_callback: (scope notified) (nullable):
- * @from_data: (closure from_callback):
+ * @from_callback: (scope notified) (nullable) (closure from_data):
+ * @from_data:
  * @from_notify: (destroy from_data):
  *
  * Returns: (transfer none):
@@ -149,11 +149,11 @@ GBinding* gjs_g_object_bind_property_full(
  * @target:
  * @target_property:
  * @flags:
- * @to_callback: (scope notified) (nullable):
- * @to_data: (closure to_callback):
+ * @to_callback: (scope notified) (nullable) (closure to_data):
+ * @to_data:
  * @to_notify: (destroy to_data):
- * @from_callback: (scope notified) (nullable):
- * @from_data: (closure from_callback):
+ * @from_callback: (scope notified) (nullable) (closure from_data):
+ * @from_data:
  * @from_notify: (destroy from_data):
  */
 GJS_EXPORT

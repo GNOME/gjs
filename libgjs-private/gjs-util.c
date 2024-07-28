@@ -235,7 +235,7 @@ out:
  * @store: a #GListStore
  * @item: the new item
  * @compare_func: (scope call): pairwise comparison function for sorting
- * @user_data: (closure): user data for @compare_func
+ * @user_data: user data for @compare_func
  *
  * Inserts @item into @store at a position to be determined by the
  * @compare_func.
@@ -258,7 +258,7 @@ unsigned int gjs_list_store_insert_sorted(GListStore *store, GObject *item,
  * gjs_list_store_sort:
  * @store: a #GListStore
  * @compare_func: (scope call): pairwise comparison function for sorting
- * @user_data: (closure): user data for @compare_func
+ * @user_data: user data for @compare_func
  *
  * Sort the items in @store according to @compare_func.
  */
@@ -270,7 +270,7 @@ void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
 /**
  * gjs_gtk_custom_sorter_new:
  * @sort_func: (nullable) (scope call): function to sort items
- * @user_data: (closure): user data for @compare_func
+ * @user_data: user data for @sort_func
  * @destroy: destroy notify for @user_data
  *
  * Creates a new `GtkSorter` that works by calling @sort_func to compare items.
@@ -305,7 +305,7 @@ GObject* gjs_gtk_custom_sorter_new(GjsCompareDataFunc sort_func,
  * gjs_gtk_custom_sorter_set_sort_func:
  * @sorter: a `GtkCustomSorter`
  * @sort_func: (nullable) (scope call): function to sort items
- * @user_data: (closure): user data to pass to @sort_func
+ * @user_data: user data to pass to @sort_func
  * @destroy: destroy notify for @user_data
  *
  * Sets (or unsets) the function used for sorting items.
@@ -423,7 +423,7 @@ void gjs_log_set_writer_default() {
 /**
  * gjs_log_set_writer_func:
  * @func: (scope notified): callback with log data
- * @user_data: (closure): user data for @func
+ * @user_data: user data for @func
  * @user_data_free: (destroy user_data_free): destroy for @user_data
  *
  * Sets a given function as the writer function for structured logging,
