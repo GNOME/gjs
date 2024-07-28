@@ -22,12 +22,11 @@ fi
 # nullPointerRedundantCheck, nullPointerArithmeticRedundantCheck: False positive
 # when using g_assert_nonnull(). Check again when
 # https://github.com/danmar/cppcheck/pull/5830 is available.
-# mallocOnClassWarning: False positive https://trac.cppcheck.net/ticket/12313
-cppcheck --project=compile_commands.json --inline-suppr \
-    --error-exitcode=1 --enable=warning,performance,portability \
+cppcheck --project=compile_commands.json --check-level=exhaustive \
+    --inline-suppr --error-exitcode=1 --enable=warning,performance,portability \
     --suppress=duplInheritedMember --suppress=incorrectStringBooleanError \
     --suppress=nullPointerArithmeticRedundantCheck \
-    --suppress=nullPointerRedundantCheck --suppress=mallocOnClassWarning \
+    --suppress=nullPointerRedundantCheck \
     --suppress=*:*/gobject-introspection-1.0/tests/regress.c \
     --suppress=*:*/gobject-introspection-1.0/tests/gimarshallingtests.c \
     --suppress=*:*/gobject-introspection-1.0/tests/warnlib.c \
