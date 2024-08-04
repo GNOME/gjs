@@ -17,6 +17,12 @@ import 'resource:///org/gjs/jsunit/modules/sideEffect.js';
 import 'resource://org/gjs/jsunit/modules/sideEffect.js';
 import 'resource:///org/gjs/jsunit/modules/../modules/sideEffect.js';
 
+// Imports with query parameters should not fail and be imported uniquely
+import 'resource:///org/gjs/jsunit/modules/sideEffect3.js?foo=bar&maple=syrup';
+// these should resolve to the same after being canonicalized
+import 'resource://org/gjs/jsunit/modules/./sideEffect3.js?etag=1';
+import 'resource:///org/gjs/jsunit/modules/sideEffect3.js?etag=1';
+
 describe('ES module imports', function () {
     it('default import', function () {
         expect($).toEqual(5);
@@ -75,6 +81,10 @@ describe('ES module imports', function () {
 
     it('treats equivalent URIs as equal and does not load the module again', function () {
         expect(globalThis.leakyState).toEqual(1);
+    });
+
+    it('can load modules with query parameters uniquely', function () {
+        expect(globalThis.queryLeakyState).toEqual(2);
     });
 });
 
@@ -146,6 +156,18 @@ describe('Dynamic imports', function () {
         await import('resource://org/gjs/jsunit/modules/sideEffect2.js');
         await import('resource:///org/gjs/jsunit/modules/../modules/sideEffect2.js');
         expect(globalThis.leakyState).toEqual(1);
+    });
+
+    it('treats query parameters uniquely for absolute URIs', async function () {
+        delete globalThis.queryLeakyState;
+        await import('resource:///org/gjs/jsunit/modules/sideEffect3.js?maple=syrup');
+        expect(globalThis.queryLeakyState).toEqual(1);
+    });
+
+    it('treats query parameters uniquely for relative URIs', async function () {
+        delete globalThis.queryLeakyState;
+        await import('resource:///org/gjs/jsunit/modules/sideEffect4.js');
+        expect(globalThis.queryLeakyState).toEqual(1);
     });
 
     it('does not show internal stack frames in an import error', async function () {

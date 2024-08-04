@@ -39,5 +39,6 @@ overrides:
       - modules/importmeta.js
       - modules/exports.js
       - modules/say.js
+      - modules/sideEffect4.js
     parserOptions:
       sourceType: module

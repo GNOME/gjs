@@ -345,7 +345,15 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!path)
         return false;
 
-    if (!JS_DefineProperty(cx, return_obj, "uri", string_arg,
+    GjsAutoChar no_query_str =
+        g_uri_to_string_partial(parsed, G_URI_HIDE_QUERY);
+    JS::RootedString uri_no_query{cx, JS_NewStringCopyZ(cx, no_query_str)};
+    if (!uri_no_query)
+        return false;
+
+    if (!JS_DefineProperty(cx, return_obj, "uri", uri_no_query,
+                           JSPROP_ENUMERATE) ||
+        !JS_DefineProperty(cx, return_obj, "uriWithQuery", string_arg,
                            JSPROP_ENUMERATE) ||
         !JS_DefineProperty(cx, return_obj, "scheme", scheme,
                            JSPROP_ENUMERATE) ||
@@ -369,12 +377,10 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
         return handle_wrong_args(cx);
 
     GjsAutoUnref<GFile> module_file = g_file_new_for_uri(uri.get());
-    GjsAutoUnref<GFile> module_parent_file = g_file_get_parent(module_file);
 
-    if (module_parent_file) {
-        GjsAutoUnref<GFile> output = g_file_resolve_relative_path(
-            module_parent_file, relative_path.get());
-        GjsAutoChar output_uri = g_file_get_uri(output);
+    if (module_file) {
+        GjsAutoChar output_uri = g_uri_resolve_relative(
+            uri.get(), relative_path.get(), G_URI_FLAGS_NONE, nullptr);
 
         JS::ConstUTF8CharsZ uri_chars(output_uri, strlen(output_uri));
         JS::RootedString retval(cx, JS_NewStringCopyUTF8Z(cx, uri_chars));
@@ -510,7 +516,7 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
                                      /* etag_out = */ nullptr, &error)) {
         GjsAutoChar uri = g_file_get_uri(G_FILE(file));
         gjs_throw_custom(promise->cx, JSEXN_ERR, "ImportError",
-                         "Unable to load file from: %s (%s)", uri.get(),
+                         "Unable to load file async from: %s (%s)", uri.get(),
                          error->message);
         promise->reject_with_pending_exception();
         return;
