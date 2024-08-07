@@ -11,8 +11,10 @@ ARG BUILD_OPTS=
 ENV SHELL=/bin/bash
 
 # mozjs115 cannot be built with python3.11
+# cbindgen should be included in builddep(mozjs128)
 RUN dnf -y install 'dnf-command(builddep)' \
     autoconf213 \
+    cbindgen \
     clang \
     git \
     llvm \
