@@ -116,7 +116,7 @@ bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* 
         return false;
 
     size_t length = JS::GetDeflatedUTF8StringLength(linear);
-    char* bytes = js_pod_arena_malloc<char>(js::StringBufferArena, length + 1);
+    char* bytes = js_pod_malloc<char>(length + 1);
     if (!bytes)
         return false;
 
