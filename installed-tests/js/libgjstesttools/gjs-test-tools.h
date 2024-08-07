@@ -94,4 +94,10 @@ GObject* gjs_test_tools_get_disposed(GObject* object);
 GJS_TEST_TOOL_EXTERN
 int gjs_test_tools_open_bytes(GBytes* bytes, GError** error);
 
+GJS_TEST_TOOL_EXTERN
+GBytes* gjs_test_tools_new_unaligned_bytes(size_t len);
+
+GJS_TEST_TOOL_EXTERN
+GBytes* gjs_test_tools_new_static_bytes();
+
 G_END_DECLS
