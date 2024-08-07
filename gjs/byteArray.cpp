@@ -7,7 +7,6 @@
 #include <stdint.h>
 
 #include <algorithm>  // for copy_n
-#include <utility>  // for move
 
 #include <glib-object.h>
 #include <glib.h>
@@ -22,7 +21,6 @@
 #include <js/Utility.h>   // for UniqueChars
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for JS_NewPlainObject
-#include <mozilla/UniquePtr.h>
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"
@@ -33,7 +31,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/text-encoding.h"
-#include "util/misc.h"  // for _gjs_memdup2
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -164,15 +161,17 @@ from_gbytes_func(JSContext *context,
     return true;
 }
 
-JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
+JSObject* gjs_byte_array_from_data_copy(JSContext* cx, size_t nbytes,
+                                        void* data) {
     JS::RootedObject array_buffer(cx);
     // a null data pointer takes precedence over whatever `nbytes` says
     if (data) {
-        mozilla::UniquePtr<void, JS::BufferContentsDeleter> data_copy{
-            _gjs_memdup2(data, nbytes),
-            {[](void* contents, void*) { g_free(contents); }}};
-        array_buffer =
-            JS::NewExternalArrayBuffer(cx, nbytes, std::move(data_copy));
+        array_buffer = JS::NewArrayBuffer(cx, nbytes);
+
+        JS::AutoCheckCannotGC nogc{};
+        bool unused;
+        uint8_t* storage = JS::GetArrayBufferData(array_buffer, &unused, nogc);
+        std::copy_n(static_cast<uint8_t*>(data), nbytes, storage);
     } else {
         array_buffer = JS::NewArrayBuffer(cx, 0);
     }
@@ -190,7 +189,7 @@ JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
 }
 
 JSObject* gjs_byte_array_from_byte_array(JSContext* cx, GByteArray* array) {
-    return gjs_byte_array_from_data(cx, array->len, array->data);
+    return gjs_byte_array_from_data_copy(cx, array->len, array->data);
 }
 
 GBytes* gjs_byte_array_get_bytes(JSObject* obj) {

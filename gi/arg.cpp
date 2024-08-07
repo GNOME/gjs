@@ -1981,7 +1981,7 @@ static bool gjs_array_from_carray_internal(
 
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
-        JSObject* obj = gjs_byte_array_from_data(context, length, array);
+        JSObject* obj = gjs_byte_array_from_data_copy(context, length, array);
         if (!obj)
             return false;
         value_p.setObject(*obj);
@@ -2269,7 +2269,7 @@ static bool gjs_array_from_zero_terminated_c_array(
     /* Special case array(guint8) */
     if (element_type == GI_TYPE_TAG_UINT8) {
         size_t len = strlen(static_cast<char*>(c_array));
-        JSObject* obj = gjs_byte_array_from_data(context, len, c_array);
+        JSObject* obj = gjs_byte_array_from_data_copy(context, len, c_array);
         if (!obj)
             return false;
         value_p.setObject(*obj);
