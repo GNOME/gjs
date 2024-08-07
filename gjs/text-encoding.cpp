@@ -16,6 +16,7 @@
 #include <memory>    // for unique_ptr
 #include <string>    // for u16string
 #include <tuple>     // for tuple
+#include <utility>   // for move
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -40,7 +41,7 @@
 #include <jspubtd.h>      // for JSProto_InternalError
 #include <mozilla/Maybe.h>
 #include <mozilla/Span.h>
-#include <mozilla/Unused.h>
+#include <mozilla/UniquePtr.h>
 
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -398,13 +399,8 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
             utf8_len = strlen(utf8.get());
         }
 
-        array_buffer = JS::NewArrayBufferWithContents(cx, utf8_len, utf8.get());
-
-        // array_buffer only assumes ownership if the call succeeded,
-        // if array_buffer assumes ownership we must release our ownership
-        // without freeing the data.
-        if (array_buffer)
-            mozilla::Unused << utf8.release();
+        array_buffer =
+            JS::NewArrayBufferWithContents(cx, utf8_len, std::move(utf8));
     } else {
         GjsAutoError error;
         GjsAutoChar encoded = nullptr;
@@ -453,9 +449,10 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
         if (bytes_written == 0)
             return JS_NewUint8Array(cx, 0);
 
+        mozilla::UniquePtr<void, JS::BufferContentsDeleter> contents{
+            encoded.release(), gfree_arraybuffer_contents};
         array_buffer =
-            JS::NewExternalArrayBuffer(cx, bytes_written, encoded.release(),
-                                       gfree_arraybuffer_contents, nullptr);
+            JS::NewExternalArrayBuffer(cx, bytes_written, std::move(contents));
     }
 
     if (!array_buffer)

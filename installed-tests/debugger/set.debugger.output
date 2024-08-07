@@ -4,7 +4,7 @@ db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> # Currently the only option is "pretty" for pretty-printing. Set doesn't yet
 db> # allow setting variables in the program.
 db> c
-Debugger statement, toplevel at set.debugger.js:4:0
+Debugger statement, toplevel at set.debugger.js:4:1
 db> p a
 $1 = [object Object]
 {}

@@ -6,11 +6,15 @@
 
 #include <stdint.h>
 
+#include <algorithm>  // for copy_n
+#include <utility>  // for move
+
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/ArrayBuffer.h>
 #include <js/CallArgs.h>
+#include <js/GCAPI.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
@@ -18,6 +22,7 @@
 #include <js/Utility.h>   // for UniqueChars
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for JS_NewPlainObject
+#include <mozilla/UniquePtr.h>
 
 #include "gi/boxed.h"
 #include "gjs/atoms.h"
@@ -29,14 +34,6 @@
 #include "gjs/macros.h"
 #include "gjs/text-encoding.h"
 #include "util/misc.h"  // for _gjs_memdup2
-
-// Callback to use with JS::NewExternalArrayBuffer()
-
-static void bytes_unref_arraybuffer(void* contents [[maybe_unused]],
-                                    void* user_data) {
-    auto* gbytes = static_cast<GBytes*>(user_data);
-    g_bytes_unref(gbytes);
-}
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -145,15 +142,18 @@ from_gbytes_func(JSContext *context,
         return true;
     }
 
-    JS::RootedObject array_buffer(
-        context,
-        JS::NewExternalArrayBuffer(
-            context, len,
-            const_cast<void*>(data),  // the ArrayBuffer won't modify the data
-            bytes_unref_arraybuffer, gbytes));
+    JS::RootedObject array_buffer{context, JS::NewArrayBuffer(context, len)};
     if (!array_buffer)
         return false;
-    g_bytes_ref(gbytes);  // now owned by both ArrayBuffer and BoxedBase
+
+    // Copy the data into the ArrayBuffer so that the copy is aligned, and
+    // because the GBytes data pointer may point into immutable memory.
+    {
+        JS::AutoCheckCannotGC nogc;
+        bool unused;
+        uint8_t* storage = JS::GetArrayBufferData(array_buffer, &unused, nogc);
+        std::copy_n(static_cast<const uint8_t*>(data), len, storage);
+    }
 
     JS::RootedObject obj(
         context, JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1));
@@ -167,11 +167,15 @@ from_gbytes_func(JSContext *context,
 JSObject* gjs_byte_array_from_data(JSContext* cx, size_t nbytes, void* data) {
     JS::RootedObject array_buffer(cx);
     // a null data pointer takes precedence over whatever `nbytes` says
-    if (data)
-        array_buffer = JS::NewArrayBufferWithContents(
-            cx, nbytes, _gjs_memdup2(data, nbytes));
-    else
+    if (data) {
+        mozilla::UniquePtr<void, JS::BufferContentsDeleter> data_copy{
+            _gjs_memdup2(data, nbytes),
+            {[](void* contents, void*) { g_free(contents); }}};
+        array_buffer =
+            JS::NewExternalArrayBuffer(cx, nbytes, std::move(data_copy));
+    } else {
         array_buffer = JS::NewArrayBuffer(cx, 0);
+    }
     if (!array_buffer)
         return nullptr;
 

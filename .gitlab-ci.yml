@@ -31,7 +31,7 @@ build-alpine-image:
         --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
 
 .coverage: &coverage
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     coverage: '/^  lines.*(\d+\.\d+\%)/'
   script:
@@ -80,7 +80,7 @@ build-alpine-image:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-4126932_fedora.mozjs115-debug  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-4161430_fedora.mozjs128-debug  # pinned on purpose
   variables:
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs --setup=verbose
   except:
@@ -91,7 +91,7 @@ sanitizer_gcc:
   stage: test
   tags:
     - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     CONFIG_OPTS: -Db_sanitize=address,undefined
     TEST_OPTS: --timeout-multiplier=3
@@ -108,7 +108,7 @@ sanitizer_thread_gcc:
   allow_failure: true
   tags:
     - asan # TSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     CONFIG_OPTS: -Db_sanitize=thread
     TEST_OPTS: --timeout-multiplier=3 --setup=verbose
@@ -122,7 +122,7 @@ sanitizer_thread_gcc:
 build_maximal:
   when: on_success
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     CC: clang
     CXX: clang++
@@ -149,7 +149,7 @@ build_maximal:
 build_minimal:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128
   variables:
     CONFIG_OPTS: -Dbuildtype=release -Dreadline=disabled -Dprofiler=disabled
     TEST_OPTS: --setup=verbose
@@ -159,7 +159,7 @@ build_minimal:
 build_unity:
   <<: *build
   stage: test
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128
   variables:
     # unity-size here is forced to use an high number to check whether we can
     # join all the sources together, but should not be used in real world to
@@ -304,7 +304,7 @@ headers_check:
 iwyu:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   script:
     - test/test-ci.sh UPSTREAM_BASE
     - meson setup _build -Db_pch=false
@@ -362,7 +362,7 @@ coverage:
 iwyu-full:
   when: manual
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   script:
     - meson setup _build
     - ./tools/run_iwyu.sh
@@ -374,7 +374,7 @@ sanitizer_clang:
   stage: manual
   tags:
     - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     CC: clang
     CXX: clang++
@@ -390,7 +390,7 @@ sanitizer_clang:
 installed_tests:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
     TEST: skip
@@ -406,7 +406,7 @@ installed_tests:
 valgrind:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     USE_UNSTABLE_GNOME_PREFIX: 'true'
     TEST_OPTS: --setup=valgrind
@@ -419,7 +419,7 @@ valgrind:
 zeal_2:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     TEST_OPTS: --setup=extra_gc
   when: manual
@@ -429,7 +429,7 @@ zeal_2:
 zeal_4:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     TEST_OPTS: --setup=pre_verify
   when: manual
@@ -439,7 +439,7 @@ zeal_4:
 zeal_11:
   <<: *build
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs115-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
     TEST_OPTS: --setup=post_verify
   when: manual

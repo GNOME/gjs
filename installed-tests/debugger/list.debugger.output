@@ -41,9 +41,9 @@ db> list 0
 db> list divide
 Unknown option
 db> break 4
-Breakpoint 1 at list.debugger.js:4:8
+Breakpoint 1 at list.debugger.js:4:9
 db> c
-Breakpoint 1, divide() at list.debugger.js:4:8
+Breakpoint 1, divide() at list.debugger.js:4:9
 db> list
    1	// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
    2	// SPDX-FileCopyrightText: 2021 Mantoh Nasah Kuma <nasahnash20@gmail.com>

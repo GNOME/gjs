@@ -58,6 +58,7 @@
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ColumnNumber.h>
 #include <js/ComparisonOperators.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
@@ -126,7 +127,6 @@
 #include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
 #include <mozilla/UniquePtr.h>
-#include <mozilla/Unused.h>
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/history.h>
 #include <readline/readline.h>

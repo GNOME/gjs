@@ -1,3 +1,44 @@
+NEXT
+----
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 128, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 115.
+  Here are the highlights of the new JavaScript features.
+  For more information, look them up on MDN or devdocs.io.
+
+  * New APIs
+    + The new `Object.groupBy()` and `Map.groupBy()` static methods group the
+      elements of an iterable according to the return value of a key function.
+    + The new `Promise.withResolvers()` static method returns a Promise as well
+      as its resolve and reject functions, shorthand for a common pattern used
+      when promisifying event-based APIs.
+    + Strings have gained the `isWellFormed()` and `toWellFormed()` methods
+      which help when interoperating with strings that may have unpaired
+      Unicode surrogates. This usually does not come up in the GNOME platform.
+    + ArrayBuffers have gained the `transfer()` and `transferToFixedLength()`
+      methods, which transfer ownership of a data buffer to a new ArrayBuffer
+      object, without copying it, and invalidating ("detaching") any existing
+      references to the buffer. There is also a new property, `detached`, which
+      allows checking whether an ArrayBuffer is in the detached state.
+    + The new `Intl.Segmenter` class allows splitting a string into graphemes,
+      words, or sentences, in a locale-aware way.
+    + `Intl.NumberFormat` has gained `formatRange()` and `formatRangeToParts()`
+      methods, which allow formatting number ranges, like "3–5".
+    + `Intl.PluralRules` has gained a `selectRange()` method, which allows
+      selecting the proper plural form based on a range of numbers, like
+      "30–50 feral hogs".
+
+  * New behaviour
+    + The `Intl.NumberFormat` and `Intl.PluralRules` constructors support new
+      options: `roundingIncrement`, `roundingMode`, `roundingPriority`, and
+      `trailingZeroDisplay`.
+    + The `Intl.NumberFormat` constructor also supports the new option
+      `useGrouping`.
+  
+  * Backwards-incompatible changes
+    + The behaviour of `Date.parse()` has been changed to be more consistent
+      with other JavaScript engines. (But don't use `Date.parse()`.)
+
 Version 1.81.1
 --------------
 

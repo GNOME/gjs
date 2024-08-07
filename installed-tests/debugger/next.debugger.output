@@ -2,26 +2,26 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, a() at next.debugger.js:4:4
+Debugger statement, a() at next.debugger.js:4:5
 db> next
-a() at next.debugger.js:4:4
+a() at next.debugger.js:4:5
 db> n
-a() at next.debugger.js:5:4
+a() at next.debugger.js:5:5
 A line in b
 db> n
-a() at next.debugger.js:6:4
+a() at next.debugger.js:6:5
 A line in a
 db> n
-a() at next.debugger.js:7:0
+a() at next.debugger.js:7:1
 No value returned.
 db> n
-a() at next.debugger.js:7:0
-toplevel at next.debugger.js:13:0
+a() at next.debugger.js:7:1
+toplevel at next.debugger.js:13:1
 db> n
-toplevel at next.debugger.js:13:0
+toplevel at next.debugger.js:13:1
 db> n
-toplevel at next.debugger.js:14:0
+toplevel at next.debugger.js:14:1
 No value returned.
 db> n
-toplevel at next.debugger.js:14:0
+toplevel at next.debugger.js:14:1
 Program exited with code 0

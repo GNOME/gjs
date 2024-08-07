@@ -2,34 +2,34 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, d() at down-up.debugger.js:16:4
+Debugger statement, d() at down-up.debugger.js:16:5
 db> down
 Youngest frame selected; you cannot go down.
 db> up
-#1    c() at down-up.debugger.js:12:4
+#1    c() at down-up.debugger.js:12:5
    12	    d();
 db> up
-#2    b() at down-up.debugger.js:8:4
+#2    b() at down-up.debugger.js:8:5
    8	    c();
 db> up
-#3    a() at down-up.debugger.js:4:4
+#3    a() at down-up.debugger.js:4:5
    4	    b();
 db> up
-#4    toplevel at down-up.debugger.js:19:0
+#4    toplevel at down-up.debugger.js:19:1
    19	a();
 db> up
 Initial frame selected; you cannot go up.
 db> down
-#3    a() at down-up.debugger.js:4:4
+#3    a() at down-up.debugger.js:4:5
    4	    b();
 db> dn
-#2    b() at down-up.debugger.js:8:4
+#2    b() at down-up.debugger.js:8:5
    8	    c();
 db> dn
-#1    c() at down-up.debugger.js:12:4
+#1    c() at down-up.debugger.js:12:5
    12	    d();
 db> dn
-#0    d() at down-up.debugger.js:16:4
+#0    d() at down-up.debugger.js:16:5
    16	    debugger;
 db> c
 Program exited with code 0

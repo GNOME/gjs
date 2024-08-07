@@ -12,6 +12,7 @@
 
 #include <js/AllocPolicy.h>
 #include <js/CharacterEncoding.h>
+#include <js/ColumnNumber.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashSet
@@ -113,8 +114,10 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
                             &source_string);
     uint32_t line_num;
     JS::GetSavedFrameLine(cx, nullptr, saved_frame, &line_num);
-    uint32_t column_num;
-    JS::GetSavedFrameColumn(cx, nullptr, saved_frame, &column_num);
+    JS::TaggedColumnNumberOneOrigin tagged_column;
+    JS::GetSavedFrameColumn(cx, nullptr, saved_frame, &tagged_column);
+    JS::ColumnNumberOneOrigin column_num{tagged_column.toLimitedColumnNumber()};
+    // asserts that this isn't a WASM frame
 
     JS::RootedValue v_exc{cx};
     if (!JS::CreateError(cx, error_kind, saved_frame, source_string, line_num,
@@ -251,8 +254,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         !report->isWarning() && report->errorNumber == 137) {
         /* 137, JSMSG_OUT_OF_MEMORY */
-        g_error("GJS ran out of memory at %s: %i.",
-                report->filename,
+        g_error("GJS ran out of memory at %s: %i.", report->filename.c_str(),
                 report->lineno);
     }
 
@@ -274,6 +276,6 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
         level = G_LOG_LEVEL_WARNING;
     }
 
-    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning, report->filename,
-          report->lineno, report->message().c_str());
+    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning,
+          report->filename.c_str(), report->lineno, report->message().c_str());
 }

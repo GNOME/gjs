@@ -2,20 +2,20 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> breakpoint 4
-Breakpoint 1 at breakpoint.debugger.js:4:0
+Breakpoint 1 at breakpoint.debugger.js:4:1
 db> break 6
-Breakpoint 2 at breakpoint.debugger.js:6:4
+Breakpoint 2 at breakpoint.debugger.js:6:5
 db> b 8
-Breakpoint 3 at breakpoint.debugger.js:8:0
+Breakpoint 3 at breakpoint.debugger.js:8:1
 db> c
 1
-Breakpoint 1, toplevel at breakpoint.debugger.js:4:0
+Breakpoint 1, toplevel at breakpoint.debugger.js:4:1
 db> c
 2
-Breakpoint 3, toplevel at breakpoint.debugger.js:8:0
+Breakpoint 3, toplevel at breakpoint.debugger.js:8:1
 db> c
 3
-Breakpoint 2, foo() at breakpoint.debugger.js:6:4
+Breakpoint 2, foo() at breakpoint.debugger.js:6:5
 db> c
 Function foo
 Program exited with code 0

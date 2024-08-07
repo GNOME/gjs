@@ -2,7 +2,7 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at lastvalues.debugger.js:6:0
+Debugger statement, toplevel at lastvalues.debugger.js:6:1
 db> p a
 $1 = undefined
 db> p b

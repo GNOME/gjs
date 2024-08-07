@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 
 const ByteArray = imports.byteArray;
-const {GIMarshallingTests, GLib} = imports.gi;
+const {GIMarshallingTests, GjsTestTools, GLib} = imports.gi;
 
 describe('Uint8Array with legacy ByteArray functions', function () {
     it('can be created from a string', function () {
@@ -71,6 +71,20 @@ describe('Uint8Array with legacy ByteArray functions', function () {
     it('deals gracefully with a 0-length GLib.Bytes', function () {
         const noBytes = ByteArray.toGBytes(new Uint8Array(0));
         expect(ByteArray.fromGBytes(noBytes).length).toEqual(0);
+    });
+
+    it('deals gracefully with a non-aligned GBytes', function () {
+        const unalignedBytes = GjsTestTools.new_unaligned_bytes(48);
+        const arr = ByteArray.fromGBytes(unalignedBytes);
+        expect(arr.length).toEqual(48);
+        expect(Array.prototype.slice.call(arr, 0, 4)).toEqual([1, 2, 3, 4]);
+    });
+
+    it('deals gracefully with a GBytes in static storage', function () {
+        const staticBytes = GjsTestTools.new_static_bytes();
+        const arr = ByteArray.fromGBytes(staticBytes);
+        arr[2] = 42;
+        expect(Array.from(arr)).toEqual([104, 101, 42, 108, 111, 0]);
     });
 
     it('deals gracefully with a 0-length string', function () {

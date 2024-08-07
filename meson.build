@@ -48,7 +48,7 @@ if cc.get_id() == 'msvc'
     add_project_arguments(cxx.get_supported_arguments([
         '-utf-8',  # Use UTF-8 mode
         '/Zc:externConstexpr',  # Required for 'extern constexpr' on MSVC
-        '/Zc:preprocessor',     # Required to consume the mozjs-115 headers on MSVC
+        '/Zc:preprocessor',     # Required to consume the mozjs-128 headers on MSVC
 
         # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
         # header files commonly do
@@ -141,7 +141,7 @@ cairo = dependency('cairo', fallback: ['cairo', 'libcairo_dep'])
 cairo_gobject = dependency('cairo-gobject',
     fallback: ['cairo', 'libcairogobject_dep'])
 cairo_xlib = dependency('cairo-xlib', required: false)
-spidermonkey = dependency('mozjs-115')
+spidermonkey = dependency('mozjs-128')
 
 sysprof_capture = dependency('sysprof-capture-4',
     required: get_option('profiler'), include_type: 'system',
