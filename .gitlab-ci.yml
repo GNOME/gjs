@@ -492,3 +492,17 @@ fedora.mozjs115-debug:
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile.debug
+
+fedora.mozjs128:
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile
+    ARGS: --build-arg MOZJS_BRANCH=mozjs128 --build-arg MOZJS_BUILDDEPS=mozjs115
+
+fedora.mozjs128-debug:
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile.debug
+    ARGS: --build-arg MOZJS_BRANCH=mozjs128 --build-arg MOZJS_BUILDDEPS=mozjs115
