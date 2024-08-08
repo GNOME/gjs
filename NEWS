@@ -1,5 +1,5 @@
-NEXT
-----
+Version 1.81.2
+--------------
 
 - New JavaScript features! This version of GJS is based on SpiderMonkey 128, an
   upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 115.
@@ -34,10 +34,22 @@ NEXT
       `trailingZeroDisplay`.
     + The `Intl.NumberFormat` constructor also supports the new option
       `useGrouping`.
-  
+
   * Backwards-incompatible changes
     + The behaviour of `Date.parse()` has been changed to be more consistent
       with other JavaScript engines. (But don't use `Date.parse()`.)
+
+- Closed bugs and merge requests:
+  * Invalid search paths cause failed assertions when printing imports.gi
+    [#629, !935, Gary Li]
+  * SpiderMonkey 128 [#630, !936, !945, Philip Chimento]
+  * Pretty-printing byte array in gjs-console throws a type conversion
+    error [#434, !937, Gary Li]
+  * js: Add gjs_debug_callable() debug function [!940, Philip Chimento]
+  * build: Build Cairo from subproject if not found [!941, Philip
+    Chimento]
+  * Bump CI image to Fedora 40 [!942, Philip Chimento]
+  * CI tools updates [!943, Philip Chimento]
 
 Version 1.81.1
 --------------
@@ -52,7 +64,7 @@ Version 1.81.1
       new Gio.FileIcon({file: myFile})
 
   vs
-   
+
       Gio.FileIcon.new(myFile)
 
   Confusion between the two often lead to bug reports when confusing
