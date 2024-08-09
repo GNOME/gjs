@@ -54,13 +54,13 @@ function testOutParameter(root, value, {omit, skip, funcName = `${root}_out`} = 
 function testUninitializedOutParameter(root, defaultValue, {omit, skip, funcName = `${root}_out_uninitialized`} = {}) {
     if (omit)
         return;
-    xit("picks a reasonable default value when the function doesn't set the out parameter", function () {
+    it("picks a reasonable default value when the function doesn't set the out parameter", function () {
         if (skip)
             pending(skip);
         const [success, defaultVal] = GIMarshallingTests[funcName]();
         expect(success).toBeFalse();
         expect(defaultVal).toEqual(defaultValue);
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
+    });
 }
 
 function testInoutParameter(root, inValue, outValue,
@@ -319,9 +319,9 @@ describe('Floating point', function () {
                 expect(GIMarshallingTests[`${type}_inout`](max)).toBeCloseTo(min, 10);
             });
 
-            xit('can handle noncanonical NaN', function () {
+            it('can handle noncanonical NaN', function () {
                 expect(GIMarshallingTests[`${type}_noncanonical_nan_out`]()).toBeNaN();
-            }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
+            });
         });
     });
 });
@@ -391,10 +391,7 @@ describe('Fixed-size C array', function () {
         testReturnValue('array_fixed_int', [-1, 0, 1, 2]);
         testInParameter('array_fixed_int', [-1, 0, 1, 2]);
         testOutParameter('array_fixed', [-1, 0, 1, 2]);
-        testOutParameter('array_fixed_caller_allocated', [-1, 0, 1, 2], {
-            skip: GIMarshallingTests.array_fixed_caller_allocated_out
-                ? false : 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/370',
-        });
+        testOutParameter('array_fixed_caller_allocated', [-1, 0, 1, 2]);
         testInoutParameter('array_fixed', [-1, 0, 1, 2], [2, 1, 0, -1]);
     });
 
@@ -411,9 +408,6 @@ describe('Fixed-size C array', function () {
     });
 
     it('marshals a fixed-size struct array as caller allocated out param', function () {
-        if (!GIMarshallingTests.array_fixed_caller_allocated_struct_out)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/370');
-
         expect(GIMarshallingTests.array_fixed_caller_allocated_struct_out()).toEqual([
             jasmine.objectContaining({long_: -2, int8: -1}),
             jasmine.objectContaining({long_: 1, int8: 2}),
@@ -644,9 +638,6 @@ describe('Zero-terminated C array', function () {
 
         ['none', 'container', 'full'].forEach(transfer => {
             it(`marshals as a transfer-${transfer} in and out parameter`, function () {
-                if (transfer === 'full')
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/399');
-
                 const returnedArray =
                     GIMarshallingTests[`array_gvariant_${transfer}_in`](variantArray);
                 expect(returnedArray.map(v => v.deepUnpack())).toEqual([27, 'Hello']);
@@ -924,13 +915,13 @@ describe('GValue', function () {
         },
     });
 
-    xit('can handle noncanonical float NaN', function () {
+    it('can handle noncanonical float NaN', function () {
         expect(GIMarshallingTests.gvalue_noncanonical_nan_float()).toBeNaN();
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
+    });
 
-    xit('can handle noncanonical double NaN', function () {
+    it('can handle noncanonical double NaN', function () {
         expect(GIMarshallingTests.gvalue_noncanonical_nan_double()).toBeNaN();
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/430');
+    });
 
     it('marshals as an int64 in parameter', function () {
         expect(() => GIMarshallingTests.gvalue_int64_in(BigIntLimits.int64.max))
@@ -1030,8 +1021,6 @@ describe('GValue', function () {
     });
 
     it('array can be passed as an out argument and unpacked when zero-terminated', function () {
-        if (!GIMarshallingTests.return_gvalue_zero_terminated_array)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/397');
         expect(GIMarshallingTests.return_gvalue_zero_terminated_array())
             .toEqual([42, '42', true]);
     });
@@ -2392,8 +2381,6 @@ describe('GObject signals', function () {
 
             const signalName = `some_${type}`;
             const funcName = `emit_${type}`.replaceAll('-', '_');
-            if (!obj[funcName])
-                pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
             const signalId = obj.connect(signalName, signalCallback);
             obj[funcName]();
             obj.disconnect(signalId);
@@ -2414,9 +2401,7 @@ describe('GObject signals', function () {
             '0': 0,
             '1': -1,
             '2': -2,
-        }, !GIMarshallingTests.SignalsObject.prototype.emit_hash_table_utf8_int
-            ? 'https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409'
-            : false);
+        });
     });
 
     ['none', 'full'].forEach(transfer => {
@@ -2434,9 +2419,6 @@ describe('GObject signals', function () {
     it('with not-ref-counted boxed types with transfer full are properly handled', function () {
         // When using JS side only we can handle properly the problems of
         // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/470
-        if (!GObject.signal_lookup('some-boxed-struct-full', GIMarshallingTests.SignalsObject.$gtype))
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
-
         const callbackFunc = jasmine.createSpy('callbackFunc');
         const signalId = obj.connect('some-boxed-struct-full', callbackFunc);
         obj.emit('some-boxed-struct-full',
