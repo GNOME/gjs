@@ -6,8 +6,8 @@
     <file preprocess="xml-stripblanks">complex3.ui</file>
     <file preprocess="xml-stripblanks">complex4.ui</file>
     <file>jasmine.js</file>
-    <file>minijasmine.js</file>
     <file>minijasmine-executor.js</file>
+    <file>minijasmine.js</file>
     <file>modules/alwaysThrows.js</file>
     <file>modules/badOverrides/GIMarshallingTests.js</file>
     <file>modules/badOverrides/Gio.js</file>
@@ -17,14 +17,12 @@
     <file>modules/badOverrides2/Gio.js</file>
     <file>modules/badOverrides2/Regress.js</file>
     <file>modules/badOverrides2/WarnLib.js</file>
-    <file>modules/subBadInit/__init__.js</file>
-    <file>modules/subErrorInit/__init__.js</file>
     <file>modules/data.txt</file>
-    <file>modules/encodings.json</file>
     <file>modules/dynamic.js</file>
-    <file>modules/importmeta.js</file>
+    <file>modules/encodings.json</file>
     <file>modules/exports.js</file>
     <file>modules/foobar.js</file>
+    <file>modules/importmeta.js</file>
     <file>modules/lexicalScope.js</file>
     <file>modules/modunicode.js</file>
     <file>modules/mutualImport/a.js</file>
@@ -38,5 +36,7 @@
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>
+    <file>modules/subBadInit/__init__.js</file>
+    <file>modules/subErrorInit/__init__.js</file>
   </gresource>
 </gresources>
