@@ -7,6 +7,8 @@
 #include <stddef.h>     // for size_t
 #include <string.h>
 
+#include <vector>  // for vector
+
 #include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -502,8 +504,30 @@ static bool canonicalize_specifier(JSContext* cx,
     if (!specifier_utf8)
         return false;
 
-    GjsAutoUnref<GFile> file = g_file_new_for_uri(specifier_utf8.get());
-    GjsAutoChar canonical_specifier = g_file_get_uri(file);
+    GjsAutoChar scheme, host, path, query;
+    if (!g_uri_split(specifier_utf8.get(), G_URI_FLAGS_NONE, scheme.out(),
+                     nullptr, host.out(), nullptr, path.out(), query.out(),
+                     nullptr, nullptr))
+        return false;
+
+    if (g_strcmp0(scheme, "gi")) {
+        // canonicalize without the query portion to avoid it being encoded
+        GjsAutoChar for_file_uri =
+            g_uri_join(G_URI_FLAGS_NONE, scheme.get(), nullptr, host.get(), -1,
+                       path.get(), nullptr, nullptr);
+        GjsAutoUnref<GFile> file = g_file_new_for_uri(for_file_uri.get());
+        for_file_uri = g_file_get_uri(file);
+        host.reset();
+        path.reset();
+        if (!g_uri_split(for_file_uri.get(), G_URI_FLAGS_NONE, nullptr, nullptr,
+                         host.out(), nullptr, path.out(), nullptr, nullptr,
+                         nullptr))
+            return false;
+    }
+
+    GjsAutoChar canonical_specifier =
+        g_uri_join(G_URI_FLAGS_NONE, scheme.get(), nullptr, host.get(), -1,
+                   path.get(), query.get(), nullptr);
     JS::ConstUTF8CharsZ chars{canonical_specifier, strlen(canonical_specifier)};
     JS::RootedString new_specifier{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!new_specifier)

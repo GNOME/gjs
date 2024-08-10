@@ -163,7 +163,7 @@ class InternalModuleLoader {
         // 1) Resolve path and URI-based imports.
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
         if (uri) {
-            module = registry.get(uri.uri);
+            module = registry.get(uri.uriWithQuery);
 
             // Check if module is already loaded (relative handling)
             if (module)
@@ -175,10 +175,10 @@ class InternalModuleLoader {
 
             const [text, internal = false] = result;
 
-            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
 
-            registry.set(uri.uri, compiled);
+            registry.set(uri.uriWithQuery, compiled);
             return compiled;
         }
 
@@ -358,7 +358,7 @@ class ModuleLoader extends InternalModuleLoader {
         // 1) Resolve path and URI-based imports.
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
         if (uri) {
-            module = registry.get(uri.uri);
+            module = registry.get(uri.uriWithQuery);
 
             // Check if module is already loaded (relative handling)
             if (module)
@@ -369,16 +369,16 @@ class ModuleLoader extends InternalModuleLoader {
                 return null;
 
             // Check if module loaded while awaiting.
-            module = registry.get(uri.uri);
+            module = registry.get(uri.uriWithQuery);
             if (module)
                 return module;
 
             const [text, internal = false] = result;
 
-            const priv = new ModulePrivate(uri.uri, uri.uri, internal);
+            const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
 
-            registry.set(uri.uri, compiled);
+            registry.set(uri.uriWithQuery, compiled);
             return compiled;
         }
 
