@@ -22,6 +22,7 @@
     <file>modules/encodings.json</file>
     <file>modules/exports.js</file>
     <file>modules/foobar.js</file>
+    <file>modules/greet.js</file>
     <file>modules/importmeta.js</file>
     <file>modules/lexicalScope.js</file>
     <file>modules/modunicode.js</file>
