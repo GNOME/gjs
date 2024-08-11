@@ -38,6 +38,7 @@ overrides:
       - testWeakRef.js
       - modules/importmeta.js
       - modules/exports.js
+      - modules/greet.js
       - modules/say.js
       - modules/sideEffect4.js
     parserOptions:

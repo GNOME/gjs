@@ -23,6 +23,9 @@ import 'resource:///org/gjs/jsunit/modules/sideEffect3.js?foo=bar&maple=syrup';
 import 'resource://org/gjs/jsunit/modules/./sideEffect3.js?etag=1';
 import 'resource:///org/gjs/jsunit/modules/sideEffect3.js?etag=1';
 
+import greeting1 from 'resource:///org/gjs/jsunit/modules/greet.js?greeting=Hello&name=Test%20Code';
+import greeting2 from 'resource:///org/gjs/jsunit/modules/greet.js?greeting=Bonjour&name=Code%20de%20Test';
+
 describe('ES module imports', function () {
     it('default import', function () {
         expect($).toEqual(5);
@@ -85,6 +88,11 @@ describe('ES module imports', function () {
 
     it('can load modules with query parameters uniquely', function () {
         expect(globalThis.queryLeakyState).toEqual(2);
+    });
+
+    it('passes query parameters to imported modules in import.meta.uri', function () {
+        expect(greeting1).toEqual('Hello, Test Code');
+        expect(greeting2).toEqual('Bonjour, Code de Test');
     });
 });
 

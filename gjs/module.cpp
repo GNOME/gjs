@@ -475,9 +475,9 @@ bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
               &private_ref.toObject());
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-    JS::RootedValue v_uri(cx);
-    if (!JS_GetPropertyById(cx, module, atoms.uri(), &v_uri) ||
-        !JS_DefinePropertyById(cx, meta, atoms.url(), v_uri,
+    JS::RootedValue specifier{cx};
+    if (!JS_GetProperty(cx, module, "id", &specifier) ||
+        !JS_DefinePropertyById(cx, meta, atoms.url(), specifier,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
