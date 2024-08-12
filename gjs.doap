@@ -32,20 +32,4 @@
       <gnome:userid>pchimento</gnome:userid>
     </foaf:Person>
   </maintainer>
-
-  <maintainer>
-    <foaf:Person>
-      <foaf:name>Cosimo Cecchi</foaf:name>
-      <foaf:mbox rdf:resource="mailto:cosimoc@src.gnome.org"/>
-      <gnome:userid>cosimoc</gnome:userid>
-    </foaf:Person>
-  </maintainer>
-
-  <maintainer>
-    <foaf:Person>
-      <foaf:name>Giovanni Campagna</foaf:name>
-      <foaf:mbox rdf:resource="mailto:gcampagna@src.gnome.org"/>
-<!--      <gnome:userid>gcampagna</gnome:userid> -->
-    </foaf:Person>
-  </maintainer>
 </Project>
