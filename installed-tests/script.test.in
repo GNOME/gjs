@@ -3,5 +3,5 @@
 
 [Test]
 Type=session
-Exec=sh @installed_tests_execdir@/scripts/@name@
+Exec=sh @prefix@/@installed_tests_execdir@/scripts/@name@
 Output=TAP

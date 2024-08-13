@@ -3,5 +3,5 @@
 
 [Test]
 Type=session
-Exec=@installed_tests_execdir@/debugger-test.sh @installed_tests_execdir@/debugger/@name@
+Exec=@prefix@/@installed_tests_execdir@/debugger-test.sh @prefix@/@installed_tests_execdir@/debugger/@name@
 Output=TAP
