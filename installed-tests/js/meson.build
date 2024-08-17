@@ -165,7 +165,7 @@ foreach test : jasmine_tests
 
     test_description_subst = {
         'name': 'test@0@.js'.format(test),
-        'installed_tests_execdir': installed_tests_execdir,
+        'installed_tests_execdir': prefix / installed_tests_execdir,
     }
     configure_file(configuration: test_description_subst,
         input: '../minijasmine.test.in',
@@ -208,7 +208,7 @@ foreach test : dbus_tests
 
     dbus_test_description_subst = {
         'name': 'test@0@.js'.format(test),
-        'installed_tests_execdir': installed_tests_execdir,
+        'installed_tests_execdir': prefix / installed_tests_execdir,
     }
     configure_file(
         configuration: dbus_test_description_subst,
@@ -246,7 +246,7 @@ foreach test : modules_tests
 
     esm_test_description_subst = {
         'name': 'test@0@.js'.format(test),
-        'installed_tests_execdir': installed_tests_execdir,
+        'installed_tests_execdir': prefix / installed_tests_execdir,
     }
     configure_file(configuration: esm_test_description_subst,
         input: '../minijasmine-module.test.in',
