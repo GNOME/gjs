@@ -596,6 +596,7 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
 ### Test environment ###########################################################
 
 tests_environment = environment()
+gi_tests_builddir = meson.project_build_root() / 'subprojects' / 'gobject-introspection-tests'
 js_tests_builddir = meson.current_build_dir() / 'installed-tests' / 'js'
 libgjs_test_tools_builddir = js_tests_builddir / 'libgjstesttools'
 # GJS_PATH is empty here since we want to force the use of our own
@@ -605,11 +606,11 @@ tests_environment.set('GJS_USE_UNINSTALLED_FILES', '1')
 tests_environment.set('GJS_PATH', '')
 tests_environment.set('GJS_DEBUG_OUTPUT', 'stderr')
 tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
-    js_tests_builddir, libgjs_test_tools_builddir)
+    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
-    js_tests_builddir, libgjs_test_tools_builddir)
+    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.prepend('DYLD_LIBRARY_PATH', meson.current_build_dir(),
-    js_tests_builddir, libgjs_test_tools_builddir)
+    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
 # Workaround for https://github.com/google/sanitizers/issues/1322
 tests_environment.set('ASAN_OPTIONS', 'intercept_tls_get_addr=0')
@@ -645,6 +646,11 @@ if get_option('b_coverage')
 endif
 
 ### Tests and test setups ######################################################
+
+# External code should not error out even when building with -Werror
+gi_tests = subproject('gobject-introspection-tests',
+    default_options: ['werror=false', 'cairo=true',
+        'install_dir=@0@'.format(installed_tests_execdir)])
 
 subdir('installed-tests')
 
@@ -694,12 +700,6 @@ zeal11_environment.set('JS_GC_ZEAL', '11')
 add_test_setup('post_verify', timeout_multiplier: 2, env: zeal11_environment)
 
 ### Warn about conditions that may affect runtime ##############################
-
-if gi.version().version_compare('<1.71.0')
-    warning('''You do not have a new enough version of
-gobject-introspection to run the tests. You can still build GJS, but some
-tests will fail.''')
-endif
 
 if tests_locale == 'C' or tests_locale == 'N/A'
     warning('''Your libc does not have the C.UTF-8 locale and no other

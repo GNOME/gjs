@@ -33,6 +33,7 @@ build-alpine-image:
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     coverage: '/^  lines.*(\d+\.\d+\%)/'
   script:
     - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
@@ -82,6 +83,7 @@ build_recommended:
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:job-4161430_fedora.mozjs128-debug  # pinned on purpose
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs --setup=verbose
   except:
     - schedules
@@ -93,11 +95,11 @@ sanitizer_gcc:
     - asan # LSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     CONFIG_OPTS: -Db_sanitize=address,undefined
     TEST_OPTS: --timeout-multiplier=3
     # Override these during build, but they are overridden by meson anyways
     ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
-    USE_UNSTABLE_GNOME_PREFIX: 'true'
   except:
     - schedules
 
@@ -110,9 +112,9 @@ sanitizer_thread_gcc:
     - asan # TSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     CONFIG_OPTS: -Db_sanitize=thread
     TEST_OPTS: --timeout-multiplier=3 --setup=verbose
-    USE_UNSTABLE_GNOME_PREFIX: 'true'
   except:
     - schedules
 
@@ -124,9 +126,9 @@ build_maximal:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     CC: clang
     CXX: clang++
-    USE_UNSTABLE_GNOME_PREFIX: 'true'
     CONFIG_OPTS: >-
       -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true -Db_pch=false
     ENABLE_GTK: "yes"
@@ -151,6 +153,7 @@ build_minimal:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     CONFIG_OPTS: -Dbuildtype=release -Dreadline=disabled -Dprofiler=disabled
     TEST_OPTS: --setup=verbose
   except:
@@ -161,6 +164,7 @@ build_unity:
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     # unity-size here is forced to use an high number to check whether we can
     # join all the sources together, but should not be used in real world to
     # not to break multi-jobs compilation
@@ -213,11 +217,17 @@ cppcheck:
   script:
     - cppcheck --version
     # Create fake g-i test files, we are not analyzing them anyway
-    - mkdir -p /usr/share/gobject-introspection-1.0/tests
+    - mkdir -p subprojects/gobject-introspection-tests
     - |
-      touch /usr/share/gobject-introspection-1.0/tests/gimarshallingtests.{c,h} \
-        /usr/share/gobject-introspection-1.0/tests/regress.{c,h} \
-        /usr/share/gobject-introspection-1.0/tests/warnlib.{c,h}
+      touch \
+        subprojects/gobject-introspection-tests/annotation.{c,h} \
+        subprojects/gobject-introspection-tests/drawable.{c,h} \
+        subprojects/gobject-introspection-tests/foo.{c,h} \
+        subprojects/gobject-introspection-tests/gimarshallingtests.{c,h} \
+        subprojects/gobject-introspection-tests/regress.{c,h} \
+        subprojects/gobject-introspection-tests/regress-unix.{c,h} \
+        subprojects/gobject-introspection-tests/warnlib.{c,h} \
+        subprojects/gobject-introspection-tests/utility.{c,h}
     - ./tools/run_cppcheck.sh -q
   except:
     refs:
@@ -305,6 +315,8 @@ iwyu:
   when: on_success
   stage: source_check
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
   script:
     - test/test-ci.sh UPSTREAM_BASE
     - meson setup _build -Db_pch=false
@@ -363,6 +375,8 @@ iwyu-full:
   when: manual
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
   script:
     - meson setup _build
     - ./tools/run_iwyu.sh
@@ -376,9 +390,9 @@ sanitizer_clang:
     - asan # LSAN needs CAP_SYS_PTRACE
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     CC: clang
     CXX: clang++
-    USE_UNSTABLE_GNOME_PREFIX: 'true'
     # Override these during build, but they are overridden by meson anyways
     ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
     CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
@@ -392,6 +406,7 @@ installed_tests:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
     TEST: skip
   when: manual
@@ -408,7 +423,7 @@ valgrind:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
-    USE_UNSTABLE_GNOME_PREFIX: 'true'
+    GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=valgrind
   allow_failure: true
   when: manual
@@ -421,6 +436,7 @@ zeal_2:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=extra_gc
   when: manual
   except:
@@ -431,6 +447,7 @@ zeal_4:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=pre_verify
   when: manual
   except:
@@ -441,6 +458,7 @@ zeal_11:
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
   variables:
+    GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=post_verify
   when: manual
   except:

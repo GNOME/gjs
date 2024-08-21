@@ -19,17 +19,6 @@ do_Set_Env () {
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
 
-    if [ "$USE_UNSTABLE_GNOME_PREFIX" = "true" ]; then
-        prefix=/opt/GNOME
-        libdir=$prefix/lib64
-        export PATH=$prefix/bin:$PATH
-        export LD_LIBRARY_PATH=$libdir:$LD_LIBRARY_PATH
-        export PKG_CONFIG_PATH=$libdir/pkgconfig:$PKG_CONFIG_PATH
-        export GI_TYPELIB_PATH=$libdir/girepository-1.0:$GI_TYPELIB_PATH
-        export XDG_DATA_DIRS=$prefix/share:$XDG_DATA_DIRS
-        export ACLOCAL_PATH=$prefix/share/aclocal:$ACLOCAL_PATH
-    fi
-
     export DISPLAY="${DISPLAY:-:0}"
 }
 

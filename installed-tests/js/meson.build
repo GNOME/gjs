@@ -15,89 +15,6 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
     include_directories: top_include,
     install: get_option('installed_tests'), install_dir: installed_tests_execdir)
 
-# When building gobject-introspection as a subproject, use the variables
-# exported by the subproject to find the locations of the test sources.
-# Otherwise, get the locations from the pkgconfig file.
-if gi.type_name() == 'internal'
-    gi_subproject = subproject('gobject-introspection')
-    regress_sources = (gi_subproject.get_variable('test_regress_sources') +
-        gi_subproject.get_variable('test_regress_headers'))
-    gimarshallingtests_sources = (
-        gi_subproject.get_variable('test_marshalling_sources') +
-        gi_subproject.get_variable('test_marshalling_headers'))
-    warnlib_sources = (gi_subproject.get_variable('test_warnlib_sources') +
-        gi_subproject.get_variable('test_warnlib_headers'))
-    gi_tests_include = gi_subproject.get_variable('test_regress_incdirs')
-else
-    gidatadir = gi.get_variable(pkgconfig: 'gidatadir')
-    gi_tests = gidatadir / 'tests'
-    regress_sources = [gi_tests / 'regress.c', gi_tests / 'regress.h']
-    warnlib_sources = [gi_tests / 'warnlib.c', gi_tests / 'warnlib.h']
-    gimarshallingtests_sources = [
-        gi_tests / 'gimarshallingtests.c',
-        gi_tests / 'gimarshallingtests.h',
-    ]
-    gi_tests_include = include_directories(gi_tests)
-endif
-
-test_gir_extra_c_args = []
-test_gir_warning_c_args = []
-
-if cc.get_argument_syntax() == 'msvc'
-  # We need to ensure the symbols in the test DLLs export in clang-cl builds
-  test_gir_extra_c_args += ['-D_GI_EXTERN=__declspec(dllexport)extern']
-else
-  # These consist of external code (from gobject-introspection) so they should not
-  # error out even when building with -Werror
-  test_gir_warning_c_args += ['-Wno-error']
-endif
-
-regress_dependencies = [glib, gobject, gio, cairo, cairo_gobject]
-regress_gir_includes = ['Gio-2.0', 'cairo-1.0']
-regress_gir_c_args = test_gir_extra_c_args
-
-libregress = library('regress', regress_sources,
-    c_args: regress_gir_c_args + test_gir_warning_c_args,
-    include_directories: gi_tests_include,
-    dependencies: regress_dependencies, install: get_option('installed_tests'),
-    install_dir: installed_tests_execdir)
-regress_gir = gnome.generate_gir(libregress, includes: regress_gir_includes,
-    sources: regress_sources, namespace: 'Regress', nsversion: '1.0',
-    identifier_prefix: 'Regress', symbol_prefix: 'regress_',
-    extra_args: ['--warn-all'] + regress_gir_c_args,
-    install: get_option('installed_tests'), install_gir: false,
-    install_dir_typelib: installed_tests_execdir,
-    fatal_warnings: get_option('werror'))
-regress_typelib = regress_gir[1]
-
-libwarnlib = library('warnlib', warnlib_sources,
-    c_args: test_gir_warning_c_args + test_gir_extra_c_args,
-    include_directories: gi_tests_include,
-    dependencies: [glib, gobject, gio],
-    install: get_option('installed_tests'),
-    install_dir: installed_tests_execdir)
-# This should have --warn-all turned off, but there is currently no way to do so
-# in gnome.generate_gir(). See https://github.com/mesonbuild/meson/issues/5876
-warnlib_gir = gnome.generate_gir(libwarnlib, includes: ['Gio-2.0'],
-    sources: warnlib_sources, namespace: 'WarnLib', nsversion: '1.0',
-    symbol_prefix: 'warnlib_', header: 'warnlib.h',
-    install: get_option('installed_tests'), install_gir: false,
-    install_dir_typelib: installed_tests_execdir)
-warnlib_typelib = warnlib_gir[1]
-
-libgimarshallingtests = library('gimarshallingtests',
-    gimarshallingtests_sources, dependencies: [glib, gobject, gio],
-    include_directories: gi_tests_include,
-    c_args:  test_gir_extra_c_args + test_gir_warning_c_args,
-    install: get_option('installed_tests'), install_dir: installed_tests_execdir)
-gimarshallingtests_gir = gnome.generate_gir(libgimarshallingtests,
-    includes: ['Gio-2.0'], sources: gimarshallingtests_sources,
-    namespace: 'GIMarshallingTests', nsversion: '1.0',
-    symbol_prefix: 'gi_marshalling_tests_', fatal_warnings: get_option('werror'),
-    install: get_option('installed_tests'), install_gir: false,
-    install_dir_typelib: installed_tests_execdir)
-gimarshallingtests_typelib = gimarshallingtests_gir[1]
-
 subdir('libgjstesttools')
 
 jasmine_tests = [
@@ -152,9 +69,9 @@ tests_dependencies = [
     gschemas_compiled,
     gjs_private_typelib,
     gjstest_tools_typelib,
-    gimarshallingtests_typelib,
-    regress_typelib,
-    warnlib_typelib,
+    gi_tests.get_variable('gimarshallingtests_typelib'),
+    gi_tests.get_variable('regress_typelib'),
+    gi_tests.get_variable('warnlib_typelib'),
 ]
 
 foreach test : jasmine_tests

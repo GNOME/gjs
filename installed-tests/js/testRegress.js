@@ -1234,8 +1234,6 @@ describe('Life, the Universe and Everything', function () {
             });
 
             it('signal with object with full transport gets correct arguments', function (done) {
-                if (!GObject.signal_lookup('sig-with-obj-full', Regress.TestObj.$gtype))
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
                 o.connect('sig-with-obj-full', (self, objectParam) => {
                     expect(objectParam.int).toEqual(5);
                     done();
@@ -1244,9 +1242,6 @@ describe('Life, the Universe and Everything', function () {
             });
 
             it('signal with object with full transport gets correct arguments from JS', function (done) {
-                if (!GObject.signal_lookup('sig-with-obj-full', Regress.TestObj.$gtype))
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
-
                 o.connect('sig-with-obj-full', (self, objectParam) => {
                     expect(objectParam.int).toEqual(55);
                     done();
@@ -1316,9 +1311,6 @@ describe('Life, the Universe and Everything', function () {
             });
 
             it('signal with GStrv parameter and transfer full is properly handled from JS', function (done) {
-                if (!GObject.signal_lookup('sig-with-strv-full', Regress.TestObj.$gtype))
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
-
                 o.connect('sig-with-strv-full', (signalObj, signalArray, shouldBeUndefined) => {
                     expect(signalObj).toBe(o);
                     expect(shouldBeUndefined).not.toBeDefined();
@@ -1329,8 +1321,6 @@ describe('Life, the Universe and Everything', function () {
             });
 
             xit('signal with GStrv parameter and transfer full is properly handled', function (done) {
-                if (!o.emit_sig_with_gstrv_full)
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/409');
                 o.connect('sig-with-strv-full', (signalObj, signalArray, shouldBeUndefined) => {
                     expect(signalObj).toBe(o);
                     expect(shouldBeUndefined).not.toBeDefined();
