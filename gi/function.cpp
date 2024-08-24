@@ -25,6 +25,7 @@
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
+#include <js/HeapAPI.h>  // for RuntimeHeapIsCollecting
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT
 #include <js/PropertySpec.h>
@@ -34,8 +35,8 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
-#include <jsapi.h>        // for HandleValueArray
-#include <jspubtd.h>      // for JSProtoKey
+#include <jsapi.h>    // for HandleValueArray
+#include <jspubtd.h>  // for JSProtoKey
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
@@ -310,7 +311,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     JSContext* context = this->context();
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    if (G_UNLIKELY(gjs->sweeping())) {
+    if (JS::RuntimeHeapIsCollecting()) {
         warn_about_illegal_js_callback(
             "during garbage collection",
             "destroying a Clutter actor or GTK widget with ::destroy signal "

@@ -943,36 +943,23 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
 }
 
 void GjsContextPrivate::set_finalize_status(JSFinalizeStatus status) {
-    // Implementation note for mozjs-24:
+    // Implementation note for mozjs-128:
     //
-    // Sweeping happens in two phases, in the first phase all GC things from the
-    // allocation arenas are queued for sweeping, then the actual sweeping
-    // happens. The first phase is marked by JSFINALIZE_GROUP_START, the second
-    // one by JSFINALIZE_GROUP_END, and finally we will see
-    // JSFINALIZE_COLLECTION_END at the end of all GC. (see jsgc.cpp,
+    // Sweeping happens in three phases:
+    // 1st phase (JSFINALIZE_GROUP_PREPARE): the collector prepares to sweep a
+    // group of zones. 2nd phase (JSFINALIZE_GROUP_START): weak references to
+    // unmarked things have been removed, but no GC thing has been swept. 3rd
+    // Phase (JSFINALIZE_GROUP_END): all dead GC things for a group of zones
+    // have been swept. The above repeats for each sweep group.
+    // JSFINALIZE_COLLECTION_END occurs at the end of all GC. (see jsgc.cpp,
     // BeginSweepPhase/BeginSweepingZoneGroup and SweepPhase, all called from
     // IncrementalCollectSlice).
     //
     // Incremental GC muddies the waters, because BeginSweepPhase is always run
     // to entirety, but SweepPhase can be run incrementally and mixed with JS
     // code runs or even native code, when MaybeGC/IncrementalGC return.
-    //
-    // Luckily for us, objects are treated specially, and are not really queued
-    // for deferred incremental finalization (unless they are marked for
-    // background sweeping). Instead, they are finalized immediately during
-    // phase 1, so the following guarantees are true (and we rely on them):
-    // - phase 1 of GC will begin and end in the same JSAPI call (i.e., our
-    //   callback will be called with GROUP_START and the triggering JSAPI call
-    //   will not return until we see a GROUP_END)
-    // - object finalization will begin and end in the same JSAPI call
-    // - therefore, if there is a finalizer frame somewhere in the stack,
-    //   GjsContextPrivate::sweeping() will return true.
-    //
-    // Comments in mozjs-24 imply that this behavior might change in the future,
-    // but it hasn't changed in mozilla-central as of 2014-02-23. In addition to
-    // that, the mozilla-central version has a huge comment in a different
-    // portion of the file, explaining why finalization of objects can't be
-    // mixed with JS code, so we can probably rely on this behavior.
+    // After GROUP_START, the collector may yield to the mutator meaning JS code
+    // can run between the callback for GROUP_START and GROUP_END.
 
     int64_t now = 0;
 
@@ -981,7 +968,6 @@ void GjsContextPrivate::set_finalize_status(JSFinalizeStatus status) {
 
     switch (status) {
         case JSFINALIZE_GROUP_PREPARE:
-            m_in_gc_sweep = true;
             m_sweep_begin_time = now;
             break;
         case JSFINALIZE_GROUP_START:
@@ -996,7 +982,6 @@ void GjsContextPrivate::set_finalize_status(JSFinalizeStatus status) {
             m_group_sweep_begin_time = 0;
             break;
         case JSFINALIZE_COLLECTION_END:
-            m_in_gc_sweep = false;
             if (m_profiler && m_sweep_begin_time != 0) {
                 _gjs_profiler_add_mark(m_profiler, m_sweep_begin_time,
                                        now - m_sweep_begin_time, "GJS", "Sweep",
