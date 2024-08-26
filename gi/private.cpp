@@ -349,6 +349,12 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
     GTypeQuery query;
     g_type_query(parent_priv->gtype(), &query);
 
+    if (G_UNLIKELY(
+            g_type_test_flags(parent_priv->gtype(), G_TYPE_FLAG_FINAL))) {
+        gjs_throw(cx, "Cannot inherit from a final type");
+        return false;
+    }
+
     GTypeInfo type_info = gjs_gobject_class_info;
     type_info.class_size = query.class_size;
     type_info.instance_size = query.instance_size;
