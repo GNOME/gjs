@@ -347,12 +347,7 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
     g_assert(parent_priv);
 
     GTypeQuery query;
-    parent_priv->type_query_dynamic_safe(&query);
-    if (G_UNLIKELY(query.type == 0)) {
-        gjs_throw(cx,
-                  "Cannot inherit from a non-gjs dynamic type [bug 687184]");
-        return false;
-    }
+    g_type_query(parent_priv->gtype(), &query);
 
     GTypeInfo type_info = gjs_gobject_class_info;
     type_info.class_size = query.class_size;

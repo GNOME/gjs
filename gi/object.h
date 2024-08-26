@@ -104,8 +104,6 @@ class ObjectBase
     [[nodiscard]] bool is_custom_js_class();
 
  public:
-    void type_query_dynamic_safe(GTypeQuery* query);
-
     GJS_JSAPI_RETURN_CONVENTION
     static bool typecheck(JSContext* cx, JS::HandleObject obj,
                           GIObjectInfo* expected_info, GType expected_gtype);
