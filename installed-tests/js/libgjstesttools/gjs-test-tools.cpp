@@ -7,8 +7,6 @@
 #include <mutex>
 #include <unordered_set>
 
-#include "gjs/jsapi-util.h"
-
 #ifdef G_OS_UNIX
 #    include <errno.h>
 #    include <fcntl.h> /* for FD_CLOEXEC */
@@ -17,6 +15,8 @@
 
 #    include <glib-unix.h> /* for g_unix_open_pipe */
 #endif
+
+#include "gjs/auto.h"
 
 static std::atomic<GObject*> s_tmp_object = nullptr;
 static GWeakRef s_tmp_weak;
@@ -135,8 +135,8 @@ static RefThreadData* ref_thread_data_new(GObject* object, int interval,
 }
 
 static void* ref_thread_func(void* data) {
-    GjsAutoPointer<RefThreadData, void, g_free> ref_data =
-        static_cast<RefThreadData*>(data);
+    Gjs::AutoPointer<RefThreadData, void, g_free> ref_data{
+        static_cast<RefThreadData*>(data)};
 
     if (FinalizedObjectsLocked()->count(ref_data->object))
         return nullptr;

@@ -24,6 +24,7 @@
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -80,8 +81,8 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
     if (proto_fs && !JS_DefineFunctions(context, prototype, proto_fs))
         return false;
 
-    GjsAutoChar full_function_name =
-        g_strdup_printf("%s_%s", ns_name, class_name);
+    Gjs::AutoChar full_function_name{
+        g_strdup_printf("%s_%s", ns_name, class_name)};
     JSFunction* constructor_fun =
         JS_NewFunction(context, constructor_native, nargs, JSFUN_CONSTRUCTOR,
                        full_function_name);
@@ -199,8 +200,10 @@ bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
                                  const char* func_namespace, JSNative getter,
                                  JS::HandleValue getter_slot, JSNative setter,
                                  JS::HandleValue setter_slot, unsigned flags) {
-    GjsAutoChar getter_name = g_strconcat(func_namespace, "_get::", prop_name, nullptr);
-    GjsAutoChar setter_name = g_strconcat(func_namespace, "_set::", prop_name, nullptr);
+    Gjs::AutoChar getter_name{
+        g_strconcat(func_namespace, "_get::", prop_name, nullptr)};
+    Gjs::AutoChar setter_name{
+        g_strconcat(func_namespace, "_set::", prop_name, nullptr)};
 
     JS::RootedObject getter_obj(
         cx, define_native_accessor_wrapper(cx, getter, 0, getter_name,

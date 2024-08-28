@@ -26,6 +26,7 @@
 #include <jsapi.h>  // for JS_WrapObject
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/global.h"
@@ -57,7 +58,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "readline", args, "|s", "prompt", &prompt))
         return false;
 
-    GjsAutoChar line;
+    Gjs::AutoChar line;
     do {
         const char* real_prompt = prompt ? prompt.get() : "db> ";
 #ifdef HAVE_READLINE_READLINE_H

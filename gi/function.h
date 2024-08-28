@@ -25,7 +25,9 @@
 #include <js/Value.h>
 
 #include "gi/closure.h"
-#include "gjs/jsapi-util.h"
+#include "gi/info.h"
+#include "gjs/auto.h"
+#include "gjs/gerror-result.h"
 #include "gjs/macros.h"
 
 namespace JS {
@@ -39,9 +41,6 @@ typedef enum {
     PARAM_CALLBACK,
     PARAM_UNKNOWN,
 } GjsParamType;
-
-using GjsAutoGClosure =
-    GjsAutoPointer<GClosure, GClosure, g_closure_unref, g_closure_ref>;
 
 struct GjsCallbackTrampoline : public Gjs::Closure {
     GJS_JSAPI_RETURN_CONVENTION static GjsCallbackTrampoline* create(
@@ -82,9 +81,9 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     void warn_about_illegal_js_callback(const char* when, const char* reason,
                                         bool dump_stack);
 
-    static std::vector<GjsAutoGClosure> s_forever_closure_list;
+    static std::vector<Gjs::AutoGClosure> s_forever_closure_list;
 
-    GjsAutoCallableInfo m_info;
+    GI::AutoCallableInfo m_info;
     ffi_closure* m_closure = nullptr;
     std::unique_ptr<GjsParamType[]> m_param_types;
     ffi_cif m_cif;
@@ -95,15 +94,15 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
 // Stack allocation only!
 class GjsFunctionCallState {
-    GjsAutoCppPointer<GIArgument[]> m_in_cvalues;
-    GjsAutoCppPointer<GIArgument[]> m_out_cvalues;
-    GjsAutoCppPointer<GIArgument[]> m_inout_original_cvalues;
+    Gjs::AutoCppPointer<GIArgument[]> m_in_cvalues;
+    Gjs::AutoCppPointer<GIArgument[]> m_out_cvalues;
+    Gjs::AutoCppPointer<GIArgument[]> m_inout_original_cvalues;
 
  public:
     std::unordered_set<GIArgument*> ignore_release;
     JS::RootedObject instance_object;
     JS::RootedVector<JS::Value> return_values;
-    GjsAutoError local_error;
+    Gjs::AutoError local_error;
     GICallableInfo* info;
     uint8_t gi_argc = 0;
     uint8_t processed_c_args = 0;
@@ -159,7 +158,7 @@ class GjsFunctionCallState {
         return first_arg_offset() + processed_c_args;
     }
 
-    [[nodiscard]] GjsAutoChar display_name() {
+    [[nodiscard]] Gjs::AutoChar display_name() {
         GIBaseInfo* container = g_base_info_get_container(info);  // !owned
         if (container) {
             return g_strdup_printf(

@@ -33,6 +33,7 @@
 #include <jsapi.h>       // for JS_IdToValue, JS_InitReflectParse
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/global.h"
@@ -90,9 +91,9 @@ class GjsBaseGlobal {
     GJS_JSAPI_RETURN_CONVENTION
     static bool run_bootstrap(JSContext* cx, const char* bootstrap_script,
                               JS::HandleObject global) {
-        GjsAutoChar uri = g_strdup_printf(
+        Gjs::AutoChar uri{g_strdup_printf(
             "resource:///org/gnome/gjs/modules/script/_bootstrap/%s.js",
-            bootstrap_script);
+            bootstrap_script)};
 
         JSAutoRealm ar(cx, global);
 

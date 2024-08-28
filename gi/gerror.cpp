@@ -30,10 +30,13 @@
 #include "gi/boxed.h"
 #include "gi/enumeration.h"
 #include "gi/gerror.h"
+#include "gi/info.h"
 #include "gi/repo.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/error-types.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
@@ -126,7 +129,7 @@ bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(context, argc, vp, rec, self);
 
-    GjsAutoChar descr;
+    Gjs::AutoChar descr;
 
     // An error created via `new GLib.Error` will have a Boxed* private pointer,
     // not an Error*, so we can't call regular to_string() on it.
@@ -219,8 +222,8 @@ bool ErrorPrototype::get_parent_proto(JSContext* cx,
                                       JS::MutableHandleObject proto) const {
     g_irepository_require(nullptr, "GLib", "2.0", GIRepositoryLoadFlags(0),
                           nullptr);
-    GjsAutoStructInfo glib_error_info =
-        g_irepository_find_by_name(nullptr, "GLib", "Error");
+    GI::AutoStructInfo glib_error_info{
+        g_irepository_find_by_name(nullptr, "GLib", "Error")};
     proto.set(gjs_lookup_generic_prototype(cx, glib_error_info));
     return !!proto;
 }
@@ -365,8 +368,8 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* context, GError* gerror) {
     if (!info) {
         /* We don't have error domain metadata */
         /* Marshal the error as a plain GError */
-        GjsAutoBaseInfo glib_boxed =
-            g_irepository_find_by_name(nullptr, "GLib", "Error");
+        GI::AutoBaseInfo glib_boxed{
+            g_irepository_find_by_name(nullptr, "GLib", "Error")};
         return BoxedInstance::new_for_c_struct(context, glib_boxed, gerror);
     }
 
@@ -475,7 +478,7 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
     if (!message)
         return nullptr;
 
-    GjsAutoTypeClass<GEnumClass> klass(GJS_TYPE_JS_ERROR);
+    Gjs::AutoTypeClass<GEnumClass> klass{GJS_TYPE_JS_ERROR};
     const GEnumValue *value = g_enum_get_value_by_name(klass, name.get());
     int code;
     if (value)
@@ -533,7 +536,7 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
  *
  * Returns: false, for convenience in returning from the calling function.
  */
-bool gjs_throw_gerror(JSContext* cx, GjsAutoError const& error) {
+bool gjs_throw_gerror(JSContext* cx, Gjs::AutoError const& error) {
     // return false even if the GError is null, as presumably something failed
     // in the calling code, and the caller expects to throw.
     g_return_val_if_fail(error, false);

@@ -38,6 +38,7 @@
 #include "gi/function.h"
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
+#include "gi/info.h"
 #include "gi/interface.h"
 #include "gi/ns.h"
 #include "gi/object.h"
@@ -45,7 +46,9 @@
 #include "gi/repo.h"
 #include "gi/union.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -94,8 +97,8 @@ static bool resolve_namespace_object(JSContext* context,
         return false;
     }
 
-    GjsAutoPointer<GList, GList, strlist_free> versions =
-        g_irepository_enumerate_versions(nullptr, ns_name.get());
+    Gjs::AutoPointer<GList, GList, strlist_free> versions{
+        g_irepository_enumerate_versions(nullptr, ns_name.get())};
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
         !g_irepository_is_registered(nullptr, ns_name.get(), nullptr) &&
@@ -105,7 +108,7 @@ static bool resolve_namespace_object(JSContext* context,
                       ns_name.get(), nversions))
         return false;
 
-    GjsAutoError error;
+    Gjs::AutoError error;
     // If resolving Gio, load the platform-specific typelib first, so that
     // GioUnix/GioWin32 GTypes get looked up in there with higher priority,
     // instead of in Gio.
@@ -116,8 +119,8 @@ static bool resolve_namespace_object(JSContext* context,
 #    else   // G_OS_WIN32
         const char* platform = "Win32";
 #    endif  // G_OS_UNIX/G_OS_WIN32
-        GjsAutoChar platform_specific =
-            g_strconcat(ns_name.get(), platform, nullptr);
+        Gjs::AutoChar platform_specific{
+            g_strconcat(ns_name.get(), platform, nullptr)};
         if (!g_irepository_require(nullptr, platform_specific, version.get(),
                                    GIRepositoryLoadFlags(0), &error)) {
             gjs_throw(context, "Failed to require %s %s: %s",
@@ -280,7 +283,7 @@ static bool gjs_value_from_constant_info(JSContext* cx, GIConstantInfo* info,
     GIArgument garg;
     g_constant_info_get_value(info, &garg);
 
-    GjsAutoTypeInfo type_info = g_constant_info_get_type(info);
+    GI::AutoTypeInfo type_info{g_constant_info_get_type(info)};
 
     bool ok = gjs_value_from_gi_argument(cx, value, type_info, &garg, true);
 
@@ -755,7 +758,7 @@ JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
 // with the GIBaseInfo that involves handing a JS object to the user. Otherwise,
 // use g_irepository_find_by_gtype() directly.
 GIBaseInfo* gjs_lookup_gtype(GIRepository* repo, GType gtype) {
-    GjsAutoBaseInfo retval = g_irepository_find_by_gtype(repo, gtype);
+    GI::AutoBaseInfo retval{g_irepository_find_by_gtype(repo, gtype)};
     if (!retval)
         return nullptr;
 

@@ -43,6 +43,8 @@
 #include <mozilla/Span.h>
 #include <mozilla/UniquePtr.h>
 
+#include "gjs/auto.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -55,7 +57,7 @@ static void gfree_arraybuffer_contents(void* contents, void*) {
 }
 
 static std::nullptr_t gjs_throw_type_error_from_gerror(
-    JSContext* cx, GjsAutoError const& error) {
+    JSContext* cx, Gjs::AutoError const& error) {
     g_return_val_if_fail(error, nullptr);
     gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr, "%s", error->message);
     return nullptr;
@@ -77,9 +79,9 @@ GJS_JSAPI_RETURN_CONVENTION
 static JSString* gjs_lossy_decode_from_uint8array_slow(
     JSContext* cx, const uint8_t* bytes, size_t bytes_len,
     const char* from_codeset) {
-    GjsAutoError error;
-    GjsAutoUnref<GCharsetConverter> converter(
-        g_charset_converter_new(UTF16_CODESET, from_codeset, &error));
+    Gjs::AutoError error;
+    Gjs::AutoUnref<GCharsetConverter> converter{
+        g_charset_converter_new(UTF16_CODESET, from_codeset, &error)};
 
     // This should only throw if an encoding is not available.
     if (error)
@@ -122,7 +124,7 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
     std::u16string output_str = u"";
 
     do {
-        GjsAutoError local_error;
+        Gjs::AutoError local_error;
 
         // Create a buffer to convert into.
         std::unique_ptr<char[]> buffer = std::make_unique<char[]>(buffer_size);
@@ -210,11 +212,11 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
     }
 
     size_t bytes_written, bytes_read;
-    GjsAutoError error;
+    Gjs::AutoError error;
 
-    GjsAutoChar bytes =
-        g_convert(reinterpret_cast<const char*>(input), input_len,
-                  UTF16_CODESET, encoding, &bytes_read, &bytes_written, &error);
+    Gjs::AutoChar bytes{g_convert(reinterpret_cast<const char*>(input),
+                                  input_len, UTF16_CODESET, encoding,
+                                  &bytes_read, &bytes_written, &error)};
 
     if (error)
         return gjs_throw_type_error_from_gerror(cx, error);
@@ -239,7 +241,7 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
         g_ascii_strcasecmp(encoding, "utf8") == 0)
         return true;
 
-    GjsAutoChar stripped(g_strdup(encoding));
+    Gjs::AutoChar stripped{g_strdup(encoding)};
     g_strstrip(stripped);  // modifies in place
     return g_ascii_strcasecmp(stripped, "utf-8") == 0 ||
            g_ascii_strcasecmp(stripped, "utf8") == 0;
@@ -402,8 +404,8 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
         array_buffer =
             JS::NewArrayBufferWithContents(cx, utf8_len, std::move(utf8));
     } else {
-        GjsAutoError error;
-        GjsAutoChar encoded = nullptr;
+        Gjs::AutoError error;
+        Gjs::AutoChar encoded;
         size_t bytes_written;
 
         /* Scope for AutoCheckCannotGC, will crash if a GC is triggered

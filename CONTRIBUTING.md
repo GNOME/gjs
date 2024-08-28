@@ -264,7 +264,8 @@ other programming languages.
 GJS was originally written in C, and the current state of the C++ code
 reflects that.
 Gradually, we want to move the code to a more idiomatic C++ style, using
-smart pointer classes such as `GjsAutoChar` to help avoid memory leaks.
+smart pointer classes such as `Gjs::AutoChar` to help avoid memory
+leaks.
 Even farther in the future, we expect the Rust bindings for SpiderMonkey
 to mature as Mozilla's Servo browser engine progresses, and we may
 consider rewriting part or all of GJS in Rust.

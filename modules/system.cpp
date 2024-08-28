@@ -30,6 +30,7 @@
 
 #include "gi/object.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -54,7 +55,7 @@ gjs_address_of(JSContext *context,
                              "object", &target_obj))
         return false;
 
-    GjsAutoChar pointer_string = g_strdup_printf("%p", target_obj.get());
+    Gjs::AutoChar pointer_string{g_strdup_printf("%p", target_obj.get())};
     return gjs_string_from_utf8(context, pointer_string, argv.rval());
 }
 
@@ -74,7 +75,7 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
         return false;
     }
 
-    GjsAutoChar pointer_string = g_strdup_printf("%p", obj);
+    Gjs::AutoChar pointer_string{g_strdup_printf("%p", obj)};
     return gjs_string_from_utf8(cx, pointer_string, argv.rval());
 }
 
@@ -126,7 +127,7 @@ gjs_dump_heap(JSContext *cx,
               JS::Value *vp)
 {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-    GjsAutoChar filename;
+    Gjs::AutoChar filename;
 
     if (!gjs_parse_call_args(cx, "dumpHeap", args, "|F", "filename", &filename))
         return false;
@@ -192,9 +193,9 @@ static bool write_gc_info(const char16_t* buf, uint32_t len, void* data) {
     auto* fp = static_cast<FILE*>(data);
 
     long bytes_written;  // NOLINT(runtime/int): the GLib API requires this type
-    GjsAutoChar utf8 = g_utf16_to_utf8(reinterpret_cast<const uint16_t*>(buf),
+    Gjs::AutoChar utf8{g_utf16_to_utf8(reinterpret_cast<const uint16_t*>(buf),
                                        len, /* items_read = */ nullptr,
-                                       &bytes_written, /* error = */ nullptr);
+                                       &bytes_written, /* error = */ nullptr)};
     if (!utf8)
         utf8 = g_strdup("<invalid string>");
 
@@ -205,7 +206,7 @@ static bool write_gc_info(const char16_t* buf, uint32_t len, void* data) {
 static bool gjs_dump_memory_info(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    GjsAutoChar filename;
+    Gjs::AutoChar filename;
     if (!gjs_parse_call_args(cx, "dumpMemoryInfo", args, "|F", "filename",
                              &filename))
         return false;

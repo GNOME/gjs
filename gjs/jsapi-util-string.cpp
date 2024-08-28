@@ -34,13 +34,15 @@
 #include <mozilla/CheckedInt.h>
 #include <mozilla/Span.h>
 
+#include "gjs/auto.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/misc.h"  // for _gjs_memdup2
 
 class JSLinearString;
 
-GjsAutoChar gjs_hyphen_to_underscore(const char* str) {
+Gjs::AutoChar gjs_hyphen_to_underscore(const char* str) {
     char *s = g_strdup(str);
     char *retval = s;
     while (*(s++) != '\0') {
@@ -50,8 +52,8 @@ GjsAutoChar gjs_hyphen_to_underscore(const char* str) {
     return retval;
 }
 
-GjsAutoChar gjs_hyphen_to_camel(const char* str) {
-    GjsAutoChar retval = static_cast<char*>(g_malloc(strlen(str) + 1));
+Gjs::AutoChar gjs_hyphen_to_camel(const char* str) {
+    Gjs::AutoChar retval{static_cast<char*>(g_malloc(strlen(str) + 1))};
     const char* input_iter = str;
     char* output_iter = retval.get();
     bool uppercase_next = false;
@@ -204,12 +206,9 @@ gjs_string_from_utf8_n(JSContext             *cx,
     return !!str;
 }
 
-bool
-gjs_string_to_filename(JSContext      *context,
-                       const JS::Value filename_val,
-                       GjsAutoChar    *filename_string)
-{
-    GjsAutoError error;
+bool gjs_string_to_filename(JSContext* context, const JS::Value filename_val,
+                            Gjs::AutoChar* filename_string) {
+    Gjs::AutoError error;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
@@ -233,11 +232,11 @@ gjs_string_from_filename(JSContext             *context,
                          JS::MutableHandleValue value_p)
 {
     gsize written;
-    GjsAutoError error;
+    Gjs::AutoError error;
 
     error = NULL;
-    GjsAutoChar utf8_string = g_filename_to_utf8(filename_string, n_bytes,
-                                                 nullptr, &written, &error);
+    Gjs::AutoChar utf8_string{g_filename_to_utf8(filename_string, n_bytes,
+                                                 nullptr, &written, &error)};
     if (error) {
         gjs_throw(context,
                   "Could not convert UTF-8 string '%s' to a filename: '%s'",
@@ -335,7 +334,7 @@ gjs_string_to_ucs4(JSContext       *cx,
         return true;
 
     size_t len;
-    GjsAutoError error;
+    Gjs::AutoError error;
 
     if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, ucs4_string_p, len_p);
@@ -390,7 +389,7 @@ gjs_string_from_ucs4(JSContext             *cx,
     }
 
     long u16_string_length;
-    GjsAutoError error;
+    Gjs::AutoError error;
 
     gunichar2* u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, nullptr,
                                             &u16_string_length, &error);

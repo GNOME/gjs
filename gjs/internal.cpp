@@ -34,8 +34,10 @@
 #include <jsapi.h>        // for JS_NewPlainObject, JS_ObjectIsFunction
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, SetFunctionNativeReserved
 
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/internal.h"
 #include "gjs/jsapi-util-args.h"
@@ -66,13 +68,13 @@ union Utf8Unit;
  * @returns whether an error occurred while loading or evaluating the module.
  */
 bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
-    GjsAutoChar full_path(g_strdup_printf(
+    Gjs::AutoChar full_path(g_strdup_printf(
         "resource:///org/gnome/gjs/modules/internal/%s.js", identifier));
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Loading internal module '%s' (%s)",
               identifier, full_path.get());
 
-    GjsAutoChar script;
+    Gjs::AutoChar script;
     size_t script_len;
     if (!gjs_load_internal_source(cx, full_path, script.out(), &script_len))
         return false;
@@ -309,8 +311,8 @@ bool gjs_internal_get_source_map_registry(JSContext* cx, unsigned argc,
 
 bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     using AutoHashTable =
-        GjsAutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
-    using AutoURI = GjsAutoPointer<GUri, GUri, g_uri_unref>;
+        Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
+    using AutoURI = Gjs::AutoPointer<GUri, GUri, g_uri_unref>;
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     JS::RootedString string_arg(cx);
@@ -321,7 +323,7 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!uri)
         return false;
 
-    GjsAutoError error;
+    Gjs::AutoError error;
     AutoURI parsed = g_uri_parse(uri.get(), G_URI_FLAGS_NONE, &error);
     if (!parsed) {
         Gjs::AutoMainRealm ar{cx};
@@ -386,8 +388,8 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!path)
         return false;
 
-    GjsAutoChar no_query_str =
-        g_uri_to_string_partial(parsed, G_URI_HIDE_QUERY);
+    Gjs::AutoChar no_query_str{
+        g_uri_to_string_partial(parsed, G_URI_HIDE_QUERY)};
     JS::RootedString uri_no_query{cx, JS_NewStringCopyZ(cx, no_query_str)};
     if (!uri_no_query)
         return false;
@@ -417,11 +419,11 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
                              "uri", &uri, "relativePath", &relative_path))
         return handle_wrong_args(cx);
 
-    GjsAutoUnref<GFile> module_file = g_file_new_for_uri(uri.get());
+    Gjs::AutoUnref<GFile> module_file{g_file_new_for_uri(uri.get())};
 
     if (module_file) {
-        GjsAutoChar output_uri = g_uri_resolve_relative(
-            uri.get(), relative_path.get(), G_URI_FLAGS_NONE, nullptr);
+        Gjs::AutoChar output_uri{g_uri_resolve_relative(
+            uri.get(), relative_path.get(), G_URI_FLAGS_NONE, nullptr)};
 
         JS::ConstUTF8CharsZ uri_chars(output_uri, strlen(output_uri));
         JS::RootedString retval(cx, JS_NewStringCopyUTF8Z(cx, uri_chars));
@@ -443,11 +445,11 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
     if (!gjs_parse_call_args(cx, "loadResourceOrFile", args, "s", "uri", &uri))
         return handle_wrong_args(cx);
 
-    GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
+    Gjs::AutoUnref<GFile> file{g_file_new_for_uri(uri.get())};
 
     char* contents;
     size_t length;
-    GjsAutoError error;
+    Gjs::AutoError error;
     if (!g_file_load_contents(file, /* cancellable = */ nullptr, &contents,
                               &length, /* etag_out = */ nullptr, &error)) {
         Gjs::AutoMainRealm ar{cx};
@@ -475,7 +477,7 @@ bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "uriExists", args, "!s", "uri", &uri))
         return handle_wrong_args(cx);
 
-    GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
+    Gjs::AutoUnref<GFile> file{g_file_new_for_uri(uri.get())};
 
     args.rval().setBoolean(g_file_query_exists(file, nullptr));
     return true;
@@ -488,7 +490,7 @@ bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "atob", args, "!s", "text", &text))
         return handle_wrong_args(cx);
 
-    GjsAutoChar decoded =
+    Gjs::AutoChar decoded =
         reinterpret_cast<char*>(g_base64_decode(text.get(), &result_len));
     JS::ConstUTF8CharsZ contents_chars{decoded, result_len};
     JS::RootedString contents_str{cx,
@@ -556,10 +558,10 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
 
     char* contents;
     size_t length;
-    GjsAutoError error;
+    Gjs::AutoError error;
     if (!g_file_load_contents_finish(G_FILE(file), res, &contents, &length,
                                      /* etag_out = */ nullptr, &error)) {
-        GjsAutoChar uri = g_file_get_uri(G_FILE(file));
+        Gjs::AutoChar uri{g_file_get_uri(G_FILE(file))};
         gjs_throw_custom(promise->cx, JSEXN_ERR, "ImportError",
                          "Unable to load file async from: %s (%s)", uri.get(),
                          error->message);
@@ -591,7 +593,7 @@ static bool load_async_executor(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     JS::Value priv_value = js::GetFunctionNativeReserved(&args.callee(), 0);
     g_assert(!priv_value.isNull() && "Executor called twice");
-    GjsAutoUnref<GFile> file = G_FILE(priv_value.toPrivate());
+    Gjs::AutoUnref<GFile> file{G_FILE(priv_value.toPrivate())};
     g_assert(file && "Executor called twice");
     // We now own the GFile, and will pass the reference to the GAsyncResult, so
     // remove it from the executor's private slot so it doesn't become dangling
@@ -616,7 +618,7 @@ bool gjs_internal_load_resource_or_file_async(JSContext* cx, unsigned argc,
                              &uri))
         return handle_wrong_args(cx);
 
-    GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
+    Gjs::AutoUnref<GFile> file{g_file_new_for_uri(uri.get())};
 
     JS::RootedObject executor(cx,
                               JS_GetFunctionObject(js::NewFunctionWithReserved(

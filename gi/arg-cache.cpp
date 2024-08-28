@@ -40,12 +40,14 @@
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
 #include "gi/gtype.h"
+#include "gi/info.h"
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"  // for GjsTypecheckNoThrow
+#include "gjs/auto.h"
 #include "gjs/byteArray.h"
 #include "gjs/enum-utils.h"  // for operator&, operator|=, operator|
 #include "gjs/jsapi-util.h"
@@ -217,11 +219,11 @@ struct Array : BasicType {
 
 struct HasIntrospectionInfo {
     constexpr explicit HasIntrospectionInfo(GIBaseInfo* info,
-                                            const GjsAutoTakeOwnership& add_ref)
+                                            const TakeOwnership& add_ref)
         : m_info(info, add_ref) {}
     constexpr explicit HasIntrospectionInfo(GIBaseInfo* info) : m_info(info) {}
 
-    GjsAutoBaseInfo m_info;
+    GI::AutoBaseInfo m_info;
 };
 
 // boxed / union / GObject
@@ -248,13 +250,13 @@ struct RegisteredType : GTypedType {
 
 struct RegisteredInterface : HasIntrospectionInfo, GTypedType {
     explicit RegisteredInterface(GIRegisteredTypeInfo* info)
-        : HasIntrospectionInfo(info, GjsAutoTakeOwnership{}),
+        : HasIntrospectionInfo(info, TakeOwnership{}),
           GTypedType(g_registered_type_info_get_g_type(m_info)) {}
 };
 
 struct Callback : Nullable, HasIntrospectionInfo {
     explicit Callback(GICallbackInfo* info)
-        : HasIntrospectionInfo(info, GjsAutoTakeOwnership{}),
+        : HasIntrospectionInfo(info, TakeOwnership{}),
           m_scope(GI_SCOPE_TYPE_INVALID) {}
 
     inline void set_callback_destroy_pos(int pos) {
@@ -592,7 +594,7 @@ struct UnregisteredBoxedIn : BoxedIn, HasIntrospectionInfo {
     explicit UnregisteredBoxedIn(GIStructInfo* info)
         : BoxedIn(g_registered_type_info_get_g_type(info),
                   g_base_info_get_type(info)),
-          HasIntrospectionInfo(info, GjsAutoTakeOwnership{}) {}
+          HasIntrospectionInfo(info, TakeOwnership{}) {}
     // This is a smart argument, no release needed
     GIBaseInfo* info() const override { return m_info; }
 };
@@ -1139,7 +1141,7 @@ GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T>::in(JSContext* cx,
     }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
-                      GjsAutoChar{gjs_argument_display_name(
+                      Gjs::AutoChar{gjs_argument_display_name(
                                       arg_name(), GJS_ARGUMENT_ARGUMENT)}
                           .get(),
                       std::to_string(gjs_arg_get<T>(arg)).c_str(),
@@ -1193,7 +1195,7 @@ GJS_JSAPI_RETURN_CONVENTION bool StringInTransferNone<TAG>::in(
                                       ExpectedType::STRING);
 
     if constexpr (TAG == GI_TYPE_TAG_FILENAME) {
-        GjsAutoChar str;
+        AutoChar str;
         if (!gjs_string_to_filename(cx, value, &str))
             return false;
         gjs_arg_set(arg, str.release());
@@ -1717,9 +1719,9 @@ constexpr size_t argument_maximum_size() {
 #endif
 
 template <typename T, Arg::Kind ArgKind, typename... Args>
-GjsAutoCppPointer<T> Argument::make(uint8_t index, const char* name,
-                                    GITypeInfo* type_info, GITransfer transfer,
-                                    GjsArgumentFlags flags, Args&&... args) {
+AutoCppPointer<T> Argument::make(uint8_t index, const char* name,
+                                 GITypeInfo* type_info, GITransfer transfer,
+                                 GjsArgumentFlags flags, Args&&... args) {
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
     static_assert(
         sizeof(T) <= argument_maximum_size<T>(),
@@ -1800,8 +1802,8 @@ template <typename T, Arg::Kind ArgKind, typename... Args>
 constexpr T* ArgsCache::set_argument(uint8_t index, const char* name,
                                      GITypeInfo* type_info, GITransfer transfer,
                                      GjsArgumentFlags flags, Args&&... args) {
-    GjsAutoCppPointer<T> arg = Argument::make<T, ArgKind>(
-        index, name, type_info, transfer, flags, args...);
+    AutoCppPointer<T> arg{Argument::make<T, ArgKind>(index, name, type_info,
+                                                     transfer, flags, args...)};
     arg_get<ArgKind>(index) = arg.release();
     return static_cast<T*>(arg_get<ArgKind>(index).get());
 }
@@ -2031,7 +2033,7 @@ Enum::Enum(GIEnumInfo* enum_info) {
     int64_t max = std::numeric_limits<int64_t>::min();
     int n = g_enum_info_get_n_values(enum_info);
     for (int i = 0; i < n; i++) {
-        GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
+        GI::AutoValueInfo value_info{g_enum_info_get_value(enum_info, i)};
         int64_t value = g_value_info_get_value(value_info);
 
         if (value > max)
@@ -2055,7 +2057,7 @@ Flags::Flags(GIEnumInfo* enum_info) {
     uint64_t mask = 0;
     int n = g_enum_info_get_n_values(enum_info);
     for (int i = 0; i < n; i++) {
-        GjsAutoValueInfo value_info = g_enum_info_get_value(enum_info, i);
+        GI::AutoValueInfo value_info{g_enum_info_get_value(enum_info, i)};
         int64_t value = g_value_info_get_value(value_info);
         // From the docs for g_value_info_get_value(): "This will always be
         // representable as a 32-bit signed or unsigned value. The use of
@@ -2339,8 +2341,8 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             break;
 
         case GI_TYPE_TAG_INTERFACE: {
-            GjsAutoBaseInfo interface_info =
-                g_type_info_get_interface(type_info);
+            GI::AutoBaseInfo interface_info{
+                g_type_info_get_interface(type_info)};
             build_interface_in_arg(gi_index, type_info, interface_info,
                                    transfer, name, flags);
             return;
@@ -2557,7 +2559,7 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
 
             switch (array_type) {
                 case GI_ARRAY_TYPE_C: {
-                    GjsAutoTypeInfo param_info;
+                    GI::AutoTypeInfo param_info;
                     int n_elements =
                         g_type_info_get_array_fixed_size(&type_info);
 
@@ -2589,8 +2591,8 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         }
 
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
-            GjsAutoBaseInfo interface_info =
-                g_type_info_get_interface(&type_info);
+            GI::AutoBaseInfo interface_info{
+                g_type_info_get_interface(&type_info)};
             GType gtype = g_registered_type_info_get_g_type(interface_info);
             if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 auto* gjs_arg = set_argument_auto<Arg::BoxedCallerAllocatesOut>(
@@ -2607,7 +2609,7 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
     }
 
     if (type_tag == GI_TYPE_TAG_INTERFACE) {
-        GjsAutoBaseInfo interface_info = g_type_info_get_interface(&type_info);
+        GI::AutoBaseInfo interface_info{g_type_info_get_interface(&type_info)};
         if (interface_info.type() == GI_INFO_TYPE_CALLBACK) {
             if (direction != GI_DIRECTION_IN) {
                 // Can't do callbacks for out or inout

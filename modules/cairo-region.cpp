@@ -21,6 +21,7 @@
 #include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/enum-utils.h"
 #include "gjs/jsapi-util-args.h"
@@ -233,8 +234,8 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            GjsAutoChar display_name =
-                gjs_argument_display_name(arg_name, argument_type);
+            Gjs::AutoChar display_name{
+                gjs_argument_display_name(arg_name, argument_type)};
             gjs_throw(context, "%s may not be null", display_name.get());
             return false;
         }

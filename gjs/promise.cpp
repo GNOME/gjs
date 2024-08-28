@@ -18,6 +18,7 @@
 #include <jsapi.h>  // for JS_NewPlainObject
 #include <jsfriendapi.h>  // for RunJobs
 
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -53,10 +54,10 @@ class PromiseJobDispatcher::Source : public GSource {
     // The private GJS context this source runs within.
     GjsContextPrivate* m_gjs;
     // The main context this source attaches to.
-    GjsAutoMainContext m_main_context;
+    AutoMainContext m_main_context;
     // The cancellable that stops this source.
-    GjsAutoUnref<GCancellable> m_cancellable;
-    GjsAutoPointer<GSource, GSource, g_source_unref> m_cancellable_source;
+    AutoUnref<GCancellable> m_cancellable;
+    AutoPointer<GSource, GSource, g_source_unref> m_cancellable_source;
 
     // G_PRIORITY_HIGH is normally -100, we set 10 times that to ensure our
     // source always has the greatest priority. This means our prepare will
@@ -97,7 +98,7 @@ class PromiseJobDispatcher::Source : public GSource {
      */
     Source(GjsContextPrivate* gjs, GMainContext* main_context)
         : m_gjs(gjs),
-          m_main_context(main_context, GjsAutoTakeOwnership()),
+          m_main_context(main_context, TakeOwnership{}),
           m_cancellable(g_cancellable_new()),
           m_cancellable_source(g_cancellable_source_new(m_cancellable)) {
         g_source_set_priority(this, PRIORITY);

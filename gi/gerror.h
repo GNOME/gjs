@@ -16,7 +16,8 @@
 
 #include "gi/cwrapper.h"
 #include "gi/wrapperutils.h"
-#include "gjs/jsapi-util.h"  // for GjsAutoPointer operators
+#include "gjs/auto.h"  // for Gjs::AutoPointer operators
+#include "gjs/gerror-result.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
@@ -163,6 +164,6 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
 
-bool gjs_throw_gerror(JSContext* cx, GjsAutoError const&);
+bool gjs_throw_gerror(JSContext* cx, Gjs::AutoError const&);
 
 #endif  // GI_GERROR_H_

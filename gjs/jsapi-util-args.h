@@ -26,6 +26,7 @@
 #include <mozilla/Result.h>  // for GenericErrorResult
 #include <mozilla/ResultVariant.h>  // IWYU pragma: keep
 
+#include "gjs/auto.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
@@ -44,11 +45,11 @@ namespace detail {
 }
 
 class ParseArgsErr {
-    GjsAutoChar m_message;
+    Gjs::AutoChar m_message;
 
  public:
     explicit ParseArgsErr(const char* literal_msg)
-        : m_message(literal_msg, GjsAutoTakeOwnership{}) {}
+        : m_message(literal_msg, Gjs::TakeOwnership{}) {}
     template <typename F>
     ParseArgsErr(const char* format_string, F param)
         : m_message(g_strdup_printf(format_string, param)) {}
@@ -114,9 +115,10 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
 
 GJS_ALWAYS_INLINE
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
-                                     JS::HandleValue value, GjsAutoChar* ref) {
+                                     JS::HandleValue value,
+                                     Gjs::AutoChar* ref) {
     if (c != 'F')
-        return Err("Wrong type for %c, got GjsAutoChar*", c);
+        return Err("Wrong type for %c, got Gjs::AutoChar*", c);
     if (nullable && value.isNull()) {
         ref->release();
         return JS::Ok();
@@ -326,7 +328,7 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * b: A boolean (pass a bool *)
  * s: A string, converted into UTF-8 (pass a JS::UniqueChars*)
  * F: A string, converted into "filename encoding" (i.e. active locale) (pass
- *   a GjsAutoChar *)
+ *   a Gjs::AutoChar *)
  * S: A string, no conversion (pass a JS::MutableHandleString)
  * i: A number, will be converted to a 32-bit int (pass an int32_t * or a
  *   pointer to an enum type)
@@ -393,7 +395,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
         return false;
     }
 
-    GjsAutoStrv parts = g_strsplit(format, "|", 2);
+    Gjs::AutoStrv parts{g_strsplit(format, "|", 2)};
     fmt_required = parts.get()[0];
     fmt_optional = parts.get()[1];  // may be null
 

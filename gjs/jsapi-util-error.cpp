@@ -28,7 +28,9 @@
 #include <mozilla/ScopeExit.h>
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -93,7 +95,7 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
 [[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
     JSContext* cx, JSExnType error_kind, const char* error_name,
     const char* format, va_list args) {
-    GjsAutoChar s = g_strdup_vprintf(format, args);
+    Gjs::AutoChar s{g_strdup_vprintf(format, args)};
     auto fallback = mozilla::MakeScopeExit([cx, &s]() {
         // try just reporting it to error handler? should not
         // happen though pretty much
@@ -212,7 +214,7 @@ gjs_throw_literal(JSContext       *context,
  * and domain don't matter. So, for example, don't use it to throw errors
  * around calling from JS into C code.
  */
-bool gjs_throw_gerror_message(JSContext* cx, GjsAutoError const& error) {
+bool gjs_throw_gerror_message(JSContext* cx, Gjs::AutoError const& error) {
     g_return_val_if_fail(error, false);
     gjs_throw_literal(cx, error->message);
     return false;

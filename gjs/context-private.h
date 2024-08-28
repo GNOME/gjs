@@ -37,8 +37,8 @@
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
 #include "gi/closure.h"
+#include "gjs/auto.h"
 #include "gjs/context.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/macros.h"
 #include "gjs/mainloop.h"
@@ -88,7 +88,7 @@ class GjsContextPrivate : public JS::JobQueue {
     JobQueueStorage m_job_queue;
     Gjs::PromiseJobDispatcher m_dispatcher;
     Gjs::MainLoop m_main_loop;
-    GjsAutoUnref<GMemoryMonitor> m_memory_monitor;
+    Gjs::AutoUnref<GMemoryMonitor> m_memory_monitor;
 
     std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;

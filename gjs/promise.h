@@ -11,15 +11,14 @@
 
 #include <js/TypeDecls.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/auto.h"
 
 class GjsContextPrivate;
 
-using GjsAutoMainContext =
-    GjsAutoPointer<GMainContext, GMainContext, g_main_context_unref,
-                   g_main_context_ref>;
-
 namespace Gjs {
+
+using AutoMainContext = AutoPointer<GMainContext, GMainContext,
+                                    g_main_context_unref, g_main_context_ref>;
 
 /**
  * @brief A class which wraps a custom GSource and handles associating it with a
@@ -29,7 +28,7 @@ namespace Gjs {
 class PromiseJobDispatcher {
     class Source;
     // The thread-default GMainContext
-    GjsAutoMainContext m_main_context;
+    AutoMainContext m_main_context;
     // The custom source.
     std::unique_ptr<Source> m_source;
 

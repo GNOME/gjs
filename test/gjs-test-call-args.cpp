@@ -21,8 +21,8 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 
+#include "gjs/auto.h"
 #include "gjs/jsapi-util-args.h"
-#include "gjs/jsapi-util.h"
 #include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
 
@@ -118,7 +118,7 @@ JSNATIVE_TEST_FUNC_END
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     bool boolval;
     JS::UniqueChars strval;
-    GjsAutoChar fileval;
+    Gjs::AutoChar fileval;
     JS::RootedString jsstrval(cx);
     int intval;
     unsigned uintval;
@@ -188,7 +188,7 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
     JS::UniqueChars strval;
-    GjsAutoChar fileval;
+    Gjs::AutoChar fileval;
     JS::RootedString jsstrval(cx);
     JS::RootedObject objval(cx);
     retval = gjs_parse_call_args(cx, "oneOfEachNullableType", args, "?s?F?S?o",
@@ -235,12 +235,13 @@ JSNATIVE_BAD_NULLABLE_TEST_FUNC(double, "f");
                                      "val", &val);                       \
     JSNATIVE_TEST_FUNC_END
 
+using Gjs::AutoChar;
 JSNATIVE_BAD_TYPE_TEST_FUNC(bool, "i");
 JSNATIVE_BAD_TYPE_TEST_FUNC(int, "u");
 JSNATIVE_BAD_TYPE_TEST_FUNC(unsigned, "t");
 JSNATIVE_BAD_TYPE_TEST_FUNC(int64_t, "f");
 JSNATIVE_BAD_TYPE_TEST_FUNC(double, "b");
-JSNATIVE_BAD_TYPE_TEST_FUNC(GjsAutoChar, "i");
+JSNATIVE_BAD_TYPE_TEST_FUNC(AutoChar, "i");
 
 #undef JSNATIVE_BAD_TYPE_TEST_FUNC
 
@@ -288,7 +289,7 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FN("unsignedInvalidType", unsigned_invalid_type, 0, 0),
     JS_FN("int64_tInvalidType", int64_t_invalid_type, 0, 0),
     JS_FN("doubleInvalidType", double_invalid_type, 0, 0),
-    JS_FN("GjsAutoCharInvalidType", GjsAutoChar_invalid_type, 0, 0),
+    JS_FN("AutoCharInvalidType", AutoChar_invalid_type, 0, 0),
     JS_FN("UniqueCharsInvalidType", UniqueChars_invalid_type, 0, 0),
     JS_FN("JSStringInvalidType", JSString_invalid_type, 0, 0),
     JS_FN("objectInvalidType", object_invalid_type, 0, 0),
@@ -343,7 +344,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     JS::RootedValue ignored(fx->cx);
     ok = JS::Evaluate(fx->cx, options, source, &ignored);
     g_assert_false(ok);
-    GjsAutoChar message = gjs_test_get_exception_message(fx->cx);
+    Gjs::AutoChar message{gjs_test_get_exception_message(fx->cx)};
     g_assert_nonnull(message);
 
     /* Cheap way to shove an expected exception message into the data argument */
@@ -434,8 +435,8 @@ gjs_test_add_tests_for_parse_call_args(void)
                              "doubleInvalidType(false)"
                              "//*Wrong type for b, got double?");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-autochar-type",
-                             "GjsAutoCharInvalidType(1)"
-                             "//*Wrong type for i, got GjsAutoChar?");
+                             "AutoCharInvalidType(1)"
+                             "//*Wrong type for i, got Gjs::AutoChar?");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-autojschar-type",
                              "UniqueCharsInvalidType(1)"
                              "//*Wrong type for i, got JS::UniqueChars?");

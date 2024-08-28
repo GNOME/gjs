@@ -47,7 +47,9 @@
 #include "gi/gerror.h"
 #include "gi/object.h"
 #include "gi/utils-inl.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -69,7 +71,7 @@ class Function : public CWrapper<Function> {
     static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_function;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GFUNCTION;
 
-    GjsAutoCallableInfo m_info;
+    GI::AutoCallableInfo m_info;
 
     ArgsCache m_arguments;
 
@@ -78,7 +80,7 @@ class Function : public CWrapper<Function> {
     GIFunctionInvoker m_invoker;
 
     explicit Function(GICallableInfo* info)
-        : m_info(info, GjsAutoTakeOwnership()),
+        : m_info(info, Gjs::TakeOwnership{}),
           m_js_in_argc(0),
           m_js_out_argc(0),
           m_invoker({}) {
@@ -226,7 +228,8 @@ static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
         break;
     case GI_TYPE_TAG_INTERFACE:
         {
-            GjsAutoBaseInfo interface_info(g_type_info_get_interface(ret_type));
+            GI::AutoBaseInfo interface_info{
+                g_type_info_get_interface(ret_type)};
             GIInfoType interface_type = interface_info.type();
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
@@ -587,7 +590,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                     ObjectInstance::associate_string(
                         gobject, gjs_arg_get<char*>(&argument));
                 } else {
-                    GjsAutoChar str = gjs_arg_steal<char*>(&argument);
+                    Gjs::AutoChar str{gjs_arg_steal<char*>(&argument)};
                     gjs_arg_set<const char*>(&argument, g_intern_string(str));
                 }
             }
@@ -699,7 +702,7 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
     : Closure(cx, callable,
               scope != GI_SCOPE_TYPE_NOTIFIED || !has_scope_object,
               g_base_info_get_name(callable_info)),
-      m_info(callable_info, GjsAutoTakeOwnership()),
+      m_info(callable_info, Gjs::TakeOwnership{}),
       m_param_types(std::make_unique<GjsParamType[]>(
           g_callable_info_get_n_args(callable_info))),
       m_scope(scope),
@@ -718,7 +721,7 @@ GjsCallbackTrampoline::~GjsCallbackTrampoline() {
 }
 
 void GjsCallbackTrampoline::mark_forever() {
-    s_forever_closure_list.emplace_back(this, GjsAutoTakeOwnership{});
+    s_forever_closure_list.emplace_back(this, Gjs::TakeOwnership{});
 }
 
 void GjsCallbackTrampoline::prepare_shutdown() {
@@ -729,8 +732,8 @@ ffi_closure* GjsCallbackTrampoline::create_closure() {
     auto callback = [](ffi_cif*, void* result, void** ffi_args, void* data) {
         auto** args = reinterpret_cast<GIArgument**>(ffi_args);
         g_assert(data && "Trampoline data is not set");
-        Gjs::Closure::Ptr trampoline(static_cast<GjsCallbackTrampoline*>(data),
-                                     GjsAutoTakeOwnership());
+        Gjs::Closure::Ptr trampoline{static_cast<GjsCallbackTrampoline*>(data),
+                                     Gjs::TakeOwnership{}};
 
         trampoline.as<GjsCallbackTrampoline>()->callback_closure(args, result);
     };
@@ -770,8 +773,8 @@ bool GjsCallbackTrampoline::initialize() {
         }
 
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
-            GjsAutoBaseInfo interface_info =
-                g_type_info_get_interface(&type_info);
+            GI::AutoBaseInfo interface_info{
+                g_type_info_get_interface(&type_info)};
             GIInfoType interface_type = interface_info.type();
             if (interface_type == GI_INFO_TYPE_CALLBACK) {
                 gjs_throw(context(),
@@ -864,7 +867,7 @@ static void* get_return_ffi_pointer_from_gi_argument(
             if (!return_type)
                 return nullptr;
 
-            GjsAutoBaseInfo info = g_type_info_get_interface(return_type);
+            GI::AutoBaseInfo info{g_type_info_get_interface(return_type)};
 
             switch (info.type()) {
                 case GI_INFO_TYPE_ENUM:
@@ -1274,7 +1277,7 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
         arg_names += gjs_arg->arg_name();
     }
 
-    GjsAutoChar descr;
+    AutoChar descr;
     if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
         descr = g_strdup_printf(
             "%s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
@@ -1315,7 +1318,7 @@ const JSFunctionSpec Function::proto_funcs[] = {
 
 bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     guint8 i;
-    GjsAutoError error;
+    AutoError error;
 
     if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
         if (!g_function_info_prep_invoker(m_info, &m_invoker, &error))

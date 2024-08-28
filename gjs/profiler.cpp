@@ -39,6 +39,7 @@
 #include <js/TypeDecls.h>
 #include <mozilla/Atomics.h>  // for ProfilingStack operators
 
+#include "gjs/auto.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"  // for gjs_explain_gc_reason
 #include "gjs/mem-private.h"
@@ -149,15 +150,14 @@ static GjsContext *profiling_context;
 
     g_assert(((void) "Profiler must be set up before extracting maps", self));
 
-    GjsAutoChar path = g_strdup_printf("/proc/%jd/maps", intmax_t(self->pid));
+    Gjs::AutoChar path{g_strdup_printf("/proc/%jd/maps", intmax_t(self->pid))};
 
-    char *content_tmp;
+    Gjs::AutoChar content;
     size_t len;
-    if (!g_file_get_contents(path, &content_tmp, &len, nullptr))
-      return false;
-    GjsAutoChar content = content_tmp;
+    if (!g_file_get_contents(path, content.out(), &len, nullptr))
+        return false;
 
-    GjsAutoStrv lines = g_strsplit(content, "\n", 0);
+    Gjs::AutoStrv lines{g_strsplit(content, "\n", 0)};
 
     for (size_t ix = 0; lines[ix]; ix++) {
         char file[256];
@@ -523,7 +523,7 @@ gjs_profiler_start(GjsProfiler *self)
         self->capture = sysprof_capture_writer_new_from_fd(self->fd, 0);
         self->fd = -1;
     } else {
-        GjsAutoChar path = g_strdup(self->filename);
+        Gjs::AutoChar path{g_strdup(self->filename)};
         if (!path)
             path = g_strdup_printf("gjs-%jd.syscap", intmax_t(self->pid));
 

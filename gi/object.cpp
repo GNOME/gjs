@@ -57,12 +57,14 @@
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/deprecation.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"
@@ -233,7 +235,7 @@ ObjectInstance::unset_object_qdata(void)
 }
 
 GParamSpec* ObjectPrototype::find_param_spec_from_id(
-    JSContext* cx, GjsAutoTypeClass<GObjectClass> const& object_class,
+    JSContext* cx, Gjs::AutoTypeClass<GObjectClass> const& object_class,
     JS::HandleString key) {
     /* First check for the ID in the cache */
 
@@ -241,7 +243,7 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(
     if (!js_prop_name)
         return nullptr;
 
-    GjsAutoChar gname = gjs_hyphen_from_camel(js_prop_name.get());
+    Gjs::AutoChar gname{gjs_hyphen_from_camel(js_prop_name.get())};
     GParamSpec* pspec = g_object_class_find_property(object_class, gname);
 
     if (!pspec) {
@@ -330,11 +332,11 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     return gjs_value_from_g_value(cx, rval, &gvalue);
 }
 
-[[nodiscard]] static GjsAutoFieldInfo lookup_field_info(GIObjectInfo* info,
-                                                        const char* name) {
+[[nodiscard]] static GI::AutoFieldInfo lookup_field_info(GIObjectInfo* info,
+                                                         const char* name) {
     int n_fields = g_object_info_get_n_fields(info);
     int ix;
-    GjsAutoFieldInfo retval;
+    GI::AutoFieldInfo retval;
 
     for (ix = 0; ix < n_fields; ix++) {
         retval = g_object_info_get_field(info, ix);
@@ -382,7 +384,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx, JS::HandleString name,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
                      gjs_debug_string(name).c_str());
 
-    GjsAutoTypeInfo type = g_field_info_get_type(field);
+    GI::AutoTypeInfo type{g_field_info_get_type(field)};
     tag = g_type_info_get_tag(type);
 
     switch (tag) {
@@ -514,7 +516,7 @@ bool ObjectInstance::field_setter_not_impl(JSContext* cx,
 }
 
 bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
-    GjsAutoError error;
+    Gjs::AutoError error;
     GType ptype = g_type_parent(m_gtype);
     gpointer addr1, addr2;
 
@@ -529,19 +531,19 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
     return addr1 == addr2;
 }
 
-[[nodiscard]] static GjsAutoVFuncInfo find_vfunc_on_parents(
+[[nodiscard]] static GI::AutoVFuncInfo find_vfunc_on_parents(
     GIObjectInfo* info, const char* name, bool* out_defined_by_parent) {
     bool defined_by_parent = false;
 
     /* ref the first info so that we don't destroy
      * it when unrefing parents later */
-    GjsAutoObjectInfo parent(info, GjsAutoTakeOwnership());
+    GI::AutoObjectInfo parent{info, Gjs::TakeOwnership{}};
 
     /* Since it isn't possible to override a vfunc on
      * an interface without reimplementing it, we don't need
      * to search the parent types when looking for a vfunc. */
-    GjsAutoVFuncInfo vfunc =
-        g_object_info_find_vfunc_using_interfaces(parent, name, nullptr);
+    GI::AutoVFuncInfo vfunc{
+        g_object_info_find_vfunc_using_interfaces(parent, name, nullptr)};
     while (!vfunc && parent) {
         parent = g_object_info_get_parent(parent);
         if (parent)
@@ -557,7 +559,7 @@ bool ObjectPrototype::is_vfunc_unchanged(GIVFuncInfo* info) {
 }
 
 /* Taken from GLib */
-static void canonicalize_key(const GjsAutoChar& key) {
+static void canonicalize_key(const Gjs::AutoChar& key) {
     for (char* p = key; *p != 0; p++) {
         char c = *p;
 
@@ -571,7 +573,7 @@ static void canonicalize_key(const GjsAutoChar& key) {
 [[nodiscard]] static bool is_ginterface_property_name(GIInterfaceInfo* info,
                                                       const char* name) {
     int n_props = g_interface_info_get_n_properties(info);
-    GjsAutoPropertyInfo prop_info;
+    GI::AutoPropertyInfo prop_info;
 
     for (int ix = 0; ix < n_props; ix++) {
         prop_info = g_interface_info_get_property(info, ix);
@@ -783,7 +785,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     guint n_interfaces;
     guint i;
 
-    GjsAutoChar canonical_name;
+    Gjs::AutoChar canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
         // Optimization: GObject property names must start with a letter
         if (g_ascii_isalpha(name[0])) {
@@ -799,7 +801,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     /* Fallback to GType system for non custom GObjects with no GI information
      */
     if (canonical_name && G_TYPE_IS_CLASSED(m_gtype) && !is_custom_js_class()) {
-        GjsAutoTypeClass<GObjectClass> oclass(m_gtype);
+        Gjs::AutoTypeClass<GObjectClass> oclass{m_gtype};
 
         if (GParamSpec* pspec =
                 g_object_class_find_property(oclass, canonical_name))
@@ -812,7 +814,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             if (!G_TYPE_IS_CLASSED(iface_gtype))
                 continue;
 
-            GjsAutoTypeClass<GObjectClass> iclass(iface_gtype);
+            Gjs::AutoTypeClass<GObjectClass> iclass{iface_gtype};
 
             if (GParamSpec* pspec =
                     g_object_class_find_property(iclass, canonical_name))
@@ -823,8 +825,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
     for (i = 0; i < n_interfaces; i++) {
         GIInterfaceInfo* iface_info = interfaces[i];
-        GjsAutoFunctionInfo method_info =
-            g_interface_info_find_method(iface_info, name);
+        GI::AutoFunctionInfo method_info{
+            g_interface_info_find_method(iface_info, name)};
         if (method_info) {
             if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
                 bool found = false;
@@ -848,7 +850,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
          * because I don't think interfaces can have fields */
         if (canonical_name &&
             is_ginterface_property_name(iface_info, canonical_name)) {
-            GjsAutoTypeClass<GObjectClass> oclass(m_gtype);
+            Gjs::AutoTypeClass<GObjectClass> oclass{m_gtype};
             // unowned
             GParamSpec* pspec = g_object_class_find_property(
                 oclass, canonical_name);  // unowned
@@ -866,8 +868,8 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
-[[nodiscard]] static GjsAutoChar get_gobject_property_name(GIObjectInfo* info,
-                                                           const char* name) {
+[[nodiscard]] static Gjs::AutoChar get_gobject_property_name(GIObjectInfo* info,
+                                                             const char* name) {
     // Optimization: GObject property names must start with a letter
     if (!g_ascii_isalpha(name[0]))
         return nullptr;
@@ -876,17 +878,17 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     int n_ifaces = g_object_info_get_n_interfaces(info);
     int ix;
 
-    GjsAutoChar canonical_name = gjs_hyphen_from_camel(name);
+    Gjs::AutoChar canonical_name{gjs_hyphen_from_camel(name)};
     canonicalize_key(canonical_name);
 
     for (ix = 0; ix < n_props; ix++) {
-        GjsAutoPropertyInfo prop_info = g_object_info_get_property(info, ix);
+        GI::AutoPropertyInfo prop_info{g_object_info_get_property(info, ix)};
         if (strcmp(canonical_name, prop_info.name()) == 0)
             return canonical_name;
     }
 
     for (ix = 0; ix < n_ifaces; ix++) {
-        GjsAutoInterfaceInfo iface_info = g_object_info_get_interface(info, ix);
+        GI::AutoInterfaceInfo iface_info{g_object_info_get_interface(info, ix)};
         if (is_ginterface_property_name(iface_info, canonical_name))
             return canonical_name;
     }
@@ -957,8 +959,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
         const char *name_without_vfunc_ = &(name[6]);  /* lifetime tied to name */
         bool defined_by_parent;
-        GjsAutoVFuncInfo vfunc = find_vfunc_on_parents(
-            m_info, name_without_vfunc_, &defined_by_parent);
+        GI::AutoVFuncInfo vfunc{find_vfunc_on_parents(
+            m_info, name_without_vfunc_, &defined_by_parent)};
         if (vfunc) {
             /* In the event that the vfunc is unchanged, let regular
              * prototypal inheritance take over. */
@@ -979,14 +981,14 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
     }
 
     if (auto const& canonical_name = get_gobject_property_name(m_info, name)) {
-        GjsAutoTypeClass<GObjectClass> gobj_class{m_gtype};
+        Gjs::AutoTypeClass<GObjectClass> gobj_class{m_gtype};
         if (GParamSpec* pspec =
                 g_object_class_find_property(gobj_class, canonical_name))
             return lazy_define_gobject_property(context, obj, id, pspec,
                                                 resolved, name);
     }
 
-    GjsAutoFieldInfo field_info = lookup_field_info(m_info, name);
+    GI::AutoFieldInfo field_info{lookup_field_info(m_info, name)};
     if (field_info) {
         bool found = false;
         if (!JS_AlreadyHasOwnPropertyById(context, obj, id, &found))
@@ -1030,10 +1032,9 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
      * introduces the iface)
      */
 
-    GjsAutoBaseInfo implementor_info;
-    GjsAutoFunctionInfo method_info =
-        g_object_info_find_method_using_interfaces(m_info, name,
-                                                   implementor_info.out());
+    GI::AutoBaseInfo implementor_info;
+    GI::AutoFunctionInfo method_info{g_object_info_find_method_using_interfaces(
+        m_info, name, implementor_info.out())};
 
     /**
      * Search through any interfaces implemented by the GType;
@@ -1082,8 +1083,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
     GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
 
     for (unsigned k = 0; k < n_interfaces; k++) {
-        GjsAutoInterfaceInfo iface_info =
-            g_irepository_find_by_gtype(nullptr, interfaces[k]);
+        GI::AutoInterfaceInfo iface_info{
+            g_irepository_find_by_gtype(nullptr, interfaces[k])};
 
         if (!iface_info) {
             continue;
@@ -1099,8 +1100,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Methods
         for (int i = 0; i < n_methods; i++) {
-            GjsAutoFunctionInfo meth_info =
-                g_interface_info_get_method(iface_info, i);
+            GI::AutoFunctionInfo meth_info{
+                g_interface_info_get_method(iface_info, i)};
             GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
 
             if (flags & GI_FUNCTION_IS_METHOD) {
@@ -1114,10 +1115,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Properties
         for (int i = 0; i < n_properties; i++) {
-            GjsAutoPropertyInfo prop_info =
-                g_interface_info_get_property(iface_info, i);
+            GI::AutoPropertyInfo prop_info{
+                g_interface_info_get_property(iface_info, i)};
 
-            GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
+            Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
 
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id.isVoid())
@@ -1139,7 +1140,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Methods
         for (int i = 0; i < n_methods; i++) {
-            GjsAutoFunctionInfo meth_info = g_object_info_get_method(info(), i);
+            GI::AutoFunctionInfo meth_info{g_object_info_get_method(info(), i)};
             GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
 
             if (flags & GI_FUNCTION_IS_METHOD) {
@@ -1153,10 +1154,10 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Properties
         for (int i = 0; i < n_properties; i++) {
-            GjsAutoPropertyInfo prop_info =
-                g_object_info_get_property(info(), i);
+            GI::AutoPropertyInfo prop_info{
+                g_object_info_get_property(info(), i)};
 
-            GjsAutoChar js_name = gjs_hyphen_to_underscore(prop_info.name());
+            Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id.isVoid())
                 return false;
@@ -1170,7 +1171,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 /* Set properties from args to constructor (args[0] is supposed to be
  * a hash) */
 bool ObjectPrototype::props_to_g_parameters(
-    JSContext* context, GjsAutoTypeClass<GObjectClass> const& object_class,
+    JSContext* context, Gjs::AutoTypeClass<GObjectClass> const& object_class,
     JS::HandleObject props, std::vector<const char*>* names,
     AutoGValueVector* values) {
     size_t ix, length;
@@ -1518,16 +1519,16 @@ ObjectInstance::release_native_object(void)
             GObject* ptr = m_ptr.release();
 
             // Workaround for https://gitlab.gnome.org/GNOME/gtk/-/issues/6289
-            GjsAutoObjectInfo surface_info =
-                g_irepository_find_by_gtype(nullptr, gdksurface_type);
+            GI::AutoObjectInfo surface_info{
+                g_irepository_find_by_gtype(nullptr, gdksurface_type)};
             g_assert(surface_info && "Could not find introspected GdkSurface info");
-            GjsAutoFunctionInfo destroy_func =
-                g_object_info_find_method(surface_info, "destroy");
+            GI::AutoFunctionInfo destroy_func{
+                g_object_info_find_method(surface_info, "destroy")};
             GIArgument destroy_args;
             gjs_arg_set(&destroy_args, ptr);
             GIArgument unused_return;
 
-            GjsAutoError err;
+            Gjs::AutoError err;
             if (!g_function_info_invoke(destroy_func, &destroy_args, 1, nullptr,
                                         0, &unused_return, err.out()))
                 g_critical("Error destroying GdkSurface %p: %s", ptr,
@@ -1722,7 +1723,7 @@ static void invalidate_closure_vector(std::vector<GClosure*>* closures,
         // invalidation mechanism, but adding a temporary reference to
         // ensure that the closure is still valid when calling invalidation
         // notify callbacks
-        GjsAutoGClosure closure(*it, GjsAutoTakeOwnership());
+        Gjs::AutoGClosure closure{*it, Gjs::TakeOwnership{}};
         it = closures->erase(it);
 
         // Only call the invalidate notifiers that won't touch this vector
@@ -1776,7 +1777,7 @@ bool ObjectInstance::init_impl(JSContext* context, const JS::CallArgs& args,
                       name(), args.length()))
         return false;
 
-    GjsAutoTypeClass<GObjectClass> object_class(gtype());
+    Gjs::AutoTypeClass<GObjectClass> object_class{gtype()};
     std::vector<const char *> names;
     AutoGValueVector values;
 
@@ -2067,7 +2068,7 @@ static JSObject *
 gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
 {
-    GjsAutoObjectInfo info = gjs_lookup_gtype(nullptr, gtype);
+    GI::AutoObjectInfo info{gjs_lookup_gtype(nullptr, gtype)};
     return gjs_lookup_object_prototype_from_info(context, info, gtype);
 }
 
@@ -2109,7 +2110,7 @@ GIFieldInfo* ObjectPrototype::lookup_cached_field_info(JSContext* cx,
 
     // We must be looking up a field defined on a parent. Look up the prototype
     // object via its GIObjectInfo.
-    GjsAutoObjectInfo parent_info = g_object_info_get_parent(m_info);
+    GI::AutoObjectInfo parent_info{g_object_info_get_parent(m_info)};
     JS::RootedObject parent_proto(cx, gjs_lookup_object_prototype_from_info(
                                           cx, parent_info, G_TYPE_INVALID));
     ObjectPrototype* parent = ObjectPrototype::for_js(cx, parent_proto);
@@ -2317,12 +2318,12 @@ ObjectInstance::emit_impl(JSContext          *context,
         if (!ObjectBase::info())
             continue;
 
-        GjsAutoSignalInfo signal_info = g_object_info_find_signal(
-            ObjectBase::info(), signal_query.signal_name);
+        GI::AutoSignalInfo signal_info{g_object_info_find_signal(
+            ObjectBase::info(), signal_query.signal_name)};
         if (!signal_info)
             continue;
 
-        GjsAutoArgInfo arg_info = g_callable_info_get_arg(signal_info, i);
+        GI::AutoArgInfo arg_info{g_callable_info_get_arg(signal_info, i)};
         if (g_arg_info_get_ownership_transfer(arg_info) !=
             GI_TRANSFER_NOTHING) {
             // FIXME(3v1n0): As it happens in many places in gjs, we can't track
@@ -2921,11 +2922,11 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
                             GIBaseInfo* vfunc_info, const char* vfunc_name,
                             void** implementor_vtable_ret,
-                            GjsAutoFieldInfo* field_info_ret) {
+                            GI::AutoFieldInfo* field_info_ret) {
     GType ancestor_gtype;
     int length, i;
     GIBaseInfo *ancestor_info;
-    GjsAutoStructInfo struct_info;
+    GI::AutoStructInfo struct_info;
     bool is_interface;
 
     field_info_ret->reset();
@@ -2936,7 +2937,7 @@ static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
 
     is_interface = g_base_info_get_type(ancestor_info) == GI_INFO_TYPE_INTERFACE;
 
-    GjsAutoTypeClass<GTypeClass> implementor_class(implementor_gtype);
+    Gjs::AutoTypeClass<GTypeClass> implementor_class{implementor_gtype};
     if (is_interface) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
@@ -2957,11 +2958,11 @@ static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
 
     length = g_struct_info_get_n_fields(struct_info);
     for (i = 0; i < length; i++) {
-        GjsAutoFieldInfo field_info = g_struct_info_get_field(struct_info, i);
+        GI::AutoFieldInfo field_info{g_struct_info_get_field(struct_info, i)};
         if (strcmp(field_info.name(), vfunc_name) != 0)
             continue;
 
-        GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
+        GI::AutoTypeInfo type_info{g_field_info_get_type(field_info)};
         if (g_type_info_get_tag(type_info) != GI_TYPE_TAG_INTERFACE) {
             /* We have a field with the same name, but it's not a callback.
              * There's no hope of being another field with a correct name,
@@ -3005,7 +3006,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
      * This is awful, so abort now. */
     g_assert(info != NULL);
 
-    GjsAutoVFuncInfo vfunc = g_object_info_find_vfunc(info, name.get());
+    GI::AutoVFuncInfo vfunc{g_object_info_find_vfunc(info, name.get())};
     // Search the parent type chain
     while (!vfunc && info_gtype != G_TYPE_OBJECT) {
         info_gtype = g_type_parent(info_gtype);
@@ -3020,8 +3021,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     // defined interfaces...
     if (!vfunc) {
         for (GType interface_gtype : m_interface_gtypes) {
-            GjsAutoInterfaceInfo interface =
-                g_irepository_find_by_gtype(nullptr, interface_gtype);
+            GI::AutoInterfaceInfo interface{
+                g_irepository_find_by_gtype(nullptr, interface_gtype)};
 
             // Private and dynamic interfaces (defined in JS) do not have type
             // info.
@@ -3043,20 +3044,20 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     // See https://gitlab.gnome.org/GNOME/gjs/-/issues/89
     if (!vfunc) {
         unsigned n_interfaces;
-        GjsAutoPointer<GType> interface_list =
-            g_type_interfaces(m_gtype, &n_interfaces);
+        Gjs::AutoPointer<GType> interface_list{
+            g_type_interfaces(m_gtype, &n_interfaces)};
 
         for (unsigned i = 0; i < n_interfaces; i++) {
-            GjsAutoInterfaceInfo interface =
-                g_irepository_find_by_gtype(nullptr, interface_list[i]);
+            GI::AutoInterfaceInfo interface{
+                g_irepository_find_by_gtype(nullptr, interface_list[i])};
 
             if (interface) {
-                GjsAutoVFuncInfo parent_vfunc =
-                    g_interface_info_find_vfunc(interface, name.get());
+                GI::AutoVFuncInfo parent_vfunc{
+                    g_interface_info_find_vfunc(interface, name.get())};
 
                 if (parent_vfunc) {
-                    GjsAutoChar identifier = g_strdup_printf(
-                        "%s.%s", interface.ns(), interface.name());
+                    Gjs::AutoChar identifier{g_strdup_printf(
+                        "%s.%s", interface.ns(), interface.name())};
                     gjs_throw(cx,
                               "%s does not implement %s, add %s to your "
                               "implements array",
@@ -3074,7 +3075,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     }
 
     void *implementor_vtable;
-    GjsAutoFieldInfo field_info;
+    GI::AutoFieldInfo field_info;
     if (!find_vfunc_info(cx, m_gtype, vfunc, name.get(), &implementor_vtable,
                          &field_info))
         return false;
@@ -3127,7 +3128,7 @@ gjs_lookup_object_constructor(JSContext             *context,
 {
     JSObject *constructor;
 
-    GjsAutoObjectInfo object_info = gjs_lookup_gtype(nullptr, gtype);
+    GI::AutoObjectInfo object_info{gjs_lookup_gtype(nullptr, gtype)};
 
     constructor = gjs_lookup_object_constructor_from_info(context, object_info, gtype);
 

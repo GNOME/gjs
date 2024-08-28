@@ -17,9 +17,9 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/friend/DumpFunctions.h>
 
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
-#include "gjs/jsapi-util.h"
 
 void
 gjs_context_print_stack_stderr(GjsContext *context)
@@ -33,11 +33,11 @@ gjs_context_print_stack_stderr(GjsContext *context)
 void
 gjs_dumpstack(void)
 {
-    GjsSmartPointer<GList> contexts = gjs_context_get_all();
+    Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
-        GjsAutoUnref<GjsContext> context(GJS_CONTEXT(iter->data));
+        Gjs::AutoUnref<GjsContext> context{GJS_CONTEXT(iter->data)};
         gjs_context_print_stack_stderr(context);
     }
 }
@@ -47,12 +47,12 @@ gjs_dumpstack_string() {
     std::string out;
     std::ostringstream all_traces;
 
-    GjsSmartPointer<GList> contexts = gjs_context_get_all();
+    Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
     js::Sprinter printer;
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
-        GjsAutoUnref<GjsContext> context(GJS_CONTEXT(iter->data));
+        Gjs::AutoUnref<GjsContext> context{GJS_CONTEXT(iter->data)};
         if (!printer.init()) {
             all_traces << "No stack trace for context " << context.get()
                        << ": out of memory\n\n";

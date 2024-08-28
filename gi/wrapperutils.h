@@ -32,7 +32,9 @@
 
 #include "gi/arg-inl.h"
 #include "gi/cwrapper.h"
+#include "gi/info.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -684,18 +686,18 @@ template <class Base, class Prototype, class Instance,
           typename Info = GIObjectInfo>
 class GIWrapperPrototype : public Base {
     using GjsAutoPrototype =
-        GjsAutoPointer<Prototype, void, g_atomic_rc_box_release>;
+        Gjs::AutoPointer<Prototype, void, g_atomic_rc_box_release>;
 
  protected:
     // m_info may be null in the case of JS-defined types, or internal types
     // not exposed through introspection, such as GLocalFile. Not all subclasses
     // of GIWrapperPrototype support this. Object and Interface support it in
     // any case.
-    GjsAutoBaseInfo m_info;
+    GI::AutoBaseInfo m_info;
     GType m_gtype;
 
     explicit GIWrapperPrototype(Info* info, GType gtype)
-        : Base(), m_info(info, GjsAutoTakeOwnership()), m_gtype(gtype) {
+        : Base(), m_info(info, Gjs::TakeOwnership{}), m_gtype(gtype) {
         Base::debug_lifecycle("Prototype constructor");
     }
 
@@ -956,7 +958,7 @@ class GIWrapperPrototype : public Base {
         if (!proto->define_static_methods(cx, constructor))
             return nullptr;
 
-        GjsAutoChar class_name = g_strdup_printf("%s", proto->name());
+        Gjs::AutoChar class_name{g_strdup_printf("%s", proto->name())};
         if (!JS_DefineProperty(cx, in_object, class_name, constructor,
                                GJS_MODULE_PROP_FLAGS))
             return nullptr;
@@ -1022,11 +1024,13 @@ class GIWrapperPrototype : public Base {
 };
 
 using GIWrappedUnowned = void;
+namespace Gjs {
 template <>
-struct GjsSmartPointer<GIWrappedUnowned>
-    : GjsAutoPointer<GIWrappedUnowned, void, nullptr> {
-    using GjsAutoPointer::GjsAutoPointer;
+struct SmartPointer<GIWrappedUnowned>
+    : AutoPointer<GIWrappedUnowned, void, nullptr> {
+    using AutoPointer::AutoPointer;
 };
+}  // namespace Gjs
 
 /*
  * GIWrapperInstance:
@@ -1043,7 +1047,7 @@ template <class Base, class Prototype, class Instance,
           typename Wrapped = GIWrappedUnowned>
 class GIWrapperInstance : public Base {
  protected:
-    GjsSmartPointer<Wrapped> m_ptr;
+    Gjs::SmartPointer<Wrapped> m_ptr;
 
     explicit GIWrapperInstance(Prototype* prototype, JS::HandleObject obj)
         : Base(prototype), m_ptr(nullptr) {

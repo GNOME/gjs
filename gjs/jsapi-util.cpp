@@ -46,6 +46,7 @@
 #include <mozilla/ScopeExit.h>
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
@@ -593,7 +594,7 @@ static void _linux_get_self_process_size(long* rss_size)  // NOLINT(runtime/int)
 
     *rss_size = 0;
 
-    GjsAutoChar contents;
+    Gjs::AutoChar contents;
     if (!g_file_get_contents("/proc/self/stat", contents.out(), &len, nullptr))
         return;
 

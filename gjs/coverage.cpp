@@ -28,6 +28,7 @@
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/coverage.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -71,7 +72,7 @@ static GParamSpec *properties[PROP_N] = { NULL, };
 [[nodiscard]] static bool write_source_file_header(GOutputStream* stream,
                                                    GFile* source_file,
                                                    GError** error) {
-    GjsAutoChar path = get_file_identifier(source_file);
+    Gjs::AutoChar path{get_file_identifier(source_file)};
     return g_output_stream_printf(stream, NULL, NULL, error, "SF:%s\n", path.get());
 }
 
@@ -79,7 +80,7 @@ static GParamSpec *properties[PROP_N] = { NULL, };
     GFile* source_file, GFile* destination_file, GError** error) {
     /* We need to recursively make the directory we
      * want to copy to, as g_file_copy doesn't do that */
-    GjsAutoUnref<GFile> destination_dir = g_file_get_parent(destination_file);
+    Gjs::AutoUnref<GFile> destination_dir{g_file_get_parent(destination_file)};
     if (!g_file_make_directory_with_parents(destination_dir, NULL, error)) {
         if (!g_error_matches(*error, G_IO_ERROR, G_IO_ERROR_EXISTS))
             return false;
@@ -129,7 +130,7 @@ static GParamSpec *properties[PROP_N] = { NULL, };
  */
 [[nodiscard]] static char* find_diverging_child_components(GFile* child,
                                                            GFile* parent) {
-    GjsAutoUnref<GFile> ancestor(parent, GjsAutoTakeOwnership());
+    Gjs::AutoUnref<GFile> ancestor{parent, Gjs::TakeOwnership{}};
     while (ancestor) {
         char *relpath = g_file_get_relative_path(ancestor, child);
         if (relpath)
@@ -141,23 +142,23 @@ static GParamSpec *properties[PROP_N] = { NULL, };
     /* This is a special case of getting the URI below. The difference is that
      * this gives you a regular path name; getting it through the URI would
      * give a URI-encoded path (%20 for spaces, etc.) */
-    GjsAutoUnref<GFile> root = g_file_new_for_path("/");
+    Gjs::AutoUnref<GFile> root{g_file_new_for_path("/")};
     char* child_path = g_file_get_relative_path(root, child);
     if (child_path)
         return child_path;
 
-    GjsAutoChar child_uri = g_file_get_uri(child);
+    Gjs::AutoChar child_uri{g_file_get_uri(child)};
     return strip_uri_scheme(child_uri);
 }
 
 [[nodiscard]] static bool filename_has_coverage_prefixes(GjsCoverage* self,
                                                          const char* filename) {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(self));
-    GjsAutoChar workdir = g_get_current_dir();
-    GjsAutoChar abs_filename = g_canonicalize_filename(filename, workdir);
+    Gjs::AutoChar workdir{g_get_current_dir()};
+    Gjs::AutoChar abs_filename{g_canonicalize_filename(filename, workdir)};
 
     for (const char * const *prefix = priv->prefixes; *prefix; prefix++) {
-        GjsAutoChar abs_prefix = g_canonicalize_filename(*prefix, workdir);
+        Gjs::AutoChar abs_prefix{g_canonicalize_filename(*prefix, workdir)};
         if (g_str_has_prefix(abs_filename, abs_prefix))
             return true;
     }
@@ -172,7 +173,7 @@ write_line(GOutputStream *out,
     return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
 }
 
-[[nodiscard]] static GjsAutoUnref<GFile> write_statistics_internal(
+[[nodiscard]] static Gjs::AutoUnref<GFile> write_statistics_internal(
     GjsCoverage* coverage, JSContext* cx, GError** error) {
     if (!s_coverage_enabled) {
         g_critical(
@@ -195,15 +196,12 @@ write_line(GOutputStream *out,
     size_t lcov_length;
     JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
 
-    GjsAutoUnref<GOutputStream> ostream =
-        G_OUTPUT_STREAM(g_file_append_to(output_file,
-                                         G_FILE_CREATE_NONE,
-                                         NULL,
-                                         error));
+    Gjs::AutoUnref<GOutputStream> ostream{G_OUTPUT_STREAM(
+        g_file_append_to(output_file, G_FILE_CREATE_NONE, NULL, error))};
     if (!ostream)
         return nullptr;
 
-    GjsAutoStrv lcov_lines = g_strsplit(lcov.get(), "\n", -1);
+    Gjs::AutoStrv lcov_lines{g_strsplit(lcov.get(), "\n", -1)};
     const char* test_name = NULL;
     bool ignoring_file = false;
 
@@ -233,11 +231,12 @@ write_line(GOutputStream *out,
             /* The source file could be a resource, so we must use
              * g_file_new_for_commandline_arg() to disambiguate between URIs and
              * filesystem paths. */
-            GjsAutoUnref<GFile> source_file = g_file_new_for_commandline_arg(filename);
-            GjsAutoChar diverged_paths =
-                find_diverging_child_components(source_file, priv->output_dir);
-            GjsAutoUnref<GFile> destination_file =
-                g_file_resolve_relative_path(priv->output_dir, diverged_paths);
+            Gjs::AutoUnref<GFile> source_file{
+                g_file_new_for_commandline_arg(filename)};
+            Gjs::AutoChar diverged_paths{
+                find_diverging_child_components(source_file, priv->output_dir)};
+            Gjs::AutoUnref<GFile> destination_file{
+                g_file_resolve_relative_path(priv->output_dir, diverged_paths)};
             if (!copy_source_file_to_coverage_output(source_file, destination_file, error))
                 return nullptr;
 
@@ -273,18 +272,19 @@ void
 gjs_coverage_write_statistics(GjsCoverage *coverage)
 {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
-    GjsAutoError error;
+    Gjs::AutoError error;
 
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
     Gjs::AutoMainRealm ar{cx};
 
-    GjsAutoUnref<GFile> output_file = write_statistics_internal(coverage, cx, &error);
+    Gjs::AutoUnref<GFile> output_file{
+        write_statistics_internal(coverage, cx, &error)};
     if (!output_file) {
         g_critical("Error writing coverage data: %s", error->message);
         return;
     }
 
-    GjsAutoChar output_file_path = g_file_get_path(output_file);
+    Gjs::AutoChar output_file_path{g_file_get_path(output_file)};
     g_message("Wrote coverage statistics to %s", output_file_path.get());
 }
 

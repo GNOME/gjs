@@ -46,6 +46,7 @@
 #include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
@@ -93,7 +94,7 @@ public:
             if (!stack_str) {
                 g_printerr("(Unable to print stack trace)\n");
             } else {
-                GjsAutoChar encoded_stack_str{g_filename_from_utf8(
+                Gjs::AutoChar encoded_stack_str{g_filename_from_utf8(
                     stack_str.get(), -1, nullptr, nullptr, nullptr)};
                 if (!encoded_stack_str)
                     g_printerr("(Unable to print stack trace)\n");

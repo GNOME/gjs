@@ -77,6 +77,7 @@
 #include "gi/repo.h"
 #include "gi/utils-inl.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
@@ -162,7 +163,7 @@ enum {
 static GMutex contexts_lock;
 static GList *all_contexts = NULL;
 
-static GjsAutoChar dump_heap_output;
+static Gjs::AutoChar dump_heap_output;
 static unsigned dump_heap_idle_id = 0;
 
 #ifdef G_OS_UNIX
@@ -176,8 +177,8 @@ gjs_context_dump_heaps(void)
     gjs_memory_report("signal handler", false);
 
     /* dump to sequential files to allow easier comparisons */
-    GjsAutoChar filename = g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
-                                           intmax_t(getpid()), counter);
+    Gjs::AutoChar filename{g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
+                                           intmax_t(getpid()), counter)};
     ++counter;
 
     FILE *fp = fopen(filename, "w");
@@ -345,13 +346,13 @@ gjs_context_class_init(GjsContextClass *klass)
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        GjsAutoChar basedir =
-            g_win32_get_package_installation_directory_of_module(gjs_dll);
-        GjsAutoChar priv_typelib_dir = g_build_filename(
-            basedir, "lib", "gjs", "girepository-1.0", nullptr);
+        Gjs::AutoChar basedir{
+            g_win32_get_package_installation_directory_of_module(gjs_dll)};
+        Gjs::AutoChar priv_typelib_dir{g_build_filename(
+            basedir, "lib", "gjs", "girepository-1.0", nullptr)};
 #else
-        GjsAutoChar priv_typelib_dir =
-            g_build_filename(PKGLIBDIR, "girepository-1.0", nullptr);
+        Gjs::AutoChar priv_typelib_dir{
+            g_build_filename(PKGLIBDIR, "girepository-1.0", nullptr)};
 #endif
         g_irepository_prepend_search_path(priv_typelib_dir);
     }
@@ -1322,7 +1323,7 @@ gjs_context_eval(GjsContext   *js_context,
 
     size_t real_len = script_len < 0 ? strlen(script) : script_len;
 
-    GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
+    Gjs::AutoUnref<GjsContext> js_context_ref{js_context, Gjs::TakeOwnership{}};
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
     gjs->register_non_module_sourcemap(script, filename);
@@ -1333,7 +1334,7 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
                              uint8_t* exit_code, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
-    GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
+    Gjs::AutoUnref<GjsContext> js_context_ref{js_context, Gjs::TakeOwnership{}};
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
     return gjs->eval_module(identifier, exit_code, error);
@@ -1448,7 +1449,7 @@ bool GjsContextPrivate::run_main_loop_hook() {
 // for non-module runs we need to invoke this logic manually
 void GjsContextPrivate::register_non_module_sourcemap(const char* script,
                                                       const char* filename) {
-    using AutoURI = GjsAutoPointer<GUri, GUri, g_uri_unref>;
+    using AutoURI = Gjs::AutoPointer<GUri, GUri, g_uri_unref>;
     Gjs::AutoMainRealm ar{this};
 
     JS::RootedObject global{m_cx, JS::CurrentGlobalOrNull(m_cx)};
@@ -1467,8 +1468,8 @@ void GjsContextPrivate::register_non_module_sourcemap(const char* script,
     // file:// this parameter is used to help locate non-inlined source map file
     AutoURI uri = g_uri_parse(filename, G_URI_FLAGS_NONE, nullptr);
     if (!uri) {
-        GjsAutoUnref<GFile> file = g_file_new_for_path(filename);
-        GjsAutoChar file_uri = g_file_get_uri(file);
+        Gjs::AutoUnref<GFile> file = g_file_new_for_path(filename);
+        Gjs::AutoChar file_uri = g_file_get_uri(file);
         JS::RootedString abs_filename_scheme_str{
             m_cx, JS_NewStringCopyZ(m_cx, file_uri.get())};
         args[2].setString(abs_filename_scheme_str);
@@ -1657,9 +1658,9 @@ gjs_context_eval_file(GjsContext    *js_context,
                       int           *exit_status_p,
                       GError       **error)
 {
-    GjsAutoChar script;
+    Gjs::AutoChar script;
     size_t script_len;
-    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
+    Gjs::AutoUnref<GFile> file{g_file_new_for_commandline_arg(filename)};
 
     if (!g_file_load_contents(file, nullptr, script.out(), &script_len, nullptr,
                               error))
@@ -1671,8 +1672,8 @@ gjs_context_eval_file(GjsContext    *js_context,
 
 bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
                                   uint8_t* exit_status_p, GError** error) {
-    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
-    GjsAutoChar uri = g_file_get_uri(file);
+    Gjs::AutoUnref<GFile> file{g_file_new_for_commandline_arg(filename)};
+    Gjs::AutoChar uri{g_file_get_uri(file)};
 
     return gjs_context_register_module(js_context, uri, uri, error) &&
            gjs_context_eval_module(js_context, uri, exit_status_p, error);
@@ -1719,8 +1720,8 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     JS::CompileOptions options(m_cx);
     options.setFileAndLine(filename, 1).setNonSyntacticScope(true);
 
-    GjsAutoUnref<GFile> file = g_file_new_for_commandline_arg(filename);
-    GjsAutoChar uri = g_file_get_uri(file);
+    Gjs::AutoUnref<GFile> file{g_file_new_for_commandline_arg(filename)};
+    Gjs::AutoChar uri{g_file_get_uri(file)};
     JS::RootedObject priv(m_cx, gjs_script_module_build_private(m_cx, uri));
     if (!priv)
         return false;
