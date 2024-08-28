@@ -32,6 +32,7 @@
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for InformalValueTypeName, IdVector
+#include <mozilla/Unused.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -1176,11 +1177,8 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
     gjs_arg_set(&atom_intern_args[0], name);
     gjs_arg_set(&atom_intern_args[1], false);
 
-    g_function_info_invoke(atom_intern_fun,
-                           atom_intern_args, 2,
-                           nullptr, 0,
-                           ret,
-                           nullptr);
+    mozilla::Unused << g_function_info_invoke(atom_intern_fun, atom_intern_args,
+                                              2, nullptr, 0, ret, nullptr);
 }
 
 static bool value_to_interface_gi_argument(
@@ -2688,11 +2686,14 @@ bool gjs_value_from_gi_argument(JSContext* context,
                         g_struct_info_find_method(interface_info, "name");
                     GIArgument atom_name_ret;
 
-                    g_function_info_invoke(atom_name_fun,
-                            arg, 1,
-                            nullptr, 0,
-                            &atom_name_ret,
-                            nullptr);
+                    GjsAutoError error = nullptr;
+                    if (!g_function_info_invoke(atom_name_fun, arg, 1, nullptr,
+                                                0, &atom_name_ret,
+                                                error.out())) {
+                        gjs_throw(context, "Failed to call gdk_atom_name(): %s",
+                                  error->message);
+                        return false;
+                    }
 
                     GjsAutoChar name = gjs_arg_get<char*>(&atom_name_ret);
                     if (g_strcmp0("NONE", name) == 0) {
