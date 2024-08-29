@@ -3,5 +3,5 @@
 
 [Test]
 Type=session
-Exec=@prefix@/@installed_tests_execdir@/minijasmine @prefix@/@installed_tests_execdir@/js/@name@ -m
+Exec=@installed_tests_execdir@/minijasmine @installed_tests_execdir@/js/@name@ -m
 Output=TAP
