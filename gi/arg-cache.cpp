@@ -145,7 +145,7 @@ struct BasicType {
     GITypeTag m_tag : 5;
 };
 
-struct TypeInfo {
+struct HasTypeInfo {
     constexpr GITypeInfo* type_info() const {
         // Should be const GITypeInfo*, but G-I APIs won't accept that
         return const_cast<GITypeInfo*>(&m_type_info);
@@ -326,7 +326,7 @@ struct SkipAll : Argument {
     constexpr bool skip() { return true; }
 };
 
-struct Generic : SkipAll, Transferable, TypeInfo {};
+struct Generic : SkipAll, Transferable, HasTypeInfo {};
 
 struct GenericIn : Generic {
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -556,7 +556,7 @@ struct ForeignStructIn : ForeignStructInstanceIn {
                  GIArgument*) override;
 };
 
-struct FallbackInterfaceIn : RegisteredInterfaceIn, TypeInfo {
+struct FallbackInterfaceIn : RegisteredInterfaceIn, HasTypeInfo {
     using RegisteredInterfaceIn::RegisteredInterfaceIn;
 
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
@@ -1752,7 +1752,7 @@ GjsAutoCppPointer<T> Argument::make(uint8_t index, const char* name,
     if constexpr (std::is_base_of_v<Arg::Transferable, T>)
         arg->m_transfer = transfer;
 
-    if constexpr (std::is_base_of_v<Arg::TypeInfo, T> &&
+    if constexpr (std::is_base_of_v<Arg::HasTypeInfo, T> &&
                   ArgKind != Arg::Kind::INSTANCE) {
         arg->m_type_info = std::move(*type_info);
     }
