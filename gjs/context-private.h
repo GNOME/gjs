@@ -39,6 +39,7 @@
 #include "gi/closure.h"
 #include "gjs/auto.h"
 #include "gjs/context.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/macros.h"
 #include "gjs/mainloop.h"
@@ -142,10 +143,11 @@ class GjsContextPrivate : public JS::JobQueue {
     void warn_about_unhandled_promise_rejections();
 
     GJS_JSAPI_RETURN_CONVENTION bool run_main_loop_hook();
-    [[nodiscard]] bool handle_exit_code(bool no_sync_error_pending,
-                                        const char* source_type,
-                                        const char* identifier,
-                                        uint8_t* exit_code, GError** error);
+    [[nodiscard]]
+    Gjs::GErrorResult<> handle_exit_code(bool no_sync_error_pending,
+                                         const char* source_type,
+                                         const char* identifier,
+                                         uint8_t* exit_code);
     [[nodiscard]] bool auto_profile_enter(void);
     void auto_profile_exit(bool status);
 
@@ -228,15 +230,16 @@ class GjsContextPrivate : public JS::JobQueue {
     void register_non_module_sourcemap(const char* script,
                                        const char* filename);
 
-    [[nodiscard]] bool eval(const char* script, size_t script_len,
-                            const char* filename, int* exit_status_p,
-                            GError** error);
+    [[nodiscard]]
+    Gjs::GErrorResult<> eval(const char* script, size_t script_len,
+                             const char* filename, int* exit_status_p);
     GJS_JSAPI_RETURN_CONVENTION
     bool eval_with_scope(JS::HandleObject scope_object, const char* script,
                          size_t script_len, const char* filename,
                          JS::MutableHandleValue retval);
-    [[nodiscard]] bool eval_module(const char* identifier, uint8_t* exit_code_p,
-                                   GError** error);
+    [[nodiscard]]
+    Gjs::GErrorResult<> eval_module(const char* identifier,
+                                    uint8_t* exit_code_p);
     GJS_JSAPI_RETURN_CONVENTION
     bool call_function(JS::HandleObject this_obj, JS::HandleValue func_val,
                        const JS::HandleValueArray& args,
@@ -278,8 +281,9 @@ class GjsContextPrivate : public JS::JobQueue {
     void unregister_notifier(DestroyNotify notify_func, void* data);
     void async_closure_enqueue_for_gc(Gjs::Closure*);
 
-    [[nodiscard]] bool register_module(const char* identifier,
-                                       const char* filename, GError** error);
+    [[nodiscard]]
+    Gjs::GErrorResult<> register_module(const char* identifier,
+                                        const char* filename);
 
     static void trace(JSTracer* trc, void* data);
 

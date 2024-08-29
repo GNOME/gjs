@@ -23,8 +23,11 @@
 #include <js/Value.h>
 #include <js/experimental/CodeCoverage.h>  // for EnableCodeCoverage
 #include <jsapi.h>                         // for JS_WrapObject
+#include <mozilla/Result.h>
+#include <mozilla/Try.h>
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/coverage.h"
@@ -32,6 +35,9 @@
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+
+using Gjs::GErrorResult;
+using mozilla::Err, mozilla::Ok;
 
 static bool s_coverage_enabled = false;
 
@@ -69,26 +75,35 @@ static GParamSpec *properties[PROP_N] = { NULL, };
     return path;
 }
 
-[[nodiscard]] static bool write_source_file_header(GOutputStream* stream,
-                                                   GFile* source_file,
-                                                   GError** error) {
+[[nodiscard]]
+static GErrorResult<> write_source_file_header(GOutputStream* stream,
+                                               GFile* source_file) {
     Gjs::AutoChar path{get_file_identifier(source_file)};
-    return g_output_stream_printf(stream, NULL, NULL, error, "SF:%s\n", path.get());
+    Gjs::AutoError error;
+    if (!g_output_stream_printf(stream, nullptr, nullptr, error.out(),
+                                "SF:%s\n", path.get()))
+        return Err(error.release());
+    return Ok{};
 }
 
-[[nodiscard]] static bool copy_source_file_to_coverage_output(
-    GFile* source_file, GFile* destination_file, GError** error) {
+[[nodiscard]]
+static GErrorResult<> copy_source_file_to_coverage_output(
+    GFile* source_file, GFile* destination_file) {
     /* We need to recursively make the directory we
      * want to copy to, as g_file_copy doesn't do that */
+    Gjs::AutoError error;
     Gjs::AutoUnref<GFile> destination_dir{g_file_get_parent(destination_file)};
-    if (!g_file_make_directory_with_parents(destination_dir, NULL, error)) {
-        if (!g_error_matches(*error, G_IO_ERROR, G_IO_ERROR_EXISTS))
-            return false;
-        g_clear_error(error);
+    if (!g_file_make_directory_with_parents(destination_dir, nullptr,
+                                            error.out())) {
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+            return Err(error.release());
+        error.reset();
     }
 
-    return g_file_copy(source_file, destination_file, G_FILE_COPY_OVERWRITE,
-                       nullptr, nullptr, nullptr, error);
+    if (!g_file_copy(source_file, destination_file, G_FILE_COPY_OVERWRITE,
+                     nullptr, nullptr, nullptr, error.out()))
+        return Err(error.release());
+    return Ok{};
 }
 
 /* This function will strip a URI scheme and return
@@ -165,30 +180,34 @@ static GParamSpec *properties[PROP_N] = { NULL, };
     return false;
 }
 
-static inline bool
-write_line(GOutputStream *out,
-           const char    *line,
-           GError       **error)
-{
-    return g_output_stream_printf(out, nullptr, nullptr, error, "%s\n", line);
+[[nodiscard]]
+static inline GErrorResult<> write_line(GOutputStream* out, const char* line) {
+    Gjs::AutoError error;
+    if (!g_output_stream_printf(out, nullptr, nullptr, error.out(), "%s\n",
+                                line))
+        return Err(error.release());
+    return Ok{};
 }
 
-[[nodiscard]] static Gjs::AutoUnref<GFile> write_statistics_internal(
-    GjsCoverage* coverage, JSContext* cx, GError** error) {
+[[nodiscard]]
+GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
+    GjsCoverage* coverage, JSContext* cx) {
     if (!s_coverage_enabled) {
         g_critical(
             "Code coverage requested, but gjs_coverage_enable() was not called."
             " You must call this function before creating any GjsContext.");
-        return nullptr;
+        return Gjs::AutoUnref<GFile>{};
     }
 
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     /* Create output directory if it doesn't exist */
-    if (!g_file_make_directory_with_parents(priv->output_dir, nullptr, error)) {
-        if (!g_error_matches(*error, G_IO_ERROR, G_IO_ERROR_EXISTS))
-            return nullptr;
-        g_clear_error(error);
+    Gjs::AutoError error;
+    if (!g_file_make_directory_with_parents(priv->output_dir, nullptr,
+                                            error.out())) {
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+            return Err(error.release());
+        error.reset();
     }
 
     GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
@@ -196,10 +215,10 @@ write_line(GOutputStream *out,
     size_t lcov_length;
     JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
 
-    Gjs::AutoUnref<GOutputStream> ostream{G_OUTPUT_STREAM(
-        g_file_append_to(output_file, G_FILE_CREATE_NONE, NULL, error))};
+    Gjs::AutoUnref<GOutputStream> ostream{G_OUTPUT_STREAM(g_file_append_to(
+        output_file, G_FILE_CREATE_NONE, nullptr, error.out()))};
     if (!ostream)
-        return nullptr;
+        return Err(error.release());
 
     Gjs::AutoStrv lcov_lines{g_strsplit(lcov.get(), "\n", -1)};
     const char* test_name = NULL;
@@ -225,8 +244,7 @@ write_line(GOutputStream *out,
             }
 
             /* Now we can write the test name before writing the source file */
-            if (!write_line(ostream, test_name, error))
-                return nullptr;
+            MOZ_TRY(write_line(ostream, test_name));
 
             /* The source file could be a resource, so we must use
              * g_file_new_for_commandline_arg() to disambiguate between URIs and
@@ -237,21 +255,19 @@ write_line(GOutputStream *out,
                 find_diverging_child_components(source_file, priv->output_dir)};
             Gjs::AutoUnref<GFile> destination_file{
                 g_file_resolve_relative_path(priv->output_dir, diverged_paths)};
-            if (!copy_source_file_to_coverage_output(source_file, destination_file, error))
-                return nullptr;
+            MOZ_TRY(copy_source_file_to_coverage_output(source_file,
+                                                        destination_file));
 
             /* Rewrite the source file path to be relative to the output
              * dir so that genhtml will find it */
-            if (!write_source_file_header(ostream, destination_file, error))
-                return nullptr;
+            MOZ_TRY(write_source_file_header(ostream, destination_file));
             continue;
         }
 
-        if (!write_line(ostream, *iter, error))
-            return nullptr;
+        MOZ_TRY(write_line(ostream, *iter));
     }
 
-    return output_file;
+    return Gjs::AutoUnref<GFile>{output_file};
 }
 
 /**
@@ -272,19 +288,18 @@ void
 gjs_coverage_write_statistics(GjsCoverage *coverage)
 {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
-    Gjs::AutoError error;
-
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
     Gjs::AutoMainRealm ar{cx};
 
-    Gjs::AutoUnref<GFile> output_file{
-        write_statistics_internal(coverage, cx, &error)};
-    if (!output_file) {
-        g_critical("Error writing coverage data: %s", error->message);
+    GErrorResult<Gjs::AutoUnref<GFile>> result{
+        write_statistics_internal(coverage, cx)};
+    if (result.isErr()) {
+        g_critical("Error writing coverage data: %s",
+                   result.inspectErr()->message);
         return;
     }
 
-    Gjs::AutoChar output_file_path{g_file_get_path(output_file)};
+    Gjs::AutoChar output_file_path{g_file_get_path(result.unwrap())};
     g_message("Wrote coverage statistics to %s", output_file_path.get());
 }
 

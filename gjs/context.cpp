@@ -68,6 +68,7 @@
 #include <js/friend/DumpFunctions.h>
 #include <jsapi.h>              // for JS_GetFunctionObject, JS_Ge...
 #include <jsfriendapi.h>        // for ScriptEnvironmentPreparer
+#include <mozilla/Result.h>
 #include <mozilla/UniquePtr.h>  // for UniquePtr::get
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
@@ -83,6 +84,7 @@
 #include "gjs/context.h"
 #include "gjs/engine.h"
 #include "gjs/error-types.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/importer.h"
 #include "gjs/internal.h"
@@ -105,6 +107,9 @@
 namespace mozilla {
 union Utf8Unit;
 }
+
+using Gjs::GErrorResult;
+using mozilla::Err, mozilla::Ok;
 
 static void     gjs_context_dispose           (GObject               *object);
 static void     gjs_context_finalize          (GObject               *object);
@@ -1311,6 +1316,13 @@ gjs_context_get_native_context (GjsContext *js_context)
     return gjs->context();
 }
 
+static inline bool result_to_c(GErrorResult<> result, GError** error_out) {
+    if (result.isOk())
+        return true;
+    *error_out = result.unwrapErr().release();
+    return false;
+}
+
 bool
 gjs_context_eval(GjsContext   *js_context,
                  const char   *script,
@@ -1327,7 +1339,8 @@ gjs_context_eval(GjsContext   *js_context,
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
     gjs->register_non_module_sourcemap(script, filename);
-    return gjs->eval(script, real_len, filename, exit_status_p, error);
+    return result_to_c(gjs->eval(script, real_len, filename, exit_status_p),
+                       error);
 }
 
 bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
@@ -1337,7 +1350,7 @@ bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
     Gjs::AutoUnref<GjsContext> js_context_ref{js_context, Gjs::TakeOwnership{}};
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
-    return gjs->eval_module(identifier, exit_code, error);
+    return result_to_c(gjs->eval_module(identifier, exit_code), error);
 }
 
 bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
@@ -1346,7 +1359,7 @@ bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 
-    return gjs->register_module(identifier, uri, error);
+    return result_to_c(gjs->register_module(identifier, uri), error);
 }
 
 bool GjsContextPrivate::auto_profile_enter() {
@@ -1368,57 +1381,61 @@ void GjsContextPrivate::auto_profile_exit(bool auto_profile) {
         gjs_profiler_stop(m_profiler);
 }
 
-bool GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
-                                         const char* source_type,
-                                         const char* identifier,
-                                         uint8_t* exit_code, GError** error) {
+GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
+                                                   const char* source_type,
+                                                   const char* identifier,
+                                                   uint8_t* exit_code) {
     uint8_t code;
     if (should_exit(&code)) {
         /* exit_status_p is public API so can't be changed, but should be
          * uint8_t, not int */
-        g_set_error(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+        Gjs::AutoError error;
+        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
                     "Exit with code %d", code);
 
         *exit_code = code;
-        return false;  // Don't log anything
+        return Err(error.release());  // Don't log anything
     }
 
     // Once the main loop exits an exception could
     // be pending even if the script returned
     // true synchronously
     if (JS_IsExceptionPending(m_cx)) {
-        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+        Gjs::AutoError error;
+        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                     "%s %s threw an exception", source_type, identifier);
         gjs_log_exception_uncaught(m_cx);
 
         *exit_code = 1;
-        return false;
+        return Err(error.release());
     }
 
     if (m_unhandled_exception) {
-        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+        Gjs::AutoError error;
+        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                     "%s %s threw an exception", source_type, identifier);
         *exit_code = 1;
-        return false;
+        return Err(error.release());
     }
 
     // Assume success if no error was thrown and should exit isn't
     // set
     if (no_sync_error_pending) {
         *exit_code = 0;
-        return true;
+        return Ok{};
     }
 
     g_critical("%s %s terminated with an uncatchable exception", source_type,
                identifier);
-    g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+    Gjs::AutoError error;
+    g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                 "%s %s terminated with an uncatchable exception", source_type,
                 identifier);
 
     gjs_log_exception_uncaught(m_cx);
     /* No exit code from script, but we don't want to exit(0) */
     *exit_code = 1;
-    return false;
+    return Err(error.release());
 }
 
 bool GjsContextPrivate::set_main_loop_hook(JSObject* callable) {
@@ -1479,9 +1496,9 @@ void GjsContextPrivate::register_non_module_sourcemap(const char* script,
     JS::Call(m_cx, v_loader_obj, "populateSourceMap", args, &ignored);
 }
 
-bool GjsContextPrivate::eval(const char* script, size_t script_len,
-                             const char* filename, int* exit_status_p,
-                             GError** error) {
+GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
+                                       const char* filename,
+                                       int* exit_status_p) {
     AutoResetExit reset(this);
 
     bool auto_profile = auto_profile_enter();
@@ -1530,10 +1547,10 @@ bool GjsContextPrivate::eval(const char* script, size_t script_len,
     auto_profile_exit(auto_profile);
 
     uint8_t out_code;
-    ok = handle_exit_code(ok, "Script", filename, &out_code, error);
+    GErrorResult<> result = handle_exit_code(ok, "Script", filename, &out_code);
 
     if (exit_status_p) {
-        if (ok && retval.isInt32()) {
+        if (result.isOk() && retval.isInt32()) {
             int code = retval.toInt32();
             gjs_debug(GJS_DEBUG_CONTEXT,
                       "Script returned integer code %d", code);
@@ -1543,11 +1560,11 @@ bool GjsContextPrivate::eval(const char* script, size_t script_len,
         }
     }
 
-    return ok;
+    return result;
 }
 
-bool GjsContextPrivate::eval_module(const char* identifier,
-                                    uint8_t* exit_status_p, GError** error) {
+GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
+                                              uint8_t* exit_status_p) {
     AutoResetExit reset(this);
 
     bool auto_profile = auto_profile_enter();
@@ -1558,22 +1575,24 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     JS::RootedId key(m_cx, gjs_intern_string_to_id(m_cx, identifier));
     JS::RootedObject obj(m_cx);
     if (!gjs_global_registry_get(m_cx, registry, key, &obj) || !obj) {
-        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+        Gjs::AutoError error;
+        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                     "Cannot load module with identifier: '%s'", identifier);
 
         if (exit_status_p)
             *exit_status_p = 1;
-        return false;
+        return Err(error.release());
     }
 
     if (!JS::ModuleLink(m_cx, obj)) {
         gjs_log_exception(m_cx);
-        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+        Gjs::AutoError error;
+        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                     "Failed to resolve imports for module: '%s'", identifier);
 
         if (exit_status_p)
             *exit_status_p = 1;
-        return false;
+        return Err(error.release());
     }
 
     JS::RootedValue evaluation_promise(m_cx);
@@ -1620,19 +1639,20 @@ bool GjsContextPrivate::eval_module(const char* identifier,
     auto_profile_exit(auto_profile);
 
     uint8_t out_code;
-    ok = handle_exit_code(ok, "Module", identifier, &out_code, error);
+    GErrorResult<> result =
+        handle_exit_code(ok, "Module", identifier, &out_code);
     if (exit_status_p)
         *exit_status_p = out_code;
 
-    return ok;
+    return result;
 }
 
-bool GjsContextPrivate::register_module(const char* identifier, const char* uri,
-                                        GError** error) {
+GErrorResult<> GjsContextPrivate::register_module(const char* identifier,
+                                                  const char* uri) {
     Gjs::AutoMainRealm ar{this};
 
     if (gjs_module_load(m_cx, identifier, uri))
-        return true;
+        return Ok{};
 
     const char* msg = "unknown";
     JS::ExceptionStack exn_stack(m_cx);
@@ -1645,11 +1665,12 @@ bool GjsContextPrivate::register_module(const char* identifier, const char* uri,
         JS_ClearPendingException(m_cx);
     }
 
-    g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
+    Gjs::AutoError error;
+    g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                 "Failed to parse module '%s': %s", identifier,
                 msg ? msg : "unknown");
 
-    return false;
+    return Err(error.release());
 }
 
 bool
