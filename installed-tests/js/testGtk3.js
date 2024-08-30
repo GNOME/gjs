@@ -227,6 +227,22 @@ describe('Gtk overrides', function () {
             'GTK destroy signal is emitted while disposing objects');
     });
 
+    it('destroy signal is not emitted when objects are garbage collected', function () {
+        let label = new Gtk.Label({label: 'Hello'});
+        const handleDispose = jasmine.createSpy('handleDispose').and.callFake(() => {
+            expect(label.label).toBe('Hello');
+        });
+        label.connect('destroy', handleDispose);
+
+        label = null;
+
+        System.gc();
+
+        System.gc();
+
+        expect(handleDispose).not.toHaveBeenCalled();
+    });
+
     it('accepts string in place of GdkAtom', function () {
         expect(() => Gtk.Clipboard.get(1)).toThrow();
         expect(() => Gtk.Clipboard.get(true)).toThrow();

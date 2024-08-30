@@ -20,6 +20,7 @@
 #include <js/Conversions.h>
 #include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
+#include <js/HeapAPI.h>   // for RuntimeHeapIsCollecting
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -236,7 +237,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     context = m_cx;
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    if (G_UNLIKELY(gjs->sweeping())) {
+    if (JS::RuntimeHeapIsCollecting()) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
         std::ostringstream message;
 

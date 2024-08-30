@@ -121,7 +121,6 @@ class GjsContextPrivate : public JS::JobQueue {
 
     /* flags */
     std::atomic_bool m_destroying = ATOMIC_VAR_INIT(false);
-    bool m_in_gc_sweep : 1;
     bool m_should_exit : 1;
     bool m_force_gc : 1;
     bool m_draining_job_queue : 1;
@@ -196,7 +195,6 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] GjsProfiler* profiler() const { return m_profiler; }
     [[nodiscard]] const GjsAtoms& atoms() const { return *m_atoms; }
     [[nodiscard]] bool destroying() const { return m_destroying.load(); }
-    [[nodiscard]] bool sweeping() const { return m_in_gc_sweep; }
     [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
     GJS_USE const char* program_path(void) const { return m_program_path; }
