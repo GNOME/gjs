@@ -32,7 +32,7 @@
 #    include <sysprof-capture.h>
 #endif
 
-#include <js/GCAPI.h>           // for JSFinalizeStatus
+#include <js/GCAPI.h>           // for JSFinalizeStatus, JSGCStatus, GCReason
 #include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
 #include <js/TypeDecls.h>
 #include <mozilla/Atomics.h>  // for ProfilingStack operators

@@ -277,8 +277,6 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] bool register_module(const char* identifier,
                                        const char* filename, GError** error);
 
-    void set_gc_status(JSGCStatus status, JS::GCReason reason);
-
     static void trace(JSTracer* trc, void* data);
 
     void free_profiler(void);

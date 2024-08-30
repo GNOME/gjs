@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#include <js/GCAPI.h>  // for JSFinalizeStatus
+#include <js/GCAPI.h>  // for JSFinalizeStatus, JSGCStatus, GCReason
 #include <js/ProfilingCategory.h>
 #include <js/ProfilingStack.h>
 #include <js/RootingAPI.h>
