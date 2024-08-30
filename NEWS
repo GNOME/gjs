@@ -1,3 +1,19 @@
+Version 1.81.90
+---------------
+
+- Closed bugs and merge requests:
+
+  * callbacks: fix sweeping check for incremental GC [!859, !950, Evan Welsh,
+    Gary Li]
+  * GJS doesn't handle query parameters in imports [#618, !944, Gary Li]
+  * Integrate gobject-introspection-tests as submodule [!946, Philip Chimento]
+  * module: Include full module specifier in import.meta.url [!947, Philip
+    Chimento]
+  * doap: Remove invalid maintainer entry [!948, Sophie Herold]
+  * installed tests have the wrong libexecdir [#636, !949, Jeremy Bicha]
+  * Inheriting final class crashes GJS [#640, !951, Gary Li]
+  * Various maintenance [!952, Philip Chimento]
+
 Version 1.81.2
 --------------
 
