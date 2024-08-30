@@ -38,7 +38,7 @@
 #include <mozilla/Atomics.h>  // for ProfilingStack operators
 
 #include "gjs/context.h"
-#include "gjs/jsapi-util.h"
+#include "gjs/jsapi-util.h"  // for gjs_explain_gc_reason
 #include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"
 #include "gjs/profiler.h"
@@ -114,8 +114,10 @@ struct _GjsProfiler {
     GPid pid;
 
     /* Timing information */
+    int64_t gc_begin_time;
     int64_t sweep_begin_time;
     int64_t group_sweep_begin_time;
+    const char* gc_reason;  // statically allocated
 
     /* GLib signal handler ID for SIGUSR2 */
     unsigned sigusr2_id;
@@ -923,5 +925,34 @@ void _gjs_profiler_set_finalize_status(GjsProfiler* self,
 #else
     (void)self;
     (void)status;
+#endif
+}
+
+void _gjs_profiler_set_gc_status(GjsProfiler* self, JSGCStatus status,
+                                 JS::GCReason reason) {
+#ifdef ENABLE_PROFILER
+    int64_t now = g_get_monotonic_time() * 1000L;
+
+    switch (status) {
+        case JSGC_BEGIN:
+            self->gc_begin_time = now;
+            self->gc_reason = gjs_explain_gc_reason(reason);
+            break;
+        case JSGC_END:
+            if (self->gc_begin_time != 0) {
+                _gjs_profiler_add_mark(self, self->gc_begin_time,
+                                       now - self->gc_begin_time, "GJS",
+                                       "Garbage collection", self->gc_reason);
+            }
+            self->gc_begin_time = 0;
+            self->gc_reason = nullptr;
+            break;
+        default:
+            g_assert_not_reached();
+    }
+#else
+    (void)self;
+    (void)status;
+    (void)reason;
 #endif
 }

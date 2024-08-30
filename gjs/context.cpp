@@ -904,17 +904,14 @@ void GjsContextPrivate::schedule_gc_if_needed(void) {
 }
 
 void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason reason) {
-    int64_t now = 0;
     if (m_profiler)
-        now = g_get_monotonic_time() * 1000L;
+        _gjs_profiler_set_gc_status(m_profiler, status, reason);
 
     switch (status) {
         case JSGC_BEGIN:
-            m_gc_begin_time = now;
-            m_gc_reason = gjs_explain_gc_reason(reason);
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT,
                                 "Begin garbage collection because of %s",
-                                m_gc_reason);
+                                gjs_explain_gc_reason(reason));
 
             // We finalize any pending toggle refs before doing any garbage
             // collection, so that we can collect the JS wrapper objects, and in
@@ -926,14 +923,6 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
             m_async_closures.shrink_to_fit();
             break;
         case JSGC_END:
-            if (m_profiler && m_gc_begin_time != 0) {
-                _gjs_profiler_add_mark(m_profiler, m_gc_begin_time,
-                                       now - m_gc_begin_time, "GJS",
-                                       "Garbage collection", m_gc_reason);
-            }
-            m_gc_begin_time = 0;
-            m_gc_reason = nullptr;
-
             m_destroy_notifications.shrink_to_fit();
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
             break;

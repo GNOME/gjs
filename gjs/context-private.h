@@ -129,11 +129,6 @@ class GjsContextPrivate : public JS::JobQueue {
     bool m_unhandled_exception : 1;
     bool m_should_listen_sigusr2 : 1;
 
-    // If profiling is enabled, we record the durations and reason for GC mark
-    // and sweep
-    int64_t m_gc_begin_time;
-    const char* m_gc_reason;  // statically allocated
-
     void schedule_gc_internal(bool force_gc);
     static gboolean trigger_gc_if_needed(void* data);
     void on_garbage_collection(JSGCStatus, JS::GCReason);
