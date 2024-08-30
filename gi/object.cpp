@@ -114,16 +114,6 @@ bool ObjectBase::is_custom_js_class() {
     return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
 }
 
-// Plain g_type_query fails and leaves @query uninitialized for dynamic types.
-// See https://gitlab.gnome.org/GNOME/glib/issues/623
-void ObjectBase::type_query_dynamic_safe(GTypeQuery* query) {
-    GType type = gtype();
-    while (g_type_get_qdata(type, ObjectBase::custom_type_quark()))
-        type = g_type_parent(type);
-
-    g_type_query(type, query);
-}
-
 void ObjectInstance::link() {
     g_assert(std::find(s_wrapped_gobject_list.begin(),
                        s_wrapped_gobject_list.end(),
@@ -1587,7 +1577,7 @@ ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
       m_gobj_finalized(false),
       m_uses_toggle_ref(false) {
     GTypeQuery query;
-    type_query_dynamic_safe(&query);
+    g_type_query(gtype(), &query);
     if (G_LIKELY(query.type))
         JS::AddAssociatedMemory(object, query.instance_size,
                                 MemoryUse::GObjectInstanceStruct);
@@ -1929,7 +1919,7 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
 
 void ObjectInstance::finalize_impl(JS::GCContext* gcx, JSObject* obj) {
     GTypeQuery query;
-    type_query_dynamic_safe(&query);
+    g_type_query(gtype(), &query);
     if (G_LIKELY(query.type))
         JS::RemoveAssociatedMemory(obj, query.instance_size,
                                    MemoryUse::GObjectInstanceStruct);

@@ -347,10 +347,11 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
     g_assert(parent_priv);
 
     GTypeQuery query;
-    parent_priv->type_query_dynamic_safe(&query);
-    if (G_UNLIKELY(query.type == 0)) {
-        gjs_throw(cx,
-                  "Cannot inherit from a non-gjs dynamic type [bug 687184]");
+    g_type_query(parent_priv->gtype(), &query);
+
+    if (G_UNLIKELY(
+            g_type_test_flags(parent_priv->gtype(), G_TYPE_FLAG_FINAL))) {
+        gjs_throw(cx, "Cannot inherit from a final type");
         return false;
     }
 

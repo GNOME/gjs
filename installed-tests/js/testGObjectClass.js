@@ -226,6 +226,11 @@ const MyAbstractObject = GObject.registerClass({
 }, class MyAbstractObject extends GObject.Object {
 });
 
+const MyFinalObject = GObject.registerClass({
+    GTypeFlags: GObject.TypeFlags.FINAL,
+}, class extends GObject.Object {
+});
+
 const MyApplication = GObject.registerClass({
     Signals: {'custom': {param_types: [GObject.TYPE_INT]}},
 }, class MyApplication extends Gio.Application {
@@ -282,6 +287,15 @@ describe('GObject class with decorator', function () {
 
     it('throws an error when used with an abstract class', function () {
         expect(() => new MyAbstractObject()).toThrow();
+    });
+
+    it('throws if final class is inherited from', function () {
+        try {
+            GObject.registerClass(class extends MyFinalObject {});
+            fail();
+        } catch (e) {
+            expect(e.message).toEqual('Cannot inherit from a final type');
+        }
     });
 
     it('constructs with default values for properties', function () {
