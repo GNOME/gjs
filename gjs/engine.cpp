@@ -35,6 +35,7 @@
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/jsapi-util.h"
+#include "gjs/profiler-private.h"
 #include "util/log.h"
 
 struct JSStructuredCloneWriter;
@@ -42,7 +43,8 @@ struct JSStructuredCloneWriter;
 static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
-    gjs->set_finalize_status(status);
+    if (gjs->profiler())
+        _gjs_profiler_set_finalize_status(gjs->profiler(), status);
 }
 
 static void on_promise_unhandled_rejection(

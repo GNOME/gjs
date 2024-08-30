@@ -32,6 +32,7 @@
 #    include <sysprof-capture.h>
 #endif
 
+#include <js/GCAPI.h>           // for JSFinalizeStatus
 #include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
 #include <js/TypeDecls.h>
 #include <mozilla/Atomics.h>  // for ProfilingStack operators
@@ -111,6 +112,10 @@ struct _GjsProfiler {
 
     /* Cached copy of our pid */
     GPid pid;
+
+    /* Timing information */
+    int64_t sweep_begin_time;
+    int64_t group_sweep_begin_time;
 
     /* GLib signal handler ID for SIGUSR2 */
     unsigned sigusr2_id;
@@ -863,5 +868,60 @@ void gjs_profiler_set_fd(GjsProfiler* self, int fd) {
     }
 #else
     (void)fd;  // Unused in the no-profiler case
+#endif
+}
+
+void _gjs_profiler_set_finalize_status(GjsProfiler* self,
+                                       JSFinalizeStatus status) {
+#ifdef ENABLE_PROFILER
+    // Implementation note for mozjs-128:
+    //
+    // Sweeping happens in three phases:
+    // 1st phase (JSFINALIZE_GROUP_PREPARE): the collector prepares to sweep a
+    // group of zones. 2nd phase (JSFINALIZE_GROUP_START): weak references to
+    // unmarked things have been removed, but no GC thing has been swept. 3rd
+    // Phase (JSFINALIZE_GROUP_END): all dead GC things for a group of zones
+    // have been swept. The above repeats for each sweep group.
+    // JSFINALIZE_COLLECTION_END occurs at the end of all GC. (see jsgc.cpp,
+    // BeginSweepPhase/BeginSweepingZoneGroup and SweepPhase, all called from
+    // IncrementalCollectSlice).
+    //
+    // Incremental GC muddies the waters, because BeginSweepPhase is always run
+    // to entirety, but SweepPhase can be run incrementally and mixed with JS
+    // code runs or even native code, when MaybeGC/IncrementalGC return.
+    // After GROUP_START, the collector may yield to the mutator meaning JS code
+    // can run between the callback for GROUP_START and GROUP_END.
+
+    int64_t now = g_get_monotonic_time() * 1000L;
+
+    switch (status) {
+        case JSFINALIZE_GROUP_PREPARE:
+            self->sweep_begin_time = now;
+            break;
+        case JSFINALIZE_GROUP_START:
+            self->group_sweep_begin_time = now;
+            break;
+        case JSFINALIZE_GROUP_END:
+            if (self->group_sweep_begin_time != 0) {
+                _gjs_profiler_add_mark(self, self->group_sweep_begin_time,
+                                       now - self->group_sweep_begin_time,
+                                       "GJS", "Group sweep", nullptr);
+            }
+            self->group_sweep_begin_time = 0;
+            break;
+        case JSFINALIZE_COLLECTION_END:
+            if (self->sweep_begin_time != 0) {
+                _gjs_profiler_add_mark(self, self->sweep_begin_time,
+                                       now - self->sweep_begin_time, "GJS",
+                                       "Sweep", nullptr);
+            }
+            self->sweep_begin_time = 0;
+            break;
+        default:
+            g_assert_not_reached();
+    }
+#else
+    (void)self;
+    (void)status;
 #endif
 }

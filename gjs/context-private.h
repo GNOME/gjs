@@ -132,8 +132,6 @@ class GjsContextPrivate : public JS::JobQueue {
     // If profiling is enabled, we record the durations and reason for GC mark
     // and sweep
     int64_t m_gc_begin_time;
-    int64_t m_sweep_begin_time;
-    int64_t m_group_sweep_begin_time;
     const char* m_gc_reason;  // statically allocated
 
     void schedule_gc_internal(bool force_gc);
@@ -280,7 +278,6 @@ class GjsContextPrivate : public JS::JobQueue {
                                        const char* filename, GError** error);
 
     void set_gc_status(JSGCStatus status, JS::GCReason reason);
-    void set_finalize_status(JSFinalizeStatus status);
 
     static void trace(JSTracer* trc, void* data);
 
