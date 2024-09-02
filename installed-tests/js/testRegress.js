@@ -534,6 +534,25 @@ describe('Life, the Universe and Everything', function () {
         });
     });
 
+    it('enum that references its own members has correct values', function () {
+        expect(Regress.TestReferenceEnum.ZERO).toEqual(4);
+        expect(Regress.TestReferenceEnum.ONE).toEqual(2);
+        expect(Regress.TestReferenceEnum.TWO).toEqual(54);
+        expect(Regress.TestReferenceEnum.THREE).toEqual(4);
+        expect(Regress.TestReferenceEnum.FOUR).toEqual(216);
+        expect(Regress.TestReferenceEnum.FIVE).toEqual(-217);
+    });
+
+    it('unregistered enum works', function () {
+        expect(Regress.TestEnumNoGEnum.EVALUE1).toEqual(0);
+        expect(Regress.TestEnumNoGEnum.EVALUE2).toEqual(42);
+        expect(Regress.TestEnumNoGEnum.EVALUE3).toEqual('0'.charCodeAt());
+    });
+
+    it('value is not added to enum with #define', function () {
+        expect(Regress.TestEnumNoGEnum.EVALUE_DEPRECATED).not.toBeDefined();
+    });
+
     it('enum parameter', function () {
         expect(Regress.test_enum_param(Regress.TestEnum.VALUE1)).toEqual('value1');
         expect(Regress.test_enum_param(Regress.TestEnum.VALUE3)).toEqual('value3');

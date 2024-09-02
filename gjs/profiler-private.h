@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include <js/GCAPI.h>  // for JSFinalizeStatus, JSGCStatus, GCReason
 #include <js/ProfilingCategory.h>
 #include <js/ProfilingStack.h>
 #include <js/RootingAPI.h>
@@ -56,5 +57,8 @@ void _gjs_profiler_add_mark(GjsProfiler* self, int64_t time, int64_t duration,
 [[nodiscard]] bool _gjs_profiler_is_running(GjsProfiler* self);
 
 void _gjs_profiler_setup_signals(GjsProfiler *self, GjsContext *context);
+
+void _gjs_profiler_set_finalize_status(GjsProfiler*, JSFinalizeStatus);
+void _gjs_profiler_set_gc_status(GjsProfiler*, JSGCStatus, JS::GCReason);
 
 #endif  // GJS_PROFILER_PRIVATE_H_

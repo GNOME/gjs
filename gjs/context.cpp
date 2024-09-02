@@ -904,17 +904,14 @@ void GjsContextPrivate::schedule_gc_if_needed(void) {
 }
 
 void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason reason) {
-    int64_t now = 0;
     if (m_profiler)
-        now = g_get_monotonic_time() * 1000L;
+        _gjs_profiler_set_gc_status(m_profiler, status, reason);
 
     switch (status) {
         case JSGC_BEGIN:
-            m_gc_begin_time = now;
-            m_gc_reason = gjs_explain_gc_reason(reason);
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT,
                                 "Begin garbage collection because of %s",
-                                m_gc_reason);
+                                gjs_explain_gc_reason(reason));
 
             // We finalize any pending toggle refs before doing any garbage
             // collection, so that we can collect the JS wrapper objects, and in
@@ -926,68 +923,8 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
             m_async_closures.shrink_to_fit();
             break;
         case JSGC_END:
-            if (m_profiler && m_gc_begin_time != 0) {
-                _gjs_profiler_add_mark(m_profiler, m_gc_begin_time,
-                                       now - m_gc_begin_time, "GJS",
-                                       "Garbage collection", m_gc_reason);
-            }
-            m_gc_begin_time = 0;
-            m_gc_reason = nullptr;
-
             m_destroy_notifications.shrink_to_fit();
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
-            break;
-        default:
-            g_assert_not_reached();
-    }
-}
-
-void GjsContextPrivate::set_finalize_status(JSFinalizeStatus status) {
-    // Implementation note for mozjs-128:
-    //
-    // Sweeping happens in three phases:
-    // 1st phase (JSFINALIZE_GROUP_PREPARE): the collector prepares to sweep a
-    // group of zones. 2nd phase (JSFINALIZE_GROUP_START): weak references to
-    // unmarked things have been removed, but no GC thing has been swept. 3rd
-    // Phase (JSFINALIZE_GROUP_END): all dead GC things for a group of zones
-    // have been swept. The above repeats for each sweep group.
-    // JSFINALIZE_COLLECTION_END occurs at the end of all GC. (see jsgc.cpp,
-    // BeginSweepPhase/BeginSweepingZoneGroup and SweepPhase, all called from
-    // IncrementalCollectSlice).
-    //
-    // Incremental GC muddies the waters, because BeginSweepPhase is always run
-    // to entirety, but SweepPhase can be run incrementally and mixed with JS
-    // code runs or even native code, when MaybeGC/IncrementalGC return.
-    // After GROUP_START, the collector may yield to the mutator meaning JS code
-    // can run between the callback for GROUP_START and GROUP_END.
-
-    int64_t now = 0;
-
-    if (m_profiler)
-        now = g_get_monotonic_time() * 1000L;
-
-    switch (status) {
-        case JSFINALIZE_GROUP_PREPARE:
-            m_sweep_begin_time = now;
-            break;
-        case JSFINALIZE_GROUP_START:
-            m_group_sweep_begin_time = now;
-            break;
-        case JSFINALIZE_GROUP_END:
-            if (m_profiler && m_group_sweep_begin_time != 0) {
-                _gjs_profiler_add_mark(m_profiler, m_group_sweep_begin_time,
-                                       now - m_group_sweep_begin_time, "GJS",
-                                       "Group sweep", nullptr);
-            }
-            m_group_sweep_begin_time = 0;
-            break;
-        case JSFINALIZE_COLLECTION_END:
-            if (m_profiler && m_sweep_begin_time != 0) {
-                _gjs_profiler_add_mark(m_profiler, m_sweep_begin_time,
-                                       now - m_sweep_begin_time, "GJS", "Sweep",
-                                       nullptr);
-            }
-            m_sweep_begin_time = 0;
             break;
         default:
             g_assert_not_reached();

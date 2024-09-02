@@ -46,6 +46,7 @@ union Utf8Unit;
 }
 
 class GjsBaseGlobal {
+    GJS_JSAPI_RETURN_CONVENTION
     static JSObject* base(JSContext* cx, const JSClass* clasp,
                           JS::RealmCreationOptions options,
                           JSPrincipals* principals = nullptr) {
@@ -68,7 +69,8 @@ class GjsBaseGlobal {
     }
 
  protected:
-    [[nodiscard]] static JSObject* create(
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create(
         JSContext* cx, const JSClass* clasp,
         JS::RealmCreationOptions options = JS::RealmCreationOptions(),
         JSPrincipals* principals = nullptr) {
@@ -76,7 +78,8 @@ class GjsBaseGlobal {
         return base(cx, clasp, options, principals);
     }
 
-    [[nodiscard]] static JSObject* create_with_compartment(
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create_with_compartment(
         JSContext* cx, JS::HandleObject existing, const JSClass* clasp,
         JS::RealmCreationOptions options = JS::RealmCreationOptions(),
         JSPrincipals* principals = nullptr) {
@@ -161,12 +164,14 @@ class GjsGlobal : GjsBaseGlobal {
         JS_FS_END};
 
  public:
-    [[nodiscard]] static JSObject* create(JSContext* cx) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create(JSContext* cx) {
         return GjsBaseGlobal::create(cx, &klass);
     }
 
-    [[nodiscard]] static JSObject* create_with_compartment(
-        JSContext* cx, JS::HandleObject cmp_global) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create_with_compartment(JSContext* cx,
+                                             JS::HandleObject cmp_global) {
         return GjsBaseGlobal::create_with_compartment(cx, cmp_global, &klass);
     }
 
@@ -234,17 +239,20 @@ class GjsDebuggerGlobal : GjsBaseGlobal {
         JS_FN("loadNative", &load_native_module, 1, 0), JS_FS_END};
 
  public:
-    [[nodiscard]] static JSObject* create(JSContext* cx) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create(JSContext* cx) {
         JS::RealmCreationOptions options;
         options.setToSourceEnabled(true);  // debugger uses uneval()
         return GjsBaseGlobal::create(cx, &klass, options);
     }
 
-    [[nodiscard]] static JSObject* create_with_compartment(
-        JSContext* cx, JS::HandleObject cmp_global) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create_with_compartment(JSContext* cx,
+                                             JS::HandleObject cmp_global) {
         return GjsBaseGlobal::create_with_compartment(cx, cmp_global, &klass);
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
     static bool define_properties(JSContext* cx, JS::HandleObject global,
                                   const char* realm_name,
                                   const char* bootstrap_script) {
@@ -294,16 +302,19 @@ class GjsInternalGlobal : GjsBaseGlobal {
     };
 
  public:
-    [[nodiscard]] static JSObject* create(JSContext* cx) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create(JSContext* cx) {
         return GjsBaseGlobal::create(cx, &klass, {}, get_internal_principals());
     }
 
-    [[nodiscard]] static JSObject* create_with_compartment(
-        JSContext* cx, JS::HandleObject cmp_global) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* create_with_compartment(JSContext* cx,
+                                             JS::HandleObject cmp_global) {
         return GjsBaseGlobal::create_with_compartment(
             cx, cmp_global, &klass, {}, get_internal_principals());
     }
 
+    GJS_JSAPI_RETURN_CONVENTION
     static bool define_properties(JSContext* cx, JS::HandleObject global,
                                   const char* realm_name,
                                   const char* bootstrap_script

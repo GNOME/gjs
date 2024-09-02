@@ -39,4 +39,8 @@ describe('WarnLib', function () {
         expect(o.mooCalled).toBeTruthy();  // spies don't work on vfuncs
         expect(o.booCalled).toBeTruthy();
     });
+
+    it('handles enum members that start with a digit', function () {
+        expect(WarnLib.NumericEnum['1ST']).toEqual(1);
+    });
 });
