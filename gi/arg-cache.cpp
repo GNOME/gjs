@@ -182,8 +182,13 @@ struct Positioned {
 
     constexpr bool set_out_parameter(GjsFunctionCallState* state,
                                      GIArgument* arg) {
-        gjs_arg_unset<void*>(&state->out_cvalue(m_arg_pos));
-        gjs_arg_set(arg, &gjs_arg_member<void*>(&state->out_cvalue(m_arg_pos)));
+        // Clear all bits of the out C value. No one member is guaranteed to
+        // span the whole union on all architectures, so use memset() instead of
+        // gjs_arg_unset<T>().
+        memset(&state->out_cvalue(m_arg_pos), 0, sizeof(GIArgument));
+        // The value passed to the function is actually the address of the out
+        // C value
+        gjs_arg_set(arg, &state->out_cvalue(m_arg_pos));
         return true;
     }
 
