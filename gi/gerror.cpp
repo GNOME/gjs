@@ -404,7 +404,7 @@ bool ErrorBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
              "transfer_to_gi_argument() must choose between in or out");
 
     if (!ErrorBase::typecheck(cx, obj)) {
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return false;
     }
 

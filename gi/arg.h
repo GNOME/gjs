@@ -62,8 +62,6 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
 
 size_t gjs_type_get_element_size(GITypeTag element_type, GITypeInfo* type_info);
 
-void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg);
-
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_gi_argument(JSContext*, JS::HandleValue, GITypeInfo*,
                               const char* arg_name, GjsArgumentType, GITransfer,

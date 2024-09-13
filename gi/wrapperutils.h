@@ -586,7 +586,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
                  "transfer_to_gi_argument() must choose between in or out");
 
         if (!Base::typecheck(cx, obj, expected_info, expected_gtype)) {
-            gjs_arg_unset<void*>(arg);
+            gjs_arg_unset(arg);
             return false;
         }
 
