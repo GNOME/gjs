@@ -1,3 +1,13 @@
+Version 1.82.0
+--------------
+
+- Closed bugs and merge requests:
+
+  * installed tests are failing because they can't load internal typelibs from
+    parent directory [#639, !953, Simon McVittie]
+  * GIMarshalling test has 3 failures with 1.81.90 on i686 [#642, !954, Philip
+    Chimento]
+
 Version 1.81.90
 ---------------
 
