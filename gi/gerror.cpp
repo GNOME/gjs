@@ -527,7 +527,7 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
 /*
  * gjs_throw_gerror:
  *
- * Converts a GError into a JavaScript exception, and frees the GError.
+ * Converts a GError into a JavaScript exception.
  * Differently from gjs_throw(), it will overwrite an existing exception, as it
  * is used to report errors from C functions.
  *
