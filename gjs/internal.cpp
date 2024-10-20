@@ -19,7 +19,6 @@
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>  // for JSEXN_ERR
 #include <js/Exception.h>
-#include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer
 #include <js/Modules.h>
 #include <js/Promise.h>
 #include <js/PropertyAndElement.h>
@@ -28,7 +27,6 @@
 #include <js/RootingAPI.h>
 #include <js/SourceText.h>
 #include <js/String.h>
-#include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
@@ -445,32 +443,16 @@ class PromiseData {
     JSContext* cx;
 
  private:
-    JS::Heap<JSFunction*> m_resolve;
-    JS::Heap<JSFunction*> m_reject;
+    JS::PersistentRooted<JSFunction*> m_resolve;
+    JS::PersistentRooted<JSFunction*> m_reject;
 
-    JS::HandleFunction resolver() {
-        return JS::HandleFunction::fromMarkedLocation(m_resolve.address());
-    }
-    JS::HandleFunction rejecter() {
-        return JS::HandleFunction::fromMarkedLocation(m_reject.address());
-    }
-
-    static void trace(JSTracer* trc, void* data) {
-        auto* self = PromiseData::from_ptr(data);
-        JS::TraceEdge(trc, &self->m_resolve, "loadResourceOrFileAsync resolve");
-        JS::TraceEdge(trc, &self->m_reject, "loadResourceOrFileAsync reject");
-    }
+    JS::HandleFunction resolver() { return m_resolve; }
+    JS::HandleFunction rejecter() { return m_reject; }
 
  public:
     explicit PromiseData(JSContext* a_cx, JSFunction* resolve,
                          JSFunction* reject)
-        : cx(a_cx), m_resolve(resolve), m_reject(reject) {
-        JS_AddExtraGCRootsTracer(cx, &PromiseData::trace, this);
-    }
-
-    ~PromiseData() {
-        JS_RemoveExtraGCRootsTracer(cx, &PromiseData::trace, this);
-    }
+        : cx(a_cx), m_resolve(cx, resolve), m_reject(cx, reject) {}
 
     static PromiseData* from_ptr(void* ptr) {
         return static_cast<PromiseData*>(ptr);
