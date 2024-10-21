@@ -1,3 +1,11 @@
+Version 1.82.1
+--------------
+
+- Closed bugs and merge requests:
+
+  * gnome-shell crash when switching user after upgrade from Fedora 40 to Fedora
+    41 [#647, !955, Philip Chimento]
+
 Version 1.82.0
 --------------
 
