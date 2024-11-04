@@ -210,7 +210,7 @@ Gio._promisify(Gio.File.prototype, 'load_contents_async',
 
 try {
     const file = Gio.File.new_for_path('file.txt');
-    const [contents, len, etag] = await file.load_contents_async(null);
+    const [contents, etag] = await file.load_contents_async(null);
 } catch (e) {
     logError(e, 'Failed to load file contents');
 }
