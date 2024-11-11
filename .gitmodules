@@ -2,5 +2,5 @@
 # SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 [submodule "subprojects/gobject-introspection-tests"]
 	path = subprojects/gobject-introspection-tests
-	url = ../gobject-introspection-tests.git
+	url = ../../GNOME/gobject-introspection-tests.git
     shallow = true
