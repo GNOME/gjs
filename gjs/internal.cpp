@@ -15,10 +15,10 @@
 #include <js/CallAndConstruct.h>  // for JS_CallFunction
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
-#include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/ErrorReport.h>  // for JSEXN_ERR
 #include <js/Exception.h>
+#include <js/Id.h>  // for PropertyKey
 #include <js/Modules.h>
 #include <js/Promise.h>
 #include <js/PropertyAndElement.h>
@@ -87,9 +87,26 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     options.setSelfHostingMode(false);
 
     Gjs::AutoInternalRealm ar{cx};
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    JS::RootedObject internal_global{cx, gjs->internal_global()};
+    JS::RootedObject module{cx, JS::CompileModule(cx, options, buf)};
+    if (!module)
+        return false;
 
-    JS::RootedValue ignored(cx);
-    return JS::Evaluate(cx, options, buf, &ignored);
+    JS::RootedObject registry{cx, gjs_get_module_registry(internal_global)};
+
+    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path)};
+    if (key.isVoid())
+        return false;
+
+    JS::RootedValue ignore{cx};
+    if (!gjs_global_registry_set(cx, registry, key, module) ||
+        !JS::ModuleLink(cx, module) ||
+        !JS::ModuleEvaluate(cx, module, &ignore)) {
+        return false;
+    }
+
+    return true;
 }
 
 static bool handle_wrong_args(JSContext* cx) {
@@ -260,6 +277,32 @@ bool gjs_internal_get_registry(JSContext* cx, unsigned argc, JS::Value* vp) {
     JSAutoRealm ar(cx, global);
 
     JS::RootedObject registry(cx, gjs_get_module_registry(global));
+    args.rval().setObject(*registry);
+    return true;
+}
+
+/**
+ * gjs_internal_get_source_map_registry:
+ *
+ * @brief Retrieves the source map registry for the passed global object.
+ *
+ * @param cx the current JSContext
+ * @param argc
+ * @param vp
+ *
+ * @returns whether an error occurred while retrieving the registry.
+ */
+bool gjs_internal_get_source_map_registry(JSContext* cx, unsigned argc,
+                                          JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedObject global{cx};
+    if (!gjs_parse_call_args(cx, "getSourceMapRegistry", args, "o", "global",
+                             &global))
+        return handle_wrong_args(cx);
+
+    JSAutoRealm ar{cx, global};
+
+    JSObject* registry = gjs_get_source_map_registry(global);
     args.rval().setObject(*registry);
     return true;
 }
@@ -435,6 +478,26 @@ bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp) {
     GjsAutoUnref<GFile> file = g_file_new_for_uri(uri.get());
 
     args.rval().setBoolean(g_file_query_exists(file, nullptr));
+    return true;
+}
+
+bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::UniqueChars text;
+    size_t result_len;
+    if (!gjs_parse_call_args(cx, "atob", args, "!s", "text", &text))
+        return handle_wrong_args(cx);
+
+    GjsAutoChar decoded =
+        reinterpret_cast<char*>(g_base64_decode(text.get(), &result_len));
+    JS::ConstUTF8CharsZ contents_chars{decoded, result_len};
+    JS::RootedString contents_str{cx,
+                                  JS_NewStringCopyUTF8Z(cx, contents_chars)};
+
+    if (!contents_str)
+        return false;
+
+    args.rval().setString(contents_str);
     return true;
 }
 

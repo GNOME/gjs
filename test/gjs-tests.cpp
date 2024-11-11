@@ -1148,6 +1148,84 @@ static void gjstest_test_func_gjs_context_argv_array() {
     g_assert_false(ok);
 }
 
+static void gjstest_test_func_gjs_context_eval_module_source_map() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    uint8_t exit_status;
+    GjsAutoError error;
+    const char* pattern =
+        "*get2ndNumber*number.js:2:5 -> number.ts:6:5*numberWork.js:2:13 -> "
+        "numberWork.ts:3:13*";
+
+    // separate source map
+    bool ok = gjs_context_register_module(gjs,
+                                          "resource:///org/gnome/gjs/mock/test/"
+                                          "source-maps/separate/numberWork.js",
+                                          "resource:///org/gnome/gjs/mock/test/"
+                                          "source-maps/separate/numberWork.js",
+                                          &error);
+    g_assert_true(ok);
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, pattern);
+    ok = gjs_context_eval_module(gjs,
+                                 "resource:///org/gnome/gjs/mock/test/"
+                                 "source-maps/separate/numberWork.js",
+                                 &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+    g_test_assert_expected_messages();
+
+    // inlined source maps
+    error = nullptr;
+    ok = gjs_context_register_module(gjs,
+                                     "resource:///org/gnome/gjs/mock/test/"
+                                     "source-maps/inlined/numberWork.js",
+                                     "resource:///org/gnome/gjs/mock/test/"
+                                     "source-maps/inlined/numberWork.js",
+                                     &error);
+    g_assert_true(ok);
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, pattern);
+    ok = gjs_context_eval_module(gjs,
+                                 "resource:///org/gnome/gjs/mock/test/"
+                                 "source-maps/inlined/numberWork.js",
+                                 &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+    g_test_assert_expected_messages();
+}
+
+static void gjstest_test_func_gjs_context_eval_file_source_map() {
+    GjsAutoUnref<GjsContext> gjs = gjs_context_new();
+    int exit_status;
+    GjsAutoError error;
+    const char* pattern = "*noModule.js:2:9 -> noModule.ts:6:11*";
+    const char* separate_test_file =
+        "resource:///org/gnome/gjs/mock/test/source-maps/separate/noModule.js";
+    const char* inlined_test_file =
+        "resource:///org/gnome/gjs/mock/test/source-maps/inlined/noModule.js";
+
+    // separate source map
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, pattern);
+    bool ok =
+        gjs_context_eval_file(gjs, separate_test_file, &exit_status, &error);
+
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+    g_test_assert_expected_messages();
+
+    // inlined source map
+    error = nullptr;
+    g_test_expect_message("Gjs", G_LOG_LEVEL_CRITICAL, pattern);
+    ok = gjs_context_eval_file(gjs, inlined_test_file, &exit_status, &error);
+    g_assert_false(ok);
+    g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
+    g_assert_cmpuint(exit_status, ==, 1);
+    g_test_assert_expected_messages();
+}
 }  // namespace Test
 }  // namespace Gjs
 
@@ -1257,6 +1335,11 @@ main(int    argc,
                gjs_unit_test_fixture_teardown);
     g_test_add_func("/gjs/context/run-in-realm",
                     gjstest_test_func_gjs_context_run_in_realm);
+
+    g_test_add_func("/gjs/context/eval-module/source-map",
+                    gjstest_test_func_gjs_context_eval_module_source_map);
+    g_test_add_func("/gjs/context/eval-file/source-map",
+                    gjstest_test_func_gjs_context_eval_file_source_map);
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                            \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \

@@ -41,6 +41,8 @@ enum class GjsGlobalSlot : uint32_t {
     MODULE_LOADER,
     // Stores the module registry (a Map object)
     MODULE_REGISTRY,
+    // Stores the source map registry (a Map object)
+    SOURCE_MAP_REGISTRY,
     NATIVE_REGISTRY,
     // prettyPrint() function defined in JS but used internally in C++
     PRETTY_PRINT_FUNC,
@@ -80,6 +82,11 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
                              JS::PropertyKey key,
                              JS::MutableHandleObject value);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_global_source_map_get(JSContext* cx, JS::HandleObject registry,
+                               JS::Handle<JS::Value> key,
+                               JS::MutableHandleObject value);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,

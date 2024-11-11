@@ -24,6 +24,10 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_internal_get_registry(JSContext* cx, unsigned argc, JS::Value* vp);
 
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_internal_get_source_map_registry(JSContext* cx, unsigned argc,
+                                          JS::Value* vp);
+
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_internal_set_global_module_loader(JSContext* cx, unsigned argc,
                                            JS::Value* vp);
 
@@ -49,5 +53,8 @@ bool gjs_internal_load_resource_or_file_async(JSContext* cx, unsigned argc,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp);
+
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp);
 
 #endif  // GJS_INTERNAL_H_

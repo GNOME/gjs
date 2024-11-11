@@ -205,6 +205,13 @@ class GjsGlobal : GjsBaseGlobal {
         gjs_set_global_slot(global, GjsGlobalSlot::MODULE_REGISTRY,
                             JS::ObjectValue(*module_registry));
 
+        JS::RootedObject source_map_registry{cx, JS::NewMapObject(cx)};
+        if (!source_map_registry)
+            return false;
+
+        gjs_set_global_slot(global, GjsGlobalSlot::SOURCE_MAP_REGISTRY,
+                            JS::ObjectValue(*source_map_registry));
+
         JS::Value v_importer =
             gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
         g_assert(((void) "importer should be defined before passing null "
@@ -282,6 +289,8 @@ class GjsInternalGlobal : GjsBaseGlobal {
         JS_FN("compileInternalModule", gjs_internal_compile_internal_module, 2,
               0),
         JS_FN("getRegistry", gjs_internal_get_registry, 1, 0),
+        JS_FN("getSourceMapRegistry", gjs_internal_get_source_map_registry, 1,
+              0),
         JS_FN("loadResourceOrFile", gjs_internal_load_resource_or_file, 1, 0),
         JS_FN("loadResourceOrFileAsync",
               gjs_internal_load_resource_or_file_async, 1, 0),
@@ -292,6 +301,7 @@ class GjsInternalGlobal : GjsBaseGlobal {
               0),
         JS_FN("setModulePrivate", gjs_internal_set_module_private, 2, 0),
         JS_FN("uriExists", gjs_internal_uri_exists, 1, 0),
+        JS_FN("atob", gjs_internal_atob, 1, 0),
         JS_FS_END};
 
     static constexpr JSClass klass = {
@@ -338,6 +348,13 @@ class GjsInternalGlobal : GjsBaseGlobal {
 
         gjs_set_global_slot(global, GjsGlobalSlot::MODULE_REGISTRY,
                             JS::ObjectValue(*module_registry));
+
+        JS::RootedObject source_map_registry{cx, JS::NewMapObject(cx)};
+        if (!source_map_registry)
+            return false;
+
+        gjs_set_global_slot(global, GjsGlobalSlot::SOURCE_MAP_REGISTRY,
+                            JS::ObjectValue(*source_map_registry));
 
         return JS_DefineFunctions(cx, global, static_funcs);
     }
@@ -485,6 +502,32 @@ bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
     }
 
     module_out.set(nullptr);
+    return true;
+}
+
+/**
+ * gjs_global_source_map_get:
+ *
+ * @brief This function retrieves a source map consumer from the source map
+ * registry, or %NULL if the source does not have a source map consumer.
+ */
+bool gjs_global_source_map_get(
+    JSContext* cx, JS::HandleObject registry, JS::Handle<JS::Value> key,
+    JS::MutableHandleObject source_map_consumer_obj) {
+    JS::RootedValue v_value{cx};
+    if (!JS::MapGet(cx, registry, key, &v_value))
+        return false;
+    JS::RootedString str{cx, key.toString()};
+
+    g_assert((v_value.isUndefined() || v_value.isObject()) &&
+             "Invalid value in source map registry");
+
+    if (v_value.isObject()) {
+        source_map_consumer_obj.set(&v_value.toObject());
+        return true;
+    }
+
+    source_map_consumer_obj.set(nullptr);
     return true;
 }
 

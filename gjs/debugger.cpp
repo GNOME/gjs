@@ -32,6 +32,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/module.h"
 
 #include "util/console.h"
 
@@ -99,10 +100,25 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+static bool get_source_map_registry(JSContext* cx, unsigned argc,
+                                    JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+
+    JS::RootedObject registry{cx, gjs_get_source_map_registry(gjs->global())};
+    if (!JS_WrapObject(cx, &registry)) {
+        gjs_log_exception(cx);
+        return false;
+    }
+    args.rval().setObject(*registry);
+    return true;
+}
+
 // clang-format off
 static JSFunctionSpec debugger_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("getSourceMapRegistry", get_source_map_registry, 0, GJS_MODULE_PROP_FLAGS),
     JS_FS_END
 };
 // clang-format on

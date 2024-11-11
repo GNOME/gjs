@@ -19,19 +19,23 @@
 
 #include <js/AllocPolicy.h>
 #include <js/Array.h>
+#include <js/CallAndConstruct.h>  // for Call
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>
 #include <js/Class.h>
+#include <js/ColumnNumber.h>  // for TaggedColumnNumberOneOrigin
 #include <js/Conversions.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
-#include <js/GCAPI.h>     // for JS_MaybeGC, NonIncrementalGC, GCRe...
+#include <js/GCAPI.h>        // for JS_MaybeGC, NonIncrementalGC, GCRe...
 #include <js/GCHashTable.h>  // for GCHashSet
-#include <js/GCVector.h>  // for RootedVector
-#include <js/HashTable.h>  // for DefaultHasher
-#include <js/Object.h>    // for GetClass
+#include <js/GCVector.h>     // for RootedVector
+#include <js/HashTable.h>    // for DefaultHasher
+#include <js/Object.h>       // for GetClass
 #include <js/PropertyAndElement.h>
+#include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
 #include <js/RootingAPI.h>
+#include <js/SavedFrameAPI.h>
 #include <js/String.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
@@ -43,8 +47,10 @@
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/module.h"
 
 static void
 throw_property_lookup_error(JSContext       *cx,
@@ -264,6 +270,7 @@ static JSString* exception_to_string(JSContext* cx, JS::HandleValue exc) {
 
 // Helper function: format the error's stack property.
 static std::string format_exception_stack(JSContext* cx, JS::HandleObject exc) {
+    auto Ok = JS::SavedFrameResult::Ok;
     JS::AutoSaveExceptionState saved_exc(cx);
     auto restore =
         mozilla::MakeScopeExit([&saved_exc]() { saved_exc.restore(); });
@@ -276,10 +283,97 @@ static std::string format_exception_stack(JSContext* cx, JS::HandleObject exc) {
     // have the latter.
     JS::RootedObject saved_frame{cx, JS::ExceptionStackOrNull(exc)};
     if (saved_frame) {
+        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+        Gjs::AutoMainRealm ar{gjs};
+        JS::RootedObject global{cx, gjs->global()};
+        JS::RootedObject registry{cx, gjs_get_source_map_registry(global)};
+
         JS::UniqueChars utf8_stack{format_saved_frame(cx, saved_frame)};
         if (!utf8_stack)
             return {};
-        out << '\n' << utf8_stack.get();
+
+        char* utf8_stack_str = utf8_stack.get();
+        std::stringstream ss{utf8_stack_str};
+        // append source map info when available to each line
+        while (saved_frame) {
+            JS::RootedObject consumer{cx};
+            JS::RootedString source_string{cx};
+            bool success;
+            uint32_t line;
+            JS::TaggedColumnNumberOneOrigin column;
+            std::string stack_line;
+
+            // print the original stack trace
+            std::getline(ss, stack_line, '\n');
+            out << '\n' << stack_line;
+
+            success =
+                JS::GetSavedFrameSource(cx, nullptr, saved_frame,
+                                        &source_string) == Ok &&
+                JS::GetSavedFrameLine(cx, nullptr, saved_frame, &line) == Ok &&
+                JS::GetSavedFrameColumn(cx, nullptr, saved_frame, &column) ==
+                    Ok;
+            JS::GetSavedFrameParent(cx, nullptr, saved_frame, &saved_frame);
+            if (!success) {
+                continue;
+            }
+
+            JS::RootedValue source_key{cx, JS::StringValue(source_string)};
+            success =
+                gjs_global_source_map_get(cx, registry, source_key, &consumer);
+            if (!success || !consumer) {
+                continue;
+            }
+
+            // build query obj for consumer
+            JS::RootedObject input_obj{cx, JS_NewPlainObject(cx)};
+            if (!input_obj) {
+                continue;
+            }
+            if (!JS_DefineProperty(cx, input_obj, "line", line,
+                                   JSPROP_ENUMERATE) ||
+                !JS_DefineProperty(cx, input_obj, "column",
+                                   column.oneOriginValue() - 1,
+                                   JSPROP_ENUMERATE)) {
+                continue;
+            }
+
+            JS::RootedValue val{cx, JS::ObjectValue(*input_obj)};
+            if (!JS::Call(cx, consumer, "originalPositionFor",
+                          JS::HandleValueArray(val), &val)) {
+                continue;
+            }
+            JS::RootedObject rvalObj{cx, &val.toObject()};
+
+            out << " -> ";
+
+            if (!JS_GetProperty(cx, rvalObj, "name", &val)) {
+                continue;
+            }
+            if (val.isString()) {
+                JS::RootedString string{cx, val.toString()};
+                out << JS_EncodeStringToUTF8(cx, string).get() << "@";
+            }
+            if (!JS_GetProperty(cx, rvalObj, "source", &val)) {
+                continue;
+            }
+            if (val.isString()) {
+                JS::RootedString string{cx, val.toString()};
+                out << JS_EncodeStringToUTF8(cx, string).get();
+            }
+            if (!JS_GetProperty(cx, rvalObj, "line", &val)) {
+                continue;
+            }
+            if (val.isInt32()) {
+                out << ":" << val.toInt32();
+            }
+            if (!JS_GetProperty(cx, rvalObj, "column", &val)) {
+                continue;
+            }
+            if (val.isInt32()) {
+                out << ":" << val.toInt32() + 1;
+            }
+        }
         return out.str();
     }
 

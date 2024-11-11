@@ -31,29 +31,30 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/AllocPolicy.h>  // for SystemAllocPolicy
+#include <js/AllocPolicy.h>       // for SystemAllocPolicy
 #include <js/CallAndConstruct.h>  // for Call, JS_CallFunctionValue
-#include <js/CallArgs.h>     // for UndefinedHandleValue
+#include <js/CallArgs.h>          // for UndefinedHandleValue
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/Context.h>
 #include <js/ErrorReport.h>
-#include <js/Exception.h>           // for StealPendingExceptionStack
-#include <js/GCAPI.h>               // for JS_GC, JS_AddExtraGCRootsTr...
-#include <js/GCHashTable.h>         // for WeakCache
-#include <js/GCVector.h>            // for RootedVector
-#include <js/GlobalObject.h>        // for CurrentGlobalOrNull
-#include <js/HeapAPI.h>             // for ExposeObjectToActiveJS
+#include <js/Exception.h>     // for StealPendingExceptionStack
+#include <js/GCAPI.h>         // for JS_GC, JS_AddExtraGCRootsTr...
+#include <js/GCHashTable.h>   // for WeakCache
+#include <js/GCVector.h>      // for RootedVector
+#include <js/GlobalObject.h>  // for CurrentGlobalOrNull
+#include <js/HeapAPI.h>       // for ExposeObjectToActiveJS
 #include <js/Id.h>
 #include <js/Modules.h>
-#include <js/Promise.h>             // for JobQueue::SavedJobQueue
+#include <js/Promise.h>  // for JobQueue::SavedJobQueue
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_RE...
 #include <js/Realm.h>
 #include <js/RootingAPI.h>
 #include <js/ScriptPrivate.h>
 #include <js/SourceText.h>
+#include <js/String.h>  // for JS_NewStringCopyZ
 #include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/UniquePtr.h>
@@ -61,8 +62,8 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/friend/DumpFunctions.h>
-#include <jsapi.h>        // for JS_GetFunctionObject, JS_Ge...
-#include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
+#include <jsapi.h>              // for JS_GetFunctionObject, JS_Ge...
+#include <jsfriendapi.h>        // for ScriptEnvironmentPreparer
 #include <mozilla/UniquePtr.h>  // for UniquePtr::get
 
 #include "gi/closure.h"  // for Closure::Ptr, Closure
@@ -747,10 +748,14 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         g_error("Failed to define module global in internal global.");
     }
 
-    if (!gjs_load_internal_module(cx, "loader")) {
+    if (!gjs_load_internal_module(cx, "internalLoader")) {
         gjs_log_exception(cx);
         g_error("Failed to load internal module loaders.");
     }
+
+    load_context_module(cx,
+                        "resource:///org/gnome/gjs/modules/internal/loader.js",
+                        "module loader");
 
     {
         Gjs::AutoMainRealm ar{this};
@@ -1280,8 +1285,9 @@ gjs_context_eval(GjsContext   *js_context,
     size_t real_len = script_len < 0 ? strlen(script) : script_len;
 
     GjsAutoUnref<GjsContext> js_context_ref(js_context, GjsAutoTakeOwnership());
-
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+
+    gjs->register_non_module_sourcemap(script, filename);
     return gjs->eval(script, real_len, filename, exit_status_p, error);
 }
 
@@ -1398,6 +1404,40 @@ bool GjsContextPrivate::run_main_loop_hook() {
     JS::RootedValue ignored_rval(m_cx);
     return JS::Call(m_cx, JS::NullHandleValue, hook,
                     JS::HandleValueArray::empty(), &ignored_rval);
+}
+
+// source maps parsing is built upon hooks for resolving or loading modules
+// for non-module runs we need to invoke this logic manually
+void GjsContextPrivate::register_non_module_sourcemap(const char* script,
+                                                      const char* filename) {
+    using AutoURI = GjsAutoPointer<GUri, GUri, g_uri_unref>;
+    Gjs::AutoMainRealm ar{this};
+
+    JS::RootedObject global{m_cx, JS::CurrentGlobalOrNull(m_cx)};
+    JS::RootedValue v_loader{
+        m_cx, gjs_get_global_slot(global, GjsGlobalSlot::MODULE_LOADER)};
+    g_assert(v_loader.isObject());
+    JS::RootedObject v_loader_obj{m_cx, &v_loader.toObject()};
+
+    JS::RootedValueArray<3> args{m_cx};
+    JS::RootedString script_str{m_cx, JS_NewStringCopyZ(m_cx, script)};
+    JS::RootedString file_name_str{m_cx, JS_NewStringCopyZ(m_cx, filename)};
+    args[0].setString(script_str);
+    args[1].setString(file_name_str);
+
+    // if the file uri is not an absolute uri with a scheme, build one assuming
+    // file:// this parameter is used to help locate non-inlined source map file
+    AutoURI uri = g_uri_parse(filename, G_URI_FLAGS_NONE, nullptr);
+    if (!uri) {
+        GjsAutoUnref<GFile> file = g_file_new_for_path(filename);
+        GjsAutoChar file_uri = g_file_get_uri(file);
+        JS::RootedString abs_filename_scheme_str{
+            m_cx, JS_NewStringCopyZ(m_cx, file_uri.get())};
+        args[2].setString(abs_filename_scheme_str);
+    }
+
+    JS::RootedValue ignored{m_cx};
+    JS::Call(m_cx, v_loader_obj, "populateSourceMap", args, &ignored);
 }
 
 bool GjsContextPrivate::eval(const char* script, size_t script_len,

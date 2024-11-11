@@ -1,0 +1,44 @@
+GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2024 Gary Li <gary.li1@uwaterloo.ca>
+db> set colors false
+db> list
+   1	interface SuperFancyNumber {
+   2	    n: number;
+   3	}
+   4	
+  *5	export const get2ndNumber = (num: SuperFancyNumber[]) => {
+   6	    return num[1].n.toFixed(1);
+   7	}
+db> bt
+#0    module code at sourcemap-number-module.js:1:27 -> number.ts:5:29
+db> frame
+#0    module code at sourcemap-number-module.js:1:27 -> number.ts:5:29
+   1	export var get2ndNumber = function (num) {
+db> c
+Unwinding due to exception. (Type 'c' to continue unwinding.)
+#0    <anonymous>([object Array]) at sourcemap-number-module.js:2:5 -> number.ts:6:5
+   2	    return num[1].n.toFixed(1);
+Exception value is:
+$1 = [object TypeError]
+TypeError: num[1].n is null
+db> list
+   1	interface SuperFancyNumber {
+   2	    n: number;
+   3	}
+   4	
+   5	export const get2ndNumber = (num: SuperFancyNumber[]) => {
+  *6	    return num[1].n.toFixed(1);
+   7	}
+db> up
+#1    module code at sourcemap-separate-module.debugger.js:2:13 -> numberWork.ts:3:14
+   2	get2ndNumber([{ n: 1 }, { n: null }]);
+db> list
+   1	import { get2ndNumber } from "./number.js";
+   2	
+  *3	get2ndNumber([{n:1}, {n: null}]);
+db> bt
+#0    <anonymous>([object Array]) at sourcemap-number-module.js:2:5 -> number.ts:6:5
+#1    module code at sourcemap-separate-module.debugger.js:2:13 -> numberWork.ts:3:14
+db> [quit due to end of input]
+Program exited with code 0

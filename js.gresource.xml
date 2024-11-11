@@ -4,6 +4,14 @@
 <gresources>
   <gresource prefix="/org/gnome/gjs">
     <!-- Internal modules -->
+    <file>modules/internal/internalLoader.js</file>
+    <file>modules/internal/source-map/array-set.js</file>
+    <file>modules/internal/source-map/base64-vlq.js</file>
+    <file>modules/internal/source-map/base64.js</file>
+    <file>modules/internal/source-map/binary-search.js</file>
+    <file>modules/internal/source-map/extractUrl.js</file>
+    <file>modules/internal/source-map/source-map-consumer.js</file>
+    <file>modules/internal/source-map/util.js</file>
     <file>modules/internal/loader.js</file>
 
     <!-- ESM-based modules -->

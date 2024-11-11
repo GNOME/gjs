@@ -219,6 +219,9 @@ class GjsContextPrivate : public JS::JobQueue {
         return from_cx(cx)->global();
     }
 
+    void register_non_module_sourcemap(const char* script,
+                                       const char* filename);
+
     [[nodiscard]] bool eval(const char* script, size_t script_len,
                             const char* filename, int* exit_status_p,
                             GError** error);

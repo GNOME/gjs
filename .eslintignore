@@ -7,3 +7,6 @@ installed-tests/js/modules/subBadInit/__init__.js
 modules/script/jsUnit.js
 /_build
 /builddir
+modules/internal/source-map/
+installed-tests/debugger/sourcemap*
+test/source-maps/
