@@ -71,7 +71,9 @@ tests_dependencies = [
     gjstest_tools_typelib,
     gi_tests.get_variable('gimarshallingtests_typelib'),
     gi_tests.get_variable('regress_typelib'),
+    gi_tests.get_variable('regress_unix_typelib'),
     gi_tests.get_variable('warnlib_typelib'),
+    gi_tests.get_variable('utility_typelib'),
 ]
 
 foreach test : jasmine_tests
