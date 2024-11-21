@@ -11,8 +11,13 @@
 #    include <io.h>
 #endif
 
+#ifdef HAVE_READLINE_READLINE_H
+#    include <readline/history.h>
+#endif
+
 #include <glib.h>
 
+#include "gjs/jsapi-util.h"
 #include "util/console.h"
 
 /**
@@ -62,3 +67,28 @@ bool gjs_console_clear() {
 
     return fputs(ANSICode::CLEAR_SCREEN, stdout) > 0 && fflush(stdout) > 0;
 }
+
+#ifdef HAVE_READLINE_READLINE_H
+char* gjs_console_get_repl_history_path() {
+    const char* user_history_path = g_getenv("GJS_REPL_HISTORY");
+    GjsAutoChar default_history_path =
+        g_build_filename(g_get_user_cache_dir(), "gjs_repl_history", nullptr);
+    bool is_write_history_disabled =
+        user_history_path && user_history_path[0] == '\0';
+    if (is_write_history_disabled)
+        return nullptr;
+
+    if (user_history_path)
+        return g_strdup(user_history_path);
+    return default_history_path.release();
+}
+
+void gjs_console_write_repl_history(const char* path) {
+    if (path) {
+        int err = write_history(path);
+        if (err != 0)
+            g_warning("Could not persist history to defined file %s: %s", path,
+                      g_strerror(err));
+    }
+}
+#endif

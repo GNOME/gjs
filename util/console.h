@@ -28,6 +28,11 @@ bool gjs_console_is_tty(int fd);
 
 bool gjs_console_clear(void);
 
+#ifdef HAVE_READLINE_READLINE_H
+char* gjs_console_get_repl_history_path();
+void gjs_console_write_repl_history(const char*);
+#endif
+
 G_END_DECLS
 
 #endif  // UTIL_CONSOLE_H_

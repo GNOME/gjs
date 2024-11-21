@@ -77,6 +77,8 @@ class GjsContextPrivate : public JS::JobQueue {
 
     char** m_search_path;
 
+    char* m_repl_history_path;
+
     unsigned m_auto_gc_id;
 
     GjsAtoms* m_atoms;
@@ -191,6 +193,9 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
     GJS_USE const char* program_path(void) const { return m_program_path; }
+    GJS_USE const char* repl_history_path() const {
+        return m_repl_history_path;
+    }
     void set_program_path(char* value) { m_program_path = value; }
     void set_search_path(char** value) { m_search_path = value; }
     void set_should_profile(bool value) { m_should_profile = value; }
@@ -198,6 +203,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_should_listen_sigusr2(bool value) {
         m_should_listen_sigusr2 = value;
     }
+    void set_repl_history_path(char* value) { m_repl_history_path = value; }
     void set_args(std::vector<std::string>&& args);
     GJS_JSAPI_RETURN_CONVENTION JSObject* build_args_array();
     [[nodiscard]] bool is_owner_thread() const {

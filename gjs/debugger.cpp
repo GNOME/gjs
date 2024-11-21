@@ -94,7 +94,9 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* Add line to history and convert it to a JSString so that we can pass it
      * back as the return value */
 #ifdef HAVE_READLINE_READLINE_H
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     add_history(line);
+    gjs_console_write_repl_history(gjs->repl_history_path());
 #endif
     args.rval().setString(JS_NewStringCopyZ(cx, line));
     return true;

@@ -17,6 +17,10 @@ GJS allows runtime configuration with a number of environment variables.
   Setting this variable to any value causes GJS to exit when an out-of-memory
   condition is encountered, instead of just printing a warning.
 
+* `GJS_REPL_HISTORY`
+
+  When not set, GJS persists REPL history in `gjs_repl_history` under the XDG user cache folder which is usually `~/.cache/`. Set this variable to a writable path to save REPL command history in an alternate location. If set to an empty string, then command history is not persisted.
+
 ## JavaScript Engine
 
 * `JS_GC_ZEAL`
