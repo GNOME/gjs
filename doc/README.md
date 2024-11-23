@@ -56,20 +56,20 @@ Here is a non-exhaustive list of applications written in GJS:
 GNOME Core Apps
 
 * [Characters](https://gitlab.gnome.org/GNOME/gnome-characters)
+* [Extensions](https://gitlab.gnome.org/GNOME/gnome-shell/-/tree/HEAD/subprojects/extensions-app)
 * [Maps](https://gitlab.gnome.org/GNOME/gnome-maps)
 * [Weather](https://gitlab.gnome.org/GNOME/gnome-weather)
-* [Extensions](https://gitlab.gnome.org/GNOME/gnome-shell/-/tree/HEAD/subprojects/extensions-app)
 
 GNOME Circle Apps
 
 * [Biblioteca](https://github.com/workbenchdev/Biblioteca)
+* [Commit](https://github.com/sonnyp/commit/)
 * [Decibels](https://gitlab.gnome.org/GNOME/Incubator/decibels) (TypeScript)
+* [Forge Sparks](https://github.com/rafaelmardojai/forge-sparks)
+* [Junction](https://github.com/sonnyp/Junction)
 * [Polari](https://gitlab.gnome.org/GNOME/polari)
 * [Tangram](https://github.com/sonnyp/Tangram)
-* [Commit](https://github.com/sonnyp/commit/)
-* [Junction](https://github.com/sonnyp/Junction)
 * [Workbench](https://github.com/sonnyp/Workbench)
-* [Forge Sparks](https://github.com/rafaelmardojai/forge-sparks)
 
 ### GNOME Shell Extensions
 
