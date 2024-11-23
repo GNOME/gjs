@@ -106,6 +106,7 @@ GJS_EXPORT GJS_USE const char* gjs_get_js_version(void);
 GJS_EXPORT
 void gjs_context_setup_debugger_console(GjsContext* gjs);
 
+GJS_EXPORT GJS_USE const char* gjs_context_get_repl_history_path(GjsContext*);
 G_END_DECLS
 
 #endif /* GJS_CONTEXT_H_ */

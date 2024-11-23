@@ -19,6 +19,10 @@
 #    include <windows.h>
 #endif
 
+#ifdef HAVE_READLINE_READLINE_H
+#    include <readline/history.h>
+#endif
+
 #include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
@@ -152,6 +156,7 @@ enum {
     PROP_PROFILER_ENABLED,
     PROP_PROFILER_SIGUSR2,
     PROP_EXEC_AS_MODULE,
+    PROP_REPL_HISTORY_PATH
 };
 
 static GMutex contexts_lock;
@@ -321,6 +326,21 @@ gjs_context_class_init(GjsContextClass *klass)
     g_object_class_install_property(object_class, PROP_EXEC_AS_MODULE, pspec);
     g_param_spec_unref(pspec);
 
+    /**
+     * GjsContext:repl-history-path:
+     *
+     * Set this property to persist repl command history in the console or
+     * debugger. If NULL, then command history will not be persisted.
+     */
+    pspec = g_param_spec_string(
+        "repl-history-path", "REPL History Path",
+        "The writable path to persist repl history", nullptr,
+        (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY |
+                      G_PARAM_STATIC_STRINGS));
+    g_object_class_install_property(object_class, PROP_REPL_HISTORY_PATH,
+                                    pspec);
+    g_param_spec_unref(pspec);
+
     /* For GjsPrivate */
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
@@ -488,6 +508,7 @@ GjsContextPrivate::~GjsContextPrivate(void) {
     g_clear_pointer(&m_search_path, g_strfreev);
     g_clear_pointer(&m_program_path, g_free);
     g_clear_pointer(&m_program_name, g_free);
+    g_clear_pointer(&m_repl_history_path, g_free);
 }
 
 static void
@@ -529,6 +550,17 @@ gjs_context_constructed(GObject *object)
     g_mutex_unlock(&contexts_lock);
 
     setup_dump_heap();
+
+#ifdef HAVE_READLINE_READLINE_H
+    const char* path = gjs_context_get_repl_history_path(js_context);
+    // Populate command history from persisted file
+    if (path) {
+        int err = read_history(path);
+        if (err != 0 && g_getenv("GJS_REPL_HISTORY"))
+            g_warning("Could not read REPL history file %s: %s", path,
+                      g_strerror(err));
+    }
+#endif
 }
 
 static bool on_context_module_rejected_log_exception(JSContext* cx,
@@ -806,6 +838,9 @@ gjs_context_get_property (GObject     *object,
     case PROP_PROGRAM_PATH:
         g_value_set_string(value, gjs->program_path());
         break;
+    case PROP_REPL_HISTORY_PATH:
+        g_value_set_string(value, gjs->repl_history_path());
+        break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
         break;
@@ -838,6 +873,9 @@ gjs_context_set_property (GObject      *object,
         break;
     case PROP_EXEC_AS_MODULE:
         gjs->set_execute_as_module(g_value_get_boolean(value));
+        break;
+    case PROP_REPL_HISTORY_PATH:
+        gjs->set_repl_history_path(g_value_dup_string(value));
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -1861,6 +1899,17 @@ const char *
 gjs_get_js_version(void)
 {
     return JS_GetImplementationVersion();
+}
+
+/**
+ * gjs_context_get_repl_history_path:
+ *
+ * Returns the path property for persisting REPL command history
+ *
+ * Returns: a string
+ */
+const char* gjs_context_get_repl_history_path(GjsContext* self) {
+    return GjsContextPrivate::from_object(self)->repl_history_path();
 }
 
 /**

@@ -51,6 +51,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "modules/console.h"
+#include "util/console.h"
 
 namespace mozilla {
 union Utf8Unit;
@@ -140,15 +141,19 @@ class AutoCatchCtrlC {
 sigjmp_buf AutoCatchCtrlC::jump_buffer;
 #endif  // HAVE_SIGNAL_H
 
-[[nodiscard]] static bool gjs_console_readline(char** bufp,
-                                               const char* prompt) {
+[[nodiscard]] static bool gjs_console_readline(char** bufp, const char* prompt,
+                                               const char* repl_history_path
+                                               [[maybe_unused]]) {
 #ifdef HAVE_READLINE_READLINE_H
     char *line;
     line = readline(prompt);
     if (!line)
         return false;
-    if (line[0] != '\0')
+    if (line[0] != '\0') {
         add_history(line);
+        gjs_console_write_repl_history(repl_history_path);
+    }
+
     *bufp = line;
 #else   // !HAVE_READLINE_READLINE_H
     char line[256];
@@ -232,6 +237,7 @@ gjs_console_interact(JSContext *context,
     char* temp_buf;
     volatile int lineno;     // accessed after setjmp()
     volatile int startline;  // accessed after setjmp()
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
 
 #ifndef HAVE_READLINE_READLINE_H
     int rl_end = 0;  // nonzero if using readline and any text is typed in
@@ -279,8 +285,9 @@ gjs_console_interact(JSContext *context,
             }
 #endif  // HAVE_SIGNAL_H
 
-            if (!gjs_console_readline(
-                    &temp_buf, startline == lineno ? "gjs> " : ".... ")) {
+            if (!gjs_console_readline(&temp_buf,
+                                      startline == lineno ? "gjs> " : ".... ",
+                                      gjs->repl_history_path())) {
                 eof = true;
                 break;
             }
@@ -298,7 +305,6 @@ gjs_console_interact(JSContext *context,
         }
         exit_warning = false;
 
-        GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
         ok = gjs->run_jobs_fallible() && ok;
 
         if (!ok) {

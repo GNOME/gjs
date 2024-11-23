@@ -21,6 +21,7 @@
 
 #include <gjs/gjs.h>
 #include <gjs/jsapi-util.h>
+#include "util/console.h"
 
 static GjsAutoStrv include_path;
 static GjsAutoStrv coverage_prefixes;
@@ -350,10 +351,17 @@ int main(int argc, char** argv) {
     if (coverage_prefixes)
         gjs_coverage_enable();
 
+#ifdef HAVE_READLINE_READLINE_H
+    GjsAutoChar repl_history_path = gjs_console_get_repl_history_path();
+#else
+    GjsAutoChar repl_history_path = nullptr;
+#endif
+
     GjsAutoUnref<GjsContext> js_context(GJS_CONTEXT(g_object_new(
         GJS_TYPE_CONTEXT, "search-path", include_path.get(), "program-name",
         program_name, "program-path", program_path.get(), "profiler-enabled",
-        enable_profiler, "exec-as-module", exec_as_module, nullptr)));
+        enable_profiler, "exec-as-module", exec_as_module, "repl-history-path",
+        repl_history_path.get(), nullptr)));
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != NULL) {
