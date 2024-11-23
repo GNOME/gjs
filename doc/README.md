@@ -66,22 +66,18 @@ GNOME Apps
 * [Junction](https://github.com/sonnyp/Junction)
 * [Oh My SVG](https://github.com/sonnyp/OhMySVG)
 * [Workbench](https://github.com/sonnyp/Workbench)
-* [GNOME Sound Recorder](https://gitlab.gnome.org/GNOME/gnome-sound-recorder) (TypeScript)
-* [Zap](https://apps.gnome.org/app/fr.romainvigier.zap/)
+* [Vocalis](https://gitlab.gnome.org/World/vocalis) (TypeScript)
 
 Others
 
 * [Quick Lookup](https://github.com/johnfactotum/quick-lookup)
 * [Foliate](https://github.com/johnfactotum/foliate)
-* [Clapper](https://github.com/Rafostar/clapper/)
 * [Almond](https://github.com/stanford-oval/almond-gnome/)
 * [Lobjur](https://github.com/ranfdev/Lobjur) (Clojure)
 * [Touché](https://github.com/JoseExposito/touche)
-* [Annex](https://github.com/andyholmes/annex)
 * [Bolso](https://github.com/felipeborges/bolso)
 * [Design](https://github.com/dubstar-04/Design)
 * [Capsule](https://gitlab.gnome.org/verdre/Capsule)
-* [Spiel](https://gitlab.gnome.org/feaneron/spiel)
 * [Retro](https://github.com/sonnyp/Retro)
 * [libportal test](https://github.com/flatpak/libportal/tree/main/portal-test/gtk4)
 * [Sticky](https://github.com/vixalien/sticky)
@@ -89,11 +85,6 @@ Others
 * [Flatpak Manifest Editor](https://gitlab.gnome.org/feaneron/flatpak-manifest-editor)
 * [Forge Sparks](https://github.com/rafaelmardojai/forge-sparks)
 * [Diccionario de la Lengua](https://codeberg.org/rafaelmardojai/diccionario-lengua)
-
-Archived
-
-* [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
-* [GNOME Documents](https://gitlab.gnome.org/GNOME/gnome-documents)
 
 ### GNOME Shell Extensions
 
