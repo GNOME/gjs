@@ -1472,41 +1472,61 @@ describe('Life, the Universe and Everything', function () {
                 expect(o.skip_return_val.length).toEqual(5);
             });
 
-            xit('skips over return value annotated with skip', function () {
-                const [b, d, sum] = o.skip_return_val(1, 2, 3, 4, 5);
+            it('DOES NOT skip over return value annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                const [bool, b, d, sum] = o.skip_return_val(1, 2, 3, 4, 5);
+                expect(bool).toBeTrue();
                 expect(b).toEqual(2);
                 expect(d).toEqual(4);
                 expect(sum).toEqual(54);
 
                 const retval = o.skip_return_val_no_out(1);
-                expect(retval).not.toBeDefined();
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
+                expect(retval).toBeTrue();
+                expect(() => o.skip_return_val_no_out(0)).toThrow();
+            });
 
-            xit('skips over parameters annotated with skip', function () {
-                expect(o.skip_param.length).toEqual(4);
+            it('DOES NOT skip over parameters annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                expect(o.skip_param.length).toEqual(5);
 
-                const [success, b, d, sum] = o.skip_param(1, 2, 3, 4);
+                const [success, b, d, sum] = o.skip_param(1, 1.5, 2, 3, 4);
                 expect(success).toBeTruthy();
                 expect(b).toEqual(2);
                 expect(d).toEqual(3);
                 expect(sum).toEqual(43);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
+            });
 
-            xit('skips over out parameters annotated with skip', function () {
-                const [success, d, sum] = o.skip_out_param(1, 2, 3, 4, 5);
-                expect(success).toBeTruthy();
-                expect(d).toEqual(4);
-                expect(sum).toEqual(54);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
-
-            xit('skips over inout parameters annotated with skip', function () {
-                expect(o.skip_inout_param.length).toEqual(4);
-
-                const [success, b, sum] = o.skip_inout_param(1, 2, 3, 4);
+            it('DOES NOT skip over out parameters annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                const [success, b, d, sum] = o.skip_out_param(1, 2, 3, 4, 5);
                 expect(success).toBeTruthy();
                 expect(b).toEqual(2);
-                expect(sum).toEqual(43);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
+                expect(d).toEqual(4);
+                expect(sum).toEqual(54);
+            });
+
+            it('skips over inout parameters annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                expect(o.skip_inout_param.length).toEqual(5);
+
+                const [success, b, d, sum] = o.skip_inout_param(1, 2, 3, 4, 5);
+                expect(success).toBeTruthy();
+                expect(b).toEqual(2);
+                expect(d).toEqual(4);
+                expect(sum).toEqual(54);
+            });
 
             it('gives number of arguments for static methods', function () {
                 expect(Regress.TestObj.new_from_file.length).toEqual(1);
