@@ -2393,7 +2393,7 @@ describe('GObject signals', function () {
         });
     }
 
-    ['none', 'container', 'none'].forEach(transfer => {
+    ['none', 'container', 'full'].forEach(transfer => {
         testSignalEmission('boxed-gptrarray-utf8', transfer, ['0', '1', '2']);
         testSignalEmission('boxed-gptrarray-boxed-struct', transfer, [
             new GIMarshallingTests.BoxedStruct({long_: 42}),
