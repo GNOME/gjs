@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2010 Giovanni Campagna <gcampagna@src.gnome.org>
 // SPDX-FileCopyrightText: 2011 Red Hat, Inc.
 // SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
-// SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
+// SPDX-FileCopyrightText: 2019, 2024 Philip Chimento <philip.chimento@gmail.com>
 
 // Load overrides for GIMarshallingTests
 imports.overrides.searchPath.unshift('resource:///org/gjs/jsunit/modules/overrides');
@@ -330,6 +330,29 @@ describe('time_t', function () {
     testSimpleMarshalling('time_t', 1234567890, 0, 0);
 });
 
+describe('off_t', function () {
+    testSimpleMarshalling('off_t', 1234567890, 0, 0);
+});
+
+function testUnixIntegerTypedefMarshalling(type, inValue) {
+    describe(type, function () {
+        const skip = GIMarshallingTests[`${type}_in`] ? false : 'Only supported on Unix';
+        testSimpleMarshalling(type, inValue, 0, 0, {
+            returnv: {skip},
+            in: {skip},
+            out: {skip},
+            uninitOut: {skip},
+            inout: {skip},
+        });
+    });
+}
+
+testUnixIntegerTypedefMarshalling('dev_t', 1234567890);
+testUnixIntegerTypedefMarshalling('gid_t', 65534);
+testUnixIntegerTypedefMarshalling('pid_t', 12345);
+testUnixIntegerTypedefMarshalling('socklen_t', 123);
+testUnixIntegerTypedefMarshalling('uid_t', 65534);
+
 describe('GType', function () {
     describe('void', function () {
         testSimpleMarshalling('gtype', GObject.TYPE_NONE, GObject.TYPE_INT, null);
@@ -391,6 +414,7 @@ describe('Fixed-size C array', function () {
         testReturnValue('array_fixed_int', [-1, 0, 1, 2]);
         testInParameter('array_fixed_int', [-1, 0, 1, 2]);
         testOutParameter('array_fixed', [-1, 0, 1, 2]);
+        testUninitializedOutParameter('array_fixed', null);
         testOutParameter('array_fixed_caller_allocated', [-1, 0, 1, 2]);
         testInoutParameter('array_fixed', [-1, 0, 1, 2], [2, 1, 0, -1]);
     });
@@ -405,6 +429,10 @@ describe('Fixed-size C array', function () {
             jasmine.objectContaining({long_: 7, int8: 6}),
             jasmine.objectContaining({long_: 6, int8: 7}),
         ]);
+    });
+
+    it('picks a reasonable default for struct array out param when uninitialized', function () {
+        expect(GIMarshallingTests.array_fixed_out_struct_uninitialized()).toEqual([false, null]);
     });
 
     it('marshals a fixed-size struct array as caller allocated out param', function () {
@@ -650,6 +678,10 @@ describe('GArray', function () {
     describe('of ints with transfer none', function () {
         testReturnValue('garray_int_none', [-1, 0, 1, 2]);
         testInParameter('garray_int_none', [-1, 0, 1, 2]);
+    });
+
+    it('marshals BigInt int64s as a transfer-none in value', function () {
+        GIMarshallingTests.garray_uint64_none_in([0, BigIntLimits.int64.umax]);
     });
 
     it('marshals int64s as a transfer-none return value', function () {
@@ -1273,6 +1305,8 @@ describe('Boxed struct', function () {
         }));
     });
 
+    testUninitializedOutParameter('boxed_struct', null);
+
     it('marshals as an inout parameter', function () {
         const struct = new GIMarshallingTests.BoxedStruct({
             long_: 42,
@@ -1296,6 +1330,73 @@ describe('Union', function () {
     it('marshals as the this-argument of a method', function () {
         expect(() => union.inv()).not.toThrow();  // was this supposed to be static?
         expect(() => union.method()).not.toThrow();
+    });
+});
+
+describe('Structured union', function () {
+    xit('can be created with a default constructor', function () {
+        const u = new GIMarshallingTests.StructuredUnion(GIMarshallingTests.StructuredUnionType.NONE);
+        expect(u).toBeInstanceOf(GIMarshallingTests.StructuredUnion);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/657');
+
+    it('can be created with NONE', function () {
+        const t = GIMarshallingTests.StructuredUnionType.NONE;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+    });
+
+    it('can be created with SIMPLE_STRUCT', function () {
+        const t = GIMarshallingTests.StructuredUnionType.SIMPLE_STRUCT;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+        // expect(u.simple_struct.parent.long_).toBe(6);
+        // expect(u.simple_struct.parent.int8).toBe(7);
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+    });
+
+    it('can be created with NESTED_STRUCT', function () {
+        const t = GIMarshallingTests.StructuredUnionType.NESTED_STRUCT;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+        // expect(u.nested_struct.parent.simple_struct.parent.long_).toBe(6);
+        // expect(u.nested_struct.parent.simple_struct.parent.int8).toBe(7);
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+    });
+
+    it('can be created with BOXED_STRUCT', function () {
+        const t = GIMarshallingTests.StructuredUnionType.BOXED_STRUCT;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+        // expect(u.boxed_struct.parent.long_).toBe(42);
+        // expect(u.boxed_struct.parent.string_).toBe('hello');
+        // expect(u.boxed_struct.parent.g_strv).toBe(['0', '1', '2']);
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+    });
+
+    it('can be created with BOXED_STRUCT_PTR', function () {
+        const t = GIMarshallingTests.StructuredUnionType.BOXED_STRUCT_PTR;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+        // expect(u.boxed_struct_ptr.parent.long_).toBe(42);
+        // expect(u.boxed_struct_ptr.parent.string_).toBe('hello');
+        // expect(u.boxed_struct_ptr.parent.g_strv).toBe(['0', '1', '2']);
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+    });
+
+    it('can be created with POINTER_STRUCT', function () {
+        const t = GIMarshallingTests.StructuredUnionType.POINTER_STRUCT;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+        // expect(u.pointer_struct.parent.long_).toBe(42);
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+    });
+
+    it('can be created with SINGLE_UNION', function () {
+        const t = GIMarshallingTests.StructuredUnionType.SINGLE_UNION;
+        const u = GIMarshallingTests.StructuredUnion.new(t);
+        expect(u.type()).toBe(t);
+        // expect(u.single_union.parent.union_.long_).toBe(42);
+        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
     });
 });
 
@@ -1357,6 +1458,10 @@ describe('GObject', function () {
             it(`marshals as a ${mode} parameter with transfer ${transfer}`, function () {
                 expect(GIMarshallingTests.Object[`${transfer}_${mode}`]().int).toEqual(0);
             });
+        });
+
+        it(`picks a reasonable default when uninitialized as out parameter with transfer ${transfer}`, function () {
+            expect(GIMarshallingTests.Object[`${transfer}_out_uninitialized`]()).toEqual([false, null]);
         });
 
         it(`marshals as an inout parameter with transfer ${transfer}`, function () {
@@ -1552,8 +1657,17 @@ describe('Virtual function', function () {
         expect(tester.int).toEqual(39);
     });
 
+    it('marshals an in argument through a method that indirectly calls the vfunc', function () {
+        tester.int8_in(39);
+        expect(tester.int).toEqual(39);
+    });
+
     it('marshals an out argument', function () {
         expect(tester.method_int8_out()).toEqual(40);
+    });
+
+    it('marshals an out argument through a method that indirectly calls the vfunc', function () {
+        expect(tester.int8_out()).toEqual(40);
     });
 
     it('marshals a POD out argument', function () {
@@ -1892,6 +2006,29 @@ describe('Inherited GObject', function () {
                 o.method_with_default_implementation(43);
                 expect(o.int).toEqual(43);
             });
+
+            it('has a vfunc default implementation that can be called', function () {
+                const o = new GIMarshallingTests[klass]({int: 0});
+                o.vfunc_method_deep_hierarchy(44);
+                expect(o.int).toBe(44);
+            });
+
+            it('has a vfunc that can be overridden', function () {
+                class Derived extends GIMarshallingTests[klass] {
+                    static [GObject.GTypeName] = `Derived${klass}`;
+                    static {
+                        GObject.registerClass(Derived);
+                    }
+
+                    vfunc_method_deep_hierarchy(param) {
+                        expect(param).toBe(45);
+                        this.int = 46;
+                    }
+                }
+                const o = new Derived({int: 0});
+                o.vfunc_method_deep_hierarchy(45);
+                expect(o.int).toBe(46);
+            });
         });
     });
 });
@@ -2033,11 +2170,17 @@ describe('GError', function () {
         ]);
     });
 
+    testUninitializedOutParameter('gerror', null);
+
     it('marshals a GError** elsewhere in the signature as an out parameter with transfer none', function () {
         expect(GIMarshallingTests.gerror_out_transfer_none()).toEqual([
             jasmine.any(GLib.Error),
             'we got an error, life is shit',
         ]);
+    });
+
+    it('picks a reasonable default value when out parameter is uninitialized with transfer none', function () {
+        expect(GIMarshallingTests.gerror_out_transfer_none_uninitialized()).toEqual([false, null, null]);
     });
 
     it('marshals GError as a return value', function () {
@@ -2074,6 +2217,11 @@ describe('Overrides', function () {
         const obj = GIMarshallingTests.OverridesObject.returnv();
         expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesObject);
     });
+
+    it('returns the overridden object from a C constructor', function () {
+        const obj = GIMarshallingTests.OverridesObject.new();
+        expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesObject);
+    });
 });
 
 describe('Filename', function () {
@@ -2097,6 +2245,7 @@ describe('GObject.ParamSpec', function () {
     };
     testReturnValue('param_spec', jasmine.objectContaining(expectedProps));
     testOutParameter('param_spec', jasmine.objectContaining(expectedProps));
+    testUninitializedOutParameter('param_spec', null);
 });
 
 describe('GObject properties', function () {
@@ -2366,6 +2515,11 @@ describe('GObject properties', function () {
 
         ids.forEach(id => overriding.disconnect(id));
     });
+
+    it('can be created from C constructor as well', function () {
+        obj = GIMarshallingTests.PropertiesObject.new();
+        expect(obj).toBeInstanceOf(GIMarshallingTests.PropertiesObject);
+    });
 });
 
 describe('GObject signals', function () {
@@ -2432,4 +2586,125 @@ describe('GObject signals', function () {
         expect(callbackFunc).toHaveBeenCalledOnceWith(obj,
             new GIMarshallingTests.BoxedStruct({long_: 44}));
     });
+
+    xit('not-ref-counted boxed types with transfer full originating from C are properly handled', function () {
+        const callbackFunc = jasmine.createSpy('callbackFunc');
+        const signalId = obj.connect('some-boxed-struct-full', callbackFunc);
+        obj.emit_boxed_struct_full();
+        obj.disconnect(signalId);
+        expect(callbackFunc).toHaveBeenCalledOnceWith(obj,
+            new GIMarshallingTests.BoxedStruct({long_: 99, string_: 'a string', g_strv: ['foo', 'bar', 'baz']}));
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/470');
+
+    it('can be created from C constructor as well', function () {
+        obj = GIMarshallingTests.SignalsObject.new();
+        expect(obj).toBeInstanceOf(GIMarshallingTests.SignalsObject);
+    });
+});
+
+// Adapted from pygobject
+describe('GError extra tests', function () {
+    it('marshals GError instances through GValue', function () {
+        const error = GLib.Error.new_literal(Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'error');
+        const error1 = GLib.Error.new_literal(Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'error');
+        GIMarshallingTests.compare_two_gerrors_in_gvalue(error, error1);
+    });
+
+    it('can be nullable', function () {
+        const error = GLib.Error.new_literal(Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'error');
+        expect(GIMarshallingTests.nullable_gerror(error)).toBeTruthy();
+        expect(GIMarshallingTests.nullable_gerror(null)).toBeFalsy();
+    });
+});
+
+// Adapted from pygobject
+describe('GHashTable extra tests', function () {
+    it('marshals a hash table of enums as an in argument', function () {
+        GIMarshallingTests.ghashtable_enum_none_in({
+            1: GIMarshallingTests.ExtraEnum.VALUE1,
+            2: GIMarshallingTests.ExtraEnum.VALUE2,
+            3: GIMarshallingTests.ExtraEnum.VALUE3,
+        });
+    });
+
+    it('marshals a hash table of enums as a return value', function () {
+        expect(GIMarshallingTests.ghashtable_enum_none_return()).toEqual({
+            1: GIMarshallingTests.ExtraEnum.VALUE1,
+            2: GIMarshallingTests.ExtraEnum.VALUE2,
+            3: GIMarshallingTests.ExtraEnum.VALUE3,
+        });
+    });
+});
+
+// Adapted from pygobject
+describe('Filename tests', function () {
+    let workdir;
+    beforeAll(function (done) {
+        Gio.File.new_tmp_dir_async(null, GLib.PRIORITY_DEFAULT, null, (self, result) => {
+            workdir = Gio.File.new_tmp_dir_finish(result);
+            done();
+        });
+    });
+
+    afterAll(function () {
+        GLib.rmdir(workdir.get_path());
+    });
+
+    it('wrong types', function () {
+        expect(() => GIMarshallingTests.filename_copy(23)).toThrowError();
+        expect(() => GIMarshallingTests.filename_copy([])).toThrowError();
+    });
+
+    it('nullability', function () {
+        expect(GIMarshallingTests.filename_copy(null)).toBeNull();
+        expect(() => GIMarshallingTests.filename_exists(null)).toThrowError();
+    });
+
+    it('round-tripping', function () {
+        expect(GIMarshallingTests.filename_copy('foo')).toBe('foo');
+    });
+
+    // We run the tests with Latin1 filename encoding, to catch mistakes
+    it('various types of paths in GLib encoding', function () {
+        const strPath = GIMarshallingTests.filename_copy('ä');
+        expect(strPath).toBe('ä');
+        expect(GIMarshallingTests.filename_to_glib_repr(strPath))
+            .toEqual(Uint8Array.of(0xe4));
+    });
+
+    it('various types of path existing', function () {
+        const paths = ['foo-2', 'öäü-3'];
+        for (const path of paths) {
+            const file = workdir.get_child(path);
+            const stream = file.create(Gio.FileCreateFlags.NONE, null);
+            expect(GIMarshallingTests.filename_exists(file.get_path())).toBeTrue();
+            stream.close(null);
+            file.delete(null);
+        }
+    });
+});
+
+// Adapted from pygobject
+describe('Array of enum extra tests', function () {
+    xit('marshals a C array of enum values as a return value', function () {
+        expect(GIMarshallingTests.enum_array_return_type()).toEqual('foo');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/603');
+});
+
+// Adapted from pygobject
+describe('Flags extra tests', function () {
+    it('marshals a 32-high bit flags value as an in argument', function () {
+        GIMarshallingTests.extra_flags_large_in(GIMarshallingTests.ExtraFlags.VALUE2);
+    });
+});
+
+// Adapted from pygobject
+describe('UTF-8 strings invalid bytes tests', function () {
+    xit('handles invalid UTF-8 return values gracefully', function () {
+        expect(GIMarshallingTests.extra_utf8_full_return_invalid()).toThrowError(TypeError);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
+
+    xit('handles invalid UTF-8 out arguments gracefully', function () {
+        expect(GIMarshallingTests.extra_utf8_full_out_invalid()).toThrowError(TypeError);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
 });

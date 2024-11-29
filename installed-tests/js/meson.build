@@ -154,6 +154,7 @@ modules_tests = [
     'GLibLogWriter',
     'Global',
     'Timers',
+    'Utility',
     'WeakRef',
 ]
 

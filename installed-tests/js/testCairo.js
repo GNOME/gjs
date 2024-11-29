@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2010 litl, LLC
+// SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 
 imports.gi.versions.Gdk = '3.0';
 imports.gi.versions.Gtk = '3.0';
@@ -301,31 +302,37 @@ describe('Cairo', function () {
 
     describe('GI test suite', function () {
         describe('for context', function () {
-            it('can be marshalled as a return value', function () {
-                const outCr = Regress.test_cairo_context_full_return();
-                const outSurface = outCr.getTarget();
-                expect(outSurface.getFormat()).toEqual(Cairo.Format.ARGB32);
-                expect(outSurface.getWidth()).toEqual(10);
-                expect(outSurface.getHeight()).toEqual(10);
-            });
+            ['none', 'full'].forEach(transfer => {
+                it(`can be marshalled as a transfer ${transfer} return value`, function () {
+                    const outCr = Regress[`test_cairo_context_${transfer}_return`]();
+                    const outSurface = outCr.getTarget();
+                    expect(outSurface.getFormat()).toEqual(Cairo.Format.ARGB32);
+                    expect(outSurface.getWidth()).toEqual(10);
+                    expect(outSurface.getHeight()).toEqual(10);
+                });
 
-            it('can be marshalled as an in parameter', function () {
-                expect(() => Regress.test_cairo_context_none_in(cr)).not.toThrow();
+                it(`can be marshalled as a transfer ${transfer} in parameter`, function () {
+                    expect(() => Regress[`test_cairo_context_${transfer}_in`](cr)).not.toThrow();
+                });
             });
         });
 
         describe('for surface', function () {
             ['none', 'full'].forEach(transfer => {
-                it(`can be marshalled as a transfer-${transfer} return value`, function () {
+                it(`can be marshalled as a transfer ${transfer} return value`, function () {
                     const outSurface = Regress[`test_cairo_surface_${transfer}_return`]();
                     expect(outSurface.getFormat()).toEqual(Cairo.Format.ARGB32);
                     expect(outSurface.getWidth()).toEqual(10);
                     expect(outSurface.getHeight()).toEqual(10);
                 });
-            });
 
-            it('can be marshalled as an in parameter', function () {
-                expect(() => Regress.test_cairo_surface_none_in(surface)).not.toThrow();
+                it(`can be marshalled as a transfer ${transfer} in parameter`, function () {
+                    if (transfer === 'full') {
+                        pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/660');
+                        return;
+                    }
+                    expect(() => Regress[`test_cairo_surface_${transfer}_in`](surface)).not.toThrow();
+                });
             });
 
             it('can be marshalled as an out parameter', function () {
@@ -335,6 +342,91 @@ describe('Cairo', function () {
                 expect(outSurface.getHeight()).toEqual(10);
             });
         });
+
+        xdescribe('for path', function () {
+            it('can be marshalled as a return value', function () {
+                const path = Regress.test_cairo_path_full_return();
+                expect(path).toBeInstanceOf(Cairo.Path);
+            });
+
+            it('can be marshalled as an in parameter with transfer none', function () {
+                const path = cr.copyPath();
+                Regress.test_cairo_path_none_in(path);
+            });
+
+            it('can be marshalled as an in parameter with transfer full', function () {
+                const path = cr.copyPath();
+                const outPath = Regress.test_cairo_path_full_in_full_return(path);
+                expect(outPath).toBeInstanceOf(Cairo.Path);
+            });
+        }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/659');
+
+        xdescribe('for pattern', function () {
+            ['none', 'full'].forEach(transfer => {
+                it(`can be marshalled as a return value with transfer ${transfer}`, function () {
+                    const pattern = Regress[`test_cairo_pattern_${transfer}_return`]();
+                    expect(pattern).toBeInstanceOf(Cairo.Pattern);
+                });
+
+                it(`can be marshalled as an in parameter with transfer ${transfer}`, function () {
+                    const pattern = Cairo.SolidPattern.createRGB(1, 2, 3);
+                    Regress[`test_cairo_pattern_${transfer}_in`](pattern);
+                });
+            });
+        }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/659');
+
+        describe('for region', function () {
+            xit('can be marshalled as an in argument', function () {
+                const region = new Cairo.Region();
+                Regress.test_cairo_region_full_in(region);
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/660');
+        });
+
+        xdescribe('for FontOptions', function () {
+            ['none', 'full'].forEach(transfer => {
+                it(`can be marshalled as a return value with transfer ${transfer}`, function () {
+                    const fontOptions = Regress[`test_cairo_font_options_${transfer}_return`]();
+                    expect(fontOptions).toBeInstanceOf(Cairo.FontOptions);
+                });
+
+                it(`can be marshalled as an in parameter with transfer ${transfer}`, function () {
+                    const fontOptions = Cairo.SolidPattern.createRGB(1, 2, 3);
+                    Regress[`test_cairo_font_options_${transfer}_in`](fontOptions);
+                });
+            });
+        }).pend('Cairo.FontOptions not implemented. Open an issue if you need this');
+
+        xdescribe('for matrix', function () {
+            it('can be marshalled as a return value', function () {
+                const matrix = Regress.test_cairo_matrix_none_return();
+                expect(matrix).toEqual(jasmine.objectContaining({
+                    x0: 0,
+                    y0: 0,
+                    xx: 1,
+                    xy: 0,
+                    yy: 1,
+                    yx: 0,
+                }));
+            });
+
+            it('can be marshalled as an in parameter', function () {
+                const matrix = new Cairo.Matrix();
+                matrix.initIdentity();
+                Regress.test_cairo_matrix_none_in(matrix);
+            });
+
+            it('can be marshalled as a caller-allocates out parameter', function () {
+                const matrix = Regress.test_cairo_matrix_out_caller_allocates();
+                expect(matrix).toEqual(jasmine.objectContaining({
+                    x0: 0,
+                    y0: 0,
+                    xx: 1,
+                    xy: 0,
+                    yy: 1,
+                    yx: 0,
+                }));
+            });
+        }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/662');
 
         it('can be marshalled through a signal handler', function () {
             let o = new Regress.TestObj();

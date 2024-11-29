@@ -35,6 +35,7 @@ overrides:
       - testEncoding.js
       - testGLibLogWriter.js
       - testTimers.js
+      - testUtility.js
       - testWeakRef.js
       - modules/importmeta.js
       - modules/exports.js
