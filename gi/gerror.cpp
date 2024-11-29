@@ -404,7 +404,7 @@ bool ErrorBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
              "transfer_to_gi_argument() must choose between in or out");
 
     if (!ErrorBase::typecheck(cx, obj)) {
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return false;
     }
 
@@ -527,7 +527,7 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
 /*
  * gjs_throw_gerror:
  *
- * Converts a GError into a JavaScript exception, and frees the GError.
+ * Converts a GError into a JavaScript exception.
  * Differently from gjs_throw(), it will overwrite an existing exception, as it
  * is used to report errors from C functions.
  *

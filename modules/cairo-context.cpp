@@ -934,7 +934,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
             return false;
         }
 
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return true;
     }
 

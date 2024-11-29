@@ -336,7 +336,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
             return false;
         }
 
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return true;
     }
 

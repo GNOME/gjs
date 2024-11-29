@@ -239,7 +239,7 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
             return false;
         }
 
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return true;
     }
 

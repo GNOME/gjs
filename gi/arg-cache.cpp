@@ -182,10 +182,7 @@ struct Positioned {
 
     constexpr bool set_out_parameter(GjsFunctionCallState* state,
                                      GIArgument* arg) {
-        // Clear all bits of the out C value. No one member is guaranteed to
-        // span the whole union on all architectures, so use memset() instead of
-        // gjs_arg_unset<T>().
-        memset(&state->out_cvalue(m_arg_pos), 0, sizeof(GIArgument));
+        gjs_arg_unset(&state->out_cvalue(m_arg_pos));
         // The value passed to the function is actually the address of the out
         // C value
         gjs_arg_set(arg, &state->out_cvalue(m_arg_pos));
@@ -1001,12 +998,12 @@ bool ExplicitArrayInOut::in(JSContext* cx, GjsFunctionCallState* state,
     if (!gjs_arg_get<void*>(arg)) {
         // Special case where we were given JS null to also pass null for
         // length, and not a pointer to an integer that derefs to 0.
-        gjs_arg_unset<void*>(&state->in_cvalue(length_pos));
-        gjs_arg_unset<int>(&state->out_cvalue(length_pos));
-        gjs_arg_unset<int>(&state->inout_original_cvalue(length_pos));
+        gjs_arg_unset(&state->in_cvalue(length_pos));
+        gjs_arg_unset(&state->out_cvalue(length_pos));
+        gjs_arg_unset(&state->inout_original_cvalue(length_pos));
 
-        gjs_arg_unset<void*>(&state->out_cvalue(ix));
-        gjs_arg_unset<void*>(&state->inout_original_cvalue(ix));
+        gjs_arg_unset(&state->out_cvalue(ix));
+        gjs_arg_unset(&state->inout_original_cvalue(ix));
     } else {
         if G_LIKELY (m_length_direction == GI_DIRECTION_INOUT) {
             state->out_cvalue(length_pos) =
@@ -1180,7 +1177,7 @@ bool Nullable::handle_nullable(JSContext* cx, GIArgument* arg,
                                const char* arg_name) {
     if (!m_nullable)
         return report_invalid_null(cx, arg_name);
-    gjs_arg_unset<void*>(arg);
+    gjs_arg_unset(arg);
     return true;
 }
 
@@ -1630,7 +1627,7 @@ bool CallbackIn::release(JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
     // CallbackTrampolines are refcounted because for notified/async closures
     // it is possible to destroy it while in call, and therefore we cannot
     // check its scope at this point
-    gjs_arg_unset<void*>(in_arg);
+    gjs_arg_unset(in_arg);
     return true;
 }
 

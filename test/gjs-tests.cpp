@@ -993,7 +993,7 @@ static void gjstest_test_args_set_get_unset() {
 
     gjs_arg_set(&arg, true);
     g_assert_true(arg.v_boolean);
-    gjs_arg_unset<bool>(&arg);
+    gjs_arg_unset(&arg);
     g_assert_false(arg.v_boolean);
 
     int8_t random_int8 = get_random_number<int8_t>();
@@ -1072,7 +1072,7 @@ static void gjstest_test_args_set_get_unset() {
 
     gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, TRUE);
     g_assert_true(arg.v_boolean);
-    gjs_arg_unset<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg);
+    gjs_arg_unset(&arg);
     g_assert_false(arg.v_boolean);
 
     GType random_gtype = get_random_number<GType>();

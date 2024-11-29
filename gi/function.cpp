@@ -296,7 +296,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     g_callable_info_load_return_type(m_info, &ret_type);
     if (g_type_info_get_tag(&ret_type) != GI_TYPE_TAG_VOID) {
         GIArgument argument = {};
-        gjs_gi_argument_init_default(&ret_type, &argument);
+        gjs_arg_unset(&argument);
         set_return_ffi_arg_from_gi_argument(&ret_type, result, &argument);
     }
 

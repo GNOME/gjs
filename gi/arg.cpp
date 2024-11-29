@@ -716,7 +716,7 @@ gjs_array_to_ptrarray(JSContext   *context,
 
     for (i = 0; i < length; i++) {
         GIArgument arg;
-        gjs_arg_unset<void*>(&arg);
+        gjs_arg_unset(&arg);
 
         elem = JS::UndefinedValue();
         if (!JS_GetElement(context, array_obj, i, &elem)) {
@@ -1221,7 +1221,7 @@ static bool value_to_interface_gi_argument(
 
         Gjs::AutoGValue gvalue;
         if (!gjs_value_to_g_value(cx, value, &gvalue)) {
-            gjs_arg_unset<void*>(arg);
+            gjs_arg_unset(arg);
             return false;
         }
 
@@ -1330,7 +1330,7 @@ static bool value_to_interface_gi_argument(
 
             } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
                 if (!gjs_typecheck_param(cx, obj, gtype, true)) {
-                    gjs_arg_unset<void*>(arg);
+                    gjs_arg_unset(arg);
                     return false;
                 }
                 gjs_arg_set(arg, gjs_g_param_from_param(cx, obj));
@@ -1389,7 +1389,7 @@ static bool value_to_interface_gi_argument(
 
             gjs_throw(cx, "Unhandled GType %s unpacking GIArgument from Object",
                       g_type_name(gtype));
-            gjs_arg_unset<void*>(arg);
+            gjs_arg_unset(arg);
             return false;
         }
 
@@ -1501,7 +1501,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
         // just so it isn't uninitialized
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return check_nullable_argument(context, arg_name, arg_type, type_tag,
                                        flags, arg);
 
@@ -1761,95 +1761,6 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
     }
 
     return true;
-}
-
-/* If a callback function with a return value throws, we still have
- * to return something to C. This function defines what that something
- * is. It basically boils down to memset(arg, 0, sizeof(*arg)), but
- * gives as a bit more future flexibility and also will work if
- * libffi passes us a buffer that only has room for the appropriate
- * branch of GIArgument. (Currently it appears that the return buffer
- * has a fixed size large enough for the union of all types.)
- */
-void gjs_gi_argument_init_default(GITypeInfo* type_info, GIArgument* arg) {
-    GITypeTag type_tag = g_type_info_get_tag(type_info);
-
-    switch (type_tag) {
-        case GI_TYPE_TAG_VOID:
-            // just so it isn't uninitialized
-            gjs_arg_unset<void*>(arg);
-            break;
-        case GI_TYPE_TAG_INT8:
-            gjs_arg_unset<int8_t>(arg);
-            break;
-        case GI_TYPE_TAG_UINT8:
-            gjs_arg_unset<uint8_t>(arg);
-            break;
-        case GI_TYPE_TAG_INT16:
-            gjs_arg_unset<int16_t>(arg);
-            break;
-        case GI_TYPE_TAG_UINT16:
-            gjs_arg_unset<uint16_t>(arg);
-            break;
-        case GI_TYPE_TAG_INT32:
-            gjs_arg_unset<int32_t>(arg);
-            break;
-        case GI_TYPE_TAG_UINT32:
-            gjs_arg_unset<uint32_t>(arg);
-            break;
-        case GI_TYPE_TAG_UNICHAR:
-            gjs_arg_unset<char32_t>(arg);
-            break;
-        case GI_TYPE_TAG_INT64:
-            gjs_arg_unset<int64_t>(arg);
-            break;
-        case GI_TYPE_TAG_UINT64:
-            gjs_arg_unset<uint64_t>(arg);
-            break;
-        case GI_TYPE_TAG_BOOLEAN:
-            gjs_arg_unset<bool>(arg);
-            break;
-        case GI_TYPE_TAG_FLOAT:
-            gjs_arg_unset<float>(arg);
-            break;
-        case GI_TYPE_TAG_DOUBLE:
-            gjs_arg_unset<double>(arg);
-            break;
-        case GI_TYPE_TAG_GTYPE:
-            gjs_arg_unset<GType, GI_TYPE_TAG_GTYPE>(arg);
-            break;
-        case GI_TYPE_TAG_FILENAME:
-        case GI_TYPE_TAG_UTF8:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_ERROR:
-            gjs_arg_unset<void*>(arg);
-            break;
-        case GI_TYPE_TAG_INTERFACE: {
-            GjsAutoBaseInfo interface_info =
-                g_type_info_get_interface(type_info);
-            g_assert(interface_info != nullptr);
-
-            GIInfoType interface_type = interface_info.type();
-
-            if (interface_type == GI_INFO_TYPE_ENUM ||
-                interface_type == GI_INFO_TYPE_FLAGS)
-                gjs_arg_unset<int, GI_TYPE_TAG_INTERFACE>(arg);
-            else
-                gjs_arg_unset<void*>(arg);
-        } break;
-        case GI_TYPE_TAG_GHASH:
-            // Possibly better to return an empty hash table?
-            gjs_arg_unset<GHashTable*>(arg);
-            break;
-        case GI_TYPE_TAG_ARRAY:
-            gjs_arg_unset<void*>(arg);
-            break;
-        default:
-            g_warning("Unhandled type %s for default GIArgument initialization",
-                      g_type_tag_to_string(type_tag));
-            break;
-    }
 }
 
 bool gjs_value_to_callback_out_arg(JSContext* context, JS::HandleValue value,

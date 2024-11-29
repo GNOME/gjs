@@ -2882,7 +2882,7 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
              "transfer_to_gi_argument() must choose between in or out");
 
     if (!ObjectBase::typecheck(cx, obj, expected_info, expected_gtype)) {
-        gjs_arg_unset<void*>(arg);
+        gjs_arg_unset(arg);
         return false;
     }
 

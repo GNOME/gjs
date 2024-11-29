@@ -7,6 +7,7 @@
 #include <config.h>
 
 #include <stdint.h>
+#include <string.h>  // for memset
 
 #include <cstddef>  // for nullptr_t
 #include <limits>
@@ -182,18 +183,17 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
     return gjs_int_to_pointer(gjs_arg_get<T, TAG>(arg));
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 constexpr inline void gjs_arg_unset(GIArgument* arg) {
-    if constexpr (std::is_pointer_v<T>)
-        gjs_arg_set<T, TAG>(arg, nullptr);
-    else
-        gjs_arg_set<T, TAG>(arg, static_cast<T>(0));
+    // Clear all bits of the out C value. No one member is guaranteed to span
+    // the whole union on all architectures, so use memset() instead of
+    // gjs_arg_set<T>(arg, 0) for some type T.
+    memset(arg, 0, sizeof(GIArgument));
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 [[nodiscard]] constexpr inline T gjs_arg_steal(GIArgument* arg) {
     auto val = gjs_arg_get<T, TAG>(arg);
-    gjs_arg_unset<T, TAG>(arg);
+    gjs_arg_unset(arg);
     return val;
 }
 
