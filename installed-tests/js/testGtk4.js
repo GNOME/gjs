@@ -7,11 +7,6 @@ imports.gi.versions.Gtk = '4.0';
 const {Gdk, Gio, GObject, Gtk, GLib, GjsTestTools} = imports.gi;
 const System = imports.system;
 
-// Set up log writer for tests to override
-const writerFunc = jasmine.createSpy('log writer', () => GLib.LogWriterOutput.UNHANDLED);
-writerFunc.and.callThrough();
-GLib.log_set_writer_func(writerFunc);
-
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
     return `
@@ -188,145 +183,6 @@ function validateTemplate(description, ClassName, pending = false) {
     });
 }
 
-describe('Gtk overrides', function () {
-    beforeAll(function () {
-        Gtk.init();
-    });
-
-    afterAll(function () {
-        templateFile.delete(null);
-    });
-
-    validateTemplate('UI template', MyComplexGtkSubclass);
-    validateTemplate('UI template from resource', MyComplexGtkSubclassFromResource);
-    validateTemplate('UI template from string', MyComplexGtkSubclassFromString);
-    validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
-    validateTemplate('Class inheriting from template class', SubclassSubclass, true);
-
-    it('ensures signal handlers are callable', function () {
-        const ClassWithUncallableHandler = GObject.registerClass({
-            Template: createTemplate('Gjs_ClassWithUncallableHandler'),
-            Children: ['label-child', 'label-child2'],
-            InternalChildren: ['internal-label-child'],
-        }, class ClassWithUncallableHandler extends Gtk.Grid {
-            templateCallback() {}
-            get boundCallback() {
-                return 'who ya gonna call?';
-            }
-        });
-
-        // The exception is thrown inside a vfunc with a GError out parameter,
-        // and Gtk logs a critical.
-        writerFunc.calls.reset();
-        writerFunc.and.callFake((level, fields) => {
-            const decoder = new TextDecoder('utf-8');
-            const domain = decoder.decode(fields?.GLIB_DOMAIN);
-            const message = decoder.decode(fields?.MESSAGE);
-            expect(level).toBe(GLib.LogLevelFlags.LEVEL_CRITICAL);
-            expect(domain).toBe('Gtk');
-            expect(message).toMatch('is not a function');
-            return GLib.LogWriterOutput.HANDLED;
-        });
-
-        void new ClassWithUncallableHandler();
-
-        expect(writerFunc).toHaveBeenCalled();
-        writerFunc.and.callThrough();
-    });
-
-    it('rejects unsupported template URIs', function () {
-        expect(() => {
-            return GObject.registerClass({
-                Template: 'https://gnome.org',
-            }, class GtkTemplateInvalid extends Gtk.Widget {
-            });
-        }).toThrowError(TypeError, /Invalid template URI/);
-    });
-
-    it('sets CSS names on classes', function () {
-        expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
-    });
-
-    it('static inheritance works', function () {
-        expect(MyComplexGtkSubclass.get_css_name()).toEqual('complex-subclass');
-    });
-
-    it('can create a Gtk.TreeIter with accessible stamp field', function () {
-        const iter = new Gtk.TreeIter();
-        iter.stamp = 42;
-        expect(iter.stamp).toEqual(42);
-    });
-
-    it('can create a Gtk.CustomSorter with callback', function () {
-        const sortFunc = jasmine.createSpy('sortFunc').and.returnValue(1);
-        const model = Gtk.StringList.new(['hello', 'world']);
-        const sorter = Gtk.CustomSorter.new(sortFunc);
-        void Gtk.SortListModel.new(model, sorter);
-        expect(sortFunc).toHaveBeenCalledOnceWith(jasmine.any(Gtk.StringObject), jasmine.any(Gtk.StringObject));
-    });
-
-    it('can change the callback of a Gtk.CustomSorter', function () {
-        const model = Gtk.StringList.new(['hello', 'world']);
-        const sorter = Gtk.CustomSorter.new(null);
-        void Gtk.SortListModel.new(model, sorter);
-
-        const sortFunc = jasmine.createSpy('sortFunc').and.returnValue(1);
-        sorter.set_sort_func(sortFunc);
-        expect(sortFunc).toHaveBeenCalledOnceWith(jasmine.any(Gtk.StringObject), jasmine.any(Gtk.StringObject));
-
-        sortFunc.calls.reset();
-        sorter.set_sort_func(null);
-        expect(sortFunc).not.toHaveBeenCalled();
-    });
-});
-
-describe('Gtk 4 regressions', function () {
-    it('Gdk.Event fundamental type should not crash', function () {
-        expect(() => new Gdk.Event()).toThrowError(/Couldn't find a constructor/);
-    });
-
-    xit('Actions added via Gtk.WidgetClass.add_action() should not crash', function () {
-        const custom = new CustomActionWidget();
-        custom.activate_action('custom.action', null);
-        expect(custom.action).toEqual(42);
-    }).pend('https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/3796');
-
-    it('Gdk.NoSelection section returns valid start/end values', function () {
-        if (!Gtk.NoSelection.prototype.get_section)
-            pending('Gtk 4.12 is required');
-
-        let result;
-        try {
-            result = new Gtk.NoSelection().get_section(0);
-        } catch (err) {
-            if (err.message.includes('not introspectable'))
-                pending('This version of GTK has the annotation bug');
-            throw err;
-        }
-        expect(result).toEqual([0, GLib.MAXUINT32]);
-    });
-
-    function createSurface(shouldStash) {
-        // Create a Gdk.Surface that is unreachable after this function ends
-        const display = Gdk.Display.get_default();
-        const surface = Gdk.Surface.new_toplevel(display);
-        if (shouldStash)
-            GjsTestTools.save_object(surface);
-    }
-
-    it('Gdk.Surface is destroyed properly', function () {
-        createSurface(false);
-        System.gc();
-    });
-
-    it('Gdk.Surface is not destroyed if a ref is held from C', function () {
-        createSurface(true);
-        System.gc();
-        const surface = GjsTestTools.steal_saved();
-        expect(surface.is_destroyed()).toBeFalsy();
-    });
-});
-
 class LeakTestWidget extends Gtk.Button {
     buttonClicked() {}
 }
@@ -340,30 +196,173 @@ GObject.registerClass({
 </interface>`),
 }, LeakTestWidget);
 
-
-describe('Gtk template signal', function () {
+describe('Gtk 4', function () {
+    let writerFunc;
     beforeAll(function () {
         Gtk.init();
+
+        // Set up log writer for tests to override
+        writerFunc = jasmine.createSpy('log writer', () => GLib.LogWriterOutput.UNHANDLED);
+        writerFunc.and.callThrough();
+        GLib.log_set_writer_func(writerFunc);
     });
 
-    function asyncIdle() {
-        return new Promise(resolve => {
-            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                resolve();
-                return GLib.SOURCE_REMOVE;
+    afterAll(function () {
+        GLib.log_set_writer_default();
+        templateFile.delete(null);
+    });
+
+    describe('overrides', function () {
+        validateTemplate('UI template', MyComplexGtkSubclass);
+        validateTemplate('UI template from resource', MyComplexGtkSubclassFromResource);
+        validateTemplate('UI template from string', MyComplexGtkSubclassFromString);
+        validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
+        validateTemplate('Class inheriting from template class', SubclassSubclass, true);
+
+        it('ensures signal handlers are callable', function () {
+            const ClassWithUncallableHandler = GObject.registerClass({
+                Template: createTemplate('Gjs_ClassWithUncallableHandler'),
+                Children: ['label-child', 'label-child2'],
+                InternalChildren: ['internal-label-child'],
+            }, class ClassWithUncallableHandler extends Gtk.Grid {
+                templateCallback() {}
+                get boundCallback() {
+                    return 'who ya gonna call?';
+                }
             });
+
+            // The exception is thrown inside a vfunc with a GError out parameter,
+            // and Gtk logs a critical.
+            writerFunc.calls.reset();
+            writerFunc.and.callFake((level, fields) => {
+                const decoder = new TextDecoder('utf-8');
+                const domain = decoder.decode(fields?.GLIB_DOMAIN);
+                const message = decoder.decode(fields?.MESSAGE);
+                expect(level).toBe(GLib.LogLevelFlags.LEVEL_CRITICAL);
+                expect(domain).toBe('Gtk');
+                expect(message).toMatch('is not a function');
+                return GLib.LogWriterOutput.HANDLED;
+            });
+
+            void new ClassWithUncallableHandler();
+
+            expect(writerFunc).toHaveBeenCalled();
+            writerFunc.and.callThrough();
         });
-    }
 
-    it('does not leak', async function () {
-        const weakRef = new WeakRef(new LeakTestWidget());
+        it('rejects unsupported template URIs', function () {
+            expect(() => {
+                return GObject.registerClass({
+                    Template: 'https://gnome.org',
+                }, class GtkTemplateInvalid extends Gtk.Widget {
+                });
+            }).toThrowError(TypeError, /Invalid template URI/);
+        });
 
-        await asyncIdle();
-        // It takes two GC cycles to free the widget, because of the tardy sweep
-        // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
-        System.gc();
-        System.gc();
+        it('sets CSS names on classes', function () {
+            expect(Gtk.Widget.get_css_name.call(MyComplexGtkSubclass)).toEqual('complex-subclass');
+        });
 
-        expect(weakRef.deref()).toBeUndefined();
+        it('static inheritance works', function () {
+            expect(MyComplexGtkSubclass.get_css_name()).toEqual('complex-subclass');
+        });
+
+        it('can create a Gtk.TreeIter with accessible stamp field', function () {
+            const iter = new Gtk.TreeIter();
+            iter.stamp = 42;
+            expect(iter.stamp).toEqual(42);
+        });
+
+        it('can create a Gtk.CustomSorter with callback', function () {
+            const sortFunc = jasmine.createSpy('sortFunc').and.returnValue(1);
+            const model = Gtk.StringList.new(['hello', 'world']);
+            const sorter = Gtk.CustomSorter.new(sortFunc);
+            void Gtk.SortListModel.new(model, sorter);
+            expect(sortFunc).toHaveBeenCalledOnceWith(jasmine.any(Gtk.StringObject), jasmine.any(Gtk.StringObject));
+        });
+
+        it('can change the callback of a Gtk.CustomSorter', function () {
+            const model = Gtk.StringList.new(['hello', 'world']);
+            const sorter = Gtk.CustomSorter.new(null);
+            void Gtk.SortListModel.new(model, sorter);
+
+            const sortFunc = jasmine.createSpy('sortFunc').and.returnValue(1);
+            sorter.set_sort_func(sortFunc);
+            expect(sortFunc).toHaveBeenCalledOnceWith(jasmine.any(Gtk.StringObject), jasmine.any(Gtk.StringObject));
+
+            sortFunc.calls.reset();
+            sorter.set_sort_func(null);
+            expect(sortFunc).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('regressions', function () {
+        it('Gdk.Event fundamental type should not crash', function () {
+            expect(() => new Gdk.Event()).toThrowError(/Couldn't find a constructor/);
+        });
+
+        xit('Actions added via Gtk.WidgetClass.add_action() should not crash', function () {
+            const custom = new CustomActionWidget();
+            custom.activate_action('custom.action', null);
+            expect(custom.action).toEqual(42);
+        }).pend('https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/3796');
+
+        it('Gdk.NoSelection section returns valid start/end values', function () {
+            if (!Gtk.NoSelection.prototype.get_section)
+                pending('Gtk 4.12 is required');
+
+            let result;
+            try {
+                result = new Gtk.NoSelection().get_section(0);
+            } catch (err) {
+                if (err.message.includes('not introspectable'))
+                    pending('This version of GTK has the annotation bug');
+                throw err;
+            }
+            expect(result).toEqual([0, GLib.MAXUINT32]);
+        });
+
+        function createSurface(shouldStash) {
+            // Create a Gdk.Surface that is unreachable after this function ends
+            const display = Gdk.Display.get_default();
+            const surface = Gdk.Surface.new_toplevel(display);
+            if (shouldStash)
+                GjsTestTools.save_object(surface);
+        }
+
+        it('Gdk.Surface is destroyed properly', function () {
+            createSurface(false);
+            System.gc();
+        });
+
+        it('Gdk.Surface is not destroyed if a ref is held from C', function () {
+            createSurface(true);
+            System.gc();
+            const surface = GjsTestTools.steal_saved();
+            expect(surface.is_destroyed()).toBeFalsy();
+        });
+    });
+
+    describe('template signal', function () {
+        function asyncIdle() {
+            return new Promise(resolve => {
+                GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                    resolve();
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+        }
+
+        it('does not leak', async function () {
+            const weakRef = new WeakRef(new LeakTestWidget());
+
+            await asyncIdle();
+            // It takes two GC cycles to free the widget, because of the tardy sweep
+            // problem (https://gitlab.gnome.org/GNOME/gjs/-/issues/217)
+            System.gc();
+            System.gc();
+
+            expect(weakRef.deref()).toBeUndefined();
+        });
     });
 });

@@ -31,6 +31,10 @@ describe('GLib Structured logging handler', function () {
         GLib.log_set_writer_func(writer_func);
     });
 
+    afterAll(function () {
+        GLib.log_set_writer_default();
+    });
+
     beforeEach(function () {
         writer_func.calls.reset();
     });
