@@ -107,6 +107,10 @@ describe('console', function () {
         writer_func.calls.reset();
     });
 
+    afterAll(function () {
+        GLib.log_set_writer_default();
+    });
+
     it('has correct object tag', function () {
         expect(console.toString()).toBe('[object console]');
     });

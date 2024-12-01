@@ -887,6 +887,10 @@ describe('DBus Proxy wrapper', function () {
         writerFunc.calls.reset();
     });
 
+    afterAll(function () {
+        GLib.log_set_writer_default();
+    });
+
     it('init failures are reported in sync mode', function () {
         const cancellable = new Gio.Cancellable();
         cancellable.cancel();

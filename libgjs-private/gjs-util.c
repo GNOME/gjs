@@ -340,6 +340,7 @@ void gjs_gtk_custom_sorter_set_sort_func(GObject* sorter,
     g_clear_pointer(&set_sort_func_fun, g_base_info_unref);
 }
 
+static bool log_writer_cleared = false;
 static void* log_writer_user_data = NULL;
 static GDestroyNotify log_writer_user_data_free = NULL;
 static GThread* log_writer_thread = NULL;
@@ -350,9 +351,10 @@ static GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
                                                     void* user_data) {
     g_assert(log_writer_thread);
 
-    // If the wrapper is called from a thread other than the one that set it,
+    // If the log writer function has been cleared with log_set_writer_default()
+    // or the wrapper is called from a thread other than the one that set it,
     // return unhandled so the fallback logger is used.
-    if (g_thread_self() != log_writer_thread)
+    if (log_writer_cleared || g_thread_self() != log_writer_thread)
         return g_log_writer_default(log_level, fields, n_fields, NULL);
 
     GjsGLogWriterFunc func = (GjsGLogWriterFunc)user_data;
@@ -414,10 +416,10 @@ void gjs_log_set_writer_default() {
         log_writer_user_data_free(log_writer_user_data);
     }
 
-    g_log_set_writer_func(g_log_writer_default, NULL, NULL);
     log_writer_user_data_free = NULL;
     log_writer_user_data = NULL;
-    log_writer_thread = NULL;
+    log_writer_thread = g_thread_self();
+    log_writer_cleared = true;
 }
 
 /**
