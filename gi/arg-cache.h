@@ -51,6 +51,16 @@ enum class Kind {
 }  // namespace Arg
 
 struct Argument {
+    // Convenience struct to prevent long argument lists to make() and the
+    // functions that call it
+    struct Init {
+        uint8_t index;
+        const char* name;
+        GITransfer transfer;
+        GjsArgumentFlags flags;
+        GITypeInfo* type_info = nullptr;
+    };
+
     virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -115,9 +125,7 @@ struct Argument {
     friend struct ArgsCache;
 
     template <typename T, Arg::Kind ArgKind, typename... Args>
-    static AutoCppPointer<T> make(uint8_t index, const char* name,
-                                  GITypeInfo* type_info, GITransfer transfer,
-                                  GjsArgumentFlags flags, Args&&... args);
+    static AutoCppPointer<T> make(const Init&, Args&&...);
 };
 
 using ArgumentPtr = AutoCppPointer<Argument>;
@@ -169,27 +177,11 @@ struct ArgsCache {
                                 GjsArgumentFlags);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    void build_interface_in_arg(uint8_t gi_index, GITypeInfo*, GIBaseInfo*,
-                                GITransfer, const char* name, GjsArgumentFlags);
+    void build_interface_in_arg(const Argument::Init&, GIBaseInfo*);
 
     template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
               typename... Args>
-    constexpr T* set_argument(uint8_t index, const char* name, GITypeInfo*,
-                              GITransfer, GjsArgumentFlags flags,
-                              Args&&... args);
-
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
-              typename... Args>
-    constexpr T* set_argument(uint8_t index, const char* name, GITransfer,
-                              GjsArgumentFlags flags, Args&&... args);
-
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
-              typename... Args>
-    constexpr T* set_argument_auto(Args&&... args);
-
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL, typename Tuple,
-              typename... Args>
-    constexpr T* set_argument_auto(Tuple&& tuple, Args&&... args);
+    constexpr T* set_argument(const Argument::Init&, Args&&...);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
