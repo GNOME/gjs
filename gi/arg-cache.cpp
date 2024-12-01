@@ -2060,9 +2060,14 @@ namespace arg_cache {
 }  // namespace arg_cache
 
 template <Arg::Kind ArgKind>
-void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
-                                       GIBaseInfo* interface_info,
-                                       GITypeInfo* type_info) {
+void ArgsCache::build_interface_in_arg(
+    const Argument::Init& base_args, GIBaseInfo* interface_info,
+    std::conditional_t<ArgKind != Arg::Kind::INSTANCE, GITypeInfo*, int>
+        type_info) {
+    if constexpr (ArgKind != Arg::Kind::INSTANCE)
+        g_assert(type_info &&
+                 "type info cannot be null except for instance parameter");
+
     GIInfoType interface_type = g_base_info_get_type(interface_info);
 
     // We do some transfer magic later, so let's ensure we don't mess up.
@@ -2131,10 +2136,12 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
 
             if (arg_cache::is_gdk_atom(interface_info)) {
                 // Fall back to the generic marshaller
-                set_argument<ArgKind>(
-                    new Arg::FallbackInterfaceIn(type_info, interface_info),
-                    base_args);
-                return;
+                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
+                    set_argument<ArgKind>(
+                        new Arg::FallbackInterfaceIn(type_info, interface_info),
+                        base_args);
+                    return;
+                }
             }
 
             if (gtype == G_TYPE_CLOSURE) {
@@ -2168,10 +2175,12 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
             }
 
             if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                set_argument<ArgKind>(
-                    new Arg::FallbackInterfaceIn(type_info, interface_info),
-                    base_args);
-                return;
+                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
+                    set_argument<ArgKind>(
+                        new Arg::FallbackInterfaceIn(type_info, interface_info),
+                        base_args);
+                    return;
+                }
             }
 
             if (interface_type == GI_INFO_TYPE_UNION) {
@@ -2504,7 +2513,7 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
 
     build_interface_in_arg<Arg::Kind::INSTANCE>(
         {Argument::ABSENT, nullptr, transfer, GjsArgumentFlags::NONE},
-        interface_info, nullptr);
+        interface_info);
 }
 
 static constexpr bool type_tag_is_scalar(GITypeTag tag) {

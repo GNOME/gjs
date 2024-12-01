@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <limits>
+#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -178,9 +179,14 @@ struct ArgsCache {
     void build_normal_inout_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
                                 GjsArgumentFlags);
 
+    // GITypeInfo is not available for instance parameters (see
+    // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334) but
+    // for other parameters, this function additionally takes a GITypeInfo.
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    void build_interface_in_arg(const Argument::Init&, GIBaseInfo*,
-                                GITypeInfo*);
+    void build_interface_in_arg(
+        const Argument::Init&, GIBaseInfo*,
+        std::conditional_t<ArgKind != Arg::Kind::INSTANCE, GITypeInfo*, int> =
+            {});
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);
