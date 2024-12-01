@@ -183,7 +183,7 @@ struct ArgsCache {
     void build_interface_in_arg(const Argument::Init&, GIBaseInfo*);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
-    constexpr T* set_argument(T* arg, const Argument::Init&);
+    constexpr void set_argument(T* arg, const Argument::Init&);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
@@ -191,11 +191,12 @@ struct ArgsCache {
                             GjsArgumentFlags flags, int length_pos);
 
     template <typename T>
-    constexpr T* set_return(T* arg, GITypeInfo*, GITransfer, GjsArgumentFlags);
+    constexpr void set_return(T* arg, GITypeInfo*, GITransfer,
+                              GjsArgumentFlags);
 
     template <typename T>
-    constexpr T* set_instance(T* arg, GITransfer,
-                              GjsArgumentFlags flags = GjsArgumentFlags::NONE);
+    constexpr void set_instance(
+        T* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
     void set_skip_all(uint8_t index, const char* name = nullptr);
 

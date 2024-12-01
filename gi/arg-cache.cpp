@@ -1788,24 +1788,23 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
 }
 
 template <Arg::Kind ArgKind, typename T>
-constexpr T* ArgsCache::set_argument(T* arg, const Argument::Init& init) {
+constexpr void ArgsCache::set_argument(T* arg, const Argument::Init& init) {
     Argument::init_common<T, ArgKind>(init, arg);
     arg_get<ArgKind>(init.index) = arg;
-    return static_cast<T*>(arg_get<ArgKind>(init.index).get());
 }
 
 template <typename T>
-constexpr T* ArgsCache::set_return(T* arg, GITypeInfo* type_info,
-                                   GITransfer transfer,
-                                   GjsArgumentFlags flags) {
-    return set_argument<Arg::Kind::RETURN_VALUE>(
+constexpr void ArgsCache::set_return(T* arg, GITypeInfo* type_info,
+                                     GITransfer transfer,
+                                     GjsArgumentFlags flags) {
+    set_argument<Arg::Kind::RETURN_VALUE>(
         arg, {Argument::ABSENT, nullptr, transfer, flags, type_info});
 }
 
 template <typename T>
-constexpr T* ArgsCache::set_instance(T* arg, GITransfer transfer,
-                                     GjsArgumentFlags flags) {
-    return set_argument<Arg::Kind::INSTANCE>(
+constexpr void ArgsCache::set_instance(T* arg, GITransfer transfer,
+                                       GjsArgumentFlags flags) {
+    set_argument<Arg::Kind::INSTANCE>(
         arg, {Argument::ABSENT, nullptr, transfer, flags});
 }
 
