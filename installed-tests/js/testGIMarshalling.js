@@ -671,8 +671,7 @@ describe('GArray', function () {
         it('marshals as a transfer-full caller-allocated out parameter throws errors', function () {
             // should throw when called, not when the function object is created
             expect(() => GIMarshallingTests.garray_utf8_full_out_caller_allocated).not.toThrow();
-            expect(() => GIMarshallingTests.garray_utf8_full_out_caller_allocated())
-                .toThrowError(/type array.*\(out caller-allocates\)/);
+            expect(() => GIMarshallingTests.garray_utf8_full_out_caller_allocated()).toThrow();
         });
     });
 

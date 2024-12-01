@@ -477,7 +477,7 @@ struct FallbackIn : GenericIn, Nullable {
 using FallbackInOut = GenericInOut;
 using FallbackOut = GenericOut;
 
-struct NotIntrospectable : GenericIn {
+struct NotIntrospectable : SkipAll {
     explicit NotIntrospectable(NotIntrospectableReason reason)
         : m_reason(reason) {}
     NotIntrospectableReason m_reason;
@@ -939,11 +939,9 @@ bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
     }
 
     gjs_throw(cx,
-              "Function %s() cannot be called: argument '%s' with type %s is "
-              "not introspectable because it has a %s",
-              state->display_name().get(), m_arg_name,
-              g_type_tag_to_string(g_type_info_get_tag(&m_type_info)),
-              reason_string);
+              "Function %s() cannot be called: argument '%s' is not "
+              "introspectable because it has a %s",
+              state->display_name().get(), m_arg_name, reason_string);
     return false;
 }
 
