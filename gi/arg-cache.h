@@ -61,7 +61,6 @@ struct Argument {
         const char* name;
         GITransfer transfer;
         GjsArgumentFlags flags;
-        GITypeInfo* type_info = nullptr;
     };
 
     virtual ~Argument() = default;
@@ -180,7 +179,8 @@ struct ArgsCache {
                                 GjsArgumentFlags);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    void build_interface_in_arg(const Argument::Init&, GIBaseInfo*);
+    void build_interface_in_arg(const Argument::Init&, GIBaseInfo*,
+                                GITypeInfo*);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);
@@ -191,8 +191,7 @@ struct ArgsCache {
                             GjsArgumentFlags flags, int length_pos);
 
     template <typename T>
-    constexpr void set_return(T* arg, GITypeInfo*, GITransfer,
-                              GjsArgumentFlags);
+    constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);
 
     template <typename T>
     constexpr void set_instance(
