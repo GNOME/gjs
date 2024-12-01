@@ -2089,8 +2089,8 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
     if (G_UNLIKELY(transfer == GI_TRANSFER_CONTAINER)) {
-        set_argument_auto<Arg::NotIntrospectable>(base_args,
-                                                  INTERFACE_TRANSFER_CONTAINER);
+        set_argument_auto<Arg::NotIntrospectable, ArgKind>(
+            base_args, INTERFACE_TRANSFER_CONTAINER);
         return;
     }
 
@@ -2185,7 +2185,7 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
             if (interface_type == GI_INFO_TYPE_UNION) {
                 if (gtype == G_TYPE_NONE) {
                     // Can't handle unions without a GType
-                    set_argument_auto<Arg::NotIntrospectable>(
+                    set_argument_auto<Arg::NotIntrospectable, ArgKind>(
                         base_args, UNREGISTERED_UNION);
                     return;
                 }
@@ -2209,7 +2209,7 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
                 if (transfer != GI_TRANSFER_NOTHING) {
                     // Can't transfer ownership of a structure type not
                     // registered as a boxed
-                    set_argument_auto<Arg::NotIntrospectable>(
+                    set_argument_auto<Arg::NotIntrospectable, ArgKind>(
                         base_args, UNREGISTERED_BOXED_WITH_TRANSFER);
                     return;
                 }
@@ -2238,8 +2238,8 @@ void ArgsCache::build_interface_in_arg(uint8_t gi_index, GITypeInfo* type_info,
         default:
             // Don't know how to handle this interface type (should not happen
             // in practice, for typelibs emitted by g-ir-compiler)
-            set_argument_auto<Arg::NotIntrospectable>(base_args,
-                                                      UNSUPPORTED_TYPE);
+            set_argument_auto<Arg::NotIntrospectable, ArgKind>(
+                base_args, UNSUPPORTED_TYPE);
     }
 }
 
