@@ -296,7 +296,8 @@ struct Flags {
 };
 
 struct CallerAllocates {
-    size_t m_allocates_size = 0;
+    explicit CallerAllocates(size_t size) : m_allocates_size(size) {}
+    size_t m_allocates_size;
 };
 
 // Gjs::Arguments:
@@ -814,6 +815,7 @@ using CArrayInOut = ExplicitArrayInOut;
 using CArrayOut = ReturnArray;
 
 struct CallerAllocatesOut : GenericOut, CallerAllocates {
+    using CallerAllocates::CallerAllocates;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -825,7 +827,8 @@ struct CallerAllocatesOut : GenericOut, CallerAllocates {
 };
 
 struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
-    using GTypedType::GTypedType;
+    BoxedCallerAllocatesOut(size_t size, GType gtype)
+        : CallerAllocatesOut(size), GTypedType(gtype) {}
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 };
@@ -2566,17 +2569,13 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                 g_type_info_get_interface(&type_info)};
             GType gtype = g_registered_type_info_get_g_type(interface_info);
             if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                auto* gjs_arg = set_argument(
-                    new Arg::BoxedCallerAllocatesOut(gtype), common_args);
-                gjs_arg->m_allocates_size = size;
+                set_argument(new Arg::BoxedCallerAllocatesOut(size, gtype),
+                             common_args);
                 return;
             }
         }
 
-        auto* gjs_arg =
-            set_argument(new Arg::CallerAllocatesOut(), common_args);
-        gjs_arg->m_allocates_size = size;
-
+        set_argument(new Arg::CallerAllocatesOut(size), common_args);
         return;
     }
 
