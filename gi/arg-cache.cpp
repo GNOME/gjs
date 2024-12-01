@@ -1712,16 +1712,14 @@ constexpr size_t argument_maximum_size() {
 }
 #endif
 
-template <typename T, Arg::Kind ArgKind, typename... Args>
-AutoCppPointer<T> Argument::make(const Init& init, Args&&... args) {
+template <typename T, Arg::Kind ArgKind>
+void Argument::init_common(const Init& init, T* arg) {
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
     static_assert(
         sizeof(T) <= argument_maximum_size<T>(),
         "Think very hard before increasing the size of Gjs::Arguments. "
         "One is allocated for every argument to every introspected function.");
 #endif
-    auto arg = new T(args...);
-
     if constexpr (ArgKind == Arg::Kind::INSTANCE) {
         g_assert(init.index == Argument::ABSENT &&
                  "index was ignored in INSTANCE parameter");
@@ -1753,8 +1751,6 @@ AutoCppPointer<T> Argument::make(const Init& init, Args&&... args) {
                   ArgKind != Arg::Kind::INSTANCE) {
         arg->m_type_info = std::move(*init.type_info);
     }
-
-    return arg;
 }
 
 bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
@@ -1791,26 +1787,26 @@ bool ArgsCache::initialize(JSContext* cx, GICallableInfo* callable) {
     return true;
 }
 
-template <typename T, Arg::Kind ArgKind, typename... Args>
-constexpr T* ArgsCache::set_argument(const Argument::Init& init,
-                                     Args&&... args) {
-    AutoCppPointer<T> arg{Argument::make<T, ArgKind>(init, args...)};
-    arg_get<ArgKind>(init.index) = arg.release();
+template <Arg::Kind ArgKind, typename T>
+constexpr T* ArgsCache::set_argument(T* arg, const Argument::Init& init) {
+    Argument::init_common<T, ArgKind>(init, arg);
+    arg_get<ArgKind>(init.index) = arg;
     return static_cast<T*>(arg_get<ArgKind>(init.index).get());
 }
 
 template <typename T>
-constexpr T* ArgsCache::set_return(GITypeInfo* type_info, GITransfer transfer,
+constexpr T* ArgsCache::set_return(T* arg, GITypeInfo* type_info,
+                                   GITransfer transfer,
                                    GjsArgumentFlags flags) {
-    return set_argument<T, Arg::Kind::RETURN_VALUE>(
-        {Argument::ABSENT, nullptr, transfer, flags, type_info});
+    return set_argument<Arg::Kind::RETURN_VALUE>(
+        arg, {Argument::ABSENT, nullptr, transfer, flags, type_info});
 }
 
 template <typename T>
-constexpr T* ArgsCache::set_instance(GITransfer transfer,
+constexpr T* ArgsCache::set_instance(T* arg, GITransfer transfer,
                                      GjsArgumentFlags flags) {
-    return set_argument<T, Arg::Kind::INSTANCE>(
-        {Argument::ABSENT, nullptr, transfer, flags});
+    return set_argument<Arg::Kind::INSTANCE>(
+        arg, {Argument::ABSENT, nullptr, transfer, flags});
 }
 
 GType ArgsCache::instance_type() const {
@@ -1836,9 +1832,9 @@ GITypeInfo* ArgsCache::return_type() const {
     return const_cast<GITypeInfo*>(rval->return_type());
 }
 
-constexpr void ArgsCache::set_skip_all(uint8_t index, const char* name) {
-    set_argument<Arg::SkipAll>(
-        {index, name, GI_TRANSFER_NOTHING, GjsArgumentFlags::SKIP_ALL});
+void ArgsCache::set_skip_all(uint8_t index, const char* name) {
+    set_argument(new Arg::SkipAll(), {index, name, GI_TRANSFER_NOTHING,
+                                      GjsArgumentFlags::SKIP_ALL});
 }
 
 template <Arg::Kind ArgKind>
@@ -1854,8 +1850,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
 
     if constexpr (ArgKind == Arg::Kind::RETURN_VALUE) {
         GITransfer transfer = g_callable_info_get_caller_owns(callable);
-        array = set_return<Arg::ReturnArray>(type_info, transfer,
-                                             GjsArgumentFlags::NONE);
+        array = set_return(new Arg::ReturnArray(), type_info, transfer,
+                           GjsArgumentFlags::NONE);
     } else {
         const char* arg_name = g_base_info_get_name(arg);
         GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
@@ -1863,13 +1859,13 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                                    type_info};
 
         if (direction == GI_DIRECTION_IN) {
-            array = set_argument<Arg::CArrayIn>(common_args);
+            array = set_argument(new Arg::CArrayIn(), common_args);
             set_skip_all(length_pos, g_base_info_get_name(&length_arg));
         } else if (direction == GI_DIRECTION_INOUT) {
-            array = set_argument<Arg::CArrayInOut>(common_args);
+            array = set_argument(new Arg::CArrayInOut(), common_args);
             set_skip_all(length_pos, g_base_info_get_name(&length_arg));
         } else {
-            array = set_argument<Arg::CArrayOut>(common_args);
+            array = set_argument(new Arg::CArrayOut(), common_args);
         }
     }
 
@@ -1878,7 +1874,8 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
         // do some basic initialization here.
         g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
         uint8_t validated_length_pos = length_pos;
-        set_argument<Arg::ArrayLengthOut>(
+        set_argument(
+            new Arg::ArrayLengthOut(),
             {validated_length_pos, g_base_info_get_name(&length_arg),
              GI_TRANSFER_NOTHING,
              static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL),
@@ -1910,67 +1907,67 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
 
     switch (tag) {
         case GI_TYPE_TAG_BOOLEAN:
-            set_return<Arg::BooleanReturn>(&type_info, transfer, flags);
+            set_return(new Arg::BooleanReturn(), &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT8:
-            set_return<Arg::NumericReturn<int8_t, GI_TYPE_TAG_INT8>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<int8_t, GI_TYPE_TAG_INT8>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT16:
-            set_return<Arg::NumericReturn<int16_t, GI_TYPE_TAG_INT16>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<int16_t, GI_TYPE_TAG_INT16>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT32:
-            set_return<Arg::NumericReturn<int32_t, GI_TYPE_TAG_INT32>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<int32_t, GI_TYPE_TAG_INT32>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT8:
-            set_return<Arg::NumericReturn<uint8_t, GI_TYPE_TAG_UINT8>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<uint8_t, GI_TYPE_TAG_UINT8>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT16:
-            set_return<Arg::NumericReturn<uint16_t, GI_TYPE_TAG_UINT16>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<uint16_t, GI_TYPE_TAG_UINT16>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT32:
-            set_return<Arg::NumericReturn<uint32_t, GI_TYPE_TAG_UINT32>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<uint32_t, GI_TYPE_TAG_UINT32>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT64:
-            set_return<Arg::NumericReturn<int64_t, GI_TYPE_TAG_INT64>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<int64_t, GI_TYPE_TAG_INT64>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT64:
-            set_return<Arg::NumericReturn<uint64_t, GI_TYPE_TAG_UINT64>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<uint64_t, GI_TYPE_TAG_UINT64>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_FLOAT:
-            set_return<Arg::NumericReturn<float, GI_TYPE_TAG_FLOAT>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<float, GI_TYPE_TAG_FLOAT>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_DOUBLE:
-            set_return<Arg::NumericReturn<double, GI_TYPE_TAG_DOUBLE>>(
-                &type_info, transfer, flags);
+            set_return(new Arg::NumericReturn<double, GI_TYPE_TAG_DOUBLE>(),
+                       &type_info, transfer, flags);
             return;
 
         case GI_TYPE_TAG_UTF8:
             if (transfer == GI_TRANSFER_NOTHING) {
-                set_return<Arg::StringReturn<GI_TRANSFER_NOTHING>>(
-                    &type_info, transfer, flags);
+                set_return(new Arg::StringReturn<GI_TRANSFER_NOTHING>(),
+                           &type_info, transfer, flags);
                 return;
             } else {
-                set_return<Arg::StringReturn<GI_TRANSFER_EVERYTHING>>(
-                    &type_info, transfer, flags);
+                set_return(new Arg::StringReturn<GI_TRANSFER_EVERYTHING>(),
+                           &type_info, transfer, flags);
                 return;
             }
 
@@ -1992,7 +1989,7 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
 
     // in() is ignored for the return value, but skip_in is not (it is used
     // in the failure release path)
-    set_return<Arg::GenericReturn>(&type_info, transfer, flags);
+    set_return(new Arg::GenericReturn(), &type_info, transfer, flags);
 }
 
 namespace Arg {
@@ -2056,28 +2053,30 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
     if (G_UNLIKELY(base_args.transfer == GI_TRANSFER_CONTAINER)) {
-        set_argument<Arg::NotIntrospectable, ArgKind>(
-            base_args, INTERFACE_TRANSFER_CONTAINER);
+        set_argument<ArgKind>(
+            new Arg::NotIntrospectable(INTERFACE_TRANSFER_CONTAINER),
+            base_args);
         return;
     }
 
     switch (interface_type) {
         case GI_INFO_TYPE_ENUM:
-            set_argument<Arg::EnumIn, ArgKind>(base_args, interface_info);
+            set_argument<ArgKind>(new Arg::EnumIn(interface_info), base_args);
             return;
 
         case GI_INFO_TYPE_FLAGS:
-            set_argument<Arg::FlagsIn, ArgKind>(base_args, interface_info);
+            set_argument<ArgKind>(new Arg::FlagsIn(interface_info), base_args);
             return;
 
         case GI_INFO_TYPE_STRUCT:
             if (g_struct_info_is_foreign(interface_info)) {
                 if constexpr (ArgKind == Arg::Kind::INSTANCE)
-                    set_argument<Arg::ForeignStructInstanceIn, ArgKind>(
-                        base_args, interface_info);
+                    set_argument<ArgKind>(
+                        new Arg::ForeignStructInstanceIn(interface_info),
+                        base_args);
                 else
-                    set_argument<Arg::ForeignStructIn, ArgKind>(base_args,
-                                                                interface_info);
+                    set_argument<ArgKind>(
+                        new Arg::ForeignStructIn(interface_info), base_args);
                 return;
             }
             [[fallthrough]];
@@ -2091,8 +2090,9 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
                 !g_struct_info_is_gtype_struct(interface_info)) {
                 if constexpr (ArgKind != Arg::Kind::INSTANCE) {
                     // This covers cases such as GTypeInstance
-                    set_argument<Arg::FallbackInterfaceIn, ArgKind>(
-                        base_args, interface_info);
+                    set_argument<ArgKind>(
+                        new Arg::FallbackInterfaceIn(interface_info),
+                        base_args);
                     return;
                 }
             }
@@ -2102,78 +2102,84 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
 
             if (gtype == G_TYPE_VALUE) {
                 if constexpr (ArgKind == Arg::Kind::INSTANCE)
-                    set_argument<Arg::BoxedIn, ArgKind>(base_args,
-                                                        interface_info);
+                    set_argument<ArgKind>(new Arg::BoxedIn(interface_info),
+                                          base_args);
                 else if (base_args.transfer == GI_TRANSFER_NOTHING)
-                    set_argument<Arg::GValueInTransferNone, ArgKind>(
-                        base_args, interface_info);
+                    set_argument<ArgKind>(
+                        new Arg::GValueInTransferNone(interface_info),
+                        base_args);
                 else
-                    set_argument<Arg::GValueIn, ArgKind>(base_args,
-                                                         interface_info);
+                    set_argument<ArgKind>(new Arg::GValueIn(interface_info),
+                                          base_args);
                 return;
             }
 
             if (arg_cache::is_gdk_atom(interface_info)) {
                 // Fall back to the generic marshaller
-                set_argument<Arg::FallbackInterfaceIn, ArgKind>(base_args,
-                                                                interface_info);
+                set_argument<ArgKind>(
+                    new Arg::FallbackInterfaceIn(interface_info), base_args);
                 return;
             }
 
             if (gtype == G_TYPE_CLOSURE) {
                 if (base_args.transfer == GI_TRANSFER_NOTHING &&
                     ArgKind != Arg::Kind::INSTANCE)
-                    set_argument<Arg::GClosureInTransferNone, ArgKind>(
-                        base_args, interface_info);
+                    set_argument<ArgKind>(
+                        new Arg::GClosureInTransferNone(interface_info),
+                        base_args);
                 else
-                    set_argument<Arg::GClosureIn, ArgKind>(base_args,
-                                                           interface_info);
+                    set_argument<ArgKind>(new Arg::GClosureIn(interface_info),
+                                          base_args);
                 return;
             }
 
             if (gtype == G_TYPE_BYTES) {
                 if (base_args.transfer == GI_TRANSFER_NOTHING &&
                     ArgKind != Arg::Kind::INSTANCE)
-                    set_argument<Arg::GBytesInTransferNone, ArgKind>(
-                        base_args, interface_info);
+                    set_argument<ArgKind>(
+                        new Arg::GBytesInTransferNone(interface_info),
+                        base_args);
                 else
-                    set_argument<Arg::GBytesIn, ArgKind>(base_args,
-                                                         interface_info);
+                    set_argument<ArgKind>(new Arg::GBytesIn(interface_info),
+                                          base_args);
                 return;
             }
 
             if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                set_argument<Arg::ObjectIn, ArgKind>(base_args, interface_info);
+                set_argument<ArgKind>(new Arg::ObjectIn(interface_info),
+                                      base_args);
                 return;
             }
 
             if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                set_argument<Arg::FallbackInterfaceIn, ArgKind>(base_args,
-                                                                interface_info);
+                set_argument<ArgKind>(
+                    new Arg::FallbackInterfaceIn(interface_info), base_args);
                 return;
             }
 
             if (interface_type == GI_INFO_TYPE_UNION) {
                 if (gtype == G_TYPE_NONE) {
                     // Can't handle unions without a GType
-                    set_argument<Arg::NotIntrospectable, ArgKind>(
-                        base_args, UNREGISTERED_UNION);
+                    set_argument<ArgKind>(
+                        new Arg::NotIntrospectable(UNREGISTERED_UNION),
+                        base_args);
                     return;
                 }
 
-                set_argument<Arg::UnionIn, ArgKind>(base_args, interface_info);
+                set_argument<ArgKind>(new Arg::UnionIn(interface_info),
+                                      base_args);
                 return;
             }
 
             if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                set_argument<Arg::FundamentalIn, ArgKind>(base_args,
-                                                          interface_info);
+                set_argument<ArgKind>(new Arg::FundamentalIn(interface_info),
+                                      base_args);
                 return;
             }
 
             if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                set_argument<Arg::InterfaceIn, ArgKind>(base_args,
-                                                        interface_info);
+                set_argument<ArgKind>(new Arg::InterfaceIn(interface_info),
+                                      base_args);
                 return;
             }
 
@@ -2182,16 +2188,17 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
                 if (base_args.transfer != GI_TRANSFER_NOTHING) {
                     // Can't transfer ownership of a structure type not
                     // registered as a boxed
-                    set_argument<Arg::NotIntrospectable, ArgKind>(
-                        base_args, UNREGISTERED_BOXED_WITH_TRANSFER);
+                    set_argument<ArgKind>(new Arg::NotIntrospectable(
+                                              UNREGISTERED_BOXED_WITH_TRANSFER),
+                                          base_args);
                     return;
                 }
 
-                set_argument<Arg::UnregisteredBoxedIn, ArgKind>(base_args,
-                                                                interface_info);
+                set_argument<ArgKind>(
+                    new Arg::UnregisteredBoxedIn(interface_info), base_args);
                 return;
             }
-            set_argument<Arg::BoxedIn, ArgKind>(base_args, interface_info);
+            set_argument<ArgKind>(new Arg::BoxedIn(interface_info), base_args);
             return;
         } break;
 
@@ -2211,8 +2218,8 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
         default:
             // Don't know how to handle this interface type (should not happen
             // in practice, for typelibs emitted by g-ir-compiler)
-            set_argument<Arg::NotIntrospectable, ArgKind>(base_args,
-                                                          UNSUPPORTED_TYPE);
+            set_argument<ArgKind>(new Arg::NotIntrospectable(UNSUPPORTED_TYPE),
+                                  base_args);
     }
 }
 
@@ -2237,74 +2244,74 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 
     switch (tag) {
         case GI_TYPE_TAG_VOID:
-            set_argument<Arg::NullIn>(common_args);
+            set_argument(new Arg::NullIn(), common_args);
             break;
 
         case GI_TYPE_TAG_BOOLEAN:
-            set_argument<Arg::BooleanIn>(common_args);
+            set_argument(new Arg::BooleanIn(), common_args);
             break;
 
         case GI_TYPE_TAG_INT8:
-            set_argument<Arg::NumericIn<int8_t>>(common_args);
+            set_argument(new Arg::NumericIn<int8_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT16:
-            set_argument<Arg::NumericIn<int16_t>>(common_args);
+            set_argument(new Arg::NumericIn<int16_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT32:
-            set_argument<Arg::NumericIn<int32_t>>(common_args);
+            set_argument(new Arg::NumericIn<int32_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT8:
-            set_argument<Arg::NumericIn<uint8_t>>(common_args);
+            set_argument(new Arg::NumericIn<uint8_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT16:
-            set_argument<Arg::NumericIn<uint16_t>>(common_args);
+            set_argument(new Arg::NumericIn<uint16_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT32:
-            set_argument<Arg::NumericIn<uint32_t>>(common_args);
+            set_argument(new Arg::NumericIn<uint32_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT64:
-            set_argument<Arg::NumericIn<int64_t>>(common_args);
+            set_argument(new Arg::NumericIn<int64_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT64:
-            set_argument<Arg::NumericIn<uint64_t>>(common_args);
+            set_argument(new Arg::NumericIn<uint64_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_FLOAT:
-            set_argument<Arg::NumericIn<float>>(common_args);
+            set_argument(new Arg::NumericIn<float>(), common_args);
             return;
 
         case GI_TYPE_TAG_DOUBLE:
-            set_argument<Arg::NumericIn<double>>(common_args);
+            set_argument(new Arg::NumericIn<double>(), common_args);
             return;
 
         case GI_TYPE_TAG_UNICHAR:
-            set_argument<Arg::UnicharIn>(common_args);
+            set_argument(new Arg::UnicharIn(), common_args);
             break;
 
         case GI_TYPE_TAG_GTYPE:
-            set_argument<Arg::GTypeIn>(common_args);
+            set_argument(new Arg::GTypeIn(), common_args);
             break;
 
         case GI_TYPE_TAG_FILENAME:
             if (transfer == GI_TRANSFER_NOTHING)
-                set_argument<Arg::FilenameInTransferNone>(common_args);
+                set_argument(new Arg::FilenameInTransferNone(), common_args);
             else
-                set_argument<Arg::FilenameIn>(common_args);
+                set_argument(new Arg::FilenameIn(), common_args);
             break;
 
         case GI_TYPE_TAG_UTF8:
             if (transfer == GI_TRANSFER_NOTHING)
-                set_argument<Arg::StringInTransferNone<GI_TYPE_TAG_UTF8>>(
-                    common_args);
+                set_argument(new Arg::StringInTransferNone<GI_TYPE_TAG_UTF8>(),
+                             common_args);
             else
-                set_argument<Arg::StringIn>(common_args);
+                set_argument(new Arg::StringIn(), common_args);
             break;
 
         case GI_TYPE_TAG_INTERFACE: {
@@ -2321,7 +2328,7 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
         case GI_TYPE_TAG_ERROR:
         default:
             // FIXME: Falling back to the generic marshaller
-            set_argument<Arg::FallbackIn>(common_args);
+            set_argument(new Arg::FallbackIn(), common_args);
     }
 }
 
@@ -2334,60 +2341,61 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index, GITypeInfo* type_info,
 
     switch (tag) {
         case GI_TYPE_TAG_BOOLEAN:
-            set_argument<Arg::BooleanOut>(common_args);
+            set_argument(new Arg::BooleanOut(), common_args);
             break;
 
         case GI_TYPE_TAG_INT8:
-            set_argument<Arg::NumericOut<int8_t>>(common_args);
+            set_argument(new Arg::NumericOut<int8_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT16:
-            set_argument<Arg::NumericOut<int16_t>>(common_args);
+            set_argument(new Arg::NumericOut<int16_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT32:
-            set_argument<Arg::NumericOut<int32_t>>(common_args);
+            set_argument(new Arg::NumericOut<int32_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT8:
-            set_argument<Arg::NumericOut<uint8_t>>(common_args);
+            set_argument(new Arg::NumericOut<uint8_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT16:
-            set_argument<Arg::NumericOut<uint16_t>>(common_args);
+            set_argument(new Arg::NumericOut<uint16_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT32:
-            set_argument<Arg::NumericOut<uint32_t>>(common_args);
+            set_argument(new Arg::NumericOut<uint32_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT64:
-            set_argument<Arg::NumericOut<int64_t>>(common_args);
+            set_argument(new Arg::NumericOut<int64_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT64:
-            set_argument<Arg::NumericOut<uint64_t>>(common_args);
+            set_argument(new Arg::NumericOut<uint64_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_FLOAT:
-            set_argument<Arg::NumericOut<float>>(common_args);
+            set_argument(new Arg::NumericOut<float>(), common_args);
             return;
 
         case GI_TYPE_TAG_DOUBLE:
-            set_argument<Arg::NumericOut<double>>(common_args);
+            set_argument(new Arg::NumericOut<double>(), common_args);
             return;
 
         case GI_TYPE_TAG_UTF8:
             if (transfer == GI_TRANSFER_NOTHING) {
-                set_argument<Arg::StringOut<GI_TRANSFER_NOTHING>>(common_args);
+                set_argument(new Arg::StringOut<GI_TRANSFER_NOTHING>(),
+                             common_args);
             } else {
-                set_argument<Arg::StringOut<GI_TRANSFER_EVERYTHING>>(
-                    common_args);
+                set_argument(new Arg::StringOut<GI_TRANSFER_EVERYTHING>(),
+                             common_args);
             }
             return;
 
         default:
-            set_argument<Arg::FallbackOut>(common_args);
+            set_argument(new Arg::FallbackOut(), common_args);
     }
 }
 
@@ -2400,51 +2408,51 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
 
     switch (tag) {
         case GI_TYPE_TAG_BOOLEAN:
-            set_argument<Arg::BooleanInOut>(common_args);
+            set_argument(new Arg::BooleanInOut(), common_args);
             break;
 
         case GI_TYPE_TAG_INT8:
-            set_argument<Arg::NumericInOut<int8_t>>(common_args);
+            set_argument(new Arg::NumericInOut<int8_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT16:
-            set_argument<Arg::NumericInOut<int16_t>>(common_args);
+            set_argument(new Arg::NumericInOut<int16_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT32:
-            set_argument<Arg::NumericInOut<int32_t>>(common_args);
+            set_argument(new Arg::NumericInOut<int32_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT8:
-            set_argument<Arg::NumericInOut<uint8_t>>(common_args);
+            set_argument(new Arg::NumericInOut<uint8_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT16:
-            set_argument<Arg::NumericInOut<uint16_t>>(common_args);
+            set_argument(new Arg::NumericInOut<uint16_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT32:
-            set_argument<Arg::NumericInOut<uint32_t>>(common_args);
+            set_argument(new Arg::NumericInOut<uint32_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_INT64:
-            set_argument<Arg::NumericInOut<int64_t>>(common_args);
+            set_argument(new Arg::NumericInOut<int64_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_UINT64:
-            set_argument<Arg::NumericInOut<uint64_t>>(common_args);
+            set_argument(new Arg::NumericInOut<uint64_t>(), common_args);
             return;
 
         case GI_TYPE_TAG_FLOAT:
-            set_argument<Arg::NumericInOut<float>>(common_args);
+            set_argument(new Arg::NumericInOut<float>(), common_args);
             return;
 
         case GI_TYPE_TAG_DOUBLE:
-            set_argument<Arg::NumericInOut<double>>(common_args);
+            set_argument(new Arg::NumericInOut<double>(), common_args);
             return;
 
         default:
-            set_argument<Arg::FallbackInOut>(common_args);
+            set_argument(new Arg::FallbackInOut(), common_args);
     }
 }
 
@@ -2465,14 +2473,14 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
     GIInfoType info_type = g_base_info_get_type(interface_info);
     if (info_type == GI_INFO_TYPE_STRUCT &&
         g_struct_info_is_gtype_struct(interface_info)) {
-        set_instance<Arg::GTypeStructInstanceIn>(transfer);
+        set_instance(new Arg::GTypeStructInstanceIn(), transfer);
         return;
     }
     if (info_type == GI_INFO_TYPE_OBJECT) {
         GType gtype = g_registered_type_info_get_g_type(interface_info);
 
         if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-            set_instance<Arg::ParamInstanceIn>(transfer);
+            set_instance(new Arg::ParamInstanceIn(), transfer);
             return;
         }
     }
@@ -2547,8 +2555,9 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         }
 
         if (!size) {
-            set_argument<Arg::NotIntrospectable>(
-                common_args, OUT_CALLER_ALLOCATES_NON_STRUCT);
+            set_argument(
+                new Arg::NotIntrospectable(OUT_CALLER_ALLOCATES_NON_STRUCT),
+                common_args);
             return;
         }
 
@@ -2557,14 +2566,15 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                 g_type_info_get_interface(&type_info)};
             GType gtype = g_registered_type_info_get_g_type(interface_info);
             if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-                auto* gjs_arg = set_argument<Arg::BoxedCallerAllocatesOut>(
-                    common_args, gtype);
+                auto* gjs_arg = set_argument(
+                    new Arg::BoxedCallerAllocatesOut(gtype), common_args);
                 gjs_arg->m_allocates_size = size;
                 return;
             }
         }
 
-        auto* gjs_arg = set_argument<Arg::CallerAllocatesOut>(common_args);
+        auto* gjs_arg =
+            set_argument(new Arg::CallerAllocatesOut(), common_args);
         gjs_arg->m_allocates_size = size;
 
         return;
@@ -2575,7 +2585,8 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         if (interface_info.type() == GI_INFO_TYPE_CALLBACK) {
             if (direction != GI_DIRECTION_IN) {
                 // Can't do callbacks for out or inout
-                set_argument<Arg::NotIntrospectable>(common_args, CALLBACK_OUT);
+                set_argument(new Arg::NotIntrospectable(CALLBACK_OUT),
+                             common_args);
                 return;
             }
 
@@ -2587,12 +2598,13 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                 // overwritten with the 'skipped' one. If no callback follows,
                 // then this is probably an unsupported function, so the
                 // function invocation code will check this and throw.
-                set_argument<Arg::NotIntrospectable>(
-                    common_args, DESTROY_NOTIFY_NO_CALLBACK);
+                set_argument(
+                    new Arg::NotIntrospectable(DESTROY_NOTIFY_NO_CALLBACK),
+                    common_args);
                 *inc_counter_out = false;
             } else {
-                auto* gjs_arg =
-                    set_argument<Arg::CallbackIn>(common_args, interface_info);
+                auto* gjs_arg = set_argument(
+                    new Arg::CallbackIn(interface_info), common_args);
 
                 int destroy_pos = g_arg_info_get_destroy(arg);
                 int closure_pos = g_arg_info_get_closure(arg);
@@ -2604,8 +2616,9 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     set_skip_all(closure_pos);
 
                 if (destroy_pos >= 0 && closure_pos < 0) {
-                    set_argument<Arg::NotIntrospectable>(
-                        common_args, DESTROY_NOTIFY_NO_USER_DATA);
+                    set_argument(
+                        new Arg::NotIntrospectable(DESTROY_NOTIFY_NO_USER_DATA),
+                        common_args);
                     return;
                 }
 
@@ -2638,18 +2651,18 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
             return;
         } else if (g_type_info_is_zero_terminated(&type_info)) {
             if (direction == GI_DIRECTION_IN) {
-                set_argument<Arg::ZeroTerminatedArrayIn>(common_args);
+                set_argument(new Arg::ZeroTerminatedArrayIn(), common_args);
                 return;
             } else if (direction == GI_DIRECTION_INOUT) {
-                set_argument<Arg::ZeroTerminatedArrayInOut>(common_args);
+                set_argument(new Arg::ZeroTerminatedArrayInOut(), common_args);
                 return;
             }
         } else if (g_type_info_get_array_fixed_size(&type_info) >= 0) {
             if (direction == GI_DIRECTION_IN) {
-                set_argument<Arg::FixedSizeArrayIn>(common_args);
+                set_argument(new Arg::FixedSizeArrayIn(), common_args);
                 return;
             } else if (direction == GI_DIRECTION_INOUT) {
-                set_argument<Arg::FixedSizeArrayInOut>(common_args);
+                set_argument(new Arg::FixedSizeArrayInOut(), common_args);
                 return;
             }
         }

@@ -50,6 +50,9 @@ enum class Kind {
 
 }  // namespace Arg
 
+// When creating an Argument, pass it directly to ArgsCache::set_argument() or
+// one of the similar methods, which will call init_common() on it and store it
+// in the appropriate place in the arguments cache.
 struct Argument {
     // Convenience struct to prevent long argument lists to make() and the
     // functions that call it
@@ -124,8 +127,8 @@ struct Argument {
  private:
     friend struct ArgsCache;
 
-    template <typename T, Arg::Kind ArgKind, typename... Args>
-    static AutoCppPointer<T> make(const Init&, Args&&...);
+    template <typename T, Arg::Kind ArgKind>
+    static void init_common(const Init&, T* arg);
 };
 
 using ArgumentPtr = AutoCppPointer<Argument>;
@@ -179,9 +182,8 @@ struct ArgsCache {
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void build_interface_in_arg(const Argument::Init&, GIBaseInfo*);
 
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
-              typename... Args>
-    constexpr T* set_argument(const Argument::Init&, Args&&...);
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
+    constexpr T* set_argument(T* arg, const Argument::Init&);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
@@ -189,13 +191,13 @@ struct ArgsCache {
                             GjsArgumentFlags flags, int length_pos);
 
     template <typename T>
-    constexpr T* set_return(GITypeInfo*, GITransfer, GjsArgumentFlags);
+    constexpr T* set_return(T* arg, GITypeInfo*, GITransfer, GjsArgumentFlags);
 
     template <typename T>
-    constexpr T* set_instance(GITransfer,
+    constexpr T* set_instance(T* arg, GITransfer,
                               GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
-    constexpr void set_skip_all(uint8_t index, const char* name = nullptr);
+    void set_skip_all(uint8_t index, const char* name = nullptr);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     constexpr uint8_t arg_index(uint8_t index
