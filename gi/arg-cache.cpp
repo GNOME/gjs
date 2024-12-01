@@ -254,32 +254,28 @@ struct RegisteredInterface : HasIntrospectionInfo, GTypedType {
 };
 
 struct Callback : Nullable, HasIntrospectionInfo {
-    explicit Callback(GICallbackInfo* info)
+    explicit Callback(GICallbackInfo* info, int closure_pos, int destroy_pos,
+                      GIScopeType scope)
         : HasIntrospectionInfo(info, TakeOwnership{}),
-          m_scope(GI_SCOPE_TYPE_INVALID) {}
-
-    inline void set_callback_destroy_pos(int pos) {
-        g_assert(pos <= Argument::MAX_ARGS &&
+          m_closure_pos(closure_pos < 0 ? Argument::ABSENT : closure_pos),
+          m_destroy_pos(destroy_pos < 0 ? Argument::ABSENT : destroy_pos),
+          m_scope(scope) {
+        g_assert(destroy_pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
-        m_destroy_pos = pos < 0 ? Argument::ABSENT : pos;
+        g_assert(closure_pos <= Argument::MAX_ARGS &&
+                 "No more than 253 arguments allowed");
     }
 
     [[nodiscard]] constexpr bool has_callback_destroy() {
         return m_destroy_pos != Argument::ABSENT;
     }
 
-    inline void set_callback_closure_pos(int pos) {
-        g_assert(pos <= Argument::MAX_ARGS &&
-                 "No more than 253 arguments allowed");
-        m_closure_pos = pos < 0 ? Argument::ABSENT : pos;
-    }
-
     [[nodiscard]] constexpr bool has_callback_closure() {
         return m_closure_pos != Argument::ABSENT;
     }
 
-    uint8_t m_closure_pos = Argument::ABSENT;
-    uint8_t m_destroy_pos = Argument::ABSENT;
+    uint8_t m_closure_pos;
+    uint8_t m_destroy_pos;
     GIScopeType m_scope : 3;
 };
 
@@ -2602,9 +2598,6 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     common_args);
                 *inc_counter_out = false;
             } else {
-                auto* gjs_arg = set_argument(
-                    new Arg::CallbackIn(interface_info), common_args);
-
                 int destroy_pos = g_arg_info_get_destroy(arg);
                 int closure_pos = g_arg_info_get_closure(arg);
 
@@ -2621,9 +2614,10 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     return;
                 }
 
-                gjs_arg->m_scope = g_arg_info_get_scope(arg);
-                gjs_arg->set_callback_destroy_pos(destroy_pos);
-                gjs_arg->set_callback_closure_pos(closure_pos);
+                set_argument(
+                    new Arg::CallbackIn(interface_info, closure_pos,
+                                        destroy_pos, g_arg_info_get_scope(arg)),
+                    common_args);
             }
 
             return;
