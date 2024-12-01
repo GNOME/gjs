@@ -202,17 +202,13 @@ struct Positioned {
 };
 
 struct Array : BasicType {
-    uint8_t m_length_pos = 0;
+    uint8_t m_length_pos;
     GIDirection m_length_direction : 2;
 
-    Array() : BasicType(), m_length_direction(GI_DIRECTION_IN) {}
-
-    void set_array_length(int pos, GITypeTag tag, GIDirection direction) {
+    Array(int pos, GITypeTag tag, GIDirection direction)
+        : BasicType(tag), m_length_pos(pos), m_length_direction(direction) {
         g_assert(pos >= 0 && pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
-        m_length_pos = pos;
-        m_length_direction = direction;
-        m_tag = tag;
     }
 };
 
@@ -409,12 +405,14 @@ struct SimpleOut : SkipAll, Positioned {
 };
 
 struct ExplicitArray : GenericOut, Array, Nullable {
+    using Array::Array;
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
 };
 
 struct ExplicitArrayIn : ExplicitArray {
+    using ExplicitArray::ExplicitArray;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -426,6 +424,7 @@ struct ExplicitArrayIn : ExplicitArray {
 };
 
 struct ExplicitArrayInOut : ExplicitArrayIn {
+    using ExplicitArrayIn::ExplicitArrayIn;
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -435,6 +434,7 @@ struct ExplicitArrayInOut : ExplicitArrayIn {
 };
 
 struct ExplicitArrayOut : ExplicitArrayInOut {
+    using ExplicitArrayInOut::ExplicitArrayInOut;
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
         return invalid(cx, G_STRFUNC);
@@ -444,6 +444,7 @@ struct ExplicitArrayOut : ExplicitArrayInOut {
 };
 
 struct ReturnArray : ExplicitArrayOut {
+    using ExplicitArrayOut::ExplicitArrayOut;
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
         if (m_length_direction != GI_DIRECTION_OUT) {
@@ -1841,16 +1842,18 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                                    GITypeInfo* type_info, GIDirection direction,
                                    GIArgInfo* arg, GjsArgumentFlags flags,
                                    int length_pos) {
-    Arg::ExplicitArray* array;
     GIArgInfo length_arg;
     g_callable_info_load_arg(callable, length_pos, &length_arg);
     GITypeInfo length_type;
     g_arg_info_load_type(&length_arg, &length_type);
+    GITypeTag length_tag = g_type_info_get_tag(&length_type);
+    GIDirection length_direction = g_arg_info_get_direction(&length_arg);
 
     if constexpr (ArgKind == Arg::Kind::RETURN_VALUE) {
         GITransfer transfer = g_callable_info_get_caller_owns(callable);
-        array = set_return(new Arg::ReturnArray(), type_info, transfer,
-                           GjsArgumentFlags::NONE);
+        set_return(
+            new Arg::ReturnArray(length_pos, length_tag, length_direction),
+            type_info, transfer, GjsArgumentFlags::NONE);
     } else {
         const char* arg_name = g_base_info_get_name(arg);
         GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
@@ -1858,13 +1861,13 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                                    type_info};
 
         if (direction == GI_DIRECTION_IN) {
-            array = set_argument(new Arg::CArrayIn(), common_args);
+            set_argument(new Arg::CArrayIn(length_pos, length_tag, length_direction), common_args);
             set_skip_all(length_pos, g_base_info_get_name(&length_arg));
         } else if (direction == GI_DIRECTION_INOUT) {
-            array = set_argument(new Arg::CArrayInOut(), common_args);
+            set_argument(new Arg::CArrayInOut(length_pos, length_tag, length_direction), common_args);
             set_skip_all(length_pos, g_base_info_get_name(&length_arg));
         } else {
-            array = set_argument(new Arg::CArrayOut(), common_args);
+            set_argument(new Arg::CArrayOut(length_pos, length_tag, length_direction), common_args);
         }
     }
 
@@ -1880,9 +1883,6 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
              static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL),
              &length_type});
     }
-
-    array->set_array_length(length_pos, g_type_info_get_tag(&length_type),
-                            g_arg_info_get_direction(&length_arg));
 }
 
 void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
