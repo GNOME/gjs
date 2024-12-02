@@ -191,10 +191,15 @@ struct ArgsCache {
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);
 
-    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                             GITypeInfo*, GIDirection, GIArgInfo*,
                             GjsArgumentFlags flags, int length_pos);
+
+    void set_array_return(GICallableInfo*, GITypeInfo*, GjsArgumentFlags,
+                          int length_pos);
+
+    void init_out_array_length_argument(GIArgInfo*, GjsArgumentFlags,
+                                        int length_pos);
 
     template <typename T>
     constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);

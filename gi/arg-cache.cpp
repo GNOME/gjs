@@ -1848,7 +1848,20 @@ void ArgsCache::set_skip_all(uint8_t index, const char* name) {
                                       GjsArgumentFlags::SKIP_ALL});
 }
 
-template <Arg::Kind ArgKind>
+void ArgsCache::init_out_array_length_argument(GIArgInfo* length_arg,
+                                               GjsArgumentFlags flags,
+                                               int length_pos) {
+    // Even if we skip the length argument most of time, we need to do some
+    // basic initialization here.
+    g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
+    uint8_t validated_length_pos = length_pos;
+    set_argument(
+        new Arg::ArrayLengthOut(),
+        {validated_length_pos, g_base_info_get_name(length_arg),
+         GI_TRANSFER_NOTHING,
+         static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL)});
+}
+
 void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                                    GITypeInfo* type_info, GIDirection direction,
                                    GIArgInfo* arg, GjsArgumentFlags flags,
@@ -1860,44 +1873,46 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
     GITypeTag length_tag = g_type_info_get_tag(&length_type);
     GIDirection length_direction = g_arg_info_get_direction(&length_arg);
 
-    if constexpr (ArgKind == Arg::Kind::RETURN_VALUE) {
-        GITransfer transfer = g_callable_info_get_caller_owns(callable);
-        set_return(new Arg::ReturnArray(type_info, length_pos, length_tag,
-                                        length_direction),
-                   transfer, GjsArgumentFlags::NONE);
+    const char* arg_name = g_base_info_get_name(arg);
+    GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
+    Argument::Init common_args{gi_index, arg_name, transfer, flags};
+
+    if (direction == GI_DIRECTION_IN) {
+        set_argument(new Arg::CArrayIn(type_info, length_pos, length_tag,
+                                       length_direction),
+                     common_args);
+        set_skip_all(length_pos, g_base_info_get_name(&length_arg));
+    } else if (direction == GI_DIRECTION_INOUT) {
+        set_argument(new Arg::CArrayInOut(type_info, length_pos, length_tag,
+                                          length_direction),
+                     common_args);
+        set_skip_all(length_pos, g_base_info_get_name(&length_arg));
     } else {
-        const char* arg_name = g_base_info_get_name(arg);
-        GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
-        Argument::Init common_args{gi_index, arg_name, transfer, flags};
-
-        if (direction == GI_DIRECTION_IN) {
-            set_argument(new Arg::CArrayIn(type_info, length_pos, length_tag,
-                                           length_direction),
-                         common_args);
-            set_skip_all(length_pos, g_base_info_get_name(&length_arg));
-        } else if (direction == GI_DIRECTION_INOUT) {
-            set_argument(new Arg::CArrayInOut(type_info, length_pos, length_tag,
-                                              length_direction),
-                         common_args);
-            set_skip_all(length_pos, g_base_info_get_name(&length_arg));
-        } else {
-            set_argument(new Arg::CArrayOut(type_info, length_pos, length_tag,
-                                            length_direction),
-                         common_args);
-        }
+        set_argument(new Arg::CArrayOut(type_info, length_pos, length_tag,
+                                        length_direction),
+                     common_args);
     }
 
-    if (ArgKind == Arg::Kind::RETURN_VALUE || direction == GI_DIRECTION_OUT) {
-        // Even if we skip the length argument most of time, we need to
-        // do some basic initialization here.
-        g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
-        uint8_t validated_length_pos = length_pos;
-        set_argument(new Arg::ArrayLengthOut(),
-                     {validated_length_pos, g_base_info_get_name(&length_arg),
-                      GI_TRANSFER_NOTHING,
-                      static_cast<GjsArgumentFlags>(
-                          flags | GjsArgumentFlags::SKIP_ALL)});
-    }
+    if (direction == GI_DIRECTION_OUT)
+        init_out_array_length_argument(&length_arg, flags, length_pos);
+}
+
+void ArgsCache::set_array_return(GICallableInfo* callable,
+                                 GITypeInfo* type_info, GjsArgumentFlags flags,
+                                 int length_pos) {
+    GIArgInfo length_arg;
+    g_callable_info_load_arg(callable, length_pos, &length_arg);
+    GITypeInfo length_type;
+    g_arg_info_load_type(&length_arg, &length_type);
+    GITypeTag length_tag = g_type_info_get_tag(&length_type);
+    GIDirection length_direction = g_arg_info_get_direction(&length_arg);
+
+    GITransfer transfer = g_callable_info_get_caller_owns(callable);
+    set_return(new Arg::ReturnArray(type_info, length_pos, length_tag,
+                                    length_direction),
+               transfer, GjsArgumentFlags::NONE);
+
+    init_out_array_length_argument(&length_arg, flags, length_pos);
 }
 
 void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
@@ -1988,9 +2003,7 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
         case GI_TYPE_TAG_ARRAY: {
             int length_pos = g_type_info_get_array_length(&type_info);
             if (length_pos >= 0) {
-                set_array_argument<Arg::Kind::RETURN_VALUE>(
-                    callable, 0, &type_info, GI_DIRECTION_OUT, nullptr, flags,
-                    length_pos);
+                set_array_return(callable, &type_info, flags, length_pos);
                 return;
             }
 
