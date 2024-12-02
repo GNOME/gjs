@@ -17,6 +17,7 @@
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>
+#include <mozilla/Maybe.h>
 
 #include "gi/arg.h"
 #include "gjs/auto.h"
@@ -107,8 +108,8 @@ struct Argument {
  protected:
     constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
 
-    virtual GITypeTag return_tag() const { return GI_TYPE_TAG_VOID; }
-    virtual const GITypeInfo* return_type() const { return nullptr; }
+    virtual mozilla::Maybe<GITypeTag> return_tag() const { return {}; }
+    virtual mozilla::Maybe<const GITypeInfo*> return_type() const { return {}; }
     virtual const Arg::Instance* as_instance() const { return nullptr; }
 
     constexpr void set_instance_parameter() {
@@ -168,8 +169,8 @@ struct ArgsCache {
     void build_instance(GICallableInfo* callable);
 
     GType instance_type() const;
-    GITypeTag return_tag() const;
-    GITypeInfo* return_type() const;
+    mozilla::Maybe<GITypeTag> return_tag() const;
+    mozilla::Maybe<GITypeInfo*> return_type() const;
 
  private:
     void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
@@ -238,11 +239,11 @@ struct ArgsCache {
         return arg_get<Arg::Kind::INSTANCE>().get();
     }
 
-    constexpr Argument* return_value() const {
+    constexpr mozilla::Maybe<Argument*> return_value() const {
         if (!m_has_return)
-            return nullptr;
+            return {};
 
-        return arg_get<Arg::Kind::RETURN_VALUE>().get();
+        return mozilla::Some(arg_get<Arg::Kind::RETURN_VALUE>().get());
     }
 
  private:

@@ -37,6 +37,7 @@
 #include <js/Warnings.h>
 #include <jsapi.h>    // for HandleValueArray
 #include <jspubtd.h>  // for JSProtoKey
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
@@ -56,6 +57,8 @@
 #include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
+
+using mozilla::Maybe, mozilla::Some;
 
 /* We use guint8 for arguments; functions can't
  * have more than this.
@@ -824,12 +827,15 @@ std::string Gjs::Function::format_name() {
 namespace Gjs {
 
 static void* get_return_ffi_pointer_from_gi_argument(
-    GITypeTag tag, GITypeInfo* return_type, GIFFIReturnValue* return_value) {
-    if (return_type && g_type_info_is_pointer(return_type))
+    Maybe<GITypeTag> tag, Maybe<GITypeInfo*> return_type,
+    GIFFIReturnValue* return_value) {
+    if (return_type && g_type_info_is_pointer(*return_type))
         return &gjs_arg_member<void*>(return_value);
-    switch (tag) {
+    if (!tag)
+        return nullptr;
+    switch (*tag) {
         case GI_TYPE_TAG_VOID:
-            return nullptr;
+            g_assert_not_reached();
         case GI_TYPE_TAG_INT8:
             return &gjs_arg_member<int8_t>(return_value);
         case GI_TYPE_TAG_INT16:
@@ -858,7 +864,7 @@ static void* get_return_ffi_pointer_from_gi_argument(
             if (!return_type)
                 return nullptr;
 
-            GI::AutoBaseInfo info{g_type_info_get_interface(return_type)};
+            GI::AutoBaseInfo info{g_type_info_get_interface(*return_type)};
 
             switch (info.type()) {
                 case GI_INFO_TYPE_ENUM:
@@ -1037,8 +1043,8 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     g_assert_cmpuint(ffi_arg_pos, ==, ffi_argc);
     g_assert_cmpuint(gi_arg_pos, ==, state.gi_argc);
 
-    GITypeTag return_tag = m_arguments.return_tag();
-    GITypeInfo* return_type = m_arguments.return_type();
+    Maybe<GITypeTag> return_tag = m_arguments.return_tag();
+    Maybe<GITypeInfo*> return_type = m_arguments.return_type();
     return_value_p = get_return_ffi_pointer_from_gi_argument(
         return_tag, return_type, &return_value);
     ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
@@ -1051,11 +1057,11 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
         args.rval().setUndefined();
 
     if (return_type) {
-        gi_type_info_extract_ffi_return_value(return_type, &return_value,
+        gi_type_info_extract_ffi_return_value(*return_type, &return_value,
                                               state.return_value());
-    } else if (return_tag != GI_TYPE_TAG_VOID) {
-        g_assert(GI_TYPE_TAG_IS_BASIC(return_tag));
-        gi_type_tag_extract_ffi_return_value(return_tag, GI_INFO_TYPE_INVALID,
+    } else if (return_tag) {
+        g_assert(GI_TYPE_TAG_IS_BASIC(*return_tag));
+        gi_type_tag_extract_ffi_return_value(*return_tag, GI_INFO_TYPE_INVALID,
                                              &return_value,
                                              state.return_value());
     }
@@ -1064,7 +1070,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     // the type conversion above, or if state.did_throw_gerror is true.
     js_arg_pos = 0;
     for (gi_arg_pos = -1; gi_arg_pos < state.gi_argc; gi_arg_pos++) {
-        Argument* gjs_arg;
+        Maybe<Argument*> gjs_arg;
         GIArgument* out_value;
 
         if (gi_arg_pos == -1) {
@@ -1072,13 +1078,13 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
             gjs_arg = m_arguments.return_value();
         } else {
             out_value = &state.out_cvalue(gi_arg_pos);
-            gjs_arg = m_arguments.argument(gi_arg_pos);
+            gjs_arg = Some(m_arguments.argument(gi_arg_pos));
         }
 
-        gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                          "Marshalling argument '%s' out, %d/%d GI args",
-                          gjs_arg ? gjs_arg->arg_name() : "<unknown>",
-                          gi_arg_pos, state.gi_argc);
+        gjs_debug_marshal(
+            GJS_DEBUG_GFUNCTION, "Marshalling argument '%s' out, %d/%d GI args",
+            gjs_arg.map(std::mem_fn(&Argument::arg_name)).valueOr("<unknown>"),
+            gi_arg_pos, state.gi_argc);
 
         JS::RootedValue js_out_arg(context);
         if (!r_value) {
@@ -1098,13 +1104,13 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
             }
 
             if (gjs_arg &&
-                !gjs_arg->out(context, &state, out_value, &js_out_arg)) {
+                !(*gjs_arg)->out(context, &state, out_value, &js_out_arg)) {
                 state.failed = true;
                 break;
             }
         }
 
-        if (gjs_arg && !gjs_arg->skip_out()) {
+        if (gjs_arg && !(*gjs_arg)->skip_out()) {
             if (!r_value) {
                 if (!state.return_values.append(js_out_arg)) {
                     JS_ReportOutOfMemory(context);
@@ -1140,20 +1146,20 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
     for (int gi_arg_pos = -(state->first_arg_offset());
          gi_arg_pos < state->gi_argc && ffi_arg_pos < ffi_arg_max;
          gi_arg_pos++, ffi_arg_pos++) {
-        Argument* gjs_arg;
+        Maybe<Argument*> gjs_arg;
         GIArgument* in_value = nullptr;
         GIArgument* out_value = nullptr;
 
         if (gi_arg_pos == -2) {
             in_value = state->instance();
-            gjs_arg = m_arguments.instance();
+            gjs_arg = Some(m_arguments.instance());
         } else if (gi_arg_pos == -1) {
             out_value = state->return_value();
             gjs_arg = m_arguments.return_value();
         } else {
             in_value = &state->in_cvalue(gi_arg_pos);
             out_value = &state->out_cvalue(gi_arg_pos);
-            gjs_arg = m_arguments.argument(gi_arg_pos);
+            gjs_arg = Some(m_arguments.argument(gi_arg_pos));
         }
 
         if (!gjs_arg)
@@ -1162,11 +1168,11 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
         gjs_debug_marshal(
             GJS_DEBUG_GFUNCTION,
             "Releasing argument '%s', %d/%d GI args, %u/%u C args",
-            gjs_arg->arg_name(), gi_arg_pos, state->gi_argc, ffi_arg_pos,
+            (*gjs_arg)->arg_name(), gi_arg_pos, state->gi_argc, ffi_arg_pos,
             state->processed_c_args);
 
         // Only process in or inout arguments if we failed, the rest is garbage
-        if (state->failed && gjs_arg->skip_in())
+        if (state->failed && (*gjs_arg)->skip_in())
             continue;
 
         // Save the return GIArgument if it was requested
@@ -1175,7 +1181,7 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
             continue;
         }
 
-        if (!gjs_arg->release(cx, state, in_value, out_value)) {
+        if (!(*gjs_arg)->release(cx, state, in_value, out_value)) {
             postinvoke_release_failed = true;
             // continue with the release even if we fail, to avoid leaks
         }

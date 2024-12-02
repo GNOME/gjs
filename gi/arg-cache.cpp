@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <functional>  // for mem_fn
 #include <limits>
 #include <type_traits>
 #include <unordered_set>  // for unordered_set::erase(), insert()
@@ -27,6 +28,7 @@
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>        // for InformalValueTypeName, JS_TypeOfValue
 #include <jspubtd.h>      // for JSTYPE_FUNCTION
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
@@ -52,6 +54,8 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
+
+using mozilla::Maybe, mozilla::Some;
 
 enum ExpectedType {
     OBJECT,
@@ -358,10 +362,13 @@ struct GenericOut : GenericInOut {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
-    GITypeTag return_tag() const override {
-        return g_type_info_get_tag(&const_cast<GenericOut*>(this)->m_type_info);
+    Maybe<GITypeTag> return_tag() const override {
+        return Some(
+            g_type_info_get_tag(&const_cast<GenericOut*>(this)->m_type_info));
     }
-    const GITypeInfo* return_type() const override { return &m_type_info; }
+    Maybe<const GITypeInfo*> return_type() const override {
+        return Some(&m_type_info);
+    }
 };
 
 struct GenericReturn : ReturnValue {
@@ -401,7 +408,7 @@ struct NumericReturn : SkipAll {
         return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
                                                   value);
     }
-    GITypeTag return_tag() const override { return TAG; }
+    Maybe<GITypeTag> return_tag() const override { return Some(TAG); }
 };
 
 using BooleanReturn = NumericReturn<gboolean, GI_TYPE_TAG_BOOLEAN>;
@@ -766,7 +773,9 @@ struct StringReturn : StringOutBase<TRANSFER> {
         return Argument::invalid(cx, G_STRFUNC);
     }
 
-    GITypeTag return_tag() const override { return GI_TYPE_TAG_UTF8; }
+    Maybe<GITypeTag> return_tag() const override {
+        return Some(GI_TYPE_TAG_UTF8);
+    }
 };
 
 template <GITransfer TRANSFER = GI_TRANSFER_NOTHING>
@@ -1827,20 +1836,14 @@ GType ArgsCache::instance_type() const {
     return instance()->as_instance()->gtype();
 }
 
-GITypeTag ArgsCache::return_tag() const {
-    Argument* rval = return_value();
-    if (!rval)
-        return GI_TYPE_TAG_VOID;
-
-    return rval->return_tag();
+Maybe<GITypeTag> ArgsCache::return_tag() const {
+    return return_value().andThen(std::mem_fn(&Argument::return_tag));
 }
 
-GITypeInfo* ArgsCache::return_type() const {
-    Argument* rval = return_value();
-    if (!rval)
-        return nullptr;
-
-    return const_cast<GITypeInfo*>(rval->return_type());
+Maybe<GITypeInfo*> ArgsCache::return_type() const {
+    return return_value()
+        .andThen(std::mem_fn(&Argument::return_type))
+        .map([](const GITypeInfo* ti) { return const_cast<GITypeInfo*>(ti); });
 }
 
 void ArgsCache::set_skip_all(uint8_t index, const char* name) {
