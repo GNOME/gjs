@@ -532,7 +532,7 @@ struct Instance : NullableIn {
         return skip();
     }
 
-    const Instance* as_instance() const override { return this; }
+    Maybe<const Instance*> as_instance() const override { return Some(this); }
 
     //  The instance GType can be useful only in few cases such as GObjects and
     //  GInterfaces, so we don't store it by default, unless needed.
@@ -1829,11 +1829,10 @@ constexpr void ArgsCache::set_instance(T* arg, GITransfer transfer,
         arg, {Argument::ABSENT, nullptr, transfer, flags});
 }
 
-GType ArgsCache::instance_type() const {
-    if (!m_is_method)
-        return G_TYPE_NONE;
-
-    return instance()->as_instance()->gtype();
+Maybe<GType> ArgsCache::instance_type() const {
+    return instance()
+        .andThen(std::mem_fn(&Argument::as_instance))
+        .map(std::mem_fn(&Arg::Instance::gtype));
 }
 
 Maybe<GITypeTag> ArgsCache::return_tag() const {

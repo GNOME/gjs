@@ -953,7 +953,8 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
         GIArgument* in_value = state.instance();
         JS::RootedValue in_js_value(context, JS::ObjectValue(*obj));
 
-        if (!m_arguments.instance()->in(context, &state, in_value, in_js_value))
+        if (!m_arguments.instance().value()->in(context, &state, in_value,
+                                                in_js_value))
             return false;
 
         ffi_arg_pointers[ffi_arg_pos] = in_value;
@@ -961,13 +962,13 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
         // Callback lifetimes will be attached to the instance object if it is
         // a GObject or GInterface
-        GType gtype = m_arguments.instance_type();
-        if (gtype != G_TYPE_NONE) {
-            if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
-                g_type_is_a(gtype, G_TYPE_INTERFACE))
+        Maybe<GType> gtype = m_arguments.instance_type();
+        if (gtype) {
+            if (g_type_is_a(*gtype, G_TYPE_OBJECT) ||
+                g_type_is_a(*gtype, G_TYPE_INTERFACE))
                 state.instance_object = obj;
 
-            if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+            if (g_type_is_a(*gtype, G_TYPE_OBJECT)) {
                 auto* o = ObjectBase::for_js(context, obj);
                 dynamicString = o->format_name();
             }
@@ -1152,7 +1153,7 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
 
         if (gi_arg_pos == -2) {
             in_value = state->instance();
-            gjs_arg = Some(m_arguments.instance());
+            gjs_arg = m_arguments.instance();
         } else if (gi_arg_pos == -1) {
             out_value = state->return_value();
             gjs_arg = m_arguments.return_value();

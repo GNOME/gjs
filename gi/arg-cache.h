@@ -110,7 +110,9 @@ struct Argument {
 
     virtual mozilla::Maybe<GITypeTag> return_tag() const { return {}; }
     virtual mozilla::Maybe<const GITypeInfo*> return_type() const { return {}; }
-    virtual const Arg::Instance* as_instance() const { return nullptr; }
+    virtual mozilla::Maybe<const Arg::Instance*> as_instance() const {
+        return {};
+    }
 
     constexpr void set_instance_parameter() {
         m_arg_name = "instance parameter";
@@ -168,7 +170,7 @@ struct ArgsCache {
 
     void build_instance(GICallableInfo* callable);
 
-    GType instance_type() const;
+    mozilla::Maybe<GType> instance_type() const;
     mozilla::Maybe<GITypeTag> return_tag() const;
     mozilla::Maybe<GITypeInfo*> return_type() const;
 
@@ -232,11 +234,11 @@ struct ArgsCache {
         return arg_get(index).get();
     }
 
-    constexpr Argument* instance() const {
+    constexpr mozilla::Maybe<Argument*> instance() const {
         if (!m_is_method)
-            return nullptr;
+            return {};
 
-        return arg_get<Arg::Kind::INSTANCE>().get();
+        return mozilla::Some(arg_get<Arg::Kind::INSTANCE>().get());
     }
 
     constexpr mozilla::Maybe<Argument*> return_value() const {
