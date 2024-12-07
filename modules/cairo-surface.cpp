@@ -23,6 +23,7 @@
 #include "gi/arg.h"
 #include "gi/cwrapper.h"
 #include "gi/foreign.h"
+#include "gjs/auto.h"
 #include "gjs/enum-utils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util-args.h"
@@ -45,7 +46,7 @@ writeToPNG_func(JSContext *context,
                 JS::Value *vp)
 {
     GJS_GET_THIS(context, argc, vp, argv, obj);
-    GjsAutoChar filename;
+    Gjs::AutoChar filename;
 
     if (!gjs_parse_call_args(context, "writeToPNG", argv, "F",
                              "filename", &filename))
@@ -330,8 +331,8 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
     GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            GjsAutoChar display_name =
-                gjs_argument_display_name(arg_name, argument_type);
+            Gjs::AutoChar display_name{
+                gjs_argument_display_name(arg_name, argument_type)};
             gjs_throw(context, "%s may not be null", display_name.get());
             return false;
         }
@@ -341,8 +342,8 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
     }
 
     if (!value.isObject()) {
-        GjsAutoChar display_name =
-            gjs_argument_display_name(arg_name, argument_type);
+        Gjs::AutoChar display_name{
+            gjs_argument_display_name(arg_name, argument_type)};
         gjs_throw(context, "%s is not a Cairo.Surface", display_name.get());
         return false;
     }

@@ -34,6 +34,7 @@
 
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
@@ -75,7 +76,7 @@ static void on_cleanup_finalization_registry(JSFunction* cleanup_task,
 
 bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
                               size_t* length) {
-    GjsAutoError error;
+    Gjs::AutoError error;
     const char* path = filename + 11;  // len("resource://")
     GBytes* script_bytes =
         g_resources_lookup_data(path, G_RESOURCE_LOOKUP_FLAGS_NONE, &error);

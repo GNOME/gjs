@@ -20,11 +20,8 @@
 #    include <js/RootingAPI.h>
 #    include <jsapi.h>    // for JS_NewObjectWithGivenProto
 #    include <jspubtd.h>  // for JSProtoKey
-#endif
 
-#include "gjs/jsapi-util.h"
-
-#if CAIRO_HAS_SVG_SURFACE
+#    include "gjs/auto.h"
 #    include "gjs/jsapi-util-args.h"
 #    include "modules/cairo-private.h"
 
@@ -39,7 +36,7 @@ JSObject* CairoSVGSurface::new_proto(JSContext* cx, JSProtoKey) {
 
 cairo_surface_t* CairoSVGSurface::constructor_impl(JSContext* context,
                                                    const JS::CallArgs& argv) {
-    GjsAutoChar filename;
+    Gjs::AutoChar filename;
     double width, height;
     cairo_surface_t *surface;
     if (!gjs_parse_call_args(context, "SVGSurface", argv, "Fff",

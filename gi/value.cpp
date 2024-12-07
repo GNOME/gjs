@@ -38,6 +38,7 @@
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
 #include "gi/gtype.h"
+#include "gi/info.h"
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
@@ -45,6 +46,7 @@
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
+#include "gjs/auto.h"
 #include "gjs/byteArray.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
@@ -145,7 +147,7 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool maybe_release_signal_value(JSContext* cx,
-                                       GjsAutoArgInfo const& arg_info,
+                                       GI::AutoArgInfo const& arg_info,
                                        GITypeInfo* type_info,
                                        const GValue* gvalue,
                                        GITransfer transfer) {
@@ -171,13 +173,14 @@ static bool maybe_release_signal_value(JSContext* cx,
  * only works for signals on introspected GObjects, not signals on GJS-defined
  * GObjects nor standalone closures. The return value must be unreffed.
  */
-[[nodiscard]] static GjsAutoSignalInfo get_signal_info_if_available(
+[[nodiscard]]
+static GI::AutoSignalInfo get_signal_info_if_available(
     GSignalQuery* signal_query) {
     if (!signal_query->itype)
         return nullptr;
 
-    GjsAutoBaseInfo obj =
-        g_irepository_find_by_gtype(nullptr, signal_query->itype);
+    GI::AutoBaseInfo obj{
+        g_irepository_find_by_gtype(nullptr, signal_query->itype)};
     if (!obj)
         return nullptr;
 
@@ -292,12 +295,12 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         int array_len_index_for = -1;
         bool skip = false;
         GITypeInfo type_info;
-        GjsAutoArgInfo arg_info;
+        GI::AutoArgInfo arg_info;
     };
     std::vector<ArgumentDetails> args_details(n_param_values);
     bool needs_cleanup = false;
 
-    GjsAutoSignalInfo signal_info = get_signal_info_if_available(&signal_query);
+    GI::AutoSignalInfo signal_info{get_signal_info_if_available(&signal_query)};
     if (signal_info) {
         /* Start at argument 1, skip the instance parameter */
         for (i = 1; i < n_param_values; ++i) {
@@ -759,8 +762,8 @@ gjs_value_to_g_value_internal(JSContext      *context,
                           JS::InformalValueTypeName(value));
                 return false;
             } else {
-                GjsAutoBaseInfo registered =
-                    g_irepository_find_by_gtype(nullptr, gtype);
+                GI::AutoBaseInfo registered{
+                    g_irepository_find_by_gtype(nullptr, gtype)};
 
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
@@ -835,7 +838,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
         if (Gjs::js_value_to_c(context, value, &value_int64)) {
             GEnumValue *v;
-            GjsAutoTypeClass<GEnumClass> enum_class(gtype);
+            Gjs::AutoTypeClass<GEnumClass> enum_class{gtype};
 
             /* See arg.c:_gjs_enum_to_int() */
             v = g_enum_get_value(enum_class, (int)value_int64);
@@ -962,7 +965,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
         v_double = v;
     } else {
         /* Need to distinguish between negative integers and unsigned integers */
-        GjsAutoEnumInfo info = g_irepository_find_by_gtype(nullptr, gtype);
+        GI::AutoEnumInfo info{g_irepository_find_by_gtype(nullptr, gtype)};
 
         // Native enums don't have type info, assume
         // they are signed to avoid crashing when
@@ -1067,7 +1070,7 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         }
 
         GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
-        GjsAutoTypeInfo element_info = g_type_info_get_param_type(type_info, 0);
+        GI::AutoTypeInfo element_info{g_type_info_get_param_type(type_info, 0)};
         if (!gjs_array_from_g_value_array(context, value_p, element_info,
                                           transfer, gvalue)) {
             gjs_throw(context, "Failed to convert array");
@@ -1079,8 +1082,8 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
                       "signal information");
             return false;
         }
-        GjsAutoTypeInfo key_info = g_type_info_get_param_type(type_info, 0);
-        GjsAutoTypeInfo value_info = g_type_info_get_param_type(type_info, 1);
+        GI::AutoTypeInfo key_info{g_type_info_get_param_type(type_info, 0)};
+        GI::AutoTypeInfo value_info{g_type_info_get_param_type(type_info, 1)};
         GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
 
         if (!gjs_object_from_g_hash(
@@ -1125,7 +1128,7 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
 
         /* The only way to differentiate unions and structs is from
          * their g-i info as both GBoxed */
-        GjsAutoBaseInfo info = gjs_lookup_gtype(nullptr, gtype);
+        GI::AutoBaseInfo info{gjs_lookup_gtype(nullptr, gtype)};
         if (!info) {
             gjs_throw(context,
                       "No introspection information found for %s",

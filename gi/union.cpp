@@ -15,6 +15,7 @@
 
 #include "gi/arg-inl.h"
 #include "gi/function.h"
+#include "gi/info.h"
 #include "gi/repo.h"
 #include "gi/union.h"
 #include "gjs/jsapi-util.h"
@@ -54,8 +55,8 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     }
 
     // Look for methods and other class properties
-    GjsAutoFunctionInfo method_info =
-        g_union_info_find_method(info(), prop_name.get());
+    GI::AutoFunctionInfo method_info{
+        g_union_info_find_method(info(), prop_name.get())};
 
     if (method_info) {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -94,7 +95,7 @@ static void* union_new(JSContext* context, JS::HandleObject this_obj,
     for (i = 0; i < n_methods; ++i) {
         GIFunctionInfoFlags flags;
 
-        GjsAutoFunctionInfo func_info = g_union_info_get_method(info, i);
+        GI::AutoFunctionInfo func_info{g_union_info_get_method(info, i)};
 
         flags = g_function_info_get_flags(func_info);
         if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0 &&

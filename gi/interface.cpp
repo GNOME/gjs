@@ -15,6 +15,7 @@
 #include <js/Utility.h>  // for UniqueChars
 
 #include "gi/function.h"
+#include "gi/info.h"
 #include "gi/interface.h"
 #include "gi/object.h"
 #include "gi/repo.h"
@@ -48,7 +49,7 @@ bool InterfacePrototype::new_enumerate_impl(
     }
 
     for (int i = 0; i < n_methods; i++) {
-        GjsAutoFunctionInfo meth_info = g_interface_info_get_method(info(), i);
+        GI::AutoFunctionInfo meth_info{g_interface_info_get_method(info(), i)};
         GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
 
         if (flags & GI_FUNCTION_IS_METHOD) {
@@ -82,8 +83,8 @@ bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
         return true;  // not resolved, but no error
     }
 
-    GjsAutoFunctionInfo method_info =
-        g_interface_info_find_method(m_info, prop_name.get());
+    GI::AutoFunctionInfo method_info{
+        g_interface_info_find_method(m_info, prop_name.get())};
 
     if (method_info) {
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
@@ -173,7 +174,7 @@ gjs_lookup_interface_constructor(JSContext             *context,
 {
     JSObject *constructor;
 
-    GjsAutoInterfaceInfo interface_info = gjs_lookup_gtype(nullptr, gtype);
+    GI::AutoInterfaceInfo interface_info{gjs_lookup_gtype(nullptr, gtype)};
     if (!interface_info) {
         gjs_throw(context, "Cannot expose non introspectable interface %s",
                   g_type_name(gtype));

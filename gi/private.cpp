@@ -32,6 +32,7 @@
 #include "gi/repo.h"
 #include "gi/value.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -67,7 +68,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
         pspec = g_object_interface_find_property(interface_type, name.get());
         g_type_default_interface_unref(interface_type);
     } else {
-        GjsAutoTypeClass<GObjectClass> class_type(gtype);
+        Gjs::AutoTypeClass<GObjectClass> class_type{gtype};
         pspec = g_object_class_find_property(class_type, name.get());
     }
 
@@ -77,7 +78,7 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    GjsAutoParam new_pspec = g_param_spec_override(name.get(), pspec);
+    Gjs::AutoParam new_pspec{g_param_spec_override(name.get(), pspec)};
 
     g_param_spec_set_qdata(new_pspec, ObjectBase::custom_property_quark(),
                            GINT_TO_POINTER(1));
@@ -211,7 +212,7 @@ static bool gjs_register_interface_impl(JSContext* cx, const char* name,
                                                  &n_interfaces, &n_properties))
         return false;
 
-    GjsAutoPointer<GType> iface_types = g_new(GType, n_interfaces);
+    Gjs::AutoPointer<GType> iface_types{g_new(GType, n_interfaces)};
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
@@ -331,7 +332,7 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
                                                  &n_interfaces, &n_properties))
         return false;
 
-    GjsAutoPointer<GType> iface_types = g_new(GType, n_interfaces);
+    Gjs::AutoPointer<GType> iface_types{g_new(GType, n_interfaces)};
 
     /* We do interface addition in two passes so that any failure
        is caught early, before registering the GType (which we can't undo) */
@@ -392,7 +393,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
 
     GType instance_type;
-    GjsAutoPointer<GType> iface_types;
+    Gjs::AutoPointer<GType> iface_types;
     uint32_t n_interfaces;
     if (!gjs_register_type_impl(cx, name.get(), type_flags, parent, interfaces,
                                 properties, iface_types.out(), &n_interfaces,
@@ -431,7 +432,7 @@ static bool gjs_register_type_with_class(JSContext* cx, unsigned argc,
 
     GType instance_type;
     uint32_t n_interfaces;
-    GjsAutoPointer<GType> iface_types;
+    Gjs::AutoPointer<GType> iface_types;
     if (!gjs_register_type_impl(cx, name.get(), type_flags, parent, interfaces,
                                 properties, iface_types.out(), &n_interfaces,
                                 &instance_type))
@@ -498,7 +499,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!JS::GetArrayLength(cx, params_obj, &n_parameters))
         return false;
 
-    GjsAutoPointer<GType> params = g_new(GType, n_parameters);
+    Gjs::AutoPointer<GType> params{g_new(GType, n_parameters)};
     JS::RootedValue gtype_val(cx);
     for (uint32_t ix = 0; ix < n_parameters; ix++) {
         if (!JS_GetElement(cx, params_obj, ix, &gtype_val) ||

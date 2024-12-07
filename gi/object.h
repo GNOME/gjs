@@ -27,10 +27,11 @@
 #include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
 #include <mozilla/Likely.h>         // for MOZ_LIKELY
 
+#include "gi/info.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
+#include "gjs/auto.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
@@ -186,7 +187,7 @@ class ObjectPrototype
     friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
     using FieldCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
+        JS::GCHashMap<JS::Heap<JSString*>, GI::AutoFieldInfo,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using NegativeLookupCache =
         JS::GCHashSet<JS::Heap<jsid>, IdHasher, js::SystemAllocPolicy>;
@@ -237,13 +238,13 @@ class ObjectPrototype
     void set_type_qdata(void);
     GJS_JSAPI_RETURN_CONVENTION
     GParamSpec* find_param_spec_from_id(JSContext*,
-                                        GjsAutoTypeClass<GObjectClass> const&,
+                                        Gjs::AutoTypeClass<GObjectClass> const&,
                                         JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
     GIFieldInfo* lookup_cached_field_info(JSContext* cx, JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
     bool props_to_g_parameters(JSContext*,
-                               GjsAutoTypeClass<GObjectClass> const&,
+                               Gjs::AutoTypeClass<GObjectClass> const&,
                                JS::HandleObject props,
                                std::vector<const char*>* names,
                                AutoGValueVector* values);

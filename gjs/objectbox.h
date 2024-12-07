@@ -10,7 +10,7 @@
 
 #include <js/TypeDecls.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/auto.h"
 #include "gjs/macros.h"
 
 class JSTracer;
@@ -19,7 +19,7 @@ class ObjectBox {
     static void destroy(ObjectBox*);
 
  public:
-    using Ptr = GjsAutoPointer<ObjectBox, ObjectBox, ObjectBox::destroy>;
+    using Ptr = Gjs::AutoPointer<ObjectBox, ObjectBox, ObjectBox::destroy>;
 
     [[nodiscard]] static GType gtype();
 
@@ -39,5 +39,5 @@ class ObjectBox {
 
     struct impl;
     static void destroy_impl(impl*);
-    GjsAutoPointer<impl, impl, destroy_impl> m_impl;
+    Gjs::AutoPointer<impl, impl, destroy_impl> m_impl;
 };

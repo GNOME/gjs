@@ -37,7 +37,9 @@
 #include "gi/repo.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -65,8 +67,8 @@ bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     }
 
     // Look for methods and other class properties
-    GjsAutoFunctionInfo method_info =
-        g_struct_info_find_method(info(), prop_name.get());
+    GI::AutoFunctionInfo method_info{
+        g_struct_info_find_method(info(), prop_name.get())};
     if (!method_info) {
         *resolved = false;
         return true;
@@ -97,7 +99,7 @@ bool BoxedPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                         bool only_enumerable [[maybe_unused]]) {
     int n_methods = g_struct_info_get_n_methods(info());
     for (int i = 0; i < n_methods; i++) {
-        GjsAutoFunctionInfo meth_info = g_struct_info_get_method(info(), i);
+        GI::AutoFunctionInfo meth_info{g_struct_info_get_method(info(), i)};
         GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
 
         if (flags & GI_FUNCTION_IS_METHOD) {
@@ -168,7 +170,7 @@ std::unique_ptr<BoxedPrototype::FieldMap> BoxedPrototype::create_field_map(
     }
 
     for (i = 0; i < n_fields; i++) {
-        GjsAutoFieldInfo field_info = g_struct_info_get_field(struct_info, i);
+        GI::AutoFieldInfo field_info{g_struct_info_get_field(struct_info, i)};
 
         // We get the string as a jsid later, which is interned. We intern the
         // string here as well, so it will be the same string pointer
@@ -356,10 +358,10 @@ bool BoxedInstance::constructor_impl(JSContext* context, JS::HandleObject obj,
     // exists, otherwise we malloc the correct amount of space if possible;
     // finally, we fallback on the default constructor.
     if (proto->has_zero_args_constructor()) {
-        GjsAutoFunctionInfo func_info = proto->zero_args_constructor_info();
+        GI::AutoFunctionInfo func_info{proto->zero_args_constructor_info()};
 
         GIArgument rval_arg;
-        GjsAutoError error;
+        Gjs::AutoError error;
 
         if (!g_function_info_invoke(func_info, NULL, 0, NULL, 0, &rval_arg, &error)) {
             gjs_throw(context, "Failed to invoke boxed constructor: %s",
@@ -528,7 +530,7 @@ bool BoxedBase::field_getter(JSContext* context, unsigned argc, JS::Value* vp) {
 
     uint32_t field_ix = gjs_dynamic_property_private_slot(&args.callee())
         .toPrivateUint32();
-    GjsAutoFieldInfo field_info = priv->get_field_info(context, field_ix);
+    GI::AutoFieldInfo field_info{priv->get_field_info(context, field_ix)};
     if (!field_info)
         return false;
 
@@ -540,11 +542,11 @@ bool BoxedBase::field_getter(JSContext* context, unsigned argc, JS::Value* vp) {
 bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
                                       GIFieldInfo* field_info,
                                       JS::MutableHandleValue rval) const {
-    GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
+    GI::AutoTypeInfo type_info{g_field_info_get_type(field_info)};
 
     if (!g_type_info_is_pointer(type_info) &&
         g_type_info_get_tag(type_info) == GI_TYPE_TAG_INTERFACE) {
-        GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
+        GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
 
         if (interface_info.type() == GI_INFO_TYPE_STRUCT ||
             interface_info.type() == GI_INFO_TYPE_BOXED) {
@@ -563,8 +565,8 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
     if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
         g_type_info_get_array_length(type_info) != -1) {
         auto length_field_ix = g_type_info_get_array_length(type_info);
-        GjsAutoFieldInfo length_field_info =
-            get_field_info(cx, length_field_ix);
+        GI::AutoFieldInfo length_field_info{
+            get_field_info(cx, length_field_ix)};
         if (!length_field_info) {
             gjs_throw(cx, "Reading field %s.%s is not supported", name(),
                       g_base_info_get_name(field_info));
@@ -578,8 +580,8 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
             return false;
         }
 
-        GjsAutoTypeInfo length_type_info =
-            g_field_info_get_type(length_field_info);
+        GI::AutoTypeInfo length_type_info{
+            g_field_info_get_type(length_field_info)};
         size_t length = gjs_gi_argument_get_array_length(
             g_type_info_get_tag(length_type_info), &length_arg);
         return gjs_value_from_explicit_array(cx, rval, type_info, &arg, length);
@@ -647,11 +649,11 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
 bool BoxedInstance::field_setter_impl(JSContext* context,
                                       GIFieldInfo* field_info,
                                       JS::HandleValue value) {
-    GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
+    GI::AutoTypeInfo type_info{g_field_info_get_type(field_info)};
 
     if (!g_type_info_is_pointer (type_info) &&
         g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
-        GjsAutoBaseInfo interface_info = g_type_info_get_interface(type_info);
+        GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
 
         if (interface_info.type() == GI_INFO_TYPE_STRUCT ||
             interface_info.type() == GI_INFO_TYPE_BOXED) {
@@ -696,7 +698,7 @@ bool BoxedBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     uint32_t field_ix = gjs_dynamic_property_private_slot(&args.callee())
         .toPrivateUint32();
-    GjsAutoFieldInfo field_info = priv->get_field_info(cx, field_ix);
+    GI::AutoFieldInfo field_info{priv->get_field_info(cx, field_ix)};
     if (!field_info)
         return false;
 
@@ -734,7 +736,7 @@ bool BoxedPrototype::define_boxed_class_fields(JSContext* cx,
     // At this point methods have already been defined on the prototype, so we
     // may get name conflicts which we need to check for.
     for (i = 0; i < n_fields; i++) {
-        GjsAutoFieldInfo field = g_struct_info_get_field(info(), i);
+        GI::AutoFieldInfo field{g_struct_info_get_field(info(), i)};
         JS::RootedValue private_id(cx, JS::PrivateUint32Value(i));
         JS::RootedId id{cx, gjs_intern_string_to_id(cx, field.name())};
 
@@ -800,8 +802,8 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
             g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
-            GjsAutoTypeInfo param_info =
-                g_type_info_get_param_type(type_info, 0);
+            GI::AutoTypeInfo param_info{
+                g_type_info_get_param_type(type_info, 0)};
             return type_can_be_allocated_directly(param_info);
         }
 
@@ -810,7 +812,7 @@ const struct JSClass BoxedBase::klass = {
         switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_INTERFACE:
             {
-            GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
+            GI::AutoBaseInfo interface{g_type_info_get_interface(type_info)};
             switch (interface.type()) {
                 case GI_INFO_TYPE_BOXED:
                 case GI_INFO_TYPE_STRUCT:
@@ -880,8 +882,8 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_is_pointer(type_info)) {
         if (g_type_info_get_tag(type_info) == GI_TYPE_TAG_ARRAY &&
             g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
-            GjsAutoTypeInfo param_info =
-                g_type_info_get_param_type(type_info, 0);
+            GI::AutoTypeInfo param_info{
+                g_type_info_get_param_type(type_info, 0)};
             return direct_allocation_has_pointers(param_info);
         }
 
@@ -891,7 +893,7 @@ const struct JSClass BoxedBase::klass = {
     if (g_type_info_get_tag(type_info) != GI_TYPE_TAG_INTERFACE)
         return false;
 
-    GjsAutoBaseInfo interface = g_type_info_get_interface(type_info);
+    GI::AutoBaseInfo interface{g_type_info_get_interface(type_info)};
     if (interface.type() == GI_INFO_TYPE_BOXED ||
         interface.type() == GI_INFO_TYPE_STRUCT)
         return simple_struct_has_pointers(interface.as<GIStructInfo>());
@@ -913,8 +915,8 @@ const struct JSClass BoxedBase::klass = {
         return false;
 
     for (i = 0; i < n_fields && is_simple; i++) {
-        GjsAutoFieldInfo field_info = g_struct_info_get_field(info, i);
-        GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
+        GI::AutoFieldInfo field_info{g_struct_info_get_field(info, i)};
+        GI::AutoTypeInfo type_info{g_field_info_get_type(field_info)};
 
         is_simple = type_can_be_allocated_directly(type_info);
     }
@@ -930,8 +932,8 @@ const struct JSClass BoxedBase::klass = {
     g_assert(n_fields > 0);
 
     for (int i = 0; i < n_fields; i++) {
-        GjsAutoFieldInfo field_info = g_struct_info_get_field(info, i);
-        GjsAutoTypeInfo type_info = g_field_info_get_type(field_info);
+        GI::AutoFieldInfo field_info{g_struct_info_get_field(info, i)};
+        GI::AutoTypeInfo type_info{g_field_info_get_type(field_info)};
         if (direct_allocation_has_pointers(type_info))
             return true;
     }
@@ -971,7 +973,7 @@ bool BoxedPrototype::init(JSContext* context) {
         for (i = 0; i < n_methods; ++i) {
             GIFunctionInfoFlags flags;
 
-            GjsAutoFunctionInfo func_info = g_struct_info_get_method(m_info, i);
+            GI::AutoFunctionInfo func_info{g_struct_info_get_method(m_info, i)};
 
             flags = g_function_info_get_flags(func_info);
             if ((flags & GI_FUNCTION_IS_CONSTRUCTOR) != 0) {

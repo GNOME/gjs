@@ -25,9 +25,11 @@
 #include <jsapi.h>       // for JS_NewObjectWithGivenProto
 
 #include "gi/cwrapper.h"
+#include "gi/info.h"
 #include "gi/ns.h"
 #include "gi/repo.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
@@ -69,7 +71,7 @@
     }
 }
 
-class Ns : private GjsAutoChar, public CWrapper<Ns> {
+class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
 
@@ -81,7 +83,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
 
     explicit Ns(const char* ns_name)
-        : GjsAutoChar(const_cast<char*>(ns_name), GjsAutoTakeOwnership()) {
+        : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
         GJS_INC_COUNTER(ns);
 #if GLIB_CHECK_VERSION(2, 79, 2)
         m_is_gio_or_glib =
@@ -101,8 +103,8 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             return;
 
         const char* base_name = resolved_name + strlen(prefix);
-        GjsAutoChar old_name =
-            g_strdup_printf("%s.%s", this->get(), resolved_name);
+        Gjs::AutoChar old_name{
+            g_strdup_printf("%s.%s", this->get(), resolved_name)};
         if (exceptions) {
             for (const char** exception = exceptions; *exception; exception++) {
                 if (strcmp(old_name, *exception) == 0)
@@ -110,8 +112,8 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             }
         }
 
-        GjsAutoChar new_name =
-            g_strdup_printf("%s%s.%s", this->get(), platform, base_name);
+        Gjs::AutoChar new_name{
+            g_strdup_printf("%s%s.%s", this->get(), platform, base_name)};
         _gjs_warn_deprecated_once_per_callsite(
             cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
             {old_name.get(), new_name.get()});
@@ -145,8 +147,8 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
             return true;  // not resolved, but no error
         }
 
-        GjsAutoBaseInfo info =
-            g_irepository_find_by_name(nullptr, get(), name.get());
+        GI::AutoBaseInfo info{
+            g_irepository_find_by_name(nullptr, get(), name.get())};
         if (!info) {
             *resolved = false;  // No property defined, but no error either
             return true;
@@ -198,7 +200,7 @@ class Ns : private GjsAutoChar, public CWrapper<Ns> {
         }
 
         for (int k = 0; k < n; k++) {
-            GjsAutoBaseInfo info = g_irepository_get_info(nullptr, get(), k);
+            GI::AutoBaseInfo info{g_irepository_get_info(nullptr, get(), k)};
             GIInfoType info_type = g_base_info_get_type(info);
             if (!type_is_enumerable(info_type))
                 continue;

@@ -42,7 +42,9 @@
 #include <mozilla/UniquePtr.h>
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/importer.h"
 #include "gjs/jsapi-util.h"
@@ -67,7 +69,7 @@ importer_to_string(JSContext *cx,
 {
     GJS_GET_THIS(cx, argc, vp, args, importer);
 
-    GjsAutoChar output;
+    Gjs::AutoChar output;
 
     const JSClass* klass = JS::GetClass(importer);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -141,7 +143,7 @@ define_meta_properties(JSContext       *context,
                                 &parent_module_path))
             return false;
 
-        GjsAutoChar module_path_buf;
+        Gjs::AutoChar module_path_buf;
         if (parent_module_path.isNull()) {
             module_path_buf = g_strdup(module_name);
         } else {
@@ -154,8 +156,8 @@ define_meta_properties(JSContext       *context,
         if (!gjs_string_from_utf8(context, module_path_buf, &module_path))
             return false;
 
-        GjsAutoChar to_string_tag_buf = g_strdup_printf("GjsModule %s",
-                                                        module_path_buf.get());
+        Gjs::AutoChar to_string_tag_buf{
+            g_strdup_printf("GjsModule %s", module_path_buf.get())};
         if (!gjs_string_from_utf8(context, to_string_tag_buf, &to_string_tag))
             return false;
     } else {
@@ -305,12 +307,12 @@ import_module_init(JSContext       *context,
                    JS::HandleObject module_obj)
 {
     gsize script_len = 0;
-    GjsAutoError error;
+    Gjs::AutoError error;
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     JS::RootedValue ignored(context);
 
-    GjsAutoChar script;
+    Gjs::AutoChar script;
     if (!g_file_load_contents(file, nullptr, script.out(), &script_len, nullptr,
                               &error)) {
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
@@ -324,7 +326,7 @@ import_module_init(JSContext       *context,
     }
     g_assert(script);
 
-    GjsAutoChar full_path = g_file_get_parse_name(file);
+    Gjs::AutoChar full_path{g_file_get_parse_name(file)};
 
     return gjs->eval_with_scope(module_obj, script, script_len, full_path,
                                 &ignored);
@@ -347,7 +349,7 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
         if (v_module.isObject())
             return &v_module.toObject();
 
-        GjsAutoChar full_path = g_file_get_parse_name(file);
+        Gjs::AutoChar full_path{g_file_get_parse_name(file)};
         gjs_throw(cx, "Unexpected non-object module __init__ imported from %s",
                   full_path.get());
         return nullptr;
@@ -395,8 +397,8 @@ static bool import_symbol_from_init_js(JSContext* cx, JS::HandleObject importer,
                                        GFile* directory, const char* name,
                                        bool* result) {
     bool found;
-    GjsAutoUnref<GFile> file =
-        g_file_get_child(directory, MODULE_INIT_FILENAME);
+    Gjs::AutoUnref<GFile> file{
+        g_file_get_child(directory, MODULE_INIT_FILENAME)};
 
     JS::RootedObject module_obj(cx, load_module_init(cx, importer, file));
     if (!module_obj || !JS_AlreadyHasOwnProperty(cx, module_obj, name, &found))
@@ -429,7 +431,7 @@ static bool attempt_import(JSContext* cx, JS::HandleObject obj,
     if (!module_obj)
         return false;
 
-    GjsAutoChar full_path = g_file_get_parse_name(file);
+    Gjs::AutoChar full_path{g_file_get_parse_name(file)};
 
     return define_meta_properties(cx, module_obj, full_path, module_name,
                                   obj) &&
@@ -501,7 +503,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
         return true;
     }
 
-    GjsAutoChar filename = g_strdup_printf("%s.js", name.get());
+    Gjs::AutoChar filename{g_strdup_printf("%s.js", name.get())};
     std::vector<std::string> directories;
     JS::RootedValue elem(context);
     JS::RootedString str(context);
@@ -532,8 +534,8 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
         if (dirname[0] == '\0')
             continue;
 
-        GjsAutoUnref<GFile> directory =
-            g_file_new_for_commandline_arg(dirname.get());
+        Gjs::AutoUnref<GFile> directory{
+            g_file_new_for_commandline_arg(dirname.get())};
 
         /* Try importing __init__.js and loading the symbol from it */
         bool found = false;
@@ -544,11 +546,11 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
             return true;
 
         /* Second try importing a directory (a sub-importer) */
-        GjsAutoUnref<GFile> file = g_file_get_child(directory, name.get());
+        Gjs::AutoUnref<GFile> file{g_file_get_child(directory, name.get())};
 
         if (g_file_query_file_type(file, GFileQueryInfoFlags(0), nullptr) ==
             G_FILE_TYPE_DIRECTORY) {
-            GjsAutoChar full_path = g_file_get_parse_name(file);
+            Gjs::AutoChar full_path{g_file_get_parse_name(file)};
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path.get(), name.get());
@@ -569,7 +571,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
         exists = g_file_query_exists(file, nullptr);
 
         if (!exists) {
-            GjsAutoChar full_path = g_file_get_parse_name(file);
+            Gjs::AutoChar full_path{g_file_get_parse_name(file)};
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "JS import '%s' not found in %s at %s", name.get(),
                       dirname.get(), full_path.get());
@@ -656,18 +658,18 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         if (!dirname)
             return false;
 
-        GjsAutoUnref<GFile> directory =
-            g_file_new_for_commandline_arg(dirname.get());
-        GjsAutoUnref<GFile> file =
-            g_file_get_child(directory, MODULE_INIT_FILENAME);
+        Gjs::AutoUnref<GFile> directory{
+            g_file_new_for_commandline_arg(dirname.get())};
+        Gjs::AutoUnref<GFile> file{
+            g_file_get_child(directory, MODULE_INIT_FILENAME)};
 
         if (!load_module_elements(context, object, properties, file))
             return false;
 
         /* new_for_commandline_arg handles resource:/// paths */
-        GjsAutoUnref<GFileEnumerator> direnum = g_file_enumerate_children(
+        Gjs::AutoUnref<GFileEnumerator> direnum{g_file_enumerate_children(
             directory, "standard::name,standard::type", G_FILE_QUERY_INFO_NONE,
-            nullptr, nullptr);
+            nullptr, nullptr)};
 
         while (true) {
             GFileInfo *info;
@@ -678,7 +680,7 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
             if (info == NULL || file == NULL)
                 break;
 
-            GjsAutoChar filename = g_file_get_basename(file);
+            Gjs::AutoChar filename{g_file_get_basename(file)};
 
             /* skip hidden files and directories (.svn, .git, ...) */
             if (filename.get()[0] == '.')
@@ -697,8 +699,8 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
                     return false;
                 }
             } else if (g_str_has_suffix(filename, ".js")) {
-                GjsAutoChar filename_noext =
-                    g_strndup(filename, strlen(filename) - 3);
+                Gjs::AutoChar filename_noext{
+                    g_strndup(filename, strlen(filename) - 3)};
                 jsid id = gjs_intern_string_to_id(context, filename_noext);
                 if (id.isVoid())
                     return false;
@@ -800,8 +802,8 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
         /* $XDG_DATA_DIRS /gjs-1.0 */
         system_data_dirs = g_get_system_data_dirs();
         for (i = 0; system_data_dirs[i] != NULL; ++i) {
-            GjsAutoChar s =
-                g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr);
+            Gjs::AutoChar s{
+                g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr)};
             gjs_search_path.push_back(s.get());
         }
 
@@ -809,8 +811,8 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
-        GjsAutoChar gjs_data_dir =
-            g_build_filename(basedir, "share", "gjs-1.0", nullptr);
+        Gjs::AutoChar gjs_data_dir{
+            g_build_filename(basedir, "share", "gjs-1.0", nullptr)};
         gjs_search_path.push_back(gjs_data_dir.get());
         g_free (basedir);
 #else

@@ -21,7 +21,7 @@
   {"include": ["\"gitypes.h\"", "private", "<girepository.h>", "public"]},
   {"include": ["<gitypes.h>", "private", "<girepository.h>", "public"]},
   {"include": ["\"giversion.h\"", "private", "<girepository.h>", "public"]},
-  {"include": ["@\"gi.*info.h\"", "private", "<girepository.h>", "public"]},
+  {"include": ["@\"gi[a-z]*info.h\"", "private", "<girepository.h>", "public"]},
   {"include": ["\"glib/galloca.h\"", "private", "<alloca.h>", "public"]},
   {"include": ["\"glib/garray.h\"", "private", "<glib.h>", "public"]},
   {"include": ["\"glib/gbacktrace.h\"", "private", "<glib.h>", "public"]},

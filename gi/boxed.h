@@ -24,8 +24,8 @@
 #include <js/TypeDecls.h>
 
 #include "gi/cwrapper.h"
+#include "gi/info.h"
 #include "gi/wrapperutils.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
@@ -81,7 +81,7 @@ class BoxedPrototype : public GIWrapperPrototype<BoxedBase, BoxedPrototype,
     friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
 
     using FieldMap =
-        JS::GCHashMap<JS::Heap<JSString*>, GjsAutoFieldInfo,
+        JS::GCHashMap<JS::Heap<JSString*>, GI::AutoFieldInfo,
                       js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
 
     int m_zero_args_constructor;  // -1 if none

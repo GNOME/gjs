@@ -24,10 +24,12 @@
 
 #include "gi/cwrapper.h"
 #include "gi/function.h"
+#include "gi/info.h"
 #include "gi/param.h"
 #include "gi/repo.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
@@ -40,9 +42,9 @@ extern struct JSClass gjs_param_class;
 // Reserved slots
 static const size_t POINTER = 0;
 
-struct Param : GjsAutoParam {
+struct Param : Gjs::AutoParam {
     explicit Param(GParamSpec* param)
-        : GjsAutoParam(param, GjsAutoTakeOwnership()) {}
+        : Gjs::AutoParam(param, Gjs::TakeOwnership{}) {}
 };
 
 [[nodiscard]] static GParamSpec* param_value(JSContext* cx,
@@ -79,9 +81,9 @@ param_resolve(JSContext       *context,
         return true; /* not resolved, but no error */
     }
 
-    GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
-    GjsAutoFunctionInfo method_info =
-        g_object_info_find_method(info, name.get());
+    GI::AutoObjectInfo info{g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM)};
+    GI::AutoFunctionInfo method_info{
+        g_object_info_find_method(info, name.get())};
 
     if (!method_info) {
         *resolved = false;
@@ -213,7 +215,7 @@ gjs_define_param_class(JSContext       *context,
     if (!gjs_wrapper_define_gtype_prop(context, constructor, G_TYPE_PARAM))
         return false;
 
-    GjsAutoObjectInfo info = g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM);
+    GI::AutoObjectInfo info{g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM)};
     if (!gjs_define_static_methods<InfoType::Object>(context, constructor,
                                                      G_TYPE_PARAM, info))
         return false;

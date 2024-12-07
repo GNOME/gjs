@@ -24,6 +24,7 @@
 #include "gi/gobject.h"
 #include "gi/object.h"
 #include "gi/value.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
@@ -57,11 +58,11 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
     if (!gjs_value_from_g_value(cx, &jsvalue, value))
         return false;
 
-    GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
+    Gjs::AutoChar underscore_name{gjs_hyphen_to_underscore(pspec->name)};
 
     if (pspec->flags & G_PARAM_CONSTRUCT_ONLY) {
         unsigned flags = GJS_MODULE_PROP_FLAGS | JSPROP_READONLY;
-        GjsAutoChar camel_name = gjs_hyphen_to_camel(pspec->name);
+        Gjs::AutoChar camel_name{gjs_hyphen_to_camel(pspec->name)};
 
         if (g_param_spec_get_qdata(pspec, ObjectBase::custom_property_quark())) {
             JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> jsprop(cx);
@@ -232,7 +233,7 @@ static void gjs_object_get_gproperty(GObject* object,
     JS::RootedValue jsvalue(cx);
     JSAutoRealm ar(cx, js_obj);
 
-    GjsAutoChar underscore_name = gjs_hyphen_to_underscore(pspec->name);
+    Gjs::AutoChar underscore_name{gjs_hyphen_to_underscore(pspec->name)};
     if (!JS_GetProperty(cx, js_obj, underscore_name, &jsvalue)) {
         gjs_log_exception_uncaught(cx);
         return;
@@ -254,7 +255,7 @@ static void gjs_object_class_init(void* class_pointer, void*) {
         return;
 
     unsigned i = 0;
-    for (GjsAutoParam& pspec : properties) {
+    for (Gjs::AutoParam& pspec : properties) {
         g_param_spec_set_qdata(pspec, ObjectBase::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_class_install_property(klass, ++i, pspec);
@@ -294,7 +295,7 @@ static void gjs_interface_init(void* g_iface, void*) {
     if (!pop_class_init_properties(gtype, &properties))
         return;
 
-    for (GjsAutoParam& pspec : properties) {
+    for (Gjs::AutoParam& pspec : properties) {
         g_param_spec_set_qdata(pspec, ObjectBase::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_interface_install_property(g_iface, pspec);

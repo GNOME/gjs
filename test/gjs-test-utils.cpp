@@ -12,9 +12,9 @@
 #include <js/Realm.h>
 #include <js/TypeDecls.h>
 
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
-#include "gjs/jsapi-util.h"
 #include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
 
@@ -29,7 +29,7 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
 void
 gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
 {
-    GjsAutoChar message = gjs_test_get_exception_message(fx->cx);
+    Gjs::AutoChar message = gjs_test_get_exception_message(fx->cx);
     if (message)
         g_printerr("**\n%s\n", message.get());
 

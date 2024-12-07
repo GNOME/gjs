@@ -18,8 +18,8 @@
 #include <js/TypeDecls.h>
 
 #include "gi/arg.h"
+#include "gjs/auto.h"
 #include "gjs/enum-utils.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 class GjsFunctionCallState;
@@ -115,12 +115,12 @@ struct Argument {
     friend struct ArgsCache;
 
     template <typename T, Arg::Kind ArgKind, typename... Args>
-    static GjsAutoCppPointer<T> make(uint8_t index, const char* name,
-                                     GITypeInfo* type_info, GITransfer transfer,
-                                     GjsArgumentFlags flags, Args&&... args);
+    static AutoCppPointer<T> make(uint8_t index, const char* name,
+                                  GITypeInfo* type_info, GITransfer transfer,
+                                  GjsArgumentFlags flags, Args&&... args);
 };
 
-using ArgumentPtr = GjsAutoCppPointer<Argument>;
+using ArgumentPtr = AutoCppPointer<Argument>;
 
 // This is a trick to print out the sizes of the structs at compile time, in
 // an error message:
@@ -241,7 +241,7 @@ struct ArgsCache {
     }
 
  private:
-    GjsAutoCppPointer<ArgumentPtr[]> m_args;
+    AutoCppPointer<ArgumentPtr[]> m_args;
 
     bool m_is_method : 1;
     bool m_has_return : 1;

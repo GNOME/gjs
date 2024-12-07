@@ -26,7 +26,7 @@
 
 #include <glib.h>
 
-#include "gjs/jsapi-util.h"
+#include "gjs/auto.h"
 #include "util/log.h"
 #include "util/misc.h"
 
@@ -34,7 +34,7 @@ static std::atomic_bool s_initialized = ATOMIC_VAR_INIT(false);
 static bool s_debug_log_enabled = false;
 static bool s_print_thread = false;
 static std::unique_ptr<LogFile> s_log_file;
-static GjsAutoPointer<GTimer, GTimer, g_timer_destroy> s_timer;
+static Gjs::AutoPointer<GTimer, GTimer, g_timer_destroy> s_timer;
 static std::array<bool, GJS_DEBUG_LAST> s_enabled_topics;
 
 static const char* topic_to_prefix(GjsDebugTopic topic) {
@@ -119,7 +119,7 @@ void gjs_log_init() {
          */
         c = strchr(const_cast<char*>(debug_output), '%');
         if (c && c[1] == 'u' && !strchr(c + 1, '%')) {
-            GjsAutoChar file_name;
+            Gjs::AutoChar file_name;
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
             _Pragma("GCC diagnostic push")
                 _Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
@@ -150,7 +150,7 @@ void gjs_log_init() {
         auto* topics = g_getenv("GJS_DEBUG_TOPICS");
         s_enabled_topics.fill(topics == nullptr);
         if (topics) {
-            GjsAutoStrv prefixes(g_strsplit(topics, ";", -1));
+            Gjs::AutoStrv prefixes{g_strsplit(topics, ";", -1)};
             for (unsigned i = 0; prefixes[i] != NULL; i++) {
                 GjsDebugTopic topic = prefix_to_topic(prefixes[i]);
                 if (topic != GJS_DEBUG_LAST)

@@ -14,9 +14,10 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#include "gjs/auto.h"
 #include "gjs/context.h"
 #include "gjs/coverage.h"
-#include "gjs/jsapi-util.h"
+#include "gjs/gerror-result.h"
 
 // COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
 #ifdef __clang_analyzer__
@@ -38,7 +39,7 @@ static void
 replace_file(GFile      *file,
               const char *contents)
 {
-    GjsAutoError error;
+    Gjs::AutoError error;
     g_file_replace_contents(file, contents, strlen(contents), NULL /* etag */,
                             FALSE /* make backup */, G_FILE_CREATE_NONE,
                             NULL /* etag out */, NULL /* cancellable */, &error);
@@ -196,7 +197,7 @@ assert_coverage_data_contains_value_for_key(const char *data,
 
     g_assert_nonnull(sf_line);
 
-    GjsAutoChar actual = g_strndup(&sf_line[strlen(key)], strlen(value));
+    Gjs::AutoChar actual{g_strndup(&sf_line[strlen(key)], strlen(value))};
     g_assert_cmpstr(value, ==, actual);
 }
 
@@ -637,7 +638,7 @@ has_function_name(const char *line,
     while (*(line - 1) != ',')
         ++line;
 
-    GjsAutoChar actual = g_strndup(line, strlen(expected_function_name));
+    Gjs::AutoChar actual{g_strndup(line, strlen(expected_function_name))};
     g_assert_cmpstr(actual, ==, expected_function_name);
 }
 
@@ -682,7 +683,7 @@ has_function_line(const char *line,
     /* Advance past "FN:" */
     line += 3;
 
-    GjsAutoChar actual = g_strndup(line, strlen(expected_function_line));
+    Gjs::AutoChar actual{g_strndup(line, strlen(expected_function_line))};
     g_assert_cmpstr(actual, ==, expected_function_line);
 }
 
@@ -737,9 +738,9 @@ hit_count_is_more_than_for_function(const char *line,
 
     max_buf_size = strcspn(line, "\n");
     detected_function = g_new(char, max_buf_size + 1);
-    GjsAutoChar format_string = g_strdup_printf("%%5u,%%%zus", max_buf_size);
+    Gjs::AutoChar format_string{g_strdup_printf("%%5u,%%%zus", max_buf_size)};
 
-// clang-format off
+    // clang-format off
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")

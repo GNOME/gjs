@@ -17,7 +17,9 @@
 
 #include "gi/cwrapper.h"
 #include "gi/enumeration.h"
+#include "gi/info.h"
 #include "gi/wrapperutils.h"
+#include "gjs/auto.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -39,7 +41,7 @@ gjs_define_enum_value(JSContext       *context,
      * Gdk.GravityType.south-west (where 'south-west' is value_name)
      * Convert back to all SOUTH_WEST.
      */
-    GjsAutoChar fixed_name = g_ascii_strup(value_name, -1);
+    Gjs::AutoChar fixed_name{g_ascii_strup(value_name, -1)};
     for (i = 0; fixed_name[i]; ++i) {
         char c = fixed_name[i];
         if (!(('A' <= c && c <= 'Z') ||
@@ -76,7 +78,7 @@ gjs_define_enum_values(JSContext       *context,
      */
     n_values = g_enum_info_get_n_values(info);
     for (i = 0; i < n_values; ++i) {
-        GjsAutoBaseInfo value_info = g_enum_info_get_value(info, i);
+        GI::AutoBaseInfo value_info{g_enum_info_get_value(info, i)};
 
         if (!gjs_define_enum_value(context, in_object, value_info))
             return false;

@@ -126,6 +126,7 @@
 #include <mozilla/ResultVariant.h>
 #include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
+#include <mozilla/Try.h>
 #include <mozilla/UniquePtr.h>
 #include <mozilla/Unused.h>
 #ifdef HAVE_READLINE_READLINE_H

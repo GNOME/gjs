@@ -24,11 +24,13 @@
 #include "gi/arg.h"
 #include "gi/function.h"
 #include "gi/fundamental.h"
+#include "gi/info.h"
 #include "gi/repo.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/jsapi-util-root.h"  // for WeakPtr methods
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
@@ -77,7 +79,7 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
     n_methods = g_object_info_get_n_methods(info);
 
     for (i = 0; i < n_methods; ++i) {
-        GjsAutoFunctionInfo func_info;
+        GI::AutoFunctionInfo func_info;
         GIFunctionInfoFlags flags;
 
         func_info = g_object_info_get_method(info, i);
@@ -103,14 +105,14 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
     ret = true;
     interfaces = g_type_interfaces(gtype(), &n_interfaces);
     for (i = 0; i < n_interfaces; i++) {
-        GjsAutoInterfaceInfo iface_info =
-            g_irepository_find_by_gtype(nullptr, interfaces[i]);
+        GI::AutoInterfaceInfo iface_info{
+            g_irepository_find_by_gtype(nullptr, interfaces[i])};
 
         if (!iface_info)
             continue;
 
-        GjsAutoFunctionInfo method_info =
-            g_interface_info_find_method(iface_info, name);
+        GI::AutoFunctionInfo method_info{
+            g_interface_info_find_method(iface_info, name)};
 
         if (method_info &&
             g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
@@ -138,8 +140,8 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     }
 
     /* We are the prototype, so look for methods and other class properties */
-    GjsAutoFunctionInfo method_info =
-        g_object_info_find_method(info(), prop_name.get());
+    GI::AutoFunctionInfo method_info{
+        g_object_info_find_method(info(), prop_name.get())};
 
     if (method_info) {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -319,7 +321,7 @@ static JSObject*
 gjs_lookup_fundamental_prototype_from_gtype(JSContext *context,
                                             GType      gtype)
 {
-    GjsAutoObjectInfo info;
+    GI::AutoObjectInfo info;
 
     /* A given gtype might not have any definition in the introspection
      * data. If that's the case, try to look for a definition of any of the

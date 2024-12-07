@@ -12,6 +12,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/function.h"
+#include "gi/info.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
 
@@ -111,8 +112,8 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
     int n_methods = InfoMethodsPolicy<TAG>::n_methods(info);
 
     for (int ix = 0; ix < n_methods; ix++) {
-        GjsAutoFunctionInfo meth_info =
-            InfoMethodsPolicy<TAG>::method(info, ix);
+        GI::AutoFunctionInfo meth_info{
+            InfoMethodsPolicy<TAG>::method(info, ix)};
         GIFunctionInfoFlags flags = g_function_info_get_flags(meth_info);
 
         // Anything that isn't a method we put on the constructor. This
@@ -128,7 +129,7 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
 
     // Also define class/interface methods if there is a gtype struct
 
-    GjsAutoStructInfo type_struct = InfoMethodsPolicy<TAG>::type_struct(info);
+    GI::AutoStructInfo type_struct{InfoMethodsPolicy<TAG>::type_struct(info)};
     // Not an error for it to be null even in the case of Object and Interface;
     // documentation says g_object_info_get_class_struct() and
     // g_interface_info_get_iface_struct() can validly return a null pointer.
@@ -138,8 +139,8 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
     n_methods = g_struct_info_get_n_methods(type_struct);
 
     for (int ix = 0; ix < n_methods; ix++) {
-        GjsAutoFunctionInfo meth_info =
-            g_struct_info_get_method(type_struct, ix);
+        GI::AutoFunctionInfo meth_info{
+            g_struct_info_get_method(type_struct, ix)};
 
         if (!gjs_define_function(cx, constructor, gtype, meth_info))
             return false;

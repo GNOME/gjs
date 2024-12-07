@@ -43,8 +43,10 @@
 #include <mozilla/Maybe.h>
 
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/deprecation.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -60,7 +62,7 @@ union Utf8Unit;
 }
 
 class GjsScriptModule {
-    GjsAutoChar m_name;
+    Gjs::AutoChar m_name;
 
     // Reserved slots
     static const size_t POINTER = 0;
@@ -154,8 +156,8 @@ class GjsScriptModule {
                 JS::HandleObject module,
                 GFile           *file)
     {
-        GjsAutoError error;
-        GjsAutoChar script;
+        Gjs::AutoError error;
+        Gjs::AutoChar script;
         size_t script_len = 0;
 
         if (!(g_file_load_contents(file, nullptr, script.out(), &script_len,
@@ -163,8 +165,8 @@ class GjsScriptModule {
             return gjs_throw_gerror_message(cx, error);
         g_assert(script);
 
-        GjsAutoChar full_path = g_file_get_parse_name(file);
-        GjsAutoChar uri = g_file_get_uri(file);
+        Gjs::AutoChar full_path{g_file_get_parse_name(file)};
+        Gjs::AutoChar uri{g_file_get_uri(file)};
         return evaluate_import(cx, module, script, script_len, full_path, uri);
     }
 
@@ -523,7 +525,7 @@ static bool canonicalize_specifier(JSContext* cx,
     if (!specifier_utf8)
         return false;
 
-    GjsAutoChar scheme, host, path, query;
+    Gjs::AutoChar scheme, host, path, query;
     if (!g_uri_split(specifier_utf8.get(), G_URI_FLAGS_NONE, scheme.out(),
                      nullptr, host.out(), nullptr, path.out(), query.out(),
                      nullptr, nullptr))
@@ -531,10 +533,10 @@ static bool canonicalize_specifier(JSContext* cx,
 
     if (g_strcmp0(scheme, "gi")) {
         // canonicalize without the query portion to avoid it being encoded
-        GjsAutoChar for_file_uri =
-            g_uri_join(G_URI_FLAGS_NONE, scheme.get(), nullptr, host.get(), -1,
-                       path.get(), nullptr, nullptr);
-        GjsAutoUnref<GFile> file = g_file_new_for_uri(for_file_uri.get());
+        Gjs::AutoChar for_file_uri{g_uri_join(G_URI_FLAGS_NONE, scheme.get(),
+                                              nullptr, host.get(), -1,
+                                              path.get(), nullptr, nullptr)};
+        Gjs::AutoUnref<GFile> file{g_file_new_for_uri(for_file_uri.get())};
         for_file_uri = g_file_get_uri(file);
         host.reset();
         path.reset();
@@ -544,9 +546,9 @@ static bool canonicalize_specifier(JSContext* cx,
             return false;
     }
 
-    GjsAutoChar canonical_specifier =
+    Gjs::AutoChar canonical_specifier{
         g_uri_join(G_URI_FLAGS_NONE, scheme.get(), nullptr, host.get(), -1,
-                   path.get(), query.get(), nullptr);
+                   path.get(), query.get(), nullptr)};
     JS::ConstUTF8CharsZ chars{canonical_specifier, strlen(canonical_specifier)};
     JS::RootedString new_specifier{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!new_specifier)
