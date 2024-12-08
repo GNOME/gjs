@@ -396,7 +396,7 @@ struct NumericOut : SkipAll, Positioned {
 
 using BooleanOut = NumericOut<gboolean, GI_TYPE_TAG_BOOLEAN>;
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename T, GITypeTag TAG>
 struct NumericReturn : SkipAll {
     static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
