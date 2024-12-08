@@ -389,7 +389,7 @@ struct NumericOut : SkipAll, Positioned {
     }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
+        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
                                                   value);
     }
 };
@@ -405,7 +405,7 @@ struct NumericReturn : SkipAll {
     }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
+        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
                                                   value);
     }
     Maybe<GITypeTag> return_tag() const override { return Some(TAG); }
@@ -696,7 +696,7 @@ struct BooleanIn : SkipAll {
             JS::HandleValue) override;
 };
 
-template <typename T>
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 struct NumericIn : SkipAll {
     static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -704,18 +704,18 @@ struct NumericIn : SkipAll {
 };
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-struct NumericInOut : NumericIn<T>, Positioned {
+struct NumericInOut : NumericIn<T, TAG>, Positioned {
     static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
-        if (!NumericIn<T>::in(cx, state, arg, value))
+        if (!NumericIn<T, TAG>::in(cx, state, arg, value))
             return false;
 
         return set_inout_parameter(state, arg);
     }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T>(arg),
+        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
                                                   value);
     }
 };
@@ -1145,17 +1145,17 @@ bool BooleanIn::in(JSContext*, GjsFunctionCallState*, GIArgument* arg,
     return true;
 }
 
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T>::in(JSContext* cx,
-                                                  GjsFunctionCallState*,
-                                                  GIArgument* arg,
-                                                  JS::HandleValue value) {
+template <typename T, GITypeTag TAG>
+GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T, TAG>::in(JSContext* cx,
+                                                       GjsFunctionCallState*,
+                                                       GIArgument* arg,
+                                                       JS::HandleValue value) {
     bool out_of_range = false;
 
-    if (!gjs_arg_set_from_js_value<T>(cx, value, arg, &out_of_range)) {
+    if (!gjs_arg_set_from_js_value<T, TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
             gjs_throw(cx, "Argument %s: value is out of range for %s",
-                      arg_name(), Gjs::static_type_name<T>());
+                      arg_name(), Gjs::static_type_name<T, TAG>());
         }
 
         return false;
@@ -1163,10 +1163,10 @@ GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T>::in(JSContext* cx,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
                       Gjs::AutoChar{gjs_argument_display_name(
-                                      arg_name(), GJS_ARGUMENT_ARGUMENT)}
+                                        arg_name(), GJS_ARGUMENT_ARGUMENT)}
                           .get(),
-                      std::to_string(gjs_arg_get<T>(arg)).c_str(),
-                      Gjs::static_type_name<T>());
+                      std::to_string(gjs_arg_get<T, TAG>(arg)).c_str(),
+                      Gjs::static_type_name<T, TAG>());
 
     return true;
 }
