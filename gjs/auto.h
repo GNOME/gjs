@@ -20,6 +20,7 @@
 // For some reason, this needs to be here because otherwise
 // AutoPointer<char*>::swap() fails to link.
 #include <js/GCPolicyAPI.h>  // IWYU pragma: keep
+#include <js/Utility.h>      // for UniqueChars
 
 // Auto pointers. We don't use GLib's g_autofree and friends because they only
 // work on GCC and Clang, and we try to support MSVC where possible. But this is
@@ -194,6 +195,15 @@ struct AutoCharFuncs {
 };
 using AutoChar =
     AutoPointer<char, char, AutoCharFuncs::free, AutoCharFuncs::dup>;
+
+// This moves a string owned by the JS runtime into the GLib domain. This is
+// only possible because currently, js_free() and g_free() both ultimately call
+// free(). It would cause crashes if SpiderMonkey were to stop supporting
+// embedders using the system allocator in the future. In that case, this
+// function would have to copy the string.
+[[nodiscard]] inline AutoChar js_chars_to_glib(JS::UniqueChars&& js_chars) {
+    return {js_chars.release()};
+}
 
 using AutoStrv = AutoPointer<char*, char*, g_strfreev, g_strdupv>;
 

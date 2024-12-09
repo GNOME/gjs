@@ -11,12 +11,14 @@
 #include <cmath>  // for isnan
 #include <limits>
 #include <string>
+#include <utility>  // for move
 
 #include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/BigInt.h>
+#include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/Conversions.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -25,6 +27,7 @@
 
 #include "gi/gtype.h"
 #include "gi/value.h"
+#include "gjs/auto.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
@@ -209,12 +212,18 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
 template <>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
     JSContext* cx, const JS::HandleValue& value, char** out) {
-    JS::UniqueChars tmp_result = gjs_string_to_utf8(cx, value);
+    if (value.isNull()) {
+        *out = nullptr;
+        return true;
+    }
 
-    if (!tmp_result)
+    if (!value.isString())
         return false;
 
-    *out = g_strdup(tmp_result.get());
+    JS::RootedString str{cx, value.toString()};
+    JS::UniqueChars utf8 = JS_EncodeStringToUTF8(cx, str);
+
+    *out = js_chars_to_glib(std::move(utf8)).release();
     return true;
 }
 

@@ -3,18 +3,14 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for size_t
-
 #include <glib.h>
 
-#include <js/Class.h>
 #include <js/GCAPI.h>  // for JS_GC, JS_SetGCCallback, JSGCStatus
-#include <js/Object.h>
 #include <js/TypeDecls.h>
-#include <js/Value.h>
-#include <jsapi.h>  // for JS_NewObject
+#include <jsapi.h>
 
 #include "gjs/context-private.h"
+#include "gjs/jsapi-simple-wrapper.h"
 #include "gjs/jsapi-util-root.h"
 #include "test/gjs-test-utils.h"
 
@@ -30,9 +26,6 @@ static GMutex gc_lock;
 static GCond gc_finished;
 static int gc_counter;
 
-// TestObj reserved slots
-static const size_t POINTER = 0;
-
 #define PARENT(fx) ((GjsUnitTestFixture *)fx)
 struct GjsRootingFixture {
     GjsUnitTestFixture parent;
@@ -43,31 +36,14 @@ struct GjsRootingFixture {
     GjsMaybeOwned* obj;  // only used in callback test cases
 };
 
-static void test_obj_finalize(JS::GCContext*, JSObject* obj) {
-    bool* finalized_p = JS::GetMaybePtrFromReservedSlot<bool>(obj, POINTER);
-    g_assert_false(*finalized_p);
-    *finalized_p = true;
-}
-
-static const JSClassOps test_obj_class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    nullptr,  // resolve
-    nullptr,  // mayResolve
-    test_obj_finalize};
-
-static JSClass test_obj_class = {
-    "TestObj", JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-    &test_obj_class_ops};
-
 static JSObject *
 test_obj_new(GjsRootingFixture *fx)
 {
-    JSObject *retval = JS_NewObject(PARENT(fx)->cx, &test_obj_class);
-    JS::SetReservedSlot(retval, POINTER, JS::PrivateValue(&fx->finalized));
-    return retval;
+    return Gjs::SimpleWrapper::new_for_ptr(
+        PARENT(fx)->cx, fx, [](GjsRootingFixture* data) {
+            g_assert_false(data->finalized);
+            data->finalized = true;
+        });
 }
 
 static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {

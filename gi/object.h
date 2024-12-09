@@ -124,12 +124,19 @@ class ObjectBase
     /* JS property getters/setters */
 
  public:
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_getter(JSContext*, unsigned,
+                                                        JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
-    static bool prop_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool prop_getter_write_only(JSContext*, unsigned argc,
+                                       JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_setter(JSContext*, unsigned,
+                                                        JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
-    static bool prop_setter(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool prop_setter_read_only(JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
@@ -186,13 +193,9 @@ class ObjectPrototype
                                     ObjectInstance>;
     friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
-    using FieldCache =
-        JS::GCHashMap<JS::Heap<JSString*>, GI::AutoFieldInfo,
-                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
     using NegativeLookupCache =
         JS::GCHashSet<JS::Heap<jsid>, IdHasher, js::SystemAllocPolicy>;
 
-    FieldCache m_field_cache;
     NegativeLookupCache m_unresolvable_cache;
     // a list of vfunc GClosures installed on this prototype, used when tracing
     std::vector<GClosure*> m_vfuncs;
@@ -240,8 +243,6 @@ class ObjectPrototype
     GParamSpec* find_param_spec_from_id(JSContext*,
                                         Gjs::AutoTypeClass<GObjectClass> const&,
                                         JS::HandleString key);
-    GJS_JSAPI_RETURN_CONVENTION
-    GIFieldInfo* lookup_cached_field_info(JSContext* cx, JS::HandleString key);
     GJS_JSAPI_RETURN_CONVENTION
     bool props_to_g_parameters(JSContext*,
                                Gjs::AutoTypeClass<GObjectClass> const&,
@@ -430,16 +431,17 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* JS property getters/setters */
 
  private:
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
+        JSContext* cx, GParamSpec*, JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_getter_impl(JSContext* cx, GParamSpec*,
-                          JS::MutableHandleValue rval);
-    GJS_JSAPI_RETURN_CONVENTION
-    bool field_getter_impl(JSContext* cx, JS::HandleString name,
+    bool field_getter_impl(JSContext* cx, GI::AutoFieldInfo const&,
                            JS::MutableHandleValue rval);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(JSContext*, GParamSpec*,
+                                                      JS::HandleValue);
     GJS_JSAPI_RETURN_CONVENTION
-    bool prop_setter_impl(JSContext* cx, GParamSpec*, JS::HandleValue value);
-    GJS_JSAPI_RETURN_CONVENTION
-    bool field_setter_not_impl(JSContext* cx, JS::HandleString name);
+    bool field_setter_not_impl(JSContext* cx, GI::AutoFieldInfo const&);
 
     // JS constructor
 

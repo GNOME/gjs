@@ -981,7 +981,8 @@ describe('GValue', function () {
     });
 
     it('marshals as an int64 out parameter', function () {
-        expect(GIMarshallingTests.gvalue_int64_out()).toEqual(Limits.int64.max);
+        expect(warn64(true, GIMarshallingTests.gvalue_int64_out)).toEqual(
+            Limits.int64.max);
     });
 
     it('marshals as a caller-allocated out parameter', function () {
@@ -2133,17 +2134,21 @@ describe('GObject properties', function () {
     function testPropertyGetSetBigInt(type, value1, value2) {
         const snakeCase = `some_${type}`;
         const paramCase = snakeCase.replaceAll('_', '-');
+        const isBigInt = v =>
+            v > BigInt(Number.MAX_SAFE_INTEGER) || v < BigInt(Number.MIN_SAFE_INTEGER);
         it(`gets and sets a ${type} property with a bigint`, function () {
             const handler = jasmine.createSpy(`handle-${paramCase}`);
             const id = obj.connect(`notify::${paramCase}`, handler);
 
             obj[snakeCase] = value1;
             expect(handler).toHaveBeenCalledTimes(1);
-            expect(obj[snakeCase]).toEqual(Number(value1));
+            expect(warn64(isBigInt(value1), () => obj[snakeCase])).toEqual(
+                Number(value1));
 
             obj[snakeCase] = value2;
             expect(handler).toHaveBeenCalledTimes(2);
-            expect(obj[snakeCase]).toEqual(Number(value2));
+            expect(warn64(isBigInt(value2), () => obj[snakeCase])).toEqual(
+                Number(value2));
 
             obj.disconnect(id);
         });
@@ -2161,6 +2166,7 @@ describe('GObject properties', function () {
     testPropertyGetSetBigInt('int64', BigIntLimits.int64.min, BigIntLimits.int64.max);
     testPropertyGetSet('uint64', 42, 64);
     testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax);
+    testPropertyGetSetBigInt('uint64', 0n, BigInt(Number.MAX_SAFE_INTEGER));
     testPropertyGetSet('string', 'Gjs', 'is cool!');
     testPropertyGetSet('string', 'and supports', null);
 

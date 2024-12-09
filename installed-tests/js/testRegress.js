@@ -350,6 +350,7 @@ describe('Life, the Universe and Everything', function () {
         it('marshalling in', function () {
             expect(Regress.test_strv_in(['1', '2', '3'])).toBeTruthy();
             expect(Regress.test_strv_in(['4', '5', '6'])).toBeFalsy();
+            expect(Regress.test_strv_in(['4', '5', null])).toBeFalsy();
             // Ensure that primitives throw without SEGFAULT
             expect(() => Regress.test_strv_in(1)).toThrow();
             expect(() => Regress.test_strv_in('')).toThrow();

@@ -11,6 +11,18 @@ const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
+// Sometimes tests pass if we are comparing two inaccurate values in JS with
+// each other. That's fine for now. Then we just have to suppress the warnings.
+function warn64(func, ...args) {
+    GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+        '*cannot be safely stored*');
+    const ret = func(...args);
+    const error = new Error();
+    GLib.test_assert_expected_messages_internal('Gjs',
+        error.fileName, error.lineNumber, 'warn64');
+    return ret;
+}
+
 const MyObject = GObject.registerClass({
     Properties: {
         'readwrite': GObject.ParamSpec.string('readwrite', 'ParamReadwrite',
@@ -533,11 +545,11 @@ describe('GObject class with decorator', function () {
         }, class PropInt64 extends GObject.Object {});
 
         let int64 = GLib.MAXINT64_BIGINT - 5n;
-        let obj = new PropInt64({int64});
+        let obj = warn64(() => new PropInt64({int64}));
         expect(obj.int64).toEqual(Number(int64));
 
         int64 = GLib.MININT64_BIGINT + 555n;
-        obj = new PropInt64({int64});
+        obj = warn64(() => new PropInt64({int64}));
         expect(obj.int64).toEqual(Number(int64));
     });
 
@@ -552,7 +564,7 @@ describe('GObject class with decorator', function () {
             },
         }, class PropDefaultInt64Init extends GObject.Object {});
 
-        const obj = new PropInt64Init();
+        const obj = warn64(() => new PropInt64Init());
         expect(obj.int64).toEqual(Number(defaultValue));
     });
 
@@ -566,7 +578,7 @@ describe('GObject class with decorator', function () {
         }, class PropUint64 extends GObject.Object {});
 
         const uint64 = GLib.MAXUINT64_BIGINT - 5n;
-        const obj = new PropUint64({uint64});
+        const obj = warn64(() => new PropUint64({uint64}));
         expect(obj.uint64).toEqual(Number(uint64));
     });
 
@@ -580,7 +592,7 @@ describe('GObject class with decorator', function () {
             },
         }, class PropDefaultUint64Init extends GObject.Object {});
 
-        const obj = new PropUint64Init();
+        const obj = warn64(() => new PropUint64Init());
         expect(obj.uint64).toEqual(Number(defaultValue));
     });
 
