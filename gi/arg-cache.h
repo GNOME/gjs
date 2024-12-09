@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <limits>
+#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -50,7 +51,19 @@ enum class Kind {
 
 }  // namespace Arg
 
+// When creating an Argument, pass it directly to ArgsCache::set_argument() or
+// one of the similar methods, which will call init_common() on it and store it
+// in the appropriate place in the arguments cache.
 struct Argument {
+    // Convenience struct to prevent long argument lists to make() and the
+    // functions that call it
+    struct Init {
+        uint8_t index;
+        const char* name;
+        GITransfer transfer;
+        GjsArgumentFlags flags;
+    };
+
     virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -114,10 +127,8 @@ struct Argument {
  private:
     friend struct ArgsCache;
 
-    template <typename T, Arg::Kind ArgKind, typename... Args>
-    static AutoCppPointer<T> make(uint8_t index, const char* name,
-                                  GITypeInfo* type_info, GITransfer transfer,
-                                  GjsArgumentFlags flags, Args&&... args);
+    template <typename T, Arg::Kind ArgKind>
+    static void init_common(const Init&, T* arg);
 };
 
 using ArgumentPtr = AutoCppPointer<Argument>;
@@ -168,28 +179,17 @@ struct ArgsCache {
     void build_normal_inout_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
                                 GjsArgumentFlags);
 
+    // GITypeInfo is not available for instance parameters (see
+    // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334) but
+    // for other parameters, this function additionally takes a GITypeInfo.
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    void build_interface_in_arg(uint8_t gi_index, GITypeInfo*, GIBaseInfo*,
-                                GITransfer, const char* name, GjsArgumentFlags);
+    void build_interface_in_arg(
+        const Argument::Init&, GIBaseInfo*,
+        std::conditional_t<ArgKind != Arg::Kind::INSTANCE, GITypeInfo*, int> =
+            {});
 
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
-              typename... Args>
-    constexpr T* set_argument(uint8_t index, const char* name, GITypeInfo*,
-                              GITransfer, GjsArgumentFlags flags,
-                              Args&&... args);
-
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
-              typename... Args>
-    constexpr T* set_argument(uint8_t index, const char* name, GITransfer,
-                              GjsArgumentFlags flags, Args&&... args);
-
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL,
-              typename... Args>
-    constexpr T* set_argument_auto(Args&&... args);
-
-    template <typename T, Arg::Kind ArgKind = Arg::Kind::NORMAL, typename Tuple,
-              typename... Args>
-    constexpr T* set_argument_auto(Tuple&& tuple, Args&&... args);
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
+    constexpr void set_argument(T* arg, const Argument::Init&);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
@@ -197,13 +197,13 @@ struct ArgsCache {
                             GjsArgumentFlags flags, int length_pos);
 
     template <typename T>
-    constexpr T* set_return(GITypeInfo*, GITransfer, GjsArgumentFlags);
+    constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);
 
     template <typename T>
-    constexpr T* set_instance(GITransfer,
-                              GjsArgumentFlags flags = GjsArgumentFlags::NONE);
+    constexpr void set_instance(
+        T* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
-    constexpr void set_skip_all(uint8_t index, const char* name = nullptr);
+    void set_skip_all(uint8_t index, const char* name = nullptr);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     constexpr uint8_t arg_index(uint8_t index

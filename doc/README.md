@@ -53,47 +53,23 @@ new project and select `JavaScript` language.
 
 Here is a non-exhaustive list of applications written in GJS:
 
-GNOME Apps
+GNOME Core Apps
 
 * [Characters](https://gitlab.gnome.org/GNOME/gnome-characters)
+* [Extensions](https://gitlab.gnome.org/GNOME/gnome-shell/-/tree/HEAD/subprojects/extensions-app)
 * [Maps](https://gitlab.gnome.org/GNOME/gnome-maps)
 * [Weather](https://gitlab.gnome.org/GNOME/gnome-weather)
-* [Extensions](https://gitlab.gnome.org/GNOME/gnome-shell/-/tree/HEAD/subprojects/extensions-app)
+
+GNOME Circle Apps
+
+* [Biblioteca](https://github.com/workbenchdev/Biblioteca)
+* [Commit](https://github.com/sonnyp/commit/)
+* [Decibels](https://gitlab.gnome.org/GNOME/Incubator/decibels) (TypeScript)
+* [Forge Sparks](https://github.com/rafaelmardojai/forge-sparks)
+* [Junction](https://github.com/sonnyp/Junction)
 * [Polari](https://gitlab.gnome.org/GNOME/polari)
 * [Tangram](https://github.com/sonnyp/Tangram)
-* [Flatseal](https://github.com/tchx84/Flatseal)
-* [Commit](https://github.com/sonnyp/commit/)
-* [Junction](https://github.com/sonnyp/Junction)
-* [Oh My SVG](https://github.com/sonnyp/OhMySVG)
 * [Workbench](https://github.com/sonnyp/Workbench)
-* [GNOME Sound Recorder](https://gitlab.gnome.org/GNOME/gnome-sound-recorder) (TypeScript)
-* [Zap](https://apps.gnome.org/app/fr.romainvigier.zap/)
-
-Others
-
-* [Quick Lookup](https://github.com/johnfactotum/quick-lookup)
-* [Foliate](https://github.com/johnfactotum/foliate)
-* [Clapper](https://github.com/Rafostar/clapper/)
-* [Almond](https://github.com/stanford-oval/almond-gnome/)
-* [Lobjur](https://github.com/ranfdev/Lobjur) (Clojure)
-* [Touché](https://github.com/JoseExposito/touche)
-* [Annex](https://github.com/andyholmes/annex)
-* [Bolso](https://github.com/felipeborges/bolso)
-* [Design](https://github.com/dubstar-04/Design)
-* [Capsule](https://gitlab.gnome.org/verdre/Capsule)
-* [Spiel](https://gitlab.gnome.org/feaneron/spiel)
-* [Retro](https://github.com/sonnyp/Retro)
-* [libportal test](https://github.com/flatpak/libportal/tree/main/portal-test/gtk4)
-* [Sticky](https://github.com/vixalien/sticky)
-* [Playhouse](https://github.com/sonnyp/Playhouse)
-* [Flatpak Manifest Editor](https://gitlab.gnome.org/feaneron/flatpak-manifest-editor)
-* [Forge Sparks](https://github.com/rafaelmardojai/forge-sparks)
-* [Diccionario de la Lengua](https://codeberg.org/rafaelmardojai/diccionario-lengua)
-
-Archived
-
-* [GNOME Books](https://gitlab.gnome.org/GNOME/gnome-books)
-* [GNOME Documents](https://gitlab.gnome.org/GNOME/gnome-documents)
 
 ### GNOME Shell Extensions
 

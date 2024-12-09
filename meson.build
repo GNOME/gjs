@@ -125,7 +125,7 @@ endif
 null_dep = dependency('', required : false)
 
 # Note: Notify GNOME release team when adding or updating dependencies
-glib_required_version = '>= 2.66.0'
+glib_required_version = '>= 2.68.0'
 glib = dependency('glib-2.0', version: glib_required_version,
     fallback: ['glib', 'libglib_dep'])
 gthread = dependency('gthread-2.0', version: glib_required_version,
@@ -135,7 +135,7 @@ gobject = dependency('gobject-2.0', version: glib_required_version,
 gio = dependency('gio-2.0', version: glib_required_version,
     fallback: ['glib', 'libgio_dep'])
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
-gi = dependency('gobject-introspection-1.0', version: '>= 1.66.0',
+gi = dependency('gobject-introspection-1.0', version: '>= 1.72.0',
     fallback: ['gobject-introspection', 'girepo_dep'])
 cairo = dependency('cairo', fallback: ['cairo', 'libcairo_dep'])
 cairo_gobject = dependency('cairo-gobject',

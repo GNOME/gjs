@@ -711,13 +711,8 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
 }
 
 GjsCallbackTrampoline::~GjsCallbackTrampoline() {
-    if (m_info && m_closure) {
-#if GI_CHECK_VERSION(1, 71, 0)
+    if (m_info && m_closure)
         g_callable_info_destroy_closure(m_info, m_closure);
-#else
-        g_callable_info_free_closure(m_info, m_closure);
-#endif
-    }
 }
 
 void GjsCallbackTrampoline::mark_forever() {
@@ -738,11 +733,7 @@ ffi_closure* GjsCallbackTrampoline::create_closure() {
         trampoline.as<GjsCallbackTrampoline>()->callback_closure(args, result);
     };
 
-#if GI_CHECK_VERSION(1, 71, 0)
     return g_callable_info_create_closure(m_info, &m_cif, callback, this);
-#else
-    return g_callable_info_prepare_closure(m_info, &m_cif, callback, this);
-#endif
 }
 
 bool GjsCallbackTrampoline::initialize() {
