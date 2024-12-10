@@ -78,8 +78,8 @@ bool BoxedPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
 #endif
 
     if (g_function_info_get_flags(method_info) & GI_FUNCTION_IS_METHOD) {
-        gjs_debug(GJS_DEBUG_GBOXED, "Defining method %s in prototype for %s.%s",
-                  method_info.name(), ns(), name());
+        gjs_debug(GJS_DEBUG_GBOXED, "Defining method %s in prototype for %s",
+                  method_info.name(), format_name().c_str());
 
         /* obj is the Boxed prototype */
         if (!gjs_define_function(cx, obj, gtype(), method_info))
@@ -486,8 +486,8 @@ bool BoxedInstance::get_nested_interface_object(
     int offset;
 
     if (!struct_is_simple(struct_info)) {
-        gjs_throw(context, "Reading field %s.%s is not supported", name(),
-                  g_base_info_get_name(field_info));
+        gjs_throw(context, "Reading field %s.%s is not supported",
+                  format_name().c_str(), g_base_info_get_name(field_info));
 
         return false;
     }
@@ -557,8 +557,8 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
 
     GIArgument arg;
     if (!g_field_info_get_field(field_info, m_ptr, &arg)) {
-        gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                  g_base_info_get_name(field_info));
+        gjs_throw(cx, "Reading field %s.%s is not supported",
+                  format_name().c_str(), g_base_info_get_name(field_info));
         return false;
     }
 
@@ -568,15 +568,15 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
         GI::AutoFieldInfo length_field_info{
             get_field_info(cx, length_field_ix)};
         if (!length_field_info) {
-            gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                      g_base_info_get_name(field_info));
+            gjs_throw(cx, "Reading field %s.%s is not supported",
+                      format_name().c_str(), g_base_info_get_name(field_info));
             return false;
         }
 
         GIArgument length_arg;
         if (!g_field_info_get_field(length_field_info, m_ptr, &length_arg)) {
-            gjs_throw(cx, "Reading field %s.%s is not supported", name(),
-                      length_field_info.name());
+            gjs_throw(cx, "Reading field %s.%s is not supported",
+                      format_name().c_str(), length_field_info.name());
             return false;
         }
 
@@ -610,8 +610,8 @@ bool BoxedInstance::set_nested_interface_object(JSContext* context,
     int offset;
 
     if (!struct_is_simple(struct_info)) {
-        gjs_throw(context, "Writing field %s.%s is not supported", name(),
-                  g_base_info_get_name(field_info));
+        gjs_throw(context, "Writing field %s.%s is not supported",
+                  format_name().c_str(), g_base_info_get_name(field_info));
 
         return false;
     }
@@ -671,8 +671,8 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
 
     bool success = true;
     if (!g_field_info_set_field(field_info, m_ptr, &arg)) {
-        gjs_throw(context, "Writing field %s.%s is not supported", name(),
-                  g_base_info_get_name(field_info));
+        gjs_throw(context, "Writing field %s.%s is not supported",
+                  format_name().c_str(), g_base_info_get_name(field_info));
         success = false;
     }
 
@@ -746,9 +746,9 @@ bool BoxedPrototype::define_boxed_class_fields(JSContext* cx,
             return false;
         if (already_defined) {
             gjs_debug(GJS_DEBUG_GBOXED,
-                      "Field %s.%s.%s overlaps with method of the same name; "
+                      "Field %s.%s overlaps with method of the same name; "
                       "skipping",
-                      ns(), name(), field.name());
+                      format_name().c_str(), field.name());
             continue;
         }
 

@@ -216,26 +216,26 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
  protected:
     void debug_lifecycle(const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
-        gjs_debug_lifecycle(
-            Base::DEBUG_TOPIC, "[%p: %s pointer %p - %s.%s (%s)] %s", this,
-            Base::DEBUG_TAG, ptr_addr(), ns(), name(), type_name(), message);
+        gjs_debug_lifecycle(Base::DEBUG_TOPIC,
+                            "[%p: %s pointer %p - %s (%s)] %s", this,
+                            Base::DEBUG_TAG, ptr_addr(), format_name().c_str(),
+                            type_name(), message);
     }
     void debug_lifecycle(const void* obj GJS_USED_VERBOSE_LIFECYCLE,
                          const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
-        gjs_debug_lifecycle(
-            Base::DEBUG_TOPIC,
-            "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s", this,
-            Base::DEBUG_TAG, ptr_addr(), obj, ns(), name(), type_name(),
-            message);
+        gjs_debug_lifecycle(Base::DEBUG_TOPIC,
+                            "[%p: %s pointer %p - JS wrapper %p - %s (%s)] %s",
+                            this, Base::DEBUG_TAG, ptr_addr(), obj,
+                            format_name().c_str(), type_name(), message);
     }
     void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
                       const char* id GJS_USED_VERBOSE_PROPS,
                       const void* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(
             Base::DEBUG_TOPIC,
-            "[%p: %s pointer %p - JS wrapper %p - %s.%s (%s)] %s '%s'", this,
-            Base::DEBUG_TAG, ptr_addr(), obj, ns(), name(), type_name(),
-            message, id);
+            "[%p: %s pointer %p - JS wrapper %p - %s (%s)] %s '%s'", this,
+            Base::DEBUG_TAG, ptr_addr(), obj, format_name().c_str(),
+            type_name(), message, id);
     }
     void debug_jsprop(const char* message, jsid id, const void* obj) const {
         if constexpr (GJS_VERBOSE_ENABLE_PROPS)
@@ -530,8 +530,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     bool check_is_instance(JSContext* cx, const char* for_what) const {
         if (!is_prototype())
             return true;
-        gjs_throw(cx, "Can't %s on %s.%s.prototype; only on instances",
-                  for_what, ns(), name());
+        gjs_throw(cx, "Can't %s on %s.prototype; only on instances", for_what,
+                  format_name().c_str());
         return false;
     }
 
@@ -637,15 +637,15 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return true;
 
         if (expected_info) {
-            gjs_throw_custom(
-                cx, JSEXN_TYPEERR, nullptr,
-                "Object is of type %s.%s - cannot convert to %s.%s", priv->ns(),
-                priv->name(), g_base_info_get_namespace(expected_info),
-                g_base_info_get_name(expected_info));
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                             "Object is of type %s - cannot convert to %s.%s",
+                             priv->format_name().c_str(),
+                             g_base_info_get_namespace(expected_info),
+                             g_base_info_get_name(expected_info));
         } else {
             gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object is of type %s.%s - cannot convert to %s",
-                             priv->ns(), priv->name(),
+                             "Object is of type %s - cannot convert to %s",
+                             priv->format_name().c_str(),
                              g_type_name(expected_gtype));
         }
 

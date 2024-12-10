@@ -1094,12 +1094,10 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
                 g_callable_info_load_arg(m_info, gi_arg_pos, &arg_info);
                 gjs_throw(
                     context,
-                    "Error invoking %s.%s: impossible to determine what "
-                    "to pass to the out '%s' argument. It may be that the "
-                    "function is unsupported, or there may be a bug in "
-                    "its annotations.",
-                    m_info.ns(), m_info.name(),
-                    g_base_info_get_name(&arg_info));
+                    "Error invoking %s: impossible to determine what to pass "
+                    "to the out '%s' argument. It may be that the function is "
+                    "unsupported, or there may be a bug in its annotations.",
+                    format_name().c_str(), g_base_info_get_name(&arg_info));
                 state.failed = true;
                 break;
             }
