@@ -7,6 +7,7 @@
 
 #include <config.h>
 
+#include <string>
 #include <vector>
 
 struct JSContext;
@@ -25,6 +26,6 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
 
 void _gjs_warn_deprecated_once_per_callsite(
     JSContext* cx, GjsDeprecationMessageId id,
-    const std::vector<const char*>& args);
+    const std::vector<std::string>& args);
 
 #endif  // GJS_DEPRECATION_H_

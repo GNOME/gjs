@@ -7,6 +7,7 @@
 #include <stddef.h>     // for size_t
 #include <string.h>
 
+#include <string>
 #include <vector>  // for vector
 
 #include <gio/gio.h>
@@ -199,7 +200,7 @@ class GjsScriptModule {
 
         _gjs_warn_deprecated_once_per_callsite(
             cx, GjsDeprecationMessageId::ModuleExportedLetOrConst,
-            {gjs_debug_id(id).c_str(), m_name});
+            {gjs_debug_id(id), m_name.get()});
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx, maybe_desc.value());
         return JS_DefinePropertyById(cx, module, id, desc);
