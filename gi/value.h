@@ -196,7 +196,7 @@ std::string gvalue_to_string(GValue* gvalue) {
     } else if constexpr (std::is_same_v<T, GVariant*>) {
         AutoChar variant{
             g_variant_print(Gjs::gvalue_get<T, TAG>(gvalue), true)};
-        str += '<' + variant + '>';
+        str += std::string("<") + variant.get() + '>';
     } else if constexpr (std::is_arithmetic_v<T>) {
         str += std::to_string(Gjs::gvalue_get<T, TAG>(gvalue));
     } else {
