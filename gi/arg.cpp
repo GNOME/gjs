@@ -62,6 +62,15 @@
 #include "gjs/macros.h"
 #include "util/log.h"
 
+// This file contains marshalling functions for GIArgument. It is divided into
+// three sections, with some helper functions coming first.
+// 1. "To" marshallers - JS::Value or other JS data structure to GIArgument or
+//    pointer, used for in arguments
+// 2. "From" marshallers - GIArgument or pointer to JS::Value or other JS data
+//    structure, used for out arguments and return values
+// 3. "Release" marshallers - used when cleaning up GIArguments after a C
+//    function call
+
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_internal(
     JSContext*, GITransfer, GITypeInfo*, GITypeTag, GjsArgumentType,
     GjsArgumentFlags, GIArgument*);
@@ -238,6 +247,10 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
             return false;
     }
 }
+
+///// "TO" MARSHALLERS /////////////////////////////////////////////////////////
+// These marshaller functions are responsible for converting JS values to the
+// required GIArgument type, for the in parameters of a C function call.
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
@@ -619,39 +632,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
 }
 
 bool
-gjs_array_from_strv(JSContext             *context,
-                    JS::MutableHandleValue value_p,
-                    const char           **strv)
-{
-    guint i;
-    JS::RootedValueVector elems(context);
-
-    /* We treat a NULL strv as an empty array, since this function should always
-     * set an array value when returning true.
-     * Another alternative would be to set value_p to JS::NullValue, but clients
-     * would need to always check for both an empty array and null if that was
-     * the case.
-     */
-    for (i = 0; strv != NULL && strv[i] != NULL; i++) {
-        if (!elems.growBy(1)) {
-            JS_ReportOutOfMemory(context);
-            return false;
-        }
-
-        if (!gjs_string_from_utf8(context, strv[i], elems[i]))
-            return false;
-    }
-
-    JSObject* obj = JS::NewArrayObject(context, elems);
-    if (!obj)
-        return false;
-
-    value_p.setObject(*obj);
-
-    return true;
-}
-
-bool
 gjs_array_to_strv(JSContext   *context,
                   JS::Value    array_value,
                   unsigned int length,
@@ -963,78 +943,6 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
     }
 
     g_return_val_if_reached(0);
-}
-
-enum class ArrayReleaseType {
-    EXPLICIT_LENGTH,
-    ZERO_TERMINATED,
-};
-
-template <ArrayReleaseType release_type = ArrayReleaseType::EXPLICIT_LENGTH>
-static inline bool gjs_gi_argument_release_array_internal(
-    JSContext* cx, GITransfer element_transfer, GjsArgumentFlags flags,
-    GITypeInfo* param_type, unsigned length, GIArgument* arg) {
-    Gjs::AutoPointer<uint8_t, void, g_free> arg_array{
-        gjs_arg_steal<uint8_t*>(arg)};
-
-    if (!arg_array)
-        return true;
-
-    if (element_transfer != GI_TRANSFER_EVERYTHING)
-        return true;
-
-    if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
-        if (length == 0)
-            return true;
-    }
-
-    GITypeTag type_tag = g_type_info_get_tag(param_type);
-
-    if (flags & GjsArgumentFlags::ARG_IN &&
-        !type_needs_release(param_type, type_tag))
-        return true;
-
-    if (flags & GjsArgumentFlags::ARG_OUT &&
-        !type_needs_out_release(param_type, type_tag))
-        return true;
-
-    size_t element_size = gjs_type_get_element_size(type_tag, param_type);
-    if G_UNLIKELY (element_size == 0)
-        return true;
-
-    bool is_pointer = g_type_info_is_pointer(param_type);
-    for (size_t i = 0;; i++) {
-        GIArgument elem;
-        auto* element_start = &arg_array[i * element_size];
-        auto* pointer =
-            is_pointer ? *reinterpret_cast<uint8_t**>(element_start) : nullptr;
-
-        if constexpr (release_type == ArrayReleaseType::ZERO_TERMINATED) {
-            if (is_pointer) {
-                if (!pointer)
-                    break;
-            } else if (*element_start == 0 &&
-                       memcmp(element_start, element_start + 1,
-                              element_size - 1) == 0) {
-                break;
-            }
-        }
-
-        gjs_arg_set(&elem, is_pointer ? pointer : element_start);
-        JS::AutoSaveExceptionState saved_exc(cx);
-        if (!gjs_g_arg_release_internal(cx, element_transfer, param_type,
-                                        type_tag, GJS_ARGUMENT_ARRAY_ELEMENT,
-                                        flags, &elem)) {
-            return false;
-        }
-
-        if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
-            if (i == length - 1)
-                break;
-        }
-    }
-
-    return true;
 }
 
 static GArray* garray_new_for_storage_type(unsigned length,
@@ -1803,6 +1711,35 @@ bool gjs_value_to_callback_out_arg(JSContext* context, JS::HandleValue value,
         g_arg_info_get_ownership_transfer(arg_info), flags, arg);
 }
 
+///// "FROM" MARSHALLERS ///////////////////////////////////////////////////////
+// These marshaller functions are responsible for converting C values returned
+// from a C function call, usually stored in a GIArgument, back to JS values.
+
+bool gjs_array_from_strv(JSContext* cx, JS::MutableHandleValue value_out,
+                         const char** strv) {
+    // We treat a NULL strv as an empty array, since this function should always
+    // set an array value when returning true. Another alternative would be
+    // value_out.setNull(), but clients would need to always check for both an
+    // empty array and null if that was the case.
+    JS::RootedValueVector elems{cx};
+    for (size_t i = 0; strv && strv[i]; i++) {
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        if (!gjs_string_from_utf8(cx, strv[i], elems[i]))
+            return false;
+    }
+
+    JSObject* obj = JS::NewArrayObject(cx, elems);
+    if (!obj)
+        return false;
+
+    value_out.setObject(*obj);
+    return true;
+}
+
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
     JSContext* cx, JS::MutableHandleValue value_p, GITypeInfo* type_info,
@@ -1833,34 +1770,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
         return false;
 
     value_p.setObject(*obj);
-
-    return true;
-}
-
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
-    JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
-    GjsArgumentFlags flags, GIArgument* arg) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
-    Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
-
-    if (transfer == GI_TRANSFER_CONTAINER)
-        return true;
-
-    GIArgument elem;
-    GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
-    g_assert(param_info);
-    GITypeTag type_tag = g_type_info_get_tag(param_info);
-
-    for (T* l = list; l; l = l->next) {
-        gjs_arg_set(&elem, l->data);
-
-        if (!gjs_g_arg_release_internal(cx, transfer, param_info, type_tag,
-                                        GJS_ARGUMENT_LIST_ELEMENT, flags,
-                                        &elem)) {
-            return false;
-        }
-    }
 
     return true;
 }
@@ -2785,6 +2694,38 @@ bool gjs_value_from_gi_argument(JSContext* context,
     return true;
 }
 
+///// RELEASE MARSHALLERS //////////////////////////////////////////////////////
+// These marshaller function are responsible for releasing the values stored in
+// GIArgument after a C function call succeeds or fails.
+
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
+    JSContext* cx, GITransfer transfer, GITypeInfo* type_info,
+    GjsArgumentFlags flags, GIArgument* arg) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
+
+    if (transfer == GI_TRANSFER_CONTAINER)
+        return true;
+
+    GIArgument elem;
+    GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
+    g_assert(param_info);
+    GITypeTag type_tag = g_type_info_get_tag(param_info);
+
+    for (T* l = list; l; l = l->next) {
+        gjs_arg_set(&elem, l->data);
+
+        if (!gjs_g_arg_release_internal(cx, transfer, param_info, type_tag,
+                                        GJS_ARGUMENT_LIST_ELEMENT, flags,
+                                        &elem)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 struct GHR_closure {
     JSContext *context;
     GI::AutoTypeInfo key_param_info, val_param_info;
@@ -2820,6 +2761,78 @@ gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
                     c->context, c->transfer, c->val_param_info, val_type,
                     GJS_ARGUMENT_HASH_ELEMENT, c->flags, &val_arg))
             c->failed = true;
+    }
+
+    return true;
+}
+
+enum class ArrayReleaseType {
+    EXPLICIT_LENGTH,
+    ZERO_TERMINATED,
+};
+
+template <ArrayReleaseType release_type = ArrayReleaseType::EXPLICIT_LENGTH>
+static inline bool gjs_gi_argument_release_array_internal(
+    JSContext* cx, GITransfer element_transfer, GjsArgumentFlags flags,
+    GITypeInfo* param_type, unsigned length, GIArgument* arg) {
+    Gjs::AutoPointer<uint8_t, void, g_free> arg_array{
+        gjs_arg_steal<uint8_t*>(arg)};
+
+    if (!arg_array)
+        return true;
+
+    if (element_transfer != GI_TRANSFER_EVERYTHING)
+        return true;
+
+    if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
+        if (length == 0)
+            return true;
+    }
+
+    GITypeTag type_tag = g_type_info_get_tag(param_type);
+
+    if (flags & GjsArgumentFlags::ARG_IN &&
+        !type_needs_release(param_type, type_tag))
+        return true;
+
+    if (flags & GjsArgumentFlags::ARG_OUT &&
+        !type_needs_out_release(param_type, type_tag))
+        return true;
+
+    size_t element_size = gjs_type_get_element_size(type_tag, param_type);
+    if G_UNLIKELY (element_size == 0)
+        return true;
+
+    bool is_pointer = g_type_info_is_pointer(param_type);
+    for (size_t i = 0;; i++) {
+        GIArgument elem;
+        auto* element_start = &arg_array[i * element_size];
+        auto* pointer =
+            is_pointer ? *reinterpret_cast<uint8_t**>(element_start) : nullptr;
+
+        if constexpr (release_type == ArrayReleaseType::ZERO_TERMINATED) {
+            if (is_pointer) {
+                if (!pointer)
+                    break;
+            } else if (*element_start == 0 &&
+                       memcmp(element_start, element_start + 1,
+                              element_size - 1) == 0) {
+                break;
+            }
+        }
+
+        gjs_arg_set(&elem, is_pointer ? pointer : element_start);
+        JS::AutoSaveExceptionState saved_exc(cx);
+        if (!gjs_g_arg_release_internal(cx, element_transfer, param_type,
+                                        type_tag, GJS_ARGUMENT_ARRAY_ELEMENT,
+                                        flags, &elem)) {
+            return false;
+        }
+
+        if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
+            if (i == length - 1)
+                break;
+        }
     }
 
     return true;
