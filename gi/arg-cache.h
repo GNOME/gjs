@@ -41,7 +41,6 @@ enum NotIntrospectableReason : uint8_t {
 namespace Gjs {
 namespace Arg {
 
-using ReturnValue = struct GenericOut;
 struct Instance;
 
 enum class Kind {

@@ -371,8 +371,8 @@ struct GenericOut : GenericInOut {
     }
 };
 
-struct GenericReturn : ReturnValue {
-    using ReturnValue::GenericOut;
+struct GenericReturn : GenericOut {
+    using GenericOut::GenericOut;
     // No in!
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
