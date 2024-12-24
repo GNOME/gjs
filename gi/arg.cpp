@@ -254,7 +254,7 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, GIEnumInfo* enum_info,
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
-    JSContext* cx, const JS::HandleValue& value, GITypeInfo* type_info,
+    JSContext* cx, JS::HandleValue value, GITypeInfo* type_info,
     GITransfer transfer, const char* arg_name, GjsArgumentType arg_type,
     T** list_p) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
