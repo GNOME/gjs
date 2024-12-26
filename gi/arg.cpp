@@ -2240,23 +2240,16 @@ bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
                                         &keyarg))
             return false;
 
-        keystr = JS::ToString(context, keyjs);
-        if (!keystr)
-            return false;
-
-        JS::UniqueChars keyutf8(JS_EncodeStringToUTF8(context, keystr));
-        if (!keyutf8)
+        JS::RootedId key{context};
+        if (!JS_ValueToId(context, keyjs, &key))
             return false;
 
         g_type_info_argument_from_hash_pointer(val_param_info, val_pointer,
                                                &valarg);
         if (!gjs_value_from_gi_argument(context, &valjs, val_param_info,
                                         GJS_ARGUMENT_HASH_ELEMENT, transfer,
-                                        &valarg))
-            return false;
-
-        if (!JS_DefineProperty(context, obj, keyutf8.get(), valjs,
-                               JSPROP_ENUMERATE))
+                                        &valarg) ||
+            !JS_DefinePropertyById(context, obj, key, valjs, JSPROP_ENUMERATE))
             return false;
     }
 
