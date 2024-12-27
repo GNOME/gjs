@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 ---
 include:
-  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/b791bd48996e3ced9ca13f1c5ee82be8540b8adb/templates/alpine.yml'
+  - remote: 'https://gitlab.gnome.org/Infrastructure/freedesktop-ci-templates/-/raw/b791bd48996e3ced9ca13f1c5ee82be8540b8adb/templates/alpine.yml'
 
 stages:
   - prepare
