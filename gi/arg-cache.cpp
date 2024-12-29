@@ -2119,6 +2119,16 @@ void ArgsCache::build_interface_in_arg(
         case GI_INFO_TYPE_OBJECT:
         case GI_INFO_TYPE_INTERFACE:
         case GI_INFO_TYPE_UNION: {
+            if (arg_cache::is_gdk_atom(interface_info)) {
+                // Fall back to the generic marshaller
+                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
+                    set_argument<ArgKind>(
+                        new Arg::FallbackInterfaceIn(type_info, interface_info),
+                        base_args);
+                    return;
+                }
+            }
+
             GType gtype = g_registered_type_info_get_g_type(interface_info);
 
             if (interface_type == GI_INFO_TYPE_STRUCT && gtype == G_TYPE_NONE &&
@@ -2149,15 +2159,6 @@ void ArgsCache::build_interface_in_arg(
                 return;
             }
 
-            if (arg_cache::is_gdk_atom(interface_info)) {
-                // Fall back to the generic marshaller
-                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
-                    set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(type_info, interface_info),
-                        base_args);
-                    return;
-                }
-            }
 
             if (gtype == G_TYPE_CLOSURE) {
                 if (base_args.transfer == GI_TRANSFER_NOTHING &&
