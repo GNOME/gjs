@@ -1,8 +1,14 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
+# SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 ---
 include:
-  - remote: 'https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/b791bd48996e3ced9ca13f1c5ee82be8540b8adb/templates/alpine.yml'
+  - remote: 'https://gitlab.gnome.org/Infrastructure/freedesktop-ci-templates/-/raw/b791bd48996e3ced9ca13f1c5ee82be8540b8adb/templates/alpine.yml'
+  - component: gitlab.gnome.org/GNOME/citemplates/release-service@master
+    inputs:
+      job-stage: deploy
+      dist-job-name: build_maximal
+      tarball-artifact-path: "_build/meson-dist/${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.xz"
 
 stages:
   - prepare
@@ -138,12 +144,14 @@ build_maximal:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
     - test/test-ci.sh SH_CHECKS
+    - xvfb-run -a meson dist -C _build --include-subprojects
   artifacts:
     reports:
       junit: _build/meson-logs/testlog*.junit.xml
-    name: log
+    name: "${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}"
     when: always
     paths:
+      - _build/meson-dist/*.tar.xz
       - _build/compile_commands.json
       - _build/meson-logs/*log*.txt
       - scripts.log

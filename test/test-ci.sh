@@ -129,6 +129,8 @@ do_Create_Artifacts_Folder "$1"
 
 # Ignore extra git security checks as we don't care in CI.
 git config --global --add safe.directory "${PWD}"
+git config --global --add safe.directory \
+    "${PWD}/subprojects/gobject-introspection-tests"
 
 if test "$1" = "SETUP"; then
     do_Show_Info
