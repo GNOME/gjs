@@ -110,6 +110,20 @@ void gjs_test_tools_ref_other_thread(GObject* object, GError** error) {
     // cppcheck-suppress memleak
 }
 
+static gpointer emit_test_signal_other_thread_func(gpointer data) {
+    g_signal_emit_by_name(data, "test");
+    return nullptr;
+}
+
+void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
+                                                  GError** error) {
+    auto* thread =
+        g_thread_try_new("emit_signal_object",
+                         emit_test_signal_other_thread_func, object, error);
+    if (thread)
+        g_thread_join(thread);
+}
+
 typedef enum {
     REF = 1 << 0,
     UNREF = 1 << 1,

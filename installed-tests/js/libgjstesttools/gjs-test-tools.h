@@ -51,6 +51,10 @@ GThread* gjs_test_tools_delayed_unref_other_thread(GObject* object,
                                                    GError** error);
 
 GJS_TEST_TOOL_EXTERN
+void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
+                                                  GError** error);
+
+GJS_TEST_TOOL_EXTERN
 GThread* gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
                                                        int interval,
                                                        GError** error);

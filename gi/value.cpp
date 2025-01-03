@@ -237,17 +237,26 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     context = m_cx;
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    if (JS::RuntimeHeapIsCollecting()) {
+    if (G_UNLIKELY(!gjs->is_owner_thread()) || JS::RuntimeHeapIsCollecting()) {
         GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
         std::ostringstream message;
 
-        message << "Attempting to call back into JSAPI during the sweeping "
+        if (!gjs->is_owner_thread()) {
+            message << "Attempting to call back into JSAPI on a different "
+                       "thread. This is most likely caused by an API not "
+                       "intended to be used in JS. Because it would crash the "
+                       "application, it has been blocked.";
+        } else {
+            message
+                << "Attempting to call back into JSAPI during the sweeping "
                    "phase of GC. This is most likely caused by not destroying "
                    "a Clutter actor or Gtk+ widget with ::destroy signals "
                    "connected, but can also be caused by using the destroy(), "
                    "dispose(), or remove() vfuncs. Because it would crash the "
                    "application, it has been blocked and the JS callback not "
                    "invoked.";
+            message << "\n" << gjs_dumpstack_string();
+        }
         if (hint) {
             gpointer instance;
             g_signal_query(hint->signal_id, &signal_query);
@@ -257,7 +266,6 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                     << " on " << g_type_name(G_TYPE_FROM_INSTANCE(instance))
                     << " " << instance << ".";
         }
-        message << "\n" << gjs_dumpstack_string();
         g_critical("%s", message.str().c_str());
         return;
     }
