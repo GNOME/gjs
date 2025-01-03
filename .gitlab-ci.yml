@@ -351,7 +351,7 @@ codespell:
     - |
       codespell -S "*.png,*.po,*.jpg,*.wrap,.git,LICENSES" -f \
         --builtin "code,usage,clear" \
-        --skip="./build/maintainer-upload-release.sh,./installed-tests/js/jasmine.js,./README.md,./build/flatpak/*.json,./tools/package-lock.json" \
+        --skip="./build/maintainer-tag-release.sh,./installed-tests/js/jasmine.js,./README.md,./build/flatpak/*.json,./tools/package-lock.json,./modules/internal/source-map/*" \
         --ignore-words-list="aas,afterall,deque,falsy,files',filetest,gir,inout,musl,nmake,stdio,uint,upto,ws,xdescribe"
   except:
     - schedules

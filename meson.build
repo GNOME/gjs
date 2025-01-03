@@ -775,7 +775,5 @@ meson.add_devenv({'GJS_USE_UNINSTALLED_FILES': '1'})
 
 ### Maintainer scripts #########################################################
 
-run_target('maintainer-upload-release',
-  command: ['build/maintainer-upload-release.sh',
-            meson.project_name(),
-            meson.project_version()])
+run_target('maintainer-tag-release',
+  command: ['build/maintainer-tag-release.sh', meson.project_version()])
