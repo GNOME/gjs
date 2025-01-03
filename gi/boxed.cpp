@@ -677,7 +677,8 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
     }
 
     JS::AutoSaveExceptionState saved_exc(context);
-    if (!gjs_gi_argument_release(context, GI_TRANSFER_NOTHING, type_info, &arg))
+    if (!gjs_gi_argument_release(context, GI_TRANSFER_NOTHING, type_info,
+                                 GjsArgumentFlags::ARG_IN, &arg))
         gjs_log_exception(context);
     saved_exc.restore();
 

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2008 Red Hat, Inc.
+// SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 
-const Regress = imports.gi.Regress;
+const {Regress, Utility} = imports.gi;
 
 // We use Gio to have some objects that we know exist
 imports.gi.versions.Gtk = '3.0';
@@ -189,6 +190,10 @@ describe('Life, the Universe and Everything', function () {
         expect(bounced).toEqual(now);
     });
 
+    it('includes off_t', function () {
+        expect(Regress.test_offt(0x7fff_ffff)).toBe(0x7fff_ffff);
+    });
+
     it('includes GTypes', function () {
         expect(Regress.test_gtype(GObject.TYPE_NONE)).toBe(GObject.TYPE_NONE);
         expect(Regress.test_gtype(String)).toBe(GObject.TYPE_STRING);
@@ -349,7 +354,10 @@ describe('Life, the Universe and Everything', function () {
     describe('String arrays', function () {
         it('marshalling in', function () {
             expect(Regress.test_strv_in(['1', '2', '3'])).toBeTruthy();
+            expect(Regress.test_strv_in(['1', '2'])).toBeFalsy();
             expect(Regress.test_strv_in(['4', '5', '6'])).toBeFalsy();
+            expect(Regress.test_strv_in(['1', '5', '6'])).toBeFalsy();
+            expect(Regress.test_strv_in(['1', '2', '6'])).toBeFalsy();
             expect(Regress.test_strv_in(['4', '5', null])).toBeFalsy();
             // Ensure that primitives throw without SEGFAULT
             expect(() => Regress.test_strv_in(1)).toThrow();
@@ -968,11 +976,11 @@ describe('Life, the Universe and Everything', function () {
             });
         });
 
-        xit('methods take priority over fields in a name conflict', function () {
+        it('methods take priority over fields in a name conflict', function () {
             const boxed = new Regress.TestBoxedC({name_conflict: true});
             expect(boxed.name_conflict).not.toBeTrue();
             expect(boxed.name_conflict()).toBeTrue();
-        }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/454');
+        });
     });
 
     describe('wrong type for GBoxed', function () {
@@ -1156,6 +1164,9 @@ describe('Life, the Universe and Everything', function () {
                 expect(t.string).toBe(string);
                 t.string = 'string2';
                 expect(t.string).toBe('string2');
+                t.set_string('string3');
+                expect(t.string).toBe('string3');
+                expect(t.get_string()).toBe('string3');
             });
 
             xit('GType object', function () {
@@ -1472,41 +1483,61 @@ describe('Life, the Universe and Everything', function () {
                 expect(o.skip_return_val.length).toEqual(5);
             });
 
-            xit('skips over return value annotated with skip', function () {
-                const [b, d, sum] = o.skip_return_val(1, 2, 3, 4, 5);
+            it('DOES NOT skip over return value annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                const [bool, b, d, sum] = o.skip_return_val(1, 2, 3, 4, 5);
+                expect(bool).toBeTrue();
                 expect(b).toEqual(2);
                 expect(d).toEqual(4);
                 expect(sum).toEqual(54);
 
                 const retval = o.skip_return_val_no_out(1);
-                expect(retval).not.toBeDefined();
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
+                expect(retval).toBeTrue();
+                expect(() => o.skip_return_val_no_out(0)).toThrow();
+            });
 
-            xit('skips over parameters annotated with skip', function () {
-                expect(o.skip_param.length).toEqual(4);
+            it('DOES NOT skip over parameters annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                expect(o.skip_param.length).toEqual(5);
 
-                const [success, b, d, sum] = o.skip_param(1, 2, 3, 4);
+                const [success, b, d, sum] = o.skip_param(1, 1.5, 2, 3, 4);
                 expect(success).toBeTruthy();
                 expect(b).toEqual(2);
                 expect(d).toEqual(3);
                 expect(sum).toEqual(43);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
+            });
 
-            xit('skips over out parameters annotated with skip', function () {
-                const [success, d, sum] = o.skip_out_param(1, 2, 3, 4, 5);
-                expect(success).toBeTruthy();
-                expect(d).toEqual(4);
-                expect(sum).toEqual(54);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
-
-            xit('skips over inout parameters annotated with skip', function () {
-                expect(o.skip_inout_param.length).toEqual(4);
-
-                const [success, b, sum] = o.skip_inout_param(1, 2, 3, 4);
+            it('DOES NOT skip over out parameters annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                const [success, b, d, sum] = o.skip_out_param(1, 2, 3, 4, 5);
                 expect(success).toBeTruthy();
                 expect(b).toEqual(2);
-                expect(sum).toEqual(43);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/59');
+                expect(d).toEqual(4);
+                expect(sum).toEqual(54);
+            });
+
+            it('skips over inout parameters annotated with skip', function () {
+                // This test will need to change as part of
+                // https://gitlab.gnome.org/GNOME/gjs/issues/59. Note this is an
+                // API break, so we have a regression test for the current
+                // behaviour.
+                expect(o.skip_inout_param.length).toEqual(5);
+
+                const [success, b, d, sum] = o.skip_inout_param(1, 2, 3, 4, 5);
+                expect(success).toBeTruthy();
+                expect(b).toEqual(2);
+                expect(d).toEqual(4);
+                expect(sum).toEqual(54);
+            });
 
             it('gives number of arguments for static methods', function () {
                 expect(Regress.TestObj.new_from_file.length).toEqual(1);
@@ -1659,6 +1690,11 @@ describe('Life, the Universe and Everything', function () {
         it('constructs a subtype of a hidden (no introspection data) fundamental type', function () {
             expect(() => Regress.test_create_fundamental_hidden_class_instance()).not.toThrow();
         });
+
+        it('constructs an instance of a fundamental type with no get/set function', function () {
+            const o = new Regress.TestFundamentalObjectNoGetSetFunc('plop');
+            expect(o.get_data()).toBe('plop');
+        });
     });
 
     it('callbacks', function () {
@@ -1777,12 +1813,42 @@ describe('Life, the Universe and Everything', function () {
         const callback = jasmine.createSpy('callback');
         o.instance_method_callback(callback);
         expect(callback).toHaveBeenCalled();
+        callback.calls.reset();
+        o.instance_method_callback(null);
+        expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('async instance methods', function () {
+        const o = new Regress.TestObj();
+        const prio = GLib.PRIORITY_DEFAULT;
+        const cancel = new Gio.Cancellable();
+        expect(o.function_sync(prio)).toBeTrue();
+        o.function_async(prio, cancel, (obj, res) => {
+            expect(obj).toBe(o);
+            expect(o.function_finish(res)).toBeTrue();
+        });
+        expect(o.function_thaw_async()).toBe(1);
     });
 
     it('static method taking a callback', function () {
         const callback = jasmine.createSpy('callback');
         Regress.TestObj.static_method_callback(callback);
         expect(callback).toHaveBeenCalled();
+        callback.calls.reset();
+        Regress.TestObj.static_method_callback(null);
+        expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('async static methods', function (done) {
+        const prio = GLib.PRIORITY_DEFAULT;
+        const cancel = new Gio.Cancellable();
+        expect(Regress.test_function_sync(prio)).toBeTrue();
+        Regress.test_function_async(prio, cancel, (obj, res) => {
+            expect(obj).toBeNull();
+            expect(Regress.test_function_finish(res)).toBeTrue();
+            done();
+        });
+        expect(Regress.test_function_thaw_async()).toBe(1);
     });
 
     it('constructor taking a callback', function () {
@@ -1791,6 +1857,16 @@ describe('Life, the Universe and Everything', function () {
         expect(callback).toHaveBeenCalled();
         expect(Regress.test_callback_thaw_notifications()).toEqual(42);
         expect(callback).toHaveBeenCalledTimes(2);
+    });
+
+    it('async constructor', function (done) {
+        const cancel = new Gio.Cancellable();
+        Regress.TestObj.new_async('plop', cancel, (obj, res) => {
+            expect(obj).toBeNull();
+            expect(Regress.TestObj.new_finish(res)).toBeInstanceOf(Regress.TestObj);
+            done();
+        });
+        expect(Regress.TestObj.constructor_thaw_async()).toBe(1);
     });
 
     it('hash table passed to callback', function () {
@@ -1939,6 +2015,7 @@ describe('Life, the Universe and Everything', function () {
     it('marshals an aliased type', function () {
         // GLib.PtrArray is not introspectable, so neither is an alias of it
         // Regress.introspectable_via_alias(new GLib.PtrArray());
+        expect(Regress.not_introspectable_via_alias).not.toBeDefined();
         expect(Regress.aliased_caller_alloc()).toEqual(jasmine.any(Regress.TestBoxed));
     });
 
@@ -2002,4 +2079,565 @@ describe('Life, the Universe and Everything', function () {
             expect(() => Regress.test_array_struct_in_none(array)).not.toThrow();
         });
     });
+});
+
+// Inline functions are not introspectable because there is no symbol to load
+// from the library
+describe('Inline', function () {
+    it('function', function () {
+        expect(Regress.test_inline_function).not.toBeDefined();
+    });
+
+    it('method', function () {
+        const o = new Regress.TestObj();
+        expect(o.inline_method).not.toBeDefined();
+    });
+});
+
+describe('Annotations object', function () {
+    let o;
+    beforeEach(function () {
+        o = new Regress.AnnotationObject();
+    });
+
+    it('handles a deprecated string property', function () {
+        expect(o.stringProperty).toBeNull();
+        o.stringProperty = 'foo';
+    });
+
+    xit('handles a callback property', function () {
+        expect(o.functionProperty).toBeNull();
+        o.functionProperty = null;
+        o.functionProperty = array => array.map(x => x + 1);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/83');
+
+    it('handles a property that was annotated weirdly', function () {
+        expect(o.tabProperty).toBeNull();
+        o.tabProperty = '\t';
+    });
+
+    xit('handles a signal which takes a pointer argument but annotated as a string', function () {
+        o.connect('string-signal', function (self, str) {
+            expect(self).toBe(o);
+            expect(str).toBe('foo');
+        });
+        o.emit('string-signal', 'foo');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/57');
+
+    xit('handles a signal which takes a list of strings', function () {
+        o.connect('list-signal', function (self, list) {
+            expect(self).toBe(o);
+            expect(list).toBe(['foo', 'bar']);
+        });
+        o.emit('list-signal', ['foo', 'bar']);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/57');
+
+    it('handles a signal with undocumented argument', function () {
+        o.connect('doc-empty-arg-parsing', function (self, arg) {
+            expect(self).toBe(o);
+            expect(arg).toBeNull();
+        });
+        o.emit('doc-empty-arg-parsing', null);
+    });
+
+    it('handles a signal with arbitrary ignored attributes', function () {
+        o.connect('attribute-signal', function (self, s1, s2) {
+            expect(self).toBe(o);
+            expect(s1).toBe('foo');
+            expect(s2).toBe('bar');
+            return s1 + s2;
+        });
+        expect(o.emit('attribute-signal', 'foo', 'bar')).toBe('foobar');
+    });
+
+    xit('handles an in-argument passed by pointer', function () {
+        expect(o.in(2)).toBe(2);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/652');
+
+    xit('handles an optional in-out argument', function () {
+        expect(o.inout3()).toEqual([1, null]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/53');
+
+    it('handles various in-out argument configurations also tested elsewhere', function () {
+        expect(o.method()).toBe(1);
+        expect(o.out()).toEqual([1, 2]);
+        expect(o.inout(2)).toEqual([3, 3]);
+        expect(o.inout2(2)).toEqual([3, 3]);  // not sure why this exists
+        expect(o.inout3(1)).toEqual([2, 1]);
+
+        expect(o.calleeowns()).toEqual([1, null]);
+        expect(o.calleesowns()).toEqual([1, null, null]);
+
+        expect(o.get_strings()).toEqual(['bar', 'regress_annotation']);
+        expect(o.get_hash()).toEqual({
+            one: o,
+            two: o,
+        });
+        o.with_voidp(null);
+        expect(o.get_objects()).toEqual([o]);
+        expect(o.create_object()).toBe(o);
+        o.use_buffer(new Uint8Array(16));
+
+        o.compute_sum([1, 2, 3]);
+        o.compute_sum_n([1, 2, 3]);
+        o.compute_sum_nz([1, 2, 3]);
+
+        o.parse_args(['--num', '5', '--no-florp']);
+        expect(o.string_out()).toEqual([false, null]);
+        o.foreach(() => {});
+
+        expect(o.set_data(Uint8Array.from([104, 105, 106, 107])));
+        expect(o.set_data2([104, 105, 106, 107]));
+        expect(o.set_data3(Uint8Array.from([104, 105, 106, 107])));
+
+        expect(o.allow_none('foo')).toBeNull();
+        expect(o.notrans()).toBeNull();
+        expect(o.do_not_use()).toBeNull();
+        o.watch(() => {});
+        o.hidden_self();
+
+        Regress.annotation_init(['--num', '5', '--no-florp']);
+        expect(Regress.annotation_return_array()).toEqual([]);
+        expect(Regress.annotation_string_zero_terminated()).toBeNull();
+        expect(Regress.annotation_string_zero_terminated_out(['in', 'out'])).toEqual(['in', 'out']);
+        Regress.annotation_versioned();
+        Regress.annotation_string_array_length(['foo', 'bar']);
+        o.extra_annos();
+        Regress.annotation_custom_destroy(() => {});
+        Regress.annotation_custom_destroy_cleanup();
+        expect(Regress.annotation_get_source_file()).toBeNull();
+        Regress.annotation_set_source_file('résumé.txt');
+        expect(Regress.annotation_attribute_func(o, 'foo')).toBe(42);
+        Regress.annotation_invalid_regress_annotation(42);
+        expect(Regress.annotation_test_parsing_bug630862()).toBeNull();
+        Regress.annotation_space_after_comment_bug631690();
+        expect(Regress.annotation_return_filename()).toBe('a utf-8 filename');
+        expect(Regress.annotation_transfer_floating(o)).toBeNull();
+    });
+
+    xit('handles a GPtrArray of GValue', function () {
+        Regress.annotation_ptr_array([]);
+        Regress.annotation_ptr_array([1, 2]);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/272 (maybe)');
+
+    xit('handles a struct with a fixed length array field', function () {
+        const s = new Regress.AnnotationStruct({
+            objects: Array(10).fill(o),
+        });
+        expect(s.objects).toEqual([o, o, o, o, o, o, o, o, o, o]);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/525');
+
+    it('handles various header-only stuff', function () {
+        const f = new Regress.AnnotationFields({
+            field1: 42,
+            field4: 43,
+        });
+        // writing the array field is not supported but should fail gracefully
+        expect(() => (f.arr = Uint8Array.from([104, 105, 106, 107]))).toThrow();
+
+        expect(Regress.ANNOTATION_CALCULATED_DEFINE).toBe(100);
+        expect(Regress.ANNOTATION_CALCULATED_LARGE_DIV).toBe(1000000);
+    });
+
+    xit('handles an integer constant larger than 32 bits', function () {
+        expect(Regress.ANNOTATION_CALCULATED_LARGE).toBe(10000000000);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/526');
+});
+
+describe('Abstract drawable object', function () {
+    class MyDrawable extends Regress.TestInheritDrawable {}
+    beforeAll(function () {
+        GObject.registerClass(MyDrawable);
+    });
+
+    let o;
+    beforeEach(function () {
+        o = new MyDrawable();
+    });
+
+    it('calls methods', function () {
+        void o.do_foo(42);
+        expect(o.get_origin()).toEqual([0, 0]);
+        expect(o.get_size()).toEqual([42, 42]);
+        void o.do_foo_maybe_throw(42);
+        expect(() => o.do_foo_maybe_throw(43)).toThrow();
+    });
+});
+
+describe('Regress.Foo', function () {
+    it('various stuff', function () {
+        expect(Regress.foo_init()).toBe(0x1138);
+        expect(Regress.foo_init_argv([])).toBe(0x1138);
+        expect(Regress.foo_init_argv_address(['--num', '5', '--no-florp']))
+            .toEqual([0x1138, ['--num', '5', '--no-florp']]);
+        expect(Regress.foo_not_a_constructor_new()).toBeNull();
+
+        const o = new Utility.Object();
+        const s = new Utility.Struct({
+            field: 42,
+            bitfield1: 7,
+            bitfield2: 3,
+        });
+        void Regress.foo_method_external_references(o, Utility.EnumType.C, Utility.FlagType.B, s);
+        void Regress.FooObject.a_global_method(o);
+
+        expect(Regress.foo_private_function).not.toBeDefined();
+    });
+
+    it('Interface', function () {
+        class Impl extends GObject.Object {
+            static [GObject.interfaces] = [Regress.FooInterface];
+            static {
+                GObject.registerClass(Impl);
+            }
+
+            do_regress_foo_called = false;
+            vfunc_do_regress_foo(foo) {
+                expect(foo).toBe(777);
+                this.do_regress_foo_called = true;
+            }
+        }
+
+        Impl.static_method(77);
+
+        const o = new Impl();
+        o.do_regress_foo(777);
+        expect(o.do_regress_foo_called).toBeTrue();
+    });
+
+    it('SubInterface', function () {
+        class SubImpl extends GObject.Object {
+            static [GObject.interfaces] = [Regress.FooInterface, Regress.FooSubInterface];
+            static {
+                GObject.registerClass(SubImpl);
+            }
+
+            do_regress_foo_called = false;
+            vfunc_do_regress_foo(foo) {
+                expect(foo).toBe(777);
+                this.do_regress_foo_called = true;
+            }
+
+            do_bar_called = false;
+            vfunc_do_bar() {
+                this.do_bar_called = true;
+            }
+        }
+
+        SubImpl.static_method(77);
+
+        const o = new SubImpl();
+        o.do_regress_foo(777);
+        expect(o.do_regress_foo_called).toBeTrue();
+
+        o.do_bar();
+        expect(o.do_bar_called).toBeTrue();
+
+        const spy = jasmine.createSpy('callback');
+        o.connect('destroy-event', spy);
+        o.emit('destroy-event');
+        expect(spy).toHaveBeenCalledOnceWith(o);
+    });
+
+    xit('interface with vfunc that takes a callback', function () {
+        class BazImpl extends GObject.Object {
+            static [GObject.interfaces] = [Regress.FooInterface, Regress.FooSubInterface];
+            static {
+                GObject.registerClass(BazImpl);
+            }
+
+            do_baz_called = false;
+            vfunc_do_baz(callback) {
+                callback(777);
+                this.do_baz_called = true;
+            }
+        }
+
+        const o = new BazImpl();
+        const spy = jasmine.createSpy('callback');
+        o.do_baz(spy);
+        expect(spy).toHaveBeenCalledOnceWith(777);
+        expect(o.do_baz_called).toBeTrue();
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/72');
+
+    it('Object static', function () {
+        expect(Regress.FooObject.new()).toBeInstanceOf(Regress.FooObject);
+        expect(Regress.FooObject.new_as_super()).toBeInstanceOf(Regress.FooObject);
+
+        expect(Regress.FooObject.static_meth()).toBe(77);
+
+        expect(Regress.FooObject.get_default()).toBeNull();
+    });
+
+    function testRegressFooObjectMethods(o) {
+        expect(o.external_type()).toBeNull();
+        o.various(null, Regress.AnnotationObject);
+        o.is_it_time_yet(new Date());
+        o.seek(0x7fff_ffff_ffff_ffffn);
+        expect(o.get_name()).toBe('regress_foo');
+        expect(o.dup_name()).toBe('regress_foo');
+        o.handle_glyph(0x2212);
+        expect(o.skipped_method).toBeUndefined();
+        expect(o.append_new_stack_layer(5)).toBeNull();
+        o.do_regress_foo(777);
+    }
+
+    it('Object instance', function () {
+        const o = new Regress.FooObject();
+        testRegressFooObjectMethods(o);
+        expect(o.virtual_method(77)).toBeFalse();
+        o.read(0xff, 10);
+    });
+
+    it('Object properties', function () {
+        const o = new Regress.FooObject({
+            string: 'string',
+        });
+        expect(o.string).toBeNull();
+        expect(o.hidden).toBeUndefined();
+    });
+
+    it('Subobject instance', function () {
+        class MySubobject extends Regress.FooSubobject {
+            vfunc_virtual_method(first_param) {
+                expect(first_param).toBe(77);
+                return true;
+            }
+
+            read_fn_called = false;
+            vfunc_read_fn() {
+                this.read_fn_called = true;
+            }
+        }
+        GObject.registerClass(MySubobject);
+        const o = new MySubobject();
+        testRegressFooObjectMethods(o);
+        expect(o.virtual_method(77)).toBeTrue();
+        o.read(0xff, 10);
+        expect(o.read_fn_called).toBeFalse();  // C method does not call vfunc
+    });
+
+    it('Buffer instance', function () {
+        const o = new Regress.FooBuffer();
+        o.some_method();
+    });
+
+    it('OtherObject instance', function () {
+        void new Regress.FooOtherObject();
+    });
+
+    it('EnumType', function () {
+        expect(Regress.foo_enum_method(Regress.FooEnumType.BETA)).toBe(0);
+        expect(Regress.FooEnumType.method(Regress.FooEnumType.ALPHA)).toBe(1);
+        expect(Regress.foo_enum_type_method(Regress.FooEnumType.ALPHA)).toBe(1);
+        expect(Regress.FooEnumType.returnv(1)).toBe(Regress.FooEnumType.DELTA);
+        expect(Regress.foo_enum_type_returnv(1)).toBe(Regress.FooEnumType.DELTA);
+    });
+
+    it('FlagsType', function () {
+        expect(Regress.FooFlagsType.FIRST).toBe(1);
+        expect(Regress.FooFlagsType.SECOND).toBe(2);
+        expect(Regress.FooFlagsType.THIRD).toBe(4);
+        expect(Regress.FOO_FLAGS_SECOND_AND_THIRD).toBe(6);
+    });
+
+    it('EnumNoType', function () {
+        expect(Regress.FooEnumNoType.UN).toBe(1);
+        expect(Regress.FooEnumNoType.DEUX).toBe(2);
+        expect(Regress.FooEnumNoType.TROIS).toBe(3);
+        expect(Regress.FooEnumNoType.NEUF).toBe(9);
+    });
+
+    it('FlagsNoType', function () {
+        expect(Regress.FooFlagsNoType.ETT).toBe(1);
+        expect(Regress.FooFlagsNoType.TVA).toBe(2);
+        expect(Regress.FooFlagsNoType.FYRA).toBe(4);
+    });
+
+    it('EnumFullname', function () {
+        expect(Regress.FooEnumFullname.ONE).toBe(1);
+        expect(Regress.FooEnumFullname.TWO).toBe(2);
+        expect(Regress.FooEnumFullname.THREE).toBe(3);
+    });
+
+    it('Address', function () {
+        expect(Regress.FooAddressType.INVALID).toBe(0);
+        expect(Regress.FooAddressType.IPV4).toBe(1);
+        expect(Regress.FooAddressType.IPV6).toBe(2);
+    });
+
+    it('Various boxed instances', function () {
+        const o1 = new Regress.FooBoxed();
+        o1.method();
+
+        const o2 = new Regress.FooBRect({x: 1.5, y: -2.5});
+        expect(o2.x).toBe(1.5);
+        expect(o2.y).toBe(-2.5);
+
+        const o3 = Regress.FooBRect.new(-1.4, 2.6);
+        expect(o3.x).toBe(-1.4);
+        expect(o3.y).toBe(2.6);
+        o2.add(o3);
+        o3.add(o2);
+
+        const o4 = new Regress.FooBUnion();
+        o4.type = 77;
+        expect(o4.type).toBe(77);
+        o4.v = 7.777;
+        expect(o4.v).toBe(7.777);
+        o4.rect = o3;
+        expect(o4.rect).toBe(o3);
+    });
+
+    it('Rectangle instance', function () {
+        const o1 = new Regress.FooRectangle({x: 0, y: 0, width: 10, height: 10});
+        const o2 = new Regress.FooRectangle({x: 1, y: 1, width: 12, height: 12});
+        o1.add(o2);
+        o2.add(o1);
+    });
+
+    it('Various test functions', function () {
+        Regress.foo_test_unsigned(0xffff_ffff);
+        Regress.foo_test_string_array([]);
+        Regress.foo_test_string_array_with_g([]);
+        expect(Regress.foo_test_array()).toBeNull();
+    });
+
+    it('Error type', function () {
+        expect(() => {
+            throw new Regress.FooError({message: 'foo', code: Regress.FooError.BAD});
+        }).toThrow(jasmine.objectContaining({
+            message: 'foo',
+            code: Regress.FooError.BAD,
+        }));
+    });
+
+    it('Foreign struct', function () {
+        const s1 = new Regress.FooForeignStruct({regress_foo: 777});
+        expect(s1.regress_foo).toBe(777);
+    });
+
+    xit('Foreign struct via introspected constructor', function () {
+        const s2 = Regress.FooForeignStruct.new();
+        expect(s2.regress_foo).toBe(0);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/656');
+});
+
+describe('RegressUnix', function () {
+    let RegressUnix;
+    try {
+        ({RegressUnix} = imports.gi);
+    } catch (_) {
+        return;
+    }
+
+    ['devt', 'gidt', 'pidt', 'socklent', 'uidt'].forEach(name => {
+        it(`handles ${name}`, function () {
+            expect(RegressUnix[`test_${name}`](12345)).toBe(12345);
+        });
+    });
+});
+
+// Adapted from pygobject
+describe('Boxed type return extra tests', function () {
+    it('Refcounted boxed type wrapper', function () {
+        const wrapper = new Regress.TestBoxedCWrapper();
+        const copy = wrapper.copy();
+        // TestBoxedC uses refcounting, so the underlying native objects should
+        // be the same
+        function nativeAddress(boxed) {
+            const match = /native@0x([0-9a-f]+)/.exec(boxed.toString());
+            return match[1];
+        }
+        expect(nativeAddress(copy)).not.toBe(nativeAddress(wrapper));
+        expect(nativeAddress(copy.get())).toBe(nativeAddress(wrapper.get()));
+    });
+
+    it('Array of boxed type transfer none out parameter', function () {
+        expect(Regress.test_array_fixed_boxed_none_out()).toEqual([
+            jasmine.any(Regress.TestBoxedC),
+            jasmine.any(Regress.TestBoxedC),
+        ]);
+    });
+
+    it('Boxed GValue out', function () {
+        const int8 = Math.trunc(Math.random() * (GLib.MAXINT8 - GLib.MININT8) + GLib.MININT8);
+        expect(Regress.test_gvalue_out_boxed(int8).some_int8).toBe(int8);
+    });
+
+    ['none', 'full'].forEach(transfer => {
+        it(`GList of boxed type transfer ${transfer} return value`, function () {
+            expect(Regress[`test_glist_boxed_${transfer}_return`](2)).toEqual([
+                jasmine.any(Regress.TestBoxedC),
+                jasmine.any(Regress.TestBoxedC),
+            ]);
+        });
+    });
+});
+
+// Adapted from pygobject
+describe('UTF-8 strings invalid bytes tests', function () {
+    xit('handles invalid UTF-8 return values gracefully', function () {
+        expect(() => Regress.test_array_of_non_utf8_strings()).toThrowError(TypeError);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
+});
+
+// Adapted from pygobject
+describe('Fundamental extra tests', function () {
+    it('array of fundamental objects in', function () {
+        expect(Regress.test_array_of_fundamental_objects_in([
+            new Regress.TestFundamentalSubObject('data1'),
+            new Regress.TestFundamentalSubObject('data2'),
+        ])).toBeTrue();
+    });
+
+    it('array of fundamental objects out', function () {
+        const objs = Regress.test_array_of_fundamental_objects_out();
+        expect(objs).toEqual([
+            jasmine.any(Regress.TestFundamentalObject),
+            jasmine.any(Regress.TestFundamentalObject),
+        ]);
+    });
+
+    it('in argument', function () {
+        const o = new Regress.TestFundamentalSubObject('data');
+        expect(Regress.test_fundamental_argument_in(o)).toBeTrue();
+    });
+
+    it('abstract type', function () {
+        expect(() => new Regress.TestFundamentalObject()).toThrow();
+    });
+
+    it('out argument', function () {
+        const o = new Regress.TestFundamentalSubObject('data');
+        const sameObject = Regress.test_fundamental_argument_out(o);
+        expect(sameObject).toBe(o);
+    });
+});
+
+// See testCairo.js for extra Cairo tests from regressextra.c
+
+// Adapted from pygobject
+describe('Class with action signals', function () {
+    let o;
+    beforeEach(function () {
+        o = new Regress.TestAction();
+    });
+
+    xit('returns a new object', function () {
+        const otherObj = o.emit('action');
+        expect(otherObj).toBeInstanceOf(Regress.TestAction);
+        expect(otherObj).not.toBe(o);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/661');
+
+    it('returns null', function () {
+        expect(o.emit('action2')).toBeNull();
+    });
+});
+
+describe('Bitmask fundamental type', function () {
+    xit('can be created', function () {
+        const bitmask = new Regress.Bitmask(2);
+        console.log(bitmask);
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection-tests/-/issues/7');
 });
