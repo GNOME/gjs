@@ -10,11 +10,7 @@
 set -ex
 : "${MESON_BUILD_ROOT:?}"
 : "${MESON_SOURCE_ROOT:?}"
-project_name="${1:?project name is required}"
-project_version="${2:?project version is required}"
-tarball_basename="${project_name}-${project_version}.tar.xz"
-tarball_path="${MESON_BUILD_ROOT}/meson-dist/${tarball_basename}"
-[[ -e "$tarball_path" ]]  # ninja dist must have been successful
+project_version="${1:?project version is required}"
 
 # Don't forget to write release notes
 head -n1 "${MESON_SOURCE_ROOT}/NEWS" | grep "$project_version"
@@ -54,7 +50,3 @@ pushd "$MESON_SOURCE_ROOT"
     fi
     git push --atomic origin "$branch" "$project_version"
 popd
-
-scp "$tarball_path" "master.gnome.org:"
-# shellcheck disable=SC2029
-ssh -t "master.gnome.org" ftpadmin install --unattended "$tarball_basename"
