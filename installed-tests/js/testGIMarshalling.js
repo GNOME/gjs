@@ -334,20 +334,21 @@ describe('off_t', function () {
     testSimpleMarshalling('off_t', 1234567890, 0, 0);
 });
 
-function testUnixIntegerTypedefMarshalling(type, inValue) {
+function testUnixIntegerTypedefMarshalling(type, inValue, skipAny = {}) {
     describe(type, function () {
         const skip = GIMarshallingTests[`${type}_in`] ? false : 'Only supported on Unix';
         testSimpleMarshalling(type, inValue, 0, 0, {
-            returnv: {skip},
-            in: {skip},
-            out: {skip},
-            uninitOut: {skip},
-            inout: {skip},
+            returnv: {skip: skip || skipAny.skipReturn},
+            in: {skip: skip || skipAny.skipIn},
+            out: {skip: skip || skipAny.skipOut},
+            uninitOut: {skip: skip || skipAny.skipUninitOut},
+            inout: {skip: skip || skipAny.skipInOut},
         });
     });
 }
 
-testUnixIntegerTypedefMarshalling('dev_t', 1234567890);
+// https://gitlab.gnome.org/GNOME/gjs/-/issues/673
+testUnixIntegerTypedefMarshalling('dev_t', 1234567890, {skipInOut: true});
 testUnixIntegerTypedefMarshalling('gid_t', 65534);
 testUnixIntegerTypedefMarshalling('pid_t', 12345);
 testUnixIntegerTypedefMarshalling('socklen_t', 123);
