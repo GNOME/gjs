@@ -122,6 +122,7 @@ void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
                          emit_test_signal_other_thread_func, object, error);
     if (thread)
         g_thread_join(thread);
+    // cppcheck-suppress memleak
 }
 
 typedef enum {
