@@ -48,7 +48,7 @@ subdir('js')
 
 # Debugger script tests #
 
-debugger_tests = [
+debugger_command_tests = [
     'backtrace',
     'breakpoint',
     'continue',
@@ -65,14 +65,8 @@ debugger_tests = [
     'quit',
     'return',
     'set',
-    'sourcemap-dynamic-module',
-    'sourcemap-separate-module',
-    'sourcemap-separate',
-    'sourcemap-inlined',
-    'sourcemap-inlined-module',
     'step',
     'throw',
-    'throw-ignored',
     'until',
 ]
 
@@ -81,7 +75,7 @@ if get_option('installed_tests')
     install_data('debugger-test.sh', install_dir: installed_tests_execdir)
 endif
 
-foreach test : debugger_tests
+foreach test : debugger_command_tests
     test_file = files('debugger' / '@0@.debugger'.format(test))
 
     test('@0@ command'.format(test), debugger_test_driver,
@@ -102,6 +96,41 @@ foreach test : debugger_tests
         install_data(test_file, install_dir: installed_tests_execdir / 'debugger')
         install_data('debugger' / '@0@.debugger.js'.format(test),
             'debugger' / '@0@.debugger.output'.format(test),
+            install_dir: installed_tests_execdir / 'debugger')
+    endif
+endforeach
+
+debugger_tests = [
+    'sourcemap dynamic module',
+    'sourcemap separate module',
+    'sourcemap separate',
+    'sourcemap inlined',
+    'sourcemap inlined module',
+    'throw ignored',
+]
+
+foreach test : debugger_tests
+    filename = test.replace(' ', '-')
+    test_file = files('debugger' / '@0@.debugger'.format(filename))
+
+    test(test, debugger_test_driver,
+        args: test_file, env: tests_environment, protocol: 'tap',
+        suite: 'Debugger', depends: tests_dependencies)
+
+    test_description_subst = {
+        'name': '@0@.debugger'.format(filename),
+        'installed_tests_execdir': prefix / installed_tests_execdir,
+    }
+    configure_file(configuration: test_description_subst,
+        input: 'debugger.test.in',
+        output: '@0@.test'.format(filename),
+        install: get_option('installed_tests'),
+        install_dir: installed_tests_metadir)
+
+    if get_option('installed_tests')
+        install_data(test_file, install_dir: installed_tests_execdir / 'debugger')
+        install_data('debugger' / '@0@.debugger.js'.format(filename),
+            'debugger' / '@0@.debugger.output'.format(filename),
             install_dir: installed_tests_execdir / 'debugger')
     endif
 endforeach
