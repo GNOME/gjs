@@ -2364,10 +2364,20 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
         }
 
         case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_GHASH:
-        case GI_TYPE_TAG_ERROR:
+            if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+                if (g_type_info_is_zero_terminated(type_info)) {
+                    set_argument(new Arg::ZeroTerminatedArrayIn(type_info),
+                                 common_args);
+                    return;
+                }
+                if (g_type_info_get_array_fixed_size(type_info) >= 0) {
+                    set_argument(new Arg::FixedSizeArrayIn(type_info),
+                                 common_args);
+                    return;
+                }
+            }
+            [[fallthrough]];
+
         default:
             // FIXME: Falling back to the generic marshaller
             set_argument(new Arg::FallbackIn(type_info), common_args);
@@ -2492,6 +2502,21 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
         case GI_TYPE_TAG_DOUBLE:
             set_argument(new Arg::NumericInOut<double>(), common_args);
             return;
+
+        case GI_TYPE_TAG_ARRAY:
+            if (g_type_info_get_array_type(type_info) == GI_ARRAY_TYPE_C) {
+                if (g_type_info_is_zero_terminated(type_info)) {
+                    set_argument(new Arg::ZeroTerminatedArrayInOut(type_info),
+                                 common_args);
+                    return;
+                }
+                if (g_type_info_get_array_fixed_size(type_info) >= 0) {
+                    set_argument(new Arg::FixedSizeArrayInOut(type_info),
+                                 common_args);
+                    return;
+                }
+            }
+            [[fallthrough]];
 
         default:
             set_argument(new Arg::FallbackInOut(type_info), common_args);
@@ -2687,26 +2712,6 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
             }
 
             return;
-        } else if (g_type_info_is_zero_terminated(&type_info)) {
-            if (direction == GI_DIRECTION_IN) {
-                set_argument(new Arg::ZeroTerminatedArrayIn(&type_info),
-                             common_args);
-                return;
-            } else if (direction == GI_DIRECTION_INOUT) {
-                set_argument(new Arg::ZeroTerminatedArrayInOut(&type_info),
-                             common_args);
-                return;
-            }
-        } else if (g_type_info_get_array_fixed_size(&type_info) >= 0) {
-            if (direction == GI_DIRECTION_IN) {
-                set_argument(new Arg::FixedSizeArrayIn(&type_info),
-                             common_args);
-                return;
-            } else if (direction == GI_DIRECTION_INOUT) {
-                set_argument(new Arg::FixedSizeArrayInOut(&type_info),
-                             common_args);
-                return;
-            }
         }
     }
 
