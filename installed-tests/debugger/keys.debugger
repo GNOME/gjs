@@ -8,4 +8,5 @@ keys {}
 keys bar
 keys ['a', 'b', 'c']
 keys
+keys b
 c

@@ -2,7 +2,7 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at print.debugger.js:19:1
+Debugger statement, toplevel at print.debugger.js:61:1
 db> # Simple types
 db> print a
 $1 = undefined
@@ -30,7 +30,7 @@ $10 = [object Array]
 [1, "money", 2, "show", { three: "to", get ready: "go cat go" }]
 db> p i
 $11 = [object Object]
-{ some: "plain object", that: "has keys" }
+{ some: "plain object", that: "has keys", with: null, and: undefined }
 db> p/b i
 $12 = [object Object]
 [object Object]
@@ -55,5 +55,8 @@ $18 = [object Object]
 db> p o
 $19 = [object Object]
 { some: "plain object", [Symbol("that")]: "has symbols" }
+db> p p
+$20 = [object Object]
+{ meaningOfLife: 42, childVisible: { meaningOfLife: 42, #privateField: 1, #subPrivateField: 2 }, #privateField: 1, #subPrivateField: 2, #child: { meaningOfLife: 42, #privateField: 1, #subPrivateField: 2 }, #customToStringChild: Custom child!, #circular1: { n: { n: [Circular] } }, #circular2: [Circular], #selfRef: [Circular], #date: 2025-01-07T00:53:42.417Z, #privateFunc: [ Function:  ] }
 db> c
 Program exited with code 0
