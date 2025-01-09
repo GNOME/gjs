@@ -1550,16 +1550,19 @@ bool FallbackOut::release(JSContext* cx, GjsFunctionCallState*,
 GJS_JSAPI_RETURN_CONVENTION
 bool FallbackInOut::release(JSContext* cx, GjsFunctionCallState* state,
                             GIArgument*, GIArgument* out_arg) {
-    // For inout, transfer refers to what we get back from the function; for
-    // the temporary C value we allocated, clearly we're responsible for
-    // freeing it.
-
+    GITransfer transfer =
+        state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
     GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
-    if (!gjs_gi_argument_release_in_arg(cx, GI_TRANSFER_NOTHING, &m_type_info,
+
+    // Assume that inout transfer means that in and out transfer are the same.
+    // See https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
+
+    if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg) &&
+        !gjs_gi_argument_release_in_arg(cx, transfer, &m_type_info,
                                         original_out_arg))
         return false;
 
-    return gjs_gi_argument_release(cx, m_transfer, &m_type_info, out_arg);
+    return gjs_gi_argument_release(cx, transfer, &m_type_info, out_arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1593,25 +1596,19 @@ bool ExplicitArrayInOut::release(JSContext* cx, GjsFunctionCallState* state,
                                  GIArgument* out_arg) {
     GIArgument* length_arg = &state->out_cvalue(m_length_pos);
     size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
-
-    // For inout, transfer refers to what we get back from the function; for
-    // the temporary C value we allocated, clearly we're responsible for
-    // freeing it.
+    GITransfer transfer =
+        state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
 
     GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
     // Due to https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/192
     // Here we've to guess what to do, but in general is "better" to leak than
     // crash, so let's assume that in/out transfer is matching.
     if (gjs_arg_get<void*>(original_out_arg) != gjs_arg_get<void*>(out_arg)) {
-        GITransfer transfer =
-            state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
         if (!gjs_gi_argument_release_in_array(cx, transfer, &m_type_info,
                                               length, original_out_arg))
             return false;
     }
 
-    GITransfer transfer =
-        state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
     return gjs_gi_argument_release_out_array(cx, transfer, &m_type_info, length,
                                              out_arg);
 }
