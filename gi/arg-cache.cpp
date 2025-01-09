@@ -491,6 +491,15 @@ struct BasicTypeReturn : SkipAll, BasicType {
     }
 };
 
+struct BasicTypeOut : BasicTypeReturn, Positioned {
+    using BasicTypeReturn::BasicTypeReturn;
+
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
+    }
+};
+
 struct BasicTypeTransferableReturn : BasicTypeReturn, Transferable {
     using BasicTypeReturn::BasicTypeReturn;
     bool release(JSContext*, GjsFunctionCallState*,
@@ -499,6 +508,15 @@ struct BasicTypeTransferableReturn : BasicTypeReturn, Transferable {
         gjs_gi_argument_release_basic(m_transfer, m_tag, Argument::flags(),
                                       out_arg);
         return true;
+    }
+};
+
+struct BasicTypeTransferableOut : BasicTypeTransferableReturn, Positioned {
+    using BasicTypeTransferableReturn::BasicTypeTransferableReturn;
+
+    bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+            JS::HandleValue) override {
+        return set_out_parameter(state, arg);
     }
 };
 
@@ -2296,7 +2314,8 @@ bool Argument::release(JSContext*, GjsFunctionCallState*, GIArgument*,
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
 template <typename T>
 constexpr size_t argument_maximum_size() {
-    if constexpr (std::is_same_v<T, Arg::BasicTypeReturn> ||
+    if constexpr (std::is_same_v<T, Arg::BasicTypeOut> ||
+                  std::is_same_v<T, Arg::BasicTypeReturn> ||
                   std::is_same_v<T, Arg::ByteArrayIn> ||
                   std::is_same_v<T, Arg::ByteArrayReturn> ||
                   std::is_same_v<T, Arg::ErrorIn> ||
@@ -2313,6 +2332,7 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicGListReturn> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayIn> ||
                   std::is_same_v<T, Arg::BasicGPtrArrayReturn> ||
+                  std::is_same_v<T, Arg::BasicTypeTransferableOut> ||
                   std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
         return 32;
     if constexpr (std::is_same_v<T, Arg::BasicExplicitCArrayIn> ||
@@ -3235,9 +3255,21 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index, GITypeInfo* type_info,
             }
             return;
 
-        default:
-            set_argument(new Arg::FallbackOut(type_info), common_args);
+        default: {
+        }
     }
+
+    bool is_pointer = g_type_info_is_pointer(type_info);
+    if (Gjs::is_basic_type(tag, is_pointer)) {
+        if (transfer == GI_TRANSFER_NOTHING) {
+            set_argument(new Arg::BasicTypeOut(tag), common_args);
+        } else {
+            set_argument(new Arg::BasicTypeTransferableOut(tag), common_args);
+        }
+        return;
+    }
+
+    set_argument(new Arg::FallbackOut(type_info), common_args);
 }
 
 void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
