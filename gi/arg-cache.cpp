@@ -2647,14 +2647,14 @@ template <typename T>
 constexpr void ArgsCache::set_return(T* arg, GITransfer transfer,
                                      GjsArgumentFlags flags) {
     set_argument<Arg::Kind::RETURN_VALUE>(
-        arg, {Argument::ABSENT, nullptr, transfer, flags});
+        arg, Argument::Init{nullptr, Argument::ABSENT, transfer, flags});
 }
 
 template <typename T>
 constexpr void ArgsCache::set_instance(T* arg, GITransfer transfer,
                                        GjsArgumentFlags flags) {
     set_argument<Arg::Kind::INSTANCE>(
-        arg, {Argument::ABSENT, nullptr, transfer, flags});
+        arg, Argument::Init{nullptr, Argument::ABSENT, transfer, flags});
 }
 
 Maybe<GType> ArgsCache::instance_type() const {
@@ -2668,8 +2668,9 @@ Maybe<Arg::ReturnTag> ArgsCache::return_tag() const {
 }
 
 void ArgsCache::set_skip_all(uint8_t index, const char* name) {
-    set_argument(new Arg::SkipAll(), {index, name, GI_TRANSFER_NOTHING,
-                                      GjsArgumentFlags::SKIP_ALL});
+    set_argument(new Arg::SkipAll(),
+                 Argument::Init{name, index, GI_TRANSFER_NOTHING,
+                                GjsArgumentFlags::SKIP_ALL});
 }
 
 void ArgsCache::init_out_array_length_argument(GIArgInfo* length_arg,
@@ -2679,11 +2680,11 @@ void ArgsCache::init_out_array_length_argument(GIArgInfo* length_arg,
     // basic initialization here.
     g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
     uint8_t validated_length_pos = length_pos;
-    set_argument(
-        new Arg::ArrayLengthOut(),
-        {validated_length_pos, g_base_info_get_name(length_arg),
-         GI_TRANSFER_NOTHING,
-         static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL)});
+    set_argument(new Arg::ArrayLengthOut(),
+                 Argument::Init{g_base_info_get_name(length_arg),
+                                validated_length_pos, GI_TRANSFER_NOTHING,
+                                static_cast<GjsArgumentFlags>(
+                                    flags | GjsArgumentFlags::SKIP_ALL)});
 }
 
 void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
@@ -2706,7 +2707,7 @@ void ArgsCache::set_array_argument(GICallableInfo* callable, uint8_t gi_index,
 
     const char* arg_name = g_base_info_get_name(arg);
     GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
-    Argument::Init common_args{gi_index, arg_name, transfer, flags};
+    Argument::Init common_args{arg_name, gi_index, transfer, flags};
 
     if (direction == GI_DIRECTION_IN) {
         if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
@@ -3201,7 +3202,7 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
 
     const char* name = g_base_info_get_name(arg);
     GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
-    Argument::Init common_args{gi_index, name, transfer, flags};
+    Argument::Init common_args{name, gi_index, transfer, flags};
     GITypeTag tag = g_type_info_get_tag(type_info);
 
     switch (tag) {
@@ -3393,7 +3394,7 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index, GITypeInfo* type_info,
                                      GIArgInfo* arg, GjsArgumentFlags flags) {
     const char* name = g_base_info_get_name(arg);
     GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
-    Argument::Init common_args{gi_index, name, transfer, flags};
+    Argument::Init common_args{name, gi_index, transfer, flags};
     GITypeTag tag = g_type_info_get_tag(type_info);
 
     switch (tag) {
@@ -3567,7 +3568,7 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index, GITypeInfo* type_info,
                                        GIArgInfo* arg, GjsArgumentFlags flags) {
     const char* name = g_base_info_get_name(arg);
     GITransfer transfer = g_arg_info_get_ownership_transfer(arg);
-    Argument::Init common_args{gi_index, name, transfer, flags};
+    Argument::Init common_args{name, gi_index, transfer, flags};
     GITypeTag tag = g_type_info_get_tag(type_info);
 
     switch (tag) {
@@ -3747,7 +3748,8 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
     }
 
     build_interface_in_arg<Arg::Kind::INSTANCE>(
-        {Argument::ABSENT, nullptr, transfer, GjsArgumentFlags::NONE},
+        Argument::Init{nullptr, Argument::ABSENT, transfer,
+                       GjsArgumentFlags::NONE},
         interface_info);
 }
 
@@ -3778,7 +3780,7 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         flags |= GjsArgumentFlags::SKIP_IN;
     *inc_counter_out = true;
 
-    Argument::Init common_args{gi_index, arg_name, transfer, flags};
+    Argument::Init common_args{arg_name, gi_index, transfer, flags};
 
     GITypeTag type_tag = g_type_info_get_tag(&type_info);
     if (direction == GI_DIRECTION_OUT &&
