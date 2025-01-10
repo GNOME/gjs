@@ -340,24 +340,26 @@ struct SkipAll : Argument {
     constexpr bool skip() { return true; }
 };
 
-struct Generic : SkipAll, Transferable, HasTypeInfo {
+struct Fallback : Transferable, HasTypeInfo {
     using HasTypeInfo::HasTypeInfo;
 };
 
-struct GenericIn : Generic {
-    using Generic::Generic;
+struct FallbackIn : SkipAll, Fallback, Nullable {
+    using Fallback::Fallback;
+
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
-    bool out(JSContext* cx, GjsFunctionCallState*, GIArgument*,
-             JS::MutableHandleValue) override {
-        return invalid(cx, G_STRFUNC);
-    }
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
+
+    GjsArgumentFlags flags() const override {
+        return Argument::flags() | Nullable::flags();
+    }
 };
 
-struct GenericInOut : GenericIn, Positioned {
-    using GenericIn::GenericIn;
+struct FallbackInOut : SkipAll, Positioned, Fallback {
+    using Fallback::Fallback;
+
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -366,24 +368,25 @@ struct GenericInOut : GenericIn, Positioned {
                  GIArgument*) override;
 };
 
-struct GenericOut : GenericInOut {
-    using GenericInOut::GenericInOut;
+struct FallbackOut : FallbackInOut {
+    using FallbackInOut::FallbackInOut;
+
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
-
-    Maybe<ReturnTag> return_tag() const override {
-        return HasTypeInfo::return_tag();
-    }
 };
 
-struct GenericReturn : GenericOut {
-    using GenericOut::GenericOut;
+struct FallbackReturn : FallbackOut {
+    using FallbackOut::FallbackOut;
     // No in!
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
         return invalid(cx, G_STRFUNC);
+    }
+
+    Maybe<ReturnTag> return_tag() const override {
+        return HasTypeInfo::return_tag();
     }
 };
 
@@ -429,10 +432,10 @@ struct SimpleOut : SkipAll, Positioned {
     };
 };
 
-struct ExplicitArray : GenericOut, Array, Nullable {
+struct ExplicitArray : FallbackOut, Array, Nullable {
     ExplicitArray(GITypeInfo* type_info, int pos, GITypeTag tag,
                   GIDirection direction)
-        : GenericOut(type_info), Array(pos, tag, direction) {}
+        : FallbackOut(type_info), Array(pos, tag, direction) {}
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
@@ -485,26 +488,11 @@ struct ReturnArray : ExplicitArrayOut {
                       m_arg_name);
             return false;
         }
-        return GenericOut::in(cx, state, arg, value);
+        return FallbackOut::in(cx, state, arg, value);
     };
 };
 
 using ArrayLengthOut = SimpleOut;
-
-struct FallbackIn : GenericIn, Nullable {
-    using GenericIn::GenericIn;
-    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
-             JS::MutableHandleValue) override {
-        return skip();
-    }
-
-    GjsArgumentFlags flags() const override {
-        return Argument::flags() | Nullable::flags();
-    }
-};
-
-using FallbackInOut = GenericInOut;
-using FallbackOut = GenericOut;
 
 struct NotIntrospectable : SkipAll {
     explicit NotIntrospectable(NotIntrospectableReason reason)
@@ -534,14 +522,6 @@ struct Instance : NullableIn {
 
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
-        return skip();
-    }
-    bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
-             JS::MutableHandleValue) override {
-        return skip();
-    }
-    bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
-                 GIArgument*) override {
         return skip();
     }
 
@@ -845,16 +825,16 @@ using CArrayInOut = ExplicitArrayInOut;
 
 using CArrayOut = ReturnArray;
 
-struct CallerAllocatesOut : GenericOut, CallerAllocates {
+struct CallerAllocatesOut : FallbackOut, CallerAllocates {
     CallerAllocatesOut(GITypeInfo* type_info, size_t size)
-        : GenericOut(type_info), CallerAllocates(size) {}
+        : FallbackOut(type_info), CallerAllocates(size) {}
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
     GjsArgumentFlags flags() const override {
-        return GenericOut::flags() | GjsArgumentFlags::CALLER_ALLOCATES;
+        return FallbackOut::flags() | GjsArgumentFlags::CALLER_ALLOCATES;
     }
 };
 
@@ -865,8 +845,8 @@ struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
                  GIArgument*) override;
 };
 
-struct ZeroTerminatedArrayInOut : GenericInOut {
-    using GenericInOut::GenericInOut;
+struct ZeroTerminatedArrayInOut : FallbackInOut {
+    using FallbackInOut::FallbackInOut;
     bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument*,
                  GIArgument* out_arg) override {
         GITransfer transfer =
@@ -883,8 +863,8 @@ struct ZeroTerminatedArrayInOut : GenericInOut {
     }
 };
 
-struct ZeroTerminatedArrayIn : GenericIn, Nullable {
-    using GenericIn::GenericIn;
+struct ZeroTerminatedArrayIn : FallbackIn {
+    using FallbackIn::FallbackIn;
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
              JS::MutableHandleValue) override {
         return skip();
@@ -904,8 +884,8 @@ struct ZeroTerminatedArrayIn : GenericIn, Nullable {
     }
 };
 
-struct FixedSizeArrayIn : GenericIn {
-    using GenericIn::GenericIn;
+struct FixedSizeArrayIn : FallbackIn {
+    using FallbackIn::FallbackIn;
     bool out(JSContext*, GjsFunctionCallState*, GIArgument*,
              JS::MutableHandleValue) override {
         return skip();
@@ -922,8 +902,8 @@ struct FixedSizeArrayIn : GenericIn {
     }
 };
 
-struct FixedSizeArrayInOut : GenericInOut {
-    using GenericInOut::GenericInOut;
+struct FixedSizeArrayInOut : FallbackInOut {
+    using FallbackInOut::FallbackInOut;
     bool release(JSContext* cx, GjsFunctionCallState* state, GIArgument*,
                  GIArgument* out_arg) override {
         GITransfer transfer =
@@ -984,20 +964,20 @@ bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
-                   JS::HandleValue value) {
+bool FallbackIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+                    JS::HandleValue value) {
     return gjs_value_to_gi_argument(cx, value, &m_type_info, m_arg_name,
                                     GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
                                     arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericInOut::in(JSContext* cx, GjsFunctionCallState* state,
-                      GIArgument* arg, JS::HandleValue value) {
-    if (!GenericIn::in(cx, state, arg, value))
-        return false;
-
-    return set_inout_parameter(state, arg);
+bool FallbackInOut::in(JSContext* cx, GjsFunctionCallState* state,
+                       GIArgument* arg, JS::HandleValue value) {
+    return gjs_value_to_gi_argument(cx, value, &m_type_info, m_arg_name,
+                                    GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
+                                    arg) &&
+           set_inout_parameter(state, arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -1129,8 +1109,8 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericOut::in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
-                    JS::HandleValue) {
+bool FallbackOut::in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
+                     JS::HandleValue) {
     // Default value in case a broken C function doesn't fill in the pointer
     return set_out_parameter(state, arg);
 }
@@ -1531,8 +1511,8 @@ bool ParamInstanceIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericInOut::out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
-                       JS::MutableHandleValue value) {
+bool FallbackInOut::out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+                        JS::MutableHandleValue value) {
     return gjs_value_from_gi_argument(cx, value, &m_type_info, arg, true);
 }
 
@@ -1553,23 +1533,23 @@ bool ExplicitArrayInOut::out(JSContext* cx, GjsFunctionCallState* state,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericIn::release(JSContext* cx, GjsFunctionCallState* state,
-                        GIArgument* in_arg, GIArgument*) {
+bool FallbackIn::release(JSContext* cx, GjsFunctionCallState* state,
+                         GIArgument* in_arg, GIArgument*) {
     GITransfer transfer =
         state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
     return gjs_gi_argument_release_in_arg(cx, transfer, &m_type_info, in_arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericOut::release(JSContext* cx, GjsFunctionCallState*,
-                         GIArgument* in_arg [[maybe_unused]],
-                         GIArgument* out_arg) {
+bool FallbackOut::release(JSContext* cx, GjsFunctionCallState*,
+                          GIArgument* in_arg [[maybe_unused]],
+                          GIArgument* out_arg) {
     return gjs_gi_argument_release(cx, m_transfer, &m_type_info, out_arg);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool GenericInOut::release(JSContext* cx, GjsFunctionCallState* state,
-                           GIArgument*, GIArgument* out_arg) {
+bool FallbackInOut::release(JSContext* cx, GjsFunctionCallState* state,
+                            GIArgument*, GIArgument* out_arg) {
     // For inout, transfer refers to what we get back from the function; for
     // the temporary C value we allocated, clearly we're responsible for
     // freeing it.
@@ -2026,7 +2006,7 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
 
     // in() is ignored for the return value, but skip_in is not (it is used
     // in the failure release path)
-    set_return(new Arg::GenericReturn(&type_info), transfer, flags);
+    set_return(new Arg::FallbackReturn(&type_info), transfer, flags);
 }
 
 namespace Arg {
