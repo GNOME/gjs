@@ -40,6 +40,29 @@ function dvToString(v) {
     return s;
 }
 
+// Build a nested tree of all private fields wherever they reside. Each level has KV tuples and their descendents:
+// {cur: [[key1, value1], ...], children: {key1: {...next level}}}
+function getProperties(dv, result, seen = new WeakSet()) {
+    if (!dv || seen.has(dv))
+        return;
+
+    if (typeof dv === 'object')
+        seen.add(dv);
+
+    const privateKVs = dv.getOwnPrivateProperties?.().map(k => [k.description, dv.getProperty(k).return]) ?? [];
+    const nonPrivateKVs = dv.getOwnPropertyNames?.().concat(dv.getOwnPropertySymbols()).map(k => [k, dv.getProperty(k).return]) ?? [];
+    result.cur = privateKVs;
+
+    result.children = {};
+    // a private field can be under a non-private field
+    privateKVs.concat(nonPrivateKVs).forEach(([k, v]) => {
+        result.children[k] = {};
+        getProperties(v, result.children[k], seen);
+    });
+    // prettyPrint in the debuggee compartment needs access to the original private field value and not Debugger.Object
+    result.cur.forEach(kv => kv[1]?.unsafeDereference && (kv[1] = kv[1].unsafeDereference()));
+}
+
 function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     // Special sentinel values returned by Debugger.Environment.getVariable()
     if (typeof dv === 'object' && dv !== null) {
@@ -67,7 +90,9 @@ function debuggeeValueToString(dv, style = {pretty: options.pretty}) {
     if (style.brief)
         return [dvrepr, dvrepr];
 
-    const str = exec('imports._print.getPrettyPrintFunction(globalThis)(v)', {v: dv});
+    const properties = {};
+    getProperties(dv, properties);
+    const str = exec('imports._print.getPrettyPrintFunction(globalThis)(v, extra)', {v: dv, extra: dv.makeDebuggeeValue(properties)});
     if ('throw' in str) {
         if (style.noerror)
             return [dvrepr, undefined];
@@ -431,9 +456,11 @@ function keysCommand(rest) {
     }
     const names = dv.getOwnPropertyNames();
     const symbols = dv.getOwnPropertySymbols();
+    const privateFields = dv.getOwnPrivateProperties();
     const keys = [
         ...names.map(s => `"${s}"`),
         ...symbols.map(s => `Symbol("${s.description}")`),
+        ...privateFields.map(s => `${s.description}`),
     ];
     if (keys.length === 0)
         print('No own properties');

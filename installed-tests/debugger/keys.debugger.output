@@ -2,7 +2,7 @@ GJS debugger. Type "help" for help
 db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 db> # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 db> c
-Debugger statement, toplevel at keys.debugger.js:9:1
+Debugger statement, toplevel at keys.debugger.js:49:1
 db> keys a
 "foo", "bar", "tres", Symbol("s")
 db> k a
@@ -17,5 +17,7 @@ db> keys ['a', 'b', 'c']
 "0", "1", "2", "length"
 db> keys
 Missing argument. See 'help keys'
+db> keys b
+"meaningOfLife", "childVisible", #privateField, #subPrivateField, #child, #customToStringChild, #circular1, #circular2, #selfRef, #date, #privateFunc
 db> c
 Program exited with code 0
