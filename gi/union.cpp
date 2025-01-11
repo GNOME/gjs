@@ -64,8 +64,8 @@ bool UnionPrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
 #endif
         if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
             gjs_debug(GJS_DEBUG_GBOXED,
-                      "Defining method %s in prototype for %s.%s",
-                      method_info.name(), ns(), name());
+                      "Defining method %s in prototype for %s",
+                      method_info.name(), format_name().c_str());
 
             /* obj is union proto */
             if (!gjs_define_function(context, obj, gtype(), method_info))

@@ -17,6 +17,7 @@
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>
+#include <mozilla/Maybe.h>
 
 #include "gi/arg.h"
 #include "gjs/auto.h"
@@ -40,7 +41,6 @@ enum NotIntrospectableReason : uint8_t {
 namespace Gjs {
 namespace Arg {
 
-using ReturnValue = struct GenericOut;
 struct Instance;
 
 enum class Kind {
@@ -107,9 +107,11 @@ struct Argument {
  protected:
     constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
 
-    virtual GITypeTag return_tag() const { return GI_TYPE_TAG_VOID; }
-    virtual const GITypeInfo* return_type() const { return nullptr; }
-    virtual const Arg::Instance* as_instance() const { return nullptr; }
+    virtual mozilla::Maybe<GITypeTag> return_tag() const { return {}; }
+    virtual mozilla::Maybe<const GITypeInfo*> return_type() const { return {}; }
+    virtual mozilla::Maybe<const Arg::Instance*> as_instance() const {
+        return {};
+    }
 
     constexpr void set_instance_parameter() {
         m_arg_name = "instance parameter";
@@ -167,9 +169,9 @@ struct ArgsCache {
 
     void build_instance(GICallableInfo* callable);
 
-    GType instance_type() const;
-    GITypeTag return_tag() const;
-    GITypeInfo* return_type() const;
+    mozilla::Maybe<GType> instance_type() const;
+    mozilla::Maybe<GITypeTag> return_tag() const;
+    mozilla::Maybe<GITypeInfo*> return_type() const;
 
  private:
     void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
@@ -191,10 +193,15 @@ struct ArgsCache {
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);
 
-    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     void set_array_argument(GICallableInfo* callable, uint8_t gi_index,
                             GITypeInfo*, GIDirection, GIArgInfo*,
                             GjsArgumentFlags flags, int length_pos);
+
+    void set_array_return(GICallableInfo*, GITypeInfo*, GjsArgumentFlags,
+                          int length_pos);
+
+    void init_out_array_length_argument(GIArgInfo*, GjsArgumentFlags,
+                                        int length_pos);
 
     template <typename T>
     constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);
@@ -226,18 +233,18 @@ struct ArgsCache {
         return arg_get(index).get();
     }
 
-    constexpr Argument* instance() const {
+    constexpr mozilla::Maybe<Argument*> instance() const {
         if (!m_is_method)
-            return nullptr;
+            return {};
 
-        return arg_get<Arg::Kind::INSTANCE>().get();
+        return mozilla::Some(arg_get<Arg::Kind::INSTANCE>().get());
     }
 
-    constexpr Argument* return_value() const {
+    constexpr mozilla::Maybe<Argument*> return_value() const {
         if (!m_has_return)
-            return nullptr;
+            return {};
 
-        return arg_get<Arg::Kind::RETURN_VALUE>().get();
+        return mozilla::Some(arg_get<Arg::Kind::RETURN_VALUE>().get());
     }
 
  private:

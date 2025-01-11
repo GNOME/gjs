@@ -156,12 +156,12 @@ bool ObjectInstance::check_gobject_disposed_or_finalized(
         return true;
 
     g_critical(
-        "Object %s.%s (%p), has been already %s — impossible to %s "
-        "it. This might be caused by the object having been destroyed from C "
-        "code using something such as destroy(), dispose(), or remove() "
-        "vfuncs.\n%s",
-        ns(), name(), m_ptr.get(), m_gobj_finalized ? "finalized" : "disposed",
-        for_what, gjs_dumpstack_string().c_str());
+        "Object %s (%p), has been already %s — impossible to %s it. This might "
+        "be caused by the object having been destroyed from C code using "
+        "something such as destroy(), dispose(), or remove() vfuncs.\n%s",
+        format_name().c_str(), m_ptr.get(),
+        m_gobj_finalized ? "finalized" : "disposed", for_what,
+        gjs_dumpstack_string().c_str());
     return false;
 }
 
@@ -319,9 +319,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     }
 
     if (param->flags & G_PARAM_DEPRECATED) {
-        const std::string& class_name = format_name();
-        _gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty, {class_name.c_str(), param->name});
+        _gjs_warn_deprecated_once_per_callsite(cx, DeprecatedGObjectProperty,
+                                               {format_name(), param->name});
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
@@ -335,9 +334,9 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
                 cx, Gjs::gvalue_get<T, TAG>(&gvalue), rval))
             return true;
 
-        gjs_throw(cx, "Can't convert value %s got from %s.%s::%s property",
-                  Gjs::gvalue_to_string<void*, TAG>(&gvalue).c_str(), ns(),
-                  name(), param->name);
+        gjs_throw(cx, "Can't convert value %s got from %s::%s property",
+                  Gjs::gvalue_to_string<void*, TAG>(&gvalue).c_str(),
+                  format_name().c_str(), param->name);
         return false;
     } else {
         return gjs_value_from_g_value(cx, rval, &gvalue);
@@ -467,10 +466,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         return true;
 
     if (param_spec->flags & G_PARAM_DEPRECATED) {
-        const std::string& class_name = format_name();
         _gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty,
-            {class_name.c_str(), param_spec->name});
+            cx, DeprecatedGObjectProperty, {format_name(), param_spec->name});
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
@@ -489,8 +486,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         Gjs::JsValueHolder::Relaxed<T> val{};
         if (!Gjs::js_value_to_c_checked<T, TAG>(cx, value, &val,
                                                 &out_of_range)) {
-            gjs_throw(cx, "Can't convert value %s to set %s.%s::%s property",
-                      gjs_debug_value(value).c_str(), ns(), name(),
+            gjs_throw(cx, "Can't convert value %s to set %s::%s property",
+                      gjs_debug_value(value).c_str(), format_name().c_str(),
                       param_spec->name);
             return false;
         }
@@ -506,8 +503,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
     } else {
         T native_value;
         if (!Gjs::js_value_to_c<TAG>(cx, value, &native_value)) {
-            gjs_throw(cx, "Can't convert %s value to set %s.%s::%s property",
-                      gjs_debug_value(value).c_str(), ns(), name(),
+            gjs_throw(cx, "Can't convert %s value to set %s::%s property",
+                      gjs_debug_value(value).c_str(), format_name().c_str(),
                       param_spec->name);
             return false;
         }
@@ -1218,8 +1215,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
 
     if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
         gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Defining method %s in prototype for %s (%s.%s)",
-                  method_info.name(), type_name(), ns(), this->name());
+                  "Defining method %s in prototype for %s (%s)",
+                  method_info.name(), type_name(), format_name().c_str());
         if (GI_IS_INTERFACE_INFO(implementor_info)) {
             bool found = false;
             if (!resolve_on_interface_prototype(context, implementor_info, id,
@@ -2113,8 +2110,8 @@ ObjectInstance::~ObjectInstance() {
         if (!had_toggle_up && had_toggle_down) {
             g_error(
                 "Finalizing wrapper for an object that's scheduled to be "
-                "unrooted: %s.%s\n",
-                ns(), name());
+                "unrooted: %s",
+                format_name().c_str());
         }
 
         if (!m_gobj_disposed)

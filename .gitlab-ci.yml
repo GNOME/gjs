@@ -90,7 +90,7 @@ build_recommended:
   image: registry.gitlab.gnome.org/gnome/gjs:job-4161430_fedora.mozjs128-debug  # pinned on purpose
   variables:
     GIT_SUBMODULE_STRATEGY: normal
-    TEST_OPTS: --verbose --no-stdsplit --print-errorlogs --setup=verbose
+    TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
   except:
     - schedules
 

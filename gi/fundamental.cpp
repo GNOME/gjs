@@ -152,15 +152,15 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
             if (g_base_info_is_deprecated(method_info)) {
                 gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                           "Ignoring definition of deprecated method %s in "
-                          "prototype %s.%s",
-                          method_info.name(), ns(), name());
+                          "prototype %s",
+                          method_info.name(), format_name().c_str());
                 *resolved = false;
                 return true;
             }
 
             gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                      "Defining method %s in prototype for %s.%s",
-                      method_info.name(), ns(), name());
+                      "Defining method %s in prototype for %s",
+                      method_info.name(), format_name().c_str());
 
             if (!gjs_define_function(cx, obj, gtype(), method_info))
                 return false;
@@ -187,8 +187,8 @@ bool FundamentalInstance::invoke_constructor(JSContext* context,
                                              GIArgument* rvalue) {
     GIFunctionInfo* constructor_info = get_prototype()->constructor_info();
     if (!constructor_info) {
-        gjs_throw(context, "Couldn't find a constructor for type %s.%s", ns(),
-                  name());
+        gjs_throw(context, "Couldn't find a constructor for type %s",
+                  format_name().c_str());
         return false;
     }
 
@@ -379,9 +379,9 @@ bool FundamentalPrototype::define_class(JSContext* cx,
 
     if (g_object_info_get_n_fields(info) > 0) {
         gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                  "Fundamental type '%s.%s' apparently has accessible fields. "
-                  "Gjs has no support for this yet, ignoring these.",
-                  priv->ns(), priv->name());
+                  "Fundamental type '%s' apparently has accessible fields. GJS "
+                  "has no support for this yet, ignoring these.",
+                  priv->format_name().c_str());
     }
 
     return true;

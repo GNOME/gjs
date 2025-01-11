@@ -153,9 +153,9 @@ bool ErrorBase::to_string(JSContext* context, unsigned argc, JS::Value* vp) {
        hiding some useful information */
 
     if (priv->is_prototype()) {
-        descr = g_strdup_printf("%s.%s", priv->ns(), priv->name());
+        descr = g_strdup(priv->format_name().c_str());
     } else {
-        descr = g_strdup_printf("%s.%s: %s", priv->ns(), priv->name(),
+        descr = g_strdup_printf("%s: %s", priv->format_name().c_str(),
                                 priv->to_instance()->message());
     }
 

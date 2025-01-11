@@ -51,53 +51,6 @@ template <auto GIArgument::*member>
  * Setting a tag for a type allows to perform proper specialization. */
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 [[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
-    if constexpr (TAG == GI_TYPE_TAG_VOID) {
-        if constexpr (std::is_same_v<T, bool>)
-            return gjs_arg_member<&GIArgument::v_boolean>(arg);
-        if constexpr (std::is_same_v<T, int8_t>)
-            return gjs_arg_member<&GIArgument::v_int8>(arg);
-        if constexpr (std::is_same_v<T, uint8_t>)
-            return gjs_arg_member<&GIArgument::v_uint8>(arg);
-        if constexpr (std::is_same_v<T, int16_t>)
-            return gjs_arg_member<&GIArgument::v_int16>(arg);
-        if constexpr (std::is_same_v<T, uint16_t>)
-            return gjs_arg_member<&GIArgument::v_uint16>(arg);
-        if constexpr (std::is_same_v<T, int32_t>)
-            return gjs_arg_member<&GIArgument::v_int32>(arg);
-        if constexpr (std::is_same_v<T, uint32_t>)
-            return gjs_arg_member<&GIArgument::v_uint32>(arg);
-        if constexpr (std::is_same_v<T, int64_t>)
-            return gjs_arg_member<&GIArgument::v_int64>(arg);
-        if constexpr (std::is_same_v<T, uint64_t>)
-            return gjs_arg_member<&GIArgument::v_uint64>(arg);
-
-        // gunichar is stored in v_uint32
-        if constexpr (std::is_same_v<T, char32_t>)
-            return gjs_arg_member<&GIArgument::v_uint32>(arg);
-
-        if constexpr (std::is_same_v<T, float>)
-            return gjs_arg_member<&GIArgument::v_float>(arg);
-
-        if constexpr (std::is_same_v<T, double>)
-            return gjs_arg_member<&GIArgument::v_double>(arg);
-
-        if constexpr (std::is_same_v<T, char*>)
-            return gjs_arg_member<&GIArgument::v_string>(arg);
-
-        if constexpr (std::is_same_v<T, void*>)
-            return gjs_arg_member<&GIArgument::v_pointer>(arg);
-
-        if constexpr (std::is_same_v<T, std::nullptr_t>)
-            return gjs_arg_member<&GIArgument::v_pointer>(arg);
-
-        if constexpr (std::is_pointer<T>()) {
-            using NonconstPtrT = std::add_pointer_t<
-                std::remove_const_t<std::remove_pointer_t<T>>>;
-            return reinterpret_cast<NonconstPtrT&>(
-                gjs_arg_member<&GIArgument::v_pointer>(arg));
-        }
-    }
-
     if constexpr (TAG == GI_TYPE_TAG_BOOLEAN && std::is_same_v<T, gboolean>)
         return gjs_arg_member<&GIArgument::v_boolean>(arg);
 
@@ -114,6 +67,51 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
             return gjs_arg_member<&GIArgument::v_int>(arg);
         else
             return gjs_arg_member<&GIArgument::v_uint>(arg);
+    }
+
+    if constexpr (std::is_same_v<T, bool>)
+        return gjs_arg_member<&GIArgument::v_boolean>(arg);
+    if constexpr (std::is_same_v<T, int8_t>)
+        return gjs_arg_member<&GIArgument::v_int8>(arg);
+    if constexpr (std::is_same_v<T, uint8_t>)
+        return gjs_arg_member<&GIArgument::v_uint8>(arg);
+    if constexpr (std::is_same_v<T, int16_t>)
+        return gjs_arg_member<&GIArgument::v_int16>(arg);
+    if constexpr (std::is_same_v<T, uint16_t>)
+        return gjs_arg_member<&GIArgument::v_uint16>(arg);
+    if constexpr (std::is_same_v<T, int32_t>)
+        return gjs_arg_member<&GIArgument::v_int32>(arg);
+    if constexpr (std::is_same_v<T, uint32_t>)
+        return gjs_arg_member<&GIArgument::v_uint32>(arg);
+    if constexpr (std::is_same_v<T, int64_t>)
+        return gjs_arg_member<&GIArgument::v_int64>(arg);
+    if constexpr (std::is_same_v<T, uint64_t>)
+        return gjs_arg_member<&GIArgument::v_uint64>(arg);
+
+    // gunichar is stored in v_uint32
+    if constexpr (std::is_same_v<T, char32_t>)
+        return gjs_arg_member<&GIArgument::v_uint32>(arg);
+
+    if constexpr (std::is_same_v<T, float>)
+        return gjs_arg_member<&GIArgument::v_float>(arg);
+
+    if constexpr (std::is_same_v<T, double>)
+        return gjs_arg_member<&GIArgument::v_double>(arg);
+
+    if constexpr (std::is_same_v<T, char*>)
+        return gjs_arg_member<&GIArgument::v_string>(arg);
+
+    if constexpr (std::is_same_v<T, void*>)
+        return gjs_arg_member<&GIArgument::v_pointer>(arg);
+
+    if constexpr (std::is_same_v<T, std::nullptr_t>)
+        return gjs_arg_member<&GIArgument::v_pointer>(arg);
+
+    if constexpr (std::is_pointer<T>()) {
+        using NonconstPtrT =
+            std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
+        return reinterpret_cast<NonconstPtrT&>(
+            gjs_arg_member<&GIArgument::v_pointer>(arg));
     }
 }
 

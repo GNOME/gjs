@@ -119,7 +119,7 @@ void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
 
 void _gjs_warn_deprecated_once_per_callsite(
     JSContext* cx, GjsDeprecationMessageId id,
-    const std::vector<const char*>& args) {
+    const std::vector<std::string>& args) {
     // In C++20, use std::format() for this
     std::string_view format_string{messages[id]};
     std::stringstream message;

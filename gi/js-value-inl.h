@@ -49,14 +49,14 @@ namespace JsValueHolder {
 template <typename T1, typename T2>
 constexpr bool comparable_types() {
     return std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2> &&
+           std::is_integral_v<T1> == std::is_integral_v<T2> &&
            std::is_signed_v<T1> == std::is_signed_v<T2>;
 }
 
 template <typename T, typename Container>
 constexpr bool type_fits() {
     if constexpr (comparable_types<T, Container>()) {
-        return (std::is_integral_v<T> == std::is_integral_v<Container> &&
-                std::numeric_limits<T>::max() <=
+        return (std::numeric_limits<T>::max() <=
                     std::numeric_limits<Container>::max() &&
                 std::numeric_limits<T>::lowest() >=
                     std::numeric_limits<Container>::lowest());
