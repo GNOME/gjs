@@ -827,13 +827,12 @@ std::string Gjs::Function::format_name() {
 namespace Gjs {
 
 static void* get_return_ffi_pointer_from_gi_argument(
-    Maybe<GITypeTag> tag, Maybe<GITypeInfo*> return_type,
-    GIFFIReturnValue* return_value) {
-    if (return_type && g_type_info_is_pointer(*return_type))
-        return &gjs_arg_member<void*>(return_value);
-    if (!tag)
+    Maybe<Arg::ReturnTag> return_tag, GIFFIReturnValue* return_value) {
+    if (!return_tag)
         return nullptr;
-    switch (*tag) {
+    if (return_tag->is_pointer())
+        return &gjs_arg_member<void*>(return_value);
+    switch (return_tag->tag()) {
         case GI_TYPE_TAG_VOID:
             g_assert_not_reached();
         case GI_TYPE_TAG_INT8:
@@ -861,20 +860,12 @@ static void* get_return_ffi_pointer_from_gi_argument(
         case GI_TYPE_TAG_DOUBLE:
             return &gjs_arg_member<double>(return_value);
         case GI_TYPE_TAG_INTERFACE: {
-            if (!return_type)
-                return nullptr;
-
-            GI::AutoBaseInfo info{g_type_info_get_interface(*return_type)};
-
-            switch (info.type()) {
-                case GI_INFO_TYPE_ENUM:
-                case GI_INFO_TYPE_FLAGS:
-                    return &gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
-                        return_value);
-                default:
-                    return &gjs_arg_member<void*>(return_value);
-            }
-            break;
+            GIInfoType info_type = return_tag->interface_type();
+            if (info_type == GI_INFO_TYPE_ENUM ||
+                info_type == GI_INFO_TYPE_FLAGS)
+                return &gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
+                    return_value);
+            [[fallthrough]];
         }
         default:
             return &gjs_arg_member<void*>(return_value);
@@ -891,7 +882,6 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     g_assert((args.isConstructing() || !this_obj) &&
              "If not a constructor, then pass the 'this' object via CallArgs");
 
-    void* return_value_p;  // will point inside the return GIArgument union
     GIFFIReturnValue return_value;
 
     unsigned ffi_argc = m_invoker.cif.nargs;
@@ -1044,10 +1034,11 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     g_assert_cmpuint(ffi_arg_pos, ==, ffi_argc);
     g_assert_cmpuint(gi_arg_pos, ==, state.gi_argc);
 
-    Maybe<GITypeTag> return_tag = m_arguments.return_tag();
-    Maybe<GITypeInfo*> return_type = m_arguments.return_type();
-    return_value_p = get_return_ffi_pointer_from_gi_argument(
-        return_tag, return_type, &return_value);
+    Maybe<Arg::ReturnTag> return_tag = m_arguments.return_tag();
+    // return_value_p will point inside the return GIFFIReturnValue union if the
+    // C function has a non-void return type
+    void* return_value_p =
+        get_return_ffi_pointer_from_gi_argument(return_tag, &return_value);
     ffi_call(&m_invoker.cif, FFI_FN(m_invoker.native_address), return_value_p,
              ffi_arg_pointers.get());
 
@@ -1057,14 +1048,10 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
     if (!r_value)
         args.rval().setUndefined();
 
-    if (return_type) {
-        gi_type_info_extract_ffi_return_value(*return_type, &return_value,
-                                              state.return_value());
-    } else if (return_tag) {
-        g_assert(GI_TYPE_TAG_IS_BASIC(*return_tag));
-        gi_type_tag_extract_ffi_return_value(*return_tag, GI_INFO_TYPE_INVALID,
-                                             &return_value,
-                                             state.return_value());
+    if (return_tag) {
+        gi_type_tag_extract_ffi_return_value(
+            return_tag->tag(), return_tag->interface_type(), &return_value,
+            state.return_value());
     }
 
     // Process out arguments and return values. This loop is skipped if we fail

@@ -76,7 +76,56 @@ bool inline gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
                                     nullptr /* arg_name */, argument_type,
                                     transfer, GjsArgumentFlags::NONE, arg);
 }
-
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_basic_gi_argument(JSContext*, JS::HandleValue, GITypeTag,
+                                    GIArgument*, const char* arg_name,
+                                    GjsArgumentType, GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_gerror_gi_argument(JSContext*, JS::HandleValue, GITransfer,
+                                     GIArgument*, const char* arg_name,
+                                     GjsArgumentType, GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_basic_glist_gi_argument(JSContext*, JS::HandleValue,
+                                          GITypeTag element_tag, GIArgument*,
+                                          const char* arg_name,
+                                          GjsArgumentType);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_basic_gslist_gi_argument(JSContext*, JS::HandleValue,
+                                           GITypeTag element_tag, GIArgument*,
+                                           const char* arg_name,
+                                           GjsArgumentType);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_basic_ghash_gi_argument(JSContext*, JS::HandleValue,
+                                          GITypeTag key_tag,
+                                          GITypeTag value_tag, GITransfer,
+                                          GIArgument*, const char* arg_name,
+                                          GjsArgumentType, GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_basic_array_gi_argument(JSContext*, JS::HandleValue,
+                                          GITypeTag element_tag, GIArrayType,
+                                          GIArgument*, const char* arg_name,
+                                          GjsArgumentType, GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_byte_array_gi_argument(JSContext*, JS::HandleValue,
+                                         GIArgument*, const char* arg_name,
+                                         GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_array_to_basic_explicit_array(JSContext*, JS::HandleValue,
+                                       GITypeTag element_tag,
+                                       const char* arg_name, GjsArgumentType,
+                                       GjsArgumentFlags, void** contents_out,
+                                       size_t* length_out);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_gdk_atom_gi_argument(JSContext*, JS::HandleValue, GIArgument*,
+                                       const char* arg_name, GjsArgumentType);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_to_interface_gi_argument(JSContext*, JS::HandleValue,
+                                        GIBaseInfo* interface_info, GITransfer,
+                                        GIArgument*, const char* arg_name,
+                                        GjsArgumentType, GjsArgumentFlags);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_gi_argument(JSContext*, JS::MutableHandleValue,
+                                      GITypeTag, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_gi_argument(JSContext*, JS::MutableHandleValue, GITypeInfo*,
                                 GjsArgumentType, GITransfer, GIArgument*);
@@ -92,6 +141,32 @@ inline bool gjs_value_from_gi_argument(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_ghash(JSContext*, JS::MutableHandleValue,
+                                GITypeTag key_tag, GITypeTag value_tag,
+                                GHashTable*);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_array_from_basic_glist_gi_argument(JSContext*, JS::MutableHandleValue,
+                                            GITypeTag element_tag, GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_array_from_basic_gslist_gi_argument(JSContext*, JS::MutableHandleValue,
+                                             GITypeTag element_tag,
+                                             GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_array_from_basic_zero_terminated_array(JSContext*,
+                                                JS::MutableHandleValue,
+                                                GITypeTag element_tag,
+                                                void* c_array);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_fixed_size_array_gi_argument(JSContext*,
+                                                       JS::MutableHandleValue,
+                                                       GITypeTag element_tag,
+                                                       size_t fixed_size,
+                                                       GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_explicit_array(JSContext*, JS::MutableHandleValue,
+                                         GITypeTag element_tag, GIArgument*,
+                                         size_t length);
+GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_explicit_array(JSContext* context,
                                    JS::MutableHandleValue value_p,
                                    GITypeInfo* type_info, GITransfer transfer,
@@ -105,7 +180,18 @@ inline bool gjs_value_from_explicit_array(JSContext* context,
     return gjs_value_from_explicit_array(context, value_p, type_info,
                                          GI_TRANSFER_EVERYTHING, arg, length);
 }
-
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_byte_array_gi_argument(JSContext*, JS::MutableHandleValue,
+                                           GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_garray_gi_argument(JSContext*, JS::MutableHandleValue,
+                                             GITypeTag element_tag,
+                                             GIArgument*);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_value_from_basic_gptrarray_gi_argument(JSContext*,
+                                                JS::MutableHandleValue,
+                                                GITypeTag element_tag,
+                                                GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release(JSContext*, GITransfer, GITypeInfo*,
                              GjsArgumentFlags, GIArgument*);
@@ -115,6 +201,33 @@ inline bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
     return gjs_gi_argument_release(cx, transfer, type_info,
                                    GjsArgumentFlags::NONE, arg);
 }
+void gjs_gi_argument_release_basic(GITransfer, GITypeTag, GjsArgumentFlags,
+                                   GIArgument*);
+void gjs_gi_argument_release_basic_glist(GITransfer, GITypeTag element_tag,
+                                         GIArgument*);
+void gjs_gi_argument_release_basic_gslist(GITransfer, GITypeTag element_tag,
+                                          GIArgument*);
+void gjs_gi_argument_release_basic_ghash(GITransfer, GITypeTag key_tag,
+                                         GITypeTag value_tag, GIArgument*);
+void gjs_gi_argument_release_basic_garray(GITransfer transfer,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg);
+void gjs_gi_argument_release_basic_gptrarray(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg);
+void gjs_gi_argument_release_basic_c_array(GITransfer, GITypeTag element_tag,
+                                           GIArgument*);
+void gjs_gi_argument_release_basic_c_array(GITransfer, GITypeTag element_tag,
+                                           size_t length, GIArgument*);
+void gjs_gi_argument_release_basic_in_array(GITransfer, GITypeTag element_tag,
+                                            GIArgument*);
+void gjs_gi_argument_release_basic_in_array(GITransfer, GITypeTag element_tag,
+                                            size_t length, GIArgument*);
+void gjs_gi_argument_release_basic_out_array(GITransfer, GITypeTag element_tag,
+                                             GIArgument*);
+void gjs_gi_argument_release_basic_out_array(GITransfer, GITypeTag element_tag,
+                                             size_t length, GIArgument*);
+void gjs_gi_argument_release_byte_array(GIArgument* arg);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_out_array(JSContext*, GITransfer, GITypeInfo*,
                                        unsigned length, GIArgument*);

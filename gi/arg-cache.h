@@ -20,6 +20,7 @@
 #include <mozilla/Maybe.h>
 
 #include "gi/arg.h"
+#include "gi/info.h"
 #include "gjs/auto.h"
 #include "gjs/enum-utils.h"
 #include "gjs/macros.h"
@@ -47,6 +48,33 @@ enum class Kind {
     NORMAL,
     INSTANCE,
     RETURN_VALUE,
+};
+
+class ReturnTag {
+    GITypeTag m_tag : 5;
+    GIInfoType m_info_type : 5;
+    bool m_is_pointer : 1;
+
+ public:
+    constexpr explicit ReturnTag(GITypeTag tag)
+        : m_tag(tag), m_info_type(GI_INFO_TYPE_INVALID), m_is_pointer(false) {}
+    constexpr explicit ReturnTag(GITypeTag tag, GIInfoType info_type,
+                                 bool is_pointer)
+        : m_tag(tag), m_info_type(info_type), m_is_pointer(is_pointer) {}
+    explicit ReturnTag(GITypeInfo* type_info)
+        : m_tag(g_type_info_get_tag(type_info)),
+          m_info_type(GI_INFO_TYPE_INVALID),
+          m_is_pointer(g_type_info_is_pointer(type_info)) {
+        if (m_tag == GI_TYPE_TAG_INTERFACE) {
+            GI::AutoBaseInfo interface_info{
+                g_type_info_get_interface(type_info)};
+            m_info_type = g_base_info_get_type(interface_info);
+        }
+    }
+
+    constexpr GITypeTag tag() const { return m_tag; }
+    constexpr GIInfoType interface_type() const { return m_info_type; }
+    constexpr bool is_pointer() const { return m_is_pointer; }
 };
 
 }  // namespace Arg
@@ -107,8 +135,7 @@ struct Argument {
  protected:
     constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
 
-    virtual mozilla::Maybe<GITypeTag> return_tag() const { return {}; }
-    virtual mozilla::Maybe<const GITypeInfo*> return_type() const { return {}; }
+    virtual mozilla::Maybe<Arg::ReturnTag> return_tag() const { return {}; }
     virtual mozilla::Maybe<const Arg::Instance*> as_instance() const {
         return {};
     }
@@ -170,8 +197,7 @@ struct ArgsCache {
     void build_instance(GICallableInfo* callable);
 
     mozilla::Maybe<GType> instance_type() const;
-    mozilla::Maybe<GITypeTag> return_tag() const;
-    mozilla::Maybe<GITypeInfo*> return_type() const;
+    mozilla::Maybe<Arg::ReturnTag> return_tag() const;
 
  private:
     void build_normal_in_arg(uint8_t gi_index, GITypeInfo*, GIArgInfo*,
@@ -185,10 +211,8 @@ struct ArgsCache {
     // https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334) but
     // for other parameters, this function additionally takes a GITypeInfo.
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
-    void build_interface_in_arg(
-        const Argument::Init&, GIBaseInfo*,
-        std::conditional_t<ArgKind != Arg::Kind::INSTANCE, GITypeInfo*, int> =
-            {});
+    void build_interface_in_arg(const Argument::Init&,
+                                GIBaseInfo* interface_info);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
     constexpr void set_argument(T* arg, const Argument::Init&);

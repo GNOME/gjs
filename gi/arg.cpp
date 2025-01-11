@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen, memcpy
 
+#include <array>
 #include <string>
 #include <utility>  // for move
 
@@ -280,8 +281,12 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
     g_assert(param_info);
 
+    GITypeTag element_tag = g_type_info_get_tag(param_info);
+    g_assert(!GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use basic_array_to_linked_list() instead");
+
     if (transfer == GI_TRANSFER_CONTAINER) {
-        if (type_needs_release (param_info, g_type_info_get_tag(param_info))) {
+        if (type_needs_release(param_info, element_tag)) {
             /* FIXME: to make this work, we'd have to keep a list of temporary
              * GIArguments for the function call so we could free them after
              * the surrounding container had been freed by the callee.
@@ -457,9 +462,11 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
     case GI_TYPE_TAG_DOUBLE:
     case GI_TYPE_TAG_INT64:
     case GI_TYPE_TAG_UINT64:
-    /* FIXME: The above four could be supported, but are currently not. The ones
-     * below cannot be key types in a regular JS object; we would need to allow
-     * marshalling Map objects into GHashTables to support those. */
+    // FIXME: The above four could be supported, but are currently not. The ones
+    // below cannot be key types in a regular JS object; we would need to allow
+    // marshalling Map objects into GHashTables to support those, as well as
+    // refactoring this function to take GITypeInfo* and splitting out the
+    // marshalling for basic types into a different function.
     case GI_TYPE_TAG_VOID:
     case GI_TYPE_TAG_GTYPE:
     case GI_TYPE_TAG_ERROR:
@@ -505,6 +512,12 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
 
     GI::AutoTypeInfo key_param_info{g_type_info_get_param_type(type_info, 0)};
     GI::AutoTypeInfo val_param_info{g_type_info_get_param_type(type_info, 1)};
+    GITypeTag key_tag = g_type_info_get_tag(key_param_info);
+    GITypeTag val_type = g_type_info_get_tag(val_param_info);
+
+    g_assert(
+        (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_type)) &&
+        "use gjs_value_to_basic_ghash_gi_argument() instead");
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release (key_param_info, g_type_info_get_tag(key_param_info)) ||
@@ -525,7 +538,6 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
     if (!JS_Enumerate(context, props, &ids))
         return false;
 
-    GITypeTag key_tag = g_type_info_get_tag(key_param_info);
     Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result{
         create_hash_table_for_key_type(key_tag)};
 
@@ -546,7 +558,6 @@ static bool gjs_object_to_g_hash(JSContext* context, JS::HandleObject props,
                                       GjsArgumentFlags::MAY_BE_NULL, &val_arg))
             return false;
 
-        GITypeTag val_type = g_type_info_get_tag(val_param_info);
         /* Use heap-allocated values for types that don't fit in a pointer */
         if (val_type == GI_TYPE_TAG_INT64) {
             val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
@@ -682,6 +693,39 @@ static bool gjs_string_to_intarray(JSContext* context, JS::HandleString str,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool array_to_basic_c_array(JSContext* cx, JS::HandleValue v_array,
+                                   size_t length, GITypeTag element_tag,
+                                   void** array_out) {
+    // Always one extra element, to cater for null terminated arrays
+    Gjs::AutoPointer<void*> array{array_allocate<void*>(length + 1)};
+
+    JS::RootedObject array_obj{cx, &v_array.toObject()};
+    JS::RootedValue elem{cx};
+    for (size_t ix = 0; ix < length; ix++) {
+        GIArgument arg;
+        gjs_arg_unset(&arg);
+
+        elem.setUndefined();
+        if (!JS_GetElement(cx, array_obj, ix, &elem)) {
+            gjs_throw(cx, "Missing array element %zu", ix);
+            return false;
+        }
+
+        if (!gjs_value_to_basic_gi_argument(cx, elem, element_tag, &arg,
+                                            nullptr, GJS_ARGUMENT_ARRAY_ELEMENT,
+                                            GjsArgumentFlags::NONE)) {
+            gjs_throw(cx, "Invalid element in array");
+            return false;
+        }
+
+        array[ix] = gjs_arg_get<void*>(&arg);
+    }
+
+    *array_out = array.release();
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool
 gjs_array_to_ptrarray(JSContext   *context,
                       JS::Value    array_value,
@@ -773,55 +817,78 @@ static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_to_basic_array(JSContext* cx, JS::HandleValue v_array,
+                                     size_t length,
+                                     GITypeTag element_storage_type,
+                                     void** array_out) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_storage_type));
+
+    switch (element_storage_type) {
+        case GI_TYPE_TAG_UTF8:
+            return gjs_array_to_strv(cx, v_array, length, array_out);
+        case GI_TYPE_TAG_FILENAME:
+            return array_to_basic_c_array(cx, v_array, length,
+                                          element_storage_type, array_out);
+        case GI_TYPE_TAG_BOOLEAN:
+            return gjs_array_to_auto_array<gboolean, GI_TYPE_TAG_BOOLEAN>(
+                cx, v_array, length, array_out);
+        case GI_TYPE_TAG_UNICHAR:
+            return gjs_array_to_auto_array<char32_t>(cx, v_array, length,
+                                                     array_out);
+        case GI_TYPE_TAG_UINT8:
+            return gjs_array_to_auto_array<uint8_t>(cx, v_array, length,
+                                                    array_out);
+        case GI_TYPE_TAG_INT8:
+            return gjs_array_to_auto_array<int8_t>(cx, v_array, length,
+                                                   array_out);
+        case GI_TYPE_TAG_UINT16:
+            return gjs_array_to_auto_array<uint16_t>(cx, v_array, length,
+                                                     array_out);
+        case GI_TYPE_TAG_INT16:
+            return gjs_array_to_auto_array<int16_t>(cx, v_array, length,
+                                                    array_out);
+        case GI_TYPE_TAG_UINT32:
+            return gjs_array_to_auto_array<uint32_t>(cx, v_array, length,
+                                                     array_out);
+        case GI_TYPE_TAG_INT32:
+            return gjs_array_to_auto_array<int32_t>(cx, v_array, length,
+                                                    array_out);
+        case GI_TYPE_TAG_INT64:
+            return gjs_array_to_auto_array<int64_t>(cx, v_array, length,
+                                                    array_out);
+        case GI_TYPE_TAG_UINT64:
+            return gjs_array_to_auto_array<uint64_t>(cx, v_array, length,
+                                                     array_out);
+        case GI_TYPE_TAG_FLOAT:
+            return gjs_array_to_auto_array<float>(cx, v_array, length,
+                                                  array_out);
+        case GI_TYPE_TAG_DOUBLE:
+            return gjs_array_to_auto_array<double>(cx, v_array, length,
+                                                   array_out);
+        case GI_TYPE_TAG_GTYPE:
+            return gjs_array_to_auto_array<GType, GI_TYPE_TAG_GTYPE>(
+                cx, v_array, length, array_out);
+        case GI_TYPE_TAG_VOID:
+            gjs_throw(cx, "Unhandled array element type %d",
+                      element_storage_type);
+            return false;
+        default:
+            g_assert_not_reached();
+    }
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
                                size_t length, GITransfer transfer,
                                GITypeInfo* param_info, void** arr_p) {
     GITypeTag element_type = g_type_info_get_storage_type(param_info);
 
-    switch (element_type) {
-    case GI_TYPE_TAG_UTF8:
-        return gjs_array_to_strv (context, array_value, length, arr_p);
-    case GI_TYPE_TAG_BOOLEAN:
-        return gjs_array_to_auto_array<gboolean, GI_TYPE_TAG_BOOLEAN>(
-            context, array_value, length, arr_p);
-    case GI_TYPE_TAG_UNICHAR:
-        return gjs_array_to_auto_array<char32_t>(context, array_value, length,
-                                                 arr_p);
-    case GI_TYPE_TAG_UINT8:
-        return gjs_array_to_auto_array<uint8_t>(context, array_value, length,
-                                                arr_p);
-    case GI_TYPE_TAG_INT8:
-        return gjs_array_to_auto_array<int8_t>(context, array_value, length,
-                                               arr_p);
-    case GI_TYPE_TAG_UINT16:
-        return gjs_array_to_auto_array<uint16_t>(context, array_value, length,
-                                                 arr_p);
-    case GI_TYPE_TAG_INT16:
-        return gjs_array_to_auto_array<int16_t>(context, array_value, length,
-                                                arr_p);
-    case GI_TYPE_TAG_UINT32:
-        return gjs_array_to_auto_array<uint32_t>(context, array_value, length,
-                                                 arr_p);
-    case GI_TYPE_TAG_INT32:
-        return gjs_array_to_auto_array<int32_t>(context, array_value, length,
-                                                arr_p);
-    case GI_TYPE_TAG_INT64:
-        return gjs_array_to_auto_array<int64_t>(context, array_value, length,
-                                                arr_p);
-    case GI_TYPE_TAG_UINT64:
-        return gjs_array_to_auto_array<uint64_t>(context, array_value, length,
-                                                 arr_p);
-    case GI_TYPE_TAG_FLOAT:
-        return gjs_array_to_auto_array<float>(context, array_value, length,
-                                              arr_p);
-    case GI_TYPE_TAG_DOUBLE:
-        return gjs_array_to_auto_array<double>(context, array_value, length,
-                                               arr_p);
-    case GI_TYPE_TAG_GTYPE:
-        return gjs_array_to_auto_array<GType, GI_TYPE_TAG_GTYPE>(
-            context, array_value, length, arr_p);
+    if (GI_TYPE_TAG_IS_BASIC(element_type)) {
+        return gjs_array_to_basic_array(context, array_value, length,
+                                        element_type, arr_p);
+    }
 
-    /* Everything else is a pointer type */
+    switch (element_type) {
     case GI_TYPE_TAG_INTERFACE:
         if (!g_type_info_is_pointer(param_info)) {
             GI::AutoBaseInfo interface_info{
@@ -847,18 +914,54 @@ static bool gjs_array_to_array(JSContext* context, JS::HandleValue array_value,
     case GI_TYPE_TAG_GSLIST:
     case GI_TYPE_TAG_GHASH:
     case GI_TYPE_TAG_ERROR:
-    case GI_TYPE_TAG_FILENAME:
         return gjs_array_to_ptrarray(context,
                                      array_value,
                                      length,
                                      transfer == GI_TRANSFER_CONTAINER ? GI_TRANSFER_NOTHING : transfer,
                                      param_info,
                                      arr_p);
-    case GI_TYPE_TAG_VOID:
     default:
-        gjs_throw(context,
-                  "Unhandled array element type %d", element_type);
+        // Basic types already handled in gjs_array_to_basic_array()
+        gjs_throw(context, "Unhandled array element type %d", element_type);
         return false;
+    }
+}
+
+static inline size_t basic_type_element_size(GITypeTag element_tag) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag));
+
+    switch (element_tag) {
+        case GI_TYPE_TAG_BOOLEAN:
+            return sizeof(gboolean);
+        case GI_TYPE_TAG_INT8:
+            return sizeof(int8_t);
+        case GI_TYPE_TAG_UINT8:
+            return sizeof(uint8_t);
+        case GI_TYPE_TAG_INT16:
+            return sizeof(int16_t);
+        case GI_TYPE_TAG_UINT16:
+            return sizeof(uint16_t);
+        case GI_TYPE_TAG_INT32:
+            return sizeof(int32_t);
+        case GI_TYPE_TAG_UINT32:
+            return sizeof(uint32_t);
+        case GI_TYPE_TAG_INT64:
+            return sizeof(int64_t);
+        case GI_TYPE_TAG_UINT64:
+            return sizeof(uint64_t);
+        case GI_TYPE_TAG_FLOAT:
+            return sizeof(float);
+        case GI_TYPE_TAG_DOUBLE:
+            return sizeof(double);
+        case GI_TYPE_TAG_GTYPE:
+            return sizeof(GType);
+        case GI_TYPE_TAG_UNICHAR:
+            return sizeof(char32_t);
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+            return sizeof(char*);
+        default:
+            g_return_val_if_reached(0);
     }
 }
 
@@ -869,41 +972,12 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
         return sizeof(void*);
 
     switch (element_type) {
-    case GI_TYPE_TAG_BOOLEAN:
-        return sizeof(gboolean);
-    case GI_TYPE_TAG_INT8:
-        return sizeof(int8_t);
-    case GI_TYPE_TAG_UINT8:
-        return sizeof(uint8_t);
-    case GI_TYPE_TAG_INT16:
-        return sizeof(int16_t);
-    case GI_TYPE_TAG_UINT16:
-        return sizeof(uint16_t);
-    case GI_TYPE_TAG_INT32:
-        return sizeof(int32_t);
-    case GI_TYPE_TAG_UINT32:
-        return sizeof(uint32_t);
-    case GI_TYPE_TAG_INT64:
-        return sizeof(int64_t);
-    case GI_TYPE_TAG_UINT64:
-        return sizeof(uint64_t);
-    case GI_TYPE_TAG_FLOAT:
-        return sizeof(float);
-    case GI_TYPE_TAG_DOUBLE:
-        return sizeof(double);
-    case GI_TYPE_TAG_GTYPE:
-        return sizeof(GType);
-    case GI_TYPE_TAG_UNICHAR:
-        return sizeof(char32_t);
     case GI_TYPE_TAG_GLIST:
         return sizeof(GSList);
     case GI_TYPE_TAG_GSLIST:
         return sizeof(GList);
     case GI_TYPE_TAG_ERROR:
         return sizeof(GError);
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-        return sizeof(char*);
     case GI_TYPE_TAG_INTERFACE: {
         GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
 
@@ -940,6 +1014,9 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
 
     case GI_TYPE_TAG_VOID:
         break;
+
+    default:
+        return basic_type_element_size(element_type);
     }
 
     g_return_val_if_reached(0);
@@ -949,6 +1026,11 @@ static GArray* garray_new_for_storage_type(unsigned length,
                                            GITypeTag storage_type,
                                            GITypeInfo* type_info) {
     size_t element_size = gjs_type_get_element_size(storage_type, type_info);
+    return g_array_sized_new(true, false, element_size, length);
+}
+
+static GArray* garray_new_for_basic_type(unsigned length, GITypeTag tag) {
+    size_t element_size = basic_type_element_size(tag);
     return g_array_sized_new(true, false, element_size, length);
 }
 
@@ -1001,19 +1083,113 @@ throw_invalid_argument(JSContext      *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool throw_invalid_argument_tag(JSContext* cx, JS::HandleValue value,
+                                       GITypeTag type_tag, const char* arg_name,
+                                       GjsArgumentType arg_type) {
+    Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
+
+    gjs_throw(cx, "Expected type %s for %s but got type '%s'",
+              g_type_tag_to_string(type_tag), display_name.get(),
+              JS::InformalValueTypeName(value));
+    return false;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool throw_invalid_interface_argument(JSContext* cx,
+                                             JS::HandleValue value,
+                                             GIBaseInfo* interface_info,
+                                             const char* arg_name,
+                                             GjsArgumentType arg_type) {
+    Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
+
+    gjs_throw(cx, "Expected type %s for %s but got type '%s'",
+              g_info_type_to_string(g_base_info_get_type(interface_info)),
+              display_name.get(), JS::InformalValueTypeName(value));
+    return false;
+}
+
+bool gjs_array_to_basic_explicit_array(
+    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
+    const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags,
+    void** contents_out, size_t* length_out) {
+    g_assert(contents_out && length_out && "forgot out parameter");
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting argument '%s' JS value %s to C array",
+                      arg_name, gjs_debug_value(value).c_str());
+
+    if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
+        (!value.isString() && !value.isObjectOrNull())) {
+        return throw_invalid_argument_tag(cx, value, element_tag, arg_name,
+                                          arg_type);
+    }
+
+    if (value.isNull()) {
+        *contents_out = nullptr;
+        *length_out = 0;
+        return true;
+    }
+
+    if (value.isString()) {
+        // Allow strings as int8/uint8/int16/uint16 arrays
+        JS::RootedString str{cx, value.toString()};
+        return gjs_string_to_intarray(cx, str, element_tag, contents_out,
+                                      length_out);
+    }
+
+    JS::RootedObject array_obj{cx, &value.toObject()};
+    if (JS_IsUint8Array(array_obj) &&
+        (element_tag == GI_TYPE_TAG_INT8 || element_tag == GI_TYPE_TAG_UINT8)) {
+        GBytes* bytes = gjs_byte_array_get_bytes(array_obj);
+        *contents_out = g_bytes_unref_to_data(bytes, length_out);
+        return true;
+    }
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    bool found_length;
+    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
+        return false;
+    if (found_length) {
+        uint32_t length;
+
+        if (!gjs_object_require_converted_property(cx, array_obj, nullptr,
+                                                   atoms.length(), &length)) {
+            return false;
+        }
+
+        // For basic types, type tag == storage type
+        if (!gjs_array_to_basic_array(cx, value, length, element_tag,
+                                      contents_out))
+            return false;
+
+        *length_out = length;
+        return true;
+    }
+
+    return throw_invalid_argument_tag(cx, value, element_tag, arg_name,
+                                      arg_type);
+}
+
 bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
                                  GITypeInfo* type_info, const char* arg_name,
                                  GjsArgumentType arg_type, GITransfer transfer,
                                  GjsArgumentFlags flags, void** contents,
                                  size_t* length_p) {
+    GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
+    GITypeTag element_tag = g_type_info_get_tag(param_info);
+
+    if (GI_TYPE_TAG_IS_BASIC(element_tag)) {
+        return gjs_array_to_basic_explicit_array(context, value, element_tag,
+                                                 arg_name, arg_type, flags,
+                                                 contents, length_p);
+    }
+
     bool found_length;
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '%s' JS value %s to C array, transfer %d",
         arg_name, gjs_debug_value(value).c_str(), transfer);
-
-    GI::AutoTypeInfo param_info{g_type_info_get_param_type(type_info, 0)};
 
     if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
         (!value.isString() && !value.isObjectOrNull())) {
@@ -1027,14 +1203,12 @@ bool gjs_array_to_explicit_array(JSContext* context, JS::HandleValue value,
     } else if (value.isString()) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
         JS::RootedString str(context, value.toString());
-        GITypeTag element_tag = g_type_info_get_tag(param_info);
         if (!gjs_string_to_intarray(context, str, element_tag, contents, length_p))
             return false;
     } else {
         JS::RootedObject array_obj(context, &value.toObject());
-        GITypeTag element_type = g_type_info_get_tag(param_info);
-        if (JS_IsUint8Array(array_obj) && (element_type == GI_TYPE_TAG_INT8 ||
-                                           element_type == GI_TYPE_TAG_UINT8)) {
+        if (JS_IsUint8Array(array_obj) && (element_tag == GI_TYPE_TAG_INT8 ||
+                                           element_tag == GI_TYPE_TAG_UINT8)) {
             GBytes* bytes = gjs_byte_array_get_bytes(array_obj);
             *contents = g_bytes_unref_to_data(bytes, length_p);
             return true;
@@ -1092,13 +1266,45 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
                                               2, nullptr, 0, ret, nullptr);
 }
 
-static bool value_to_interface_gi_argument(
+static bool value_to_gdk_atom_gi_argument_internal(JSContext* cx,
+                                                   JS::HandleValue value,
+                                                   GIArgument* arg,
+                                                   const char* arg_name,
+                                                   GjsArgumentType arg_type) {
+    if (!value.isNull() && !value.isString()) {
+        Gjs::AutoChar display_name{
+            gjs_argument_display_name(arg_name, arg_type)};
+        gjs_throw(cx, "Expected type String or null for %s but got type '%s'",
+                  display_name.get(), JS::InformalValueTypeName(value));
+        return false;
+    }
+
+    if (value.isNull()) {
+        intern_gdk_atom("NONE", arg);
+        return true;
+    }
+
+    JS::RootedString str{cx, value.toString()};
+    JS::UniqueChars name{JS_EncodeStringToUTF8(cx, str)};
+    if (!name)
+        return false;
+
+    intern_gdk_atom(name.get(), arg);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+bool value_to_interface_gi_argument_internal(
     JSContext* cx, JS::HandleValue value, GIBaseInfo* interface_info,
     GIInfoType interface_type, GITransfer transfer, bool expect_object,
-    GIArgument* arg, GjsArgumentType arg_type, GjsArgumentFlags flags,
-    bool* report_type_mismatch) {
-    g_assert(report_type_mismatch);
+    GIArgument* arg, const char* arg_name, GjsArgumentType arg_type,
+    GjsArgumentFlags flags) {
     GType gtype;
+
+    if (arg::is_gdk_atom(interface_info)) {
+        return value_to_gdk_atom_gi_argument_internal(cx, value, arg, arg_name,
+                                                      arg_type);
+    }
 
     switch (interface_type) {
         case GI_INFO_TYPE_BOXED:
@@ -1139,26 +1345,9 @@ static bool value_to_interface_gi_argument(
         gjs_arg_set(arg, g_boxed_copy(G_TYPE_VALUE, &gvalue));
         return true;
 
-    } else if (arg::is_gdk_atom(interface_info)) {
-        if (!value.isNull() && !value.isString()) {
-            *report_type_mismatch = true;
-            return false;
-        } else if (value.isNull()) {
-            intern_gdk_atom("NONE", arg);
-            return true;
-        }
-
-        JS::RootedString str(cx, value.toString());
-        JS::UniqueChars name(JS_EncodeStringToUTF8(cx, str));
-        if (!name)
-            return false;
-
-        intern_gdk_atom(name.get(), arg);
-        return true;
-
     } else if (expect_object != value.isObjectOrNull()) {
-        *report_type_mismatch = true;
-        return false;
+        return throw_invalid_interface_argument(cx, value, interface_info,
+                                                arg_name, arg_type);
 
     } else if (value.isNull()) {
         gjs_arg_set(arg, nullptr);
@@ -1173,8 +1362,8 @@ static bool value_to_interface_gi_argument(
                 return false;
 
             if (actual_gtype == G_TYPE_NONE) {
-                *report_type_mismatch = true;
-                return false;
+                return throw_invalid_interface_argument(
+                    cx, value, interface_info, arg_name, arg_type);
             }
 
             // We use peek here to simplify reference counting (we just ignore
@@ -1352,8 +1541,8 @@ static bool value_to_interface_gi_argument(
     gjs_debug(GJS_DEBUG_GFUNCTION,
               "JSObject type '%s' is neither null nor an object",
               JS::InformalValueTypeName(value));
-    *report_type_mismatch = true;
-    return false;
+    return throw_invalid_interface_argument(cx, value, interface_info, arg_name,
+                                            arg_type);
 }
 
 template <typename T>
@@ -1398,11 +1587,540 @@ static bool check_nullable_argument(JSContext* cx, const char* arg_name,
     return true;
 }
 
+bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
+                                    GITypeTag type_tag, GIArgument* arg,
+                                    const char* arg_name,
+                                    GjsArgumentType arg_type,
+                                    GjsArgumentFlags flags) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(type_tag) &&
+             "use gjs_value_to_gi_argument() for non-basic types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type %s", arg_name,
+        gjs_debug_value(value).c_str(), g_type_tag_to_string(type_tag));
+
+    switch (type_tag) {
+        case GI_TYPE_TAG_VOID:
+            // don't know how to handle non-pointer VOID
+            return throw_invalid_argument_tag(cx, value, type_tag, arg_name,
+                                              arg_type);
+        case GI_TYPE_TAG_INT8:
+            return gjs_arg_set_from_js_value<int8_t>(cx, value, arg, arg_name,
+                                                     arg_type);
+        case GI_TYPE_TAG_UINT8:
+            return gjs_arg_set_from_js_value<uint8_t>(cx, value, arg, arg_name,
+                                                      arg_type);
+        case GI_TYPE_TAG_INT16:
+            return gjs_arg_set_from_js_value<int16_t>(cx, value, arg, arg_name,
+                                                      arg_type);
+
+        case GI_TYPE_TAG_UINT16:
+            return gjs_arg_set_from_js_value<uint16_t>(cx, value, arg, arg_name,
+                                                       arg_type);
+
+        case GI_TYPE_TAG_INT32:
+            return gjs_arg_set_from_js_value<int32_t>(cx, value, arg, arg_name,
+                                                      arg_type);
+
+        case GI_TYPE_TAG_UINT32:
+            return gjs_arg_set_from_js_value<uint32_t>(cx, value, arg, arg_name,
+                                                       arg_type);
+
+        case GI_TYPE_TAG_INT64:
+            return gjs_arg_set_from_js_value<int64_t>(cx, value, arg, arg_name,
+                                                      arg_type);
+
+        case GI_TYPE_TAG_UINT64:
+            return gjs_arg_set_from_js_value<uint64_t>(cx, value, arg, arg_name,
+                                                       arg_type);
+
+        case GI_TYPE_TAG_BOOLEAN:
+            gjs_arg_set(arg, JS::ToBoolean(value));
+            return true;
+
+        case GI_TYPE_TAG_FLOAT:
+            return gjs_arg_set_from_js_value<float>(cx, value, arg, arg_name,
+                                                    arg_type);
+
+        case GI_TYPE_TAG_DOUBLE:
+            return gjs_arg_set_from_js_value<double>(cx, value, arg, arg_name,
+                                                     arg_type);
+
+        case GI_TYPE_TAG_UNICHAR:
+            if (value.isString()) {
+                return gjs_unichar_from_string(cx, value,
+                                               &gjs_arg_member<char32_t>(arg));
+            }
+
+            return throw_invalid_argument_tag(cx, value, type_tag, arg_name,
+                                              arg_type);
+
+        case GI_TYPE_TAG_GTYPE:
+            if (value.isObjectOrNull()) {
+                GType gtype;
+                JS::RootedObject obj{cx, value.toObjectOrNull()};
+                if (!gjs_gtype_get_actual_gtype(cx, obj, &gtype))
+                    return false;
+
+                if (gtype == G_TYPE_INVALID)
+                    return false;
+                gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(arg, gtype);
+                return true;
+            }
+
+            return throw_invalid_argument_tag(cx, value, type_tag, arg_name,
+                                              arg_type);
+
+        case GI_TYPE_TAG_FILENAME:
+            if (value.isNull()) {
+                gjs_arg_set(arg, nullptr);
+            } else if (value.isString()) {
+                Gjs::AutoChar filename_str;
+                if (!gjs_string_to_filename(cx, value, &filename_str))
+                    return false;
+
+                gjs_arg_set(arg, filename_str.release());
+            } else {
+                return throw_invalid_argument_tag(cx, value, type_tag, arg_name,
+                                                  arg_type);
+            }
+
+            return check_nullable_argument(cx, arg_name, arg_type, type_tag,
+                                           flags, arg);
+
+        case GI_TYPE_TAG_UTF8:
+            if (value.isNull()) {
+                gjs_arg_set(arg, nullptr);
+            } else if (value.isString()) {
+                JS::RootedString str{cx, value.toString()};
+                JS::UniqueChars utf8_str{JS_EncodeStringToUTF8(cx, str)};
+                if (!utf8_str)
+                    return false;
+
+                gjs_arg_set(
+                    arg, Gjs::js_chars_to_glib(std::move(utf8_str)).release());
+            } else {
+                return throw_invalid_argument_tag(cx, value, type_tag, arg_name,
+                                                  arg_type);
+            }
+
+            return check_nullable_argument(cx, arg_name, arg_type, type_tag,
+                                           flags, arg);
+
+        default:
+            g_return_val_if_reached(false);  // non-basic type
+    }
+}
+
+bool gjs_value_to_gerror_gi_argument(JSContext* cx, JS::HandleValue value,
+                                     GITransfer transfer, GIArgument* arg,
+                                     const char* arg_name,
+                                     GjsArgumentType arg_type,
+                                     GjsArgumentFlags flags) {
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type error",
+        arg_name, gjs_debug_value(value).c_str());
+
+    if (value.isNull()) {
+        gjs_arg_set(arg, nullptr);
+    } else if (value.isObject()) {
+        JS::RootedObject obj(cx, &value.toObject());
+        if (!ErrorBase::transfer_to_gi_argument(cx, obj, arg, GI_DIRECTION_IN,
+                                                transfer))
+            return false;
+    } else {
+        return throw_invalid_argument_tag(cx, value, GI_TYPE_TAG_ERROR,
+                                          arg_name, arg_type);
+    }
+
+    return check_nullable_argument(cx, arg_name, arg_type, GI_TYPE_TAG_ERROR,
+                                   flags, arg);
+}
+
+bool gjs_value_to_gdk_atom_gi_argument(JSContext* cx, JS::HandleValue value,
+                                       GIArgument* arg, const char* arg_name,
+                                       GjsArgumentType arg_type) {
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type interface",
+        arg_name, gjs_debug_value(value).c_str());
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is GdkAtom");
+
+    return value_to_gdk_atom_gi_argument_internal(cx, value, arg, arg_name,
+                                                  arg_type);
+}
+
+// Convert a JS value to GIArgument, specifically for arguments with type tag
+// GI_TYPE_TAG_INTERFACE.
+bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
+                                        GIBaseInfo* interface_info,
+                                        GITransfer transfer, GIArgument* arg,
+                                        const char* arg_name,
+                                        GjsArgumentType arg_type,
+                                        GjsArgumentFlags flags) {
+    g_assert(interface_info);
+
+    if (arg::is_gdk_atom(interface_info)) {
+        return gjs_value_to_gdk_atom_gi_argument(cx, value, arg, arg_name,
+                                                 arg_type);
+    }
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type interface",
+        arg_name, gjs_debug_value(value).c_str());
+
+    GIInfoType interface_type = g_base_info_get_type(interface_info);
+    if (interface_type == GI_INFO_TYPE_STRUCT &&
+        g_struct_info_is_foreign(interface_info)) {
+        return gjs_struct_foreign_convert_to_gi_argument(
+            cx, value, interface_info, arg_name, arg_type, transfer, flags,
+            arg);
+    }
+
+    bool expect_object = interface_type != GI_INFO_TYPE_ENUM &&
+                         interface_type != GI_INFO_TYPE_FLAGS;
+
+    if (!value_to_interface_gi_argument_internal(
+            cx, value, interface_info, interface_type, transfer, expect_object,
+            arg, arg_name, arg_type, flags))
+        return false;
+
+    if (expect_object) {
+        return check_nullable_argument(cx, arg_name, arg_type,
+                                       GI_TYPE_TAG_INTERFACE, flags, arg);
+    }
+    return true;
+}
+
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool basic_array_to_linked_list(
+    JSContext* cx, const JS::HandleValue& value, GITypeTag element_tag,
+    const char* arg_name, GjsArgumentType arg_type, T** list_p) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_array_to_g_list() for lists containing non-basic types");
+
+    constexpr GITypeTag list_tag =
+        std::is_same_v<T, GList> ? GI_TYPE_TAG_GLIST : GI_TYPE_TAG_GSLIST;
+
+    // While a list can be NULL in C, that means empty array in JavaScript, it
+    // doesn't mean null in JavaScript.
+    if (!value.isObject())
+        return false;
+
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject array_obj(cx, &value.toObject());
+
+    bool found_length;
+    if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
+        return false;
+    if (!found_length) {
+        return throw_invalid_argument_tag(cx, value, list_tag, arg_name,
+                                          arg_type);
+    }
+
+    uint32_t length;
+    if (!gjs_object_require_converted_property(cx, array_obj, nullptr,
+                                               atoms.length(), &length)) {
+        return throw_invalid_argument_tag(cx, value, list_tag, arg_name,
+                                          arg_type);
+    }
+
+    JS::RootedObject array{cx, value.toObjectOrNull()};
+    JS::RootedValue elem{cx};
+    T* list = nullptr;
+
+    for (size_t i = 0; i < length; ++i) {
+        GIArgument elem_arg = {0};
+
+        elem = JS::UndefinedValue();
+        if (!JS_GetElement(cx, array, i, &elem)) {
+            gjs_throw(cx, "Missing array element %zu", i);
+            return false;
+        }
+
+        if (!gjs_value_to_basic_gi_argument(cx, elem, element_tag, &elem_arg,
+                                            arg_name, GJS_ARGUMENT_LIST_ELEMENT,
+                                            GjsArgumentFlags::NONE)) {
+            return false;
+        }
+
+        void* hash_pointer =
+            gi_type_tag_hash_pointer_from_argument(element_tag, &elem_arg);
+
+        if constexpr (std::is_same_v<T, GList>)
+            list = g_list_prepend(list, hash_pointer);
+        else if constexpr (std::is_same_v<T, GSList>)
+            list = g_slist_prepend(list, hash_pointer);
+    }
+
+    if constexpr (std::is_same_v<T, GList>)
+        list = g_list_reverse(list);
+    else if constexpr (std::is_same_v<T, GSList>)
+        list = g_slist_reverse(list);
+
+    *list_p = list;
+
+    return true;
+}
+
+bool gjs_value_to_basic_glist_gi_argument(JSContext* cx, JS::HandleValue value,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg, const char* arg_name,
+                                          GjsArgumentType arg_type) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_array_to_g_list() for lists containing non-basic types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type glist",
+        arg_name, gjs_debug_value(value).c_str());
+
+    return basic_array_to_linked_list(cx, value, element_tag, arg_name,
+                                      arg_type, &gjs_arg_member<GList*>(arg));
+}
+
+bool gjs_value_to_basic_gslist_gi_argument(JSContext* cx, JS::HandleValue value,
+                                           GITypeTag element_tag,
+                                           GIArgument* arg,
+                                           const char* arg_name,
+                                           GjsArgumentType arg_type) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_array_to_g_list() for lists containing non-basic types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type gslist",
+        arg_name, gjs_debug_value(value).c_str());
+
+    return basic_array_to_linked_list(cx, value, element_tag, arg_name,
+                                      arg_type, &gjs_arg_member<GSList*>(arg));
+}
+
+bool gjs_value_to_basic_ghash_gi_argument(
+    JSContext* cx, JS::HandleValue value, GITypeTag key_tag,
+    GITypeTag value_tag, GITransfer transfer, GIArgument* arg,
+    const char* arg_name, GjsArgumentType arg_type, GjsArgumentFlags flags) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(key_tag) &&
+             "use gjs_object_to_g_hash() for hashes with non-basic key types");
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(value_tag) &&
+        "use gjs_object_to_g_hash() for hashes with non-basic value types");
+
+    gjs_debug_marshal(
+        GJS_DEBUG_GFUNCTION,
+        "Converting argument '%s' JS value %s to GIArgument type ghash",
+        arg_name, gjs_debug_value(value).c_str());
+
+    if (value.isNull()) {
+        if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
+            return throw_invalid_argument_tag(cx, value, GI_TYPE_TAG_GHASH,
+                                              arg_name, arg_type);
+        }
+        gjs_arg_set(arg, nullptr);
+        return true;
+    }
+
+    if (!value.isObject()) {
+        return throw_invalid_argument_tag(cx, value, GI_TYPE_TAG_GHASH,
+                                          arg_name, arg_type);
+    }
+
+    if (transfer == GI_TRANSFER_CONTAINER) {
+        if (Gjs::basic_type_needs_release(key_tag) ||
+            Gjs::basic_type_needs_release(value_tag)) {
+            // See comment in gjs_value_to_g_hash()
+            gjs_throw(cx, "Container transfer for in parameters not supported");
+            return false;
+        }
+
+        transfer = GI_TRANSFER_NOTHING;
+    }
+
+    JS::RootedObject props{cx, &value.toObject()};
+    JS::Rooted<JS::IdVector> ids{cx, cx};
+    if (!JS_Enumerate(cx, props, &ids))
+        return false;
+
+    Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> result{
+        create_hash_table_for_key_type(key_tag)};
+
+    JS::RootedValue v_key{cx}, v_val{cx};
+    JS::RootedId cur_id{cx};
+    for (size_t id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
+        cur_id = ids[id_ix];
+        void* key_ptr;
+        void* val_ptr;
+        GIArgument val_arg = {0};
+
+        if (!JS_IdToValue(cx, cur_id, &v_key) ||
+            // Type check key type.
+            !value_to_ghashtable_key(cx, v_key, key_tag, &key_ptr) ||
+            !JS_GetPropertyById(cx, props, cur_id, &v_val) ||
+            // Type check and convert value to a C type
+            !gjs_value_to_basic_gi_argument(cx, v_val, value_tag, &val_arg,
+                                            nullptr, GJS_ARGUMENT_HASH_ELEMENT,
+                                            GjsArgumentFlags::MAY_BE_NULL))
+            return false;
+
+        // Use heap-allocated values for types that don't fit in a pointer
+        if (value_tag == GI_TYPE_TAG_INT64) {
+            val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
+        } else if (value_tag == GI_TYPE_TAG_UINT64) {
+            val_ptr = heap_value_new_from_arg<uint64_t>(&val_arg);
+        } else if (value_tag == GI_TYPE_TAG_FLOAT) {
+            val_ptr = heap_value_new_from_arg<float>(&val_arg);
+        } else if (value_tag == GI_TYPE_TAG_DOUBLE) {
+            val_ptr = heap_value_new_from_arg<double>(&val_arg);
+        } else {
+            // Other types are simply stuffed inside the pointer
+            val_ptr =
+                gi_type_tag_hash_pointer_from_argument(value_tag, &val_arg);
+        }
+
+        g_hash_table_insert(result, key_ptr, val_ptr);
+    }
+
+    gjs_arg_set(arg, result.release());
+    return true;
+}
+
+bool gjs_value_to_basic_array_gi_argument(JSContext* cx, JS::HandleValue value,
+                                          GITypeTag element_tag,
+                                          GIArrayType array_type,
+                                          GIArgument* arg, const char* arg_name,
+                                          GjsArgumentType arg_type,
+                                          GjsArgumentFlags flags) {
+    Gjs::AutoPointer<void> data;
+    size_t length;
+    if (!gjs_array_to_basic_explicit_array(cx, value, element_tag, arg_name,
+                                           arg_type, flags, data.out(),
+                                           &length)) {
+        return false;
+    }
+
+    if (array_type == GI_ARRAY_TYPE_C) {
+        gjs_arg_set(arg, data.release());
+    } else if (array_type == GI_ARRAY_TYPE_ARRAY) {
+        GArray* array = garray_new_for_basic_type(length, element_tag);
+
+        if (data)
+            g_array_append_vals(array, data, length);
+        gjs_arg_set(arg, array);
+    } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
+        return gjs_value_to_byte_array_gi_argument(cx, value, arg, arg_name,
+                                                   flags);
+    } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
+        GPtrArray* array = g_ptr_array_sized_new(length);
+
+        g_ptr_array_set_size(array, length);
+        if (data)
+            memcpy(array->pdata, data, sizeof(void*) * length);
+        gjs_arg_set(arg, array);
+    }
+    return true;
+}
+
+bool gjs_value_to_byte_array_gi_argument(JSContext* cx, JS::HandleValue value,
+                                         GIArgument* arg, const char* arg_name,
+                                         GjsArgumentFlags flags) {
+    // First, let's handle the case where we're passed an instance of
+    // Uint8Array and it needs to be marshalled to GByteArray.
+    if (value.isObject()) {
+        JSObject* bytearray_obj = &value.toObject();
+        if (JS_IsUint8Array(bytearray_obj)) {
+            gjs_arg_set(arg, gjs_byte_array_get_byte_array(bytearray_obj));
+            return true;
+        }
+    }
+
+    Gjs::AutoPointer<void> data;
+    size_t length;
+    if (!gjs_array_to_basic_explicit_array(cx, value, GI_TYPE_TAG_UINT8,
+                                           arg_name, GJS_ARGUMENT_ARGUMENT,
+                                           flags, data.out(), &length)) {
+        return false;
+    }
+
+    GByteArray* byte_array = g_byte_array_sized_new(length);
+
+    if (data)
+        g_byte_array_append(byte_array, data.as<const uint8_t>(), length);
+    gjs_arg_set(arg, byte_array);
+    return true;
+}
+
 bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                               GITypeInfo* type_info, const char* arg_name,
                               GjsArgumentType arg_type, GITransfer transfer,
                               GjsArgumentFlags flags, GIArgument* arg) {
     GITypeTag type_tag = g_type_info_get_tag(type_info);
+    bool is_pointer = g_type_info_is_pointer(type_info);
+
+    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+        return gjs_value_to_basic_gi_argument(context, value, type_tag, arg,
+                                              arg_name, arg_type, flags);
+    }
+
+    if (type_tag == GI_TYPE_TAG_ERROR) {
+        return gjs_value_to_gerror_gi_argument(context, value, transfer, arg,
+                                               arg_name, arg_type, flags);
+    }
+
+    if (type_tag == GI_TYPE_TAG_INTERFACE) {
+        GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
+        return gjs_value_to_interface_gi_argument(context, value,
+                                                  interface_info, transfer, arg,
+                                                  arg_name, arg_type, flags);
+    }
+
+    if (type_tag == GI_TYPE_TAG_GLIST || type_tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            if (type_tag == GI_TYPE_TAG_GLIST)
+                return gjs_value_to_basic_glist_gi_argument(
+                    context, value, element_tag, arg, arg_name, arg_type);
+            return gjs_value_to_basic_gslist_gi_argument(
+                context, value, element_tag, arg, arg_name, arg_type);
+        }
+        // else, fall through to generic marshaller
+
+    } else if (type_tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            return gjs_value_to_basic_ghash_gi_argument(
+                context, value, key_tag, value_tag, transfer, arg, arg_name,
+                arg_type, flags);
+        }
+        // else, fall through to generic marshaller
+
+    } else if (type_tag == GI_TYPE_TAG_ARRAY) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+        GIArrayType array_type = g_type_info_get_array_type(type_info);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            return gjs_value_to_basic_array_gi_argument(
+                context, value, element_tag, array_type, arg, arg_name,
+                arg_type, flags);
+        }
+        // else, fall through to generic marshaller
+    }
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
@@ -1411,173 +2129,13 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        // just so it isn't uninitialized
+        g_assert(is_pointer &&
+                 "non-pointers should be handled by "
+                 "gjs_value_to_basic_gi_argument()");
+        // void pointer; cannot marshal. Pass null to C if argument is nullable.
         gjs_arg_unset(arg);
         return check_nullable_argument(context, arg_name, arg_type, type_tag,
                                        flags, arg);
-
-    case GI_TYPE_TAG_INT8:
-        return gjs_arg_set_from_js_value<int8_t>(context, value, arg, arg_name,
-                                                 arg_type);
-    case GI_TYPE_TAG_UINT8:
-        return gjs_arg_set_from_js_value<uint8_t>(context, value, arg, arg_name,
-                                                  arg_type);
-    case GI_TYPE_TAG_INT16:
-        return gjs_arg_set_from_js_value<int16_t>(context, value, arg, arg_name,
-                                                  arg_type);
-
-    case GI_TYPE_TAG_UINT16:
-        return gjs_arg_set_from_js_value<uint16_t>(context, value, arg,
-                                                   arg_name, arg_type);
-
-    case GI_TYPE_TAG_INT32:
-        return gjs_arg_set_from_js_value<int32_t>(context, value, arg, arg_name,
-                                                  arg_type);
-
-    case GI_TYPE_TAG_UINT32:
-        return gjs_arg_set_from_js_value<uint32_t>(context, value, arg,
-                                                   arg_name, arg_type);
-
-    case GI_TYPE_TAG_INT64:
-        return gjs_arg_set_from_js_value<int64_t>(context, value, arg, arg_name,
-                                                  arg_type);
-
-    case GI_TYPE_TAG_UINT64:
-        return gjs_arg_set_from_js_value<uint64_t>(context, value, arg,
-                                                   arg_name, arg_type);
-
-    case GI_TYPE_TAG_BOOLEAN:
-        gjs_arg_set(arg, JS::ToBoolean(value));
-        return true;
-
-    case GI_TYPE_TAG_FLOAT:
-        return gjs_arg_set_from_js_value<float>(context, value, arg, arg_name,
-                                                arg_type);
-
-    case GI_TYPE_TAG_DOUBLE:
-        return gjs_arg_set_from_js_value<double>(context, value, arg, arg_name,
-                                                 arg_type);
-
-    case GI_TYPE_TAG_UNICHAR:
-        if (value.isString()) {
-            if (!gjs_unichar_from_string(context, value,
-                                         &gjs_arg_member<char32_t>(arg)))
-                return false;
-        } else {
-            throw_invalid_argument(context, value, type_info, arg_name,
-                                   arg_type);
-            return false;
-        }
-        break;
-
-    case GI_TYPE_TAG_GTYPE:
-        if (value.isObjectOrNull()) {
-            GType gtype;
-            JS::RootedObject obj(context, value.toObjectOrNull());
-            if (!gjs_gtype_get_actual_gtype(context, obj, &gtype))
-                return false;
-
-            if (gtype == G_TYPE_INVALID)
-                return false;
-            gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(arg, gtype);
-        } else {
-            throw_invalid_argument(context, value, type_info, arg_name,
-                                   arg_type);
-            return false;
-        }
-        break;
-
-    case GI_TYPE_TAG_FILENAME:
-        if (value.isNull()) {
-            gjs_arg_set(arg, nullptr);
-        } else if (value.isString()) {
-            Gjs::AutoChar filename_str;
-            if (!gjs_string_to_filename(context, value, &filename_str))
-                return false;
-
-            gjs_arg_set(arg, filename_str.release());
-        } else {
-            throw_invalid_argument(context, value, type_info, arg_name,
-                                   arg_type);
-            return false;
-        }
-
-        return check_nullable_argument(context, arg_name, arg_type, type_tag,
-                                       flags, arg);
-
-    case GI_TYPE_TAG_UTF8:
-        if (value.isNull()) {
-            gjs_arg_set(arg, nullptr);
-        } else if (value.isString()) {
-            JS::RootedString str(context, value.toString());
-            JS::UniqueChars utf8_str(JS_EncodeStringToUTF8(context, str));
-            if (!utf8_str)
-                return false;
-
-            gjs_arg_set(arg, g_strdup(utf8_str.get()));
-        } else {
-            throw_invalid_argument(context, value, type_info, arg_name,
-                                   arg_type);
-            return false;
-        }
-
-        return check_nullable_argument(context, arg_name, arg_type, type_tag,
-                                       flags, arg);
-
-    case GI_TYPE_TAG_ERROR:
-        if (value.isNull()) {
-            gjs_arg_set(arg, nullptr);
-        } else if (value.isObject()) {
-            JS::RootedObject obj(context, &value.toObject());
-            if (!ErrorBase::transfer_to_gi_argument(context, obj, arg,
-                                                    GI_DIRECTION_IN, transfer))
-                return false;
-        } else {
-            throw_invalid_argument(context, value, type_info, arg_name,
-                                   arg_type);
-            return false;
-        }
-
-        return check_nullable_argument(context, arg_name, arg_type, type_tag,
-                                       flags, arg);
-
-    case GI_TYPE_TAG_INTERFACE:
-        {
-        bool expect_object = true;
-
-        GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
-        g_assert(interface_info);
-
-        GIInfoType interface_type = interface_info.type();
-        if (interface_type == GI_INFO_TYPE_ENUM ||
-            interface_type == GI_INFO_TYPE_FLAGS ||
-            arg::is_gdk_atom(interface_info))
-            expect_object = false;
-
-        if (interface_type == GI_INFO_TYPE_STRUCT &&
-            g_struct_info_is_foreign(interface_info)) {
-            return gjs_struct_foreign_convert_to_gi_argument(
-                context, value, interface_info, arg_name, arg_type, transfer,
-                flags, arg);
-        }
-
-        bool report_type_mismatch = false;
-        if (!value_to_interface_gi_argument(
-                context, value, interface_info, interface_type, transfer,
-                expect_object, arg, arg_type, flags, &report_type_mismatch)) {
-            if (report_type_mismatch)
-                throw_invalid_argument(context, value, type_info, arg_name,
-                                       arg_type);
-
-            return false;
-        }
-
-        if (expect_object)
-            return check_nullable_argument(context, arg_name, arg_type,
-                                           type_tag, flags, arg);
-        }
-        break;
-
     case GI_TYPE_TAG_GLIST:
         return gjs_array_to_g_list(context, value, type_info, transfer,
                                    arg_name, arg_type,
@@ -1616,20 +2174,6 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         size_t length;
         GIArrayType array_type = g_type_info_get_array_type(type_info);
 
-        /* First, let's handle the case where we're passed an instance
-         * of Uint8Array and it needs to be marshalled to GByteArray.
-         */
-        if (value.isObject()) {
-            JSObject* bytearray_obj = &value.toObject();
-            if (JS_IsUint8Array(bytearray_obj) &&
-                array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-                gjs_arg_set(arg, gjs_byte_array_get_byte_array(bytearray_obj));
-                break;
-            } else {
-                /* Fall through, !handled */
-            }
-        }
-
         if (!gjs_array_to_explicit_array(context, value, type_info, arg_name,
                                          arg_type, transfer, flags, data.out(),
                                          &length)) {
@@ -1648,12 +2192,8 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                 g_array_append_vals(array, data, length);
             gjs_arg_set(arg, array);
         } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-            GByteArray *byte_array = g_byte_array_sized_new(length);
-
-            if (data)
-                g_byte_array_append(byte_array, data.as<const uint8_t>(),
-                                    length);
-            gjs_arg_set(arg, byte_array);
+            // handled in gjs_value_to_basic_array_gi_argument()
+            g_assert_not_reached();
         } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
             GPtrArray *array = g_ptr_array_sized_new(length);
 
@@ -1665,6 +2205,9 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         break;
     }
     default:
+        // basic types handled in gjs_value_to_basic_gi_argument(), ERROR
+        // handled in gjs_value_to_gerror_gi_argument(), and INTERFACE handled
+        // in gjs_value_to_interface_gi_argument()
         g_warning("Unhandled type %s for JavaScript to GIArgument conversion",
                   g_type_tag_to_string(type_tag));
         throw_invalid_argument(context, value, type_info, arg_name, arg_type);
@@ -1714,6 +2257,120 @@ bool gjs_value_to_callback_out_arg(JSContext* context, JS::HandleValue value,
 ///// "FROM" MARSHALLERS ///////////////////////////////////////////////////////
 // These marshaller functions are responsible for converting C values returned
 // from a C function call, usually stored in a GIArgument, back to JS values.
+
+bool gjs_value_from_basic_gi_argument(JSContext* cx,
+                                      JS::MutableHandleValue value_out,
+                                      GITypeTag type_tag, GIArgument* arg) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(type_tag) &&
+             "use gjs_value_from_gi_argument() for non-basic types");
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument %s to JS::Value",
+                      g_type_tag_to_string(type_tag));
+
+    switch (type_tag) {
+        case GI_TYPE_TAG_VOID:
+            // Pointers are handled in gjs_value_from_gi_argument(), and would
+            // set null instead
+            value_out.setUndefined();
+            return true;
+
+        case GI_TYPE_TAG_BOOLEAN:
+            value_out.setBoolean(gjs_arg_get<bool>(arg));
+            return true;
+
+        case GI_TYPE_TAG_INT32:
+            value_out.setInt32(gjs_arg_get<int32_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_UINT32:
+            value_out.setNumber(gjs_arg_get<uint32_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_INT64:
+            value_out.setNumber(gjs_arg_get_maybe_rounded<int64_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_UINT64:
+            value_out.setNumber(gjs_arg_get_maybe_rounded<uint64_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_UINT16:
+            value_out.setInt32(gjs_arg_get<uint16_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_INT16:
+            value_out.setInt32(gjs_arg_get<int16_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_UINT8:
+            value_out.setInt32(gjs_arg_get<uint8_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_INT8:
+            value_out.setInt32(gjs_arg_get<int8_t>(arg));
+            return true;
+
+        case GI_TYPE_TAG_FLOAT:
+            value_out.setNumber(JS::CanonicalizeNaN(gjs_arg_get<float>(arg)));
+            return true;
+
+        case GI_TYPE_TAG_DOUBLE:
+            value_out.setNumber(JS::CanonicalizeNaN(gjs_arg_get<double>(arg)));
+            return true;
+
+        case GI_TYPE_TAG_GTYPE: {
+            GType gtype = gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(arg);
+            if (gtype == 0) {
+                value_out.setNull();
+                return true;
+            }
+
+            JSObject* obj = gjs_gtype_create_gtype_wrapper(cx, gtype);
+            if (!obj)
+                return false;
+
+            value_out.setObject(*obj);
+            return true;
+        }
+
+        case GI_TYPE_TAG_UNICHAR: {
+            char32_t value = gjs_arg_get<char32_t>(arg);
+
+            // Preserve the bidirectional mapping between 0 and ""
+            if (value == 0) {
+                value_out.set(JS_GetEmptyStringValue(cx));
+                return true;
+            } else if (!g_unichar_validate(value)) {
+                gjs_throw(cx, "Invalid unicode codepoint %" G_GUINT32_FORMAT,
+                          value);
+                return false;
+            }
+
+            char utf8[7];
+            int bytes = g_unichar_to_utf8(value, utf8);
+            return gjs_string_from_utf8_n(cx, utf8, bytes, value_out);
+        }
+
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_UTF8: {
+            const char* str = gjs_arg_get<const char*>(arg);
+            if (!str) {
+                value_out.setNull();
+                return true;
+            }
+
+            if (type_tag == GI_TYPE_TAG_FILENAME)
+                return gjs_string_from_filename(cx, str, -1, value_out);
+
+            return gjs_string_from_utf8(cx, str, value_out);
+        }
+
+        default:
+            // this function handles only basic types
+            g_return_val_if_reached(false);
+    }
+}
 
 bool gjs_array_from_strv(JSContext* cx, JS::MutableHandleValue value_out,
                          const char** strv) {
@@ -1775,6 +2432,20 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
 }
 
 template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_basic_c_array(
+    JSContext* cx, JS::MutableHandleValueVector elems, GITypeTag element_tag,
+    GIArgument* arg, void* array, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        gjs_arg_set<T, TAG>(arg, *(static_cast<T*>(array) + i));
+
+        if (!gjs_value_from_basic_gi_argument(cx, elems[i], element_tag, arg))
+            return false;
+    }
+
+    return true;
+}
+
+template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     GITypeInfo* param_info, GIArgument* arg, void* array, size_t length,
@@ -1792,6 +2463,122 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_from_basic_c_array_internal(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    size_t length, void* contents) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag));
+
+    // Special case array(uint8)
+    if (element_tag == GI_TYPE_TAG_UINT8) {
+        JSObject* u8array = gjs_byte_array_from_data_copy(cx, length, contents);
+        if (!u8array)
+            return false;
+        value_out.setObject(*u8array);
+        return true;
+    }
+
+    // Special case array(unichar) to be a string in JS
+    if (element_tag == GI_TYPE_TAG_UNICHAR) {
+        return gjs_string_from_ucs4(cx, static_cast<gunichar*>(contents),
+                                    length, value_out);
+    }
+
+    // a null array pointer takes precedence over whatever `length` says
+    if (!contents) {
+        JSObject* array = JS::NewArrayObject(cx, 0);
+        if (!array)
+            return false;
+        value_out.setObject(*array);
+        return true;
+    }
+
+    JS::RootedValueVector elems{cx};
+    if (!elems.resize(length)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
+
+    GIArgument arg;
+    switch (element_tag) {
+        // Special cases handled above
+        case GI_TYPE_TAG_UINT8:
+        case GI_TYPE_TAG_UNICHAR:
+            g_assert_not_reached();
+
+        case GI_TYPE_TAG_BOOLEAN:
+            if (!fill_vector_from_basic_c_array<gboolean, GI_TYPE_TAG_BOOLEAN>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT8:
+            if (!fill_vector_from_basic_c_array<int8_t>(cx, &elems, element_tag,
+                                                        &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_UINT16:
+            if (!fill_vector_from_basic_c_array<uint16_t>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT16:
+            if (!fill_vector_from_basic_c_array<int16_t>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_UINT32:
+            if (!fill_vector_from_basic_c_array<uint32_t>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT32:
+            if (!fill_vector_from_basic_c_array<int32_t>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_UINT64:
+            if (!fill_vector_from_basic_c_array<uint64_t>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT64:
+            if (!fill_vector_from_basic_c_array<int64_t>(
+                    cx, &elems, element_tag, &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            if (!fill_vector_from_basic_c_array<float>(cx, &elems, element_tag,
+                                                       &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            if (!fill_vector_from_basic_c_array<double>(cx, &elems, element_tag,
+                                                        &arg, contents, length))
+                return false;
+            break;
+
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+            if (!fill_vector_from_basic_c_array<void*>(cx, &elems, element_tag,
+                                                       &arg, contents, length))
+                return false;
+            break;
+        case GI_TYPE_TAG_VOID:
+            gjs_throw(cx, "Unknown Array element-type %d", element_tag);
+            return false;
+        default:
+            g_assert_not_reached();
+    }
+
+    JSObject* array = JS::NewArrayObject(cx, elems);
+    if (!array)
+        return false;
+
+    value_out.setObject(*array);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_carray_internal(
     JSContext* context, JS::MutableHandleValue value_p, GIArrayType array_type,
     GITypeInfo* param_info, GITransfer transfer, guint length, void* array) {
@@ -1800,18 +2587,10 @@ static bool gjs_array_from_carray_internal(
 
     element_type = g_type_info_get_tag(param_info);
 
-    /* Special case array(guint8) */
-    if (element_type == GI_TYPE_TAG_UINT8) {
-        JSObject* obj = gjs_byte_array_from_data_copy(context, length, array);
-        if (!obj)
-            return false;
-        value_p.setObject(*obj);
-        return true;
+    if (GI_TYPE_TAG_IS_BASIC(element_type)) {
+        return gjs_array_from_basic_c_array_internal(
+            context, value_p, element_type, length, array);
     }
-
-    /* Special case array(unichar) to be a string in JS */
-    if (element_type == GI_TYPE_TAG_UNICHAR)
-        return gjs_string_from_ucs4(context, (gunichar *) array, length, value_p);
 
     // a null array pointer takes precedence over whatever `length` says
     if (!array) {
@@ -1830,60 +2609,6 @@ static bool gjs_array_from_carray_internal(
 
     GIArgument arg;
     switch (element_type) {
-        /* Special cases handled above */
-        case GI_TYPE_TAG_UINT8:
-        case GI_TYPE_TAG_UNICHAR:
-            g_assert_not_reached();
-        case GI_TYPE_TAG_BOOLEAN:
-            if (!fill_vector_from_carray<gboolean, GI_TYPE_TAG_BOOLEAN>(
-                    context, elems, param_info, &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT8:
-            if (!fill_vector_from_carray<int8_t>(context, elems, param_info,
-                                                 &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_UINT16:
-            if (!fill_vector_from_carray<uint16_t>(context, elems, param_info,
-                                                   &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT16:
-            if (!fill_vector_from_carray<int16_t>(context, elems, param_info,
-                                                  &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_UINT32:
-            if (!fill_vector_from_carray<uint32_t>(context, elems, param_info,
-                                                   &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT32:
-            if (!fill_vector_from_carray<int32_t>(context, elems, param_info,
-                                                  &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_UINT64:
-            if (!fill_vector_from_carray<uint64_t>(context, elems, param_info,
-                                                   &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT64:
-            if (!fill_vector_from_carray<int64_t>(context, elems, param_info,
-                                                  &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_FLOAT:
-            if (!fill_vector_from_carray<float>(context, elems, param_info,
-                                                &arg, array, length))
-                return false;
-            break;
-        case GI_TYPE_TAG_DOUBLE:
-            if (!fill_vector_from_carray<double>(context, elems, param_info,
-                                                 &arg, array, length))
-                return false;
-            break;
         case GI_TYPE_TAG_INTERFACE: {
             GI::AutoBaseInfo interface_info{
                 g_type_info_get_interface(param_info)};
@@ -1914,9 +2639,6 @@ static bool gjs_array_from_carray_internal(
             }
         }
         /* fallthrough */
-        case GI_TYPE_TAG_GTYPE:
-        case GI_TYPE_TAG_UTF8:
-        case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
@@ -1926,10 +2648,10 @@ static bool gjs_array_from_carray_internal(
                                                 &arg, array, length, transfer))
                 return false;
             break;
-        case GI_TYPE_TAG_VOID:
         default:
-          gjs_throw(context, "Unknown Array element-type %d", element_type);
-          return false;
+            // Basic types handled above
+            gjs_throw(context, "Unknown Array element-type %d", element_type);
+            return false;
     }
 
     JSObject* obj = JS::NewArrayObject(context, elems);
@@ -1968,6 +2690,14 @@ bool gjs_value_from_explicit_array(JSContext* context,
     return gjs_array_from_carray_internal(
         context, value_p, g_type_info_get_array_type(type_info), param_info,
         transfer, length, gjs_arg_get<void*>(arg));
+}
+
+bool gjs_value_from_basic_explicit_array(JSContext* cx,
+                                         JS::MutableHandleValue value_out,
+                                         GITypeTag element_tag, GIArgument* arg,
+                                         size_t length) {
+    return gjs_array_from_basic_c_array_internal(
+        cx, value_out, element_tag, length, gjs_arg_get<void*>(arg));
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -2042,6 +2772,28 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
 }
 
 template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool
+fill_vector_from_basic_zero_terminated_c_array(
+    JSContext* cx, JS::MutableHandleValueVector elems, GITypeTag element_tag,
+    GIArgument* arg, void* c_array) {
+    T* array = static_cast<T*>(c_array);
+
+    for (size_t ix = 0; array[ix]; ix++) {
+        gjs_arg_set(arg, array[ix]);
+
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        if (!gjs_value_from_basic_gi_argument(cx, elems[ix], element_tag, arg))
+            return false;
+    }
+
+    return true;
+}
+
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     GITypeInfo* param_info, GIArgument* arg, void* c_array,
@@ -2078,6 +2830,113 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
     return true;
 }
 
+bool gjs_array_from_basic_zero_terminated_array(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    void* c_array) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "Use gjs_array_from_zero_terminated_c_array for non-basic types");
+
+    if (!c_array) {
+        // OK, but no conversion to do
+        value_out.setNull();
+        return true;
+    }
+
+    // Special case array(uint8_t)
+    if (element_tag == GI_TYPE_TAG_UINT8) {
+        size_t length = strlen(static_cast<char*>(c_array));
+        JSObject* byte_array =
+            gjs_byte_array_from_data_copy(cx, length, c_array);
+        if (!byte_array)
+            return false;
+
+        value_out.setObject(*byte_array);
+        return true;
+    }
+
+    // Special case array(gunichar) to JS string
+    if (element_tag == GI_TYPE_TAG_UNICHAR) {
+        return gjs_string_from_ucs4(cx, static_cast<gunichar*>(c_array), -1,
+                                    value_out);
+    }
+
+    JS::RootedValueVector elems{cx};
+
+    GIArgument arg;
+    switch (element_tag) {
+        case GI_TYPE_TAG_INT8:
+            if (!fill_vector_from_basic_zero_terminated_c_array<int8_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_UINT16:
+            if (!fill_vector_from_basic_zero_terminated_c_array<uint16_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT16:
+            if (!fill_vector_from_basic_zero_terminated_c_array<int16_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_UINT32:
+            if (!fill_vector_from_basic_zero_terminated_c_array<uint32_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT32:
+            if (!fill_vector_from_basic_zero_terminated_c_array<int32_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_UINT64:
+            if (!fill_vector_from_basic_zero_terminated_c_array<uint64_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_INT64:
+            if (!fill_vector_from_basic_zero_terminated_c_array<int64_t>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            if (!fill_vector_from_basic_zero_terminated_c_array<float>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            if (!fill_vector_from_basic_zero_terminated_c_array<double>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+            if (!fill_vector_from_basic_zero_terminated_c_array<void*>(
+                    cx, &elems, element_tag, &arg, c_array))
+                return false;
+            break;
+        // Boolean zero-terminated array makes no sense, because false is also
+        // zero
+        case GI_TYPE_TAG_BOOLEAN:
+            gjs_throw(cx, "Boolean zero-terminated array not supported");
+            return false;
+        case GI_TYPE_TAG_VOID:
+            gjs_throw(cx, "Unknown element-type 'void'");
+            return false;
+        default:
+            // UINT8 and UNICHAR are special cases handled above
+            g_assert_not_reached();
+    }
+
+    JSObject* array = JS::NewArrayObject(cx, elems);
+    if (!array)
+        return false;
+
+    value_out.setObject(*array);
+    return true;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_zero_terminated_c_array(
     JSContext* context, JS::MutableHandleValue value_p, GITypeInfo* param_info,
@@ -2085,87 +2944,29 @@ static bool gjs_array_from_zero_terminated_c_array(
     GITypeTag element_type;
 
     element_type = g_type_info_get_tag(param_info);
+    bool element_is_pointer = g_type_info_is_pointer(param_info);
 
-    /* Special case array(guint8) */
-    if (element_type == GI_TYPE_TAG_UINT8) {
-        size_t len = strlen(static_cast<char*>(c_array));
-        JSObject* obj = gjs_byte_array_from_data_copy(context, len, c_array);
-        if (!obj)
-            return false;
-        value_p.setObject(*obj);
-        return true;
+    if (Gjs::is_basic_type(element_type, element_is_pointer)) {
+        return gjs_array_from_basic_zero_terminated_array(
+            context, value_p, element_type, c_array);
     }
-
-    /* Special case array(gunichar) to JS string */
-    if (element_type == GI_TYPE_TAG_UNICHAR)
-        return gjs_string_from_ucs4(context, (gunichar *) c_array, -1, value_p);
 
     JS::RootedValueVector elems(context);
 
     GIArgument arg;
     switch (element_type) {
-        /* Special cases handled above. */
-        case GI_TYPE_TAG_UINT8:
-        case GI_TYPE_TAG_UNICHAR:
-            g_assert_not_reached();
-        case GI_TYPE_TAG_INT8:
-            if (!fill_vector_from_zero_terminated_carray<int8_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_UINT16:
-            if (!fill_vector_from_zero_terminated_carray<uint16_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT16:
-            if (!fill_vector_from_zero_terminated_carray<int16_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_UINT32:
-            if (!fill_vector_from_zero_terminated_carray<uint32_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT32:
-            if (!fill_vector_from_zero_terminated_carray<int32_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_UINT64:
-            if (!fill_vector_from_zero_terminated_carray<uint64_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_INT64:
-            if (!fill_vector_from_zero_terminated_carray<int64_t>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_FLOAT:
-            if (!fill_vector_from_zero_terminated_carray<float>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
-        case GI_TYPE_TAG_DOUBLE:
-            if (!fill_vector_from_zero_terminated_carray<double>(
-                    context, elems, param_info, &arg, c_array))
-                return false;
-            break;
         case GI_TYPE_TAG_INTERFACE: {
             GI::AutoBaseInfo interface_info{
                 g_type_info_get_interface(param_info)};
 
-            if (!g_type_info_is_pointer(param_info) &&
-                is_gvalue(interface_info)) {
+            if (!element_is_pointer && is_gvalue(interface_info)) {
                 if (!fill_vector_from_zero_terminated_carray<GValue>(
                         context, elems, param_info, &arg, c_array))
                     return false;
                 break;
             }
 
-            if (!g_type_info_is_pointer(param_info)) {
+            if (!element_is_pointer) {
                 gjs_throw(context,
                           "Flat C array of %s.%s not supported (see "
                           "https://gitlab.gnome.org/GNOME/gjs/-/issues/603)",
@@ -2175,9 +2976,6 @@ static bool gjs_array_from_zero_terminated_c_array(
 
             [[fallthrough]];
         }
-        case GI_TYPE_TAG_GTYPE:
-        case GI_TYPE_TAG_UTF8:
-        case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
@@ -2187,15 +2985,10 @@ static bool gjs_array_from_zero_terminated_c_array(
                     context, elems, param_info, &arg, c_array, transfer))
                 return false;
             break;
-        /* Boolean zero-terminated array makes no sense, because FALSE is also
-         * zero */
-        case GI_TYPE_TAG_BOOLEAN:
-            gjs_throw(context, "Boolean zero-terminated array not supported");
-            return false;
-        case GI_TYPE_TAG_VOID:
         default:
-          gjs_throw(context, "Unknown element-type %d", element_type);
-          return false;
+            // Handled in gjs_array_from_basic_zero_terminated_c_array()
+            gjs_throw(context, "Unknown element-type %d", element_type);
+            return false;
     }
 
     JSObject* obj = JS::NewArrayObject(context, elems);
@@ -2212,6 +3005,10 @@ bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
                             GITypeInfo* val_param_info, GITransfer transfer,
                             GHashTable* hash) {
     GHashTableIter iter;
+
+    g_assert((!GI_TYPE_TAG_IS_BASIC(g_type_info_get_tag(key_param_info)) ||
+              !GI_TYPE_TAG_IS_BASIC(g_type_info_get_tag(val_param_info))) &&
+             "use gjs_value_from_basic_ghash() instead");
 
     // a NULL hash table becomes a null JS value
     if (hash==NULL) {
@@ -2256,12 +3053,273 @@ bool gjs_object_from_g_hash(JSContext* context, JS::MutableHandleValue value_p,
     return true;
 }
 
+bool gjs_value_from_basic_fixed_size_array_gi_argument(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    size_t fixed_size, GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument fixed array of %s to JS::Value",
+                      g_type_tag_to_string(element_tag));
+
+    void* c_array = gjs_arg_get<void*>(arg);
+    if (!c_array) {
+        // OK, but no conversion to do
+        value_out.setNull();
+        return true;
+    }
+
+    return gjs_array_from_basic_c_array_internal(cx, value_out, element_tag,
+                                                 fixed_size, c_array);
+}
+
+bool gjs_value_from_byte_array_gi_argument(JSContext* cx,
+                                           JS::MutableHandleValue value_out,
+                                           GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument byte array to JS::Value");
+
+    auto* byte_array = gjs_arg_get<GByteArray*>(arg);
+    if (!byte_array) {
+        value_out.setNull();
+        return true;
+    }
+
+    JSObject* u8array = gjs_byte_array_from_byte_array(cx, byte_array);
+    if (!u8array)
+        return false;
+
+    value_out.setObject(*u8array);
+    return true;
+}
+
+bool gjs_value_from_basic_garray_gi_argument(JSContext* cx,
+                                             JS::MutableHandleValue value_out,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument GArray of %s to JS::Value",
+                      g_type_tag_to_string(element_tag));
+
+    auto* garray = gjs_arg_get<GArray*>(arg);
+    if (!garray) {
+        value_out.setNull();
+        return true;
+    }
+
+    return gjs_array_from_basic_c_array_internal(cx, value_out, element_tag,
+                                                 garray->len, garray->data);
+}
+
+bool gjs_value_from_basic_gptrarray_gi_argument(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument GPtrArray of %s to JS::Value",
+                      g_type_tag_to_string(element_tag));
+
+    auto* ptr_array = gjs_arg_get<GPtrArray*>(arg);
+    if (!ptr_array) {
+        value_out.setNull();
+        return true;
+    }
+
+    return gjs_array_from_basic_c_array_internal(
+        cx, value_out, element_tag, ptr_array->len, ptr_array->pdata);
+}
+
+template <typename T>
+GJS_JSAPI_RETURN_CONVENTION static bool array_from_basic_linked_list(
+    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
+    T* list) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(element_tag) &&
+        "use gjs_array_from_g_list() for lists containing non-basic types");
+
+    GIArgument arg;
+    JS::RootedValueVector elems{cx};
+
+    for (size_t i = 0; list; list = list->next, ++i) {
+        // for basic types, type tag == storage type
+        gi_type_tag_argument_from_hash_pointer(element_tag, list->data, &arg);
+
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        if (!gjs_value_from_basic_gi_argument(cx, elems[i], element_tag, &arg))
+            return false;
+    }
+
+    JS::RootedObject obj{cx, JS::NewArrayObject(cx, elems)};
+    if (!obj)
+        return false;
+
+    value_out.setObject(*obj);
+
+    return true;
+}
+
+bool gjs_array_from_basic_glist_gi_argument(JSContext* cx,
+                                            JS::MutableHandleValue value_out,
+                                            GITypeTag element_tag,
+                                            GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GArgument glist to JS::Value");
+    return array_from_basic_linked_list(cx, value_out, element_tag,
+                                        gjs_arg_get<GList*>(arg));
+}
+
+bool gjs_array_from_basic_gslist_gi_argument(JSContext* cx,
+                                             JS::MutableHandleValue value_out,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GArgument gslist to JS::Value");
+    return array_from_basic_linked_list(cx, value_out, element_tag,
+                                        gjs_arg_get<GSList*>(arg));
+}
+
+bool gjs_value_from_basic_ghash(JSContext* cx, JS::MutableHandleValue value_out,
+                                GITypeTag key_tag, GITypeTag value_tag,
+                                GHashTable* hash) {
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(key_tag) &&
+        "use gjs_object_from_g_hash() for hashes with non-basic key types");
+    g_assert(
+        GI_TYPE_TAG_IS_BASIC(value_tag) &&
+        "use gjs_object_from_g_hash() for hashes with non-basic value types");
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Converting GIArgument ghash to JS::Value");
+
+    // a NULL hash table becomes a null JS value
+    if (!hash) {
+        value_out.setNull();
+        return true;
+    }
+
+    JS::RootedObject obj{cx, JS_NewPlainObject(cx)};
+    if (!obj)
+        return false;
+
+    JS::RootedValue v_key{cx}, v_val{cx};
+    JS::RootedId key{cx};
+    GIArgument key_arg, value_arg;
+    GHashTableIter iter;
+    void* key_pointer;
+    void* val_pointer;
+    g_hash_table_iter_init(&iter, hash);
+    while (g_hash_table_iter_next(&iter, &key_pointer, &val_pointer)) {
+        gi_type_tag_argument_from_hash_pointer(key_tag, key_pointer, &key_arg);
+        gi_type_tag_argument_from_hash_pointer(value_tag, val_pointer,
+                                               &value_arg);
+        if (!gjs_value_from_basic_gi_argument(cx, &v_key, key_tag, &key_arg) ||
+            !JS_ValueToId(cx, v_key, &key) ||
+            !gjs_value_from_basic_gi_argument(cx, &v_val, value_tag,
+                                              &value_arg) ||
+            !JS_DefinePropertyById(cx, obj, key, v_val, JSPROP_ENUMERATE))
+            return false;
+    }
+
+    value_out.setObject(*obj);
+    return true;
+}
+
 bool gjs_value_from_gi_argument(JSContext* context,
                                 JS::MutableHandleValue value_p,
                                 GITypeInfo* type_info,
                                 GjsArgumentType argument_type,
                                 GITransfer transfer, GIArgument* arg) {
     GITypeTag type_tag = g_type_info_get_tag(type_info);
+    bool is_pointer = g_type_info_is_pointer(type_info);
+    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+        return gjs_value_from_basic_gi_argument(context, value_p, type_tag,
+                                                arg);
+    }
+
+    if (type_tag == GI_TYPE_TAG_GLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            return gjs_array_from_basic_glist_gi_argument(context, value_p,
+                                                          element_tag, arg);
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            return gjs_array_from_basic_gslist_gi_argument(context, value_p,
+                                                           element_tag, arg);
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            return gjs_value_from_basic_ghash(context, value_p, key_tag,
+                                              value_tag,
+                                              gjs_arg_get<GHashTable*>(arg));
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_ARRAY) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            GIArrayType array_type = g_type_info_get_array_type(type_info);
+
+            switch (array_type) {
+                case GI_ARRAY_TYPE_C: {
+                    if (g_type_info_is_zero_terminated(type_info)) {
+                        return gjs_array_from_basic_zero_terminated_array(
+                            context, value_p, element_tag,
+                            gjs_arg_get<void*>(arg));
+                    }
+
+                    int fixed_size =
+                        g_type_info_get_array_fixed_size(type_info);
+                    g_assert(fixed_size != -1 &&
+                             "arrays with length param handled in "
+                             "gjs_value_from_basic_explicit_array()");
+                    return gjs_value_from_basic_fixed_size_array_gi_argument(
+                        context, value_p, element_tag, fixed_size, arg);
+                }
+
+                case GI_ARRAY_TYPE_BYTE_ARRAY:
+                    return gjs_value_from_byte_array_gi_argument(context,
+                                                                 value_p, arg);
+
+                case GI_ARRAY_TYPE_ARRAY:
+                    return gjs_value_from_basic_garray_gi_argument(
+                        context, value_p, element_tag, arg);
+
+                case GI_ARRAY_TYPE_PTR_ARRAY:
+                    return gjs_value_from_basic_gptrarray_gi_argument(
+                        context, value_p, element_tag, arg);
+            }
+        }
+        // else fall through to generic marshaller
+    }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument %s to JS::Value",
@@ -2269,106 +3327,13 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
+        g_assert(is_pointer &&
+                 "non-pointers should be handled by "
+                 "gjs_value_from_basic_gi_argument()");
         // If the argument is a pointer, convert to null to match our
         // in handling.
-        if (g_type_info_is_pointer(type_info))
-            value_p.setNull();
-        else
-            value_p.setUndefined();
-        break;
-
-    case GI_TYPE_TAG_BOOLEAN:
-        value_p.setBoolean(gjs_arg_get<bool>(arg));
-        break;
-
-    case GI_TYPE_TAG_INT32:
-        value_p.setInt32(gjs_arg_get<int32_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_UINT32:
-        value_p.setNumber(gjs_arg_get<uint32_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_INT64:
-        value_p.setNumber(gjs_arg_get_maybe_rounded<int64_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_UINT64:
-        value_p.setNumber(gjs_arg_get_maybe_rounded<uint64_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_UINT16:
-        value_p.setInt32(gjs_arg_get<uint16_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_INT16:
-        value_p.setInt32(gjs_arg_get<int16_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_UINT8:
-        value_p.setInt32(gjs_arg_get<uint8_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_INT8:
-        value_p.setInt32(gjs_arg_get<int8_t>(arg));
-        break;
-
-    case GI_TYPE_TAG_FLOAT:
-        value_p.setNumber(JS::CanonicalizeNaN(gjs_arg_get<float>(arg)));
-        break;
-
-    case GI_TYPE_TAG_DOUBLE:
-        value_p.setNumber(JS::CanonicalizeNaN(gjs_arg_get<double>(arg)));
-        break;
-
-    case GI_TYPE_TAG_GTYPE:
-    {
-        GType gtype = gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(arg);
-        if (gtype == 0) {
-            value_p.setNull();
-            return true;
-        }
-
-        JSObject* obj = gjs_gtype_create_gtype_wrapper(context, gtype);
-        if (!obj)
-            return false;
-
-        value_p.setObject(*obj);
+        value_p.setNull();
         return true;
-    }
-        break;
-
-    case GI_TYPE_TAG_UNICHAR: {
-        char32_t value = gjs_arg_get<char32_t>(arg);
-
-        // Preserve the bidirectional mapping between 0 and ""
-        if (value == 0) {
-            value_p.set(JS_GetEmptyStringValue(context));
-            return true;
-        } else if (!g_unichar_validate(value)) {
-            gjs_throw(context, "Invalid unicode codepoint %" G_GUINT32_FORMAT,
-                      value);
-            return false;
-        }
-
-        char utf8[7];
-        int bytes = g_unichar_to_utf8(value, utf8);
-        return gjs_string_from_utf8_n(context, utf8, bytes, value_p);
-    }
-
-    case GI_TYPE_TAG_FILENAME:
-    case GI_TYPE_TAG_UTF8: {
-        const char* str = gjs_arg_get<const char*>(arg);
-        if (!str) {
-            value_p.setNull();
-            return true;
-        }
-
-        if (type_tag == GI_TYPE_TAG_FILENAME)
-            return gjs_string_from_filename(context, str, -1, value_p);
-
-        return gjs_string_from_utf8(context, str, value_p);
-    }
 
     case GI_TYPE_TAG_ERROR: {
         GError* ptr = gjs_arg_get<GError*>(arg);
@@ -2679,6 +3644,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
         break;
 
     default:
+        // basic types handled in gjs_value_from_basic_gi_argument()
         g_warning("Unhandled type %s converting GIArgument to JavaScript",
                   g_type_tag_to_string(type_tag));
         return false;
@@ -2730,16 +3696,20 @@ struct GHR_closure {
 static gboolean
 gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
     GHR_closure *c = (GHR_closure *) user_data;
+
+    GITypeTag key_tag = g_type_info_get_tag(c->key_param_info);
+    GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
+    g_assert(
+        (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_type)) &&
+        "use basic_ghash_release() instead");
+
     GIArgument key_arg, val_arg;
     gjs_arg_set(&key_arg, key);
     gjs_arg_set(&val_arg, val);
     if (!gjs_g_arg_release_internal(c->context, c->transfer, c->key_param_info,
-                                    g_type_info_get_tag(c->key_param_info),
-                                    GJS_ARGUMENT_HASH_ELEMENT, c->flags,
-                                    &key_arg))
+                                    key_tag, GJS_ARGUMENT_HASH_ELEMENT,
+                                    c->flags, &key_arg))
         c->failed = true;
-
-    GITypeTag val_type = g_type_info_get_tag(c->val_param_info);
 
     switch (val_type) {
         case GI_TYPE_TAG_DOUBLE:
@@ -2764,6 +3734,26 @@ enum class ArrayReleaseType {
     ZERO_TERMINATED,
 };
 
+template <ArrayReleaseType release_type>
+static inline void release_basic_array_internal(GITypeTag element_tag,
+                                                unsigned length, void** array) {
+    if (!Gjs::basic_type_needs_release(element_tag))
+        return;
+
+    for (size_t ix = 0;; ix++) {
+        if constexpr (release_type == ArrayReleaseType::ZERO_TERMINATED) {
+            if (!array[ix])
+                break;
+        }
+        if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
+            if (ix == length)
+                break;
+        }
+
+        g_free(array[ix]);
+    }
+}
+
 template <ArrayReleaseType release_type = ArrayReleaseType::EXPLICIT_LENGTH>
 static inline bool gjs_gi_argument_release_array_internal(
     JSContext* cx, GITransfer element_transfer, GjsArgumentFlags flags,
@@ -2777,12 +3767,18 @@ static inline bool gjs_gi_argument_release_array_internal(
     if (element_transfer != GI_TRANSFER_EVERYTHING)
         return true;
 
+    GITypeTag type_tag = g_type_info_get_tag(param_type);
+    bool is_pointer = g_type_info_is_pointer(param_type);
+    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+        release_basic_array_internal<release_type>(type_tag, length,
+                                                   arg_array.as<void*>());
+        return true;
+    }
+
     if constexpr (release_type == ArrayReleaseType::EXPLICIT_LENGTH) {
         if (length == 0)
             return true;
     }
-
-    GITypeTag type_tag = g_type_info_get_tag(param_type);
 
     if (flags & GjsArgumentFlags::ARG_IN &&
         !type_needs_release(param_type, type_tag))
@@ -2796,7 +3792,6 @@ static inline bool gjs_gi_argument_release_array_internal(
     if G_UNLIKELY (element_size == 0)
         return true;
 
-    bool is_pointer = g_type_info_is_pointer(param_type);
     for (size_t i = 0;; i++) {
         GIArgument elem;
         auto* element_start = &arg_array[i * element_size];
@@ -2840,6 +3835,152 @@ constexpr static bool is_transfer_in_nothing(GITransfer transfer,
     return (transfer == GI_TRANSFER_NOTHING) && (flags & GjsArgumentFlags::ARG_IN);
 }
 
+static void release_basic_type_internal(GITypeTag type_tag, GIArgument* arg) {
+    if (is_string_type(type_tag))
+        g_clear_pointer(&gjs_arg_member<char*>(arg), g_free);
+}
+
+template <typename T>
+static void basic_linked_list_release(GITransfer transfer,
+                                      GITypeTag element_tag, GIArgument* arg) {
+    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+    g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
+             "use gjs_g_arg_release_g_list() for lists with non-basic types");
+
+    Gjs::SmartPointer<T> list = gjs_arg_steal<T*>(arg);
+
+    if (transfer == GI_TRANSFER_CONTAINER)
+        return;
+
+    GIArgument elem;
+    for (T* l = list; l; l = l->next) {
+        gjs_arg_set(&elem, l->data);
+        release_basic_type_internal(element_tag, &elem);
+    }
+}
+
+void gjs_gi_argument_release_basic_glist(GITransfer transfer,
+                                         GITypeTag element_tag,
+                                         GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument GList");
+    basic_linked_list_release<GList>(transfer, element_tag, arg);
+}
+
+void gjs_gi_argument_release_basic_gslist(GITransfer transfer,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg) {
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument GSList");
+    basic_linked_list_release<GSList>(transfer, element_tag, arg);
+}
+
+void gjs_gi_argument_release_basic_ghash(GITransfer transfer, GITypeTag key_tag,
+                                         GITypeTag value_tag, GIArgument* arg) {
+    g_assert(GI_TYPE_TAG_IS_BASIC(key_tag) && GI_TYPE_TAG_IS_BASIC(value_tag));
+
+    if (!gjs_arg_get<GHashTable*>(arg))
+        return;
+
+    Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy> hash_table{
+        gjs_arg_steal<GHashTable*>(arg)};
+    if (transfer == GI_TRANSFER_CONTAINER) {
+        g_hash_table_remove_all(hash_table);
+    } else {
+        std::array<GITypeTag, 2> data{key_tag, value_tag};
+        g_hash_table_foreach_steal(
+            hash_table,
+            [](void* key, void* val, void* user_data) -> gboolean {
+                auto* tags = static_cast<std::array<GITypeTag, 2>*>(user_data);
+                GITypeTag key_tag = (*tags)[0], value_tag = (*tags)[1];
+                GIArgument key_arg, val_arg;
+                gjs_arg_set(&key_arg, key);
+                gjs_arg_set(&val_arg, val);
+                release_basic_type_internal(key_tag, &key_arg);
+
+                switch (value_tag) {
+                    case GI_TYPE_TAG_DOUBLE:
+                    case GI_TYPE_TAG_FLOAT:
+                    case GI_TYPE_TAG_INT64:
+                    case GI_TYPE_TAG_UINT64:
+                        g_clear_pointer(&gjs_arg_member<void*>(&val_arg),
+                                        g_free);
+                        break;
+
+                    default:
+                        release_basic_type_internal(value_tag, &val_arg);
+                }
+
+                return true;
+            },
+            &data);
+    }
+}
+
+void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
+                                           GITypeTag element_tag,
+                                           GIArgument* arg) {
+    if (!gjs_arg_get<void*>(arg))
+        return;
+
+    if (is_string_type(element_tag) && transfer != GI_TRANSFER_CONTAINER)
+        g_clear_pointer(&gjs_arg_member<GStrv>(arg), g_strfreev);
+    else
+        g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
+}
+
+void gjs_gi_argument_release_basic_c_array(GITransfer transfer,
+                                           GITypeTag element_tag, size_t length,
+                                           GIArgument* arg) {
+    if (!gjs_arg_get<void*>(arg))
+        return;
+
+    Gjs::AutoPointer<void*, void, g_free> array{gjs_arg_steal<void**>(arg)};
+
+    if (!is_string_type(element_tag) || transfer == GI_TRANSFER_CONTAINER)
+        return;
+
+    for (size_t ix = 0; ix < length; ix++)
+        g_free(array[ix]);
+}
+
+void gjs_gi_argument_release_basic_garray(GITransfer transfer,
+                                          GITypeTag element_tag,
+                                          GIArgument* arg) {
+    if (!gjs_arg_get<void*>(arg))
+        return;
+
+    Gjs::AutoPointer<GArray, GArray, g_array_unref> array{
+        gjs_arg_steal<GArray*>(arg)};
+
+    if (transfer == GI_TRANSFER_CONTAINER || !is_string_type(element_tag))
+        return;
+
+    for (size_t ix = 0; ix < array->len; ix++)
+        g_free(g_array_index(array, char*, ix));
+}
+
+void gjs_gi_argument_release_byte_array(GIArgument* arg) {
+    if (!gjs_arg_get<void*>(arg))
+        return;
+
+    g_clear_pointer(&gjs_arg_member<GByteArray*>(arg), g_byte_array_unref);
+}
+
+void gjs_gi_argument_release_basic_gptrarray(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
+    if (!gjs_arg_get<void*>(arg))
+        return;
+
+    Gjs::AutoPointer<GPtrArray, GPtrArray, g_ptr_array_unref> array{
+        gjs_arg_steal<GPtrArray*>(arg)};
+
+    if (transfer == GI_TRANSFER_CONTAINER || !is_string_type(element_tag))
+        return;
+
+    g_ptr_array_foreach(
+        array, [](void* ptr, void*) { g_free(ptr); }, nullptr);
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(
     JSContext* context, GITransfer transfer, GITypeInfo* type_info,
@@ -2848,26 +3989,88 @@ static bool gjs_g_arg_release_internal(
     g_assert(transfer != GI_TRANSFER_NOTHING ||
              flags != GjsArgumentFlags::NONE);
 
+    bool is_pointer = g_type_info_is_pointer(type_info);
+    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+        release_basic_type_internal(type_tag, arg);
+        return true;
+    }
+
+    if (type_tag == GI_TYPE_TAG_GLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            basic_linked_list_release<GList>(transfer, element_tag, arg);
+            return true;
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GSLIST) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            basic_linked_list_release<GSList>(transfer, element_tag, arg);
+            return true;
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_GHASH) {
+        GI::AutoTypeInfo key_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag key_tag = g_type_info_get_tag(key_type);
+        bool key_is_pointer = g_type_info_is_pointer(key_type);
+        GI::AutoTypeInfo value_type{g_type_info_get_param_type(type_info, 1)};
+        GITypeTag value_tag = g_type_info_get_tag(value_type);
+        bool value_is_pointer = g_type_info_is_pointer(value_type);
+
+        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
+            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+            gjs_gi_argument_release_basic_ghash(transfer, key_tag, value_tag,
+                                                arg);
+            return true;
+        }
+        // else fall through to generic marshaller
+    }
+
+    if (type_tag == GI_TYPE_TAG_ARRAY) {
+        GI::AutoTypeInfo element_type{g_type_info_get_param_type(type_info, 0)};
+        GITypeTag element_tag = g_type_info_get_tag(element_type);
+        bool element_is_pointer = g_type_info_is_pointer(element_type);
+
+        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+            GIArrayType array_type = g_type_info_get_array_type(type_info);
+            switch (array_type) {
+                case GI_ARRAY_TYPE_C:
+                    gjs_gi_argument_release_basic_c_array(transfer, element_tag,
+                                                          arg);
+                    return true;
+                case GI_ARRAY_TYPE_ARRAY:
+                    gjs_gi_argument_release_basic_garray(transfer, element_tag,
+                                                         arg);
+                    return true;
+                case GI_ARRAY_TYPE_BYTE_ARRAY:
+                    gjs_gi_argument_release_byte_array(arg);
+                    return true;
+                case GI_ARRAY_TYPE_PTR_ARRAY:
+                    gjs_gi_argument_release_basic_gptrarray(transfer,
+                                                            element_tag, arg);
+                    return true;
+                default:
+                    g_assert_not_reached();
+            }
+        }
+        // else fall through to generic marshaller
+    }
+
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-    case GI_TYPE_TAG_BOOLEAN:
-    case GI_TYPE_TAG_INT8:
-    case GI_TYPE_TAG_UINT8:
-    case GI_TYPE_TAG_INT16:
-    case GI_TYPE_TAG_UINT16:
-    case GI_TYPE_TAG_INT32:
-    case GI_TYPE_TAG_UINT32:
-    case GI_TYPE_TAG_INT64:
-    case GI_TYPE_TAG_UINT64:
-    case GI_TYPE_TAG_FLOAT:
-    case GI_TYPE_TAG_DOUBLE:
-    case GI_TYPE_TAG_UNICHAR:
-    case GI_TYPE_TAG_GTYPE:
-        break;
-
-    case GI_TYPE_TAG_FILENAME:
-    case GI_TYPE_TAG_UTF8:
-        g_clear_pointer(&gjs_arg_member<char*>(arg), g_free);
+        g_assert(is_pointer &&
+                 "non-pointer should be handled by "
+                 "release_basic_type_internal()");
         break;
 
     case GI_TYPE_TAG_ERROR:
@@ -2968,32 +4171,6 @@ static bool gjs_g_arg_release_internal(
             element_type = g_type_info_get_tag(param_info);
 
             switch (element_type) {
-            case GI_TYPE_TAG_UTF8:
-            case GI_TYPE_TAG_FILENAME:
-                if (transfer == GI_TRANSFER_CONTAINER)
-                    g_clear_pointer(&gjs_arg_member<void*>(arg),
-                                    g_free);
-                else
-                    g_clear_pointer(&gjs_arg_member<GStrv>(arg),
-                                    g_strfreev);
-                break;
-
-            case GI_TYPE_TAG_BOOLEAN:
-            case GI_TYPE_TAG_UINT8:
-            case GI_TYPE_TAG_UINT16:
-            case GI_TYPE_TAG_UINT32:
-            case GI_TYPE_TAG_UINT64:
-            case GI_TYPE_TAG_INT8:
-            case GI_TYPE_TAG_INT16:
-            case GI_TYPE_TAG_INT32:
-            case GI_TYPE_TAG_INT64:
-            case GI_TYPE_TAG_FLOAT:
-            case GI_TYPE_TAG_DOUBLE:
-            case GI_TYPE_TAG_UNICHAR:
-            case GI_TYPE_TAG_GTYPE:
-                g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
-                break;
-
             case GI_TYPE_TAG_INTERFACE:
                 if (!g_type_info_is_pointer(param_info)) {
                     GI::AutoBaseInfo interface_info{
@@ -3031,8 +4208,8 @@ static bool gjs_g_arg_release_internal(
                 }
             }
 
-            case GI_TYPE_TAG_VOID:
             default:
+                // basic types handled above
                 gjs_throw(context,
                           "Releasing a C array with explicit length, that was nested"
                           "inside another container. This is not supported (and will leak)");
@@ -3046,24 +4223,6 @@ static bool gjs_g_arg_release_internal(
             element_type = g_type_info_get_tag(param_info);
 
             switch (element_type) {
-            case GI_TYPE_TAG_BOOLEAN:
-            case GI_TYPE_TAG_UNICHAR:
-            case GI_TYPE_TAG_UINT8:
-            case GI_TYPE_TAG_UINT16:
-            case GI_TYPE_TAG_UINT32:
-            case GI_TYPE_TAG_UINT64:
-            case GI_TYPE_TAG_INT8:
-            case GI_TYPE_TAG_INT16:
-            case GI_TYPE_TAG_INT32:
-            case GI_TYPE_TAG_INT64:
-            case GI_TYPE_TAG_FLOAT:
-            case GI_TYPE_TAG_DOUBLE:
-            case GI_TYPE_TAG_GTYPE:
-                g_clear_pointer(&gjs_arg_member<GArray*>(arg), g_array_unref);
-                break;
-
-            case GI_TYPE_TAG_UTF8:
-            case GI_TYPE_TAG_FILENAME:
             case GI_TYPE_TAG_ARRAY:
             case GI_TYPE_TAG_INTERFACE:
             case GI_TYPE_TAG_GLIST:
@@ -3092,17 +4251,14 @@ static bool gjs_g_arg_release_internal(
                 break;
             }
 
-            case GI_TYPE_TAG_VOID:
             default:
+                // basic types handled above
                 gjs_throw(context,
                           "Don't know how to release GArray element-type %d",
                           element_type);
                 return false;
             }
 
-        } else if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
-            g_clear_pointer(&gjs_arg_member<GByteArray*>(arg),
-                            g_byte_array_unref);
         } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
             GI::AutoTypeInfo param_info{
                 g_type_info_get_param_type(type_info, 0)};
@@ -3122,6 +4278,7 @@ static bool gjs_g_arg_release_internal(
                 }
             }
         } else {
+            // GI_ARRAY_TYPE_BYTEARRAY handled above; other values unknown
             g_assert_not_reached();
         }
         break;
@@ -3159,6 +4316,7 @@ static bool gjs_g_arg_release_internal(
         break;
 
     default:
+        // basic types should have been handled in release_basic_type_internal()
         g_warning("Unhandled type %s releasing GIArgument",
                   g_type_tag_to_string(type_tag));
         return false;
@@ -3184,6 +4342,19 @@ bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
                                       GJS_ARGUMENT_ARGUMENT, flags, arg);
 }
 
+void gjs_gi_argument_release_basic(GITransfer transfer, GITypeTag type_tag,
+                                   GjsArgumentFlags flags, GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING &&
+        !is_transfer_in_nothing(transfer, flags))
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument %s out param or return value",
+                      g_type_tag_to_string(type_tag));
+
+    release_basic_type_internal(type_tag, arg);
+}
+
 bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
                                     GITypeInfo* type_info,
                                     GjsArgumentFlags flags, GIArgument* arg) {
@@ -3206,6 +4377,39 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
                                           GJS_ARGUMENT_ARGUMENT, flags, arg);
 
     return true;
+}
+
+void gjs_gi_argument_release_basic_in_array(GITransfer transfer,
+                                            GITypeTag element_tag,
+                                            GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument basic C array in param");
+
+    if (is_string_type(element_tag) && transfer != GI_TRANSFER_CONTAINER)
+        g_clear_pointer(&gjs_arg_member<GStrv>(arg), g_strfreev);
+    else
+        g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
+}
+
+void gjs_gi_argument_release_basic_in_array(GITransfer transfer,
+                                            GITypeTag element_tag,
+                                            size_t length, GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument basic C array in param");
+
+    Gjs::AutoPointer<void*, void, g_free> array{gjs_arg_steal<void**>(arg)};
+
+    if (!is_string_type(element_tag))
+        return;
+
+    for (size_t ix = 0; ix < length; ix++)
+        g_free(array[ix]);
 }
 
 bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
@@ -3237,6 +4441,39 @@ bool gjs_gi_argument_release_in_array(JSContext* context, GITransfer transfer,
         ArrayReleaseType::ZERO_TERMINATED>(context, GI_TRANSFER_EVERYTHING,
                                            GjsArgumentFlags::ARG_IN, param_type,
                                            0, arg);
+}
+
+void gjs_gi_argument_release_basic_out_array(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument array out param");
+
+    if (is_string_type(element_tag) && transfer != GI_TRANSFER_CONTAINER)
+        g_clear_pointer(&gjs_arg_member<GStrv>(arg), g_strfreev);
+    else
+        g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
+}
+
+void gjs_gi_argument_release_basic_out_array(GITransfer transfer,
+                                             GITypeTag element_tag,
+                                             size_t length, GIArgument* arg) {
+    if (transfer == GI_TRANSFER_NOTHING)
+        return;
+
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                      "Releasing GIArgument array out param");
+
+    Gjs::AutoPointer<void*, void, g_free> array{gjs_arg_steal<void**>(arg)};
+
+    if (transfer == GI_TRANSFER_CONTAINER || !is_string_type(element_tag))
+        return;
+
+    for (size_t ix = 0; ix < length; ix++)
+        g_free(array[ix]);
 }
 
 bool gjs_gi_argument_release_out_array(JSContext* context, GITransfer transfer,

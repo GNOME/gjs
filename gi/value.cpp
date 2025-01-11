@@ -1103,10 +1103,16 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         GI::AutoTypeInfo key_info{g_type_info_get_param_type(type_info, 0)};
         GI::AutoTypeInfo value_info{g_type_info_get_param_type(type_info, 1)};
         GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
+        GITypeTag key_tag = g_type_info_get_tag(key_info);
+        GITypeTag val_tag = g_type_info_get_tag(value_info);
 
-        if (!gjs_object_from_g_hash(context, value_p, key_info, value_info,
-                                    transfer,
-                                    Gjs::gvalue_get<GHashTable*>(gvalue))) {
+        auto* ghash = Gjs::gvalue_get<GHashTable*>(gvalue);
+        if (GI_TYPE_TAG_IS_BASIC(key_tag) && GI_TYPE_TAG_IS_BASIC(val_tag)) {
+            if (!gjs_value_from_basic_ghash(context, value_p, key_tag, val_tag,
+                                            ghash))
+                return false;
+        } else if (!gjs_object_from_g_hash(context, value_p, key_info,
+                                           value_info, transfer, ghash)) {
             gjs_throw(context, "Failed to convert Hash Table");
             return false;
         }
