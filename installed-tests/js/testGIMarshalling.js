@@ -2523,6 +2523,143 @@ describe('GObject properties', function () {
     });
 });
 
+describe('GObject properties accessors', function () {
+    let obj;
+    beforeEach(function () {
+        if (!GIMarshallingTests.PropertiesAccessorsObject)
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
+        obj = new GIMarshallingTests.PropertiesAccessorsObject();
+    });
+
+    function testPropertyGetSet(type, value1, value2, skip = false) {
+        const snakeCase = `some_${type}`;
+        const paramCase = snakeCase.replaceAll('_', '-');
+        const camelCase = snakeCase.replace(/(_\w)/g,
+            match => match.toUpperCase().replace('_', ''));
+
+        [snakeCase, paramCase, camelCase].forEach(propertyName => {
+            it(`gets and sets a ${type} property as ${propertyName}`, function () {
+                if (skip)
+                    pending(skip);
+                obj[propertyName] = value1;
+                expect(obj[propertyName]).toEqual(value1);
+                obj[propertyName] = value2;
+                expect(obj[propertyName]).toEqual(value2);
+            });
+        });
+    }
+
+    function testPropertyGetSetBigInt(type, value1, value2) {
+        const isBigInt = v =>
+            v > BigInt(Number.MAX_SAFE_INTEGER) || v < BigInt(Number.MIN_SAFE_INTEGER);
+        it(`gets and sets a ${type} property with a bigint`, function () {
+            obj[`some_${type}`] = value1;
+            expect(warn64(isBigInt(value1), () => obj[`some_${type}`])).toEqual(
+                Number(value1));
+            obj[`some_${type}`] = value2;
+            expect(warn64(isBigInt(value2), () => obj[`some_${type}`])).toEqual(
+                Number(value2));
+        });
+    }
+
+    testPropertyGetSet('boolean', true, false);
+    testPropertyGetSet('char', 42, 64);
+    testPropertyGetSet('uchar', 42, 64);
+    testPropertyGetSet('int', 42, 64);
+    testPropertyGetSet('uint', 42, 64);
+    testPropertyGetSet('long', 42, 64);
+    testPropertyGetSet('ulong', 42, 64);
+    testPropertyGetSet('int64', 42, 64);
+    testPropertyGetSet('int64', Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+    testPropertyGetSetBigInt('int64', BigIntLimits.int64.min, BigIntLimits.int64.max,
+        'https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/524');
+    testPropertyGetSet('uint64', 42, 64);
+    testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax,
+        'https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/524');
+    testPropertyGetSet('string', 'Gjs', 'is cool!');
+
+    it('get and sets out-of-range values throws', function () {
+        expect(() => {
+            obj.some_int64 = Limits.int64.max;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = BigIntLimits.int64.max + 1n;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = BigIntLimits.int64.min - 1n;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = BigIntLimits.int64.umax;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_int64 = -BigIntLimits.int64.umax;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_uint64 = Limits.int64.min;
+        }).toThrowError(/out of range/);
+        expect(() => {
+            obj.some_uint64 = BigIntLimits.int64.umax + 100n;
+        }).toThrowError(/out of range/);
+    });
+
+    it('gets and sets a float property', function () {
+        obj.some_float = Math.E;
+        expect(obj.some_float).toBeCloseTo(Math.E);
+        obj.some_float = Math.PI;
+        expect(obj.some_float).toBeCloseTo(Math.PI);
+    });
+
+    it('gets and sets a double property', function () {
+        obj.some_double = Math.E;
+        expect(obj.some_double).toBeCloseTo(Math.E);
+        obj.some_double = Math.PI;
+        expect(obj.some_double).toBeCloseTo(Math.PI);
+    });
+
+    testPropertyGetSet('strv', ['0', '1', '2'], []);
+    testPropertyGetSet('boxed_struct', new GIMarshallingTests.BoxedStruct(),
+        new GIMarshallingTests.BoxedStruct({long_: 42}));
+    // testPropertyGetSet('boxed_glist', [1, 2, 3], []);
+    testPropertyGetSet('gvalue', 42, 'foo');
+    testPropertyGetSetBigInt('gvalue', BigIntLimits.int64.umax, BigIntLimits.int64.min);
+    testPropertyGetSet('variant', new GLib.Variant('b', true),
+        new GLib.Variant('s', 'hello'));
+    testPropertyGetSet('variant', new GLib.Variant('x', BigIntLimits.int64.min),
+        new GLib.Variant('x', BigIntLimits.int64.max));
+    testPropertyGetSet('variant', new GLib.Variant('t', BigIntLimits.int64.max),
+        new GLib.Variant('t', BigIntLimits.int64.umax));
+    testPropertyGetSet('object', new GObject.Object(),
+        new GIMarshallingTests.Object({int: 42}));
+    testPropertyGetSet('flags', GIMarshallingTests.Flags.VALUE2,
+        GIMarshallingTests.Flags.VALUE1 | GIMarshallingTests.Flags.VALUE2);
+    testPropertyGetSet('enum', GIMarshallingTests.GEnum.VALUE2,
+        GIMarshallingTests.GEnum.VALUE3);
+    testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
+        new TextEncoder().encode('👾'));
+
+    it('gets a read-only property', function () {
+        expect(obj.some_readonly).toEqual(42);
+    });
+
+    it('throws when setting a read-only property', function () {
+        expect(() => (obj.some_readonly = 35)).toThrow();
+    });
+
+    it('allows to set/get deprecated properties', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GObject property*.some-deprecated-int is deprecated*');
+        obj.some_deprecated_int = 35;
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testAllowToSetGetDeprecatedProperties');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GObject property*.some-deprecated-int is deprecated*');
+        expect(obj.some_deprecated_int).toBe(35);
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
+            'testAllowToSetGetDeprecatedProperties');
+    });
+});
+
 describe('GObject signals', function () {
     let obj;
     beforeEach(function () {

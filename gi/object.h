@@ -26,6 +26,7 @@
 #include <js/TypeDecls.h>
 #include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
 #include <mozilla/Likely.h>         // for MOZ_LIKELY
+#include <mozilla/Maybe.h>
 
 #include "gi/info.h"
 #include "gi/value.h"
@@ -47,6 +48,8 @@ struct ObjectInstance;
 }
 class ObjectInstance;
 class ObjectPrototype;
+class ObjectPropertyInfoCaller;
+class ObjectPropertyPspecCaller;
 
 /*
  * ObjectBase:
@@ -131,12 +134,24 @@ class ObjectBase
     static bool prop_getter_write_only(JSContext*, unsigned argc,
                                        JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_getter_simple_type_func(
+        JSContext*, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
     template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
     GJS_JSAPI_RETURN_CONVENTION static bool prop_setter(JSContext*, unsigned,
                                                         JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_read_only(JSContext*, unsigned argc, JS::Value* vp);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp);
+    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION static bool prop_setter_simple_type_func(
+        JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext* cx, unsigned argc, JS::Value* vp);
 
@@ -223,9 +238,10 @@ class ObjectPrototype
     static void vfunc_invalidated_notify(void* data, GClosure* closure);
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool lazy_define_gobject_property(JSContext* cx, JS::HandleObject obj,
-                                      JS::HandleId id, GParamSpec*,
-                                      bool* resolved, const char* name);
+    bool lazy_define_gobject_property(
+        JSContext* cx, JS::HandleObject obj, JS::HandleId id, GParamSpec*,
+        bool* resolved, const char* name,
+        mozilla::Maybe<const GI::AutoPropertyInfo> = {});
 
     enum ResolveWhat { ConsiderOnlyMethods, ConsiderMethodsAndProperties };
     GJS_JSAPI_RETURN_CONVENTION
@@ -435,11 +451,25 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
         JSContext* cx, GParamSpec*, JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
+    bool prop_getter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
+                          JS::CallArgs const& args);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
+        JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
+    GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, GI::AutoFieldInfo const&,
                            JS::MutableHandleValue rval);
     template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
     GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(JSContext*, GParamSpec*,
                                                       JS::HandleValue);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool prop_setter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
+                          JS::CallArgs const& args);
+    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID,
+              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(
+        JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_not_impl(JSContext* cx, GI::AutoFieldInfo const&);
 

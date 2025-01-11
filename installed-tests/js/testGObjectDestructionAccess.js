@@ -367,7 +367,7 @@ describe('Disposed or finalized GObject', function () {
         const callSpy = jasmine.createSpy('vfunc_dispose');
         const DisposeFile = GObject.registerClass(class DisposeFile extends Gio.ThemedIcon {
             vfunc_dispose(...args) {
-                expect(this.names).toEqual(['dummy']);
+                expect(this.names).toEqual(['dummy', 'dummy-symbolic']);
                 callSpy(...args);
             }
         });
