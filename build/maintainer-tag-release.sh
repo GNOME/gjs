@@ -42,13 +42,7 @@ pushd "$MESON_SOURCE_ROOT"
         # Tag already exists; verify that it points to HEAD
         [ "$(git rev-parse "$project_version"^{})" = "$(git rev-parse HEAD)" ]
     else
-        if type git-evtag &>/dev/null; then
-            # Can't specify tag message on command line
-            # https://github.com/cgwalters/git-evtag/issues/9
-            EDITOR=true git evtag sign "$project_version"
-        else
-            git tag -s "$project_version" -m "Version $project_version"
-        fi
+        git tag -s "$project_version" -m "Version $project_version"
     fi
     git push --atomic origin "$branch" "$project_version"
 popd
