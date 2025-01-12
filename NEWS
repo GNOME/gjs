@@ -1,3 +1,54 @@
+Version 1.83.1
+--------------
+
+- GJS now supports source maps. If you use build tools such as TypeScript for
+  source code transformation, you can ship source map files alongside your built
+  JS files and make sure your build tool adds the magic source map comment. You
+  will then get the original source locations printed in stack traces and in the
+  debugger.
+
+- In the interactive interpreter (gjs-console), command history is now saved
+  between runs. You can set the environment variable GJS_REPL_HISTORY to save
+  the command history to a custom file, or set it to an empty string to switch
+  this feature off.
+
+- The debugger now supports examining private fields.
+
+- Some performance and memory usage improvements around calling GNOME platform
+  functions and accessing properties of GNOME platform objects.
+
+- Backwards-incompatible change: Gettext.setlocale() now only affects the locale
+  of the current thread. This will not affect your JS code, but it may affect
+  your app if you use a C library with worker threads and you relied on being
+  able to set the locale in those worker threads from JS.
+
+- Closed bugs and merge requests:
+
+  * Rewrite arguments cache using C++ inheritance [!519, Marco Trevisan, Philip
+    Chimento]
+  * package: Try to load resource module name if available [!839, Marco
+    Trevisan]
+  * object, args-cache: Improve performance with properties basic types [!866,
+    Marco Trevisan, Philip Chimento]
+  * Use property accessors and setters directly [#524, !867, Marco Trevisan,
+    Philip Chimento]
+  * gjs-util: make gjs_setlocale thread-safe [!893, Ray Strode]
+  * Support Source Maps [#474, !938, Gary Li]
+  * Fix return value of load_contents_async [!956, Sebastian Wiesner]
+  * Various maintenance [!957, !961, !967, Philip Chimento]
+  * Add history support to REPL [#645, !958, Gary Li]
+  * Some prep for type safety refactors [!959, Philip Chimento]
+  * Update to latest gobject-introspection-tests [!962, Philip Chimento]
+  * Build failure regression for i686 [#669, !963, Philip Chimento]
+  * Segfault when using GtkListView and custom widgets [#443, !964, Gary Li]
+  * ci: Switch to GNOME GitLab mirror of ci-templates [!965, Bartłomiej
+    Piotrowski]
+  * Connecting to signal of a GstElement errors with "too much recursion" [#557,
+    !966, Gary Li]
+  * Update to use GNOME Release Service [!968, Philip Chimento]
+  * Enable inspecting symbol properties and private fields in the debugger
+    [#455, !969, Gary Li]
+
 Version 1.82.1
 --------------
 
