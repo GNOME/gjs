@@ -8,6 +8,7 @@
 #include <config.h>
 
 #include <stdint.h>
+#include <string>
 
 #include <js/GCAPI.h>  // for JSFinalizeStatus, JSGCStatus, GCReason
 #include <js/ProfilingCategory.h>
@@ -18,17 +19,20 @@
 #include "gjs/context.h"
 #include "gjs/profiler.h"
 
+#define GJS_PROFILER_DYNAMIC_STRING(cx, str) \
+    js::GetContextProfilingStackIfEnabled(cx) ? str : ""
+
 class AutoProfilerLabel {
  public:
     explicit inline AutoProfilerLabel(JSContext* cx, const char* label,
-                                      const char* dynamicString,
+                                      const std::string& dynamicString,
                                       JS::ProfilingCategoryPair categoryPair =
                                           JS::ProfilingCategoryPair::OTHER,
                                       uint32_t flags = 0)
         : m_stack(js::GetContextProfilingStackIfEnabled(cx)) {
         if (m_stack)
-            m_stack->pushLabelFrame(label, dynamicString, this, categoryPair,
-                                    flags);
+            m_stack->pushLabelFrame(label, dynamicString.c_str(), this,
+                                    categoryPair, flags);
     }
 
     inline ~AutoProfilerLabel() {

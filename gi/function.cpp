@@ -960,14 +960,14 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
             if (g_type_is_a(*gtype, G_TYPE_OBJECT)) {
                 auto* o = ObjectBase::for_js(context, obj);
-                dynamicString = o->format_name();
+                dynamicString =
+                    GJS_PROFILER_DYNAMIC_STRING(context, o->format_name());
             }
         }
     }
-
-    dynamicString += '.';
-    dynamicString += format_name();
-    AutoProfilerLabel label(context, "", dynamicString.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        context, dynamicString + "." + format_name())};
+    AutoProfilerLabel label{context, "", full_name};
 
     g_assert(ffi_arg_pos + state.gi_argc <
              std::numeric_limits<decltype(state.processed_c_args)>::max());
