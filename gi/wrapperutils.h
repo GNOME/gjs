@@ -483,8 +483,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         Instance* priv = Instance::new_for_js_object(prototype, obj);
 
         {
-            std::string fullName = priv->format_name();
-            AutoProfilerLabel label(cx, "constructor", fullName.c_str());
+            std::string full_name{
+                GJS_PROFILER_DYNAMIC_STRING(cx, priv->format_name())};
+            AutoProfilerLabel label{cx, "constructor", full_name};
 
             if (!priv->constructor_impl(cx, obj, args))
                 return false;

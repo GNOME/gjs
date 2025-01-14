@@ -302,8 +302,9 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto* pspec = static_cast<GParamSpec*>(
         gjs_dynamic_property_private_slot(&args.callee()).toPrivate());
 
-    std::string fullName{priv->format_name() + "[\"" + pspec->name + "\"]"};
-    AutoProfilerLabel label(cx, "property getter", fullName.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + pspec->name + "\"]")};
+    AutoProfilerLabel label{cx, "property getter", full_name};
 
     priv->debug_jsprop("Property getter", pspec->name, obj);
 
@@ -385,9 +386,9 @@ bool ObjectBase::prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     const GI::AutoFunctionInfo& func_info = info_caller->func_info;
     GI::AutoPropertyInfo property_info{g_function_info_get_property(func_info)};
-    std::string full_name{priv->format_name() + "[\"" + property_info.name() +
-                          "\"]"};
-    AutoProfilerLabel label{cx, "property getter", full_name.c_str()};
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + property_info.name() + "\"]")};
+    AutoProfilerLabel label{cx, "property getter", full_name};
 
     priv->debug_jsprop("Property getter", property_info.name(), obj);
 
@@ -548,9 +549,9 @@ bool ObjectBase::prop_getter_simple_type_func(JSContext* cx, unsigned argc,
     auto* caller =
         Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, pspec_obj);
 
-    std::string full_name{priv->format_name() + "[\"" + caller->pspec->name +
-                          "\"]"};
-    AutoProfilerLabel label{cx, "property getter", full_name.c_str()};
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + caller->pspec->name + "\"]")};
+    AutoProfilerLabel label{cx, "property getter", full_name};
 
     priv->debug_jsprop("Property getter",
                        gjs_intern_string_to_id(cx, caller->pspec->name), obj);
@@ -623,9 +624,9 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto const& field_info =
         *Gjs::SimpleWrapper::get<GI::AutoFieldInfo>(cx, field_info_obj);
 
-    std::string fullName{priv->format_name() + "[\"" + field_info.name() +
-                         "\"]"};
-    AutoProfilerLabel label(cx, "field getter", fullName.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + field_info.name() + "\"]")};
+    AutoProfilerLabel label{cx, "field getter", full_name};
 
     priv->debug_jsprop("Field getter", field_info.name(), obj);
 
@@ -689,8 +690,9 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto* pspec = static_cast<GParamSpec*>(
         gjs_dynamic_property_private_slot(&args.callee()).toPrivate());
 
-    std::string fullName{priv->format_name() + "[\"" + pspec->name + "\"]"};
-    AutoProfilerLabel label(cx, "property setter", fullName.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + pspec->name + "\"]")};
+    AutoProfilerLabel label{cx, "property setter", full_name};
 
     priv->debug_jsprop("Property setter", pspec->name, obj);
 
@@ -787,9 +789,9 @@ bool ObjectBase::prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     const GI::AutoFunctionInfo& func_info = info_caller->func_info;
     GI::AutoPropertyInfo property_info{g_function_info_get_property(func_info)};
-    std::string full_name{priv->format_name() + "[\"" + property_info.name() +
-                          "\"]"};
-    AutoProfilerLabel label{cx, "property setter", full_name.c_str()};
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + property_info.name() + "\"]")};
+    AutoProfilerLabel label{cx, "property setter", full_name};
 
     priv->debug_jsprop("Property setter", property_info.name(), obj);
 
@@ -928,8 +930,9 @@ bool ObjectBase::prop_setter_simple_type_func(JSContext* cx, unsigned argc,
     auto* caller =
         Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, pspec_obj);
 
-    std::string fullName{priv->format_name() + "[" + caller->pspec->name + "]"};
-    AutoProfilerLabel label(cx, "property setter", fullName.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[" + caller->pspec->name + "]")};
+    AutoProfilerLabel label{cx, "property setter", full_name};
 
     priv->debug_jsprop("Property setter", caller->pspec->name, obj);
 
@@ -1002,9 +1005,9 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto const& field_info =
         *Gjs::SimpleWrapper::get<GI::AutoFieldInfo>(cx, field_info_obj);
 
-    std::string fullName{priv->format_name() + "[\"" + field_info.name() +
-                         "\"]"};
-    AutoProfilerLabel label(cx, "field setter", fullName.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        cx, priv->format_name() + "[\"" + field_info.name() + "\"]")};
+    AutoProfilerLabel label{cx, "field setter", full_name};
 
     priv->debug_jsprop("Field setter", field_info.name(), obj);
 
@@ -3010,9 +3013,10 @@ bool ObjectInstance::connect_impl(JSContext* context, const JS::CallArgs& args,
             return false;
     }
 
-    std::string dynamicString =
-        format_name() + '.' + func_name + "('" + signal_name.get() + "')";
-    AutoProfilerLabel label(context, "", dynamicString.c_str());
+    std::string dynamic_string{GJS_PROFILER_DYNAMIC_STRING(
+        context,
+        format_name() + '.' + func_name + "('" + signal_name.get() + "')")};
+    AutoProfilerLabel label{context, "", dynamic_string};
 
     if (!JS::IsCallable(callback)) {
         gjs_throw(context, "second arg must be a callback");
@@ -3080,9 +3084,9 @@ ObjectInstance::emit_impl(JSContext          *context,
                              "signal name", &signal_name))
         return false;
 
-    std::string dynamicString =
-        format_name() + "emit('" + signal_name.get() + "')";
-    AutoProfilerLabel label(context, "", dynamicString.c_str());
+    std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
+        context, format_name() + " emit('" + signal_name.get() + "')")};
+    AutoProfilerLabel label{context, "", full_name};
 
     if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
                              &signal_detail, false)) {
@@ -3395,8 +3399,9 @@ bool ObjectBase::init_gobject(JSContext* context, unsigned argc,
     if (!priv->check_is_instance(context, "initialize"))
         return false;
 
-    std::string dynamicString = priv->format_name() + "._init";
-    AutoProfilerLabel label(context, "", dynamicString.c_str());
+    std::string full_name{
+        GJS_PROFILER_DYNAMIC_STRING(context, priv->format_name() + "._init")};
+    AutoProfilerLabel label{context, "", full_name};
 
     return priv->to_instance()->init_impl(context, argv, obj);
 }
