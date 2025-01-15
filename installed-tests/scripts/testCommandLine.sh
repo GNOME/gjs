@@ -114,6 +114,15 @@ GLib.timeout_add_seconds(GLib.PRIORITY_HIGH, 3, () => loop.quit());
 loop.run();
 EOF
 
+cat <<EOF >int.js
+const Format = imports.format;
+const output = imports.format.vprintf('%Id', [60]);
+print(output
+  .split('')
+  .map(c => c.codePointAt(0).toString(16).padStart(4, '0'))
+  .join(' '));
+EOF
+
 total=0
 
 report () {
@@ -341,7 +350,21 @@ else
     skip "exit after first System.exit call in a signal callback" "running under valgrind"
 fi
 
-rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js \
+# https://gitlab.gnome.org/GNOME/gjs/-/issues/671
+output=$(LC_ALL=C $gjs int.js)
+test "$output" = "0036 0030"
+report "%Id prints Latin digits in C locale $output"
+output=$(LC_ALL=en_CA $gjs int.js)
+test "$output" = "0036 0030"
+report "%Id prints Latin digits in en_CA locale $output"
+output=$(LC_ALL=fa_IR $gjs int.js)
+test "$output" = "06f6 06f0"
+report "%Id prints Persian digits in fa_IR locale $output"
+output=$(LC_ALL=ar_EG $gjs int.js)
+test "$output" = "0666 0660"
+report "%Id prints Arabic digits in ar_EG locale $output"
+
+rm -f exit.js help.js promise.js awaitcatch.js doublegi.js argv.js int.js \
     signalexit.js promiseexit.js
 
 echo "1..$total"

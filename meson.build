@@ -283,16 +283,6 @@ failed to execute. Most likely you should build it with a different
 configuration.''' + recommended_configuration)
 endif
 
-have_printf_alternative_int = cc.compiles('''
-#include <stdio.h>
-int main(void) {
-    printf("%Id", (int)0);
-    return 0;
-}
-''',
-    args: ['-Werror', '-Wformat'],
-    name: 'printf() supports %I alternative int syntax')
-
 ### Check for external programs ################################################
 
 dtrace = find_program('dtrace', required: get_option('dtrace'))
@@ -323,8 +313,6 @@ header_conf.set('DEBUG', not nondebug_spidermonkey,
     description: 'SpiderMonkey was compiled with --enable-debug')
 header_conf.set('HAVE_DTRACE', get_option('dtrace'),
     description: 'Using dtrace probes')
-header_conf.set('HAVE_PRINTF_ALTERNATIVE_INT', have_printf_alternative_int,
-    description: 'printf() accepts "%Id" for alternative integer output')
 if build_readline
     header_conf.set('HAVE_READLINE_READLINE_H',
         cxx.check_header('readline/readline.h', prefix: '#include <cstdio>',

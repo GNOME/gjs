@@ -62,7 +62,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 FROM registry.fedoraproject.org/fedora:40
 
-ARG LOCALES=tr_TR
+ARG LOCALES=ar_EG en_CA fa_IR tr_TR
 ENV SHELL=/bin/bash
 
 # List is comprised of base dependencies for CI scripts, gjs, and debug packages

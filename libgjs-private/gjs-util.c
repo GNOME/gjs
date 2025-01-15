@@ -20,16 +20,6 @@
 #include "libgjs-private/gjs-util.h"
 #include "util/console.h"
 
-char *
-gjs_format_int_alternative_output(int n)
-{
-#ifdef HAVE_PRINTF_ALTERNATIVE_INT
-    return g_strdup_printf("%Id", n);
-#else
-    return g_strdup_printf("%d", n);
-#endif
-}
-
 GType gjs_locale_category_get_type(void) {
     static size_t gjs_locale_category_get_type = 0;
     if (g_once_init_enter(&gjs_locale_category_get_type)) {

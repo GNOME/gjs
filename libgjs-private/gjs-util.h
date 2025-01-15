@@ -18,10 +18,6 @@
 
 G_BEGIN_DECLS
 
-/* For imports.format */
-GJS_EXPORT
-char * gjs_format_int_alternative_output (int n);
-
 /**
  * GjsCompareDataFunc:
  * @a: a value
