@@ -975,7 +975,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         if (out_of_range) {
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
                       std::to_string(native_value).c_str(),
-                      pspec_caller->pspec->name, Gjs::static_type_name<T>());
+                      pspec_caller->pspec->name,
+                      Gjs::static_type_name<T, TAG>());
             return false;
         }
 
