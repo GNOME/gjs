@@ -44,11 +44,19 @@
             if (value === null)
                 return 'null';
 
-            if (_hasStandardToString(value)) {
-                const printedObjects = new WeakSet();
-                return formatObject(value, extra, printedObjects);
+            if (_hasStandardToString(value))
+                return formatObject(value, extra);
+
+            if (!value.toString) {
+                let str = formatObject(value, extra);
+                // object has null prototype either from Object.create(null) or cases like the module namespace object
+                if (Object.getPrototypeOf(value) === null)
+                    str = `[Object: null prototype] ${str}`;
+
+                return str;
             }
-            // If the object has a nonstandard toString, prefer that
+
+            // Prefer the non-standard toString
             return value.toString();
         case 'function':
             if (value.toString === Function.prototype.toString)
@@ -71,7 +79,7 @@
         return `${key}`;
     }
 
-    function formatObject(obj, properties, printedObjects) {
+    function formatObject(obj, properties, printedObjects = new WeakSet()) {
         printedObjects.add(obj);
         if (Array.isArray(obj) || _isTypedArray(obj))
             return formatArray(obj, properties, printedObjects).toString();

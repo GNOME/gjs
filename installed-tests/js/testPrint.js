@@ -213,6 +213,22 @@ describe('prettyPrint', function () {
             .toEqual('{ foo: [GjsFileImporter root] }');
     });
 
+    it('null prototype object', function () {
+        const obj = Object.create(null);
+        obj.test = 1;
+        expect(prettyPrint(obj)).toEqual('[Object: null prototype] { test: 1 }');
+    });
+
+    it('null prototype object with custom toString', function () {
+        const obj = Object.create(null);
+        obj.toString = () => 'Maple Syrup';
+        expect(prettyPrint(obj)).toEqual('Maple Syrup');
+    });
+
+    it('object with nullish toString', function () {
+        expect(prettyPrint({toString: null})).toEqual('{ toString: null }');
+    });
+
     describe('TypedArrays', () => {
         [
             Int8Array,

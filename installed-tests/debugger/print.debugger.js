@@ -58,5 +58,13 @@ class PrivateTest extends Child {
     }
 }
 const p = new PrivateTest();
+class PrivateNullishToString {
+    #test;
+    toString = null;
+    constructor() {
+        this.#test = 1;
+    }
+}
+const q = new PrivateNullishToString();
 debugger;
-void (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
+void (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q);
