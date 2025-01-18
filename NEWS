@@ -1,3 +1,13 @@
+Version 1.83.2
+--------------
+
+- Closed bugs and merge requests:
+
+  * profiler: only build dynamic string for profiler label if profiling
+    [#668, !971, Gary Li]
+  * object: Fix missing static_type_name template parameter
+    [!974, Philip Chimento]
+
 Version 1.83.1
 --------------
 
