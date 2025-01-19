@@ -478,7 +478,9 @@ if cairo_xlib.found()
 endif
 
 if build_readline
-    libgjs_dependencies += readline_deps
+    gio_unix = dependency('gio-unix-2.0', version: glib_required_version,
+        fallback: ['glib', 'libgiounix_dep'])
+    libgjs_dependencies += [readline_deps, gio_unix]
 endif
 
 libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines
