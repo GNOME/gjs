@@ -1940,7 +1940,7 @@ GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T, TAG>::in(JSContext* cx,
     if (!gjs_arg_set_from_js_value<T, TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
             gjs_throw(cx, "Argument %s: value is out of range for %s",
-                      arg_name(), Gjs::static_type_name<T, TAG>());
+                      arg_name(), Gjs::static_type_name<T>());
         }
 
         return false;

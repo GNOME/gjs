@@ -9,107 +9,117 @@
 #include <stdint.h>
 
 #include <girepository.h>
-#include <glib-object.h>  // for GType
+#include <glib-object.h>  // for GValue
 #include <glib.h>         // for gboolean
 
 namespace Gjs {
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-constexpr inline const char* static_type_name() = delete;
+namespace Tag {
+struct GBoolean {};
+struct GType {};
+}  // namespace Tag
+
+template <typename TAG>
+struct MarshallingInfo {};
 
 template <>
-constexpr inline const char* static_type_name<bool>() {
-    return "bool";
-}
+struct MarshallingInfo<bool> {
+    static constexpr const char* name = "bool";
+};
 
 template <>
-constexpr inline const char* static_type_name<int8_t>() {
-    return "int8";
-}
+struct MarshallingInfo<int8_t> {
+    static constexpr const char* name = "int8";
+};
 
 template <>
-constexpr inline const char* static_type_name<uint8_t>() {
-    return "uint8";
-}
+struct MarshallingInfo<uint8_t> {
+    static constexpr const char* name = "uint8";
+};
 
 template <>
-constexpr inline const char* static_type_name<int16_t>() {
-    return "int16";
-}
+struct MarshallingInfo<int16_t> {
+    static constexpr const char* name = "int16";
+};
 
 template <>
-constexpr inline const char* static_type_name<uint16_t>() {
-    return "uint16";
-}
+struct MarshallingInfo<uint16_t> {
+    static constexpr const char* name = "uint16";
+};
 
 template <>
-constexpr inline const char* static_type_name<int32_t>() {
-    return "int32";
-}
+struct MarshallingInfo<int32_t> {
+    static constexpr const char* name = "int32";
+};
 
 template <>
-constexpr inline const char* static_type_name<uint32_t>() {
-    return "uint32";
-}
+struct MarshallingInfo<uint32_t> {
+    static constexpr const char* name = "uint32";
+};
 
 template <>
-constexpr inline const char* static_type_name<char32_t>() {
-    return "char32_t";
-}
+struct MarshallingInfo<char32_t> {
+    static constexpr const char* name = "char32";
+};
 
 template <>
-constexpr inline const char* static_type_name<int64_t>() {
-    return "int64";
-}
+struct MarshallingInfo<int64_t> {
+    static constexpr const char* name = "int64";
+};
 
 template <>
-constexpr inline const char* static_type_name<uint64_t>() {
-    return "uint64";
-}
+struct MarshallingInfo<uint64_t> {
+    static constexpr const char* name = "uint64";
+};
 
 template <>
-constexpr inline const char* static_type_name<float>() {
-    return "float";
-}
+struct MarshallingInfo<float> {
+    static constexpr const char* name = "float";
+};
 
 template <>
-constexpr inline const char* static_type_name<double>() {
-    return "double";
-}
+struct MarshallingInfo<double> {
+    static constexpr const char* name = "double";
+};
 
 template <>
-constexpr inline const char* static_type_name<void*>() {
-    return "pointer";
-}
+struct MarshallingInfo<void*> {
+    static constexpr const char* name = "pointer";
+};
 
 template <>
-constexpr inline const char* static_type_name<GType, GI_TYPE_TAG_GTYPE>() {
-    return "GType";
-}
+struct MarshallingInfo<Tag::GType> {
+    static constexpr const char* name = "GType";
+};
 
 template <>
-constexpr inline const char* static_type_name<gboolean, GI_TYPE_TAG_BOOLEAN>() {
-    return "boolean";
-}
+struct MarshallingInfo<Tag::GBoolean> {
+    static constexpr const char* name = "boolean";
+};
 
 template <>
-constexpr inline const char* static_type_name<GValue>() {
-    return "GValue";
-}
+struct MarshallingInfo<GValue*> {
+    static constexpr const char* name = "GValue";
+};
 
 template <>
-inline const char* static_type_name<char*>() {
-    return "string";
-}
+struct MarshallingInfo<GValue> {
+    static constexpr const char* name = "flat GValue";
+};
 
 template <>
-inline const char* static_type_name<const char*>() {
-    return "constant string";
-}
+struct MarshallingInfo<char*> {
+    static constexpr const char* name = "string";
+};
 
 template <>
-inline const char* static_type_name<void>() {
-    return "void";
+struct MarshallingInfo<const char*> {
+    static constexpr const char* name = "constant string";
+};
+
+template <typename TAG>
+constexpr inline const char* static_type_name() {
+    return MarshallingInfo<TAG>::name;
 }
 
 }  // namespace Gjs

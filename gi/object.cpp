@@ -46,6 +46,7 @@
 #include <jsapi.h>        // for JS_GetFunctionObject, IdVector
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
+#include <mozilla/Result.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -746,7 +747,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         if (out_of_range) {
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
                       std::to_string(val).c_str(), param_spec->name,
-                      Gjs::static_type_name<T, TAG>());
+                      Gjs::static_type_name<T>());
             return false;
         }
 
@@ -981,8 +982,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         if (out_of_range) {
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
                       std::to_string(native_value).c_str(),
-                      pspec_caller->pspec->name,
-                      Gjs::static_type_name<T, TAG>());
+                      pspec_caller->pspec->name, Gjs::static_type_name<T>());
             return false;
         }
 

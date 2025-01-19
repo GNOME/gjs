@@ -632,7 +632,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
 
         if (!js_value_to_c_strict<TAG>(cx, elem, &result[i])) {
             gjs_throw(cx, "Invalid element in %s array",
-                      Gjs::static_type_name<T, TAG>());
+                      Gjs::static_type_name<T>());
             return false;
         }
     }
