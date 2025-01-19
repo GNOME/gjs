@@ -969,9 +969,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     using FuncType = void (*)(GObject*, T);
     FuncType func = reinterpret_cast<FuncType>(pspec_caller->native_address);
 
-    if constexpr (std::is_arithmetic_v<T> &&
-                  !Gjs::type_has_js_getter<
-                      T, Gjs::JsValueHolder::Strict<T, TAG>>()) {
+    // FIXME: Does not compile on i386
+    if constexpr (std::is_arithmetic_v<T> && !Gjs::type_has_js_getter<T>()) {
         bool out_of_range = false;
 
         Gjs::JsValueHolder::Relaxed<T> native_value{};
