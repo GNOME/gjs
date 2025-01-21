@@ -362,8 +362,8 @@ class ObjectPropertyInfoCaller {
     GI::AutoFunctionInfo func_info;
     void* native_address;
 
-    explicit ObjectPropertyInfoCaller(const GI::AutoFunctionInfo& info)
-        : func_info(info), native_address(nullptr) {}
+    explicit ObjectPropertyInfoCaller(GIFunctionInfo* info)
+        : func_info(info, Gjs::TakeOwnership{}), native_address(nullptr) {}
 
     Gjs::GErrorResult<> init() {
         GIFunctionInvoker invoker;
@@ -531,7 +531,7 @@ class ObjectPropertyPspecCaller {
     explicit ObjectPropertyPspecCaller(GParamSpec* param)
         : pspec(param), native_address(nullptr) {}
 
-    Gjs::GErrorResult<> init(const GI::AutoFunctionInfo& info) {
+    Gjs::GErrorResult<> init(GIFunctionInfo* info) {
         GIFunctionInvoker invoker;
         Gjs::AutoError error;
         if (!g_function_info_prep_invoker(info, &invoker, &error))
