@@ -1233,6 +1233,46 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
+                                      GIFunctionInfo* getter, GITypeInfo* type,
+                                      JS::MutableHandleValue wrapper_out) {
+    JS::RootedObject wrapper{cx};
+
+    GITransfer transfer = g_callable_info_get_caller_owns(getter);
+    JSNative js_getter = get_getter_for_type(type, transfer);
+
+    Gjs::GErrorResult<> init_result{Ok{}};
+    if (js_getter) {
+        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyPspecCaller>(
+            cx, pspec);
+        if (!wrapper)
+            return nullptr;
+        auto* caller =
+            Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, wrapper);
+        init_result = caller->init(getter);
+    } else {
+        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
+            cx, getter);
+        if (!wrapper)
+            return nullptr;
+        js_getter = &ObjectBase::prop_getter_func;
+        auto* caller =
+            Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, wrapper);
+        init_result = caller->init();
+    }
+
+    if (init_result.isErr()) {
+        gjs_throw(cx, "Impossible to create invoker for %s: %s",
+                  g_base_info_get_name(getter),
+                  init_result.inspectErr()->message);
+        return nullptr;
+    }
+
+    wrapper_out.setObject(*wrapper);
+    return js_getter;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static JSNative get_getter_for_property(
     JSContext* cx, GParamSpec* pspec, Maybe<GI::AutoPropertyInfo> property_info,
     JS::MutableHandleValue priv_out) {
@@ -1251,42 +1291,8 @@ static JSNative get_getter_for_property(
             GI::AutoTypeInfo return_type{
                 g_callable_info_get_return_type(prop_getter)};
 
-            JS::RootedObject getter_wrapper{cx};
-
-            JSNative js_getter = get_getter_for_type(
-                return_type, g_callable_info_get_caller_owns(prop_getter));
-            Gjs::GErrorResult<> init_result{Ok{}};
-            if (js_getter) {
-                getter_wrapper =
-                    Gjs::SimpleWrapper::new_for_type<ObjectPropertyPspecCaller>(
-                        cx, pspec);
-                if (!getter_wrapper)
-                    return nullptr;
-                init_result =
-                    Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(
-                        cx, getter_wrapper)
-                        ->init(prop_getter);
-            } else {
-                getter_wrapper =
-                    Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
-                        cx, prop_getter);
-                if (!getter_wrapper)
-                    return nullptr;
-                js_getter = &ObjectBase::prop_getter_func;
-                init_result = Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(
-                                  cx, getter_wrapper)
-                                  ->init();
-            }
-
-            if (init_result.isErr()) {
-                gjs_throw(cx, "Impossible to create invoker for %s: %s",
-                          prop_getter.name(),
-                          init_result.inspectErr()->message);
-                return nullptr;
-            }
-
-            priv_out.setObject(*getter_wrapper);
-            return js_getter;
+            return create_getter_invoker(cx, pspec, prop_getter, return_type,
+                                         priv_out);
         }
     }
 
@@ -1320,6 +1326,47 @@ static JSNative get_getter_for_property(
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static JSNative create_setter_invoker(JSContext* cx, GParamSpec* pspec,
+                                      GIFunctionInfo* setter,
+                                      GIArgInfo* value_arg, GITypeInfo* type,
+                                      JS::MutableHandleValue wrapper_out) {
+    JS::RootedObject wrapper{cx};
+
+    GITransfer transfer = g_arg_info_get_ownership_transfer(value_arg);
+    JSNative js_setter = get_setter_for_type(type, transfer);
+
+    Gjs::GErrorResult<> init_result{Ok{}};
+    if (js_setter) {
+        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyPspecCaller>(
+            cx, pspec);
+        if (!wrapper)
+            return nullptr;
+        auto* caller =
+            Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, wrapper);
+        init_result = caller->init(setter);
+    } else {
+        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
+            cx, setter);
+        if (!wrapper)
+            return nullptr;
+        js_setter = &ObjectBase::prop_setter_func;
+        auto* caller =
+            Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, wrapper);
+        init_result = caller->init();
+    }
+
+    if (init_result.isErr()) {
+        gjs_throw(cx, "Impossible to create invoker for %s: %s",
+                  g_base_info_get_name(setter),
+                  init_result.inspectErr()->message);
+        return nullptr;
+    }
+
+    wrapper_out.setObject(*wrapper);
+    return js_setter;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static JSNative get_setter_for_property(
     JSContext* cx, GParamSpec* pspec, Maybe<GI::AutoPropertyInfo> property_info,
     JS::MutableHandleValue priv_out) {
@@ -1337,42 +1384,9 @@ static JSNative get_setter_for_property(
             GI::AutoBaseInfo arg_info{g_callable_info_get_arg(prop_setter, 0)};
             GITypeInfo type_info;
             g_arg_info_load_type(arg_info, &type_info);
-            JS::RootedObject setter_wrapper{cx};
 
-            JSNative js_setter = get_setter_for_type(
-                &type_info, g_arg_info_get_ownership_transfer(arg_info));
-            Gjs::GErrorResult<> init_result{Ok{}};
-            if (js_setter) {
-                setter_wrapper =
-                    Gjs::SimpleWrapper::new_for_type<ObjectPropertyPspecCaller>(
-                        cx, pspec);
-                if (!setter_wrapper)
-                    return nullptr;
-                init_result =
-                    Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(
-                        cx, setter_wrapper)
-                        ->init(prop_setter);
-            } else {
-                setter_wrapper =
-                    Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
-                        cx, prop_setter);
-                if (!setter_wrapper)
-                    return nullptr;
-                js_setter = &ObjectBase::prop_setter_func;
-                init_result = Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(
-                                  cx, setter_wrapper)
-                                  ->init();
-            }
-
-            if (init_result.isErr()) {
-                gjs_throw(cx, "Impossible to create invoker for %s: %s",
-                          prop_setter.name(),
-                          init_result.inspectErr()->message);
-                return nullptr;
-            }
-
-            priv_out.setObject(*setter_wrapper);
-            return js_setter;
+            return create_setter_invoker(cx, pspec, prop_setter, arg_info,
+                                         &type_info, priv_out);
         }
     }
 
