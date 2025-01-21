@@ -416,6 +416,9 @@ static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
                                   void* native_address, GIArgument* out_arg) {
     switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_VOID:
+            if (g_type_info_is_pointer(type_info))
+                return simple_getter_caller<void*>(obj, native_address,
+                                                   out_arg);
             return false;
         case GI_TYPE_TAG_BOOLEAN:
             return simple_getter_caller<gboolean, GI_TYPE_TAG_BOOLEAN>(
@@ -819,6 +822,8 @@ static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
                                   GObject* obj, void* native_address) {
     switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_VOID:
+            if (g_type_info_is_pointer(type_info))
+                return simple_setter_caller<void*>(arg, obj, native_address);
             return false;
         case GI_TYPE_TAG_BOOLEAN:
             return simple_setter_caller<gboolean, GI_TYPE_TAG_BOOLEAN>(
