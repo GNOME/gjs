@@ -1272,6 +1272,100 @@ static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
     return js_getter;
 }
 
+// We cannot use g_base_info_equal because the GITypeInfo of properties is
+// not marked as a pointer in GIR files, while it is marked as a pointer in the
+// return type of the associated getter, or the argument type of the associated
+// setter. Also, there isn't a GParamSpec for integers of specific widths, there
+// is only int and long, whereas the corresponding getter may return a specific
+// width of integer.
+[[nodiscard]]
+static bool type_info_compatible(GITypeInfo* func_type, GITypeInfo* prop_type) {
+    GITypeTag tag = g_type_info_get_tag(prop_type);
+    GITypeTag func_tag = g_type_info_get_tag(func_type);
+
+    if (GI_TYPE_TAG_IS_BASIC(tag)) {
+        if (g_type_info_is_pointer(func_type) !=
+            g_type_info_is_pointer(prop_type))
+            return false;
+    }
+    switch (tag) {
+        case GI_TYPE_TAG_VOID:     // g_param_spec_param
+        case GI_TYPE_TAG_BOOLEAN:  // g_param_spec_boolean
+        case GI_TYPE_TAG_INT8:     // g_param_spec_char
+        case GI_TYPE_TAG_DOUBLE:   // g_param_spec_double
+        case GI_TYPE_TAG_FLOAT:    // g_param_spec_float
+        case GI_TYPE_TAG_GTYPE:    // g_param_spec_gtype
+        case GI_TYPE_TAG_UINT8:    // g_param_spec_uchar
+        case GI_TYPE_TAG_UNICHAR:  // g_param_spec_unichar
+        case GI_TYPE_TAG_ERROR:    // would be g_param_spec_boxed?
+            return func_tag == tag;
+        case GI_TYPE_TAG_INT32:
+        case GI_TYPE_TAG_INT64:
+            // g_param_spec_int, g_param_spec_long, or g_param_spec_int64
+            return func_tag == GI_TYPE_TAG_INT8 ||
+                   func_tag == GI_TYPE_TAG_INT16 ||
+                   func_tag == GI_TYPE_TAG_INT32 ||
+                   func_tag == GI_TYPE_TAG_INT64;
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_UINT64:
+            // g_param_spec_uint, g_param_spec_ulong, or g_param_spec_uint64
+            return func_tag == GI_TYPE_TAG_UINT8 ||
+                   func_tag == GI_TYPE_TAG_UINT16 ||
+                   func_tag == GI_TYPE_TAG_UINT32 ||
+                   func_tag == GI_TYPE_TAG_UINT64;
+        case GI_TYPE_TAG_UTF8:  // g_param_spec_string
+            return func_tag == tag || func_tag == GI_TYPE_TAG_FILENAME;
+        case GI_TYPE_TAG_INT16:
+        case GI_TYPE_TAG_UINT16:
+        case GI_TYPE_TAG_FILENAME:
+            g_return_val_if_reached(false);  // never occurs as GParamSpec type
+        // everything else
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST: {
+            if (func_tag != tag)
+                return false;
+            GI::AutoBaseInfo func_elem{
+                g_type_info_get_param_type(func_type, 0)};
+            GI::AutoBaseInfo prop_elem{
+                g_type_info_get_param_type(func_type, 0)};
+            return g_base_info_equal(func_elem, prop_elem);
+        }
+        case GI_TYPE_TAG_ARRAY: {
+            if (func_tag != tag)
+                return false;
+            GI::AutoBaseInfo func_elem{
+                g_type_info_get_param_type(func_type, 0)};
+            GI::AutoBaseInfo prop_elem{
+                g_type_info_get_param_type(func_type, 0)};
+            return g_base_info_equal(func_elem, prop_elem) &&
+                   g_type_info_is_zero_terminated(func_type) ==
+                       g_type_info_is_zero_terminated(prop_type) &&
+                   g_type_info_get_array_fixed_size(func_type) ==
+                       g_type_info_get_array_fixed_size(prop_type) &&
+                   g_type_info_get_array_type(func_type) ==
+                       g_type_info_get_array_type(prop_type);
+        }
+        case GI_TYPE_TAG_GHASH: {
+            if (func_tag != tag)
+                return false;
+            GI::AutoBaseInfo func_key{g_type_info_get_param_type(func_type, 0)};
+            GI::AutoBaseInfo prop_key{g_type_info_get_param_type(func_type, 0)};
+            GI::AutoBaseInfo func_val{g_type_info_get_param_type(func_type, 0)};
+            GI::AutoBaseInfo prop_val{g_type_info_get_param_type(func_type, 0)};
+            return g_base_info_equal(func_key, prop_key) &&
+                   g_base_info_equal(func_val, prop_val);
+        }
+        case GI_TYPE_TAG_INTERFACE: {
+            if (func_tag != tag)
+                return false;
+            GI::AutoBaseInfo func_iface{g_type_info_get_interface(func_type)};
+            GI::AutoBaseInfo prop_iface{g_type_info_get_interface(prop_type)};
+            return g_base_info_equal(func_iface, prop_iface);
+        }
+    }
+    g_return_val_if_reached(false);
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static JSNative get_getter_for_property(
     JSContext* cx, GParamSpec* pspec, Maybe<GI::AutoPropertyInfo> property_info,
@@ -1290,9 +1384,24 @@ static JSNative get_getter_for_property(
             !g_callable_info_skip_return(prop_getter)) {
             GI::AutoTypeInfo return_type{
                 g_callable_info_get_return_type(prop_getter)};
+            GI::AutoTypeInfo prop_type{
+                g_property_info_get_type(*property_info)};
 
-            return create_getter_invoker(cx, pspec, prop_getter, return_type,
-                                         priv_out);
+            if (G_LIKELY(type_info_compatible(return_type, prop_type))) {
+                return create_getter_invoker(cx, pspec, prop_getter,
+                                             return_type, priv_out);
+            } else {
+                GIBaseInfo* container = g_base_info_get_container(prop_getter);
+                g_warning(
+                    "Type %s of property %s.%s::%s does not match return type "
+                    "%s of getter %s. Falling back to slow path",
+                    g_type_tag_to_string(g_type_info_get_tag(prop_type)),
+                    g_base_info_get_namespace(container),
+                    g_base_info_get_name(container), property_info->name(),
+                    g_type_tag_to_string(g_type_info_get_tag(return_type)),
+                    prop_getter.name());
+                // fall back to GValue below
+            }
         }
     }
 
@@ -1385,9 +1494,24 @@ static JSNative get_setter_for_property(
             g_callable_info_load_arg(prop_setter, 0, &value_arg);
             GITypeInfo type_info;
             g_arg_info_load_type(&value_arg, &type_info);
+            GI::AutoTypeInfo prop_type{
+                g_property_info_get_type(*property_info)};
 
-            return create_setter_invoker(cx, pspec, prop_setter, &value_arg,
-                                         &type_info, priv_out);
+            if (G_LIKELY(type_info_compatible(&type_info, prop_type))) {
+                return create_setter_invoker(cx, pspec, prop_setter, &value_arg,
+                                             &type_info, priv_out);
+            } else {
+                GIBaseInfo* container = g_base_info_get_container(prop_setter);
+                g_warning(
+                    "Type %s of property %s.%s::%s does not match type %s of "
+                    "first argument of setter %s. Falling back to slow path",
+                    g_type_tag_to_string(g_type_info_get_tag(prop_type)),
+                    g_base_info_get_namespace(container),
+                    g_base_info_get_name(container), property_info->name(),
+                    g_type_tag_to_string(g_type_info_get_tag(&type_info)),
+                    prop_setter.name());
+                // fall back to GValue below
+            }
         }
     }
 
