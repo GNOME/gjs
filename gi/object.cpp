@@ -1381,11 +1381,12 @@ static JSNative get_setter_for_property(
 
         if (prop_setter && g_callable_info_is_method(prop_setter) &&
             g_callable_info_get_n_args(prop_setter) == 1) {
-            GI::AutoBaseInfo arg_info{g_callable_info_get_arg(prop_setter, 0)};
+            GIArgInfo value_arg;
+            g_callable_info_load_arg(prop_setter, 0, &value_arg);
             GITypeInfo type_info;
-            g_arg_info_load_type(arg_info, &type_info);
+            g_arg_info_load_type(&value_arg, &type_info);
 
-            return create_setter_invoker(cx, pspec, prop_setter, arg_info,
+            return create_setter_invoker(cx, pspec, prop_setter, &value_arg,
                                          &type_info, priv_out);
         }
     }
