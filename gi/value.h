@@ -192,7 +192,7 @@ std::string gvalue_to_string(GValue* gvalue) {
         std::string("GValue of type ") + G_VALUE_TYPE_NAME(gvalue) + ": ";
 
     if constexpr (std::is_same_v<T, char*>) {
-        str += '"' + Gjs::gvalue_get<T, TAG>(gvalue) + '"';
+        str += std::string("\"") + Gjs::gvalue_get<T, TAG>(gvalue) + '"';
     } else if constexpr (std::is_same_v<T, GVariant*>) {
         AutoChar variant{
             g_variant_print(Gjs::gvalue_get<T, TAG>(gvalue), true)};
