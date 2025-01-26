@@ -51,6 +51,15 @@ namespace mozilla {
 union Utf8Unit;
 }
 
+namespace Gjs {
+namespace Tag {
+struct Enum;
+struct GBoolean;
+struct GType;
+struct UnsignedEnum;
+}  // namespace Tag
+}  // namespace Gjs
+
 // COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
 #ifdef __clang_analyzer__
 void g_assertion_message(const char*, const char*, int, const char*,
@@ -1064,37 +1073,36 @@ static void gjstest_test_args_set_get_unset() {
     assert_equal(static_cast<void*>(arg.v_string),
                  static_cast<void*>(cstr.get()));
 
-    gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, TRUE);
+    gjs_arg_set<Gjs::Tag::GBoolean>(&arg, TRUE);
     g_assert_true(arg.v_boolean);
-    g_assert_true((gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg)));
+    g_assert_true((gjs_arg_get<Gjs::Tag::GBoolean>(&arg)));
 
-    gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, FALSE);
+    gjs_arg_set<Gjs::Tag::GBoolean>(&arg, FALSE);
     g_assert_false(arg.v_boolean);
-    g_assert_false((gjs_arg_get<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg)));
+    g_assert_false((gjs_arg_get<Gjs::Tag::GBoolean>(&arg)));
 
-    gjs_arg_set<gboolean, GI_TYPE_TAG_BOOLEAN>(&arg, TRUE);
+    gjs_arg_set<Gjs::Tag::GBoolean>(&arg, TRUE);
     g_assert_true(arg.v_boolean);
     gjs_arg_unset(&arg);
     g_assert_false(arg.v_boolean);
 
     GType random_gtype = get_random_number<GType>();
-    gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(&arg, random_gtype);
+    gjs_arg_set<Gjs::Tag::GType>(&arg, random_gtype);
     if constexpr (std::is_same_v<GType, gsize>)
         assert_equal(static_cast<GType>(arg.v_size), random_gtype);
     else if constexpr (std::is_same_v<GType, gulong>)
         assert_equal(static_cast<GType>(arg.v_ulong), random_gtype);
-    assert_equal(gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(&arg), random_gtype);
+    assert_equal(gjs_arg_get<Gjs::Tag::GType>(&arg), random_gtype);
 
     int random_signed_iface = get_random_number<int>();
-    gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(&arg, random_signed_iface);
+    gjs_arg_set<Gjs::Tag::Enum>(&arg, random_signed_iface);
     assert_equal(arg.v_int, random_signed_iface);
-    assert_equal(gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(&arg),
-                 random_signed_iface);
+    assert_equal(gjs_arg_get<Gjs::Tag::Enum>(&arg), random_signed_iface);
 
     unsigned random_unsigned_iface = get_random_number<unsigned>();
-    gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(&arg, random_unsigned_iface);
+    gjs_arg_set<Gjs::Tag::UnsignedEnum>(&arg, random_unsigned_iface);
     assert_equal(arg.v_uint, random_unsigned_iface);
-    assert_equal(gjs_arg_get<unsigned, GI_TYPE_TAG_INTERFACE>(&arg),
+    assert_equal(gjs_arg_get<Gjs::Tag::UnsignedEnum>(&arg),
                  random_unsigned_iface);
 }
 

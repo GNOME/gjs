@@ -19,6 +19,7 @@
 #include <glib.h>         // for gboolean
 #include <js/TypeDecls.h>  // for HandleValue
 
+#include "gi/arg-types-inl.h"
 #include "gi/js-value-inl.h"
 #include "gi/utils-inl.h"
 #include "gjs/macros.h"
@@ -46,15 +47,12 @@ template <auto GIArgument::*member>
     return (arg->*member);
 }
 
-/* The tag is needed to disambiguate types such as gboolean and GType
- * which are in fact typedef's of other generic types.
- * Setting a tag for a type allows to perform proper specialization. */
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 [[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
-    if constexpr (TAG == GI_TYPE_TAG_BOOLEAN && std::is_same_v<T, gboolean>)
+    if constexpr (std::is_same_v<TAG, Gjs::Tag::GBoolean>)
         return gjs_arg_member<&GIArgument::v_boolean>(arg);
 
-    if constexpr (TAG == GI_TYPE_TAG_GTYPE && std::is_same_v<T, GType>) {
+    if constexpr (std::is_same_v<TAG, Gjs::Tag::GType>) {
         // GType is defined differently on 32-bit vs. 64-bit architectures.
         if constexpr (std::is_same_v<GType, gsize>)
             return gjs_arg_member<&GIArgument::v_size>(arg);
@@ -62,91 +60,93 @@ template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
             return gjs_arg_member<&GIArgument::v_ulong>(arg);
     }
 
-    if constexpr (TAG == GI_TYPE_TAG_INTERFACE && std::is_integral_v<T>) {
-        if constexpr (std::is_signed_v<T>)
-            return gjs_arg_member<&GIArgument::v_int>(arg);
-        else
-            return gjs_arg_member<&GIArgument::v_uint>(arg);
-    }
+    if constexpr (std::is_same_v<TAG, Gjs::Tag::Long>)
+        return gjs_arg_member<&GIArgument::v_long>(arg);
+    if constexpr (std::is_same_v<TAG, Gjs::Tag::UnsignedLong>)
+        return gjs_arg_member<&GIArgument::v_ulong>(arg);
 
-    if constexpr (std::is_same_v<T, bool>)
+    if constexpr (std::is_same_v<TAG, Gjs::Tag::Enum>)
+        return gjs_arg_member<&GIArgument::v_int>(arg);
+    if constexpr (std::is_same_v<TAG, Gjs::Tag::UnsignedEnum>)
+        return gjs_arg_member<&GIArgument::v_uint>(arg);
+
+    if constexpr (std::is_same_v<TAG, bool>)
         return gjs_arg_member<&GIArgument::v_boolean>(arg);
-    if constexpr (std::is_same_v<T, int8_t>)
+    if constexpr (std::is_same_v<TAG, int8_t>)
         return gjs_arg_member<&GIArgument::v_int8>(arg);
-    if constexpr (std::is_same_v<T, uint8_t>)
+    if constexpr (std::is_same_v<TAG, uint8_t>)
         return gjs_arg_member<&GIArgument::v_uint8>(arg);
-    if constexpr (std::is_same_v<T, int16_t>)
+    if constexpr (std::is_same_v<TAG, int16_t>)
         return gjs_arg_member<&GIArgument::v_int16>(arg);
-    if constexpr (std::is_same_v<T, uint16_t>)
+    if constexpr (std::is_same_v<TAG, uint16_t>)
         return gjs_arg_member<&GIArgument::v_uint16>(arg);
-    if constexpr (std::is_same_v<T, int32_t>)
+    if constexpr (std::is_same_v<TAG, int32_t>)
         return gjs_arg_member<&GIArgument::v_int32>(arg);
-    if constexpr (std::is_same_v<T, uint32_t>)
+    if constexpr (std::is_same_v<TAG, uint32_t>)
         return gjs_arg_member<&GIArgument::v_uint32>(arg);
-    if constexpr (std::is_same_v<T, int64_t>)
+    if constexpr (std::is_same_v<TAG, int64_t>)
         return gjs_arg_member<&GIArgument::v_int64>(arg);
-    if constexpr (std::is_same_v<T, uint64_t>)
+    if constexpr (std::is_same_v<TAG, uint64_t>)
         return gjs_arg_member<&GIArgument::v_uint64>(arg);
 
     // gunichar is stored in v_uint32
-    if constexpr (std::is_same_v<T, char32_t>)
+    if constexpr (std::is_same_v<TAG, char32_t>)
         return gjs_arg_member<&GIArgument::v_uint32>(arg);
 
-    if constexpr (std::is_same_v<T, float>)
+    if constexpr (std::is_same_v<TAG, float>)
         return gjs_arg_member<&GIArgument::v_float>(arg);
 
-    if constexpr (std::is_same_v<T, double>)
+    if constexpr (std::is_same_v<TAG, double>)
         return gjs_arg_member<&GIArgument::v_double>(arg);
 
-    if constexpr (std::is_same_v<T, char*>)
+    if constexpr (std::is_same_v<TAG, char*>)
         return gjs_arg_member<&GIArgument::v_string>(arg);
 
-    if constexpr (std::is_same_v<T, void*>)
+    if constexpr (std::is_same_v<TAG, void*>)
         return gjs_arg_member<&GIArgument::v_pointer>(arg);
 
-    if constexpr (std::is_same_v<T, std::nullptr_t>)
+    if constexpr (std::is_same_v<TAG, std::nullptr_t>)
         return gjs_arg_member<&GIArgument::v_pointer>(arg);
 
-    if constexpr (std::is_pointer<T>()) {
+    if constexpr (std::is_pointer<TAG>()) {
         using NonconstPtrT =
-            std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
+            std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<TAG>>>;
         return reinterpret_cast<NonconstPtrT&>(
             gjs_arg_member<&GIArgument::v_pointer>(arg));
     }
 }
 
-typedef enum {
-    GJS_TYPE_TAG_LONG = 0,
-} ExtraTag;
+template <typename TAG, typename = std::enable_if_t<
+                            std::is_arithmetic_v<Gjs::Tag::RealT<TAG>>>>
+constexpr inline void gjs_arg_set(GIArgument* arg, Gjs::Tag::RealT<TAG> v) {
+    if constexpr (std::is_same_v<TAG, bool> ||
+                  std::is_same_v<TAG, Gjs::Tag::GBoolean>)
+        v = !!v;
 
-template <typename T, ExtraTag TAG>
-[[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
-    if constexpr (TAG == GJS_TYPE_TAG_LONG &&
-                  std::is_same_v<T, long>)  // NOLINT(runtime/int)
-        return gjs_arg_member<&GIArgument::v_long>(arg);
-    else if constexpr (TAG == GJS_TYPE_TAG_LONG &&
-                       std::is_same_v<T, unsigned long>)  // NOLINT(runtime/int)
-        return gjs_arg_member<&GIArgument::v_ulong>(arg);
+    gjs_arg_member<TAG>(arg) = v;
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+// Specialization for types where TAG and RealT<TAG> are the same type, to allow
+// inferring template parameter
+template <typename T,
+          typename = std::enable_if_t<std::is_same_v<Gjs::Tag::RealT<T>, T> &&
+                                      std::is_arithmetic_v<T>>>
 constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
-    if constexpr (std::is_pointer_v<T>) {
-        using NonconstPtrT =
-            std::add_pointer_t<std::remove_const_t<std::remove_pointer_t<T>>>;
-        gjs_arg_member<NonconstPtrT, TAG>(arg) = const_cast<NonconstPtrT>(v);
-    } else {
-        if constexpr (std::is_same_v<T, bool> || (std::is_same_v<T, gboolean> &&
-                                                  TAG == GI_TYPE_TAG_BOOLEAN))
-            v = !!v;
-
-        gjs_arg_member<T, TAG>(arg) = v;
-    }
+    gjs_arg_set<T>(arg, v);
 }
 
-template <typename T, ExtraTag TAG>
-constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
-    gjs_arg_member<T, TAG>(arg) = v;
+// Specialization for non-function pointers, so that you don't have to repeat
+// the pointer type explicitly for type deduction, and that takes care of
+// GIArgument not having constness
+template <typename T, typename = std::enable_if_t<!std::is_function_v<T>>>
+constexpr inline void gjs_arg_set(GIArgument* arg, T* v) {
+    using NonconstPtrT = std::add_pointer_t<std::remove_const_t<T>>;
+    gjs_arg_member<NonconstPtrT>(arg) = const_cast<NonconstPtrT>(v);
+}
+
+// Overload for nullptr since it's not handled by TAG*
+constexpr inline void gjs_arg_set(GIArgument* arg, std::nullptr_t) {
+    gjs_arg_member<void*>(arg) = nullptr;
 }
 
 // Store function pointers as void*. It is a requirement of GLib that your
@@ -156,29 +156,30 @@ constexpr inline void gjs_arg_set(GIArgument* arg, ReturnT (*v)(Args...)) {
     gjs_arg_member<void*>(arg) = reinterpret_cast<void*>(v);
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-constexpr inline std::enable_if_t<std::is_integral_v<T>> gjs_arg_set(
-    GIArgument* arg, void* v) {
-    gjs_arg_set<T, TAG>(arg, gjs_pointer_to_int<T>(v));
+// Specifying an integer-type tag and passing a void pointer, extracts a stuffed
+// integer out of the pointer; otherwise just store the pointer in v_pointer
+template <typename TAG = void*>
+constexpr inline void gjs_arg_set(GIArgument* arg, void* v) {
+    using T = Gjs::Tag::RealT<TAG>;
+    if constexpr (std::is_integral_v<T>)
+        gjs_arg_set<TAG>(arg, gjs_pointer_to_int<T>(v));
+    else
+        gjs_arg_member<void*>(arg) = v;
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] constexpr inline T gjs_arg_get(GIArgument* arg) {
-    if constexpr (std::is_same_v<T, bool> ||
-                  (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN))
-        return T(!!gjs_arg_member<T, TAG>(arg));
+template <typename TAG>
+[[nodiscard]] constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_get(
+    GIArgument* arg) {
+    if constexpr (std::is_same_v<TAG, bool> ||
+                  std::is_same_v<TAG, Gjs::Tag::GBoolean>)
+        return Gjs::Tag::RealT<TAG>(!!gjs_arg_member<TAG>(arg));
 
-    return gjs_arg_member<T, TAG>(arg);
+    return gjs_arg_member<TAG>(arg);
 }
 
-template <typename T, ExtraTag TAG>
-[[nodiscard]] constexpr inline T gjs_arg_get(GIArgument* arg) {
-    return gjs_arg_member<T, TAG>(arg);
-}
-
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 [[nodiscard]] constexpr inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
-    return gjs_int_to_pointer(gjs_arg_get<T, TAG>(arg));
+    return gjs_int_to_pointer(gjs_arg_get<TAG>(arg));
 }
 
 constexpr inline void gjs_arg_unset(GIArgument* arg) {
@@ -188,22 +189,25 @@ constexpr inline void gjs_arg_unset(GIArgument* arg) {
     memset(arg, 0, sizeof(GIArgument));
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-[[nodiscard]] constexpr inline T gjs_arg_steal(GIArgument* arg) {
-    auto val = gjs_arg_get<T, TAG>(arg);
+template <typename TAG>
+[[nodiscard]] constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_steal(
+    GIArgument* arg) {
+    auto val = gjs_arg_get<TAG>(arg);
     gjs_arg_unset(arg);
     return val;
 }
 
 // Implementation to store rounded (u)int64_t numbers into double
 
-template <typename BigT>
+template <typename BigTag>
 [[nodiscard]] inline constexpr std::enable_if_t<
-    std::is_integral_v<BigT> && (std::numeric_limits<BigT>::max() >
-                                 std::numeric_limits<int32_t>::max()),
+    std::is_integral_v<Gjs::Tag::RealT<BigTag>> &&
+        (std::numeric_limits<Gjs::Tag::RealT<BigTag>>::max() >
+         std::numeric_limits<int32_t>::max()),
     double>
 gjs_arg_get_maybe_rounded(GIArgument* arg) {
-    BigT val = gjs_arg_get<BigT>(arg);
+    using BigT = Gjs::Tag::RealT<BigTag>;
+    BigT val = gjs_arg_get<BigTag>(arg);
 
     if (val < Gjs::min_safe_big_number<BigT>() ||
         val > Gjs::max_safe_big_number<BigT>()) {
@@ -216,22 +220,25 @@ gjs_arg_get_maybe_rounded(GIArgument* arg) {
     return static_cast<double>(val);
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
     JSContext* cx, const JS::HandleValue& value, GIArgument* arg,
     bool* out_of_range) {
-    if constexpr (Gjs::type_has_js_getter<T>())
-        return Gjs::js_value_to_c<TAG>(cx, value, &gjs_arg_member<T, TAG>(arg));
+    if constexpr (Gjs::type_has_js_getter<TAG>())
+        return Gjs::js_value_to_c<TAG>(cx, value, &gjs_arg_member<TAG>(arg));
 
-    Gjs::JsValueHolder::Relaxed<T> val{};
+    Gjs::JsValueHolder::Relaxed<TAG> val{};
 
-    if (!Gjs::js_value_to_c_checked<T, TAG>(cx, value, &val, out_of_range))
+    using T = Gjs::Tag::RealT<TAG>;
+    using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;
+    if (!Gjs::js_value_to_c_checked<T, HolderTag>(cx, value, &val,
+                                                  out_of_range))
         return false;
 
     if (*out_of_range)
         return false;
 
-    gjs_arg_set<T, TAG>(arg, val);
+    gjs_arg_set<TAG>(arg, val);
 
     return true;
 }

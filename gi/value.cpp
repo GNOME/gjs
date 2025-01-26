@@ -81,12 +81,10 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
             gjs_arg_set(arg, g_value_get_uint(value));
             return true;
         case G_TYPE_LONG:
-            gjs_arg_set<long, GJS_TYPE_TAG_LONG>(  // NOLINT(runtime/int)
-                arg, g_value_get_long(value));
+            gjs_arg_set<Gjs::Tag::Long>(arg, g_value_get_long(value));
             return true;
         case G_TYPE_ULONG:
-            gjs_arg_set<unsigned long,  // NOLINT(runtime/int)
-                        GJS_TYPE_TAG_LONG>(arg, g_value_get_ulong(value));
+            gjs_arg_set<Gjs::Tag::UnsignedLong>(arg, g_value_get_ulong(value));
             return true;
         case G_TYPE_INT64:
             gjs_arg_set(arg, int64_t{g_value_get_int64(value)});
@@ -128,8 +126,7 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
             }
 
             if (g_type_is_a(gtype, G_TYPE_GTYPE)) {
-                gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(arg,
-                                                      g_value_get_gtype(value));
+                gjs_arg_set<Gjs::Tag::GType>(arg, g_value_get_gtype(value));
                 return true;
             }
 
@@ -614,7 +611,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         }
     } else if (gtype == G_TYPE_INT) {
         gint32 i;
-        if (Gjs::js_value_to_c(context, value, &i)) {
+        if (Gjs::js_value_to_c<int32_t>(context, value, &i)) {
             Gjs::gvalue_set(gvalue, i);
         } else {
             return throw_expect_type(context, value, "integer");
@@ -631,7 +628,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         }
     } else if (gtype == G_TYPE_DOUBLE) {
         gdouble d;
-        if (Gjs::js_value_to_c(context, value, &d)) {
+        if (Gjs::js_value_to_c<double>(context, value, &d)) {
             Gjs::gvalue_set(gvalue, d);
         } else {
             return throw_expect_type(context, value, "double");
@@ -647,7 +644,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         }
     } else if (gtype == G_TYPE_UINT) {
         guint32 i;
-        if (Gjs::js_value_to_c(context, value, &i)) {
+        if (Gjs::js_value_to_c<uint32_t>(context, value, &i)) {
             Gjs::gvalue_set(gvalue, i);
         } else {
             return throw_expect_type(context, value, "unsigned integer");
@@ -844,7 +841,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         int64_t value_int64;
 
-        if (Gjs::js_value_to_c(context, value, &value_int64)) {
+        if (Gjs::js_value_to_c<int64_t>(context, value, &value_int64)) {
             GEnumValue *v;
             Gjs::AutoTypeClass<GEnumClass> enum_class{gtype};
 
@@ -864,7 +861,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
     } else if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
         int64_t value_int64;
 
-        if (Gjs::js_value_to_c(context, value, &value_int64)) {
+        if (Gjs::js_value_to_c<int64_t>(context, value, &value_int64)) {
             if (!_gjs_flags_value_is_valid(context, gtype, value_int64))
                 return false;
 
@@ -900,7 +897,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         JS::RootedObject obj(context, &value.toObject());
         if (!gjs_gtype_get_actual_gtype(context, obj, &type))
             return false;
-        Gjs::gvalue_set<GType, GI_TYPE_TAG_GTYPE>(gvalue, type);
+        Gjs::gvalue_set<Gjs::Tag::GType>(gvalue, type);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (value.isNull()) {
             /* Nothing to do */
@@ -916,7 +913,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
          * e.g. ClutterUnit.
          */
         gint32 i;
-        if (Gjs::js_value_to_c(context, value, &i)) {
+        if (Gjs::js_value_to_c<int32_t>(context, value, &i)) {
             GValue int_value = { 0, };
             g_value_init(&int_value, G_TYPE_INT);
             Gjs::gvalue_set(&int_value, i);
@@ -1029,13 +1026,11 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
             return Gjs::c_value_to_js(
                 context, Gjs::gvalue_get<unsigned int>(gvalue), value_p);
         case G_TYPE_LONG:
-            return Gjs::c_value_to_js(
-                context, Gjs::gvalue_get<long>(gvalue),  // NOLINT(runtime/int)
-                value_p);
+            return Gjs::c_value_to_js<Gjs::Tag::Long>(
+                context, Gjs::gvalue_get<Gjs::Tag::Long>(gvalue), value_p);
         case G_TYPE_ULONG:
-            return Gjs::c_value_to_js(
-                context,
-                Gjs::gvalue_get<unsigned long>(gvalue),  // NOLINT(runtime/int)
+            return Gjs::c_value_to_js<Gjs::Tag::UnsignedLong>(
+                context, Gjs::gvalue_get<Gjs::Tag::UnsignedLong>(gvalue),
                 value_p);
         case G_TYPE_INT64:
             return Gjs::c_value_to_js_checked(
@@ -1181,7 +1176,7 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         value_p.setObjectOrNull(obj);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         value_p.set(convert_int_to_enum(
-            gtype, Gjs::gvalue_get<long>(gvalue)));  // NOLINT(runtime/int)
+            gtype, Gjs::gvalue_get<Gjs::Tag::Long>(gvalue)));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         GParamSpec* gparam = Gjs::gvalue_get<GParamSpec*>(gvalue);
         JSObject *obj;
@@ -1204,7 +1199,7 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         return gjs_value_from_gi_argument(context, value_p, type_info, &arg,
                                           true);
     } else if (gtype == G_TYPE_GTYPE) {
-        auto gvalue_gtype = Gjs::gvalue_get<GType, GI_TYPE_TAG_GTYPE>(gvalue);
+        GType gvalue_gtype = Gjs::gvalue_get<Gjs::Tag::GType>(gvalue);
 
         if (gvalue_gtype == 0) {
             value_p.setNull();

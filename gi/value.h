@@ -11,15 +11,16 @@
 
 #include <sstream>  // for ostringstream
 #include <string>   // for string
+#include <type_traits>
 #include <utility>  // for move, swap
 #include <vector>   // for vector
 
-#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>    // for FALSE, g_clear_pointer, g_free, g_variant_...
 
 #include <js/TypeDecls.h>
 
+#include "gi/arg-types-inl.h"
 #include "gi/utils-inl.h"
 #include "gjs/auto.h"
 #include "gjs/macros.h"
@@ -74,101 +75,135 @@ struct AutoGValue : GValue {
  * https://gitlab.gnome.org/GNOME/glib/-/blob/main/gobject/gmarshal.c
  */
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-inline constexpr T gvalue_get(const GValue* gvalue) {
-    if constexpr (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN)
+template <typename TAG>
+inline constexpr Tag::RealT<TAG> gvalue_get(const GValue* gvalue) {
+    if constexpr (std::is_same_v<TAG, Tag::GBoolean>)
         return gvalue->data[0].v_int != FALSE;
-    else if constexpr (std::is_same_v<T, bool>)
+    else if constexpr (std::is_same_v<TAG, bool>)
         return gvalue->data[0].v_int != FALSE;
-    else if constexpr (std::is_same_v<T, char>)
+    else if constexpr (std::is_same_v<TAG, char>)
         return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<T, signed char>)
+    else if constexpr (std::is_same_v<TAG, signed char>)
         return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<T, guchar>)
+    else if constexpr (std::is_same_v<TAG, unsigned char>)
         return gvalue->data[0].v_uint;
-    else if constexpr (std::is_same_v<T, int>)
+    else if constexpr (std::is_same_v<TAG, int>)
         return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<T, unsigned int>)
+    else if constexpr (std::is_same_v<TAG, unsigned int>)
         return gvalue->data[0].v_uint;
-    else if constexpr (std::is_same_v<T, long>)  // NOLINT(runtime/int)
+    else if constexpr (std::is_same_v<TAG, Tag::Long>)
         return gvalue->data[0].v_long;
-    else if constexpr (std::is_same_v<T, unsigned long>)  // NOLINT(runtime/int)
+    else if constexpr (std::is_same_v<TAG, Tag::UnsignedLong>)
         return gvalue->data[0].v_ulong;
-    else if constexpr (std::is_same_v<T, int64_t>)
+    else if constexpr (std::is_same_v<TAG, int64_t>)
         return gvalue->data[0].v_int64;
-    else if constexpr (std::is_same_v<T, uint64_t>)
+    else if constexpr (std::is_same_v<TAG, uint64_t>)
         return gvalue->data[0].v_uint64;
-    else if constexpr (std::is_enum_v<T> && TAG == GI_TYPE_TAG_INT32)
+    else if constexpr (std::is_same_v<TAG, Tag::Enum>)
         return gvalue->data[0].v_long;
-    else if constexpr (std::is_enum_v<T> && TAG == GI_TYPE_TAG_UINT64)
+    else if constexpr (std::is_same_v<TAG, Tag::UnsignedEnum>)
         return gvalue->data[0].v_ulong;
-    else if constexpr (std::is_same_v<T, float>)
+    else if constexpr (std::is_same_v<TAG, float>)
         return gvalue->data[0].v_float;
-    else if constexpr (std::is_same_v<T, double>)
+    else if constexpr (std::is_same_v<TAG, double>)
         return gvalue->data[0].v_double;
-    else if constexpr (std::is_same_v<T, GType> && TAG == GI_TYPE_TAG_GTYPE)
+    else if constexpr (std::is_same_v<TAG, Tag::GType>)
         return gjs_pointer_to_int<GType>(gvalue->data[0].v_pointer);
-    else if constexpr (!std::is_pointer_v<T>)
-        static_assert(std::is_pointer_v<T>, "Scalar type not properly handled");
+    else if constexpr (!std::is_pointer_v<TAG>)
+        static_assert(std::is_pointer_v<TAG>,
+                      "Scalar type not properly handled");
     else
-        return static_cast<T>(gvalue->data[0].v_pointer);
+        return static_cast<TAG>(gvalue->data[0].v_pointer);
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-void gvalue_set(GValue* gvalue, T value) {
-    if constexpr (std::is_same_v<T, gboolean> && TAG == GI_TYPE_TAG_BOOLEAN)
+template <typename TAG>
+void gvalue_set(GValue* gvalue, Tag::RealT<TAG> value) {
+    if constexpr (std::is_same_v<TAG, Tag::GBoolean>)
         gvalue->data[0].v_int = value != FALSE;
-    else if constexpr (std::is_same_v<T, bool>)
+    else if constexpr (std::is_same_v<TAG, bool>)
         gvalue->data[0].v_int = value != false;
-    else if constexpr (std::is_same_v<T, char>)
+    else if constexpr (std::is_same_v<TAG, char>)
         gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<T, signed char>)
+    else if constexpr (std::is_same_v<TAG, signed char>)
         gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<T, guchar>)
+    else if constexpr (std::is_same_v<TAG, unsigned char>)
         gvalue->data[0].v_uint = value;
-    else if constexpr (std::is_same_v<T, int>)
+    else if constexpr (std::is_same_v<TAG, int>)
         gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<T, unsigned int>)
+    else if constexpr (std::is_same_v<TAG, unsigned int>)
         gvalue->data[0].v_uint = value;
-    else if constexpr (std::is_same_v<T, long>)  // NOLINT(runtime/int)
+    else if constexpr (std::is_same_v<TAG, Tag::Long>)
         gvalue->data[0].v_long = value;
-    else if constexpr (std::is_same_v<T, unsigned long>)  // NOLINT(runtime/int)
+    else if constexpr (std::is_same_v<TAG, Tag::UnsignedLong>)
         gvalue->data[0].v_ulong = value;
-    else if constexpr (std::is_same_v<T, int64_t>)
+    else if constexpr (std::is_same_v<TAG, int64_t>)
         gvalue->data[0].v_int64 = value;
-    else if constexpr (std::is_same_v<T, uint64_t>)
+    else if constexpr (std::is_same_v<TAG, uint64_t>)
         gvalue->data[0].v_uint64 = value;
-    else if constexpr (std::is_enum_v<T> && TAG == GI_TYPE_TAG_INT32)
+    else if constexpr (std::is_same_v<TAG, Tag::Enum>)
         gvalue->data[0].v_long = value;
-    else if constexpr (std::is_enum_v<T> && TAG == GI_TYPE_TAG_UINT64)
+    else if constexpr (std::is_same_v<TAG, Tag::UnsignedEnum>)
         gvalue->data[0].v_ulong = value;
-    else if constexpr (std::is_same_v<T, float>)
+    else if constexpr (std::is_same_v<TAG, float>)
         gvalue->data[0].v_float = value;
-    else if constexpr (std::is_same_v<T, double>)
+    else if constexpr (std::is_same_v<TAG, double>)
         gvalue->data[0].v_double = value;
-    else if constexpr (std::is_same_v<T, GType> && TAG == GI_TYPE_TAG_GTYPE)
+    else if constexpr (std::is_same_v<TAG, Tag::GType>)
         gvalue->data[0].v_pointer = gjs_int_to_pointer(value);
     else
-        static_assert(std::is_pointer_v<T>, "Scalar type not properly handled");
+        static_assert(!std::is_scalar_v<Tag::RealT<TAG>>,
+                      "Scalar type not properly handled");
+}
 
+// Specialization for types where TAG and RealT<TAG> are the same type, to allow
+// inferring template parameter
+template <typename T,
+          typename = std::enable_if_t<std::is_same_v<Gjs::Tag::RealT<T>, T>>>
+inline void gvalue_set(GValue* gvalue, T value) {
+    gvalue_set<T>(gvalue, value);
+}
+
+template <typename T>
+void gvalue_set(GValue* gvalue, T* value) = delete;
+
+template <>
+inline void gvalue_set(GValue* gvalue, char* value) {
+    g_clear_pointer(&gvalue->data[0].v_pointer, g_free);
+    gvalue->data[0].v_pointer = g_strdup(value);
+}
+
+template <>
+inline void gvalue_set(GValue* gvalue, GObject* value) {
+    g_set_object(&gvalue->data[0].v_pointer, value);
+}
+
+template <>
+inline void gvalue_set(GValue* gvalue, GVariant* value) {
+    g_clear_pointer(reinterpret_cast<GVariant**>(&gvalue->data[0].v_pointer),
+                    g_variant_unref);
+    gvalue->data[0].v_pointer = value ? g_variant_ref(value) : nullptr;
+}
+
+template <typename T>
+void gvalue_set(GValue* gvalue, std::nullptr_t) {
     if constexpr (std::is_same_v<T, char*>) {
         g_clear_pointer(&gvalue->data[0].v_pointer, g_free);
-        gvalue->data[0].v_pointer = g_strdup(value);
     } else if constexpr (std::is_same_v<T, GObject*>) {
-        g_set_object(&gvalue->data[0].v_pointer, value);
+        g_set_object(&gvalue->data[0].v_pointer, nullptr);
     } else if constexpr (std::is_same_v<T, GVariant*>) {
         g_clear_pointer(reinterpret_cast<T*>(&gvalue->data[0].v_pointer),
                         g_variant_unref);
-        gvalue->data[0].v_pointer = value ? g_variant_ref(value) : nullptr;
+        gvalue->data[0].v_pointer = nullptr;
     } else {
         static_assert(!std::is_pointer_v<T>, "Not a known pointer type");
     }
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-void gvalue_take(GValue* gvalue, T value) {
+template <typename TAG>
+void gvalue_take(GValue* gvalue, Tag::RealT<TAG> value) {
+    using T = Tag::RealT<TAG>;
     if constexpr (!std::is_pointer_v<T>) {
-        return gvalue_set<T, TAG>(gvalue, value);
+        return gvalue_set<TAG>(gvalue, value);
     }
 
     if constexpr (std::is_same_v<T, char*>) {
@@ -186,22 +221,21 @@ void gvalue_take(GValue* gvalue, T value) {
     }
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 std::string gvalue_to_string(GValue* gvalue) {
     auto str =
         std::string("GValue of type ") + G_VALUE_TYPE_NAME(gvalue) + ": ";
 
-    if constexpr (std::is_same_v<T, char*>) {
-        str += std::string("\"") + Gjs::gvalue_get<T, TAG>(gvalue) + '"';
-    } else if constexpr (std::is_same_v<T, GVariant*>) {
-        AutoChar variant{
-            g_variant_print(Gjs::gvalue_get<T, TAG>(gvalue), true)};
+    if constexpr (std::is_same_v<TAG, char*>) {
+        str += std::string("\"") + Gjs::gvalue_get<TAG>(gvalue) + '"';
+    } else if constexpr (std::is_same_v<TAG, GVariant*>) {
+        AutoChar variant{g_variant_print(Gjs::gvalue_get<TAG>(gvalue), true)};
         str += std::string("<") + variant.get() + '>';
-    } else if constexpr (std::is_arithmetic_v<T>) {
-        str += std::to_string(Gjs::gvalue_get<T, TAG>(gvalue));
+    } else if constexpr (std::is_arithmetic_v<TAG>) {
+        str += std::to_string(Gjs::gvalue_get<TAG>(gvalue));
     } else {
         std::ostringstream out;
-        out << Gjs::gvalue_get<T, TAG>(gvalue);
+        out << Gjs::gvalue_get<TAG>(gvalue);
         str += out.str();
     }
     return str;

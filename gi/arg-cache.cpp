@@ -593,40 +593,40 @@ struct FallbackReturn : FallbackOut {
     }
 };
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 struct NumericOut : SkipAll, Positioned {
-    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue) override {
         return set_out_parameter(state, arg);
     }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
-                                                  value);
+        return Gjs::c_value_to_js_checked<TAG>(cx, gjs_arg_get<TAG>(arg),
+                                               value);
     }
 };
 
-using BooleanOut = NumericOut<gboolean, GI_TYPE_TAG_BOOLEAN>;
+using BooleanOut = NumericOut<Tag::GBoolean>;
 
-template <typename T, GITypeTag TAG>
+template <typename TAG>
 struct NumericReturn : SkipAll {
-    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
         return invalid(cx, G_STRFUNC);
     }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
-                                                  value);
+        return Gjs::c_value_to_js_checked<TAG>(cx, gjs_arg_get<TAG>(arg),
+                                               value);
     }
     Maybe<ReturnTag> return_tag() const override {
-        return Some(ReturnTag{TAG});
+        return Some(ReturnTag{MarshallingInfo<TAG>::gi_tag});
     }
 };
 
-using BooleanReturn = NumericReturn<gboolean, GI_TYPE_TAG_BOOLEAN>;
+using BooleanReturn = NumericReturn<Tag::GBoolean>;
 
 struct SimpleOut : SkipAll, Positioned {
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
@@ -1344,31 +1344,31 @@ struct BooleanIn : SkipAll {
             JS::HandleValue) override;
 };
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 struct NumericIn : SkipAll {
-    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
 };
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-struct NumericInOut : NumericIn<T, TAG>, Positioned {
-    static_assert(std::is_arithmetic_v<T>, "Not arithmetic type");
+template <typename TAG>
+struct NumericInOut : NumericIn<TAG>, Positioned {
+    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
-        if (!NumericIn<T, TAG>::in(cx, state, arg, value))
+        if (!NumericIn<TAG>::in(cx, state, arg, value))
             return false;
 
         return set_inout_parameter(state, arg);
     }
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js_checked<T, TAG>(cx, gjs_arg_get<T, TAG>(arg),
-                                                  value);
+        return Gjs::c_value_to_js_checked<TAG>(cx, gjs_arg_get<TAG>(arg),
+                                               value);
     }
 };
 
-using BooleanInOut = NumericInOut<gboolean, GI_TYPE_TAG_BOOLEAN>;
+using BooleanInOut = NumericInOut<Tag::GBoolean>;
 
 struct UnicharIn : SkipAll {
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -1930,17 +1930,17 @@ bool BooleanIn::in(JSContext*, GjsFunctionCallState*, GIArgument* arg,
     return true;
 }
 
-template <typename T, GITypeTag TAG>
-GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T, TAG>::in(JSContext* cx,
-                                                       GjsFunctionCallState*,
-                                                       GIArgument* arg,
-                                                       JS::HandleValue value) {
+template <typename TAG>
+GJS_JSAPI_RETURN_CONVENTION bool NumericIn<TAG>::in(JSContext* cx,
+                                                    GjsFunctionCallState*,
+                                                    GIArgument* arg,
+                                                    JS::HandleValue value) {
     bool out_of_range = false;
 
-    if (!gjs_arg_set_from_js_value<T, TAG>(cx, value, arg, &out_of_range)) {
+    if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
             gjs_throw(cx, "Argument %s: value is out of range for %s",
-                      arg_name(), Gjs::static_type_name<T>());
+                      arg_name(), Gjs::static_type_name<TAG>());
         }
 
         return false;
@@ -1950,8 +1950,8 @@ GJS_JSAPI_RETURN_CONVENTION bool NumericIn<T, TAG>::in(JSContext* cx,
                       Gjs::AutoChar{gjs_argument_display_name(
                                         arg_name(), GJS_ARGUMENT_ARGUMENT)}
                           .get(),
-                      std::to_string(gjs_arg_get<T, TAG>(arg)).c_str(),
-                      Gjs::static_type_name<T, TAG>());
+                      std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
+                      Gjs::static_type_name<TAG>());
 
     return true;
 }
@@ -1976,8 +1976,8 @@ bool GTypeIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                                       ExpectedType::OBJECT);
 
     JS::RootedObject gtype_obj(cx, &value.toObject());
-    return gjs_gtype_get_actual_gtype(
-        cx, gtype_obj, &gjs_arg_member<GType, GI_TYPE_TAG_GTYPE>(arg));
+    return gjs_gtype_get_actual_gtype(cx, gtype_obj,
+                                      &gjs_arg_member<Tag::GType>(arg));
 }
 
 // Common code for most types that are pointers on the C side
@@ -2021,7 +2021,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool EnumIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                 JS::HandleValue value) {
     int64_t number;
-    if (!Gjs::js_value_to_c(cx, value, &number))
+    if (!Gjs::js_value_to_c<int64_t>(cx, value, &number))
         return false;
 
     // Unpack the values from their uint32_t bitfield. See note in
@@ -2042,9 +2042,9 @@ bool EnumIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
     }
 
     if (m_unsigned)
-        gjs_arg_set<unsigned, GI_TYPE_TAG_INTERFACE>(arg, number);
+        gjs_arg_set<Tag::UnsignedEnum>(arg, number);
     else
-        gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, number);
+        gjs_arg_set<Tag::Enum>(arg, number);
 
     return true;
 }
@@ -2053,7 +2053,7 @@ GJS_JSAPI_RETURN_CONVENTION
 bool FlagsIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                  JS::HandleValue value) {
     int64_t number;
-    if (!Gjs::js_value_to_c(cx, value, &number))
+    if (!Gjs::js_value_to_c<int64_t>(cx, value, &number))
         return false;
 
     if ((uint64_t(number) & m_mask) != uint64_t(number)) {
@@ -2066,7 +2066,7 @@ bool FlagsIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
     // We cast to unsigned because that's what makes sense, but then we
     // put it in the v_int slot because that's what we use to unmarshal
     // flags types at the moment.
-    gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(arg, static_cast<unsigned>(number));
+    gjs_arg_set<Tag::Enum>(arg, static_cast<unsigned>(number));
     return true;
 }
 
@@ -2805,53 +2805,43 @@ void ArgsCache::build_return(GICallableInfo* callable, bool* inc_counter_out) {
             return;
 
         case GI_TYPE_TAG_INT8:
-            set_return(new Arg::NumericReturn<int8_t, GI_TYPE_TAG_INT8>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<int8_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT16:
-            set_return(new Arg::NumericReturn<int16_t, GI_TYPE_TAG_INT16>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<int16_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT32:
-            set_return(new Arg::NumericReturn<int32_t, GI_TYPE_TAG_INT32>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<int32_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT8:
-            set_return(new Arg::NumericReturn<uint8_t, GI_TYPE_TAG_UINT8>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<uint8_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT16:
-            set_return(new Arg::NumericReturn<uint16_t, GI_TYPE_TAG_UINT16>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<uint16_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT32:
-            set_return(new Arg::NumericReturn<uint32_t, GI_TYPE_TAG_UINT32>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<uint32_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_INT64:
-            set_return(new Arg::NumericReturn<int64_t, GI_TYPE_TAG_INT64>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<int64_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_UINT64:
-            set_return(new Arg::NumericReturn<uint64_t, GI_TYPE_TAG_UINT64>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<uint64_t>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_FLOAT:
-            set_return(new Arg::NumericReturn<float, GI_TYPE_TAG_FLOAT>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<float>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_DOUBLE:
-            set_return(new Arg::NumericReturn<double, GI_TYPE_TAG_DOUBLE>(),
-                       transfer, flags);
+            set_return(new Arg::NumericReturn<double>(), transfer, flags);
             return;
 
         case GI_TYPE_TAG_UTF8:

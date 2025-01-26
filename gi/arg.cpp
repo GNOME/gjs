@@ -349,19 +349,21 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     return g_hash_table_new(NULL, NULL);
 }
 
-template <typename IntType>
+template <typename IntTag>
 GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
     JSContext* cx, const JS::HandleValue& value, void** pointer_out) {
+    using IntType = Gjs::Tag::RealT<IntTag>;
     static_assert(std::is_integral_v<IntType>, "Need an integer");
     bool out_of_range = false;
 
-    Gjs::JsValueHolder::Strict<IntType> i;
+    using HolderTag = Gjs::JsValueHolder::Strict<IntTag>;
+    Gjs::Tag::RealT<HolderTag> i;
     if (!Gjs::js_value_to_c_checked<IntType>(cx, value, &i, &out_of_range))
         return false;
 
     if (out_of_range) {
         gjs_throw(cx, "value is out of range for hash table key of type %s",
-                  Gjs::static_type_name<IntType>());
+                  Gjs::static_type_name<IntTag>());
     }
 
     *pointer_out = gjs_int_to_pointer<IntType>(i);
@@ -494,10 +496,11 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
     return true;
 }
 
-template <typename T>
-[[nodiscard]] static T* heap_value_new_from_arg(GIArgument* val_arg) {
-    T* heap_val = g_new(T, 1);
-    *heap_val = gjs_arg_get<T>(val_arg);
+template <typename TAG>
+[[nodiscard]] static Gjs::Tag::RealT<TAG>* heap_value_new_from_arg(
+    GIArgument* val_arg) {
+    auto* heap_val = g_new(Gjs::Tag::RealT<TAG>, 1);
+    *heap_val = gjs_arg_get<TAG>(val_arg);
 
     return heap_val;
 }
@@ -599,28 +602,30 @@ template <typename T>
     return array;
 }
 
-template <GITypeTag TAG, typename T>
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
-    JSContext* cx, const JS::HandleValue& value, T* out) {
-    using ValueHolderT = Gjs::JsValueHolder::Strict<T, TAG>;
-    if constexpr (Gjs::type_has_js_getter<T, ValueHolderT>())
+    JSContext* cx, const JS::HandleValue& value, Gjs::Tag::RealT<TAG>* out) {
+    if constexpr (Gjs::type_has_js_getter<TAG,
+                                          Gjs::HolderMode::ContainingType>())
         return Gjs::js_value_to_c<TAG>(cx, value, out);
 
-    ValueHolderT v;
+    Gjs::Tag::RealT<Gjs::JsValueHolder::Strict<TAG>> v;
     bool ret = Gjs::js_value_to_c<TAG>(cx, value, &v);
     *out = v;
 
     return ret;
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
     JSContext* cx, JS::Value array_value, size_t length, void** arr_p) {
+    using RealT = Gjs::Tag::RealT<T>;
+
     JS::RootedObject array(cx, array_value.toObjectOrNull());
     JS::RootedValue elem(cx);
 
     // Add one so we're always zero terminated
-    Gjs::SmartPointer<T> result{array_allocate<T>(length + 1)};
+    Gjs::SmartPointer<RealT> result{array_allocate<RealT>(length + 1)};
 
     for (size_t i = 0; i < length; ++i) {
         elem = JS::UndefinedValue();
@@ -630,7 +635,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
             return false;
         }
 
-        if (!js_value_to_c_strict<TAG>(cx, elem, &result[i])) {
+        if (!js_value_to_c_strict<T>(cx, elem, &result[i])) {
             gjs_throw(cx, "Invalid element in %s array",
                       Gjs::static_type_name<T>());
             return false;
@@ -830,7 +835,7 @@ static bool gjs_array_to_basic_array(JSContext* cx, JS::HandleValue v_array,
             return array_to_basic_c_array(cx, v_array, length,
                                           element_storage_type, array_out);
         case GI_TYPE_TAG_BOOLEAN:
-            return gjs_array_to_auto_array<gboolean, GI_TYPE_TAG_BOOLEAN>(
+            return gjs_array_to_auto_array<Gjs::Tag::GBoolean>(
                 cx, v_array, length, array_out);
         case GI_TYPE_TAG_UNICHAR:
             return gjs_array_to_auto_array<char32_t>(cx, v_array, length,
@@ -866,8 +871,8 @@ static bool gjs_array_to_basic_array(JSContext* cx, JS::HandleValue v_array,
             return gjs_array_to_auto_array<double>(cx, v_array, length,
                                                    array_out);
         case GI_TYPE_TAG_GTYPE:
-            return gjs_array_to_auto_array<GType, GI_TYPE_TAG_GTYPE>(
-                cx, v_array, length, array_out);
+            return gjs_array_to_auto_array<Gjs::Tag::GType>(cx, v_array, length,
+                                                            array_out);
         case GI_TYPE_TAG_VOID:
             gjs_throw(cx, "Unhandled array element type %d",
                       element_storage_type);
@@ -1511,8 +1516,7 @@ bool value_to_interface_gi_argument_internal(
                 !_gjs_enum_value_is_valid(cx, interface_info, value_int64))
                 return false;
 
-            gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(
-                arg, _gjs_enum_to_int(value_int64));
+            gjs_arg_set<Gjs::Tag::Enum>(arg, _gjs_enum_to_int(value_int64));
             return true;
 
         } else if (interface_type == GI_INFO_TYPE_FLAGS) {
@@ -1522,8 +1526,7 @@ bool value_to_interface_gi_argument_internal(
                 !_gjs_flags_value_is_valid(cx, gtype, value_int64))
                 return false;
 
-            gjs_arg_set<int, GI_TYPE_TAG_INTERFACE>(
-                arg, _gjs_enum_to_int(value_int64));
+            gjs_arg_set<Gjs::Tag::Enum>(arg, _gjs_enum_to_int(value_int64));
             return true;
 
         } else if (gtype == G_TYPE_NONE) {
@@ -1545,19 +1548,19 @@ bool value_to_interface_gi_argument_internal(
                                             arg_type);
 }
 
-template <typename T>
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
     JSContext* cx, const JS::HandleValue& value, GIArgument* arg,
     const char* arg_name, GjsArgumentType arg_type) {
     bool out_of_range = false;
 
-    if (!gjs_arg_set_from_js_value<T>(cx, value, arg, &out_of_range)) {
+    if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
             Gjs::AutoChar display_name{
                 gjs_argument_display_name(arg_name, arg_type)};
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      std::to_string(gjs_arg_get<T>(arg)).c_str(),
-                      display_name.get(), Gjs::static_type_name<T>());
+                      std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
+                      display_name.get(), Gjs::static_type_name<TAG>());
         }
 
         return false;
@@ -1566,8 +1569,8 @@ GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
         Gjs::AutoChar{gjs_argument_display_name(arg_name, arg_type)}.get(),
-        std::to_string(gjs_arg_get<T>(arg)).c_str(),
-        Gjs::static_type_name<T>());
+        std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
+        Gjs::static_type_name<TAG>());
 
     return true;
 }
@@ -1665,7 +1668,7 @@ bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
 
                 if (gtype == G_TYPE_INVALID)
                     return false;
-                gjs_arg_set<GType, GI_TYPE_TAG_GTYPE>(arg, gtype);
+                gjs_arg_set<Gjs::Tag::GType>(arg, gtype);
                 return true;
             }
 
@@ -2320,7 +2323,7 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
             return true;
 
         case GI_TYPE_TAG_GTYPE: {
-            GType gtype = gjs_arg_get<GType, GI_TYPE_TAG_GTYPE>(arg);
+            GType gtype = gjs_arg_get<Gjs::Tag::GType>(arg);
             if (gtype == 0) {
                 value_out.setNull();
                 return true;
@@ -2431,12 +2434,13 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
     return true;
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_basic_c_array(
     JSContext* cx, JS::MutableHandleValueVector elems, GITypeTag element_tag,
     GIArgument* arg, void* array, size_t length) {
+    using T = Gjs::Tag::RealT<TAG>;
     for (size_t i = 0; i < length; i++) {
-        gjs_arg_set<T, TAG>(arg, *(static_cast<T*>(array) + i));
+        gjs_arg_set<TAG>(arg, *(static_cast<T*>(array) + i));
 
         if (!gjs_value_from_basic_gi_argument(cx, elems[i], element_tag, arg))
             return false;
@@ -2445,13 +2449,13 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_basic_c_array(
     return true;
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     GITypeInfo* param_info, GIArgument* arg, void* array, size_t length,
     GITransfer transfer = GI_TRANSFER_EVERYTHING) {
     for (size_t i = 0; i < length; i++) {
-        gjs_arg_set<T, TAG>(arg, *(static_cast<T*>(array) + i));
+        gjs_arg_set<T>(arg, *(static_cast<Gjs::Tag::RealT<T>*>(array) + i));
 
         if (!gjs_value_from_gi_argument(cx, elems[i], param_info,
                                         GJS_ARGUMENT_ARRAY_ELEMENT, transfer,
@@ -2506,7 +2510,7 @@ static bool gjs_array_from_basic_c_array_internal(
             g_assert_not_reached();
 
         case GI_TYPE_TAG_BOOLEAN:
-            if (!fill_vector_from_basic_c_array<gboolean, GI_TYPE_TAG_BOOLEAN>(
+            if (!fill_vector_from_basic_c_array<Gjs::Tag::GBoolean>(
                     cx, &elems, element_tag, &arg, contents, length))
                 return false;
             break;
@@ -2771,15 +2775,16 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
                                           transfer, length, data);
 }
 
-template <typename T>
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION static bool
 fill_vector_from_basic_zero_terminated_c_array(
     JSContext* cx, JS::MutableHandleValueVector elems, GITypeTag element_tag,
     GIArgument* arg, void* c_array) {
+    using T = Gjs::Tag::RealT<TAG>;
     T* array = static_cast<T*>(c_array);
 
     for (size_t ix = 0; array[ix]; ix++) {
-        gjs_arg_set(arg, array[ix]);
+        gjs_arg_set<TAG>(arg, array[ix]);
 
         if (!elems.growBy(1)) {
             JS_ReportOutOfMemory(cx);
@@ -3368,8 +3373,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
             /* Enum/Flags are aren't pointer types, unlike the other interface subtypes */
             if (interface_type == GI_INFO_TYPE_ENUM) {
                 int64_t value_int64 = _gjs_enum_from_int(
-                    interface_info,
-                    gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(arg));
+                    interface_info, gjs_arg_get<Gjs::Tag::Enum>(arg));
 
                 if (!_gjs_enum_value_is_valid(context, interface_info,
                                               value_int64))
@@ -3381,8 +3385,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
             if (interface_type == GI_INFO_TYPE_FLAGS) {
                 int64_t value_int64 = _gjs_enum_from_int(
-                    interface_info,
-                    gjs_arg_get<int, GI_TYPE_TAG_INTERFACE>(arg));
+                    interface_info, gjs_arg_get<Gjs::Tag::Enum>(arg));
 
                 GType gtype = g_registered_type_info_get_g_type(
                     interface_info.as<GIRegisteredTypeInfo>());
