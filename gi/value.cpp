@@ -1017,8 +1017,8 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
 
     switch (gtype) {
         case G_TYPE_CHAR:
-            return Gjs::c_value_to_js(context, Gjs::gvalue_get<char>(gvalue),
-                                      value_p);
+            return Gjs::c_value_to_js(
+                context, Gjs::gvalue_get<signed char>(gvalue), value_p);
         case G_TYPE_UCHAR:
             return Gjs::c_value_to_js(
                 context, Gjs::gvalue_get<unsigned char>(gvalue), value_p);
