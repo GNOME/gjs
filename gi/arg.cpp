@@ -350,8 +350,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
 }
 
 template <typename IntTag>
-GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
-    JSContext* cx, const JS::HandleValue& value, void** pointer_out) {
+GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(JSContext* cx,
+                                                          JS::HandleValue value,
+                                                          void** pointer_out) {
     using IntType = Gjs::Tag::RealT<IntTag>;
     static_assert(std::is_integral_v<IntType>, "Need an integer");
     bool out_of_range = false;
@@ -603,7 +604,7 @@ template <typename T>
 
 template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
-    JSContext* cx, const JS::HandleValue& value, Gjs::Tag::RealT<TAG>* out) {
+    JSContext* cx, JS::HandleValue value, Gjs::Tag::RealT<TAG>* out) {
     if constexpr (Gjs::type_has_js_getter<TAG,
                                           Gjs::HolderMode::ContainingType>())
         return Gjs::js_value_to_c<TAG>(cx, value, out);
@@ -1549,8 +1550,8 @@ bool value_to_interface_gi_argument_internal(
 
 template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
-    JSContext* cx, const JS::HandleValue& value, GIArgument* arg,
-    const char* arg_name, GjsArgumentType arg_type) {
+    JSContext* cx, JS::HandleValue value, GIArgument* arg, const char* arg_name,
+    GjsArgumentType arg_type) {
     bool out_of_range = false;
 
     if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
@@ -1800,7 +1801,7 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
 
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION static bool basic_array_to_linked_list(
-    JSContext* cx, const JS::HandleValue& value, GITypeTag element_tag,
+    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
     const char* arg_name, GjsArgumentType arg_type, T** list_p) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
