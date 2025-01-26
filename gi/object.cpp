@@ -1426,9 +1426,11 @@ static JSNative get_getter_for_property(
             return &ObjectBase::prop_getter<double>;
         case G_TYPE_STRING:
             return &ObjectBase::prop_getter<char*>;
+        case G_TYPE_LONG:
+            return &ObjectBase::prop_getter<Gjs::Tag::Long>;
+        case G_TYPE_ULONG:
+            return &ObjectBase::prop_getter<Gjs::Tag::UnsignedLong>;
         default:
-            // TODO(ptomato): Handle G_TYPE_LONG and G_TYPE_ULONG with ExtraTag
-            // to prevent collision with (u)int64_t on MacOS
             return &ObjectBase::prop_getter<>;
     }
 }
@@ -1536,9 +1538,11 @@ static JSNative get_setter_for_property(
             return &ObjectBase::prop_setter<double>;
         case G_TYPE_STRING:
             return &ObjectBase::prop_setter<char*>;
+        case G_TYPE_LONG:
+            return &ObjectBase::prop_setter<Gjs::Tag::Long>;
+        case G_TYPE_ULONG:
+            return &ObjectBase::prop_setter<Gjs::Tag::UnsignedLong>;
         default:
-            // TODO(ptomato): Handle G_TYPE_LONG and G_TYPE_ULONG with ExtraTag
-            // to prevent collision with (u)int64_t on MacOS
             return &ObjectBase::prop_setter<>;
     }
 }
