@@ -137,7 +137,7 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
         }
     }
 
-    gjs_throw(cx, "No know GArgument conversion for %s",
+    gjs_throw(cx, "No known GIArgument conversion for %s",
               G_VALUE_TYPE_NAME(value));
     return false;
 }
