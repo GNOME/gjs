@@ -116,12 +116,13 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
             GType gtype = G_VALUE_TYPE(value);
 
             if (g_type_is_a(gtype, G_TYPE_FLAGS)) {
-                gjs_arg_set(arg, g_value_get_flags(value));
+                gjs_arg_set<Gjs::Tag::UnsignedEnum>(arg,
+                                                    g_value_get_flags(value));
                 return true;
             }
 
             if (g_type_is_a(gtype, G_TYPE_ENUM)) {
-                gjs_arg_set(arg, g_value_get_enum(value));
+                gjs_arg_set<Gjs::Tag::Enum>(arg, g_value_get_enum(value));
                 return true;
             }
 
