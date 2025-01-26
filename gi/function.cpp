@@ -594,7 +594,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                         gobject, gjs_arg_get<char*>(&argument));
                 } else {
                     Gjs::AutoChar str{gjs_arg_steal<char*>(&argument)};
-                    gjs_arg_set<const char*>(&argument, g_intern_string(str));
+                    gjs_arg_set(&argument, g_intern_string(str));
                 }
             }
 
