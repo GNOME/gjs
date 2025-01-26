@@ -42,34 +42,11 @@
 #    include "gjs/deprecation.h"
 #endif  // GLib >= 2.79.2
 
-[[nodiscard]] static bool type_is_enumerable(GIInfoType info_type) {
-    switch (info_type) {
-        case GI_INFO_TYPE_BOXED:
-        case GI_INFO_TYPE_STRUCT:
-        case GI_INFO_TYPE_UNION:
-        case GI_INFO_TYPE_OBJECT:
-        case GI_INFO_TYPE_ENUM:
-        case GI_INFO_TYPE_FLAGS:
-        case GI_INFO_TYPE_INTERFACE:
-        case GI_INFO_TYPE_FUNCTION:
-        case GI_INFO_TYPE_CONSTANT:
-            return true;
-        // Don't enumerate types which GJS doesn't define on namespaces.
-        // See gjs_define_info
-        case GI_INFO_TYPE_INVALID:
-        case GI_INFO_TYPE_INVALID_0:
-        case GI_INFO_TYPE_CALLBACK:
-        case GI_INFO_TYPE_VALUE:
-        case GI_INFO_TYPE_SIGNAL:
-        case GI_INFO_TYPE_VFUNC:
-        case GI_INFO_TYPE_PROPERTY:
-        case GI_INFO_TYPE_FIELD:
-        case GI_INFO_TYPE_ARG:
-        case GI_INFO_TYPE_TYPE:
-        case GI_INFO_TYPE_UNRESOLVED:
-        default:
-            return false;
-    }
+[[nodiscard]] static bool type_is_enumerable(GIBaseInfo* info) {
+    // Don't enumerate types which GJS doesn't define on namespaces.
+    // See gjs_define_info
+    return GI_IS_REGISTERED_TYPE_INFO(info) || GI_IS_FUNCTION_INFO(info) ||
+           GI_IS_CONSTANT_INFO(info);
 }
 
 class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
@@ -202,8 +179,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
         for (int k = 0; k < n; k++) {
             GI::AutoBaseInfo info{g_irepository_get_info(nullptr, get(), k)};
-            GIInfoType info_type = g_base_info_get_type(info);
-            if (!type_is_enumerable(info_type))
+            if (!type_is_enumerable(info))
                 continue;
 
             const char* name = info.name();

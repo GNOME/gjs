@@ -548,7 +548,7 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
         g_type_info_get_tag(type_info) == GI_TYPE_TAG_INTERFACE) {
         GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
 
-        if (interface_info.type() == GI_INFO_TYPE_STRUCT ||
+        if (GI_IS_STRUCT_INFO(interface_info) ||
             interface_info.type() == GI_INFO_TYPE_BOXED) {
             return get_nested_interface_object(cx, obj, field_info,
                                                interface_info, rval);
@@ -655,7 +655,7 @@ bool BoxedInstance::field_setter_impl(JSContext* context,
         g_type_info_get_tag (type_info) == GI_TYPE_TAG_INTERFACE) {
         GI::AutoBaseInfo interface_info{g_type_info_get_interface(type_info)};
 
-        if (interface_info.type() == GI_INFO_TYPE_STRUCT ||
+        if (GI_IS_STRUCT_INFO(interface_info) ||
             interface_info.type() == GI_INFO_TYPE_BOXED) {
             return set_nested_interface_object(context, field_info,
                                                interface_info, value);
@@ -814,39 +814,16 @@ const struct JSClass BoxedBase::klass = {
         case GI_TYPE_TAG_INTERFACE:
             {
             GI::AutoBaseInfo interface{g_type_info_get_interface(type_info)};
-            switch (interface.type()) {
-                case GI_INFO_TYPE_BOXED:
-                case GI_INFO_TYPE_STRUCT:
-                    return struct_is_simple(interface.as<GIStructInfo>());
-                case GI_INFO_TYPE_UNION:
-                    /* FIXME: Need to implement */
-                    is_simple = false;
-                    break;
-                case GI_INFO_TYPE_OBJECT:
-                case GI_INFO_TYPE_VFUNC:
-                case GI_INFO_TYPE_CALLBACK:
-                case GI_INFO_TYPE_INVALID:
-                case GI_INFO_TYPE_INTERFACE:
-                case GI_INFO_TYPE_FUNCTION:
-                case GI_INFO_TYPE_CONSTANT:
-                case GI_INFO_TYPE_VALUE:
-                case GI_INFO_TYPE_SIGNAL:
-                case GI_INFO_TYPE_PROPERTY:
-                case GI_INFO_TYPE_FIELD:
-                case GI_INFO_TYPE_ARG:
-                case GI_INFO_TYPE_TYPE:
-                case GI_INFO_TYPE_UNRESOLVED:
-                    is_simple = false;
-                    break;
-                case GI_INFO_TYPE_INVALID_0:
-                    g_assert_not_reached();
-                    break;
-                case GI_INFO_TYPE_ENUM:
-                case GI_INFO_TYPE_FLAGS:
-                default:
-                    break;
-            }
-                break;
+            if (GI_IS_STRUCT_INFO(interface) ||
+                interface.type() == GI_INFO_TYPE_BOXED)
+                return struct_is_simple(interface.as<GIStructInfo>());
+            if (GI_IS_UNION_INFO(interface))
+                return false;  // FIXME: Need to implement
+            if (GI_IS_ENUM_INFO(interface))
+                return true;  // enum and flags
+            if (interface.type() == GI_INFO_TYPE_INVALID_0)
+                g_assert_not_reached();
+            return false;
             }
         case GI_TYPE_TAG_BOOLEAN:
         case GI_TYPE_TAG_INT8:
@@ -895,8 +872,7 @@ const struct JSClass BoxedBase::klass = {
         return false;
 
     GI::AutoBaseInfo interface{g_type_info_get_interface(type_info)};
-    if (interface.type() == GI_INFO_TYPE_BOXED ||
-        interface.type() == GI_INFO_TYPE_STRUCT)
+    if (interface.type() == GI_INFO_TYPE_BOXED || GI_IS_STRUCT_INFO(interface))
         return simple_struct_has_pointers(interface.as<GIStructInfo>());
 
     return false;

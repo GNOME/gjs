@@ -3018,7 +3018,6 @@ namespace arg_cache {
 template <Arg::Kind ArgKind>
 void ArgsCache::build_interface_in_arg(
     const Argument::Init& base_args, GIBaseInfo* interface_info) {
-    GIInfoType interface_type = g_base_info_get_type(interface_info);
 
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
@@ -3029,172 +3028,145 @@ void ArgsCache::build_interface_in_arg(
         return;
     }
 
-    switch (interface_type) {
-        case GI_INFO_TYPE_ENUM:
-            set_argument<ArgKind>(new Arg::EnumIn(interface_info), base_args);
-            return;
-
-        case GI_INFO_TYPE_FLAGS:
-            set_argument<ArgKind>(new Arg::FlagsIn(interface_info), base_args);
-            return;
-
-        case GI_INFO_TYPE_STRUCT:
-            if (g_struct_info_is_foreign(interface_info)) {
-                if constexpr (ArgKind == Arg::Kind::INSTANCE)
-                    set_argument<ArgKind>(
-                        new Arg::ForeignStructInstanceIn(interface_info),
-                        base_args);
-                else
-                    set_argument<ArgKind>(
-                        new Arg::ForeignStructIn(interface_info), base_args);
-                return;
-            }
-            [[fallthrough]];
-        case GI_INFO_TYPE_BOXED:
-        case GI_INFO_TYPE_OBJECT:
-        case GI_INFO_TYPE_INTERFACE:
-        case GI_INFO_TYPE_UNION: {
-            if (arg_cache::is_gdk_atom(interface_info)) {
-                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
-                    set_argument<ArgKind>(new Arg::GdkAtomIn(), base_args);
-                    return;
-                }
-            }
-
-            GType gtype = g_registered_type_info_get_g_type(interface_info);
-
-            if (interface_type == GI_INFO_TYPE_STRUCT && gtype == G_TYPE_NONE &&
-                !g_struct_info_is_gtype_struct(interface_info)) {
-                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
-                    // This covers cases such as GTypeInstance
-                    set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(interface_info),
-                        base_args);
-                    return;
-                }
-            }
-
-            // Transfer handling is a bit complex here, because some of our in()
-            // arguments know not to copy stuff if we don't need to.
-
-            if (gtype == G_TYPE_VALUE) {
-                if constexpr (ArgKind == Arg::Kind::INSTANCE)
-                    set_argument<ArgKind>(new Arg::BoxedIn(interface_info),
-                                          base_args);
-                else if (base_args.transfer == GI_TRANSFER_NOTHING)
-                    set_argument<ArgKind>(
-                        new Arg::GValueInTransferNone(interface_info),
-                        base_args);
-                else
-                    set_argument<ArgKind>(new Arg::GValueIn(interface_info),
-                                          base_args);
-                return;
-            }
-
-
-            if (gtype == G_TYPE_CLOSURE) {
-                if (base_args.transfer == GI_TRANSFER_NOTHING &&
-                    ArgKind != Arg::Kind::INSTANCE)
-                    set_argument<ArgKind>(
-                        new Arg::GClosureInTransferNone(interface_info),
-                        base_args);
-                else
-                    set_argument<ArgKind>(new Arg::GClosureIn(interface_info),
-                                          base_args);
-                return;
-            }
-
-            if (gtype == G_TYPE_BYTES) {
-                if (base_args.transfer == GI_TRANSFER_NOTHING &&
-                    ArgKind != Arg::Kind::INSTANCE)
-                    set_argument<ArgKind>(
-                        new Arg::GBytesInTransferNone(interface_info),
-                        base_args);
-                else
-                    set_argument<ArgKind>(new Arg::GBytesIn(interface_info),
-                                          base_args);
-                return;
-            }
-
-            if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
-                set_argument<ArgKind>(new Arg::ObjectIn(interface_info),
-                                      base_args);
-                return;
-            }
-
-            if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-                if constexpr (ArgKind != Arg::Kind::INSTANCE) {
-                    set_argument<ArgKind>(
-                        new Arg::FallbackInterfaceIn(interface_info),
-                        base_args);
-                    return;
-                }
-            }
-
-            if (interface_type == GI_INFO_TYPE_UNION) {
-                if (gtype == G_TYPE_NONE) {
-                    // Can't handle unions without a GType
-                    set_argument<ArgKind>(
-                        new Arg::NotIntrospectable(UNREGISTERED_UNION),
-                        base_args);
-                    return;
-                }
-
-                set_argument<ArgKind>(new Arg::UnionIn(interface_info),
-                                      base_args);
-                return;
-            }
-
-            if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                set_argument<ArgKind>(new Arg::FundamentalIn(interface_info),
-                                      base_args);
-                return;
-            }
-
-            if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-                set_argument<ArgKind>(new Arg::InterfaceIn(interface_info),
-                                      base_args);
-                return;
-            }
-
-            // generic boxed type
-            if (gtype == G_TYPE_NONE) {
-                if (base_args.transfer != GI_TRANSFER_NOTHING) {
-                    // Can't transfer ownership of a structure type not
-                    // registered as a boxed
-                    set_argument<ArgKind>(new Arg::NotIntrospectable(
-                                              UNREGISTERED_BOXED_WITH_TRANSFER),
-                                          base_args);
-                    return;
-                }
-
-                set_argument<ArgKind>(
-                    new Arg::UnregisteredBoxedIn(interface_info), base_args);
-                return;
-            }
-            set_argument<ArgKind>(new Arg::BoxedIn(interface_info), base_args);
-            return;
-        } break;
-
-        case GI_INFO_TYPE_INVALID:
-        case GI_INFO_TYPE_FUNCTION:
-        case GI_INFO_TYPE_CALLBACK:
-        case GI_INFO_TYPE_CONSTANT:
-        case GI_INFO_TYPE_INVALID_0:
-        case GI_INFO_TYPE_VALUE:
-        case GI_INFO_TYPE_SIGNAL:
-        case GI_INFO_TYPE_VFUNC:
-        case GI_INFO_TYPE_PROPERTY:
-        case GI_INFO_TYPE_FIELD:
-        case GI_INFO_TYPE_ARG:
-        case GI_INFO_TYPE_TYPE:
-        case GI_INFO_TYPE_UNRESOLVED:
-        default:
-            // Don't know how to handle this interface type (should not happen
-            // in practice, for typelibs emitted by g-ir-compiler)
-            set_argument<ArgKind>(new Arg::NotIntrospectable(UNSUPPORTED_TYPE),
-                                  base_args);
+    if (g_base_info_get_type(interface_info) == GI_INFO_TYPE_FLAGS) {
+        set_argument<ArgKind>(new Arg::FlagsIn(interface_info), base_args);
+        return;
     }
+
+    if (GI_IS_ENUM_INFO(interface_info)) {
+        set_argument<ArgKind>(new Arg::EnumIn(interface_info), base_args);
+        return;
+    }
+
+    if (GI_IS_STRUCT_INFO(interface_info) &&
+        g_struct_info_is_foreign(interface_info)) {
+        if constexpr (ArgKind == Arg::Kind::INSTANCE)
+            set_argument<ArgKind>(
+                new Arg::ForeignStructInstanceIn(interface_info), base_args);
+        else
+            set_argument<ArgKind>(new Arg::ForeignStructIn(interface_info),
+                                  base_args);
+        return;
+    }
+
+    if (GI_IS_REGISTERED_TYPE_INFO(interface_info)) {
+        if (arg_cache::is_gdk_atom(interface_info)) {
+            if constexpr (ArgKind != Arg::Kind::INSTANCE) {
+                set_argument<ArgKind>(new Arg::GdkAtomIn(), base_args);
+                return;
+            }
+        }
+
+        GType gtype = g_registered_type_info_get_g_type(interface_info);
+
+        if (GI_IS_STRUCT_INFO(interface_info) && gtype == G_TYPE_NONE &&
+            !g_struct_info_is_gtype_struct(interface_info)) {
+            if constexpr (ArgKind != Arg::Kind::INSTANCE) {
+                // This covers cases such as GTypeInstance
+                set_argument<ArgKind>(
+                    new Arg::FallbackInterfaceIn(interface_info), base_args);
+                return;
+            }
+        }
+
+        // Transfer handling is a bit complex here, because some of our in()
+        // arguments know not to copy stuff if we don't need to.
+
+        if (gtype == G_TYPE_VALUE) {
+            if constexpr (ArgKind == Arg::Kind::INSTANCE)
+                set_argument<ArgKind>(new Arg::BoxedIn(interface_info),
+                                      base_args);
+            else if (base_args.transfer == GI_TRANSFER_NOTHING)
+                set_argument<ArgKind>(
+                    new Arg::GValueInTransferNone(interface_info), base_args);
+            else
+                set_argument<ArgKind>(new Arg::GValueIn(interface_info),
+                                      base_args);
+            return;
+        }
+
+        if (gtype == G_TYPE_CLOSURE) {
+            if (base_args.transfer == GI_TRANSFER_NOTHING &&
+                ArgKind != Arg::Kind::INSTANCE)
+                set_argument<ArgKind>(
+                    new Arg::GClosureInTransferNone(interface_info), base_args);
+            else
+                set_argument<ArgKind>(new Arg::GClosureIn(interface_info),
+                                      base_args);
+            return;
+        }
+
+        if (gtype == G_TYPE_BYTES) {
+            if (base_args.transfer == GI_TRANSFER_NOTHING &&
+                ArgKind != Arg::Kind::INSTANCE)
+                set_argument<ArgKind>(
+                    new Arg::GBytesInTransferNone(interface_info), base_args);
+            else
+                set_argument<ArgKind>(new Arg::GBytesIn(interface_info),
+                                      base_args);
+            return;
+        }
+
+        if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+            set_argument<ArgKind>(new Arg::ObjectIn(interface_info), base_args);
+            return;
+        }
+
+        if (g_type_is_a(gtype, G_TYPE_PARAM)) {
+            if constexpr (ArgKind != Arg::Kind::INSTANCE) {
+                set_argument<ArgKind>(
+                    new Arg::FallbackInterfaceIn(interface_info), base_args);
+                return;
+            }
+        }
+
+        if (GI_IS_UNION_INFO(interface_info)) {
+            if (gtype == G_TYPE_NONE) {
+                // Can't handle unions without a GType
+                set_argument<ArgKind>(
+                    new Arg::NotIntrospectable(UNREGISTERED_UNION), base_args);
+                return;
+            }
+
+            set_argument<ArgKind>(new Arg::UnionIn(interface_info), base_args);
+            return;
+        }
+
+        if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+            set_argument<ArgKind>(new Arg::FundamentalIn(interface_info),
+                                  base_args);
+            return;
+        }
+
+        if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
+            set_argument<ArgKind>(new Arg::InterfaceIn(interface_info),
+                                  base_args);
+            return;
+        }
+
+        // generic boxed type
+        if (gtype == G_TYPE_NONE) {
+            if (base_args.transfer != GI_TRANSFER_NOTHING) {
+                // Can't transfer ownership of a structure type not
+                // registered as a boxed
+                set_argument<ArgKind>(new Arg::NotIntrospectable(
+                                          UNREGISTERED_BOXED_WITH_TRANSFER),
+                                      base_args);
+                return;
+            }
+
+            set_argument<ArgKind>(new Arg::UnregisteredBoxedIn(interface_info),
+                                  base_args);
+            return;
+        }
+        set_argument<ArgKind>(new Arg::BoxedIn(interface_info), base_args);
+        return;
+    }
+
+    // Don't know how to handle this interface type (should not happen
+    // in practice, for typelibs emitted by g-ir-compiler)
+    set_argument<ArgKind>(new Arg::NotIntrospectable(UNSUPPORTED_TYPE),
+                          base_args);
 }
 
 void ArgsCache::build_normal_in_arg(uint8_t gi_index, GITypeInfo* type_info,
@@ -3743,13 +3715,12 @@ void ArgsCache::build_instance(GICallableInfo* callable) {
     // Instead, special-case the arguments here that would otherwise go through
     // the generic marshaller.
     // See: https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/334
-    GIInfoType info_type = g_base_info_get_type(interface_info);
-    if (info_type == GI_INFO_TYPE_STRUCT &&
+    if (GI_IS_STRUCT_INFO(interface_info) &&
         g_struct_info_is_gtype_struct(interface_info)) {
         set_instance(new Arg::GTypeStructInstanceIn(), transfer);
         return;
     }
-    if (info_type == GI_INFO_TYPE_OBJECT) {
+    if (GI_IS_OBJECT_INFO(interface_info)) {
         GType gtype = g_registered_type_info_get_g_type(interface_info);
 
         if (g_type_is_a(gtype, G_TYPE_PARAM)) {
