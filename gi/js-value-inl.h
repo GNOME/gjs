@@ -33,16 +33,14 @@
 #include "gjs/macros.h"
 
 namespace Gjs {
-namespace JsValueHolder {
 
-template <typename TAG>
-using Strict = Tag::RealT<typename MarshallingInfo<TAG>::containing_tag>;
-
-template <typename TAG>
-using Relaxed = typename MarshallingInfo<TAG>::jsvalue_pack_type;
-
-}  // namespace JsValueHolder
-
+// There are two ways you can unpack a C value from a JSValue.
+// ContainingType means storing the unpacked value in the most appropriate C
+// type that can contain it. Implicit conversion may be performed and the value
+// may need to be checked to make sure it is in range.
+// PackType, on the other hand, means storing it in the C type that is exactly
+// equivalent to how JSValue stores it, so no implicit conversion is performed
+// unless the JSValue contains a pointer to a GC-thing, like BigInt.
 enum HolderMode { ContainingType, PackType };
 
 template <typename TAG, HolderMode MODE = HolderMode::PackType>
@@ -50,8 +48,7 @@ constexpr bool type_has_js_getter() {
     if constexpr (MODE == HolderMode::PackType) {
         return std::is_same_v<Tag::RealT<TAG>, Tag::JSValuePackT<TAG>>;
     } else {
-        return std::is_same_v<Tag::RealT<TAG>,
-                              Tag::RealT<JsValueHolder::Strict<TAG>>>;
+        return std::is_same_v<Tag::RealT<TAG>, Tag::JSValueContainingT<TAG>>;
     }
 }
 

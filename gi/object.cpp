@@ -737,7 +737,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
                          !Gjs::type_has_js_getter<TAG>()) {
         bool out_of_range = false;
 
-        Gjs::JsValueHolder::Relaxed<TAG> val{};
+        Gjs::Tag::JSValuePackT<TAG> val{};
         using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;
         if (!Gjs::js_value_to_c_checked<T, HolderTag>(cx, value, &val,
                                                       &out_of_range)) {
@@ -977,7 +977,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     if constexpr (std::is_arithmetic_v<T> && !Gjs::type_has_js_getter<TAG>()) {
         bool out_of_range = false;
 
-        Gjs::JsValueHolder::Relaxed<TAG> native_value{};
+        Gjs::Tag::JSValuePackT<TAG> native_value{};
         using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;
         if (!Gjs::js_value_to_c_checked<T, HolderTag>(
                 cx, args[0], &native_value, &out_of_range))

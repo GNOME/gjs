@@ -356,8 +356,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(
     static_assert(std::is_integral_v<IntType>, "Need an integer");
     bool out_of_range = false;
 
-    using HolderTag = Gjs::JsValueHolder::Strict<IntTag>;
-    Gjs::Tag::RealT<HolderTag> i;
+    Gjs::Tag::JSValueContainingT<IntTag> i;
     if (!Gjs::js_value_to_c_checked<IntType>(cx, value, &i, &out_of_range))
         return false;
 
@@ -609,7 +608,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
                                           Gjs::HolderMode::ContainingType>())
         return Gjs::js_value_to_c<TAG>(cx, value, out);
 
-    Gjs::Tag::RealT<Gjs::JsValueHolder::Strict<TAG>> v;
+    Gjs::Tag::JSValueContainingT<TAG> v;
     bool ret = Gjs::js_value_to_c<TAG>(cx, value, &v);
     *out = v;
 

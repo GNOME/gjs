@@ -227,7 +227,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
     if constexpr (Gjs::type_has_js_getter<TAG>())
         return Gjs::js_value_to_c<TAG>(cx, value, &gjs_arg_member<TAG>(arg));
 
-    Gjs::JsValueHolder::Relaxed<TAG> val{};
+    Gjs::Tag::JSValuePackT<TAG> val{};
 
     using T = Gjs::Tag::RealT<TAG>;
     using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;

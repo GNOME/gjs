@@ -265,6 +265,19 @@ namespace Tag {
 template <typename TAG>
 using RealT = typename MarshallingInfo<TAG>::real_type;
 
+// There are two ways you can unpack a C value from a JSValue.
+// The containing type is the most appropriate C type that can contain the
+// unpacked value. Implicit conversion may be performed and the value may need
+// to be checked to make sure it is in range.
+// The JSValue pack type, on the other hand, is the C type that is exactly
+// equivalent to how JSValue stores the value, so no implicit conversion is
+// performed unless the JSValue contains a pointer to a GC-thing, like BigInt.
+template <typename TAG>
+using JSValueContainingT = RealT<typename MarshallingInfo<TAG>::containing_tag>;
+
+template <typename TAG>
+using JSValueContainingTag = typename MarshallingInfo<TAG>::containing_tag;
+
 template <typename TAG>
 using JSValuePackT = typename MarshallingInfo<TAG>::jsvalue_pack_type;
 
