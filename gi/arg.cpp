@@ -1930,9 +1930,8 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
                               GITransfer transfer, GjsArgumentFlags flags,
                               GIArgument* arg) {
     GITypeTag type_tag = type_info.tag();
-    bool is_pointer = type_info.is_pointer();
 
-    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+    if (type_info.is_basic()) {
         return gjs_value_to_basic_gi_argument(context, value, type_tag, arg,
                                               arg_name, arg_type, flags);
     }
@@ -1951,42 +1950,31 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
 
     if (type_tag == GI_TYPE_TAG_GLIST || type_tag == GI_TYPE_TAG_GSLIST) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+        if (element_type.is_basic()) {
             if (type_tag == GI_TYPE_TAG_GLIST)
                 return gjs_value_to_basic_glist_gi_argument(
-                    context, value, element_tag, arg, arg_name, arg_type);
+                    context, value, element_type.tag(), arg, arg_name,
+                    arg_type);
             return gjs_value_to_basic_gslist_gi_argument(
-                context, value, element_tag, arg, arg_name, arg_type);
+                context, value, element_type.tag(), arg, arg_name, arg_type);
         }
         // else, fall through to generic marshaller
 
     } else if (type_tag == GI_TYPE_TAG_GHASH) {
         GI::AutoTypeInfo key_type{type_info.key_type()};
-        GITypeTag key_tag = key_type.tag();
-        bool key_is_pointer = key_type.is_pointer();
-
         GI::AutoTypeInfo value_type{type_info.value_type()};
-        GITypeTag value_tag = value_type.tag();
-        bool value_is_pointer = value_type.is_pointer();
-
-        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
-            Gjs::is_basic_type(value_tag, value_is_pointer)) {
+        if (key_type.is_basic() && value_type.is_basic()) {
             return gjs_value_to_basic_ghash_gi_argument(
-                context, value, key_tag, value_tag, transfer, arg, arg_name,
-                arg_type, flags);
+                context, value, key_type.tag(), value_type.tag(), transfer, arg,
+                arg_name, arg_type, flags);
         }
         // else, fall through to generic marshaller
 
     } else if (type_tag == GI_TYPE_TAG_ARRAY) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+        if (element_type.is_basic()) {
             return gjs_value_to_basic_array_gi_argument(
-                context, value, element_tag, type_info.array_type(), arg,
+                context, value, element_type.tag(), type_info.array_type(), arg,
                 arg_name, arg_type, flags);
         }
         // else, fall through to generic marshaller
@@ -1999,7 +1987,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        g_assert(is_pointer &&
+        g_assert(type_info.is_pointer() &&
                  "non-pointers should be handled by "
                  "gjs_value_to_basic_gi_argument()");
         // void pointer; cannot marshal. Pass null to C if argument is nullable.
@@ -2803,9 +2791,8 @@ static bool gjs_array_from_zero_terminated_c_array(
     JSContext* context, JS::MutableHandleValue value_p,
     const GI::TypeInfo element_type, GITransfer transfer, void* c_array) {
     GITypeTag element_tag = element_type.tag();
-    bool element_is_pointer = element_type.is_pointer();
 
-    if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+    if (element_type.is_basic()) {
         return gjs_array_from_basic_zero_terminated_array(context, value_p,
                                                           element_tag, c_array);
     }
@@ -2817,6 +2804,7 @@ static bool gjs_array_from_zero_terminated_c_array(
         case GI_TYPE_TAG_INTERFACE: {
             GI::AutoBaseInfo interface_info{element_type.interface()};
             auto reg_info = interface_info.as<GI::InfoTag::REGISTERED_TYPE>();
+            bool element_is_pointer = element_type.is_pointer();
 
             if (!element_is_pointer && reg_info && reg_info->is_g_value()) {
                 if (!fill_vector_from_zero_terminated_carray<GValue>(
@@ -3090,49 +3078,35 @@ bool gjs_value_from_gi_argument(JSContext* context,
                                 GjsArgumentType argument_type,
                                 GITransfer transfer, GIArgument* arg) {
     GITypeTag type_tag = type_info.tag();
-    bool is_pointer = type_info.is_pointer();
-    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+    if (type_info.is_basic()) {
         return gjs_value_from_basic_gi_argument(context, value_p, type_tag,
                                                 arg);
     }
 
     if (type_tag == GI_TYPE_TAG_GLIST) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
-            return gjs_array_from_basic_glist_gi_argument(context, value_p,
-                                                          element_tag, arg);
+        if (element_type.is_basic()) {
+            return gjs_array_from_basic_glist_gi_argument(
+                context, value_p, element_type.tag(), arg);
         }
         // else fall through to generic marshaller
     }
 
     if (type_tag == GI_TYPE_TAG_GSLIST) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
-            return gjs_array_from_basic_gslist_gi_argument(context, value_p,
-                                                           element_tag, arg);
+        if (element_type.is_basic()) {
+            return gjs_array_from_basic_gslist_gi_argument(
+                context, value_p, element_type.tag(), arg);
         }
         // else fall through to generic marshaller
     }
 
     if (type_tag == GI_TYPE_TAG_GHASH) {
         GI::AutoTypeInfo key_type{type_info.key_type()};
-        GITypeTag key_tag = key_type.tag();
-        bool key_is_pointer = key_type.is_pointer();
-
         GI::AutoTypeInfo value_type{type_info.value_type()};
-        GITypeTag value_tag = value_type.tag();
-        bool value_is_pointer = value_type.is_pointer();
-
-        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
-            Gjs::is_basic_type(value_tag, value_is_pointer)) {
-            return gjs_value_from_basic_ghash(context, value_p, key_tag,
-                                              value_tag,
+        if (key_type.is_basic() && value_type.is_basic()) {
+            return gjs_value_from_basic_ghash(context, value_p, key_type.tag(),
+                                              value_type.tag(),
                                               gjs_arg_get<GHashTable*>(arg));
         }
         // else fall through to generic marshaller
@@ -3140,15 +3114,12 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
     if (type_tag == GI_TYPE_TAG_ARRAY) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+        if (element_type.is_basic()) {
             switch (type_info.array_type()) {
                 case GI_ARRAY_TYPE_C: {
                     if (type_info.is_zero_terminated()) {
                         return gjs_array_from_basic_zero_terminated_array(
-                            context, value_p, element_tag,
+                            context, value_p, element_type.tag(),
                             gjs_arg_get<void*>(arg));
                     }
 
@@ -3157,7 +3128,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
                              "arrays with length param handled in "
                              "gjs_value_from_basic_explicit_array()");
                     return gjs_value_from_basic_fixed_size_array_gi_argument(
-                        context, value_p, element_tag, fixed_size, arg);
+                        context, value_p, element_type.tag(), fixed_size, arg);
                 }
 
                 case GI_ARRAY_TYPE_BYTE_ARRAY:
@@ -3166,11 +3137,11 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
                 case GI_ARRAY_TYPE_ARRAY:
                     return gjs_value_from_basic_garray_gi_argument(
-                        context, value_p, element_tag, arg);
+                        context, value_p, element_type.tag(), arg);
 
                 case GI_ARRAY_TYPE_PTR_ARRAY:
                     return gjs_value_from_basic_gptrarray_gi_argument(
-                        context, value_p, element_tag, arg);
+                        context, value_p, element_type.tag(), arg);
             }
         }
         // else fall through to generic marshaller
@@ -3182,7 +3153,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        g_assert(is_pointer &&
+        g_assert(type_info.is_pointer() &&
                  "non-pointers should be handled by "
                  "gjs_value_from_basic_gi_argument()");
         // If the argument is a pointer, convert to null to match our
@@ -3582,10 +3553,8 @@ static inline bool gjs_gi_argument_release_array_internal(
     if (element_transfer != GI_TRANSFER_EVERYTHING)
         return true;
 
-    GITypeTag type_tag = element_type.tag();
-    bool is_pointer = element_type.is_pointer();
-    if (Gjs::is_basic_type(type_tag, is_pointer)) {
-        release_basic_array_internal<release_type>(type_tag, length,
+    if (element_type.is_basic()) {
+        release_basic_array_internal<release_type>(element_type.tag(), length,
                                                    arg_array.as<void*>());
         return true;
     }
@@ -3596,17 +3565,19 @@ static inline bool gjs_gi_argument_release_array_internal(
     }
 
     if (flags & GjsArgumentFlags::ARG_IN &&
-        !type_needs_release(element_type, type_tag))
+        !type_needs_release(element_type, element_type.tag()))
         return true;
 
     if (flags & GjsArgumentFlags::ARG_OUT &&
-        !type_needs_out_release(element_type, type_tag))
+        !type_needs_out_release(element_type, element_type.tag()))
         return true;
 
+    GITypeTag type_tag = element_type.tag();
     size_t element_size = gjs_type_get_element_size(type_tag, element_type);
     if G_UNLIKELY (element_size == 0)
         return true;
 
+    bool is_pointer = element_type.is_pointer();
     for (size_t i = 0;; i++) {
         GIArgument elem;
         auto* element_start = &arg_array[i * element_size];
@@ -3804,19 +3775,15 @@ static bool gjs_g_arg_release_internal(
     g_assert(transfer != GI_TRANSFER_NOTHING ||
              flags != GjsArgumentFlags::NONE);
 
-    bool is_pointer = type_info.is_pointer();
-    if (Gjs::is_basic_type(type_tag, is_pointer)) {
+    if (type_info.is_basic()) {
         release_basic_type_internal(type_tag, arg);
         return true;
     }
 
     if (type_tag == GI_TYPE_TAG_GLIST) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
-            basic_linked_list_release<GList>(transfer, element_tag, arg);
+        if (element_type.is_basic()) {
+            basic_linked_list_release<GList>(transfer, element_type.tag(), arg);
             return true;
         }
         // else fall through to generic marshaller
@@ -3824,11 +3791,9 @@ static bool gjs_g_arg_release_internal(
 
     if (type_tag == GI_TYPE_TAG_GSLIST) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
-            basic_linked_list_release<GSList>(transfer, element_tag, arg);
+        if (element_type.is_basic()) {
+            basic_linked_list_release<GSList>(transfer, element_type.tag(),
+                                              arg);
             return true;
         }
         // else fall through to generic marshaller
@@ -3836,16 +3801,10 @@ static bool gjs_g_arg_release_internal(
 
     if (type_tag == GI_TYPE_TAG_GHASH) {
         GI::AutoTypeInfo key_type{type_info.key_type()};
-        GITypeTag key_tag = key_type.tag();
-        bool key_is_pointer = key_type.is_pointer();
         GI::AutoTypeInfo value_type{type_info.value_type()};
-        GITypeTag value_tag = value_type.tag();
-        bool value_is_pointer = value_type.is_pointer();
-
-        if (Gjs::is_basic_type(key_tag, key_is_pointer) &&
-            Gjs::is_basic_type(value_tag, value_is_pointer)) {
-            gjs_gi_argument_release_basic_ghash(transfer, key_tag, value_tag,
-                                                arg);
+        if (key_type.is_basic() && value_type.is_basic()) {
+            gjs_gi_argument_release_basic_ghash(transfer, key_type.tag(),
+                                                value_type.tag(), arg);
             return true;
         }
         // else fall through to generic marshaller
@@ -3853,25 +3812,22 @@ static bool gjs_g_arg_release_internal(
 
     if (type_tag == GI_TYPE_TAG_ARRAY) {
         GI::AutoTypeInfo element_type{type_info.element_type()};
-        GITypeTag element_tag = element_type.tag();
-        bool element_is_pointer = element_type.is_pointer();
-
-        if (Gjs::is_basic_type(element_tag, element_is_pointer)) {
+        if (element_type.is_basic()) {
             switch (type_info.array_type()) {
                 case GI_ARRAY_TYPE_C:
-                    gjs_gi_argument_release_basic_c_array(transfer, element_tag,
-                                                          arg);
+                    gjs_gi_argument_release_basic_c_array(
+                        transfer, element_type.tag(), arg);
                     return true;
                 case GI_ARRAY_TYPE_ARRAY:
-                    gjs_gi_argument_release_basic_garray(transfer, element_tag,
-                                                         arg);
+                    gjs_gi_argument_release_basic_garray(
+                        transfer, element_type.tag(), arg);
                     return true;
                 case GI_ARRAY_TYPE_BYTE_ARRAY:
                     gjs_gi_argument_release_byte_array(arg);
                     return true;
                 case GI_ARRAY_TYPE_PTR_ARRAY:
-                    gjs_gi_argument_release_basic_gptrarray(transfer,
-                                                            element_tag, arg);
+                    gjs_gi_argument_release_basic_gptrarray(
+                        transfer, element_type.tag(), arg);
                     return true;
                 default:
                     g_assert_not_reached();
@@ -3882,7 +3838,7 @@ static bool gjs_g_arg_release_internal(
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
-        g_assert(is_pointer &&
+        g_assert(type_info.is_pointer() &&
                  "non-pointer should be handled by "
                  "release_basic_type_internal()");
         break;

@@ -740,6 +740,14 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
         return t == GI_TYPE_TAG_FILENAME || t == GI_TYPE_TAG_UTF8;
     }
 
+    [[nodiscard]]
+    bool is_basic() const {
+        GITypeTag t = tag();
+        if (t == GI_TYPE_TAG_VOID && is_pointer())
+            return false;  // void* is not a basic type
+        return GI_TYPE_TAG_IS_BASIC(t);
+    }
+
     // More semantic versions of param_type(), that are only intended to be
     // called on TypeInfos where the result is known not to be null
 
