@@ -142,7 +142,7 @@ class ModuleLoader extends InternalModuleLoader {
             } else {
                 // load the source map resource or file
                 // resolve the source map file relative to the source file
-                const sourceMapUri = this.resolveSpecifier(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
+                const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
                 const result = this.loadURI(sourceMapUri);
                 if (!result)
                     return;
