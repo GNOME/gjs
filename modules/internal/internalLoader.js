@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
+
+/// <reference path="./environment.d.ts" />
+// @ts-check
+
 /**
  * Thrown when there is an error importing a module.
  */
@@ -46,10 +50,10 @@ export class InternalModuleLoader {
     /**
      * @param {typeof globalThis} global the global object to handle module
      *   resolution
-     * @param {(string, string) => import("../types").Module} compileFunc the
-     *   function to compile a source into a module for a particular global
-     *   object. Should be compileInternalModule() for InternalModuleLoader,
-     *   but overridden in ModuleLoader
+     * @param {CompileFunc} compileFunc the function to compile a source into a
+     *   module for a particular global object. Should be
+     *   compileInternalModule() for InternalModuleLoader, but overridden in
+     *   ModuleLoader
      */
     constructor(global, compileFunc) {
         this.global = global;
@@ -136,7 +140,7 @@ export class InternalModuleLoader {
      * @param {string | null} importingModuleURI the URI of the module
      *   triggering this resolve
      *
-     * @returns {Module | null}
+     * @returns {ResolvedModule}
      */
     resolveModule(specifier, importingModuleURI) {
         const registry = getRegistry(this.global);

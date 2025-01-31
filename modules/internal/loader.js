@@ -2,18 +2,8 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-/** @typedef {{ uri: string; scheme: string; host: string; path: string; query: Query }} Uri */
-
-/**
- * Use '__internal: never' to prevent any object from being type compatible with Module
- * because it is an internal type.
- *
- * @typedef {{__internal: never;}} Module
- */
-/** @typedef {typeof moduleGlobalThis | typeof globalThis} Global */
-/** @typedef {{ load(uri: Uri): [contents: string, internal: boolean]; }} SchemeHandler */
-/** @typedef {{ [key: string]: string | undefined; }} Query */
-/** @typedef {(uri: string, contents: string) => Module} CompileFunc */
+/// <reference path="./environment.d.ts" />
+// @ts-check
 
 import {ImportError, InternalModuleLoader, ModulePrivate} from './internalLoader.js';
 import {extractUrl} from './source-map/extractUrl.js';
@@ -102,7 +92,7 @@ class ModuleLoader extends InternalModuleLoader {
      * erroring if no resource is found.
      *
      * @param {string} specifier the module specifier to resolve for an import
-     * @returns {import("./internalLoader").Module}
+     * @returns {Module}
      */
     resolveBareSpecifier(specifier) {
         // 2) Resolve internal imports.
@@ -134,7 +124,8 @@ class ModuleLoader extends InternalModuleLoader {
      *
      * @param {string} text The JS code of the module
      * @param {string} uri The URI of the module or file with the sourceMappingURL definition
-     * @param {string} absoluteUri The Absolute URI of the file containing the sourceMappingURL definition. This is only used for non-module files.
+     * @param {string} [absoluteUri] The Absolute URI of the file containing the
+     *   sourceMappingURL definition. This is only used for non-module files.
      */
     populateSourceMap(text, uri, absoluteUri) {
         if (!text)
@@ -178,7 +169,7 @@ class ModuleLoader extends InternalModuleLoader {
      *   the module initiating the import, null if the import is not coming from
      *   a file that can resolve relative imports
      * @param {string} specifier the module specifier to resolve for an import
-     * @returns {import("./internalLoader").Module}
+     * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
         const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri);
