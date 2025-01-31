@@ -901,4 +901,87 @@ introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     GObject.Object.prototype.ref = unsupportedRefcountingMethod;
     GObject.Object.prototype.ref_sink = unsupportedRefcountingMethod;
     GObject.Object.prototype.unref = unsupportedRefcountingMethod;
+
+    const gValConstructor = GObject.Value;
+    GObject.Value = function (...args) {
+        const v = new gValConstructor();
+        if (args.length !== 2)
+            return v;
+
+        const type = args[0], val = args[1];
+        v.init(type);
+        switch (v.g_type) {
+        case GObject.TYPE_BOOLEAN:
+            v.set_boolean(val);
+            break;
+        case GObject.TYPE_BOXED:
+            v.set_boxed(val);
+            break;
+        case GObject.TYPE_CHAR:
+            v.set_schar(val);
+            break;
+        case GObject.TYPE_DOUBLE:
+            v.set_double(val);
+            break;
+        case GObject.TYPE_FLOAT:
+            v.set_float(val);
+            break;
+        case GObject.TYPE_GTYPE:
+            v.set_gtype(val);
+            break;
+        case GObject.TYPE_INT:
+            v.set_int(val);
+            break;
+        case GObject.TYPE_INT64:
+            v.set_int64(val);
+            break;
+        case GObject.TYPE_LONG:
+            v.set_long(val);
+            break;
+        case GObject.TYPE_OBJECT:
+            v.set_object(val);
+            break;
+        case GObject.TYPE_PARAM:
+            v.set_param(val);
+            break;
+        case GObject.TYPE_STRING:
+            v.set_string(val);
+            break;
+        case GObject.TYPE_UCHAR:
+            v.set_uchar(val);
+            break;
+        case GObject.TYPE_UINT:
+            v.set_uint(val);
+            break;
+        case GObject.TYPE_UINT64:
+            v.set_uint64(val);
+            break;
+        case GObject.TYPE_ULONG:
+            v.set_ulong(val);
+            break;
+        case GObject.TYPE_VARIANT:
+            v.set_variant(val);
+            break;
+        // case TYPE_POINTER omitted
+        default:
+            if (GObject.type_is_a(v.g_type, GObject.TYPE_FLAGS))
+                v.set_flag(val);
+            else if (GObject.type_is_a(v.g_type, GObject.TYPE_ENUM))
+                v.set_enum(val);
+            else if (GObject.type_is_a(v.g_type, GObject.TYPE_BOXED))
+                v.set_boxed(val);
+            else if (GObject.type_is_a(v.g_type, GObject.TYPE_OBJECT))
+                v.set_object(val);
+            else
+                throw new TypeError(`Invalid type argument ${type} to GObject.Value constructor!`);
+        }
+
+        return v;
+    };
+    GObject.Value.prototype = gValConstructor.prototype;
+    GObject.Value.prototype.constructor = GObject.Value;
+    GObject.Value.$gtype = gValConstructor.$gtype;
+    Object.entries(gValConstructor).forEach(([k, v]) => {
+        GObject.Value[k] = v;
+    });
 }
