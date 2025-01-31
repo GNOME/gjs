@@ -172,7 +172,7 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri);
+        const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
 
         this.populateSourceMap(text, uri);
 
