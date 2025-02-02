@@ -306,20 +306,42 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
                                                          out_of_range);
 }
 
-template <typename WantedType, typename TAG>
+template <typename WantedType, typename TAG, typename U>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
-    JSContext* cx, const JS::HandleValue& value, TypeWrapper<WantedType>* out,
+    JSContext* cx, const JS::HandleValue& value, TypeWrapper<U>* out,
     bool* out_of_range) {
     static_assert(std::is_integral_v<WantedType>);
 
-    WantedType wanted_out;
-    if (!js_value_to_c_checked<WantedType, TAG>(cx, value, &wanted_out,
-                                                out_of_range))
-        return false;
+    if constexpr (std::is_same_v<WantedType, U>) {
+        WantedType wanted_out;
+        if (!js_value_to_c_checked<WantedType, TAG>(cx, value, &wanted_out,
+                                                    out_of_range))
+            return false;
 
-    *out = TypeWrapper<WantedType>{wanted_out};
+        *out = TypeWrapper<WantedType>{wanted_out};
 
-    return true;
+        return true;
+    }
+
+    // Handle the cases resulting from TypeWrapper<long> and
+    // TypeWrapper<int64_t> not being convertible on macOS
+    if constexpr (!std::is_same_v<int64_t, long> &&    // NOLINT(runtime/int)
+                  std::is_same_v<WantedType, long> &&  // NOLINT(runtime/int)
+                  std::is_same_v<U, int64_t>) {
+        return js_value_to_c_checked<int64_t, int64_t>(cx, value, out,
+                                                       out_of_range);
+    }
+
+    if constexpr (!std::is_same_v<uint64_t,
+                                  unsigned long> &&  // NOLINT(runtime/int)
+                  std::is_same_v<WantedType,
+                                 unsigned long> &&  // NOLINT(runtime/int)
+                  std::is_same_v<U, uint64_t>) {
+        return js_value_to_c_checked<uint64_t, uint64_t>(cx, value, out,
+                                                         out_of_range);
+        // https://trac.cppcheck.net/ticket/10731
+        // cppcheck-suppress missingReturn
+    }
 }
 
 template <typename TAG>
