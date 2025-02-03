@@ -180,11 +180,11 @@ const char* gjs_set_thread_locale(GjsLocaleCategory category,
     if (category_mask == 0)
         goto out;
 
-    new_locale_id = newlocale(category_mask, locale_name,
-                              gjs_steal_locale_id(&old_locale_id));
+    new_locale_id = newlocale(category_mask, locale_name, old_locale_id);
 
     if (new_locale_id == UNSET_LOCALE_ID)
         goto out;
+    old_locale_id = UNSET_LOCALE_ID; /* was moved into new_locale_id */
 
     prior_name = g_strdup(setlocale(category, NULL));
 
