@@ -88,9 +88,6 @@ function testTransferMarshalling(root, value, inoutValue, defaultValue, options 
     });
     describe('with transfer full', function () {
         const fullOptions = {
-            in: {
-                omit: true,  // this case is not in the test suite
-            },
             inout: {
                 skip: 'https://gitlab.gnome.org/GNOME/gobject-introspection/issues/192',
             },
@@ -105,7 +102,7 @@ function testContainerMarshalling(root, value, inoutValue, defaultValue, options
     describe('with transfer container', function () {
         const containerOptions = {
             in: {
-                omit: true,  // this case is not in the test suite
+                skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/44',
             },
             inout: {
                 skip: 'https://gitlab.gnome.org/GNOME/gjs/issues/44',
@@ -444,6 +441,15 @@ describe('Fixed-size C array', function () {
             jasmine.objectContaining({long_: 5, int8: 6}),
         ]);
     });
+
+    for (const marshal of ['return', 'out']) {
+        it(`handles a ${marshal} array with odd alignment`, function () {
+            const arr = GIMarshallingTests[`array_fixed_${marshal}_unaligned`]();
+            expect(arr.length).toEqual(32);
+            expect(Array.prototype.slice.call(arr, 0, 4)).toEqual([1, 2, 3, 4]);
+            GIMarshallingTests.cleanup_unaligned_buffer();
+        });
+    }
 });
 
 describe('C array with length', function () {
@@ -633,6 +639,15 @@ describe('C array with length', function () {
     it('does not interpret an unannotated integer as a length parameter', function () {
         expect(() => GIMarshallingTests.array_in_nonzero_nonlen(42, 'abcd')).not.toThrow();
     });
+
+    for (const marshal of ['return', 'out']) {
+        it(`handles a ${marshal} array with odd alignment`, function () {
+            const arr = GIMarshallingTests[`array_${marshal}_unaligned`]();
+            expect(arr.length).toEqual(32);
+            expect(Array.prototype.slice.call(arr, 0, 4)).toEqual([1, 2, 3, 4]);
+            GIMarshallingTests.cleanup_unaligned_buffer();
+        });
+    }
 });
 
 describe('Zero-terminated C array', function () {
@@ -673,6 +688,50 @@ describe('Zero-terminated C array', function () {
             });
         });
     });
+
+    for (const marshal of ['return', 'out']) {
+        it(`handles a ${marshal} array with odd alignment`, function () {
+            const arr = GIMarshallingTests[`array_zero_terminated_${marshal}_unaligned`]();
+            expect(Array.from(arr)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+            GIMarshallingTests.cleanup_unaligned_buffer();
+        });
+    }
+});
+
+describe('Exhaustive test of UTF-8 sequences', function () {
+    ['length', 'fixed', 'zero_terminated'].forEach(arrayKind =>
+        ['none', 'container', 'full'].forEach(transfer => {
+            const testFunction = returnMode => {
+                const commonName = 'array_utf8';
+                const funcName = [arrayKind, commonName, transfer, returnMode].join('_');
+                const func = GIMarshallingTests[funcName];
+                if (!func)  // FIXME
+                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection-tests/-/merge_requests/11');
+                return func;
+            };
+
+            ['out', 'return'].forEach(returnMode =>
+                it(`${arrayKind} ${returnMode} transfer ${transfer}`, function () {
+                    const func = testFunction(returnMode);
+                    expect(func()).toEqual(['a', 'b', '¢', '🔠']);
+                }));
+
+            it(`${arrayKind} in transfer ${transfer}`, function () {
+                const func = testFunction('in');
+                if (transfer === 'container')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+                expect(() => func(['🅰', 'β', 'c', 'd'])).not.toThrow();
+            });
+
+            it(`${arrayKind} inout transfer ${transfer}`, function () {
+                const func = testFunction('inout');
+                if (transfer === 'container')
+                    pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+                expect(func(['🅰', 'β', 'c', 'd'])).toEqual(['a', 'b', '¢', '🔠']);
+            });
+        }));
 });
 
 describe('GArray', function () {
@@ -744,6 +803,8 @@ describe('GByteArray', function () {
     const refByteArray = Uint8Array.from([0, 49, 0xFF, 51]);
 
     testReturnValue('bytearray_full', refByteArray);
+    testOutParameter('bytearray_full', refByteArray);
+    testInoutParameter('bytearray_full', refByteArray, Uint8Array.from([104, 101, 108, 0, 0xFF]));
 
     it('can be passed in with transfer none', function () {
         expect(() => GIMarshallingTests.bytearray_none_in(refByteArray))
@@ -1984,6 +2045,72 @@ describe('Wrong virtual functions', function () {
     });
 });
 
+let StaticVFuncTester;
+try {
+    StaticVFuncTester = GObject.registerClass(
+    class StaticVFuncTesterClass extends VFuncTester {
+        static vfunc_vfunc_static_name() {
+            return 'Overridden name';
+        }
+
+        static vfunc_vfunc_static_create_new(int) {
+            return new StaticVFuncTester({int});
+        }
+
+        static vfunc_vfunc_static_create_new_out(int) {
+            return new StaticVFuncTester({int});
+        }
+    });
+} catch (e) {
+    if (!`${e}`.includes('Could not find definition of virtual function'))
+        throw e;
+}
+
+describe('Static virtual functions', function () {
+    beforeEach(function () {
+        if (!StaticVFuncTester) {
+            if (GIMarshallingTests.Object.vfunc_static_name)
+                throw new Error('vfunc_static_name should not be defined, or we have another issue');
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/361');
+        }
+    });
+
+    xit('has static_name', function () {
+        expect(GIMarshallingTests.Object.vfunc_static_name()).toBe(
+            'GIMarshallingTestsObject');
+        expect(StaticVFuncTester.vfunc_static_name()).toBe(
+            'GIMarshallingTestsObject');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+
+    xit('has static_typed_name', function () {
+        expect(GIMarshallingTests.Object.vfunc_static_typed_name(
+            GIMarshallingTests.Object.$gtype)).toBe('GIMarshallingTestsObject');
+        expect(StaticVFuncTester.vfunc_static_typed_name(StaticVFuncTester.$gtype))
+            .toBe('Overridden name');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+
+    ['', '_out'].forEach(suffix => xit(`has static_create_new${suffix}`, function () {
+        const baseObj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
+            GIMarshallingTests.Object.$gtype, 55);
+        expect(baseObj).toBeInstanceOf(GIMarshallingTests.Object);
+        expect(baseObj).not.toBeInstanceOf(StaticVFuncTester);
+        expect(baseObj.int_).toBe(55);
+
+        const middleObj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
+            VFuncTester.$gtype, 35);
+        expect(middleObj).toBeInstanceOf(GIMarshallingTests.Object);
+        expect(middleObj).not.toBeInstanceOf(VFuncTester);
+        expect(middleObj.int_).toBe(35);
+
+        const obj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
+            StaticVFuncTester.$gtype, 85);
+        expect(obj).toBeInstanceOf(GIMarshallingTests.Object);
+        expect(obj).toBeInstanceOf(VFuncTester);
+        expect(obj).toBeInstanceOf(StaticVFuncTester);
+        expect(obj.int_).toBe(85);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802'));
+});
+
 describe('Inherited GObject', function () {
     ['SubObject', 'SubSubObject'].forEach(klass => {
         describe(klass, function () {
@@ -2409,11 +2536,7 @@ describe('GObject properties', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
     });
 
-    it('allows to set/get deprecated properties', function () {
-        if (!GObject.Object.find_property.call(
-            GIMarshallingTests.PropertiesObject, 'some-deprecated-int'))
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
-
+    xit('allows to set/get deprecated properties', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*GObject property*.some-deprecated-int is deprecated*');
         obj.some_deprecated_int = 35;
@@ -2425,7 +2548,7 @@ describe('GObject properties', function () {
         expect(obj.some_deprecated_int).toBe(35);
         GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
             'testAllowToSetGetDeprecatedProperties');
-    });
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
 
     const JSOverridingProperty = GObject.registerClass(
         class Overriding extends GIMarshallingTests.PropertiesObject {
@@ -2526,8 +2649,6 @@ describe('GObject properties', function () {
 describe('GObject properties accessors', function () {
     let obj;
     beforeEach(function () {
-        if (!GIMarshallingTests.PropertiesAccessorsObject)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
         obj = new GIMarshallingTests.PropertiesAccessorsObject();
     });
 
