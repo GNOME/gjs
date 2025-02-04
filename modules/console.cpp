@@ -27,6 +27,10 @@
 #include <glib.h>
 #include <glib/gprintf.h>  // for g_fprintf
 
+#ifdef HAVE_READLINE_READLINE_H
+#    include <gio/gunixinputstream.h>
+#endif
+
 #include <js/CallAndConstruct.h>
 #include <js/CallArgs.h>
 #include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
@@ -44,6 +48,7 @@
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>  // for JS_NewPlainObject
+#include <mozilla/Maybe.h>
 
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
@@ -57,6 +62,8 @@
 namespace mozilla {
 union Utf8Unit;
 }
+
+using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 
 static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
     JS::PrintError(stderr, report, /* reportWarnings = */ true);
@@ -142,27 +149,72 @@ class AutoCatchCtrlC {
 sigjmp_buf AutoCatchCtrlC::jump_buffer;
 #endif  // HAVE_SIGNAL_H
 
-[[nodiscard]] static bool gjs_console_readline(char** bufp, const char* prompt,
-                                               const char* repl_history_path
-                                               [[maybe_unused]]) {
 #ifdef HAVE_READLINE_READLINE_H
-    char *line;
-    line = readline(prompt);
-    if (!line)
-        return false;
-    if (line[0] != '\0') {
-        add_history(line);
-        gjs_console_write_repl_history(repl_history_path);
+// Readline only has a global handler anyway, so may as well use global data
+static Maybe<std::string> rl_async_line{};
+static bool rl_async_done = true;
+
+static gboolean on_stdin_ready(GPollableInputStream* pollable, void*) {
+    while (g_pollable_input_stream_is_readable(pollable))
+        rl_callback_read_char();
+    return TRUE;  // don't remove source
+}
+
+static void on_readline_complete(char* line) {
+    rl_async_line = line ? Some(line) : Nothing();
+    rl_async_done = true;
+    // This needs to be called from the callback handler, otherwise an extra
+    // prompt is displayed.
+    rl_callback_handler_remove();
+}
+#endif
+
+[[nodiscard]]
+static bool gjs_console_readline(std::string* bufp, const char* prompt,
+                                 const char* repl_history_path
+                                 [[maybe_unused]]) {
+#ifdef HAVE_READLINE_READLINE_H
+    g_assert(rl_async_done && "should not attempt two parallel readline calls");
+
+    rl_callback_handler_install(prompt, on_readline_complete);
+    rl_async_done = false;
+
+    Gjs::AutoUnref<GInputStream> stdin_stream{
+        g_unix_input_stream_new(fileno(rl_instream), /* close = */ false)};
+    Gjs::AutoUnref<GSource> stdin_source{g_pollable_input_stream_create_source(
+        G_POLLABLE_INPUT_STREAM(stdin_stream.get()), nullptr)};
+    g_source_set_callback(stdin_source, G_SOURCE_FUNC(on_stdin_ready), nullptr,
+                          nullptr);
+
+    Gjs::AutoPointer<GMainContext, GMainContext, g_main_context_unref>
+        main_context{g_main_context_ref_thread_default()};
+    unsigned tag = g_source_attach(stdin_source, main_context);
+    stdin_source.release();
+
+    while (!rl_async_done) {
+        // Yield to other things while waiting for input
+        while (g_main_context_pending(main_context))
+            g_main_context_iteration(main_context, /* may_block = */ false);
     }
 
-    *bufp = line;
+    g_source_remove(tag);
+
+    if (!rl_async_line)
+        return false;
+
+    *bufp = rl_async_line.extract();
+
+    if ((*bufp)[0] != '\0') {
+        add_history(bufp->c_str());
+        gjs_console_write_repl_history(repl_history_path);
+    }
 #else   // !HAVE_READLINE_READLINE_H
     char line[256];
     fprintf(stdout, "%s", prompt);
     fflush(stdout);
     if (!fgets(line, sizeof line, stdin))
         return false;
-    *bufp = g_strdup(line);
+    *bufp = line;
 #endif  // !HAVE_READLINE_READLINE_H
     return true;
 }
@@ -235,7 +287,6 @@ gjs_console_interact(JSContext *context,
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     volatile bool eof, exit_warning;  // accessed after setjmp()
     JS::RootedObject global{context, JS::CurrentGlobalOrNull(context)};
-    char* temp_buf;
     volatile int lineno;     // accessed after setjmp()
     volatile int startline;  // accessed after setjmp()
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
@@ -251,7 +302,6 @@ gjs_console_interact(JSContext *context,
     // Separate initialization from declaration because of possible overwriting
     // when siglongjmp() jumps into this function
     eof = exit_warning = false;
-    temp_buf = nullptr;
     lineno = 1;
     do {
         /*
@@ -286,6 +336,7 @@ gjs_console_interact(JSContext *context,
             }
 #endif  // HAVE_SIGNAL_H
 
+            std::string temp_buf;
             if (!gjs_console_readline(&temp_buf,
                                       startline == lineno ? "gjs> " : ".... ",
                                       gjs->repl_history_path())) {
@@ -294,7 +345,6 @@ gjs_console_interact(JSContext *context,
             }
             buffer += temp_buf;
             buffer += "\n";
-            g_free(temp_buf);
             lineno++;
         } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer.c_str(),
                                                 buffer.size()));
