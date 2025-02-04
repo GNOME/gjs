@@ -1,3 +1,35 @@
+Version 1.83.3
+--------------
+
+- The gjs-console REPL is now asynchronous. You can, for example, create a
+  window with a button, connect a signal handler, click the button, and the
+  signal handler will run when the button is clicked. Previously, the signal
+  handler wouldn't run because it was blocked by the console waiting for input.
+  This doesn't yet make `await` work in the console, but it is a prerequisite.
+
+- Usually for C APIs that use GValue, GJS transparently substitutes native JS
+  values. However, in some cases you need to use the GObject.Value wrapper in
+  JS. There is now a new API to construct GObject.Value. Instead of constructing
+  an empty Value object, calling `init()` with the type, and then `set_...` to
+  fill it, you can now do it in one: `new GObject.Value(String, 'a string')`.
+  (The old way still works.)
+
+- Closed bugs and merge requests:
+  * interactive interpreter + mainloop [#67, !670, !975, Evan Welsh, Philip
+    Chimento]
+  * object: Add support for static virtual functions [!802, Marco Trevisan,
+    Philip Chimento]
+  * "%Id" support in format strings for alternative digits disabled due to error
+    in detection at configure/build time [#671, !972, Philip Chimento]
+  * null-prototype objects should be pretty-printed less confusingly [#626,
+    !973, Gary Li]
+  * Missing property with gjs 1.83.2/master [#677, !976, Philip Chimento]
+  * arg-types-inl: Replace `<T, TAG>` pairs with a single TAG [!977,
+    Philip Chimento]
+  * Introduce simpler override for GObject.Value [#456, !978, Gary Li]
+  * Use Meson 1.4 and full_path() feature [!979, Philip Chimento]
+  * Update gobject-introspection-tests [!981, Philip Chimento]
+
 Version 1.83.2
 --------------
 
