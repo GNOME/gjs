@@ -1,3 +1,8 @@
+Version 1.83.4
+--------------
+
+- Brown bag release to fix codespell error in NEWS file.
+
 Version 1.83.3
 --------------
 
@@ -23,7 +28,7 @@ Version 1.83.3
     in detection at configure/build time [#671, !972, Philip Chimento]
   * null-prototype objects should be pretty-printed less confusingly [#626,
     !973, Gary Li]
-  * Missing property with gjs 1.83.2/master [#677, !976, Philip Chimento]
+  * Missing property with gjs 1.83.2 [#677, !976, Philip Chimento]
   * arg-types-inl: Replace `<T, TAG>` pairs with a single TAG [!977,
     Philip Chimento]
   * Introduce simpler override for GObject.Value [#456, !978, Gary Li]
