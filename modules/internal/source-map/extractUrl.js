@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC-BY-3.0
 // SPDX-FileCopyrightText: 2024 Source Maps Task Group (TC39-TG4)
 // Reference implementation in Source Map V3 Standard 6.2.2.1
+// @ts-nocheck
 export function extractUrl(source) {
     const JS_NEWLINE = /^/m;
 

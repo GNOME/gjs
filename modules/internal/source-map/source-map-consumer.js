@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // SPDX-FileCopyrightText: Copyright 2011 Mozilla Foundation and contributors
 // Upstream https://github.com/mozilla/source-map/blob/master/lib/source-map-consumer.js
+// @ts-nocheck
 
 /*
  * Copyright 2011 Mozilla Foundation and contributors
