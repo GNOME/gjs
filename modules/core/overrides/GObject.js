@@ -299,6 +299,16 @@ function _registerGObjectType(klass) {
     requiredInterfaces.forEach(iface =>
         _copyInterfacePrototypeDescriptors(klass.prototype, iface.prototype));
 
+    Object.getOwnPropertyNames(klass)
+    .filter(name => name.startsWith('vfunc_'))
+    .forEach(name => {
+        const prop = Object.getOwnPropertyDescriptor(klass, name);
+        if (!(prop.value instanceof Function))
+            return;
+
+        giPrototype[Gi.hook_up_vfunc_symbol](name.slice(6), klass[name], true);
+    });
+
     Object.getOwnPropertyNames(klass.prototype)
     .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
     .forEach(name => {

@@ -2070,26 +2070,25 @@ describe('Static virtual functions', function () {
     beforeEach(function () {
         if (!StaticVFuncTester) {
             if (GIMarshallingTests.Object.vfunc_static_name)
-                throw new Error('vfunc_static_name should not be defined, or we have another issue');
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/361');
+                pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
         }
     });
 
-    xit('has static_name', function () {
+    it('has static_name', function () {
         expect(GIMarshallingTests.Object.vfunc_static_name()).toBe(
             'GIMarshallingTestsObject');
         expect(StaticVFuncTester.vfunc_static_name()).toBe(
             'GIMarshallingTestsObject');
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+    });
 
-    xit('has static_typed_name', function () {
+    it('has static_typed_name', function () {
         expect(GIMarshallingTests.Object.vfunc_static_typed_name(
             GIMarshallingTests.Object.$gtype)).toBe('GIMarshallingTestsObject');
         expect(StaticVFuncTester.vfunc_static_typed_name(StaticVFuncTester.$gtype))
             .toBe('Overridden name');
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+    });
 
-    ['', '_out'].forEach(suffix => xit(`has static_create_new${suffix}`, function () {
+    ['', '_out'].forEach(suffix => it(`has static_create_new${suffix}`, function () {
         const baseObj = GIMarshallingTests.Object[`vfunc_static_create_new${suffix}`](
             GIMarshallingTests.Object.$gtype, 55);
         expect(baseObj).toBeInstanceOf(GIMarshallingTests.Object);
@@ -2108,7 +2107,7 @@ describe('Static virtual functions', function () {
         expect(obj).toBeInstanceOf(VFuncTester);
         expect(obj).toBeInstanceOf(StaticVFuncTester);
         expect(obj.int_).toBe(85);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802'));
+    }));
 });
 
 describe('Inherited GObject', function () {

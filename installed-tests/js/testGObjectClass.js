@@ -984,7 +984,7 @@ describe('GObject virtual function', function () {
 
     it('supports static methods', function () {
         if (!Gio.Icon.vfunc_from_tokens)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/361');
+            pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
@@ -992,17 +992,17 @@ describe('GObject virtual function', function () {
         })).not.toThrow();
     });
 
-    xit('must be non-static for methods', function () {
+    it('must be non-static for methods', function () {
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
             static vfunc_serialize() {}
         })).toThrowError(/.* static definition of non-static.*/);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/802');
+    });
 
     it('must be static for methods', function () {
         if (!Gio.Icon.vfunc_from_tokens)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/361');
+            pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
