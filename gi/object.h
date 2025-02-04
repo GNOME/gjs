@@ -127,7 +127,7 @@ class ObjectBase
     /* JS property getters/setters */
 
  public:
-    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    template <typename TAG = void>
     GJS_JSAPI_RETURN_CONVENTION static bool prop_getter(JSContext*, unsigned,
                                                         JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
@@ -135,21 +135,19 @@ class ObjectBase
                                        JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp);
-    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID,
-              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
     GJS_JSAPI_RETURN_CONVENTION static bool prop_getter_simple_type_func(
         JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext* cx, unsigned argc, JS::Value* vp);
-    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    template <typename TAG = void>
     GJS_JSAPI_RETURN_CONVENTION static bool prop_setter(JSContext*, unsigned,
                                                         JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_read_only(JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp);
-    template <typename T = void, GITypeTag TAG = GI_TYPE_TAG_VOID,
-              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
     GJS_JSAPI_RETURN_CONVENTION static bool prop_setter_simple_type_func(
         JSContext*, unsigned argc, JS::Value* vp);
     GJS_JSAPI_RETURN_CONVENTION
@@ -447,27 +445,25 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* JS property getters/setters */
 
  private:
-    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    template <typename TAG>
     GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
         JSContext* cx, GParamSpec*, JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_getter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
                           JS::CallArgs const& args);
-    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID,
-              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
     GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
         JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext* cx, GI::AutoFieldInfo const&,
                            JS::MutableHandleValue rval);
-    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+    template <typename TAG>
     GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(JSContext*, GParamSpec*,
                                                       JS::HandleValue);
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_setter_impl(JSContext* cx, ObjectPropertyInfoCaller*,
                           JS::CallArgs const& args);
-    template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID,
-              GITransfer TRANSFER = GI_TRANSFER_NOTHING>
+    template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
     GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(
         JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION

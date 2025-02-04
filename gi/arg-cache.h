@@ -11,7 +11,6 @@
 #include <stdint.h>
 
 #include <limits>
-#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>

@@ -46,6 +46,7 @@
 #include <jsapi.h>        // for JS_GetFunctionObject, IdVector
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
+#include <mozilla/Result.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -295,7 +296,7 @@ bool ObjectInstance::add_property_impl(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
-template <typename T, GITypeTag TAG>
+template <typename TAG>
 bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
@@ -313,11 +314,10 @@ bool ObjectBase::prop_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    return priv->to_instance()->prop_getter_impl<T, TAG>(cx, pspec,
-                                                         args.rval());
+    return priv->to_instance()->prop_getter_impl<TAG>(cx, pspec, args.rval());
 }
 
-template <typename T, GITypeTag TAG>
+template <typename TAG>
 bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
                                       JS::MutableHandleValue rval) {
     if (!check_gobject_finalized("get any property from")) {
@@ -336,13 +336,13 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param));
     g_object_get_property(m_ptr, param->name, &gvalue);
 
-    if constexpr (!std::is_same_v<T, void>) {
-        if (Gjs::c_value_to_js_checked<T, TAG>(
-                cx, Gjs::gvalue_get<T, TAG>(&gvalue), rval))
+    if constexpr (!std::is_same_v<TAG, void>) {
+        if (Gjs::c_value_to_js_checked<TAG>(cx, Gjs::gvalue_get<TAG>(&gvalue),
+                                            rval))
             return true;
 
         gjs_throw(cx, "Can't convert value %s got from %s::%s property",
-                  Gjs::gvalue_to_string<void*, TAG>(&gvalue).c_str(),
+                  Gjs::gvalue_to_string<TAG>(&gvalue).c_str(),
                   format_name().c_str(), param->name);
         return false;
     } else {
@@ -400,14 +400,15 @@ bool ObjectBase::prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->prop_getter_impl(cx, info_caller, args);
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 [[nodiscard]]
 static bool simple_getter_caller(GObject* obj, void* native_address,
                                  GIArgument* out_arg) {
+    using T = Gjs::Tag::RealT<TAG>;
     using FuncType = T (*)(GObject*);
     FuncType func = reinterpret_cast<FuncType>(native_address);
 
-    gjs_arg_set<T, TAG>(out_arg, func(obj));
+    gjs_arg_set<TAG>(out_arg, func(obj));
     return true;
 }
 
@@ -421,8 +422,8 @@ static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
                                                    out_arg);
             return false;
         case GI_TYPE_TAG_BOOLEAN:
-            return simple_getter_caller<gboolean, GI_TYPE_TAG_BOOLEAN>(
-                obj, native_address, out_arg);
+            return simple_getter_caller<Gjs::Tag::GBoolean>(obj, native_address,
+                                                            out_arg);
         case GI_TYPE_TAG_INT8:
             return simple_getter_caller<int8_t>(obj, native_address, out_arg);
         case GI_TYPE_TAG_UINT8:
@@ -444,8 +445,8 @@ static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
         case GI_TYPE_TAG_DOUBLE:
             return simple_getter_caller<double>(obj, native_address, out_arg);
         case GI_TYPE_TAG_GTYPE:
-            return simple_getter_caller<GType, GI_TYPE_TAG_GTYPE>(
-                obj, native_address, out_arg);
+            return simple_getter_caller<Gjs::Tag::GType>(obj, native_address,
+                                                         out_arg);
         case GI_TYPE_TAG_UNICHAR:
             return simple_getter_caller<gunichar>(obj, native_address, out_arg);
 
@@ -542,7 +543,7 @@ class ObjectPropertyPspecCaller {
     }
 };
 
-template <typename T, GITypeTag TAG, GITransfer TRANSFER>
+template <typename TAG, GITransfer TRANSFER>
 bool ObjectBase::prop_getter_simple_type_func(JSContext* cx, unsigned argc,
                                               JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
@@ -564,11 +565,11 @@ bool ObjectBase::prop_getter_simple_type_func(JSContext* cx, unsigned argc,
     if (priv->is_prototype())
         return true;
 
-    return priv->to_instance()->prop_getter_impl<T, TAG, TRANSFER>(cx, caller,
-                                                                   args);
+    return priv->to_instance()->prop_getter_impl<TAG, TRANSFER>(cx, caller,
+                                                                args);
 }
 
-template <typename T, GITypeTag TAG, GITransfer TRANSFER>
+template <typename TAG, GITransfer TRANSFER>
 bool ObjectInstance::prop_getter_impl(JSContext* cx,
                                       ObjectPropertyPspecCaller* pspec_caller,
                                       JS::CallArgs const& args) {
@@ -586,10 +587,11 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
                      pspec_caller->pspec->name);
 
+    using T = Gjs::Tag::RealT<TAG>;
     using FuncType = T (*)(GObject*);
     FuncType func = reinterpret_cast<FuncType>(pspec_caller->native_address);
     T retval = func(m_ptr);
-    if (!Gjs::c_value_to_js_checked<T, TAG>(cx, retval, args.rval()))
+    if (!Gjs::c_value_to_js_checked<TAG>(cx, retval, args.rval()))
         return false;
 
     if constexpr (TRANSFER != GI_TRANSFER_NOTHING) {
@@ -686,7 +688,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
 
 /* Dynamic setter for GObject properties. Returns false on OOM/exception.
  * args.rval() becomes the "stored value" for the property. */
-template <typename T, GITypeTag TAG>
+template <typename TAG>
 bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
 
@@ -707,10 +709,10 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* Clear the JS stored value, to avoid keeping additional references */
     args.rval().setUndefined();
 
-    return priv->to_instance()->prop_setter_impl<T, TAG>(cx, pspec, args[0]);
+    return priv->to_instance()->prop_setter_impl<TAG>(cx, pspec, args[0]);
 }
 
-template <typename T, GITypeTag TAG>
+template <typename TAG>
 bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
                                       JS::HandleValue value) {
     if (!check_gobject_finalized("set any property on"))
@@ -726,17 +728,19 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
 
     Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param_spec));
 
+    using T = Gjs::Tag::RealT<TAG>;
     if constexpr (std::is_same_v<T, void>) {
         if (!gjs_value_to_g_value(cx, value, &gvalue))
             return false;
     } else if constexpr (std::is_arithmetic_v<  // NOLINT(readability/braces)
                              T> &&
-                         !Gjs::type_has_js_getter<T>()) {
+                         !Gjs::type_has_js_getter<TAG>()) {
         bool out_of_range = false;
 
-        Gjs::JsValueHolder::Relaxed<T> val{};
-        if (!Gjs::js_value_to_c_checked<T, TAG>(cx, value, &val,
-                                                &out_of_range)) {
+        Gjs::Tag::JSValuePackT<TAG> val{};
+        using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;
+        if (!Gjs::js_value_to_c_checked<T, HolderTag>(cx, value, &val,
+                                                      &out_of_range)) {
             gjs_throw(cx, "Can't convert value %s to set %s::%s property",
                       gjs_debug_value(value).c_str(), format_name().c_str(),
                       param_spec->name);
@@ -746,11 +750,11 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         if (out_of_range) {
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
                       std::to_string(val).c_str(), param_spec->name,
-                      Gjs::static_type_name<T, TAG>());
+                      Gjs::static_type_name<TAG>());
             return false;
         }
 
-        Gjs::gvalue_set<T, TAG>(&gvalue, val);
+        Gjs::gvalue_set<TAG>(&gvalue, val);
     } else {
         T native_value;
         if (!Gjs::js_value_to_c<TAG>(cx, value, &native_value)) {
@@ -761,9 +765,9 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         }
 
         if constexpr (std::is_pointer_v<T>) {
-            Gjs::gvalue_take<T, TAG>(&gvalue, g_steal_pointer(&native_value));
+            Gjs::gvalue_take<TAG>(&gvalue, g_steal_pointer(&native_value));
         } else {
-            Gjs::gvalue_set<T, TAG>(&gvalue, native_value);
+            Gjs::gvalue_set<TAG>(&gvalue, native_value);
         }
     }
 
@@ -806,14 +810,14 @@ bool ObjectBase::prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->prop_setter_impl(cx, info_caller, args);
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 [[nodiscard]]
 static bool simple_setter_caller(GIArgument* arg, GObject* obj,
                                  void* native_address) {
-    using FuncType = void (*)(GObject*, T);
+    using FuncType = void (*)(GObject*, Gjs::Tag::RealT<TAG>);
     FuncType func = reinterpret_cast<FuncType>(native_address);
 
-    func(obj, gjs_arg_get<T, TAG>(arg));
+    func(obj, gjs_arg_get<TAG>(arg));
     return true;
 }
 
@@ -826,8 +830,8 @@ static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
                 return simple_setter_caller<void*>(arg, obj, native_address);
             return false;
         case GI_TYPE_TAG_BOOLEAN:
-            return simple_setter_caller<gboolean, GI_TYPE_TAG_BOOLEAN>(
-                arg, obj, native_address);
+            return simple_setter_caller<Gjs::Tag::GBoolean>(arg, obj,
+                                                            native_address);
         case GI_TYPE_TAG_INT8:
             return simple_setter_caller<int8_t>(arg, obj, native_address);
         case GI_TYPE_TAG_UINT8:
@@ -849,8 +853,8 @@ static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
         case GI_TYPE_TAG_DOUBLE:
             return simple_setter_caller<double>(arg, obj, native_address);
         case GI_TYPE_TAG_GTYPE:
-            return simple_setter_caller<GType, GI_TYPE_TAG_GTYPE>(
-                arg, obj, native_address);
+            return simple_setter_caller<Gjs::Tag::GType>(arg, obj,
+                                                         native_address);
         case GI_TYPE_TAG_UNICHAR:
             return simple_setter_caller<gunichar>(arg, obj, native_address);
 
@@ -925,7 +929,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     return gjs_gi_argument_release_in_arg(cx, transfer, &type_info, &arg);
 }
 
-template <typename T, GITypeTag TAG, GITransfer TRANSFER>
+template <typename TAG, GITransfer TRANSFER>
 bool ObjectBase::prop_setter_simple_type_func(JSContext* cx, unsigned argc,
                                               JS::Value* vp) {
     GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, obj, ObjectBase, priv);
@@ -946,11 +950,11 @@ bool ObjectBase::prop_setter_simple_type_func(JSContext* cx, unsigned argc,
     if (priv->is_prototype())
         return true;
 
-    return priv->to_instance()->prop_setter_impl<T, TAG, TRANSFER>(cx, caller,
-                                                                   args);
+    return priv->to_instance()->prop_setter_impl<TAG, TRANSFER>(cx, caller,
+                                                                args);
 }
 
-template <typename T, GITypeTag TAG, GITransfer TRANSFER>
+template <typename TAG, GITransfer TRANSFER>
 bool ObjectInstance::prop_setter_impl(JSContext* cx,
                                       ObjectPropertyPspecCaller* pspec_caller,
                                       JS::CallArgs const& args) {
@@ -966,24 +970,23 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
             {format_name(), pspec_caller->pspec->name});
     }
 
+    using T = Gjs::Tag::RealT<TAG>;
     using FuncType = void (*)(GObject*, T);
     FuncType func = reinterpret_cast<FuncType>(pspec_caller->native_address);
 
-    if constexpr (std::is_arithmetic_v<T> &&
-                  !Gjs::type_has_js_getter<
-                      T, Gjs::JsValueHolder::Strict<T, TAG>>()) {
+    if constexpr (std::is_arithmetic_v<T> && !Gjs::type_has_js_getter<TAG>()) {
         bool out_of_range = false;
 
-        Gjs::JsValueHolder::Relaxed<T> native_value{};
-        if (!Gjs::js_value_to_c_checked<T, TAG>(cx, args[0], &native_value,
-                                                &out_of_range))
+        Gjs::Tag::JSValuePackT<TAG> native_value{};
+        using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;
+        if (!Gjs::js_value_to_c_checked<T, HolderTag>(
+                cx, args[0], &native_value, &out_of_range))
             return false;
 
         if (out_of_range) {
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
                       std::to_string(native_value).c_str(),
-                      pspec_caller->pspec->name,
-                      Gjs::static_type_name<T, TAG>());
+                      pspec_caller->pspec->name, Gjs::static_type_name<TAG>());
             return false;
         }
 
@@ -1146,8 +1149,7 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
                                     GITransfer transfer) {
     switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_BOOLEAN:
-            return ObjectBase::prop_getter_simple_type_func<
-                gboolean, GI_TYPE_TAG_BOOLEAN>;
+            return ObjectBase::prop_getter_simple_type_func<Gjs::Tag::GBoolean>;
         case GI_TYPE_TAG_INT8:
             return ObjectBase::prop_getter_simple_type_func<int8_t>;
         case GI_TYPE_TAG_UINT8:
@@ -1169,18 +1171,17 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
         case GI_TYPE_TAG_DOUBLE:
             return ObjectBase::prop_getter_simple_type_func<double>;
         case GI_TYPE_TAG_GTYPE:
-            return ObjectBase::prop_getter_simple_type_func<GType,
-                                                            GI_TYPE_TAG_GTYPE>;
+            return ObjectBase::prop_getter_simple_type_func<Gjs::Tag::GType>;
         case GI_TYPE_TAG_UNICHAR:
             return ObjectBase::prop_getter_simple_type_func<gunichar>;
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_UTF8:
             if (transfer == GI_TRANSFER_NOTHING) {
                 return ObjectBase::prop_getter_simple_type_func<
-                    const char*, GI_TYPE_TAG_VOID, GI_TRANSFER_NOTHING>;
+                    const char*, GI_TRANSFER_NOTHING>;
             } else {
                 return ObjectBase::prop_getter_simple_type_func<
-                    char*, GI_TYPE_TAG_VOID, GI_TRANSFER_EVERYTHING>;
+                    char*, GI_TRANSFER_EVERYTHING>;
             }
         default:
             return nullptr;
@@ -1191,8 +1192,7 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
                                                   GITransfer transfer) {
     switch (g_type_info_get_tag(type_info)) {
         case GI_TYPE_TAG_BOOLEAN:
-            return ObjectBase::prop_setter_simple_type_func<
-                gboolean, GI_TYPE_TAG_BOOLEAN>;
+            return ObjectBase::prop_setter_simple_type_func<Gjs::Tag::GBoolean>;
         case GI_TYPE_TAG_INT8:
             return ObjectBase::prop_setter_simple_type_func<int8_t>;
         case GI_TYPE_TAG_UINT8:
@@ -1214,18 +1214,17 @@ static JSNative get_getter_for_type(GITypeInfo* type_info,
         case GI_TYPE_TAG_DOUBLE:
             return ObjectBase::prop_setter_simple_type_func<double>;
         case GI_TYPE_TAG_GTYPE:
-            return ObjectBase::prop_setter_simple_type_func<GType,
-                                                            GI_TYPE_TAG_GTYPE>;
+            return ObjectBase::prop_setter_simple_type_func<Gjs::Tag::GType>;
         case GI_TYPE_TAG_UNICHAR:
             return ObjectBase::prop_setter_simple_type_func<gunichar>;
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_UTF8:
             if (transfer == GI_TRANSFER_NOTHING) {
                 return ObjectBase::prop_setter_simple_type_func<
-                    char*, GI_TYPE_TAG_VOID, GI_TRANSFER_NOTHING>;
+                    char*, GI_TRANSFER_NOTHING>;
             } else {
                 return ObjectBase::prop_setter_simple_type_func<
-                    char*, GI_TYPE_TAG_VOID, GI_TRANSFER_EVERYTHING>;
+                    char*, GI_TRANSFER_EVERYTHING>;
             }
         default:
             return nullptr;
@@ -1408,7 +1407,7 @@ static JSNative get_getter_for_property(
     priv_out.setPrivate(pspec);
     switch (pspec->value_type) {
         case G_TYPE_BOOLEAN:
-            return &ObjectBase::prop_getter<gboolean, GI_TYPE_TAG_BOOLEAN>;
+            return &ObjectBase::prop_getter<Gjs::Tag::GBoolean>;
         case G_TYPE_INT:
             return &ObjectBase::prop_getter<int>;
         case G_TYPE_UINT:
@@ -1427,9 +1426,11 @@ static JSNative get_getter_for_property(
             return &ObjectBase::prop_getter<double>;
         case G_TYPE_STRING:
             return &ObjectBase::prop_getter<char*>;
+        case G_TYPE_LONG:
+            return &ObjectBase::prop_getter<Gjs::Tag::Long>;
+        case G_TYPE_ULONG:
+            return &ObjectBase::prop_getter<Gjs::Tag::UnsignedLong>;
         default:
-            // TODO(ptomato): Handle G_TYPE_LONG and G_TYPE_ULONG with ExtraTag
-            // to prevent collision with (u)int64_t on MacOS
             return &ObjectBase::prop_getter<>;
     }
 }
@@ -1518,7 +1519,7 @@ static JSNative get_setter_for_property(
     priv_out.setPrivate(pspec);
     switch (pspec->value_type) {
         case G_TYPE_BOOLEAN:
-            return &ObjectBase::prop_setter<gboolean, GI_TYPE_TAG_BOOLEAN>;
+            return &ObjectBase::prop_setter<Gjs::Tag::GBoolean>;
         case G_TYPE_INT:
             return &ObjectBase::prop_setter<int>;
         case G_TYPE_UINT:
@@ -1537,9 +1538,11 @@ static JSNative get_setter_for_property(
             return &ObjectBase::prop_setter<double>;
         case G_TYPE_STRING:
             return &ObjectBase::prop_setter<char*>;
+        case G_TYPE_LONG:
+            return &ObjectBase::prop_setter<Gjs::Tag::Long>;
+        case G_TYPE_ULONG:
+            return &ObjectBase::prop_setter<Gjs::Tag::UnsignedLong>;
         default:
-            // TODO(ptomato): Handle G_TYPE_LONG and G_TYPE_ULONG with ExtraTag
-            // to prevent collision with (u)int64_t on MacOS
             return &ObjectBase::prop_setter<>;
     }
 }

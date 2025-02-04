@@ -41,6 +41,7 @@
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"
+#include "gi/arg-types-inl.h"
 #include "gi/arg.h"
 #include "gi/closure.h"
 #include "gi/cwrapper.h"
@@ -183,15 +184,16 @@ class Function : public CWrapper<Function> {
 
 }  // namespace Gjs
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 static inline void set_ffi_arg(void* result, GIArgument* value) {
+    using T = Gjs::Tag::RealT<TAG>;
     if constexpr (std::is_integral_v<T> && std::is_signed_v<T>) {
-        *static_cast<ffi_sarg*>(result) = gjs_arg_get<T, TAG>(value);
+        *static_cast<ffi_sarg*>(result) = gjs_arg_get<TAG>(value);
     } else if constexpr (std::is_floating_point_v<T> || std::is_unsigned_v<T>) {
-        *static_cast<ffi_arg*>(result) = gjs_arg_get<T, TAG>(value);
+        *static_cast<ffi_arg*>(result) = gjs_arg_get<TAG>(value);
     } else if constexpr (std::is_pointer_v<T>) {
         *static_cast<ffi_arg*>(result) =
-            gjs_pointer_to_int<ffi_arg>(gjs_arg_get<T, TAG>(value));
+            gjs_pointer_to_int<ffi_arg>(gjs_arg_get<TAG>(value));
     }
 }
 
@@ -221,7 +223,7 @@ static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
         set_ffi_arg<uint32_t>(result, return_value);
         break;
     case GI_TYPE_TAG_BOOLEAN:
-        set_ffi_arg<gboolean, GI_TYPE_TAG_BOOLEAN>(result, return_value);
+        set_ffi_arg<Gjs::Tag::GBoolean>(result, return_value);
         break;
     case GI_TYPE_TAG_UNICHAR:
         set_ffi_arg<char32_t>(result, return_value);
@@ -237,7 +239,7 @@ static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
 
             if (interface_type == GI_INFO_TYPE_ENUM ||
                 interface_type == GI_INFO_TYPE_FLAGS)
-                set_ffi_arg<int, GI_TYPE_TAG_INTERFACE>(result, return_value);
+                set_ffi_arg<Gjs::Tag::Enum>(result, return_value);
             else
                 set_ffi_arg<void*>(result, return_value);
         }
@@ -253,7 +255,7 @@ static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
         set_ffi_arg<double>(result, return_value);
         break;
     case GI_TYPE_TAG_GTYPE:
-        set_ffi_arg<GType, GI_TYPE_TAG_GTYPE>(result, return_value);
+        set_ffi_arg<Gjs::Tag::GType>(result, return_value);
         break;
     case GI_TYPE_TAG_UTF8:
     case GI_TYPE_TAG_FILENAME:
@@ -594,7 +596,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                         gobject, gjs_arg_get<char*>(&argument));
                 } else {
                     Gjs::AutoChar str{gjs_arg_steal<char*>(&argument)};
-                    gjs_arg_set<const char*>(&argument, g_intern_string(str));
+                    gjs_arg_set(&argument, g_intern_string(str));
                 }
             }
 
@@ -848,7 +850,7 @@ static void* get_return_ffi_pointer_from_gi_argument(
         case GI_TYPE_TAG_UINT32:
             return &gjs_arg_member<uint32_t>(return_value);
         case GI_TYPE_TAG_BOOLEAN:
-            return &gjs_arg_member<gboolean, GI_TYPE_TAG_BOOLEAN>(return_value);
+            return &gjs_arg_member<Gjs::Tag::GBoolean>(return_value);
         case GI_TYPE_TAG_UNICHAR:
             return &gjs_arg_member<uint32_t>(return_value);
         case GI_TYPE_TAG_INT64:
@@ -863,8 +865,7 @@ static void* get_return_ffi_pointer_from_gi_argument(
             GIInfoType info_type = return_tag->interface_type();
             if (info_type == GI_INFO_TYPE_ENUM ||
                 info_type == GI_INFO_TYPE_FLAGS)
-                return &gjs_arg_member<int, GI_TYPE_TAG_INTERFACE>(
-                    return_value);
+                return &gjs_arg_member<Gjs::Tag::UnsignedEnum>(return_value);
             [[fallthrough]];
         }
         default:

@@ -11,9 +11,9 @@
 #include <cmath>  // for isnan
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <utility>  // for move
 
-#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -25,6 +25,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>    // for CanonicalizeNaN
 
+#include "gi/arg-types-inl.h"
 #include "gi/gtype.h"
 #include "gi/value.h"
 #include "gjs/auto.h"
@@ -33,117 +34,83 @@
 
 namespace Gjs {
 
-template <typename T>
-struct TypeWrapper {
-    constexpr TypeWrapper() : m_value(0) {}
-    explicit constexpr TypeWrapper(T v) : m_value(v) {}
-    constexpr operator T() const { return m_value; }
-    constexpr operator T() { return m_value; }
+// There are two ways you can unpack a C value from a JSValue.
+// ContainingType means storing the unpacked value in the most appropriate C
+// type that can contain it. Implicit conversion may be performed and the value
+// may need to be checked to make sure it is in range.
+// PackType, on the other hand, means storing it in the C type that is exactly
+// equivalent to how JSValue stores it, so no implicit conversion is performed
+// unless the JSValue contains a pointer to a GC-thing, like BigInt.
+enum HolderMode { ContainingType, PackType };
 
- private:
-    T m_value;
-};
-
-namespace JsValueHolder {
-
-template <typename T1, typename T2>
-constexpr bool comparable_types() {
-    return std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2> &&
-           std::is_integral_v<T1> == std::is_integral_v<T2> &&
-           std::is_signed_v<T1> == std::is_signed_v<T2>;
-}
-
-template <typename T, typename Container>
-constexpr bool type_fits() {
-    if constexpr (comparable_types<T, Container>()) {
-        return (std::numeric_limits<T>::max() <=
-                    std::numeric_limits<Container>::max() &&
-                std::numeric_limits<T>::lowest() >=
-                    std::numeric_limits<Container>::lowest());
-    }
-
-    return false;
-}
-
-/* The tag is needed to disambiguate types such as gboolean and GType
- * which are in fact typedef's of other generic types.
- * Setting a tag for a type allows to perform proper specialization. */
-template <typename T, GITypeTag TAG>
-constexpr auto get_strict() {
-    if constexpr (TAG != GI_TYPE_TAG_VOID) {
-        if constexpr (std::is_same_v<T, GType> && TAG == GI_TYPE_TAG_GTYPE)
-            return GType{};
-        else if constexpr (std::is_same_v<T, gboolean> &&
-                           TAG == GI_TYPE_TAG_BOOLEAN)
-            return gboolean{};
-        else
-            return;
-    } else {
-        if constexpr (std::is_same_v<T, char32_t>)
-            return char32_t{};
-        else if constexpr (type_fits<T, int32_t>())
-            return int32_t{};
-        else if constexpr (type_fits<T, uint32_t>())
-            return uint32_t{};
-        else if constexpr (type_fits<T, int64_t>())
-            return int64_t{};
-        else if constexpr (type_fits<T, uint64_t>())
-            return uint64_t{};
-        else if constexpr (type_fits<T, double>())
-            return double{};
-        else
-            return T{};
-    }
-}
-
-template <typename T>
-constexpr auto get_relaxed() {
-    if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>)
-        return TypeWrapper<T>{};
-    else if constexpr (type_fits<T, int32_t>())
-        return int32_t{};
-    else if constexpr (type_fits<T, uint16_t>())
-        return uint32_t{};
-    else if constexpr (std::is_arithmetic_v<T>)
-        return double{};
-    else
-        return T{};
-}
-
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
-using Strict = decltype(JsValueHolder::get_strict<T, TAG>());
-
-template <typename T>
-using Relaxed = decltype(JsValueHolder::get_relaxed<T>());
-
-}  // namespace JsValueHolder
-
-
-template <typename T, typename MODE = JsValueHolder::Relaxed<T>>
+template <typename TAG, HolderMode MODE = HolderMode::PackType>
 constexpr bool type_has_js_getter() {
-    return std::is_same_v<T, MODE>;
+    if constexpr (MODE == HolderMode::PackType) {
+        return std::is_same_v<Tag::RealT<TAG>, Tag::JSValuePackT<TAG>>;
+    } else {
+        return std::is_same_v<Tag::RealT<TAG>, Tag::JSValueContainingT<TAG>>;
+    }
 }
 
 /* Avoid implicit conversions */
-template <GITypeTag TAG = GI_TYPE_TAG_VOID, typename T>
+template <typename TAG, typename UnpackT>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(JSContext*,
                                                       const JS::HandleValue&,
-                                                      T*) = delete;
+                                                      UnpackT*) = delete;
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<signed char>(
     JSContext* cx, const JS::HandleValue& value, int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool
+    js_value_to_c<signed short>  // NOLINT(runtime/int)
+    (JSContext* cx, const JS::HandleValue& value, int32_t* out) {
+    return JS::ToInt32(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<int32_t>(
+    JSContext* cx, const JS::HandleValue& value, int32_t* out) {
+    return JS::ToInt32(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<unsigned char>(
+    JSContext* cx, const JS::HandleValue& value, int32_t* out) {
+    return JS::ToInt32(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<unsigned char>(
     JSContext* cx, const JS::HandleValue& value, uint32_t* out) {
     return JS::ToUint32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool
+    js_value_to_c<unsigned short>  // NOLINT(runtime/int)
+    (JSContext* cx, const JS::HandleValue& value, int32_t* out) {
+    return JS::ToInt32(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool
+    js_value_to_c<unsigned short>  // NOLINT(runtime/int)
+    (JSContext* cx, const JS::HandleValue& value, uint32_t* out) {
+    return JS::ToUint32(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint32_t>(
+    JSContext* cx, const JS::HandleValue& value, uint32_t* out) {
+    return JS::ToUint32(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<char32_t>(
     JSContext* cx, const JS::HandleValue& value, char32_t* out) {
     uint32_t tmp;
     bool retval = JS::ToUint32(cx, value, &tmp);
@@ -152,7 +119,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<int64_t>(
     JSContext* cx, const JS::HandleValue& value, int64_t* out) {
     if (value.isBigInt()) {
         *out = JS::ToBigInt64(value.toBigInt());
@@ -162,7 +129,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint64_t>(
     JSContext* cx, const JS::HandleValue& value, uint64_t* out) {
     if (value.isBigInt()) {
         *out = JS::ToBigUint64(value.toBigInt());
@@ -172,20 +139,32 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint32_t>(
     JSContext* cx, const JS::HandleValue& value, double* out) {
     return JS::ToNumber(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GI_TYPE_TAG_BOOLEAN>(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<float>(
+    JSContext* cx, const JS::HandleValue& value, double* out) {
+    return JS::ToNumber(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<double>(
+    JSContext* cx, const JS::HandleValue& value, double* out) {
+    return JS::ToNumber(cx, value, out);
+}
+
+template <>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<Tag::GBoolean>(
     JSContext*, const JS::HandleValue& value, gboolean* out) {
     *out = !!JS::ToBoolean(value);
     return true;
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GI_TYPE_TAG_GTYPE>(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<Tag::GType>(
     JSContext* cx, const JS::HandleValue& value, GType* out) {
     if (!value.isObject())
         return false;
@@ -203,14 +182,14 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GI_TYPE_TAG_GTYPE>(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GValue>(
     JSContext* cx, const JS::HandleValue& value, GValue* out) {
     *out = G_VALUE_INIT;
     return gjs_value_to_g_value(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<char*>(
     JSContext* cx, const JS::HandleValue& value, char** out) {
     if (value.isNull()) {
         *out = nullptr;
@@ -240,9 +219,12 @@ template <typename BigT>
     return std::numeric_limits<BigT>::lowest();
 }
 
-template <typename WantedType, GITypeTag TAG = GI_TYPE_TAG_VOID, typename T>
+template <typename WantedType, typename TAG,
+          typename = std::enable_if_t<!std::is_same_v<Tag::RealT<TAG>, TAG>>,
+          typename U>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
-    JSContext* cx, const JS::HandleValue& value, T* out, bool* out_of_range) {
+    JSContext* cx, const JS::HandleValue& value, U* out, bool* out_of_range) {
+    using T = Tag::RealT<TAG>;
     static_assert(std::numeric_limits<T>::max() >=
                           std::numeric_limits<WantedType>::max() &&
                       std::numeric_limits<T>::lowest() <=
@@ -316,32 +298,60 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
     }
 }
 
-template <typename WantedType, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename WantedType, typename T,
+          typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
 GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
-    JSContext* cx, const JS::HandleValue& value, TypeWrapper<WantedType>* out,
+    JSContext* cx, const JS::HandleValue& value, T* out, bool* out_of_range) {
+    return js_value_to_c_checked<WantedType, T, void, T>(cx, value, out,
+                                                         out_of_range);
+}
+
+template <typename WantedType, typename TAG, typename U>
+GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
+    JSContext* cx, const JS::HandleValue& value, TypeWrapper<U>* out,
     bool* out_of_range) {
     static_assert(std::is_integral_v<WantedType>);
 
-    WantedType wanted_out;
-    if (!js_value_to_c_checked<WantedType, TAG>(cx, value, &wanted_out,
-                                                out_of_range))
-        return false;
+    if constexpr (std::is_same_v<WantedType, U>) {
+        WantedType wanted_out;
+        if (!js_value_to_c_checked<WantedType, TAG>(cx, value, &wanted_out,
+                                                    out_of_range))
+            return false;
 
-    *out = TypeWrapper<WantedType>{wanted_out};
+        *out = TypeWrapper<WantedType>{wanted_out};
 
-    return true;
+        return true;
+    }
+
+    // Handle the cases resulting from TypeWrapper<long> and
+    // TypeWrapper<int64_t> not being convertible on macOS
+    if constexpr (!std::is_same_v<int64_t, long> &&    // NOLINT(runtime/int)
+                  std::is_same_v<WantedType, long> &&  // NOLINT(runtime/int)
+                  std::is_same_v<U, int64_t>) {
+        return js_value_to_c_checked<int64_t, int64_t>(cx, value, out,
+                                                       out_of_range);
+    }
+
+    if constexpr (!std::is_same_v<uint64_t,
+                                  unsigned long> &&  // NOLINT(runtime/int)
+                  std::is_same_v<WantedType,
+                                 unsigned long> &&  // NOLINT(runtime/int)
+                  std::is_same_v<U, uint64_t>) {
+        return js_value_to_c_checked<uint64_t, uint64_t>(cx, value, out,
+                                                         out_of_range);
+        // https://trac.cppcheck.net/ticket/10731
+        // cppcheck-suppress missingReturn
+    }
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
-    JSContext* cx [[maybe_unused]], T value,
+    JSContext* cx [[maybe_unused]], Tag::RealT<TAG> value,
     JS::MutableHandleValue js_value_p) {
-    if constexpr (std::is_same_v<T, bool>) {
-        js_value_p.setBoolean(value);
-        return true;
-    } else if constexpr (std::is_same_v<  // NOLINT(readability/braces)
-                             T, gboolean> &&
-                         TAG == GI_TYPE_TAG_BOOLEAN) {
+    using T = Tag::RealT<TAG>;
+
+    if constexpr (std::is_same_v<TAG, bool> ||
+                  std::is_same_v<TAG, Tag::GBoolean>) {
         js_value_p.setBoolean(value);
         return true;
     } else if constexpr (std::is_arithmetic_v<T>) {
@@ -372,10 +382,20 @@ GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
     }
 }
 
-template <typename T, GITypeTag TAG = GI_TYPE_TAG_VOID>
+// Specialization for types where TAG and RealT<TAG> are the same type, to allow
+// inferring template parameter
+template <typename T,
+          typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
+GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
+    JSContext* cx, T value, JS::MutableHandleValue js_value_p) {
+    return c_value_to_js<T>(cx, value, js_value_p);
+}
+
+template <typename TAG>
 GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
-    JSContext* cx [[maybe_unused]], T value,
+    JSContext* cx [[maybe_unused]], Tag::RealT<TAG> value,
     JS::MutableHandleValue js_value_p) {
+    using T = Tag::RealT<TAG>;
     if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
         if (value < Gjs::min_safe_big_number<T>() ||
             value > Gjs::max_safe_big_number<T>()) {
@@ -386,7 +406,16 @@ GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
         }
     }
 
-    return c_value_to_js<T, TAG>(cx, value, js_value_p);
+    return c_value_to_js<TAG>(cx, value, js_value_p);
+}
+
+// Specialization for types where TAG and RealT<TAG> are the same type, to allow
+// inferring template parameter
+template <typename T,
+          typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
+GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
+    JSContext* cx, T value, JS::MutableHandleValue js_value_p) {
+    return c_value_to_js_checked<T>(cx, value, js_value_p);
 }
 
 }  // namespace Gjs
