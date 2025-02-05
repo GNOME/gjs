@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
+// eslint-disable-next-line spaced-comment
 /// <reference path="./environment.d.ts" />
 // @ts-check
 
@@ -175,6 +176,13 @@ class ModuleLoader extends InternalModuleLoader {
         return this.resolveBareSpecifier(specifier);
     }
 
+    /**
+     * Overrides InternalModuleLoader.moduleLoadHook
+     *
+     * @param {string} id - the module specifier
+     * @param {string} uri - the URI where the module is to be found
+     * @returns {Module}
+     */
     moduleLoadHook(id, uri) {
         const [text] = this.loadURI(parseURI(uri));
         this.populateSourceMap(text, uri);

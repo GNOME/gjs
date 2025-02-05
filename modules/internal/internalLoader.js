@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
+// eslint-disable-next-line spaced-comment
 /// <reference path="./environment.d.ts" />
 // @ts-check
 
@@ -170,14 +171,31 @@ export class InternalModuleLoader {
         return [null, '', ''];
     }
 
+    /**
+     * Called by SpiderMonkey as part of gjs_module_resolve().
+     *
+     * @param {ModulePrivate | null} importingModulePriv - the private object of
+     *   the module initiating the import, null if the import is not coming from
+     *   a file that can resolve relative imports
+     * @param {string} specifier - the specifier (e.g. relative path, root
+     *   package) to resolve
+     * @returns {Module}
+     */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [resolved] = this.resolveModule(specifier, importingModulePriv.uri ?? null);
+        const [resolved] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
         if (!resolved)
             throw new ImportError(`Module not found: ${specifier}`);
 
         return resolved;
     }
 
+    /**
+     * Called by SpiderMonkey as part of gjs_module_load().
+     *
+     * @param {string} id - the module specifier
+     * @param {string} uri - the URI where the module is to be found
+     * @returns {Module}
+     */
     moduleLoadHook(id, uri) {
         const priv = new ModulePrivate(id, uri);
 
