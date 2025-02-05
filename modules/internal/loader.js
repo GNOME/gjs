@@ -221,7 +221,7 @@ class ModuleLoader extends InternalModuleLoader {
 
             registry.set(uri.uriWithQuery, compiled);
 
-            this.populateSourceMap(text, uri);
+            this.populateSourceMap(text, uri.uri);
             return compiled;
         }
 

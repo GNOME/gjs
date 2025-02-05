@@ -1,0 +1,26 @@
+GJS debugger. Type "help" for help
+db> # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+db> # SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
+db> c
+Promise 2 started from @sourcemap-dynamic-module.debugger.js:1:1
+Promise 3 started from @sourcemap-dynamic-module.debugger.js:3:24
+Promise 4 fulfilled after XXXX ms
+Promise 3 fulfilled after XXXX ms with [object Object]
+[Object: null prototype] { get2ndNumber: [ Function: get2ndNumber ], [Symbol.toStringTag]: "Module" }
+Debugger statement, module code at sourcemap-dynamic-module.debugger.js:4:1
+db> s
+module code at sourcemap-dynamic-module.debugger.js:4:1
+db> s
+module code at sourcemap-dynamic-module.debugger.js:5:1
+entered frame: <anonymous>([object Array]) at sourcemap-number-module.js:2:5 -> number.ts:6:5
+db> set colors false
+db> list
+   1	interface SuperFancyNumber {
+   2	    n: number;
+   3	}
+   4	
+   5	export const get2ndNumber = (num: SuperFancyNumber[]) => {
+  *6	    return num[1].n.toFixed(1);
+   7	}
+db> [quit due to end of input]
+Program exited with code 0
