@@ -70,6 +70,7 @@ class ModuleLoader extends InternalModuleLoader {
      * Overrides InternalModuleLoader.loadURI
      *
      * @param {Uri} uri a Uri object to load
+     * @returns {[contents: string, internal?: boolean]}
      */
     loadURI(uri) {
         if (uri.scheme) {
@@ -79,12 +80,7 @@ class ModuleLoader extends InternalModuleLoader {
                 return loader.load(uri);
         }
 
-        const result = super.loadURI(uri);
-
-        if (result)
-            return result;
-
-        throw new ImportError(`Invalid module URI: ${uri.uri}`);
+        return super.loadURI(uri);
     }
 
     /**
@@ -143,10 +139,7 @@ class ModuleLoader extends InternalModuleLoader {
                 // load the source map resource or file
                 // resolve the source map file relative to the source file
                 const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
-                const result = this.loadURI(sourceMapUri);
-                if (!result)
-                    return;
-                jsonText = result[0];
+                [jsonText] = this.loadURI(sourceMapUri);
             }
         } catch (e) {}
 
@@ -183,13 +176,7 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     moduleLoadHook(id, uri) {
-        const result = this.loadURI(parseURI(uri));
-        // result can only be null if `this` is InternalModuleLoader. If `this`
-        // is ModuleLoader, then loadURI() will have thrown
-        if (!result)
-            throw new ImportError(`URI not found: ${uri}`);
-
-        const [text] = result;
+        const [text] = this.loadURI(parseURI(uri));
         this.populateSourceMap(text, uri);
         return super.moduleLoadHook(id, uri);
     }

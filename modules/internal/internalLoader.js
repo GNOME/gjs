@@ -64,13 +64,13 @@ export class InternalModuleLoader {
      * Loads a file or resource URI synchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {[contents: string, internal?: boolean] | null}
+     * @returns {[contents: string, internal?: boolean]}
      */
     loadURI(uri) {
         if (uri.scheme === 'file' || uri.scheme === 'resource')
             return [loadResourceOrFile(uri.uri)];
 
-        return null;
+        throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
 
     /**
@@ -159,12 +159,7 @@ export class InternalModuleLoader {
             if (module)
                 return [module, '', ''];
 
-            const result = this.loadURI(uri);
-            if (!result)
-                return [null, '', ''];
-
-            const [text, internal = false] = result;
-
+            const [text, internal = false] = this.loadURI(uri);
             const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
 
@@ -186,13 +181,7 @@ export class InternalModuleLoader {
     moduleLoadHook(id, uri) {
         const priv = new ModulePrivate(id, uri);
 
-        const result = this.loadURI(parseURI(uri));
-        // result can only be null if `this` is InternalModuleLoader. If `this`
-        // is ModuleLoader, then loadURI() will have thrown
-        if (!result)
-            throw new ImportError(`URI not found: ${uri}`);
-
-        const [text] = result;
+        const [text] = this.loadURI(parseURI(uri));
         const compiled = this.compileModule(priv, text);
 
         const registry = getRegistry(this.global);
