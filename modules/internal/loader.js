@@ -222,16 +222,12 @@ class ModuleLoader extends InternalModuleLoader {
             if (module)
                 return module;
 
-            const result = await this.loadURIAsync(uri);
-            if (!result)
-                return null;
+            const [text, internal = false] = await this.loadURIAsync(uri);
 
             // Check if module loaded while awaiting.
             module = registry.get(uri.uriWithQuery);
             if (module)
                 return module;
-
-            const [text, internal = false] = result;
 
             const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
@@ -251,7 +247,7 @@ class ModuleLoader extends InternalModuleLoader {
      * Loads a file or resource URI asynchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {Promise<[string] | [string, boolean] | null>}
+     * @returns {Promise<[string] | [string, boolean]>}
      */
     async loadURIAsync(uri) {
         if (uri.scheme) {
@@ -266,7 +262,7 @@ class ModuleLoader extends InternalModuleLoader {
             return [result];
         }
 
-        return null;
+        throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
 }
 

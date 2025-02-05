@@ -27,7 +27,7 @@ declare type Module = { __internal: never };
 declare type Global = typeof globalThis;
 declare type SchemeHandler = {
     load(uri: Uri): [contents: string, internal: boolean];
-    loadAsync(uri: Uri): Promise<[string] | [string, boolean] | null>;
+    loadAsync(uri: Uri): Promise<[string] | [string, boolean]>;
 };
 
 declare type Query = { [key: string]: string | undefined };
