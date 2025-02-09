@@ -579,6 +579,16 @@ describe('Life, the Universe and Everything', function () {
             Regress.TestFlags.FLAG3);
     });
 
+    it('flag returned without private values below smallest flag value', function () {
+        expect(Regress.TestDiscontinuousFlags.DISCONTINUOUS1).toEqual(512);
+        expect(Regress.test_discontinuous_1_with_private_values()).toEqual(Regress.TestDiscontinuousFlags.DISCONTINUOUS1);
+    });
+
+    it('flag returned without private values above highest flag value', function () {
+        expect(Regress.TestDiscontinuousFlags.DISCONTINUOUS2).toEqual(536870912);
+        expect(Regress.test_discontinuous_2_with_private_values()).toEqual(Regress.TestDiscontinuousFlags.DISCONTINUOUS2);
+    });
+
     describe('Simple introspected struct', function () {
         let struct;
         beforeEach(function () {
