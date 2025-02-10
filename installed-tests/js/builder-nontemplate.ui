@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT OR LGPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com> -->
+<interface>
+  <object class="GtkWindow">
+    <child>
+      <object class="GtkButton" id="button">
+        <signal name="clicked" handler="onButtonClicked"/>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -510,7 +510,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     template <typename T>
     GJS_JSAPI_RETURN_CONVENTION bool typecheck_impl(T expected) const {
         g_assert(m_gobj_disposed || !m_ptr ||
-                 gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
+                 g_type_is_a(gtype(), G_OBJECT_TYPE(m_ptr.as<GObject*>())));
         return GIWrapperInstance::typecheck_impl(expected);
     }
 

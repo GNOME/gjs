@@ -219,6 +219,73 @@ describe('Gtk 4', function () {
         validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
         validateTemplate('Class inheriting from template class', SubclassSubclass, true);
 
+        describe('Non-template UI file', function () {
+            let callbacks;
+
+            beforeEach(function () {
+                callbacks = {
+                    onButtonClicked() {},
+                };
+                spyOn(callbacks, 'onButtonClicked');
+            });
+
+            it('from resource', function () {
+                const builder = new Gtk.Builder({
+                    resource: '/org/gjs/jsunit/builder-nontemplate.ui',
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+            });
+
+            it('from filename', function () {
+                const [ntFile, ntStream] = Gio.File.new_tmp(null);
+                const output = ntStream.get_output_stream();
+                const input = Gio.resources_open_stream('/org/gjs/jsunit/builder-nontemplate.ui',
+                    Gio.ResourceLookupFlags.NONE);
+                output.splice(input,
+                    Gio.OutputStreamSpliceFlags.CLOSE_SOURCE | Gio.OutputStreamSpliceFlags.CLOSE_TARGET,
+                    null);
+
+                const builder = new Gtk.Builder({
+                    filename: ntFile.get_path(),
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+
+                ntFile.delete(null);
+            });
+
+            it('from string', function () {
+                const data = Gio.resources_lookup_data('/org/gjs/jsunit/builder-nontemplate.ui',
+                    Gio.ResourceLookupFlags.NONE);
+                const decoder = new TextDecoder('utf-8');
+                const string = decoder.decode(data);
+                const builder = new Gtk.Builder({
+                    data: string,
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+            });
+
+            it('from bytes', function () {
+                const data = Gio.resources_lookup_data('/org/gjs/jsunit/builder-nontemplate.ui',
+                    Gio.ResourceLookupFlags.NONE);
+                const builder = new Gtk.Builder({
+                    data,
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+            });
+        });
+
         it('ensures signal handlers are callable', function () {
             const ClassWithUncallableHandler = GObject.registerClass({
                 Template: createTemplate('Gjs_ClassWithUncallableHandler'),
