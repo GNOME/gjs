@@ -139,7 +139,8 @@ class ModuleLoader extends InternalModuleLoader {
             } else {
                 // load the source map resource or file
                 // resolve the source map file relative to the source file
-                const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
+                const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`,
+                    parseURI(absoluteUri ?? uri));
                 [jsonText] = this.loadURI(sourceMapUri);
             }
         } catch (e) {}
@@ -166,7 +167,8 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
+        const [module, text, uri] = this.resolveModule(specifier, importingModuleURI);
 
         this.populateSourceMap(text, uri);
 
@@ -200,7 +202,6 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Promise<Module>}
      */
     async moduleResolveAsyncHook(importingModulePriv, specifier) {
-        const importingModuleURI = importingModulePriv?.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded
@@ -209,6 +210,7 @@ class ModuleLoader extends InternalModuleLoader {
             return module;
 
         // 1) Resolve path and URI-based imports.
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
         if (uri) {
             module = registry.get(uri.uriWithQuery);

@@ -78,7 +78,7 @@ export class InternalModuleLoader {
      * Resolves an import specifier given an optional parent importer.
      *
      * @param {string} specifier the import specifier
-     * @param {string | null} [parentURI] the URI of the module importing the specifier
+     * @param {Uri | null} [parentURI] the URI of the module importing the specifier
      * @returns {Uri | null}
      */
     resolveSpecifier(specifier, parentURI = null) {
@@ -106,16 +106,14 @@ export class InternalModuleLoader {
      * the parentURI isn't valid.
      *
      * @param {string} relativePath the relative path to resolve against the base URI
-     * @param {string} importingModuleURI the URI of the module triggering this
+     * @param {Uri} importingModuleURI the URI of the module triggering this
      *   resolve
      * @returns {Uri}
      */
     resolveRelativePath(relativePath, importingModuleURI) {
-        // Ensure the parent URI is valid.
-        parseURI(importingModuleURI);
-
         // Handle relative imports from URI-based modules.
-        const relativeURI = resolveRelativeResourceOrFile(importingModuleURI, relativePath);
+        const relativeURI = resolveRelativeResourceOrFile(importingModuleURI.uriWithQuery,
+            relativePath);
         if (!relativeURI)
             throw new ImportError('File does not have a valid parent!');
         return parseURI(relativeURI);
@@ -138,7 +136,7 @@ export class InternalModuleLoader {
 
     /**
      * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
+     * @param {Uri | null} importingModuleURI the URI of the module
      *   triggering this resolve
      *
      * @returns {ResolvedModule}
@@ -182,7 +180,8 @@ export class InternalModuleLoader {
      * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [resolved] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
+        const [resolved] = this.resolveModule(specifier, importingModuleURI);
         if (!resolved)
             throw new ImportError(`Module not found: ${specifier}`);
 
