@@ -85,10 +85,10 @@ struct Argument {
     // Convenience struct to prevent long argument lists to make() and the
     // functions that call it
     struct Init {
-        uint8_t index;
         const char* name;
-        GITransfer transfer;
-        GjsArgumentFlags flags;
+        uint8_t index;
+        GITransfer transfer : 2;
+        GjsArgumentFlags flags : 6;
     };
 
     virtual ~Argument() = default;

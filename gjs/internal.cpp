@@ -316,7 +316,7 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     JS::RootedString string_arg(cx);
-    if (!gjs_parse_call_args(cx, "parseUri", args, "S", "uri", &string_arg))
+    if (!gjs_parse_call_args(cx, "parseURI", args, "S", "uri", &string_arg))
         return handle_wrong_args(cx);
 
     JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
