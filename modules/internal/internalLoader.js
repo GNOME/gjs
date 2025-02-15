@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
+
+// eslint-disable-next-line spaced-comment
+/// <reference path="./environment.d.ts" />
+// @ts-check
+
 /**
  * Thrown when there is an error importing a module.
  */
@@ -46,10 +51,10 @@ export class InternalModuleLoader {
     /**
      * @param {typeof globalThis} global the global object to handle module
      *   resolution
-     * @param {(string, string) => import("../types").Module} compileFunc the
-     *   function to compile a source into a module for a particular global
-     *   object. Should be compileInternalModule() for InternalModuleLoader,
-     *   but overridden in ModuleLoader
+     * @param {CompileFunc} compileFunc the function to compile a source into a
+     *   module for a particular global object. Should be
+     *   compileInternalModule() for InternalModuleLoader, but overridden in
+     *   ModuleLoader
      */
     constructor(global, compileFunc) {
         this.global = global;
@@ -60,13 +65,13 @@ export class InternalModuleLoader {
      * Loads a file or resource URI synchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {[contents: string, internal?: boolean] | null}
+     * @returns {[contents: string, internal?: boolean]}
      */
     loadURI(uri) {
         if (uri.scheme === 'file' || uri.scheme === 'resource')
             return [loadResourceOrFile(uri.uri)];
 
-        return null;
+        throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
 
     /**
@@ -136,7 +141,7 @@ export class InternalModuleLoader {
      * @param {string | null} importingModuleURI the URI of the module
      *   triggering this resolve
      *
-     * @returns {Module | null}
+     * @returns {ResolvedModule}
      */
     resolveModule(specifier, importingModuleURI) {
         const registry = getRegistry(this.global);
@@ -155,12 +160,7 @@ export class InternalModuleLoader {
             if (module)
                 return [module, '', ''];
 
-            const result = this.loadURI(uri);
-            if (!result)
-                return [null, '', ''];
-
-            const [text, internal = false] = result;
-
+            const [text, internal = false] = this.loadURI(uri);
             const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
 
@@ -171,24 +171,35 @@ export class InternalModuleLoader {
         return [null, '', ''];
     }
 
+    /**
+     * Called by SpiderMonkey as part of gjs_module_resolve().
+     *
+     * @param {ModulePrivate | null} importingModulePriv - the private object of
+     *   the module initiating the import, null if the import is not coming from
+     *   a file that can resolve relative imports
+     * @param {string} specifier - the specifier (e.g. relative path, root
+     *   package) to resolve
+     * @returns {Module}
+     */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [resolved] = this.resolveModule(specifier, importingModulePriv.uri ?? null);
+        const [resolved] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
         if (!resolved)
             throw new ImportError(`Module not found: ${specifier}`);
 
         return resolved;
     }
 
+    /**
+     * Called by SpiderMonkey as part of gjs_module_load().
+     *
+     * @param {string} id - the module specifier
+     * @param {string} uri - the URI where the module is to be found
+     * @returns {Module}
+     */
     moduleLoadHook(id, uri) {
         const priv = new ModulePrivate(id, uri);
 
-        const result = this.loadURI(parseURI(uri));
-        // result can only be null if `this` is InternalModuleLoader. If `this`
-        // is ModuleLoader, then loadURI() will have thrown
-        if (!result)
-            throw new ImportError(`URI not found: ${uri}`);
-
-        const [text] = result;
+        const [text] = this.loadURI(parseURI(uri));
         const compiled = this.compileModule(priv, text);
 
         const registry = getRegistry(this.global);

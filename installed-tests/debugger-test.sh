@@ -20,11 +20,13 @@ if stringContain "module" "$JS_SCRIPT" ; then
         -e "s#file://$(realpath $1)#$(basename $1)#g" \
         -e "s/file:\/\/.*sourcemap-number-module.js/sourcemap-number-module.js/g" \
         -e "s/0x[0-9a-f]\{4,16\}/0xADDR/g" \
+        -e "s/[0-9][0-9.]* ms/XXXX ms/g" \
         | diff -u "$EXPECTED_OUTPUT" -)
 else
     THE_DIFF=$("$gjs" -d "$JS_SCRIPT" < "$DEBUGGER_SCRIPT" | sed \
         -e "s#$1#$(basename $1)#g" \
         -e "s/0x[0-9a-f]\{4,16\}/0xADDR/g" \
+        -e "s/[0-9][0-9.]* ms/XXXX ms/g" \
         | diff -u "$EXPECTED_OUTPUT" -)
 fi
 EXITCODE=$?

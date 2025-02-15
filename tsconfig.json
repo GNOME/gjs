@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
+{
+  "files": [
+    "modules/internal/internalLoader.js",
+    "modules/internal/loader.js",
+  ],
+  "compilerOptions": {
+    "noEmit": true,  // don't generate files, just typecheck them
+    "allowJs": true,
+    "checkJs": true,
+    "skipLibCheck": true,  // don't check environment.d.ts
+
+    "target": "es2023",
+    "lib": ["es2023"],
+
+    // Type checking options
+    "strict": true
+  }
+}

@@ -295,6 +295,25 @@ eslint:
       - .eslintrc.yml
       - '**/.eslintrc.yml'
 
+typecheck:
+  when: on_success
+  stage: source_check
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
+  script:
+    - ./tools/run_typecheck.sh --version
+    - ./tools/run_typecheck.sh
+  except:
+    refs:
+      - schedules
+      - tags
+  only:
+    changes:
+      - modules/internal/*.js
+      - tools/package-lock.json
+      - tsconfig.json
+
 headers_check:
   when: on_success
   stage: source_check

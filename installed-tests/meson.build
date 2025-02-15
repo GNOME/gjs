@@ -65,6 +65,7 @@ debugger_tests = [
     'quit',
     'return',
     'set',
+    'sourcemap-dynamic-module',
     'sourcemap-separate-module',
     'sourcemap-separate',
     'sourcemap-inlined',

@@ -94,6 +94,16 @@ describe('ES module imports', function () {
         expect(greeting1).toEqual('Hello, Test Code');
         expect(greeting2).toEqual('Bonjour, Code de Test');
     });
+
+    it('rejects imports from a nonsense URI scheme', async function () {
+        await expectAsync(import('resource:///org/gjs/jsunit/modules/scaryURI.js'))
+            .toBeRejectedWith(jasmine.objectContaining({name: 'ImportError'}));
+    });
+
+    it('rejects imports from a real but unsupported URI scheme', async function () {
+        await expectAsync(import('resource:///org/gjs/jsunit/modules/networkURI.js'))
+            .toBeRejectedWith(jasmine.objectContaining({name: 'ImportError'}));
+    });
 });
 
 describe('Builtin ES modules', function () {
@@ -207,5 +217,15 @@ describe('Dynamic imports', function () {
             expect(e.constructor).toBe(SyntaxError);
             expect(e.stack).not.toMatch('internal/');
         }
+    });
+
+    it('rejects imports from a nonsense URI scheme', async function () {
+        await expectAsync(import('scary:///module.js'))
+            .toBeRejectedWith(jasmine.objectContaining({name: 'ImportError'}));
+    });
+
+    it('rejects imports from a real but unsupported URI scheme', async function () {
+        await expectAsync(import('https://gitlab.gnome.org/GNOME/gjs/-/raw/ce4411f5d9b6fc00ab8d949890037bd351634d5f/installed-tests/js/modules/say.js'))
+            .toBeRejectedWith(jasmine.objectContaining({name: 'ImportError'}));
     });
 });

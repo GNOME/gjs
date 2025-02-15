@@ -2,18 +2,9 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-/** @typedef {{ uri: string; scheme: string; host: string; path: string; query: Query }} Uri */
-
-/**
- * Use '__internal: never' to prevent any object from being type compatible with Module
- * because it is an internal type.
- *
- * @typedef {{__internal: never;}} Module
- */
-/** @typedef {typeof moduleGlobalThis | typeof globalThis} Global */
-/** @typedef {{ load(uri: Uri): [contents: string, internal: boolean]; }} SchemeHandler */
-/** @typedef {{ [key: string]: string | undefined; }} Query */
-/** @typedef {(uri: string, contents: string) => Module} CompileFunc */
+// eslint-disable-next-line spaced-comment
+/// <reference path="./environment.d.ts" />
+// @ts-check
 
 import {ImportError, InternalModuleLoader, ModulePrivate} from './internalLoader.js';
 import {extractUrl} from './source-map/extractUrl.js';
@@ -80,6 +71,7 @@ class ModuleLoader extends InternalModuleLoader {
      * Overrides InternalModuleLoader.loadURI
      *
      * @param {Uri} uri a Uri object to load
+     * @returns {[contents: string, internal?: boolean]}
      */
     loadURI(uri) {
         if (uri.scheme) {
@@ -89,12 +81,7 @@ class ModuleLoader extends InternalModuleLoader {
                 return loader.load(uri);
         }
 
-        const result = super.loadURI(uri);
-
-        if (result)
-            return result;
-
-        throw new ImportError(`Invalid module URI: ${uri.uri}`);
+        return super.loadURI(uri);
     }
 
     /**
@@ -102,7 +89,7 @@ class ModuleLoader extends InternalModuleLoader {
      * erroring if no resource is found.
      *
      * @param {string} specifier the module specifier to resolve for an import
-     * @returns {import("./internalLoader").Module}
+     * @returns {Module}
      */
     resolveBareSpecifier(specifier) {
         // 2) Resolve internal imports.
@@ -134,7 +121,8 @@ class ModuleLoader extends InternalModuleLoader {
      *
      * @param {string} text The JS code of the module
      * @param {string} uri The URI of the module or file with the sourceMappingURL definition
-     * @param {string} absoluteUri The Absolute URI of the file containing the sourceMappingURL definition. This is only used for non-module files.
+     * @param {string} [absoluteUri] The Absolute URI of the file containing the
+     *   sourceMappingURL definition. This is only used for non-module files.
      */
     populateSourceMap(text, uri, absoluteUri) {
         if (!text)
@@ -151,11 +139,8 @@ class ModuleLoader extends InternalModuleLoader {
             } else {
                 // load the source map resource or file
                 // resolve the source map file relative to the source file
-                const sourceMapUri = this.resolveSpecifier(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
-                const result = this.loadURI(sourceMapUri);
-                if (!result)
-                    return;
-                jsonText = result[0];
+                const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
+                [jsonText] = this.loadURI(sourceMapUri);
             }
         } catch (e) {}
 
@@ -178,10 +163,10 @@ class ModuleLoader extends InternalModuleLoader {
      *   the module initiating the import, null if the import is not coming from
      *   a file that can resolve relative imports
      * @param {string} specifier the module specifier to resolve for an import
-     * @returns {import("./internalLoader").Module}
+     * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri);
+        const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
 
         this.populateSourceMap(text, uri);
 
@@ -191,14 +176,15 @@ class ModuleLoader extends InternalModuleLoader {
         return this.resolveBareSpecifier(specifier);
     }
 
+    /**
+     * Overrides InternalModuleLoader.moduleLoadHook
+     *
+     * @param {string} id - the module specifier
+     * @param {string} uri - the URI where the module is to be found
+     * @returns {Module}
+     */
     moduleLoadHook(id, uri) {
-        const result = this.loadURI(parseURI(uri));
-        // result can only be null if `this` is InternalModuleLoader. If `this`
-        // is ModuleLoader, then loadURI() will have thrown
-        if (!result)
-            throw new ImportError(`URI not found: ${uri}`);
-
-        const [text] = result;
+        const [text] = this.loadURI(parseURI(uri));
         this.populateSourceMap(text, uri);
         return super.moduleLoadHook(id, uri);
     }
@@ -231,23 +217,19 @@ class ModuleLoader extends InternalModuleLoader {
             if (module)
                 return module;
 
-            const result = await this.loadURIAsync(uri);
-            if (!result)
-                return null;
+            const [text, internal = false] = await this.loadURIAsync(uri);
 
             // Check if module loaded while awaiting.
             module = registry.get(uri.uriWithQuery);
             if (module)
                 return module;
 
-            const [text, internal = false] = result;
-
             const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
 
             registry.set(uri.uriWithQuery, compiled);
 
-            this.populateSourceMap(text, uri);
+            this.populateSourceMap(text, uri.uri);
             return compiled;
         }
 
@@ -260,7 +242,7 @@ class ModuleLoader extends InternalModuleLoader {
      * Loads a file or resource URI asynchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {Promise<[string] | [string, boolean] | null>}
+     * @returns {Promise<[string] | [string, boolean]>}
      */
     async loadURIAsync(uri) {
         if (uri.scheme) {
@@ -275,7 +257,7 @@ class ModuleLoader extends InternalModuleLoader {
             return [result];
         }
 
-        return null;
+        throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
 }
 
@@ -312,6 +294,6 @@ moduleLoader.registerScheme('gi', {
      */
     loadAsync(uri) {
         // gi: only does string manipulation, so it is safe to use the same code for sync and async.
-        return this.load(uri);
+        return Promise.resolve(this.load(uri));
     },
 });

@@ -40,7 +40,9 @@ overrides:
       - modules/importmeta.js
       - modules/exports.js
       - modules/greet.js
+      - modules/networkURI.js
       - modules/say.js
+      - modules/scaryURI.js
       - modules/sideEffect4.js
     parserOptions:
       sourceType: module
