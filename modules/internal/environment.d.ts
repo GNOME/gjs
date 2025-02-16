@@ -32,7 +32,7 @@ declare type SchemeHandler = {
 
 declare type Query = { [key: string]: string | undefined };
 declare type CompileFunc = (uri: string, source: string) => Module;
-declare type ResolvedModule = [Module | null, string, string];
+declare type ResolvedModule = [Module, string, string];
 
 declare type Uri = {
     uri: string;

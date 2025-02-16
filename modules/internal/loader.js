@@ -100,33 +100,29 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     /**
-     * Resolves a bare specifier like 'system' against internal resources,
-     * erroring if no resource is found.
+     * Overrides InternalModuleLoader.resolveSpecifier. Adds the behaviour of
+     * resolving a bare specifier like 'system' against internal resources.
      *
-     * @param {string} specifier the module specifier to resolve for an import
-     * @returns {Module}
+     * @param {string} specifier the import specifier
+     * @param {Uri | null} [parentURI] the URI of the module importing the
+     *   specifier
+     * @returns {Uri}
      */
-    resolveBareSpecifier(specifier) {
-        // 2) Resolve internal imports.
+    resolveSpecifier(specifier, parentURI = null) {
+        try {
+            return super.resolveSpecifier(specifier, parentURI);
+        } catch (error) {
+            // On failure due to bare specifiers, try resolving the bare
+            // specifier to an internal module
+            if (!specifier.startsWith('.')) {
+                const realURI = this.buildInternalURIs(specifier).find(uriExists);
+                if (realURI)
+                    return parseURI(realURI);
+            }
 
-        const uri = this.buildInternalURIs(specifier).find(uriExists);
-
-        if (!uri)
-            throw new ImportError(`Unknown module: '${specifier}'`);
-
-        const parsed = parseURI(uri);
-        if (parsed.scheme !== 'file' && parsed.scheme !== 'resource')
-            throw new ImportError('Only file:// and resource:// URIs are currently supported.');
-
-        const text = loadResourceOrFile(parsed.uri);
-        const priv = new ModulePrivate(specifier, uri, true);
-        const compiled = this.compileModule(priv, text);
-
-        const registry = getRegistry(this.global);
-        if (!registry.has(specifier))
-            registry.set(specifier, compiled);
-
-        return compiled;
+            // Re-throw other errors
+            throw error;
+        }
     }
 
     /**
@@ -187,10 +183,7 @@ class ModuleLoader extends InternalModuleLoader {
 
         this.populateSourceMap(text, uri);
 
-        if (module)
-            return module;
-
-        return this.resolveBareSpecifier(specifier);
+        return module;
     }
 
     /**
@@ -227,33 +220,28 @@ class ModuleLoader extends InternalModuleLoader {
         // 1) Resolve path and URI-based imports.
         const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
-        if (uri) {
-            module = registry.get(uri.uriWithQuery);
 
-            // Check if module is already loaded (relative handling)
-            if (module)
-                return module;
+        module = registry.get(uri.uriWithQuery);
 
-            const text = await this.loadURIAsync(uri);
+        // Check if module is already loaded (relative handling)
+        if (module)
+            return module;
 
-            // Check if module loaded while awaiting.
-            module = registry.get(uri.uriWithQuery);
-            if (module)
-                return module;
+        const text = await this.loadURIAsync(uri);
 
-            const internal = this.isInternal(uri);
-            const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
-            const compiled = this.compileModule(priv, text);
+        // Check if module loaded while awaiting.
+        module = registry.get(uri.uriWithQuery);
+        if (module)
+            return module;
 
-            registry.set(uri.uriWithQuery, compiled);
+        const internal = this.isInternal(uri);
+        const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
+        const compiled = this.compileModule(priv, text);
 
-            this.populateSourceMap(text, uri.uri);
-            return compiled;
-        }
+        registry.set(uri.uriWithQuery, compiled);
 
-        // 2) Resolve internal imports.
-
-        return this.resolveBareSpecifier(specifier);
+        this.populateSourceMap(text, uri.uri);
+        return compiled;
     }
 
     /**
