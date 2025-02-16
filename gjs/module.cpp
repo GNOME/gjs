@@ -570,7 +570,8 @@ static bool canonicalize_specifier(JSContext* cx,
  *
  * @returns whether an error occurred while resolving the specifier.
  */
-JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
+JSObject* gjs_module_resolve(JSContext* cx,
+                             JS::HandleValue importing_module_priv,
                              JS::HandleObject module_request) {
     g_assert((gjs_global_is_type(cx, GjsGlobalType::DEFAULT) ||
               gjs_global_is_type(cx, GjsGlobalType::INTERNAL)) &&
@@ -589,13 +590,13 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
         return nullptr;
 
     JS::RootedValueArray<2> args(cx);
-    args[0].set(importingModulePriv);
+    args[0].set(importing_module_priv);
     args[1].setString(specifier);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Module resolve hook for module %s (relative to %s), global %p",
               gjs_debug_string(specifier).c_str(),
-              gjs_debug_value(importingModulePriv).c_str(), global.get());
+              gjs_debug_value(importing_module_priv).c_str(), global.get());
 
     JS::RootedValue result(cx);
     if (!JS::Call(cx, loader, "moduleResolveHook", args, &result))
