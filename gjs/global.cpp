@@ -401,11 +401,10 @@ JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
 
 /**
  * gjs_global_is_type:
+ * @cx: the current #JSContext
+ * @type: the global type to test for
  *
- * @param cx the current #JSContext
- * @param type the global type to test for
- *
- * @returns whether the current global is the same type as #type
+ * Returns: whether the current global is the same type as @type
  */
 bool gjs_global_is_type(JSContext* cx, GjsGlobalType type) {
     JSObject* global = JS::CurrentGlobalOrNull(cx);
@@ -445,16 +444,17 @@ GjsGlobalType gjs_global_get_type(JSObject* global) {
 
 /**
  * gjs_global_registry_set:
+ * @cx: the current #JSContext
+ * @registry: a JS Map object
+ * @key: a module identifier, typically a string or symbol
+ * @module: a module object
  *
- * @brief This function inserts a module object into a global registry.
- * Global registries are JS Map objects for easy reuse and access
- * within internal JS. This function will assert if a module has
- * already been inserted at the given key.
-
- * @param cx the current #JSContext
- * @param registry a JS Map object
- * @param key a module identifier, typically a string or symbol
- * @param module a module object
+ * This function inserts a module object into a global registry. Global
+ * registries are JS Map objects for easy reuse and access within internal JS.
+ * This function will assert if a module has already been inserted at the given
+ * key.
+ *
+ * Returns: false if an exception is pending, otherwise true.
  */
 bool gjs_global_registry_set(JSContext* cx, JS::HandleObject registry,
                              JS::PropertyKey key, JS::HandleObject module) {
@@ -475,16 +475,16 @@ bool gjs_global_registry_set(JSContext* cx, JS::HandleObject registry,
 
 /**
  * gjs_global_registry_get:
+ * @cx: the current #JSContext
+ * @registry: a JS Map object
+ * @key: a module identifier, typically a string or symbol
+ * @module_out: (out): handle where a module object will be stored
  *
- * @brief This function retrieves a module record from the global registry,
- * or %NULL if the module record is not present.
- * Global registries are JS Map objects for easy reuse and access
- * within internal JS.
-
- * @param cx the current #JSContext
- * @param registry a JS Map object
- * @param key a module identifier, typically a string or symbol
- * @param module a module object
+ * This function retrieves a module record from the global registry, or null if
+ * the module record is not present. Global registries are JS Map objects for
+ * easy reuse and access within internal JS.
+ *
+ * Returns: false if an exception is pending, otherwise true.
  */
 bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
                              JS::PropertyKey key,
@@ -508,9 +508,16 @@ bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
 
 /**
  * gjs_global_source_map_get:
+ * @cx: the current #JSContext
+ * @registry: a JS Map object
+ * @key: a source string, such as retrieved from a stack frame
+ * @source_map_consumer_obj: handle where a source map consumer object will be
+ *   stored
  *
- * @brief This function retrieves a source map consumer from the source map
- * registry, or %NULL if the source does not have a source map consumer.
+ * This function retrieves a source map consumer from the source map registry,
+ * or null if the source does not have a source map consumer.
+ *
+ * Returns: false if an exception is pending, otherwise true.
  */
 bool gjs_global_source_map_get(
     JSContext* cx, JS::HandleObject registry, JS::HandleString key,

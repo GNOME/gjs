@@ -56,16 +56,15 @@ union Utf8Unit;
 
 /**
  * gjs_load_internal_module:
+ * @cx: the current JSContext
+ * @identifier: the identifier of the internal module
  *
- * @brief Loads a module source from an internal resource,
+ * Loads a module source from an internal resource,
  * resource:///org/gnome/gjs/modules/internal/{#identifier}.js, registers it in
  * the internal global's module registry, and proceeds to compile, initialize,
  * and evaluate the module.
  *
- * @param cx the current JSContext
- * @param identifier the identifier of the internal module
- *
- * @returns whether an error occurred while loading or evaluating the module.
+ * Returns: whether an error occurred while loading or evaluating the module.
  */
 bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     Gjs::AutoChar full_path(g_strdup_printf(
@@ -119,13 +118,16 @@ static bool handle_wrong_args(JSContext* cx) {
 
 /**
  * gjs_internal_set_global_module_loader:
+ * @global: the JS global object
+ * @loader: the JS module loader object to store in @global
  *
- * @brief Sets the MODULE_LOADER slot of the passed global object.
- * The second argument should be an instance of ModuleLoader or
- * InternalModuleLoader. Its moduleResolveHook and moduleLoadHook properties
- * will be called.
+ * JS function exposed as `setGlobalModuleLoader` in the internal global scope.
  *
- * @returns guaranteed to return true or assert.
+ * Sets the MODULE_LOADER slot of @global. @loader should be an instance of
+ * ModuleLoader or InternalModuleLoader. Its `moduleResolveHook` and
+ * `moduleLoadHook` properties will be called.
+ *
+ * Returns: JS undefined
  */
 bool gjs_internal_set_global_module_loader(JSContext* cx, unsigned argc,
                                            JS::Value* vp) {
@@ -144,16 +146,15 @@ bool gjs_internal_set_global_module_loader(JSContext* cx, unsigned argc,
 
 /**
  * compile_module:
+ * @cx: the current JSContext
+ * @uri: The URI of the module
+ * @source: The source text of the module
+ * @v_module_out: (out): Return location for the module as a JS value
  *
- * @brief Compiles the a module source text into an internal #Module object
- * given the module's URI as the first argument.
+ * Compiles the a module source text into an internal #Module object given the
+ * module's URI as the first argument.
  *
- * @param cx the current JSContext
- * @param uri The URI of the module
- * @param source The source text of the module
- * @param v_module_out Return location for the module as a JS value
- *
- * @returns whether an error occurred while compiling the module.
+ * Returns: whether an error occurred while compiling the module.
  */
 static bool compile_module(JSContext* cx, const JS::UniqueChars& uri,
                            JS::HandleString source,
@@ -180,17 +181,17 @@ static bool compile_module(JSContext* cx, const JS::UniqueChars& uri,
 
 /**
  * gjs_internal_compile_internal_module:
+ * @uri: The URI of the module (JS string)
+ * @source: The source text of the module (JS string)
  *
- * @brief Compiles a module source text within the internal global's realm.
+ * JS function exposed as `compileInternalModule` in the internal global scope.
+ *
+ * Compiles a module source text within the internal global's realm.
  *
  * NOTE: Modules compiled with this function can only be executed
  * within the internal global's realm.
  *
- * @param cx the current JSContext
- * @param argc
- * @param vp
- *
- * @returns whether an error occurred while compiling the module.
+ * Returns: The compiled JS module object.
  */
 bool gjs_internal_compile_internal_module(JSContext* cx, unsigned argc,
                                           JS::Value* vp) {
@@ -209,17 +210,17 @@ bool gjs_internal_compile_internal_module(JSContext* cx, unsigned argc,
 
 /**
  * gjs_internal_compile_module:
+ * @uri: The URI of the module (JS string)
+ * @source: The source text of the module (JS string)
  *
- * @brief Compiles a module source text within the main realm.
+ * JS function exposed as `compileModule` in the internal global scope.
+ *
+ * Compiles a module source text within the main realm.
  *
  * NOTE: Modules compiled with this function can only be executed
  * within the main realm.
  *
- * @param cx the current JSContext
- * @param argc
- * @param vp
- *
- * @returns whether an error occurred while compiling the module.
+ * Returns: The compiled JS module object.
  */
 bool gjs_internal_compile_module(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
@@ -237,15 +238,14 @@ bool gjs_internal_compile_module(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 /**
  * gjs_internal_set_module_private:
+ * @module: The JS module object
+ * @private: The JS module private object for @module
  *
- * @brief Sets the private object of an internal #Module object.
- * The private object must be a #JSObject.
+ * JS function exposed as `setModulePrivate` in the internal global scope.
  *
- * @param cx the current JSContext
- * @param argc
- * @param vp
+ * Sets the private object of an internal #Module object.
  *
- * @returns whether an error occurred while setting the private.
+ * Returns: JS undefined
  */
 bool gjs_internal_set_module_private(JSContext* cx, unsigned argc,
                                      JS::Value* vp) {
@@ -261,14 +261,13 @@ bool gjs_internal_set_module_private(JSContext* cx, unsigned argc,
 
 /**
  * gjs_internal_get_registry:
+ * @global: The JS global object
  *
- * @brief Retrieves the module registry for the passed global object.
+ * JS function exposed as `getRegistry` in the internal global scope.
  *
- * @param cx the current JSContext
- * @param argc
- * @param vp
+ * Retrieves the module registry for @global.
  *
- * @returns whether an error occurred while retrieving the registry.
+ * Returns: the module registry, a JS Map object.
  */
 bool gjs_internal_get_registry(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
@@ -285,14 +284,13 @@ bool gjs_internal_get_registry(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 /**
  * gjs_internal_get_source_map_registry:
+ * @global: The JS global object
  *
- * @brief Retrieves the source map registry for the passed global object.
+ * JS function exposed as `getSourceMapRegistry` in the internal global scope.
  *
- * @param cx the current JSContext
- * @param argc
- * @param vp
+ * Retrieves the source map registry for @global.
  *
- * @returns whether an error occurred while retrieving the registry.
+ * Returns: the source map registry, a JS Map object.
  */
 bool gjs_internal_get_source_map_registry(JSContext* cx, unsigned argc,
                                           JS::Value* vp) {

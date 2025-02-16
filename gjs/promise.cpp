@@ -48,7 +48,9 @@
 namespace Gjs {
 
 /**
- * @brief a custom GSource which handles draining our job queue.
+ * PromiseJobDispatcher::Source:
+ *
+ * A custom GSource which handles draining our job queue.
  */
 class PromiseJobDispatcher::Source : public GSource {
     // The private GJS context this source runs within.
@@ -90,11 +92,12 @@ class PromiseJobDispatcher::Source : public GSource {
 
  public:
     /**
-     * @brief Constructs a new GjsPromiseJobQueueSource GSource and adds a
-     * reference to the associated main context.
+     * Source::Source:
+     * @gjs: the GJS object
+     * @main_context: GLib main context to associate with the source
      *
-     * @param cx the current JSContext
-     * @param cancellable an optional cancellable
+     * Constructs a new GSource for the PromiseJobDispatcher and adds a
+     * reference to the associated main context.
      */
     Source(GjsContextPrivate* gjs, GMainContext* main_context)
         : m_gjs(gjs),
@@ -122,13 +125,17 @@ class PromiseJobDispatcher::Source : public GSource {
     bool is_running() { return !!g_source_get_context(this); }
 
     /**
-     * @brief Trigger the cancellable, detaching our source.
+     * Source::cancel:
+     *
+     * Trigger the cancellable, detaching our source.
      */
     void cancel() { g_cancellable_cancel(m_cancellable); }
     /**
-     * @brief Reset the cancellable and prevent the source from stopping,
-     * overriding a previous cancel() call. Called by start() in
-     * PromiseJobDispatcher to ensure the custom source will start.
+     * Source::reset:
+     *
+     * Reset the cancellable and prevent the source from stopping, overriding a
+     * previous cancel() call. Called by PromiseJobDispatcher::start() to ensure
+     * the custom source will start.
      */
     void reset() {
         if (!g_cancellable_is_cancelled(m_cancellable))
