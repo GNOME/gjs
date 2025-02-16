@@ -359,11 +359,17 @@ int main(int argc, char** argv) {
     Gjs::AutoChar repl_history_path = nullptr;
 #endif
 
-    Gjs::AutoUnref<GjsContext> js_context(GJS_CONTEXT(g_object_new(
-        GJS_TYPE_CONTEXT, "search-path", include_path.get(), "program-name",
-        program_name, "program-path", program_path.get(), "profiler-enabled",
-        enable_profiler, "exec-as-module", exec_as_module, "repl-history-path",
-        repl_history_path.get(), nullptr)));
+    Gjs::AutoUnref<GjsContext> js_context{GJS_CONTEXT(g_object_new(
+        GJS_TYPE_CONTEXT,
+        // clang-format off
+        "search-path", include_path.get(),
+        "program-name", program_name,
+        "program-path", program_path.get(),
+        "profiler-enabled", enable_profiler,
+        "exec-as-module", exec_as_module,
+        "repl-history-path", repl_history_path.get(),
+        // clang-format on
+        nullptr))};
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != NULL) {
