@@ -513,12 +513,12 @@ bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
  * registry, or %NULL if the source does not have a source map consumer.
  */
 bool gjs_global_source_map_get(
-    JSContext* cx, JS::HandleObject registry, JS::Handle<JS::Value> key,
+    JSContext* cx, JS::HandleObject registry, JS::HandleString key,
     JS::MutableHandleObject source_map_consumer_obj) {
+    JS::RootedValue v_key{cx, JS::StringValue(key)};
     JS::RootedValue v_value{cx};
-    if (!JS::MapGet(cx, registry, key, &v_value))
+    if (!JS::MapGet(cx, registry, v_key, &v_value))
         return false;
-    JS::RootedString str{cx, key.toString()};
 
     g_assert((v_value.isUndefined() || v_value.isObject()) &&
              "Invalid value in source map registry");

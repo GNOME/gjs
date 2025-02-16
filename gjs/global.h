@@ -85,7 +85,7 @@ bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_global_source_map_get(JSContext* cx, JS::HandleObject registry,
-                               JS::Handle<JS::Value> key,
+                               JS::HandleString key,
                                JS::MutableHandleObject value);
 
 GJS_JSAPI_RETURN_CONVENTION

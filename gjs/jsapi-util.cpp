@@ -319,9 +319,8 @@ static std::string format_exception_stack(JSContext* cx, JS::HandleObject exc) {
                 continue;
             }
 
-            JS::RootedValue source_key{cx, JS::StringValue(source_string)};
-            success =
-                gjs_global_source_map_get(cx, registry, source_key, &consumer);
+            success = gjs_global_source_map_get(cx, registry, source_string,
+                                                &consumer);
             if (!success || !consumer) {
                 continue;
             }
