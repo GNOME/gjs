@@ -26,8 +26,8 @@ declare var atob: (text: string) => string;
 declare type Module = { __internal: never };
 declare type Global = typeof globalThis;
 declare type SchemeHandler = {
-    load(uri: Uri): [contents: string, internal: boolean];
-    loadAsync(uri: Uri): Promise<[string] | [string, boolean]>;
+    load(uri: Uri): string;
+    loadAsync(uri: Uri): Promise<string>;
 };
 
 declare type Query = { [key: string]: string | undefined };

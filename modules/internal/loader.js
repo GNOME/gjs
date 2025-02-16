@@ -60,6 +60,21 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     /**
+     * Overrides InternalModuleLoader.isInternal
+     *
+     * @param {Uri} uri real URI of the module (file:/// or resource:///)
+     */
+    isInternal(uri) {
+        const s = uri.uri;
+        for (const internalURIPattern of this.moduleURIs) {
+            const [start, end] = internalURIPattern.split('*');
+            if (s.startsWith(start) && s.endsWith(end))
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * @param {string} scheme the URI scheme to register
      * @param {SchemeHandler} handler a handler
      */
@@ -71,7 +86,7 @@ class ModuleLoader extends InternalModuleLoader {
      * Overrides InternalModuleLoader.loadURI
      *
      * @param {Uri} uri a Uri object to load
-     * @returns {[contents: string, internal?: boolean]}
+     * @returns {string}
      */
     loadURI(uri) {
         if (uri.scheme) {
@@ -141,7 +156,7 @@ class ModuleLoader extends InternalModuleLoader {
                 // resolve the source map file relative to the source file
                 const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`,
                     parseURI(absoluteUri ?? uri));
-                [jsonText] = this.loadURI(sourceMapUri);
+                jsonText = this.loadURI(sourceMapUri);
             }
         } catch (e) {}
 
@@ -186,7 +201,7 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Module}
      */
     moduleLoadHook(id, uri) {
-        const [text] = this.loadURI(parseURI(uri));
+        const text = this.loadURI(parseURI(uri));
         this.populateSourceMap(text, uri);
         return super.moduleLoadHook(id, uri);
     }
@@ -219,13 +234,14 @@ class ModuleLoader extends InternalModuleLoader {
             if (module)
                 return module;
 
-            const [text, internal = false] = await this.loadURIAsync(uri);
+            const text = await this.loadURIAsync(uri);
 
             // Check if module loaded while awaiting.
             module = registry.get(uri.uriWithQuery);
             if (module)
                 return module;
 
+            const internal = this.isInternal(uri);
             const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
             const compiled = this.compileModule(priv, text);
 
@@ -244,9 +260,9 @@ class ModuleLoader extends InternalModuleLoader {
      * Loads a file or resource URI asynchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {Promise<[string] | [string, boolean]>}
+     * @returns {Promise<string>}
      */
-    async loadURIAsync(uri) {
+    loadURIAsync(uri) {
         if (uri.scheme) {
             const loader = this.schemeHandlers.get(uri.scheme);
 
@@ -254,10 +270,8 @@ class ModuleLoader extends InternalModuleLoader {
                 return loader.loadAsync(uri);
         }
 
-        if (uri.scheme === 'file' || uri.scheme === 'resource') {
-            const result = await loadResourceOrFileAsync(uri.uri);
-            return [result];
-        }
+        if (uri.scheme === 'file' || uri.scheme === 'resource')
+            return loadResourceOrFileAsync(uri.uri);
 
         throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
@@ -289,7 +303,7 @@ moduleLoader.registerScheme('gi', {
         const namespace = uri.host;
         const version = uri.query.version;
 
-        return [generateGIModule(namespace, version), true];
+        return generateGIModule(namespace, version);
     },
     /**
      * @param {Uri} uri the URI to load asynchronously
