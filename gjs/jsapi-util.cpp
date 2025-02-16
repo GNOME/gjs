@@ -314,7 +314,12 @@ static std::string format_exception_stack(JSContext* cx, JS::HandleObject exc) {
                 JS::GetSavedFrameLine(cx, nullptr, saved_frame, &line) == Ok &&
                 JS::GetSavedFrameColumn(cx, nullptr, saved_frame, &column) ==
                     Ok;
-            JS::GetSavedFrameParent(cx, nullptr, saved_frame, &saved_frame);
+            if (JS::GetSavedFrameParent(cx, nullptr, saved_frame,
+                                        &saved_frame) != Ok) {
+                // If we can't iterate, bail out and don't print source map info
+                break;
+            }
+
             if (!success) {
                 continue;
             }
