@@ -150,8 +150,8 @@ class ModuleLoader extends InternalModuleLoader {
             } else {
                 // load the source map resource or file
                 // resolve the source map file relative to the source file
-                const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`,
-                    parseURI(absoluteUri ?? uri));
+                const sourceMapUri = resolveRelativeResourceOrFile(absoluteUri ?? uri,
+                    `./${sourceMapUrl}`);
                 jsonText = this.loadURI(sourceMapUri);
             }
         } catch (e) {}

@@ -443,21 +443,10 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
 
     Gjs::AutoUnref<GFile> module_file{g_file_new_for_uri(uri.get())};
 
-    if (module_file) {
-        Gjs::AutoChar output_uri{g_uri_resolve_relative(
-            uri.get(), relative_path.get(), G_URI_FLAGS_NONE, nullptr)};
+    Gjs::AutoChar output_uri{g_uri_resolve_relative(
+        uri.get(), relative_path.get(), G_URI_FLAGS_NONE, nullptr)};
 
-        JS::ConstUTF8CharsZ uri_chars(output_uri, strlen(output_uri));
-        JS::RootedString retval(cx, JS_NewStringCopyUTF8Z(cx, uri_chars));
-        if (!retval)
-            return false;
-
-        args.rval().setString(retval);
-        return true;
-    }
-
-    args.rval().setNull();
-    return true;
+    return gjs_uri_object(cx, output_uri.get(), args.rval());
 }
 
 bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,

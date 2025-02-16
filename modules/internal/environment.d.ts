@@ -12,7 +12,7 @@ declare var loadResourceOrFile: (uri: string) => string;
 declare var loadResourceOrFileAsync: (uri: string) => Promise<string>;
 declare var parseURI: (uri: string) => Uri;
 declare var resolveRelativeResourceOrFile:
-    (uri: string, relativePath: string) => string | null;
+    (uri: string, relativePath: string) => Uri;
 declare var setGlobalModuleLoader:
     (global: Global, loader: InternalModuleLoader) => void;
 declare var setModulePrivate: (module: Module, private: ModulePrivate) => void;

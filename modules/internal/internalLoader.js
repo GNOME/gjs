@@ -105,28 +105,10 @@ export class InternalModuleLoader {
             if (!parentURI)
                 throw new ImportError('Cannot import relative path when module path is unknown.');
 
-            return this.resolveRelativePath(specifier, parentURI);
+            return resolveRelativeResourceOrFile(parentURI.uriWithQuery, specifier);
         }
 
         throw new ImportError(`Module not found: ${specifier}`);
-    }
-
-    /**
-     * Resolves a path relative to a URI, throwing an ImportError if
-     * the parentURI isn't valid.
-     *
-     * @param {string} relativePath the relative path to resolve against the base URI
-     * @param {Uri} importingModuleURI the URI of the module triggering this
-     *   resolve
-     * @returns {Uri}
-     */
-    resolveRelativePath(relativePath, importingModuleURI) {
-        // Handle relative imports from URI-based modules.
-        const relativeURI = resolveRelativeResourceOrFile(importingModuleURI.uriWithQuery,
-            relativePath);
-        if (!relativeURI)
-            throw new ImportError('File does not have a valid parent!');
-        return parseURI(relativeURI);
     }
 
     /**
