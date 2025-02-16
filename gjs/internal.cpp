@@ -307,27 +307,33 @@ bool gjs_internal_get_source_map_registry(JSContext* cx, unsigned argc,
     return true;
 }
 
-bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
+/**
+ * gjs_uri_object:
+ * @cx: the current JSContext
+ * @uri: the URI to parse into a JS URI object
+ * @rval: (out): handle to a JSValue where the URI object will be stored
+ *
+ * Parses @uri and creates a JS object with the various parsed parts available
+ * as properties. See type `Uri` in modules/internal/environment.d.ts.
+ *
+ * Basically a JS wrapper for g_uri_parse() for use in the internal global scope
+ * where we don't have access to gobject-introspection.
+ *
+ * Returns: false if an exception is pending, otherwise true
+ */
+static bool gjs_uri_object(JSContext* cx, const char* uri,
+                           JS::MutableHandleValue rval) {
     using AutoHashTable =
         Gjs::AutoPointer<GHashTable, GHashTable, g_hash_table_destroy>;
     using AutoURI = Gjs::AutoPointer<GUri, GUri, g_uri_unref>;
 
-    JS::CallArgs args = CallArgsFromVp(argc, vp);
-    JS::RootedString string_arg(cx);
-    if (!gjs_parse_call_args(cx, "parseURI", args, "S", "uri", &string_arg))
-        return handle_wrong_args(cx);
-
-    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
-    if (!uri)
-        return false;
-
     Gjs::AutoError error;
-    AutoURI parsed = g_uri_parse(uri.get(), G_URI_FLAGS_NONE, &error);
+    AutoURI parsed = g_uri_parse(uri, G_URI_FLAGS_NONE, &error);
     if (!parsed) {
         Gjs::AutoMainRealm ar{cx};
 
         gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
-                         "Attempted to import invalid URI: %s (%s)", uri.get(),
+                         "Attempted to import invalid URI: %s (%s)", uri,
                          error->message);
         return false;
     }
@@ -344,8 +350,8 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
             Gjs::AutoMainRealm ar{cx};
 
             gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
-                             "Attempted to import invalid URI: %s (%s)",
-                             uri.get(), error->message);
+                             "Attempted to import invalid URI: %s (%s)", uri,
+                             error->message);
             return false;
         }
 
@@ -371,6 +377,11 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!return_obj)
         return false;
 
+    JS::RootedValue v_uri{cx};
+    Gjs::AutoChar uri_string{g_uri_to_string(parsed)};
+    if (!gjs_string_from_utf8(cx, uri_string, &v_uri))
+        return false;
+
     // JS_NewStringCopyZ() used here and below because the URI components are
     // %-encoded, meaning ASCII-only
     JS::RootedString scheme(cx,
@@ -394,7 +405,7 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     if (!JS_DefineProperty(cx, return_obj, "uri", uri_no_query,
                            JSPROP_ENUMERATE) ||
-        !JS_DefineProperty(cx, return_obj, "uriWithQuery", string_arg,
+        !JS_DefineProperty(cx, return_obj, "uriWithQuery", v_uri,
                            JSPROP_ENUMERATE) ||
         !JS_DefineProperty(cx, return_obj, "scheme", scheme,
                            JSPROP_ENUMERATE) ||
@@ -404,8 +415,21 @@ bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
                            JSPROP_ENUMERATE))
         return false;
 
-    args.rval().setObject(*return_obj);
+    rval.setObject(*return_obj);
     return true;
+}
+
+bool gjs_internal_parse_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    JS::RootedString string_arg{cx};
+    if (!gjs_parse_call_args(cx, "parseURI", args, "S", "uri", &string_arg))
+        return handle_wrong_args(cx);
+
+    JS::UniqueChars uri = JS_EncodeStringToUTF8(cx, string_arg);
+    if (!uri)
+        return false;
+
+    return gjs_uri_object(cx, uri.get(), args.rval());
 }
 
 bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
