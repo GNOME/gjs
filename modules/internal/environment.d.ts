@@ -3,8 +3,9 @@
 
 declare var moduleGlobalThis: Global;
 
-declare var compileModule: CompileFunc;
+declare var atob: (text: string) => string;
 declare var compileInternalModule: CompileFunc;
+declare var compileModule: CompileFunc;
 declare var getRegistry: (global: Global) => Map<string, Module>;
 declare var getSourceMapRegistry:
     (global: Global) => Map<string, SourceMapConsumer>;
@@ -17,7 +18,6 @@ declare var setGlobalModuleLoader:
     (global: Global, loader: InternalModuleLoader) => void;
 declare var setModulePrivate: (module: Module, private: ModulePrivate) => void;
 declare var uriExists: (uri: string) => boolean;
-declare var atob: (text: string) => string;
 
 /**
  * Use '__internal: never' to prevent any object from being type compatible with

@@ -15,14 +15,17 @@ globals:
   logError: off
   print: off
   printerr: off
-  moduleGlobalThis: readonly
-  compileModule: readonly
+
+  atob: readonly
   compileInternalModule: readonly
+  compileModule: readonly
+  getRegistry: readonly
+  getSourceMapRegistry: readonly
   loadResourceOrFile: readonly
   loadResourceOrFileAsync: readonly
+  moduleGlobalThis: readonly
   parseURI: readonly
-  uriExists: readonly
   resolveRelativeResourceOrFile: readonly
   setGlobalModuleLoader: readonly
   setModulePrivate: readonly
-  getRegistry: readonly
+  uriExists: readonly
