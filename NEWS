@@ -1,3 +1,12 @@
+Version 1.83.90
+---------------
+
+- Closed bugs and merge requests:
+  * Various maintenance [!982, Philip Chimento]
+  * Add type checking job [!983, Philip Chimento]
+  * Write g-i regression tests for flags and enum values with gaps [#538, !984,
+    Gary Li]
+
 Version 1.83.4
 --------------
 
