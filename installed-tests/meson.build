@@ -20,9 +20,11 @@ if cxx.get_argument_syntax() != 'msvc'
         'CommandLineModules',
     ]
 
-    have_gtk4 = dependency('gtk4', required: false).found()
-    if have_gtk4
-        simple_tests += 'Warnings'
+    if not get_option('skip_gtk_tests')
+        have_gtk4 = dependency('gtk4', required: false).found()
+        if have_gtk4
+            simple_tests += 'Warnings'
+        endif
     endif
 endif
 
