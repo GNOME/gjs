@@ -616,6 +616,7 @@ tests_environment.set('TSAN_OPTIONS',
         tsan_suppressions[0].full_path()))
 tests_environment.set('G_SLICE', 'always-malloc')
 tests_environment.set('NO_AT_BRIDGE', '1')
+tests_environment.set('GTK_A11Y', 'none')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('GSETTINGS_BACKEND', 'memory')
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
