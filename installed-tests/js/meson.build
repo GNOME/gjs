@@ -106,10 +106,7 @@ endif
 
 dbus_tests = ['GDBus']
 if not get_option('skip_gtk_tests')
-    have_gtk4 = dependency('gtk4', required: false).found()
-
     if have_gtk4
-        # FIXME: find out why GTK4 tries to acquire a message bus
         dbus_tests += 'Gtk4'
     endif
 endif
