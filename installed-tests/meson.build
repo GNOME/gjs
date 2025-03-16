@@ -18,12 +18,13 @@ if cxx.get_argument_syntax() != 'msvc'
     simple_tests += [
         'CommandLine',
         'CommandLineModules',
+        'Warnings',
     ]
 
     if not get_option('skip_gtk_tests')
         have_gtk4 = dependency('gtk4', required: false).found()
         if have_gtk4
-            simple_tests += 'Warnings'
+            simple_tests += 'Gtk4Warnings'
         endif
     endif
 endif
