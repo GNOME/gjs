@@ -1,3 +1,10 @@
+Version 1.84.0
+--------------
+
+- Closed bugs and merge requests:
+  * tests: Prevent failures when GTK4/DISPLAY is missing [!986, Jan Tojnar]
+  * testWarnings: run gc wrapper test only under Gtk4 [!987, Gary Li]
+
 Version 1.83.90
 ---------------
 
