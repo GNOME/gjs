@@ -36,6 +36,8 @@
 #include <js/ValueArray.h>
 #include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 
+#include <unordered_set>
+
 #include "gi/closure.h"
 #include "gjs/auto.h"
 #include "gjs/context.h"
@@ -60,6 +62,22 @@ using GTypeTable =
     JS::GCHashMap<GType, Gjs::WeakPtr<JSObject*>, js::DefaultHasher<GType>,
                   js::SystemAllocPolicy>;
 using FunctionVector = JS::GCVector<JSFunction*, 0, js::SystemAllocPolicy>;
+
+// https://www.boost.org/doc/libs/1_35_0/doc/html/boost/hash_combine_id241013.html
+template <class T>
+void hash_combine(size_t &seed, T const &v) {
+    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+struct pair_hash {
+    template <class T1, class T2>
+    size_t operator()(const std::pair<T1, T2> &p) const {
+        size_t seed = 0;
+        hash_combine(seed, p.first);
+        hash_combine(seed, p.second);
+        return seed;
+    }
+};
 
 class GjsContextPrivate : public JS::JobQueue {
  public:
@@ -91,7 +109,7 @@ class GjsContextPrivate : public JS::JobQueue {
     Gjs::MainLoop m_main_loop;
     Gjs::AutoUnref<GMemoryMonitor> m_memory_monitor;
 
-    std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
+    std::unordered_set<std::pair<DestroyNotify, void*>, pair_hash> m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
     std::unordered_map<uint64_t, JS::UniqueChars> m_unhandled_rejection_stacks;
     FunctionVector m_cleanup_tasks;

@@ -436,13 +436,13 @@ void GjsContextPrivate::free_profiler(void) {
 
 void GjsContextPrivate::register_notifier(DestroyNotify notify_func,
                                           void* data) {
-    m_destroy_notifications.push_back({notify_func, data});
+    m_destroy_notifications.insert({notify_func, data});
 }
 
 void GjsContextPrivate::unregister_notifier(DestroyNotify notify_func,
                                             void* data) {
     auto target = std::make_pair(notify_func, data);
-    Gjs::remove_one_from_unsorted_vector(&m_destroy_notifications, target);
+    m_destroy_notifications.erase(target);
 }
 
 void GjsContextPrivate::dispose(void) {
