@@ -47,7 +47,7 @@ namespace Gjs {
 namespace Test {
 struct ObjectInstance;
 }
-}
+}  // namespace Gjs
 class ObjectInstance;
 class ObjectPrototype;
 class ObjectPropertyInfoCaller;
@@ -223,7 +223,7 @@ class ObjectPrototype
 
     NegativeLookupCache m_unresolvable_cache;
     // a list of vfunc GClosures installed on this prototype, used when tracing
-    std::vector<GClosure*> m_vfuncs;
+    std::unordered_set<GClosure*> m_vfuncs;
     // a list of interface types explicitly associated with this prototype,
     // by gjs_add_interface
     std::vector<GType> m_interface_gtypes;
@@ -324,7 +324,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GjsMaybeOwned m_wrapper;
     // a list of all GClosures installed on this object (from signal connections
     // and scope-notify callbacks passed to methods), used when tracing
-    std::vector<GClosure*> m_closures;
+    std::unordered_set<GClosure*> m_closures;
 
     bool m_wrapper_finalized : 1;
     bool m_gobj_disposed : 1;

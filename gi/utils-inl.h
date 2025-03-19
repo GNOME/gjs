@@ -41,23 +41,3 @@ template <>
 inline bool gjs_pointer_to_int<bool>(void* p) {
     return !!gjs_pointer_to_int<int8_t>(p);
 }
-
-namespace Gjs {
-
-template <typename T>
-inline bool remove_one_from_unsorted_vector(std::vector<T>* v, const T& value) {
-    // This assumes that there's only a copy of the same value in the vector
-    // so this needs to be ensured when populating it.
-    // We use the swap and pop idiom to avoid moving all the values.
-    auto it = std::find(v->begin(), v->end(), value);
-    if (it != v->end()) {
-        std::swap(*it, v->back());
-        v->pop_back();
-        g_assert(std::find(v->begin(), v->end(), value) == v->end());
-        return true;
-    }
-
-    return false;
-}
-
-}  // namespace Gjs

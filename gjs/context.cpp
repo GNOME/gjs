@@ -972,7 +972,6 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
             m_async_closures.shrink_to_fit();
             break;
         case JSGC_END:
-            m_destroy_notifications.shrink_to_fit();
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
             break;
         default:

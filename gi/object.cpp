@@ -2693,7 +2693,7 @@ void ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     g_object_unref(m_ptr);
 }
 
-static void invalidate_closure_vector(std::vector<GClosure*>* closures,
+static void invalidate_closure_vector(std::unordered_set<GClosure*>* closures,
                                       void* data, GClosureNotify notify_func) {
     g_assert(closures);
     g_assert(notify_func);
@@ -3060,7 +3060,7 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
 
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
-    m_closures.push_back(closure);
+    m_closures.insert(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
 
@@ -3070,12 +3070,11 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
     // This callback should *only* touch m_closures
     auto* priv = static_cast<ObjectInstance*>(data);
-    Gjs::remove_one_from_unsorted_vector(&priv->m_closures, closure);
+    priv->m_closures.erase(closure);
 }
 
 void ObjectInstance::invalidate_closures() {
     invalidate_closure_vector(&m_closures, this, &closure_invalidated_notify);
-    m_closures.shrink_to_fit();
 }
 
 bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -4033,7 +4032,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(), trampoline) ==
                      m_vfuncs.end() &&
                  "This vfunc was already associated with this class");
-        m_vfuncs.push_back(trampoline);
+        m_vfuncs.insert(trampoline);
         g_closure_add_invalidate_notifier(
             trampoline, this, &ObjectPrototype::vfunc_invalidated_notify);
         g_closure_add_invalidate_notifier(
@@ -4049,7 +4048,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 void ObjectPrototype::vfunc_invalidated_notify(void* data, GClosure* closure) {
     // This callback should *only* touch m_vfuncs
     auto* priv = static_cast<ObjectPrototype*>(data);
-    Gjs::remove_one_from_unsorted_vector(&priv->m_vfuncs, closure);
+    priv->m_vfuncs.erase(closure);
 }
 
 bool
