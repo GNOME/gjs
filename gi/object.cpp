@@ -3054,10 +3054,6 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
-    g_assert(std::find(m_closures.begin(), m_closures.end(), closure) ==
-                 m_closures.end() &&
-             "This closure was already associated with this object");
-
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
     m_closures.insert(closure);
