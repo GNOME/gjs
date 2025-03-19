@@ -12,6 +12,7 @@
 
 #include <functional>
 #include <vector>
+#include <unordered_set>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -430,7 +431,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* Methods to manipulate the linked list of instances */
 
  private:
-    static std::vector<ObjectInstance*> s_wrapped_gobject_list;
+    static std::unordered_set<ObjectInstance*> s_wrapped_gobject_list;
     void link(void);
     void unlink(void);
     [[nodiscard]] static size_t num_wrapped_gobjects() {

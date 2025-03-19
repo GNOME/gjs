@@ -127,14 +127,11 @@ bool ObjectBase::is_custom_js_class() {
 }
 
 void ObjectInstance::link() {
-    g_assert(std::find(s_wrapped_gobject_list.begin(),
-                       s_wrapped_gobject_list.end(),
-                       this) == s_wrapped_gobject_list.end());
-    s_wrapped_gobject_list.push_back(this);
+    s_wrapped_gobject_list.insert(this);
 }
 
 void ObjectInstance::unlink() {
-    Gjs::remove_one_from_unsorted_vector(&s_wrapped_gobject_list, this);
+    s_wrapped_gobject_list.erase(this);
 }
 
 const void* ObjectBase::jsobj_addr(void) const {
@@ -2267,19 +2264,15 @@ ObjectInstance::gobj_dispose_notify(void)
 void ObjectInstance::remove_wrapped_gobjects_if(
     const ObjectInstance::Predicate& predicate,
     const ObjectInstance::Action& action) {
-    // Note: remove_if() does not actually remove elements, just reorders them
-    // and returns a start iterator of elements to remove
-    s_wrapped_gobject_list.erase(
-        std::remove_if(s_wrapped_gobject_list.begin(),
-                       s_wrapped_gobject_list.end(),
-                       ([predicate, action](ObjectInstance* link) {
-                           if (predicate(link)) {
-                               action(link);
-                               return true;
-                           }
-                           return false;
-                       })),
-        s_wrapped_gobject_list.end());
+
+    for (auto link = s_wrapped_gobject_list.begin(), last = s_wrapped_gobject_list.end(); link != last;) {
+        if (predicate(*link)) {
+            action(*link);
+            link = s_wrapped_gobject_list.erase(link);
+        } else {
+            ++link;
+        }
+    }
 }
 
 /*
@@ -2604,8 +2597,6 @@ void ObjectInstance::update_heap_wrapper_weak_pointers(JSTracer* trc,
             return instance->weak_pointer_was_finalized(trc);
         },
         std::mem_fn(&ObjectInstance::disassociate_js_gobject));
-
-    s_wrapped_gobject_list.shrink_to_fit();
 }
 
 bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
