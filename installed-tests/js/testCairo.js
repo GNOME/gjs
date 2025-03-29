@@ -396,6 +396,20 @@ describe('Cairo', function () {
             });
         }).pend('Cairo.FontOptions not implemented. Open an issue if you need this');
 
+        xdescribe('for FontFace', function () {
+            it('can be marshalled as a return value with transfer full', function () {
+                const fontFace = Regress.test_cairo_font_face_full_return(cr);
+                expect(fontFace).toBeInstanceOf(Cairo.FontFace);
+            });
+        }).pend('Cairo.FontFace not implemented. Open an issue if you need this');
+
+        xdescribe('for ScaledFont', function () {
+            it('can be marshalled as a return value with transfer full', function () {
+                const scaledFont = Regress.test_cairo_scaled_font_full_return(cr);
+                expect(scaledFont).toBeInstanceOf(Cairo.ScaledFont);
+            });
+        }).pend('Cairo.ScaledFont not implemented. Open an issue if you need this');
+
         xdescribe('for matrix', function () {
             it('can be marshalled as a return value', function () {
                 const matrix = Regress.test_cairo_matrix_none_return();

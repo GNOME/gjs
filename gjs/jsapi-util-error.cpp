@@ -256,8 +256,8 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         !report->isWarning() && report->errorNumber == 137) {
         /* 137, JSMSG_OUT_OF_MEMORY */
-        g_error("GJS ran out of memory at %s: %i.", report->filename.c_str(),
-                report->lineno);
+        g_error("GJS ran out of memory at %s:%u:%u.", report->filename.c_str(),
+                report->lineno, report->column.oneOriginValue());
     }
 
     if (report->isWarning()) {
@@ -278,6 +278,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
         level = G_LOG_LEVEL_WARNING;
     }
 
-    g_log(G_LOG_DOMAIN, level, "JS %s: [%s %d]: %s", warning,
-          report->filename.c_str(), report->lineno, report->message().c_str());
+    g_log(G_LOG_DOMAIN, level, "JS %s: %s:%u:%u: %s", warning,
+          report->filename.c_str(), report->lineno,
+          report->column.oneOriginValue(), report->message().c_str());
 }

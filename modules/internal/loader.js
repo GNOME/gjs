@@ -1,4 +1,3 @@
-/* global atob, getSourceMapRegistry */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
@@ -60,6 +59,21 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     /**
+     * Overrides InternalModuleLoader.isInternal
+     *
+     * @param {Uri} uri real URI of the module (file:/// or resource:///)
+     */
+    isInternal(uri) {
+        const s = uri.uri;
+        for (const internalURIPattern of this.moduleURIs) {
+            const [start, end] = internalURIPattern.split('*');
+            if (s.startsWith(start) && s.endsWith(end))
+                return true;
+        }
+        return false;
+    }
+
+    /**
      * @param {string} scheme the URI scheme to register
      * @param {SchemeHandler} handler a handler
      */
@@ -71,7 +85,7 @@ class ModuleLoader extends InternalModuleLoader {
      * Overrides InternalModuleLoader.loadURI
      *
      * @param {Uri} uri a Uri object to load
-     * @returns {[contents: string, internal?: boolean]}
+     * @returns {string}
      */
     loadURI(uri) {
         if (uri.scheme) {
@@ -85,33 +99,29 @@ class ModuleLoader extends InternalModuleLoader {
     }
 
     /**
-     * Resolves a bare specifier like 'system' against internal resources,
-     * erroring if no resource is found.
+     * Overrides InternalModuleLoader.resolveSpecifier. Adds the behaviour of
+     * resolving a bare specifier like 'system' against internal resources.
      *
-     * @param {string} specifier the module specifier to resolve for an import
-     * @returns {Module}
+     * @param {string} specifier the import specifier
+     * @param {Uri | null} [parentURI] the URI of the module importing the
+     *   specifier
+     * @returns {Uri}
      */
-    resolveBareSpecifier(specifier) {
-        // 2) Resolve internal imports.
+    resolveSpecifier(specifier, parentURI = null) {
+        try {
+            return super.resolveSpecifier(specifier, parentURI);
+        } catch (error) {
+            // On failure due to bare specifiers, try resolving the bare
+            // specifier to an internal module
+            if (!specifier.startsWith('.')) {
+                const realURI = this.buildInternalURIs(specifier).find(uriExists);
+                if (realURI)
+                    return parseURI(realURI);
+            }
 
-        const uri = this.buildInternalURIs(specifier).find(uriExists);
-
-        if (!uri)
-            throw new ImportError(`Unknown module: '${specifier}'`);
-
-        const parsed = parseURI(uri);
-        if (parsed.scheme !== 'file' && parsed.scheme !== 'resource')
-            throw new ImportError('Only file:// and resource:// URIs are currently supported.');
-
-        const text = loadResourceOrFile(parsed.uri);
-        const priv = new ModulePrivate(specifier, uri, true);
-        const compiled = this.compileModule(priv, text);
-
-        const registry = getRegistry(this.global);
-        if (!registry.has(specifier))
-            registry.set(specifier, compiled);
-
-        return compiled;
+            // Re-throw other errors
+            throw error;
+        }
     }
 
     /**
@@ -139,8 +149,9 @@ class ModuleLoader extends InternalModuleLoader {
             } else {
                 // load the source map resource or file
                 // resolve the source map file relative to the source file
-                const sourceMapUri = this.resolveRelativePath(`./${sourceMapUrl}`, absoluteUri ? absoluteUri : uri);
-                [jsonText] = this.loadURI(sourceMapUri);
+                const sourceMapUri = resolveRelativeResourceOrFile(absoluteUri ?? uri,
+                    `./${sourceMapUrl}`);
+                jsonText = this.loadURI(sourceMapUri);
             }
         } catch (e) {}
 
@@ -166,14 +177,12 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [module, text, uri] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
+        const [module, text, uri] = this.resolveModule(specifier, importingModuleURI);
 
         this.populateSourceMap(text, uri);
 
-        if (module)
-            return module;
-
-        return this.resolveBareSpecifier(specifier);
+        return module;
     }
 
     /**
@@ -184,7 +193,7 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Module}
      */
     moduleLoadHook(id, uri) {
-        const [text] = this.loadURI(parseURI(uri));
+        const text = this.loadURI(parseURI(uri));
         this.populateSourceMap(text, uri);
         return super.moduleLoadHook(id, uri);
     }
@@ -200,7 +209,6 @@ class ModuleLoader extends InternalModuleLoader {
      * @returns {Promise<Module>}
      */
     async moduleResolveAsyncHook(importingModulePriv, specifier) {
-        const importingModuleURI = importingModulePriv?.uri;
         const registry = getRegistry(this.global);
 
         // Check if the module has already been loaded
@@ -209,42 +217,39 @@ class ModuleLoader extends InternalModuleLoader {
             return module;
 
         // 1) Resolve path and URI-based imports.
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
-        if (uri) {
-            module = registry.get(uri.uriWithQuery);
 
-            // Check if module is already loaded (relative handling)
-            if (module)
-                return module;
+        module = registry.get(uri.uriWithQuery);
 
-            const [text, internal = false] = await this.loadURIAsync(uri);
+        // Check if module is already loaded (relative handling)
+        if (module)
+            return module;
 
-            // Check if module loaded while awaiting.
-            module = registry.get(uri.uriWithQuery);
-            if (module)
-                return module;
+        const text = await this.loadURIAsync(uri);
 
-            const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
-            const compiled = this.compileModule(priv, text);
+        // Check if module loaded while awaiting.
+        module = registry.get(uri.uriWithQuery);
+        if (module)
+            return module;
 
-            registry.set(uri.uriWithQuery, compiled);
+        const internal = this.isInternal(uri);
+        const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
+        const compiled = this.compileModule(priv, text);
 
-            this.populateSourceMap(text, uri.uri);
-            return compiled;
-        }
+        registry.set(uri.uriWithQuery, compiled);
 
-        // 2) Resolve internal imports.
-
-        return this.resolveBareSpecifier(specifier);
+        this.populateSourceMap(text, uri.uri);
+        return compiled;
     }
 
     /**
      * Loads a file or resource URI asynchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {Promise<[string] | [string, boolean]>}
+     * @returns {Promise<string>}
      */
-    async loadURIAsync(uri) {
+    loadURIAsync(uri) {
         if (uri.scheme) {
             const loader = this.schemeHandlers.get(uri.scheme);
 
@@ -252,10 +257,8 @@ class ModuleLoader extends InternalModuleLoader {
                 return loader.loadAsync(uri);
         }
 
-        if (uri.scheme === 'file' || uri.scheme === 'resource') {
-            const result = await loadResourceOrFileAsync(uri.uri);
-            return [result];
-        }
+        if (uri.scheme === 'file' || uri.scheme === 'resource')
+            return loadResourceOrFileAsync(uri.uri);
 
         throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
@@ -287,7 +290,7 @@ moduleLoader.registerScheme('gi', {
         const namespace = uri.host;
         const version = uri.query.version;
 
-        return [generateGIModule(namespace, version), true];
+        return generateGIModule(namespace, version);
     },
     /**
      * @param {Uri} uri the URI to load asynchronously

@@ -8,7 +8,7 @@ const {_createBuilderConnectFunc, _createClosure, _registerType} = imports._comm
 const Gi = imports._gi;
 
 let Gtk;
-let BuilderScope;
+let TemplateBuilderScope;
 
 function _init() {
     Gtk = this;
@@ -73,20 +73,22 @@ function _init() {
         };
     }
 
-    if (Gtk.BuilderScope) {
-        BuilderScope = GObject.registerClass({
-            Implements: [Gtk.BuilderScope],
-        }, class extends GObject.Object {
-            vfunc_create_closure(builder, handlerName, flags, connectObject) {
-                const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
-                const thisArg = builder.get_current_object();
-                return Gi.associateClosure(
-                    connectObject ?? thisArg,
-                    _createClosure(builder, thisArg, handlerName, swapped, connectObject)
-                );
-            }
-        });
-    }
+    // Everything after this is GTK4-only, for the Gtk.Builder JS implementation
+    if (!Gtk.BuilderScope)
+        return;
+
+    TemplateBuilderScope = GObject.registerClass({
+        Implements: [Gtk.BuilderScope],
+    }, class extends GObject.Object {
+        vfunc_create_closure(builder, handlerName, flags, connectObject) {
+            const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
+            const thisArg = builder.get_current_object();
+            return Gi.associateClosure(
+                connectObject ?? thisArg,
+                _createClosure(builder, thisArg, handlerName, swapped, connectObject)
+            );
+        }
+    });
 }
 
 function _registerWidgetType(klass) {
@@ -132,8 +134,8 @@ function _registerWidgetType(klass) {
             Gtk.Widget.set_template.call(klass, template);
         }
 
-        if (BuilderScope)
-            Gtk.Widget.set_template_scope.call(klass, new BuilderScope());
+        if (TemplateBuilderScope)
+            Gtk.Widget.set_template_scope.call(klass, new TemplateBuilderScope());
         else
             Gtk.Widget.set_connect_func.call(klass, _createBuilderConnectFunc(klass));
     }

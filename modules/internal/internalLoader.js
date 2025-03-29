@@ -62,14 +62,24 @@ export class InternalModuleLoader {
     }
 
     /**
+     * Determines whether a module gets access to import.meta.importSync().
+     *
+     * @param {Uri} uri real URI of the module (file:/// or resource:///)
+     */
+    isInternal(uri) {
+        void uri;
+        return false;
+    }
+
+    /**
      * Loads a file or resource URI synchronously
      *
      * @param {Uri} uri the file or resource URI to load
-     * @returns {[contents: string, internal?: boolean]}
+     * @returns {string} the contents of the module
      */
     loadURI(uri) {
         if (uri.scheme === 'file' || uri.scheme === 'resource')
-            return [loadResourceOrFile(uri.uri)];
+            return loadResourceOrFile(uri.uri);
 
         throw new ImportError(`Unsupported URI scheme for importing: ${uri.scheme ?? uri}`);
     }
@@ -78,8 +88,8 @@ export class InternalModuleLoader {
      * Resolves an import specifier given an optional parent importer.
      *
      * @param {string} specifier the import specifier
-     * @param {string | null} [parentURI] the URI of the module importing the specifier
-     * @returns {Uri | null}
+     * @param {Uri | null} [parentURI] the URI of the module importing the specifier
+     * @returns {Uri}
      */
     resolveSpecifier(specifier, parentURI = null) {
         try {
@@ -95,30 +105,10 @@ export class InternalModuleLoader {
             if (!parentURI)
                 throw new ImportError('Cannot import relative path when module path is unknown.');
 
-            return this.resolveRelativePath(specifier, parentURI);
+            return resolveRelativeResourceOrFile(parentURI.uriWithQuery, specifier);
         }
 
-        return null;
-    }
-
-    /**
-     * Resolves a path relative to a URI, throwing an ImportError if
-     * the parentURI isn't valid.
-     *
-     * @param {string} relativePath the relative path to resolve against the base URI
-     * @param {string} importingModuleURI the URI of the module triggering this
-     *   resolve
-     * @returns {Uri}
-     */
-    resolveRelativePath(relativePath, importingModuleURI) {
-        // Ensure the parent URI is valid.
-        parseURI(importingModuleURI);
-
-        // Handle relative imports from URI-based modules.
-        const relativeURI = resolveRelativeResourceOrFile(importingModuleURI, relativePath);
-        if (!relativeURI)
-            throw new ImportError('File does not have a valid parent!');
-        return parseURI(relativeURI);
+        throw new ImportError(`Module not found: ${specifier}`);
     }
 
     /**
@@ -138,7 +128,7 @@ export class InternalModuleLoader {
 
     /**
      * @param {string} specifier the specifier (e.g. relative path, root package) to resolve
-     * @param {string | null} importingModuleURI the URI of the module
+     * @param {Uri | null} importingModuleURI the URI of the module
      *   triggering this resolve
      *
      * @returns {ResolvedModule}
@@ -153,22 +143,20 @@ export class InternalModuleLoader {
 
         // 1) Resolve path and URI-based imports.
         const uri = this.resolveSpecifier(specifier, importingModuleURI);
-        if (uri) {
-            module = registry.get(uri.uriWithQuery);
 
-            // Check if module is already loaded (relative handling)
-            if (module)
-                return [module, '', ''];
+        module = registry.get(uri.uriWithQuery);
 
-            const [text, internal = false] = this.loadURI(uri);
-            const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
-            const compiled = this.compileModule(priv, text);
+        // Check if module is already loaded (relative handling)
+        if (module)
+            return [module, '', ''];
 
-            registry.set(uri.uriWithQuery, compiled);
-            return [compiled, text, uri.uri];
-        }
+        const text = this.loadURI(uri);
+        const internal = this.isInternal(uri);
+        const priv = new ModulePrivate(uri.uriWithQuery, uri.uri, internal);
+        const compiled = this.compileModule(priv, text);
 
-        return [null, '', ''];
+        registry.set(uri.uriWithQuery, compiled);
+        return [compiled, text, uri.uri];
     }
 
     /**
@@ -182,10 +170,8 @@ export class InternalModuleLoader {
      * @returns {Module}
      */
     moduleResolveHook(importingModulePriv, specifier) {
-        const [resolved] = this.resolveModule(specifier, importingModulePriv?.uri ?? null);
-        if (!resolved)
-            throw new ImportError(`Module not found: ${specifier}`);
-
+        const importingModuleURI = importingModulePriv ? parseURI(importingModulePriv.uri) : null;
+        const [resolved] = this.resolveModule(specifier, importingModuleURI);
         return resolved;
     }
 
@@ -199,7 +185,7 @@ export class InternalModuleLoader {
     moduleLoadHook(id, uri) {
         const priv = new ModulePrivate(id, uri);
 
-        const [text] = this.loadURI(parseURI(uri));
+        const text = this.loadURI(parseURI(uri));
         const compiled = this.compileModule(priv, text);
 
         const registry = getRegistry(this.global);

@@ -50,8 +50,10 @@ static GOptionEntry entries[] = {
       "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
     { "coverage-output", 0, 0, G_OPTION_ARG_STRING, coverage_output_path.out(),
       "Write coverage output to a directory DIR. This option is mandatory when using --coverage-prefix", "DIR", },
-    { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(), "Add the directory DIR to the list of directories to search for js files.", "DIR" },
-    { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module, "Execute the file as a module." },
+    { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(),
+        "Add DIR to the list of paths to search for JS files", "DIR" },
+    { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
+        "Execute the file as a module" },
     { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
         G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
@@ -359,11 +361,17 @@ int main(int argc, char** argv) {
     Gjs::AutoChar repl_history_path = nullptr;
 #endif
 
-    Gjs::AutoUnref<GjsContext> js_context(GJS_CONTEXT(g_object_new(
-        GJS_TYPE_CONTEXT, "search-path", include_path.get(), "program-name",
-        program_name, "program-path", program_path.get(), "profiler-enabled",
-        enable_profiler, "exec-as-module", exec_as_module, "repl-history-path",
-        repl_history_path.get(), nullptr)));
+    Gjs::AutoUnref<GjsContext> js_context{GJS_CONTEXT(g_object_new(
+        GJS_TYPE_CONTEXT,
+        // clang-format off
+        "search-path", include_path.get(),
+        "program-name", program_name,
+        "program-path", program_path.get(),
+        "profiler-enabled", enable_profiler,
+        "exec-as-module", exec_as_module,
+        "repl-history-path", repl_history_path.get(),
+        // clang-format on
+        nullptr))};
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != NULL) {

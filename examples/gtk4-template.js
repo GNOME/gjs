@@ -16,8 +16,9 @@ Gtk.init();
  *   - an absolute file URI, such as `file:///home/user/window.ui`
  *   - a GResource URI, such as `resource:///org/gnome/AppName/window.ui`
  */
-const file = Gio.File.new_for_path('gtk4-template.ui');
-const [, template] = file.load_contents(null);
+const file = Gio.File.new_for_uri(import.meta.url);
+const templateFile = file.get_parent().resolve_relative_path('gtk4-template.ui');
+const [, template] = templateFile.load_contents(null);
 
 
 const ExampleWindow = GObject.registerClass({

@@ -3,8 +3,9 @@
 
 declare var moduleGlobalThis: Global;
 
-declare var compileModule: CompileFunc;
+declare var atob: (text: string) => string;
 declare var compileInternalModule: CompileFunc;
+declare var compileModule: CompileFunc;
 declare var getRegistry: (global: Global) => Map<string, Module>;
 declare var getSourceMapRegistry:
     (global: Global) => Map<string, SourceMapConsumer>;
@@ -12,12 +13,11 @@ declare var loadResourceOrFile: (uri: string) => string;
 declare var loadResourceOrFileAsync: (uri: string) => Promise<string>;
 declare var parseURI: (uri: string) => Uri;
 declare var resolveRelativeResourceOrFile:
-    (uri: string, relativePath: string) => string | null;
+    (uri: string, relativePath: string) => Uri;
 declare var setGlobalModuleLoader:
     (global: Global, loader: InternalModuleLoader) => void;
 declare var setModulePrivate: (module: Module, private: ModulePrivate) => void;
 declare var uriExists: (uri: string) => boolean;
-declare var atob: (text: string) => string;
 
 /**
  * Use '__internal: never' to prevent any object from being type compatible with
@@ -26,13 +26,13 @@ declare var atob: (text: string) => string;
 declare type Module = { __internal: never };
 declare type Global = typeof globalThis;
 declare type SchemeHandler = {
-    load(uri: Uri): [contents: string, internal: boolean];
-    loadAsync(uri: Uri): Promise<[string] | [string, boolean]>;
+    load(uri: Uri): string;
+    loadAsync(uri: Uri): Promise<string>;
 };
 
 declare type Query = { [key: string]: string | undefined };
 declare type CompileFunc = (uri: string, source: string) => Module;
-declare type ResolvedModule = [Module | null, string, string];
+declare type ResolvedModule = [Module, string, string];
 
 declare type Uri = {
     uri: string;

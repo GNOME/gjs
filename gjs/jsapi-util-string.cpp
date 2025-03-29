@@ -97,18 +97,20 @@ JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
 
 /**
  * gjs_string_to_utf8_n:
- * @param cx: the current #JSContext
- * @param str: a handle to a JSString
- * @param output a pointer to a JS::UniqueChars
- * @param output_len a pointer for the length of output
+ * @cx: the current #JSContext
+ * @str: string to encode in UTF-8
+ * @output: (out): return location for the UTF-8-encoded string
+ * @output_len: (out): return location for the length of @output
  *
- * @brief Converts a JSString to UTF-8 and puts the char array in #output and
- * its length in #output_len.
+ * Converts a JSString to UTF-8 and puts the char array in @output and its
+ * length in @output_len.
  *
- * This function handles the boilerblate for unpacking a JSString, determining its
- * length, and returning the appropriate JS::UniqueChars. This function should generally
- * be preferred over using JS::DeflateStringToUTF8Buffer directly as it correctly
- * handles allocation in a JS_Free compatible manner.
+ * This function handles the boilerplate for unpacking @str, determining its
+ * length, and returning the appropriate JS::UniqueChars. This function should
+ * generally be preferred over using JS::DeflateStringToUTF8Buffer() directly as
+ * it correctly handles allocation in a JS_free compatible manner.
+ *
+ * Returns: false if an exception is pending, otherwise true.
  */
 bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* output,
                           size_t* output_len) {
@@ -135,14 +137,13 @@ bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* 
 
 /**
  * gjs_lossy_string_from_utf8:
+ * @cx: the current #JSContext
+ * @utf8_string: a zero-terminated array of UTF-8 characters to decode
  *
- * @brief Converts an array of UTF-8 characters to a JS string.
- * Instead of throwing, any invalid characters will be converted
- * to the UTF-8 invalid character fallback.
+ * Converts @utf8_string to a JS string. Instead of throwing, any invalid
+ * characters will be converted to the UTF-8 invalid character fallback.
  *
- * @param cx the current #JSContext
- * @param utf8_string an array of UTF-8 characters
- * @param value_p a value to store the resulting string in
+ * Returns: The decoded string.
  */
 JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
     JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
@@ -159,9 +160,14 @@ JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
 
 /**
  * gjs_lossy_string_from_utf8_n:
+ * @cx: the current #JSContext
+ * @utf8_string: an array of UTF-8 characters to decode
+ * @len: length of @utf8_string
  *
- * @brief Provides the same conversion behavior as gjs_lossy_string_from_utf8
- * with a fixed length. See gjs_lossy_string_from_utf8()
+ * Provides the same conversion behavior as gjs_lossy_string_from_utf8
+ * with a fixed length. See gjs_lossy_string_from_utf8().
+ *
+ * Returns: The decoded string.
  */
 JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
                                        size_t len) {

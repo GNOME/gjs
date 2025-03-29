@@ -195,7 +195,7 @@ static void gjstest_test_func_gjs_context_eval_dynamic_import_bad() {
     int status;
 
     g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
-                          "*Unknown module: 'badmodule'*");
+                          "*ImportError*badmodule*");
 
     bool ok = gjs_context_eval(gjs, R"js(
         let isBad = false;

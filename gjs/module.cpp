@@ -275,14 +275,14 @@ class GjsScriptModule {
 
 /**
  * gjs_script_module_build_private:
- * @param cx the #JSContext
- * @param uri the URI this script module is loaded from
+ * @cx: the #JSContext
+ * @uri: the URI this script module is loaded from
  *
- * @brief To support dynamic imports from scripts, we need to provide private
- * data when we compile scripts which is compatible with our module resolution
- * hooks in modules/internal/loader.js
+ * To support dynamic imports from scripts, we need to provide private data when
+ * we compile scripts which is compatible with our module resolution hooks in
+ * modules/internal/loader.js
  *
- * @returns a JSObject which can be used for a JSScript's private data.
+ * Returns: a JSObject which can be used for a JSScript's private data.
  */
 JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri) {
     return GjsScriptModule::build_private(cx, uri);
@@ -319,15 +319,14 @@ decltype(GjsScriptModule::class_ops) constexpr GjsScriptModule::class_ops;
 
 /**
  * gjs_get_native_registry:
+ * @global: The JS global object
  *
- * @brief Retrieves a global's native registry from the NATIVE_REGISTRY slot.
- * Registries are JS Map objects created with JS::NewMapObject instead
- * of GCHashMaps (used elsewhere in GJS) because the objects need to be
- * exposed to internal JS code and accessed from native C++ code.
+ * Retrieves a global's native registry from the NATIVE_REGISTRY slot.
+ * Registries are JS Map objects created with JS::NewMapObject instead of
+ * GCHashMaps (used elsewhere in GJS) because the objects need to be exposed to
+ * internal JS code and accessed from native C++ code.
  *
- * @param global a global #JSObject
- *
- * @returns the registry map as a #JSObject
+ * Returns: the native module registry, a JS Map object.
  */
 JSObject* gjs_get_native_registry(JSObject* global) {
     JS::Value native_registry =
@@ -339,14 +338,12 @@ JSObject* gjs_get_native_registry(JSObject* global) {
 
 /**
  * gjs_get_module_registry:
+ * @global: the JS global object
  *
- * @brief Retrieves a global's module registry from the MODULE_REGISTRY slot.
- * Registries are JS Maps. See gjs_get_native_registry for more detail.
+ * Retrieves a global's module registry from the MODULE_REGISTRY slot.
+ * Registries are JS Maps. See gjs_get_native_registry() for more detail.
  *
- * @param cx the current #JSContext
- * @param global a global #JSObject
- *
- * @returns the registry map as a #JSObject
+ * Returns: the module registry, a JS Map object
  */
 JSObject* gjs_get_module_registry(JSObject* global) {
     JS::Value esm_registry =
@@ -358,14 +355,12 @@ JSObject* gjs_get_module_registry(JSObject* global) {
 
 /**
  * gjs_get_source_map_registry:
+ * @global: The JS global object
  *
- * @brief Retrieves a global's source map registry from the SOURCE_MAP_REGISTRY
- * slot. Registries are JS Maps.
+ * Retrieves a global's source map registry from the SOURCE_MAP_REGISTRY slot.
+ * Registries are JS Maps.
  *
- * @param cx the current #JSContext
- * @param global a global #JSObject
- *
- * @returns the registry map as a #JSObject
+ * Returns: the source map registry, a JS Map object
  */
 JSObject* gjs_get_source_map_registry(JSObject* global) {
     JS::Value source_map_registry =
@@ -377,11 +372,13 @@ JSObject* gjs_get_source_map_registry(JSObject* global) {
 
 /**
  * gjs_module_load:
+ * @cx: the current JSContext
+ * @identifier: specifier of the module to load
+ * @file_uri: URI to load the module from
  *
- * Loads and registers a module given a specifier and
- * URI.
+ * Loads and registers a module given a specifier and URI.
  *
- * @returns whether an error occurred while resolving the specifier.
+ * Returns: whether an error occurred while resolving the specifier.
  */
 JSObject* gjs_module_load(JSContext* cx, const char* identifier,
                           const char* file_uri) {
@@ -423,8 +420,11 @@ JSObject* gjs_module_load(JSContext* cx, const char* identifier,
 
 /**
  * import_native_module_sync:
+ * @identifier: the specifier for the module to import
  *
- * @brief Synchronously imports native "modules" from the import global's
+ * JS function exposed as `import.meta.importSync` in internal modules only.
+ *
+ * Synchronously imports native "modules" from the import global's
  * native registry. This function does not do blocking I/O so it is
  * safe to call it synchronously for accessing native "modules" within
  * modules. This function is always called within the import global's
@@ -432,11 +432,7 @@ JSObject* gjs_module_load(JSContext* cx, const char* identifier,
  *
  * Compare gjs_import_native_module() for the legacy importer.
  *
- * @param cx the current JSContext
- * @param argc
- * @param vp
- *
- * @returns whether an error occurred while importing the native module.
+ * Returns: the imported JS module object.
  */
 static bool import_native_module_sync(JSContext* cx, unsigned argc,
                                       JS::Value* vp) {
@@ -478,15 +474,15 @@ static bool import_native_module_sync(JSContext* cx, unsigned argc,
 
 /**
  * gjs_populate_module_meta:
+ * @cx: the current JSContext
+ * @private_ref: the JS private value for the #Module object, as a JS Object
+ * @meta: the JS `import.meta` object
  *
- * Hook SpiderMonkey calls to populate the import.meta object.
- * Defines a property "import.meta.url", and additionally a method
- * "import.meta.importSync" if this is an internal module.
+ * Hook SpiderMonkey calls to populate the `import.meta` object.
+ * Defines a property `import.meta.url`, and additionally a method
+ * `import.meta.importSync` if this is an internal module.
  *
- * @param private_ref the private value for the #Module object
- * @param meta the import.meta object
- *
- * @returns whether an error occurred while populating the module meta.
+ * Returns: whether an error occurred while populating the module meta.
  */
 bool gjs_populate_module_meta(JSContext* cx, JS::HandleValue private_ref,
                               JS::HandleObject meta) {
@@ -561,16 +557,18 @@ static bool canonicalize_specifier(JSContext* cx,
 
 /**
  * gjs_module_resolve:
+ * @cx: the current JSContext
+ * @importing_module_priv: the private JS Object of the #Module object
+ *   initiating the import, or a JS null value
+ * @module_request: the module request object
  *
- * Hook SpiderMonkey calls to resolve import specifiers.
+ * This function resolves import specifiers. It is called internally by
+ * SpiderMonkey as a hook.
  *
- * @param importingModulePriv the private value of the #Module object initiating
- *   the import, or a JS null value
- * @param specifier the import specifier to resolve
- *
- * @returns whether an error occurred while resolving the specifier.
+ * Returns: whether an error occurred while resolving the specifier.
  */
-JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
+JSObject* gjs_module_resolve(JSContext* cx,
+                             JS::HandleValue importing_module_priv,
                              JS::HandleObject module_request) {
     g_assert((gjs_global_is_type(cx, GjsGlobalType::DEFAULT) ||
               gjs_global_is_type(cx, GjsGlobalType::INTERNAL)) &&
@@ -589,13 +587,13 @@ JSObject* gjs_module_resolve(JSContext* cx, JS::HandleValue importingModulePriv,
         return nullptr;
 
     JS::RootedValueArray<2> args(cx);
-    args[0].set(importingModulePriv);
+    args[0].set(importing_module_priv);
     args[1].setString(specifier);
 
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Module resolve hook for module %s (relative to %s), global %p",
               gjs_debug_string(specifier).c_str(),
-              gjs_debug_value(importingModulePriv).c_str(), global.get());
+              gjs_debug_value(importing_module_priv).c_str(), global.get());
 
     JS::RootedValue result(cx);
     if (!JS::Call(cx, loader, "moduleResolveHook", args, &result))
