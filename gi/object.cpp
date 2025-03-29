@@ -126,13 +126,9 @@ bool ObjectBase::is_custom_js_class() {
     return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
 }
 
-void ObjectInstance::link() {
-    s_wrapped_gobject_list.insert(this);
-}
+void ObjectInstance::link() { s_wrapped_gobject_list.insert(this); }
 
-void ObjectInstance::unlink() {
-    s_wrapped_gobject_list.erase(this);
-}
+void ObjectInstance::unlink() { s_wrapped_gobject_list.erase(this); }
 
 const void* ObjectBase::jsobj_addr(void) const {
     if (is_prototype())
@@ -2264,8 +2260,9 @@ ObjectInstance::gobj_dispose_notify(void)
 void ObjectInstance::remove_wrapped_gobjects_if(
     const ObjectInstance::Predicate& predicate,
     const ObjectInstance::Action& action) {
-
-    for (auto link = s_wrapped_gobject_list.begin(), last = s_wrapped_gobject_list.end(); link != last;) {
+    for (auto link = s_wrapped_gobject_list.begin(),
+              last = s_wrapped_gobject_list.end();
+         link != last;) {
         if (predicate(*link)) {
             action(*link);
             link = s_wrapped_gobject_list.erase(link);

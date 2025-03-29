@@ -11,8 +11,8 @@
 #include <stdint.h>  // for uint32_t
 
 #include <functional>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include <girepository.h>
 #include <glib-object.h>

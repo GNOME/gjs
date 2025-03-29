@@ -27,6 +27,7 @@
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>  // for move
 #include <vector>
 
@@ -76,7 +77,6 @@
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
-#include "gi/utils-inl.h"
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/byteArray.h"
