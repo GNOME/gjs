@@ -18,10 +18,6 @@ stages:
   - manual
   - deploy
 
-.dummy-container-build:
-  script:
-    echo Dummy container build
-
 .gjs-alpine:
   variables:
     FDO_DISTRIBUTION_TAG: '2024-07-28.0'
@@ -29,8 +25,7 @@ stages:
 
 build-alpine-image:
   extends:
-    # - .fdo.container-build@alpine@x86_64
-    - .dummy-container-build
+    - .fdo.container-build@alpine@x86_64
     - .gjs-alpine
   stage: prepare
   variables:
