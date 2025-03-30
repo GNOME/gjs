@@ -791,12 +791,14 @@ class InfoOperations<Wrapper, InfoTag::ARG>
         return g_arg_info_is_caller_allocates(ptr());
     }
     [[nodiscard]]
-    int closure_index() const {
-        return g_arg_info_get_closure(ptr());
+    mozilla::Maybe<unsigned> closure_index() const {
+        int out = g_arg_info_get_closure(ptr());
+        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
     }
     [[nodiscard]]
-    int destroy_index() const {
-        return g_arg_info_get_destroy(ptr());
+    mozilla::Maybe<unsigned> destroy_index() const {
+        int out = g_arg_info_get_destroy(ptr());
+        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
     }
     [[nodiscard]]
     GIDirection direction() const {

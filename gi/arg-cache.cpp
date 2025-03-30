@@ -468,15 +468,15 @@ struct RegisteredInterface : HasIntrospectionInfo<TAG>, GTypedType {
 };
 
 struct Callback : Nullable, HasIntrospectionInfo<GI::InfoTag::CALLBACK> {
-    explicit Callback(const GI::CallbackInfo info, int closure_pos,
-                      int destroy_pos, GIScopeType scope)
+    explicit Callback(const GI::CallbackInfo info, Maybe<unsigned> closure_pos,
+                      Maybe<unsigned> destroy_pos, GIScopeType scope)
         : HasIntrospectionInfo(info),
-          m_closure_pos(closure_pos < 0 ? Argument::ABSENT : closure_pos),
-          m_destroy_pos(destroy_pos < 0 ? Argument::ABSENT : destroy_pos),
+          m_closure_pos(closure_pos.valueOr(Argument::ABSENT)),
+          m_destroy_pos(destroy_pos.valueOr(Argument::ABSENT)),
           m_scope(scope) {
-        g_assert(destroy_pos <= Argument::MAX_ARGS &&
+        g_assert(destroy_pos.valueOr(0) <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
-        g_assert(closure_pos <= Argument::MAX_ARGS &&
+        g_assert(closure_pos.valueOr(0) <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
     }
 
@@ -3720,16 +3720,20 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                     common_args);
                 *inc_counter_out = false;
             } else {
-                int destroy_pos = arg.destroy_index();
-                int closure_pos = arg.closure_index();
+                Maybe<unsigned> destroy_pos = arg.destroy_index();
+                Maybe<unsigned> closure_pos = arg.closure_index();
+                g_assert(destroy_pos.valueOr(0) <= Argument::MAX_ARGS &&
+                         "No more than 253 arguments allowed");
+                g_assert(closure_pos.valueOr(0) <= Argument::MAX_ARGS &&
+                         "No more than 253 arguments allowed");
 
-                if (destroy_pos >= 0)
-                    set_skip_all(destroy_pos);
+                if (destroy_pos)
+                    set_skip_all(*destroy_pos);
 
-                if (closure_pos >= 0)
-                    set_skip_all(closure_pos);
+                if (closure_pos)
+                    set_skip_all(*closure_pos);
 
-                if (destroy_pos >= 0 && closure_pos < 0) {
+                if (destroy_pos && !closure_pos) {
                     set_argument(
                         new Arg::NotIntrospectable(DESTROY_NOTIFY_NO_USER_DATA),
                         common_args);
