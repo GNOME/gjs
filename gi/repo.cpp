@@ -99,7 +99,7 @@ static bool resolve_namespace_object(JSContext* context,
         repo.enumerate_versions(ns_name.get())};
     unsigned nversions = g_list_length(versions);
     if (nversions > 1 && !version &&
-        !g_irepository_is_registered(nullptr, ns_name.get(), nullptr) &&
+        !repo.is_registered(ns_name.get(), nullptr) &&
         !JS::WarnUTF8(context,
                       "Requiring %s but it has %u versions available; use "
                       "imports.gi.versions to pick one",

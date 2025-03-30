@@ -1655,6 +1655,10 @@ class Repository {
         return g_irepository_get_version(m_ptr, ns);
     }
     [[nodiscard]]
+    bool is_registered(const char* ns, const char* version) const {
+        return g_irepository_is_registered(m_ptr, ns, version);
+    }
+    [[nodiscard]]
     mozilla::Span<const InterfaceInfo> object_get_gtype_interfaces(
         GType gtype) const {
         InterfaceInfo* interfaces;
