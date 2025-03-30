@@ -2794,8 +2794,7 @@ bool ObjectInstance::init_impl(JSContext* context, const JS::CallArgs& args,
         }
 
         JS::RootedObject props(context, &args[0].toObject());
-        if (ObjectInstance::typecheck(context, props, nullptr, G_TYPE_NONE,
-                                      GjsTypecheckNoThrow{})) {
+        if (ObjectBase::for_js(context, props)) {
             gjs_throw(context,
                       "Argument to the constructor of %s should be a plain JS "
                       "object with properties to set",
