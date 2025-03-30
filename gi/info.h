@@ -30,6 +30,7 @@
 #include <mozilla/ResultVariant.h>  // IWYU pragma: keep (see Result::Impl)
 #include <mozilla/Span.h>
 
+#include "gjs/auto.h"
 #include "gjs/gerror-result.h"
 #include "util/log.h"
 
@@ -1614,6 +1615,8 @@ class Repository {
         }
     };
 
+    static void strlist_free(GList* l) { g_list_free_full(l, g_free); }
+
  public:
     using Iterator = InfoIterator<IterableNamespace, InfoTag::BASE,
                                   &IterableNamespace::get_n_infos,
@@ -1623,6 +1626,12 @@ class Repository {
         return Iterator{{m_ptr, ns}};
     }
 
+    using AutoVersionList =
+        Gjs::AutoPointer<GList, GList, &Repository::strlist_free>;
+    [[nodiscard]]
+    AutoVersionList enumerate_versions(const char* ns) const {
+        return g_irepository_enumerate_versions(m_ptr, ns);
+    }
     [[nodiscard]]
     mozilla::Maybe<AutoEnumInfo> find_by_error_domain(GQuark domain) const {
         return detail::Pointer::nullable<InfoTag::ENUM>(
