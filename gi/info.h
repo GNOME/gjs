@@ -1642,6 +1642,10 @@ class Repository {
             g_irepository_find_by_name(m_ptr, ns, name));
     }
     [[nodiscard]]
+    const char* get_version(const char* ns) const {
+        return g_irepository_get_version(m_ptr, ns);
+    }
+    [[nodiscard]]
     mozilla::Span<const InterfaceInfo> object_get_gtype_interfaces(
         GType gtype) const {
         InterfaceInfo* interfaces;

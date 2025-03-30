@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include <girepository.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>
@@ -202,7 +201,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     GJS_JSAPI_RETURN_CONVENTION
     static bool get_version(JSContext* cx, unsigned argc, JS::Value* vp) {
         GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
-        const char *version = g_irepository_get_version(nullptr, priv->get());
+        const char* version = GI::Repository{}.get_version(priv->get());
         return gjs_string_from_utf8(cx, version, args.rval());
     }
 
