@@ -3836,12 +3836,11 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
                                          GIArgument* arg,
                                          GIDirection transfer_direction,
                                          GITransfer transfer_ownership,
-                                         GType expected_gtype,
-                                         GIBaseInfo* expected_info) {
+                                         GType expected_gtype) {
     g_assert(transfer_direction != GI_DIRECTION_INOUT &&
              "transfer_to_gi_argument() must choose between in or out");
 
-    if (!ObjectBase::typecheck(cx, obj, expected_info, expected_gtype)) {
+    if (!ObjectBase::typecheck(cx, obj, nullptr, expected_gtype)) {
         gjs_arg_unset(arg);
         return false;
     }

@@ -583,12 +583,11 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
                                         GIArgument* arg,
                                         GIDirection transfer_direction,
                                         GITransfer transfer_ownership,
-                                        GType expected_gtype,
-                                        GIBaseInfo* expected_info = nullptr) {
+                                        GType expected_gtype) {
         g_assert(transfer_direction != GI_DIRECTION_INOUT &&
                  "transfer_to_gi_argument() must choose between in or out");
 
-        if (!Base::typecheck(cx, obj, expected_info, expected_gtype)) {
+        if (!Base::typecheck(cx, obj, nullptr, expected_gtype)) {
             gjs_arg_unset(arg);
             return false;
         }

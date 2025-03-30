@@ -1417,15 +1417,23 @@ bool value_to_interface_gi_argument_internal(
                 g_type_is_a(gtype, G_TYPE_BOXED) ||
                 g_type_is_a(gtype, G_TYPE_VALUE) ||
                 g_type_is_a(gtype, G_TYPE_VARIANT)) {
+                if (!BoxedBase::typecheck(cx, obj, interface_info,
+                                          G_TYPE_NONE)) {
+                    gjs_arg_unset(arg);
+                    return false;
+                }
                 return BoxedBase::transfer_to_gi_argument(
-                    cx, obj, arg, GI_DIRECTION_IN, transfer, gtype,
-                    interface_info);
+                    cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
             }
         }
 
         if (interface_type == GI_INFO_TYPE_UNION) {
+            if (!UnionBase::typecheck(cx, obj, interface_info, G_TYPE_NONE)) {
+                gjs_arg_unset(arg);
+                return false;
+            }
             return UnionBase::transfer_to_gi_argument(
-                cx, obj, arg, GI_DIRECTION_IN, transfer, gtype, interface_info);
+                cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
         }
 
         if (gtype != G_TYPE_NONE) {
@@ -1448,8 +1456,7 @@ bool value_to_interface_gi_argument_internal(
                     if (BoxedBase::typecheck(cx, obj, interface_info, gtype,
                                              GjsTypecheckNoThrow())) {
                         return BoxedBase::transfer_to_gi_argument(
-                            cx, obj, arg, GI_DIRECTION_IN, transfer, gtype,
-                            interface_info);
+                            cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
                     }
 
                     GClosure* closure =

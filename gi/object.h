@@ -90,8 +90,7 @@ class ObjectBase
                                         GIArgument* arg,
                                         GIDirection transfer_direction,
                                         GITransfer transfer_ownership,
-                                        GType expected_gtype,
-                                        GIBaseInfo* expected_info = nullptr);
+                                        GType expected_gtype);
 
  private:
     // This is used in debug methods only.

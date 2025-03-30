@@ -2122,8 +2122,12 @@ bool BoxedInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
                                                   GI_DIRECTION_IN, m_transfer);
     }
 
+    if (!BoxedBase::typecheck(cx, object, info(), G_TYPE_NONE)) {
+        gjs_arg_unset(arg);
+        return false;
+    }
     return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
-                                              m_transfer, gtype, info());
+                                              m_transfer, gtype);
 }
 
 // Unions include ClutterEvent and GdkEvent, which occur fairly often in an
