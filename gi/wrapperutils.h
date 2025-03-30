@@ -632,8 +632,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             !priv->check_is_instance(cx, "convert to pointer"))
             return false;
 
-        if (priv->to_instance()->typecheck_impl(cx, expected_info,
-                                                expected_gtype))
+        if (priv->to_instance()->typecheck_impl(expected_info, expected_gtype))
             return true;
 
         if (expected_info) {
@@ -659,7 +658,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         if (!priv || priv->is_prototype())
             return false;
 
-        return priv->to_instance()->typecheck_impl(cx, expected_info,
+        return priv->to_instance()->typecheck_impl(expected_info,
                                                    expected_gtype);
     }
 
@@ -1133,8 +1132,8 @@ class GIWrapperInstance : public Base {
      * It's possible to override typecheck_impl() if you need an extra step in
      * the check.
      */
-    [[nodiscard]] bool typecheck_impl(JSContext*, GIBaseInfo* expected_info,
-                                      GType expected_gtype) const {
+    [[nodiscard]]
+    bool typecheck_impl(GIBaseInfo* expected_info, GType expected_gtype) const {
         if (expected_gtype != G_TYPE_NONE)
             return g_type_is_a(Base::gtype(), expected_gtype);
         else if (expected_info)

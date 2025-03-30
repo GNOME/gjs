@@ -493,8 +493,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     [[nodiscard]] const char* to_string_kind() const;
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
-                        GType expected_type) const;
+    bool typecheck_impl(GIBaseInfo* expected_info, GType expected_type) const;
 
     /* Notification callbacks */
     void gobj_dispose_notify(void);
