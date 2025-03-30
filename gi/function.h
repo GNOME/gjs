@@ -72,7 +72,8 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     bool callback_closure_inner(JSContext* cx, JS::HandleObject this_object,
                                 GObject* gobject, JS::MutableHandleValue rval,
                                 GIArgument** args, const GI::TypeInfo ret_type,
-                                int n_args, int c_args_offset, void* result);
+                                unsigned n_args, unsigned c_args_offset,
+                                void* result);
     void warn_about_illegal_js_callback(const char* when, const char* reason,
                                         bool dump_stack);
 

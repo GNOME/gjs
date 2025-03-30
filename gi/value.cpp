@@ -322,10 +322,11 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             signal_info->load_arg(i - 1, &arg_details.arg_info());
             arg_details.info->first.load_type(&arg_details.type_info());
 
-            int array_len_pos = arg_details.type_info().array_length_index();
-            if (array_len_pos != -1) {
-                args_details[array_len_pos + 1].skip = true;
-                arg_details.array_len_index_for = array_len_pos + 1;
+            Maybe<unsigned> array_len_pos =
+                arg_details.type_info().array_length_index();
+            if (array_len_pos) {
+                args_details[*array_len_pos + 1].skip = true;
+                arg_details.array_len_index_for = *array_len_pos + 1;
             }
 
             if (!needs_cleanup && arg_details.arg_info().ownership_transfer() !=
@@ -1203,7 +1204,7 @@ static bool gjs_value_from_g_value_internal(
         }
         const GI::TypeInfo type_info = introspection_info->second;
 
-        g_assert(type_info.array_length_index() == -1 &&
+        g_assert(!type_info.array_length_index() &&
                  "Check gjs_value_from_array_and_length_values() before "
                  "calling gjs_value_from_g_value_internal()");
 

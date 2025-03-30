@@ -1076,15 +1076,15 @@ struct ByteArrayInOut : ByteArrayOut {
 };
 
 struct ExplicitArrayBase : BasicTypeContainerReturn, ExplicitArray {
-    ExplicitArrayBase(int length_pos, GITypeTag length_tag,
+    ExplicitArrayBase(unsigned length_pos, GITypeTag length_tag,
                       GIDirection length_direction)
         : BasicTypeContainerReturn(length_tag),
           ExplicitArray(length_pos, length_direction) {}
 };
 
 struct CArrayIn : ExplicitArrayBase, HasTypeInfo {
-    CArrayIn(const GI::TypeInfo type_info, int length_pos, GITypeTag length_tag,
-             GIDirection length_direction)
+    CArrayIn(const GI::TypeInfo type_info, unsigned length_pos,
+             GITypeTag length_tag, GIDirection length_direction)
         : ExplicitArrayBase(length_pos, length_tag, length_direction),
           HasTypeInfo(type_info) {}
 
@@ -1101,7 +1101,7 @@ struct CArrayIn : ExplicitArrayBase, HasTypeInfo {
 // Positioned must come before HasTypeInfo for struct packing reasons, otherwise
 // this could inherit from CArrayIn
 struct CArrayInOut : ExplicitArrayBase, Positioned, HasTypeInfo {
-    CArrayInOut(const GI::TypeInfo type_info, int length_pos,
+    CArrayInOut(const GI::TypeInfo type_info, unsigned length_pos,
                 GITypeTag length_tag, GIDirection length_direction)
         : ExplicitArrayBase(length_pos, length_tag, length_direction),
           HasTypeInfo(type_info) {}
@@ -1472,7 +1472,7 @@ struct CallbackIn : SkipAll, Callback {
 };
 
 struct BasicExplicitCArrayOut : ExplicitArrayBase, BasicCArray, Positioned {
-    explicit BasicExplicitCArrayOut(GITypeTag element_tag, int length_pos,
+    explicit BasicExplicitCArrayOut(GITypeTag element_tag, unsigned length_pos,
                                     GITypeTag length_tag,
                                     GIDirection length_direction)
         : ExplicitArrayBase(length_pos, length_tag, length_direction),
@@ -2678,7 +2678,7 @@ void ArgsCache::set_skip_all(uint8_t index, const char* name) {
 
 void ArgsCache::init_out_array_length_argument(const GI::ArgInfo length_arg,
                                                GjsArgumentFlags flags,
-                                               int length_pos) {
+                                               unsigned length_pos) {
     // Even if we skip the length argument most of time, we need to do some
     // basic initialization here.
     g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
@@ -2694,8 +2694,8 @@ void ArgsCache::set_array_argument(const GI::CallableInfo callable,
                                    uint8_t gi_index,
                                    const GI::TypeInfo type_info,
                                    GIDirection direction, const GI::ArgInfo arg,
-                                   GjsArgumentFlags flags, int length_pos) {
-    g_assert(length_pos >= 0);
+                                   GjsArgumentFlags flags,
+                                   unsigned length_pos) {
     g_assert(type_info.array_type() == GI_ARRAY_TYPE_C);
 
     GI::AutoTypeInfo element_type{type_info.element_type()};
@@ -2753,8 +2753,7 @@ void ArgsCache::set_array_argument(const GI::CallableInfo callable,
 
 void ArgsCache::set_array_return(const GI::CallableInfo callable,
                                  const GI::TypeInfo type_info,
-                                 GjsArgumentFlags flags, int length_pos) {
-    g_assert(length_pos >= 0);
+                                 GjsArgumentFlags flags, unsigned length_pos) {
     g_assert(type_info.array_type() == GI_ARRAY_TYPE_C);
 
     GI::AutoTypeInfo element_type{type_info.element_type()};
@@ -2858,9 +2857,9 @@ void ArgsCache::build_return(const GI::CallableInfo callable,
             }
 
         case GI_TYPE_TAG_ARRAY: {
-            int length_pos = type_info.array_length_index();
-            if (length_pos >= 0) {
-                set_array_return(callable, type_info, flags, length_pos);
+            Maybe<unsigned> length_pos = type_info.array_length_index();
+            if (length_pos) {
+                set_array_return(callable, type_info, flags, *length_pos);
                 return;
             }
 
@@ -3751,17 +3750,17 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
 
     if (type_tag == GI_TYPE_TAG_ARRAY &&
         type_info.array_type() == GI_ARRAY_TYPE_C) {
-        int length_pos = type_info.array_length_index();
+        Maybe<unsigned> length_pos = type_info.array_length_index();
 
-        if (length_pos >= 0) {
-            Argument* cached_length = argument(length_pos);
+        if (length_pos) {
+            Argument* cached_length = argument(*length_pos);
             bool skip_length = cached_length && !(cached_length->skip_in() &&
                                                   cached_length->skip_out());
 
             set_array_argument(callable, gi_index, type_info, direction, arg,
-                               flags, length_pos);
+                               flags, *length_pos);
 
-            if (length_pos < gi_index && skip_length) {
+            if (*length_pos < gi_index && skip_length) {
                 // we already collected length_pos, remove it
                 *inc_counter_out = false;
             }

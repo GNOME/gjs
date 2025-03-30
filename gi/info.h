@@ -678,8 +678,9 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
 
  public:
     [[nodiscard]]
-    int array_length_index() const {
-        return g_type_info_get_array_length(ptr());
+    mozilla::Maybe<unsigned> array_length_index() const {
+        int out = g_type_info_get_array_length(ptr());
+        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
     }
     [[nodiscard]]
     mozilla::Maybe<size_t> array_fixed_size() const {
@@ -849,14 +850,16 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
         return ArgsIterator{ptr()};
     }
     [[nodiscard]]
-    AutoArgInfo arg(int n) const {
+    AutoArgInfo arg(unsigned n) const {
         g_assert(n < n_args());
         return detail::Pointer::to_owned<InfoTag::ARG>(
             g_callable_info_get_arg(ptr(), n));
     }
     [[nodiscard]]
-    int n_args() const {
-        return g_callable_info_get_n_args(ptr());
+    unsigned n_args() const {
+        int out = g_callable_info_get_n_args(ptr());
+        g_assert(out >= 0 && "Bad return from g_callable_info_get_n_args()");
+        return out;
     }
 
     [[nodiscard]]
@@ -895,7 +898,7 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
     bool is_method() const {
         return g_callable_info_is_method(ptr());
     }
-    void load_arg(int n, StackArgInfo* arg) const {
+    void load_arg(unsigned n, StackArgInfo* arg) const {
         g_assert(n < n_args());
         g_callable_info_load_arg(ptr(), n, detail::Pointer::get_from(*arg));
     }

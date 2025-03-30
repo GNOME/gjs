@@ -918,7 +918,7 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
 
     case GI_TYPE_TAG_ARRAY:
         if (type_info.array_type() == GI_ARRAY_TYPE_C) {
-            if (type_info.array_length_index() < 0)
+            if (!type_info.array_length_index())
                 return sizeof(void*);
 
             GI::AutoTypeInfo element_type{type_info.element_type()};
@@ -3393,7 +3393,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
                     gjs_arg_get<void*>(arg));
             } else {
                 /* arrays with length are handled outside of this function */
-                g_assert(type_info.array_length_index() == -1 &&
+                g_assert(!type_info.array_length_index() &&
                          "Use gjs_value_from_explicit_array() for arrays with "
                          "length param");
                 return gjs_array_from_fixed_size_array(context, value_p,

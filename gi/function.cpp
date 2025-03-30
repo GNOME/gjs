@@ -328,8 +328,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     JSAutoRealm ar(context, callable());
 
-    int n_args = m_info.n_args();
-    g_assert(n_args >= 0);
+    unsigned n_args = m_info.n_args();
 
     struct AutoCallbackData {
         AutoCallbackData(GjsCallbackTrampoline* trampoline,
@@ -352,7 +351,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     AutoCallbackData callback_data(this, gjs);
     JS::RootedObject this_object(context);
-    int c_args_offset = 0;
+    unsigned c_args_offset = 0;
     GObject* gobj = nullptr;
     if (m_is_vfunc) {
         gobj = G_OBJECT(gjs_arg_get<GObject*>(args[0]));
@@ -423,8 +422,8 @@ inline GIArgument* get_argument_for_arg_info(const GI::ArgInfo arg_info,
 bool GjsCallbackTrampoline::callback_closure_inner(
     JSContext* context, JS::HandleObject this_object, GObject* gobject,
     JS::MutableHandleValue rval, GIArgument** args, const GI::TypeInfo ret_type,
-    int n_args, int c_args_offset, void* result) {
-    int n_outargs = 0;
+    unsigned n_args, unsigned c_args_offset, void* result) {
+    unsigned n_outargs = 0;
     JS::RootedValueVector jsargs(context);
 
     if (!jsargs.reserve(n_args))
@@ -434,7 +433,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     bool ret_type_is_void = ret_tag == GI_TYPE_TAG_VOID;
     bool in_args_to_cleanup = false;
 
-    for (int i = 0, n_jsargs = 0; i < n_args; i++) {
+    for (unsigned i = 0, n_jsargs = 0; i < n_args; i++) {
         GI::StackArgInfo arg_info;
         GI::StackTypeInfo type_info;
         GjsParamType param_type;
@@ -463,7 +462,11 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             case PARAM_SKIPPED:
                 continue;
             case PARAM_ARRAY: {
-                int array_length_pos = type_info.array_length_index();
+                // In initialize(), we already don't store PARAM_ARRAY for non-
+                // fixed-size arrays
+                unsigned array_length_pos =
+                    type_info.array_length_index().value();
+
                 GI::StackArgInfo array_length_arg;
                 GI::StackTypeInfo arg_type_info;
 
@@ -527,7 +530,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     } else if (n_outargs == 1 && ret_type_is_void) {
         /* void return value, one out args. Should
          * be a single return value. */
-        for (int i = 0; i < n_args; i++) {
+        for (unsigned i = 0; i < n_args; i++) {
             GI::StackArgInfo arg_info;
             m_info.load_arg(i, &arg_info);
             if (arg_info.direction() == GI_DIRECTION_IN)
@@ -594,7 +597,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             elem_idx++;
         }
 
-        for (int i = 0; i < n_args; i++) {
+        for (unsigned i = 0; i < n_args; i++) {
             GI::StackArgInfo arg_info;
             m_info.load_arg(i, &arg_info);
             if (arg_info.direction() == GI_DIRECTION_IN)
@@ -616,7 +619,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     if (!in_args_to_cleanup)
         return true;
 
-    for (int i = 0; i < n_args; i++) {
+    for (unsigned i = 0; i < n_args; i++) {
         GI::StackArgInfo arg_info;
         m_info.load_arg(i, &arg_info);
         GITransfer transfer = arg_info.ownership_transfer();
@@ -737,8 +740,8 @@ bool GjsCallbackTrampoline::initialize() {
 
     /* Analyze param types and directions, similarly to
      * init_cached_function_data */
-    int n_param_types = m_info.n_args();
-    for (int i = 0; i < n_param_types; i++) {
+    unsigned n_param_types = m_info.n_args();
+    for (unsigned i = 0; i < n_param_types; i++) {
         GI::StackArgInfo arg_info;
         GI::StackTypeInfo type_info;
 
@@ -766,14 +769,14 @@ bool GjsCallbackTrampoline::initialize() {
             }
         } else if (type_tag == GI_TYPE_TAG_ARRAY) {
             if (type_info.array_type() == GI_ARRAY_TYPE_C) {
-                int array_length_pos = type_info.array_length_index();
-
-                if (array_length_pos < 0)
+                Maybe<unsigned> array_length_pos =
+                    type_info.array_length_index();
+                if (!array_length_pos)
                     continue;
 
-                if (array_length_pos < n_param_types) {
+                if (*array_length_pos < n_param_types) {
                     GI::StackArgInfo length_arg_info;
-                    m_info.load_arg(array_length_pos, &length_arg_info);
+                    m_info.load_arg(*array_length_pos, &length_arg_info);
 
                     if (length_arg_info.direction() != direction) {
                         gjs_throw(context(),
@@ -784,7 +787,7 @@ bool GjsCallbackTrampoline::initialize() {
                         return false;
                     }
 
-                    m_param_types[array_length_pos] = PARAM_SKIPPED;
+                    m_param_types[*array_length_pos] = PARAM_SKIPPED;
                     m_param_types[i] = PARAM_ARRAY;
                 }
             }

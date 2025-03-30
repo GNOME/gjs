@@ -546,8 +546,8 @@ bool BoxedInstance::field_getter_impl(JSContext* cx, JSObject* obj,
     }
 
     if (type_info.tag() == GI_TYPE_TAG_ARRAY &&
-        type_info.array_length_index() != -1) {
-        int length_field_ix = type_info.array_length_index();
+        type_info.array_length_index()) {
+        unsigned length_field_ix = type_info.array_length_index().value();
         Maybe<GI::AutoFieldInfo> length_field_info{
             get_field_info(cx, length_field_ix)};
         if (!length_field_info) {

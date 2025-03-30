@@ -223,13 +223,13 @@ struct ArgsCache {
 
     void set_array_argument(const GI::CallableInfo, uint8_t gi_index,
                             const GI::TypeInfo, GIDirection, const GI::ArgInfo,
-                            GjsArgumentFlags, int length_pos);
+                            GjsArgumentFlags, unsigned length_pos);
 
     void set_array_return(const GI::CallableInfo, const GI::TypeInfo,
-                          GjsArgumentFlags, int length_pos);
+                          GjsArgumentFlags, unsigned length_pos);
 
     void init_out_array_length_argument(const GI::ArgInfo, GjsArgumentFlags,
-                                        int length_pos);
+                                        unsigned length_pos);
 
     template <typename T>
     constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);
