@@ -1417,8 +1417,7 @@ bool value_to_interface_gi_argument_internal(
                 g_type_is_a(gtype, G_TYPE_BOXED) ||
                 g_type_is_a(gtype, G_TYPE_VALUE) ||
                 g_type_is_a(gtype, G_TYPE_VARIANT)) {
-                if (!BoxedBase::typecheck(cx, obj, interface_info,
-                                          G_TYPE_NONE)) {
+                if (!BoxedBase::typecheck(cx, obj, interface_info)) {
                     gjs_arg_unset(arg);
                     return false;
                 }
@@ -1428,7 +1427,7 @@ bool value_to_interface_gi_argument_internal(
         }
 
         if (interface_type == GI_INFO_TYPE_UNION) {
-            if (!UnionBase::typecheck(cx, obj, interface_info, G_TYPE_NONE)) {
+            if (!UnionBase::typecheck(cx, obj, interface_info)) {
                 gjs_arg_unset(arg);
                 return false;
             }
@@ -1453,8 +1452,10 @@ bool value_to_interface_gi_argument_internal(
 
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    if (BoxedBase::typecheck(cx, obj, interface_info, gtype,
-                                             GjsTypecheckNoThrow())) {
+                    if (BoxedBase::typecheck(cx, obj, interface_info,
+                                             GjsTypecheckNoThrow{}) &&
+                        BoxedBase::typecheck(cx, obj, gtype,
+                                             GjsTypecheckNoThrow{})) {
                         return BoxedBase::transfer_to_gi_argument(
                             cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
                     }
@@ -1487,8 +1488,8 @@ bool value_to_interface_gi_argument_internal(
             } else if (G_TYPE_IS_INTERFACE(gtype)) {
                 // Could be a GObject interface that's missing a prerequisite,
                 // or could be a fundamental
-                if (ObjectBase::typecheck(cx, obj, nullptr, gtype,
-                                          GjsTypecheckNoThrow())) {
+                if (ObjectBase::typecheck(cx, obj, gtype,
+                                          GjsTypecheckNoThrow{})) {
                     return ObjectBase::transfer_to_gi_argument(
                         cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
                 }

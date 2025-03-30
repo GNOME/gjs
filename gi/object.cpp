@@ -143,20 +143,6 @@ const void* ObjectBase::jsobj_addr(void) const {
     return to_instance()->m_wrapper.debug_addr();
 }
 
-// Overrides GIWrapperBase::typecheck(). We only override the overload that
-// throws, so that we can throw our own more informative error.
-bool ObjectBase::typecheck(JSContext* cx, JS::HandleObject obj,
-                           GIObjectInfo* expected_info, GType expected_gtype) {
-    if (GIWrapperBase::typecheck(cx, obj, expected_info, expected_gtype))
-        return true;
-
-    gjs_throw(cx,
-              "This JS object wrapper isn't wrapping a GObject."
-              " If this is a custom subclass, are you sure you chained"
-              " up to the parent _init properly?");
-    return false;
-}
-
 bool ObjectInstance::check_gobject_disposed_or_finalized(
     const char* for_what) const {
     if (!m_gobj_disposed)
@@ -3839,7 +3825,7 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
     g_assert(transfer_direction != GI_DIRECTION_INOUT &&
              "transfer_to_gi_argument() must choose between in or out");
 
-    if (!ObjectBase::typecheck(cx, obj, nullptr, expected_gtype)) {
+    if (!ObjectBase::typecheck(cx, obj, expected_gtype)) {
         gjs_arg_unset(arg);
         return false;
     }
@@ -3865,14 +3851,6 @@ bool ObjectBase::transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
     }
 
     return true;
-}
-
-// Overrides GIWrapperInstance::typecheck_impl()
-bool ObjectInstance::typecheck_impl(GIBaseInfo* expected_info,
-                                    GType expected_type) const {
-    g_assert(m_gobj_disposed || !m_ptr ||
-             gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
-    return GIWrapperInstance::typecheck_impl(expected_info, expected_type);
 }
 
 GJS_JSAPI_RETURN_CONVENTION

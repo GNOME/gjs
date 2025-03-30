@@ -2122,7 +2122,7 @@ bool BoxedInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
                                                   GI_DIRECTION_IN, m_transfer);
     }
 
-    if (!BoxedBase::typecheck(cx, object, info(), G_TYPE_NONE)) {
+    if (info() && !BoxedBase::typecheck(cx, object, info())) {
         gjs_arg_unset(arg);
         return false;
     }
@@ -2214,8 +2214,7 @@ bool InterfaceIn::in(JSContext* cx, GjsFunctionCallState* state,
 
     // Could be a GObject interface that's missing a prerequisite,
     // or could be a fundamental
-    if (ObjectBase::typecheck(cx, object, nullptr, gtype,
-                              GjsTypecheckNoThrow())) {
+    if (ObjectBase::typecheck(cx, object, gtype, GjsTypecheckNoThrow{})) {
         return ObjectBase::transfer_to_gi_argument(
             cx, object, arg, GI_DIRECTION_IN, m_transfer, gtype);
     }

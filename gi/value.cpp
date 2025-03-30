@@ -672,7 +672,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
             /* nothing to do */
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
-            if (!ObjectBase::typecheck(context, obj, nullptr, gtype) ||
+            if (!ObjectBase::typecheck(context, obj, gtype) ||
                 !ObjectBase::to_c_ptr(context, obj, &gobj))
                 return false;
             if (!gobj)
@@ -799,11 +799,11 @@ gjs_value_to_g_value_internal(JSContext      *context,
                    loading the typelib.
                 */
                 if (!gboxed) {
-                    if (UnionBase::typecheck(context, obj, nullptr, gtype,
-                                             GjsTypecheckNoThrow())) {
+                    if (UnionBase::typecheck(context, obj, gtype,
+                                             GjsTypecheckNoThrow{})) {
                         gboxed = UnionBase::to_c_ptr(context, obj);
                     } else {
-                        if (!BoxedBase::typecheck(context, obj, nullptr, gtype))
+                        if (!BoxedBase::typecheck(context, obj, gtype))
                             return false;
 
                         gboxed = BoxedBase::to_c_ptr(context, obj);
@@ -828,7 +828,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (!BoxedBase::typecheck(context, obj, nullptr, G_TYPE_VARIANT))
+            if (!BoxedBase::typecheck(context, obj, G_TYPE_VARIANT))
                 return false;
 
             variant = BoxedBase::to_c_ptr<GVariant>(context, obj);
