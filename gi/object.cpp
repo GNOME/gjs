@@ -126,7 +126,11 @@ bool ObjectBase::is_custom_js_class() {
     return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
 }
 
-void ObjectInstance::link() { s_wrapped_gobject_list.insert(this); }
+
+void ObjectInstance::link() {
+    auto [_, done] = s_wrapped_gobject_list.insert(this);
+    g_assert(done);
+}
 
 void ObjectInstance::unlink() { s_wrapped_gobject_list.erase(this); }
 
@@ -3053,7 +3057,8 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
 
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
-    m_closures.insert(closure);
+    auto [_, done] = m_closures.insert(closure);
+    g_assert(done);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
 
