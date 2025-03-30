@@ -682,8 +682,9 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
         return g_type_info_get_array_length(ptr());
     }
     [[nodiscard]]
-    int array_fixed_size() const {
-        return g_type_info_get_array_fixed_size(ptr());
+    mozilla::Maybe<size_t> array_fixed_size() const {
+        int out = g_type_info_get_array_fixed_size(ptr());
+        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
     }
     [[nodiscard]]
     GIArrayType array_type() const {

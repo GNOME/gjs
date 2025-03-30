@@ -324,12 +324,15 @@ struct GPtrArrayContainer {
 };
 
 struct FixedSizeArray {
-    explicit FixedSizeArray(const GI::TypeInfo type_info)
-        : m_fixed_size(type_info.array_fixed_size()) {
-        g_assert(m_fixed_size >= 0);
+    explicit FixedSizeArray(const GI::TypeInfo type_info) {
+        size_t fixed_size = type_info.array_fixed_size().value();
+        g_assert(
+            fixed_size <= UINT32_MAX &&
+            "4294967295 fixed array elements ought to be enough for anybody");
+        m_fixed_size = fixed_size;
     }
 
-    int m_fixed_size = -1;
+    uint32_t m_fixed_size = -1;
 
     bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
             const char* arg_name, GjsArgumentFlags flags,
@@ -351,7 +354,7 @@ struct FixedSizeArray {
 
     void release_contents(GIArgument* arg) {
         char** array = gjs_arg_get<char**>(arg);
-        for (int ix = 0; ix < m_fixed_size; ix++)
+        for (size_t ix = 0; ix < m_fixed_size; ix++)
             g_free(array[ix]);
     }
 
@@ -1668,7 +1671,7 @@ struct FixedSizeArrayIn : FallbackIn {
         GITransfer transfer =
             state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
 
-        int size = m_type_info.array_fixed_size();
+        size_t size = m_type_info.array_fixed_size().value();
         return gjs_gi_argument_release_in_array(cx, transfer, m_type_info, size,
                                                 in_arg);
     }
@@ -1681,7 +1684,7 @@ struct FixedSizeArrayInOut : FallbackInOut {
         GITransfer transfer =
             state->call_completed() ? m_transfer : GI_TRANSFER_NOTHING;
         GIArgument* original_out_arg = &state->inout_original_cvalue(m_arg_pos);
-        int size = m_type_info.array_fixed_size();
+        size_t size = m_type_info.array_fixed_size().value();
         if (!gjs_gi_argument_release_in_array(cx, transfer, m_type_info, size,
                                               original_out_arg))
             return false;
@@ -2875,7 +2878,7 @@ void ArgsCache::build_return(const GI::CallableInfo callable,
                             transfer, flags);
                         return;
                     }
-                    if (type_info.array_fixed_size() >= 0) {
+                    if (type_info.array_fixed_size()) {
                         set_return(
                             new Arg::BasicCFixedSizeArrayReturn(type_info),
                             transfer, flags);
@@ -3264,7 +3267,7 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index,
                             common_args);
                         return;
                     }
-                    if (type_info.array_fixed_size() >= 0) {
+                    if (type_info.array_fixed_size()) {
                         set_argument(new Arg::BasicCFixedSizeArrayIn(type_info),
                                      common_args);
                         return;
@@ -3278,7 +3281,7 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index,
                                  common_args);
                     return;
                 }
-                if (type_info.array_fixed_size() >= 0) {
+                if (type_info.array_fixed_size()) {
                     set_argument(new Arg::FixedSizeArrayIn(type_info),
                                  common_args);
                     return;
@@ -3383,7 +3386,7 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index,
                     return;
                 }
 
-                if (type_info.array_fixed_size() >= 0) {
+                if (type_info.array_fixed_size()) {
                     set_argument(new Arg::BasicCFixedSizeArrayOut(type_info),
                                  common_args);
                     return;
@@ -3426,7 +3429,7 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index,
                     return;
                 }
 
-                if (type_info.array_fixed_size() >= 0) {
+                if (type_info.array_fixed_size()) {
                     set_argument(new Arg::BasicCFixedSizeArrayOut(type_info),
                                  common_args);
                     return;
@@ -3538,7 +3541,7 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index,
                                  common_args);
                     return;
                 }
-                if (type_info.array_fixed_size() >= 0) {
+                if (type_info.array_fixed_size()) {
                     if (type_info.element_type().is_basic()) {
                         set_argument(
                             new Arg::BasicCFixedSizeArrayInOut(type_info),
@@ -3650,14 +3653,14 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         if (type_tag == GI_TYPE_TAG_ARRAY) {
             switch (type_info.array_type()) {
                 case GI_ARRAY_TYPE_C: {
-                    int n_elements = type_info.array_fixed_size();
-                    if (n_elements <= 0)
+                    Maybe<size_t> n_elements = type_info.array_fixed_size();
+                    if (!n_elements || *n_elements == 0)
                         break;
 
                     GI::AutoTypeInfo element_type{type_info.element_type()};
                     size = gjs_type_get_element_size(element_type.tag(),
                                                      element_type);
-                    size *= n_elements;
+                    size *= *n_elements;
                     break;
                 }
                 default:
