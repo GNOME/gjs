@@ -862,9 +862,7 @@ static void* get_return_ffi_pointer_from_gi_argument(
         case GI_TYPE_TAG_DOUBLE:
             return &gjs_arg_member<double>(return_value);
         case GI_TYPE_TAG_INTERFACE: {
-            GIInfoType info_type = return_tag->interface_type();
-            if (info_type == GI_INFO_TYPE_ENUM ||
-                info_type == GI_INFO_TYPE_FLAGS)
+            if (return_tag->is_enum_or_flags_interface())
                 return &gjs_arg_member<Gjs::Tag::UnsignedEnum>(return_value);
             [[fallthrough]];
         }
