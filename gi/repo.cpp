@@ -363,12 +363,11 @@ _gjs_log_info_usage(GIBaseInfo *info)
 
         container = g_base_info_get_container(info);
 
-        gjs_debug_gi_usage("{ GI_INFO_TYPE_%s, \"%s\", \"%s\", \"%s\", %s },",
-                           gjs_info_type_name(info_type),
+        gjs_debug_gi_usage("{ GIInfoType %s, \"%s\", \"%s\", \"%s\", %s },",
+                           g_info_type_to_string(info_type),
                            g_base_info_get_namespace(info),
                            container ? g_base_info_get_name(container) : "",
-                           g_base_info_get_name(info),
-                           details);
+                           g_base_info_get_name(info), details);
         g_free(details);
     }
 }
@@ -481,10 +480,10 @@ gjs_define_info(JSContext       *context,
     case GI_INFO_TYPE_TYPE:
     case GI_INFO_TYPE_UNRESOLVED:
     default:
-        gjs_throw(context, "API of type %s not implemented, cannot define %s.%s",
-                  gjs_info_type_name(g_base_info_get_type(info)),
-                  g_base_info_get_namespace(info),
-                  g_base_info_get_name(info));
+        gjs_throw(context,
+                  "API of type %s not implemented, cannot define %s.%s",
+                  g_info_type_to_string(g_base_info_get_type(info)),
+                  g_base_info_get_namespace(info), g_base_info_get_name(info));
         return false;
     }
 
@@ -510,8 +509,8 @@ gjs_lookup_namespace_object(JSContext  *context,
     ns = g_base_info_get_namespace(info);
     if (ns == NULL) {
         gjs_throw(context, "%s '%s' does not have a namespace",
-                     gjs_info_type_name(g_base_info_get_type(info)),
-                     g_base_info_get_name(info));
+                  g_info_type_to_string(g_base_info_get_type(info)),
+                  g_base_info_get_name(info));
 
         return NULL;
     }
@@ -621,56 +620,6 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
 
     g_assert(gjs_global_get_type(global) == GjsGlobalType::DEFAULT);
     return lookup_namespace(cx, global, ns_name);
-}
-
-const char*
-gjs_info_type_name(GIInfoType type)
-{
-    switch (type) {
-    case GI_INFO_TYPE_INVALID:
-        return "INVALID";
-    case GI_INFO_TYPE_FUNCTION:
-        return "FUNCTION";
-    case GI_INFO_TYPE_CALLBACK:
-        return "CALLBACK";
-    case GI_INFO_TYPE_STRUCT:
-        return "STRUCT";
-    case GI_INFO_TYPE_BOXED:
-        return "BOXED";
-    case GI_INFO_TYPE_ENUM:
-        return "ENUM";
-    case GI_INFO_TYPE_FLAGS:
-        return "FLAGS";
-    case GI_INFO_TYPE_OBJECT:
-        return "OBJECT";
-    case GI_INFO_TYPE_INTERFACE:
-        return "INTERFACE";
-    case GI_INFO_TYPE_CONSTANT:
-        return "CONSTANT";
-    case GI_INFO_TYPE_UNION:
-        return "UNION";
-    case GI_INFO_TYPE_VALUE:
-        return "VALUE";
-    case GI_INFO_TYPE_SIGNAL:
-        return "SIGNAL";
-    case GI_INFO_TYPE_VFUNC:
-        return "VFUNC";
-    case GI_INFO_TYPE_PROPERTY:
-        return "PROPERTY";
-    case GI_INFO_TYPE_FIELD:
-        return "FIELD";
-    case GI_INFO_TYPE_ARG:
-        return "ARG";
-    case GI_INFO_TYPE_TYPE:
-        return "TYPE";
-    case GI_INFO_TYPE_UNRESOLVED:
-        return "UNRESOLVED";
-    case GI_INFO_TYPE_INVALID_0:
-        g_assert_not_reached();
-        return "----INVALID0----";
-    default:
-      return "???";
-    }
 }
 
 char*

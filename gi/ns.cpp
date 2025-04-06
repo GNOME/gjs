@@ -157,7 +157,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
         gjs_debug(GJS_DEBUG_GNAMESPACE,
                   "Found info type %s for '%s' in namespace '%s'",
-                  gjs_info_type_name(info.type()), info.name(), info.ns());
+                  g_info_type_to_string(info.type()), info.name(), info.ns());
 
 #if GLIB_CHECK_VERSION(2, 79, 2)
         static const char* unix_types_exceptions[] = {
