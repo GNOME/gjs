@@ -231,9 +231,11 @@ template <typename T>
 using AutoCppPointer = AutoPointer<T, T, AutoPointerDeleter<T>>;
 
 template <typename T = GTypeClass>
-struct AutoTypeClass : AutoPointer<T, void, &g_type_class_unref> {
-    AutoTypeClass(gpointer ptr = nullptr)  // NOLINT(runtime/explicit)
+class AutoTypeClass : public AutoPointer<T, void, &g_type_class_unref> {
+    explicit AutoTypeClass(void* ptr = nullptr)
         : AutoPointer<T, void, g_type_class_unref>(static_cast<T*>(ptr)) {}
+
+ public:
     explicit AutoTypeClass(GType gtype)
         : AutoTypeClass(g_type_class_ref(gtype)) {}
 };

@@ -3766,7 +3766,7 @@ static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
         vfunc_info.container<GI::InfoTag::REGISTERED_TYPE>().value();
     GType ancestor_gtype = ancestor_info.gtype();
 
-    Gjs::AutoTypeClass<GTypeClass> implementor_class{implementor_gtype};
+    Gjs::AutoTypeClass implementor_class{implementor_gtype};
     if (auto iface_info = ancestor_info.as<GI::InfoTag::INTERFACE>()) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
