@@ -54,11 +54,13 @@ jasmine_tests = [
 
 if not get_option('skip_gtk_tests')
     jasmine_tests += [
-        'Gtk3',
         'GObjectDestructionAccess',
         'LegacyGtk',
     ]
 
+    if have_gtk3
+        jasmine_tests += 'Gtk3'
+    endif
     if have_gtk4
         jasmine_tests += 'Gtk4'
     endif
