@@ -341,6 +341,12 @@ describe('Gtk 4', function () {
             const surface = GjsTestTools.steal_saved();
             expect(surface.is_destroyed()).toBeFalsy();
         });
+
+        it('private type implementing two interfaces is introspected correctly', function () {
+            const pages = new Gtk.Notebook().pages;  // implements Gio.ListModel and Gtk.SelectionModel
+            expect(pages.get_n_items()).toBe(0);
+            expect(pages.get_selection().get_size()).toBe(0);
+        });
     });
 
     describe('template signal', function () {

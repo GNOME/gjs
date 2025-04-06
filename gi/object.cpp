@@ -1874,8 +1874,10 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
             }
         }
 
-        return resolve_on_interface_prototype(cx, iface_info, id, obj,
-                                              resolved);
+        if (!resolve_on_interface_prototype(cx, iface_info, id, obj, resolved))
+            return false;
+        if (*resolved)
+            return true;
     }
 
     *resolved = false;
