@@ -2122,8 +2122,12 @@ bool BoxedInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
                                                   GI_DIRECTION_IN, m_transfer);
     }
 
+    if (info() && !BoxedBase::typecheck(cx, object, info())) {
+        gjs_arg_unset(arg);
+        return false;
+    }
     return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
-                                              m_transfer, gtype, info());
+                                              m_transfer, gtype);
 }
 
 // Unions include ClutterEvent and GdkEvent, which occur fairly often in an
@@ -2210,8 +2214,7 @@ bool InterfaceIn::in(JSContext* cx, GjsFunctionCallState* state,
 
     // Could be a GObject interface that's missing a prerequisite,
     // or could be a fundamental
-    if (ObjectBase::typecheck(cx, object, nullptr, gtype,
-                              GjsTypecheckNoThrow())) {
+    if (ObjectBase::typecheck(cx, object, gtype, GjsTypecheckNoThrow{})) {
         return ObjectBase::transfer_to_gi_argument(
             cx, object, arg, GI_DIRECTION_IN, m_transfer, gtype);
     }
@@ -2520,32 +2523,13 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::ByteArrayReturn> ||
                   std::is_same_v<T, Arg::ErrorIn> ||
                   std::is_same_v<T, Arg::GdkAtomIn> ||
-                  std::is_same_v<T, Arg::NumericIn<int>>)
+                  std::is_same_v<T, Arg::NumericIn<int>> ||
+                  std::is_same_v<T, Arg::NumericInOut<int>> ||
+                  std::is_same_v<T, Arg::NumericOut<int>> ||
+                  std::is_same_v<T, Arg::NumericReturn<int>> ||
+                  std::is_same_v<T, Arg::SimpleOut> ||
+                  std::is_same_v<T, Arg::SkipAll>)
         return 24;
-    if constexpr (std::is_same_v<T, Arg::BasicCFixedSizeArrayIn> ||
-                  std::is_same_v<T, Arg::BasicCFixedSizeArrayInOut> ||
-                  std::is_same_v<T, Arg::BasicCFixedSizeArrayOut> ||
-                  std::is_same_v<T, Arg::BasicCFixedSizeArrayReturn> ||
-                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayIn> ||
-                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayInOut> ||
-                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayOut> ||
-                  std::is_same_v<T, Arg::BasicCZeroTerminatedArrayReturn> ||
-                  std::is_same_v<T, Arg::BasicGArrayIn> ||
-                  std::is_same_v<T, Arg::BasicGArrayInOut> ||
-                  std::is_same_v<T, Arg::BasicGArrayOut> ||
-                  std::is_same_v<T, Arg::BasicGArrayReturn> ||
-                  std::is_same_v<T, Arg::BasicGListIn> ||
-                  std::is_same_v<T, Arg::BasicGListInOut> ||
-                  std::is_same_v<T, Arg::BasicGListOut> ||
-                  std::is_same_v<T, Arg::BasicGListReturn> ||
-                  std::is_same_v<T, Arg::BasicGPtrArrayIn> ||
-                  std::is_same_v<T, Arg::BasicGPtrArrayInOut> ||
-                  std::is_same_v<T, Arg::BasicGPtrArrayOut> ||
-                  std::is_same_v<T, Arg::BasicGPtrArrayReturn> ||
-                  std::is_same_v<T, Arg::BasicTypeTransferableInOut> ||
-                  std::is_same_v<T, Arg::BasicTypeTransferableOut> ||
-                  std::is_same_v<T, Arg::BasicTypeTransferableReturn>)
-        return 32;
     if constexpr (std::is_same_v<T, Arg::BasicExplicitCArrayIn> ||
                   std::is_same_v<T, Arg::BasicExplicitCArrayInOut> ||
                   std::is_same_v<T, Arg::BasicExplicitCArrayOut> ||
@@ -2554,16 +2538,43 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::BasicGHashOut> ||
                   std::is_same_v<T, Arg::BasicGHashReturn> ||
                   std::is_same_v<T, Arg::BoxedIn> ||
-                  std::is_same_v<T, Arg::ObjectIn>)
+                  std::is_same_v<T, Arg::FundamentalIn> ||
+                  std::is_same_v<T, Arg::GBytesIn> ||
+                  std::is_same_v<T, Arg::GBytesInTransferNone> ||
+                  std::is_same_v<T, Arg::GClosureIn> ||
+                  std::is_same_v<T, Arg::GClosureInTransferNone> ||
+                  std::is_same_v<T, Arg::GValueIn> ||
+                  std::is_same_v<T, Arg::GValueInTransferNone> ||
+                  std::is_same_v<T, Arg::InterfaceIn> ||
+                  std::is_same_v<T, Arg::ObjectIn> ||
+                  std::is_same_v<T, Arg::UnionIn>)
         return 40;
+    if constexpr (std::is_same_v<T, Arg::FallbackInterfaceIn> ||
+                  std::is_same_v<T, Arg::ForeignStructIn> ||
+                  std::is_same_v<T, Arg::ForeignStructInstanceIn> ||
+                  std::is_same_v<T, Arg::UnregisteredBoxedIn>)
+        return 48;
+    if constexpr (std::is_same_v<T, Arg::CallbackIn>)
+        return 56;
     if constexpr (std::is_same_v<T, Arg::CArrayIn> ||
                   std::is_same_v<T, Arg::CArrayInOut> ||
-                  std::is_same_v<T, Arg::CArrayInOut>)
+                  std::is_same_v<T, Arg::CArrayInOut> ||
+                  std::is_same_v<T, Arg::CArrayOut> ||
+                  std::is_same_v<T, Arg::FallbackInOut> ||
+                  std::is_same_v<T, Arg::FallbackOut> ||
+                  std::is_same_v<T, Arg::FallbackReturn> ||
+                  std::is_same_v<T, Arg::FixedSizeArrayInOut> ||
+                  std::is_same_v<T, Arg::ZeroTerminatedArrayInOut>)
         return 104;
+    if constexpr (std::is_same_v<T, Arg::CallerAllocatesOut> ||
+                  std::is_same_v<T, Arg::FallbackIn> ||
+                  std::is_same_v<T, Arg::FixedSizeArrayIn> ||
+                  std::is_same_v<T, Arg::ZeroTerminatedArrayIn>)
+        return 112;
     if constexpr (std::is_same_v<T, Arg::BoxedCallerAllocatesOut>)
         return 120;
     else
-        return 112;
+        return 32;
 }
 #endif
 

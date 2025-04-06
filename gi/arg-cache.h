@@ -72,6 +72,12 @@ class ReturnTag {
     }
 
     constexpr GITypeTag tag() const { return m_tag; }
+    [[nodiscard]]
+    constexpr bool is_enum_or_flags_interface() const {
+        return m_tag == GI_TYPE_TAG_INTERFACE &&
+               (m_info_type == GI_INFO_TYPE_ENUM ||
+                m_info_type == GI_INFO_TYPE_FLAGS);
+    }
     constexpr GIInfoType interface_type() const { return m_info_type; }
     constexpr bool is_pointer() const { return m_is_pointer; }
 };

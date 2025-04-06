@@ -583,12 +583,12 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
                                         GIArgument* arg,
                                         GIDirection transfer_direction,
                                         GITransfer transfer_ownership,
-                                        GType expected_gtype,
-                                        GIBaseInfo* expected_info = nullptr) {
+                                        GType expected_gtype) {
         g_assert(transfer_direction != GI_DIRECTION_INOUT &&
                  "transfer_to_gi_argument() must choose between in or out");
 
-        if (!Base::typecheck(cx, obj, expected_info, expected_gtype)) {
+        if (expected_gtype != G_TYPE_NONE &&
+            !Base::typecheck(cx, obj, expected_gtype)) {
             gjs_arg_unset(arg);
             return false;
         }
@@ -627,41 +627,48 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     GJS_JSAPI_RETURN_CONVENTION
     static bool typecheck(JSContext* cx, JS::HandleObject object,
-                          GIBaseInfo* expected_info, GType expected_gtype) {
+                          GIBaseInfo* expected_info) {
         Base* priv;
         if (!Base::for_js_typecheck(cx, object, &priv) ||
             !priv->check_is_instance(cx, "convert to pointer"))
             return false;
 
-        if (priv->to_instance()->typecheck_impl(cx, expected_info,
-                                                expected_gtype))
+        if (priv->to_instance()->typecheck_impl(expected_info))
             return true;
 
-        if (expected_info) {
-            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object is of type %s - cannot convert to %s.%s",
-                             priv->format_name().c_str(),
-                             g_base_info_get_namespace(expected_info),
-                             g_base_info_get_name(expected_info));
-        } else {
-            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object is of type %s - cannot convert to %s",
-                             priv->format_name().c_str(),
-                             g_type_name(expected_gtype));
-        }
-
+        gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                         "Object is of type %s - cannot convert to %s.%s",
+                         priv->format_name().c_str(),
+                         g_base_info_get_namespace(expected_info),
+                         g_base_info_get_name(expected_info));
         return false;
     }
-    [[nodiscard]] static bool typecheck(JSContext* cx, JS::HandleObject object,
-                                        GIBaseInfo* expected_info,
-                                        GType expected_gtype,
-                                        GjsTypecheckNoThrow) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool typecheck(JSContext* cx, JS::HandleObject object,
+                          GType expected_gtype) {
+        Base* priv;
+        if (!Base::for_js_typecheck(cx, object, &priv) ||
+            !priv->check_is_instance(cx, "convert to pointer"))
+            return false;
+
+        if (priv->to_instance()->typecheck_impl(expected_gtype))
+            return true;
+
+        gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                         "Object is of type %s - cannot convert to %s",
+                         priv->format_name().c_str(),
+                         g_type_name(expected_gtype));
+        return false;
+    }
+    template <typename T>
+    [[nodiscard]]
+    static bool typecheck(JSContext* cx, JS::HandleObject object,
+                          T expected, GjsTypecheckNoThrow) {
         Base* priv = Base::for_js(cx, object);
         if (!priv || priv->is_prototype())
             return false;
 
-        return priv->to_instance()->typecheck_impl(cx, expected_info,
-                                                   expected_gtype);
+        return priv->to_instance()->typecheck_impl(expected);
     }
 
     // Deleting these constructors and assignment operators will also delete
@@ -1134,13 +1141,17 @@ class GIWrapperInstance : public Base {
      * It's possible to override typecheck_impl() if you need an extra step in
      * the check.
      */
-    [[nodiscard]] bool typecheck_impl(JSContext*, GIBaseInfo* expected_info,
-                                      GType expected_gtype) const {
-        if (expected_gtype != G_TYPE_NONE)
-            return g_type_is_a(Base::gtype(), expected_gtype);
-        else if (expected_info)
-            return g_base_info_equal(Base::info(), expected_info);
-        return true;
+    [[nodiscard]]
+    bool typecheck_impl(GIBaseInfo* expected_info) const {
+        g_assert(expected_info &&
+                 "should not call typecheck_impl() without introspection info");
+        return g_base_info_equal(Base::info(), expected_info);
+    }
+    [[nodiscard]]
+    bool typecheck_impl(GType expected_gtype) const {
+        g_assert(expected_gtype != G_TYPE_NONE &&
+                 "should not call typecheck_impl() without a real GType");
+        return g_type_is_a(Base::gtype(), expected_gtype);
     }
 };
 

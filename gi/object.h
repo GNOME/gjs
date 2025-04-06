@@ -33,6 +33,7 @@
 #include "gi/wrapperutils.h"
 #include "gjs/auto.h"
 #include "gjs/jsapi-util-root.h"
+#include "gjs/jsapi-util.h"  // for gjs_throw
 #include "gjs/macros.h"
 #include "util/log.h"
 
@@ -90,8 +91,7 @@ class ObjectBase
                                         GIArgument* arg,
                                         GIDirection transfer_direction,
                                         GITransfer transfer_ownership,
-                                        GType expected_gtype,
-                                        GIBaseInfo* expected_info = nullptr);
+                                        GType expected_gtype);
 
  private:
     // This is used in debug methods only.
@@ -108,15 +108,26 @@ class ObjectBase
     [[nodiscard]] bool is_custom_js_class();
 
  public:
-    GJS_JSAPI_RETURN_CONVENTION
-    static bool typecheck(JSContext* cx, JS::HandleObject obj,
-                          GIObjectInfo* expected_info, GType expected_gtype);
-    [[nodiscard]] static bool typecheck(JSContext* cx, JS::HandleObject obj,
-                                        GIObjectInfo* expected_info,
-                                        GType expected_gtype,
-                                        GjsTypecheckNoThrow no_throw) {
-        return GIWrapperBase::typecheck(cx, obj, expected_info, expected_gtype,
-                                        no_throw);
+    // Overrides GIWrapperBase::typecheck(). We only override the overload that
+    // throws, so that we can throw our own more informative error.
+    template <typename T>
+    GJS_JSAPI_RETURN_CONVENTION static bool typecheck(JSContext* cx,
+                                                      JS::HandleObject obj,
+                                                      T expected) {
+        if (GIWrapperBase::typecheck(cx, obj, expected))
+            return true;
+
+        gjs_throw(cx,
+                  "This JS object wrapper isn't wrapping a GObject."
+                  " If this is a custom subclass, are you sure you chained"
+                  " up to the parent _init properly?");
+        return false;
+    }
+    template <typename T>
+    [[nodiscard]]
+    static bool typecheck(JSContext* cx, JS::HandleObject obj, T expected,
+                          GjsTypecheckNoThrow no_throw) {
+        return GIWrapperBase::typecheck(cx, obj, expected, no_throw);
     }
 
     /* JSClass operations */
@@ -493,9 +504,13 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
                    JS::HandleObject obj);
     [[nodiscard]] const char* to_string_kind() const;
 
-    GJS_JSAPI_RETURN_CONVENTION
-    bool typecheck_impl(JSContext* cx, GIBaseInfo* expected_info,
-                        GType expected_type) const;
+    // Overrides GIWrapperInstance::typecheck_impl()
+    template <typename T>
+    GJS_JSAPI_RETURN_CONVENTION bool typecheck_impl(T expected) const {
+        g_assert(m_gobj_disposed || !m_ptr ||
+                 gtype() == G_OBJECT_TYPE(m_ptr.as<GObject*>()));
+        return GIWrapperInstance::typecheck_impl(expected);
+    }
 
     /* Notification callbacks */
     void gobj_dispose_notify(void);
