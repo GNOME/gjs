@@ -58,6 +58,9 @@
 #include "gi/info.h"
 #include "gi/js-value-inl.h"  // for Relaxed, c_value_to_js_checked
 #include "gi/object.h"
+
+#include <mozilla/Unused.h>
+
 #include "gi/repo.h"
 #include "gi/toggle.h"
 #include "gi/utils-inl.h"  // for gjs_int_to_pointer
@@ -130,6 +133,7 @@ bool ObjectBase::is_custom_js_class() {
 void ObjectInstance::link() {
     auto [_, done] = s_wrapped_gobject_list.insert(this);
     g_assert(done);
+    mozilla::Unused << done;
 }
 
 void ObjectInstance::unlink() { s_wrapped_gobject_list.erase(this); }
@@ -3061,7 +3065,7 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     g_assert(done && "This closure was already associated with this object");
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
-
+    mozilla::Unused << done;
     return true;
 }
 
