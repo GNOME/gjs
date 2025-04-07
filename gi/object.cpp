@@ -3058,7 +3058,7 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
     auto [_, done] = m_closures.insert(closure);
-    g_assert(done);
+    g_assert(done && "This closure was already associated with this object");
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
 
