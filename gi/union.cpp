@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 
 #include <js/CallArgs.h>
 #include <js/Class.h>

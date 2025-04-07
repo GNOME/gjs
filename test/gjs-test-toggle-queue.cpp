@@ -13,7 +13,7 @@
 #include <tuple>    // for tie
 #include <utility>  // for pair
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -72,9 +72,10 @@ static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {
 }
 
 static void setup(GjsUnitTestFixture* fx, const void*) {
-    g_irepository_prepend_search_path(g_getenv("TOP_BUILDDIR"));
     gjs_test_tools_init();
     gjs_unit_test_fixture_setup(fx, nullptr);
+    AutoUnref<GIRepository> repo = gi_repository_dup_default();
+    gi_repository_prepend_search_path(repo, g_getenv("TOP_BUILDDIR"));
     JS_SetGCCallback(fx->cx, on_gc, fx);
 
     AutoError error;

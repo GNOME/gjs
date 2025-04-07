@@ -32,7 +32,7 @@
 #include <vector>
 
 #include <gio/gio.h>
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -359,7 +359,8 @@ gjs_context_class_init(GjsContextClass *klass)
         Gjs::AutoChar priv_typelib_dir{
             g_build_filename(PKGLIBDIR, "girepository-1.0", nullptr)};
 #endif
-        g_irepository_prepend_search_path(priv_typelib_dir);
+        GI::Repository repo;
+        repo.prepend_search_path(priv_typelib_dir);
     }
     auto& registry = Gjs::NativeModuleDefineFuncs::get();
     registry.add("_promiseNative", gjs_define_native_promise_stuff);

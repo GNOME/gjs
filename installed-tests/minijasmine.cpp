@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include <gio/gio.h>
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -37,12 +37,14 @@ main(int argc, char **argv)
 
     setlocale(LC_ALL, "");
 
+    GIRepository* repo = gi_repository_dup_default();
     if (g_getenv("GJS_USE_UNINSTALLED_FILES") != NULL) {
-        g_irepository_prepend_search_path(g_getenv("TOP_BUILDDIR"));
+        gi_repository_prepend_search_path(repo, g_getenv("TOP_BUILDDIR"));
     } else {
-        g_irepository_prepend_search_path(INSTTESTDIR);
-        g_irepository_prepend_library_path(INSTTESTDIR);
+        gi_repository_prepend_search_path(repo, INSTTESTDIR);
+        gi_repository_prepend_library_path(repo, INSTTESTDIR);
     }
+    g_clear_object(&repo);
 
     const char *coverage_prefix = g_getenv("GJS_UNIT_COVERAGE_PREFIX");
     const char *coverage_output_path = g_getenv("GJS_UNIT_COVERAGE_OUTPUT");

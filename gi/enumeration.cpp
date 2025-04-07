@@ -6,7 +6,6 @@
 
 #include <inttypes.h>
 
-#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

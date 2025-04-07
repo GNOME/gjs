@@ -5,7 +5,7 @@
 #include <config.h>
 
 #include <cairo.h>
-#include <girepository.h>
+#include <girepository/girepository.h>
 
 #include <js/CallArgs.h>
 #include <js/Conversions.h>

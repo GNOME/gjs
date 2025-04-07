@@ -125,7 +125,7 @@ endif
 null_dep = dependency('', required : false)
 
 # Note: Notify GNOME release team when adding or updating dependencies
-glib_required_version = '>= 2.68.0'
+glib_required_version = '>= 2.85.1'
 glib = dependency('glib-2.0', version: glib_required_version,
     fallback: ['glib', 'libglib_dep'])
 gthread = dependency('gthread-2.0', version: glib_required_version,
@@ -135,8 +135,8 @@ gobject = dependency('gobject-2.0', version: glib_required_version,
 gio = dependency('gio-2.0', version: glib_required_version,
     fallback: ['glib', 'libgio_dep'])
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
-gi = dependency('gobject-introspection-1.0', version: '>= 1.72.0',
-    fallback: ['gobject-introspection', 'girepo_dep'])
+gi = dependency('girepository-2.0', version: glib_required_version,
+    fallback: ['glib', 'libgirepository_dep'])
 cairo = dependency('cairo', fallback: ['cairo', 'libcairo_dep'])
 cairo_gobject = dependency('cairo-gobject',
     fallback: ['cairo', 'libcairogobject_dep'])
@@ -746,7 +746,7 @@ summary({
     'libexecdir': prefix / libexecdir,
 }, section: 'Directories')
 locations = []
-foreach dep: [ffi, glib, gi, spidermonkey, readline, sysprof_capture]
+foreach dep: [ffi, glib, spidermonkey, readline, sysprof_capture]
     if dep.type_name() == 'pkgconfig'
         locations += 'in @0@'.format(dep.get_variable(pkgconfig: 'prefix'))
     else
@@ -756,16 +756,15 @@ endforeach
 summary({
     'libffi': '@0@ (@1@)'.format(ffi.version(), locations[0]),
     'GLib': '@0@ (@1@)'.format(glib.version(), locations[1]),
-    'GObject introspection': '@0@ (@1@)'.format(gi.version(), locations[2]),
     'SpiderMonkey': '@0@ (@1@, @2@ build)'.format(spidermonkey.version(),
-        locations[3], nondebug_spidermonkey ? 'release' : 'debug'),
+        locations[2], nondebug_spidermonkey ? 'release' : 'debug'),
 }, section: 'Dependencies')
 if build_readline
-    summary('Readline', '(@0@)'.format(locations[4]), section: 'Dependencies')
+    summary('Readline', '(@0@)'.format(locations[3]), section: 'Dependencies')
 endif
 if build_profiler
     summary('Sysprof',
-        '@0@ (@1@)'.format(sysprof_capture.version(), locations[5]),
+        '@0@ (@1@)'.format(sysprof_capture.version(), locations[4]),
         section: 'Dependencies')
 endif
 summary({

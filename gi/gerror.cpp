@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 
 #include <js/CallAndConstruct.h>
@@ -269,7 +269,7 @@ static Maybe<const GI::EnumInfo> find_error_domain_info(
 
     /* last attempt: load GIRepository (for invoke errors, rarely
        needed) */
-    repo.require("GIRepository", "2.0").unwrap();
+    repo.require("GIRepository", "3.0").unwrap();
     return repo.find_by_error_domain(domain);
 }
 

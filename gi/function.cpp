@@ -14,8 +14,8 @@
 #include <vector>
 
 #include <ffi.h>
-#include <girepository.h>
-#include <girffi.h>
+#include <girepository/girepository.h>
+#include <girepository/girffi.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -1036,7 +1036,7 @@ bool Function::invoke(JSContext* context, const JS::CallArgs& args,
 
     if (return_tag) {
         gi_type_tag_extract_ffi_return_value(
-            return_tag->tag(), return_tag->interface_type(), &return_value,
+            return_tag->tag(), return_tag->interface_gtype(), &return_value,
             state.return_value());
     }
 
@@ -1205,7 +1205,7 @@ bool Function::call(JSContext* context, unsigned js_argc, JS::Value* vp) {
 }
 
 Function::~Function() {
-    g_function_invoker_destroy(&m_invoker);
+    gi_function_invoker_clear(&m_invoker);
     GJS_DEC_COUNTER(function);
 }
 
@@ -1294,7 +1294,7 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     } else if (auto vfunc_info = m_info.as<GI::InfoTag::VFUNC>()) {
         Gjs::GErrorResult<void*> result = vfunc_info->address(gtype);
         if (!result.isOk()) {
-            if (result.inspectErr()->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
+            if (result.inspectErr()->code != GI_INVOKE_ERROR_SYMBOL_NOT_FOUND)
                 return gjs_throw_gerror(context, result.unwrapErr());
 
             gjs_throw(context, "Virtual function not implemented: %s",

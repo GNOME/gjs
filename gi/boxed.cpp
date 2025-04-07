@@ -10,7 +10,7 @@
 #include <algorithm>  // for one_of, any_of
 #include <utility>  // for move, forward
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 
 #include <js/CallArgs.h>
@@ -787,8 +787,6 @@ static bool type_can_be_allocated_directly(const GI::TypeInfo& type_info) {
         return false;  // FIXME: Need to implement
     if (interface_info.is_enum_or_flags())
         return true;
-    if (interface_info.type() == GI_INFO_TYPE_INVALID_0)
-        g_assert_not_reached();
     return false;
 }
 

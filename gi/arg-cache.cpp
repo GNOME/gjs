@@ -17,7 +17,7 @@
 #include <utility>
 
 #include <ffi.h>
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib.h>
 
 #include <js/Conversions.h>
@@ -151,7 +151,7 @@ struct BasicType {
 };
 
 struct HasTypeInfo {
-    constexpr explicit HasTypeInfo(GI::TypeInfo info) {
+    explicit HasTypeInfo(GI::TypeInfo info) {
         GI::detail::Pointer::to_stack(GI::detail::Pointer::get_from(info),
                                       &m_type_info);
     }
@@ -441,19 +441,20 @@ struct GTypedType {
 };
 
 struct RegisteredType : GTypedType {
-    RegisteredType(GType gtype, GIInfoType info_type)
-        : GTypedType(gtype), m_info_type(info_type) {}
+    RegisteredType(GType gtype, bool is_enum_or_flags)
+        : GTypedType(gtype), m_is_enum_or_flags(is_enum_or_flags) {}
     explicit RegisteredType(const GI::RegisteredTypeInfo info)
-        : GTypedType(info.gtype()), m_info_type(info.type()) {
+        : GTypedType(info.gtype()),
+          m_is_enum_or_flags(info.is_enum_or_flags()) {
         g_assert(m_gtype != G_TYPE_NONE &&
                  "Use RegisteredInterface for this type");
     }
 
     Maybe<ReturnTag> return_tag() const {
-        return Some(ReturnTag{GI_TYPE_TAG_INTERFACE, m_info_type, true});
+        return Some(ReturnTag{GI_TYPE_TAG_INTERFACE, m_is_enum_or_flags, true});
     }
 
-    GIInfoType m_info_type : 5;
+    bool m_is_enum_or_flags : 1;
 };
 
 template <GI::InfoTag TAG>
@@ -1256,7 +1257,8 @@ struct BoxedIn : BoxedInTransferNone {
 struct UnregisteredBoxedIn : BoxedIn,
                              HasIntrospectionInfo<GI::InfoTag::STRUCT> {
     explicit UnregisteredBoxedIn(const GI::StructInfo info)
-        : BoxedIn(info.gtype(), info.type()), HasIntrospectionInfo(info) {}
+        : BoxedIn(info.gtype(), /* is_enum_or_flags = */ false),
+          HasIntrospectionInfo(info) {}
     // This is a smart argument, no release needed
 };
 
@@ -2562,14 +2564,14 @@ constexpr size_t argument_maximum_size() {
                   std::is_same_v<T, Arg::FallbackReturn> ||
                   std::is_same_v<T, Arg::FixedSizeArrayInOut> ||
                   std::is_same_v<T, Arg::ZeroTerminatedArrayInOut>)
-        return 104;
+        return 176;  // FIXME
     if constexpr (std::is_same_v<T, Arg::CallerAllocatesOut> ||
                   std::is_same_v<T, Arg::FallbackIn> ||
                   std::is_same_v<T, Arg::FixedSizeArrayIn> ||
                   std::is_same_v<T, Arg::ZeroTerminatedArrayIn>)
-        return 112;
+        return 184;  // FIXME
     if constexpr (std::is_same_v<T, Arg::BoxedCallerAllocatesOut>)
-        return 120;
+        return 192;  // FIXME
     else
         return 32;
 }

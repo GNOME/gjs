@@ -13,7 +13,7 @@
 #include <string.h>
 
 #include <glib-object.h>
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib.h>
 #include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, textdomain */
 
@@ -294,24 +294,21 @@ void gjs_g_binding_group_bind_full(
 
 static GParamSpec* gjs_gtk_container_class_find_child_property(
     GIObjectInfo* container_info, GObject* container, const char* property) {
-    GIBaseInfo* class_info = NULL;
-    GIBaseInfo* find_child_property_fun = NULL;
-
     GIArgument ret;
     GIArgument find_child_property_args[2];
 
-    class_info = g_object_info_get_class_struct(container_info);
-    find_child_property_fun =
-        g_struct_info_find_method(class_info, "find_child_property");
+    GIStructInfo* class_info = gi_object_info_get_class_struct(container_info);
+    GIFunctionInfo* find_child_property_fun =
+        gi_struct_info_find_method(class_info, "find_child_property");
 
     find_child_property_args[0].v_pointer = G_OBJECT_GET_CLASS(container);
     find_child_property_args[1].v_string = (char*)property;
 
-    g_function_info_invoke(find_child_property_fun, find_child_property_args, 2,
-                           NULL, 0, &ret, NULL);
+    gi_function_info_invoke(find_child_property_fun, find_child_property_args,
+                            2, NULL, 0, &ret, NULL);
 
-    g_clear_pointer(&class_info, g_base_info_unref);
-    g_clear_pointer(&find_child_property_fun, g_base_info_unref);
+    g_clear_pointer(&class_info, gi_base_info_unref);
+    g_clear_pointer(&find_child_property_fun, gi_base_info_unref);
 
     return (GParamSpec*)ret.v_pointer;
 }
@@ -320,16 +317,15 @@ void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
                                           const char* property,
                                           const GValue* value) {
     GParamSpec* pspec = NULL;
-    GIBaseInfo* base_info = NULL;
-    GIBaseInfo* child_set_property_fun = NULL;
-    GIObjectInfo* container_info;
+    GIFunctionInfo* child_set_property_fun = NULL;
     GValue value_arg = G_VALUE_INIT;
     GIArgument ret;
 
     GIArgument child_set_property_args[4];
 
-    base_info = g_irepository_find_by_name(NULL, "Gtk", "Container");
-    container_info = (GIObjectInfo*)base_info;
+    GIRepository* repo = gi_repository_dup_default();
+    GIObjectInfo* container_info =
+        GI_OBJECT_INFO(gi_repository_find_by_name(repo, "Gtk", "Container"));
 
     pspec = gjs_gtk_container_class_find_child_property(container_info,
                                                         container, property);
@@ -353,22 +349,23 @@ void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
         g_value_copy(value, &value_arg);
     }
 
-    child_set_property_fun =
-        g_object_info_find_method(container_info, "child_set_property");
+    child_set_property_fun = GI_FUNCTION_INFO(
+        gi_object_info_find_method(container_info, "child_set_property"));
 
     child_set_property_args[0].v_pointer = container;
     child_set_property_args[1].v_pointer = child;
     child_set_property_args[2].v_string = (char*)property;
     child_set_property_args[3].v_pointer = &value_arg;
 
-    g_function_info_invoke(child_set_property_fun, child_set_property_args, 4,
-                           NULL, 0, &ret, NULL);
+    gi_function_info_invoke(child_set_property_fun, child_set_property_args, 4,
+                            NULL, 0, &ret, NULL);
 
     g_value_unset(&value_arg);
 
 out:
-    g_clear_pointer(&base_info, g_base_info_unref);
-    g_clear_pointer(&child_set_property_fun, g_base_info_unref);
+    g_clear_pointer(&container_info, gi_base_info_unref);
+    g_clear_pointer(&child_set_property_fun, gi_base_info_unref);
+    g_clear_object(&repo);
 }
 
 /**
@@ -422,10 +419,11 @@ void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
  */
 GObject* gjs_gtk_custom_sorter_new(GjsCompareDataFunc sort_func,
                                    void* user_data, GDestroyNotify destroy) {
+    GIRepository* repo = gi_repository_dup_default();
     GIObjectInfo* container_info =
-        g_irepository_find_by_name(NULL, "Gtk", "CustomSorter");
-    GIBaseInfo* custom_sorter_new_fun =
-        g_object_info_find_method(container_info, "new");
+        GI_OBJECT_INFO(gi_repository_find_by_name(repo, "Gtk", "CustomSorter"));
+    GIFunctionInfo* custom_sorter_new_fun =
+        GI_FUNCTION_INFO(gi_object_info_find_method(container_info, "new"));
 
     GIArgument ret;
     GIArgument custom_sorter_new_args[3];
@@ -433,11 +431,12 @@ GObject* gjs_gtk_custom_sorter_new(GjsCompareDataFunc sort_func,
     custom_sorter_new_args[1].v_pointer = user_data;
     custom_sorter_new_args[2].v_pointer = destroy;
 
-    g_function_info_invoke(custom_sorter_new_fun, custom_sorter_new_args, 3,
-                           NULL, 0, &ret, NULL);
+    gi_function_info_invoke(custom_sorter_new_fun, custom_sorter_new_args, 3,
+                            NULL, 0, &ret, NULL);
 
-    g_clear_pointer(&container_info, g_base_info_unref);
-    g_clear_pointer(&custom_sorter_new_fun, g_base_info_unref);
+    g_clear_pointer(&container_info, gi_base_info_unref);
+    g_clear_pointer(&custom_sorter_new_fun, gi_base_info_unref);
+    g_clear_object(&repo);
 
     return (GObject*)ret.v_pointer;
 }
@@ -462,10 +461,11 @@ void gjs_gtk_custom_sorter_set_sort_func(GObject* sorter,
                                          GjsCompareDataFunc sort_func,
                                          void* user_data,
                                          GDestroyNotify destroy) {
+    GIRepository* repo = gi_repository_dup_default();
     GIObjectInfo* container_info =
-        g_irepository_find_by_name(NULL, "Gtk", "CustomSorter");
-    GIBaseInfo* set_sort_func_fun =
-        g_object_info_find_method(container_info, "set_sort_func");
+        GI_OBJECT_INFO(gi_repository_find_by_name(repo, "Gtk", "CustomSorter"));
+    GIFunctionInfo* set_sort_func_fun = GI_FUNCTION_INFO(
+        gi_object_info_find_method(container_info, "set_sort_func"));
 
     GIArgument unused_ret;
     GIArgument set_sort_func_args[4];
@@ -474,11 +474,12 @@ void gjs_gtk_custom_sorter_set_sort_func(GObject* sorter,
     set_sort_func_args[2].v_pointer = user_data;
     set_sort_func_args[3].v_pointer = destroy;
 
-    g_function_info_invoke(set_sort_func_fun, set_sort_func_args, 4, NULL, 0,
-                           &unused_ret, NULL);
+    gi_function_info_invoke(set_sort_func_fun, set_sort_func_args, 4, NULL, 0,
+                            &unused_ret, NULL);
 
-    g_clear_pointer(&container_info, g_base_info_unref);
-    g_clear_pointer(&set_sort_func_fun, g_base_info_unref);
+    g_clear_pointer(&container_info, gi_base_info_unref);
+    g_clear_pointer(&set_sort_func_fun, gi_base_info_unref);
+    g_clear_object(&repo);
 }
 
 static bool log_writer_cleared = false;

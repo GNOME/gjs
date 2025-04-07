@@ -12,7 +12,7 @@
 #include <string>  // for u16string, u32string
 #include <type_traits>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 #include <glib/gstdio.h>  // for g_unlink

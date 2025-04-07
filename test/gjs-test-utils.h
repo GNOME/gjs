@@ -16,6 +16,7 @@
 #include <type_traits>  // for is_same
 #include <utility>      // IWYU pragma: keep
 
+#include <girepository/girepository.h>
 #include <glib.h>  // for g_assert_...
 
 #include <js/TypeDecls.h>

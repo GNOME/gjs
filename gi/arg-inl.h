@@ -14,7 +14,7 @@
 #include <string>  // for to_string
 #include <type_traits>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>  // for GType
 #include <glib.h>         // for gboolean
 

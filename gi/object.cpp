@@ -18,8 +18,8 @@
 #include <utility>      // for move
 #include <vector>
 
-#include <girepository.h>
-#include <girffi.h>
+#include <girepository/girepository.h>
+#include <girepository/girffi.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -356,7 +356,7 @@ class ObjectPropertyInfoCaller {
         GIFunctionInvoker invoker;
         MOZ_TRY(func_info.prep_invoker(&invoker));
         native_address = invoker.native_address;
-        g_function_invoker_destroy(&invoker);
+        gi_function_invoker_clear(&invoker);
         return Ok{};
     }
 };
@@ -528,7 +528,7 @@ class ObjectPropertyPspecCaller {
         GIFunctionInvoker invoker;
         MOZ_TRY(info.prep_invoker(&invoker));
         native_address = invoker.native_address;
-        g_function_invoker_destroy(&invoker);
+        gi_function_invoker_clear(&invoker);
         return Ok{};
     }
 };

@@ -10,7 +10,7 @@
 #include <sstream>
 #include <string>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

@@ -16,7 +16,7 @@
 #include <utility>  // for move
 #include <vector>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -323,7 +323,7 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GHashTable key %s",
-                      g_type_tag_to_string(type_tag));
+                      gi_type_tag_to_string(type_tag));
 
     switch (type_tag) {
     case GI_TYPE_TAG_BOOLEAN:
@@ -421,14 +421,14 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
 
     default:
         g_warning("Unhandled type %s for GHashTable key conversion",
-                  g_type_tag_to_string(type_tag));
+                  gi_type_tag_to_string(type_tag));
         unsupported = true;
         break;
     }
 
     if (G_UNLIKELY(unsupported)) {
         gjs_throw(cx, "Type %s not supported for hash table keys",
-                  g_type_tag_to_string(type_tag));
+                  gi_type_tag_to_string(type_tag));
         return false;
     }
 
@@ -630,7 +630,7 @@ static bool gjs_string_to_intarray(JSContext* context, JS::HandleString str,
         default:
             /* can't convert a string to this type */
             gjs_throw(context, "Cannot convert string to array of '%s'",
-                      g_type_tag_to_string(element_type));
+                      gi_type_tag_to_string(element_type));
             return false;
     }
 }
@@ -987,7 +987,7 @@ static bool throw_invalid_argument_tag(JSContext* cx, JS::HandleValue value,
     Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
 
     gjs_throw(cx, "Expected type %s for %s but got type '%s'",
-              g_type_tag_to_string(type_tag), display_name.get(),
+              gi_type_tag_to_string(type_tag), display_name.get(),
               JS::InformalValueTypeName(value));
     return false;
 }
@@ -1456,7 +1456,7 @@ static bool check_nullable_argument(JSContext* cx, const char* arg_name,
         Gjs::AutoChar display_name{
             gjs_argument_display_name(arg_name, arg_type)};
         gjs_throw(cx, "%s (type %s) may not be null", display_name.get(),
-                  g_type_tag_to_string(type_tag));
+                  gi_type_tag_to_string(type_tag));
         return false;
     }
 
@@ -1474,7 +1474,7 @@ bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '%s' JS value %s to GIArgument type %s", arg_name,
-        gjs_debug_value(value).c_str(), g_type_tag_to_string(type_tag));
+        gjs_debug_value(value).c_str(), gi_type_tag_to_string(type_tag));
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -1983,7 +1983,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '%s' JS value %s to GIArgument type %s", arg_name,
-        gjs_debug_value(value).c_str(), g_type_tag_to_string(type_tag));
+        gjs_debug_value(value).c_str(), gi_type_tag_to_string(type_tag));
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -2066,7 +2066,7 @@ bool gjs_value_to_gi_argument(JSContext* context, JS::HandleValue value,
         // handled in gjs_value_to_gerror_gi_argument(), and INTERFACE handled
         // in gjs_value_to_interface_gi_argument()
         g_warning("Unhandled type %s for JavaScript to GIArgument conversion",
-                  g_type_tag_to_string(type_tag));
+                  gi_type_tag_to_string(type_tag));
         throw_invalid_argument(context, value, type_info, arg_name, arg_type);
         return false;
     }
@@ -2121,7 +2121,7 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument %s to JS::Value",
-                      g_type_tag_to_string(type_tag));
+                      gi_type_tag_to_string(type_tag));
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -2902,7 +2902,7 @@ bool gjs_value_from_basic_fixed_size_array_gi_argument(
     size_t fixed_size, GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument fixed array of %s to JS::Value",
-                      g_type_tag_to_string(element_tag));
+                      gi_type_tag_to_string(element_tag));
 
     void* c_array = gjs_arg_get<void*>(arg);
     if (!c_array) {
@@ -2941,7 +2941,7 @@ bool gjs_value_from_basic_garray_gi_argument(JSContext* cx,
                                              GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument GArray of %s to JS::Value",
-                      g_type_tag_to_string(element_tag));
+                      gi_type_tag_to_string(element_tag));
 
     auto* garray = gjs_arg_get<GArray*>(arg);
     if (!garray) {
@@ -2958,7 +2958,7 @@ bool gjs_value_from_basic_gptrarray_gi_argument(
     GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument GPtrArray of %s to JS::Value",
-                      g_type_tag_to_string(element_tag));
+                      gi_type_tag_to_string(element_tag));
 
     auto* ptr_array = gjs_arg_get<GPtrArray*>(arg);
     if (!ptr_array) {
@@ -3147,7 +3147,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting GIArgument %s to JS::Value",
-                      g_type_tag_to_string(type_tag));
+                      gi_type_tag_to_string(type_tag));
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -3433,7 +3433,7 @@ bool gjs_value_from_gi_argument(JSContext* context,
     default:
         // basic types handled in gjs_value_from_basic_gi_argument()
         g_warning("Unhandled type %s converting GIArgument to JavaScript",
-                  g_type_tag_to_string(type_tag));
+                  gi_type_tag_to_string(type_tag));
         return false;
     }
 
@@ -4073,7 +4073,7 @@ static bool gjs_g_arg_release_internal(
     default:
         // basic types should have been handled in release_basic_type_internal()
         g_warning("Unhandled type %s releasing GIArgument",
-                  g_type_tag_to_string(type_tag));
+                  gi_type_tag_to_string(type_tag));
         return false;
     }
 
@@ -4103,7 +4103,7 @@ void gjs_gi_argument_release_basic(GITransfer transfer, GITypeTag type_tag,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Releasing GIArgument %s out param or return value",
-                      g_type_tag_to_string(type_tag));
+                      gi_type_tag_to_string(type_tag));
 
     release_basic_type_internal(type_tag, arg);
 }

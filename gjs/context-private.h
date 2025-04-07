@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <gio/gio.h>  // for GMemoryMonitor
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

@@ -5,8 +5,6 @@
 
 #include <config.h>
 
-#include <girepository.h>
-
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCVector.h>     // for MutableHandleIdVector

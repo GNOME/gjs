@@ -12,7 +12,6 @@
 
 #include <memory>  // for unique_ptr
 
-#include <girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
