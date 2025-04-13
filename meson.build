@@ -225,6 +225,16 @@ endif
 
 build_readline = readline.found()
 
+have_gtk3 = dependency('gtk+-3.0', required: false).found()
+have_gtk4 = dependency('gtk4', required: false).found()
+
+if (not have_gtk3 and not have_gtk4 and not get_option('skip_gtk_tests'))
+    error('''You have neither GTK 3 nor 4 available.
+GTK is not required, but without at least one of these versions you'll be
+skipping a lot of tests. Configure with -Dskip_gtk_tests=true if that's
+intentional.''')
+endif
+
 ### Check for library features #################################################
 
 # Check if SpiderMonkey was compiled with --enable-debug. If this is the case,
@@ -709,6 +719,10 @@ endif
 
 if get_option('skip_gtk_tests')
     warning('Not using GTK, not all tests will be run.')
+elif not have_gtk3
+    warning('Not using GTK 3, not all tests will be run.')
+elif not have_gtk4
+    warning('Not using GTK 4, not all tests will be run.')
 endif
 
 if get_option('skip_dbus_tests')

@@ -21,11 +21,8 @@ if cxx.get_argument_syntax() != 'msvc'
         'Warnings',
     ]
 
-    if not get_option('skip_gtk_tests')
-        have_gtk4 = dependency('gtk4', required: false).found()
-        if have_gtk4
-            simple_tests += 'Gtk4Warnings'
-        endif
+    if not get_option('skip_gtk_tests') and have_gtk4
+        simple_tests += 'Gtk4Warnings'
     endif
 endif
 
