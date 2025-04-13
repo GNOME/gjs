@@ -318,12 +318,9 @@ _gjs_log_info_usage(GIBaseInfo *info)
 
     {
         char *details;
-        GIInfoType info_type;
         GIBaseInfo *container;
 
-        info_type = g_base_info_get_type(info);
-
-        if (info_type == GI_INFO_TYPE_FUNCTION) {
+        if (GI_IS_FUNCTION_INFO(info)) {
             std::string args("{ ");
             int n_args;
             int i;
@@ -363,132 +360,88 @@ _gjs_log_info_usage(GIBaseInfo *info)
 
         container = g_base_info_get_container(info);
 
-        gjs_debug_gi_usage("{ GI_INFO_TYPE_%s, \"%s\", \"%s\", \"%s\", %s },",
-                           gjs_info_type_name(info_type),
+        gjs_debug_gi_usage("{ GIInfoType %s, \"%s\", \"%s\", \"%s\", %s },",
+                           g_info_type_to_string(g_base_info_get_type(info)),
                            g_base_info_get_namespace(info),
                            container ? g_base_info_get_name(container) : "",
-                           g_base_info_get_name(info),
-                           details);
+                           g_base_info_get_name(info), details);
         g_free(details);
     }
 }
 #endif /* GJS_VERBOSE_ENABLE_GI_USAGE */
 
-bool
-gjs_define_info(JSContext       *context,
-                JS::HandleObject in_object,
-                GIBaseInfo      *info,
-                bool            *defined)
-{
+bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
+                     GIBaseInfo* info, bool* defined) {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
     _gjs_log_info_usage(info);
 #endif
 
     *defined = true;
 
-    switch (g_base_info_get_type(info)) {
-    case GI_INFO_TYPE_FUNCTION:
-        {
-            JSObject *f;
-            f = gjs_define_function(context, in_object, 0, (GICallableInfo*) info);
-            if (f == NULL)
-                return false;
-        }
-        break;
-    case GI_INFO_TYPE_OBJECT:
-        {
-            GType gtype;
-            gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)info);
+    if (GI_IS_FUNCTION_INFO(info))
+        return gjs_define_function(cx, in_object, 0, info);
 
-            if (g_type_is_a (gtype, G_TYPE_PARAM)) {
-                if (!gjs_define_param_class(context, in_object))
-                    return false;
-            } else if (g_type_is_a (gtype, G_TYPE_OBJECT)) {
-                JS::RootedObject ignored1(context), ignored2(context);
-                if (!ObjectPrototype::define_class(context, in_object, info,
-                                                   gtype, nullptr, 0, &ignored1,
-                                                   &ignored2))
-                    return false;
-            } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-                JS::RootedObject ignored(context);
-                if (!FundamentalPrototype::define_class(context, in_object,
-                                                        info, &ignored))
-                    return false;
-            } else {
-                gjs_throw (context,
-                           "Unsupported type %s, deriving from fundamental %s",
-                           g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
-                return false;
-            }
-        }
-        break;
-    case GI_INFO_TYPE_STRUCT:
-        /* We don't want GType structures in the namespace,
-           we expose their fields as vfuncs and their methods
-           as static methods
-        */
-        if (g_struct_info_is_gtype_struct((GIStructInfo*) info)) {
-            *defined = false;
-            break;
-        }
-        /* Fall through */
+    if (GI_IS_OBJECT_INFO(info)) {
+        GType gtype = g_registered_type_info_get_g_type(info);
 
-    case GI_INFO_TYPE_BOXED:
-        if (!BoxedPrototype::define_class(context, in_object, info))
-            return false;
-        break;
-    case GI_INFO_TYPE_UNION:
-        if (!UnionPrototype::define_class(context, in_object,
-                                          (GIUnionInfo*)info))
-            return false;
-        break;
-    case GI_INFO_TYPE_ENUM:
-        if (g_enum_info_get_error_domain((GIEnumInfo*) info)) {
-            /* define as GError subclass */
-            if (!ErrorPrototype::define_class(context, in_object, info))
-                return false;
-            break;
-        }
-        [[fallthrough]];
+        if (g_type_is_a(gtype, G_TYPE_PARAM))
+            return gjs_define_param_class(cx, in_object);
 
-    case GI_INFO_TYPE_FLAGS:
-        if (!gjs_define_enumeration(context, in_object, (GIEnumInfo*) info))
-            return false;
-        break;
-    case GI_INFO_TYPE_CONSTANT:
-        if (!gjs_define_constant(context, in_object, (GIConstantInfo*) info))
-            return false;
-        break;
-    case GI_INFO_TYPE_INTERFACE:
-        {
-            JS::RootedObject ignored1(context), ignored2(context);
-            if (!InterfacePrototype::create_class(
-                    context, in_object, info,
-                    g_registered_type_info_get_g_type(info), &ignored1,
-                    &ignored2))
-                return false;
+        if (g_type_is_a(gtype, G_TYPE_OBJECT)) {
+            JS::RootedObject ignored1{cx}, ignored2{cx};
+            return ObjectPrototype::define_class(
+                cx, in_object, info, gtype, nullptr, 0, &ignored1, &ignored2);
         }
-        break;
-    case GI_INFO_TYPE_INVALID:
-    case GI_INFO_TYPE_INVALID_0:
-    case GI_INFO_TYPE_CALLBACK:
-    case GI_INFO_TYPE_VALUE:
-    case GI_INFO_TYPE_SIGNAL:
-    case GI_INFO_TYPE_VFUNC:
-    case GI_INFO_TYPE_PROPERTY:
-    case GI_INFO_TYPE_FIELD:
-    case GI_INFO_TYPE_ARG:
-    case GI_INFO_TYPE_TYPE:
-    case GI_INFO_TYPE_UNRESOLVED:
-    default:
-        gjs_throw(context, "API of type %s not implemented, cannot define %s.%s",
-                  gjs_info_type_name(g_base_info_get_type(info)),
-                  g_base_info_get_namespace(info),
-                  g_base_info_get_name(info));
+
+        if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
+            JS::RootedObject ignored{cx};
+            return FundamentalPrototype::define_class(cx, in_object, info,
+                                                      &ignored);
+        }
+
+        gjs_throw(cx, "Unsupported type %s, deriving from fundamental %s",
+                  g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
         return false;
     }
 
-    return true;
+    // We don't want GType structures in the namespace, we expose their fields
+    // as vfuncs and their methods as static methods
+    if (GI_IS_STRUCT_INFO(info) && g_struct_info_is_gtype_struct(info)) {
+        *defined = false;
+        return true;
+    }
+
+    if (GI_IS_STRUCT_INFO(info) ||
+        g_base_info_get_type(info) == GI_INFO_TYPE_BOXED)
+        return BoxedPrototype::define_class(cx, in_object, info);
+
+    if (GI_IS_UNION_INFO(info))
+        return UnionPrototype::define_class(cx, in_object, (GIUnionInfo*)info);
+
+    if (GI_IS_ENUM_INFO(info)) {
+        if (g_base_info_get_type(info) != GI_INFO_TYPE_FLAGS &&
+            g_enum_info_get_error_domain(info)) {
+            /* define as GError subclass */
+            return ErrorPrototype::define_class(cx, in_object, info);
+        }
+
+        return gjs_define_enumeration(cx, in_object, info);
+    }
+
+    if (GI_IS_CONSTANT_INFO(info))
+        return gjs_define_constant(cx, in_object, info);
+
+    if (GI_IS_INTERFACE_INFO(info)) {
+        JS::RootedObject ignored1{cx}, ignored2{cx};
+        return InterfacePrototype::create_class(
+            cx, in_object, info, g_registered_type_info_get_g_type(info),
+            &ignored1, &ignored2);
+    }
+
+    gjs_throw(cx, "API of type %s not implemented, cannot define %s.%s",
+              g_info_type_to_string(g_base_info_get_type(info)),
+              g_base_info_get_namespace(info), g_base_info_get_name(info));
+    return false;
 }
 
 /* Get the "unknown namespace", which should be used for unnamespaced types */
@@ -510,8 +463,8 @@ gjs_lookup_namespace_object(JSContext  *context,
     ns = g_base_info_get_namespace(info);
     if (ns == NULL) {
         gjs_throw(context, "%s '%s' does not have a namespace",
-                     gjs_info_type_name(g_base_info_get_type(info)),
-                     g_base_info_get_name(info));
+                  g_info_type_to_string(g_base_info_get_type(info)),
+                  g_base_info_get_name(info));
 
         return NULL;
     }
@@ -621,56 +574,6 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
 
     g_assert(gjs_global_get_type(global) == GjsGlobalType::DEFAULT);
     return lookup_namespace(cx, global, ns_name);
-}
-
-const char*
-gjs_info_type_name(GIInfoType type)
-{
-    switch (type) {
-    case GI_INFO_TYPE_INVALID:
-        return "INVALID";
-    case GI_INFO_TYPE_FUNCTION:
-        return "FUNCTION";
-    case GI_INFO_TYPE_CALLBACK:
-        return "CALLBACK";
-    case GI_INFO_TYPE_STRUCT:
-        return "STRUCT";
-    case GI_INFO_TYPE_BOXED:
-        return "BOXED";
-    case GI_INFO_TYPE_ENUM:
-        return "ENUM";
-    case GI_INFO_TYPE_FLAGS:
-        return "FLAGS";
-    case GI_INFO_TYPE_OBJECT:
-        return "OBJECT";
-    case GI_INFO_TYPE_INTERFACE:
-        return "INTERFACE";
-    case GI_INFO_TYPE_CONSTANT:
-        return "CONSTANT";
-    case GI_INFO_TYPE_UNION:
-        return "UNION";
-    case GI_INFO_TYPE_VALUE:
-        return "VALUE";
-    case GI_INFO_TYPE_SIGNAL:
-        return "SIGNAL";
-    case GI_INFO_TYPE_VFUNC:
-        return "VFUNC";
-    case GI_INFO_TYPE_PROPERTY:
-        return "PROPERTY";
-    case GI_INFO_TYPE_FIELD:
-        return "FIELD";
-    case GI_INFO_TYPE_ARG:
-        return "ARG";
-    case GI_INFO_TYPE_TYPE:
-        return "TYPE";
-    case GI_INFO_TYPE_UNRESOLVED:
-        return "UNRESOLVED";
-    case GI_INFO_TYPE_INVALID_0:
-        g_assert_not_reached();
-        return "----INVALID0----";
-    default:
-      return "???";
-    }
 }
 
 char*

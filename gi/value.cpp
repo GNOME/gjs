@@ -182,10 +182,9 @@ static GI::AutoSignalInfo get_signal_info_if_available(
     if (!obj)
         return nullptr;
 
-    GIInfoType info_type = obj.type();
-    if (info_type == GI_INFO_TYPE_OBJECT)
+    if (GI_IS_OBJECT_INFO(obj))
         return g_object_info_find_signal(obj, signal_query->signal_name);
-    else if (info_type == GI_INFO_TYPE_INTERFACE)
+    else if (GI_IS_INTERFACE_INFO(obj))
         return g_interface_info_find_signal(obj, signal_query->signal_name);
 
     return nullptr;
@@ -773,22 +772,17 @@ gjs_value_to_g_value_internal(JSContext      *context,
 
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
-                if (registered) {
-                    GIInfoType info_type = registered.type();
+                if (registered && GI_IS_STRUCT_INFO(registered) &&
+                    g_struct_info_is_foreign(registered.as<GIStructInfo>())) {
+                    GIArgument arg;
 
-                    if (info_type == GI_INFO_TYPE_STRUCT &&
-                        g_struct_info_is_foreign(
-                            registered.as<GIStructInfo>())) {
-                        GIArgument arg;
+                    if (!gjs_struct_foreign_convert_to_gi_argument(
+                            context, value, registered, nullptr,
+                            GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
+                            GjsArgumentFlags::MAY_BE_NULL, &arg))
+                        return false;
 
-                        if (!gjs_struct_foreign_convert_to_gi_argument(
-                                context, value, registered, nullptr,
-                                GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
-                                GjsArgumentFlags::MAY_BE_NULL, &arg))
-                            return false;
-
-                        gboxed = gjs_arg_get<void*>(&arg);
-                    }
+                    gboxed = gjs_arg_get<void*>(&arg);
                 }
 
                 /* First try a union, if that fails,
@@ -1151,22 +1145,20 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         }
 
         void* gboxed = Gjs::gvalue_get<void*>(gvalue);
-        if (info.type() == GI_INFO_TYPE_STRUCT &&
-            g_struct_info_is_foreign(info)) {
+        if (GI_IS_STRUCT_INFO(info) && g_struct_info_is_foreign(info)) {
             GIArgument arg;
             gjs_arg_set(&arg, gboxed);
             return gjs_struct_foreign_convert_from_gi_argument(context, value_p,
                                                                info, &arg);
         }
 
-        GIInfoType type = info.type();
-        if (type == GI_INFO_TYPE_BOXED || type == GI_INFO_TYPE_STRUCT) {
+        if (info.type() == GI_INFO_TYPE_BOXED || GI_IS_STRUCT_INFO(info)) {
             if (no_copy)
                 obj = BoxedInstance::new_for_c_struct(context, info, gboxed,
                                                       BoxedInstance::NoCopy());
             else
                 obj = BoxedInstance::new_for_c_struct(context, info, gboxed);
-        } else if (type == GI_INFO_TYPE_UNION) {
+        } else if (GI_IS_UNION_INFO(info)) {
             obj = UnionInstance::new_for_c_union(context, info, gboxed);
         } else {
             gjs_throw(context, "Unexpected introspection type %d for %s",

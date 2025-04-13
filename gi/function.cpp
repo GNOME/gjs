@@ -235,10 +235,8 @@ static void set_return_ffi_arg_from_gi_argument(GITypeInfo* ret_type,
         {
             GI::AutoBaseInfo interface_info{
                 g_type_info_get_interface(ret_type)};
-            GIInfoType interface_type = interface_info.type();
 
-            if (interface_type == GI_INFO_TYPE_ENUM ||
-                interface_type == GI_INFO_TYPE_FLAGS)
+            if (GI_IS_ENUM_INFO(interface_info))
                 set_ffi_arg<Gjs::Tag::Enum>(result, return_value);
             else
                 set_ffi_arg<void*>(result, return_value);
@@ -1260,7 +1258,7 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
     }
 
     AutoChar descr;
-    if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
+    if (GI_IS_FUNCTION_INFO(m_info)) {
         descr = g_strdup_printf(
             "%s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
             format_name().c_str(), arg_names.c_str(),
@@ -1302,10 +1300,10 @@ bool Function::init(JSContext* context, GType gtype /* = G_TYPE_NONE */) {
     guint8 i;
     AutoError error;
 
-    if (m_info.type() == GI_INFO_TYPE_FUNCTION) {
+    if (GI_IS_FUNCTION_INFO(m_info)) {
         if (!g_function_info_prep_invoker(m_info, &m_invoker, &error))
             return gjs_throw_gerror(context, error);
-    } else if (m_info.type() == GI_INFO_TYPE_VFUNC) {
+    } else if (GI_IS_VFUNC_INFO(m_info)) {
         void* addr = g_vfunc_info_get_address(m_info, gtype, &error);
         if (error) {
             if (error->code != G_INVOKE_ERROR_SYMBOL_NOT_FOUND)
@@ -1402,19 +1400,16 @@ gjs_define_function(JSContext       *context,
                     GType            gtype,
                     GICallableInfo  *info)
 {
-    GIInfoType info_type;
     std::string name;
-
-    info_type = g_base_info_get_type((GIBaseInfo *)info);
 
     JS::RootedObject function(context,
                               Gjs::Function::create(context, gtype, info));
     if (!function)
         return NULL;
 
-    if (info_type == GI_INFO_TYPE_FUNCTION) {
+    if (GI_IS_FUNCTION_INFO(info)) {
         name = g_base_info_get_name(info);
-    } else if (info_type == GI_INFO_TYPE_VFUNC) {
+    } else if (GI_IS_VFUNC_INFO(info)) {
         name = "vfunc_" + std::string(g_base_info_get_name(info));
     } else {
         g_assert_not_reached ();

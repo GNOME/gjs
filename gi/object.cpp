@@ -3862,7 +3862,6 @@ static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
     int length, i;
     GIBaseInfo *ancestor_info;
     GI::AutoStructInfo struct_info;
-    bool is_interface;
 
     field_info_ret->reset();
     *implementor_vtable_ret = NULL;
@@ -3870,10 +3869,8 @@ static bool find_vfunc_info(JSContext* context, GType implementor_gtype,
     ancestor_info = g_base_info_get_container(vfunc_info);
     ancestor_gtype = g_registered_type_info_get_g_type((GIRegisteredTypeInfo*)ancestor_info);
 
-    is_interface = g_base_info_get_type(ancestor_info) == GI_INFO_TYPE_INTERFACE;
-
     Gjs::AutoTypeClass<GTypeClass> implementor_class{implementor_gtype};
-    if (is_interface) {
+    if (GI_IS_INTERFACE_INFO(ancestor_info)) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
                                                         ancestor_gtype);

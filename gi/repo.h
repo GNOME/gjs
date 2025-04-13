@@ -7,7 +7,6 @@
 
 #include <config.h>
 
-#include <girepository.h>
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>
@@ -18,8 +17,6 @@
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,
                      JS::MutableHandleObject repo);
-
-[[nodiscard]] const char* gjs_info_type_name(GIInfoType type);
 GJS_JSAPI_RETURN_CONVENTION
 JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
 GJS_JSAPI_RETURN_CONVENTION
