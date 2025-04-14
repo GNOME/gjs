@@ -47,7 +47,7 @@ namespace Gjs {
 namespace Test {
 struct ObjectInstance;
 }
-}  // namespace Gjs
+}
 class ObjectInstance;
 class ObjectPrototype;
 class ObjectPropertyInfoCaller;

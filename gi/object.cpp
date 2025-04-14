@@ -47,6 +47,7 @@
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
+#include <mozilla/Unused.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -58,9 +59,6 @@
 #include "gi/info.h"
 #include "gi/js-value-inl.h"  // for Relaxed, c_value_to_js_checked
 #include "gi/object.h"
-
-#include <mozilla/Unused.h>
-
 #include "gi/repo.h"
 #include "gi/toggle.h"
 #include "gi/utils-inl.h"  // for gjs_int_to_pointer
@@ -128,7 +126,6 @@ G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
 bool ObjectBase::is_custom_js_class() {
     return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
 }
-
 
 void ObjectInstance::link() {
     auto [_, done] = s_wrapped_gobject_list.insert(this);
