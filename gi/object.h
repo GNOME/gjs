@@ -324,7 +324,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GjsMaybeOwned m_wrapper;
     // a list of all GClosures installed on this object (from signal connections
     // and scope-notify callbacks passed to methods), used when tracing
-    std::unordered_set<GClosure*> m_closures;
+    std::vector<GClosure*> m_closures;
 
     bool m_wrapper_finalized : 1;
     bool m_gobj_disposed : 1;

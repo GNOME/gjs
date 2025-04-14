@@ -2695,8 +2695,9 @@ void ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     g_object_unref(m_ptr);
 }
 
-static void invalidate_closure_vector(std::unordered_set<GClosure*>* closures,
-                                      void* data, GClosureNotify notify_func) {
+template <typename T>
+static void invalidate_closure_collection(T* closures, void* data,
+                                          GClosureNotify notify_func) {
     g_assert(closures);
     g_assert(notify_func);
 
@@ -2965,7 +2966,7 @@ ObjectInstance::~ObjectInstance() {
 }
 
 ObjectPrototype::~ObjectPrototype() {
-    invalidate_closure_vector(&m_vfuncs, this, &vfunc_invalidated_notify);
+    invalidate_closure_collection(&m_vfuncs, this, &vfunc_invalidated_notify);
 
     g_type_class_unref(g_type_class_peek(m_gtype));
 
@@ -3056,24 +3057,29 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
+    g_assert(std::find(m_closures.begin(), m_closures.end(), closure) ==
+                 m_closures.end() &&
+             "This closure was already associated with this object");
+
     /* This is a weak reference, and will be cleared when the closure is
      * invalidated */
-    auto [_, done] = m_closures.insert(closure);
-    g_assert(done && "This closure was already associated with this object");
+    m_closures.push_back(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
-    mozilla::Unused << done;
+
     return true;
 }
 
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
     // This callback should *only* touch m_closures
     auto* priv = static_cast<ObjectInstance*>(data);
-    priv->m_closures.erase(closure);
+    Gjs::remove_one_from_unsorted_vector(&priv->m_closures, closure);
 }
 
 void ObjectInstance::invalidate_closures() {
-    invalidate_closure_vector(&m_closures, this, &closure_invalidated_notify);
+    invalidate_closure_collection(&m_closures, this,
+                                  &closure_invalidated_notify);
+    m_closures.shrink_to_fit();
 }
 
 bool ObjectBase::connect(JSContext* cx, unsigned argc, JS::Value* vp) {
