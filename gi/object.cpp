@@ -2271,9 +2271,9 @@ void ObjectInstance::remove_wrapped_gobjects_if(
         if (predicate(*link)) {
             action(*link);
             link = s_wrapped_gobject_list.erase(link);
-        } else {
-            ++link;
+            continue;
         }
+        ++link;
     }
 }
 
