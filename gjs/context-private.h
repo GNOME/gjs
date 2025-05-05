@@ -62,17 +62,17 @@ using GTypeTable =
                   js::SystemAllocPolicy>;
 using FunctionVector = JS::GCVector<JSFunction*, 0, js::SystemAllocPolicy>;
 
-struct destroy_data_hash {
-    size_t operator()(const std::pair<DestroyNotify, void*>& p) const {
-        return std::hash(p.second);
-    }
-};
-
 class GjsContextPrivate : public JS::JobQueue {
  public:
     using DestroyNotify = void (*)(JSContext*, void* data);
 
  private:
+    struct destroy_data_hash {
+        size_t operator()(const std::pair<DestroyNotify, void*>& p) const {
+            return std::hash<size_t>()(reinterpret_cast<size_t>(p.second));
+        }
+    };
+
     GjsContext* m_public_context;
     JSContext* m_cx;
     JS::Heap<JSObject*> m_main_loop_hook;
