@@ -436,10 +436,15 @@ static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
         case GI_TYPE_TAG_UNICHAR:
             return simple_getter_caller<gunichar>(obj, native_address, out_arg);
 
+        case GI_TYPE_TAG_INTERFACE:
+            if (GI_IS_ENUM_INFO(g_type_info_get_interface(type_info))) {
+                return simple_getter_caller<int32_t>(obj, native_address, out_arg);
+            }
+            return simple_getter_caller<void*>(obj, native_address, out_arg);
+
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_INTERFACE:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
@@ -844,10 +849,15 @@ static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
         case GI_TYPE_TAG_UNICHAR:
             return simple_setter_caller<gunichar>(arg, obj, native_address);
 
+        case GI_TYPE_TAG_INTERFACE:
+            if (GI_IS_ENUM_INFO(g_type_info_get_interface(type_info))) {
+                return simple_setter_caller<int32_t>(arg, obj, native_address);
+            }
+            return simple_setter_caller<void*>(arg, obj, native_address);
+
         case GI_TYPE_TAG_UTF8:
         case GI_TYPE_TAG_FILENAME:
         case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_INTERFACE:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
