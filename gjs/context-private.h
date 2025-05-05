@@ -98,7 +98,7 @@ class GjsContextPrivate : public JS::JobQueue {
     Gjs::MainLoop m_main_loop;
     Gjs::AutoUnref<GMemoryMonitor> m_memory_monitor;
 
-    std::unordered_set<std::pair<DestroyNotify, void*>, pair_hash>
+    std::unordered_set<std::pair<DestroyNotify, void*>, destroy_data_hash>
         m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
     std::unordered_map<uint64_t, JS::UniqueChars> m_unhandled_rejection_stacks;
