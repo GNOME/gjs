@@ -442,7 +442,7 @@ static bool simple_getters_caller(GITypeInfo* type_info, GObject* obj,
                     g_type_info_get_interface(type_info)};
 
                 if (GI_IS_ENUM_INFO(interface_info)) {
-                    return simple_getter_caller<int32_t>(obj, native_address, out_arg);
+                    return simple_getter_caller<Gjs::Tag::Enum>(obj, native_address, out_arg);
                 }
                 return simple_getter_caller<void*>(obj, native_address, out_arg);
             }
@@ -860,7 +860,7 @@ static bool simple_setters_caller(GITypeInfo* type_info, GIArgument* arg,
                     g_type_info_get_interface(type_info)};
 
                 if (GI_IS_ENUM_INFO(interface_info)) {
-                    return simple_setter_caller<int32_t>(arg, obj, native_address);
+                    return simple_setter_caller<Gjs::Tag::Enum>(arg, obj, native_address);
                 }
                 return simple_setter_caller<void*>(arg, obj, native_address);
             }
