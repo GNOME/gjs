@@ -27,6 +27,7 @@
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>  // for move
 #include <vector>
 
@@ -76,7 +77,6 @@
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"
-#include "gi/utils-inl.h"
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/byteArray.h"
@@ -436,13 +436,13 @@ void GjsContextPrivate::free_profiler(void) {
 
 void GjsContextPrivate::register_notifier(DestroyNotify notify_func,
                                           void* data) {
-    m_destroy_notifications.push_back({notify_func, data});
+    m_destroy_notifications.insert({notify_func, data});
 }
 
 void GjsContextPrivate::unregister_notifier(DestroyNotify notify_func,
                                             void* data) {
     auto target = std::make_pair(notify_func, data);
-    Gjs::remove_one_from_unsorted_vector(&m_destroy_notifications, target);
+    m_destroy_notifications.erase(target);
 }
 
 void GjsContextPrivate::dispose(void) {
@@ -972,7 +972,6 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason re
             m_async_closures.shrink_to_fit();
             break;
         case JSGC_END:
-            m_destroy_notifications.shrink_to_fit();
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
             break;
         default:

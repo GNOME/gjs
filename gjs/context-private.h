@@ -14,6 +14,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>  // for pair
 #include <vector>
 
@@ -66,6 +67,12 @@ class GjsContextPrivate : public JS::JobQueue {
     using DestroyNotify = void (*)(JSContext*, void* data);
 
  private:
+    struct destroy_data_hash {
+        size_t operator()(const std::pair<DestroyNotify, void*>& p) const {
+            return std::hash<size_t>()(reinterpret_cast<size_t>(p.second));
+        }
+    };
+
     GjsContext* m_public_context;
     JSContext* m_cx;
     JS::Heap<JSObject*> m_main_loop_hook;
@@ -91,7 +98,8 @@ class GjsContextPrivate : public JS::JobQueue {
     Gjs::MainLoop m_main_loop;
     Gjs::AutoUnref<GMemoryMonitor> m_memory_monitor;
 
-    std::vector<std::pair<DestroyNotify, void*>> m_destroy_notifications;
+    std::unordered_set<std::pair<DestroyNotify, void*>, destroy_data_hash>
+        m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
     std::unordered_map<uint64_t, JS::UniqueChars> m_unhandled_rejection_stacks;
     FunctionVector m_cleanup_tasks;

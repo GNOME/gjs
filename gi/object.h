@@ -11,6 +11,7 @@
 #include <stdint.h>  // for uint32_t
 
 #include <functional>
+#include <unordered_set>
 #include <vector>
 
 #include <girepository.h>
@@ -222,7 +223,7 @@ class ObjectPrototype
 
     NegativeLookupCache m_unresolvable_cache;
     // a list of vfunc GClosures installed on this prototype, used when tracing
-    std::vector<GClosure*> m_vfuncs;
+    std::unordered_set<GClosure*> m_vfuncs;
     // a list of interface types explicitly associated with this prototype,
     // by gjs_add_interface
     std::vector<GType> m_interface_gtypes;
@@ -430,7 +431,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     /* Methods to manipulate the linked list of instances */
 
  private:
-    static std::vector<ObjectInstance*> s_wrapped_gobject_list;
+    static std::unordered_set<ObjectInstance*> s_wrapped_gobject_list;
     void link(void);
     void unlink(void);
     [[nodiscard]] static size_t num_wrapped_gobjects() {
