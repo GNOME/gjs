@@ -120,7 +120,7 @@ void gjs_cairo_context_init(void);
 void gjs_cairo_surface_init(void);
 
 /* path */
-
+void gjs_cairo_path_init();
 class CairoPath : public CWrapper<CairoPath, cairo_path_t> {
     friend CWrapperPointerOps<CairoPath, cairo_path_t>;
     friend CWrapper<CairoPath, cairo_path_t>;
@@ -150,6 +150,7 @@ class CairoPath : public CWrapper<CairoPath, cairo_path_t> {
         &CairoPath::class_ops, &CairoPath::class_spec};
 
  public:
+    static cairo_path_t* copy_ptr(cairo_path_t* path);
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* take_c_ptr(JSContext* cx, cairo_path_t* ptr);
 };
@@ -387,6 +388,7 @@ class CairoSVGSurface {
 #endif  // CAIRO_HAS_SVG_SURFACE
 
 /* pattern */
+void gjs_cairo_pattern_init();
 
 class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
     friend CWrapperPointerOps<CairoPattern, cairo_pattern_t>;

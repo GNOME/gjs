@@ -15,6 +15,12 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
+#include "gi/arg-inl.h"
+#include "gi/arg.h"
+#include "gi/cwrapper.h"
+#include "gi/foreign.h"
+#include "gjs/auto.h"
+#include "gjs/enum-utils.h"
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -137,4 +143,65 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
 
     return JS::GetMaybePtrFromReservedSlot<cairo_pattern_t>(
         pattern_wrapper, CairoPattern::POINTER);
+}
+
+GJS_JSAPI_RETURN_CONVENTION static bool pattern_to_gi_argument(
+    JSContext* context, JS::Value value, const char* arg_name,
+    GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
+    GIArgument* arg) {
+    if (value.isNull()) {
+        if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
+            Gjs::AutoChar display_name{
+                gjs_argument_display_name(arg_name, argument_type)};
+            gjs_throw(context, "%s may not be null", display_name.get());
+            return false;
+        }
+
+        gjs_arg_unset(arg);
+        return true;
+    }
+
+    if (!value.isObject()) {
+        Gjs::AutoChar display_name{
+            gjs_argument_display_name(arg_name, argument_type)};
+        gjs_throw(context, "%s is not a Cairo.Pattern", display_name.get());
+        return false;
+    }
+
+    JS::RootedObject pattern_wrapper{context, &value.toObject()};
+    cairo_pattern_t* s = CairoPattern::for_js(context, pattern_wrapper);
+    if (!s)
+        return false;
+    if (transfer == GI_TRANSFER_EVERYTHING)
+        cairo_pattern_reference(s);
+
+    gjs_arg_set(arg, s);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool pattern_from_gi_argument(JSContext* cx,
+                                     JS::MutableHandleValue value_p,
+                                     GIArgument* arg) {
+    JSObject* obj =
+        CairoPattern::from_c_ptr(cx, gjs_arg_get<cairo_pattern_t*>(arg));
+    if (!obj)
+        return false;
+
+    value_p.setObject(*obj);
+    return true;
+}
+
+static bool pattern_release_argument(JSContext*, GITransfer transfer,
+                                     GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        cairo_pattern_destroy(gjs_arg_get<cairo_pattern_t*>(arg));
+    return true;
+}
+
+void gjs_cairo_pattern_init(void) {
+    static GjsForeignInfo foreign_info = {pattern_to_gi_argument,
+                                          pattern_from_gi_argument,
+                                          pattern_release_argument};
+    gjs_struct_foreign_register("cairo", "Pattern", &foreign_info);
 }

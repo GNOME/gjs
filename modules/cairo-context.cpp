@@ -923,7 +923,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FS_END};
 // clang-format on
 
-[[nodiscard]] static bool context_to_gi_argument(
+GJS_JSAPI_RETURN_CONVENTION static bool context_to_gi_argument(
     JSContext* context, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {

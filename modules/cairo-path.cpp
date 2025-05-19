@@ -13,6 +13,14 @@
 #include <js/TypeDecls.h>
 #include <jsapi.h>  // for JS_NewObjectWithGivenProto
 
+#include "gi/arg-inl.h"
+#include "gi/arg.h"
+#include "gi/cwrapper.h"
+#include "gi/foreign.h"
+#include "gjs/auto.h"
+#include "gjs/enum-utils.h"
+#include "gjs/jsapi-util.h"
+#include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
 // clang-format off
@@ -24,7 +32,7 @@ const JSPropertySpec CairoPath::proto_props[] = {
 /*
  * CairoPath::take_c_ptr():
  * Same as CWrapper::from_c_ptr(), but always takes ownership of the pointer
- * rather than copying it. It's not possible to copy a cairo_path_t*.
+ * rather than copying it.
  */
 JSObject* CairoPath::take_c_ptr(JSContext* cx, cairo_path_t* ptr) {
     JS::RootedObject proto(cx, CairoPath::prototype(cx));
@@ -47,4 +55,75 @@ void CairoPath::finalize_impl(JS::GCContext*, cairo_path_t* path) {
     if (!path)
         return;
     cairo_path_destroy(path);
+}
+
+GJS_JSAPI_RETURN_CONVENTION static bool path_to_gi_argument(
+    JSContext* cx, JS::Value value, const char* arg_name,
+    GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
+    GIArgument* arg) {
+    if (value.isNull()) {
+        if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
+            Gjs::AutoChar display_name{
+                gjs_argument_display_name(arg_name, argument_type)};
+            gjs_throw(cx, "%s may not be null", display_name.get());
+            return false;
+        }
+
+        gjs_arg_unset(arg);
+        return true;
+    }
+
+    if (!value.isObject()) {
+        Gjs::AutoChar display_name{
+            gjs_argument_display_name(arg_name, argument_type)};
+        gjs_throw(cx, "%s is not a Cairo.Path", display_name.get());
+        return false;
+    }
+
+    JS::RootedObject path_wrapper{cx, &value.toObject()};
+    cairo_path_t* s = CairoPath::for_js(cx, path_wrapper);
+    if (!s)
+        return false;
+    if (transfer == GI_TRANSFER_EVERYTHING)
+        s = CairoPath::copy_ptr(s);
+
+    gjs_arg_set(arg, s);
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
+static bool path_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
+                                  GIArgument* arg) {
+    JSObject* obj = CairoPath::from_c_ptr(cx, gjs_arg_get<cairo_path_t*>(arg));
+    if (!obj)
+        return false;
+
+    value_p.setObject(*obj);
+    return true;
+}
+
+static bool path_release_argument(JSContext*, GITransfer transfer,
+                                  GIArgument* arg) {
+    if (transfer != GI_TRANSFER_NOTHING)
+        cairo_path_destroy(gjs_arg_get<cairo_path_t*>(arg));
+    return true;
+}
+
+void gjs_cairo_path_init(void) {
+    static GjsForeignInfo foreign_info = {
+        path_to_gi_argument, path_from_gi_argument, path_release_argument};
+    gjs_struct_foreign_register("cairo", "Path", &foreign_info);
+}
+
+// Adapted from PyGObject cairo code
+cairo_path_t* CairoPath::copy_ptr(cairo_path_t* path) {
+    cairo_surface_t* surface =
+        cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
+    cairo_t* cr = cairo_create(surface);
+    cairo_append_path(cr, path);
+    cairo_path_t* copy = cairo_copy_path(cr);
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+
+    return copy;
 }
