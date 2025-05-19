@@ -250,7 +250,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool region_to_gi_argument(
     if (!CairoRegion::for_js_typecheck(context, obj, &region))
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
-        cairo_region_destroy(region);
+        cairo_region_reference(region);
 
     gjs_arg_set(arg, region);
     return true;

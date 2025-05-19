@@ -327,10 +327,6 @@ describe('Cairo', function () {
                 });
 
                 it(`can be marshalled as a transfer ${transfer} in parameter`, function () {
-                    if (transfer === 'full') {
-                        pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/660');
-                        return;
-                    }
                     expect(() => Regress[`test_cairo_surface_${transfer}_in`](surface)).not.toThrow();
                 });
             });
@@ -343,7 +339,7 @@ describe('Cairo', function () {
             });
         });
 
-        xdescribe('for path', function () {
+        describe('for path', function () {
             it('can be marshalled as a return value', function () {
                 const path = Regress.test_cairo_path_full_return();
                 expect(path).toBeInstanceOf(Cairo.Path);
@@ -359,9 +355,9 @@ describe('Cairo', function () {
                 const outPath = Regress.test_cairo_path_full_in_full_return(path);
                 expect(outPath).toBeInstanceOf(Cairo.Path);
             });
-        }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/659');
+        });
 
-        xdescribe('for pattern', function () {
+        describe('for pattern', function () {
             ['none', 'full'].forEach(transfer => {
                 it(`can be marshalled as a return value with transfer ${transfer}`, function () {
                     const pattern = Regress[`test_cairo_pattern_${transfer}_return`]();
@@ -373,13 +369,13 @@ describe('Cairo', function () {
                     Regress[`test_cairo_pattern_${transfer}_in`](pattern);
                 });
             });
-        }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/659');
+        });
 
         describe('for region', function () {
-            xit('can be marshalled as an in argument', function () {
+            it('can be marshalled as an in argument', function () {
                 const region = new Cairo.Region();
                 Regress.test_cairo_region_full_in(region);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/660');
+            });
         });
 
         xdescribe('for FontOptions', function () {

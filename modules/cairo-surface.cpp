@@ -353,7 +353,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool surface_to_gi_argument(
     if (!s)
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
-        cairo_surface_destroy(s);
+        cairo_surface_reference(s);
 
     gjs_arg_set(arg, s);
     return true;
