@@ -325,7 +325,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
         surface_wrapper, CairoSurface::POINTER);
 }
 
-[[nodiscard]] static bool surface_to_gi_argument(
+GJS_JSAPI_RETURN_CONVENTION static bool surface_to_gi_argument(
     JSContext* context, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
@@ -353,7 +353,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
     if (!s)
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
-        cairo_surface_destroy(s);
+        cairo_surface_reference(s);
 
     gjs_arg_set(arg, s);
     return true;

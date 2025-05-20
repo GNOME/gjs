@@ -228,7 +228,7 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     cairo_region_destroy(region);
 }
 
-[[nodiscard]] static bool region_to_gi_argument(
+GJS_JSAPI_RETURN_CONVENTION static bool region_to_gi_argument(
     JSContext* context, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
@@ -250,7 +250,7 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     if (!CairoRegion::for_js_typecheck(context, obj, &region))
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
-        cairo_region_destroy(region);
+        cairo_region_reference(region);
 
     gjs_arg_set(arg, region);
     return true;
