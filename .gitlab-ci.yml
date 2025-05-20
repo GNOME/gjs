@@ -7,7 +7,7 @@ include:
   - component: gitlab.gnome.org/GNOME/citemplates/release-service@master
     inputs:
       job-stage: deploy
-      dist-job-name: build_maximal
+      dist-job-name: build_maximal_x86_64
       tarball-artifact-path: "_build/meson-dist/${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.xz"
 
 stages:
@@ -127,7 +127,7 @@ sanitizer_thread_gcc:
 # There are a lot of debug log statements that are ifdef'd out in normal usage.
 # These sometimes get invalid expressions in them, leading to annoyance the
 # next time you try to use debug logging.
-build_maximal:
+.build_maximal: &build_maximal
   when: on_success
   stage: test
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs128-debug
@@ -143,7 +143,11 @@ build_maximal:
   script:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
-    - test/test-ci.sh SH_CHECKS
+    # The aarch64 runners do not support sudo installing gjs, so avoid complexity supporting two codepaths
+    - |
+      if [[ "$CI_RUNNER_TAGS" != *"aarch64"* ]]; then
+        test/test-ci.sh SH_CHECKS
+      fi
     - xvfb-run -a meson dist -C _build --include-subprojects
   artifacts:
     reports:
@@ -155,6 +159,14 @@ build_maximal:
       - _build/compile_commands.json
       - _build/meson-logs/*log*.txt
       - scripts.log
+
+build_maximal_x86_64:
+  <<: *build_maximal
+
+build_maximal_aarch64:
+  <<: *build_maximal
+  tags:
+    - aarch64
 
 build_minimal:
   <<: *build
@@ -508,19 +520,20 @@ zeal_11:
     # using the vfs driver, and this causes errors.
     - sed -i '/^mountopt =.*/d' /etc/containers/storage.conf
 
+    - export arch=$(echo "$CI_RUNNER_EXECUTABLE_ARCH" | cut -d'/' -f2)
     # Where the real magic happens
-    - buildah bud -f $DOCKERFILE -t "$CI_REGISTRY_IMAGE:$CI_JOB_NAME" $ARGS
+    - buildah bud -f $DOCKERFILE -t "$CI_REGISTRY_IMAGE:$IMAGE_NAME-$arch" $ARGS
 
     # Prepare to publish
-    - buildah tag "$CI_REGISTRY_IMAGE:$CI_JOB_NAME" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
+    - buildah tag "$CI_REGISTRY_IMAGE:$IMAGE_NAME-$arch" "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME_SLUG"
     - buildah images
     - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
     # Publish (if running on a schedule)
     - |
       if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
-        buildah push "$CI_REGISTRY_IMAGE:$CI_JOB_NAME"
-        buildah push "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME"
+        buildah push "$CI_REGISTRY_IMAGE:$IMAGE_NAME-$arch"
+        buildah push "$CI_REGISTRY_IMAGE:job-${CI_JOB_ID}_$CI_JOB_NAME_SLUG"
       fi
 
 .Docker variables: &docker_variables
@@ -534,10 +547,44 @@ fedora.mozjs128:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile
     ARGS: --build-arg MOZJS_BRANCH=mozjs128 --build-arg MOZJS_BUILDDEPS=mozjs115
+    IMAGE_NAME: fedora.mozjs128
 
-fedora.mozjs128-debug:
+.fedora.mozjs128-debug: &fedora_mozjs128_debug
   <<: *create_docker_image
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile.debug
     ARGS: --build-arg MOZJS_BRANCH=mozjs128 --build-arg MOZJS_BUILDDEPS=mozjs115
+    IMAGE_NAME: fedora.mozjs128-debug
+
+fedora.mozjs128-debug_x86_64:
+  <<: *fedora_mozjs128_debug
+
+fedora.mozjs128-debug_aarch64:
+  <<: *fedora_mozjs128_debug
+  tags:
+    - aarch64
+
+build-manifest-debug:
+  needs: ["fedora.mozjs128-debug_x86_64", "fedora.mozjs128-debug_aarch64"]
+  image: quay.io/freedesktop.org/ci-templates:container-build-base-2023-06-27.1
+  stage: deploy
+  only:
+    variables:
+      - $CRON_TASK == "BUILD_CI_IMAGES"
+  variables:
+    IMAGE_NAME: fedora.mozjs128-debug
+  
+  script:
+    - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - buildah manifest create $CI_REGISTRY_IMAGE:$IMAGE_NAME
+    - |
+      for arch in amd64 arm64; do
+        buildah manifest add $CI_REGISTRY_IMAGE:$IMAGE_NAME docker://$CI_REGISTRY_IMAGE:$IMAGE_NAME-$arch
+      done
+    # Publish multi-arch image (if running on a schedule)
+    # Newer buildah can omit the docker:// in manifest push https://github.com/containers/podman/issues/18360
+    - |
+      if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
+        buildah manifest push --all $CI_REGISTRY_IMAGE:$IMAGE_NAME docker://$CI_REGISTRY_IMAGE:$IMAGE_NAME
+      fi
