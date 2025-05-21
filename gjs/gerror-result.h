@@ -12,6 +12,13 @@
 
 #include "gjs/auto.h"
 
+namespace mozilla {
+namespace detail {
+template <typename V, typename E, PackingStrategy Strategy>
+class ResultImplementation;
+}
+}  // namespace mozilla
+
 // Auto pointer type for GError, as well as a Result type that can be used as a
 // type-safe return type for fallible GNOME-platform operations.
 // To indicate success, return Ok{}, and to indicate failure, return Err(error)
@@ -83,6 +90,15 @@ class SelectResultImpl<Ok, Gjs::AutoError> {
         constexpr const GError* inspectErr() const { return m_value.get(); }
         Gjs::AutoError unwrapErr() { return m_value.release(); }
     };
+};
+
+// Packing for any other pointer. Unlike in SpiderMonkey, GLib-allocated
+// pointers may not be aligned, so their bottom bit cannot be used for a flag.
+template <typename T>
+class SelectResultImpl<T*, Gjs::AutoError> {
+ public:
+    using Type = ResultImplementation<T*, Gjs::AutoError,
+                                      PackingStrategy::PackedVariant>;
 };
 
 }  // namespace detail

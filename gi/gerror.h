@@ -15,6 +15,7 @@
 #include <js/TypeDecls.h>
 
 #include "gi/cwrapper.h"
+#include "gi/info.h"
 #include "gi/wrapperutils.h"
 #include "gjs/auto.h"  // for Gjs::AutoPointer operators
 #include "gjs/gerror-result.h"
@@ -99,17 +100,16 @@ class ErrorBase
                                         GjsTypecheckNoThrow);
 };
 
-class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
-                                                 ErrorInstance, GIEnumInfo> {
+class ErrorPrototype
+    : public GIWrapperPrototype<ErrorBase, ErrorPrototype, ErrorInstance,
+                                GI::AutoEnumInfo, GI::EnumInfo> {
     friend class GIWrapperPrototype<ErrorBase, ErrorPrototype, ErrorInstance,
-                                    GIEnumInfo>;
+                                    GI::AutoEnumInfo, GI::EnumInfo>;
     friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
     GQuark m_domain;
 
-    static constexpr InfoType::Tag info_type_tag = InfoType::Enum;
-
-    explicit ErrorPrototype(GIEnumInfo* info, GType gtype);
+    explicit ErrorPrototype(const GI::EnumInfo, GType);
     ~ErrorPrototype(void);
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -120,7 +120,7 @@ class ErrorPrototype : public GIWrapperPrototype<ErrorBase, ErrorPrototype,
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext* cx, JS::HandleObject in_object,
-                             GIEnumInfo* info);
+                             const GI::EnumInfo);
 };
 
 class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,

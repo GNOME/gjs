@@ -12,6 +12,7 @@
 
 #include <new>
 #include <string>
+#include <type_traits>
 
 #include <girepository.h>
 #include <glib-object.h>
@@ -29,6 +30,7 @@
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_GetPrototype
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
 #include "gi/cwrapper.h"
@@ -48,9 +50,21 @@ class JSTracer;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
-                                const char* objtype, GIBaseInfo* info,
+                                const char* objtype,
+                                mozilla::Maybe<const GI::BaseInfo> info,
                                 GType gtype, const void* native_address,
                                 JS::MutableHandleValue ret);
+
+GJS_JSAPI_RETURN_CONVENTION
+static inline bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
+                                              const char* objtype,
+                                              const GI::BaseInfo info,
+                                              GType gtype,
+                                              const void* native_address,
+                                              JS::MutableHandleValue ret) {
+    return gjs_wrapper_to_string_func(
+        cx, this_obj, objtype, mozilla::Some(info), gtype, native_address, ret);
+}
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
                                          const char* field_name);
@@ -58,25 +72,41 @@ bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
 bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
                                       const char* field_name);
 
-namespace InfoType {
-enum Tag { Enum, Interface, Object, Struct, Union };
-}
-
 namespace MemoryUse {
 constexpr JS::MemoryUse GObjectInstanceStruct = JS::MemoryUse::Embedding1;
 }
 
 struct GjsTypecheckNoThrow {};
 
+// Some types of introspected wrapper permit creating a new type from JS (e.g.,
+// objects, interfaces.) These JS-created types do not have introspection info
+// and so their GIWrapperPrototype::info() methods return Maybe<const FooInfo>.
+// Others do not permit creating a new type from JS (e.g., enums, boxeds.) These
+// have GIWrapperPrototype::info() methods that return const FooInfo directly.
+// Sometimes we need to have different code for the two cases.
+template <typename>
+struct is_maybe : std::false_type {};
+template <typename T>
+struct is_maybe<mozilla::Maybe<T>> : std::true_type {};
+
 /*
  * gjs_define_static_methods:
  *
  * Defines all static methods from @info on @constructor. Also includes class
- * methods for GIObjectInfo, and interface methods for GIInterfaceInfo.
+ * methods for GI::ObjectInfo, and interface methods for GI::InterfaceInfo.
  */
-template <InfoType::Tag>
+template <GI::InfoTag TAG>
 GJS_JSAPI_RETURN_CONVENTION bool gjs_define_static_methods(
-    JSContext* cx, JS::HandleObject constructor, GType gtype, GIBaseInfo* info);
+    JSContext*, JS::HandleObject constructor, GType,
+    const GI::UnownedInfo<TAG>);
+
+template <GI::InfoTag TAG>
+GJS_JSAPI_RETURN_CONVENTION inline bool gjs_define_static_methods(
+    JSContext* cx, JS::HandleObject constructor, GType gtype,
+    const GI::OwnedInfo<TAG>& info) {
+    return gjs_define_static_methods(cx, constructor, gtype,
+                                     GI::UnownedInfo<TAG>{info});
+}
 
 /*
  * GIWrapperBase:
@@ -185,17 +215,27 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     // should be able to access the GIFooInfo and the GType, but for space
     // reasons we store them only on Prototype.
 
-    [[nodiscard]] GIBaseInfo* info() const { return get_prototype()->info(); }
+    [[nodiscard]] auto info() const { return get_prototype()->info(); }
     [[nodiscard]] GType gtype() const { return get_prototype()->gtype(); }
 
     // The next three methods are operations derived from the GIFooInfo.
 
     [[nodiscard]] const char* type_name() const { return g_type_name(gtype()); }
     [[nodiscard]] const char* ns() const {
-        return info() ? g_base_info_get_namespace(info()) : "";
+        if constexpr (Prototype::may_not_have_info) {
+            const auto i = info();
+            return i ? i->ns() : "";
+        } else {
+            return info().ns();
+        }
     }
     [[nodiscard]] const char* name() const {
-        return info() ? g_base_info_get_name(info()) : type_name();
+        if constexpr (Prototype::may_not_have_info) {
+            const auto i = info();
+            return i ? i->name() : type_name();
+        } else {
+            return info().name();
+        }
     }
 
     [[nodiscard]] std::string format_name() const {
@@ -627,7 +667,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     GJS_JSAPI_RETURN_CONVENTION
     static bool typecheck(JSContext* cx, JS::HandleObject object,
-                          GIBaseInfo* expected_info) {
+                          const GI::BaseInfo expected_info) {
         Base* priv;
         if (!Base::for_js_typecheck(cx, object, &priv) ||
             !priv->check_is_instance(cx, "convert to pointer"))
@@ -639,8 +679,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                          "Object is of type %s - cannot convert to %s.%s",
                          priv->format_name().c_str(),
-                         g_base_info_get_namespace(expected_info),
-                         g_base_info_get_name(expected_info));
+                         expected_info.ns(), expected_info.name());
         return false;
     }
     GJS_JSAPI_RETURN_CONVENTION
@@ -690,8 +729,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
  * GIWrapperPrototype", because of the unusual polymorphism scheme, in order for
  * Base to call methods such as trace_impl().
  */
-template <class Base, class Prototype, class Instance,
-          typename Info = GIObjectInfo>
+template <class Base, class Prototype, class Instance, typename OwnedInfo,
+          typename UnownedInfo>
 class GIWrapperPrototype : public Base {
     using GjsAutoPrototype =
         Gjs::AutoPointer<Prototype, void, g_atomic_rc_box_release>;
@@ -701,11 +740,11 @@ class GIWrapperPrototype : public Base {
     // not exposed through introspection, such as GLocalFile. Not all subclasses
     // of GIWrapperPrototype support this. Object and Interface support it in
     // any case.
-    GI::AutoBaseInfo m_info;
+    OwnedInfo m_info;
     GType m_gtype;
 
-    explicit GIWrapperPrototype(Info* info, GType gtype)
-        : Base(), m_info(info, Gjs::TakeOwnership{}), m_gtype(gtype) {
+    explicit GIWrapperPrototype(const UnownedInfo info, GType gtype)
+        : Base(), m_info(info), m_gtype(gtype) {
         Base::debug_lifecycle("Prototype constructor");
     }
 
@@ -814,7 +853,11 @@ class GIWrapperPrototype : public Base {
         // "unknown" if this is a custom or internal JS class with no GI
         // namespace, as in that case the name is already globally unique (it's
         // a GType name).
-        const char* gi_namespace = Base::info() ? Base::ns() : "unknown";
+        const char* gi_namespace;
+        if constexpr (may_not_have_info)
+            gi_namespace = Base::info() ? Base::ns() : "unknown";
+        else
+            gi_namespace = Base::ns();
 
         unsigned nargs = static_cast<Prototype*>(this)->constructor_nargs();
 
@@ -841,20 +884,21 @@ class GIWrapperPrototype : public Base {
      * Defines all introspectable static methods on @constructor, including
      * class methods for objects, and interface methods for interfaces. See
      * gjs_define_static_methods() for details.
-     *
-     * It requires Prototype to have an info_type_tag member to indicate
-     * the correct template specialization of gjs_define_static_methods().
      */
     GJS_JSAPI_RETURN_CONVENTION
     bool define_static_methods(JSContext* cx, JS::HandleObject constructor) {
-        if (!info())
-            return true;  // no introspection means no methods to define
-        return gjs_define_static_methods<Prototype::info_type_tag>(
-            cx, constructor, m_gtype, m_info);
+        if constexpr (may_not_have_info) {
+            if (!info())
+                return true;  // no introspection means no methods to define
+            return gjs_define_static_methods(cx, constructor, m_gtype,
+                                             info().value());
+        } else {
+            return gjs_define_static_methods(cx, constructor, m_gtype, m_info);
+        }
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static Prototype* create_prototype(Info* info, GType gtype) {
+    static Prototype* create_prototype(const UnownedInfo info, GType gtype) {
         g_assert(gtype != G_TYPE_INVALID);
 
         // We have to keep the Prototype in an arcbox because some of its
@@ -895,7 +939,7 @@ class GIWrapperPrototype : public Base {
      */
     GJS_JSAPI_RETURN_CONVENTION
     static Prototype* create_class(JSContext* cx, JS::HandleObject in_object,
-                                   Info* info, GType gtype,
+                                   const UnownedInfo info, GType gtype,
                                    JS::MutableHandleObject constructor,
                                    JS::MutableHandleObject prototype) {
         g_assert(in_object);
@@ -937,7 +981,7 @@ class GIWrapperPrototype : public Base {
 
     GJS_JSAPI_RETURN_CONVENTION
     static Prototype* wrap_class(JSContext* cx, JS::HandleObject in_object,
-                                 Info* info, GType gtype,
+                                 const UnownedInfo info, GType gtype,
                                  JS::HandleObject constructor,
                                  JS::MutableHandleObject prototype) {
         g_assert(in_object);
@@ -1004,7 +1048,8 @@ class GIWrapperPrototype : public Base {
 
     // Accessors
 
-    [[nodiscard]] Info* info() const { return m_info; }
+    static constexpr bool may_not_have_info = is_maybe<UnownedInfo>::value;
+    [[nodiscard]] const UnownedInfo info() const { return m_info; }
     [[nodiscard]] GType gtype() const { return m_gtype; }
 
     // Helper methods
@@ -1142,10 +1187,14 @@ class GIWrapperInstance : public Base {
      * the check.
      */
     [[nodiscard]]
-    bool typecheck_impl(GIBaseInfo* expected_info) const {
-        g_assert(expected_info &&
-                 "should not call typecheck_impl() without introspection info");
-        return g_base_info_equal(Base::info(), expected_info);
+    bool typecheck_impl(const GI::BaseInfo expected_info) const {
+        if constexpr (Prototype::may_not_have_info) {
+            if (Base::info())
+                return Base::info().ref() == expected_info;
+        } else {
+            return Base::info() == expected_info;
+        }
+        return true;
     }
     [[nodiscard]]
     bool typecheck_impl(GType expected_gtype) const {

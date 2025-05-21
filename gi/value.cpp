@@ -29,6 +29,7 @@
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for InformalValueTypeName, JS_Get...
+#include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -54,12 +55,13 @@
 #include "gjs/objectbox.h"
 #include "util/log.h"
 
+using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
+
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_g_value_internal(JSContext*, JS::MutableHandleValue,
-                                            const GValue*, bool no_copy = false,
-                                            bool is_introspected_signal = false,
-                                            GIArgInfo* = nullptr,
-                                            GITypeInfo* = nullptr);
+static bool gjs_value_from_g_value_internal(
+    JSContext*, JS::MutableHandleValue, const GValue*, bool no_copy = false,
+    bool is_introspected_signal = false,
+    Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>> = {});
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
@@ -145,8 +147,8 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool maybe_release_signal_value(JSContext* cx,
-                                       GI::AutoArgInfo const& arg_info,
-                                       GITypeInfo* type_info,
+                                       const GI::ArgInfo arg_info,
+                                       const GI::TypeInfo type_info,
                                        const GValue* gvalue,
                                        GITransfer transfer) {
     if (transfer == GI_TRANSFER_NOTHING)
@@ -172,22 +174,22 @@ static bool maybe_release_signal_value(JSContext* cx,
  * GObjects nor standalone closures. The return value must be unreffed.
  */
 [[nodiscard]]
-static GI::AutoSignalInfo get_signal_info_if_available(
-    GSignalQuery* signal_query) {
+static Maybe<GI::AutoSignalInfo> get_signal_info_if_available(
+    const GI::Repository& repo, GSignalQuery* signal_query) {
     if (!signal_query->itype)
-        return nullptr;
+        return {};
 
-    GI::AutoBaseInfo obj{
-        g_irepository_find_by_gtype(nullptr, signal_query->itype)};
-    if (!obj)
-        return nullptr;
+    Maybe<GI::AutoRegisteredTypeInfo> info{
+        repo.find_by_gtype(signal_query->itype)};
+    if (!info)
+        return {};
 
-    if (GI_IS_OBJECT_INFO(obj))
-        return g_object_info_find_signal(obj, signal_query->signal_name);
-    else if (GI_IS_INTERFACE_INFO(obj))
-        return g_interface_info_find_signal(obj, signal_query->signal_name);
+    if (auto object_info = info->as<GI::InfoTag::OBJECT>())
+        return object_info->signal(signal_query->signal_name);
+    else if (auto interface_info = info->as<GI::InfoTag::INTERFACE>())
+        return interface_info->signal(signal_query->signal_name);
 
-    return nullptr;
+    return {};
 }
 
 /*
@@ -197,8 +199,8 @@ static GI::AutoSignalInfo get_signal_info_if_available(
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_array_and_length_values(
     JSContext* context, JS::MutableHandleValue value_p,
-    GITypeInfo* array_type_info, const GValue* array_value,
-    GIArgInfo* array_length_arg_info, GITypeInfo* array_length_type_info,
+    const GI::TypeInfo array_type_info, const GValue* array_value,
+    Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>> array_length_info,
     const GValue* array_length_value, bool no_copy,
     bool is_introspected_signal) {
     JS::RootedValue array_length(context);
@@ -207,8 +209,8 @@ static bool gjs_value_from_array_and_length_values(
     g_assert(G_VALUE_HOLDS_INT(array_length_value));
 
     if (!gjs_value_from_g_value_internal(
-            context, &array_length, array_length_value, no_copy, is_introspected_signal,
-            array_length_arg_info, array_length_type_info))
+            context, &array_length, array_length_value, no_copy,
+            is_introspected_signal, array_length_info))
         return false;
 
     GIArgument array_arg;
@@ -298,33 +300,37 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
      */
     struct ArgumentDetails {
         int array_len_index_for = -1;
+        // FIXME don't use StackInfo here?
+        Maybe<std::pair<GI::StackArgInfo, GI::StackTypeInfo>> info;
         bool skip = false;
-        GITypeInfo type_info;
-        GI::AutoArgInfo arg_info;
+
+        // Convenience methods, unsafe if there is no introspection info
+        GI::StackArgInfo& arg_info() { return info->first; }
+        GI::StackTypeInfo& type_info() { return info->second; }
     };
     std::vector<ArgumentDetails> args_details(n_param_values);
     bool needs_cleanup = false;
 
-    GI::AutoSignalInfo signal_info{get_signal_info_if_available(&signal_query)};
+    GI::Repository repo;
+    Maybe<GI::AutoSignalInfo> signal_info{
+        get_signal_info_if_available(repo, &signal_query)};
     if (signal_info) {
         /* Start at argument 1, skip the instance parameter */
         for (i = 1; i < n_param_values; ++i) {
-            int array_len_pos;
-
             ArgumentDetails& arg_details = args_details[i];
-            arg_details.arg_info = g_callable_info_get_arg(signal_info, i - 1);
-            g_arg_info_load_type(arg_details.arg_info, &arg_details.type_info);
+            arg_details.info.emplace();
+            signal_info->load_arg(i - 1, &arg_details.arg_info());
+            arg_details.info->first.load_type(&arg_details.type_info());
 
-            array_len_pos =
-                g_type_info_get_array_length(&arg_details.type_info);
-            if (array_len_pos != -1) {
-                args_details[array_len_pos + 1].skip = true;
-                arg_details.array_len_index_for = array_len_pos + 1;
+            Maybe<unsigned> array_len_pos =
+                arg_details.type_info().array_length_index();
+            if (array_len_pos) {
+                args_details[*array_len_pos + 1].skip = true;
+                arg_details.array_len_index_for = *array_len_pos + 1;
             }
 
-            if (!needs_cleanup &&
-                g_arg_info_get_ownership_transfer(arg_details.arg_info) !=
-                    GI_TRANSFER_NOTHING)
+            if (!needs_cleanup && arg_details.arg_info().ownership_transfer() !=
+                                      GI_TRANSFER_NOTHING)
                 needs_cleanup = true;
         }
     }
@@ -356,13 +362,14 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             ArgumentDetails& array_len_details =
                 args_details[arg_details.array_len_index_for];
             res = gjs_value_from_array_and_length_values(
-                context, &argv_to_append, &arg_details.type_info, gval,
-                array_len_details.arg_info, &array_len_details.type_info,
-                array_len_gval, no_copy, is_introspected_signal);
+                //                        FIXME: what if no type_info
+                context, &argv_to_append, arg_details.type_info(), gval,
+                array_len_details.info, array_len_gval, no_copy,
+                is_introspected_signal);
         } else {
             res = gjs_value_from_g_value_internal(
                 context, &argv_to_append, gval, no_copy, is_introspected_signal,
-                arg_details.arg_info, &arg_details.type_info);
+                arg_details.info);
         }
 
         if (!res) {
@@ -397,17 +404,15 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     if (needs_cleanup) {
         for (i = 0; i < n_param_values; ++i) {
             ArgumentDetails& arg_details = args_details[i];
-            if (!arg_details.arg_info)
+            if (!arg_details.info)
                 continue;
 
-            GITransfer transfer =
-                g_arg_info_get_ownership_transfer(arg_details.arg_info);
-
+            GITransfer transfer = arg_details.arg_info().ownership_transfer();
             if (transfer == GI_TRANSFER_NOTHING)
                 continue;
 
-            if (!maybe_release_signal_value(context, arg_details.arg_info,
-                                            &arg_details.type_info,
+            if (!maybe_release_signal_value(context, arg_details.arg_info(),
+                                            arg_details.type_info(),
                                             &param_values[i], transfer)) {
                 gjs_log_exception(context);
                 return;
@@ -767,22 +772,26 @@ gjs_value_to_g_value_internal(JSContext      *context,
                           JS::InformalValueTypeName(value));
                 return false;
             } else {
-                GI::AutoBaseInfo registered{
-                    g_irepository_find_by_gtype(nullptr, gtype)};
+                GI::Repository repo;
+                Maybe<GI::AutoRegisteredTypeInfo> registered{
+                    repo.find_by_gtype(gtype)};
 
                 /* We don't necessarily have the typelib loaded when
                    we first see the structure... */
-                if (registered && GI_IS_STRUCT_INFO(registered) &&
-                    g_struct_info_is_foreign(registered.as<GIStructInfo>())) {
-                    GIArgument arg;
+                if (registered) {
+                    if (auto struct_info =
+                            registered->as<GI::InfoTag::STRUCT>();
+                        struct_info && struct_info->is_foreign()) {
+                        GIArgument arg;
 
-                    if (!gjs_struct_foreign_convert_to_gi_argument(
-                            context, value, registered, nullptr,
-                            GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
-                            GjsArgumentFlags::MAY_BE_NULL, &arg))
-                        return false;
+                        if (!gjs_struct_foreign_convert_to_gi_argument(
+                                context, value, struct_info.value(), nullptr,
+                                GJS_ARGUMENT_ARGUMENT, GI_TRANSFER_NOTHING,
+                                GjsArgumentFlags::MAY_BE_NULL, &arg))
+                            return false;
 
-                    gboxed = gjs_arg_get<void*>(&arg);
+                        gboxed = gjs_arg_get<void*>(&arg);
+                    }
                 }
 
                 /* First try a union, if that fails,
@@ -957,7 +966,9 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
     return gjs_value_to_g_value_internal(context, value, gvalue, true);
 }
 
-[[nodiscard]] static JS::Value convert_int_to_enum(GType gtype, int64_t v) {
+[[nodiscard]]
+static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
+                                     int64_t v) {
     double v_double;
 
     if (v > 0 && v < G_MAXINT) {
@@ -965,7 +976,8 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
         v_double = v;
     } else {
         /* Need to distinguish between negative integers and unsigned integers */
-        GI::AutoEnumInfo info{g_irepository_find_by_gtype(nullptr, gtype)};
+        Maybe<GI::AutoEnumInfo> info{
+            repo.find_by_gtype<GI::InfoTag::ENUM>(gtype)};
 
         // Native enums don't have type info, assume
         // they are signed to avoid crashing when
@@ -973,7 +985,7 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
         if (!info) {
             v_double = int64_t(v);
         } else {
-            v_double = _gjs_enum_from_int(info, v);
+            v_double = info->enum_from_int(v);
         }
     }
 
@@ -981,12 +993,11 @@ gjs_value_to_g_value_no_copy(JSContext      *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_value_from_g_value_internal(JSContext* context,
-                                            JS::MutableHandleValue value_p,
-                                            const GValue* gvalue, bool no_copy,
-                                            bool is_introspected_signal,
-                                            GIArgInfo* arg_info,
-                                            GITypeInfo* type_info) {
+static bool gjs_value_from_g_value_internal(
+    JSContext* context, JS::MutableHandleValue value_p, const GValue* gvalue,
+    bool no_copy, bool is_introspected_signal,
+    Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>>
+        introspection_info) {
     GType gtype;
 
     gtype = G_VALUE_TYPE(gvalue);
@@ -1072,37 +1083,41 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
             return true;
         }
 
-        if (!is_introspected_signal || !arg_info) {
+        if (!is_introspected_signal || !introspection_info) {
             gjs_throw(context, "Unknown signal");
             return false;
         }
+        const GI::ArgInfo arg_info = introspection_info->first;
+        const GI::TypeInfo type_info = introspection_info->second;
 
-        GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
-        GI::AutoTypeInfo element_info{g_type_info_get_param_type(type_info, 0)};
-        if (!gjs_array_from_g_value_array(context, value_p, element_info,
-                                          transfer, gvalue)) {
+        if (!gjs_array_from_g_value_array(
+                context, value_p, type_info.element_type(),
+                arg_info.ownership_transfer(), gvalue)) {
             gjs_throw(context, "Failed to convert array");
             return false;
         }
     } else if (gtype == G_TYPE_HASH_TABLE) {
-        if (!arg_info) {
+        if (!introspection_info) {
             gjs_throw(context, "Failed to get GValue from Hash Table without"
                       "signal information");
             return false;
         }
-        GI::AutoTypeInfo key_info{g_type_info_get_param_type(type_info, 0)};
-        GI::AutoTypeInfo value_info{g_type_info_get_param_type(type_info, 1)};
-        GITransfer transfer = g_arg_info_get_ownership_transfer(arg_info);
-        GITypeTag key_tag = g_type_info_get_tag(key_info);
-        GITypeTag val_tag = g_type_info_get_tag(value_info);
+        const GI::ArgInfo arg_info = introspection_info->first;
+        const GI::TypeInfo type_info = introspection_info->second;
+
+        GI::AutoTypeInfo key_info{type_info.key_type()};
+        GI::AutoTypeInfo value_info{type_info.value_type()};
+        GITypeTag key_tag = key_info.tag();
+        GITypeTag val_tag = value_info.tag();
 
         auto* ghash = Gjs::gvalue_get<GHashTable*>(gvalue);
         if (GI_TYPE_TAG_IS_BASIC(key_tag) && GI_TYPE_TAG_IS_BASIC(val_tag)) {
             if (!gjs_value_from_basic_ghash(context, value_p, key_tag, val_tag,
                                             ghash))
                 return false;
-        } else if (!gjs_object_from_g_hash(context, value_p, key_info,
-                                           value_info, transfer, ghash)) {
+        } else if (!gjs_object_from_g_hash(
+                       context, value_p, key_info, value_info,
+                       arg_info.ownership_transfer(), ghash)) {
             gjs_throw(context, "Failed to convert Hash Table");
             return false;
         }
@@ -1136,7 +1151,8 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
 
         /* The only way to differentiate unions and structs is from
          * their g-i info as both GBoxed */
-        GI::AutoBaseInfo info{gjs_lookup_gtype(nullptr, gtype)};
+        GI::Repository repo;
+        Maybe<GI::AutoRegisteredTypeInfo> info{gjs_lookup_gtype(repo, gtype)};
         if (!info) {
             gjs_throw(context,
                       "No introspection information found for %s",
@@ -1145,31 +1161,36 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         }
 
         void* gboxed = Gjs::gvalue_get<void*>(gvalue);
-        if (GI_IS_STRUCT_INFO(info) && g_struct_info_is_foreign(info)) {
-            GIArgument arg;
-            gjs_arg_set(&arg, gboxed);
-            return gjs_struct_foreign_convert_from_gi_argument(context, value_p,
-                                                               info, &arg);
-        }
+        if (auto struct_info = info->as<GI::InfoTag::STRUCT>()) {
+            if (struct_info->is_foreign()) {
+                GIArgument arg;
+                gjs_arg_set(&arg, gboxed);
+                return gjs_struct_foreign_convert_from_gi_argument(
+                    context, value_p, struct_info.value(), &arg);
+            }
 
-        if (info.type() == GI_INFO_TYPE_BOXED || GI_IS_STRUCT_INFO(info)) {
-            if (no_copy)
-                obj = BoxedInstance::new_for_c_struct(context, info, gboxed,
-                                                      BoxedInstance::NoCopy());
-            else
-                obj = BoxedInstance::new_for_c_struct(context, info, gboxed);
-        } else if (GI_IS_UNION_INFO(info)) {
-            obj = UnionInstance::new_for_c_union(context, info, gboxed);
+            if (no_copy) {
+                obj = BoxedInstance::new_for_c_struct(
+                    context, struct_info.value(), gboxed,
+                    BoxedInstance::NoCopy{});
+            } else {
+                obj = BoxedInstance::new_for_c_struct(
+                    context, struct_info.value(), gboxed);
+            }
+        } else if (auto union_info = info->as<GI::InfoTag::UNION>()) {
+            obj = UnionInstance::new_for_c_union(context, union_info.value(),
+                                                 gboxed);
         } else {
-            gjs_throw(context, "Unexpected introspection type %d for %s",
-                      info.type(), g_type_name(gtype));
+            gjs_throw(context, "Unexpected introspection type %s for %s",
+                      info->type_string(), g_type_name(gtype));
             return false;
         }
 
         value_p.setObjectOrNull(obj);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
+        GI::Repository repo;
         value_p.set(convert_int_to_enum(
-            gtype, Gjs::gvalue_get<Gjs::Tag::Long>(gvalue)));
+            repo, gtype, Gjs::gvalue_get<Gjs::Tag::Long>(gvalue)));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         GParamSpec* gparam = Gjs::gvalue_get<GParamSpec*>(gvalue);
         JSObject *obj;
@@ -1177,14 +1198,15 @@ static bool gjs_value_from_g_value_internal(JSContext* context,
         obj = gjs_param_from_g_param(context, gparam);
         value_p.setObjectOrNull(obj);
     } else if (is_introspected_signal && g_type_is_a(gtype, G_TYPE_POINTER)) {
-        if (!arg_info) {
+        if (!introspection_info) {
             gjs_throw(context, "Unknown signal.");
             return false;
         }
+        const GI::TypeInfo type_info = introspection_info->second;
 
-        g_assert(((void)"Check gjs_value_from_array_and_length_values() before"
-                        " calling gjs_value_from_g_value_internal()",
-                  g_type_info_get_array_length(type_info) == -1));
+        g_assert(!type_info.array_length_index() &&
+                 "Check gjs_value_from_array_and_length_values() before "
+                 "calling gjs_value_from_g_value_internal()");
 
         GIArgument arg;
         gjs_arg_set(&arg, Gjs::gvalue_get<void*>(gvalue));

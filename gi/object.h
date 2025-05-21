@@ -213,9 +213,12 @@ struct IdHasher {
 };
 
 class ObjectPrototype
-    : public GIWrapperPrototype<ObjectBase, ObjectPrototype, ObjectInstance> {
-    friend class GIWrapperPrototype<ObjectBase, ObjectPrototype,
-                                    ObjectInstance>;
+    : public GIWrapperPrototype<ObjectBase, ObjectPrototype, ObjectInstance,
+                                mozilla::Maybe<GI::AutoObjectInfo>,
+                                mozilla::Maybe<GI::ObjectInfo>> {
+    friend class GIWrapperPrototype<ObjectBase, ObjectPrototype, ObjectInstance,
+                                    mozilla::Maybe<GI::AutoObjectInfo>,
+                                    mozilla::Maybe<GI::ObjectInfo>>;
     friend class GIWrapperBase<ObjectBase, ObjectPrototype, ObjectInstance>;
 
     using NegativeLookupCache =
@@ -228,10 +231,8 @@ class ObjectPrototype
     // by gjs_add_interface
     std::vector<GType> m_interface_gtypes;
 
-    ObjectPrototype(GIObjectInfo* info, GType gtype);
+    ObjectPrototype(mozilla::Maybe<GI::ObjectInfo> info, GType gtype);
     ~ObjectPrototype();
-
-    static constexpr InfoType::Tag info_type_tag = InfoType::Object;
 
  public:
     [[nodiscard]] static ObjectPrototype* for_gtype(GType gtype);
@@ -243,8 +244,8 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool get_parent_constructor(JSContext* cx,
                                 JS::MutableHandleObject constructor) const;
-
-    [[nodiscard]] bool is_vfunc_unchanged(GIVFuncInfo* info);
+    [[nodiscard]]
+    bool is_vfunc_unchanged(const GI::VFuncInfo) const;
     static void vfunc_invalidated_notify(void* data, GClosure* closure);
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -278,7 +279,7 @@ class ObjectPrototype
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext* cx, JS::HandleObject in_object,
-                             GIObjectInfo* info, GType gtype,
+                             mozilla::Maybe<const GI::ObjectInfo>, GType,
                              GType* interface_gtypes,
                              uint32_t n_interface_gtypes,
                              JS::MutableHandleObject constructor,

@@ -21,6 +21,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_NewObjectForConstructor, JS_NewObjectWithG...
+#include <mozilla/Maybe.h>
 
 #include "gi/cwrapper.h"
 #include "gi/function.h"
@@ -36,6 +37,8 @@
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
+
+using mozilla::Maybe;
 
 extern struct JSClass gjs_param_class;
 
@@ -81,24 +84,23 @@ param_resolve(JSContext       *context,
         return true; /* not resolved, but no error */
     }
 
-    GI::AutoObjectInfo info{g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM)};
-    GI::AutoFunctionInfo method_info{
-        g_object_info_find_method(info, name.get())};
+    GI::Repository repo;
+    GI::AutoObjectInfo info{
+        repo.find_by_gtype<GI::InfoTag::OBJECT>(G_TYPE_PARAM).value()};
+    Maybe<GI::AutoFunctionInfo> method_info{info.method(name.get())};
 
     if (!method_info) {
         *resolved = false;
         return true;
     }
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-    _gjs_log_info_usage(method_info);
-#endif
+    method_info->log_usage();
 
-    if (g_function_info_get_flags (method_info) & GI_FUNCTION_IS_METHOD) {
+    if (method_info->is_method()) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Defining method %s in prototype for GObject.ParamSpec",
-                  method_info.name());
+                  method_info->name());
 
-        if (!gjs_define_function(context, obj, G_TYPE_PARAM, method_info))
+        if (!gjs_define_function(context, obj, G_TYPE_PARAM, method_info.ref()))
             return false;
 
         *resolved = true; /* we defined the prop in obj */
@@ -215,9 +217,10 @@ gjs_define_param_class(JSContext       *context,
     if (!gjs_wrapper_define_gtype_prop(context, constructor, G_TYPE_PARAM))
         return false;
 
-    GI::AutoObjectInfo info{g_irepository_find_by_gtype(nullptr, G_TYPE_PARAM)};
-    if (!gjs_define_static_methods<InfoType::Object>(context, constructor,
-                                                     G_TYPE_PARAM, info))
+    GI::Repository repo;
+    GI::AutoObjectInfo info{
+        repo.find_by_gtype<GI::InfoTag::OBJECT>(G_TYPE_PARAM).value()};
+    if (!gjs_define_static_methods(context, constructor, G_TYPE_PARAM, info))
         return false;
 
     gjs_debug(GJS_DEBUG_GPARAM,

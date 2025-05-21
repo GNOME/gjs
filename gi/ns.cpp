@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include <girepository.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>
@@ -24,6 +23,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <jsapi.h>       // for JS_NewObjectWithGivenProto
+#include <mozilla/Maybe.h>
 
 #include "gi/cwrapper.h"
 #include "gi/info.h"
@@ -42,12 +42,7 @@
 #    include "gjs/deprecation.h"
 #endif  // GLib >= 2.79.2
 
-[[nodiscard]] static bool type_is_enumerable(GIBaseInfo* info) {
-    // Don't enumerate types which GJS doesn't define on namespaces.
-    // See gjs_define_info
-    return GI_IS_REGISTERED_TYPE_INFO(info) || GI_IS_FUNCTION_INFO(info) ||
-           GI_IS_CONSTANT_INFO(info);
-}
+using mozilla::Maybe;
 
 class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
@@ -125,8 +120,8 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             return true;  // not resolved, but no error
         }
 
-        GI::AutoBaseInfo info{
-            g_irepository_find_by_name(nullptr, get(), name.get())};
+        Maybe<GI::AutoBaseInfo> info{
+            GI::Repository{}.find_by_name(get(), name.get())};
         if (!info) {
             *resolved = false;  // No property defined, but no error either
             return true;
@@ -134,7 +129,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
         gjs_debug(GJS_DEBUG_GNAMESPACE,
                   "Found info type %s for '%s' in namespace '%s'",
-                  g_info_type_to_string(info.type()), info.name(), info.ns());
+                  info->type_string(), info->name(), info->ns());
 
 #if GLIB_CHECK_VERSION(2, 79, 2)
         static const char* unix_types_exceptions[] = {
@@ -155,9 +150,9 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 #endif  // GLib >= 2.79.2
 
         bool defined;
-        if (!gjs_define_info(cx, obj, info, &defined)) {
+        if (!gjs_define_info(cx, obj, info.ref(), &defined)) {
             gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
-                      info.name());
+                      info->name());
             return false;
         }
 
@@ -171,20 +166,17 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                             JS::HandleObject obj [[maybe_unused]],
                             JS::MutableHandleIdVector properties,
                             bool only_enumerable [[maybe_unused]]) {
-        int n = g_irepository_get_n_infos(nullptr, get());
-        if (!properties.reserve(properties.length() + n)) {
+        GI::Repository::Iterator infos{GI::Repository{}.infos(get())};
+        if (!properties.reserve(properties.length() + infos.size())) {
             JS_ReportOutOfMemory(cx);
             return false;
         }
 
-        for (int k = 0; k < n; k++) {
-            GI::AutoBaseInfo info{g_irepository_get_info(nullptr, get(), k)};
-            if (!type_is_enumerable(info))
+        for (GI::AutoBaseInfo info : infos) {
+            if (!info.is_enumerable())
                 continue;
 
-            const char* name = info.name();
-
-            jsid id = gjs_intern_string_to_id(cx, name);
+            jsid id = gjs_intern_string_to_id(cx, info.name());
             if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
@@ -209,7 +201,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     GJS_JSAPI_RETURN_CONVENTION
     static bool get_version(JSContext* cx, unsigned argc, JS::Value* vp) {
         GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
-        const char *version = g_irepository_get_version(nullptr, priv->get());
+        const char* version = GI::Repository{}.get_version(priv->get());
         return gjs_string_from_utf8(cx, version, args.rval());
     }
 
