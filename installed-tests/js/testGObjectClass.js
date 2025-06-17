@@ -677,7 +677,10 @@ describe('GObject class with decorator', function () {
             }
         });
 
-        expect(() => new MyCustomCharset() && new MySecondCustomCharset()).not.toThrow();
+        expect(() => {
+            new MyCustomCharset();
+            new MySecondCustomCharset();
+        }).not.toThrow();
     });
 
     it('resolves properties from interfaces', function () {
