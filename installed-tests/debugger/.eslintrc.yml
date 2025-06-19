@@ -3,3 +3,9 @@
 # SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 rules:
   no-debugger: 'off'
+overrides:
+  - files:
+      - keys.debugger.js
+      - print.debugger.js
+    rules:
+      no-unused-private-class-members: 'off'
