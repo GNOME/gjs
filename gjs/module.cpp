@@ -21,6 +21,7 @@
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/Conversions.h>
+#include <js/EnvironmentChain.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
 #include <js/GCVector.h>  // for RootedVector
@@ -119,7 +120,7 @@ class GjsScriptModule {
         if (!buf.init(cx, source, source_len, JS::SourceOwnership::Borrowed))
             return false;
 
-        JS::RootedObjectVector scope_chain(cx);
+        JS::EnvironmentChain scope_chain{cx, JS::SupportUnscopables::No};
         if (!scope_chain.append(module)) {
             JS_ReportOutOfMemory(cx);
             return false;

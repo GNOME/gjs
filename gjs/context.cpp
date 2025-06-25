@@ -42,6 +42,7 @@
 #include <js/CompilationAndEvaluation.h>
 #include <js/CompileOptions.h>
 #include <js/Context.h>
+#include <js/EnvironmentChain.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>     // for StealPendingExceptionStack
 #include <js/GCAPI.h>         // for JS_GC, JS_AddExtraGCRootsTr...
@@ -1733,7 +1734,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     if (!buf.init(m_cx, source, source_len, JS::SourceOwnership::Borrowed))
         return false;
 
-    JS::RootedObjectVector scope_chain(m_cx);
+    JS::EnvironmentChain scope_chain{m_cx, JS::SupportUnscopables::No};
     if (!scope_chain.append(eval_obj)) {
         JS_ReportOutOfMemory(m_cx);
         return false;

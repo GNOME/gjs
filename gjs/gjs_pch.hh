@@ -65,6 +65,7 @@
 #include <js/ContextOptions.h>
 #include <js/Conversions.h>
 #include <js/Debug.h>
+#include <js/EnvironmentChain.h>
 #include <js/ErrorReport.h>
 #include <js/Exception.h>
 #include <js/GCAPI.h>
