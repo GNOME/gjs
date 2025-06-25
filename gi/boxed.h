@@ -121,7 +121,7 @@ class BoxedPrototype
     // The ID is traced from the object, so it's OK to create a handle from it.
     [[nodiscard]] JS::HandleId default_constructor_name() const {
         return JS::HandleId::fromMarkedLocation(
-            m_default_constructor_name.address());
+            m_default_constructor_name.unsafeAddress());
     }
 
     // JSClass operations
