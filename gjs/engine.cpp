@@ -181,6 +181,7 @@ JSPrincipals* get_internal_principals() {
 
 static const JSSecurityCallbacks security_callbacks = {
     /* contentSecurityPolicyAllows = */ nullptr,
+    /* codeForEvalGets = */ nullptr,
     &ModuleLoaderPrincipals::subsumes,
 };
 
