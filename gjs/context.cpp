@@ -1004,9 +1004,11 @@ void GjsContextPrivate::stop_draining_job_queue(void) {
     m_dispatcher.stop();
 }
 
-JSObject* GjsContextPrivate::getIncumbentGlobal(JSContext* cx) {
+bool GjsContextPrivate::getHostDefinedData(JSContext* cx,
+                                           JS::MutableHandleObject data) const {
     // This is equivalent to SpiderMonkey's behavior.
-    return JS::CurrentGlobalOrNull(cx);
+    data.set(JS::CurrentGlobalOrNull(cx));
+    return true;
 }
 
 // See engine.cpp and JS::SetJobQueue().
