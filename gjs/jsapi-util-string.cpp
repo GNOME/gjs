@@ -146,7 +146,7 @@ bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* 
  * Returns: The decoded string.
  */
 JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
-    JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
+    JS::UTF8Chars chars{utf8_string, strlen(utf8_string)};
     size_t outlen;
     JS::UniqueTwoByteChars twobyte_chars(
         JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
