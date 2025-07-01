@@ -1,3 +1,27 @@
+Version 1.85.1
+--------------
+
+- Closed bugs and merge requests:
+  * Various maintenance [!985, !990, !991, !1000, Philip Chimento]
+  * ObjectInstance::unlink is slow since s_wrapped_gobject_list is a vector
+    [#682, !989, road2react]
+  * Make GTK3 tests optional [#679, !993, Philip Chimento]
+  * Preparation for gobject-introspection-2.0 [!994, Philip Chimento]
+  * Add aarch64 CI job [#364, !996, Gary Li]
+  * Add null-safe C++ wrappers for libgirepository [!997, Philip Chimento]
+  * Extra handling for enum/flags in setter and getter callers [!998, Pranav P]
+  * Register Cairo.Path and Cairo.Pattern as foreign structs [#659, !999, Gary
+    Li]
+  * Crash when passing certain Cairo types as transfer-full in arguments [#660,
+    !999, Gary Li]
+
+Version 1.84.2
+--------------
+
+- Closed bugs and merge requests:
+  * GtkNotebook.pages GListModel is inaccessible from GJS [#686, !992, Philip
+    Chimento]
+
 Version 1.84.1
 --------------
 
