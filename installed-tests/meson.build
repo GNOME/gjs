@@ -138,3 +138,8 @@ foreach test : debugger_tests
             install_dir: installed_tests_execdir / 'debugger')
     endif
 endforeach
+
+if get_option('installed_tests')
+    install_data('debugger' / 'sourcemap-number-module.js',
+      install_dir: installed_tests_execdir / 'debugger')
+endif
