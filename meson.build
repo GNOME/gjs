@@ -586,8 +586,14 @@ endif
 
 ### Generate pkg-config file ###################################################
 
+requires_private_names = ['gthread-2.0', 'girepository-2.0', 'ffi', 'cairo',
+    'cairo-gobject', 'mozjs-128']
+if pkg_dependencies.contains(cairo_xlib)
+    requires_private_names += 'cairo-xlib'
+endif
 pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
-    requires: [glib, gobject, gio], requires_private: pkg_dependencies,
+    requires: ['glib-2.0', 'gobject-2.0', 'gio-2.0'],
+    requires_private: requires_private_names,
     subdirs: api_name,
     variables: [
         'exec_prefix=${prefix}',
