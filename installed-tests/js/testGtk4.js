@@ -347,6 +347,15 @@ describe('Gtk 4', function () {
             expect(pages.get_n_items()).toBe(0);
             expect(pages.get_selection().get_size()).toBe(0);
         });
+
+        it('callback with scope-notify transfer-full in parameter', function () {
+            // https://gitlab.gnome.org/GNOME/gjs/-/issues/691
+            const model = new Gio.ListStore({itemType: Gtk.Label});
+            model.append(new Gtk.Label({label: 'test'}));
+            const mapModel = new Gtk.MapListModel({model});
+            mapModel.set_map_func(item => Gtk.StringObject.new(item.label));
+            mapModel.get_item(0);
+        });
     });
 
     describe('template signal', function () {

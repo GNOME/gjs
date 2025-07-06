@@ -302,7 +302,8 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     }
 
     // Caller must take care that the lifetime of UnownedInfo does not exceed
-    // the lifetime of the StackInfo. Do not store it.
+    // the lifetime of the StackInfo. Do not store the UnownedInfo, or try to
+    // take ownership.
     UnownedInfo(const StackArgInfo& other)  // NOLINT(runtime/explicit)
         : UnownedInfo(detail::Pointer::get_from(other)) {
         static_assert(TAG == InfoTag::ARG);
@@ -382,11 +383,17 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     ~OwnedInfo() { g_clear_pointer(&m_info, g_base_info_unref); }
 
     // Copy OwnedInfo from UnownedInfo, which also comes down to just taking a
-    // reference. Explicit because it takes a reference.
+    // reference. Explicit because it takes a reference. However, make sure the
+    // UnownedInfo is not borrowed from a StackInfo!
     explicit OwnedInfo(const UnownedInfo<TAG>& other)
         : OwnedInfo(detail::Pointer::get_from(other)) {
         g_base_info_ref(m_info);
     }
+
+    // Do not try to take ownership of a StackInfo.
+    // (cpplint false positive: https://github.com/cpplint/cpplint/issues/386)
+    OwnedInfo(const StackArgInfo& other) = delete;   // NOLINT(runtime/explicit)
+    OwnedInfo(const StackTypeInfo& other) = delete;  // NOLINT(runtime/explicit)
 };
 
 using AutoArgInfo = OwnedInfo<InfoTag::ARG>;
@@ -1714,6 +1721,19 @@ class StackArgInfo : public InfoOperations<StackArgInfo, InfoTag::ARG> {
 
  public:
     constexpr StackArgInfo() {}
+    // Moving is okay, we copy the contents of the GIArgInfo struct and reset
+    // the existing one
+    constexpr StackArgInfo(StackArgInfo&& other) : m_info(other.m_info) {
+        other.m_info = {};
+    }
+    constexpr StackArgInfo& operator=(StackArgInfo&& other) {
+        m_info = other.m_info;
+        other.m_info = {};
+        return *this;
+    }
+    // Prefer moving to copying
+    StackArgInfo(const StackArgInfo&) = delete;
+    StackArgInfo& operator=(const StackArgInfo&) = delete;
 };
 
 class StackTypeInfo : public InfoOperations<StackTypeInfo, InfoTag::TYPE> {
@@ -1728,6 +1748,19 @@ class StackTypeInfo : public InfoOperations<StackTypeInfo, InfoTag::TYPE> {
 
  public:
     constexpr StackTypeInfo() {}
+    // Moving is okay, we copy the contents of the GITypeInfo struct and reset
+    // the existing one
+    constexpr StackTypeInfo(StackTypeInfo&& other) : m_info(other.m_info) {
+        other.m_info = {};
+    }
+    constexpr StackTypeInfo& operator=(StackTypeInfo&& other) {
+        m_info = other.m_info;
+        other.m_info = {};
+        return *this;
+    }
+    // Prefer moving to copying
+    StackTypeInfo(const StackTypeInfo&) = delete;
+    StackTypeInfo& operator=(const StackTypeInfo&) = delete;
 };
 
 namespace detail {

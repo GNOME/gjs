@@ -642,11 +642,11 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         }
 
         struct InvalidateData {
-            GI::AutoArgInfo arg_info;
+            GI::StackArgInfo arg_info;
             GIArgument arg;
         };
 
-        auto* data = new InvalidateData({GI::AutoArgInfo{arg_info}, *arg});
+        auto* data = new InvalidateData({std::move(arg_info), *arg});
         g_closure_add_invalidate_notifier(
             this, data, [](void* invalidate_data, GClosure* c) {
                 auto* self = static_cast<GjsCallbackTrampoline*>(c);
