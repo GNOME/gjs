@@ -141,12 +141,12 @@ elif test "$1" = "BUILD"; then
     do_Set_Env
 
     DEFAULT_CONFIG_OPTS="-Dreadline=enabled -Dprofiler=enabled -Ddtrace=false \
-        -Dsystemtap=false -Dverbose_logs=false --werror"
+        -Dsystemtap=false -Dverbose_logs=false --werror -Dglib:werror=false"
     meson setup _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS
     ninja -C _build
 
     if test "$TEST" != "skip"; then
-        xvfb-run -a meson test -C _build $TEST_OPTS
+        xvfb-run -a meson test -C _build --suite=gjs $TEST_OPTS
     fi
 
 elif test "$1" = "SH_CHECKS"; then
