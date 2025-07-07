@@ -150,7 +150,7 @@ sanitizer_thread_gcc:
       if [[ "$CI_RUNNER_TAGS" != *"aarch64"* ]]; then
         test/test-ci.sh SH_CHECKS
       fi
-    - xvfb-run -a meson dist -C _build --include-subprojects
+    - xvfb-run -a meson dist -C _build
   artifacts:
     reports:
       junit: _build/meson-logs/testlog*.junit.xml
