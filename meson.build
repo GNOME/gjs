@@ -593,6 +593,7 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
         'exec_prefix=${prefix}',
         'datarootdir=${datadir}',
         'gjs_console=${bindir}/gjs-console',
+        'mozjs_dep_name=@0@'.format(spidermonkey.name()),
     ])
 
 ### Test environment ###########################################################
