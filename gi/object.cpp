@@ -1658,7 +1658,6 @@ static bool resolve_on_interface_prototype(JSContext* cx,
                                            JS::HandleId identifier,
                                            JS::HandleObject class_prototype,
                                            bool* found) {
-    // FIXME: erroneously used g_base_info_get_type here. fix in separate commit
     JS::RootedObject interface_prototype(
         cx, gjs_lookup_object_prototype_from_info(cx, Some(iface_info),
                                                   iface_info.gtype()));
