@@ -1658,7 +1658,6 @@ static bool resolve_on_interface_prototype(JSContext* cx,
                                            JS::HandleId identifier,
                                            JS::HandleObject class_prototype,
                                            bool* found) {
-    // FIXME: erroneously used g_base_info_get_type here. fix in separate commit
     JS::RootedObject interface_prototype(
         cx, gjs_lookup_object_prototype_from_info(cx, Some(iface_info),
                                                   iface_info.gtype()));
@@ -1756,22 +1755,6 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                 g_object_class_find_property(oclass, canonical_name))
             return lazy_define_gobject_property(cx, obj, id, pspec, resolved,
                                                 name);
-
-        for (const GI::InterfaceInfo& iface_info : interfaces) {
-            GType iface_gtype = iface_info.gtype();
-            if (!G_TYPE_IS_CLASSED(iface_gtype))
-                continue;
-
-            Gjs::AutoTypeClass<GObjectClass> iclass{iface_gtype};
-
-            if (GParamSpec* pspec =
-                    g_object_class_find_property(iclass, canonical_name)) {
-                return lazy_define_gobject_property(
-                    cx, obj, id, pspec, resolved, name,
-                    get_ginterface_property_by_name(iface_info,
-                                                    canonical_name));
-            }
-        }
     }
 
     for (const GI::InterfaceInfo& iface_info : interfaces) {
@@ -1789,25 +1772,6 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
 
             *resolved = true;
             return true;
-        }
-
-        /* If the name refers to a GObject property, lazily define the property
-         * in JS as we do below in the real resolve hook. We ignore fields here
-         * because I don't think interfaces can have fields */
-        if (canonical_name) {
-            Maybe<const GI::AutoPropertyInfo> prop_info{
-                get_ginterface_property_by_name(iface_info, canonical_name)};
-
-            if (prop_info) {
-                Gjs::AutoTypeClass<GObjectClass> oclass{m_gtype};
-                // unowned
-                GParamSpec* pspec = g_object_class_find_property(
-                    oclass, canonical_name);  // unowned
-                if (pspec && pspec->owner_type == m_gtype) {
-                    return lazy_define_gobject_property(
-                        cx, obj, id, pspec, resolved, name, prop_info);
-                }
-            }
         }
 
         if (!resolve_on_interface_prototype(cx, iface_info, id, obj, resolved))
@@ -3802,7 +3766,7 @@ static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
         vfunc_info.container<GI::InfoTag::REGISTERED_TYPE>().value();
     GType ancestor_gtype = ancestor_info.gtype();
 
-    Gjs::AutoTypeClass<GTypeClass> implementor_class{implementor_gtype};
+    Gjs::AutoTypeClass implementor_class{implementor_gtype};
     if (auto iface_info = ancestor_info.as<GI::InfoTag::INTERFACE>()) {
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
