@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

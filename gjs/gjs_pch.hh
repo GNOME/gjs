@@ -33,8 +33,8 @@
 #include <errno.h>
 #include <ffi.h>
 #include <gio/gio.h>
-#include <girepository.h>
-#include <girffi.h>
+#include <girepository/girepository.h>
+#include <girepository/girffi.h>
 #include <gjs/context.h>
 #include <gjs/coverage.h>
 #include <gjs/error-types.h>

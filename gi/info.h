@@ -19,8 +19,8 @@
 #endif
 
 #include <ffi.h>
-#include <girepository.h>
-#include <girffi.h>
+#include <girepository/girepository.h>
+#include <girepository/girffi.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -85,107 +85,105 @@ struct InfoTraits {};
 template <>
 struct InfoTraits<InfoTag::ARG> {
     using CStruct = GIArgInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_ARG};
 };
 template <>
 struct InfoTraits<InfoTag::BASE> {
     using CStruct = GIBaseInfo;
-    static constexpr const GIInfoType types[] = {};
 };
 template <>
 struct InfoTraits<InfoTag::CALLABLE> {
     using CStruct = GICallableInfo;
-    static constexpr const GIInfoType types[] = {
-        GI_INFO_TYPE_CALLBACK, GI_INFO_TYPE_FUNCTION, GI_INFO_TYPE_SIGNAL,
-        GI_INFO_TYPE_VFUNC};
 };
 template <>
 struct InfoTraits<InfoTag::CALLBACK> {
     using CStruct = GICallbackInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_CALLBACK};
 };
 template <>
 struct InfoTraits<InfoTag::CONSTANT> {
     using CStruct = GIConstantInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_CONSTANT};
 };
 template <>
 struct InfoTraits<InfoTag::ENUM> {
     using CStruct = GIEnumInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_ENUM,
-                                                 GI_INFO_TYPE_FLAGS};
 };
 template <>
 struct InfoTraits<InfoTag::FIELD> {
     using CStruct = GIFieldInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_FIELD};
 };
 template <>
 struct InfoTraits<InfoTag::FLAGS> {
-    using CStruct = GIEnumInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_FLAGS};
+    using CStruct = GIFlagsInfo;
 };
 template <>
 struct InfoTraits<InfoTag::FUNCTION> {
     using CStruct = GIFunctionInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_FUNCTION};
 };
 template <>
 struct InfoTraits<InfoTag::INTERFACE> {
     using CStruct = GIInterfaceInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_INTERFACE};
 };
 template <>
 struct InfoTraits<InfoTag::OBJECT> {
     using CStruct = GIObjectInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_OBJECT};
 };
 template <>
 struct InfoTraits<InfoTag::PROPERTY> {
     using CStruct = GIPropertyInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_PROPERTY};
 };
 template <>
 struct InfoTraits<InfoTag::REGISTERED_TYPE> {
     using CStruct = GIRegisteredTypeInfo;
-    static constexpr const GIInfoType types[] = {
-        GI_INFO_TYPE_BOXED,     GI_INFO_TYPE_ENUM,   GI_INFO_TYPE_FLAGS,
-        GI_INFO_TYPE_INTERFACE, GI_INFO_TYPE_OBJECT, GI_INFO_TYPE_STRUCT,
-        GI_INFO_TYPE_UNION};
 };
 template <>
 struct InfoTraits<InfoTag::SIGNAL> {
     using CStruct = GISignalInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_SIGNAL};
 };
 template <>
 struct InfoTraits<InfoTag::STRUCT> {
     using CStruct = GIStructInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_BOXED,
-                                                 GI_INFO_TYPE_STRUCT};
 };
 template <>
 struct InfoTraits<InfoTag::TYPE> {
     using CStruct = GITypeInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_TYPE};
 };
 template <>
 struct InfoTraits<InfoTag::UNION> {
     using CStruct = GIUnionInfo;
-    // Note that BOXED can technically be a STRUCT or UNION, but is not properly
-    // supported for unions.
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_UNION};
 };
 template <>
 struct InfoTraits<InfoTag::VALUE> {
     using CStruct = GIValueInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_VALUE};
 };
 template <>
 struct InfoTraits<InfoTag::VFUNC> {
     using CStruct = GIVFuncInfo;
-    static constexpr const GIInfoType types[] = {GI_INFO_TYPE_VFUNC};
 };
+
+using GTypeFunc = GType (*)();
+static constexpr const GTypeFunc gtype_funcs[] = {
+    gi_arg_info_get_type,
+    gi_base_info_get_type,
+    gi_callable_info_get_type,
+    gi_callback_info_get_type,
+    gi_constant_info_get_type,
+    gi_enum_info_get_type,
+    gi_field_info_get_type,
+    gi_flags_info_get_type,
+    gi_function_info_get_type,
+    gi_interface_info_get_type,
+    gi_object_info_get_type,
+    gi_property_info_get_type,
+    gi_registered_type_info_get_type,
+    gi_signal_info_get_type,
+    gi_struct_info_get_type,
+    gi_type_info_get_type,
+    gi_union_info_get_type,
+    gi_value_info_get_type,
+    gi_vfunc_info_get_type,
+};
+
+constexpr GTypeFunc gtype_func(InfoTag tag) { return gtype_funcs[size_t(tag)]; }
+
 }  // namespace detail
 
 template <typename Wrapper, InfoTag TAG>
@@ -209,6 +207,16 @@ namespace detail {
 struct Pointer {
     template <InfoTag TAG>
     using CStruct = typename InfoTraits<TAG>::CStruct;
+
+    template <InfoTag TAG>
+    [[nodiscard]]
+    static constexpr
+        typename detail::InfoTraits<TAG>::CStruct* cast(GIBaseInfo* ptr) {
+        // (the following is a GI_TAG_INFO() cast but written out)
+        return reinterpret_cast<typename detail::InfoTraits<TAG>::CStruct*>(
+            g_type_check_instance_cast(reinterpret_cast<GTypeInstance*>(ptr),
+                                       gtype_func(TAG)()));
+    }
 
     template <InfoTag TAG>
     static constexpr CStruct<TAG>* get_from(const OwnedInfo<TAG>& owned) {
@@ -236,7 +244,7 @@ struct Pointer {
     }
 
     // Same, defined out of line so StackTypeInfo is not incomplete.
-    static constexpr void to_stack(GITypeInfo* ptr, StackTypeInfo* stack);
+    static void to_stack(GITypeInfo* ptr, StackTypeInfo* stack);
 
     template <InfoTag TAG>
     static constexpr mozilla::Maybe<OwnedInfo<TAG>> nullable(
@@ -253,15 +261,7 @@ struct Pointer {
     template <InfoTag TAG>
     [[nodiscard]]
     static constexpr bool typecheck(GIBaseInfo* ptr) {
-        if constexpr (TAG != InfoTag::BASE) {
-            GIInfoType t = g_base_info_get_type(ptr);
-            for (GIInfoType expected : detail::InfoTraits<TAG>::types) {
-                if (t == expected)
-                    return true;
-            }
-            return false;
-        }
-        return true;
+        return G_TYPE_CHECK_INSTANCE_TYPE(ptr, gtype_func(TAG)());
     }
 };
 }  // namespace detail
@@ -288,7 +288,7 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
 
 #ifndef G_DISABLE_CAST_CHECKS
         g_assert(m_info && "Info pointer cannot be null");
-        g_assert(detail::Pointer::typecheck<TAG>(m_info) &&
+        g_assert(detail::Pointer::typecheck<TAG>(GI_BASE_INFO(m_info)) &&
                  "Info type must match");
 #endif  // G_DISABLE_CAST_CHECKS
     }
@@ -354,7 +354,7 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
                       "OwnedInfo<T> should be byte-compatible with T*");
 #ifndef G_DISABLE_CAST_CHECKS
         g_assert(m_info && "Info pointer cannot be null");
-        g_assert(detail::Pointer::typecheck<TAG>(m_info) &&
+        g_assert(detail::Pointer::typecheck<TAG>(GI_BASE_INFO(m_info)) &&
                  "Info type must match");
 #endif  // G_DISABLE_CAST_CHECKS
     }
@@ -365,7 +365,7 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     // Copy OwnedInfo from another OwnedInfo. Explicit because it takes a
     // reference.
     explicit OwnedInfo(const OwnedInfo& other) : OwnedInfo(other.m_info) {
-        g_base_info_ref(m_info);
+        gi_base_info_ref(m_info);
     }
     // Move another OwnedInfo into this one
     OwnedInfo(OwnedInfo&& other) : OwnedInfo(other.m_info) {
@@ -373,21 +373,21 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     }
     OwnedInfo& operator=(const OwnedInfo& other) {
         m_info = other.m_info;
-        g_base_info_ref(m_info);
+        gi_base_info_ref(m_info);
         return *this;
     }
     OwnedInfo& operator=(OwnedInfo&& other) {
         std::swap(m_info, other.m_info);
         return *this;
     }
-    ~OwnedInfo() { g_clear_pointer(&m_info, g_base_info_unref); }
+    ~OwnedInfo() { g_clear_pointer(&m_info, gi_base_info_unref); }
 
     // Copy OwnedInfo from UnownedInfo, which also comes down to just taking a
     // reference. Explicit because it takes a reference. However, make sure the
     // UnownedInfo is not borrowed from a StackInfo!
     explicit OwnedInfo(const UnownedInfo<TAG>& other)
         : OwnedInfo(detail::Pointer::get_from(other)) {
-        g_base_info_ref(m_info);
+        gi_base_info_ref(m_info);
     }
 
     // Do not try to take ownership of a StackInfo.
@@ -425,7 +425,8 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
  protected:
     [[nodiscard]]
     GIBaseInfo* ptr() const {
-        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
+        return GI_BASE_INFO(
+            detail::Pointer::get_from(*static_cast<const Wrapper*>(this)));
     }
 
     // Helper for adapting GLib-style error reporting into GErrorResult
@@ -448,11 +449,13 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
  public:
     template <InfoTag TAG>
     bool operator==(const OwnedInfo<TAG>& other) const {
-        return g_base_info_equal(ptr(), detail::Pointer::get_from(other));
+        return gi_base_info_equal(
+            ptr(), GI_BASE_INFO(detail::Pointer::get_from(other)));
     }
     template <InfoTag TAG>
     bool operator==(const UnownedInfo<TAG>& other) const {
-        return g_base_info_equal(ptr(), detail::Pointer::get_from(other));
+        return gi_base_info_equal(
+            ptr(), GI_BASE_INFO(detail::Pointer::get_from(other)));
     }
     template <InfoTag TAG>
     bool operator!=(const OwnedInfo<TAG>& other) const {
@@ -467,40 +470,37 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     [[nodiscard]]
     mozilla::Maybe<const UnownedInfo<TAG>> container() const {
         return detail::Pointer::nullable_unowned<TAG>(
-            g_base_info_get_container(ptr()));
+            detail::Pointer::cast<TAG>(gi_base_info_get_container(ptr())));
     }
     [[nodiscard]]
     bool is_deprecated() const {
-        return g_base_info_is_deprecated(ptr());
+        return gi_base_info_is_deprecated(ptr());
     }
     [[nodiscard]]
     const char* name() const {
-        return g_base_info_get_name(ptr());
+        return gi_base_info_get_name(ptr());
     }
     [[nodiscard]]
     const char* ns() const {
-        return g_base_info_get_namespace(ptr());
-    }
-    [[nodiscard]]
-    GIInfoType type() const {
-        return g_base_info_get_type(ptr());
+        return gi_base_info_get_namespace(ptr());
     }
     [[nodiscard]]
     const char* type_string() const {
-        return g_info_type_to_string(type());
+        return g_type_name_from_instance(
+            reinterpret_cast<GTypeInstance*>(ptr()));
     }
 
     // Type-checking methods
 
     [[nodiscard]]
     bool is_callback() const {
-        return type() == GI_INFO_TYPE_CALLBACK;
+        return GI_IS_CALLBACK_INFO(ptr());
     }
     [[nodiscard]]
     bool is_enum_or_flags() const {
         return GI_IS_ENUM_INFO(ptr());
     }
-    [[nodiscard]] bool is_flags() const { return type() == GI_INFO_TYPE_FLAGS; }
+    [[nodiscard]] bool is_flags() const { return GI_IS_FLAGS_INFO(ptr()); }
     [[nodiscard]]
     bool is_function() const {
         return GI_IS_FUNCTION_INFO(ptr());
@@ -514,16 +514,13 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     bool is_registered_type() const {
         return GI_IS_REGISTERED_TYPE_INFO(ptr());
     }
-    [[nodiscard]]
-    bool is_struct() const {
-        return GI_IS_STRUCT_INFO(ptr()) || type() == GI_INFO_TYPE_BOXED;
-    }
+    [[nodiscard]] bool is_struct() const { return GI_IS_STRUCT_INFO(ptr()); }
     [[nodiscard]] bool is_union() const { return GI_IS_UNION_INFO(ptr()); }
     [[nodiscard]]
     bool is_unresolved() const {
         // We don't have a wrapper for GIUnresolvedInfo because it has no
         // methods, but you can check whether a BaseInfo is one.
-        return type() == GI_INFO_TYPE_UNRESOLVED;
+        return GI_IS_UNRESOLVED_INFO(ptr());
     }
     [[nodiscard]] bool is_vfunc() const { return GI_IS_VFUNC_INFO(ptr()); }
     // Don't enumerate types which GJS doesn't define on namespaces.
@@ -543,7 +540,8 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     mozilla::Maybe<const UnownedInfo<TAG2>> as() const {
         if (!detail::Pointer::typecheck<TAG2>(ptr()))
             return {};
-        return mozilla::Some(detail::Pointer::to_unowned<TAG2>(ptr()));
+        auto* checked_ptr = detail::Pointer::cast<TAG2>(ptr());
+        return mozilla::Some(detail::Pointer::to_unowned<TAG2>(checked_ptr));
     }
 
     void log_usage() const {
@@ -575,10 +573,10 @@ using BaseInfoOperations = InfoOperations<Wrapper, InfoTag::BASE>;
 //   do_stuff(bar);
 
 template <typename T>
-using NInfosFunc = int (*)(T);
+using NInfosFunc = unsigned (*)(T);
 
 template <typename T, InfoTag TAG>
-using GetInfoFunc = typename detail::InfoTraits<TAG>::CStruct* (*)(T, int);
+using GetInfoFunc = typename detail::InfoTraits<TAG>::CStruct* (*)(T, unsigned);
 
 template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
           GetInfoFunc<T, TAG> get_info>
@@ -680,30 +678,34 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
     [[nodiscard]]
     AutoTypeInfo param_type(int n) const {
         return detail::Pointer::to_owned<InfoTag::TYPE>(
-            g_type_info_get_param_type(ptr(), n));
+            gi_type_info_get_param_type(ptr(), n));
     }
 
  public:
     [[nodiscard]]
     mozilla::Maybe<unsigned> array_length_index() const {
-        int out = g_type_info_get_array_length(ptr());
-        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
+        unsigned out;
+        if (!gi_type_info_get_array_length_index(ptr(), &out))
+            return {};
+        return mozilla::Some(out);
     }
     [[nodiscard]]
     mozilla::Maybe<size_t> array_fixed_size() const {
-        int out = g_type_info_get_array_fixed_size(ptr());
-        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
+        size_t out;
+        if (!gi_type_info_get_array_fixed_size(ptr(), &out))
+            return {};
+        return mozilla::Some(out);
     }
     [[nodiscard]]
     GIArrayType array_type() const {
-        return g_type_info_get_array_type(ptr());
+        return gi_type_info_get_array_type(ptr());
     }
     void argument_from_hash_pointer(void* hash_pointer, GIArgument* arg) const {
-        g_type_info_argument_from_hash_pointer(ptr(), hash_pointer, arg);
+        gi_type_info_argument_from_hash_pointer(ptr(), hash_pointer, arg);
     }
     [[nodiscard]]
     void* hash_pointer_from_argument(GIArgument* arg) const {
-        return g_type_info_hash_pointer_from_argument(ptr(), arg);
+        return gi_type_info_hash_pointer_from_argument(ptr(), arg);
     }
     // Unlike the libgirepository API, this doesn't return null. Only call it on
     // TypeInfo with GI_TYPE_TAG_INTERFACE tag.
@@ -711,21 +713,21 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
     AutoBaseInfo interface() const {
         g_assert(tag() == GI_TYPE_TAG_INTERFACE);
         return detail::Pointer::to_owned<InfoTag::BASE>(
-            g_type_info_get_interface(ptr()));
+            gi_type_info_get_interface(ptr()));
     }
     [[nodiscard]]
     bool is_pointer() const {
-        return g_type_info_is_pointer(ptr());
+        return gi_type_info_is_pointer(ptr());
     }
     [[nodiscard]]
     bool is_zero_terminated() const {
-        return g_type_info_is_zero_terminated(ptr());
+        return gi_type_info_is_zero_terminated(ptr());
     }
     [[nodiscard]]
     GITypeTag storage_type() const {
-        return g_type_info_get_storage_type(ptr());
+        return gi_type_info_get_storage_type(ptr());
     }
-    [[nodiscard]] GITypeTag tag() const { return g_type_info_get_tag(ptr()); }
+    [[nodiscard]] GITypeTag tag() const { return gi_type_info_get_tag(ptr()); }
     void extract_ffi_return_value(GIFFIReturnValue* ffi_value,
                                   GIArgument* arg) const {
         gi_type_info_extract_ffi_return_value(ptr(), ffi_value, arg);
@@ -740,7 +742,7 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
         GITypeTag type_tag = tag();
         if (type_tag == GI_TYPE_TAG_INTERFACE)
             return interface().type_string();
-        return g_type_tag_to_string(type_tag);
+        return gi_type_tag_to_string(type_tag);
     }
 
     [[nodiscard]]
@@ -796,44 +798,48 @@ class InfoOperations<Wrapper, InfoTag::ARG>
  public:
     [[nodiscard]]
     bool caller_allocates() const {
-        return g_arg_info_is_caller_allocates(ptr());
+        return gi_arg_info_is_caller_allocates(ptr());
     }
     [[nodiscard]]
     mozilla::Maybe<unsigned> closure_index() const {
-        int out = g_arg_info_get_closure(ptr());
-        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
+        unsigned out;
+        if (!gi_arg_info_get_closure_index(ptr(), &out))
+            return {};
+        return mozilla::Some(out);
     }
     [[nodiscard]]
     mozilla::Maybe<unsigned> destroy_index() const {
-        int out = g_arg_info_get_destroy(ptr());
-        return out < 0 ? mozilla::Nothing{} : mozilla::Some(out);
+        unsigned out;
+        if (!gi_arg_info_get_destroy_index(ptr(), &out))
+            return {};
+        return mozilla::Some(out);
     }
     [[nodiscard]]
     GIDirection direction() const {
-        return g_arg_info_get_direction(ptr());
+        return gi_arg_info_get_direction(ptr());
     }
     void load_type(StackTypeInfo* type) const {
-        g_arg_info_load_type(ptr(), detail::Pointer::get_from(*type));
+        gi_arg_info_load_type_info(ptr(), detail::Pointer::get_from(*type));
     }
     [[nodiscard]]
     bool is_optional() const {
-        return g_arg_info_is_optional(ptr());
+        return gi_arg_info_is_optional(ptr());
     }
     [[nodiscard]]
     bool is_return_value() const {
-        return g_arg_info_is_return_value(ptr());
+        return gi_arg_info_is_return_value(ptr());
     }
     [[nodiscard]]
     bool may_be_null() const {
-        return g_arg_info_may_be_null(ptr());
+        return gi_arg_info_may_be_null(ptr());
     }
     [[nodiscard]]
     GITransfer ownership_transfer() const {
-        return g_arg_info_get_ownership_transfer(ptr());
+        return gi_arg_info_get_ownership_transfer(ptr());
     }
     [[nodiscard]]
     GIScopeType scope() const {
-        return g_arg_info_get_scope(ptr());
+        return gi_arg_info_get_scope(ptr());
     }
 };
 
@@ -845,13 +851,14 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
 
     [[nodiscard]]
     GICallableInfo* ptr() const {
-        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
+        return GI_CALLABLE_INFO(
+            detail::Pointer::get_from(*static_cast<const Wrapper*>(this)));
     }
 
  public:
     using ArgsIterator =
-        InfoIterator<GICallableInfo*, InfoTag::ARG, g_callable_info_get_n_args,
-                     g_callable_info_get_arg>;
+        InfoIterator<GICallableInfo*, InfoTag::ARG, gi_callable_info_get_n_args,
+                     gi_callable_info_get_arg>;
     [[nodiscard]]
     ArgsIterator args() const {
         return ArgsIterator{ptr()};
@@ -860,66 +867,64 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
     AutoArgInfo arg(unsigned n) const {
         g_assert(n < n_args());
         return detail::Pointer::to_owned<InfoTag::ARG>(
-            g_callable_info_get_arg(ptr(), n));
+            gi_callable_info_get_arg(ptr(), n));
     }
     [[nodiscard]]
     unsigned n_args() const {
-        int out = g_callable_info_get_n_args(ptr());
-        g_assert(out >= 0 && "Bad return from g_callable_info_get_n_args()");
-        return out;
+        return gi_callable_info_get_n_args(ptr());
     }
 
     [[nodiscard]]
     GITransfer caller_owns() const {
-        return g_callable_info_get_caller_owns(ptr());
+        return gi_callable_info_get_caller_owns(ptr());
     }
     [[nodiscard]]
     bool can_throw_gerror() const {
-        return g_callable_info_can_throw_gerror(ptr());
+        return gi_callable_info_can_throw_gerror(ptr());
     }
     [[nodiscard]]
     void** closure_native_address(ffi_closure* closure) const {
-        return g_callable_info_get_closure_native_address(ptr(), closure);
+        return gi_callable_info_get_closure_native_address(ptr(), closure);
     }
     [[nodiscard]]
     ffi_closure* create_closure(ffi_cif* cif, GIFFIClosureCallback callback,
                                 void* user_data) const {
-        return g_callable_info_create_closure(ptr(), cif, callback, user_data);
+        return gi_callable_info_create_closure(ptr(), cif, callback, user_data);
     }
     void destroy_closure(ffi_closure* closure) const {
-        g_callable_info_destroy_closure(ptr(), closure);
+        gi_callable_info_destroy_closure(ptr(), closure);
     }
     [[nodiscard]]
     Gjs::GErrorResult<> init_function_invoker(
         void* address, GIFunctionInvoker* invoker) const {
         GError* error = nullptr;
-        return this->bool_gerror(
-            g_function_invoker_new_for_address(address, ptr(), invoker, &error),
-            error);
+        return this->bool_gerror(gi_function_invoker_new_for_address(
+                                     address, ptr(), invoker, &error),
+                                 error);
     }
     [[nodiscard]]
     GITransfer instance_ownership_transfer() const {
-        return g_callable_info_get_instance_ownership_transfer(ptr());
+        return gi_callable_info_get_instance_ownership_transfer(ptr());
     }
     [[nodiscard]]
     bool is_method() const {
-        return g_callable_info_is_method(ptr());
+        return gi_callable_info_is_method(ptr());
     }
     void load_arg(unsigned n, StackArgInfo* arg) const {
         g_assert(n < n_args());
-        g_callable_info_load_arg(ptr(), n, detail::Pointer::get_from(*arg));
+        gi_callable_info_load_arg(ptr(), n, detail::Pointer::get_from(*arg));
     }
     void load_return_type(StackTypeInfo* type) const {
-        g_callable_info_load_return_type(ptr(),
-                                         detail::Pointer::get_from(*type));
+        gi_callable_info_load_return_type(ptr(),
+                                          detail::Pointer::get_from(*type));
     }
     [[nodiscard]]
     bool may_return_null() const {
-        return g_callable_info_may_return_null(ptr());
+        return gi_callable_info_may_return_null(ptr());
     }
     [[nodiscard]]
     bool skip_return() const {
-        return g_callable_info_skip_return(ptr());
+        return gi_callable_info_skip_return(ptr());
     }
 
     // Methods not in GIRepository
@@ -977,13 +982,14 @@ class InfoOperations<Wrapper, InfoTag::REGISTERED_TYPE>
 
     [[nodiscard]]
     GIRegisteredTypeInfo* ptr() const {
-        return BaseInfoOperations<Wrapper>::ptr();
+        return GI_REGISTERED_TYPE_INFO(
+            detail::Pointer::get_from(*static_cast<const Wrapper*>(this)));
     }
 
  public:
     [[nodiscard]]
     GType gtype() const {
-        return g_registered_type_info_get_g_type(ptr());
+        return gi_registered_type_info_get_g_type(ptr());
     }
 
     // Methods not in GIRepository
@@ -999,7 +1005,7 @@ class InfoOperations<Wrapper, InfoTag::REGISTERED_TYPE>
     }
 
     operator const BaseInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::BASE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 };
 
@@ -1019,11 +1025,12 @@ class InfoOperations<Wrapper, InfoTag::CALLBACK>
 
  public:
     operator const BaseInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::BASE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 
     operator const CallableInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::CALLABLE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
+            GI_CALLABLE_INFO(ptr()));
     }
 };
 
@@ -1039,15 +1046,15 @@ class InfoOperations<Wrapper, InfoTag::CONSTANT>
 
  public:
     void free_value(GIArgument* arg) const {
-        g_constant_info_free_value(ptr(), arg);
+        gi_constant_info_free_value(ptr(), arg);
     }
     int load_value(GIArgument* arg) const {
-        return g_constant_info_get_value(ptr(), arg);
+        return gi_constant_info_get_value(ptr(), arg);
     }
     [[nodiscard]]
     AutoTypeInfo type_info() const {
         return detail::Pointer::to_owned<InfoTag::TYPE>(
-            g_constant_info_get_type(ptr()));
+            gi_constant_info_get_type_info(ptr()));
     }
 };
 
@@ -1064,7 +1071,7 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
 
     [[nodiscard]]
     GIFunctionInfoFlags flags() const {
-        return g_function_info_get_flags(ptr());
+        return gi_function_info_get_flags(ptr());
     }
 
  public:
@@ -1076,20 +1083,20 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
         g_assert(out_args.size() <= G_MAXINT);
         GError* error = nullptr;
         return this->bool_gerror(
-            g_function_info_invoke(ptr(), in_args.data(), in_args.size(),
-                                   out_args.data(), out_args.size(),
-                                   return_value, &error),
+            gi_function_info_invoke(ptr(), in_args.data(), in_args.size(),
+                                    out_args.data(), out_args.size(),
+                                    return_value, &error),
             error);
     }
     [[nodiscard]]
     Gjs::GErrorResult<> prep_invoker(GIFunctionInvoker* invoker) const {
         GError* error = nullptr;
         return this->bool_gerror(
-            g_function_info_prep_invoker(ptr(), invoker, &error), error);
+            gi_function_info_prep_invoker(ptr(), invoker, &error), error);
     }
     [[nodiscard]]
     const char* symbol() const {
-        return g_function_info_get_symbol(ptr());
+        return gi_function_info_get_symbol(ptr());
     }
 
     // Has to be defined later because there's a chicken-and-egg loop between
@@ -1109,7 +1116,8 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
     }
 
     operator const CallableInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::CALLABLE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
+            GI_CALLABLE_INFO(ptr()));
     }
 };
 
@@ -1120,21 +1128,22 @@ class InfoOperations<Wrapper, InfoTag::ENUM>
 
     [[nodiscard]]
     GIEnumInfo* ptr() const {
-        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
+        return GI_ENUM_INFO(
+            detail::Pointer::get_from(*static_cast<const Wrapper*>(this)));
     }
 
  public:
     using ValuesIterator =
-        InfoIterator<GIEnumInfo*, InfoTag::VALUE, g_enum_info_get_n_values,
-                     g_enum_info_get_value>;
+        InfoIterator<GIEnumInfo*, InfoTag::VALUE, gi_enum_info_get_n_values,
+                     gi_enum_info_get_value>;
     [[nodiscard]]
     ValuesIterator values() const {
         return ValuesIterator{ptr()};
     }
 
     using MethodsIterator =
-        InfoIterator<GIEnumInfo*, InfoTag::FUNCTION, g_enum_info_get_n_methods,
-                     g_enum_info_get_method>;
+        InfoIterator<GIEnumInfo*, InfoTag::FUNCTION, gi_enum_info_get_n_methods,
+                     gi_enum_info_get_method>;
     [[nodiscard]]
     MethodsIterator methods() const {
         return MethodsIterator{ptr()};
@@ -1142,16 +1151,16 @@ class InfoOperations<Wrapper, InfoTag::ENUM>
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_enum_info_find_method(ptr(), name));
+            gi_enum_info_find_method(ptr(), name));
     }
 
     [[nodiscard]]
     const char* error_domain() const {
-        return g_enum_info_get_error_domain(ptr());
+        return gi_enum_info_get_error_domain(ptr());
     }
     [[nodiscard]]
     GITypeTag storage_type() const {
-        return g_enum_info_get_storage_type(ptr());
+        return gi_enum_info_get_storage_type(ptr());
     }
 
     // Methods not in GIRepository
@@ -1169,12 +1178,12 @@ class InfoOperations<Wrapper, InfoTag::ENUM>
         }
     }
 
-    // This is hacky - g_function_info_invoke() and g_field_info_get/set_field()
-    // expect the enum value in gjs_arg_member<int>(arg) and depend on all flags
-    // and enumerations being passed on the stack in a 32-bit field. See FIXME
-    // comment in g_field_info_get_field(). The same assumption of enums cast to
-    // 32-bit signed integers is found in g_value_set_enum() /
-    // g_value_set_flags().
+    // This is hacky - gi_function_info_invoke() and
+    // gi_field_info_get/set_field() expect the enum value in
+    // gjs_arg_member<int>(arg) and depend on all flags and enumerations being
+    // passed on the stack in a 32-bit field. See FIXME comment in
+    // gi_field_info_get_field(). The same assumption of enums cast to 32-bit
+    // signed integers is found in g_value_set_enum() / g_value_set_flags().
     [[nodiscard]]
     int64_t enum_from_int(int int_value) const {
         if (uses_signed_type())
@@ -1212,24 +1221,27 @@ class InfoOperations<Wrapper, InfoTag::FIELD>
     // Use the various is_FLAG() methods instead.
     [[nodiscard]]
     GIFieldInfoFlags flags() const {
-        return g_field_info_get_flags(ptr());
+        return gi_field_info_get_flags(ptr());
     }
 
  public:
-    [[nodiscard]] int offset() const { return g_field_info_get_offset(ptr()); }
+    [[nodiscard]] size_t offset() const {
+        return gi_field_info_get_offset(ptr());
+    }
     [[nodiscard]]
     BoolResult read(void* blob, GIArgument* value_out) const {
         return this->bool_to_result(
-            g_field_info_get_field(ptr(), blob, value_out));
+            gi_field_info_get_field(ptr(), blob, value_out));
     }
     [[nodiscard]]
     AutoTypeInfo type_info() const {
         return detail::Pointer::to_owned<InfoTag::TYPE>(
-            g_field_info_get_type(ptr()));
+            gi_field_info_get_type_info(ptr()));
     }
     [[nodiscard]]
     BoolResult write(void* blob, const GIArgument* value) const {
-        return this->bool_to_result(g_field_info_set_field(ptr(), blob, value));
+        return this->bool_to_result(
+            gi_field_info_set_field(ptr(), blob, value));
     }
 
     // Methods not in GIRepository
@@ -1267,8 +1279,8 @@ class InfoOperations<Wrapper, InfoTag::STRUCT>
 
  public:
     using FieldsIterator =
-        InfoIterator<GIStructInfo*, InfoTag::FIELD, g_struct_info_get_n_fields,
-                     g_struct_info_get_field>;
+        InfoIterator<GIStructInfo*, InfoTag::FIELD, gi_struct_info_get_n_fields,
+                     gi_struct_info_get_field>;
     [[nodiscard]]
     FieldsIterator fields() const {
         return FieldsIterator{ptr()};
@@ -1276,7 +1288,7 @@ class InfoOperations<Wrapper, InfoTag::STRUCT>
 
     using MethodsIterator =
         InfoIterator<GIStructInfo*, InfoTag::FUNCTION,
-                     g_struct_info_get_n_methods, g_struct_info_get_method>;
+                     gi_struct_info_get_n_methods, gi_struct_info_get_method>;
     [[nodiscard]]
     MethodsIterator methods() const {
         return MethodsIterator{ptr()};
@@ -1284,21 +1296,21 @@ class InfoOperations<Wrapper, InfoTag::STRUCT>
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_struct_info_find_method(ptr(), name));
+            gi_struct_info_find_method(ptr(), name));
     }
 
     [[nodiscard]]
     bool is_foreign() const {
-        return g_struct_info_is_foreign(ptr());
+        return gi_struct_info_is_foreign(ptr());
     }
     [[nodiscard]]
     bool is_gtype_struct() const {
-        return g_struct_info_is_gtype_struct(ptr());
+        return gi_struct_info_is_gtype_struct(ptr());
     }
-    [[nodiscard]] size_t size() const { return g_struct_info_get_size(ptr()); }
+    [[nodiscard]] size_t size() const { return gi_struct_info_get_size(ptr()); }
 
     operator const BaseInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::BASE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 };
 
@@ -1315,7 +1327,7 @@ class InfoOperations<Wrapper, InfoTag::UNION>
  public:
     using MethodsIterator =
         InfoIterator<GIUnionInfo*, InfoTag::FUNCTION,
-                     g_union_info_get_n_methods, g_union_info_get_method>;
+                     gi_union_info_get_n_methods, gi_union_info_get_method>;
     [[nodiscard]]
     MethodsIterator methods() const {
         return MethodsIterator{ptr()};
@@ -1323,10 +1335,10 @@ class InfoOperations<Wrapper, InfoTag::UNION>
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_union_info_find_method(ptr(), name));
+            gi_union_info_find_method(ptr(), name));
     }
 
-    [[nodiscard]] size_t size() const { return g_union_info_get_size(ptr()); }
+    [[nodiscard]] size_t size() const { return gi_union_info_get_size(ptr()); }
 };
 
 template <class Wrapper>
@@ -1344,14 +1356,15 @@ class InfoOperations<Wrapper, InfoTag::VFUNC>
     Gjs::GErrorResult<void*> address(GType implementor_gtype) const {
         Gjs::AutoError error;  // Cannot use GError*, distinguish from void*
         void* address =
-            g_vfunc_info_get_address(ptr(), implementor_gtype, error.out());
+            gi_vfunc_info_get_address(ptr(), implementor_gtype, error.out());
         if (!address)
             return mozilla::Err(std::move(error));
         return address;
     }
 
     [[nodiscard]] operator const CallableInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::CALLABLE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
+            GI_CALLABLE_INFO(ptr()));
     }
 };
 
@@ -1367,8 +1380,8 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
 
  public:
     using MethodsIterator = InfoIterator<GIInterfaceInfo*, InfoTag::FUNCTION,
-                                         g_interface_info_get_n_methods,
-                                         g_interface_info_get_method>;
+                                         gi_interface_info_get_n_methods,
+                                         gi_interface_info_get_method>;
     [[nodiscard]]
     MethodsIterator methods() const {
         return MethodsIterator{ptr()};
@@ -1376,12 +1389,12 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_interface_info_find_method(ptr(), name));
+            gi_interface_info_find_method(ptr(), name));
     }
 
     using PropertiesIterator = InfoIterator<GIInterfaceInfo*, InfoTag::PROPERTY,
-                                            g_interface_info_get_n_properties,
-                                            g_interface_info_get_property>;
+                                            gi_interface_info_get_n_properties,
+                                            gi_interface_info_get_property>;
     [[nodiscard]]
     PropertiesIterator properties() const {
         return PropertiesIterator{ptr()};
@@ -1390,17 +1403,17 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
     [[nodiscard]]
     mozilla::Maybe<AutoStructInfo> iface_struct() const {
         return detail::Pointer::nullable<InfoTag::STRUCT>(
-            g_interface_info_get_iface_struct(ptr()));
+            gi_interface_info_get_iface_struct(ptr()));
     }
     [[nodiscard]]
     mozilla::Maybe<AutoSignalInfo> signal(const char* name) const {
         return detail::Pointer::nullable<InfoTag::SIGNAL>(
-            g_interface_info_find_signal(ptr(), name));
+            gi_interface_info_find_signal(ptr(), name));
     }
     [[nodiscard]]
     mozilla::Maybe<AutoVFuncInfo> vfunc(const char* name) const {
         return detail::Pointer::nullable<InfoTag::VFUNC>(
-            g_interface_info_find_vfunc(ptr(), name));
+            gi_interface_info_find_vfunc(ptr(), name));
     }
 };
 
@@ -1416,16 +1429,16 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
 
  public:
     using FieldsIterator =
-        InfoIterator<GIObjectInfo*, InfoTag::FIELD, g_object_info_get_n_fields,
-                     g_object_info_get_field>;
+        InfoIterator<GIObjectInfo*, InfoTag::FIELD, gi_object_info_get_n_fields,
+                     gi_object_info_get_field>;
     [[nodiscard]]
     FieldsIterator fields() const {
         return FieldsIterator{ptr()};
     }
 
     using InterfacesIterator = InfoIterator<GIObjectInfo*, InfoTag::INTERFACE,
-                                            g_object_info_get_n_interfaces,
-                                            g_object_info_get_interface>;
+                                            gi_object_info_get_n_interfaces,
+                                            gi_object_info_get_interface>;
     [[nodiscard]]
     InterfacesIterator interfaces() const {
         return InterfacesIterator{ptr()};
@@ -1433,7 +1446,7 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
 
     using MethodsIterator =
         InfoIterator<GIObjectInfo*, InfoTag::FUNCTION,
-                     g_object_info_get_n_methods, g_object_info_get_method>;
+                     gi_object_info_get_n_methods, gi_object_info_get_method>;
     [[nodiscard]]
     MethodsIterator methods() const {
         return MethodsIterator{ptr()};
@@ -1441,12 +1454,12 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_object_info_find_method(ptr(), name));
+            gi_object_info_find_method(ptr(), name));
     }
 
     using PropertiesIterator = InfoIterator<GIObjectInfo*, InfoTag::PROPERTY,
-                                            g_object_info_get_n_properties,
-                                            g_object_info_get_property>;
+                                            gi_object_info_get_n_properties,
+                                            gi_object_info_get_property>;
     [[nodiscard]]
     PropertiesIterator properties() const {
         return PropertiesIterator{ptr()};
@@ -1455,14 +1468,15 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
     [[nodiscard]]
     mozilla::Maybe<AutoStructInfo> class_struct() const {
         return detail::Pointer::nullable<InfoTag::STRUCT>(
-            g_object_info_get_class_struct(ptr()));
+            gi_object_info_get_class_struct(ptr()));
     }
     [[nodiscard]]
     mozilla::Maybe<std::pair<AutoFunctionInfo, AutoRegisteredTypeInfo>>
     find_method_using_interfaces(const char* name) const {
-        GIRegisteredTypeInfo* declarer_ptr = nullptr;
-        GIFunctionInfo* method_ptr = g_object_info_find_method_using_interfaces(
-            ptr(), name, &declarer_ptr);
+        GIBaseInfo* declarer_ptr = nullptr;
+        GIFunctionInfo* method_ptr =
+            gi_object_info_find_method_using_interfaces(ptr(), name,
+                                                        &declarer_ptr);
 
         if (!method_ptr) {
             g_assert(!declarer_ptr);
@@ -1472,15 +1486,16 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
         AutoFunctionInfo method{
             detail::Pointer::to_owned<InfoTag::FUNCTION>(method_ptr)};
         AutoRegisteredTypeInfo declarer{
-            detail::Pointer::to_owned<InfoTag::REGISTERED_TYPE>(declarer_ptr)};
+            detail::Pointer::to_owned<InfoTag::REGISTERED_TYPE>(
+                GI_REGISTERED_TYPE_INFO(declarer_ptr))};
         g_assert(declarer.is_object() || declarer.is_interface());
         return mozilla::Some(std::make_pair(method, declarer));
     }
     [[nodiscard]]
     mozilla::Maybe<std::pair<AutoVFuncInfo, AutoRegisteredTypeInfo>>
     find_vfunc_using_interfaces(const char* name) const {
-        GIRegisteredTypeInfo* declarer_ptr = nullptr;
-        GIVFuncInfo* vfunc_ptr = g_object_info_find_vfunc_using_interfaces(
+        GIBaseInfo* declarer_ptr = nullptr;
+        GIVFuncInfo* vfunc_ptr = gi_object_info_find_vfunc_using_interfaces(
             ptr(), name, &declarer_ptr);
 
         if (!vfunc_ptr) {
@@ -1491,44 +1506,45 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
         AutoVFuncInfo vfunc{
             detail::Pointer::to_owned<InfoTag::VFUNC>(vfunc_ptr)};
         AutoRegisteredTypeInfo declarer{
-            detail::Pointer::to_owned<InfoTag::REGISTERED_TYPE>(declarer_ptr)};
+            detail::Pointer::to_owned<InfoTag::REGISTERED_TYPE>(
+                GI_REGISTERED_TYPE_INFO(declarer_ptr))};
         g_assert(declarer.is_object() || declarer.is_interface());
         return mozilla::Some(std::make_pair(vfunc, declarer));
     }
     [[nodiscard]]
     GIObjectInfoGetValueFunction get_value_function_pointer() const {
-        return g_object_info_get_get_value_function_pointer(ptr());
+        return gi_object_info_get_get_value_function_pointer(ptr());
     }
     [[nodiscard]]
     mozilla::Maybe<AutoObjectInfo> parent() const {
         return detail::Pointer::nullable<InfoTag::OBJECT>(
-            g_object_info_get_parent(ptr()));
+            gi_object_info_get_parent(ptr()));
     }
     [[nodiscard]]
     GIObjectInfoRefFunction ref_function_pointer() const {
-        return g_object_info_get_ref_function_pointer(ptr());
+        return gi_object_info_get_ref_function_pointer(ptr());
     }
     [[nodiscard]]
     GIObjectInfoSetValueFunction set_value_function_pointer() const {
-        return g_object_info_get_set_value_function_pointer(ptr());
+        return gi_object_info_get_set_value_function_pointer(ptr());
     }
     [[nodiscard]]
     mozilla::Maybe<AutoSignalInfo> signal(const char* name) const {
         return detail::Pointer::nullable<InfoTag::SIGNAL>(
-            g_object_info_find_signal(ptr(), name));
+            gi_object_info_find_signal(ptr(), name));
     }
     [[nodiscard]]
     GIObjectInfoUnrefFunction unref_function_pointer() const {
-        return g_object_info_get_unref_function_pointer(ptr());
+        return gi_object_info_get_unref_function_pointer(ptr());
     }
     [[nodiscard]]
     mozilla::Maybe<AutoVFuncInfo> vfunc(const char* name) const {
         return detail::Pointer::nullable<InfoTag::VFUNC>(
-            g_object_info_find_vfunc(ptr(), name));
+            gi_object_info_find_vfunc(ptr(), name));
     }
 
     [[nodiscard]] operator const BaseInfo() const {
-        return detail::Pointer::to_unowned<InfoTag::BASE>(ptr());
+        return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 };
 
@@ -1544,24 +1560,24 @@ class InfoOperations<Wrapper, InfoTag::PROPERTY>
 
     [[nodiscard]]
     GParamFlags flags() const {
-        return g_property_info_get_flags(ptr());
+        return gi_property_info_get_flags(ptr());
     }
 
  public:
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> getter() const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_property_info_get_getter(ptr()));
+            gi_property_info_get_getter(ptr()));
     }
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> setter() const {
         return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            g_property_info_get_setter(ptr()));
+            gi_property_info_get_setter(ptr()));
     }
     [[nodiscard]]
     AutoTypeInfo type_info() const {
         return detail::Pointer::to_owned<InfoTag::TYPE>(
-            g_property_info_get_type(ptr()));
+            gi_property_info_get_type_info(ptr()));
     }
 
     // Methods not in GIRepository
@@ -1581,7 +1597,7 @@ template <class Wrapper>
 inline mozilla::Maybe<AutoPropertyInfo>
 InfoOperations<Wrapper, InfoTag::FUNCTION>::property() const {
     return detail::Pointer::nullable<InfoTag::PROPERTY>(
-        g_function_info_get_property(ptr()));
+        gi_function_info_get_property(ptr()));
 }
 
 template <class Wrapper>
@@ -1597,7 +1613,7 @@ class InfoOperations<Wrapper, InfoTag::VALUE>
  public:
     [[nodiscard]]
     int64_t value() const {
-        return g_value_info_get_value(ptr());
+        return gi_value_info_get_value(ptr());
     }
 };
 
@@ -1605,26 +1621,22 @@ class InfoOperations<Wrapper, InfoTag::VALUE>
 // anywhere except in these wrappers, we also wrap GIRepository.
 // (ArgCache::HasTypeInfo is the one exception.)
 class Repository {
-    // All use of GIRepository is currently via the default repository, which is
-    // denoted by null. In girepository 2.0, that will be replaced by a
-    // repository object. In preparation for that, use a nullptr member in
-    // places where we'd need a GIRepository* once we migrate to 2.0.
-    std::nullptr_t m_ptr = nullptr;
+    Gjs::AutoUnref<GIRepository> m_ptr = gi_repository_dup_default();
 
     // Helper object for iterating the introspection info objects of a
     // namespace. Unlike the other introspection info iterators, this requires
     // two parameters, the GIRepository* and the namespace string, so we need
     // this helper object to adapt InfoIterator.
     struct IterableNamespace {
-        std::nullptr_t repo;
+        GIRepository* repo;
         const char* ns;
 
-        static int get_n_infos(const IterableNamespace obj) {
-            return g_irepository_get_n_infos(obj.repo, obj.ns);
+        static unsigned get_n_infos(const IterableNamespace obj) {
+            return gi_repository_get_n_infos(obj.repo, obj.ns);
         }
 
-        static GIBaseInfo* get_info(const IterableNamespace obj, int ix) {
-            return g_irepository_get_info(obj.repo, obj.ns, ix);
+        static GIBaseInfo* get_info(const IterableNamespace obj, unsigned ix) {
+            return gi_repository_get_info(obj.repo, obj.ns, ix);
         }
 
         bool operator==(const IterableNamespace& other) const {
@@ -1636,8 +1648,6 @@ class Repository {
         }
     };
 
-    static void strlist_free(GList* l) { g_list_free_full(l, g_free); }
-
  public:
     using Iterator = InfoIterator<IterableNamespace, InfoTag::BASE,
                                   &IterableNamespace::get_n_infos,
@@ -1647,47 +1657,48 @@ class Repository {
         return Iterator{{m_ptr, ns}};
     }
 
-    using AutoVersionList =
-        Gjs::AutoPointer<GList, GList, &Repository::strlist_free>;
     [[nodiscard]]
-    AutoVersionList enumerate_versions(const char* ns) const {
-        return g_irepository_enumerate_versions(m_ptr, ns);
+    Gjs::AutoStrv enumerate_versions(const char* ns, size_t* n_versions) const {
+        return gi_repository_enumerate_versions(m_ptr, ns, n_versions);
     }
     [[nodiscard]]
     mozilla::Maybe<AutoEnumInfo> find_by_error_domain(GQuark domain) const {
         return detail::Pointer::nullable<InfoTag::ENUM>(
-            g_irepository_find_by_error_domain(m_ptr, domain));
+            gi_repository_find_by_error_domain(m_ptr, domain));
     }
     template <InfoTag TAG = InfoTag::REGISTERED_TYPE>
     [[nodiscard]]
     mozilla::Maybe<OwnedInfo<TAG>> find_by_gtype(GType gtype) const {
-        return detail::Pointer::nullable<TAG>(
-            g_irepository_find_by_gtype(m_ptr, gtype));
+        return detail::Pointer::nullable<TAG>(detail::Pointer::cast<TAG>(
+            gi_repository_find_by_gtype(m_ptr, gtype)));
     }
     template <InfoTag TAG = InfoTag::BASE>
     [[nodiscard]]
     mozilla::Maybe<OwnedInfo<TAG>> find_by_name(const char* ns,
                                                 const char* name) const {
-        return detail::Pointer::nullable<TAG>(
-            g_irepository_find_by_name(m_ptr, ns, name));
+        return detail::Pointer::nullable<TAG>(detail::Pointer::cast<TAG>(
+            gi_repository_find_by_name(m_ptr, ns, name)));
     }
     [[nodiscard]]
     const char* get_version(const char* ns) const {
-        return g_irepository_get_version(m_ptr, ns);
+        return gi_repository_get_version(m_ptr, ns);
     }
     [[nodiscard]]
     bool is_registered(const char* ns, const char* version) const {
-        return g_irepository_is_registered(m_ptr, ns, version);
+        return gi_repository_is_registered(m_ptr, ns, version);
     }
     [[nodiscard]]
     mozilla::Span<const InterfaceInfo> object_get_gtype_interfaces(
         GType gtype) const {
         InterfaceInfo* interfaces;
-        unsigned n_interfaces;
-        g_irepository_get_object_gtype_interfaces(
+        size_t n_interfaces;
+        gi_repository_get_object_gtype_interfaces(
             m_ptr, gtype, &n_interfaces,
             reinterpret_cast<GIInterfaceInfo***>(&interfaces));
         return {interfaces, n_interfaces};
+    }
+    void prepend_search_path(const char* path) {
+        gi_repository_prepend_search_path(m_ptr, path);
     }
     [[nodiscard]]
     Gjs::GErrorResult<GITypelib*> require(
@@ -1695,7 +1706,7 @@ class Repository {
         GIRepositoryLoadFlags flags = {}) const {
         GError* error = nullptr;
         GITypelib* typelib =
-            g_irepository_require(m_ptr, ns, version, flags, &error);
+            gi_repository_require(m_ptr, ns, version, flags, &error);
         if (!typelib)
             return mozilla::Err(error);
         return typelib;
@@ -1706,7 +1717,7 @@ class Repository {
 
 // Introspection info allocated directly on the stack. This is used only in a
 // few cases, for performance reasons. In C, the stack-allocated struct is
-// filled in by a function such as g_arg_info_load_type().
+// filled in by a function such as gi_arg_info_load_type_info().
 // Needs to appear at the end, due to FIXME.
 
 class StackArgInfo : public InfoOperations<StackArgInfo, InfoTag::ARG> {
@@ -1721,14 +1732,15 @@ class StackArgInfo : public InfoOperations<StackArgInfo, InfoTag::ARG> {
 
  public:
     constexpr StackArgInfo() {}
+    ~StackArgInfo() { gi_base_info_clear(&m_info); }
     // Moving is okay, we copy the contents of the GIArgInfo struct and reset
     // the existing one
-    constexpr StackArgInfo(StackArgInfo&& other) : m_info(other.m_info) {
-        other.m_info = {};
+    StackArgInfo(StackArgInfo&& other) : m_info(other.m_info) {
+        gi_base_info_clear(&other.m_info);
     }
-    constexpr StackArgInfo& operator=(StackArgInfo&& other) {
+    StackArgInfo& operator=(StackArgInfo&& other) {
         m_info = other.m_info;
-        other.m_info = {};
+        gi_base_info_clear(&other.m_info);
         return *this;
     }
     // Prefer moving to copying
@@ -1748,14 +1760,15 @@ class StackTypeInfo : public InfoOperations<StackTypeInfo, InfoTag::TYPE> {
 
  public:
     constexpr StackTypeInfo() {}
+    ~StackTypeInfo() { gi_base_info_clear(&m_info); }
     // Moving is okay, we copy the contents of the GITypeInfo struct and reset
     // the existing one
-    constexpr StackTypeInfo(StackTypeInfo&& other) : m_info(other.m_info) {
-        other.m_info = {};
+    StackTypeInfo(StackTypeInfo&& other) : m_info(other.m_info) {
+        gi_base_info_clear(&other.m_info);
     }
-    constexpr StackTypeInfo& operator=(StackTypeInfo&& other) {
+    StackTypeInfo& operator=(StackTypeInfo&& other) {
         m_info = other.m_info;
-        other.m_info = {};
+        gi_base_info_clear(&other.m_info);
         return *this;
     }
     // Prefer moving to copying
@@ -1770,8 +1783,15 @@ constexpr inline GIArgInfo* Pointer::get_from(const StackArgInfo& stack) {
 constexpr inline GITypeInfo* Pointer::get_from(const StackTypeInfo& stack) {
     return const_cast<GITypeInfo*>(&stack.m_info);
 }
-constexpr inline void Pointer::to_stack(GITypeInfo* ptr, StackTypeInfo* stack) {
+inline void Pointer::to_stack(GITypeInfo* ptr, StackTypeInfo* stack) {
     stack->m_info = std::move(*ptr);
+    // Hacky: Reproduce gi_info_init() and mark the copied GITypeInfo as
+    // stack-allocated. Unfortunately, GI_TYPE_TYPE_INFO makes this function
+    // unable to be constexpr.
+    GIBaseInfoStack* stack_ptr = &stack->m_info.parent;
+    stack_ptr->parent_instance.g_class =
+        static_cast<GTypeClass*>(g_type_class_ref(GI_TYPE_TYPE_INFO));
+    stack_ptr->dummy0 = 0x7fff'ffff;
 }
 }  // namespace detail
 

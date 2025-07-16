@@ -6,7 +6,6 @@
 
 #include <sstream>
 
-#include <girepository.h>
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>

@@ -10,7 +10,7 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>  // for GHashTable
 

@@ -6,7 +6,7 @@
 
 #include <string.h>  // for strlen
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -95,13 +95,12 @@ static bool resolve_namespace_object(JSContext* context,
     }
 
     GI::Repository repo;
-    GI::Repository::AutoVersionList versions{
-        repo.enumerate_versions(ns_name.get())};
-    unsigned nversions = g_list_length(versions);
+    size_t nversions;
+    Gjs::AutoStrv versions{repo.enumerate_versions(ns_name.get(), &nversions)};
     if (nversions > 1 && !version &&
         !repo.is_registered(ns_name.get(), nullptr) &&
         !JS::WarnUTF8(context,
-                      "Requiring %s but it has %u versions available; use "
+                      "Requiring %s but it has %zu versions available; use "
                       "imports.gi.versions to pick one",
                       ns_name.get(), nversions))
         return false;

@@ -14,7 +14,7 @@
 #include <string>
 #include <type_traits>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

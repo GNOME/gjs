@@ -5,7 +5,7 @@
 
 #include <config.h>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib.h>
 
 #include <js/Class.h>

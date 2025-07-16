@@ -8,7 +8,7 @@
 
 #include <config.h>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>

@@ -12,7 +12,7 @@
 
 #include <limits>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>
@@ -51,33 +51,37 @@ enum class Kind {
 
 class ReturnTag {
     GITypeTag m_tag : 5;
-    GIInfoType m_info_type : 5;
+    bool m_is_enum_or_flags_interface : 1;
     bool m_is_pointer : 1;
 
  public:
     constexpr explicit ReturnTag(GITypeTag tag)
-        : m_tag(tag), m_info_type(GI_INFO_TYPE_INVALID), m_is_pointer(false) {}
-    constexpr explicit ReturnTag(GITypeTag tag, GIInfoType info_type,
+        : m_tag(tag),
+          m_is_enum_or_flags_interface(false),
+          m_is_pointer(false) {}
+    constexpr explicit ReturnTag(GITypeTag tag, bool is_enum_or_flags_interface,
                                  bool is_pointer)
-        : m_tag(tag), m_info_type(info_type), m_is_pointer(is_pointer) {}
+        : m_tag(tag),
+          m_is_enum_or_flags_interface(is_enum_or_flags_interface),
+          m_is_pointer(is_pointer) {}
     explicit ReturnTag(const GI::TypeInfo type_info)
         : m_tag(type_info.tag()),
-          m_info_type(GI_INFO_TYPE_INVALID),
           m_is_pointer(type_info.is_pointer()) {
         if (m_tag == GI_TYPE_TAG_INTERFACE) {
             GI::AutoBaseInfo interface_info{type_info.interface()};
-            m_info_type = interface_info.type();
+            m_is_enum_or_flags_interface = interface_info.is_enum_or_flags();
         }
     }
 
     constexpr GITypeTag tag() const { return m_tag; }
     [[nodiscard]]
     constexpr bool is_enum_or_flags_interface() const {
-        return m_tag == GI_TYPE_TAG_INTERFACE &&
-               (m_info_type == GI_INFO_TYPE_ENUM ||
-                m_info_type == GI_INFO_TYPE_FLAGS);
+        return m_tag == GI_TYPE_TAG_INTERFACE && m_is_enum_or_flags_interface;
     }
-    constexpr GIInfoType interface_type() const { return m_info_type; }
+    [[nodiscard]]
+    constexpr GType interface_gtype() const {
+        return is_enum_or_flags_interface() ? GI_TYPE_ENUM_INFO : G_TYPE_NONE;
+    }
     constexpr bool is_pointer() const { return m_is_pointer; }
 };
 

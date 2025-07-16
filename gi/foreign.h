@@ -7,7 +7,7 @@
 
 #include <config.h>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 
 #include <js/TypeDecls.h>
 #include <js/Value.h>

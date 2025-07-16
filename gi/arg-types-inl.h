@@ -11,7 +11,7 @@
 #include <limits>
 #include <type_traits>
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>  // for GValue
 #include <glib.h>         // for gboolean
 

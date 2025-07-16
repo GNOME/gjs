@@ -2006,7 +2006,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals an enum return value', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Expected type enum for Return*undefined*');
+            'JS ERROR: Error: Expected type *Enum* for Return*undefined*');
 
         expect(tester.vfunc_return_enum()).toEqual(0);
 
@@ -2016,7 +2016,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals an enum out parameter', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Expected type enum for Argument*undefined*');
+            'JS ERROR: Error: Expected type *Enum* for Argument*undefined*');
 
         expect(tester.vfunc_out_enum()).toEqual(0);
 
@@ -2026,7 +2026,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals a flags return value', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Expected type flags for Return*undefined*');
+            'JS ERROR: Error: Expected type *Flags* for Return*undefined*');
 
         expect(tester.vfunc_return_flags()).toEqual(0);
 
@@ -2036,7 +2036,7 @@ describe('Wrong virtual functions', function () {
 
     it('marshals a flags out parameter', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            'JS ERROR: Error: Expected type flags for Argument*undefined*');
+            'JS ERROR: Error: Expected type *Flags* for Argument*undefined*');
 
         expect(tester.vfunc_out_flags()).toEqual(0);
 

@@ -10,7 +10,7 @@
 #include <locale.h>
 
 #include <gio/gio.h>
-
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

@@ -14,7 +14,7 @@
 #include <vector>
 
 #include <ffi.h>
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

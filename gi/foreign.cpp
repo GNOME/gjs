@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <utility>  // for pair
 
-#include <girepository.h>
+#include <girepository/girepository.h>
 #include <glib.h>
 
 #include <js/RootingAPI.h>
