@@ -175,9 +175,11 @@ function init(params) {
         }
     }
 
+    const giRepo = GIRepository.Repository.dup_default();
+
     imports.searchPath.unshift(moduledir);
-    GIRepository.Repository.prepend_search_path(girpath);
-    GIRepository.Repository.prepend_library_path(libpath);
+    giRepo.prepend_search_path(girpath);
+    giRepo.prepend_library_path(libpath);
 
     try {
         let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
