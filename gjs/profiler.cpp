@@ -876,7 +876,7 @@ void gjs_profiler_set_fd(GjsProfiler* self, int fd) {
 void _gjs_profiler_set_finalize_status(GjsProfiler* self,
                                        JSFinalizeStatus status) {
 #ifdef ENABLE_PROFILER
-    // Implementation note for mozjs-128:
+    // Implementation note for mozjs-140:
     //
     // Sweeping happens in three phases:
     // 1st phase (JSFINALIZE_GROUP_PREPARE): the collector prepares to sweep a
@@ -884,9 +884,9 @@ void _gjs_profiler_set_finalize_status(GjsProfiler* self,
     // unmarked things have been removed, but no GC thing has been swept. 3rd
     // Phase (JSFINALIZE_GROUP_END): all dead GC things for a group of zones
     // have been swept. The above repeats for each sweep group.
-    // JSFINALIZE_COLLECTION_END occurs at the end of all GC. (see jsgc.cpp,
-    // BeginSweepPhase/BeginSweepingZoneGroup and SweepPhase, all called from
-    // IncrementalCollectSlice).
+    // JSFINALIZE_COLLECTION_END occurs at the end of all GC. (see
+    // js/src/gc/GC.cpp, GCRuntime::beginSweepPhase, beginSweepingSweepGroup,
+    // and endSweepPhase, all called from incrementalSlice).
     //
     // Incremental GC muddies the waters, because BeginSweepPhase is always run
     // to entirety, but SweepPhase can be run incrementally and mixed with JS
