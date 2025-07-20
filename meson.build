@@ -586,7 +586,7 @@ endif
 
 ### Generate pkg-config file ###################################################
 
-requires_private_names = ['gthread-2.0', 'girepository-2.0', 'ffi', 'cairo',
+requires_private_names = ['gthread-2.0', 'girepository-2.0', 'libffi', 'cairo',
     'cairo-gobject', 'mozjs-128']
 if pkg_dependencies.contains(cairo_xlib)
     requires_private_names += 'cairo-xlib'
