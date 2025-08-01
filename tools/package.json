@@ -4,13 +4,15 @@
   "repository": "https://gitlab.gnome.org/GNOME/gjs",
   "license": "MIT OR LGPL-2.0-or-later",
   "private": true,
+  "type": "module",
   "scripts": {
-    "lint": "cd .. && eslint . --format unix --resolve-plugins-relative-to tools",
+    "lint": "cd .. && eslint . --format unix",
     "fix": "npm run lint --fix",
     "typecheck": "tsc"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
+    "eslint-config-gnome": "git+https://gitlab.gnome.org/World/javascript/eslint-config-gnome.git#c479d059e8d9ea99c3b53c2ea43abf7fdb05eb51",
     "eslint-plugin-jsdoc": "^48.2.1",
     "typescript": "^5.7"
   }
