@@ -17,3 +17,7 @@ leak:g_io_module_new
 # Gtk test may leak because of a Gdk/X11 issue:
 #  https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/6037
 leak:gdk_x11_selection_input_stream_new_async
+
+# Data created as part of opening X display
+leak:glx_screen_init
+leak:eglCreateContext
