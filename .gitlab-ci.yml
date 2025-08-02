@@ -550,7 +550,7 @@ fedora.mozjs128:
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile
-    ARGS: --build-arg MOZJS_BRANCH=mozjs128 --build-arg MOZJS_BUILDDEPS=mozjs115
+    ARGS: --build-arg MOZJS_BRANCH=mozjs128
     IMAGE_NAME: fedora.mozjs128
 
 .fedora.mozjs128-debug: &fedora_mozjs128_debug
@@ -558,7 +558,7 @@ fedora.mozjs128:
   variables:
     <<: *docker_variables
     DOCKERFILE: test/extra/Dockerfile.debug
-    ARGS: --build-arg MOZJS_BRANCH=mozjs128 --build-arg MOZJS_BUILDDEPS=mozjs115
+    ARGS: --build-arg MOZJS_BRANCH=mozjs128
     IMAGE_NAME: fedora.mozjs128-debug
 
 fedora.mozjs128-debug_x86_64:
@@ -566,6 +566,30 @@ fedora.mozjs128-debug_x86_64:
 
 fedora.mozjs128-debug_aarch64:
   <<: *fedora_mozjs128_debug
+  tags:
+    - aarch64
+
+fedora.mozjs140:
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile
+    ARGS: --build-arg MOZJS_BRANCH=mozjs140 --build-arg MOZJS_BUILDDEPS=mozjs128
+    IMAGE_NAME: fedora.mozjs140
+
+.fedora.mozjs140-debug: &fedora_mozjs140_debug
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    DOCKERFILE: test/extra/Dockerfile.debug
+    ARGS: --build-arg MOZJS_BRANCH=mozjs140 --build-arg MOZJS_BUILDDEPS=mozjs128
+    IMAGE_NAME: fedora.mozjs140-debug
+
+fedora.mozjs140-debug_x86_64:
+  <<: *fedora_mozjs140_debug
+
+fedora.mozjs140-debug_aarch64:
+  <<: *fedora_mozjs140_debug
   tags:
     - aarch64
 
@@ -578,7 +602,31 @@ build-manifest-debug:
       - $CRON_TASK == "BUILD_CI_IMAGES"
   variables:
     IMAGE_NAME: fedora.mozjs128-debug
-  
+
+  script:
+    - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - buildah manifest create $CI_REGISTRY_IMAGE:$IMAGE_NAME
+    - |
+      for arch in amd64 arm64; do
+        buildah manifest add $CI_REGISTRY_IMAGE:$IMAGE_NAME docker://$CI_REGISTRY_IMAGE:$IMAGE_NAME-$arch
+      done
+    # Publish multi-arch image (if running on a schedule)
+    # Newer buildah can omit the docker:// in manifest push https://github.com/containers/podman/issues/18360
+    - |
+      if [[ "$CI_PIPELINE_SOURCE" == "schedule" ]]; then
+        buildah manifest push --all $CI_REGISTRY_IMAGE:$IMAGE_NAME docker://$CI_REGISTRY_IMAGE:$IMAGE_NAME
+      fi
+
+build-manifest-debug140:
+  needs: ["fedora.mozjs140-debug_x86_64", "fedora.mozjs140-debug_aarch64"]
+  image: quay.io/freedesktop.org/ci-templates:container-build-base-2023-06-27.1
+  stage: deploy
+  only:
+    variables:
+      - $CRON_TASK == "BUILD_CI_IMAGES"
+  variables:
+    IMAGE_NAME: fedora.mozjs140-debug
+
   script:
     - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - buildah manifest create $CI_REGISTRY_IMAGE:$IMAGE_NAME
