@@ -11,7 +11,6 @@
 #include <string.h>  // for strcmp, memchr, strlen
 
 #include <algorithm>
-#include <iosfwd>    // for nullptr_t
 #include <iterator>  // for distance
 #include <memory>    // for unique_ptr
 #include <string>    // for u16string

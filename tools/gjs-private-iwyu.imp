@@ -17,6 +17,8 @@
   {"include": ["<__stdarg_va_arg.h>", "private", "<stdarg.h>", "public"]},
 
   {"include": ["@<ffi.*>", "private", "<ffi.h>", "public"]},
+  {"include": ["\"gdbusinterfaceskeleton.h\"", "private", "<gio/gio.h>", "public"]},
+  {"include": ["\"gclosure.h\"", "private", "<glib-object.h>", "public"]},
   {"include": ["@\"gio/.*\"", "private", "<gio/gio.h>", "public"]},
   {"include": ["@<gio/.*>", "private", "<gio/gio.h>", "public"]},
   {"include": ["\"gitypes.h\"", "private", "<girepository.h>", "public"]},

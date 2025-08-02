@@ -11,16 +11,12 @@
 #include <stdlib.h>
 
 #include <type_traits>
-#include <utility>  // IWYU pragma: keep
-// (https://github.com/include-what-you-use/include-what-you-use/issues/636)
+#include <utility>
 
 #include <glib-object.h>
 #include <glib.h>
 
-// For some reason, this needs to be here because otherwise
-// AutoPointer<char*>::swap() fails to link.
-#include <js/GCPolicyAPI.h>  // IWYU pragma: keep
-#include <js/Utility.h>      // for UniqueChars
+#include <js/Utility.h>  // for UniqueChars
 
 // Auto pointers. We don't use GLib's g_autofree and friends because they only
 // work on GCC and Clang, and we try to support MSVC where possible. But this is

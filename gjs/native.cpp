@@ -4,10 +4,8 @@
 
 #include <config.h>
 
-#include <string>
 #include <tuple>  // for tie
 #include <unordered_map>
-#include <utility>  // for pair
 
 #include <glib.h>
 

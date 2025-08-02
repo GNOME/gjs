@@ -12,7 +12,6 @@
 #include <cstddef>
 #include <deque>
 #include <functional>
-#include <iosfwd>
 #include <iterator>
 #include <limits>
 #include <memory>

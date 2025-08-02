@@ -14,8 +14,6 @@
 #include <js/TypeDecls.h>
 #include <js/ValueArray.h>
 
-#include "gjs/global.h"
-#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION

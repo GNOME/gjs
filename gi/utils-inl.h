@@ -8,8 +8,9 @@
 
 #include <stdint.h>
 
-#include <algorithm>    // IWYU pragma: keep (for find)
-#include <utility>      // IWYU pragma: keep (for swap)
+#include <algorithm>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 template <typename T>
