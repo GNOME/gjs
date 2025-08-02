@@ -105,6 +105,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     readline-devel \
     sysprof-devel \
     systemtap-sdt-devel \
+    systemtap-sdt-dtrace \
     valgrind \
     which \
     Xvfb \

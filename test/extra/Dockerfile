@@ -86,7 +86,6 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     ninja-build \
     pkgconf \
     readline-devel \
-    systemtap-sdt-devel \
     valgrind \
     which \
     Xvfb \
