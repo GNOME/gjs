@@ -34,6 +34,7 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/ObjectWithStashedPointer.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
 #include <js/String.h>
@@ -72,7 +73,6 @@
 #include "gjs/deprecation.h"
 #include "gjs/gerror-result.h"
 #include "gjs/jsapi-class.h"
-#include "gjs/jsapi-simple-wrapper.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
@@ -367,7 +367,7 @@ bool ObjectBase::prop_getter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject pspec_obj{
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject()};
     auto* info_caller =
-        Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, pspec_obj);
+        JS::ObjectGetStashedPointer<ObjectPropertyInfoCaller>(cx, pspec_obj);
 
     const GI::AutoFunctionInfo& func_info = info_caller->func_info;
     GI::AutoPropertyInfo property_info{func_info.property().value()};
@@ -541,7 +541,7 @@ bool ObjectBase::prop_getter_simple_type_func(JSContext* cx, unsigned argc,
     JS::RootedObject pspec_obj(
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject());
     auto* caller =
-        Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, pspec_obj);
+        JS::ObjectGetStashedPointer<ObjectPropertyPspecCaller>(cx, pspec_obj);
 
     std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
         cx, priv->format_name() + "[\"" + caller->pspec->name + "\"]")};
@@ -608,7 +608,7 @@ bool ObjectBase::field_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject field_info_obj{
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject()};
     auto const& field_info =
-        *Gjs::SimpleWrapper::get<GI::AutoFieldInfo>(cx, field_info_obj);
+        *JS::ObjectGetStashedPointer<GI::AutoFieldInfo>(cx, field_info_obj);
 
     std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
         cx, priv->format_name() + "[\"" + field_info.name() + "\"]")};
@@ -770,7 +770,7 @@ bool ObjectBase::prop_setter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject func_obj{
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject()};
     auto* info_caller =
-        Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, func_obj);
+        JS::ObjectGetStashedPointer<ObjectPropertyInfoCaller>(cx, func_obj);
 
     const GI::AutoFunctionInfo& func_info = info_caller->func_info;
     GI::AutoPropertyInfo property_info{func_info.property().value()};
@@ -922,7 +922,7 @@ bool ObjectBase::prop_setter_simple_type_func(JSContext* cx, unsigned argc,
     JS::RootedObject pspec_obj(
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject());
     auto* caller =
-        Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, pspec_obj);
+        JS::ObjectGetStashedPointer<ObjectPropertyPspecCaller>(cx, pspec_obj);
 
     std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
         cx, priv->format_name() + "[" + caller->pspec->name + "]")};
@@ -999,7 +999,7 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::RootedObject field_info_obj{
         cx, &gjs_dynamic_property_private_slot(&args.callee()).toObject()};
     auto const& field_info =
-        *Gjs::SimpleWrapper::get<GI::AutoFieldInfo>(cx, field_info_obj);
+        *JS::ObjectGetStashedPointer<GI::AutoFieldInfo>(cx, field_info_obj);
 
     std::string full_name{GJS_PROFILER_DYNAMIC_STRING(
         cx, priv->format_name() + "[\"" + field_info.name() + "\"]")};
@@ -1208,6 +1208,19 @@ static JSNative get_getter_for_type(const GI::TypeInfo type_info,
     }
 }
 
+// Wrap a call to JS::NewObjectWithStashedPointer() while ensuring the pointer
+// is properly deleted if the call fails.
+template <typename T, typename... Ts>
+GJS_JSAPI_RETURN_CONVENTION static inline JSObject*
+new_object_with_stashed_pointer(JSContext* cx, Ts... args) {
+    std::unique_ptr<T> data = std::make_unique<T>(args...);
+    JSObject* obj = JS::NewObjectWithStashedPointer(
+        cx, data.get(), [](T* data) { delete data; });
+    if (obj)
+        data.release();
+    return obj;
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
                                       const GI::FunctionInfo getter,
@@ -1220,21 +1233,21 @@ static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
 
     Gjs::GErrorResult<> init_result{Ok{}};
     if (js_getter) {
-        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyPspecCaller>(
+        wrapper = new_object_with_stashed_pointer<ObjectPropertyPspecCaller>(
             cx, pspec);
         if (!wrapper)
             return nullptr;
         auto* caller =
-            Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, wrapper);
+            JS::ObjectGetStashedPointer<ObjectPropertyPspecCaller>(cx, wrapper);
         init_result = caller->init(getter);
     } else {
-        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
+        wrapper = new_object_with_stashed_pointer<ObjectPropertyInfoCaller>(
             cx, getter);
         if (!wrapper)
             return nullptr;
         js_getter = &ObjectBase::prop_getter_func;
         auto* caller =
-            Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, wrapper);
+            JS::ObjectGetStashedPointer<ObjectPropertyInfoCaller>(cx, wrapper);
         init_result = caller->init();
     }
 
@@ -1397,21 +1410,21 @@ static JSNative create_setter_invoker(JSContext* cx, GParamSpec* pspec,
 
     Gjs::GErrorResult<> init_result{Ok{}};
     if (js_setter) {
-        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyPspecCaller>(
+        wrapper = new_object_with_stashed_pointer<ObjectPropertyPspecCaller>(
             cx, pspec);
         if (!wrapper)
             return nullptr;
         auto* caller =
-            Gjs::SimpleWrapper::get<ObjectPropertyPspecCaller>(cx, wrapper);
+            JS::ObjectGetStashedPointer<ObjectPropertyPspecCaller>(cx, wrapper);
         init_result = caller->init(setter);
     } else {
-        wrapper = Gjs::SimpleWrapper::new_for_type<ObjectPropertyInfoCaller>(
+        wrapper = new_object_with_stashed_pointer<ObjectPropertyInfoCaller>(
             cx, setter);
         if (!wrapper)
             return nullptr;
         js_setter = &ObjectBase::prop_setter_func;
         auto* caller =
-            Gjs::SimpleWrapper::get<ObjectPropertyInfoCaller>(cx, wrapper);
+            JS::ObjectGetStashedPointer<ObjectPropertyInfoCaller>(cx, wrapper);
         init_result = caller->init();
     }
 
@@ -1911,7 +1924,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* context, JS::HandleObject obj,
             flags |= JSPROP_READONLY;
 
         JS::RootedObject rooted_field{
-            context, Gjs::SimpleWrapper::new_for_type<GI::AutoFieldInfo>(
+            context, new_object_with_stashed_pointer<GI::AutoFieldInfo>(
                          context, field_info.extract())};
         JS::RootedValue private_value{context, JS::ObjectValue(*rooted_field)};
         if (!gjs_define_property_dynamic(

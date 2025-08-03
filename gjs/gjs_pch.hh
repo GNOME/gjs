@@ -81,6 +81,7 @@
 #include <js/MemoryFunctions.h>
 #include <js/Modules.h>
 #include <js/Object.h>
+#include <js/ObjectWithStashedPointer.h>
 #include <js/Principals.h>
 #include <js/Printer.h>
 #include <js/ProfilingCategory.h>

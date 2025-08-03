@@ -9,59 +9,14 @@
 
 #include <stddef.h>  // for NULL
 
-#include <atomic>  // for atomic_int
-#include <condition_variable>
-#include <mutex>
 #include <utility>   // for move, swap
 
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/GCAPI.h>
-#include <js/RootingAPI.h>  // for Rooted
-#include <js/TypeDecls.h>
-#include <jsapi.h>
-
 #include "gjs/auto.h"
 #include "gjs/gerror-result.h"
-#include "gjs/jsapi-simple-wrapper.h"
 #include "test/gjs-test-utils.h"
-
-namespace GC {
-
-static std::mutex s_gc_lock;
-static std::condition_variable s_gc_finished;
-static std::atomic_int s_gc_counter;
-
-static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {
-    if (status != JSGC_END)
-        return;
-
-    std::unique_lock lock{s_gc_lock};
-    s_gc_counter.fetch_add(1);
-    s_gc_finished.notify_all();
-}
-
-static void setup(GjsUnitTestFixture* fx, const void*) {
-    gjs_unit_test_fixture_setup(fx, nullptr);
-    JS_SetGCCallback(fx->cx, on_gc, fx);
-}
-
-static void wait_for_gc(GjsUnitTestFixture* fx) {
-    int count = s_gc_counter.load();
-
-    JS_GC(fx->cx);
-
-    std::unique_lock lock{s_gc_lock};
-    s_gc_finished.wait(lock,
-                       [&count]() { return count != s_gc_counter.load(); });
-}
-
-static void teardown(GjsUnitTestFixture* fx, const void*) {
-    gjs_unit_test_fixture_teardown(fx, nullptr);
-}
-
-}  // namespace GC
 
 struct _GjsTestObject {
     GObject parent_instance;
@@ -635,95 +590,8 @@ static void test_gjs_error_out() {
     g_assert_null(error);
 }
 
-static void test_gjs_simple_wrapper_new_for_ptr(GjsUnitTestFixture* fx,
-                                                const void*) {
-    int value = 55;
-
-    JSObject* obj =
-        Gjs::SimpleWrapper::new_for_ptr(fx->cx, &value, [](int* value_ptr) {
-            g_assert_cmpint(*value_ptr, ==, 55);
-            *value_ptr = 33;
-        });
-    g_assert_nonnull(obj);
-
-    {
-        JS::RootedObject rooted{fx->cx, obj};
-        GC::wait_for_gc(fx);
-        JS_GC(fx->cx);
-
-        g_assert_cmpint(*Gjs::SimpleWrapper::get<int>(fx->cx, rooted), ==, 55);
-    }
-
-    GC::wait_for_gc(fx);
-    JS_GC(fx->cx);
-    g_assert_cmpint(value, ==, 33);
-}
-
-static void test_gjs_simple_wrapper_new_for_ptr_null_destructor(
-    GjsUnitTestFixture* fx, const void*) {
-    int value = 55;
-
-    JSObject* obj = Gjs::SimpleWrapper::new_for_ptr(fx->cx, &value);
-    g_assert_nonnull(obj);
-
-    {
-        JS::RootedObject rooted{fx->cx, obj};
-        g_assert_cmpint(*Gjs::SimpleWrapper::get<int>(fx->cx, rooted), ==, 55);
-    }
-
-    GC::wait_for_gc(fx);
-    JS_GC(fx->cx);
-}
-
-static void test_gjs_simple_wrapper_new_for_type(GjsUnitTestFixture* fx,
-                                                 const void*) {
-    bool destructor_called = false;
-    struct MyNiceStruct {
-        explicit MyNiceStruct(bool* destructor_called_ptr)
-            : destructor_called_ptr(destructor_called_ptr) {
-            g_assert_false(*destructor_called_ptr);
-        }
-        ~MyNiceStruct() {
-            g_assert_false(*destructor_called_ptr);
-            *destructor_called_ptr = true;
-        }
-
-        bool* destructor_called_ptr;
-    };
-
-    JSObject* obj = Gjs::SimpleWrapper::new_for_type<MyNiceStruct>(
-        fx->cx, &destructor_called);
-    g_assert_nonnull(obj);
-
-    {
-        JS::RootedObject rooted{fx->cx, obj};
-        g_assert_false(*Gjs::SimpleWrapper::get<MyNiceStruct>(fx->cx, rooted)
-                            ->destructor_called_ptr);
-    }
-
-    GC::wait_for_gc(fx);
-    JS_GC(fx->cx);
-    g_assert_true(destructor_called);
-}
-
-static void test_gjs_simple_wrapper_get_invalid_type(GjsUnitTestFixture* fx,
-                                                     const void*) {
-    JS::RootedObject obj{
-        fx->cx,
-        JS_GetFunctionObject(JS_NewFunction(
-            fx->cx, [](JSContext*, unsigned, JS::Value*) { return false; }, 1,
-            0, "aFunction"))};
-
-    g_assert_true(obj);
-    g_assert_null(Gjs::SimpleWrapper::get<JSObject>(fx->cx, obj));
-}
-
 #define ADD_AUTOPTRTEST(path, func) \
     g_test_add(path, Fixture, nullptr, setup, func, teardown);
-
-#define ADD_JS_GC_TEST(path, func)                                         \
-    g_test_add("/gjs/" path, GjsUnitTestFixture, nullptr, GC::setup, func, \
-               GC::teardown);
 
 void gjs_test_add_tests_for_jsapi_utils(void) {
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/size",
@@ -830,16 +698,4 @@ void gjs_test_add_tests_for_jsapi_utils(void) {
     g_test_add_func("/gjs/jsapi-utils/gjs-autoerror/init", test_gjs_error_init);
     g_test_add_func("/gjs/jsapi-utils/gjs-autoerror/as-out-value",
                     test_gjs_error_out);
-
-    ADD_JS_GC_TEST("/gjs/jsapi-simple-wrapper/new-for-ptr",
-                   test_gjs_simple_wrapper_new_for_ptr);
-
-    ADD_JS_GC_TEST("/gjs/jsapi-simple-wrapper/new-for-ptr-null-destructor",
-                   test_gjs_simple_wrapper_new_for_ptr_null_destructor);
-
-    ADD_JS_GC_TEST("/gjs/jsapi-simple-wrapper/new-for-type",
-                   test_gjs_simple_wrapper_new_for_type);
-
-    ADD_JS_GC_TEST("/gjs/jsapi-simple-wrapper/get-invalid-type",
-                   test_gjs_simple_wrapper_get_invalid_type);
 }
