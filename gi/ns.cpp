@@ -6,7 +6,6 @@
 
 #include <string.h>
 
-#include <string>
 #include <vector>
 
 #include <glib.h>

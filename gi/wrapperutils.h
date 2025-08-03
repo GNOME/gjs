@@ -10,7 +10,6 @@
 
 #include <stdint.h>
 
-#include <new>
 #include <string>
 #include <type_traits>
 

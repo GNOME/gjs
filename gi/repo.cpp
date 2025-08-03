@@ -45,7 +45,6 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
-#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"

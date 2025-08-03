@@ -11,7 +11,6 @@ ARG BUILD_OPTS=
 ENV SHELL=/bin/bash
 
 RUN dnf -y install 'dnf-command(builddep)' \
-    autoconf213 \
     clang \
     git \
     llvm \

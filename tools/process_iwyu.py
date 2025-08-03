@@ -58,30 +58,17 @@ FWD_DECLS_IN_HEADER = (
 )
 add_fwd_header = False
 
-CSTDINT = '#include <cstdint>'
-STDINTH = '#include <stdint.h>'
-
 FALSE_POSITIVES = (
-    # The bodies of these structs already come before their usage,
-    # we don't need to have forward declarations of them as well
-    ('gjs/atoms.h', 'class GjsAtoms;', ''),
-    ('gjs/atoms.h', 'struct GjsSymbolAtom;', ''),
-    ('gjs/mem-private.h', 'namespace Gjs { namespace Memory { struct Counter; } }', ''),
+    # glib.h is already included, we don't need to additionally forward-declare
+    ('gjs/auto.h', 'struct _GVariant;', ''),
 
-    # False positive when constructing JS::GCHashMap
-    ('gi/boxed.h', '#include <utility>', 'for move'),
-    ('gi/object.h', '#include <utility>', 'for move'),
-    ('gjs/jsapi-util-error.cpp', '#include <utility>', 'for move'),
+    # IWYU is not sure whether <utility> or <iterator> is for pair
+    ('test/gjs-test-utils.h', '#include <iterator>', 'for pair'),
+    ('test/gjs-test-toggle-queue.cpp', '#include <iterator>', 'for pair'),
 
-    # For some reason IWYU wants these with angle brackets when they are
-    # already present with quotes
-    # https://github.com/include-what-you-use/include-what-you-use/issues/1087
-    ('gjs/context.cpp', '#include <gjs/context.h>', ''),
-    ('gjs/coverage.cpp', '#include <gjs/coverage.h>', ''),
-    ('gjs/error-types.cpp', '#include <gjs/error-types.h>', ''),
-    ('gjs/jsapi-util.cpp', '#include <gjs/jsapi-util.h>', ''),
-    ('gjs/mem.cpp', '#include <gjs/mem.h>', ''),
-    ('gjs/profiler.cpp', '#include <gjs/profiler.h>', ''),
+    # C++20 false positive
+    # https://github.com/include-what-you-use/include-what-you-use/issues/1791
+    ('gjs/jsapi-util-root.h', '#include <version>', 'for nullptr_t'),
 )
 
 

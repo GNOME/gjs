@@ -5,7 +5,6 @@
 
 #include <config.h>
 
-#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

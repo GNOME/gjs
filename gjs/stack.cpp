@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <stdio.h>  // for stderr
-
 #include <sstream>
 #include <string>
 

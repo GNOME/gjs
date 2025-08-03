@@ -23,7 +23,6 @@
 #    include <readline/history.h>
 #endif
 
-#include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>

@@ -15,7 +15,6 @@
 #include <limits>
 #include <string>  // for string, u16string
 #include <type_traits>  // for enable_if_t, add_pointer_t, add_const_t
-#include <utility>      // IWYU pragma: keep
 #include <vector>
 
 #include <glib-object.h>

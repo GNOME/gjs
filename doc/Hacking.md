@@ -72,11 +72,10 @@ example, Fedora 41 or Ubuntu 24.10 and later versions), then you don't
 need to build it yourself.
 Install SpiderMonkey using your system's package manager instead:
 
-<!--Ubuntu does not currently ship a build of libmozjs-128-->
-<!-- <details>
+<details>
     <summary>Ubuntu</summary>
     <code>sudo apt-get install libmozjs-128-dev</code>
-</details> -->
+</details>
 
 <details>
     <summary>Fedora</summary>

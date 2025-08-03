@@ -8,9 +8,10 @@
 
 #include <config.h>
 
-#include <cstddef>  // for nullptr_t
+// https://github.com/include-what-you-use/include-what-you-use/issues/1791
+#include <cstddef>  // IWYU pragma: keep
 #include <memory>
-#include <new>
+#include <new>  // IWYU pragma: keep (actually for clangd)
 
 #include <glib.h>
 
