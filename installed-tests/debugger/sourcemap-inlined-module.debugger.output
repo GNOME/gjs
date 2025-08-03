@@ -21,7 +21,7 @@ Unwinding due to exception. (Type 'c' to continue unwinding.)
    2	    return num[1].n.toFixed(1);
 Exception value is:
 $1 = [object TypeError]
-TypeError: num[1].n is null
+TypeError: can't access property "toFixed", num[1].n is null
 db> list
    1	interface SuperFancyNumber {
    2	    n: number;

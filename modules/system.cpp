@@ -16,6 +16,7 @@
 
 #include <js/CallArgs.h>
 #include <js/Date.h>                // for ResetTimeZone
+#include <js/ErrorReport.h>         // for ReportUncatchableException
 #include <js/GCAPI.h>               // for JS_GC
 #include <js/JSON.h>
 #include <js/PropertyAndElement.h>
@@ -173,7 +174,8 @@ gjs_exit(JSContext *context,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
     gjs->exit(ecode);
-    return false;  /* without gjs_throw() == "throw uncatchable exception" */
+    JS::ReportUncatchableException(context);
+    return false;
 }
 
 static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {

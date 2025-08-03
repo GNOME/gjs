@@ -280,3 +280,37 @@ describe('GError.new_literal', function () {
             .toThrowError(/0 is not a valid domain/);
     });
 });
+
+describe('Interoperation with Error.isError', function () {
+    it('thrown GError', function () {
+        let err;
+        try {
+            const file = Gio.file_new_for_path("\\/,.^!@&$_don't exist");
+            file.read(null);
+        } catch (e) {
+            err = e;
+        }
+        expect(Error.isError(err)).toBeTruthy();
+    });
+
+    xit('returned GError', function () {
+        const err = GIMarshallingTests.gerror_return();
+        expect(Error.isError(err)).toBeTruthy();
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/700');
+
+    it('created GError', function () {
+        const err = new Gio.IOErrorEnum({message: 'a message', code: 0});
+        expect(Error.isError(err)).toBeTruthy();
+    });
+
+    it('GError created with the GLib.Error constructor', function () {
+        const err = new GLib.Error(Gio.IOErrorEnum, 0, 'a message');
+        expect(Error.isError(err)).toBeTruthy();
+    });
+
+    it('GError created with GLib.Error.new_literal', function () {
+        const err = GLib.Error.new_literal(
+            Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'message');
+        expect(Error.isError(err)).toBeTruthy();
+    });
+});

@@ -16,6 +16,6 @@
 - Many API functions return a `bool`. As in many other APIs, these should return `true` for success and `false` for failure.
 - Specific to SpiderMonkey is the convention that if an API function returns `false`, an  exception should have been thrown (a JS exception, not a C++ exception, which would terminate the program!) This is also described as "an exception should be _pending_ on `cx`". Likewise, if the function returns `true`, an exception should not be pending.
 - There are two ways to violate that condition:
-  - Returning `false` with no exception pending. This is interpreted as an "uncatchable" exception, and it's used for out-of-memory and killing scripts within Firefox, for example. In GJS we use it to implement `System.exit()`.
+  - Returning `false` with no exception pending. This will fail assertions in debug builds.
   - Returning `true` while an exception is pending. This can easily happen by forgetting to check the return value of a SpiderMonkey function, and is a programmer error but not too serious. It will probably cause some warnings.
 - Likewise if an API function returns a pointer such as `JSObject*` (this is less common), the convention is that it should return `nullptr` on failure, in which case an exception should be pending.

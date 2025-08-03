@@ -1,3 +1,109 @@
+Version 1.85.2
+--------------
+
+- New JavaScript features! This version of GJS is based on SpiderMonkey 140, an
+  upgrade from the previous ESR (Extended Support Release) of SpiderMonkey 128.
+  Here are the highlights of the new JavaScript features, taken from
+  SpiderMonkey's release notes.
+  For more information, look them up on MDN or devdocs.io.
+
+  * Float16Array typed arrays are now supported, along with
+    `DataView.prototype.getFloat16()` and `DataView.prototype.setFloat16()` for
+    reading and setting Float16Array values from a DataView, and the
+    `Math.f16round()` static method, which can be used to round numbers to 16
+    bits.
+  * Regular expressions can now use the same name for named capturing groups in
+    different disjunction alternatives.
+    This is allowed because only one alternative in a disjunction will match, so
+    a name declared in several alternatives can only reference one captured
+    group.
+    The names must still be unique within a particular alternative, and across
+    the rest of the pattern.
+  * Support for synchronous iterator helper methods has been added, including:
+    `Iterator.prototype.drop()`, `Iterator.prototype.every()`,
+    `Iterator.prototype.filter()`, `Iterator.prototype.find()`,
+    `Iterator.prototype.flatMap()`, `Iterator.prototype.forEach()`,
+    `Iterator.prototype.map()`, `Iterator.prototype.reduce()`,
+    `Iterator.prototype.some()`, and `Iterator.prototype.take()`.
+    These helpers allow Array-like operations on iterators without having to
+    create intermediate Array objects.
+    They can also be used with very large data sets where creating an
+    intermediate Array would not even be possible.
+  * The `(?ims-ims:...)` regular expression modifiers allow you to make changes
+    to only take effect in a specific part of a regex pattern.
+  * Support for Uint8Array methods to ease conversions between base64- and
+    hex-encoded strings and byte arrays.
+    The new methods include:
+    + `Uint8Array.fromBase64()` and `Uint8Array.fromHex()` static methods for
+      constructing a new Uint8Array object from a base64- and hex-encoded
+      string, respectively.
+    + `Uint8Array.prototype.setFromBase64()`, and
+      `Uint8Array.prototype.setFromHex()` instance methods for populating an
+       existing Uint8Array object with bytes from a base64- or hex-encoded
+       string.
+    + `Uint8Array.prototype.toBase64()` and `Uint8Array.prototype.toHex()
+      instance methods, which return a base64- and hex- encoded string from the
+      data in a Uint8Array object.
+  * Support for the `RegExp.escape()` static method that can be used to escape
+    any potential regex syntax characters in a string, returning a new string
+    that can be safely used as a literal pattern for the `RegExp()` constructor.
+  * The `Promise.try()` convenience method is now supported.
+    The method takes a callback of any kind (a function that returns or throws, synchronously or asynchronously) and wraps its result in a Promise.
+    This allows you to use promise semantics (`.then()`, `.catch()`) to handle
+    the result from any kind of method.
+  * The JSON parse with source proposal is now supported, which aims to provide
+    features to mitigate issues around loss of precision when converting values
+    such as large floats and date values between JavaScript values and JSON
+    text.
+    Specifically, the following features are now available:
+    + The `JSON.parse()` reviver parameter context argument: Provides access to
+      the original JSON source text that was parsed.
+    + `JSON.isRawJSON()`: Tests whether a value is an object returned by
+      `JSON.rawJSON()`.
+    + `JSON.rawJSON()`: Creates a "raw JSON" object containing a piece of JSON
+      text, which can then be included in an object to preserve the specified
+      value when that object is stringified.
+  * `Intl.DurationFormat` is now supported, enabling locale-sensitive formatting
+  of durations.
+  * The `Math.sumPrecise()` static method is now supported.
+    This takes an iterable (such as an Array) of numbers and returns their sum.
+    It is more precise than summing the numbers in a loop because it avoids
+    floating point precision loss in intermediate results.
+  * The `Atomics.pause()` static method is now supported.
+    This method provides a hint to the CPU that the current thread is in a
+    spinlock while waiting on access to a shared resource.
+    The system can then reduce the resources allocated to the core (such as
+    power) or thread, without yielding the current thread.
+  * The `Error.captureStackTrace()` static method is now supported.
+    This installs stack trace information on a provided object as the
+    `Error.stack` property.
+    Its main use case is to install a stack trace on a custom error object that
+    does not derive from the Error interface.
+  * The `Error.isError()` static method can now be used to check whether or not
+    an object is an instance of an Error or a GError.
+    This is more reliable than using `instanceof` for the same purpose.
+  * The `import` declaration now supports importing JSON modules using the
+    `with` attribute.
+  * The Temporal API is now supported, this aims to simplify working with dates
+    and times in various scenarios, with built-in time zone and calendar
+    representations. This includes:
+    + A duration (difference between two time points): `Temporal.Duration`
+    + Points in time:
+      - As a unique instant in history:
+        * A timestamp: `Temporal.Instant`
+        * A date-time with a time zone: `Temporal.ZonedDateTime`
+      - Time-zone-unaware date/time ("Plain"):
+        * Date (year, month, day) + time (hour, minute, second, millisecond,
+          nanosecond): `Temporal.PlainDateTime`
+        * Date (year, month, day): `Temporal.PlainDate`
+        * Year, month: `Temporal.PlainYearMonth`
+        * Month, day: `Temporal.PlainMonthDay`
+        * Time (hour, minute, second, millisecond, nanosecond):
+          `Temporal.PlainTime`
+    + Now (current time) as various class instances, or in a specific format:
+      `Temporal.Now`
+
+
 Version 1.85.1
 --------------
 

@@ -548,13 +548,7 @@ function _init() {
 
         const originalMatchInfoMethods = new Set(Object.keys(oldMatchInfo.prototype));
         const overriddenMatchInfoMethods = new Set(Object.keys(MatchInfo.prototype));
-        const symmetricDifference = new Set(originalMatchInfoMethods);
-        for (const method of overriddenMatchInfoMethods) {
-            if (symmetricDifference.has(method))
-                symmetricDifference.delete(method);
-            else
-                symmetricDifference.add(method);
-        }
+        const symmetricDifference = originalMatchInfoMethods.symmetricDifference(overriddenMatchInfoMethods);
         if (symmetricDifference.size !== 0)
             throw new Error(`Methods of GMatchInfo and GjsMatchInfo don't match: ${[...symmetricDifference]}`);
 

@@ -15,6 +15,7 @@
 #include <glib.h>
 
 #include <js/CallArgs.h>
+#include <js/ErrorReport.h>  // for ReportUncatchableException
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/Realm.h>
@@ -47,7 +48,8 @@ static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     gjs->exit(exitcode);
-    return false;  // without gjs_throw() == "throw uncatchable exception"
+    JS::ReportUncatchableException(cx);
+    return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION

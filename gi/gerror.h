@@ -55,7 +55,12 @@ class ErrorBase
     static constexpr const char* DEBUG_TAG = "gerror";
 
     static const struct JSClassOps class_ops;
+
+ public:
+    // public in order to implement Error.isError()
     static const struct JSClass klass;
+
+ protected:
     static JSPropertySpec proto_properties[];
     static JSFunctionSpec static_methods[];
 

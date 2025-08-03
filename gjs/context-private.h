@@ -264,7 +264,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     // Implementations of JS::JobQueue virtual functions
     GJS_JSAPI_RETURN_CONVENTION
-    JSObject* getIncumbentGlobal(JSContext* cx) override;
+    bool getHostDefinedData(JSContext*, JS::MutableHandleObject) const override;
     GJS_JSAPI_RETURN_CONVENTION
     bool enqueuePromiseJob(JSContext* cx, JS::HandleObject promise,
                            JS::HandleObject job,

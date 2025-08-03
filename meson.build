@@ -48,7 +48,7 @@ if cc.get_id() == 'msvc'
     add_project_arguments(cxx.get_supported_arguments([
         '-utf-8',  # Use UTF-8 mode
         '/Zc:externConstexpr',  # Required for 'extern constexpr' on MSVC
-        '/Zc:preprocessor',     # Required to consume the mozjs-128 headers on MSVC
+        '/Zc:preprocessor',     # Required to consume the mozjs headers on MSVC
 
         # Ignore spurious compiler warnings for things that GLib and SpiderMonkey
         # header files commonly do
@@ -141,7 +141,7 @@ cairo = dependency('cairo', fallback: ['cairo', 'libcairo_dep'])
 cairo_gobject = dependency('cairo-gobject',
     fallback: ['cairo', 'libcairogobject_dep'])
 cairo_xlib = dependency('cairo-xlib', required: false)
-spidermonkey = dependency('mozjs-128')
+spidermonkey = dependency('mozjs-140')
 
 sysprof_capture = dependency('sysprof-capture-4',
     required: get_option('profiler'), include_type: 'system',
@@ -460,7 +460,6 @@ libgjs_private_sources = [
 libgjs_jsapi_sources = [
     'gjs/jsapi-class.h',
     'gjs/jsapi-dynamic-class.cpp',
-    'gjs/jsapi-simple-wrapper.cpp', 'gjs/jsapi-simple-wrapper.h',
     'gjs/jsapi-util-args.h',
     'gjs/jsapi-util-error.cpp',
     'gjs/jsapi-util-root.h',
@@ -587,7 +586,7 @@ endif
 ### Generate pkg-config file ###################################################
 
 requires_private_names = ['gthread-2.0', 'girepository-2.0', 'libffi', 'cairo',
-    'cairo-gobject', 'mozjs-128']
+    'cairo-gobject', 'mozjs-140']
 if pkg_dependencies.contains(cairo_xlib)
     requires_private_names += 'cairo-xlib'
 endif

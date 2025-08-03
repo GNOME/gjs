@@ -6,11 +6,11 @@
 #include <glib.h>
 
 #include <js/GCAPI.h>  // for JS_GC, JS_SetGCCallback, JSGCStatus
+#include <js/ObjectWithStashedPointer.h>
 #include <js/TypeDecls.h>
 #include <jsapi.h>
 
 #include "gjs/context-private.h"
-#include "gjs/jsapi-simple-wrapper.h"
 #include "gjs/jsapi-util-root.h"
 #include "test/gjs-test-utils.h"
 
@@ -39,11 +39,11 @@ struct GjsRootingFixture {
 static JSObject *
 test_obj_new(GjsRootingFixture *fx)
 {
-    return Gjs::SimpleWrapper::new_for_ptr(
-        PARENT(fx)->cx, fx, [](GjsRootingFixture* data) {
-            g_assert_false(data->finalized);
-            data->finalized = true;
-        });
+    return JS::NewObjectWithStashedPointer(PARENT(fx)->cx, fx,
+                                           [](GjsRootingFixture* data) {
+                                               g_assert_false(data->finalized);
+                                               data->finalized = true;
+                                           });
 }
 
 static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {

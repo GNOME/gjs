@@ -37,7 +37,7 @@ You can also skip this step if you are not writing any C++ code.)
 ## Dependencies
 
 GJS requires five other libraries to be installed: GLib, libffi,
-gobject-introspection, SpiderMonkey (also called "mozjs128" on some
+gobject-introspection, SpiderMonkey (also called "mozjs140" on some
 systems.) and the build tool Meson.
 The readline library is not required, but strongly recommended.
 We recommend installing your system's development packages for libffi,
@@ -74,12 +74,12 @@ Install SpiderMonkey using your system's package manager instead:
 
 <details>
     <summary>Ubuntu</summary>
-    <code>sudo apt-get install libmozjs-128-dev</code>
+    <code>sudo apt-get install libmozjs-140-dev</code>
 </details>
 
 <details>
     <summary>Fedora</summary>
-    <code>sudo dnf install mozjs128-devel</code>
+    <code>sudo dnf install mozjs140-devel</code>
 </details>
 
 If you _are_ writing C++ code, then please build SpiderMonkey yourself
@@ -87,7 +87,7 @@ with the debugging features enabled.
 This can save you time later when you submit your merge request, because
 the code will be checked using the debugging features.
 
-To build SpiderMonkey, follow the instructions on [this page](https://github.com/mozilla-spidermonkey/spidermonkey-embedding-examples/blob/esr128/docs/Building%20SpiderMonkey.md) to download the source code and build the library.
+To build SpiderMonkey, follow the instructions on [this page](https://github.com/mozilla-spidermonkey/spidermonkey-embedding-examples/blob/esr140/docs/Building%20SpiderMonkey.md) to download the source code and build the library.
 If you are using `-Dprefix` to build GJS into a different path, then
 make sure to use the same build prefix for SpiderMonkey with `--prefix`.
 
@@ -175,7 +175,7 @@ more likely to show up.
 
 To see which GC zeal options are available:
 ```sh
-JS_GC_ZEAL=-1 js128
+JS_GC_ZEAL=-1 js140
 ```
 
 We include three test setups, `extra_gc`, `pre_verify`, and
@@ -239,7 +239,7 @@ This will build GJS into a separate build directory with code coverage
 instrumentation enabled, run the test suite to collect the coverage
 data, and open the generated HTML report.
 
-[embedder](https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr128/docs/Building%20SpiderMonkey.md)
+[embedder](https://github.com/spidermonkey-embedders/spidermonkey-embedding-examples/blob/esr140/docs/Building%20SpiderMonkey.md)
 
 ## Troubleshooting
 

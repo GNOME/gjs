@@ -22,7 +22,7 @@ Unwinding due to exception. (Type 'c' to continue unwinding.)
    2	var b = a.n.toString(42);
 Exception value is:
 $1 = [object TypeError]
-TypeError: a.n is null
+TypeError: can't access property "toString", a.n is null
 db> list
    1	interface FancyNumber {
    2	    n: number;
