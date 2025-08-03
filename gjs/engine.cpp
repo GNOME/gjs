@@ -32,6 +32,7 @@
 #include <mozilla/Atomics.h>  // for Atomic in JSPrincipals
 #include <mozilla/UniquePtr.h>
 
+#include "gi/gerror.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/gerror-result.h"
@@ -185,6 +186,15 @@ static const JSSecurityCallbacks security_callbacks = {
     &ModuleLoaderPrincipals::subsumes,
 };
 
+static bool instance_class_is_error(const JSClass* klass) {
+    return klass == &ErrorBase::klass;
+}
+
+static const js::DOMCallbacks dom_callbacks = {
+    /* instanceClassHasProtoAtDepth = */ nullptr,
+    &instance_class_is_error,
+};
+
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     g_assert(gjs_is_inited);
     JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
@@ -215,6 +225,7 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
                                            uninitialized_gjs);
     JS::SetHostCleanupFinalizationRegistryCallback(
         cx, on_cleanup_finalization_registry, uninitialized_gjs);
+    js::SetDOMCallbacks(cx, &dom_callbacks);
 
     // We use this to handle "lazy sources" that SpiderMonkey doesn't need to
     // keep in memory. Most sources should be kept in memory, but we can skip

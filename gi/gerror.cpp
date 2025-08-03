@@ -201,7 +201,8 @@ const struct JSClassOps ErrorBase::class_ops = {
 
 const struct JSClass ErrorBase::klass = {
     "GLib_Error",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE |
+        JSCLASS_IS_DOMJSCLASS,  // needed for Error.isError()
     &ErrorBase::class_ops
 };
 
