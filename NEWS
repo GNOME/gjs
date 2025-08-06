@@ -103,6 +103,20 @@ Version 1.85.2
     + Now (current time) as various class instances, or in a specific format:
       `Temporal.Now`
 
+- Closed bugs and merge requests:
+  * Port to libgirepository-2.0 needed [#684, !1001, Philip Chimento]
+  * installed-tests: install sourcemap-number-module.js [!1002, Jeremy Bicha]
+  * gjs-1.84.1 fails testsuite on s390x [#685, !1003, Pranav P, Jeremy Bicha]
+  * build: Add a mozjs_dep_name pkgconfig variable [!1004, Philip Chimento]
+  * Assertion when calling Gtk.MapListModel's map function [#691, !1005, Philip
+    Chimento]
+  * Various maintenance [!1006, !1014, Philip Chimento]
+  * package: Fix port to gobject-introspection-2.0 [!1007, Florian Müllner]
+  * SpiderMonkey 140 [#690, !1008, Xi Ruoyao, Philip Chimento]
+  * build: Fix libffi dependency in .pc [!1009, Florian Müllner]
+  * maint: Switch to flat eslint config  [!1010, Florian Müllner]
+  * Update Docker images to Fedora 42 and mozjs140 [!1011, !1012, !1013, Philip
+    Chimento]
 
 Version 1.85.1
 --------------
