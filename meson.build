@@ -636,6 +636,8 @@ tests_environment.set('GTK_A11Y', 'none')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('GSETTINGS_BACKEND', 'memory')
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
+# Vulkan renderer may not be compatible in all environments e.g CI, use opengl instead
+tests_environment.set('GSK_RENDERER', 'ngl')
 
 tests_locale = 'N/A'
 if cxx.get_argument_syntax() != 'msvc'
