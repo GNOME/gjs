@@ -890,6 +890,61 @@ static inline size_t basic_type_element_size(GITypeTag element_tag) {
     }
 }
 
+static inline void set_arg_from_carray_element(GIArgument* arg,
+                                               GITypeTag element_tag,
+                                               void* value) {
+    switch (element_tag) {
+        case GI_TYPE_TAG_BOOLEAN:
+            gjs_arg_set<gboolean>(arg, *static_cast<gboolean*>(value));
+            break;
+        case GI_TYPE_TAG_INT8:
+            gjs_arg_set<int8_t>(arg, *static_cast<int8_t*>(value));
+            break;
+        case GI_TYPE_TAG_UINT8:
+            gjs_arg_set<uint8_t>(arg, *static_cast<uint8_t*>(value));
+            break;
+        case GI_TYPE_TAG_INT16:
+            gjs_arg_set<int16_t>(arg, *static_cast<int16_t*>(value));
+            break;
+        case GI_TYPE_TAG_UINT16:
+            gjs_arg_set<uint16_t>(arg, *static_cast<uint16_t*>(value));
+            break;
+        case GI_TYPE_TAG_INT32:
+            gjs_arg_set<int32_t>(arg, *static_cast<int32_t*>(value));
+            break;
+        case GI_TYPE_TAG_UINT32:
+            gjs_arg_set<uint32_t>(arg, *static_cast<uint32_t*>(value));
+            break;
+        case GI_TYPE_TAG_INT64:
+            gjs_arg_set<int64_t>(arg, *static_cast<int64_t*>(value));
+            break;
+        case GI_TYPE_TAG_UINT64:
+            gjs_arg_set<uint64_t>(arg, *static_cast<uint64_t*>(value));
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            gjs_arg_set<float>(arg, *static_cast<float*>(value));
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            gjs_arg_set<double>(arg, *static_cast<double*>(value));
+            break;
+        case GI_TYPE_TAG_INTERFACE:
+            gjs_arg_set(arg, value);
+            break;
+        case GI_TYPE_TAG_VOID:
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_UNICHAR:
+            // non interface tag support handled elsewhere
+            g_assert_not_reached();
+    }
+}
+
 size_t gjs_type_get_element_size(GITypeTag element_type,
                                  const GI::TypeInfo type_info) {
     if (type_info.is_pointer() && element_type != GI_TYPE_TAG_ARRAY)
@@ -2464,21 +2519,31 @@ static bool gjs_array_from_carray_internal(JSContext* context,
     switch (element_tag) {
         case GI_TYPE_TAG_INTERFACE: {
             GI::AutoBaseInfo interface_info{element_type.interface()};
+            GITypeTag storage_element_type = element_type.storage_type();
 
             if (array_type != GI_ARRAY_TYPE_PTR_ARRAY &&
-                (interface_info.is_struct() || interface_info.is_union()) &&
+                (interface_info.is_struct() || interface_info.is_union() ||
+                 interface_info.is_enum_or_flags()) &&
                 !element_type.is_pointer()) {
-                size_t struct_size;
+                size_t element_size;
 
-                if (auto union_info = interface_info.as<GI::InfoTag::UNION>())
-                    struct_size = union_info->size();
-                else
-                    struct_size =
-                        interface_info.as<GI::InfoTag::STRUCT>()->size();
+                if (auto union_info = interface_info.as<GI::InfoTag::UNION>()) {
+                    element_size = union_info->size();
+                } else if (auto struct_info =
+                               interface_info.as<GI::InfoTag::STRUCT>()) {
+                    element_size = struct_info->size();
+                } else {
+                    auto storage =
+                        interface_info.as<GI::InfoTag::ENUM>()->storage_type();
+                    element_size = basic_type_element_size(storage);
+                }
 
                 for (size_t i = 0; i < length; i++) {
-                    gjs_arg_set(&arg,
-                                static_cast<char*>(array) + (struct_size * i));
+                    auto value = static_cast<char*>(array) + (element_size * i);
+                    // use the storage tag instead of element tag to handle
+                    // enums and flags
+                    set_arg_from_carray_element(&arg, storage_element_type,
+                                                value);
 
                     if (!gjs_value_from_gi_argument(
                             context, elems[i], element_type,
@@ -2648,10 +2713,10 @@ fill_vector_from_zero_terminated_pointer_carray(
     void** array = static_cast<void**>(c_array);
 
     for (size_t i = 0;; i++) {
-            if (!array[i])
-                    break;
+        if (!array[i])
+            break;
 
-            gjs_arg_set(arg, array[i]);
+        gjs_arg_set(arg, array[i]);
 
         if (!elems.growBy(1)) {
             JS_ReportOutOfMemory(cx);
@@ -2674,11 +2739,11 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_non_poi
     uint8_t* element_start = reinterpret_cast<uint8_t*>(c_array);
 
     for (size_t i = 0;; i++) {
-            if (*element_start == 0 &&
-                memcmp(element_start, element_start + 1, element_size - 1) == 0)
-                    break;
+        if (*element_start == 0 &&
+            memcmp(element_start, element_start + 1, element_size - 1) == 0)
+            break;
 
-            gjs_arg_set(arg, element_start);
+        gjs_arg_set(arg, element_start);
         element_start += element_size;
 
         if (!elems.growBy(1)) {

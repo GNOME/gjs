@@ -2949,9 +2949,9 @@ describe('Filename tests', function () {
 
 // Adapted from pygobject
 describe('Array of enum extra tests', function () {
-    xit('marshals a C array of enum values as a return value', function () {
-        expect(GIMarshallingTests.enum_array_return_type()).toEqual('foo');
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/603');
+    it('marshals a C array of enum values as a return value', function () {
+        expect(GIMarshallingTests.enum_array_return_type()).toEqual([0, 1, 42]);
+    });
 });
 
 // Adapted from pygobject
