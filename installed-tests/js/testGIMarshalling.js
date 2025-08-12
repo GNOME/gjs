@@ -665,6 +665,11 @@ describe('Zero-terminated C array', function () {
         expect(structArray.map(e => e.long_)).toEqual([42, 43, 44]);
     });
 
+    it('marshals an array of sequential structs as a return value', function () {
+        let structArray = GIMarshallingTests.array_zero_terminated_return_sequential_struct();
+        expect(structArray.map(e => e.long_)).toEqual([42, 43, 44]);
+    });
+
     it('marshals an array of unichars as a return value', function () {
         expect(GIMarshallingTests.array_zero_terminated_return_unichar())
             .toEqual('const ♥ utf8');

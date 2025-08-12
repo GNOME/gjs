@@ -2640,28 +2640,46 @@ fill_vector_from_basic_zero_terminated_c_array(
     return true;
 }
 
-template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_carray(
+GJS_JSAPI_RETURN_CONVENTION static bool
+fill_vector_from_zero_terminated_pointer_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     const GI::TypeInfo param_info, GIArgument* arg, void* c_array,
     GITransfer transfer = GI_TRANSFER_EVERYTHING) {
-    T* array = static_cast<T*>(c_array);
+    void** array = static_cast<void**>(c_array);
 
     for (size_t i = 0;; i++) {
-        if constexpr (std::is_scalar_v<T>) {
             if (!array[i])
                     break;
 
             gjs_arg_set(arg, array[i]);
-        } else {
-            uint8_t* element_start = reinterpret_cast<uint8_t*>(&array[i]);
+
+        if (!elems.growBy(1)) {
+            JS_ReportOutOfMemory(cx);
+            return false;
+        }
+
+        if (!gjs_value_from_gi_argument(cx, elems[i], param_info,
+                                        GJS_ARGUMENT_ARRAY_ELEMENT, transfer,
+                                        arg))
+            return false;
+    }
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_non_pointer_carray(
+    JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
+    const GI::TypeInfo param_info, GIArgument* arg, size_t element_size,
+    void* c_array, GITransfer transfer = GI_TRANSFER_EVERYTHING) {
+    uint8_t* element_start = reinterpret_cast<uint8_t*>(c_array);
+
+    for (size_t i = 0;; i++) {
             if (*element_start == 0 &&
-                // cppcheck-suppress pointerSize
-                memcmp(element_start, element_start + 1, sizeof(T) - 1) == 0)
+                memcmp(element_start, element_start + 1, element_size - 1) == 0)
                     break;
 
             gjs_arg_set(arg, element_start);
-        }
+        element_start += element_size;
 
         if (!elems.growBy(1)) {
             JS_ReportOutOfMemory(cx);
@@ -2803,20 +2821,17 @@ static bool gjs_array_from_zero_terminated_c_array(
             GI::AutoBaseInfo interface_info{element_type.interface()};
             auto reg_info = interface_info.as<GI::InfoTag::REGISTERED_TYPE>();
             bool element_is_pointer = element_type.is_pointer();
+            bool is_struct = reg_info->is_struct();
 
-            if (!element_is_pointer && reg_info && reg_info->is_g_value()) {
-                if (!fill_vector_from_zero_terminated_carray<GValue>(
-                        context, elems, element_type, &arg, c_array))
+            if (!element_is_pointer && is_struct) {
+                auto struct_info = interface_info.as<GI::InfoTag::STRUCT>();
+                size_t element_size = struct_info->size();
+
+                if (!fill_vector_from_zero_terminated_non_pointer_carray(
+                        context, elems, element_type, &arg, element_size,
+                        c_array))
                     return false;
                 break;
-            }
-
-            if (!element_is_pointer) {
-                gjs_throw(context,
-                          "Flat C array of %s.%s not supported (see "
-                          "https://gitlab.gnome.org/GNOME/gjs/-/issues/603)",
-                          interface_info.ns(), interface_info.name());
-                return false;
             }
 
             [[fallthrough]];
@@ -2826,7 +2841,7 @@ static bool gjs_array_from_zero_terminated_c_array(
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
         case GI_TYPE_TAG_ERROR:
-            if (!fill_vector_from_zero_terminated_carray<void*>(
+            if (!fill_vector_from_zero_terminated_pointer_carray(
                     context, elems, element_type, &arg, c_array, transfer))
                 return false;
             break;
