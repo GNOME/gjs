@@ -13,6 +13,10 @@
 #include <glib-object.h>
 #include <glib.h>
 
+#ifdef G_OS_WIN32
+#include <libintl.h>
+#endif
+
 #include "gjs/macros.h"
 
 G_BEGIN_DECLS

@@ -17,6 +17,15 @@
 #include <glib.h>
 #include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, textdomain */
 
+#ifdef _WIN32
+/* workaround the lack of a locale_t type on Windows, but we have _locale_t and the like */
+typedef _locale_t locale_t;
+
+#define LC_ALL_MASK LC_ALL
+
+#define freelocale(l) _free_locale(l)
+#endif
+
 #include "libgjs-private/gjs-util.h"
 #include "util/console.h"
 
@@ -81,6 +90,7 @@ static gboolean gjs_set_locale_id(locale_t* locale_id_pointer,
     return TRUE;
 }
 
+#ifndef G_OS_WIN32
 static int gjs_locale_category_get_mask(GjsLocaleCategory category) {
     /* It's tempting to just return (1 << category) but the header file
      * says not to do that.
@@ -106,6 +116,8 @@ static int gjs_locale_category_get_mask(GjsLocaleCategory category) {
 
     return 0;
 }
+#endif
+
 static size_t get_number_of_locale_categories(void) {
     return __builtin_popcount(LC_ALL_MASK) + 1;
 }
@@ -136,6 +148,60 @@ static GjsLocale* gjs_locales_new(void) {
 static GPrivate gjs_private_locale_key =
     G_PRIVATE_INIT((GDestroyNotify)gjs_locales_free);
 
+#ifdef G_OS_WIN32
+static const char* gjs_set_thread_locale_win32(GjsLocaleCategory category,
+                                               const char*       locale_name) {
+
+    int result;
+    int errno_save;
+    GjsLocale *locales = NULL, *locale = NULL;
+    char* prior_name = NULL;
+    locale_t new_locale_id = UNSET_LOCALE_ID, old_locale_id = UNSET_LOCALE_ID;
+
+    locales = g_private_get(&gjs_private_locale_key);
+
+    if (locales == NULL) {
+        locales = gjs_locales_new();
+        g_private_set(&gjs_private_locale_key, locales);
+    }
+    locale = &locales[category];
+
+    if (locale_name == NULL) {
+        if (locale->name != NULL)
+            return locale->name;
+
+        return setlocale(category, NULL);
+    }
+
+    result = _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+    if (result == -1)
+        goto out_win32;
+
+    new_locale_id = _create_locale(category, locale_name);
+    if (new_locale_id == NULL)
+        goto out_win32;
+
+    prior_name = g_strdup(setlocale(category, NULL));
+
+    for (int i = LC_MIN; i <= LC_TIME; i ++) {
+        setlocale(i, locale_name);
+    }
+
+    g_set_str(&locale->prior_name, prior_name);
+    gjs_set_locale_id(&locale->id, gjs_steal_locale_id(&new_locale_id));
+    g_set_str(&locale->name, setlocale(category, NULL));
+
+out_win32:
+    _configthreadlocale(_DISABLE_PER_THREAD_LOCALE);
+    g_clear_pointer(&prior_name, g_free);
+    errno_save = errno;
+    gjs_clear_locale_id(&new_locale_id);
+    errno = errno_save;
+
+    return prior_name;
+}
+#endif
+
 /**
  * gjs_set_thread_locale:
  * @category:
@@ -145,6 +211,8 @@ static GPrivate gjs_private_locale_key =
  */
 const char* gjs_set_thread_locale(GjsLocaleCategory category,
                                   const char* locale_name) {
+
+#ifndef G_OS_WIN32
     locale_t new_locale_id = UNSET_LOCALE_ID, old_locale_id = UNSET_LOCALE_ID;
     GjsLocale *locales = NULL, *locale = NULL;
     int category_mask;
@@ -207,6 +275,9 @@ out:
         return NULL;
 
     return locale->prior_name;
+#else
+    return gjs_set_thread_locale_win32(category, locale_name);
+#endif
 }
 
 void
