@@ -160,7 +160,7 @@ struct InfoTraits<InfoTag::VFUNC> {
 };
 
 using GTypeFunc = GType (*)();
-static constexpr const GTypeFunc gtype_funcs[] = {
+static const GTypeFunc gtype_funcs[] = {
     gi_arg_info_get_type,
     gi_base_info_get_type,
     gi_callable_info_get_type,
