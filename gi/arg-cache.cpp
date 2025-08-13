@@ -468,7 +468,7 @@ struct RegisteredInterface : HasIntrospectionInfo<TAG>, GTypedType {
     }
 };
 
-struct Callback : Nullable, HasIntrospectionInfo<GI::InfoTag::CALLBACK> {
+struct Callback : Nullable, HasIntrospectionInfo<GI::InfoTag::GJS_CALLBACK> {
     explicit Callback(const GI::CallbackInfo info, Maybe<unsigned> closure_pos,
                       Maybe<unsigned> destroy_pos, GIScopeType scope)
         : HasIntrospectionInfo(info),
@@ -3700,7 +3700,7 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
 
     if (type_tag == GI_TYPE_TAG_INTERFACE) {
         GI::AutoBaseInfo interface_info{type_info.interface()};
-        if (auto callback_info = interface_info.as<GI::InfoTag::CALLBACK>()) {
+        if (auto callback_info = interface_info.as<GI::InfoTag::GJS_CALLBACK>()) {
             if (direction != GI_DIRECTION_IN) {
                 // Can't do callbacks for out or inout
                 set_argument(new Arg::NotIntrospectable(CALLBACK_OUT),

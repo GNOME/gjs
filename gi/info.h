@@ -61,7 +61,7 @@ enum class InfoTag : unsigned {
     ARG,
     BASE,
     CALLABLE,
-    CALLBACK,
+    GJS_CALLBACK,
     CONSTANT,
     ENUM,
     FIELD,
@@ -95,7 +95,7 @@ struct InfoTraits<InfoTag::CALLABLE> {
     using CStruct = GICallableInfo;
 };
 template <>
-struct InfoTraits<InfoTag::CALLBACK> {
+struct InfoTraits<InfoTag::GJS_CALLBACK> {
     using CStruct = GICallbackInfo;
 };
 template <>
@@ -323,7 +323,7 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
 using ArgInfo = UnownedInfo<InfoTag::ARG>;
 using BaseInfo = UnownedInfo<InfoTag::BASE>;
 using CallableInfo = UnownedInfo<InfoTag::CALLABLE>;
-using CallbackInfo = UnownedInfo<InfoTag::CALLBACK>;
+using CallbackInfo = UnownedInfo<InfoTag::GJS_CALLBACK>;
 using ConstantInfo = UnownedInfo<InfoTag::CONSTANT>;
 using EnumInfo = UnownedInfo<InfoTag::ENUM>;
 using FieldInfo = UnownedInfo<InfoTag::FIELD>;
@@ -399,7 +399,7 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
 using AutoArgInfo = OwnedInfo<InfoTag::ARG>;
 using AutoBaseInfo = OwnedInfo<InfoTag::BASE>;
 using AutoCallableInfo = OwnedInfo<InfoTag::CALLABLE>;
-using AutoCallbackInfo = OwnedInfo<InfoTag::CALLBACK>;
+using AutoCallbackInfo = OwnedInfo<InfoTag::GJS_CALLBACK>;
 using AutoEnumInfo = OwnedInfo<InfoTag::ENUM>;
 using AutoFieldInfo = OwnedInfo<InfoTag::FIELD>;
 using AutoFunctionInfo = OwnedInfo<InfoTag::FUNCTION>;
@@ -1014,7 +1014,7 @@ using RegisteredTypeInfoOperations =
     InfoOperations<Wrapper, InfoTag::REGISTERED_TYPE>;
 
 template <class Wrapper>
-class InfoOperations<Wrapper, InfoTag::CALLBACK>
+class InfoOperations<Wrapper, InfoTag::GJS_CALLBACK>
     : public CallableInfoOperations<Wrapper> {
     DELETE_ALL_TYPECHECK_METHODS;
 
