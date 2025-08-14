@@ -665,6 +665,11 @@ describe('Zero-terminated C array', function () {
         expect(structArray.map(e => e.long_)).toEqual([42, 43, 44]);
     });
 
+    it('marshals an array of sequential structs as a return value', function () {
+        let structArray = GIMarshallingTests.array_zero_terminated_return_sequential_struct();
+        expect(structArray.map(e => e.long_)).toEqual([42, 43, 44]);
+    });
+
     it('marshals an array of unichars as a return value', function () {
         expect(GIMarshallingTests.array_zero_terminated_return_unichar())
             .toEqual('const ♥ utf8');
@@ -2944,9 +2949,9 @@ describe('Filename tests', function () {
 
 // Adapted from pygobject
 describe('Array of enum extra tests', function () {
-    xit('marshals a C array of enum values as a return value', function () {
-        expect(GIMarshallingTests.enum_array_return_type()).toEqual('foo');
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/603');
+    it('marshals a C array of enum values as a return value', function () {
+        expect(GIMarshallingTests.enum_array_return_type()).toEqual([0, 1, 42]);
+    });
 });
 
 // Adapted from pygobject
