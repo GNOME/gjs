@@ -479,8 +479,43 @@ function _warnNotIntrospectable(funcName, replacement) {
 
 function _init() {
     Gio = this;
+    let GioPlatform = {};
 
     Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
+
+    // Redefine Gio functions with platform-specific implementations to be
+    // backward compatible with gi-repository 1.0, however when possible we
+    // notify a deprecation warning, to ensure that the surrounding code is
+    // updated.
+    try {
+        GioPlatform = imports.gi.GioUnix;
+    } catch {
+        try {
+            GioPlatform = imports.gi.GioWin32;
+        } catch {}
+    }
+
+    Object.entries(Object.getOwnPropertyDescriptors(GioPlatform)).forEach(([prop, desc]) => {
+        if (Object.hasOwn(Gio, prop)) {
+            console.debug(`Gio already contains property ${prop}`);
+            Gio[prop] = GioPlatform[prop];
+            return;
+        }
+
+        const newDesc = {
+            enumerable: true,
+            configurable: false,
+            get() {
+                if (!newDesc._deprecationWarningDone) {
+                    console.warn(`Gio.${prop} is deprecated, please use ` +
+                        `${GioPlatform.__name__}.${prop} instead`);
+                    newDesc._deprecationWarningDone = true;
+                }
+                return desc.get?.() ?? desc.value;
+            },
+        };
+        Object.defineProperty(Gio, prop, newDesc);
+    });
 
     Gio.DBus = {
         // Namespace some functions
