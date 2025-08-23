@@ -1208,6 +1208,15 @@ describe('GValue', function () {
             .not.toThrow();
     });
 
+    it('separates float from double correctly', function () {
+        // Passing a Number infers the type 'double'. To pass a float GValue, we
+        // need to construct it manually.
+        const floatValue = new GObject.Value();
+        floatValue.init(GObject.TYPE_FLOAT);
+        floatValue.set_float(3.14);
+        expect(() => GIMarshallingTests.gvalue_float(floatValue, 3.14)).not.toThrow();
+    });
+
     // See testCairo.js for a test of GIMarshallingTests.gvalue_in_with_type()
     // on Cairo foreign structs, since it will be skipped if compiling without
     // Cairo support.

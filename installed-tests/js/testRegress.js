@@ -1841,6 +1841,21 @@ describe('Life, the Universe and Everything', function () {
         expect(o.function_thaw_async()).toBe(1);
     });
 
+    it('async instance method with extra callback', function (done) {
+        const o = new Regress.TestObj();
+        const prio = GLib.PRIORITY_DEFAULT;
+        const cancel = new Gio.Cancellable();
+        expect(o.function2_sync(prio)).toBeTrue();
+        const testCallback = jasmine.createSpy('testCallback');
+        o.function2(prio, cancel, testCallback, (obj, res) => {
+            expect(obj).toBe(o);
+            expect(o.function2_finish(res)).toEqual([true, null]);
+            expect(testCallback).toHaveBeenCalledTimes(1);
+            done();
+        });
+        expect(o.function_thaw_async()).toBe(1);
+    });
+
     it('static method taking a callback', function () {
         const callback = jasmine.createSpy('callback');
         Regress.TestObj.static_method_callback(callback);
