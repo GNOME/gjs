@@ -1828,7 +1828,7 @@ describe('Life, the Universe and Everything', function () {
         expect(callback).not.toHaveBeenCalled();
     });
 
-    it('async instance methods', function () {
+    it('async instance methods', function (done) {
         const o = new Regress.TestObj();
         const prio = GLib.PRIORITY_DEFAULT;
         const cancel = new Gio.Cancellable();
@@ -1836,6 +1836,7 @@ describe('Life, the Universe and Everything', function () {
         o.function_async(prio, cancel, (obj, res) => {
             expect(obj).toBe(o);
             expect(o.function_finish(res)).toBeTrue();
+            done();
         });
         expect(o.function_thaw_async()).toBe(1);
     });
