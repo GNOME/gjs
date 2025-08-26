@@ -20,6 +20,7 @@
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>  // for JS_EncodeStringToUTF8
 #include <js/Conversions.h>
+#include <js/ErrorReport.h>  // for JSExnType
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
@@ -403,6 +404,15 @@ GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
                 "Value %s cannot be safely stored in a JS Number "
                 "and may be rounded",
                 std::to_string(value).c_str());
+        }
+    }
+
+    if constexpr (std::is_same_v<T, char*>) {
+        if (value && !g_utf8_validate(value, -1, nullptr)) {
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                             "String from C value is invalid UTF-8 and cannot "
+                             "be safely stored");
+            return false;
         }
     }
 

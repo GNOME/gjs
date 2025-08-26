@@ -2963,11 +2963,11 @@ describe('Flags extra tests', function () {
 
 // Adapted from pygobject
 describe('UTF-8 strings invalid bytes tests', function () {
-    xit('handles invalid UTF-8 return values gracefully', function () {
-        expect(GIMarshallingTests.extra_utf8_full_return_invalid()).toThrowError(TypeError);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
+    it('handles invalid UTF-8 return values gracefully', function () {
+        expect(() => GIMarshallingTests.extra_utf8_full_return_invalid()).toThrowError(TypeError);
+    });
 
-    xit('handles invalid UTF-8 out arguments gracefully', function () {
-        expect(GIMarshallingTests.extra_utf8_full_out_invalid()).toThrowError(TypeError);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
+    it('handles invalid UTF-8 out arguments gracefully', function () {
+        expect(() => GIMarshallingTests.extra_utf8_full_out_invalid()).toThrowError(TypeError);
+    });
 });
