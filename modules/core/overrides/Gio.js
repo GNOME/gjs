@@ -4,6 +4,7 @@
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Signals = imports.signals;
+const {warnDeprecatedOncePerCallsite, PLATFORM_SPECIFIC_TYPELIB} = imports._print;
 var Gio;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
@@ -502,19 +503,15 @@ function _init() {
             return;
         }
 
-        const newDesc = {
+        Object.defineProperty(Gio, prop, {
             enumerable: true,
             configurable: false,
             get() {
-                if (!newDesc._deprecationWarningDone) {
-                    console.warn(`Gio.${prop} is deprecated, please use ` +
-                        `${GioPlatform.__name__}.${prop} instead`);
-                    newDesc._deprecationWarningDone = true;
-                }
+                warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
+                    `Gio.${prop}`, `${GioPlatform.__name__}.${prop}`);
                 return desc.get?.() ?? desc.value;
             },
-        };
-        Object.defineProperty(Gio, prop, newDesc);
+        });
     });
 
     Gio.DBus = {

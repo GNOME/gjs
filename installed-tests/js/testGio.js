@@ -396,7 +396,11 @@ describe('Gio.FileEnumerator overrides', function () {
 });
 
 describe('Gio.DesktopAppInfo fallback', function () {
-    let writerFunc;
+    const requiredVersion =
+        GLib.MAJOR_VERSION > 2 ||
+            (GLib.MAJOR_VERSION === 2 &&
+                (GLib.MINOR_VERSION > 85 ||
+                    GLib.MINOR_VERSION === 85 && GLib.MICRO_VERSION >= 5));
     let keyFile;
     const desktopFileContent = `[Desktop Entry]
 Version=1.0
@@ -405,52 +409,39 @@ Name=Some Application
 Exec=${GLib.find_program_in_path('sh')}
 `;
     beforeAll(function () {
-        // Set up log writer for tests to override
-        writerFunc = jasmine.createSpy('parsed writer func');
-        const writerFuncWrapper = jasmine.createSpy('log writer func', (level, fields) => {
-            const decoder = new TextDecoder('utf-8');
-            const domain = decoder.decode(fields?.GLIB_DOMAIN);
-            const message = `${decoder.decode(fields?.MESSAGE)}`;
-            if (level < GLib.LogLevelFlags.LEVEL_WARNING) {
-                level |= GLib.LogLevelFlags.FLAG_RECURSION;
-                GLib.log_default_handler(domain, level, `${message}\n`, null);
-            }
-            writerFunc(domain, level, message);
-            return GLib.LogWriterOutput.HANDLED;
-        });
-        writerFuncWrapper.and.callThrough();
-        GLib.log_set_writer_func(writerFuncWrapper);
-
         keyFile = new GLib.KeyFile();
         keyFile.load_from_data(desktopFileContent, desktopFileContent.length,
             GLib.KeyFileFlags.NONE);
-    });
-
-    afterAll(function () {
-        GLib.log_set_writer_default();
     });
 
     beforeEach(function () {
         if (!GioUnix)
             pending('Not supported platform');
 
-        writerFunc.calls.reset();
+        if (!requiredVersion)
+            pending('Installed Gio is not new enough for this test');
     });
+
+    function expectDeprecationWarning(testFunction) {
+        if (!requiredVersion)
+            pending('Installed Gio is not new enough for this test');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*Gio.DesktopAppInfo has been moved to a separate platform-specific library. ' +
+            'Please update your code to use GioUnix.DesktopAppInfo instead*');
+        testFunction();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGio.js', 0,
+            'Gio.DesktopAppInfo expectWarnsOnNewerGio');
+    }
 
     it('can be created using GioUnix', function () {
         expect(GioUnix.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull();
-        expect(writerFunc).not.toHaveBeenCalled();
     });
 
     it('can be created using Gio wrapper', function () {
+        expectDeprecationWarning(() =>
+            expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull());
         expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull();
-        expect(writerFunc).toHaveBeenCalledWith('Gjs-Console',
-            GLib.LogLevelFlags.LEVEL_WARNING,
-            'Gio.DesktopAppInfo is deprecated, please use GioUnix.DesktopAppInfo instead');
-
-        writerFunc.calls.reset();
-        expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull();
-        expect(writerFunc).not.toHaveBeenCalled();
     });
 
     describe('provides platform-independent functions', function () {
