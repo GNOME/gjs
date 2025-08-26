@@ -1397,7 +1397,15 @@ template <GITransfer TRANSFER = GI_TRANSFER_NOTHING>
 struct StringOutBase : SkipAll {
     bool out(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
              JS::MutableHandleValue value) override {
-        return Gjs::c_value_to_js(cx, gjs_arg_get<char*>(arg), value);
+        bool success =
+            Gjs::c_value_to_js_checked(cx, gjs_arg_get<char*>(arg), value);
+        // do not leak since release is only for in args
+        if constexpr (TRANSFER == GI_TRANSFER_EVERYTHING) {
+            if (!success) {
+                g_clear_pointer(&gjs_arg_member<char*>(arg), g_free);
+            }
+        }
+        return success;
     }
     bool release(JSContext* cx, GjsFunctionCallState*, GIArgument*,
                  GIArgument* out_arg [[maybe_unused]]) override {
