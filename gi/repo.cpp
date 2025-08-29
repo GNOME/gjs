@@ -107,7 +107,7 @@ static bool resolve_namespace_object(JSContext* context,
     // If resolving Gio, load the platform-specific typelib first, so that
     // GioUnix/GioWin32 GTypes get looked up in there with higher priority,
     // instead of in Gio.
-#if GLIB_CHECK_VERSION(2, 79, 2) && (defined(G_OS_UNIX) || defined(G_OS_WIN32))
+#if (defined(G_OS_UNIX) || defined(G_OS_WIN32))
     if (strcmp(ns_name.get(), "Gio") == 0) {
 #    ifdef G_OS_UNIX
         const char* platform = "Unix";
@@ -124,7 +124,7 @@ static bool resolve_namespace_object(JSContext* context,
             return false;
         }
     }
-#endif  // GLib >= 2.79.2
+#endif  // (defined(G_OS_UNIX) || defined(G_OS_WIN32))
 
     auto required = repo.require(ns_name.get(), version.get());
     if (!required.isOk()) {
@@ -241,7 +241,6 @@ repo_new(JSContext *context)
                                JSPROP_PERMANENT))
         return nullptr;
 
-#if GLIB_CHECK_VERSION(2, 79, 2)
 #    if defined(G_OS_UNIX)
     if (!JS_DefineProperty(context, versions, "GLibUnix", two_point_oh,
                            JSPROP_PERMANENT) ||
@@ -255,7 +254,6 @@ repo_new(JSContext *context)
                            JSPROP_PERMANENT))
         return nullptr;
 #    endif  // G_OS_UNIX/G_OS_WIN32
-#endif      // GLib >= 2.79.2
 
     JS::RootedObject private_ns(context, JS_NewPlainObject(context));
     if (!JS_DefinePropertyById(context, repo, atoms.private_ns_marker(),
@@ -582,7 +580,7 @@ Maybe<GI::AutoRegisteredTypeInfo> gjs_lookup_gtype(const GI::Repository& repo,
     if (!retval)
         return {};
 
-#if GLIB_CHECK_VERSION(2, 79, 2) && (defined(G_OS_UNIX) || defined(G_OS_WIN32))
+#if (defined(G_OS_UNIX) || defined(G_OS_WIN32))
 #    ifdef G_OS_UNIX
     static const char* c_prefix = "GUnix";
     static const char* new_ns = "GioUnix";
@@ -603,7 +601,7 @@ Maybe<GI::AutoRegisteredTypeInfo> gjs_lookup_gtype(const GI::Repository& repo,
         repo.find_by_name<GI::InfoTag::REGISTERED_TYPE>(new_ns, new_name);
     if (new_info)
         return new_info;
-#endif  // GLib >= 2.79.2
+#endif  // (defined(G_OS_UNIX) || defined(G_OS_WIN32))
 
     return retval;
 }

@@ -136,7 +136,6 @@ GBinding* gjs_g_object_bind_property_full(
     GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
     void* from_data, GDestroyNotify from_notify);
 
-#if GLIB_CHECK_VERSION(2, 72, 0)
 /**
  * gjs_g_binding_group_bind_full:
  * @source:
@@ -158,7 +157,6 @@ void gjs_g_binding_group_bind_full(
     GjsBindingTransformFunc to_callback, void* to_data,
     GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
     void* from_data, GDestroyNotify from_notify);
-#endif
 
 /* For imports.overrides.Gtk */
 GJS_EXPORT
