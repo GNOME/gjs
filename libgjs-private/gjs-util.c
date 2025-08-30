@@ -266,7 +266,6 @@ GBinding* gjs_g_object_bind_property_full(
                                                 to_closure, from_closure);
 }
 
-#if GLIB_CHECK_VERSION(2, 72, 0)
 void gjs_g_binding_group_bind_full(
     GBindingGroup* source, const char* source_property, GObject* target,
     const char* target_property, GBindingFlags flags,
@@ -288,7 +287,6 @@ void gjs_g_binding_group_bind_full(
                                        target_property, flags,
                                        to_closure, from_closure);
 }
-#endif
 
 #undef G_CLOSURE_NOTIFY
 

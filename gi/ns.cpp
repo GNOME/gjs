@@ -31,15 +31,12 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/deprecation.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
-
-#if GLIB_CHECK_VERSION(2, 79, 2)
-#    include "gjs/deprecation.h"
-#endif  // GLib >= 2.79.2
 
 using mozilla::Maybe;
 
@@ -47,9 +44,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
 
-#if GLIB_CHECK_VERSION(2, 79, 2)
     bool m_is_gio_or_glib : 1;
-#endif  // GLib >= 2.79.2
 
     static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_ns;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
@@ -57,15 +52,12 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     explicit Ns(const char* ns_name)
         : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
         GJS_INC_COUNTER(ns);
-#if GLIB_CHECK_VERSION(2, 79, 2)
         m_is_gio_or_glib =
             strcmp(ns_name, "Gio") == 0 || strcmp(ns_name, "GLib") == 0;
-#endif  // GLib >= 2.79.2
     }
 
     ~Ns() { GJS_DEC_COUNTER(ns); }
 
-#if GLIB_CHECK_VERSION(2, 79, 2)
     // helper function
     void platform_specific_warning(JSContext* cx, const char* prefix,
                                    const char* platform,
@@ -90,7 +82,6 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
             {old_name.get(), new_name.get()});
     }
-#endif  // GLib >= 2.79.2
 
     // JSClass operations
 
@@ -130,7 +121,6 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                   "Found info type %s for '%s' in namespace '%s'",
                   info->type_string(), info->name(), info->ns());
 
-#if GLIB_CHECK_VERSION(2, 79, 2)
         static const char* unix_types_exceptions[] = {
             "Gio.UnixConnection",
             "Gio.UnixCredentialsMessage",
@@ -146,7 +136,6 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             platform_specific_warning(cx, "Win32", "Win32", name.get());
             platform_specific_warning(cx, "win32_", "Win32", name.get());
         }
-#endif  // GLib >= 2.79.2
 
         bool defined;
         if (!gjs_define_info(cx, obj, info.ref(), &defined)) {

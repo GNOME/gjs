@@ -105,11 +105,7 @@ class PromiseJobDispatcher::Source : public GSource {
           m_cancellable(g_cancellable_new()),
           m_cancellable_source(g_cancellable_source_new(m_cancellable)) {
         g_source_set_priority(this, PRIORITY);
-#if GLIB_CHECK_VERSION(2, 70, 0)
         g_source_set_static_name(this, "GjsPromiseJobQueueSource");
-#else
-        g_source_set_name(this, "GjsPromiseJobQueueSource");
-#endif
 
         // Add our cancellable source to our main source,
         // this will trigger the main source if our cancellable
