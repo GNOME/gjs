@@ -544,12 +544,12 @@ zeal_11:
   STORAGE_DRIVER: vfs
   BUILDAH_FORMAT: docker
   BUILDAH_ISOLATION: chroot
+  DOCKERFILE: test/extra/Dockerfile
 
 fedora.mozjs140:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile
     ARGS: --build-arg MOZJS_BUILDDEPS=mozjs128
     IMAGE_NAME: fedora.mozjs140
 
@@ -557,8 +557,7 @@ fedora.mozjs140:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
-    DOCKERFILE: test/extra/Dockerfile.debug
-    ARGS: --build-arg MOZJS_BUILDDEPS=mozjs128
+    ARGS: --build-arg BUILD_OPTS=--enable-debug --build-arg MOZJS_BUILDDEPS=mozjs128
     IMAGE_NAME: fedora.mozjs140-debug
 
 fedora.mozjs140-debug_x86_64:

@@ -16,7 +16,7 @@ RUN dnf -y install 'dnf-command(builddep)' \
     llvm \
     llvm-devel \
     make \
-    python-packaging \
+    python3-packaging \
     rust \
     which \
     xz
@@ -77,6 +77,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     gtk4-debuginfo \
     gtk4-debugsource \
     gtk4-devel \
+    iwyu \
     lcov \
     libasan \
     libubsan \
@@ -85,6 +86,9 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     ninja-build \
     pkgconf \
     readline-devel \
+    sysprof-devel \
+    systemtap-sdt-devel \
+    systemtap-sdt-dtrace \
     valgrind \
     which \
     Xvfb \
