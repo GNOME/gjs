@@ -4,7 +4,7 @@
 # === Build Spidermonkey stage ===
 
 FROM registry.fedoraproject.org/fedora:42 AS mozjs-build
-ARG MOZJS_BRANCH=mozjs115
+ARG MOZJS_BRANCH=mozjs140
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
 
