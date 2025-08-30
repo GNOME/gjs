@@ -1,17 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-const {Gio, GjsTestTools, GLib} = imports.gi;
-
-// Adapter for compatibility with pre-GLib-2.80
-let GioUnix;
-if (imports.gi.versions.GioUnix === '2.0') {
-    GioUnix = imports.gi.GioUnix;
-} else {
-    GioUnix = {
-        InputStream: Gio.UnixInputStream,
-    };
-}
+const {Gio, GjsTestTools, GLib, GioUnix} = imports.gi;
 
 /* The methods list with their signatures.
  *

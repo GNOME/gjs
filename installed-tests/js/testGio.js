@@ -4,6 +4,11 @@
 
 const {GLib, Gio, GObject} = imports.gi;
 
+let GioUnix;
+try {
+    GioUnix = imports.gi.GioUnix;
+} catch {}
+
 const Foo = GObject.registerClass({
     Properties: {
         boolval: GObject.ParamSpec.boolean('boolval', '', '',
@@ -387,6 +392,77 @@ describe('Gio.FileEnumerator overrides', function () {
             count++;
         }
         expect(count).toBeGreaterThan(0);
+    });
+});
+
+describe('Gio.DesktopAppInfo fallback', function () {
+    const requiredVersion =
+        GLib.MAJOR_VERSION > 2 ||
+            (GLib.MAJOR_VERSION === 2 &&
+                (GLib.MINOR_VERSION > 85 ||
+                    GLib.MINOR_VERSION === 85 && GLib.MICRO_VERSION >= 5));
+    let keyFile;
+    const desktopFileContent = `[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Some Application
+Exec=${GLib.find_program_in_path('sh')}
+`;
+    beforeAll(function () {
+        keyFile = new GLib.KeyFile();
+        keyFile.load_from_data(desktopFileContent, desktopFileContent.length,
+            GLib.KeyFileFlags.NONE);
+    });
+
+    beforeEach(function () {
+        if (!GioUnix)
+            pending('Not supported platform');
+
+        if (!requiredVersion)
+            pending('Installed Gio is not new enough for this test');
+    });
+
+    function expectDeprecationWarning(testFunction) {
+        if (!requiredVersion)
+            pending('Installed Gio is not new enough for this test');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*Gio.DesktopAppInfo has been moved to a separate platform-specific library. ' +
+            'Please update your code to use GioUnix.DesktopAppInfo instead*');
+        testFunction();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGio.js', 0,
+            'Gio.DesktopAppInfo expectWarnsOnNewerGio');
+    }
+
+    it('can be created using GioUnix', function () {
+        expect(GioUnix.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull();
+    });
+
+    it('can be created using Gio wrapper', function () {
+        expectDeprecationWarning(() =>
+            expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull());
+        expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull();
+    });
+
+    describe('provides platform-independent functions', function () {
+        [Gio, GioUnix].forEach(ns => it(`when created from ${ns.__name__}`, function () {
+            if (!requiredVersion)
+                pending('Installed Gio is not new enough for this test');
+
+            const appInfo = ns.DesktopAppInfo.new_from_keyfile(keyFile);
+            expect(appInfo.get_name()).toBe('Some Application');
+        }));
+    });
+
+    describe('provides unix-only functions', function () {
+        [Gio, GioUnix].forEach(ns => it(`when created from ${ns.__name__}`, function () {
+            if (!requiredVersion)
+                pending('Installed Gio is not new enough for this test');
+
+            const appInfo = ns.DesktopAppInfo.new_from_keyfile(keyFile);
+            expect(appInfo.has_key('Name')).toBeTrue();
+            expect(appInfo.get_string('Name')).toBe('Some Application');
+        }));
     });
 });
 

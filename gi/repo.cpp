@@ -580,6 +580,10 @@ Maybe<GI::AutoRegisteredTypeInfo> gjs_lookup_gtype(const GI::Repository& repo,
     if (!retval)
         return {};
 
+#if GLIB_CHECK_VERSION(2, 85, 5)
+    return retval;
+#endif  // GLib >= 2.85.5
+
 #if (defined(G_OS_UNIX) || defined(G_OS_WIN32))
 #    ifdef G_OS_UNIX
     static const char* c_prefix = "GUnix";

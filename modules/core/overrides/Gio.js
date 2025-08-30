@@ -4,6 +4,7 @@
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Signals = imports.signals;
+const {warnDeprecatedOncePerCallsite, PLATFORM_SPECIFIC_TYPELIB} = imports._print;
 var Gio;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
@@ -479,8 +480,39 @@ function _warnNotIntrospectable(funcName, replacement) {
 
 function _init() {
     Gio = this;
+    let GioPlatform = {};
 
     Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
+
+    // Redefine Gio functions with platform-specific implementations to be
+    // backward compatible with gi-repository 1.0, however when possible we
+    // notify a deprecation warning, to ensure that the surrounding code is
+    // updated.
+    try {
+        GioPlatform = imports.gi.GioUnix;
+    } catch {
+        try {
+            GioPlatform = imports.gi.GioWin32;
+        } catch {}
+    }
+
+    Object.entries(Object.getOwnPropertyDescriptors(GioPlatform)).forEach(([prop, desc]) => {
+        if (Object.hasOwn(Gio, prop)) {
+            console.debug(`Gio already contains property ${prop}`);
+            Gio[prop] = GioPlatform[prop];
+            return;
+        }
+
+        Object.defineProperty(Gio, prop, {
+            enumerable: true,
+            configurable: false,
+            get() {
+                warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
+                    `Gio.${prop}`, `${GioPlatform.__name__}.${prop}`);
+                return desc.get?.() ?? desc.value;
+            },
+        });
+    });
 
     Gio.DBus = {
         // Namespace some functions
