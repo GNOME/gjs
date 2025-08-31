@@ -192,6 +192,13 @@ report "Basic unicode encoding (accents, etc) should be functioning properly for
 $gjs -c 'imports.system.exit((ARGV[0] !== "☭") ? 1 : 0)' "☭"
 report "Unicode encoding for symbols should be functioning properly for ARGV and imports."
 
+# ensure unicode paths are supported
+mkdir Код
+touch Код/🍁.js
+$gjs -m Код/🍁.js
+report "Unicode pathed encoding should work for module run."
+rm -r Код
+
 # gjs --help prints GJS help
 $gjs --help >/dev/null
 report "--help should succeed"
