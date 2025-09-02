@@ -328,7 +328,7 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
     using AutoURI = Gjs::AutoPointer<GUri, GUri, g_uri_unref>;
 
     Gjs::AutoError error;
-    AutoURI parsed = g_uri_parse(uri, G_URI_FLAGS_NONE, &error);
+    AutoURI parsed = g_uri_parse(uri, G_URI_FLAGS_ENCODED, &error);
     if (!parsed) {
         Gjs::AutoMainRealm ar{cx};
 
