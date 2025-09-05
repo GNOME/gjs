@@ -1,3 +1,17 @@
+Version 1.85.90
+---------------
+
+- Closed bugs and merge requests:
+  * Support flat C array return values [#603, 1015, Gary Li]
+  * Make Gtk4Warnings test work again on CI [#698, !1017, Gary Li]
+  * overrides/Gio: Add wrappers for platform-specific Gio functions [!1018,
+    Marco Trevisan, Philip Chimento]
+  * Consider whether to handle invalid UTF-8 coming from C when converting to
+    JS string [#658, !1019, Gary Li]
+  * cleanup: Remove dead code using older GLib [!1020, Marco Trevisan]
+  * gjs -m makes mojibake [#707, !1021, Gary Li]
+  * Various maintenance [!1022, Philip Chimento]
+
 Version 1.85.2
 --------------
 
