@@ -46,6 +46,8 @@ build-alpine-image:
   script:
     - export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+    # Temporary, while building GLib as subproject:
+    - export GI_TYPELIB_PATH=$GI_TYPELIB_PATH:/usr/lib64/girepository-1.0
     - 'export DISPLAY="${DISPLAY:-:0}"'
     # This script runs the build inside its own build tree and generates the
     # coverage report
