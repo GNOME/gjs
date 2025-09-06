@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2018 Endless Mobile, Inc.
 
 # lcov and genhtml configuration
-# See http://ltp.sourceforge.net/coverage/lcov/lcovrc.5.php
+# See https://github.com/linux-test-project/lcov/blob/HEAD/lcovrc
 # Adapted from GLib's lcovrc
 
 # Always enable branch coverage
