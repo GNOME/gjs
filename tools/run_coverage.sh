@@ -6,7 +6,7 @@ SOURCEDIR=$(pwd)
 BUILDDIR="$(pwd)/_coverage_build"
 LCOV_ARGS="--config-file $SOURCEDIR/tools/lcovrc"
 GENHTML_ARGS='--legend --show-details --branch-coverage'
-IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp */gjs/subprojects/glib/* */gjs/subprojects/gobject-introspection/*"
+IGNORE="*/gjs/test/* *-resources.c *minijasmine.cpp */gjs/installed-tests/js/libgjstesttools/* */gjs/subprojects/glib/* */gjs/_coverage_build/subprojects/glib/*  */gjs/subprojects/gobject-introspection/*"
 
 rm -rf "$BUILDDIR"
 meson setup "$BUILDDIR" -Db_coverage=true
