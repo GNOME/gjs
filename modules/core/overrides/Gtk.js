@@ -122,16 +122,17 @@ function _init() {
          * @param {string} [props.filename] Local filename for XML interface
          * @param {string} [props.resource] Resource path for XML interface
          * @param {object} [props.callbacks] Object with callbacks to expose
+         * @param {object} [props.objects] Object with other objects to expose
          * @param {Gtk.BuilderConstructParameters} [props.props] Other
          *   Gtk.Builder construct properties
          */
-        constructor({data, filename, resource, callbacks, ...props} = {}) {
+        constructor({data, filename, resource, callbacks, objects, ...props} = {}) {
             const countOfDataSources = [data, filename, resource]
             .filter(source => source !== undefined)
             .length;
 
             if (countOfDataSources === 0) {
-                if (!callbacks) {
+                if (!callbacks && !objects) {
                     super(props);
                     return;  // default behaviour if no extra properties passed
                 }
@@ -144,6 +145,9 @@ function _init() {
             const scope = new NonTemplateBuilderScope(callbacks);
             super({...props, scope});
 
+            if (objects)
+                this.exposeObjects(objects);
+
             if (data) {
                 const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
                 this.add_from_string(str, -1);
@@ -152,6 +156,12 @@ function _init() {
             } else if (filename) {
                 this.add_from_file(filename);
             }
+        }
+
+        // convenience method
+        exposeObjects(objects) {
+            for (const [name, object] of Object.entries(objects))
+                this.expose_object(name, object);
         }
     }
     Gtk.Builder = GtkJSBuilder;

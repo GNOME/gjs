@@ -286,6 +286,98 @@ describe('Gtk 4', function () {
             });
         });
 
+        describe('UI file with external objects', function () {
+            const builderXML = `
+                <?xml version="1.0" encoding="UTF-8"?>
+                <interface>
+                    <object class="GtkWindow" id="window">
+                        <child>
+                            <object class="GtkButton" id="button">
+                                <property name="child">label</property>
+                                <signal name="clicked" handler="onButtonClicked" object="obj" swapped="False"/>
+                            </object>
+                        </child>
+                    </object>
+                </interface>
+            `;
+
+            let callbacks, label, obj;
+            beforeEach(function () {
+                obj = new GObject.Object();
+                label = new Gtk.Label({label: 'Text'});
+                callbacks = {
+                    onButtonClicked() {},
+                };
+                spyOn(callbacks, 'onButtonClicked');
+            });
+
+            it('fails if external objects not provided', function () {
+                expect(() => new Gtk.Builder({data: builderXML})).toThrow();
+            });
+
+            it('with objects provided at construct time', function () {
+                const builder = new Gtk.Builder({
+                    data: builderXML,
+                    callbacks,
+                    objects: {label, obj},
+                });
+
+                const button = builder.get_object('button');
+                expect(button.child).toBe(label);
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalled();
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(obj);
+            });
+
+            it('with objects provided using expose_object', function () {
+                const builder = new Gtk.Builder({callbacks});
+                builder.expose_object('label', label);
+                builder.expose_object('obj', obj);
+                builder.add_from_string(builderXML, -1);
+
+                const button = builder.get_object('button');
+                expect(button.child).toBe(label);
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalled();
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(obj);
+            });
+
+            it('with objects provided using exposeObjects', function () {
+                const builder = new Gtk.Builder({callbacks});
+                builder.exposeObjects({label, obj});
+                builder.add_from_string(builderXML, -1);
+
+                const button = builder.get_object('button');
+                expect(button.child).toBe(label);
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalled();
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(obj);
+            });
+
+            it('lets object be retrieved using get_object', function () {
+                const builder = new Gtk.Builder({
+                    data: builderXML,
+                    callbacks,
+                    objects: {label, obj},
+                });
+                expect(builder.get_object('label')).toBe(label);
+                expect(builder.get_object('obj')).toBe(obj);
+            });
+
+            it('lets object be retrieved using get_objects', function () {
+                const builder = new Gtk.Builder({
+                    data: builderXML,
+                    callbacks,
+                    objects: {label, obj},
+                });
+                const objects = builder.get_objects();
+                expect(objects).toEqual(jasmine.arrayContaining([label, obj]));
+            });
+        });
+
         it('ensures signal handlers are callable', function () {
             const ClassWithUncallableHandler = GObject.registerClass({
                 Template: createTemplate('Gjs_ClassWithUncallableHandler'),
