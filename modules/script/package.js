@@ -301,7 +301,7 @@ function checkSymbol(lib, ver, symbol) {
     // GObject property
     let pspec = null;
     if (GObject.type_is_a(obj.$gtype, GObject.TYPE_INTERFACE)) {
-        let iface = GObject.type_default_interface_ref(obj.$gtype);
+        let iface = GObject.type_default_interface_get(obj.$gtype);
         pspec = GObject.Object.interface_find_property(iface, sym);
     } else if (GObject.type_is_a(obj.$gtype, GObject.TYPE_OBJECT)) {
         pspec = GObject.Object.find_property.call(obj.$gtype, sym);
