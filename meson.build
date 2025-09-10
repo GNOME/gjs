@@ -226,7 +226,8 @@ endif
 build_readline = readline.found()
 
 have_gtk3 = dependency('gtk+-3.0', required: false).found()
-have_gtk4 = dependency('gtk4', required: false).found()
+gtk4_dep = dependency('gtk4', required: false)
+have_gtk4 = gtk4_dep.found()
 
 if (not have_gtk3 and not have_gtk4 and not get_option('skip_gtk_tests'))
     error('''You have neither GTK 3 nor 4 available.
@@ -636,8 +637,10 @@ tests_environment.set('GTK_A11Y', 'none')
 tests_environment.set('GSETTINGS_SCHEMA_DIR', js_tests_builddir)
 tests_environment.set('GSETTINGS_BACKEND', 'memory')
 tests_environment.set('G_DEBUG', 'fatal-warnings,fatal-criticals')
+
 # Vulkan renderer may not be compatible in all environments e.g CI, use opengl instead
-tests_environment.set('GSK_RENDERER', 'ngl')
+tests_environment.set('GSK_RENDERER',
+    gtk4_dep.version().version_compare('>= 4.19.4') ? 'gl' : 'ngl')
 
 tests_locale = 'N/A'
 if cxx.get_argument_syntax() != 'msvc'
