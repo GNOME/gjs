@@ -481,6 +481,7 @@ function _warnNotIntrospectable(funcName, replacement) {
 function _init() {
     Gio = this;
     let GioPlatform = {};
+    let platformName = '';
 
     Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
 
@@ -490,25 +491,34 @@ function _init() {
     // updated.
     try {
         GioPlatform = imports.gi.GioUnix;
+        platformName = 'Unix';
     } catch {
         try {
             GioPlatform = imports.gi.GioWin32;
+            platformName = 'Win32';
         } catch {}
     }
 
     Object.entries(Object.getOwnPropertyDescriptors(GioPlatform)).forEach(([prop, desc]) => {
-        if (Object.hasOwn(Gio, prop)) {
-            console.debug(`Gio already contains property ${prop}`);
-            Gio[prop] = GioPlatform[prop];
+        let genericProp = prop;
+
+        const originalValue = GioPlatform[prop];
+        const gtypeName = originalValue.$gtype?.name;
+        if (gtypeName?.startsWith(`G${platformName}`))
+            genericProp = `${platformName}${prop}`;
+
+        if (Object.hasOwn(Gio, genericProp)) {
+            console.debug(`Gio already contains property ${genericProp}`);
+            Gio[genericProp] = originalValue;
             return;
         }
 
-        Object.defineProperty(Gio, prop, {
+        Object.defineProperty(Gio, genericProp, {
             enumerable: true,
             configurable: false,
             get() {
                 warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
-                    `Gio.${prop}`, `${GioPlatform.__name__}.${prop}`);
+                    `Gio.${genericProp}`, `${GioPlatform.__name__}.${prop}`);
                 return desc.get?.() ?? desc.value;
             },
         });
