@@ -232,6 +232,22 @@ describe('Backwards compatibility for GLib/Gio platform specific GIRs', function
             'Expected deprecation message for Gio.Unix -> GioUnix');
     });
 
+    it('GioUnix functions are looked up in GioUnix, not Gio', function () {
+        if (skip) {
+            pending('GioUnix required for this test');
+            return;
+        }
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*Gio.unix_mounts_get*GioUnix.mounts_get*instead*');
+
+        expect(imports.gi.Gio.unix_mounts_get.name).toBe('g_unix_mounts_get');
+
+        GLib.test_assert_expected_messages_internal('Gjs',
+            'testIntrospection.js', 0,
+            'Expected deprecation message for Gio.Unix -> GioUnix');
+    });
+
     it("doesn't print the message if the type isn't resolved directly", function () {
         if (skip) {
             pending('GioUnix required for this test');
