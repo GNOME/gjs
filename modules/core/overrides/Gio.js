@@ -485,18 +485,21 @@ function _init() {
 
     Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
 
-    // Redefine Gio functions with platform-specific implementations to be
-    // backward compatible with gi-repository 1.0, however when possible we
-    // notify a deprecation warning, to ensure that the surrounding code is
-    // updated.
-    try {
-        GioPlatform = imports.gi.GioUnix;
-        platformName = 'Unix';
-    } catch {
+    if (GLib.MAJOR_VERSION > 2 ||
+        (GLib.MAJOR_VERSION === 2 && GLib.MINOR_VERSION >= 86)) {
+        // Redefine Gio functions with platform-specific implementations to be
+        // backward compatible with gi-repository 1.0, however when possible we
+        // notify a deprecation warning, to ensure that the surrounding code is
+        // updated.
         try {
-            GioPlatform = imports.gi.GioWin32;
-            platformName = 'Win32';
-        } catch {}
+            GioPlatform = imports.gi.GioUnix;
+            platformName = 'Unix';
+        } catch {
+            try {
+                GioPlatform = imports.gi.GioWin32;
+                platformName = 'Win32';
+            } catch {}
+        }
     }
 
     const platformNameLower = platformName.toLowerCase();
