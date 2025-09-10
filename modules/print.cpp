@@ -206,7 +206,7 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
 
     if (args.length() == 1) {
         _gjs_warn_deprecated_once_per_callsite(
-            cx, GjsDeprecationMessageId(message_id));
+            cx, GjsDeprecationMessageId(message_id), 2);
         return true;
     }
 
@@ -223,7 +223,7 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
     }
 
     _gjs_warn_deprecated_once_per_callsite(
-        cx, GjsDeprecationMessageId(message_id), format_args);
+        cx, GjsDeprecationMessageId(message_id), format_args, 2);
     return true;
 }
 
