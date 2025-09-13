@@ -158,6 +158,27 @@ function _init() {
             }
         }
 
+        // override for original get_objects() method that returns a Proxy which
+        // accesses get_object() on property accesses, so that you can do
+        // const {name1, name2} = builder.get_objects();
+        // Note the builder instance is kept alive by the proxy!
+        get_objects() {
+            const builder = this;
+            const proxyHandler = {
+                get(objectsArray, id, receiver) {
+                    if (Reflect.has(objectsArray, id))
+                        return Reflect.get(objectsArray, id, receiver);
+                    if (typeof id !== 'string')
+                        return undefined;
+                    const obj = builder.get_object(id);
+                    objectsArray[id] = obj;
+                    return obj;
+                },
+            };
+            const objectsArray = super.get_objects();
+            return new Proxy(objectsArray, proxyHandler);
+        }
+
         // convenience method
         exposeObjects(objects) {
             for (const [name, object] of Object.entries(objects))

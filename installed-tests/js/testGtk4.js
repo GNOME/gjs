@@ -7,6 +7,8 @@ imports.gi.versions.Gtk = '4.0';
 const {Gdk, Gio, GObject, Gtk, GLib, GjsTestTools} = imports.gi;
 const System = imports.system;
 
+const PromiseInternal = imports._promiseNative;
+
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
     return `
@@ -375,6 +377,85 @@ describe('Gtk 4', function () {
                 });
                 const objects = builder.get_objects();
                 expect(objects).toEqual(jasmine.arrayContaining([label, obj]));
+
+                expect(objects.label).toBe(label);
+                expect(objects.obj).toBe(obj);
+            });
+        });
+
+        describe('Gtk.Builder.get_objects override', function () {
+            const objectsXML = `
+                <?xml version="1.0" encoding="UTF-8"?>
+                <interface>
+                    <object class="GtkWindow" id="window">
+                        <child>
+                            <object class="GtkBox" id="box">
+                                <child>
+                                    <object class="GtkLabel" id="label"/>
+                                </child>
+                                <child>
+                                    <!-- label with in-range integer index ID -->
+                                    <object class="GtkLabel" id="0"/>
+                                </child>
+                                <child>
+                                    <!-- label with out-of-range integer index ID -->
+                                    <object class="GtkLabel" id="10"/>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </interface>`;
+
+            let objects, window, box, label, zero, ten;
+            beforeEach(function () {
+                const builder = new Gtk.Builder({data: objectsXML});
+                window = builder.get_object('window');
+                box = builder.get_object('box');
+                label = builder.get_object('label');
+                zero = builder.get_object('0');
+                ten = builder.get_object('10');
+                objects = builder.get_objects();
+            });
+
+            it('works as a drop-in replacement for the original get_objects', function () {
+                expect(objects).toEqual(jasmine.arrayContaining([window, box, label, zero, ten]));
+            });
+
+            it('allows fetching objects by name', function () {
+                expect(objects.window).toBe(window);
+                expect(objects.box).toBe(box);
+                expect(objects.label).toBe(label);
+            });
+
+            it('does not override array index properties', function () {
+                expect(objects[0]).not.toBe(zero);
+                // OK because the array is not that long
+                expect(objects[10]).toBe(ten);
+            });
+
+            it('does not duplicate calls to get_object', function () {
+                spyOn(Gtk.Builder.prototype, 'get_object').and.callThrough();
+                expect(objects.window).toBe(window);
+                expect(objects.window).toBe(window);
+                expect(Gtk.Builder.prototype.get_object).toHaveBeenCalledTimes(1);
+            });
+
+            it('builder instance is kept alive by the proxy', function () {
+                System.gc();
+                expect(objects.window).toBe(window);
+            });
+
+            it('builder instance is not kept alive if no proxy is returned', function () {
+                let ref;
+                const retrievedWindow = (function () {
+                    const builder = new Gtk.Builder({data: objectsXML});
+                    ref = new WeakRef(builder);
+                    return builder.get_object('window');
+                })();
+                expect(retrievedWindow).toEqual(jasmine.any(Gtk.Window));
+                PromiseInternal.drainMicrotaskQueue();  // let WeakRef lapse
+                System.gc();
+                expect(ref.deref()).not.toBeDefined();
             });
         });
 
