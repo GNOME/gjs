@@ -125,7 +125,7 @@ endif
 null_dep = dependency('', required : false)
 
 # Note: Notify GNOME release team when adding or updating dependencies
-glib_required_version = '>= 2.85.1'
+glib_required_version = '>= 2.86.0'
 glib = dependency('glib-2.0', version: glib_required_version, required: false)
 gthread = dependency('gthread-2.0', version: glib_required_version, required: false)
 gobject = dependency('gobject-2.0', version: glib_required_version, required: false)

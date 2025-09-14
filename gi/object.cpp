@@ -2964,8 +2964,7 @@ gjs_lookup_object_prototype(JSContext *context,
                             GType      gtype)
 {
     GI::Repository repo;
-    Maybe<GI::AutoRegisteredTypeInfo> result{gjs_lookup_gtype(repo, gtype)};
-    Maybe<const GI::ObjectInfo> info = result.andThen(
+    Maybe<const GI::ObjectInfo> info = repo.find_by_gtype(gtype).andThen(
         std::mem_fn(&GI::AutoRegisteredTypeInfo::as<GI::InfoTag::OBJECT>));
     return gjs_lookup_object_prototype_from_info(context, info, gtype);
 }
@@ -3975,9 +3974,8 @@ gjs_lookup_object_constructor(JSContext             *context,
     JSObject *constructor;
 
     GI::Repository repo;
-    Maybe<GI::AutoBaseInfo> result{gjs_lookup_gtype(repo, gtype)};
-    Maybe<const GI::ObjectInfo> object_info =
-        result.andThen(std::mem_fn(&GI::AutoBaseInfo::as<GI::InfoTag::OBJECT>));
+    Maybe<const GI::ObjectInfo> object_info = repo.find_by_gtype(gtype).andThen(
+        std::mem_fn(&GI::AutoRegisteredTypeInfo::as<GI::InfoTag::OBJECT>));
 
     constructor = gjs_lookup_object_constructor_from_info(context, object_info, gtype);
 

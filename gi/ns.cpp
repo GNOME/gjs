@@ -40,6 +40,21 @@
 
 using mozilla::Maybe;
 
+// helper function
+void platform_specific_warning_glib(JSContext* cx, const char* prefix,
+                                    const char* platform,
+                                    const char* resolved_name) {
+    if (!g_str_has_prefix(resolved_name, prefix))
+        return;
+
+    const char* base_name = resolved_name + strlen(prefix);
+    Gjs::AutoChar old_name{g_strdup_printf("GLib.%s", resolved_name)};
+    Gjs::AutoChar new_name{g_strdup_printf("GLib%s.%s", platform, base_name)};
+    _gjs_warn_deprecated_once_per_callsite(
+        cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
+        {old_name.get(), new_name.get()});
+}
+
 class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
@@ -50,42 +65,12 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     explicit Ns(const char* ns_name)
         : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
         GJS_INC_COUNTER(ns);
-#if !GLIB_CHECK_VERSION(2, 86, 0)
-        m_is_gio_or_glib =
-            strcmp(ns_name, "Gio") == 0 || strcmp(ns_name, "GLib") == 0;
-#endif
+        m_is_glib = strcmp(ns_name, "GLib") == 0;
     }
 
     ~Ns() { GJS_DEC_COUNTER(ns); }
 
-#if !GLIB_CHECK_VERSION(2, 86, 0)
-    bool m_is_gio_or_glib : 1;
-
-    // helper function
-    void platform_specific_warning(JSContext* cx, const char* prefix,
-                                   const char* platform,
-                                   const char* resolved_name,
-                                   const char** exceptions = nullptr) {
-        if (!g_str_has_prefix(resolved_name, prefix))
-            return;
-
-        const char* base_name = resolved_name + strlen(prefix);
-        Gjs::AutoChar old_name{
-            g_strdup_printf("%s.%s", this->get(), resolved_name)};
-        if (exceptions) {
-            for (const char** exception = exceptions; *exception; exception++) {
-                if (strcmp(old_name, *exception) == 0)
-                    return;
-            }
-        }
-
-        Gjs::AutoChar new_name{
-            g_strdup_printf("%s%s.%s", this->get(), platform, base_name)};
-        _gjs_warn_deprecated_once_per_callsite(
-            cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
-            {old_name.get(), new_name.get()});
-    }
-#endif  // GLib (< 2.86.0)
+    bool m_is_glib : 1;
 
     // JSClass operations
 
@@ -125,23 +110,12 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                   "Found info type %s for '%s' in namespace '%s'",
                   info->type_string(), info->name(), info->ns());
 
-#if !GLIB_CHECK_VERSION(2, 86, 0)
-        static const char* unix_types_exceptions[] = {
-            "Gio.UnixConnection",
-            "Gio.UnixCredentialsMessage",
-            "Gio.UnixFDList",
-            "Gio.UnixSocketAddress",
-            "Gio.UnixSocketAddressType",
-            nullptr};
-
-        if (m_is_gio_or_glib) {
-            platform_specific_warning(cx, "Unix", "Unix", name.get(),
-                                      unix_types_exceptions);
-            platform_specific_warning(cx, "unix_", "Unix", name.get());
-            platform_specific_warning(cx, "Win32", "Win32", name.get());
-            platform_specific_warning(cx, "win32_", "Win32", name.get());
+        if (m_is_glib) {
+            platform_specific_warning_glib(cx, "Unix", "Unix", name.get());
+            platform_specific_warning_glib(cx, "unix_", "Unix", name.get());
+            platform_specific_warning_glib(cx, "Win32", "Win32", name.get());
+            platform_specific_warning_glib(cx, "win32_", "Win32", name.get());
         }
-#endif  // GLib (< 2.86.0)
 
         bool defined;
         if (!gjs_define_info(cx, obj, info.ref(), &defined)) {

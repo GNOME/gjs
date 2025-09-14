@@ -43,7 +43,6 @@
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
-#include "gi/repo.h"
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
@@ -1152,7 +1151,7 @@ static bool gjs_value_from_g_value_internal(
         /* The only way to differentiate unions and structs is from
          * their g-i info as both GBoxed */
         GI::Repository repo;
-        Maybe<GI::AutoRegisteredTypeInfo> info{gjs_lookup_gtype(repo, gtype)};
+        Maybe<GI::AutoRegisteredTypeInfo> info{repo.find_by_gtype(gtype)};
         if (!info) {
             gjs_throw(context,
                       "No introspection information found for %s",
