@@ -394,3 +394,59 @@ describe('GLib.MatchInfo', function () {
         });
     });
 });
+
+describe('GLibUnix functionality', function () {
+    let GLibUnix;
+    try {
+        GLibUnix = imports.gi.GLibUnix;
+    } catch {}
+
+    beforeEach(function () {
+        if (!GLibUnix)
+            pending('Not supported platform');
+    });
+
+    it('provides structs', function () {
+        new GLibUnix.Pipe();
+    });
+
+    it('provides functions', function () {
+        GLibUnix.fd_source_new(0, GLib.IOCondition.IN);
+    });
+
+    it('provides enums', function () {
+        expect(GLibUnix.PipeEnd.READ).toBe(0);
+        expect(GLibUnix.PipeEnd.WRITE).toBe(1);
+    });
+});
+
+describe('GLibUnix compatibility fallback', function () {
+    // Only test this if GLibUnix is available
+    const skip = imports.gi.versions.GLibUnix !== '2.0';
+
+    beforeEach(function () {
+        if (skip)
+            pending('Not supported platform');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GLib.* has been moved to a separate platform-specific library. ' +
+            'Please update your code to use GLibUnix.* instead*');
+    });
+
+    it('provides structs', function () {
+        new GLib.UnixPipe();
+    });
+
+    it('provides functions', function () {
+        GLib.unix_fd_source_new(0, GLib.IOCondition.IN);
+    });
+
+    it('provides enums', function () {
+        expect(GLib.UnixPipeEnd.READ).toBe(0);
+        expect(GLib.UnixPipeEnd.WRITE).toBe(1);
+    });
+
+    afterEach(function () {
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGLib.js', 0,
+            'GLib.Unix expect warning');
+    });
+});
