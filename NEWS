@@ -1,3 +1,22 @@
+Version 1.86.0
+--------------
+
+- GJS now requires GLib 2.86 to build.
+
+- Closed bugs and merge requests:
+  * Fix coverage CI job [!1023, Philip Chimento]
+  * Test failure: Package module doesn't find a non-existent interface method
+    (caused by TypeError: GObject.type_default_interface_ref is not a function)
+    [#711, !1024, Florian Müllner]
+  * Test failure: not ok 1 - Issue 443 GObject wrapper disposed warning 1..1
+    [#712, !1025, !1026, Marco Trevisan, Michael Catanzaro]
+  * gi/Gio: Improve mapping for platform-specific symbols into Gio [!1027, Marco
+    Trevisan]
+  * Remove .eslintignore [!1028, Florian Müllner]
+  * (type filepath) returned from c is decoded as utf8 (and can fail) [#706,
+    !1029, Gary Li]
+  * Various maintenance [!1030, Philip Chimento]
+
 Version 1.85.90
 ---------------
 
