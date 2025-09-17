@@ -19,12 +19,6 @@
 #include "gjs/coverage.h"
 #include "gjs/gerror-result.h"
 
-// COMPAT: https://gitlab.gnome.org/GNOME/glib/-/merge_requests/1553
-#ifdef __clang_analyzer__
-void g_assertion_message(const char*, const char*, int, const char*,
-                         const char*) __attribute__((analyzer_noreturn));
-#endif
-
 typedef struct _GjsCoverageFixture {
     GjsContext    *context;
     GjsCoverage   *coverage;

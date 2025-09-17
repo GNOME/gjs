@@ -41,8 +41,4 @@ bool gjs_define_info(JSContext*, JS::HandleObject in_object, const GI::BaseInfo,
 
 [[nodiscard]] char* gjs_hyphen_from_camel(const char* camel_name);
 
-[[nodiscard]]
-mozilla::Maybe<GI::AutoRegisteredTypeInfo> gjs_lookup_gtype(
-    const GI::Repository&, GType);
-
 #endif  // GI_REPO_H_

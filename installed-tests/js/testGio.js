@@ -396,11 +396,6 @@ describe('Gio.FileEnumerator overrides', function () {
 });
 
 describe('Gio.DesktopAppInfo fallback', function () {
-    const requiredVersion =
-        GLib.MAJOR_VERSION > 2 ||
-            (GLib.MAJOR_VERSION === 2 &&
-                (GLib.MINOR_VERSION > 85 ||
-                    GLib.MINOR_VERSION === 85 && GLib.MICRO_VERSION >= 5));
     let keyFile;
     const desktopFileContent = `[Desktop Entry]
 Version=1.0
@@ -417,15 +412,9 @@ Exec=${GLib.find_program_in_path('sh')}
     beforeEach(function () {
         if (!GioUnix)
             pending('Not supported platform');
-
-        if (!requiredVersion)
-            pending('Installed Gio is not new enough for this test');
     });
 
     function expectDeprecationWarning(testFunction) {
-        if (!requiredVersion)
-            pending('Installed Gio is not new enough for this test');
-
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*Gio.DesktopAppInfo has been moved to a separate platform-specific library. ' +
             'Please update your code to use GioUnix.DesktopAppInfo instead*');
@@ -447,9 +436,6 @@ Exec=${GLib.find_program_in_path('sh')}
 
     describe('provides platform-independent functions', function () {
         [Gio, GioUnix].forEach(ns => it(`when created from ${ns.__name__}`, function () {
-            if (!requiredVersion)
-                pending('Installed Gio is not new enough for this test');
-
             const maybeExpectDeprecationWarning = ns === Gio
                 ? expectDeprecationWarning : tf => tf();
 
@@ -462,9 +448,6 @@ Exec=${GLib.find_program_in_path('sh')}
 
     describe('provides unix-only functions', function () {
         [Gio, GioUnix].forEach(ns => it(`when created from ${ns.__name__}`, function () {
-            if (!requiredVersion)
-                pending('Installed Gio is not new enough for this test');
-
             const maybeExpectDeprecationWarning = ns === Gio
                 ? expectDeprecationWarning : tf => tf();
 

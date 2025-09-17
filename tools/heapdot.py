@@ -9,7 +9,7 @@
 
 import re
 
-func_regex = re.compile('Function(?: ([^/]+)(?:/([<|\w]+))?)?')
+func_regex = re.compile(r'Function(?: ([^/]+)(?:/([<|\w]+))?)?')
 priv_regex = re.compile(r'([^ ]+) (\(nil\)|0x[a-fA-F0-9]+$)')
 
 

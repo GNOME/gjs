@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 # SPDX-FileCopyrightText: 2019 Chun-wei Fan <fanchunwei@src.gnome.org>
 
-project('gjs', 'cpp', 'c', version: '1.85.90', license: ['MIT', 'LGPL2+'],
+project('gjs', 'cpp', 'c', version: '1.86.0', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 1.4',
     default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
@@ -125,7 +125,7 @@ endif
 null_dep = dependency('', required : false)
 
 # Note: Notify GNOME release team when adding or updating dependencies
-glib_required_version = '>= 2.85.1'
+glib_required_version = '>= 2.86.0'
 glib = dependency('glib-2.0', version: glib_required_version, required: false)
 gthread = dependency('gthread-2.0', version: glib_required_version, required: false)
 gobject = dependency('gobject-2.0', version: glib_required_version, required: false)
