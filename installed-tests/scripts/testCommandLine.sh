@@ -123,6 +123,18 @@ print(output
   .join(' '));
 EOF
 
+# this script prints out all files in current directory
+# useful to test encodings and filename type marshalling
+cat <<EOF >printFiles.js
+const {GLib, Gio} = imports.gi;
+const cd = Gio.File.new_for_path('.');
+const iter = cd.enumerate_children("standard::name", null, null);
+let f;
+while (f = iter.next_file(null)) {
+    f.get_name()
+}
+EOF
+
 total=0
 
 report () {
@@ -198,6 +210,12 @@ touch Код/🍁.js
 $gjs -m Код/🍁.js
 report "Unicode pathed encoding should work for module run."
 rm -r Код
+
+# non UTF8 file names throws error
+touch $'\xff'
+G_FILENAME_ENCODING=utf8 $gjs -m printFiles.js 2>&1 | grep -q 'Gjs-CRITICAL.*Could not convert filename string to UTF-8 for string: \\377'
+report "Throws error if filename is not UTF8"
+rm ''$'\377'
 
 # gjs --help prints GJS help
 $gjs --help >/dev/null

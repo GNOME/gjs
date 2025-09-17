@@ -243,9 +243,13 @@ gjs_string_from_filename(JSContext             *context,
     Gjs::AutoChar utf8_string{g_filename_to_utf8(filename_string, n_bytes,
                                                  nullptr, &written, &error)};
     if (error) {
+        Gjs::AutoChar escaped_char{g_strescape(filename_string, nullptr)};
         gjs_throw(context,
-                  "Could not convert UTF-8 string '%s' to a filename: '%s'",
-                  filename_string, error->message);
+                  "Could not convert filename string to UTF-8 for string: %s. "
+                  "If string is "
+                  "invalid UTF-8 and used for display purposes, try GLib "
+                  "attribute standard::display-name. The reason is: %s. ",
+                  escaped_char.get(), error->message);
         return false;
     }
 
