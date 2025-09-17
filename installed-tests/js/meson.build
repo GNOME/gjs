@@ -72,6 +72,7 @@ gschemas_compiled = gnome.compile_schemas(
     depend_files: 'org.gnome.GjsTest.gschema.xml')
 
 tests_dependencies = [
+    gir_deps,
     gschemas_compiled,
     gjs_private_typelib,
     gjstest_tools_typelib,

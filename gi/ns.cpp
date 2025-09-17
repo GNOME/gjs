@@ -44,19 +44,22 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
 
-    bool m_is_gio_or_glib : 1;
-
     static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_ns;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
 
     explicit Ns(const char* ns_name)
         : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
         GJS_INC_COUNTER(ns);
+#if !GLIB_CHECK_VERSION(2, 86, 0)
         m_is_gio_or_glib =
             strcmp(ns_name, "Gio") == 0 || strcmp(ns_name, "GLib") == 0;
+#endif
     }
 
     ~Ns() { GJS_DEC_COUNTER(ns); }
+
+#if !GLIB_CHECK_VERSION(2, 86, 0)
+    bool m_is_gio_or_glib : 1;
 
     // helper function
     void platform_specific_warning(JSContext* cx, const char* prefix,
@@ -82,6 +85,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
             {old_name.get(), new_name.get()});
     }
+#endif  // GLib (< 2.86.0)
 
     // JSClass operations
 
@@ -121,6 +125,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                   "Found info type %s for '%s' in namespace '%s'",
                   info->type_string(), info->name(), info->ns());
 
+#if !GLIB_CHECK_VERSION(2, 86, 0)
         static const char* unix_types_exceptions[] = {
             "Gio.UnixConnection",
             "Gio.UnixCredentialsMessage",
@@ -136,6 +141,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             platform_specific_warning(cx, "Win32", "Win32", name.get());
             platform_specific_warning(cx, "win32_", "Win32", name.get());
         }
+#endif  // GLib (< 2.86.0)
 
         bool defined;
         if (!gjs_define_info(cx, obj, info.ref(), &defined)) {

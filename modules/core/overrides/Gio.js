@@ -481,34 +481,51 @@ function _warnNotIntrospectable(funcName, replacement) {
 function _init() {
     Gio = this;
     let GioPlatform = {};
+    let platformName = '';
 
     Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
 
-    // Redefine Gio functions with platform-specific implementations to be
-    // backward compatible with gi-repository 1.0, however when possible we
-    // notify a deprecation warning, to ensure that the surrounding code is
-    // updated.
-    try {
-        GioPlatform = imports.gi.GioUnix;
-    } catch {
+    if (GLib.MAJOR_VERSION > 2 ||
+        (GLib.MAJOR_VERSION === 2 && GLib.MINOR_VERSION >= 86)) {
+        // Redefine Gio functions with platform-specific implementations to be
+        // backward compatible with gi-repository 1.0, however when possible we
+        // notify a deprecation warning, to ensure that the surrounding code is
+        // updated.
         try {
-            GioPlatform = imports.gi.GioWin32;
-        } catch {}
+            GioPlatform = imports.gi.GioUnix;
+            platformName = 'Unix';
+        } catch {
+            try {
+                GioPlatform = imports.gi.GioWin32;
+                platformName = 'Win32';
+            } catch {}
+        }
     }
 
+    const platformNameLower = platformName.toLowerCase();
     Object.entries(Object.getOwnPropertyDescriptors(GioPlatform)).forEach(([prop, desc]) => {
-        if (Object.hasOwn(Gio, prop)) {
-            console.debug(`Gio already contains property ${prop}`);
-            Gio[prop] = GioPlatform[prop];
+        let genericProp = prop;
+
+        const originalValue = GioPlatform[prop];
+        const gtypeName = originalValue.$gtype?.name;
+        if (gtypeName?.startsWith(`G${platformName}`))
+            genericProp = `${platformName}${prop}`;
+        else if (originalValue instanceof Function &&
+            originalValue.name.startsWith(`g_${platformNameLower}_`))
+            genericProp = `${platformNameLower}_${prop}`;
+
+        if (Object.hasOwn(Gio, genericProp)) {
+            console.debug(`Gio already contains property ${genericProp}`);
+            Gio[genericProp] = originalValue;
             return;
         }
 
-        Object.defineProperty(Gio, prop, {
+        Object.defineProperty(Gio, genericProp, {
             enumerable: true,
             configurable: false,
             get() {
                 warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
-                    `Gio.${prop}`, `${GioPlatform.__name__}.${prop}`);
+                    `Gio.${genericProp}`, `${GioPlatform.__name__}.${prop}`);
                 return desc.get?.() ?? desc.value;
             },
         });

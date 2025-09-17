@@ -441,7 +441,8 @@ Exec=${GLib.find_program_in_path('sh')}
     it('can be created using Gio wrapper', function () {
         expectDeprecationWarning(() =>
             expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull());
-        expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull();
+        expectDeprecationWarning(() =>
+            expect(Gio.DesktopAppInfo.new_from_keyfile(keyFile)).not.toBeNull());
     });
 
     describe('provides platform-independent functions', function () {
@@ -449,8 +450,13 @@ Exec=${GLib.find_program_in_path('sh')}
             if (!requiredVersion)
                 pending('Installed Gio is not new enough for this test');
 
-            const appInfo = ns.DesktopAppInfo.new_from_keyfile(keyFile);
-            expect(appInfo.get_name()).toBe('Some Application');
+            const maybeExpectDeprecationWarning = ns === Gio
+                ? expectDeprecationWarning : tf => tf();
+
+            maybeExpectDeprecationWarning(() => {
+                const appInfo = ns.DesktopAppInfo.new_from_keyfile(keyFile);
+                expect(appInfo.get_name()).toBe('Some Application');
+            });
         }));
     });
 
@@ -459,9 +465,14 @@ Exec=${GLib.find_program_in_path('sh')}
             if (!requiredVersion)
                 pending('Installed Gio is not new enough for this test');
 
-            const appInfo = ns.DesktopAppInfo.new_from_keyfile(keyFile);
-            expect(appInfo.has_key('Name')).toBeTrue();
-            expect(appInfo.get_string('Name')).toBe('Some Application');
+            const maybeExpectDeprecationWarning = ns === Gio
+                ? expectDeprecationWarning : tf => tf();
+
+            maybeExpectDeprecationWarning(() => {
+                const appInfo = ns.DesktopAppInfo.new_from_keyfile(keyFile);
+                expect(appInfo.has_key('Name')).toBeTrue();
+                expect(appInfo.get_string('Name')).toBe('Some Application');
+            });
         }));
     });
 });

@@ -126,17 +126,38 @@ null_dep = dependency('', required : false)
 
 # Note: Notify GNOME release team when adding or updating dependencies
 glib_required_version = '>= 2.85.1'
-glib = dependency('glib-2.0', version: glib_required_version,
-    fallback: ['glib', 'libglib_dep'])
-gthread = dependency('gthread-2.0', version: glib_required_version,
-    fallback: ['glib', 'libgthread_dep'])
-gobject = dependency('gobject-2.0', version: glib_required_version,
-    fallback: ['glib', 'libgobject_dep'])
-gio = dependency('gio-2.0', version: glib_required_version,
-    fallback: ['glib', 'libgio_dep'])
+glib = dependency('glib-2.0', version: glib_required_version, required: false)
+gthread = dependency('gthread-2.0', version: glib_required_version, required: false)
+gobject = dependency('gobject-2.0', version: glib_required_version, required: false)
+gio = dependency('gio-2.0', version: glib_required_version, required: false)
+gi = dependency('girepository-2.0', version: glib_required_version, required: false)
+gir_deps = []
+
+if not glib.found()
+    glib_project = subproject('glib', required: true,
+        default_options: ['introspection=enabled'])
+
+    glib = glib_project.get_variable('libglib_dep')
+    gthread = glib_project.get_variable('libgthread_dep')
+    gobject = glib_project.get_variable('libgobject_dep')
+    gio = glib_project.get_variable('libgio_dep')
+    gi = glib_project.get_variable('libgirepository_dep')
+
+    gir_deps = [
+        glib_project.get_variable('glib_gir'),
+        glib_project.get_variable('gobject_gir'),
+        glib_project.get_variable('gio_gir'),
+        glib_project.get_variable('gio_platform_gir'),
+    ]
+
+    if host_machine.system() == 'windows'
+        gir_deps += glib_project.get_variable('glib_win32_gir')
+    else
+        gir_deps += glib_project.get_variable('glib_unix_gir')
+    endif
+endif
+
 ffi = dependency('libffi', fallback: ['libffi', 'ffi_dep'])
-gi = dependency('girepository-2.0', version: glib_required_version,
-    fallback: ['glib', 'libgirepository_dep'])
 cairo = dependency('cairo', fallback: ['cairo', 'libcairo_dep'])
 cairo_gobject = dependency('cairo-gobject',
     fallback: ['cairo', 'libcairogobject_dep'])
@@ -606,6 +627,11 @@ pkg.generate(libgjs, name: api_name, description: 'JS bindings for GObjects',
 
 tests_environment = environment()
 gi_tests_builddir = meson.project_build_root() / 'subprojects' / 'gobject-introspection-tests'
+glib_root_builddir = meson.project_build_root() / 'subprojects' / 'glib'
+glib_builddir = glib_root_builddir / 'glib'
+gobject_builddir = glib_root_builddir / 'gobject'
+gi_builddir = glib_root_builddir / 'girepository'
+gio_builddir = glib_root_builddir / 'gio'
 js_tests_builddir = meson.current_build_dir() / 'installed-tests' / 'js'
 libgjs_test_tools_builddir = js_tests_builddir / 'libgjstesttools'
 # GJS_PATH is empty here since we want to force the use of our own
@@ -615,9 +641,11 @@ tests_environment.set('GJS_USE_UNINSTALLED_FILES', '1')
 tests_environment.set('GJS_PATH', '')
 tests_environment.set('GJS_DEBUG_OUTPUT', 'stderr')
 tests_environment.prepend('GI_TYPELIB_PATH', meson.current_build_dir(),
-    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir)
+    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir,
+    gi_builddir / 'introspection')
 tests_environment.prepend('LD_LIBRARY_PATH', meson.current_build_dir(),
-    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir)
+    gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir,
+    glib_builddir, gobject_builddir, gio_builddir, gi_builddir)
 tests_environment.prepend('DYLD_LIBRARY_PATH', meson.current_build_dir(),
     gi_tests_builddir, js_tests_builddir, libgjs_test_tools_builddir)
 tests_environment.set('G_FILENAME_ENCODING', 'latin1')
