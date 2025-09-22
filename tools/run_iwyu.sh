@@ -44,10 +44,11 @@ fi
 echo "files: $files"
 
 IWYU="python3 $(which iwyu_tool iwyu-tool iwyu_tool.py 2>/dev/null) -p ."
-IWYU_TOOL_ARGS="-I../gjs"
+IWYU_FEDORA_BUG_ARGS="-I/usr/lib/clang/20/include"
+IWYU_TOOL_ARGS="-I../gjs $IWYU_FEDORA_BUG_ARGS"
 IWYU_ARGS="-Wno-pragma-once-outside-header"
 IWYU_RAW="include-what-you-use -xc++ -std=c++17 -Xiwyu --keep=config.h $IWYU_ARGS"
-IWYU_RAW_INC="-I. -I.. $(pkg-config --cflags girepository-2.0 mozjs-140)"
+IWYU_RAW_INC="-I. -I.. $(pkg-config --cflags girepository-2.0 mozjs-140) $IWYU_FEDORA_BUG_ARGS"
 PRIVATE_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-private-iwyu.imp -Xiwyu --keep=config.h"
 PUBLIC_MAPPING="-Xiwyu --mapping_file=$SRCDIR/tools/gjs-public-iwyu.imp"
 POSTPROCESS="python3 $SRCDIR/tools/process_iwyu.py"
