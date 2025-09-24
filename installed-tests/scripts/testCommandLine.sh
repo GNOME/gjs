@@ -212,10 +212,10 @@ report "Unicode pathed encoding should work for module run."
 rm -r Код
 
 # non UTF8 file names throws error
-touch $'\xff'
+bash -c "touch $'\xff'"
 G_FILENAME_ENCODING=utf8 $gjs -m printFiles.js 2>&1 | grep -q 'Gjs-CRITICAL.*Could not convert filename string to UTF-8 for string: \\377'
 report "Throws error if filename is not UTF8"
-rm ''$'\377'
+bash -c "rm ''$'\377'"
 
 # gjs --help prints GJS help
 $gjs --help >/dev/null
