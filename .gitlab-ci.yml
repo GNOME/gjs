@@ -22,7 +22,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2024-07-28.0'
+    FDO_DISTRIBUTION_TAG: '2025-09-24.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -32,7 +32,7 @@ build-alpine-image:
   stage: prepare
   variables:
     FDO_DISTRIBUTION_PACKAGES: |
-      bash cppcheck git grep npm py3-codespell python3 reuse
+      bash cppcheck git grep npm py3-codespell python3 shellcheck reuse
     FDO_DISTRIBUTION_EXEC: |
       mkdir -p /cwd &&
       apk add cpplint \
@@ -290,6 +290,26 @@ cpplint:
       - "**/*.cpp"
       - "**/*.h"
       - "**/*.hh"
+
+shellcheck:
+  when: on_success
+  stage: source_check
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
+  script:
+    - shellcheck --version
+    - tools/run_shellcheck.sh
+  except:
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip shellcheck\]/
+  only:
+    changes:
+      - "**/installed-tests/**.sh"
+      - ".gitlab-ci.yml"
 
 eslint:
   when: on_success
