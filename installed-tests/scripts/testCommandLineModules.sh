@@ -24,9 +24,6 @@ report () {
 # Avoid interference in the profiler tests from stray environment variable
 unset GJS_ENABLE_PROFILER
 
-# Avoid interference in the warning tests from G_DEBUG=fatal-warnings/criticals
-OLD_G_DEBUG="$G_DEBUG"
-
 cat <<EOF >doubledynamicImportee.js
 export function noop() {}
 EOF
