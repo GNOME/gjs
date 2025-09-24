@@ -184,7 +184,7 @@ report "System.programPath should end in '/argv.js' when gjs argv.js is run"
 # hitting an assertion. For this reason, skip when running under valgrind
 # since nothing will be freed. Also suppress LSan for the same reason.
 echo "# VALGRIND = $VALGRIND"
-if test -z $VALGRIND; then
+if test -z "$VALGRIND"; then
     ASAN_OPTIONS=detect_leaks=0 $gjs exit.js
     test $? -ne 0
     report "System.exit() should still exit across an FFI boundary"
@@ -350,7 +350,7 @@ else
 fi
 
 # https://gitlab.gnome.org/GNOME/gjs/-/issues/322
-$gjs --coverage-prefix=$(pwd) --coverage-output=$(pwd) awaitcatch.js
+$gjs --coverage-prefix="$PWD" --coverage-output="$PWD" awaitcatch.js
 grep -q TN: coverage.lcov
 report "coverage prefix is treated as an absolute path"
 rm -f coverage.lcov
@@ -360,9 +360,9 @@ report "avoid statically importing two versions of the same module"
 
 # https://gitlab.gnome.org/GNOME/gjs/-/issues/19
 echo "# VALGRIND = $VALGRIND"
-if test -z $VALGRIND; then
+if test -z "$VALGRIND"; then
     output=$(env LSAN_OPTIONS=detect_leaks=0 ASAN_OPTIONS=detect_leaks=0 \
-        $gjs -m signalexit.js)
+        "$gjs" -m signalexit.js)
     test $? -eq 15
     report "exit with correct code from a signal callback"
     test -n "$output" -a -z "${output##*click 1*}"
