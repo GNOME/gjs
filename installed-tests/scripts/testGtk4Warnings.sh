@@ -103,7 +103,6 @@ EOF
 
 $gjs -m gcWrapperWarning.js 2>&1 | \
     grep -q 'Wrapper for GObject.*was disposed, cannot set property string-object'
-test $? -eq 0
 report "Issue 443 GObject wrapper disposed warning"
 
 rm -f gcWrapperWarning.js
