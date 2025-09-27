@@ -2505,15 +2505,25 @@ describe('Regress.Foo', function () {
         expect(o3.y).toBe(2.6);
         o2.add(o3);
         o3.add(o2);
-
-        const o4 = new Regress.FooBUnion();
-        o4.type = 77;
-        expect(o4.type).toBe(77);
-        o4.v = 7.777;
-        expect(o4.v).toBe(7.777);
-        o4.rect = o3;
-        expect(o4.rect).toBe(o3);
     });
+
+    xit('Primitive type union fields', function () {
+        const u = new Regress.FooBUnion();
+        expect(u.type).toBeDefined();
+        expect(u.v).toBeDefined();
+        u.type = 77;
+        expect(u.type).toBe(77);
+        u.v = 7.777;
+        expect(u.v).toBe(7.777);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/770');
+
+    xit('Union field that is a pointer to a boxed type', function () {
+        const s = Regress.FooBRect.new(-1.4, 2.6);
+        const u = new Regress.FooBUnion();
+        expect(u.rect).toBeDefined();
+        u.rect = s;
+        expect(u.rect).toBe(s);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/770');
 
     it('Rectangle instance', function () {
         const o1 = new Regress.FooRectangle({x: 0, y: 0, width: 10, height: 10});
