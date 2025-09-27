@@ -160,7 +160,8 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
  protected:
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class_impl(JSContext*, JS::HandleObject in_object,
-                                  const BoxedInfo);
+                                  const BoxedInfo,
+                                  JS::MutableHandleObject prototype);
 };
 
 template <class Base, class Prototype, class Instance>
@@ -168,17 +169,19 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     using BaseClass = GIWrapperInstance<Base, Prototype, Instance>;
     friend class GIWrapperBase<Base, Prototype, Instance>;
     friend class BoxedBase<Base, Prototype, Instance>;  // for field_getter, etc
+    template <class OtherInstance>
+    friend void adopt_nested_ptr(OtherInstance*, void*);
 
     using BoxedInfo = GI::UnownedInfo<Base::TAG>;
 
     // Reserved slots
     static const size_t PARENT_OBJECT = 1;
 
+ protected:
     bool m_allocated_directly : 1;
     bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred
                             // to by m_ptr.
 
- protected:
     explicit BoxedInstance(Prototype* prototype, JS::HandleObject obj);
     ~BoxedInstance(void);
 
@@ -206,21 +209,25 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     // Helper methods
 
     GJS_JSAPI_RETURN_CONVENTION
+    bool invoke_static_method(JSContext*, JS::HandleObject,
+                              JS::HandleId method_name, const JS::CallArgs&);
+    GJS_JSAPI_RETURN_CONVENTION
     bool init_from_props(JSContext* cx, JS::Value props_value);
 
+    template <class FieldInstance>
     GJS_JSAPI_RETURN_CONVENTION bool get_nested_interface_object(
         JSContext*, JSObject* parent_obj, const GI::FieldInfo,
-        const GI::StructInfo, JS::MutableHandleValue) const;
+        const GI::UnownedInfo<FieldInstance::TAG>,
+        JS::MutableHandleValue) const;
+    template <class FieldBase>
     GJS_JSAPI_RETURN_CONVENTION bool set_nested_interface_object(
-        JSContext*, const GI::FieldInfo, const GI::StructInfo, JS::HandleValue);
+        JSContext*, const GI::FieldInfo, const GI::UnownedInfo<FieldBase::TAG>,
+        JS::HandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
     static void* copy_ptr(JSContext* cx, GType gtype, void* ptr) {
         if (g_type_is_a(gtype, G_TYPE_BOXED))
             return g_boxed_copy(gtype, ptr);
-
-        if (g_type_is_a(gtype, G_TYPE_VARIANT))
-            return g_variant_ref(static_cast<GVariant*>(ptr));
 
         gjs_throw(cx,
                   "Can't transfer ownership of a %s type not registered as "

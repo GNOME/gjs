@@ -192,11 +192,30 @@ describe('Gdk.Atom', function () {
 });
 
 describe('Complete enumeration (boxed types)', function () {
-    it('enumerates all properties', function () {
+    it('enumerates all properties of a struct', function () {
         // Note: this test breaks down if other code access all the methods of Rectangle
         const rect = new Gdk.Rectangle();
         const names = Object.getOwnPropertyNames(Object.getPrototypeOf(rect));
         const expectAtLeast = ['equal', 'intersect', 'union', 'x', 'y', 'width', 'height'];
+        expect(names).toEqual(jasmine.arrayContaining(expectAtLeast));
+    });
+
+    it('enumerates all properties of a union', function () {
+        const event = new Gdk.Event(Gdk.EventType.KEY_PRESS);
+        const names = Object.getOwnPropertyNames(Object.getPrototypeOf(event));
+        const expectAtLeast = ['_get_angle', '_get_center', '_get_distance',
+            'any', 'button', 'configure', 'copy', 'crossing', 'dnd', 'expose',
+            'focus_change', 'free', 'get_axis', 'get_button', 'get_click_count',
+            'get_coords', 'get_device_tool', 'get_device', 'get_event_sequence',
+            'get_event_type', 'get_keycode', 'get_keyval', 'get_pointer_emulated',
+            'get_root_coords', 'get_scancode', 'get_screen', 'get_scroll_deltas',
+            'get_scroll_direction', 'get_seat', 'get_source_device', 'get_state',
+            'get_time', 'get_window', 'grab_broken', 'is_scroll_stop_event',
+            'key', 'motion', 'owner_change', 'pad_axis', 'pad_button',
+            'pad_group_mode', 'property', 'proximity', 'put', 'scroll', 'selection',
+            'set_device_tool', 'set_device', 'set_screen', 'set_source_device',
+            'setting', 'touch', 'touchpad_pinch', 'touchpad_swipe',
+            'triggers_context_menu', 'type', 'visibility', 'window_state'];
         expect(names).toEqual(jasmine.arrayContaining(expectAtLeast));
     });
 });

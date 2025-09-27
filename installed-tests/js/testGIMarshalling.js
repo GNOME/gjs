@@ -1349,80 +1349,173 @@ describe('Union', function () {
         union = GIMarshallingTests.union_returnv();
     });
 
-    xit('marshals as a return value', function () {
-        expect(union.long_).toEqual(42);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/273');
+    it('can be constructed empty', function () {
+        const constructedUnion = new GIMarshallingTests.Union();
+        expect(constructedUnion.long_).toBe(0);
+    });
+
+    it('can be constructed with properties', function () {
+        const constructedUnion = new GIMarshallingTests.Union({long_: 55});
+        expect(constructedUnion.long_).toBe(55);
+    });
+
+    it('cannot be constructed with unknown properties', function () {
+        expect(() => new GIMarshallingTests.Union({invalidProperty: 55})).toThrowError(
+            /No field.*invalidProperty.*Union.*/);
+    });
+
+    xit('cannot be constructed with wrong-type properties', function () {
+        expect(() => new GIMarshallingTests.Union({long_: 'long_'})).toThrow();
+        expect(() => new GIMarshallingTests.Union({long_: union})).toThrow();
+    }).pend('We implicitly convert wrong typed values');
+
+    it('marshals as a return value', function () {
+        expect(union.long_).toBe(42);
+    });
+
+    it('marshals as a settable property', function () {
+        union.long_ = 5555;
+        expect(union.long_).toBe(5555);
+    });
 
     it('marshals as the this-argument of a method', function () {
         expect(() => union.inv()).not.toThrow();  // was this supposed to be static?
         expect(() => union.method()).not.toThrow();
     });
+
+    it('marshals as the this-argument of a method when constructed', function () {
+        expect(() => new GIMarshallingTests.Union({long_: 42}).inv()).not.toThrow();
+        expect(() => new GIMarshallingTests.Union({long_: 42}).method()).not.toThrow();
+    });
+
+    it('marshals unregistered union', function () {
+        const u = new GIMarshallingTests.UnregisteredUnion();
+        expect(u.long_).toBe(0);
+        expect(u.size).toBe(0);
+        expect(u.str).toBe(null);
+
+        u.long_ = 1;
+        expect(u.long_).toBe(1);
+
+        u.size = 2;
+        expect(u.size).toBe(2);
+
+        expect(() => (u.str = 'three')).toThrow();
+        expect(u.size).toBe(2);
+    });
+
+    it('marshals unregistered initialized union', function () {
+        expect(new GIMarshallingTests.UnregisteredUnion({long_: 123}).long_).toBe(123);
+        expect(new GIMarshallingTests.UnregisteredUnion({size: 321}).size).toBe(321);
+        expect(() => new GIMarshallingTests.UnregisteredUnion({str: '123'})).toThrow();
+    });
 });
 
 describe('Structured union', function () {
-    xit('can be created with a default constructor', function () {
+    it('cannot be constructed with empty default constructor', function () {
+        expect(() => new GIMarshallingTests.StructuredUnion()).toThrow();
+    });
+
+    Object.entries(GIMarshallingTests.StructuredUnionType).forEach(([unionTypeName, unionType]) => {
+        const memberType = unionTypeName.toLowerCase().replace(
+            /(^[a-z]|[-_][a-z])/g, group => group.toUpperCase().replace('_', ''));
+
+        function getMember(union) {
+            let member = union[unionTypeName.toLowerCase()];
+
+            switch (union.type()) {
+            case GIMarshallingTests.StructuredUnionType.SINGLE_UNION:
+                member = member.parent;
+                break;
+            }
+
+            return member;
+        }
+
+        it(`can be constructed with default constructor ${memberType}`, function () {
+            const union = new GIMarshallingTests.StructuredUnion(unionType);
+            expect(union.type()).toBe(unionType);
+        });
+
+        it(`can be constructed and has valid member ${memberType}`, function () {
+            const union = new GIMarshallingTests.StructuredUnion(unionType);
+            const member = getMember(union);
+            let invObj;
+            switch (union.type()) {
+            case GIMarshallingTests.StructuredUnionType.NONE:
+                expect(member).toBeUndefined();
+                return;
+            case GIMarshallingTests.StructuredUnionType.NESTED_STRUCT:
+                invObj = member.parent.simple_struct;
+                break;
+            case GIMarshallingTests.StructuredUnionType.SINGLE_UNION:
+                invObj = member.union_;
+                break;
+            }
+
+            expect(member.type).toBe(union.type());
+            expect(() => (invObj ?? member.parent).inv()).not.toThrow();
+        });
+
+    });
+
+    it('can be created with a default constructor', function () {
         const u = new GIMarshallingTests.StructuredUnion(GIMarshallingTests.StructuredUnionType.NONE);
         expect(u).toBeInstanceOf(GIMarshallingTests.StructuredUnion);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/657');
+    });
 
     it('can be created with NONE', function () {
         const t = GIMarshallingTests.StructuredUnionType.NONE;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
     });
 
     it('can be created with SIMPLE_STRUCT', function () {
         const t = GIMarshallingTests.StructuredUnionType.SIMPLE_STRUCT;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
-        // expect(u.simple_struct.parent.long_).toBe(6);
-        // expect(u.simple_struct.parent.int8).toBe(7);
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+        expect(u.simple_struct.parent.long_).toBe(6);
+        expect(u.simple_struct.parent.int8).toBe(7);
     });
 
     it('can be created with NESTED_STRUCT', function () {
         const t = GIMarshallingTests.StructuredUnionType.NESTED_STRUCT;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
-        // expect(u.nested_struct.parent.simple_struct.parent.long_).toBe(6);
-        // expect(u.nested_struct.parent.simple_struct.parent.int8).toBe(7);
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+        expect(u.nested_struct.parent.simple_struct.long_).toBe(6);
+        expect(u.nested_struct.parent.simple_struct.int8).toBe(7);
     });
 
     it('can be created with BOXED_STRUCT', function () {
         const t = GIMarshallingTests.StructuredUnionType.BOXED_STRUCT;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
-        // expect(u.boxed_struct.parent.long_).toBe(42);
-        // expect(u.boxed_struct.parent.string_).toBe('hello');
-        // expect(u.boxed_struct.parent.g_strv).toBe(['0', '1', '2']);
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+        expect(u.boxed_struct.parent.long_).toBe(42);
+        expect(u.boxed_struct.parent.string_).toBe('hello');
+        expect(u.boxed_struct.parent.g_strv).toEqual(['0', '1', '2']);
     });
 
     it('can be created with BOXED_STRUCT_PTR', function () {
         const t = GIMarshallingTests.StructuredUnionType.BOXED_STRUCT_PTR;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
-        // expect(u.boxed_struct_ptr.parent.long_).toBe(42);
-        // expect(u.boxed_struct_ptr.parent.string_).toBe('hello');
-        // expect(u.boxed_struct_ptr.parent.g_strv).toBe(['0', '1', '2']);
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+        expect(u.boxed_struct_ptr.parent.long_).toBe(42);
+        expect(u.boxed_struct_ptr.parent.string_).toBe('hello');
+        expect(u.boxed_struct_ptr.parent.g_strv).toEqual(['0', '1', '2']);
     });
 
     it('can be created with POINTER_STRUCT', function () {
         const t = GIMarshallingTests.StructuredUnionType.POINTER_STRUCT;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
-        // expect(u.pointer_struct.parent.long_).toBe(42);
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+        expect(u.pointer_struct.parent.long_).toBe(42);
     });
 
     it('can be created with SINGLE_UNION', function () {
         const t = GIMarshallingTests.StructuredUnionType.SINGLE_UNION;
-        const u = GIMarshallingTests.StructuredUnion.new(t);
+        const u = new GIMarshallingTests.StructuredUnion(t);
         expect(u.type()).toBe(t);
-        // expect(u.single_union.parent.union_.long_).toBe(42);
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/273
+        expect(u.single_union.parent.union_.long_).toBe(42);
     });
 });
 

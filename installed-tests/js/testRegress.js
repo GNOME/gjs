@@ -724,7 +724,8 @@ describe('Life, the Universe and Everything', function () {
                 struct.some_union[ix].v_uint64 = 47;
                 struct.some_union[ix].v_float = 48.5;
                 struct.some_union[ix].v_double = 49.5;
-                struct.some_union[ix].v_pointer = null;
+                // Not possible, type tag is void:
+                // struct.some_union[ix].v_pointer = null;
             }
 
             expect(struct.some_type).toEqual(GObject.Object.$gtype);
@@ -739,7 +740,7 @@ describe('Life, the Universe and Everything', function () {
                 expect(struct.some_union[ix].v_double).toEqual(49.5);
                 expect(struct.some_union[ix].v_pointer).toBeNull();
             }
-        }).pend('https://gitlab.gnome.org/GNOME/gjs/issues/273');
+        }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/714');
     });
 
     // Bare int pointers, not currently supported (and possibly not ever)

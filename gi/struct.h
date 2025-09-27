@@ -7,6 +7,7 @@
 #include <config.h>
 
 #include <glib-object.h>
+#include <glib.h>
 
 #include <js/TypeDecls.h>
 
@@ -16,6 +17,9 @@
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
 
+namespace JS {
+class CallArgs;
+}
 struct JSClassOps;
 class StructPrototype;
 class StructInstance;
@@ -56,10 +60,21 @@ class StructPrototype
 
 class StructInstance
     : public BoxedInstance<StructBase, StructPrototype, StructInstance> {
+    friend class GIWrapperBase<StructBase, StructPrototype, StructInstance>;
     friend class GIWrapperInstance<StructBase, StructPrototype, StructInstance>;
 
     StructInstance(StructPrototype*, JS::HandleObject);
     ~StructInstance();
+
+    GJS_JSAPI_RETURN_CONVENTION
+    bool constructor_impl(JSContext*, JS::HandleObject, const JS::CallArgs&);
+
+    GJS_JSAPI_RETURN_CONVENTION
+    static void* copy_ptr(JSContext* cx, GType gtype, void* ptr) {
+        if (g_type_is_a(gtype, G_TYPE_VARIANT))
+            return g_variant_ref(static_cast<GVariant*>(ptr));
+        return BoxedInstance::copy_ptr(cx, gtype, ptr);
+    }
 
  public:
     GJS_JSAPI_RETURN_CONVENTION

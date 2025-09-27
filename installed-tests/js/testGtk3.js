@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 
+import Gdk from 'gi://Gdk?version=3.0';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
@@ -351,5 +352,92 @@ describe('Gtk overrides', function () {
         System.gc();
 
         expect(weakRef.deref()).toBeUndefined();
+    });
+});
+
+describe('Gdk Events', function () {
+    beforeAll(function () {
+        Gtk.init(null);
+    });
+
+    it('can construct generic', function () {
+        expect(() => new Gdk.Event()).toThrow();
+
+        const event = new Gdk.Event(Gdk.EventType.KEY_PRESS);
+        expect(event.constructor.$gtype).toBe(GObject.type_from_name('GdkEvent'));
+        expect(event.type).toBe(Gdk.EventType.KEY_PRESS);
+        expect(event.any.type).toBe(Gdk.EventType.KEY_PRESS);
+        expect(event.key.type).toBe(Gdk.EventType.KEY_PRESS);
+        expect(event.selection.type).toBe(Gdk.EventType.KEY_PRESS);
+
+        expect(event.any.constructor.name).toBe('Gdk_EventAny');
+        expect(event.expose.constructor.name).toBe('Gdk_EventExpose');
+        expect(event.visibility.constructor.name).toBe('Gdk_EventVisibility');
+        expect(event.motion.constructor.name).toBe('Gdk_EventMotion');
+        expect(event.button.constructor.name).toBe('Gdk_EventButton');
+        expect(event.touch.constructor.name).toBe('Gdk_EventTouch');
+        expect(event.scroll.constructor.name).toBe('Gdk_EventScroll');
+        expect(event.key.constructor.name).toBe('Gdk_EventKey');
+        expect(event.crossing.constructor.name).toBe('Gdk_EventCrossing');
+        expect(event.focus_change.constructor.name).toBe('Gdk_EventFocus');
+        expect(event.configure.constructor.name).toBe('Gdk_EventConfigure');
+        expect(event.property.constructor.name).toBe('Gdk_EventProperty');
+        expect(event.selection.constructor.name).toBe('Gdk_EventSelection');
+        expect(event.owner_change.constructor.name).toBe('Gdk_EventOwnerChange');
+        expect(event.proximity.constructor.name).toBe('Gdk_EventProximity');
+        expect(event.dnd.constructor.name).toBe('Gdk_EventDND');
+        expect(event.window_state.constructor.name).toBe('Gdk_EventWindowState');
+        expect(event.setting.constructor.name).toBe('Gdk_EventSetting');
+        expect(event.grab_broken.constructor.name).toBe('Gdk_EventGrabBroken');
+        expect(event.touchpad_swipe.constructor.name).toBe('Gdk_EventTouchpadSwipe');
+        expect(event.touchpad_pinch.constructor.name).toBe('Gdk_EventTouchpadPinch');
+        expect(event.pad_button.constructor.name).toBe('Gdk_EventPadButton');
+        expect(event.pad_axis.constructor.name).toBe('Gdk_EventPadAxis');
+        expect(event.pad_group_mode.constructor.name).toBe('Gdk_EventPadGroupMode');
+
+        expect(event.It$anInvalidField).toBeUndefined();
+    });
+
+    it('can set generic properties', function () {
+        const event = new Gdk.Event(Gdk.EventType.MOTION_NOTIFY);
+        expect(event.type).toBe(Gdk.EventType.MOTION_NOTIFY);
+        expect(event.motion.x).toBe(0);
+        expect(event.motion.y).toBe(0);
+        expect(() => (event.motion.window = 20)).toThrow();
+
+        const win = new Gtk.OffscreenWindow();
+        win.realize();
+        event.motion.window = win.get_window();
+        expect(event.motion.window).toBe(win.get_window());
+        event.motion.window = null;
+        expect(event.motion.window).toBeNull();
+
+        const key = new Gdk.EventKey();
+        event.key = key;
+        expect(event.key).toEqual(key);
+    });
+
+    it('can construct specific with property', function () {
+        const event = new Gdk.EventMotion();
+        expect(event.type).toBe(0);
+        expect(event.x).toBe(0);
+        expect(event.y).toBe(0);
+        expect(() => (event.window = 20)).toThrow();
+
+        const win = new Gtk.OffscreenWindow();
+        win.realize();
+        event.window = win.get_window();
+        expect(event.window).toBe(win.get_window());
+        event.window = null;
+        expect(event.window).toBeNull();
+    });
+
+    it('can construct specific with property', function () {
+        const win = new Gtk.OffscreenWindow();
+        win.realize();
+        const event = new Gdk.EventMotion({x: 3.1, y: 1.2, window: win.get_window()});
+        expect(event.x).toBe(3.1);
+        expect(event.y).toBe(1.2);
+        expect(event.window).toBe(win.get_window());
     });
 });

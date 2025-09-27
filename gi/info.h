@@ -1325,6 +1325,14 @@ class InfoOperations<Wrapper, InfoTag::UNION>
     }
 
  public:
+    using FieldsIterator =
+        InfoIterator<GIUnionInfo*, InfoTag::FIELD, gi_union_info_get_n_fields,
+                     gi_union_info_get_field>;
+    [[nodiscard]]
+    FieldsIterator fields() const {
+        return FieldsIterator{ptr()};
+    }
+
     using MethodsIterator =
         InfoIterator<GIUnionInfo*, InfoTag::FUNCTION,
                      gi_union_info_get_n_methods, gi_union_info_get_method>;

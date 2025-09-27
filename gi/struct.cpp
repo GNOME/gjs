@@ -6,12 +6,18 @@
 
 #include <utility>  // for move
 
+#include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/PropertyAndElement.h>  // for JS_DefineFunction
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gi/boxed.h"
+#include "gi/gerror.h"
 #include "gi/struct.h"
+#include "gjs/atoms.h"
+#include "gjs/context-private.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 
 // clang-format off
@@ -48,7 +54,16 @@ StructPrototype::~StructPrototype() { GJS_DEC_COUNTER(boxed_prototype); }
 
 bool StructPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
                                    const GI::StructInfo info) {
-    return BoxedPrototype::define_class_impl(cx, in_object, info);
+    JS::RootedObject prototype{cx};
+    if (!BoxedPrototype::define_class_impl(cx, in_object, info, &prototype))
+        return false;
+
+    if (info.gtype() == G_TYPE_ERROR &&
+        !JS_DefineFunction(cx, prototype, "toString", &ErrorBase::to_string, 0,
+                           GJS_MODULE_PROP_FLAGS))
+        return false;
+
+    return true;
 }
 
 StructInstance::StructInstance(StructPrototype* prototype, JS::HandleObject obj)
@@ -56,7 +71,51 @@ StructInstance::StructInstance(StructPrototype* prototype, JS::HandleObject obj)
     GJS_INC_COUNTER(boxed_instance);
 }
 
-StructInstance::~StructInstance() { GJS_DEC_COUNTER(boxed_instance); }
+StructInstance::~StructInstance() {
+    if (m_owning_ptr && m_allocated_directly && gtype() == G_TYPE_VALUE)
+        g_value_unset(m_ptr.template as<GValue>());
+
+    GJS_DEC_COUNTER(boxed_instance);
+}
+
+bool StructInstance::constructor_impl(JSContext* cx, JS::HandleObject obj,
+                                      const JS::CallArgs& args) {
+    if (gtype() == G_TYPE_VARIANT) {
+        // Short-circuit construction for GVariants by calling into the JS
+        // packing function
+        const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        if (!invoke_static_method(cx, obj, atoms.new_internal(), args))
+            return false;
+
+        // The return value of GLib.Variant.new_internal() gets its own
+        // BoxedInstance, and the one we're setting up in this constructor is
+        // discarded.
+        debug_lifecycle(
+            "Boxed construction delegated to GVariant constructor, boxed "
+            "object discarded");
+
+        return true;
+    }
+
+    if (!BoxedInstance::constructor_impl(cx, obj, args))
+        return false;
+
+    // Define the expected Error properties
+    if (gtype() == G_TYPE_ERROR) {
+        JS::RootedObject gerror(cx, &args.rval().toObject());
+        if (!gjs_define_error_properties(cx, gerror))
+            return false;
+    }
+
+    return true;
+}
+
+static bool define_extra_error_properties(JSContext* cx, JS::HandleObject obj) {
+    StructBase* priv = StructBase::for_js(cx, obj);
+    if (priv->gtype() != G_TYPE_ERROR)
+        return true;
+    return gjs_define_error_properties(cx, obj);
+}
 
 /*
  * StructInstance::new_for_c_struct:
@@ -70,12 +129,19 @@ StructInstance::~StructInstance() { GJS_DEC_COUNTER(boxed_instance); }
 JSObject* StructInstance::new_for_c_struct(JSContext* cx,
                                            const GI::StructInfo info,
                                            void* gboxed) {
-    return new_for_c_struct_impl(cx, info, gboxed);
+    JS::RootedObject obj{cx, new_for_c_struct_impl(cx, info, gboxed)};
+    if (!obj || !define_extra_error_properties(cx, obj))
+        return nullptr;
+    return obj;
 }
 
 JSObject* StructInstance::new_for_c_struct(JSContext* cx,
                                            const GI::StructInfo info,
                                            void* gboxed,
                                            Boxed::NoCopy no_copy) {
-    return new_for_c_struct_impl(cx, info, gboxed, std::move(no_copy));
+    JS::RootedObject obj{
+        cx, new_for_c_struct_impl(cx, info, gboxed, std::move(no_copy))};
+    if (!obj || !define_extra_error_properties(cx, obj))
+        return nullptr;
+    return obj;
 }
