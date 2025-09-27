@@ -36,6 +36,7 @@
     <file>modules/sideEffect2.js</file>
     <file>modules/sideEffect3.js</file>
     <file>modules/sideEffect4.js</file>
+    <file>modules/sloppy.js</file>
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>

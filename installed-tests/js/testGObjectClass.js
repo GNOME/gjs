@@ -11,6 +11,9 @@ const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Gtk = imports.gi.Gtk;
 
+imports.searchPath.unshift('resource:///org/gjs/jsunit/modules');
+const {setPropertyInSloppyMode} = imports.sloppy;
+
 // Sometimes tests pass if we are comparing two inaccurate values in JS with
 // each other. That's fine for now. Then we just have to suppress the warnings.
 function warn64(func, ...args) {
@@ -356,9 +359,14 @@ describe('GObject class with decorator', function () {
         expect(myInstance3.construct).toEqual('quz');
     });
 
-    it('does not allow changing CONSTRUCT_ONLY properties', function () {
-        myInstance.construct = 'val';
+    it('does not allow changing CONSTRUCT_ONLY properties in sloppy mode', function () {
+        setPropertyInSloppyMode(myInstance, 'construct', 'val');
         expect(myInstance.construct).toEqual('default');
+    });
+
+    it('throws when setting CONSTRUCT_ONLY properties in strict mode', function () {
+        'use strict';
+        expect(() => (myInstance.construct = 'val')).toThrow();
     });
 
     it('has a name', function () {
@@ -794,9 +802,14 @@ describe('GObject class with custom constructor', function () {
         expect(myInstance3.construct).toEqual('quz');
     });
 
-    it('does not allow changing CONSTRUCT_ONLY properties', function () {
-        myInstance.construct = 'val';
+    it('does not allow changing CONSTRUCT_ONLY properties in sloppy mode', function () {
+        setPropertyInSloppyMode(myInstance, 'construct', 'val');
         expect(myInstance.construct).toEqual('default');
+    });
+
+    it('does not allow changing CONSTRUCT_ONLY properties in strict mode', function () {
+        'use strict';
+        expect(() => (myInstance.construct = 'val')).toThrow();
     });
 
     it('has a name', function () {
