@@ -303,11 +303,11 @@ describe('Gtk 4', function () {
             expect(() => new Gdk.Event()).toThrowError(/Couldn't find a constructor/);
         });
 
-        xit('Actions added via Gtk.WidgetClass.add_action() should not crash', function () {
+        it('Actions added via Gtk.WidgetClass.add_action() should not crash', function () {
             const custom = new CustomActionWidget();
             custom.activate_action('custom.action', null);
             expect(custom.action).toEqual(42);
-        }).pend('https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/3796');
+        });
 
         it('Gdk.NoSelection section returns valid start/end values', function () {
             if (!Gtk.NoSelection.prototype.get_section)

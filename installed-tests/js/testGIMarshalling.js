@@ -574,52 +574,6 @@ describe('C array with length', function () {
         expect(array).toEqual([-2, -1, 0, 1, 2]);
     });
 
-    it('can be an in-out argument with in length', function () {
-        if (!GIMarshallingTests.array_inout_length_in)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
-        const array = GIMarshallingTests.array_inout_length_in([-1, 0, 1, 2]);
-        expect(array).toEqual([-2, -1, 1, 2]);
-    });
-
-    xit('can be an out argument with in-out length', function () {
-        const array = GIMarshallingTests.array_out_length_inout(5);
-        expect(array).toEqual([-2, -4, -6, 8, -10, -12]);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
-
-    it('cannot be an out argument with in-out length', function () {
-        // TODO(3v1n0): remove this test when fixing
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
-        if (!GIMarshallingTests.array_out_length_inout)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
-        expect(() => GIMarshallingTests.array_out_length_inout(5)).toThrow();
-    });
-
-    xit('can be an in-out argument with out length', function () {
-        const array = GIMarshallingTests.array_inout_length_out([-1, 0, 1, 2]);
-        expect(array).toEqual([-2, -1, 0, 1, 2]);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
-
-    it('cannot be an in-out argument with out length', function () {
-        // TODO(3v1n0): remove this test when fixing
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
-        if (!GIMarshallingTests.array_inout_length_out)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
-        expect(() => GIMarshallingTests.array_inout_length_out([-1, 0, 1, 2])).toThrow();
-    });
-
-    xit('can be an out argument with in length', function () {
-        const array = GIMarshallingTests.array_out_length_in([-1, 0, 1, 2]);
-        expect(array).toEqual([-2, 0, -2, -4]);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/560');
-
-    it('cannot be an out argument with in length', function () {
-        // TODO(3v1n0): remove this test when fixing
-        // https://gitlab.gnome.org/GNOME/gjs/-/issues/560
-        if (!GIMarshallingTests.array_out_length_in)
-            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
-        expect(() => GIMarshallingTests.array_out_length_in([-1, 0, 1, 2])).toThrow();
-    });
-
     it('can be an out argument along with other arguments', function () {
         let [array, sum] = GIMarshallingTests.array_out_etc(9, 5);
         expect(sum).toEqual(14);
@@ -711,10 +665,7 @@ describe('Exhaustive test of UTF-8 sequences', function () {
             const testFunction = returnMode => {
                 const commonName = 'array_utf8';
                 const funcName = [arrayKind, commonName, transfer, returnMode].join('_');
-                const func = GIMarshallingTests[funcName];
-                if (!func)  // FIXME
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection-tests/-/merge_requests/11');
-                return func;
+                return GIMarshallingTests[funcName];
             };
 
             ['out', 'return'].forEach(returnMode =>
@@ -867,10 +818,7 @@ describe('Array of GStrv', function () {
             const testFunction = returnMode => {
                 const commonName = 'array_of_gstrv_transfer';
                 const funcName = [arrayKind, commonName, transfer, returnMode].join('_');
-                const func = GIMarshallingTests[funcName];
-                if (!func)
-                    pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/407');
-                return func;
+                return GIMarshallingTests[funcName];
             };
 
             ['out', 'return'].forEach(returnMode =>
@@ -2086,7 +2034,7 @@ describe('Static virtual functions', function () {
     beforeEach(function () {
         if (!StaticVFuncTester) {
             if (GIMarshallingTests.Object.vfunc_static_name)
-                pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
+                pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/543');
         }
     });
 
@@ -2361,7 +2309,7 @@ describe('GObject properties', function () {
         obj = new GIMarshallingTests.PropertiesObject();
     });
 
-    function testPropertyGetSet(type, value1, value2, skip = false) {
+    function testPropertyGetSet(type, value1, value2) {
         const snakeCase = `some_${type}`;
         const paramCase = snakeCase.replaceAll('_', '-');
         const camelCase = snakeCase.replace(/(_\w)/g,
@@ -2369,8 +2317,6 @@ describe('GObject properties', function () {
 
         [snakeCase, paramCase, camelCase].forEach(propertyName => {
             it(`gets and sets a ${type} property as ${propertyName}`, function () {
-                if (skip)
-                    pending(skip);
                 const handler = jasmine.createSpy(`handle-${paramCase}`);
                 const id = obj.connect(`notify::${paramCase}`, handler);
 
@@ -2515,7 +2461,7 @@ describe('GObject properties', function () {
         expect(() => (obj.some_readonly = 35)).toThrow();
     });
 
-    xit('allows to set/get deprecated properties', function () {
+    it('allows to set/get deprecated properties', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*GObject property*.some-deprecated-int is deprecated*');
         obj.some_deprecated_int = 35;
@@ -2527,7 +2473,7 @@ describe('GObject properties', function () {
         expect(obj.some_deprecated_int).toBe(35);
         GLib.test_assert_expected_messages_internal('Gjs', 'testGIMarshalling.js', 0,
             'testAllowToSetGetDeprecatedProperties');
-    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/merge_requests/410');
+    });
 
     const JSOverridingProperty = GObject.registerClass(
         class Overriding extends GIMarshallingTests.PropertiesObject {
@@ -2631,7 +2577,7 @@ describe('GObject properties accessors', function () {
         obj = new GIMarshallingTests.PropertiesAccessorsObject();
     });
 
-    function testPropertyGetSet(type, value1, value2, skip = false) {
+    function testPropertyGetSet(type, value1, value2) {
         const snakeCase = `some_${type}`;
         const paramCase = snakeCase.replaceAll('_', '-');
         const camelCase = snakeCase.replace(/(_\w)/g,
@@ -2639,8 +2585,6 @@ describe('GObject properties accessors', function () {
 
         [snakeCase, paramCase, camelCase].forEach(propertyName => {
             it(`gets and sets a ${type} property as ${propertyName}`, function () {
-                if (skip)
-                    pending(skip);
                 obj[propertyName] = value1;
                 expect(obj[propertyName]).toEqual(value1);
                 obj[propertyName] = value2;
@@ -2671,11 +2615,9 @@ describe('GObject properties accessors', function () {
     testPropertyGetSet('ulong', 42, 64);
     testPropertyGetSet('int64', 42, 64);
     testPropertyGetSet('int64', Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
-    testPropertyGetSetBigInt('int64', BigIntLimits.int64.min, BigIntLimits.int64.max,
-        'https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/524');
+    testPropertyGetSetBigInt('int64', BigIntLimits.int64.min, BigIntLimits.int64.max);
     testPropertyGetSet('uint64', 42, 64);
-    testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax,
-        'https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/524');
+    testPropertyGetSetBigInt('uint64', BigIntLimits.int64.max, BigIntLimits.int64.umax);
     testPropertyGetSet('string', 'Gjs', 'is cool!');
 
     it('get and sets out-of-range values throws', function () {

@@ -1195,7 +1195,7 @@ describe('Life, the Universe and Everything', function () {
                 const byteArray2 = Uint8Array.from('efgh', c => c.charCodeAt(0));
                 t.byteArray = byteArray2;
                 expect(t.byteArray).toBe(byteArray2);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/276');
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/715');
         });
 
         describe('Object-valued GProperty', function () {

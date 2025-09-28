@@ -995,7 +995,7 @@ describe('GObject virtual function', function () {
 
     it('supports static methods', function () {
         if (!Gio.Icon.vfunc_from_tokens)
-            pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/543');
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
@@ -1013,7 +1013,7 @@ describe('GObject virtual function', function () {
 
     it('must be static for methods', function () {
         if (!Gio.Icon.vfunc_from_tokens)
-            pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/543');
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
@@ -1277,8 +1277,6 @@ describe('Property bindings', function () {
     });
 
     it('can be set up as a group', function () {
-        if (GObject.BindingGroup === undefined)
-            pending('GLib version too old');
         const group = new GObject.BindingGroup({source: a});
         group.bind('string', b, 'string', GObject.BindingFlags.NONE);
         a.string = 'foo';
@@ -1287,8 +1285,6 @@ describe('Property bindings', function () {
     });
 
     it('can be set up as a group with custom mappings', function () {
-        if (GObject.BindingGroup === undefined)
-            pending('GLib version too old');
         const group = new GObject.BindingGroup({source: a});
         group.bind_full('bool', b, 'string', GObject.BindingFlags.NONE,
             (bind, source) => [true, `${source}`],

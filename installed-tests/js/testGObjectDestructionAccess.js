@@ -739,5 +739,5 @@ describe('GObject with toggle references', function () {
         GjsTestTools.clear_saved();
         System.gc();
         expect(GjsTestTools.get_weak()).toBeNull();
-    }).pend('Flaky, see https://gitlab.gnome.org/GNOME/gjs/-/issues/NNN');
+    }).pend('Flaky, see https://gitlab.gnome.org/GNOME/gjs/-/issues/568');
 });
