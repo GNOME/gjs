@@ -1853,7 +1853,7 @@ describe('Life, the Universe and Everything', function () {
         const testCallback = jasmine.createSpy('testCallback');
         o.function2(prio, cancel, testCallback, (obj, res) => {
             expect(obj).toBe(o);
-            expect(o.function2_finish(res)).toEqual([true, null]);
+            expect(o.function2_finish(res)).toEqual([true, true, null]);
             expect(testCallback).toHaveBeenCalledTimes(1);
             done();
         });

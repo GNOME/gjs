@@ -644,6 +644,12 @@ describe('C array with length', function () {
             GIMarshallingTests.cleanup_unaligned_buffer();
         });
     }
+
+    it('supports optional inout array with length', function () {
+        expect(GIMarshallingTests.length_array_utf8_optional_inout(['🅰', 'β', 'c', 'd']))
+            .toEqual(['a', 'b', '¢', '🔠']);
+        expect(GIMarshallingTests.length_array_utf8_optional_inout([])).toEqual(['a', 'b']);
+    });
 });
 
 describe('Zero-terminated C array', function () {
