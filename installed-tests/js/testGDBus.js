@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-const {Gio, GjsTestTools, GLib, GioUnix} = imports.gi;
+import Gio from 'gi://Gio';
+import GjsTestTools from 'gi://GjsTestTools';
+import GLib from 'gi://GLib';
+import GioUnix from 'gi://GioUnix';
 
 /* The methods list with their signatures.
  *

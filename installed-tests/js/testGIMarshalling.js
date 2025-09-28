@@ -6,15 +6,11 @@
 // SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
 // SPDX-FileCopyrightText: 2019, 2024 Philip Chimento <philip.chimento@gmail.com>
 
-// Load overrides for GIMarshallingTests
-imports.overrides.searchPath.unshift('resource:///org/gjs/jsunit/modules/overrides');
-
-const GIMarshallingTests = imports.gi.GIMarshallingTests;
-
 // We use Gio and GLib to have some objects that we know exist
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
+import GIMarshallingTests from 'gi://GIMarshallingTests';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
 
 // Some helpers to cut down on repetitive marshalling tests.
 // - options.omit: the test doesn't exist, don't create a test case
@@ -2329,42 +2325,6 @@ describe('GError', function () {
     });
 });
 
-describe('Overrides', function () {
-    it('can add constants', function () {
-        expect(GIMarshallingTests.OVERRIDES_CONSTANT).toEqual(7);
-    });
-
-    it('can override a struct method', function () {
-        const struct = new GIMarshallingTests.OverridesStruct();
-        expect(struct.method()).toEqual(6);
-    });
-
-    it('returns the overridden struct', function () {
-        const obj = GIMarshallingTests.OverridesStruct.returnv();
-        expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesStruct);
-    });
-
-    it('can override an object constructor', function () {
-        const obj = new GIMarshallingTests.OverridesObject(42);
-        expect(obj.num).toEqual(42);
-    });
-
-    it('can override an object method', function () {
-        const obj = new GIMarshallingTests.OverridesObject();
-        expect(obj.method()).toEqual(6);
-    });
-
-    it('returns the overridden object', function () {
-        const obj = GIMarshallingTests.OverridesObject.returnv();
-        expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesObject);
-    });
-
-    it('returns the overridden object from a C constructor', function () {
-        const obj = GIMarshallingTests.OverridesObject.new();
-        expect(obj).toBeInstanceOf(GIMarshallingTests.OverridesObject);
-    });
-});
-
 describe('Filename', function () {
     testReturnValue('filename_list', []);
 });
@@ -2615,7 +2575,7 @@ describe('GObject properties', function () {
         expect(overriding.intValue).toBe(35);
         expect(intHandler).not.toHaveBeenCalled();
 
-        overriding.someInt = 85;
+        expect(() => (overriding.someInt = 85)).toThrowError(TypeError);
         expect(overriding['some-int']).toBe(45);
         expect(overriding.someInt).toBe(35);
         expect(overriding.some_int).toBeUndefined();

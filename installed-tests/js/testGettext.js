@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2015 Endless Mobile, Inc.
 
-const Gettext = imports.gettext;
+import Gettext from 'gettext';
 
 describe('Gettext module', function () {
     // We don't actually want to mess with the locale, so just use setlocale's

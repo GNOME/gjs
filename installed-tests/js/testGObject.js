@@ -6,8 +6,10 @@
 // except for the class machinery, interface machinery, and GObject.ParamSpec,
 // which are big enough to get their own files.
 
-const {GLib, GObject, GjsTestTools} = imports.gi;
-const {system: System} = imports;
+import GjsTestTools from 'gi://GjsTestTools';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import System from 'system';
 
 const TestObj = GObject.registerClass({
     Properties: {

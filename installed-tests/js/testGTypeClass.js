@@ -3,8 +3,8 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 
 // We use Gio to have some objects that we know exist
-const Gio = imports.gi.Gio;
-const GObject = imports.gi.GObject;
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
 
 describe('Looking up param specs', function () {
     let p1, p2;

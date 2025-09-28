@@ -2,7 +2,12 @@
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
 // SPDX-FileCopyrightText: 2019, 2023 Philip Chimento <philip.chimento@gmail.com>
 
-const GLib = imports.gi.GLib;
+import GLib from 'gi://GLib';
+
+let GLibUnix;
+try {
+    GLibUnix = (await import('gi://GLibUnix')).default;
+} catch {}
 
 describe('GVariant constructor', function () {
     it('constructs a string variant', function () {
@@ -396,11 +401,6 @@ describe('GLib.MatchInfo', function () {
 });
 
 describe('GLibUnix functionality', function () {
-    let GLibUnix;
-    try {
-        GLibUnix = imports.gi.GLibUnix;
-    } catch {}
-
     beforeEach(function () {
         if (!GLibUnix)
             pending('Not supported platform');
@@ -421,11 +421,8 @@ describe('GLibUnix functionality', function () {
 });
 
 describe('GLibUnix compatibility fallback', function () {
-    // Only test this if GLibUnix is available
-    const skip = imports.gi.versions.GLibUnix !== '2.0';
-
     beforeEach(function () {
-        if (skip)
+        if (!GLibUnix)
             pending('Not supported platform');
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*GLib.* has been moved to a separate platform-specific library. ' +

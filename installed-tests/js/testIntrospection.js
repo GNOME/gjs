@@ -5,10 +5,17 @@
 
 // Various tests having to do with how introspection is implemented in GJS
 
-imports.gi.versions.Gdk = '3.0';
-imports.gi.versions.Gtk = '3.0';
-const {Gdk, Gio, GLib, GObject, Gtk} = imports.gi;
-const System = imports.system;
+import Gdk from 'gi://Gdk?version=3.0';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk?version=3.0';
+import System from 'system';
+
+let GioUnix;
+try {
+    GioUnix = (await import('gi://GioUnix')).default;
+} catch {}
 
 describe('GLib.DestroyNotify parameter', function () {
     it('throws when encountering a GDestroyNotify not associated with a callback', function () {
@@ -212,11 +219,8 @@ describe('Complete enumeration of GIRepositoryNamespace (new_enumerate)', functi
 });
 
 describe('Backwards compatibility for GLib/Gio platform specific GIRs', function () {
-    // Only test this if GioUnix is available
-    const skip = imports.gi.versions.GioUnix !== '2.0';
-
     it('GioUnix objects are looked up in GioUnix, not Gio', function () {
-        if (skip) {
+        if (!GioUnix) {
             pending('GioUnix required for this test');
             return;
         }
@@ -233,7 +237,7 @@ describe('Backwards compatibility for GLib/Gio platform specific GIRs', function
     });
 
     it('GioUnix functions are looked up in GioUnix, not Gio', function () {
-        if (skip) {
+        if (!GioUnix) {
             pending('GioUnix required for this test');
             return;
         }
@@ -249,7 +253,7 @@ describe('Backwards compatibility for GLib/Gio platform specific GIRs', function
     });
 
     it("doesn't print the message if the type isn't resolved directly", function () {
-        if (skip) {
+        if (!GioUnix) {
             pending('GioUnix required for this test');
             return;
         }

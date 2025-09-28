@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
 
-const System = imports.system;
-
-imports.gi.versions.Gtk = '3.0';
-
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk?version=3.0';
+import System from 'system';
 
 imports.searchPath.unshift('resource:///org/gjs/jsunit/modules');
 const {setPropertyInSloppyMode} = imports.sloppy;
@@ -365,7 +362,6 @@ describe('GObject class with decorator', function () {
     });
 
     it('throws when setting CONSTRUCT_ONLY properties in strict mode', function () {
-        'use strict';
         expect(() => (myInstance.construct = 'val')).toThrow();
     });
 
@@ -808,7 +804,6 @@ describe('GObject class with custom constructor', function () {
     });
 
     it('does not allow changing CONSTRUCT_ONLY properties in strict mode', function () {
-        'use strict';
         expect(() => (myInstance.construct = 'val')).toThrow();
     });
 
@@ -1638,7 +1633,7 @@ describe('GObject class with JSObject signals', function () {
 
         let obj = {
             foo: [1, 2, 3],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             desc: 'test',
             date: new Date(),
         };
@@ -1652,7 +1647,7 @@ describe('GObject class with JSObject signals', function () {
 
         let obj = {
             foo: [9, 8, 7, 'a', 'b', 'c'],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             desc: 'test',
             date: new RegExp('\\w+'),
         };
@@ -1663,7 +1658,7 @@ describe('GObject class with JSObject signals', function () {
     it('re-emits signal with same JSObject parameter', function () {
         let obj = {
             foo: [9, 8, 7, 'a', 'b', 'c'],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             func: arg => {
                 return {ret: [arg]};
             },
@@ -1726,7 +1721,7 @@ describe('GObject class with JSObject signals', function () {
     it('returns a JSObject', function () {
         let data = {
             foo: [9, 8, 7, 'a', 'b', 'c'],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             func: arg => {
                 return {ret: [arg]};
             },

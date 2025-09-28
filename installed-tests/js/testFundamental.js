@@ -2,7 +2,8 @@
 // SPDX-FileCopyrightText: 2013 Lionel Landwerlin <llandwerlin@gmail.com>
 // SPDX-FileCopyrightText: 2021 Marco Trevisan <marco.trevisan@canonical.com>
 
-const {GObject, Regress} = imports.gi;
+import GObject from 'gi://GObject';
+import Regress from 'gi://Regress';
 
 const TestObj = GObject.registerClass({
     Signals: {

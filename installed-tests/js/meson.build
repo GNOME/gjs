@@ -19,44 +19,40 @@ subdir('libgjstesttools')
 
 jasmine_tests = [
     'self',
+    'Async',
+    'AsyncMainloop',
     'Cairo',
+    'Console',
+    'Encoding',
+    'ESModules',
     'Exceptions',
-    'Format',
     'Fundamental',
     'Gettext',
     'GIMarshalling',
     'Gio',
     'GLib',
+    'GLibLogWriter',
+    'Global',
     'GObject',
     'GObjectClass',
     'GObjectInterface',
     'GObjectValue',
     'GTypeClass',
-    'Importer',
-    'Importer2',
     'Introspection',
-    'Lang',
-    'LegacyByteArray',
-    'LegacyClass',
-    'LegacyGObject',
-    'Mainloop',
     'Namespace',
-    'Package',
     'ParamSpec',
     'Print',
     'Promise',
     'Regress',
-    'Signals',
     'System',
-    'Tweener',
+    'Timers',
+    'Utility',
     'WarnLib',
+    'WeakRef',
 ]
 
 if not get_option('skip_gtk_tests')
-    jasmine_tests += [
-        'GObjectDestructionAccess',
-        'LegacyGtk',
-    ]
+    jasmine_tests += 'GObjectDestructionAccess'
 
     if have_gtk3
         jasmine_tests += 'Gtk3'
@@ -86,8 +82,9 @@ tests_dependencies = [
 foreach test : jasmine_tests
     test_file = files('test@0@.js'.format(test))
 
-    test(test, minijasmine, args: test_file, depends: tests_dependencies,
-        env: tests_environment, protocol: 'tap', suite: 'JS')
+    test(test, minijasmine, args: [test_file, '-m'],
+        depends: tests_dependencies, env: tests_environment, protocol: 'tap',
+        suite: 'JS')
 
     test_description_subst = {
         'name': 'test@0@.js'.format(test),
@@ -115,7 +112,11 @@ dbus_test_file = files('testGDBus.js')
 
 if not get_option('skip_dbus_tests')
     test('GDBus', dbus_run_session,
-        args: ['--config-file', bus_config, '--', minijasmine, dbus_test_file],
+        args: [
+            '--config-file', bus_config,
+            '--',
+            minijasmine, dbus_test_file, '-m'
+        ],
         env: tests_environment, protocol: 'tap', suite: 'dbus',
         depends: tests_dependencies)
 endif
@@ -135,35 +136,41 @@ if get_option('installed_tests')
     install_data(dbus_test_file, install_dir: installed_js_tests_dir)
 endif
 
-# tests using ES modules are also separate because they need an extra
-# minijasmine flag
+# tests that require the legacy importer are also separate because they need to
+# invoke minijasmine without the -m flag
 
-modules_tests = [
-    'Async',
-    'CairoModule',
-    'Console',
-    'ESModules',
-    'AsyncMainloop',
-    'Encoding',
-    'GLibLogWriter',
-    'Global',
-    'Timers',
-    'Utility',
-    'WeakRef',
+legacy_importer_tests = [
+    'Format',
+    'Importer',
+    'Importer2',
+    'Lang',
+    'LegacyByteArray',
+    'LegacyCairo',
+    'LegacyClass',
+    'LegacyGObject',
+    'Mainloop',
+    'Overrides',
+    'Package',
+    'Signals',
+    'Tweener',
 ]
 
-foreach test : modules_tests
+if not get_option('skip_gtk_tests')
+    legacy_importer_tests += 'LegacyGtk'
+endif
+
+foreach test : legacy_importer_tests
     test_file = files('test@0@.js'.format(test))
 
-    test(test, minijasmine, args: [test_file, '-m'], env: tests_environment,
-        protocol: 'tap', suite: 'JS')
+    test(test, minijasmine, args: test_file, depends: tests_dependencies,
+        env: tests_environment, protocol: 'tap', suite: 'JS')
 
     esm_test_description_subst = {
         'name': 'test@0@.js'.format(test),
         'installed_tests_execdir': prefix / installed_tests_execdir,
     }
     configure_file(configuration: esm_test_description_subst,
-        input: '../minijasmine-module.test.in',
+        input: '../minijasmine-legacy-importer.test.in',
         output: 'test@0@.test'.format(test),
         install: get_option('installed_tests'),
         install_dir: installed_tests_metadir)

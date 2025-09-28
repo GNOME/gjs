@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Canonical, Ltd.
 
-imports.gi.versions.Gtk = '3.0';
-
-const {GLib, Gio, GjsTestTools, GObject, Gtk} = imports.gi;
-const {system: System} = imports;
+import Gio from 'gi://Gio';
+import GjsTestTools from 'gi://GjsTestTools';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk?version=3.0';
+import System from 'system';
 
 describe('Access to destroyed GObject', function () {
     let destroyedWindow;

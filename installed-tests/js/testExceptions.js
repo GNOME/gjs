@@ -2,7 +2,10 @@
 // SPDX-FileCopyrightText: 2013 Red Hat, Inc.
 // SPDX-FileCopyrightText: 2015 Endless Mobile, Inc.
 
-const {GIMarshallingTests, Gio, GLib, GObject} = imports.gi;
+import GIMarshallingTests from 'gi://GIMarshallingTests';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
 
 const Foo = GObject.registerClass({
     Properties: {

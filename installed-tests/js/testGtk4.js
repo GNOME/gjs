@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 
-imports.gi.versions.Gdk = '4.0';
-imports.gi.versions.Gtk = '4.0';
-
-const {Gdk, Gio, GObject, Gtk, GLib, GjsTestTools} = imports.gi;
-const System = imports.system;
+import Gdk from 'gi://Gdk?version=4.0';
+import Gio from 'gi://Gio';
+import GjsTestTools from 'gi://GjsTestTools';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk?version=4.0';
+import System from 'system';
 
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {

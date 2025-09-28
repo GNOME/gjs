@@ -3,13 +3,17 @@
 // SPDX-FileCopyrightText: 2008 Red Hat, Inc.
 // SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 
-const {Regress, Utility} = imports.gi;
-
 // We use Gio to have some objects that we know exist
-imports.gi.versions.Gtk = '3.0';
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
-const GObject = imports.gi.GObject;
+import Regress from 'gi://Regress';
+import Utility from 'gi://Utility';
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+
+let RegressUnix;
+try {
+    RegressUnix = (await import('gi://RegressUnix')).default;
+} catch {}
 
 function expectWarn64(callable) {
     GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
@@ -2560,12 +2564,8 @@ describe('Regress.Foo', function () {
 });
 
 describe('RegressUnix', function () {
-    let RegressUnix;
-    try {
-        ({RegressUnix} = imports.gi);
-    } catch (_) {
+    if (!RegressUnix)
         return;
-    }
 
     ['devt', 'gidt', 'pidt', 'socklent', 'uidt'].forEach(name => {
         it(`handles ${name}`, function () {

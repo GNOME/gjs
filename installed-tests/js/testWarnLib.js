@@ -4,7 +4,9 @@
 
 // File with tests from the WarnLib-1.0.gir test suite from GI
 
-const {Gio, GObject, WarnLib} = imports.gi;
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+import WarnLib from 'gi://WarnLib';
 
 describe('WarnLib', function () {
     // Calling matches() on an unpaired error used to JSUnit.assert:
