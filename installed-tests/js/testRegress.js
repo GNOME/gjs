@@ -2613,9 +2613,9 @@ describe('Boxed type return extra tests', function () {
 
 // Adapted from pygobject
 describe('UTF-8 strings invalid bytes tests', function () {
-    xit('handles invalid UTF-8 return values gracefully', function () {
+    it('handles invalid UTF-8 return values gracefully', function () {
         expect(() => Regress.test_array_of_non_utf8_strings()).toThrowError(TypeError);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
+    });
 });
 
 // Adapted from pygobject
