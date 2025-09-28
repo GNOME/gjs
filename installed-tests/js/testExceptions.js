@@ -313,4 +313,9 @@ describe('Interoperation with Error.isError', function () {
             Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'message');
         expect(Error.isError(err)).toBeTruthy();
     });
+
+    it('not an error', function () {
+        const err = new GIMarshallingTests.BoxedStruct();
+        expect(Error.isError(err)).toBeFalsy();
+    });
 });
