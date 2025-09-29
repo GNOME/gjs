@@ -19,6 +19,7 @@ export default defineConfig([
             'modules/internal/source-map/',
             'installed-tests/debugger/sourcemap*',
             'test/source-maps/',
+            'subprojects/',
         ],
     },
     {
