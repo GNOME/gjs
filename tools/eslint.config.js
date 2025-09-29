@@ -26,6 +26,39 @@ export default defineConfig([
         languageOptions: {
             sourceType: 'script',
         },
+        rules: {
+            // Override eslint-config-gnome no-restricted-properties
+            // Cannot merge into the existing rule:
+            // https://github.com/eslint/eslint/issues/17389
+            'no-restricted-properties': [
+                'error',
+                {
+                    object: 'imports',
+                    property: 'format',
+                    message: 'Use template strings',
+                },
+                {
+                    object: 'pkg',
+                    property: 'initFormat',
+                    message: 'Use template strings',
+                },
+                {
+                    object: 'Lang',
+                    property: 'copyProperties',
+                    message: 'Use Object.assign()',
+                },
+                {
+                    object: 'Lang',
+                    property: 'bind',
+                    message: 'Use arrow notation or Function.prototype.bind()',
+                },
+                {
+                    object: 'Lang',
+                    property: 'Class',
+                    message: 'Use ES6 classes',
+                },
+            ],
+        },
     },
     {
         files: [
