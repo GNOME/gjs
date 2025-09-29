@@ -27,6 +27,7 @@ export default defineConfig([
             sourceType: 'script',
         },
         rules: {
+            'no-prototype-builtins': 'error',
             // Override eslint-config-gnome no-restricted-properties
             // Cannot merge into the existing rule:
             // https://github.com/eslint/eslint/issues/17389

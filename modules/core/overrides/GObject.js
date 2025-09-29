@@ -342,7 +342,7 @@ function _registerGObjectType(klass) {
 
 function _interfaceInstanceOf(instance) {
     if (instance && typeof instance === 'object' &&
-        GObject.Interface.prototype.isPrototypeOf(this.prototype))
+        Object.prototype.isPrototypeOf.call(GObject.Interface.prototype, this.prototype))
         return GObject.type_is_a(instance, this);
 
     return false;
