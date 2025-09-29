@@ -38,7 +38,7 @@ describe('GType object', function () {
     it('has a read-only name', function () {
         try {
             GObject.TYPE_STRING.name = 'foo';
-        } catch (e) {
+        } catch {
         }
         expect(GObject.TYPE_STRING.name).toEqual('gchararray');
     });
@@ -46,7 +46,7 @@ describe('GType object', function () {
     it('has an undeletable name', function () {
         try {
             delete GObject.TYPE_STRING.name;
-        } catch (e) {
+        } catch {
         }
         expect(GObject.TYPE_STRING.name).toEqual('gchararray');
     });

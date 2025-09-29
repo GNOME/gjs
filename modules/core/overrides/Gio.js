@@ -364,7 +364,7 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
                 retval = new GLib.Variant(outSignature, retval);
             }
             invocation.return_value_with_unix_fd_list(retval, outFdList);
-        } catch (e) {
+        } catch {
             // if we don't do this, the other side will never see a reply
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
                 'Service implementation returned an incorrect value type');

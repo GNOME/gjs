@@ -1362,12 +1362,12 @@ describe('Auto accessor generation', function () {
             this._camelNameSetterCalled++;
         }
 
-        get ['kebab-name']() {
+        get 'kebab-name'() {
             this._kebabNameGetterCalled++;
             return 42;
         }
 
-        set ['kebab-name'](value) {
+        set 'kebab-name'(value) {
             this._kebabNameSetterCalled++;
         }
 

@@ -709,7 +709,7 @@ describe('GObject with toggle references', function () {
             threads = threads.slice(-50);
             try {
                 threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 1));
-            } catch (e) {
+            } catch {
                 // If creating the thread failed we're almost going out of memory
                 // so let's first wait for the ones allocated to complete.
                 threads.forEach(th => th.join());
