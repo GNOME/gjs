@@ -3,13 +3,17 @@
 // SPDX-FileCopyrightText: 2008 Red Hat, Inc.
 // SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 
-const {Regress, Utility} = imports.gi;
-
 // We use Gio to have some objects that we know exist
-imports.gi.versions.Gtk = '3.0';
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
-const GObject = imports.gi.GObject;
+import Regress from 'gi://Regress';
+import Utility from 'gi://Utility';
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+
+let RegressUnix;
+try {
+    RegressUnix = (await import('gi://RegressUnix')).default;
+} catch {}
 
 function expectWarn64(callable) {
     GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
@@ -1191,7 +1195,7 @@ describe('Life, the Universe and Everything', function () {
                 const byteArray2 = Uint8Array.from('efgh', c => c.charCodeAt(0));
                 t.byteArray = byteArray2;
                 expect(t.byteArray).toBe(byteArray2);
-            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/276');
+            }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/715');
         });
 
         describe('Object-valued GProperty', function () {
@@ -1849,7 +1853,7 @@ describe('Life, the Universe and Everything', function () {
         const testCallback = jasmine.createSpy('testCallback');
         o.function2(prio, cancel, testCallback, (obj, res) => {
             expect(obj).toBe(o);
-            expect(o.function2_finish(res)).toEqual([true, null]);
+            expect(o.function2_finish(res)).toEqual([true, true, null]);
             expect(testCallback).toHaveBeenCalledTimes(1);
             done();
         });
@@ -2505,15 +2509,25 @@ describe('Regress.Foo', function () {
         expect(o3.y).toBe(2.6);
         o2.add(o3);
         o3.add(o2);
-
-        const o4 = new Regress.FooBUnion();
-        o4.type = 77;
-        expect(o4.type).toBe(77);
-        o4.v = 7.777;
-        expect(o4.v).toBe(7.777);
-        o4.rect = o3;
-        expect(o4.rect).toBe(o3);
     });
+
+    xit('Primitive type union fields', function () {
+        const u = new Regress.FooBUnion();
+        expect(u.type).toBeDefined();
+        expect(u.v).toBeDefined();
+        u.type = 77;
+        expect(u.type).toBe(77);
+        u.v = 7.777;
+        expect(u.v).toBe(7.777);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/770');
+
+    xit('Union field that is a pointer to a boxed type', function () {
+        const s = Regress.FooBRect.new(-1.4, 2.6);
+        const u = new Regress.FooBUnion();
+        expect(u.rect).toBeDefined();
+        u.rect = s;
+        expect(u.rect).toBe(s);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/merge_requests/770');
 
     it('Rectangle instance', function () {
         const o1 = new Regress.FooRectangle({x: 0, y: 0, width: 10, height: 10});
@@ -2550,12 +2564,8 @@ describe('Regress.Foo', function () {
 });
 
 describe('RegressUnix', function () {
-    let RegressUnix;
-    try {
-        ({RegressUnix} = imports.gi);
-    } catch (_) {
+    if (!RegressUnix)
         return;
-    }
 
     ['devt', 'gidt', 'pidt', 'socklent', 'uidt'].forEach(name => {
         it(`handles ${name}`, function () {
@@ -2603,9 +2613,9 @@ describe('Boxed type return extra tests', function () {
 
 // Adapted from pygobject
 describe('UTF-8 strings invalid bytes tests', function () {
-    xit('handles invalid UTF-8 return values gracefully', function () {
+    it('handles invalid UTF-8 return values gracefully', function () {
         expect(() => Regress.test_array_of_non_utf8_strings()).toThrowError(TypeError);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/658');
+    });
 });
 
 // Adapted from pygobject

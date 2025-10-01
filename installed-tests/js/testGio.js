@@ -2,11 +2,13 @@
 // SPDX-FileCopyrightText: 2017 Patrick Griffis <tingping@tingping.se>
 // SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 
-const {GLib, Gio, GObject} = imports.gi;
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
 
 let GioUnix;
 try {
-    GioUnix = imports.gi.GioUnix;
+    GioUnix = (await import('gi://GioUnix')).default;
 } catch {}
 
 const Foo = GObject.registerClass({

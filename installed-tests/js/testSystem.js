@@ -5,8 +5,9 @@
 // SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2019 Canonical, Ltd.
 
-const System = imports.system;
-const {Gio, GObject} = imports.gi;
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+import System from 'system';
 
 describe('System.addressOf()', function () {
     it('gives different results for different objects', function () {

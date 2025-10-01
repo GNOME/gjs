@@ -33,16 +33,7 @@ class ResultImplementation;
 
 namespace Gjs {
 
-struct AutoErrorFuncs {
-    static GError* error_copy(GError* error) { return g_error_copy(error); }
-};
-
-// TODO(ptomato): AutoError could be more strict. Once we have an owned GError,
-// we probably don't need to be able to copy it. Note that Err(auto_error) with
-// current strictness is incorrect; you need to do Err(auto_error.release()).
-// https://gitlab.gnome.org/GNOME/gjs/-/issues/654
-struct AutoError
-    : AutoPointer<GError, GError, g_error_free, AutoErrorFuncs::error_copy> {
+struct AutoError : AutoPointer<GError, GError, g_error_free> {
     using BaseType::BaseType;
     using BaseType::operator=;
 

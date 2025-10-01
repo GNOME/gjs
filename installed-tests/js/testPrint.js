@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2022 Nasah Kuma <nasahnash19@gmail.com>
 
-imports.gi.versions.Gdk = '3.0';
-const Gdk = imports.gi.Gdk;
-const ByteArray = imports.byteArray;
+import Gdk from 'gi://Gdk?version=3.0';
+import GLib from 'gi://GLib';
+
 const {getPrettyPrintFunction} = imports._print;
 let prettyPrint = getPrettyPrintFunction(globalThis);
 
@@ -259,7 +259,7 @@ describe('prettyPrint', function () {
     });
 
     it('Uint8Array returned from introspected function', function () {
-        let a = ByteArray.fromString('⅜');
+        let [a] = GLib.locale_from_utf8('⅜', -1);
         expect(prettyPrint(a)).toEqual('[226, 133, 156]');
     });
 });

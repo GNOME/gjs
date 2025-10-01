@@ -2273,6 +2273,12 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
             if (type_tag == GI_TYPE_TAG_FILENAME)
                 return gjs_string_from_filename(cx, str, -1, value_out);
 
+            if (!g_utf8_validate(str, -1, nullptr)) {
+                gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                                 "String from C value is invalid UTF-8 and "
+                                 "cannot be safely stored");
+                return false;
+            }
             return gjs_string_from_utf8(cx, str, value_out);
         }
 

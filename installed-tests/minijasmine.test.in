@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
-# SPDX-FileCopyrightText: 2016 Philip Chimento <philip.chimento@gmail.com>
+# SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
 [Test]
 Type=session
-Exec=@installed_tests_execdir@/minijasmine @installed_tests_execdir@/js/@name@
+Exec=@installed_tests_execdir@/minijasmine @installed_tests_execdir@/js/@name@ -m
 Output=TAP

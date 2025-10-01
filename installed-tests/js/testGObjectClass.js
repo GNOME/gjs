@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
 
-const System = imports.system;
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk?version=3.0';
+import System from 'system';
 
-imports.gi.versions.Gtk = '3.0';
-
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-const GObject = imports.gi.GObject;
-const Gtk = imports.gi.Gtk;
+imports.searchPath.unshift('resource:///org/gjs/jsunit/modules');
+const {setPropertyInSloppyMode} = imports.sloppy;
 
 // Sometimes tests pass if we are comparing two inaccurate values in JS with
 // each other. That's fine for now. Then we just have to suppress the warnings.
@@ -356,9 +356,13 @@ describe('GObject class with decorator', function () {
         expect(myInstance3.construct).toEqual('quz');
     });
 
-    it('does not allow changing CONSTRUCT_ONLY properties', function () {
-        myInstance.construct = 'val';
+    it('does not allow changing CONSTRUCT_ONLY properties in sloppy mode', function () {
+        setPropertyInSloppyMode(myInstance, 'construct', 'val');
         expect(myInstance.construct).toEqual('default');
+    });
+
+    it('throws when setting CONSTRUCT_ONLY properties in strict mode', function () {
+        expect(() => (myInstance.construct = 'val')).toThrow();
     });
 
     it('has a name', function () {
@@ -794,9 +798,13 @@ describe('GObject class with custom constructor', function () {
         expect(myInstance3.construct).toEqual('quz');
     });
 
-    it('does not allow changing CONSTRUCT_ONLY properties', function () {
-        myInstance.construct = 'val';
+    it('does not allow changing CONSTRUCT_ONLY properties in sloppy mode', function () {
+        setPropertyInSloppyMode(myInstance, 'construct', 'val');
         expect(myInstance.construct).toEqual('default');
+    });
+
+    it('does not allow changing CONSTRUCT_ONLY properties in strict mode', function () {
+        expect(() => (myInstance.construct = 'val')).toThrow();
     });
 
     it('has a name', function () {
@@ -987,7 +995,7 @@ describe('GObject virtual function', function () {
 
     it('supports static methods', function () {
         if (!Gio.Icon.vfunc_from_tokens)
-            pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/543');
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
@@ -1005,7 +1013,7 @@ describe('GObject virtual function', function () {
 
     it('must be static for methods', function () {
         if (!Gio.Icon.vfunc_from_tokens)
-            pending('https://gitlab.gnome.org/GNOME/glib/-/merge_requests/4457');
+            pending('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/543');
         expect(() => GObject.registerClass({
             Implements: [Gio.Icon],
         }, class extends GObject.Object {
@@ -1269,8 +1277,6 @@ describe('Property bindings', function () {
     });
 
     it('can be set up as a group', function () {
-        if (GObject.BindingGroup === undefined)
-            pending('GLib version too old');
         const group = new GObject.BindingGroup({source: a});
         group.bind('string', b, 'string', GObject.BindingFlags.NONE);
         a.string = 'foo';
@@ -1279,8 +1285,6 @@ describe('Property bindings', function () {
     });
 
     it('can be set up as a group with custom mappings', function () {
-        if (GObject.BindingGroup === undefined)
-            pending('GLib version too old');
         const group = new GObject.BindingGroup({source: a});
         group.bind_full('bool', b, 'string', GObject.BindingFlags.NONE,
             (bind, source) => [true, `${source}`],
@@ -1358,12 +1362,12 @@ describe('Auto accessor generation', function () {
             this._camelNameSetterCalled++;
         }
 
-        get ['kebab-name']() {
+        get 'kebab-name'() {
             this._kebabNameGetterCalled++;
             return 42;
         }
 
-        set ['kebab-name'](value) {
+        set 'kebab-name'(value) {
             this._kebabNameSetterCalled++;
         }
 
@@ -1625,7 +1629,7 @@ describe('GObject class with JSObject signals', function () {
 
         let obj = {
             foo: [1, 2, 3],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             desc: 'test',
             date: new Date(),
         };
@@ -1639,7 +1643,7 @@ describe('GObject class with JSObject signals', function () {
 
         let obj = {
             foo: [9, 8, 7, 'a', 'b', 'c'],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             desc: 'test',
             date: new RegExp('\\w+'),
         };
@@ -1650,7 +1654,7 @@ describe('GObject class with JSObject signals', function () {
     it('re-emits signal with same JSObject parameter', function () {
         let obj = {
             foo: [9, 8, 7, 'a', 'b', 'c'],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             func: arg => {
                 return {ret: [arg]};
             },
@@ -1713,7 +1717,7 @@ describe('GObject class with JSObject signals', function () {
     it('returns a JSObject', function () {
         let data = {
             foo: [9, 8, 7, 'a', 'b', 'c'],
-            sub: {a: {}, 'b': this},
+            sub: {a: {}, 'b': globalThis},
             func: arg => {
                 return {ret: [arg]};
             },

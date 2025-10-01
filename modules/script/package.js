@@ -133,7 +133,7 @@ function init(params) {
         const bldPath = GLib.build_filenamev([bld, 'src']);
         try {
             moduledir = loadResource(bldPath, name);
-        } catch (e) {
+        } catch {
             try {
                 moduledir = loadResource(bldPath, _pkgname);
                 name = _pkgname;
@@ -165,7 +165,7 @@ function init(params) {
 
         try {
             moduledir = loadResource(pkgdatadir, name);
-        } catch (e) {
+        } catch {
             try {
                 moduledir = loadResource(pkgdatadir, _pkgname);
                 name = _pkgname;
@@ -185,7 +185,7 @@ function init(params) {
         let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
             `${name}.data.gresource`]));
         resource._register();
-    } catch (e) {
+    } catch {
         try {
             let resource = Gio.Resource.load(GLib.build_filenamev([pkgdatadir,
                 `${_pkgname}.data.gresource`]));
@@ -279,7 +279,7 @@ function checkSymbol(lib, ver, symbol) {
 
     try {
         Lib = imports.gi[lib];
-    } catch (e) {
+    } catch {
         return false;
     }
 

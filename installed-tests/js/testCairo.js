@@ -2,11 +2,13 @@
 // SPDX-FileCopyrightText: 2010 litl, LLC
 // SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 
-imports.gi.versions.Gdk = '3.0';
-imports.gi.versions.Gtk = '3.0';
-
-const Cairo = imports.cairo;
-const {Gdk, GIMarshallingTests, GLib, Gtk, Regress} = imports.gi;
+import Cairo from 'cairo';
+import Gdk from 'gi://Gdk?version=3.0';
+import giCairo from 'gi://cairo';
+import GIMarshallingTests from 'gi://GIMarshallingTests';
+import GLib from 'gi://GLib';
+import Gtk from 'gi://Gtk?version=3.0';
+import Regress from 'gi://Regress';
 
 function _ts(obj) {
     return obj.toString().slice(8, -1);
@@ -456,9 +458,7 @@ describe('Cairo', function () {
 });
 
 describe('Cairo imported via GI', function () {
-    const giCairo = imports.gi.cairo;
-
-    it('has the same functionality as imports.cairo', function () {
+    it('has the same functionality as cairo ES module', function () {
         const surface = new giCairo.ImageSurface(Cairo.Format.ARGB32, 1, 1);
         void new giCairo.Context(surface);
     });

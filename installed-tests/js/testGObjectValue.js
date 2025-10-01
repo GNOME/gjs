@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
-const {GLib, GObject, GIMarshallingTests, Regress} = imports.gi;
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import GIMarshallingTests from 'gi://GIMarshallingTests';
+import Regress from 'gi://Regress';
 
 const SIGNED_TYPES = ['schar', 'int', 'int64', 'long'];
 const UNSIGNED_TYPES = ['char', 'uchar', 'uint', 'uint64', 'ulong'];
@@ -44,8 +47,8 @@ describe('GObject value (GValue)', function () {
             });
         }
         if (type === 'object') {
-            const wasCreatingObject = this.creatingObject;
-            this.creatingObject = true;
+            const wasCreatingObject = globalThis.creatingObject;
+            globalThis.creatingObject = true;
             const props = ALL_TYPES.filter(e =>
                 (e !== 'object' || !wasCreatingObject) &&
                 e !== 'boxed' &&
@@ -58,7 +61,7 @@ describe('GObject value (GValue)', function () {
             ]).reduce((ac, a) => ({
                 ...ac, [`some-${a}`]: getDefaultContentByType(a),
             }), {});
-            delete this.creatingObject;
+            delete globalThis.creatingObject;
             return new GIMarshallingTests.PropertiesObject(props);
         }
         if (type === 'param') {

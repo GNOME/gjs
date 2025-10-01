@@ -3,7 +3,7 @@
 // SPDX-FileContributor: Authored by: Marco Trevisan <marco.trevisan@canonical.com>
 // SPDX-FileCopyrightText: 2022 Canonical, Ltd.
 
-const {GLib} = imports.gi;
+import GLib from 'gi://GLib';
 
 class SubPromise extends Promise {
     constructor(executor) {

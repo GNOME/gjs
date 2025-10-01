@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Canonical, Ltd.
 
-imports.gi.versions.Gtk = '3.0';
-
-const {GLib, Gio, GjsTestTools, GObject, Gtk} = imports.gi;
-const {system: System} = imports;
+import Gio from 'gi://Gio';
+import GjsTestTools from 'gi://GjsTestTools';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import Gtk from 'gi://Gtk?version=3.0';
+import System from 'system';
 
 describe('Access to destroyed GObject', function () {
     let destroyedWindow;
@@ -707,7 +709,7 @@ describe('GObject with toggle references', function () {
             threads = threads.slice(-50);
             try {
                 threads.push(GjsTestTools.delayed_ref_unref_other_thread(file, 1));
-            } catch (e) {
+            } catch {
                 // If creating the thread failed we're almost going out of memory
                 // so let's first wait for the ones allocated to complete.
                 threads.forEach(th => th.join());
@@ -737,5 +739,5 @@ describe('GObject with toggle references', function () {
         GjsTestTools.clear_saved();
         System.gc();
         expect(GjsTestTools.get_weak()).toBeNull();
-    }).pend('Flaky, see https://gitlab.gnome.org/GNOME/gjs/-/issues/NNN');
+    }).pend('Flaky, see https://gitlab.gnome.org/GNOME/gjs/-/issues/568');
 });

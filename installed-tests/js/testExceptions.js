@@ -2,7 +2,10 @@
 // SPDX-FileCopyrightText: 2013 Red Hat, Inc.
 // SPDX-FileCopyrightText: 2015 Endless Mobile, Inc.
 
-const {GIMarshallingTests, Gio, GLib, GObject} = imports.gi;
+import GIMarshallingTests from 'gi://GIMarshallingTests';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
 
 const Foo = GObject.registerClass({
     Properties: {
@@ -312,5 +315,10 @@ describe('Interoperation with Error.isError', function () {
         const err = GLib.Error.new_literal(
             Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED, 'message');
         expect(Error.isError(err)).toBeTruthy();
+    });
+
+    it('not an error', function () {
+        const err = new GIMarshallingTests.BoxedStruct();
+        expect(Error.isError(err)).toBeFalsy();
     });
 });

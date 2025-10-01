@@ -97,7 +97,7 @@ export class InternalModuleLoader {
 
             if (uri)
                 return uri;
-        } catch (err) {
+        } catch {
             // If it can't be parsed as a URI, try a relative path or return null.
         }
 

@@ -804,7 +804,17 @@ struct BasicTypeContainer : Marshaller, Container {
         if constexpr (std::is_same_v<Marshaller, BasicTypeContainerReturn> ||
                       std::is_same_v<Marshaller, BasicTypeContainerOut> ||
                       std::is_same_v<Marshaller, BasicTypeContainerInOut>) {
-            return Container::out(cx, Marshaller::element_tag(), arg, value);
+            bool success = Container::out(cx, Marshaller::element_tag(), arg, value);
+
+            GITransfer transfer = Marshaller::m_transfer;
+            GITypeTag element_tag = Marshaller::element_tag();
+            if (!success && transfer == GI_TRANSFER_EVERYTHING) {
+                if (Gjs::basic_type_needs_release(element_tag))
+                    Container::release_contents(arg);
+                if (transfer != GI_TRANSFER_CONTAINER)
+                    Container::release_container(arg);
+            }
+            return success;
         }
         g_return_val_if_reached(false);
     }

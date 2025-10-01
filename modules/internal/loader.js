@@ -153,7 +153,7 @@ class ModuleLoader extends InternalModuleLoader {
                     `./${sourceMapUrl}`);
                 jsonText = this.loadURI(sourceMapUri);
             }
-        } catch (e) {}
+        } catch {}
 
         if (jsonText) {
             try {
@@ -162,7 +162,7 @@ class ModuleLoader extends InternalModuleLoader {
                 const consumer = new SourceMapConsumer(sourceMap);
 
                 sourceMapRegistry.set(uri, consumer);
-            } catch (e) {}
+            } catch {}
         }
     }
 
