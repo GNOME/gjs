@@ -55,6 +55,7 @@
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
+#include "gi/struct.h"
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
@@ -1339,11 +1340,11 @@ bool value_to_interface_gi_argument_internal(
                 g_type_is_a(gtype, G_TYPE_BOXED) ||
                 g_type_is_a(gtype, G_TYPE_VALUE) ||
                 g_type_is_a(gtype, G_TYPE_VARIANT)) {
-                if (!BoxedBase::typecheck(cx, obj, interface_info)) {
+                if (!StructBase::typecheck(cx, obj, interface_info)) {
                     gjs_arg_unset(arg);
                     return false;
                 }
-                return BoxedBase::transfer_to_gi_argument(
+                return StructBase::transfer_to_gi_argument(
                     cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
             }
         }
@@ -1374,11 +1375,11 @@ bool value_to_interface_gi_argument_internal(
 
             } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
                 if (g_type_is_a(gtype, G_TYPE_CLOSURE)) {
-                    if (BoxedBase::typecheck(cx, obj, interface_info,
-                                             GjsTypecheckNoThrow{}) &&
-                        BoxedBase::typecheck(cx, obj, gtype,
-                                             GjsTypecheckNoThrow{})) {
-                        return BoxedBase::transfer_to_gi_argument(
+                    if (StructBase::typecheck(cx, obj, interface_info,
+                                              GjsTypecheckNoThrow{}) &&
+                        StructBase::typecheck(cx, obj, gtype,
+                                              GjsTypecheckNoThrow{})) {
+                        return StructBase::transfer_to_gi_argument(
                             cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
                     }
 
@@ -3394,12 +3395,12 @@ bool gjs_value_from_gi_argument(JSContext* context,
                 }
 
                 if (transfer == GI_TRANSFER_EVERYTHING)
-                    obj = BoxedInstance::new_for_c_struct(
+                    obj = StructInstance::new_for_c_struct(
                         context, struct_info.value(), gjs_arg_get<void*>(arg));
                 else
-                    obj = BoxedInstance::new_for_c_struct(
+                    obj = StructInstance::new_for_c_struct(
                         context, struct_info.value(), gjs_arg_get<void*>(arg),
-                        BoxedInstance::NoCopy{});
+                        Boxed::NoCopy{});
 
                 if (!obj)
                     return false;

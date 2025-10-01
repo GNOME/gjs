@@ -43,6 +43,7 @@
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
+#include "gi/struct.h"
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
@@ -532,7 +533,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                 return false;
             }
 
-            GValue* source = BoxedBase::to_c_ptr<GValue>(context, obj);
+            GValue* source = StructBase::to_c_ptr<GValue>(context, obj);
             // Only initialize the value if it doesn't have a type
             // and our source GValue has been initialized
             GType source_gtype = G_VALUE_TYPE(source);
@@ -724,7 +725,7 @@ gjs_value_to_g_value_internal(JSContext      *context,
                     return false;
 
                 if (guessed_gtype == G_TYPE_VALUE) {
-                    gboxed = BoxedBase::to_c_ptr<GValue>(context, obj);
+                    gboxed = StructBase::to_c_ptr<GValue>(context, obj);
                     g_value_set_boxed(gvalue, gboxed);
                     return true;
                 }
@@ -805,10 +806,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
                                              GjsTypecheckNoThrow{})) {
                         gboxed = UnionBase::to_c_ptr(context, obj);
                     } else {
-                        if (!BoxedBase::typecheck(context, obj, gtype))
+                        if (!StructBase::typecheck(context, obj, gtype))
                             return false;
 
-                        gboxed = BoxedBase::to_c_ptr(context, obj);
+                        gboxed = StructBase::to_c_ptr(context, obj);
                     }
                     if (!gboxed)
                         return false;
@@ -830,10 +831,10 @@ gjs_value_to_g_value_internal(JSContext      *context,
         } else if (value.isObject()) {
             JS::RootedObject obj(context, &value.toObject());
 
-            if (!BoxedBase::typecheck(context, obj, G_TYPE_VARIANT))
+            if (!StructBase::typecheck(context, obj, G_TYPE_VARIANT))
                 return false;
 
-            variant = BoxedBase::to_c_ptr<GVariant>(context, obj);
+            variant = StructBase::to_c_ptr<GVariant>(context, obj);
             if (!variant)
                 return false;
         } else {
@@ -1169,11 +1170,10 @@ static bool gjs_value_from_g_value_internal(
             }
 
             if (no_copy) {
-                obj = BoxedInstance::new_for_c_struct(
-                    context, struct_info.value(), gboxed,
-                    BoxedInstance::NoCopy{});
+                obj = StructInstance::new_for_c_struct(
+                    context, struct_info.value(), gboxed, Boxed::NoCopy{});
             } else {
-                obj = BoxedInstance::new_for_c_struct(
+                obj = StructInstance::new_for_c_struct(
                     context, struct_info.value(), gboxed);
             }
         } else if (auto union_info = info->as<GI::InfoTag::UNION>()) {

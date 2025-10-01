@@ -29,14 +29,14 @@ describe('Utility unions/structs', function () {
         expect(t.value.v_integer).toBe(0x7fff_ffff);
         t.value.v_double = Math.PI;
         expect(t.value.v_double).toBe(Math.PI);
-    }).pend('Unions nested in structs not supported. Open an issue if you need this');
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/569');
 
-    it('Byte', function () {
+    xit('Byte', function () {
         const b = new Utility.Byte();
         b.value = 0xcd;
         expect(b.parts.first_nibble).toBe(0xc);
         expect(b.parts.second_nibble).toBe(0xd);
-    }).pend('Unions must currently be registered as boxed types. Open an issue if you need this');
+    }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection/-/issues/569');
 
     it('Buffer', function () {
         const b = new Utility.Buffer();
@@ -55,14 +55,14 @@ describe('Utility unions/structs', function () {
         expect(s.data).toBeInstanceOf(Uint8Array);
     }).pend('Bitfields not supported. Open an issue if you need this');
 
-    xit('Union', function () {
+    it('Union', function () {
         const u = new Utility.Union();
         expect(u.pointer).toBeNull();
         u.integer = 0x7fff_ffff;
         expect(u.integer).toBe(0x7fff_ffff);
         u.real = Math.PI;
         expect(u.real).toBe(Math.PI);
-    }).pend('Unions must currently be registered as boxed types. Open an issue if you need this');
+    });
 });
 
 describe('Utility enums/flags', function () {

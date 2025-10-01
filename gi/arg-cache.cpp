@@ -34,7 +34,6 @@
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
 #include "gi/arg.h"
-#include "gi/boxed.h"
 #include "gi/closure.h"
 #include "gi/foreign.h"
 #include "gi/function.h"
@@ -45,6 +44,7 @@
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
+#include "gi/struct.h"
 #include "gi/union.h"
 #include "gi/value.h"
 #include "gi/wrapperutils.h"  // for GjsTypecheckNoThrow
@@ -2106,7 +2106,7 @@ bool GValueIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             return false;
 
         if (gtype == G_TYPE_VALUE) {
-            gjs_arg_set(arg, BoxedBase::to_c_ptr<GValue>(cx, obj));
+            gjs_arg_set(arg, StructBase::to_c_ptr<GValue>(cx, obj));
             state->ignore_release.insert(arg);
             return true;
         }
@@ -2139,12 +2139,12 @@ bool BoxedInTransferNone::in(JSContext* cx, GjsFunctionCallState* state,
                                                   GI_DIRECTION_IN, m_transfer);
     }
 
-    if (info() && !BoxedBase::typecheck(cx, object, info().ref())) {
+    if (info() && !StructBase::typecheck(cx, object, info().ref())) {
         gjs_arg_unset(arg);
         return false;
     }
-    return BoxedBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
-                                              m_transfer, gtype);
+    return StructBase::transfer_to_gi_argument(cx, object, arg, GI_DIRECTION_IN,
+                                               m_transfer, gtype);
 }
 
 // Unions include ClutterEvent and GdkEvent, which occur fairly often in an
@@ -2203,7 +2203,7 @@ bool GBytesIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
     // The bytearray path is taking an extra ref irrespective of transfer
     // ownership, so we need to do the same here.
-    return BoxedBase::transfer_to_gi_argument(
+    return StructBase::transfer_to_gi_argument(
         cx, object, arg, GI_DIRECTION_IN, GI_TRANSFER_EVERYTHING, G_TYPE_BYTES);
 }
 

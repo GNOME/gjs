@@ -1,6 +1,8 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
+// SPDX-FileCopyrightText: 2022 Marco Trevisan <marco.trevisan@canonical.com>
+// SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 
 #ifndef GI_BOXED_H_
 #define GI_BOXED_H_
@@ -11,6 +13,7 @@
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr
+#include <string>
 
 #include <glib-object.h>
 #include <glib.h>
@@ -23,18 +26,24 @@
 #include <js/TypeDecls.h>
 #include <mozilla/Maybe.h>
 
-#include "gi/cwrapper.h"
 #include "gi/info.h"
 #include "gi/wrapperutils.h"
+#include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
-class BoxedPrototype;
-class BoxedInstance;
 class JSTracer;
 namespace JS {
 class CallArgs;
 }
+
+namespace Boxed {
+struct NoCopy {};
+
+using FieldMap =
+    JS::GCHashMap<JS::Heap<JSString*>, GI::AutoFieldInfo,
+                  js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+}  // namespace Boxed
 
 /* To conserve memory, we have two different kinds of private data for GBoxed
  * JS wrappers: BoxedInstance, and BoxedPrototype. Both inherit from BoxedBase
@@ -42,20 +51,14 @@ class CallArgs;
  * wrapperutils.h.
  */
 
-class BoxedBase
-    : public GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance> {
-    friend class CWrapperPointerOps<BoxedBase>;
-    friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
+template <class Base, class Prototype, class Instance>
+class BoxedBase : public GIWrapperBase<Base, Prototype, Instance> {
+    using BaseClass = GIWrapperBase<Base, Prototype, Instance>;
 
  protected:
-    explicit BoxedBase(BoxedPrototype* proto = nullptr)
-        : GIWrapperBase(proto) {}
+    using BaseClass::BaseClass;
 
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
-    static constexpr const char* DEBUG_TAG = "boxed";
-
-    static const struct JSClassOps class_ops;
-    static const struct JSClass klass;
 
     // JS property accessors
 
@@ -71,36 +74,39 @@ class BoxedBase
                                                      uint32_t id) const;
 
  public:
-    [[nodiscard]] BoxedBase* get_copy_source(JSContext* cx,
-                                             JS::Value value) const;
+    [[nodiscard]] Base* get_copy_source(JSContext*, JS::Value) const;
+    using BaseClass::info;
+    using BaseClass::name;
 };
 
-class BoxedPrototype
-    : public GIWrapperPrototype<BoxedBase, BoxedPrototype, BoxedInstance,
-                                GI::AutoStructInfo, GI::StructInfo> {
-    friend class GIWrapperPrototype<BoxedBase, BoxedPrototype, BoxedInstance,
-                                    GI::AutoStructInfo, GI::StructInfo>;
-    friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
-
-    using FieldMap =
-        JS::GCHashMap<JS::Heap<JSString*>, GI::AutoFieldInfo,
-                      js::DefaultHasher<JSString*>, js::SystemAllocPolicy>;
+template <class Base, class Prototype, class Instance>
+class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
+                                                 GI::OwnedInfo<Base::TAG>,
+                                                 GI::UnownedInfo<Base::TAG>> {
+    using BoxedInfo = GI::UnownedInfo<Base::TAG>;
+    using BaseClass = GIWrapperPrototype<Base, Prototype, Instance,
+                                         GI::OwnedInfo<Base::TAG>, BoxedInfo>;
+    friend class GIWrapperBase<Base, Prototype, Instance>;
 
     int m_zero_args_constructor;  // -1 if none
     int m_default_constructor;  // -1 if none
     JS::Heap<jsid> m_default_constructor_name;
-    std::unique_ptr<FieldMap> m_field_map;
+    std::unique_ptr<Boxed::FieldMap> m_field_map;
     bool m_can_allocate_directly_without_pointers : 1;
     bool m_can_allocate_directly : 1;
 
-    explicit BoxedPrototype(const GI::StructInfo, GType);
-    ~BoxedPrototype(void);
+ protected:
+    explicit BoxedPrototype(const BoxedInfo, GType);
 
     GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
 
     // Accessors
 
  public:
+    GJS_JSAPI_RETURN_CONVENTION
+    mozilla::Maybe<const GI::FieldInfo> lookup_field(JSContext*,
+                                                     JSString* prop_name);
+
     [[nodiscard]] bool can_allocate_directly_without_pointers() const {
         return m_can_allocate_directly_without_pointers;
     }
@@ -124,6 +130,11 @@ class BoxedPrototype
             m_default_constructor_name.unsafeAddress());
     }
 
+    using BaseClass::format_name;
+    using BaseClass::gtype;
+    using BaseClass::info;
+    using BaseClass::name;
+
     // JSClass operations
 
  private:
@@ -140,36 +151,41 @@ class BoxedPrototype
     // Helper methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    static std::unique_ptr<FieldMap> create_field_map(JSContext*,
-                                                      const GI::StructInfo);
+    static std::unique_ptr<Boxed::FieldMap> create_field_map(JSContext*,
+                                                             const BoxedInfo);
     GJS_JSAPI_RETURN_CONVENTION
     bool ensure_field_map(JSContext* cx);
     GJS_JSAPI_RETURN_CONVENTION
     bool define_boxed_class_fields(JSContext* cx, JS::HandleObject proto);
 
- public:
+ protected:
     GJS_JSAPI_RETURN_CONVENTION
-    static bool define_class(JSContext* cx, JS::HandleObject in_object,
-                             const GI::StructInfo);
-    GJS_JSAPI_RETURN_CONVENTION
-    mozilla::Maybe<const GI::FieldInfo> lookup_field(JSContext*,
-                                                     JSString* prop_name);
+    static bool define_class_impl(JSContext*, JS::HandleObject in_object,
+                                  const BoxedInfo,
+                                  JS::MutableHandleObject prototype);
+    static std::string find_unique_js_field_name(const BoxedInfo,
+                                                 const std::string& field_name);
 };
 
-class BoxedInstance
-    : public GIWrapperInstance<BoxedBase, BoxedPrototype, BoxedInstance> {
-    friend class GIWrapperInstance<BoxedBase, BoxedPrototype, BoxedInstance>;
-    friend class GIWrapperBase<BoxedBase, BoxedPrototype, BoxedInstance>;
-    friend class BoxedBase;  // for field_getter, etc.
+template <class Base, class Prototype, class Instance>
+class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
+    using BaseClass = GIWrapperInstance<Base, Prototype, Instance>;
+    friend class GIWrapperBase<Base, Prototype, Instance>;
+    friend class BoxedBase<Base, Prototype, Instance>;  // for field_getter, etc
+    template <class OtherInstance>
+    friend void adopt_nested_ptr(OtherInstance*, void*);
+
+    using BoxedInfo = GI::UnownedInfo<Base::TAG>;
 
     // Reserved slots
     static const size_t PARENT_OBJECT = 1;
 
+ protected:
     bool m_allocated_directly : 1;
     bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred
                             // to by m_ptr.
 
-    explicit BoxedInstance(BoxedPrototype* prototype, JS::HandleObject obj);
+    explicit BoxedInstance(Prototype* prototype, JS::HandleObject obj);
     ~BoxedInstance(void);
 
     // Don't set GIWrapperBase::m_ptr directly. Instead, use one of these
@@ -189,25 +205,39 @@ class BoxedInstance
 
     void allocate_directly(void);
     void copy_boxed(void* boxed_ptr);
-    void copy_boxed(BoxedInstance* source);
+    void copy_boxed(Instance* source);
     void copy_memory(void* boxed_ptr);
-    void copy_memory(BoxedInstance* source);
+    void copy_memory(Instance* source);
 
     // Helper methods
 
     GJS_JSAPI_RETURN_CONVENTION
+    bool invoke_static_method(JSContext*, JS::HandleObject,
+                              JS::HandleId method_name, const JS::CallArgs&);
+    GJS_JSAPI_RETURN_CONVENTION
     bool init_from_props(JSContext* cx, JS::Value props_value);
 
-    GJS_JSAPI_RETURN_CONVENTION
-    bool get_nested_interface_object(JSContext* cx, JSObject* parent_obj,
-                                     const GI::FieldInfo, const GI::StructInfo,
-                                     JS::MutableHandleValue value) const;
-    GJS_JSAPI_RETURN_CONVENTION
-    bool set_nested_interface_object(JSContext*, const GI::FieldInfo,
-                                     const GI::StructInfo, JS::HandleValue);
+    template <class FieldInstance>
+    GJS_JSAPI_RETURN_CONVENTION bool get_nested_interface_object(
+        JSContext*, JSObject* parent_obj, const GI::FieldInfo,
+        const GI::UnownedInfo<FieldInstance::TAG>,
+        JS::MutableHandleValue) const;
+    template <class FieldBase>
+    GJS_JSAPI_RETURN_CONVENTION bool set_nested_interface_object(
+        JSContext*, const GI::FieldInfo, const GI::UnownedInfo<FieldBase::TAG>,
+        JS::HandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
-    static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
+    static void* copy_ptr(JSContext* cx, GType gtype, void* ptr) {
+        if (g_type_is_a(gtype, G_TYPE_BOXED))
+            return g_boxed_copy(gtype, ptr);
+
+        gjs_throw(cx,
+                  "Can't transfer ownership of a %s type not registered as "
+                  "boxed",
+                  Base::DEBUG_TAG);
+        return nullptr;
+    }
 
     // JS property accessors
 
@@ -225,25 +255,30 @@ class BoxedInstance
 
     // Public API for initializing BoxedInstance JS object from C struct
 
- public:
-    struct NoCopy {};
-
  private:
     GJS_JSAPI_RETURN_CONVENTION
     bool init_from_c_struct(JSContext* cx, void* gboxed);
     GJS_JSAPI_RETURN_CONVENTION
-    bool init_from_c_struct(JSContext* cx, void* gboxed, NoCopy);
+    bool init_from_c_struct(JSContext* cx, void* gboxed, Boxed::NoCopy);
+
+ protected:
     template <typename... Args>
     GJS_JSAPI_RETURN_CONVENTION static JSObject* new_for_c_struct_impl(
-        JSContext*, const GI::StructInfo, void* gboxed, Args&&...);
+        JSContext*, const BoxedInfo, void* gboxed, Args&&...);
+
+ protected:
+    using BaseClass::debug_lifecycle;
+    using BaseClass::get_copy_source;
+    using BaseClass::get_field_info;
+    using BaseClass::get_prototype;
+    using BaseClass::m_ptr;
+    using BaseClass::raw_ptr;
 
  public:
-    GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo,
-                                      void* gboxed);
-    GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo,
-                                      void* gboxed, NoCopy);
+    using BaseClass::format_name;
+    using BaseClass::gtype;
+    using BaseClass::info;
+    using BaseClass::name;
 };
 
 #endif  // GI_BOXED_H_

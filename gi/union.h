@@ -11,52 +11,43 @@
 
 #include <js/TypeDecls.h>
 
+#include "gi/boxed.h"
 #include "gi/cwrapper.h"
 #include "gi/info.h"
 #include "gi/wrapperutils.h"
 #include "gjs/macros.h"
-#include "util/log.h"
 
-namespace JS {
-class CallArgs;
-}
 struct JSClass;
 struct JSClassOps;
 class UnionPrototype;
 class UnionInstance;
 
-class UnionBase
-    : public GIWrapperBase<UnionBase, UnionPrototype, UnionInstance> {
+class UnionBase : public BoxedBase<UnionBase, UnionPrototype, UnionInstance> {
     friend class CWrapperPointerOps<UnionBase>;
     friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
+    friend class BoxedBase<UnionBase, UnionPrototype, UnionInstance>;
+    friend class BoxedPrototype<UnionBase, UnionPrototype, UnionInstance>;
+    friend class BoxedInstance<UnionBase, UnionPrototype, UnionInstance>;
 
  protected:
-    explicit UnionBase(UnionPrototype* proto = nullptr)
-        : GIWrapperBase(proto) {}
+    using BoxedBase::BoxedBase;
 
-    static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GBOXED;
     static constexpr const char* DEBUG_TAG = "union";
 
     static const JSClassOps class_ops;
     static const JSClass klass;
+
+ public:
+    static constexpr const GI::InfoTag TAG = GI::InfoTag::UNION;
 };
 
 class UnionPrototype
-    : public GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
-                                GI::AutoUnionInfo, GI::UnionInfo> {
+    : public BoxedPrototype<UnionBase, UnionPrototype, UnionInstance> {
     friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
                                     GI::AutoUnionInfo, GI::UnionInfo>;
-    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
     explicit UnionPrototype(const GI::UnionInfo info, GType gtype);
     ~UnionPrototype(void);
-
-    GJS_JSAPI_RETURN_CONVENTION
-    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                      bool* resolved);
-
-    // Overrides GIWrapperPrototype::constructor_nargs().
-    [[nodiscard]] unsigned constructor_nargs(void) const { return 0; }
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
@@ -65,32 +56,16 @@ class UnionPrototype
 };
 
 class UnionInstance
-    : public GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance> {
+    : public BoxedInstance<UnionBase, UnionPrototype, UnionInstance> {
     friend class GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance>;
-    friend class GIWrapperBase<UnionBase, UnionPrototype, UnionInstance>;
 
     explicit UnionInstance(UnionPrototype* prototype, JS::HandleObject obj);
     ~UnionInstance(void);
-
-    GJS_JSAPI_RETURN_CONVENTION
-    bool constructor_impl(JSContext* cx, JS::HandleObject obj,
-                          const JS::CallArgs& args);
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* new_for_c_union(JSContext*, const GI::UnionInfo,
                                      void* gboxed);
-
-    /*
-     * UnionInstance::copy_union:
-     *
-     * Allocate a new union pointer using g_boxed_copy(), from a raw union
-     * pointer.
-     */
-    void copy_union(void* ptr) { m_ptr = g_boxed_copy(gtype(), ptr); }
-
-    GJS_JSAPI_RETURN_CONVENTION
-    static void* copy_ptr(JSContext* cx, GType gtype, void* ptr);
 };
 
 #endif  // GI_UNION_H_
