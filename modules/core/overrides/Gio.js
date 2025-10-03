@@ -323,11 +323,13 @@ function _makeOutSignature(args) {
 
 function _handleMethodCall(info, impl, methodName, parameters, invocation) {
     // prefer a sync version if available
-    if (this[methodName]) {
+    const method = this[methodName];
+    if (method) {
         let retval;
         try {
-            const fdList = invocation.get_message().get_unix_fd_list();
-            retval = this[methodName](...parameters.deepUnpack(), fdList);
+            const args = parameters.deepUnpack();
+            args.push(invocation.get_message().get_unix_fd_list());
+            retval = method.apply(this, args);
         } catch (e) {
             if (e instanceof GLib.Error) {
                 invocation.return_gerror(e);
@@ -369,9 +371,14 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
             invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
                 'Service implementation returned an incorrect value type');
         }
-    } else if (this[`${methodName}Async`]) {
+
+        return;
+    }
+
+    const asyncMethod = this[`${methodName}Async`];
+    if (asyncMethod) {
         const fdList = invocation.get_message().get_unix_fd_list();
-        this[`${methodName}Async`](parameters.deepUnpack(), invocation, fdList);
+        asyncMethod.call(this, parameters.deepUnpack(), invocation, fdList);
     } else {
         log(`Missing handler for DBus method ${methodName}`);
         invocation.return_gerror(new Gio.DBusError({
