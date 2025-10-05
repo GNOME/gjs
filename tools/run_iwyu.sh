@@ -40,6 +40,11 @@ if ! ninja -t compdb > compile_commands.json; then
     echo 'Generating compile_commands.json failed.'
     exit 1
 fi
+# Temporary, while building GLib
+if ! ninja subprojects/glib/glib/glib-visibility.h subprojects/glib/girepository/gi-visibility.h subprojects/glib/gio/gio-visibility.h; then
+    echo 'Generating header files failed.'
+    exit 1
+fi
 
 echo "files: $files"
 
