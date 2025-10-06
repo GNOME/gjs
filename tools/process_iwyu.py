@@ -58,6 +58,9 @@ FWD_DECLS_IN_HEADER = (
 )
 add_fwd_header = False
 
+CPP20_VERSION = '#include <version>'
+CSTDDEF = '#include <cstddef>'
+
 FALSE_POSITIVES = (
     # glib.h is already included, we don't need to additionally forward-declare
     ('gjs/auto.h', 'struct _GVariant;', ''),
@@ -65,10 +68,6 @@ FALSE_POSITIVES = (
     # IWYU is not sure whether <utility> or <iterator> is for pair
     ('test/gjs-test-utils.h', '#include <iterator>', 'for pair'),
     ('test/gjs-test-toggle-queue.cpp', '#include <iterator>', 'for pair'),
-
-    # C++20 false positive
-    # https://github.com/include-what-you-use/include-what-you-use/issues/1791
-    ('gjs/jsapi-util-root.h', '#include <version>', 'for nullptr_t'),
 )
 
 
@@ -81,6 +80,13 @@ def output():
                 remove.pop(FWD_HEADER, None)
             else:
                 add[FWD_HEADER] = ''
+
+    # https://github.com/include-what-you-use/include-what-you-use/issues/1791
+    if add.pop(CPP20_VERSION, None) is not None and CSTDDEF not in all_includes:
+        if CSTDDEF in remove:
+            remove.pop(CSTDDEF, None)
+        else:
+            add[CSTDDEF] = 'for nullptr_t'
 
     if add or remove:
         print(f'\n== {file} ==')

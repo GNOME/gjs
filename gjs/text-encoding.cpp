@@ -6,11 +6,11 @@
 #include <config.h>
 
 #include <limits.h>  // for SSIZE_MAX
-#include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <string.h>  // for strcmp, memchr, strlen
 
 #include <algorithm>
+#include <cstddef>  // for nullptr_t, size_t
 #include <iterator>  // for distance
 #include <memory>    // for unique_ptr
 #include <string>    // for u16string
