@@ -383,7 +383,11 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
     const asyncMethod = this[`${methodName}Async`];
     if (asyncMethod) {
         const fdList = invocation.get_message().get_unix_fd_list();
-        asyncMethod.call(this, parameters.deepUnpack(), invocation, fdList);
+        try {
+            asyncMethod.call(this, parameters.deepUnpack(), invocation, fdList);
+        } catch (e) {
+            _handleDBusError(invocation, e);
+        }
     } else {
         log(`Missing handler for DBus method ${methodName}`);
         invocation.return_gerror(new Gio.DBusError({

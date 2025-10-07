@@ -24,6 +24,10 @@ var TestIface = `<node>
     <arg type="a{sv}" direction="in"/>
     <arg type="a{sv}" direction="out"/>
 </method>
+<method name="synchronouslyAlwaysThrowException">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
 <method name="thisDoesNotExist"/>
 <method name="noInParameter">
     <arg type="s" direction="out"/>
@@ -130,6 +134,10 @@ class Test {
     }
 
     alwaysThrowException() {
+        throw Error('Exception!');
+    }
+
+    synchronouslyAlwaysThrowExceptionAsync() {
         throw Error('Exception!');
     }
 
@@ -396,6 +404,24 @@ describe('Exported DBus object', function () {
             'JS ERROR: Exception in method call: alwaysThrowException: *');
 
         await expectAsync(proxy.alwaysThrowExceptionAsync({})).toBeRejected();
+    });
+
+    it('can handle an exception thrown by a sync remote method that is implemented asynchronously', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: synchronouslyAlwaysThrowException: *');
+
+        proxy.synchronouslyAlwaysThrowExceptionRemote({}, function (result, excp) {
+            expect(excp).not.toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by a sync method that is implemented asynchronously with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: synchronouslyAlwaysThrowException: *');
+
+        await expectAsync(proxy.synchronouslyAlwaysThrowExceptionAsync({})).toBeRejected();
     });
 
     it('can still destructure the return value when an exception is thrown', function () {
