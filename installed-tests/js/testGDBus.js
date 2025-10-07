@@ -28,6 +28,10 @@ var TestIface = `<node>
     <arg type="a{sv}" direction="in"/>
     <arg type="a{sv}" direction="out"/>
 </method>
+<method name="asynchronouslyAlwaysThrowException">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
 <method name="thisDoesNotExist"/>
 <method name="noInParameter">
     <arg type="s" direction="out"/>
@@ -139,6 +143,12 @@ class Test {
 
     synchronouslyAlwaysThrowExceptionAsync() {
         throw Error('Exception!');
+    }
+
+    async asynchronouslyAlwaysThrowExceptionAsync() {
+        await (() => new Promise(() => {
+            throw Error('Async Exception!');
+        }))();
     }
 
     thisDoesNotExist() {
@@ -422,6 +432,26 @@ describe('Exported DBus object', function () {
             'JS ERROR: Exception in method call: synchronouslyAlwaysThrowException: *');
 
         await expectAsync(proxy.synchronouslyAlwaysThrowExceptionAsync({})).toBeRejected();
+    });
+
+    it('can handle an exception thrown by an async remote method that is implemented asynchronously', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowException: *Async Exception!*');
+
+        proxy.asynchronouslyAlwaysThrowExceptionRemote({}, function (_, e) {
+            expect(e).not.toBeNull();
+            expect(e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.DBUS_ERROR)).toBeTrue();
+            expect(e.message.includes('asynchronouslyAlwaysThrowException'));
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by an async method that is implemented asynchronously with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowException: *Async Exception!*');
+
+        await expectAsync(proxy.asynchronouslyAlwaysThrowExceptionAsync({})).toBeRejected();
     });
 
     it('can still destructure the return value when an exception is thrown', function () {
