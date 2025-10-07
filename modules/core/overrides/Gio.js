@@ -321,6 +321,21 @@ function _makeOutSignature(args) {
     return `${ret})`;
 }
 
+function _handleDBusError(invocation, e) {
+    if (e instanceof GLib.Error) {
+        invocation.return_gerror(e);
+        return;
+    }
+
+    let {name} = e;
+    if (!name.includes('.')) {
+        // likely to be a normal JS error
+        name = `org.gnome.gjs.JSError.${name}`;
+    }
+    logError(e, `Exception in method call: ${invocation.get_method_name()}`);
+    invocation.return_dbus_error(name, e.message);
+}
+
 function _handleMethodCall(info, impl, methodName, parameters, invocation) {
     // prefer a sync version if available
     const method = this[methodName];
@@ -331,17 +346,7 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
             args.push(invocation.get_message().get_unix_fd_list());
             retval = method.apply(this, args);
         } catch (e) {
-            if (e instanceof GLib.Error) {
-                invocation.return_gerror(e);
-            } else {
-                let name = e.name;
-                if (!name.includes('.')) {
-                    // likely to be a normal JS error
-                    name = `org.gnome.gjs.JSError.${name}`;
-                }
-                logError(e, `Exception in method call: ${methodName}`);
-                invocation.return_dbus_error(name, e.message);
-            }
+            _handleDBusError(invocation, e);
             return;
         }
         if (retval === undefined) {
