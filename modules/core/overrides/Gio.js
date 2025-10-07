@@ -336,7 +336,7 @@ function _handleDBusError(invocation, e) {
     invocation.return_dbus_error(name, e.message);
 }
 
-function _handleMethodCall(info, impl, methodName, parameters, invocation) {
+function _handleMethodCall(methodName, parameters, invocation) {
     // prefer a sync version if available
     const method = this[methodName];
     if (method) {
@@ -424,8 +424,8 @@ function _wrapJSObject(interfaceInfo, jsObj) {
     info.cache_build();
 
     var impl = new GjsPrivate.DBusImplementation({g_interface_info: info});
-    impl.connect('handle-method-call', function (self, methodName, parameters, invocation) {
-        return _handleMethodCall.call(jsObj, info, self, methodName, parameters, invocation);
+    impl.connect('handle-method-call', function (_, methodName, parameters, invocation) {
+        return _handleMethodCall.call(jsObj, methodName, parameters, invocation);
     });
     impl.connect('handle-property-get', function (self, propertyName) {
         return _handlePropertyGet.call(jsObj, info, self, propertyName);
