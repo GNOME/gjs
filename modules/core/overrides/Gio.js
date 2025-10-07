@@ -321,6 +321,36 @@ function _makeOutSignature(args) {
     return `${ret})`;
 }
 
+function _handleDBusReply(invocation, ret) {
+    if (ret === undefined) {
+        // undefined (no return value) is the empty tuple
+        ret = new GLib.Variant('()', []);
+    }
+
+    try {
+        let outFdList = null;
+        if (!(ret instanceof GLib.Variant)) {
+            // attempt packing according to out signature
+            const outArgs = invocation.get_method_info().out_args;
+            const outSignature = _makeOutSignature(outArgs);
+            if (outSignature.includes('h') &&
+                ret[ret.length - 1] instanceof Gio.UnixFDList) {
+                outFdList = ret.pop();
+            } else if (outArgs.length === 1) {
+                // if one arg, we don't require the handler wrapping it
+                // into an Array
+                ret = [ret];
+            }
+            ret = new GLib.Variant(outSignature, ret);
+        }
+        invocation.return_value_with_unix_fd_list(ret, outFdList);
+    } catch {
+        // if we don't do this, the other side will never see a reply
+        invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
+            'Service implementation returned an incorrect value type');
+    }
+}
+
 function _handleDBusError(invocation, e) {
     if (e instanceof GLib.Error) {
         invocation.return_gerror(e);
@@ -349,33 +379,8 @@ function _handleMethodCall(methodName, invocation, parameters) {
             _handleDBusError(invocation, e);
             return;
         }
-        if (retval === undefined) {
-            // undefined (no return value) is the empty tuple
-            retval = new GLib.Variant('()', []);
-        }
-        try {
-            let outFdList = null;
-            if (!(retval instanceof GLib.Variant)) {
-                // attempt packing according to out signature
-                const outArgs = invocation.get_method_info().out_args;
-                const outSignature = _makeOutSignature(outArgs);
-                if (outSignature.includes('h') &&
-                    retval[retval.length - 1] instanceof Gio.UnixFDList) {
-                    outFdList = retval.pop();
-                } else if (outArgs.length === 1) {
-                    // if one arg, we don't require the handler wrapping it
-                    // into an Array
-                    retval = [retval];
-                }
-                retval = new GLib.Variant(outSignature, retval);
-            }
-            invocation.return_value_with_unix_fd_list(retval, outFdList);
-        } catch {
-            // if we don't do this, the other side will never see a reply
-            invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
-                'Service implementation returned an incorrect value type');
-        }
 
+        _handleDBusReply(invocation, retval);
         return;
     }
 
