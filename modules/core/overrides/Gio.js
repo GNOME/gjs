@@ -357,9 +357,8 @@ function _handleMethodCall(info, impl, methodName, parameters, invocation) {
             let outFdList = null;
             if (!(retval instanceof GLib.Variant)) {
                 // attempt packing according to out signature
-                let methodInfo = info.lookup_method(methodName);
-                let outArgs = methodInfo.out_args;
-                let outSignature = _makeOutSignature(outArgs);
+                const outArgs = invocation.get_method_info().out_args;
+                const outSignature = _makeOutSignature(outArgs);
                 if (outSignature.includes('h') &&
                     retval[retval.length - 1] instanceof Gio.UnixFDList) {
                     outFdList = retval.pop();
