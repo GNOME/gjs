@@ -390,16 +390,25 @@ function _handleMethodCall(methodName, invocation, parameters) {
 
     const asyncMethod = this[`${methodName}Async`];
     if (asyncMethod) {
+        function maybeHandleError(e) {
+            if (_methodInvocations.has(invocation)) {
+                logError(e, `Exception in method call: ${invocation.get_method_name()}`);
+                return;
+            }
+
+            _handleDBusError(invocation, e);
+        };
+
         const fdList = invocation.get_message().get_unix_fd_list();
         let ret;
         try {
             ret = asyncMethod.call(this, parameters.deepUnpack(), invocation, fdList);
         } catch (e) {
-            _handleDBusError(invocation, e);
+            maybeHandleError(e);
             return;
         }
 
-        ret?.catch?.(e => _handleDBusError(invocation, e));
+        ret?.catch?.(maybeHandleError);
     } else {
         log(`Missing handler for DBus method ${methodName}`);
         invocation.return_gerror(new Gio.DBusError({
@@ -506,6 +515,8 @@ function _warnNotIntrospectable(funcName, replacement) {
     logError(_notIntrospectableError(funcName, replacement));
 }
 
+const _methodInvocations = new WeakMap();
+
 function _init() {
     Gio = this;
     let GioPlatform = {};
@@ -610,6 +621,40 @@ function _init() {
     Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
 
     Gio.DBusProxy.makeProxyWrapper = _makeProxyWrapper;
+
+    // Wrap the invocation return methods to catch if the method has already
+    // returned, in fact in such case we should not try to return anything
+    // especially because the Gio.DBusMethodInvocation.return_* methods take
+    // the ownership of the invocation itself and, calling it more than once
+    // may lead to memory issues.
+    // The invocated methods are saved in a weak map so that we do not
+    // artificially create a toggle reference that may keep the method
+    // invocation alive forever.
+    Object.entries(Object.getOwnPropertyDescriptors(Gio.DBusMethodInvocation.prototype)).forEach(([symbol, desc]) => {
+        if (!symbol.startsWith('return_'))
+            return;
+
+        const originalMethod = desc.value;
+        desc.value = function (...args) {
+            const oldInvocation = _methodInvocations.get(this);
+            if (oldInvocation) {
+                // We do not throw here, not to break compatibility, but
+                // we make this a no-op, to prevent potential memory issues.
+                logError(new Error(), `${this} (${oldInvocation.methodName}) ` +
+                    `already returned @\n${oldInvocation.previousCallStack.split(
+                        '\n').slice(1).join('\n')}`);
+                return;
+            }
+
+            _methodInvocations.set(this, {
+                methodName: this.get_method_name(),
+                previousCallStack: new Error().stack,
+            });
+            return originalMethod.apply(this, args);
+        };
+
+        Object.defineProperty(Gio.DBusMethodInvocation.prototype, symbol, desc);
+    });
 
     // Some helpers
     _wrapFunction(Gio.DBusNodeInfo, 'new_for_xml', _newNodeInfo);
