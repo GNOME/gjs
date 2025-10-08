@@ -871,13 +871,17 @@ function _init() {
     // add_action_entries is not introspectable
     // https://gitlab.gnome.org/GNOME/gjs/-/issues/407
     Gio.ActionMap.prototype.add_action_entries = function add_action_entries(entries) {
-        for (const {name, activate, parameter_type, state, change_state} of entries) {
-            if (typeof parameter_type === 'string' && !GLib.variant_type_string_is_valid(parameter_type))
-                throw new Error(`parameter_type "${parameter_type}" is not a valid VariantType`);
+        for (let {name, activate, parameter_type, state, change_state} of entries) {
+            if (typeof parameter_type === 'string') {
+                if (!GLib.variant_type_string_is_valid(parameter_type))
+                    throw new Error(`parameter_type "${parameter_type}" is not a valid VariantType`);
+
+                parameter_type = new GLib.VariantType(parameter_type);
+            }
 
             const action = new Gio.SimpleAction({
                 name,
-                parameter_type: typeof parameter_type === 'string' ? new GLib.VariantType(parameter_type) : null,
+                parameter_type: parameter_type instanceof GLib.VariantType ? parameter_type : null,
                 state: typeof state === 'string' ? GLib.Variant.parse(null, state, null, null) : null,
             });
 
