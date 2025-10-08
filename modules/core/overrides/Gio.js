@@ -879,10 +879,16 @@ function _init() {
                 parameter_type = new GLib.VariantType(parameter_type);
             }
 
+            if (typeof state === 'boolean')
+                state = GLib.Variant.new_boolean(state);
+
+            if (typeof state === 'string')
+                state = GLib.Variant.parse(null, state, null, null);
+
             const action = new Gio.SimpleAction({
                 name,
                 parameter_type: parameter_type instanceof GLib.VariantType ? parameter_type : null,
-                state: typeof state === 'string' ? GLib.Variant.parse(null, state, null, null) : null,
+                state: state instanceof GLib.Variant ? state : null,
             });
 
             if (typeof activate === 'function')

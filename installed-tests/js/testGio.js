@@ -261,6 +261,14 @@ describe('Gio.add_action_entries override', function () {
                 name: 'baz',
                 state: 'false',
             },
+            {
+                name: 'qux',
+                state: GLib.Variant.new_boolean(true),
+            },
+            {
+                name: 'quux',
+                state: true,
+            },
         ];
 
         app.add_action_entries(entries);
@@ -273,6 +281,12 @@ describe('Gio.add_action_entries override', function () {
 
         expect(app.lookup_action('baz').name).toEqual(entries[2].name);
         expect(app.lookup_action('baz').state.print(true)).toEqual(entries[2].state);
+
+        expect(app.lookup_action('qux').name).toEqual(entries[3].name);
+        expect(app.lookup_action('qux').state.print(true)).toEqual(entries[3].state.print(true));
+
+        expect(app.lookup_action('quux').name).toEqual(entries[4].name);
+        expect(app.lookup_action('quux').state.get_boolean()).toEqual(entries[4].state);
     });
 
     it('connects and binds the activate handler', function (done) {
