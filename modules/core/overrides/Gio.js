@@ -380,7 +380,11 @@ function _handleMethodCall(methodName, invocation, parameters) {
             return;
         }
 
-        _handleDBusReply(invocation, retval);
+        // eslint-disable-next-line no-unused-expressions
+        retval?.then?.(r => _handleDBusReply(invocation, r))?.catch?.(
+            e => _handleDBusError(invocation, e)) ??
+            _handleDBusReply(invocation, retval);
+
         return;
     }
 

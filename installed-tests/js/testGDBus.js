@@ -28,6 +28,10 @@ var TestIface = `<node>
     <arg type="a{sv}" direction="in"/>
     <arg type="a{sv}" direction="out"/>
 </method>
+<method name="asynchronouslyAlwaysThrowExceptionSync">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
 <method name="asynchronouslyAlwaysThrowException">
     <arg type="a{sv}" direction="in"/>
     <arg type="a{sv}" direction="out"/>
@@ -77,6 +81,12 @@ var TestIface = `<node>
     <arg type="a{sv}" direction="out"/>
 </method>
 <method name="echo">
+    <arg type="s" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+    <arg type="i" direction="out"/>
+</method>
+<method name="asynchronouslyEchoSync">
     <arg type="s" direction="in"/>
     <arg type="i" direction="in"/>
     <arg type="s" direction="out"/>
@@ -143,6 +153,10 @@ class Test {
 
     synchronouslyAlwaysThrowExceptionAsync() {
         throw Error('Exception!');
+    }
+
+    async asynchronouslyAlwaysThrowExceptionSync() {
+        await this.asynchronouslyAlwaysThrowExceptionAsync();
     }
 
     async asynchronouslyAlwaysThrowExceptionAsync() {
@@ -222,6 +236,16 @@ class Test {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
         });
+    }
+
+    async asynchronouslyEchoSync(someString, someInt) {
+        const ret = await new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                resolve([someString, someInt]);
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        return ret;
     }
 
     // double
@@ -414,6 +438,26 @@ describe('Exported DBus object', function () {
             'JS ERROR: Exception in method call: alwaysThrowException: *');
 
         await expectAsync(proxy.alwaysThrowExceptionAsync({})).toBeRejected();
+    });
+
+    it('can handle an exception thrown by an async remote method that is implemented synchronously', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowExceptionSync: *Async Exception!*');
+
+        proxy.asynchronouslyAlwaysThrowExceptionSyncRemote({}, function (_, e) {
+            expect(e).not.toBeNull();
+            expect(e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.DBUS_ERROR)).toBeTrue();
+            expect(e.message.includes('asynchronouslyAlwaysThrowExceptionSync'));
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by an async method that is implemented synchronously with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowExceptionSync: *Async Exception!*');
+
+        await expectAsync(proxy.asynchronouslyAlwaysThrowExceptionSyncAsync({})).toBeRejected();
     });
 
     it('can handle an exception thrown by a sync remote method that is implemented asynchronously', function () {
@@ -663,6 +707,27 @@ describe('Exported DBus object', function () {
         const someInt = 42;
 
         const results = await proxy.echoAsync(someString, someInt);
+        expect(results).toEqual([someString, someInt]);
+    });
+
+    it('can call a remote async method that is implemented synchronously', function () {
+        let someString = 'Hello world!';
+        let someInt = 42;
+
+        proxy.asynchronouslyEchoSyncRemote(someString, someInt,
+            function (result, excp) {
+                expect(excp).toBeNull();
+                expect(result).toEqual([someString, someInt]);
+                loop.quit();
+            });
+        loop.run();
+    });
+
+    it('can call an async/await async method that is implemented synchronously', async function () {
+        const someString = 'Hello world!';
+        const someInt = 42;
+
+        const results = await proxy.asynchronouslyEchoSyncAsync(someString, someInt);
         expect(results).toEqual([someString, someInt]);
     });
 
