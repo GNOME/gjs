@@ -28,6 +28,7 @@
 #include <glib/gprintf.h>  // for g_fprintf
 
 #ifdef HAVE_READLINE_READLINE_H
+#    include <gio/gio.h>
 #    include <gio/gunixinputstream.h>
 #endif
 

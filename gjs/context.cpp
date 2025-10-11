@@ -23,6 +23,7 @@
 #    include <readline/history.h>
 #endif
 
+#include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>
@@ -31,11 +32,9 @@
 #include <vector>
 
 #include <gio/gio.h>
-#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/AllocPolicy.h>       // for SystemAllocPolicy
 #include <js/CallAndConstruct.h>  // for Call, JS_CallFunctionValue
 #include <js/CallArgs.h>          // for UndefinedHandleValue
 #include <js/CharacterEncoding.h>
@@ -47,7 +46,6 @@
 #include <js/Exception.h>     // for StealPendingExceptionStack
 #include <js/GCAPI.h>         // for JS_GC, JS_AddExtraGCRootsTr...
 #include <js/GCHashTable.h>   // for WeakCache
-#include <js/GCVector.h>      // for RootedVector
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/HeapAPI.h>       // for ExposeObjectToActiveJS
 #include <js/Id.h>
@@ -72,8 +70,8 @@
 #include <mozilla/Result.h>
 #include <mozilla/UniquePtr.h>  // for UniquePtr::get
 
-#include "gi/closure.h"  // for Closure::Ptr, Closure
 #include "gi/function.h"
+#include "gi/info.h"
 #include "gi/object.h"
 #include "gi/private.h"
 #include "gi/repo.h"

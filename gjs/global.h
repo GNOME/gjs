@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include <type_traits>
+
 #include <js/RootingAPI.h>  // for Handle
 #include <js/TypeDecls.h>
 #include <js/Value.h>

@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stddef.h>  // for size_t
 
+#include <string>       // for string methods
 #include <type_traits>  // for integral_constant
 
 #include <glib-object.h>  // for GType

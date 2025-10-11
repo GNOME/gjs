@@ -12,7 +12,6 @@
 #include <glib.h>
 
 #include <js/CallArgs.h>
-#include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <mozilla/Maybe.h>
@@ -26,6 +25,7 @@
 
 class InterfacePrototype;
 class InterfaceInstance;
+struct JSFunctionSpec;
 
 /* For more information on this Base/Prototype/Interface scheme, see the notes
  * in wrapperutils.h.

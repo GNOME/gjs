@@ -9,6 +9,7 @@
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/GCVector.h>     // for MutableHandleIdVector
 #include <js/Id.h>           // for PropertyKey, jsid
+#include <js/PropertySpec.h>  // for JSFunctionSpec, JS_FS_END
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 

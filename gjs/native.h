@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 
+#include <js/RootingAPI.h>  // for MutableHandle
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"

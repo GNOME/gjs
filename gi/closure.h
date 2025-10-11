@@ -11,6 +11,8 @@
 
 #include <stddef.h>
 
+#include <type_traits>
+
 #include <glib-object.h>
 
 #include <js/TypeDecls.h>

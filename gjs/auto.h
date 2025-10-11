@@ -15,6 +15,7 @@
 
 #include <glib-object.h>
 #include <glib.h>
+// IWYU pragma: no_forward_declare _GVariant
 
 #include <js/Utility.h>  // for UniqueChars
 

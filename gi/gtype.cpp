@@ -26,6 +26,7 @@
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
+#include "gjs/jsapi-util-root.h"  // for WeakPtr methods
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"

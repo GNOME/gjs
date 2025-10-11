@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <atomic>
+#include <functional>  // for hash
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -19,7 +20,6 @@
 #include <vector>
 
 #include <gio/gio.h>  // for GMemoryMonitor
-#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 

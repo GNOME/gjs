@@ -6,16 +6,17 @@
 #include <config.h>
 
 #include <cairo.h>
+#include <girepository/girepository.h>  // for GIArgument, GITransfer, ...
 
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 #include <jsapi.h>  // for JS_NewObjectWithGivenProto
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
-#include "gi/cwrapper.h"
 #include "gi/foreign.h"
 #include "gjs/auto.h"
 #include "gjs/enum-utils.h"

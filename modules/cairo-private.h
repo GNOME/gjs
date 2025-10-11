@@ -14,7 +14,6 @@
 #include <glib-object.h>
 
 #include <js/Class.h>
-#include <js/PropertySpec.h>
 #include <js/TypeDecls.h>
 #include <jspubtd.h>  // for JSProtoKey
 
@@ -23,6 +22,8 @@
 #include "gjs/macros.h"
 #include "util/log.h"
 
+struct JSFunctionSpec;
+struct JSPropertySpec;
 namespace JS {
 class CallArgs;
 }

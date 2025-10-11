@@ -27,6 +27,7 @@
 #include <js/ValueArray.h>
 #include <js/Warnings.h>
 #include <jsapi.h>  // for JS_NewPlainObject, JS_NewObject
+#include <mozilla/Maybe.h>
 #include <mozilla/ScopeExit.h>
 
 #include "gi/arg.h"
@@ -45,6 +46,7 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
