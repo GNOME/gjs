@@ -26,14 +26,12 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/jsapi-class.h"  // IWYU pragma: associated
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
 struct JSFunctionSpec;
 struct JSPropertySpec;
-namespace JS {
-class HandleValueArray;
-}
 
 /* Reserved slots of JSNative accessor wrappers */
 enum {

@@ -78,7 +78,7 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/byteArray.h"
-#include "gjs/context-private.h"
+#include "gjs/context-private.h"  // IWYU pragma: associated
 #include "gjs/context.h"
 #include "gjs/engine.h"
 #include "gjs/error-types.h"

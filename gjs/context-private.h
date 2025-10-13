@@ -43,7 +43,6 @@
 #include "gjs/context.h"
 #include "gjs/gerror-result.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/macros.h"
 #include "gjs/mainloop.h"
 #include "gjs/profiler.h"
 #include "gjs/promise.h"

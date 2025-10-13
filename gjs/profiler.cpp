@@ -43,7 +43,7 @@
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"  // for gjs_explain_gc_reason
 #include "gjs/mem-private.h"
-#include "gjs/profiler-private.h"
+#include "gjs/profiler-private.h"  // IWYU pragma: associated
 #include "gjs/profiler.h"
 
 #define FLUSH_DELAY_SECONDS 3

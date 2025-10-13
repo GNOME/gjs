@@ -75,41 +75,12 @@ do
     fi
 done
 
-for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/atoms.cpp $SRCDIR/gjs/byteArray.cpp \
-    $SRCDIR/gjs/coverage.cpp $SRCDIR/gjs/debugger.cpp \
-    $SRCDIR/gjs/deprecation.cpp $SRCDIR/gjs/engine.cpp \
-    $SRCDIR/gjs/error-types.cpp $SRCDIR/gjs/global.cpp \
-    $SRCDIR/gjs/internal.cpp $SRCDIR/gjs/importer.cpp \
-    $SRCDIR/gjs/jsapi-util*.cpp $SRCDIR/gjs/mainloop.cpp \
-    $SRCDIR/gjs/module.cpp $SRCDIR/gjs/native.cpp \
-    $SRCDIR/gjs/objectbox.cpp $SRCDIR/gjs/promise.cpp $SRCDIR/gjs/stack.cpp \
-    $SRCDIR/gjs/text-encoding.cpp $SRCDIR/modules/cairo-*.cpp \
-    $SRCDIR/modules/console.cpp $SRCDIR/modules/print.cpp \
-    $SRCDIR/modules/system.cpp $SRCDIR/test/*.cpp $SRCDIR/util/*.cpp \
-    $SRCDIR/libgjs-private/*.c
+for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/*.cpp $SRCDIR/modules/*.cpp \
+    $SRCDIR/test/*.cpp $SRCDIR/util/*.cpp $SRCDIR/libgjs-private/*.c
 do
+    test $FILE = $SRCDIR/gjs/console.cpp && continue
     if should_analyze $FILE; then
         if ! $IWYU $FILE -- $PRIVATE_MAPPING $IWYU_TOOL_ARGS | $POSTPROCESS; then
-            EXIT=1
-        fi
-    fi
-done
-
-# this header file is named differently from its corresponding implementation
-if ( should_analyze $SRCDIR/gjs/jsapi-dynamic-class.cpp || \
-    should_analyze $SRCDIR/gjs/jsapi-class.h ); then
-    if ! $IWYU $SRCDIR/gjs/jsapi-dynamic-class.cpp -- $PRIVATE_MAPPING \
-        $IWYU_TOOL_ARGS \
-        -Xiwyu --check_also=*/gjs/jsapi-class.h | $POSTPROCESS; then
-        EXIT=1
-    fi
-fi
-
-# include header files with private implementation along with their main files
-for STEM in gjs/context gjs/mem gjs/profiler modules/cairo; do
-    if should_analyze $SRCDIR/$STEM.cpp; then
-        if ! $IWYU $SRCDIR/$STEM.cpp -- $PRIVATE_MAPPING $IWYU_TOOL_ARGS \
-            -Xiwyu --check_also=*/$STEM-private.h | $POSTPROCESS; then
             EXIT=1
         fi
     fi
