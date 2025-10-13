@@ -253,7 +253,7 @@ template <class T>
         return 0;
 
     const T* start = data;
-    auto* found = static_cast<const T*>(std::memchr(start, '\0', len));
+    auto* found = static_cast<const T*>(memchr(start, '\0', len));
 
     // If a null byte was not found, return the passed length.
     if (!found)
