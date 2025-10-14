@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include <string>  // for string methods
+
 #include <girepository/girepository.h>
 #include <glib-object.h>
 
@@ -16,6 +18,7 @@
 #include <js/Exception.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
+#include <js/PropertySpec.h>        // for JS_PSG
 #include <js/RootingAPI.h>
 #include <js/SavedFrameAPI.h>
 #include <js/Stack.h>  // for BuildStackString, CaptureCurrentStack

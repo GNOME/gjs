@@ -7,11 +7,16 @@
 #include <stddef.h>  // for NULL, size_t
 #include <stdint.h>
 
-#include <limits>
 #include <memory>  // for unique_ptr
 #include <sstream>
 #include <string>
+#include <type_traits>
+#include <utility>  // for move
 #include <vector>
+
+#ifndef G_DISABLE_ASSERT
+#    include <limits>  // for numeric_limits
+#endif
 
 #include <ffi.h>
 #include <girepository/girepository.h>
@@ -20,7 +25,6 @@
 #include <glib.h>
 
 #include <js/Array.h>
-#include <js/CallAndConstruct.h>  // for IsCallable
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
@@ -38,6 +42,10 @@
 #include <jsapi.h>    // for HandleValueArray
 #include <jspubtd.h>  // for JSProtoKey
 #include <mozilla/Maybe.h>
+
+#ifndef G_DISABLE_ASSERT
+#    include <js/CallAndConstruct.h>  // for IsCallable
+#endif
 
 #include "gi/arg-cache.h"
 #include "gi/arg-inl.h"

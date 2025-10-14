@@ -11,19 +11,19 @@
 #include <glib-object.h>
 #include <glib.h>
 
-#include <js/PropertySpec.h>
 #include <js/TypeDecls.h>
 
 #include "gi/cwrapper.h"
 #include "gi/info.h"
 #include "gi/wrapperutils.h"
-#include "gjs/auto.h"  // for Gjs::AutoPointer operators
 #include "gjs/gerror-result.h"
 #include "gjs/macros.h"
 #include "util/log.h"
 
 class ErrorPrototype;
 class ErrorInstance;
+struct JSFunctionSpec;
+struct JSPropertySpec;
 namespace JS {
 class CallArgs;
 }

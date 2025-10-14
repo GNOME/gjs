@@ -361,12 +361,12 @@ headers_check:
 iwyu:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:
     - test/test-ci.sh UPSTREAM_BASE
-    - meson setup _build -Db_pch=false
+    - meson setup _build -Db_pch=false -Dbuildtype=release
     - include-what-you-use --version
     - ./tools/run_iwyu.sh ci-upstream-base
   only:
@@ -421,11 +421,11 @@ coverage:
 iwyu-full:
   when: manual
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:
-    - meson setup _build
+    - meson setup _build -Db_pch=false -Dbuildtype=release
     - ./tools/run_iwyu.sh
   except:
     - schedules

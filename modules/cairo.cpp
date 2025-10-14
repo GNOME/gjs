@@ -19,7 +19,7 @@
 #include <jsapi.h>  // for JS_NewPlainObject
 
 #include "gjs/jsapi-util.h"
-#include "modules/cairo-private.h"
+#include "modules/cairo-private.h"  // IWYU pragma: associated
 
 #ifdef CAIRO_HAS_XLIB_SURFACE
 class XLibConstructor {

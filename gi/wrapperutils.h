@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 
+#include <new>  // for operator new
 #include <string>
 #include <type_traits>
 

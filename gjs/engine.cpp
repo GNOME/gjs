@@ -29,8 +29,12 @@
 #include <js/Warnings.h>
 #include <js/experimental/SourceHook.h>
 #include <jsapi.h>  // for JS_SetGlobalJitCompilerOption
-#include <mozilla/Atomics.h>  // for Atomic in JSPrincipals
+#include <jsfriendapi.h>      // for SetDOMCallbacks, DOMCallbacks
 #include <mozilla/UniquePtr.h>
+
+#ifndef G_DISABLE_ASSERT
+#    include <mozilla/Atomics.h>  // for Atomic::operator==
+#endif
 
 #include "gi/gerror.h"
 #include "gjs/context-private.h"
@@ -39,8 +43,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
-
-struct JSStructuredCloneWriter;
 
 static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {

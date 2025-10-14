@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <atomic>
+#include <functional>  // for hash
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -19,7 +20,6 @@
 #include <vector>
 
 #include <gio/gio.h>  // for GMemoryMonitor
-#include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
 
@@ -43,7 +43,6 @@
 #include "gjs/context.h"
 #include "gjs/gerror-result.h"
 #include "gjs/jsapi-util-root.h"
-#include "gjs/macros.h"
 #include "gjs/mainloop.h"
 #include "gjs/profiler.h"
 #include "gjs/promise.h"

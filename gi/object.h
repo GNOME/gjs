@@ -22,7 +22,6 @@
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/HashTable.h>    // for DefaultHasher
 #include <js/Id.h>
-#include <js/PropertySpec.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <mozilla/HashFunctions.h>  // for HashGeneric, HashNumber
@@ -39,6 +38,8 @@
 #include "util/log.h"
 
 class GjsAtoms;
+struct JSFunctionSpec;
+struct JSPropertySpec;
 class JSTracer;
 namespace JS {
 class CallArgs;

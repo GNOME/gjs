@@ -17,6 +17,9 @@
 #include <girepository/girepository.h>
 #include <glib-object.h>  // for GType
 #include <glib.h>         // for gboolean
+// IWYU pragma: no_forward_declare _GBytes
+// IWYU pragma: no_forward_declare _GHashTable
+// IWYU pragma: no_forward_declare _GVariant
 
 #include <js/RootingAPI.h>  // for Handle
 #include <js/TypeDecls.h>  // for HandleValue

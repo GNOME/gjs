@@ -7,14 +7,16 @@
 
 #include <config.h>
 
-#include <glib-object.h>
-#include <glib.h>
-
 #include <js/CallArgs.h>  // for JSNative
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
+#include <js/Value.h>
 #include <js/ValueArray.h>
 
 #include "gjs/macros.h"
+
+struct JSFunctionSpec;
+struct JSPropertySpec;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_init_class_dynamic(

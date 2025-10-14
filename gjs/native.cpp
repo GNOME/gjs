@@ -6,6 +6,7 @@
 
 #include <tuple>  // for tie
 #include <unordered_map>
+#include <utility>  // for ignore
 
 #include <glib.h>
 

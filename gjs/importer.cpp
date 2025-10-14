@@ -23,7 +23,6 @@
 #include <js/Class.h>
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory, JSEXN_ERR
-#include <js/Exception.h>
 #include <js/GCVector.h>      // for StackGCVector
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>            // for PropertyKey
@@ -39,7 +38,10 @@
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_NewPlainObject, IdVector, JS_...
 #include <mozilla/Maybe.h>
-#include <mozilla/UniquePtr.h>
+
+#ifndef G_DISABLE_ASSERT
+#    include <js/Exception.h>  // for JS_IsExceptionPending
+#endif
 
 #include "gjs/atoms.h"
 #include "gjs/auto.h"

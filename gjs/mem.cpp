@@ -8,7 +8,7 @@
 
 #include <glib.h>
 
-#include "gjs/mem-private.h"
+#include "gjs/mem-private.h"  // IWYU pragma: associated
 #include "gjs/mem.h"
 #include "util/log.h"
 

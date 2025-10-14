@@ -11,7 +11,6 @@
 #include <glib.h>
 
 #include <js/Array.h>  // for JS::GetArrayLength
-#include <js/CallAndConstruct.h>  // for IsCallable
 #include <js/CallArgs.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
@@ -22,6 +21,10 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for JS_NewPlainObject
 #include <mozilla/Maybe.h>
+
+#ifndef G_DISABLE_ASSERT
+#    include <js/CallAndConstruct.h>  // for IsCallable
+#endif
 
 #include "gi/closure.h"
 #include "gi/gobject.h"

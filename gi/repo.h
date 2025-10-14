@@ -7,10 +7,7 @@
 
 #include <config.h>
 
-#include <glib-object.h>
-
 #include <js/TypeDecls.h>
-#include <mozilla/Maybe.h>
 
 #include "gi/info.h"
 #include "gjs/macros.h"

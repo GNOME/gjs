@@ -8,7 +8,9 @@
 #endif
 
 #ifdef ENABLE_PROFILER
-#    include <alloca.h>
+// IWYU has a weird loop where if this is present, it asks for it to be removed,
+// and if absent, asks for it to be added
+#    include <alloca.h>  // IWYU pragma: keep
 #    include <errno.h>
 #    include <stdint.h>
 #    include <stdio.h>        // for sscanf
@@ -41,7 +43,7 @@
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"  // for gjs_explain_gc_reason
 #include "gjs/mem-private.h"
-#include "gjs/profiler-private.h"
+#include "gjs/profiler-private.h"  // IWYU pragma: associated
 #include "gjs/profiler.h"
 
 #define FLUSH_DELAY_SECONDS 3

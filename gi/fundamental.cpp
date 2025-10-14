@@ -5,6 +5,8 @@
 
 #include <config.h>
 
+#include <string>  // for string methods
+
 #include <girepository/girepository.h>
 #include <glib.h>
 
@@ -30,6 +32,7 @@
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"
+#include "gjs/jsapi-util-root.h"  // for WeakPtr methods
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"

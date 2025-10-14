@@ -24,7 +24,6 @@
 #include <js/EnvironmentChain.h>
 #include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
 #include <js/Exception.h>
-#include <js/GCVector.h>  // for RootedVector
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/Id.h>
 #include <js/Modules.h>

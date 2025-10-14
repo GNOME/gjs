@@ -12,10 +12,12 @@
 #include <array>
 #include <functional>  // for mem_fn
 #include <limits>
+#include <memory>  // for make_unique, unique_ptr
 #include <string>
 #include <tuple>  // for tie
+#include <type_traits>
 #include <unordered_set>
-#include <utility>      // for move
+#include <utility>  // for move, pair
 #include <vector>
 
 #include <girepository/girepository.h>
@@ -37,6 +39,7 @@
 #include <js/ObjectWithStashedPointer.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
+#include <js/PropertySpec.h>        // for JS_FN, JSFunctionSpec, JSPropertySpec
 #include <js/String.h>
 #include <js/Symbol.h>
 #include <js/TypeDecls.h>

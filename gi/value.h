@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include <cstddef>  // for nullptr_t
 #include <sstream>  // for ostringstream
 #include <string>   // for string
 #include <type_traits>
@@ -17,6 +18,7 @@
 
 #include <glib-object.h>
 #include <glib.h>    // for FALSE, g_clear_pointer, g_free, g_variant_...
+// IWYU pragma: no_forward_declare _GHashTable
 
 #include <js/TypeDecls.h>
 

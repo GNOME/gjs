@@ -6,11 +6,11 @@
 #include <config.h>
 
 #include <limits.h>  // for SSIZE_MAX
-#include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <string.h>  // for strcmp, memchr, strlen
 
 #include <algorithm>
+#include <cstddef>  // for nullptr_t, size_t
 #include <iterator>  // for distance
 #include <memory>    // for unique_ptr
 #include <string>    // for u16string
@@ -253,7 +253,7 @@ template <class T>
         return 0;
 
     const T* start = data;
-    auto* found = static_cast<const T*>(std::memchr(start, '\0', len));
+    auto* found = static_cast<const T*>(memchr(start, '\0', len));
 
     // If a null byte was not found, return the passed length.
     if (!found)

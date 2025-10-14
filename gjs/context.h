@@ -15,6 +15,10 @@
 #include <stdint.h>
 #include <sys/types.h> /* for ssize_t */
 
+#ifndef _WIN32
+#    include <signal.h> /* for siginfo_t */
+#endif
+
 #include <glib-object.h>
 #include <glib.h>
 
