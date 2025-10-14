@@ -255,7 +255,19 @@ describe('Gio.add_action_entries override', function () {
             },
             {
                 name: 'bar',
+                parameter_type: new GLib.VariantType('s'),
+            },
+            {
+                name: 'baz',
                 state: 'false',
+            },
+            {
+                name: 'qux',
+                state: GLib.Variant.new_boolean(true),
+            },
+            {
+                name: 'quux',
+                state: true,
             },
         ];
 
@@ -265,7 +277,16 @@ describe('Gio.add_action_entries override', function () {
         expect(app.lookup_action('foo').parameter_type.dup_string()).toEqual(entries[0].parameter_type);
 
         expect(app.lookup_action('bar').name).toEqual(entries[1].name);
-        expect(app.lookup_action('bar').state.print(true)).toEqual(entries[1].state);
+        expect(app.lookup_action('bar').parameter_type.dup_string()).toEqual(entries[1].parameter_type.dup_string());
+
+        expect(app.lookup_action('baz').name).toEqual(entries[2].name);
+        expect(app.lookup_action('baz').state.print(true)).toEqual(entries[2].state);
+
+        expect(app.lookup_action('qux').name).toEqual(entries[3].name);
+        expect(app.lookup_action('qux').state.print(true)).toEqual(entries[3].state.print(true));
+
+        expect(app.lookup_action('quux').name).toEqual(entries[4].name);
+        expect(app.lookup_action('quux').state.get_boolean()).toEqual(entries[4].state);
     });
 
     it('connects and binds the activate handler', function (done) {
