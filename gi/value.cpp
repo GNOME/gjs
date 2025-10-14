@@ -1084,7 +1084,7 @@ static bool gjs_value_from_g_value_internal(
         }
 
         if (!is_introspected_signal || !introspection_info) {
-            gjs_throw(context, "Unknown signal");
+            gjs_throw(context, "Can't convert untyped array to JS value");
             return false;
         }
         const GI::ArgInfo arg_info = introspection_info->first;
