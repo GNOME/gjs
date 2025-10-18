@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 # SPDX-FileCopyrightText: 2021 Philip Chimento <philip.chimento@gmail.com>
 
-cd ${BUILDDIR:-_build}
+cd "${BUILDDIR:-_build}" || exit 1
 if ! test -f compile_commands.json; then
     echo "compile_commands.json missing. Generate it with ninja -t compdb"
     exit 1

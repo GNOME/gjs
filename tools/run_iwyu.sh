@@ -35,7 +35,7 @@ should_analyze () {
     esac
 }
 
-cd ${BUILDDIR:-_build}
+cd "${BUILDDIR:-_build}" || exit 1
 if ! ninja -t compdb > compile_commands.json; then
     echo 'Generating compile_commands.json failed.'
     exit 1
