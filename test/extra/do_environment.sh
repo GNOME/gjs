@@ -5,7 +5,7 @@
 do_Print_Labels () {
     if test -n "$1"; then
         label_len=${#1}
-        span=$(((54 - $label_len) / 2))
+        span=$(((54 - label_len) / 2))
 
         echo
         echo "= ======================================================== ="
