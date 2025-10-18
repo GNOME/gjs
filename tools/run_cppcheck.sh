@@ -30,4 +30,4 @@ cppcheck --project=compile_commands.json --check-level=exhaustive \
     --suppress=*:subprojects/* --suppress=*:js-resources.c \
     --suppress=*:test/mock-js-resources.c \
     --suppress=*:installed-tests/js/jsunit-resources.c \
-    --library=gtk,cairo,posix,../tools/cppcheck.cfg $@
+    --library=gtk,cairo,posix,../tools/cppcheck.cfg "$@"

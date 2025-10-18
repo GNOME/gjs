@@ -19,11 +19,11 @@ else
     # make stat changes not show up as modifications
     git update-index -q --really-refresh
 
-    files="$(git diff-tree --name-only -r $1..) $(git diff-index --name-only HEAD)"
+    files="$(git diff-tree --name-only -r "$1"..) $(git diff-index --name-only HEAD)"
 fi
 
 should_analyze () {
-    file=$(realpath --relative-to=$SRCDIR $1)
+    file=$(realpath --relative-to="$SRCDIR" "$1")
     case "$files" in
         all) return 0 ;;
         *$file*) return 0 ;;
@@ -67,20 +67,20 @@ for FILE in $SRCDIR/gi/arg-types-inl.h $SRCDIR/gi/js-value-inl.h \
     $SRCDIR/gjs/jsapi-util-args.h $SRCDIR/gjs/jsapi-util-root.h \
     $SRCDIR/modules/cairo-module.h
 do
-    if should_analyze $FILE; then
-        if ! $IWYU_RAW $PRIVATE_MAPPING $(realpath --relative-to=. $FILE) \
+    if should_analyze "$FILE"; then
+        if ! $IWYU_RAW $PRIVATE_MAPPING "$(realpath --relative-to=. "$FILE")" \
             $IWYU_RAW_INC 2>&1 | $POSTPROCESS; then
             EXIT=1
         fi
     fi
 done
 
-for FILE in $SRCDIR/gi/*.cpp $SRCDIR/gjs/*.cpp $SRCDIR/modules/*.cpp \
-    $SRCDIR/test/*.cpp $SRCDIR/util/*.cpp $SRCDIR/libgjs-private/*.c
+for FILE in "$SRCDIR"/gi/*.cpp "$SRCDIR"/gjs/*.cpp "$SRCDIR"/modules/*.cpp \
+    "$SRCDIR"/test/*.cpp "$SRCDIR"/util/*.cpp "$SRCDIR"/libgjs-private/*.c
 do
-    test $FILE = $SRCDIR/gjs/console.cpp && continue
-    if should_analyze $FILE; then
-        if ! $IWYU $FILE -- $PRIVATE_MAPPING $IWYU_TOOL_ARGS | $POSTPROCESS; then
+    test "$FILE" = "$SRCDIR/gjs/console.cpp" && continue
+    if should_analyze "$FILE"; then
+        if ! $IWYU "$FILE" -- $PRIVATE_MAPPING $IWYU_TOOL_ARGS | $POSTPROCESS; then
             EXIT=1
         fi
     fi
@@ -88,8 +88,8 @@ done
 
 for FILE in $SRCDIR/gjs/console.cpp $SRCDIR/installed-tests/minijasmine.cpp
 do
-    if should_analyze $FILE; then
-        if ! $IWYU $FILE -- $PUBLIC_MAPPING $IWYU_TOOL_ARGS | $POSTPROCESS; then
+    if should_analyze "$FILE"; then
+        if ! $IWYU "$FILE" -- $PUBLIC_MAPPING $IWYU_TOOL_ARGS | $POSTPROCESS; then
             EXIT=1
         fi
     fi

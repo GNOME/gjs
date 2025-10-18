@@ -10,11 +10,11 @@ do_Set_Env () {
 
     #SpiderMonkey and libgjs
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib:
-    export GI_TYPELIB_PATH=$GI_TYPELIB_PATH:/usr/lib64/girepository-1.0
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib"
+    export GI_TYPELIB_PATH="$GI_TYPELIB_PATH:/usr/lib64/girepository-1.0"
 
     #Macros
-    export ACLOCAL_PATH=$ACLOCAL_PATH:/usr/local/share/aclocal
+    export ACLOCAL_PATH="$ACLOCAL_PATH:/usr/local/share/aclocal"
 
     export SHELL=/bin/bash
     PATH=$PATH:~/.local/bin
@@ -175,7 +175,7 @@ elif test "$1" = "CPPLINT"; then
     echo
 
     do_Get_Upstream_Base
-    if test $(git rev-parse HEAD) = $(git rev-parse ci-upstream-base); then
+    if test "$(git rev-parse HEAD)" = "$(git rev-parse ci-upstream-base)"; then
         echo '-----------------------------------------'
         echo 'Running against upstream'
         echo '=> cpplint: Nothing to do'

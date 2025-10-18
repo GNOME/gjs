@@ -27,7 +27,7 @@ lcov_outputs=(
 genhtml --prefix "$BUILDDIR/lcov/org/gnome/gjs" --prefix "$BUILDDIR" --prefix "$SOURCEDIR" \
     --output-directory _coverage/html \
     --title "gjs-$VERSION Code Coverage" \
-    $GENHTML_ARGS ${lcov_outputs[@]}
+    $GENHTML_ARGS "${lcov_outputs[@]}"
 
 for lcov_output in "${lcov_outputs[@]}"; do
     cobertura_xml=$(basename "$lcov_output" .lcov).cobertura.xml
