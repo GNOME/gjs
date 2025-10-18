@@ -9,6 +9,8 @@ import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk?version=4.0';
 import System from 'system';
 
+const PromiseInternal = imports._promiseNative;
+
 // This is ugly here, but usually it would be in a resource
 function createTemplate(className) {
     return `
@@ -220,6 +222,244 @@ describe('Gtk 4', function () {
         validateTemplate('UI template from string', MyComplexGtkSubclassFromString);
         validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
         validateTemplate('Class inheriting from template class', SubclassSubclass, true);
+
+        describe('Non-template UI file', function () {
+            let callbacks;
+
+            beforeEach(function () {
+                callbacks = {
+                    onButtonClicked() {},
+                };
+                spyOn(callbacks, 'onButtonClicked');
+            });
+
+            it('from resource', function () {
+                const builder = new Gtk.Builder({
+                    resource: '/org/gjs/jsunit/builder-nontemplate.ui',
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+            });
+
+            it('from filename', function () {
+                const [ntFile, ntStream] = Gio.File.new_tmp(null);
+                const output = ntStream.get_output_stream();
+                const input = Gio.resources_open_stream('/org/gjs/jsunit/builder-nontemplate.ui',
+                    Gio.ResourceLookupFlags.NONE);
+                output.splice(input,
+                    Gio.OutputStreamSpliceFlags.CLOSE_SOURCE | Gio.OutputStreamSpliceFlags.CLOSE_TARGET,
+                    null);
+
+                const builder = new Gtk.Builder({
+                    filename: ntFile.get_path(),
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+
+                ntFile.delete(null);
+            });
+
+            it('from string', function () {
+                const data = Gio.resources_lookup_data('/org/gjs/jsunit/builder-nontemplate.ui',
+                    Gio.ResourceLookupFlags.NONE);
+                const decoder = new TextDecoder('utf-8');
+                const string = decoder.decode(data);
+                const builder = new Gtk.Builder({
+                    data: string,
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+            });
+
+            it('from bytes', function () {
+                const data = Gio.resources_lookup_data('/org/gjs/jsunit/builder-nontemplate.ui',
+                    Gio.ResourceLookupFlags.NONE);
+                const builder = new Gtk.Builder({
+                    data,
+                    callbacks,
+                });
+                const button = builder.get_object('button');
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+            });
+        });
+
+        describe('UI file with external objects', function () {
+            const builderXML = `
+                <?xml version="1.0" encoding="UTF-8"?>
+                <interface>
+                    <object class="GtkWindow" id="window">
+                        <child>
+                            <object class="GtkButton" id="button">
+                                <property name="child">label</property>
+                                <signal name="clicked" handler="onButtonClicked" object="obj" swapped="False"/>
+                            </object>
+                        </child>
+                    </object>
+                </interface>
+            `;
+
+            let callbacks, label, obj;
+            beforeEach(function () {
+                obj = new GObject.Object();
+                label = new Gtk.Label({label: 'Text'});
+                callbacks = {
+                    onButtonClicked() {},
+                };
+                spyOn(callbacks, 'onButtonClicked');
+            });
+
+            it('fails if external objects not provided', function () {
+                expect(() => new Gtk.Builder({data: builderXML})).toThrow();
+            });
+
+            it('with objects provided at construct time', function () {
+                const builder = new Gtk.Builder({
+                    data: builderXML,
+                    callbacks,
+                    objects: {label, obj},
+                });
+
+                const button = builder.get_object('button');
+                expect(button.child).toBe(label);
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalled();
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(obj);
+            });
+
+            it('with objects provided using expose_object', function () {
+                const builder = new Gtk.Builder({callbacks});
+                builder.expose_object('label', label);
+                builder.expose_object('obj', obj);
+                builder.add_from_string(builderXML, -1);
+
+                const button = builder.get_object('button');
+                expect(button.child).toBe(label);
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalled();
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(obj);
+            });
+
+            it('with objects provided using exposeObjects', function () {
+                const builder = new Gtk.Builder({callbacks});
+                builder.exposeObjects({label, obj});
+                builder.add_from_string(builderXML, -1);
+
+                const button = builder.get_object('button');
+                expect(button.child).toBe(label);
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalled();
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(obj);
+            });
+
+            it('lets object be retrieved using get_object', function () {
+                const builder = new Gtk.Builder({
+                    data: builderXML,
+                    callbacks,
+                    objects: {label, obj},
+                });
+                expect(builder.get_object('label')).toBe(label);
+                expect(builder.get_object('obj')).toBe(obj);
+            });
+
+            it('lets object be retrieved using get_objects', function () {
+                const builder = new Gtk.Builder({
+                    data: builderXML,
+                    callbacks,
+                    objects: {label, obj},
+                });
+                const objects = builder.get_objects();
+                expect(objects).toEqual(jasmine.arrayContaining([label, obj]));
+
+                expect(objects.label).toBe(label);
+                expect(objects.obj).toBe(obj);
+            });
+        });
+
+        describe('Gtk.Builder.get_objects override', function () {
+            const objectsXML = `
+                <?xml version="1.0" encoding="UTF-8"?>
+                <interface>
+                    <object class="GtkWindow" id="window">
+                        <child>
+                            <object class="GtkBox" id="box">
+                                <child>
+                                    <object class="GtkLabel" id="label"/>
+                                </child>
+                                <child>
+                                    <!-- label with in-range integer index ID -->
+                                    <object class="GtkLabel" id="0"/>
+                                </child>
+                                <child>
+                                    <!-- label with out-of-range integer index ID -->
+                                    <object class="GtkLabel" id="10"/>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </interface>`;
+
+            let objects, window, box, label, zero, ten;
+            beforeEach(function () {
+                const builder = new Gtk.Builder({data: objectsXML});
+                window = builder.get_object('window');
+                box = builder.get_object('box');
+                label = builder.get_object('label');
+                zero = builder.get_object('0');
+                ten = builder.get_object('10');
+                objects = builder.get_objects();
+            });
+
+            it('works as a drop-in replacement for the original get_objects', function () {
+                expect(objects).toEqual(jasmine.arrayContaining([window, box, label, zero, ten]));
+            });
+
+            it('allows fetching objects by name', function () {
+                expect(objects.window).toBe(window);
+                expect(objects.box).toBe(box);
+                expect(objects.label).toBe(label);
+            });
+
+            it('does not override array index properties', function () {
+                expect(objects[0]).not.toBe(zero);
+                // OK because the array is not that long
+                expect(objects[10]).toBe(ten);
+            });
+
+            it('does not duplicate calls to get_object', function () {
+                spyOn(Gtk.Builder.prototype, 'get_object').and.callThrough();
+                expect(objects.window).toBe(window);
+                expect(objects.window).toBe(window);
+                expect(Gtk.Builder.prototype.get_object).toHaveBeenCalledTimes(1);
+            });
+
+            it('builder instance is kept alive by the proxy', function () {
+                System.gc();
+                expect(objects.window).toBe(window);
+            });
+
+            it('builder instance is not kept alive if no proxy is returned', function () {
+                let ref;
+                const retrievedWindow = (function () {
+                    const builder = new Gtk.Builder({data: objectsXML});
+                    ref = new WeakRef(builder);
+                    return builder.get_object('window');
+                })();
+                expect(retrievedWindow).toEqual(jasmine.any(Gtk.Window));
+                PromiseInternal.drainMicrotaskQueue();  // let WeakRef lapse
+                System.gc();
+                expect(ref.deref()).not.toBeDefined();
+            });
+        });
 
         it('ensures signal handlers are callable', function () {
             const ClassWithUncallableHandler = GObject.registerClass({

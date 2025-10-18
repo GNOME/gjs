@@ -3,6 +3,7 @@
 <!-- SPDX-FileCopyrightText: 2014 Jonas Danielsson <jonas@threetimestwo.org> -->
 <gresources>
   <gresource prefix="/org/gjs/jsunit">
+    <file preprocess="xml-stripblanks">builder-nontemplate.ui</file>
     <file preprocess="xml-stripblanks">complex3.ui</file>
     <file preprocess="xml-stripblanks">complex4.ui</file>
     <file>jasmine.js</file>

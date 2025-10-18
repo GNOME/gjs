@@ -89,6 +89,103 @@ function _init() {
             );
         }
     });
+
+    const NonTemplateBuilderScope = GObject.registerClass(class extends GObject.Object {
+        static [GObject.GTypeName] = 'NonTemplateBuilderScope';
+        static [GObject.interfaces] = [Gtk.BuilderScope];
+        #callbacks;
+
+        constructor(callbacks = {}) {
+            super();
+            this.#callbacks = callbacks;
+        }
+
+        vfunc_create_closure(builder, handlerName, flags, connectObject) {
+            const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
+            return Gi.associateClosure(
+                connectObject ?? builder.get_current_object() ?? this,
+                _createClosure(builder, this.#callbacks, handlerName, swapped, connectObject)
+            );
+        }
+    });
+
+    class GtkJSBuilder extends Gtk.Builder {
+        static {
+            GObject.registerClass(GtkJSBuilder);
+        }
+
+        static [GObject.GTypeName] = 'GtkJSBuilder';
+
+        /**
+         * @param {object} [props] Construct properties
+         * @param {string | Uint8Array} [props.data] XML interface description
+         * @param {string} [props.filename] Local filename for XML interface
+         * @param {string} [props.resource] Resource path for XML interface
+         * @param {object} [props.callbacks] Object with callbacks to expose
+         * @param {object} [props.objects] Object with other objects to expose
+         * @param {Gtk.BuilderConstructParameters} [props.props] Other
+         *   Gtk.Builder construct properties
+         */
+        constructor({data, filename, resource, callbacks, objects, ...props} = {}) {
+            const countOfDataSources = [data, filename, resource]
+            .filter(source => source !== undefined)
+            .length;
+
+            if (countOfDataSources === 0) {
+                if (!callbacks && !objects) {
+                    super(props);
+                    return;  // default behaviour if no extra properties passed
+                }
+            } else if (countOfDataSources !== 1) {
+                throw new Error('Pass at most one of data, filename, or resource');
+            }
+            if (props.scope)
+                throw new Error("Don't pass a scope property when using JS Gtk.Builder features");
+
+            const scope = new NonTemplateBuilderScope(callbacks);
+            super({...props, scope});
+
+            if (objects)
+                this.exposeObjects(objects);
+
+            if (data) {
+                const str = typeof data === 'string' ? data : new TextDecoder().decode(data);
+                this.add_from_string(str, -1);
+            } else if (resource) {
+                this.add_from_resource(resource);
+            } else if (filename) {
+                this.add_from_file(filename);
+            }
+        }
+
+        // override for original get_objects() method that returns a Proxy which
+        // accesses get_object() on property accesses, so that you can do
+        // const {name1, name2} = builder.get_objects();
+        // Note the builder instance is kept alive by the proxy!
+        get_objects() {
+            const builder = this;
+            const proxyHandler = {
+                get(objectsArray, id, receiver) {
+                    if (Reflect.has(objectsArray, id))
+                        return Reflect.get(objectsArray, id, receiver);
+                    if (typeof id !== 'string')
+                        return undefined;
+                    const obj = builder.get_object(id);
+                    objectsArray[id] = obj;
+                    return obj;
+                },
+            };
+            const objectsArray = super.get_objects();
+            return new Proxy(objectsArray, proxyHandler);
+        }
+
+        // convenience method
+        exposeObjects(objects) {
+            for (const [name, object] of Object.entries(objects))
+                this.expose_object(name, object);
+        }
+    }
+    Gtk.Builder = GtkJSBuilder;
 }
 
 function _registerWidgetType(klass) {
