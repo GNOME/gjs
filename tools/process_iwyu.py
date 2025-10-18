@@ -93,7 +93,7 @@ FALSE_POSITIVES = (
     ('test/gjs-test-utils.h', '#include <iterator>', 'for pair'),
     ('test/gjs-test-toggle-queue.cpp', '#include <iterator>', 'for pair'),
 
-    # https://github.com/include-what-you-use/include-what-you-use/issues/1831
+    # https://github.com/include-what-you-use/include-what-you-use/issues/1808
     ('gi/value.h', 'class ObjectBox;', ''),
 )
 
