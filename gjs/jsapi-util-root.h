@@ -7,8 +7,7 @@
 
 #include <config.h>
 
-// https://github.com/include-what-you-use/include-what-you-use/issues/1791
-#include <cstddef>  // IWYU pragma: keep
+#include <cstddef>
 #include <memory>
 #include <new>  // IWYU pragma: keep (actually for clangd)
 

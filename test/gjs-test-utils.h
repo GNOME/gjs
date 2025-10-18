@@ -12,7 +12,6 @@
 #include <limits>    // for numeric_limits
 #include <string>
 #include <type_traits>  // for is_same
-#include <utility>      // IWYU pragma: keep
 
 #include <glib.h>  // for g_assert_...
 

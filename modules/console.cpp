@@ -29,7 +29,7 @@
 
 #ifdef HAVE_READLINE_READLINE_H
 #    include <gio/gio.h>
-#    include <gio/gunixinputstream.h>
+#    include <gio/gunixinputstream.h>  // IWYU pragma: keep
 #endif
 
 #include <js/CallAndConstruct.h>

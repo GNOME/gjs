@@ -9,7 +9,6 @@
 #include <errno.h> /* for errno */
 #include <locale.h> /* for setlocale/duplocale/uselocale/newlocale/freelocale */
 #include <stdbool.h>
-#include <stddef.h> /* for size_t */
 #include <string.h>
 
 #include <glib-object.h>
