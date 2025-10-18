@@ -46,9 +46,11 @@ if [ -n "$SELFTEST" ]; then
     expect_success
 
     test_env
-    echo "#include <stlib.h>" >> gi/code.c
-    echo "#include <invalid1.h> // NOcheck-pch: ignore" >> gi/code.c
-    echo "#include <invalid2.h> // check-pch: ignoreNO" >> gi/code.c
+    cat <<EOF >> gi/code.c
+#include <stlib.h>
+#include <invalid1.h> // NOcheck-pch: ignore
+#include <invalid2.h> // check-pch: ignoreNO
+EOF
     echo "#include <invalid3.h> // check-pch: ignore, yes" >> gi/other-code.c
     expect_failure
 
