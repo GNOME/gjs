@@ -3001,7 +3001,6 @@ bool ObjectBase::connect_object(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
                                   bool after, bool object) {
-    gulong id;
     guint signal_id;
     GQuark signal_detail;
     const char* func_name = object  ? "connect_object"
@@ -3069,8 +3068,8 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
         return false;
     }
 
-    id = g_signal_connect_closure_by_id(m_ptr, signal_id, signal_detail,
-                                        closure, after);
+    unsigned long id = g_signal_connect_closure_by_id(  // NOLINT(runtime/int)
+        m_ptr, signal_id, signal_detail, closure, after);
 
     args.rval().setDouble(id);
 
