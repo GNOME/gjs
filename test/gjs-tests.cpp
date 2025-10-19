@@ -523,7 +523,7 @@ static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw
     g_assert_true(ok);
     g_assert_no_error(error);
 
-    ok = gjs_context_eval_module(gjs, "lies", NULL, &error);
+    ok = gjs_context_eval_module(gjs, "lies", nullptr, &error);
 
     g_assert_true(ok);
     g_assert_no_error(error);
@@ -618,7 +618,7 @@ static void gjstest_test_func_gjs_gobject_js_defined_type() {
     GType foo_type = g_type_from_name("Gjs_FooBar");
     g_assert_cmpuint(foo_type, !=, G_TYPE_INVALID);
 
-    gpointer foo = g_object_new(foo_type, NULL);
+    void* foo = g_object_new(foo_type, nullptr);
     g_assert_true(G_IS_OBJECT(foo));
 
     g_object_unref(foo);
@@ -647,7 +647,7 @@ static void gjstest_test_func_gjs_gobject_without_introspection() {
     g_assert_nonnull(obj);
 
     int val = 0;
-    g_object_get(obj, "a-int", &val, NULL);
+    g_object_get(obj, "a-int", &val, nullptr);
     g_assert_cmpint(val, ==, 1234);
 
 #undef TESTJS
@@ -888,9 +888,7 @@ static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
 }
 
 static void gjstest_test_func_util_misc_strv_concat_null() {
-    char **ret;
-
-    ret = gjs_g_strv_concat(NULL, 0);
+    char** ret = gjs_g_strv_concat(nullptr, 0);
     g_assert_nonnull(ret);
     g_assert_null(ret[0]);
 
@@ -898,10 +896,10 @@ static void gjstest_test_func_util_misc_strv_concat_null() {
 }
 
 static void gjstest_test_func_util_misc_strv_concat_pointers() {
-    char  *strv0[2] = {(char*)"foo", NULL};
-    char  *strv1[1] = {NULL};
-    char **strv2    = NULL;
-    char  *strv3[2] = {(char*)"bar", NULL};
+    char* strv0[2] = {(char*)"foo", nullptr};
+    char* strv1[1] = {nullptr};
+    char** strv2 = nullptr;
+    char* strv3[2] = {(char*)"bar", nullptr};
     char **stuff[4];
     char **ret;
 
@@ -1331,9 +1329,9 @@ main(int    argc,
     g_test_add_func("/gjs/context/eval-file/source-map",
                     gjstest_test_func_gjs_context_eval_file_source_map);
 
-#define ADD_JSAPI_UTIL_TEST(path, func)                            \
-    g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
-               gjs_unit_test_fixture_setup, func,                  \
+#define ADD_JSAPI_UTIL_TEST(path, func)                              \
+    g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, nullptr, \
+               gjs_unit_test_fixture_setup, func,                    \
                gjs_unit_test_fixture_teardown)
 
     ADD_JSAPI_UTIL_TEST("error/throw",

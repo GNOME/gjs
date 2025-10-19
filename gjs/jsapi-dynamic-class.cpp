@@ -48,11 +48,11 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
                             JS::MutableHandleObject prototype,
                             JS::MutableHandleObject constructor) {
     /* Without a name, JS_NewObject fails */
-    g_assert (clasp->name != NULL);
+    g_assert(clasp->name != nullptr);
 
     /* gjs_init_class_dynamic only makes sense for instantiable classes,
        use JS_InitClass for static classes like Math */
-    g_assert (constructor_native != NULL);
+    g_assert(constructor_native != nullptr);
 
     /* Class initialization consists of five parts:
        - building a prototype
@@ -111,7 +111,7 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
 
 bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,
                             const JSClass* static_clasp, bool throw_error) {
-    if (!JS_InstanceOf(cx, obj, static_clasp, NULL)) {
+    if (!JS_InstanceOf(cx, obj, static_clasp, nullptr)) {
         if (throw_error) {
             const JSClass* obj_class = JS::GetClass(obj);
 
@@ -134,7 +134,7 @@ JSObject* gjs_construct_object_dynamic(JSContext* cx, JS::HandleObject proto,
 
     if (!gjs_object_require_property(cx, proto, "prototype",
                                      atoms.constructor(), &constructor))
-        return NULL;
+        return nullptr;
 
     JS::RootedValue v_constructor{cx, JS::ObjectValue(*constructor)};
     JS::RootedObject object{cx};

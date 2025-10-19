@@ -654,10 +654,10 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
         while (true) {
             GFileInfo *info;
             GFile *file;
-            if (!direnum ||
-                !g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
+            if (!direnum || !g_file_enumerator_iterate(direnum, &info, &file,
+                                                       nullptr, nullptr))
                 break;
-            if (info == NULL || file == NULL)
+            if (info == nullptr || file == nullptr)
                 break;
 
             Gjs::AutoChar filename{g_file_get_basename(file)};
@@ -766,7 +766,7 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
         if (envstr) {
             char **dirs, **d;
             dirs = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
-            for (d = dirs; *d != NULL; d++)
+            for (d = dirs; *d != nullptr; d++)
                 gjs_search_path.push_back(*d);
             /* we assume the array and strings are allocated separately */
             g_free(dirs);
@@ -777,7 +777,7 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 
         /* $XDG_DATA_DIRS /gjs-1.0 */
         system_data_dirs = g_get_system_data_dirs();
-        for (i = 0; system_data_dirs[i] != NULL; ++i) {
+        for (i = 0; system_data_dirs[i] != nullptr; ++i) {
             Gjs::AutoChar s{
                 g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr)};
             gjs_search_path.push_back(s.get());
@@ -874,7 +874,8 @@ static JSObject* gjs_create_importer(
             JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 
-    if (!define_meta_properties(cx, importer, NULL, importer_name, in_object))
+    if (!define_meta_properties(cx, importer, nullptr, importer_name,
+                                in_object))
         return nullptr;
 
     return importer;

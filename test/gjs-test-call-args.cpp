@@ -343,7 +343,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
 
     /* Cheap way to shove an expected exception message into the data argument */
     const char *expected_msg = strstr((const char *) code, "//");
-    if (expected_msg != NULL) {
+    if (expected_msg != nullptr) {
         expected_msg += 2;
         assert_match(message, expected_msg);
     }

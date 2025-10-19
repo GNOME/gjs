@@ -151,7 +151,7 @@ void gjs_log_init() {
         s_enabled_topics.fill(topics == nullptr);
         if (topics) {
             Gjs::AutoStrv prefixes{g_strsplit(topics, ";", -1)};
-            for (unsigned i = 0; prefixes[i] != NULL; i++) {
+            for (unsigned i = 0; prefixes[i] != nullptr; i++) {
                 GjsDebugTopic topic = prefix_to_topic(prefixes[i]);
                 if (topic != GJS_DEBUG_LAST)
                     s_enabled_topics[topic] = true;
@@ -202,7 +202,7 @@ gjs_debug(GjsDebugTopic topic,
 
     if (s_timer) {
         static gdouble previous = 0.0;
-        gdouble total = g_timer_elapsed(s_timer, NULL) * 1000.0;
+        gdouble total = g_timer_elapsed(s_timer, nullptr) * 1000.0;
         gdouble since = total - previous;
         const char *ts_suffix;
         char *s2;

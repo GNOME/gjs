@@ -76,7 +76,7 @@ static bool get_version_for_ns(JSContext* cx, JS::HandleObject repo_obj,
     if (!found)
         return true;
 
-    return gjs_object_require_property(cx, versions, NULL, ns_id, version);
+    return gjs_object_require_property(cx, versions, nullptr, ns_id, version);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -370,11 +370,11 @@ JSObject* gjs_lookup_private_namespace(JSContext* cx) {
 /* Get the namespace object that the GIBaseInfo should be inside */
 JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo info) {
     const char* ns = info.ns();
-    if (ns == NULL) {
+    if (ns == nullptr) {
         gjs_throw(cx, "%s '%s' does not have a namespace", info.type_string(),
                   info.name());
 
-        return NULL;
+        return nullptr;
     }
 
     JS::RootedId ns_name{cx, gjs_intern_string_to_id(cx, ns)};
@@ -471,7 +471,7 @@ static JSObject* lookup_namespace(JSContext* cx, JSObject* global,
     JS::RootedObject retval(cx);
     if (!gjs_object_require_property(cx, gi, "GI repository object", ns_name,
                                      &retval))
-        return NULL;
+        return nullptr;
 
     return retval;
 }
@@ -511,17 +511,17 @@ JSObject* gjs_lookup_generic_constructor(JSContext* cx,
     const char* constructor_name = info.name();
 
     if (G_UNLIKELY (!in_object))
-        return NULL;
+        return nullptr;
 
     JS::RootedValue value{cx};
     if (!JS_GetProperty(cx, in_object, constructor_name, &value))
-        return NULL;
+        return nullptr;
 
     if (G_UNLIKELY(!value.isObject())) {
         gjs_throw(cx,
                   "Constructor of %s.%s was the wrong type, expected an object",
                   info.ns(), constructor_name);
-        return NULL;
+        return nullptr;
     }
 
     return &value.toObject();
@@ -530,18 +530,18 @@ JSObject* gjs_lookup_generic_constructor(JSContext* cx,
 JSObject* gjs_lookup_generic_prototype(JSContext* cx, const GI::BaseInfo info) {
     JS::RootedObject constructor{cx, gjs_lookup_generic_constructor(cx, info)};
     if (G_UNLIKELY(!constructor))
-        return NULL;
+        return nullptr;
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue value{cx};
     if (!JS_GetPropertyById(cx, constructor, atoms.prototype(), &value))
-        return NULL;
+        return nullptr;
 
     if (G_UNLIKELY(!value.isObject())) {
         gjs_throw(cx,
                   "Prototype of %s.%s was the wrong type, expected an object",
                   info.ns(), info.name());
-        return NULL;
+        return nullptr;
     }
 
     return &value.toObject();

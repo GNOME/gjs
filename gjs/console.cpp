@@ -59,7 +59,7 @@ static GOptionEntry entries[] = {
         "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
         "FILE" },
     { "debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode" },
-    { NULL }
+    { nullptr }
 };
 // clang-format on
 
@@ -74,11 +74,11 @@ static GOptionEntry entries[] = {
 }
 
 [[nodiscard]] static Gjs::AutoStrv strcatv(char** strv1, char** strv2) {
-    if (strv1 == NULL && strv2 == NULL)
-        return NULL;
-    if (strv1 == NULL)
+    if (strv1 == nullptr && strv2 == nullptr)
+        return nullptr;
+    if (strv1 == nullptr)
         return g_strdupv(strv2);
-    if (strv2 == NULL)
+    if (strv2 == nullptr)
         return g_strdupv(strv1);
 
     Gjs::AutoPointer<GStrvBuilder, GStrvBuilder, g_strv_builder_unref> builder{
@@ -113,7 +113,7 @@ check_script_args_for_stray_gjs_args(int           argc,
         { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, new_coverage_prefixes.out() },
         { "coverage-output", 0, 0, G_OPTION_ARG_STRING, new_coverage_output_path.out() },
         { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, new_include_paths.out() },
-        { NULL }
+        { nullptr }
     };
     // clang-format on
 
@@ -123,12 +123,13 @@ check_script_args_for_stray_gjs_args(int           argc,
     argv_copy[0] = g_strdup("dummy"); /* Fake argv[0] for GOptionContext */
     for (ix = 0; ix < argc; ix++)
         argv_copy[ix + 1] = g_strdup(argv[ix]);
-    argv_copy[argc + 1] = NULL;
+    argv_copy[argc + 1] = nullptr;
 
-    GjsAutoGOptionContext script_options = g_option_context_new(NULL);
+    GjsAutoGOptionContext script_options = g_option_context_new(nullptr);
     g_option_context_set_ignore_unknown_options(script_options, true);
     g_option_context_set_help_enabled(script_options, false);
-    g_option_context_add_main_entries(script_options, script_check_entries, NULL);
+    g_option_context_add_main_entries(script_options, script_check_entries,
+                                      nullptr);
     if (!g_option_context_parse_strv(script_options, argv_copy.out(), &error)) {
         g_warning("Scanning script arguments failed: %s", error->message);
         return;
@@ -202,14 +203,14 @@ int main(int argc, char** argv) {
 
     setlocale(LC_ALL, "");
 
-    GjsAutoGOptionContext context = g_option_context_new(NULL);
+    GjsAutoGOptionContext context = g_option_context_new(nullptr);
     g_option_context_set_ignore_unknown_options(context, true);
     g_option_context_set_help_enabled(context, false);
 
     Gjs::AutoStrv argv_copy_addr{g_strdupv(argv)};
     char** argv_copy = argv_copy_addr;
 
-    g_option_context_add_main_entries(context, entries, NULL);
+    g_option_context_add_main_entries(context, entries, nullptr);
     if (!g_option_context_parse_strv(context, &argv_copy, &error))
         g_error("option parsing failed: %s", error->message);
 
@@ -344,7 +345,7 @@ int main(int argc, char** argv) {
         nullptr))};
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
-    if (env_coverage_output_path != NULL) {
+    if (env_coverage_output_path != nullptr) {
         g_free(coverage_output_path);
         coverage_output_path = g_strdup(env_coverage_output_path);
     }

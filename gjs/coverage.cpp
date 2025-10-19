@@ -5,7 +5,6 @@
 
 #include <config.h>
 
-#include <stdlib.h>  // for free, size_t
 #include <string.h>  // for strcmp, strlen
 
 #include <new>
@@ -66,7 +65,7 @@ enum {
     PROP_N
 };
 
-static GParamSpec *properties[PROP_N] = { NULL, };
+static GParamSpec* properties[PROP_N];
 
 [[nodiscard]] static char* get_file_identifier(GFile* source_file) {
     char *path = g_file_get_path(source_file);
@@ -106,10 +105,8 @@ static GErrorResult<> copy_source_file_to_coverage_output(
     return Ok{};
 }
 
-/* This function will strip a URI scheme and return
- * the string with the URI scheme stripped or NULL
- * if the path was not a valid URI
- */
+// This function will strip a URI scheme and return the string with the URI
+// scheme stripped or nullptr if the path was not a valid URI
 [[nodiscard]] static char* strip_uri_scheme(const char* potential_uri) {
     char *uri_header = g_uri_parse_scheme(potential_uri);
 
@@ -123,7 +120,7 @@ static GErrorResult<> copy_source_file_to_coverage_output(
         return g_strdup(potential_uri + offset + 4);
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /* This function will return a string of pathname
@@ -221,7 +218,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
         return Err(error.release());
 
     Gjs::AutoStrv lcov_lines{g_strsplit(lcov.get(), "\n", -1)};
-    const char* test_name = NULL;
+    const char* test_name = nullptr;
     bool ignoring_file = false;
 
     for (const char * const *iter = lcov_lines.get(); *iter; iter++) {
@@ -380,7 +377,7 @@ gjs_coverage_set_property(GObject      *object,
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     switch (prop_id) {
     case PROP_PREFIXES:
-        g_assert(priv->prefixes == NULL);
+        g_assert(priv->prefixes == nullptr);
         priv->prefixes = (char **) g_value_dup_boxed (value);
         break;
     case PROP_CONTEXT:
@@ -485,12 +482,9 @@ gjs_coverage_new (const char * const *prefixes,
                   GjsContext         *context,
                   GFile              *output_dir)
 {
-    GjsCoverage *coverage =
-        GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
-                                  "prefixes", prefixes,
-                                  "context", context,
-                                  "output-directory", output_dir,
-                                  NULL));
+    GjsCoverage* coverage = GJS_COVERAGE(
+        g_object_new(GJS_TYPE_COVERAGE, "prefixes", prefixes, "context",
+                     context, "output-directory", output_dir, nullptr));
 
     return coverage;
 }

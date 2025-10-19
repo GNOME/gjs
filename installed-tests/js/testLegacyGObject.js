@@ -43,7 +43,7 @@ const MyObject = new GObject.Class({
 
     _init(props) {
         // check that it's safe to set properties before
-        // chaining up (priv is NULL at this point, remember)
+        // chaining up (priv is null at this point, remember)
         this._readwrite = 'foo';
         this._readonly = 'bar';
         this._constructProp = null;

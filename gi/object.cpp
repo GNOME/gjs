@@ -2886,15 +2886,15 @@ static JSObject* gjs_lookup_object_constructor_from_info(
     }
 
     if (G_UNLIKELY (!in_object))
-        return NULL;
+        return nullptr;
 
     bool found;
     if (!JS_HasProperty(cx, in_object, constructor_name, &found))
-        return NULL;
+        return nullptr;
 
     JS::RootedValue value{cx};
     if (found && !JS_GetProperty(cx, in_object, constructor_name, &value))
-        return NULL;
+        return nullptr;
 
     JS::RootedObject constructor{cx};
     if (value.isUndefined()) {
@@ -2907,7 +2907,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
             return nullptr;
     } else {
         if (G_UNLIKELY (!value.isObject()))
-            return NULL;
+            return nullptr;
 
         constructor = &value.toObject();
     }
@@ -2927,13 +2927,13 @@ static JSObject* gjs_lookup_object_prototype_from_info(
         cx, gjs_lookup_object_constructor_from_info(cx, info, gtype)};
 
     if (G_UNLIKELY(!constructor))
-        return NULL;
+        return nullptr;
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject prototype{cx};
     if (!gjs_object_require_property(cx, constructor, "constructor object",
                                      atoms.prototype(), &prototype))
-        return NULL;
+        return nullptr;
 
     return prototype;
 }
@@ -3055,7 +3055,7 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
 
     GClosure* closure = Gjs::Closure::create_for_signal(
         cx, callback, "signal callback", signal_id);
-    if (closure == NULL)
+    if (closure == nullptr)
         return false;
 
     if (associate_obj.get() != nullptr) {
@@ -3424,7 +3424,6 @@ bool ObjectBase::init_gobject(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->init_impl(cx, argv, obj);
 }
 
-// clang-format off
 const struct JSClassOps ObjectBase::class_ops = {
     &ObjectBase::add_property,
     nullptr,  // deleteProperty
@@ -3433,11 +3432,12 @@ const struct JSClassOps ObjectBase::class_ops = {
     &ObjectBase::resolve,
     nullptr,  // mayResolve
     &ObjectBase::finalize,
-    NULL,
-    NULL,
+    nullptr,  // call
+    nullptr,  // construct
     &ObjectBase::trace,
 };
 
+// clang-format off
 const struct JSClass ObjectBase::klass = {
     "GObject_Object",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
@@ -3753,7 +3753,7 @@ static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
         GTypeInstance *implementor_iface_class;
         implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
                                                         ancestor_gtype);
-        if (implementor_iface_class == NULL) {
+        if (implementor_iface_class == nullptr) {
             gjs_throw(cx, "Couldn't find GType of implementor of interface %s.",
                       g_type_name(ancestor_gtype));
             return Nothing{};
@@ -3945,7 +3945,7 @@ bool gjs_lookup_object_constructor(JSContext* cx, GType gtype,
     JSObject* constructor =
         gjs_lookup_object_constructor_from_info(cx, object_info, gtype);
 
-    if (G_UNLIKELY (constructor == NULL))
+    if (G_UNLIKELY(constructor == nullptr))
         return false;
 
     value_p.setObject(*constructor);

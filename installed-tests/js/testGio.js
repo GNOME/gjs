@@ -239,7 +239,7 @@ describe('Gio.Settings overrides', function () {
 });
 
 describe('Gio.content_type_set_mime_dirs', function () {
-    it('can be called with NULL argument', function () {
+    it('can be called with null argument', function () {
         expect(() => Gio.content_type_set_mime_dirs(null)).not.toThrow();
     });
 });

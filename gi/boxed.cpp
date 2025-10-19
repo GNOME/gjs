@@ -294,7 +294,7 @@ bool BoxedInstance<Base, Prototype, Instance>::invoke_static_method(
         return false;
 
     JS::RootedValue method{cx};
-    if (!gjs_object_require_property(cx, js_constructor, NULL, method_name,
+    if (!gjs_object_require_property(cx, js_constructor, nullptr, method_name,
                                      &method))
         return false;
 
@@ -1012,8 +1012,8 @@ template <class Base, class Prototype, class Instance>
 template <typename... Args>
 JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
     JSContext* cx, const BoxedInfo info, void* gboxed, Args&&... args) {
-    if (gboxed == NULL)
-        return NULL;
+    if (gboxed == nullptr)
+        return nullptr;
 
     gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct %s %p with JSObject",
                       info.name(), gboxed);

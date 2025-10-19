@@ -786,7 +786,7 @@ void gjs_profiler_set_capture_writer(GjsProfiler* self, gpointer capture) {
     self->target_capture =
         capture ? sysprof_capture_writer_ref(
                       reinterpret_cast<SysprofCaptureWriter*>(capture))
-                : NULL;
+                : nullptr;
 #else
     // Unused in the no-profiler case
     (void)capture;

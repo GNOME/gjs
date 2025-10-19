@@ -250,7 +250,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
             return false;
         }
 
-        /* FIXME we don't know if the list elements can be NULL.
+        /* FIXME we don't know if the list elements can be null.
          * gobject-introspection needs to tell us this.
          * Always say they can't for now.
          */
@@ -286,7 +286,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
      * Rely on the type-aware gi_argument_release functions. */
     if (is_string_type(key_type))
         return g_hash_table_new(g_str_hash, g_str_equal);
-    return g_hash_table_new(NULL, NULL);
+    return g_hash_table_new(nullptr, nullptr);
 }
 
 template <typename IntTag>
@@ -1142,7 +1142,7 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
     }
 
     if (value.isNull()) {
-        *contents = NULL;
+        *contents = nullptr;
         *length_p = 0;
     } else if (value.isString()) {
         /* Allow strings as int8/uint8/int16/uint16 arrays */
@@ -2607,7 +2607,7 @@ static bool gjs_array_from_boxed_array(JSContext* cx,
                                        GITransfer transfer, GIArgument* arg) {
     GArray *array;
     GPtrArray *ptr_array;
-    gpointer data = NULL;
+    void* data = nullptr;
     gsize length = 0;
 
     if (!gjs_arg_get<void*>(arg)) {
@@ -2924,7 +2924,7 @@ bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue value_p,
              "use gjs_value_from_basic_ghash() instead");
 
     // a NULL hash table becomes a null JS value
-    if (hash==NULL) {
+    if (hash == nullptr) {
         value_p.setNull();
         return true;
     }

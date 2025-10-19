@@ -160,7 +160,7 @@ enum {
 };
 
 static GMutex contexts_lock;
-static GList *all_contexts = NULL;
+static GList* all_contexts = nullptr;
 
 static Gjs::AutoChar dump_heap_output;
 static unsigned dump_heap_idle_id = 0;
@@ -466,7 +466,7 @@ void GjsContextPrivate::dispose() {
 
         /* Now, release all native objects, to avoid recursion between
          * the JS teardown and the C teardown.  The JSObject proxies
-         * still exist, but point to NULL.
+         * still exist, but point to null.
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing all native objects");
         ObjectInstance::prepare_shutdown();
@@ -512,7 +512,7 @@ static void
 gjs_context_finalize(GObject *object)
 {
     if (gjs_context_get_current() == (GjsContext*)object)
-        gjs_context_make_current(NULL);
+        gjs_context_make_current(nullptr);
 
     g_mutex_lock(&contexts_lock);
     all_contexts = g_list_remove(all_contexts, object);
@@ -881,15 +881,14 @@ gjs_context_set_property (GObject      *object,
 }
 
 GjsContext* gjs_context_new() {
-    return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT, NULL);
+    return (GjsContext*)g_object_new(GJS_TYPE_CONTEXT, nullptr);
 }
 
 GjsContext*
 gjs_context_new_with_search_path(char** search_path)
 {
-    return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT,
-                         "search-path", search_path,
-                         NULL);
+    return (GjsContext*)g_object_new(GJS_TYPE_CONTEXT, "search-path",
+                                     search_path, nullptr);
 }
 
 gboolean GjsContextPrivate::trigger_gc_if_needed(void* data) {
@@ -974,7 +973,7 @@ void GjsContextPrivate::exit(uint8_t exit_code) {
 }
 
 bool GjsContextPrivate::should_exit(uint8_t* exit_code_p) const {
-    if (exit_code_p != NULL)
+    if (exit_code_p != nullptr)
         *exit_code_p = m_exit_code;
     return m_should_exit;
 }
@@ -1298,7 +1297,7 @@ GList* gjs_context_get_all() {
 void*
 gjs_context_get_native_context (GjsContext *js_context)
 {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), NULL);
+    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
     return gjs->context();
 }
@@ -1835,7 +1834,7 @@ GjsContext* gjs_context_get_current() { return current_context; }
 void
 gjs_context_make_current (GjsContext *context)
 {
-    g_assert (context == NULL || current_context == NULL);
+    g_assert(context == nullptr || current_context == nullptr);
 
     current_context = context;
 }

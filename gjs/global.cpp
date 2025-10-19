@@ -546,7 +546,7 @@ bool gjs_global_source_map_get(
  * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
  * resource://org/gnome/gjs/modules/script/_bootstrap/@bootstrap_script) or
- * %NULL for none
+ * nullptr for none
  *
  * Defines properties on the global object such as 'window' and 'imports', and
  * runs a bootstrap JS script on the global object to define any properties

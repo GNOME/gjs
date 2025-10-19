@@ -4,7 +4,6 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for NULL
 #include <stdint.h>
 
 #include <sstream>
@@ -168,9 +167,10 @@ static bool maybe_release_signal_value(JSContext* cx,
 }
 
 /*
- * Gets signal introspection info about closure, or NULL if not found. Currently
- * only works for signals on introspected GObjects, not signals on GJS-defined
- * GObjects nor standalone closures. The return value must be unreffed.
+ * Gets signal introspection info about closure, or Nothing if not found.
+ * Currently only works for signals on introspected GObjects, not signals on
+ * GJS-defined GObjects nor standalone closures. The return value must be
+ * unreffed.
  */
 [[nodiscard]]
 static Maybe<GI::AutoSignalInfo> get_signal_info_if_available(
@@ -419,7 +419,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     // null return_value means the closure wasn't expected to return a value.
     // Discard the JS function's return value in that case.
-    if (return_value != NULL) {
+    if (return_value != nullptr) {
         if (rval.isUndefined()) {
             // Either an exception was thrown and logged, or the JS function
             // returned undefined. Leave the GValue uninitialized.
@@ -659,9 +659,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         Gjs::gvalue_set(gvalue, JS::ToBoolean(value));
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
                g_type_is_a(gtype, G_TYPE_INTERFACE)) {
-        GObject *gobj;
-
-        gobj = NULL;
+        GObject* gobj = nullptr;
         if (value.isNull()) {
             /* nothing to do */
         } else if (value.isObject()) {
@@ -697,12 +695,10 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
 
         g_value_take_boxed(gvalue, static_cast<char**>(result));
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
-        void *gboxed;
-
-        gboxed = NULL;
         if (value.isNull())
             return true;
 
+        void* gboxed = nullptr;
         /* special case GValue */
         if (gtype == G_TYPE_VALUE) {
             /* explicitly handle values that are already GValues
@@ -812,7 +808,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         else
             g_value_set_boxed(gvalue, gboxed);
     } else if (gtype == G_TYPE_VARIANT) {
-        GVariant *variant = NULL;
+        GVariant* variant = nullptr;
 
         if (value.isNull()) {
             /* nothing to do */
@@ -839,7 +835,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
 
             /* See arg.c:_gjs_enum_to_int() */
             v = g_enum_get_value(enum_class, (int)value_int64);
-            if (v == NULL) {
+            if (v == nullptr) {
                 gjs_throw(cx, "%d is not a valid value for enumeration %s",
                           value.toInt32(), g_type_name(gtype));
                 return false;
@@ -862,9 +858,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             return throw_expect_type(cx, value, "flags", gtype);
         }
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-        void *gparam;
-
-        gparam = NULL;
+        void* gparam = nullptr;
         if (value.isNull()) {
             /* nothing to do */
         } else if (value.isObject()) {

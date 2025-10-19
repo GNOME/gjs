@@ -7,8 +7,6 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for NULL
-
 #include <utility>   // for move, swap
 
 #include <glib-object.h>
@@ -34,7 +32,7 @@ struct Fixture {
 static void gjs_test_object_init(GjsTestObject*) {}
 void gjs_test_object_class_init(GjsTestObjectClass*) {}
 static GjsTestObject* gjs_test_object_new() {
-    return GJS_TEST_OBJECT(g_object_new(gjs_test_object_get_type(), NULL));
+    return GJS_TEST_OBJECT(g_object_new(gjs_test_object_get_type(), nullptr));
 }
 
 static void setup(Fixture* fx, const void*) {

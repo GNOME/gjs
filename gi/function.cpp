@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for NULL, size_t
+#include <stddef.h>  // for size_t
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr
@@ -1383,7 +1383,7 @@ JSObject* Function::create(JSContext* cx, GType gtype,
         cx, JS_NewObjectWithGivenProto(cx, &Function::klass, proto)};
     if (!function) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to construct function");
-        return NULL;
+        return nullptr;
     }
 
     auto* priv = new Function(info);
@@ -1407,7 +1407,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
 
     JS::RootedObject function{cx, Gjs::Function::create(cx, gtype, info)};
     if (!function)
-        return NULL;
+        return nullptr;
 
     if (info.is_function()) {
         name = info.name();
@@ -1420,7 +1420,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
     if (!JS_DefineProperty(cx, in_object, name.c_str(), function,
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_debug(GJS_DEBUG_GFUNCTION, "Failed to define function");
-        function = NULL;
+        function = nullptr;
     }
 
     return function;

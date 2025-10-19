@@ -210,15 +210,13 @@ gjs_string_from_utf8_n(JSContext             *cx,
 
 bool gjs_string_to_filename(JSContext* cx, const JS::Value filename_val,
                             Gjs::AutoChar* filename_string) {
-    Gjs::AutoError error;
-
     /* gjs_string_to_filename verifies that filename_val is a string */
 
     JS::UniqueChars tmp{gjs_string_to_utf8(cx, filename_val)};
     if (!tmp)
         return false;
 
-    error = NULL;
+    Gjs::AutoError error;
     *filename_string =
         g_filename_from_utf8(tmp.get(), -1, nullptr, nullptr, &error);
     if (!*filename_string)
@@ -232,7 +230,6 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
     gsize written;
     Gjs::AutoError error;
 
-    error = NULL;
     Gjs::AutoChar utf8_string{g_filename_to_utf8(filename_string, n_bytes,
                                                  nullptr, &written, &error)};
     if (error) {
@@ -261,7 +258,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
 
     const JS::Latin1Char *js_data =
         JS_GetLatin1StringCharsAndLength(cx, nogc, str, len_p);
-    if (js_data == NULL)
+    if (js_data == nullptr)
         return false;
 
     /* Unicode codepoints 0x00-0xFF are the same as Latin-1
@@ -298,7 +295,7 @@ bool gjs_string_get_char16_data(JSContext* cx, JS::HandleString str,
     const char16_t* js_data =
         JS_GetTwoByteStringCharsAndLength(cx, nogc, str, len_p);
 
-    if (js_data == NULL)
+    if (js_data == nullptr)
         return false;
 
     mozilla::CheckedInt<size_t> len_bytes =
@@ -328,7 +325,7 @@ gjs_string_to_ucs4(JSContext       *cx,
                    gunichar       **ucs4_string_p,
                    size_t          *len_p)
 {
-    if (ucs4_string_p == NULL)
+    if (ucs4_string_p == nullptr)
         return true;
 
     size_t len;
@@ -344,21 +341,22 @@ gjs_string_to_ucs4(JSContext       *cx,
     const char16_t *utf16 =
         JS_GetTwoByteStringCharsAndLength(cx, nogc, str, &len);
 
-    if (utf16 == NULL) {
+    if (utf16 == nullptr) {
         gjs_throw(cx, "Failed to get UTF-16 string data");
         return false;
     }
 
-    if (ucs4_string_p != NULL) {
+    if (ucs4_string_p != nullptr) {
         long length;
-        *ucs4_string_p = g_utf16_to_ucs4(reinterpret_cast<const gunichar2 *>(utf16),
-                                         len, NULL, &length, &error);
-        if (*ucs4_string_p == NULL) {
+        *ucs4_string_p =
+            g_utf16_to_ucs4(reinterpret_cast<const gunichar2*>(utf16), len,
+                            nullptr, &length, &error);
+        if (*ucs4_string_p == nullptr) {
             gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
                       error->message);
             return false;
         }
-        if (len_p != NULL)
+        if (len_p != nullptr)
             *len_p = (size_t) length;
     }
 
