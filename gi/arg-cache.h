@@ -102,15 +102,15 @@ struct Argument {
     virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
-    virtual bool in(JSContext* cx, GjsFunctionCallState*,
-                    GIArgument* in_argument, JS::HandleValue value);
+    virtual bool in(JSContext*, GjsFunctionCallState*, GIArgument* in_argument,
+                    JS::HandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
-    virtual bool out(JSContext* cx, GjsFunctionCallState*,
-                     GIArgument* out_argument, JS::MutableHandleValue value);
+    virtual bool out(JSContext*, GjsFunctionCallState*,
+                     GIArgument* out_argument, JS::MutableHandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
-    virtual bool release(JSContext* cx, GjsFunctionCallState*,
+    virtual bool release(JSContext*, GjsFunctionCallState*,
                          GIArgument* in_argument, GIArgument* out_argument);
 
     virtual GjsArgumentFlags flags() const {

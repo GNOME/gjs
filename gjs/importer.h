@@ -14,10 +14,9 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_create_root_importer(JSContext* cx,
+JSObject* gjs_create_root_importer(JSContext*,
                                    const std::vector<std::string>& search_path);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_import_native_module(JSContext       *cx,
-                              JS::HandleObject importer,
-                              const char      *name);
+bool gjs_import_native_module(JSContext*, JS::HandleObject importer,
+                              const char* name);

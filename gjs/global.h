@@ -72,35 +72,33 @@ enum class GjsInternalGlobalSlot : uint32_t {
     LAST = static_cast<uint32_t>(GjsGlobalSlot::LAST),
 };
 
-bool gjs_global_is_type(JSContext* cx, GjsGlobalType type);
-GjsGlobalType gjs_global_get_type(JSContext* cx);
+bool gjs_global_is_type(JSContext*, GjsGlobalType);
+GjsGlobalType gjs_global_get_type(JSContext*);
 GjsGlobalType gjs_global_get_type(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_global_registry_set(JSContext* cx, JS::HandleObject registry,
-                             JS::PropertyKey key, JS::HandleObject value);
+bool gjs_global_registry_set(JSContext*, JS::HandleObject registry,
+                             JS::PropertyKey, JS::HandleObject value);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_global_registry_get(JSContext* cx, JS::HandleObject registry,
-                             JS::PropertyKey key,
-                             JS::MutableHandleObject value);
+bool gjs_global_registry_get(JSContext*, JS::HandleObject registry,
+                             JS::PropertyKey, JS::MutableHandleObject value);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_global_source_map_get(JSContext* cx, JS::HandleObject registry,
+bool gjs_global_source_map_get(JSContext*, JS::HandleObject registry,
                                JS::HandleString key,
                                JS::MutableHandleObject value);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
+JSObject* gjs_create_global_object(JSContext*, GjsGlobalType,
                                    JS::HandleObject existing_global = nullptr);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
-                                  GjsGlobalType global_type,
-                                  const char* realm_name,
+bool gjs_define_global_properties(JSContext*, JS::HandleObject global,
+                                  GjsGlobalType, const char* realm_name,
                                   const char* bootstrap_script);
 
 namespace detail {
-void set_global_slot(JSObject* global, uint32_t slot, JS::Value value);
+void set_global_slot(JSObject* global, uint32_t slot, JS::Value);
 JS::Value get_global_slot(JSObject* global, uint32_t slot);
 }  // namespace detail
 

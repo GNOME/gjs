@@ -44,10 +44,10 @@ enum class GjsArgumentFlags : uint8_t {
 
 // Overload operator| so that Visual Studio won't complain
 // when converting unsigned char to GjsArgumentFlags
-GjsArgumentFlags operator|(GjsArgumentFlags const& v1, GjsArgumentFlags const& v2);
+GjsArgumentFlags operator|(GjsArgumentFlags const&, GjsArgumentFlags const&);
 
-[[nodiscard]] char* gjs_argument_display_name(const char* arg_name,
-                                              GjsArgumentType arg_type);
+[[nodiscard]]
+char* gjs_argument_display_name(const char* arg_name, GjsArgumentType);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_callback_out_arg(JSContext*, JS::HandleValue,
@@ -60,7 +60,6 @@ bool gjs_array_to_explicit_array(JSContext*, JS::HandleValue,
                                  void** contents, size_t* length_p);
 
 size_t gjs_type_get_element_size(GITypeTag element_tag, const GI::TypeInfo);
-// FIXME: GI::TypeInfo&?
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_gi_argument(JSContext*, JS::HandleValue, const GI::TypeInfo,
@@ -256,7 +255,7 @@ inline bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value);
+bool _gjs_flags_value_is_valid(JSContext*, GType, int64_t value);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_strv(JSContext*, JS::MutableHandleValue, const char** strv);
@@ -266,12 +265,12 @@ bool gjs_array_to_strv(JSContext*, JS::Value array_value, unsigned length,
                        void** arr_p);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
+bool gjs_array_from_g_value_array(JSContext*, JS::MutableHandleValue,
                                   const GI::TypeInfo param_info, GITransfer,
-                                  const GValue* gvalue);
+                                  const GValue*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue,
+bool gjs_object_from_g_hash(JSContext*, JS::MutableHandleValue,
                             const GI::TypeInfo key_param_info,
-                            const GI::TypeInfo val_param_info,
-                            GITransfer transfer, GHashTable* hash);
+                            const GI::TypeInfo val_param_info, GITransfer,
+                            GHashTable*);

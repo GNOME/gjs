@@ -20,10 +20,9 @@ enum GjsDeprecationMessageId : unsigned {
     LastValue,  // insert new elements before this one
 };
 
-void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
-                                            GjsDeprecationMessageId message,
+void _gjs_warn_deprecated_once_per_callsite(JSContext*, GjsDeprecationMessageId,
                                             unsigned max_frames = 1);
 
 void _gjs_warn_deprecated_once_per_callsite(
-    JSContext* cx, GjsDeprecationMessageId id,
-    const std::vector<std::string>& args, unsigned max_frames = 1);
+    JSContext*, GjsDeprecationMessageId, const std::vector<std::string>& args,
+    unsigned max_frames = 1);

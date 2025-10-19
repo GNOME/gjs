@@ -8,4 +8,4 @@
 
 struct JSContext;
 
-char* gjs_test_get_exception_message(JSContext* cx);
+char* gjs_test_get_exception_message(JSContext*);

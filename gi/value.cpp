@@ -59,9 +59,8 @@ using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_g_value_internal(
-    JSContext*, JS::MutableHandleValue, const GValue*, bool no_copy = false,
-    bool is_introspected_signal = false,
-    Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>> = {});
+    JSContext*, JS::MutableHandleValue, const GValue*, bool = false,
+    bool = false, Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>> = {});
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,

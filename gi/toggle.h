@@ -68,11 +68,13 @@ public:
         return m_holder == std::this_thread::get_id();
     }
 
-    [[nodiscard]] std::deque<Item>::iterator find_operation_locked(
-        const ObjectInstance* obj, Direction direction);
+    [[nodiscard]]
+    std::deque<Item>::iterator find_operation_locked(const ObjectInstance*,
+                                                     Direction);
 
-    [[nodiscard]] std::deque<Item>::const_iterator find_operation_locked(
-        const ObjectInstance* obj, Direction direction) const;
+    [[nodiscard]]
+    std::deque<Item>::const_iterator find_operation_locked(
+        const ObjectInstance*, Direction) const;
 
     static gboolean idle_handle_toggle(void *data);
     static void idle_destroy_notify(void *data);
@@ -85,23 +87,23 @@ public:
  public:
     /* These two functions return a pair DOWN, UP signifying whether toggles
      * are / were queued. is_queued() just checks and does not modify. */
-    [[nodiscard]] std::pair<bool, bool> is_queued(ObjectInstance* obj) const;
+    [[nodiscard]] std::pair<bool, bool> is_queued(ObjectInstance*) const;
     /* Cancels pending toggles and returns whether any were queued. */
-    std::pair<bool, bool> cancel(ObjectInstance* obj);
+    std::pair<bool, bool> cancel(ObjectInstance*);
 
     /* Pops a toggle from the queue and processes it. Call this if you don't
      * want to wait for it to be processed in idle time. Returns false if queue
      * is empty. */
-    bool handle_toggle(Handler handler);
-    void handle_all_toggles(Handler handler);
+    bool handle_toggle(Handler);
+    void handle_all_toggles(Handler);
 
     /* After calling this, the toggle queue won't accept any more toggles. Only
      * intended for use when destroying the JSContext and breaking the
      * associations between C and JS objects. */
-    void shutdown(void);
+    void shutdown();
 
     /* Queues a toggle to be processed in idle time. */
-    void enqueue(ObjectInstance* obj, Direction direction, Handler handler);
+    void enqueue(ObjectInstance*, Direction, Handler);
 
     [[nodiscard]] static Locked get_default() {
         return Locked(&get_default_unlocked());

@@ -62,5 +62,5 @@ class PromiseJobDispatcher {
 
 };  // namespace Gjs
 
-bool gjs_define_native_promise_stuff(JSContext* cx,
+bool gjs_define_native_promise_stuff(JSContext*,
                                      JS::MutableHandleObject module);

@@ -66,42 +66,42 @@ class ErrorBase
     // Accessors
 
  public:
-    [[nodiscard]] GQuark domain(void) const;
+    [[nodiscard]] GQuark domain() const;
 
     // Property getters
 
  protected:
     GJS_JSAPI_RETURN_CONVENTION
-    static bool get_domain(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool get_domain(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
-    static bool get_message(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool get_message(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
-    static bool get_code(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool get_code(JSContext*, unsigned, JS::Value*);
 
     // JS methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool value_of(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool value_of(JSContext*, unsigned, JS::Value*);
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static bool to_string(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool to_string(JSContext*, unsigned, JS::Value*);
 
     // Helper methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    static GError* to_c_ptr(JSContext* cx, JS::HandleObject obj);
+    static GError* to_c_ptr(JSContext*, JS::HandleObject);
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool transfer_to_gi_argument(JSContext* cx, JS::HandleObject obj,
-                                        GIArgument* arg,
+    static bool transfer_to_gi_argument(JSContext*, JS::HandleObject,
+                                        GIArgument*,
                                         GIDirection transfer_direction,
                                         GITransfer transfer_ownership);
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool typecheck(JSContext* cx, JS::HandleObject obj);
-    [[nodiscard]] static bool typecheck(JSContext* cx, JS::HandleObject obj,
-                                        GjsTypecheckNoThrow);
+    static bool typecheck(JSContext*, JS::HandleObject);
+    [[nodiscard]]
+    static bool typecheck(JSContext*, JS::HandleObject, GjsTypecheckNoThrow);
 };
 
 class ErrorPrototype
@@ -114,16 +114,16 @@ class ErrorPrototype
     GQuark m_domain;
 
     explicit ErrorPrototype(const GI::EnumInfo, GType);
-    ~ErrorPrototype(void);
+    ~ErrorPrototype();
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_parent_proto(JSContext* cx, JS::MutableHandleObject proto) const;
+    bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const;
 
  public:
-    [[nodiscard]] GQuark domain(void) const { return m_domain; }
+    [[nodiscard]] GQuark domain() const { return m_domain; }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+    static bool define_class(JSContext*, JS::HandleObject in_object,
                              const GI::EnumInfo);
 };
 
@@ -133,8 +133,8 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
                                    GError>;
     friend class GIWrapperBase<ErrorBase, ErrorPrototype, ErrorInstance>;
 
-    explicit ErrorInstance(ErrorPrototype* prototype, JS::HandleObject obj);
-    ~ErrorInstance(void);
+    explicit ErrorInstance(ErrorPrototype*, JS::HandleObject);
+    ~ErrorInstance();
 
  public:
     void copy_gerror(GError* other) { m_ptr = g_error_copy(other); }
@@ -145,27 +145,26 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
 
     // Accessors
 
-    [[nodiscard]] const char* message(void) const { return m_ptr->message; }
-    [[nodiscard]] int code(void) const { return m_ptr->code; }
+    [[nodiscard]] const char* message() const { return m_ptr->message; }
+    [[nodiscard]] int code() const { return m_ptr->code; }
 
     // JS constructor
 
  private:
     GJS_JSAPI_RETURN_CONVENTION
-    bool constructor_impl(JSContext* cx, JS::HandleObject obj,
-                          const JS::CallArgs& args);
+    bool constructor_impl(JSContext*, JS::HandleObject, const JS::CallArgs&);
 
     // Public API
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* object_for_c_ptr(JSContext* cx, GError* gerror);
+    static JSObject* object_for_c_ptr(JSContext*, GError*);
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-GError* gjs_gerror_make_from_thrown_value(JSContext* cx);
+GError* gjs_gerror_make_from_thrown_value(JSContext*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
+bool gjs_define_error_properties(JSContext*, JS::HandleObject);
 
-bool gjs_throw_gerror(JSContext* cx, Gjs::AutoError const&);
+bool gjs_throw_gerror(JSContext*, Gjs::AutoError const&);

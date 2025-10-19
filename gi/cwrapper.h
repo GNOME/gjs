@@ -62,8 +62,8 @@ struct JSPropertySpec;
         return false;
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
-                                   GType gtype);
+bool gjs_wrapper_define_gtype_prop(JSContext*, JS::HandleObject constructor,
+                                   GType);
 
 /*
  * CWrapperPointerOps:

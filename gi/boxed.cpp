@@ -54,7 +54,8 @@
 using mozilla::Maybe, mozilla::Some;
 
 template <GI::InfoTag TAG>
-[[nodiscard]] static bool struct_is_simple(const GI::UnownedInfo<TAG>& info);
+[[nodiscard]]
+static bool struct_is_simple(const GI::UnownedInfo<TAG>&);
 
 template <class Base, class Prototype, class Instance>
 BoxedInstance<Base, Prototype, Instance>::BoxedInstance(Prototype* prototype,

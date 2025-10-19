@@ -11,4 +11,4 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_private_gi_stuff(JSContext* cx, JS::MutableHandleObject module);
+bool gjs_define_private_gi_stuff(JSContext*, JS::MutableHandleObject module);

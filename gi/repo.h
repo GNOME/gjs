@@ -12,8 +12,7 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_repo(JSContext              *cx,
-                     JS::MutableHandleObject repo);
+bool gjs_define_repo(JSContext*, JS::MutableHandleObject repo);
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_lookup_private_namespace(JSContext*);
 GJS_JSAPI_RETURN_CONVENTION

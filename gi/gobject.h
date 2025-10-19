@@ -17,5 +17,5 @@ using AutoParamArray = std::vector<Gjs::AutoParam>;
 extern const GTypeInfo gjs_gobject_class_info;
 extern const GTypeInfo gjs_gobject_interface_info;
 
-void push_class_init_properties(GType gtype, AutoParamArray* params);
-bool pop_class_init_properties(GType gtype, AutoParamArray* params_out);
+void push_class_init_properties(GType, AutoParamArray* params);
+bool pop_class_init_properties(GType, AutoParamArray* params_out);

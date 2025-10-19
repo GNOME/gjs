@@ -19,19 +19,18 @@ struct JSPropertySpec;
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_init_class_dynamic(
-    JSContext* cx, JS::HandleObject in_object, JS::HandleObject parent_proto,
-    const char* ns_name, const char* class_name, const JSClass* clasp,
+    JSContext*, JS::HandleObject in_object, JS::HandleObject parent_proto,
+    const char* ns_name, const char* class_name, const JSClass*,
     JSNative constructor_native, unsigned nargs, JSPropertySpec* ps,
     JSFunctionSpec* fs, JSPropertySpec* static_ps, JSFunctionSpec* static_fs,
     JS::MutableHandleObject prototype, JS::MutableHandleObject constructor);
 
-[[nodiscard]] bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,
-                                          const JSClass* static_clasp,
-                                          bool throw_error);
+[[nodiscard]]
+bool gjs_typecheck_instance(JSContext*, JS::HandleObject,
+                            const JSClass* static_clasp, bool throw_error);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_construct_object_dynamic(JSContext                  *cx,
-                                       JS::HandleObject            proto,
+JSObject* gjs_construct_object_dynamic(JSContext*, JS::HandleObject proto,
                                        const JS::HandleValueArray& args);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -57,6 +56,6 @@ inline bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
     JSObject* accessor_obj);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,
+bool gjs_object_in_prototype_chain(JSContext*, JS::HandleObject proto,
                                    JS::HandleObject check_obj,
                                    bool* is_in_chain);

@@ -109,17 +109,13 @@ union Utf8Unit;
 using Gjs::GErrorResult;
 using mozilla::Err, mozilla::Ok;
 
-static void     gjs_context_dispose           (GObject               *object);
-static void     gjs_context_finalize          (GObject               *object);
-static void     gjs_context_constructed       (GObject               *object);
-static void     gjs_context_get_property      (GObject               *object,
-                                                  guint                  prop_id,
-                                                  GValue                *value,
-                                                  GParamSpec            *pspec);
-static void     gjs_context_set_property      (GObject               *object,
-                                                  guint                  prop_id,
-                                                  const GValue          *value,
-                                                  GParamSpec            *pspec);
+static void gjs_context_dispose(GObject*);
+static void gjs_context_finalize(GObject*);
+static void gjs_context_constructed(GObject*);
+static void gjs_context_get_property(GObject*, unsigned prop_id, GValue*,
+                                     GParamSpec*);
+static void gjs_context_set_property(GObject*, unsigned prop_id, const GValue*,
+                                     GParamSpec*);
 
 void GjsContextPrivate::EnvironmentPreparer::invoke(JS::HandleObject scope,
                                                     Closure& closure) {

@@ -48,10 +48,10 @@ struct JSPropertySpec;
 class JSTracer;
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
+bool gjs_wrapper_to_string_func(JSContext*, JSObject* this_obj,
                                 const char* objtype,
-                                mozilla::Maybe<const GI::BaseInfo> info,
-                                GType gtype, const void* native_address,
+                                mozilla::Maybe<const GI::BaseInfo>, GType,
+                                const void* native_address,
                                 JS::MutableHandleValue ret);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -65,10 +65,10 @@ static inline bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
         cx, this_obj, objtype, mozilla::Some(info), gtype, native_address, ret);
 }
 
-bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
+bool gjs_wrapper_throw_nonexistent_field(JSContext*, GType,
                                          const char* field_name);
 
-bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
+bool gjs_wrapper_throw_readonly_field(JSContext*, GType,
                                       const char* field_name);
 
 namespace MemoryUse {

@@ -144,8 +144,8 @@ class GjsContextPrivate : public JS::JobQueue {
     void on_garbage_collection(JSGCStatus, JS::GCReason);
 
     class SavedQueue;
-    void start_draining_job_queue(void);
-    void stop_draining_job_queue(void);
+    void start_draining_job_queue();
+    void stop_draining_job_queue();
 
     void warn_about_unhandled_promise_rejections();
 
@@ -155,7 +155,7 @@ class GjsContextPrivate : public JS::JobQueue {
                                          const char* source_type,
                                          const char* identifier,
                                          uint8_t* exit_code);
-    [[nodiscard]] bool auto_profile_enter(void);
+    [[nodiscard]] bool auto_profile_enter();
     void auto_profile_exit(bool status);
 
     class AutoResetExit {
@@ -180,8 +180,8 @@ class GjsContextPrivate : public JS::JobQueue {
         GjsContext* public_context);
     [[nodiscard]] static GjsContextPrivate* from_current_context();
 
-    GjsContextPrivate(JSContext* cx, GjsContext* public_context);
-    ~GjsContextPrivate(void);
+    GjsContextPrivate(JSContext*, GjsContext* public_context);
+    ~GjsContextPrivate();
 
     /* Accessors */
     [[nodiscard]] GjsContext* public_context() const {
@@ -201,7 +201,7 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] bool destroying() const { return m_destroying.load(); }
     [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
-    GJS_USE const char* program_path(void) const { return m_program_path; }
+    GJS_USE const char* program_path() const { return m_program_path; }
     GJS_USE const char* repl_history_path() const {
         return m_repl_history_path;
     }
@@ -252,8 +252,8 @@ class GjsContextPrivate : public JS::JobQueue {
                        const JS::HandleValueArray& args,
                        JS::MutableHandleValue rval);
 
-    void schedule_gc(void) { schedule_gc_internal(true); }
-    void schedule_gc_if_needed(void);
+    void schedule_gc() { schedule_gc_internal(true); }
+    void schedule_gc_if_needed();
 
     void report_unhandled_exception() { m_unhandled_exception = true; }
     void exit(uint8_t exit_code);
@@ -264,17 +264,17 @@ class GjsContextPrivate : public JS::JobQueue {
     GJS_JSAPI_RETURN_CONVENTION
     bool getHostDefinedData(JSContext*, JS::MutableHandleObject) const override;
     GJS_JSAPI_RETURN_CONVENTION
-    bool enqueuePromiseJob(JSContext* cx, JS::HandleObject promise,
+    bool enqueuePromiseJob(JSContext*, JS::HandleObject promise,
                            JS::HandleObject job,
                            JS::HandleObject allocation_site,
                            JS::HandleObject incumbent_global) override;
-    void runJobs(JSContext* cx) override;
+    void runJobs(JSContext*) override;
     [[nodiscard]] bool empty() const override { return m_job_queue.empty(); }
     [[nodiscard]] bool isDrainingStopped() const override {
         return !m_draining_job_queue;
     }
     js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
-        JSContext* cx) override;
+        JSContext*) override;
 
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible();
     void register_unhandled_promise_rejection(uint64_t id,
@@ -284,18 +284,18 @@ class GjsContextPrivate : public JS::JobQueue {
         JSFunction* cleanup_task);
     GJS_JSAPI_RETURN_CONVENTION bool run_finalization_registry_cleanup();
 
-    void register_notifier(DestroyNotify notify_func, void* data);
-    void unregister_notifier(DestroyNotify notify_func, void* data);
+    void register_notifier(DestroyNotify, void* data);
+    void unregister_notifier(DestroyNotify, void* data);
     void async_closure_enqueue_for_gc(Gjs::Closure*);
 
     [[nodiscard]]
     Gjs::GErrorResult<> register_module(const char* identifier,
                                         const char* filename);
 
-    static void trace(JSTracer* trc, void* data);
+    static void trace(JSTracer*, void* data);
 
-    void free_profiler(void);
-    void dispose(void);
+    void free_profiler();
+    void dispose();
 };
 
 std::string gjs_dumpstack_string();
@@ -303,13 +303,13 @@ std::string gjs_dumpstack_string();
 namespace Gjs {
 class AutoMainRealm : public JSAutoRealm {
  public:
-    explicit AutoMainRealm(GjsContextPrivate* gjs);
-    explicit AutoMainRealm(JSContext* cx);
+    explicit AutoMainRealm(GjsContextPrivate*);
+    explicit AutoMainRealm(JSContext*);
 };
 
 class AutoInternalRealm : public JSAutoRealm {
  public:
-    explicit AutoInternalRealm(GjsContextPrivate* gjs);
-    explicit AutoInternalRealm(JSContext* cx);
+    explicit AutoInternalRealm(GjsContextPrivate*);
+    explicit AutoInternalRealm(JSContext*);
 };
 }  // namespace Gjs
