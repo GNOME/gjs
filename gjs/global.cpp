@@ -215,9 +215,9 @@ class GjsGlobal : GjsBaseGlobal {
 
         JS::Value v_importer =
             gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
-        g_assert(((void) "importer should be defined before passing null "
-                  "importer to GjsGlobal::define_properties",
-                  v_importer.isObject()));
+        g_assert(v_importer.isObject() &&
+                 "importer should be defined before passing null importer to "
+                 "GjsGlobal::define_properties");
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
         // Wrapping is a no-op if the importer is already in the same realm.

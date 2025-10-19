@@ -38,8 +38,8 @@ namespace detail {
 
     fchar++;
     fmt_string++;
-    g_assert(((void) "Invalid format string, parameter required after '?'",
-              *fchar != '\0'));
+    g_assert(*fchar != '\0' &&
+             "Invalid format string, parameter required after '?'");
     return true;
 }
 
@@ -245,8 +245,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
             return true;
 
         fchar = fmt_optional;
-        g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
-                  *fchar != '\0'));
+        g_assert(*fchar != '\0' &&
+                 "Wrong number of parameters passed to gjs_parse_call_args()");
         nullable = check_nullable(fchar, fmt_optional);
         fmt_optional++;
     }
@@ -297,8 +297,8 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
         format++;
     }
 
-    g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
-              *format == '\0'));
+    g_assert(*format == '\0' &&
+             "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!ignore_trailing_args && args.length() > 0) {
         gjs_throw(cx, "Error invoking %s: Expected 0 arguments, got %d",
@@ -376,8 +376,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     if (!optional_args)
         n_required = n_total;
 
-    g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
-              sizeof...(Args) / 2 == n_total));
+    g_assert(sizeof...(Args) / 2 == n_total &&
+             "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!args.requireAtLeast(cx, function_name, n_required))
         return false;

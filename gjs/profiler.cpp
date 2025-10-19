@@ -148,7 +148,7 @@ static GjsContext *profiling_context;
 [[nodiscard]] static bool gjs_profiler_extract_maps(GjsProfiler* self) {
     int64_t now = g_get_monotonic_time() * 1000L;
 
-    g_assert(((void) "Profiler must be set up before extracting maps", self));
+    g_assert(self && "Profiler must be set up before extracting maps");
 
     Gjs::AutoChar path{g_strdup_printf("/proc/%jd/maps", intmax_t(self->pid))};
 
@@ -355,9 +355,9 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
                                  void*) {
     GjsProfiler *self = gjs_context_get_profiler(profiling_context);
 
-    g_assert(((void) "SIGPROF handler called with invalid signal info", info));
-    g_assert(((void) "SIGPROF handler called with other signal",
-              info->si_signo == SIGPROF));
+    g_assert(info && "SIGPROF handler called with invalid signal info");
+    g_assert(info->si_signo == SIGPROF &&
+             "SIGPROF handler called with other signal");
 
     /*
      * NOTE:
