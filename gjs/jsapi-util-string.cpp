@@ -227,7 +227,7 @@ bool gjs_string_to_filename(JSContext* cx, const JS::Value filename_val,
 
 bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
                               ssize_t n_bytes, JS::MutableHandleValue value_p) {
-    gsize written;
+    gsize written;  // Do not use size_t, may be different width
     Gjs::AutoError error;
 
     Gjs::AutoChar utf8_string{g_filename_to_utf8(filename_string, n_bytes,

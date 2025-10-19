@@ -571,7 +571,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
         JS::RootedValue elem{cx};
         JS::RootedObject out_array{cx, rval.toObjectOrNull()};
-        gsize elem_idx = 0;
+        size_t elem_idx = 0;
         /* more than one of a return value or an out argument.
          * Should be an array of output values. */
 

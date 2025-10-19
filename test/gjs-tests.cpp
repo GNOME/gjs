@@ -1066,6 +1066,8 @@ static void gjstest_test_args_set_get_unset() {
 
     GType random_gtype = get_random_number<GType>();
     gjs_arg_set<Gjs::Tag::GType>(&arg, random_gtype);
+    // Don't replace gsize and gulong with size_t and unsigned long, since
+    // GLib may define them differently on some platforms.
     if constexpr (std::is_same_v<GType, gsize>)
         assert_equal(static_cast<GType>(arg.v_size), random_gtype);
     else if constexpr (std::is_same_v<GType, gulong>)

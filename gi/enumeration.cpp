@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for size_t
 #include <inttypes.h>
 
 #include <glib-object.h>
@@ -26,8 +27,6 @@
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
                                   const GI::ValueInfo info) {
-    gsize i;
-
     const char* value_name = info.name();
     int64_t value_val = info.value();
 
@@ -36,7 +35,7 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
      * Convert back to all SOUTH_WEST.
      */
     Gjs::AutoChar fixed_name{g_ascii_strup(value_name, -1)};
-    for (i = 0; fixed_name[i]; ++i) {
+    for (size_t i = 0; fixed_name[i]; ++i) {
         char c = fixed_name[i];
         if (!(('A' <= c && c <= 'Z') ||
               ('0' <= c && c <= '9')))

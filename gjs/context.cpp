@@ -1309,14 +1309,9 @@ static inline bool result_to_c(GErrorResult<> result, GError** error_out) {
     return false;
 }
 
-bool
-gjs_context_eval(GjsContext   *js_context,
-                 const char   *script,
-                 gssize        script_len,
-                 const char   *filename,
-                 int          *exit_status_p,
-                 GError      **error)
-{
+bool gjs_context_eval(GjsContext* js_context, const char* script,
+                      ssize_t script_len, const char* filename,
+                      int* exit_status_p, GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
 
     size_t real_len = script_len < 0 ? strlen(script) : script_len;
@@ -1779,13 +1774,11 @@ bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
     return true;
 }
 
-bool
-gjs_context_define_string_array(GjsContext  *js_context,
-                                const char    *array_name,
-                                gssize         array_length,
-                                const char   **array_values,
-                                GError       **error)
-{
+bool gjs_context_define_string_array(GjsContext* js_context,
+                                     const char* array_name,
+                                     ssize_t array_length,
+                                     const char** array_values,
+                                     GError** error) {
     g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
 

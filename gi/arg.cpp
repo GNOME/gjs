@@ -2608,13 +2608,13 @@ static bool gjs_array_from_boxed_array(JSContext* cx,
     GArray *array;
     GPtrArray *ptr_array;
     void* data = nullptr;
-    gsize length = 0;
 
     if (!gjs_arg_get<void*>(arg)) {
         value_p.setNull();
         return true;
     }
 
+    size_t length = 0;
     switch(array_type) {
     case GI_ARRAY_TYPE_BYTE_ARRAY:
         /* GByteArray is just a typedef for GArray internally */

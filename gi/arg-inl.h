@@ -59,6 +59,8 @@ template <typename TAG>
 
     if constexpr (std::is_same_v<TAG, Gjs::Tag::GType>) {
         // GType is defined differently on 32-bit vs. 64-bit architectures.
+        // Don't replace gsize and gulong with size_t and unsigned long, since
+        // GLib may define them differently on some platforms.
         if constexpr (std::is_same_v<GType, gsize>)
             return gjs_arg_member<&GIArgument::v_size>(arg);
         else if constexpr (std::is_same_v<GType, gulong>)

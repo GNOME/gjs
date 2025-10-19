@@ -111,7 +111,7 @@ static GErrorResult<> copy_source_file_to_coverage_output(
     char *uri_header = g_uri_parse_scheme(potential_uri);
 
     if (uri_header) {
-        gsize offset = strlen(uri_header);
+        size_t offset = strlen(uri_header);
         g_free(uri_header);
 
         /* g_uri_parse_scheme only parses the name

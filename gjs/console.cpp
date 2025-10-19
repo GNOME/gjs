@@ -195,7 +195,6 @@ int main(int argc, char** argv) {
     Gjs::AutoError error;
     const char *filename;
     const char *program_name;
-    gsize len;
     int gjs_argc = argc, script_argc, ix;
     char * const *script_argv;
     const char *env_coverage_output_path;
@@ -267,6 +266,7 @@ int main(int argc, char** argv) {
     Gjs::AutoChar program_path;
     gjs_argc = g_strv_length(gjs_argv);
     Gjs::AutoChar script;
+    size_t len;
     if (command) {
         script = command;
         len = strlen(script);

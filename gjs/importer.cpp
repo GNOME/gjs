@@ -292,7 +292,7 @@ bool gjs_import_native_module(JSContext* cx, JS::HandleObject importer,
 GJS_JSAPI_RETURN_CONVENTION
 static bool import_module_init(JSContext* cx, GFile* file,
                                JS::HandleObject module_obj) {
-    gsize script_len = 0;
+    gsize script_len = 0;  // Do not use size_t, may be different width
     Gjs::AutoError error;
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
@@ -757,7 +757,6 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
     if (!search_path_initialized) {
         const char* const* system_data_dirs;
         const char *envstr;
-        gsize i;
 
         /* in order of priority */
 
@@ -777,7 +776,7 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
 
         /* $XDG_DATA_DIRS /gjs-1.0 */
         system_data_dirs = g_get_system_data_dirs();
-        for (i = 0; system_data_dirs[i] != nullptr; ++i) {
+        for (size_t i = 0; system_data_dirs[i] != nullptr; ++i) {
             Gjs::AutoChar s{
                 g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr)};
             gjs_search_path.push_back(s.get());

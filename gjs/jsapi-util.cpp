@@ -629,7 +629,7 @@ bool gjs_log_exception_uncaught(JSContext* cx) {
 static void _linux_get_self_process_size(long* rss_size)  // NOLINT(runtime/int)
 {
     char *iter;
-    gsize len;
+    gsize len;  // Do not use size_t, may be different width
     int i;
 
     *rss_size = 0;

@@ -117,7 +117,7 @@ static const char *
 line_starting_with(const char *data,
                    const char *needle)
 {
-    const gsize needle_length = strlen(needle);
+    const size_t needle_length = strlen(needle);
     const char  *iter = data;
 
     while (iter) {
@@ -449,7 +449,7 @@ static void test_single_branch_coverage_written_to_coverage_data(
 
     const BranchLineData expected_branches[] = {{2, 0, TAKEN},
                                                 {2, 1, NOT_TAKEN}};
-    const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
+    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -498,7 +498,7 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
         {2, 0, TAKEN}, {2, 1, TAKEN}, {3, 0, TAKEN},
         {3, 1, TAKEN}, {3, 2, TAKEN}, {3, 3, NOT_TAKEN},
     };
-    const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
+    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -543,7 +543,7 @@ static void test_branches_for_multiple_case_statements_fallthrough(
         {2, 0, TAKEN}, {2, 1, TAKEN},     {3, 0, TAKEN},
         {3, 1, TAKEN}, {3, 2, NOT_TAKEN}, {3, 3, NOT_TAKEN},
     };
-    const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
+    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -643,7 +643,8 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
         "f",
         "b",
     };
-    const gsize expected_function_names_len = G_N_ELEMENTS(expected_function_names);
+    const size_t expected_function_names_len =
+        G_N_ELEMENTS(expected_function_names);
 
     /* Just expect that we've got an FN matching out expected function names */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
@@ -688,7 +689,8 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
         "1",
         "3",
     };
-    const gsize expected_function_lines_len = G_N_ELEMENTS(expected_function_lines);
+    const size_t expected_function_lines_len =
+        G_N_ELEMENTS(expected_function_lines);
 
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
                                                 expected_function_lines_len,
@@ -770,8 +772,7 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
         {"f", 1},
         {"b", 1},
     };
-
-    const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
+    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -812,8 +813,7 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
         {"f", 1},
         {"b", 1},
     };
-
-    const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
+    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -849,8 +849,7 @@ static void test_function_hit_counts_written_to_coverage_data(
         {"f", 1},
         {"b", 1},
     };
-
-    const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
+    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -1101,8 +1100,7 @@ assert_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
                                      const size_t                    expected_size,
                                      const char                     *section_start)
 {
-    gsize i;
-    for (i = 0; i < expected_size; ++i) {
+    for (size_t i = 0; i < expected_size; ++i) {
         if (strncmp(&section_start[3],
                     expected[i].source_file_path,
                     strlen (expected[i].source_file_path)) == 0) {
@@ -1161,8 +1159,7 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
             '2'
         }
     };
-
-    const gsize expected_len = G_N_ELEMENTS(expected);
+    const size_t expected_len = G_N_ELEMENTS(expected);
 
     const char *first_sf_record = line_starting_with(coverage_data_contents, "SF:");
     assert_coverage_data_for_source_file(expected, expected_len, first_sf_record);
@@ -1176,7 +1173,7 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
 }
 
 typedef struct _FixturedTest {
-    gsize            fixture_size;
+    size_t fixture_size;
     GTestFixtureFunc set_up;
     GTestFixtureFunc tear_down;
 } FixturedTest;
