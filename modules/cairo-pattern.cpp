@@ -199,7 +199,7 @@ static bool pattern_release_argument(JSContext*, GITransfer transfer,
     return true;
 }
 
-void gjs_cairo_pattern_init(void) {
+void gjs_cairo_pattern_init() {
     static GjsForeignInfo foreign_info = {pattern_to_gi_argument,
                                           pattern_from_gi_argument,
                                           pattern_release_argument};

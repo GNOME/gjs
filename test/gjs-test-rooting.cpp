@@ -231,9 +231,7 @@ static void test_maybe_owned_object_destroyed_after_notify(
     delete fx->obj;
 }
 
-void
-gjs_test_add_tests_for_rooting(void)
-{
+void gjs_test_add_tests_for_rooting() {
 #define ADD_ROOTING_TEST(path, f)                                      \
     g_test_add("/rooting/" path, GjsRootingFixture, nullptr, setup, f, \
                teardown);

@@ -901,7 +901,7 @@ static bool context_release_argument(JSContext*, GITransfer transfer,
     return true;
 }
 
-void gjs_cairo_context_init(void) {
+void gjs_cairo_context_init() {
     static GjsForeignInfo foreign_info = {context_to_gi_argument,
                                           context_from_gi_argument,
                                           context_release_argument};

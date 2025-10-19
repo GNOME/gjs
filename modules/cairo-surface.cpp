@@ -373,7 +373,7 @@ static bool surface_release_argument(JSContext*, GITransfer transfer,
     return true;
 }
 
-void gjs_cairo_surface_init(void) {
+void gjs_cairo_surface_init() {
     static GjsForeignInfo foreign_info = {surface_to_gi_argument,
                                           surface_from_gi_argument,
                                           surface_release_argument};

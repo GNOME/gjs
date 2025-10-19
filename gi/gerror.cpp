@@ -54,23 +54,21 @@ ErrorPrototype::ErrorPrototype(const GI::EnumInfo info, GType gtype)
     GJS_INC_COUNTER(gerror_prototype);
 }
 
-ErrorPrototype::~ErrorPrototype(void) { GJS_DEC_COUNTER(gerror_prototype); }
+ErrorPrototype::~ErrorPrototype() { GJS_DEC_COUNTER(gerror_prototype); }
 
 ErrorInstance::ErrorInstance(ErrorPrototype* prototype, JS::HandleObject obj)
     : GIWrapperInstance(prototype, obj) {
     GJS_INC_COUNTER(gerror_instance);
 }
 
-ErrorInstance::~ErrorInstance(void) {
-    GJS_DEC_COUNTER(gerror_instance);
-}
+ErrorInstance::~ErrorInstance() { GJS_DEC_COUNTER(gerror_instance); }
 
 /*
  * ErrorBase::domain:
  *
  * Fetches ErrorPrototype::domain() for instances as well as prototypes.
  */
-GQuark ErrorBase::domain(void) const { return get_prototype()->domain(); }
+GQuark ErrorBase::domain() const { return get_prototype()->domain(); }
 
 // See GIWrapperBase::constructor().
 bool ErrorInstance::constructor_impl(JSContext* cx, JS::HandleObject object,

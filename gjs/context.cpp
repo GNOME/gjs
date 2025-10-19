@@ -168,9 +168,7 @@ static unsigned dump_heap_idle_id = 0;
 #ifdef G_OS_UNIX
 // Currently heap dumping via SIGUSR1 is only supported on UNIX platforms!
 // This can reduce performance. See note in system.cpp on System.dumpHeap().
-static void
-gjs_context_dump_heaps(void)
-{
+static void gjs_context_dump_heaps() {
     static unsigned counter = 0;
 
     gjs_memory_report("signal handler", false);
@@ -207,9 +205,7 @@ static void dump_heap_signal_handler(int signum [[maybe_unused]]) {
 }
 #endif
 
-static void
-setup_dump_heap(void)
-{
+static void setup_dump_heap() {
     static bool dump_heap_initialized = false;
     if (!dump_heap_initialized) {
         dump_heap_initialized = true;
@@ -380,7 +376,7 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     gjs->m_object_init_list.trace(trc);
 }
 
-void GjsContextPrivate::warn_about_unhandled_promise_rejections(void) {
+void GjsContextPrivate::warn_about_unhandled_promise_rejections() {
     for (auto& kv : m_unhandled_rejection_stacks) {
         const char* stack = kv.second.get();
         g_warning("Unhandled promise rejection. To suppress this warning, add "
@@ -423,7 +419,7 @@ gjs_context_dispose(GObject *object)
     gjs->dispose();
 }
 
-void GjsContextPrivate::free_profiler(void) {
+void GjsContextPrivate::free_profiler() {
     gjs_debug(GJS_DEBUG_CONTEXT, "Stopping profiler");
     if (m_profiler)
         g_clear_pointer(&m_profiler, _gjs_profiler_free);
@@ -440,7 +436,7 @@ void GjsContextPrivate::unregister_notifier(DestroyNotify notify_func,
     m_destroy_notifications.erase(target);
 }
 
-void GjsContextPrivate::dispose(void) {
+void GjsContextPrivate::dispose() {
     if (m_cx) {
         stop_draining_job_queue();
 
@@ -505,7 +501,7 @@ void GjsContextPrivate::dispose(void) {
     }
 }
 
-GjsContextPrivate::~GjsContextPrivate(void) {
+GjsContextPrivate::~GjsContextPrivate() {
     g_clear_pointer(&m_search_path, g_strfreev);
     g_clear_pointer(&m_program_path, g_free);
     g_clear_pointer(&m_program_name, g_free);
@@ -884,10 +880,7 @@ gjs_context_set_property (GObject      *object,
     }
 }
 
-
-GjsContext*
-gjs_context_new(void)
-{
+GjsContext* gjs_context_new() {
     return (GjsContext*) g_object_new (GJS_TYPE_CONTEXT, NULL);
 }
 
@@ -939,7 +932,7 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
  * Does a minor GC immediately if the JS engine decides one is needed, but also
  * schedules a full GC in the next idle time.
  */
-void GjsContextPrivate::schedule_gc_if_needed(void) {
+void GjsContextPrivate::schedule_gc_if_needed() {
     // We call JS_MaybeGC immediately, but defer a check for a full GC cycle
     // to an idle handler.
     JS_MaybeGC(m_cx);
@@ -992,9 +985,9 @@ void GjsContextPrivate::exit_immediately(uint8_t exit_code) {
     ::exit(exit_code);
 }
 
-void GjsContextPrivate::start_draining_job_queue(void) { m_dispatcher.start(); }
+void GjsContextPrivate::start_draining_job_queue() { m_dispatcher.start(); }
 
-void GjsContextPrivate::stop_draining_job_queue(void) {
+void GjsContextPrivate::stop_draining_job_queue() {
     m_draining_job_queue = false;
     m_dispatcher.stop();
 }
@@ -1182,7 +1175,7 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
         gjs->stop_draining_job_queue();
     }
 
-    ~SavedQueue(void) {
+    ~SavedQueue() {
         gjs_debug(GJS_DEBUG_CONTEXT, "Unpausing job queue");
         m_gjs->m_job_queue = std::move(m_queue.get());
         m_gjs->m_draining_job_queue = m_was_draining;
@@ -1285,9 +1278,7 @@ gjs_context_gc (GjsContext  *context)
  *
  * Return value: (element-type GjsContext) (transfer full): Known #GjsContext instances
  */
-GList*
-gjs_context_get_all(void)
-{
+GList* gjs_context_get_all() {
   GList *result;
   GList *iter;
   g_mutex_lock (&contexts_lock);
@@ -1839,11 +1830,7 @@ void gjs_context_set_argv(GjsContext* js_context, ssize_t array_length,
 
 static GjsContext *current_context;
 
-GjsContext *
-gjs_context_get_current (void)
-{
-    return current_context;
-}
+GjsContext* gjs_context_get_current() { return current_context; }
 
 void
 gjs_context_make_current (GjsContext *context)
@@ -1913,11 +1900,7 @@ gjs_context_get_profiler(GjsContext *self)
  *
  * Returns: a string
  */
-const char *
-gjs_get_js_version(void)
-{
-    return JS_GetImplementationVersion();
-}
+const char* gjs_get_js_version() { return JS_GetImplementationVersion(); }
 
 /**
  * gjs_context_get_repl_history_path:

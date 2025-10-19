@@ -138,9 +138,7 @@ bool ToggleQueue::handle_toggle(Handler handler) {
     return true;
 }
 
-void
-ToggleQueue::shutdown(void)
-{
+void ToggleQueue::shutdown() {
     debug("shutdown", nullptr);
     g_assert(((void)"Queue should have been emptied before shutting down",
               q.empty()));

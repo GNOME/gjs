@@ -67,7 +67,7 @@ void gjs_log_set_writer_func(GjsGLogWriterFunc func, gpointer user_data,
                              GDestroyNotify user_data_free);
 
 GJS_EXPORT
-void gjs_log_set_writer_default();
+void gjs_log_set_writer_default(void);
 
 /* For imports.gettext */
 typedef enum

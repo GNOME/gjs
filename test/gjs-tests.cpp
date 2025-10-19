@@ -110,9 +110,7 @@ T get_random_number() {
     g_assert_not_reached();
 }
 
-static void
-gjstest_test_func_gjs_context_construct_destroy(void)
-{
+static void gjstest_test_func_gjs_context_construct_destroy() {
     GjsContext *context;
 
     /* Construct twice just to possibly a case where global state from
@@ -125,9 +123,7 @@ gjstest_test_func_gjs_context_construct_destroy(void)
     g_object_unref (context);
 }
 
-static void
-gjstest_test_func_gjs_context_construct_eval(void)
-{
+static void gjstest_test_func_gjs_context_construct_eval() {
     GjsContext *context;
     int estatus;
     AutoError error;
@@ -211,7 +207,7 @@ static void gjstest_test_func_gjs_context_eval_dynamic_import_bad() {
     g_test_assert_expected_messages();
 }
 
-static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
+static void gjstest_test_func_gjs_context_eval_non_zero_terminated() {
     AutoUnref<GjsContext> gjs{gjs_context_new()};
     AutoError error;
     int status;
@@ -224,9 +220,7 @@ static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
     g_assert_cmpint(status, ==, 77);
 }
 
-static void
-gjstest_test_func_gjs_context_exit(void)
-{
+static void gjstest_test_func_gjs_context_exit() {
     GjsContext *context = gjs_context_new();
     AutoError error;
     int status;
@@ -613,9 +607,7 @@ const GObject = imports.gi.GObject; \
 const FooBar = GObject.registerClass(class FooBar extends GObject.Object {}); \
 "
 
-static void
-gjstest_test_func_gjs_gobject_js_defined_type(void)
-{
+static void gjstest_test_func_gjs_gobject_js_defined_type() {
     GjsContext *context = gjs_context_new();
     AutoError error;
     int status;
@@ -633,7 +625,7 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
     g_object_unref(context);
 }
 
-static void gjstest_test_func_gjs_gobject_without_introspection(void) {
+static void gjstest_test_func_gjs_gobject_without_introspection() {
     AutoUnref<GjsContext> context{gjs_context_new()};
     AutoError error;
     int status;
@@ -895,9 +887,7 @@ static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
 }
 
-static void
-gjstest_test_func_util_misc_strv_concat_null(void)
-{
+static void gjstest_test_func_util_misc_strv_concat_null() {
     char **ret;
 
     ret = gjs_g_strv_concat(NULL, 0);
@@ -907,9 +897,7 @@ gjstest_test_func_util_misc_strv_concat_null(void)
     g_strfreev(ret);
 }
 
-static void
-gjstest_test_func_util_misc_strv_concat_pointers(void)
-{
+static void gjstest_test_func_util_misc_strv_concat_pointers() {
     char  *strv0[2] = {(char*)"foo", NULL};
     char  *strv1[1] = {NULL};
     char **strv2    = NULL;
@@ -933,9 +921,7 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
     g_strfreev(ret);
 }
 
-static void
-gjstest_test_profiler_start_stop(void)
-{
+static void gjstest_test_profiler_start_stop() {
     AutoUnref<GjsContext> context{GJS_CONTEXT(
         g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr))};
     GjsProfiler *profiler = gjs_context_get_profiler(context);

@@ -349,9 +349,7 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     }
 }
 
-void
-gjs_test_add_tests_for_parse_call_args(void)
-{
+void gjs_test_add_tests_for_parse_call_args() {
 #define ADD_CALL_ARGS_TEST_BASE(path, code, f)                         \
     g_test_add("/callargs/" path, GjsUnitTestFixture, code, setup, f,  \
                gjs_unit_test_fixture_teardown)

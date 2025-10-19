@@ -208,7 +208,7 @@ bool FundamentalInstance::constructor_impl(JSContext* cx,
                                    return_info, &ret_value);
 }
 
-FundamentalInstance::~FundamentalInstance(void) {
+FundamentalInstance::~FundamentalInstance() {
     if (m_ptr) {
         unref();
         m_ptr = nullptr;
@@ -227,7 +227,7 @@ FundamentalPrototype::FundamentalPrototype(const GI::ObjectInfo info,
     GJS_INC_COUNTER(fundamental_prototype);
 }
 
-FundamentalPrototype::~FundamentalPrototype(void) {
+FundamentalPrototype::~FundamentalPrototype() {
     GJS_DEC_COUNTER(fundamental_prototype);
 }
 
@@ -331,7 +331,7 @@ bool FundamentalPrototype::get_parent_proto(
 }
 
 // Overrides GIWrapperPrototype::constructor_nargs().
-unsigned FundamentalPrototype::constructor_nargs(void) const {
+unsigned FundamentalPrototype::constructor_nargs() const {
     if (m_constructor_info)
         return m_constructor_info->n_args();
     return 0;

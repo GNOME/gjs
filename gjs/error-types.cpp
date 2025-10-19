@@ -13,7 +13,7 @@ G_DEFINE_QUARK(gjs-error-quark, gjs_error)
 G_DEFINE_QUARK(gjs-js-error-quark, gjs_js_error)
 // clang-format on
 
-GType gjs_js_error_get_type(void) {
+GType gjs_js_error_get_type() {
     static const GEnumValue errors[] = {
         {GJS_JS_ERROR_ERROR, "Error", "error"},
         {GJS_JS_ERROR_EVAL_ERROR, "EvalError", "eval-error"},

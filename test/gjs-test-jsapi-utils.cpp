@@ -593,7 +593,7 @@ static void test_gjs_error_out() {
 #define ADD_AUTOPTRTEST(path, func) \
     g_test_add(path, Fixture, nullptr, setup, func, teardown);
 
-void gjs_test_add_tests_for_jsapi_utils(void) {
+void gjs_test_add_tests_for_jsapi_utils() {
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/size",
                     test_gjs_autopointer_size);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/constructor/empty",

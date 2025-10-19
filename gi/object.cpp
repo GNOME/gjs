@@ -141,7 +141,7 @@ void ObjectInstance::link() {
 
 void ObjectInstance::unlink() { s_wrapped_gobject_list.erase(this); }
 
-const void* ObjectBase::jsobj_addr(void) const {
+const void* ObjectBase::jsobj_addr() const {
     if (is_prototype())
         return nullptr;
     return to_instance()->m_wrapper.debug_addr();
@@ -181,9 +181,7 @@ ObjectInstance::for_gobject(GObject *gobj)
     return priv;
 }
 
-void
-ObjectInstance::check_js_object_finalized(void)
-{
+void ObjectInstance::check_js_object_finalized() {
     if (!m_uses_toggle_ref)
         return;
     if (G_UNLIKELY(m_wrapper_finalized)) {
@@ -202,13 +200,11 @@ ObjectPrototype* ObjectPrototype::for_gtype(GType gtype) {
         g_type_get_qdata(gtype, gjs_object_priv_quark()));
 }
 
-void ObjectPrototype::set_type_qdata(void) {
+void ObjectPrototype::set_type_qdata() {
     g_type_set_qdata(m_gtype, gjs_object_priv_quark(), this);
 }
 
-void
-ObjectInstance::set_object_qdata(void)
-{
+void ObjectInstance::set_object_qdata() {
     g_object_set_qdata_full(
         m_ptr, gjs_object_priv_quark(), this, [](void* object) {
             auto* self = static_cast<ObjectInstance*>(object);
@@ -226,9 +222,7 @@ ObjectInstance::set_object_qdata(void)
         });
 }
 
-void
-ObjectInstance::unset_object_qdata(void)
-{
+void ObjectInstance::unset_object_qdata() {
     auto priv_quark = gjs_object_priv_quark();
     if (g_object_get_qdata(m_ptr, priv_quark) == this)
         g_object_steal_qdata(m_ptr, priv_quark);
@@ -2160,9 +2154,7 @@ void ObjectInstance::ignore_gobject_finalization() {
     }
 }
 
-void
-ObjectInstance::gobj_dispose_notify(void)
-{
+void ObjectInstance::gobj_dispose_notify() {
     m_gobj_disposed = true;
 
     unset_object_qdata();
@@ -2212,16 +2204,14 @@ void ObjectInstance::context_dispose_notify(void*, GObject* where_the_object_was
  *
  * Called on each existing ObjectInstance when the #GjsContext is disposed.
  */
-void ObjectInstance::handle_context_dispose(void) {
+void ObjectInstance::handle_context_dispose() {
     if (wrapper_is_rooted()) {
         debug_lifecycle("Was rooted, but unrooting due to GjsContext dispose");
         discard_wrapper();
     }
 }
 
-void
-ObjectInstance::toggle_down(void)
-{
+void ObjectInstance::toggle_down() {
     debug_lifecycle("Toggle notify DOWN");
 
     /* Change to weak ref so the wrapper-wrappee pair can be
@@ -2253,9 +2243,7 @@ ObjectInstance::toggle_down(void)
     }
 }
 
-void
-ObjectInstance::toggle_up(void)
-{
+void ObjectInstance::toggle_up() {
     if (G_UNLIKELY(!m_ptr || m_gobj_disposed || m_gobj_finalized)) {
         if (m_ptr) {
             gjs_debug_lifecycle(
@@ -2381,9 +2369,7 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
     }
 }
 
-void
-ObjectInstance::release_native_object(void)
-{
+void ObjectInstance::release_native_object() {
     static GType gdksurface_type = 0;
 
     discard_wrapper();
@@ -2445,15 +2431,11 @@ ObjectInstance::release_native_object(void)
 /* At shutdown, we need to ensure we've cleared the context of any
  * pending toggle references.
  */
-void
-gjs_object_clear_toggles(void)
-{
+void gjs_object_clear_toggles() {
     ToggleQueue::get_default()->handle_all_toggles(toggle_handler);
 }
 
-void
-gjs_object_shutdown_toggle_queue(void)
-{
+void gjs_object_shutdown_toggle_queue() {
     ToggleQueue::get_default()->shutdown();
 }
 
@@ -2463,7 +2445,7 @@ gjs_object_shutdown_toggle_queue(void)
  * Called when the #GjsContext is disposed, in order to release all GC roots of
  * JSObjects that are held by GObjects.
  */
-void ObjectInstance::prepare_shutdown(void) {
+void ObjectInstance::prepare_shutdown() {
     /* We iterate over all of the objects, breaking the JS <-> C
      * association.  We avoid the potential recursion implied in:
      *   toggle ref removal -> gobj dispose -> toggle ref notify
@@ -2636,9 +2618,7 @@ static void invalidate_closure_collection(T* closures, void* data,
 
 // Note: m_wrapper (the JS object) may already be null when this is called, if
 // it was finalized while the GObject was toggled down.
-void
-ObjectInstance::disassociate_js_gobject(void)
-{
+void ObjectInstance::disassociate_js_gobject() {
     bool had_toggle_down, had_toggle_up;
 
     std::tie(had_toggle_down, had_toggle_up) =
@@ -3418,7 +3398,7 @@ bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
  * ObjectInstance shows a "disposed" marker in its toString() method if the
  * wrapped GObject has already been disposed.
  */
-const char* ObjectInstance::to_string_kind(void) const {
+const char* ObjectInstance::to_string_kind() const {
     if (m_gobj_finalized)
         return "object (FINALIZED)";
     return m_gobj_disposed ? "object (DISPOSED)" : "object";

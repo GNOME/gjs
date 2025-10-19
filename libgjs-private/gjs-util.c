@@ -551,7 +551,7 @@ static GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
  *
  * Sets the structured logging writer function back to the platform default.
  */
-void gjs_log_set_writer_default() {
+void gjs_log_set_writer_default(void) {
     if (log_writer_user_data_free) {
         log_writer_user_data_free(log_writer_user_data);
     }

@@ -1059,12 +1059,12 @@ class GIWrapperPrototype : public Base {
     }
 
  public:
-    Prototype* acquire(void) {
+    Prototype* acquire() {
         g_atomic_rc_box_acquire(this);
         return static_cast<Prototype*>(this);
     }
 
-    void release(void) { g_atomic_rc_box_release_full(this, &destroy_notify); }
+    void release() { g_atomic_rc_box_release_full(this, &destroy_notify); }
 
     // JSClass operations
 
@@ -1107,7 +1107,7 @@ class GIWrapperInstance : public Base {
         Base::GIWrapperBase::debug_lifecycle(obj, "Instance constructor");
     }
 
-    ~GIWrapperInstance(void) { Base::m_proto->release(); }
+    ~GIWrapperInstance() { Base::m_proto->release(); }
 
  public:
     /*

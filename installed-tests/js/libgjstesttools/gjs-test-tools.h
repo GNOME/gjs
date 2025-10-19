@@ -69,25 +69,25 @@ GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_save_object_unreffed(GObject* object);
 
 GJS_TEST_TOOL_EXTERN
-GObject* gjs_test_tools_get_saved();
+GObject* gjs_test_tools_get_saved(void);
 
 GJS_TEST_TOOL_EXTERN
-GObject* gjs_test_tools_steal_saved();
+GObject* gjs_test_tools_steal_saved(void);
 
 GJS_TEST_TOOL_EXTERN
-GObject* gjs_test_tools_peek_saved();
+GObject* gjs_test_tools_peek_saved(void);
 
 GJS_TEST_TOOL_EXTERN
-int gjs_test_tools_get_saved_ref_count();
+int gjs_test_tools_get_saved_ref_count(void);
 
 GJS_TEST_TOOL_EXTERN
-void gjs_test_tools_clear_saved();
+void gjs_test_tools_clear_saved(void);
 
 GJS_TEST_TOOL_EXTERN
 void gjs_test_tools_save_weak(GObject* object);
 
 GJS_TEST_TOOL_EXTERN
-GObject* gjs_test_tools_get_weak();
+GObject* gjs_test_tools_get_weak(void);
 
 GJS_TEST_TOOL_EXTERN
 GObject* gjs_test_tools_get_weak_other_thread(GError** error);
@@ -102,6 +102,6 @@ GJS_TEST_TOOL_EXTERN
 GBytes* gjs_test_tools_new_unaligned_bytes(size_t len);
 
 GJS_TEST_TOOL_EXTERN
-GBytes* gjs_test_tools_new_static_bytes();
+GBytes* gjs_test_tools_new_static_bytes(void);
 
 G_END_DECLS

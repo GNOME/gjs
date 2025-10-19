@@ -33,7 +33,7 @@ InterfacePrototype::InterfacePrototype(Maybe<const GI::InterfaceInfo> info,
     GJS_INC_COUNTER(interface);
 }
 
-InterfacePrototype::~InterfacePrototype(void) {
+InterfacePrototype::~InterfacePrototype() {
     g_clear_pointer(&m_vtable, g_type_default_interface_unref);
     GJS_DEC_COUNTER(interface);
 }
