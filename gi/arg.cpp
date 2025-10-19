@@ -96,7 +96,8 @@ bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
         uint32_t tmpval = static_cast<uint32_t>(value);
 
         /* check all bits are valid bits for the flag and is a 32 bit flag*/
-        if ((tmpval &= gflags_class->mask) != value) { /* Not a guint32 with invalid mask values*/
+        if ((tmpval &= gflags_class->mask) != value) {
+            // Not a uint32_t with invalid mask values
             gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
                       value, g_type_name(gtype));
             return false;
@@ -487,7 +488,7 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
     JS::RootedId cur_id{cx};
     for (id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
         cur_id = ids[id_ix];
-        gpointer key_ptr, val_ptr;
+        void* key_ptr;
         GIArgument val_arg = { 0 };
 
         if (!JS_IdToValue(cx, cur_id, &key_js) ||
@@ -501,6 +502,7 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
             return false;
 
         /* Use heap-allocated values for types that don't fit in a pointer */
+        void* val_ptr;
         if (val_type == GI_TYPE_TAG_INT64) {
             val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
         } else if (val_type == GI_TYPE_TAG_UINT64) {
@@ -569,7 +571,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
         elem = JS::UndefinedValue();
 
         if (!JS_GetElement(cx, array, i, &elem)) {
-            gjs_throw(cx, "Missing array element %" G_GSIZE_FORMAT, i);
+            gjs_throw(cx, "Missing array element %zu", i);
             return false;
         }
 
@@ -1162,8 +1164,7 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
         if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
             return false;
         if (found_length) {
-            guint32 length;
-
+            uint32_t length;
             if (!gjs_object_require_converted_property(
                     cx, array_obj, nullptr, atoms.length(), &length)) {
                 return false;
@@ -1303,7 +1304,7 @@ bool value_to_interface_gi_argument_internal(
             GType actual_gtype = G_TYPE_NONE;
             // In case we have no known type from gi we should try to be
             // more dynamic and try to get the type from JS, to handle the
-            // case in which we're handling a gpointer such as GTypeInstance
+            // case in which we're handling a pointer such as GTypeInstance
             // FIXME(3v1n0): would be nice to know if GI would give this info
             if (!gjs_gtype_get_actual_gtype(cx, obj, &actual_gtype))
                 return false;
@@ -2234,7 +2235,7 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
                 value_out.set(JS_GetEmptyStringValue(cx));
                 return true;
             } else if (!g_unichar_validate(value)) {
-                gjs_throw(cx, "Invalid unicode codepoint %" G_GUINT32_FORMAT,
+                gjs_throw(cx, "Invalid unicode codepoint U+%" PRIXLEAST32,
                           value);
                 return false;
             }
@@ -3537,8 +3538,7 @@ struct GHR_closure {
     bool failed;
 };
 
-static gboolean
-gjs_ghr_helper(gpointer key, gpointer val, gpointer user_data) {
+static gboolean gjs_ghr_helper(void* key, void* val, void* user_data) {
     GHR_closure *c = (GHR_closure *) user_data;
 
     GITypeTag key_tag = c->key_type.tag();
@@ -4049,13 +4049,10 @@ static bool gjs_g_arg_release_internal(
 
                 if (transfer != GI_TRANSFER_CONTAINER &&
                     type_needs_out_release(element_type, element_tag)) {
-                    guint i;
-
-                    for (i = 0; i < array->len; i++) {
+                    for (unsigned i = 0; i < array->len; i++) {
                         GIArgument arg_iter;
 
-                        gjs_arg_set(&arg_iter,
-                                    g_array_index(array, gpointer, i));
+                        gjs_arg_set(&arg_iter, g_array_index(array, void*, i));
                         if (!gjs_g_arg_release_internal(
                                 cx, transfer, element_type, element_tag,
                                 GJS_ARGUMENT_ARRAY_ELEMENT, flags, &arg_iter))
@@ -4080,9 +4077,7 @@ static bool gjs_g_arg_release_internal(
                 gjs_arg_steal<GPtrArray*>(arg)};
 
             if (transfer != GI_TRANSFER_CONTAINER) {
-                guint i;
-
-                for (i = 0; i < array->len; i++) {
+                for (unsigned i = 0; i < array->len; i++) {
                     GIArgument arg_iter;
 
                     gjs_arg_set(&arg_iter, g_ptr_array_index(array, i));

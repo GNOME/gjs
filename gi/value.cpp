@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <limits.h>  // for INT_MAX
 #include <stdint.h>
 
 #include <sstream>
@@ -257,10 +258,9 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
             message << "\n" << gjs_dumpstack_string();
         }
         if (hint) {
-            gpointer instance;
             g_signal_query(hint->signal_id, &signal_query);
 
-            instance = g_value_peek_pointer(&param_values[0]);
+            void* instance = g_value_peek_pointer(&param_values[0]);
             message << "\nThe offending signal was " << signal_query.signal_name
                     << " on " << g_type_name(G_TYPE_FROM_INSTANCE(instance))
                     << " " << instance << ".";
@@ -273,9 +273,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     if (marshal_data) {
         /* we are used for a signal handler */
-        guint signal_id;
-
-        signal_id = GPOINTER_TO_UINT(marshal_data);
+        unsigned signal_id = GPOINTER_TO_UINT(marshal_data);
 
         g_signal_query(signal_id, &signal_query);
 
@@ -607,7 +605,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                                      out_of_range);
         }
     } else if (gtype == G_TYPE_INT) {
-        gint32 i;
+        int32_t i;
         if (Gjs::js_value_to_c<int32_t>(cx, value, &i)) {
             Gjs::gvalue_set(gvalue, i);
         } else {
@@ -623,14 +621,14 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                                      out_of_range);
         }
     } else if (gtype == G_TYPE_DOUBLE) {
-        gdouble d;
+        double d;
         if (Gjs::js_value_to_c<double>(cx, value, &d)) {
             Gjs::gvalue_set(gvalue, d);
         } else {
             return throw_expect_type(cx, value, "double");
         }
     } else if (gtype == G_TYPE_FLOAT) {
-        gdouble d;
+        double d;
         if (Gjs::js_value_to_c_checked<float>(cx, value, &d, &out_of_range) &&
             !out_of_range) {
             Gjs::gvalue_set<float>(gvalue, d);
@@ -638,7 +636,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             return throw_expect_type(cx, value, "float", 0, out_of_range);
         }
     } else if (gtype == G_TYPE_UINT) {
-        guint32 i;
+        uint32_t i;
         if (Gjs::js_value_to_c<uint32_t>(cx, value, &i)) {
             Gjs::gvalue_set(gvalue, i);
         } else {
@@ -896,7 +894,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
          * exhausted everything else. Adding this for
          * e.g. ClutterUnit.
          */
-        gint32 i;
+        int32_t i;
         if (Gjs::js_value_to_c<int32_t>(cx, value, &i)) {
             GValue int_value = { 0, };
             g_value_init(&int_value, G_TYPE_INT);
@@ -944,7 +942,7 @@ static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
                                      int64_t v) {
     double v_double;
 
-    if (v > 0 && v < G_MAXINT) {
+    if (v > 0 && v < INT_MAX) {
         /* Optimize the unambiguous case */
         v_double = v;
     } else {

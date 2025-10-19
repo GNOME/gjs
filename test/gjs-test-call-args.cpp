@@ -289,10 +289,7 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FN("objectInvalidType", object_invalid_type, 0, 0),
     JS_FS_END};
 
-static void
-setup(GjsUnitTestFixture *fx,
-      gconstpointer       unused)
-{
+static void setup(GjsUnitTestFixture* fx, const void* unused) {
     gjs_unit_test_fixture_setup(fx, unused);
 
     JS::RootedObject global{fx->cx, JS::CurrentGlobalOrNull(fx->cx)};
@@ -300,10 +297,7 @@ setup(GjsUnitTestFixture *fx,
     g_assert_true(success);
 }
 
-static void
-run_code(GjsUnitTestFixture *fx,
-         gconstpointer       code)
-{
+static void run_code(GjsUnitTestFixture* fx, const void* code) {
     const char *script = (const char *) code;
 
     JS::SourceText<mozilla::Utf8Unit> source;
@@ -321,10 +315,8 @@ run_code(GjsUnitTestFixture *fx,
     g_assert_true(ok);
 }
 
-static void
-run_code_expect_exception(GjsUnitTestFixture *fx,
-                          gconstpointer       code)
-{
+static void run_code_expect_exception(GjsUnitTestFixture* fx,
+                                      const void* code) {
     const char *script = (const char *) code;
 
     JS::SourceText<mozilla::Utf8Unit> source;

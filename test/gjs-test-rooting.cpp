@@ -50,18 +50,12 @@ static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {
     g_mutex_unlock(&gc_lock);
 }
 
-static void
-setup(GjsRootingFixture *fx,
-      gconstpointer      unused)
-{
+static void setup(GjsRootingFixture* fx, const void* unused) {
     gjs_unit_test_fixture_setup(PARENT(fx), unused);
     JS_SetGCCallback(PARENT(fx)->cx, on_gc, fx);
 }
 
-static void
-teardown(GjsRootingFixture *fx,
-         gconstpointer      unused)
-{
+static void teardown(GjsRootingFixture* fx, const void* unused) {
     gjs_unit_test_fixture_teardown(PARENT(fx), unused);
 }
 

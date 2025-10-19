@@ -1019,7 +1019,7 @@ describe('GValue', function () {
     xit('flags can be passed into a function and packed', function () {
         expect(() => GIMarshallingTests.gvalue_in_flags(GIMarshallingTests.Flags.VALUE3))
             .not.toThrow();
-    }).pend("we don't know to pack flags in a GValue as flags and not gint");
+    }).pend("we don't know to pack flags in a GValue as flags and not int");
 
     it('flags can be passed into a function as a boxed type and packed', function () {
         const value = new GObject.Value();

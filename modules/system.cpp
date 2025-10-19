@@ -141,7 +141,7 @@ static bool gjs_gc(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 static bool gjs_exit(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    gint32 ecode;
+    int32_t ecode;
     if (!gjs_parse_call_args(cx, "exit", argv, "i", "ecode", &ecode))
         return false;
 

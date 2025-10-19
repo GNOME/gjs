@@ -166,7 +166,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
         return Err("Invalid format string combination ?u");
     if (!value.isNumber() || !JS::ToNumber(cx, value, &num))
         return Err("Couldn't convert to unsigned integer");
-    if (num > G_MAXUINT32 || num < 0)
+    if (num > INT32_MAX || num < 0)
         return Err("Value %f is out of range", num);
     *ref = num;
     return JS::Ok();

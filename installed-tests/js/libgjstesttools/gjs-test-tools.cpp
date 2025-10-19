@@ -110,7 +110,7 @@ void gjs_test_tools_ref_other_thread(GObject* object, GError** error) {
     // cppcheck-suppress memleak
 }
 
-static gpointer emit_test_signal_other_thread_func(gpointer data) {
+static void* emit_test_signal_other_thread_func(void* data) {
     g_signal_emit_by_name(data, "test");
     return nullptr;
 }

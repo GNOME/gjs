@@ -50,7 +50,7 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
                            static_cast<double>(value_val),
                            GJS_MODULE_PROP_FLAGS)) {
         gjs_throw(cx,
-                  "Unable to define enumeration value %s %" G_GINT64_FORMAT
+                  "Unable to define enumeration value %s %" PRId64
                   " (no memory most likely)",
                   fixed_name.get(), value_val);
         return false;

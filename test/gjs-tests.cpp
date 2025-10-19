@@ -853,7 +853,7 @@ static void test_gjs_debug_value_bigint_uint64(GjsUnitTestFixture* fx,
                                                const void*) {
     // gjs_debug_value(BigIntValue) prints whatever fits into int64_t, because
     // more complicated operations might be fallible
-    JS::BigInt* bi = JS::NumberToBigInt(fx->cx, G_MAXUINT64);
+    JS::BigInt* bi = JS::NumberToBigInt(fx->cx, UINT64_MAX);
     std::string debug_output = gjs_debug_bigint(bi);
 
     g_assert_cmpstr(debug_output.c_str(), ==,

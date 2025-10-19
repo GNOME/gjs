@@ -658,11 +658,10 @@ void gjs_gc_if_needed(JSContext* cx) {
 #ifdef __linux__
     {
         long rss_size;  // NOLINT(runtime/int)
-        gint64 now;
 
         /* We rate limit GCs to at most one per 5 frames.
            One frame is 16666 microseconds (1000000/60)*/
-        now = g_get_monotonic_time();
+        int64_t now = g_get_monotonic_time();
         if (now - last_gc_check_time < 5 * 16666)
             return;
 
@@ -684,7 +683,7 @@ void gjs_gc_if_needed(JSContext* cx) {
             return;  // doesn't make sense
         uint64_t rss_usize = rss_size;
         if (rss_usize > linux_rss_trigger) {
-            linux_rss_trigger = MIN(G_MAXUINT32, rss_usize * 1.25);
+            linux_rss_trigger = MIN(UINT32_MAX, rss_usize * 1.25);
             JS::NonIncrementalGC(cx, JS::GCOptions::Shrink,
                                  Gjs::GCReason::LINUX_RSS_TRIGGER);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {

@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <inttypes.h>  // for PRIu64
 #include <signal.h>  // for sigaction, SIGUSR1, sa_handler
 #include <stdint.h>
 #include <stdio.h>   // for FILE, fclose, size_t
@@ -820,12 +821,8 @@ JSObject* GjsContextPrivate::build_args_array() {
     return gjs_build_string_array(m_cx, m_args);
 }
 
-static void
-gjs_context_get_property (GObject     *object,
-                          guint        prop_id,
-                          GValue      *value,
-                          GParamSpec  *pspec)
-{
+static void gjs_context_get_property(GObject* object, unsigned prop_id,
+                                     GValue* value, GParamSpec* pspec) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
     switch (prop_id) {
@@ -844,12 +841,8 @@ gjs_context_get_property (GObject     *object,
     }
 }
 
-static void
-gjs_context_set_property (GObject      *object,
-                          guint         prop_id,
-                          const GValue *value,
-                          GParamSpec   *pspec)
-{
+static void gjs_context_set_property(GObject* object, unsigned prop_id,
+                                     const GValue* value, GParamSpec* pspec) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
     switch (prop_id) {
@@ -1205,11 +1198,11 @@ void GjsContextPrivate::register_unhandled_promise_rejection(
 void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
     size_t erased = m_unhandled_rejection_stacks.erase(id);
     if (erased != 1) {
-        g_critical("Promise %" G_GUINT64_FORMAT
-                   " Handler attached to rejected promise that wasn't "
-                   "previously marked as unhandled or that we wrongly reported "
-                   "as unhandled",
-                   id);
+        g_critical(
+            "Promise %" PRIu64
+            " handler attached to rejected promise that wasn't previously "
+            "marked as unhandled or that we wrongly reported as unhandled",
+            id);
     }
 }
 

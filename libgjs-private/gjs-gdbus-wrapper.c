@@ -28,15 +28,15 @@ enum {
     SIGNAL_LAST,
 };
 
-static guint signals[SIGNAL_LAST];
+static unsigned signals[SIGNAL_LAST];
 
 struct _GjsDBusImplementationPrivate {
     GDBusInterfaceVTable  vtable;
     GDBusInterfaceInfo   *ifaceinfo;
 
-    // from gchar* to GVariant*
+    // from char* to GVariant*
     GHashTable           *outstanding_properties;
-    guint                 idle_id;
+    unsigned idle_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
@@ -202,9 +202,10 @@ gjs_dbus_implementation_finalize(GObject *object) {
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->finalize(object);
 }
 
-static void
-gjs_dbus_implementation_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
-{
+static void gjs_dbus_implementation_set_property(GObject* object,
+                                                 unsigned property_id,
+                                                 const GValue* value,
+                                                 GParamSpec* pspec) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
 
     switch (property_id) {
@@ -265,11 +266,11 @@ gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
     GVariantBuilder invalidated_props;
     GHashTableIter iter;
     GVariant *val;
-    gchar *prop_name;
 
     g_variant_builder_init(&changed_props, G_VARIANT_TYPE_VARDICT);
     g_variant_builder_init(&invalidated_props, G_VARIANT_TYPE_STRING_ARRAY);
 
+    char* prop_name;
     g_hash_table_iter_init(&iter, self->priv->outstanding_properties);
     while (g_hash_table_iter_next(&iter, (void**) &prop_name, (void**) &val)) {
         if (val)
@@ -374,8 +375,7 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
                      G_TYPE_VARIANT /* parameters */);
 }
 
-static gboolean
-idle_cb (gpointer data) {
+static gboolean idle_cb(void* data) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (data);
 
     g_dbus_interface_skeleton_flush(skeleton);
@@ -391,11 +391,9 @@ idle_cb (gpointer data) {
  * Queue a PropertyChanged signal for emission, or update the one queued
  * adding @property
  */
-void
-gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self,
-                                               gchar                 *property,
-                                               GVariant              *newvalue)
-{
+void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,
+                                                   char* property,
+                                                   GVariant* newvalue) {
     g_hash_table_replace(self->priv->outstanding_properties,
                          g_strdup(property),
                          _g_variant_ref_sink0(newvalue));
@@ -413,11 +411,9 @@ gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self,
  * Emits a signal named @signal_name from the object and interface represented
  * by @self. This signal has no destination.
  */
-void
-gjs_dbus_implementation_emit_signal (GjsDBusImplementation *self,
-                                     gchar                 *signal_name,
-                                     GVariant              *parameters)
-{
+void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
+                                         char* signal_name,
+                                         GVariant* parameters) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
     GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
     const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);

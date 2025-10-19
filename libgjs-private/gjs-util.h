@@ -63,7 +63,7 @@ typedef GLogWriterOutput (*GjsGLogWriterFunc)(GLogLevelFlags level,
                                               void* user_data);
 
 GJS_EXPORT
-void gjs_log_set_writer_func(GjsGLogWriterFunc func, gpointer user_data,
+void gjs_log_set_writer_func(GjsGLogWriterFunc func, void* user_data,
                              GDestroyNotify user_data_free);
 
 GJS_EXPORT

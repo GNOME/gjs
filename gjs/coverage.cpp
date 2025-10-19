@@ -45,7 +45,7 @@ struct _GjsCoverage {
 };
 
 typedef struct {
-    gchar **prefixes;
+    char** prefixes;
     GjsContext *context;
     JS::Heap<JSObject*> global;
 

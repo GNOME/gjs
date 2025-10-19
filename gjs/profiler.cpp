@@ -776,7 +776,7 @@ gjs_profiler_chain_signal(GjsContext *context,
  * Set the capture writer to which profiling data is written when the @self
  * is stopped.
  */
-void gjs_profiler_set_capture_writer(GjsProfiler* self, gpointer capture) {
+void gjs_profiler_set_capture_writer(GjsProfiler* self, void* capture) {
     g_return_if_fail(self);
     g_return_if_fail(!self->running);
 

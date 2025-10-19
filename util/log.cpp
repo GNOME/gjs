@@ -201,9 +201,9 @@ gjs_debug(GjsDebugTopic topic,
     va_end (args);
 
     if (s_timer) {
-        static gdouble previous = 0.0;
-        gdouble total = g_timer_elapsed(s_timer, nullptr) * 1000.0;
-        gdouble since = total - previous;
+        static double previous = 0.0;
+        double total = g_timer_elapsed(s_timer, nullptr) * 1000.0;
+        double since = total - previous;
         const char *ts_suffix;
         char *s2;
 

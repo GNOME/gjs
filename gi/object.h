@@ -74,8 +74,8 @@ class ObjectBase
         : GIWrapperBase(proto) {}
 
  public:
-    using SignalMatchFunc = guint(gpointer, GSignalMatchType, guint, GQuark,
-                                  GClosure*, gpointer, gpointer);
+    using SignalMatchFunc = unsigned(void*, GSignalMatchType, unsigned, GQuark,
+                                     GClosure*, void*, void*);
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GOBJECT;
     static constexpr const char* DEBUG_TAG = "GObject";
 

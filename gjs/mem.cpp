@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #include <glib.h>
 
@@ -52,13 +52,12 @@ gjs_memory_report(const char *where,
                   "Object counts don't add up!");
     }
 
-    gjs_debug(GJS_DEBUG_MEMORY,
-              "  %" G_GINT64_FORMAT " objects currently alive",
+    gjs_debug(GJS_DEBUG_MEMORY, "  %" PRId64 " objects currently alive",
               GJS_GET_COUNTER(everything));
 
     if (GJS_GET_COUNTER(everything) != 0) {
         for (i = 0; i < n_counters; ++i) {
-            gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %" G_GINT64_FORMAT,
+            gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %" PRId64,
                       counters[i]->name, counters[i]->value.load());
         }
 

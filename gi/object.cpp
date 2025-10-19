@@ -3001,7 +3001,6 @@ bool ObjectBase::connect_object(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
                                   bool after, bool object) {
-    guint signal_id;
     GQuark signal_detail;
     const char* func_name = object  ? "connect_object"
                             : after ? "connect_after"
@@ -3045,6 +3044,7 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
         return false;
     }
 
+    unsigned signal_id;
     if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
                              &signal_detail, true)) {
         gjs_throw(cx, "No signal '%s' on object '%s'", signal_name.get(),
@@ -3085,7 +3085,6 @@ bool ObjectBase::emit(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
-    guint signal_id;
     GQuark signal_detail;
     GSignalQuery signal_query;
     unsigned int i;
@@ -3107,6 +3106,7 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
         cx, format_name() + " emit('" + signal_name.get() + "')")};
     AutoProfilerLabel label{cx, "", full_name};
 
+    unsigned signal_id;
     if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
                              &signal_detail, false)) {
         gjs_throw(cx, "No signal '%s' on object '%s'", signal_name.get(),

@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for size_t, strcmp, strlen
 
 #ifdef _WIN32
@@ -439,8 +440,6 @@ static bool import_file_on_module(JSContext* cx, JS::HandleObject obj,
 GJS_JSAPI_RETURN_CONVENTION
 static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
     JS::RootedObject search_path{cx};
-    guint32 search_path_len;
-    guint32 i;
     bool exists, is_array;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
@@ -455,6 +454,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
         return false;
     }
 
+    uint32_t search_path_len;
     if (!JS::GetArrayLength(cx, search_path, &search_path_len)) {
         gjs_throw(cx, "searchPath array has no length");
         return false;
@@ -489,7 +489,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
     JS::RootedValue elem{cx};
     JS::RootedString str{cx};
 
-    for (i = 0; i < search_path_len; ++i) {
+    for (uint32_t i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
         if (!JS_GetElement(cx, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
@@ -592,8 +592,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
                                    JS::MutableHandleIdVector properties,
                                    bool enumerable_only [[maybe_unused]]) {
-    guint32 search_path_len;
-    guint32 i;
     bool is_array;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
@@ -609,6 +607,7 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
         return false;
     }
 
+    uint32_t search_path_len;
     if (!JS::GetArrayLength(cx, search_path, &search_path_len)) {
         gjs_throw(cx, "searchPath array has no length");
         return false;
@@ -616,7 +615,7 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
 
     JS::RootedValue elem{cx};
     JS::RootedString str{cx};
-    for (i = 0; i < search_path_len; ++i) {
+    for (uint32_t i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
         if (!JS_GetElement(cx, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()

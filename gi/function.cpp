@@ -70,10 +70,8 @@
 
 using mozilla::Maybe, mozilla::Some;
 
-/* We use guint8 for arguments; functions can't
- * have more than this.
- */
-#define GJS_ARG_INDEX_INVALID G_MAXUINT8
+// We use uint8_t for arguments; functions can't have more than this.
+#define GJS_ARG_INDEX_INVALID UINT8_MAX
 
 namespace Gjs {
 
@@ -1304,8 +1302,6 @@ const JSFunctionSpec Function::proto_funcs[] = {
 // clang-format on
 
 bool Function::init(JSContext* cx, GType gtype /* = G_TYPE_NONE */) {
-    guint8 i;
-
     if (auto func_info = m_info.as<GI::InfoTag::FUNCTION>()) {
         GErrorResult<> result = func_info->prep_invoker(&m_invoker);
         if (result.isErr())
@@ -1340,7 +1336,7 @@ bool Function::init(JSContext* cx, GType gtype /* = G_TYPE_NONE */) {
     if (inc_counter)
         m_js_out_argc++;
 
-    for (i = 0; i < n_args; i++) {
+    for (uint8_t i = 0; i < n_args; i++) {
         Argument* gjs_arg = m_arguments.argument(i);
         GI::StackArgInfo arg_info;
 

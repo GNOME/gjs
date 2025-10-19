@@ -94,13 +94,12 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
                                              bool* resolved, const char* name) {
     bool ret;
     GType *interfaces;
-    guint n_interfaces;
-    guint i;
+    unsigned n_interfaces;
 
     ret = true;
     interfaces = g_type_interfaces(gtype(), &n_interfaces);
     GI::Repository repo;
-    for (i = 0; i < n_interfaces; i++) {
+    for (unsigned i = 0; i < n_interfaces; i++) {
         Maybe<GI::AutoInterfaceInfo> iface_info{
             repo.find_by_gtype<GI::InfoTag::INTERFACE>(interfaces[i])};
         if (!iface_info)

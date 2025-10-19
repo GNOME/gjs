@@ -1010,10 +1010,8 @@ typedef struct _GjsCoverageMultipleSourcesFixture {
     GFile *second_js_source_file;
 } GjsCoverageMultpleSourcesFixutre;
 
-static void
-gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixture_data,
-                                                                         gconstpointer user_data)
-{
+static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
+    void* fixture_data, const void* user_data) {
     gjs_coverage_fixture_set_up(fixture_data, user_data);
 
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
@@ -1059,9 +1057,8 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixt
 }
 
 static void
-gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(gpointer      fixture_data,
-                                                                      gconstpointer user_data)
-{
+gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(
+    void* fixture_data, const void* user_data) {
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
     g_object_unref(fixture->second_js_source_file);
 

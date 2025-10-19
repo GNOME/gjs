@@ -5,12 +5,12 @@
 #include <config.h>
 
 #include <stddef.h>  // for size_t
+#include <stdint.h>
 
 #include <memory>
 
 #include <cairo.h>
 #include <girepository/girepository.h>
-#include <glib.h>
 
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
@@ -467,10 +467,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool setDash_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj);
 
-    guint i;
     JS::RootedObject dashes{cx};
     double offset;
-    guint len;
     bool is_array;
 
     if (!gjs_parse_call_args(cx, "setDash", argv, "of", "dashes", &dashes,
@@ -484,6 +482,7 @@ static bool setDash_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
+    uint32_t len;
     if (!JS::GetArrayLength(cx, dashes, &len)) {
         gjs_throw(cx, "Can't get length of dashes");
         return false;
@@ -492,7 +491,7 @@ static bool setDash_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     std::unique_ptr<double[]> dashes_c = std::make_unique<double[]>(len);
     size_t dashes_c_size = 0;
     JS::RootedValue elem{cx};
-    for (i = 0; i < len; ++i) {
+    for (uint32_t i = 0; i < len; ++i) {
         double b;
 
         elem.setUndefined();
