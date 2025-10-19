@@ -16,7 +16,7 @@
 
 #include <girepository/girepository.h>
 #include <glib-object.h>  // for GType
-#include <glib.h>         // for gboolean
+#include <glib.h>
 // IWYU pragma: no_forward_declare _GBytes
 // IWYU pragma: no_forward_declare _GHashTable
 // IWYU pragma: no_forward_declare _GVariant

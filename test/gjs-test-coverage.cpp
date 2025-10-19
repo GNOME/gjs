@@ -36,7 +36,7 @@ replace_file(GFile      *file,
     Gjs::AutoError error;
     g_file_replace_contents(
         file, contents, strlen(contents), /* etag = */ nullptr,
-        FALSE /* make backup */, G_FILE_CREATE_NONE,
+        /* make backup = */ false, G_FILE_CREATE_NONE,
         /* etag out = */ nullptr, /* cancellable = */ nullptr, &error);
     g_assert_no_error(error);
 }
@@ -47,7 +47,7 @@ recursive_delete_dir(GFile *dir)
     GFileEnumerator* files =
         g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
                                   G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
-    while (TRUE) {
+    while (true) {
         GFile *file;
         GFileInfo *info;
         if (!g_file_enumerator_iterate(files, &info, &file, nullptr, nullptr) ||

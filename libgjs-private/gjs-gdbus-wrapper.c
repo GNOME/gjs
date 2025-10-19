@@ -6,6 +6,7 @@
 
 #include <config.h>
 
+#include <stdbool.h>
 #include <string.h>  // for strcmp
 
 #include <gio/gio.h>
@@ -53,16 +54,18 @@ static inline void _g_variant_unref0(void* value) {
         g_variant_unref(value);
 }
 
-static gboolean gjs_dbus_implementation_check_interface(
-    GjsDBusImplementation* self, GDBusConnection* connection,
-    const char* object_path, const char* interface_name, GError** error) {
+static bool gjs_dbus_implementation_check_interface(GjsDBusImplementation* self,
+                                                    GDBusConnection* connection,
+                                                    const char* object_path,
+                                                    const char* interface_name,
+                                                    GError** error) {
     const char* exported_object_path;
 
     if (!g_dbus_interface_skeleton_has_connection(
             G_DBUS_INTERFACE_SKELETON(self), connection)) {
         g_set_error_literal(error, G_DBUS_ERROR, G_DBUS_ERROR_DISCONNECTED,
                             "Wrong connection");
-        return FALSE;
+        return false;
     }
     exported_object_path = g_dbus_interface_skeleton_get_object_path(
         G_DBUS_INTERFACE_SKELETON(self));
@@ -71,27 +74,28 @@ static gboolean gjs_dbus_implementation_check_interface(
             error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
             "Wrong object path %s for %s", object_path,
             exported_object_path ? exported_object_path : "unexported object");
-        return FALSE;
+        return false;
     }
     if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
         g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE,
                     "Unknown interface %s on %s", interface_name,
                     self->priv->ifaceinfo->name);
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
-static gboolean gjs_dbus_implementation_check_property(
-    GjsDBusImplementation* self, const char* interface_name,
-    const char* property_name, GError** error) {
+static bool gjs_dbus_implementation_check_property(GjsDBusImplementation* self,
+                                                   const char* interface_name,
+                                                   const char* property_name,
+                                                   GError** error) {
     if (!g_dbus_interface_info_lookup_property(self->priv->ifaceinfo,
                                                property_name)) {
         g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
                     "Unknown property %s on %s", property_name, interface_name);
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
 static void gjs_dbus_implementation_method_call(

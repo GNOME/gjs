@@ -69,16 +69,16 @@ static locale_t gjs_steal_locale_id(locale_t* id) {
     return stolen_id;
 }
 
-static gboolean gjs_set_locale_id(locale_t* locale_id_pointer,
-                                  locale_t new_locale_id) {
+static bool gjs_set_locale_id(locale_t* locale_id_pointer,
+                              locale_t new_locale_id) {
     if (*locale_id_pointer == new_locale_id)
-        return FALSE;
+        return false;
 
     if (*locale_id_pointer != UNSET_LOCALE_ID)
         freelocale(*locale_id_pointer);
     *locale_id_pointer = new_locale_id;
 
-    return TRUE;
+    return true;
 }
 
 static int gjs_locale_category_get_mask(GjsLocaleCategory category) {
@@ -149,7 +149,7 @@ const char* gjs_set_thread_locale(GjsLocaleCategory category,
     GjsLocale *locales = NULL, *locale = NULL;
     int category_mask;
     char* prior_name = NULL;
-    gboolean success = FALSE;
+    bool success = false;
     int errno_save;
 
     locales = g_private_get(&gjs_private_locale_key);
@@ -195,7 +195,7 @@ const char* gjs_set_thread_locale(GjsLocaleCategory category,
     gjs_set_locale_id(&locale->id, gjs_steal_locale_id(&new_locale_id));
     g_set_str(&locale->name, setlocale(category, NULL));
 
-    success = TRUE;
+    success = true;
 out:
     g_clear_pointer(&prior_name, g_free);
     errno_save = errno;

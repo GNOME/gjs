@@ -142,8 +142,7 @@ static GjsContext *profiling_context;
  * capture file so that the callgraph builder can generate symbols
  * from the stack addresses provided.
  *
- * Returns: %TRUE if successful; otherwise %FALSE and the profile
- *   should abort.
+ * Returns: true if successful; otherwise false and the profile should abort.
  */
 [[nodiscard]] static bool gjs_profiler_extract_maps(GjsProfiler* self) {
     int64_t now = g_get_monotonic_time() * 1000L;
@@ -339,7 +338,7 @@ _gjs_profiler_free(GjsProfiler *self)
  * Checks if the profiler is currently running. This means that the JS
  * profiler is enabled and POSIX signal timers are registered.
  *
- * Returns: %TRUE if the profiler is active.
+ * Returns: true if the profiler is active.
  */
 bool
 _gjs_profiler_is_running(GjsProfiler *self)
@@ -739,7 +738,7 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
  *
  * This function should only be called from the JS thread.
  *
- * Returns: %TRUE if the signal was handled.
+ * Returns: true if the signal was handled.
  */
 bool
 gjs_profiler_chain_signal(GjsContext *context,
