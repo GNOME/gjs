@@ -117,11 +117,11 @@ static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_print(JSContext* context, unsigned argc, JS::Value* vp) {
+static bool gjs_print(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     std::string buffer;
-    if (!gjs_print_parse_args(context, argv, &buffer))
+    if (!gjs_print_parse_args(cx, argv, &buffer))
         return false;
 
     g_print("%s\n", buffer.c_str());
@@ -131,11 +131,11 @@ static bool gjs_print(JSContext* context, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_printerr(JSContext* context, unsigned argc, JS::Value* vp) {
+static bool gjs_printerr(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
 
     std::string buffer;
-    if (!gjs_print_parse_args(context, argv, &buffer))
+    if (!gjs_print_parse_args(cx, argv, &buffer))
         return false;
 
     g_printerr("%s\n", buffer.c_str());
@@ -246,11 +246,10 @@ static constexpr JSPropertySpec props[] = {
     JS_PS_END};
 // clang-format on
 
-bool gjs_define_print_stuff(JSContext* context,
-                            JS::MutableHandleObject module) {
-    module.set(JS_NewPlainObject(context));
+bool gjs_define_print_stuff(JSContext* cx, JS::MutableHandleObject module) {
+    module.set(JS_NewPlainObject(cx));
     if (!module)
         return false;
-    return JS_DefineFunctions(context, module, funcs) &&
-           JS_DefineProperties(context, module, props);
+    return JS_DefineFunctions(cx, module, funcs) &&
+           JS_DefineProperties(cx, module, props);
 }

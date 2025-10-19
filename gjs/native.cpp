@@ -46,7 +46,7 @@ bool Gjs::NativeModuleDefineFuncs::is_registered(const char* name) const {
 
 /**
  * define:
- * @context: the #JSContext
+ * @cx: the #JSContext
  * @id: Name under which the module was registered with add()
  * @module_out: Return location for a #JSObject
  *
@@ -56,16 +56,15 @@ bool Gjs::NativeModuleDefineFuncs::is_registered(const char* name) const {
  * Returns: true on success, false if an exception was thrown.
  */
 bool Gjs::NativeModuleDefineFuncs::define(
-    JSContext* context, const char* id,
-    JS::MutableHandleObject module_out) const {
+    JSContext* cx, const char* id, JS::MutableHandleObject module_out) const {
     gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", id);
 
     const auto& iter = m_modules.find(id);
 
     if (iter == m_modules.end()) {
-        gjs_throw(context, "No native module '%s' has registered itself", id);
+        gjs_throw(cx, "No native module '%s' has registered itself", id);
         return false;
     }
 
-    return iter->second(context, module_out);
+    return iter->second(cx, module_out);
 }

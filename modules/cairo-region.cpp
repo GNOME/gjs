@@ -30,55 +30,51 @@
 #include "modules/cairo-private.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-fill_rectangle(JSContext             *context,
-               JS::HandleObject       obj,
-               cairo_rectangle_int_t *rect);
+static bool fill_rectangle(JSContext* cx, JS::HandleObject obj,
+                           cairo_rectangle_int_t* rect);
 
-#define PRELUDE                                                            \
-    GJS_GET_THIS(context, argc, vp, argv, obj);                            \
-    cairo_region_t* this_region;                                           \
-    if (!CairoRegion::for_js_typecheck(context, obj, &this_region, &argv)) \
+#define PRELUDE                                                       \
+    GJS_GET_THIS(cx, argc, vp, argv, obj);                            \
+    cairo_region_t* this_region;                                      \
+    if (!CairoRegion::for_js_typecheck(cx, obj, &this_region, &argv)) \
         return false;
 
-#define RETURN_STATUS                                           \
-    return gjs_cairo_check_status(context, cairo_region_status(this_region), "region");
+#define RETURN_STATUS                                                   \
+    return gjs_cairo_check_status(cx, cairo_region_status(this_region), \
+                                  "region");
 
-#define REGION_DEFINE_REGION_FUNC(method)                                     \
-    GJS_JSAPI_RETURN_CONVENTION                                               \
-    static bool method##_func(JSContext* context, unsigned argc,              \
-                              JS::Value* vp) {                                \
-        PRELUDE;                                                              \
-        JS::RootedObject other_obj(context);                                  \
-        if (!gjs_parse_call_args(context, #method, argv, "o", "other_region", \
-                                 &other_obj))                                 \
-            return false;                                                     \
-                                                                              \
-        cairo_region_t* other_region =                                        \
-            CairoRegion::for_js(context, other_obj);                          \
-                                                                              \
-        cairo_region_##method(this_region, other_region);                     \
-        argv.rval().setUndefined();                                           \
-        RETURN_STATUS;                                                        \
+#define REGION_DEFINE_REGION_FUNC(method)                                    \
+    GJS_JSAPI_RETURN_CONVENTION                                              \
+    static bool method##_func(JSContext* cx, unsigned argc, JS::Value* vp) { \
+        PRELUDE;                                                             \
+        JS::RootedObject other_obj{cx};                                      \
+        if (!gjs_parse_call_args(cx, #method, argv, "o", "other_region",     \
+                                 &other_obj))                                \
+            return false;                                                    \
+                                                                             \
+        cairo_region_t* other_region = CairoRegion::for_js(cx, other_obj);   \
+                                                                             \
+        cairo_region_##method(this_region, other_region);                    \
+        argv.rval().setUndefined();                                          \
+        RETURN_STATUS;                                                       \
     }
 
-#define REGION_DEFINE_RECT_FUNC(method)                                    \
-    GJS_JSAPI_RETURN_CONVENTION                                            \
-    static bool method##_rectangle_func(JSContext* context, unsigned argc, \
-                                        JS::Value* vp) {                   \
-        PRELUDE;                                                           \
-        JS::RootedObject rect_obj(context);                                \
-        if (!gjs_parse_call_args(context, #method, argv, "o", "rect",      \
-                                 &rect_obj))                               \
-            return false;                                                  \
-                                                                           \
-        cairo_rectangle_int_t rect;                                        \
-        if (!fill_rectangle(context, rect_obj, &rect))                     \
-            return false;                                                  \
-                                                                           \
-        cairo_region_##method##_rectangle(this_region, &rect);             \
-        argv.rval().setUndefined();                                        \
-        RETURN_STATUS;                                                     \
+#define REGION_DEFINE_RECT_FUNC(method)                                      \
+    GJS_JSAPI_RETURN_CONVENTION                                              \
+    static bool method##_rectangle_func(JSContext* cx, unsigned argc,        \
+                                        JS::Value* vp) {                     \
+        PRELUDE;                                                             \
+        JS::RootedObject rect_obj{cx};                                       \
+        if (!gjs_parse_call_args(cx, #method, argv, "o", "rect", &rect_obj)) \
+            return false;                                                    \
+                                                                             \
+        cairo_rectangle_int_t rect;                                          \
+        if (!fill_rectangle(cx, rect_obj, &rect))                            \
+            return false;                                                    \
+                                                                             \
+        cairo_region_##method##_rectangle(this_region, &rect);               \
+        argv.rval().setUndefined();                                          \
+        RETURN_STATUS;                                                       \
     }
 
 REGION_DEFINE_REGION_FUNC(union)
@@ -92,77 +88,67 @@ REGION_DEFINE_RECT_FUNC(intersect)
 REGION_DEFINE_RECT_FUNC(xor)
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-fill_rectangle(JSContext             *context,
-               JS::HandleObject       obj,
-               cairo_rectangle_int_t *rect)
-{
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedValue val(context);
+static bool fill_rectangle(JSContext* cx, JS::HandleObject obj,
+                           cairo_rectangle_int_t* rect) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedValue val{cx};
 
-    if (!JS_GetPropertyById(context, obj, atoms.x(), &val))
+    if (!JS_GetPropertyById(cx, obj, atoms.x(), &val))
         return false;
-    if (!JS::ToInt32(context, val, &rect->x))
+    if (!JS::ToInt32(cx, val, &rect->x))
         return false;
 
-    if (!JS_GetPropertyById(context, obj, atoms.y(), &val))
+    if (!JS_GetPropertyById(cx, obj, atoms.y(), &val))
         return false;
-    if (!JS::ToInt32(context, val, &rect->y))
-        return false;
-
-    if (!JS_GetPropertyById(context, obj, atoms.width(), &val))
-        return false;
-    if (!JS::ToInt32(context, val, &rect->width))
+    if (!JS::ToInt32(cx, val, &rect->y))
         return false;
 
-    if (!JS_GetPropertyById(context, obj, atoms.height(), &val))
+    if (!JS_GetPropertyById(cx, obj, atoms.width(), &val))
         return false;
-    if (!JS::ToInt32(context, val, &rect->height))
+    if (!JS::ToInt32(cx, val, &rect->width))
+        return false;
+
+    if (!JS_GetPropertyById(cx, obj, atoms.height(), &val))
+        return false;
+    if (!JS::ToInt32(cx, val, &rect->height))
         return false;
 
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-make_rectangle(JSContext *context,
-               cairo_rectangle_int_t *rect)
-{
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedObject rect_obj(context, JS_NewPlainObject(context));
+static JSObject* make_rectangle(JSContext* cx, cairo_rectangle_int_t* rect) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject rect_obj{cx, JS_NewPlainObject(cx)};
     if (!rect_obj)
         return nullptr;
-    JS::RootedValue val(context);
+    JS::RootedValue val{cx};
 
     val = JS::Int32Value(rect->x);
-    if (!JS_SetPropertyById(context, rect_obj, atoms.x(), val))
+    if (!JS_SetPropertyById(cx, rect_obj, atoms.x(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->y);
-    if (!JS_SetPropertyById(context, rect_obj, atoms.y(), val))
+    if (!JS_SetPropertyById(cx, rect_obj, atoms.y(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->width);
-    if (!JS_SetPropertyById(context, rect_obj, atoms.width(), val))
+    if (!JS_SetPropertyById(cx, rect_obj, atoms.width(), val))
         return nullptr;
 
     val = JS::Int32Value(rect->height);
-    if (!JS_SetPropertyById(context, rect_obj, atoms.height(), val))
+    if (!JS_SetPropertyById(cx, rect_obj, atoms.height(), val))
         return nullptr;
 
     return rect_obj;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-num_rectangles_func(JSContext *context,
-                    unsigned argc,
-                    JS::Value *vp)
-{
+static bool num_rectangles_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     PRELUDE;
     int n_rects;
 
-    if (!gjs_parse_call_args(context, "num_rectangles", argv, ""))
+    if (!gjs_parse_call_args(cx, "num_rectangles", argv, ""))
         return false;
 
     n_rects = cairo_region_num_rectangles(this_region);
@@ -171,22 +157,16 @@ num_rectangles_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-get_rectangle_func(JSContext *context,
-                   unsigned argc,
-                   JS::Value *vp)
-{
+static bool get_rectangle_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     PRELUDE;
     int i;
-    JSObject *rect_obj;
     cairo_rectangle_int_t rect;
 
-    if (!gjs_parse_call_args(context, "get_rectangle", argv, "i",
-                             "rect", &i))
+    if (!gjs_parse_call_args(cx, "get_rectangle", argv, "i", "rect", &i))
         return false;
 
     cairo_region_get_rectangle(this_region, i, &rect);
-    rect_obj = make_rectangle(context, &rect);
+    JSObject* rect_obj = make_rectangle(cx, &rect);
 
     argv.rval().setObjectOrNull(rect_obj);
     RETURN_STATUS;
@@ -213,9 +193,9 @@ const JSFunctionSpec CairoRegion::proto_funcs[] = {
     JS_FN("getRectangle", get_rectangle_func, 0, 0),
     JS_FS_END};
 
-cairo_region_t* CairoRegion::constructor_impl(JSContext* context,
+cairo_region_t* CairoRegion::constructor_impl(JSContext* cx,
                                               const JS::CallArgs& argv) {
-    if (!gjs_parse_call_args(context, "Region", argv, ""))
+    if (!gjs_parse_call_args(cx, "Region", argv, ""))
         return nullptr;
 
     return cairo_region_create();
@@ -229,14 +209,14 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION static bool region_to_gi_argument(
-    JSContext* context, JS::Value value, const char* arg_name,
+    JSContext* cx, JS::Value value, const char* arg_name,
     GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
     GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
             Gjs::AutoChar display_name{
                 gjs_argument_display_name(arg_name, argument_type)};
-            gjs_throw(context, "%s may not be null", display_name.get());
+            gjs_throw(cx, "%s may not be null", display_name.get());
             return false;
         }
 
@@ -244,10 +224,10 @@ GJS_JSAPI_RETURN_CONVENTION static bool region_to_gi_argument(
         return true;
     }
 
-    JS::RootedObject obj(context, &value.toObject());
+    JS::RootedObject obj{cx, &value.toObject()};
     cairo_region_t *region;
 
-    if (!CairoRegion::for_js_typecheck(context, obj, &region))
+    if (!CairoRegion::for_js_typecheck(cx, obj, &region))
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)
         cairo_region_reference(region);
@@ -257,11 +237,11 @@ GJS_JSAPI_RETURN_CONVENTION static bool region_to_gi_argument(
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool region_from_gi_argument(JSContext* context,
+static bool region_from_gi_argument(JSContext* cx,
                                     JS::MutableHandleValue value_p,
                                     GIArgument* arg) {
     JSObject* obj =
-        CairoRegion::from_c_ptr(context, gjs_arg_get<cairo_region_t*>(arg));
+        CairoRegion::from_c_ptr(cx, gjs_arg_get<cairo_region_t*>(arg));
     if (!obj)
         return false;
 

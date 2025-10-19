@@ -12,6 +12,6 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_print_stuff(JSContext* context, JS::MutableHandleObject module);
+bool gjs_define_print_stuff(JSContext*, JS::MutableHandleObject module);
 
 #endif  // MODULES_PRINT_H_

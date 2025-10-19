@@ -29,9 +29,7 @@ class CallArgs;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool             gjs_cairo_check_status                 (JSContext       *context,
-                                                         cairo_status_t   status,
-                                                         const char      *name);
+bool gjs_cairo_check_status(JSContext*, cairo_status_t, const char* name);
 
 class CairoRegion : public CWrapper<CairoRegion, cairo_region_t> {
     friend CWrapperPointerOps<CairoRegion, cairo_region_t>;
@@ -198,7 +196,7 @@ class CairoSurface : public CWrapper<CairoSurface, cairo_surface_t> {
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool getType_func(JSContext* context, unsigned argc, JS::Value* vp);
+    static bool getType_func(JSContext*, unsigned argc, JS::Value* vp);
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
@@ -430,7 +428,7 @@ class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool getType_func(JSContext* context, unsigned argc, JS::Value* vp);
+    static bool getType_func(JSContext*, unsigned argc, JS::Value* vp);
 
  protected:
     static void finalize_impl(JS::GCContext*, cairo_pattern_t* pattern);
@@ -441,8 +439,7 @@ class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject*        gjs_cairo_pattern_from_pattern         (JSContext       *context,
-                                                         cairo_pattern_t *pattern);
+JSObject* gjs_cairo_pattern_from_pattern(JSContext*, cairo_pattern_t*);
 
 class CairoGradient : public CWrapper<CairoGradient, cairo_pattern_t> {
     friend CWrapperPointerOps<CairoGradient, cairo_pattern_t>;

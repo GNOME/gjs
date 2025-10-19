@@ -123,8 +123,7 @@ class InterfaceInstance
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_lookup_interface_constructor(JSContext             *context,
-                                      GType                  gtype,
-                                      JS::MutableHandleValue value_p);
+bool gjs_lookup_interface_constructor(JSContext*, GType,
+                                      JS::MutableHandleValue);
 
 #endif  // GI_INTERFACE_H_

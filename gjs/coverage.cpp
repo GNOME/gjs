@@ -326,26 +326,26 @@ bootstrap_coverage(GjsCoverage *coverage)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     auto* gjs = GjsContextPrivate::from_object(priv->context);
-    JSContext* context = gjs->context();
+    JSContext* cx = gjs->context();
 
-    JS::RootedObject debugger_global(
-        context, gjs_create_global_object(context, GjsGlobalType::DEBUGGER));
+    JS::RootedObject debugger_global{
+        cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER)};
     {
-        JSAutoRealm ar(context, debugger_global);
-        JS::RootedObject debuggee{context, gjs->global()};
-        if (!JS_WrapObject(context, &debuggee))
+        JSAutoRealm ar{cx, debugger_global};
+        JS::RootedObject debuggee{cx, gjs->global()};
+        if (!JS_WrapObject(cx, &debuggee))
             return false;
 
-        JS::RootedValue v_debuggee{context, JS::ObjectValue(*debuggee)};
-        if (!JS_SetPropertyById(context, debugger_global,
-                                gjs->atoms().debuggee(), v_debuggee) ||
-            !gjs_define_global_properties(context, debugger_global,
+        JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
+        if (!JS_SetPropertyById(cx, debugger_global, gjs->atoms().debuggee(),
+                                v_debuggee) ||
+            !gjs_define_global_properties(cx, debugger_global,
                                           GjsGlobalType::DEBUGGER,
                                           "GJS coverage", "coverage"))
             return false;
 
         /* Add a tracer, as suggested by jdm on #jsapi */
-        JS_AddExtraGCRootsTracer(context, coverage_tracer, coverage);
+        JS_AddExtraGCRootsTracer(cx, coverage_tracer, coverage);
 
         priv->global = debugger_global;
     }
@@ -363,9 +363,10 @@ gjs_coverage_constructed(GObject *object)
     new (&priv->global) JS::Heap<JSObject*>();
 
     if (!bootstrap_coverage(coverage)) {
-        JSContext *context = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
-        Gjs::AutoMainRealm ar{context};
-        gjs_log_exception(context);
+        JSContext* cx = static_cast<JSContext*>(
+            gjs_context_get_native_context(priv->context));
+        Gjs::AutoMainRealm ar{cx};
+        gjs_log_exception(cx);
     }
 }
 

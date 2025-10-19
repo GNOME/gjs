@@ -108,38 +108,32 @@ static bool from_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-from_gbytes_func(JSContext *context,
-                 unsigned   argc,
-                 JS::Value *vp)
-{
+static bool from_gbytes_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject bytes_obj(context);
-    GBytes *gbytes;
+    JS::RootedObject bytes_obj{cx};
 
-    if (!gjs_parse_call_args(context, "fromGBytes", argv, "o",
-                             "bytes", &bytes_obj))
+    if (!gjs_parse_call_args(cx, "fromGBytes", argv, "o", "bytes", &bytes_obj))
         return false;
 
-    if (!StructBase::typecheck(context, bytes_obj, G_TYPE_BYTES))
+    if (!StructBase::typecheck(cx, bytes_obj, G_TYPE_BYTES))
         return false;
 
-    gbytes = StructBase::to_c_ptr<GBytes>(context, bytes_obj);
+    GBytes* gbytes = StructBase::to_c_ptr<GBytes>(cx, bytes_obj);
     if (!gbytes)
         return false;
 
     size_t len;
     const void* data = g_bytes_get_data(gbytes, &len);
     if (len == 0) {
-        JS::RootedObject empty_array(context, JS_NewUint8Array(context, 0));
-        if (!empty_array || !define_legacy_tostring(context, empty_array))
+        JS::RootedObject empty_array{cx, JS_NewUint8Array(cx, 0)};
+        if (!empty_array || !define_legacy_tostring(cx, empty_array))
             return false;
 
         argv.rval().setObject(*empty_array);
         return true;
     }
 
-    JS::RootedObject array_buffer{context, JS::NewArrayBuffer(context, len)};
+    JS::RootedObject array_buffer{cx, JS::NewArrayBuffer(cx, len)};
     if (!array_buffer)
         return false;
 
@@ -152,9 +146,9 @@ from_gbytes_func(JSContext *context,
         std::copy_n(static_cast<const uint8_t*>(data), len, storage);
     }
 
-    JS::RootedObject obj(
-        context, JS_NewUint8ArrayWithBuffer(context, array_buffer, 0, -1));
-    if (!obj || !define_legacy_tostring(context, obj))
+    JS::RootedObject obj{cx,
+                         JS_NewUint8ArrayWithBuffer(cx, array_buffer, 0, -1)};
+    if (!obj || !define_legacy_tostring(cx, obj))
         return false;
 
     argv.rval().setObject(*obj);

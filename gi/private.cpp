@@ -566,34 +566,31 @@ GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_associate_closure(JSContext* context, unsigned argc,
-                                  JS::Value* vp) {
+static bool gjs_associate_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    JS::RootedObject func_obj(context);
-    JS::RootedObject target_obj(context);
-    Gjs::Closure::Ptr closure;
+    JS::RootedObject func_obj{cx};
+    JS::RootedObject target_obj{cx};
     Gjs::AutoGValue value(G_TYPE_CLOSURE);
-    ObjectInstance* obj;
 
-    if (!gjs_parse_call_args(context, "associateClosure", argv, "oo", "object",
+    if (!gjs_parse_call_args(cx, "associateClosure", argv, "oo", "object",
                              &target_obj, "func", &func_obj))
         return false;
 
     g_assert(JS::IsCallable(func_obj) &&
              "associateClosure's function must be callable");
 
-    obj = ObjectInstance::for_js(context, target_obj);
+    ObjectInstance* obj = ObjectInstance::for_js(cx, target_obj);
     if (!obj)
         return false;
 
-    closure =
-        Gjs::Closure::create_marshaled(context, func_obj, "wrapped", false);
+    Gjs::Closure::Ptr closure =
+        Gjs::Closure::create_marshaled(cx, func_obj, "wrapped", false);
 
-    if (!obj->associate_closure(context, closure))
+    if (!obj->associate_closure(cx, closure))
         return false;
 
     g_value_set_boxed(&value, closure);
-    return gjs_value_from_g_value(context, argv.rval(), &value);
+    return gjs_value_from_g_value(cx, argv.rval(), &value);
 }
 
 static JSFunctionSpec private_module_funcs[] = {

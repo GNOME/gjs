@@ -12,7 +12,6 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_js_define_cairo_stuff(JSContext              *context,
-                               JS::MutableHandleObject module);
+bool gjs_js_define_cairo_stuff(JSContext*, JS::MutableHandleObject module);
 
 #endif  // MODULES_CAIRO_MODULE_H_

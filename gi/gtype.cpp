@@ -197,11 +197,11 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
     }
 };
 
-JSObject* gjs_gtype_create_gtype_wrapper(JSContext* context, GType gtype) {
-    return GTypeObj::create(context, gtype);
+JSObject* gjs_gtype_create_gtype_wrapper(JSContext* cx, GType gtype) {
+    return GTypeObj::create(cx, gtype);
 }
 
-bool gjs_gtype_get_actual_gtype(JSContext* context, JS::HandleObject object,
+bool gjs_gtype_get_actual_gtype(JSContext* cx, JS::HandleObject object,
                                 GType* gtype_out) {
-    return GTypeObj::actual_gtype(context, object, gtype_out);
+    return GTypeObj::actual_gtype(cx, object, gtype_out);
 }

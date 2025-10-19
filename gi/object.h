@@ -527,9 +527,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_lookup_object_constructor(JSContext             *context,
-                                   GType                  gtype,
-                                   JS::MutableHandleValue value_p);
+bool gjs_lookup_object_constructor(JSContext*, GType, JS::MutableHandleValue);
 
 void gjs_object_clear_toggles(void);
 void gjs_object_shutdown_toggle_queue(void);

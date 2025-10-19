@@ -17,7 +17,7 @@
 namespace Gjs {
 class NativeModuleDefineFuncs {
     NativeModuleDefineFuncs() {}
-    typedef bool (*GjsDefineModuleFunc)(JSContext* context,
+    typedef bool (*GjsDefineModuleFunc)(JSContext*,
                                         JS::MutableHandleObject module_out);
 
     std::unordered_map<std::string, GjsDefineModuleFunc> m_modules;

@@ -13,7 +13,6 @@ class JSObject;
 struct JSContext;
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_create_ns(JSContext    *context,
-                        const char   *ns_name);
+JSObject* gjs_create_ns(JSContext*, const char* ns_name);
 
 #endif  // GI_NS_H_

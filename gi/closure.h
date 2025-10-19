@@ -92,7 +92,7 @@ class Closure : public GClosure {
 
     // COMPAT: constexpr in C++23
     JSObject* callable() const { return m_callable.get(); }
-    [[nodiscard]] constexpr JSContext* context() const { return m_cx; }
+    [[nodiscard]] constexpr JSContext* cx() const { return m_cx; }
     [[nodiscard]] constexpr bool is_valid() const { return !!m_cx; }
     GJS_JSAPI_RETURN_CONVENTION bool invoke(JS::HandleObject,
                                             const JS::HandleValueArray&,

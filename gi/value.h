@@ -248,18 +248,11 @@ std::string gvalue_to_string(GValue* gvalue) {
 using AutoGValueVector = std::vector<Gjs::AutoGValue>;
 
 GJS_JSAPI_RETURN_CONVENTION
-bool       gjs_value_to_g_value         (JSContext      *context,
-                                         JS::HandleValue value,
-                                         GValue         *gvalue);
+bool gjs_value_to_g_value(JSContext*, JS::HandleValue, GValue*);
 GJS_JSAPI_RETURN_CONVENTION
-bool       gjs_value_to_g_value_no_copy (JSContext      *context,
-                                         JS::HandleValue value,
-                                         GValue         *gvalue);
+bool gjs_value_to_g_value_no_copy(JSContext*, JS::HandleValue, GValue*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_from_g_value(JSContext             *context,
-                            JS::MutableHandleValue value_p,
-                            const GValue          *gvalue);
-
+bool gjs_value_from_g_value(JSContext*, JS::MutableHandleValue, const GValue*);
 
 #endif  // GI_VALUE_H_

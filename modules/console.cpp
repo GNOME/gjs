@@ -280,23 +280,19 @@ std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-gjs_console_interact(JSContext *context,
-                     unsigned   argc,
-                     JS::Value *vp)
-{
+static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
     volatile bool eof, exit_warning;  // accessed after setjmp()
-    JS::RootedObject global{context, JS::CurrentGlobalOrNull(context)};
+    JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
     volatile int lineno;     // accessed after setjmp()
     volatile int startline;  // accessed after setjmp()
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
 
 #ifndef HAVE_READLINE_READLINE_H
     int rl_end = 0;  // nonzero if using readline and any text is typed in
 #endif
 
-    JS::SetWarningReporter(context, gjs_console_warning_reporter);
+    JS::SetWarningReporter(cx, gjs_console_warning_reporter);
 
     AutoCatchCtrlC ctrl_c;
 
@@ -347,13 +343,13 @@ gjs_console_interact(JSContext *context,
             buffer += temp_buf;
             buffer += "\n";
             lineno++;
-        } while (!JS_Utf8BufferIsCompilableUnit(context, global, buffer.c_str(),
+        } while (!JS_Utf8BufferIsCompilableUnit(cx, global, buffer.c_str(),
                                                 buffer.size()));
 
         bool ok;
         {
-            AutoReportException are(context);
-            ok = gjs_console_eval_and_print(context, global, buffer, startline);
+            AutoReportException are(cx);
+            ok = gjs_console_eval_and_print(cx, global, buffer, startline);
         }
         exit_warning = false;
 
@@ -375,13 +371,10 @@ gjs_console_interact(JSContext *context,
     return true;
 }
 
-bool
-gjs_define_console_stuff(JSContext              *context,
-                         JS::MutableHandleObject module)
-{
-    module.set(JS_NewPlainObject(context));
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return JS_DefineFunctionById(context, module, atoms.interact(),
+bool gjs_define_console_stuff(JSContext* cx, JS::MutableHandleObject module) {
+    module.set(JS_NewPlainObject(cx));
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    return JS_DefineFunctionById(cx, module, atoms.interact(),
                                  gjs_console_interact, 1,
                                  GJS_MODULE_PROP_FLAGS);
 }

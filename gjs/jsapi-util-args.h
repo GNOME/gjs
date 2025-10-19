@@ -312,7 +312,7 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
 
 /**
  * gjs_parse_call_args:
- * @context:
+ * @cx:
  * @function_name: The name of the function being called
  * @args: #JS::CallArgs from #JSNative function
  * @format: Printf-like format specifier containing the expected arguments

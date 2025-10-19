@@ -1234,7 +1234,7 @@ void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
     //  Because we can't free the mmap'd data for a callback
     //  while it's in use, this list keeps track of ones that
     //  will be freed the next time gc happens
-    g_assert(!trampoline->context() || trampoline->context() == m_cx);
+    g_assert(!trampoline->cx() || trampoline->cx() == m_cx);
     m_async_closures.emplace_back(trampoline);
 }
 

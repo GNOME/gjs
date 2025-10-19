@@ -229,9 +229,6 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     }
 };
 
-JSObject*
-gjs_create_ns(JSContext    *context,
-              const char   *ns_name)
-{
-    return Ns::create(context, ns_name);
+JSObject* gjs_create_ns(JSContext* cx, const char* ns_name) {
+    return Ns::create(cx, ns_name);
 }

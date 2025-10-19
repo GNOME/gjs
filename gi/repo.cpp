@@ -60,38 +60,37 @@ static bool lookup_override_function(JSContext *, JS::HandleId,
                                      JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool get_version_for_ns(JSContext* context, JS::HandleObject repo_obj,
+static bool get_version_for_ns(JSContext* cx, JS::HandleObject repo_obj,
                                JS::HandleId ns_id, JS::UniqueChars* version) {
-    JS::RootedObject versions(context);
+    JS::RootedObject versions{cx};
     bool found;
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
-    if (!gjs_object_require_property(context, repo_obj, "GI repository object",
+    if (!gjs_object_require_property(cx, repo_obj, "GI repository object",
                                      atoms.versions(), &versions))
         return false;
 
-    if (!JS_AlreadyHasOwnPropertyById(context, versions, ns_id, &found))
+    if (!JS_AlreadyHasOwnPropertyById(cx, versions, ns_id, &found))
         return false;
 
     if (!found)
         return true;
 
-    return gjs_object_require_property(context, versions, NULL, ns_id, version);
+    return gjs_object_require_property(cx, versions, NULL, ns_id, version);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool resolve_namespace_object(JSContext* context,
-                                     JS::HandleObject repo_obj,
+static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
                                      JS::HandleId ns_id) {
     JS::UniqueChars version;
-    if (!get_version_for_ns(context, repo_obj, ns_id, &version))
+    if (!get_version_for_ns(cx, repo_obj, ns_id, &version))
         return false;
 
     JS::UniqueChars ns_name;
-    if (!gjs_get_string_id(context, ns_id, &ns_name))
+    if (!gjs_get_string_id(cx, ns_id, &ns_name))
         return false;
     if (!ns_name) {
-        gjs_throw(context, "Requiring invalid namespace on imports.gi");
+        gjs_throw(cx, "Requiring invalid namespace on imports.gi");
         return false;
     }
 
@@ -100,7 +99,7 @@ static bool resolve_namespace_object(JSContext* context,
     Gjs::AutoStrv versions{repo.enumerate_versions(ns_name.get(), &nversions)};
     if (nversions > 1 && !version &&
         !repo.is_registered(ns_name.get(), nullptr) &&
-        !JS::WarnUTF8(context,
+        !JS::WarnUTF8(cx,
                       "Requiring %s but it has %zu versions available; use "
                       "imports.gi.versions to pick one",
                       ns_name.get(), nversions))
@@ -120,7 +119,7 @@ static bool resolve_namespace_object(JSContext* context,
             g_strconcat(ns_name.get(), platform, nullptr)};
         auto required = repo.require(platform_specific, version.get());
         if (!required.isOk()) {
-            gjs_throw(context, "Failed to require %s %s: %s",
+            gjs_throw(cx, "Failed to require %s %s: %s",
                       platform_specific.get(), version.get(),
                       required.inspectErr()->message);
             return false;
@@ -130,7 +129,7 @@ static bool resolve_namespace_object(JSContext* context,
 
     auto required = repo.require(ns_name.get(), version.get());
     if (!required.isOk()) {
-        gjs_throw(context, "Requiring %s, version %s: %s", ns_name.get(),
+        gjs_throw(cx, "Requiring %s, version %s: %s", ns_name.get(),
                   version ? version.get() : "none",
                   required.inspectErr()->message);
         return false;
@@ -140,29 +139,27 @@ static bool resolve_namespace_object(JSContext* context,
      * with the given namespace name, pointing to that namespace
      * in the repo.
      */
-    JS::RootedObject gi_namespace(context,
-                                  gjs_create_ns(context, ns_name.get()));
+    JS::RootedObject gi_namespace{cx, gjs_create_ns(cx, ns_name.get())};
 
-    JS::RootedValue override(context);
-    if (!lookup_override_function(context, ns_id, &override) ||
+    JS::RootedValue override{cx};
+    if (!lookup_override_function(cx, ns_id, &override) ||
         // Define the property early, to avoid reentrancy issues if the override
         // module looks for namespaces that import this
-        !JS_DefinePropertyById(context, repo_obj, ns_id, gi_namespace,
+        !JS_DefinePropertyById(cx, repo_obj, ns_id, gi_namespace,
                                GJS_MODULE_PROP_FLAGS))
         return false;
 
-    JS::RootedValue result(context);
+    JS::RootedValue result{cx};
     if (!override.isUndefined() &&
-        !JS_CallFunctionValue (context, gi_namespace, /* thisp */
-                               override, /* callee */
-                               JS::HandleValueArray::empty(), &result))
+        !JS_CallFunctionValue(cx, /* this_obj = */ gi_namespace, override,
+                              JS::HandleValueArray::empty(), &result))
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
               "Defined namespace '%s' %p in GIRepository %p", ns_name.get(),
               gi_namespace.get(), repo_obj.get());
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     gjs->schedule_gc_if_needed();
     return true;
 }
@@ -172,19 +169,15 @@ static bool resolve_namespace_object(JSContext* context,
  * was not resolved; and true if id was resolved.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-repo_resolve(JSContext       *context,
-             JS::HandleObject obj,
-             JS::HandleId     id,
-             bool            *resolved)
-{
+static bool repo_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                         bool* resolved) {
     if (!id.isString()) {
         *resolved = false;
         return true; /* not resolved, but no error */
     }
 
     /* let Object.prototype resolve these */
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (id == atoms.to_string() || id == atoms.value_of()) {
         *resolved = false;
         return true;
@@ -193,7 +186,7 @@ repo_resolve(JSContext       *context,
     gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook, obj %s",
                      gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
 
-    if (!resolve_namespace_object(context, obj, id))
+    if (!resolve_namespace_object(cx, obj, id))
         return false;
 
     *resolved = true;
@@ -215,51 +208,49 @@ struct JSClass gjs_repo_class = {
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject*
-repo_new(JSContext *context)
-{
-    JS::RootedObject repo(context, JS_NewObject(context, &gjs_repo_class));
+static JSObject* repo_new(JSContext* cx) {
+    JS::RootedObject repo{cx, JS_NewObject(cx, &gjs_repo_class)};
     if (repo == nullptr)
         return nullptr;
 
     gjs_debug_lifecycle(GJS_DEBUG_GREPO, "repo constructor, obj %p",
                         repo.get());
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedObject versions(context, JS_NewPlainObject(context));
-    if (!JS_DefinePropertyById(context, repo, atoms.versions(), versions,
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject versions{cx, JS_NewPlainObject(cx)};
+    if (!JS_DefinePropertyById(cx, repo, atoms.versions(), versions,
                                JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 
     /* GLib/GObject/Gio are fixed at 2.0, since we depend on them
      * internally.
      */
-    JS::RootedString two_point_oh(context, JS_NewStringCopyZ(context, "2.0"));
-    if (!JS_DefinePropertyById(context, versions, atoms.glib(), two_point_oh,
+    JS::RootedString two_point_oh{cx, JS_NewStringCopyZ(cx, "2.0")};
+    if (!JS_DefinePropertyById(cx, versions, atoms.glib(), two_point_oh,
                                JSPROP_PERMANENT) ||
-        !JS_DefinePropertyById(context, versions, atoms.gobject(), two_point_oh,
+        !JS_DefinePropertyById(cx, versions, atoms.gobject(), two_point_oh,
                                JSPROP_PERMANENT) ||
-        !JS_DefinePropertyById(context, versions, atoms.gio(), two_point_oh,
+        !JS_DefinePropertyById(cx, versions, atoms.gio(), two_point_oh,
                                JSPROP_PERMANENT))
         return nullptr;
 
 #    if defined(G_OS_UNIX)
-    if (!JS_DefineProperty(context, versions, "GLibUnix", two_point_oh,
+    if (!JS_DefineProperty(cx, versions, "GLibUnix", two_point_oh,
                            JSPROP_PERMANENT) ||
-        !JS_DefineProperty(context, versions, "GioUnix", two_point_oh,
+        !JS_DefineProperty(cx, versions, "GioUnix", two_point_oh,
                            JSPROP_PERMANENT))
         return nullptr;
 #    elif defined(G_OS_WIN32)
-    if (!JS_DefineProperty(context, versions, "GLibWin32", two_point_oh,
+    if (!JS_DefineProperty(cx, versions, "GLibWin32", two_point_oh,
                            JSPROP_PERMANENT) ||
-        !JS_DefineProperty(context, versions, "GioWin32", two_point_oh,
+        !JS_DefineProperty(cx, versions, "GioWin32", two_point_oh,
                            JSPROP_PERMANENT))
         return nullptr;
 #    endif  // G_OS_UNIX/G_OS_WIN32
 
-    JS::RootedObject private_ns(context, JS_NewPlainObject(context));
-    if (!JS_DefinePropertyById(context, repo, atoms.private_ns_marker(),
-                               private_ns, JSPROP_PERMANENT | JSPROP_RESOLVING))
+    JS::RootedObject private_ns{cx, JS_NewPlainObject(cx)};
+    if (!JS_DefinePropertyById(cx, repo, atoms.private_ns_marker(), private_ns,
+                               JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 
     return repo;
@@ -286,14 +277,14 @@ static bool gjs_value_from_constant_info(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_define_constant(JSContext* context, JS::HandleObject in_object,
+static bool gjs_define_constant(JSContext* cx, JS::HandleObject in_object,
                                 const GI::ConstantInfo info) {
-    JS::RootedValue value(context);
+    JS::RootedValue value{cx};
 
-    if (!gjs_value_from_constant_info(context, info, &value))
+    if (!gjs_value_from_constant_info(cx, info, &value))
         return false;
 
-    return JS_DefineProperty(context, in_object, info.name(), value,
+    return JS_DefineProperty(cx, in_object, info.name(), value,
                              GJS_MODULE_PROP_FLAGS);
 }
 
@@ -371,29 +362,25 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
 }
 
 /* Get the "unknown namespace", which should be used for unnamespaced types */
-JSObject*
-gjs_lookup_private_namespace(JSContext *context)
-{
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    return gjs_lookup_namespace_object_by_name(context,
-                                               atoms.private_ns_marker());
+JSObject* gjs_lookup_private_namespace(JSContext* cx) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    return gjs_lookup_namespace_object_by_name(cx, atoms.private_ns_marker());
 }
 
 /* Get the namespace object that the GIBaseInfo should be inside */
-JSObject* gjs_lookup_namespace_object(JSContext* context,
-                                      const GI::BaseInfo info) {
+JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo info) {
     const char* ns = info.ns();
     if (ns == NULL) {
-        gjs_throw(context, "%s '%s' does not have a namespace",
-                  info.type_string(), info.name());
+        gjs_throw(cx, "%s '%s' does not have a namespace", info.type_string(),
+                  info.name());
 
         return NULL;
     }
 
-    JS::RootedId ns_name(context, gjs_intern_string_to_id(context, ns));
+    JS::RootedId ns_name{cx, gjs_intern_string_to_id(cx, ns)};
     if (ns_name.isVoid())
         return nullptr;
-    return gjs_lookup_namespace_object_by_name(context, ns_name);
+    return gjs_lookup_namespace_object_by_name(cx, ns_name);
 }
 
 /* Check if an exception's 'name' property is equal to ImportError. Ignores
@@ -518,21 +505,20 @@ gjs_hyphen_from_camel(const char *camel_name)
     return g_string_free(s, false);
 }
 
-JSObject* gjs_lookup_generic_constructor(JSContext* context,
+JSObject* gjs_lookup_generic_constructor(JSContext* cx,
                                          const GI::BaseInfo info) {
-    JS::RootedObject in_object{context,
-        gjs_lookup_namespace_object(context, info)};
+    JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
     const char* constructor_name = info.name();
 
     if (G_UNLIKELY (!in_object))
         return NULL;
 
-    JS::RootedValue value(context);
-    if (!JS_GetProperty(context, in_object, constructor_name, &value))
+    JS::RootedValue value{cx};
+    if (!JS_GetProperty(cx, in_object, constructor_name, &value))
         return NULL;
 
     if (G_UNLIKELY(!value.isObject())) {
-        gjs_throw(context,
+        gjs_throw(cx,
                   "Constructor of %s.%s was the wrong type, expected an object",
                   info.ns(), constructor_name);
         return NULL;
@@ -541,20 +527,18 @@ JSObject* gjs_lookup_generic_constructor(JSContext* context,
     return &value.toObject();
 }
 
-JSObject* gjs_lookup_generic_prototype(JSContext* context,
-                                       const GI::BaseInfo info) {
-    JS::RootedObject constructor(context,
-                                 gjs_lookup_generic_constructor(context, info));
+JSObject* gjs_lookup_generic_prototype(JSContext* cx, const GI::BaseInfo info) {
+    JS::RootedObject constructor{cx, gjs_lookup_generic_constructor(cx, info)};
     if (G_UNLIKELY(!constructor))
         return NULL;
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedValue value(context);
-    if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value))
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedValue value{cx};
+    if (!JS_GetPropertyById(cx, constructor, atoms.prototype(), &value))
         return NULL;
 
     if (G_UNLIKELY(!value.isObject())) {
-        gjs_throw(context,
+        gjs_throw(cx,
                   "Prototype of %s.%s was the wrong type, expected an object",
                   info.ns(), info.name());
         return NULL;

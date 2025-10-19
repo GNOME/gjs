@@ -38,23 +38,22 @@ const JSPropertySpec CairoPattern::proto_props[] = {
 /* Methods */
 
 GJS_JSAPI_RETURN_CONVENTION
-bool CairoPattern::getType_func(JSContext* context, unsigned argc,
-                                JS::Value* vp) {
-    GJS_GET_THIS(context, argc, vp, rec, obj);
+bool CairoPattern::getType_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, rec, obj);
     cairo_pattern_type_t type;
 
     if (argc > 1) {
-        gjs_throw(context, "Pattern.getType() takes no arguments");
+        gjs_throw(cx, "Pattern.getType() takes no arguments");
         return false;
     }
 
-    cairo_pattern_t* pattern = CairoPattern::for_js(context, obj);
+    cairo_pattern_t* pattern = CairoPattern::for_js(cx, obj);
     if (!pattern)
         return false;
 
     type = cairo_pattern_get_type(pattern);
 
-    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+    if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 
     rec.rval().setInt32(type);
@@ -85,33 +84,31 @@ void CairoPattern::finalize_impl(JS::GCContext*, cairo_pattern_t* pattern) {
 
 /**
  * gjs_cairo_pattern_from_pattern:
- * @context: the context
+ * @cx: the context
  * @pattern: cairo_pattern to attach to the object
  *
  * Constructs a pattern wrapper given cairo pattern.
  * A reference to @pattern will be taken.
  *
  */
-JSObject *
-gjs_cairo_pattern_from_pattern(JSContext       *context,
-                               cairo_pattern_t *pattern)
-{
-    g_return_val_if_fail(context, nullptr);
+JSObject* gjs_cairo_pattern_from_pattern(JSContext* cx,
+                                         cairo_pattern_t* pattern) {
+    g_return_val_if_fail(cx, nullptr);
     g_return_val_if_fail(pattern, nullptr);
 
     switch (cairo_pattern_get_type(pattern)) {
         case CAIRO_PATTERN_TYPE_SOLID:
-            return CairoSolidPattern::from_c_ptr(context, pattern);
+            return CairoSolidPattern::from_c_ptr(cx, pattern);
         case CAIRO_PATTERN_TYPE_SURFACE:
-            return CairoSurfacePattern::from_c_ptr(context, pattern);
+            return CairoSurfacePattern::from_c_ptr(cx, pattern);
         case CAIRO_PATTERN_TYPE_LINEAR:
-            return CairoLinearGradient::from_c_ptr(context, pattern);
+            return CairoLinearGradient::from_c_ptr(cx, pattern);
         case CAIRO_PATTERN_TYPE_RADIAL:
-            return CairoRadialGradient::from_c_ptr(context, pattern);
+            return CairoRadialGradient::from_c_ptr(cx, pattern);
         case CAIRO_PATTERN_TYPE_MESH:
         case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
         default:
-            gjs_throw(context,
+            gjs_throw(cx,
                       "failed to create pattern, unsupported pattern type %d",
                       cairo_pattern_get_type(pattern));
             return nullptr;
@@ -146,15 +143,17 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
         pattern_wrapper, CairoPattern::POINTER);
 }
 
-GJS_JSAPI_RETURN_CONVENTION static bool pattern_to_gi_argument(
-    JSContext* context, JS::Value value, const char* arg_name,
-    GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
-    GIArgument* arg) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool pattern_to_gi_argument(JSContext* cx, JS::Value value,
+                                   const char* arg_name,
+                                   GjsArgumentType argument_type,
+                                   GITransfer transfer, GjsArgumentFlags flags,
+                                   GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
             Gjs::AutoChar display_name{
                 gjs_argument_display_name(arg_name, argument_type)};
-            gjs_throw(context, "%s may not be null", display_name.get());
+            gjs_throw(cx, "%s may not be null", display_name.get());
             return false;
         }
 
@@ -165,12 +164,12 @@ GJS_JSAPI_RETURN_CONVENTION static bool pattern_to_gi_argument(
     if (!value.isObject()) {
         Gjs::AutoChar display_name{
             gjs_argument_display_name(arg_name, argument_type)};
-        gjs_throw(context, "%s is not a Cairo.Pattern", display_name.get());
+        gjs_throw(cx, "%s is not a Cairo.Pattern", display_name.get());
         return false;
     }
 
-    JS::RootedObject pattern_wrapper{context, &value.toObject()};
-    cairo_pattern_t* s = CairoPattern::for_js(context, pattern_wrapper);
+    JS::RootedObject pattern_wrapper{cx, &value.toObject()};
+    cairo_pattern_t* s = CairoPattern::for_js(cx, pattern_wrapper);
     if (!s)
         return false;
     if (transfer == GI_TRANSFER_EVERYTHING)

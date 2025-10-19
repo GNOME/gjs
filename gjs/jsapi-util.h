@@ -81,7 +81,7 @@ struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
     if (!args.computeThis(cx, &to))                   \
         return false;
 
-void gjs_throw_constructor_error             (JSContext       *context);
+void gjs_throw_constructor_error(JSContext*);
 
 void gjs_throw_abstract_constructor_error(JSContext* cx,
                                           const JS::CallArgs& args);
@@ -102,11 +102,10 @@ JSObject* gjs_define_string_array(JSContext* cx, JS::HandleObject obj,
                                                     JSExnType error_kind,
                                                     const char* error_name,
                                                     const char* format, ...);
-void        gjs_throw_literal                (JSContext       *context,
-                                              const char      *string);
+void gjs_throw_literal(JSContext*, const char* string);
 bool gjs_throw_gerror_message(JSContext* cx, Gjs::AutoError const&);
 
-bool        gjs_log_exception                (JSContext       *context);
+bool gjs_log_exception(JSContext*);
 
 bool gjs_log_exception_uncaught(JSContext* cx);
 
@@ -126,9 +125,8 @@ GJS_JSAPI_RETURN_CONVENTION
 JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
                                        size_t len);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_from_utf8(JSContext             *context,
-                          const char            *utf8_string,
-                          JS::MutableHandleValue value_p);
+bool gjs_string_from_utf8(JSContext*, const char* utf8_string,
+                          JS::MutableHandleValue);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_from_utf8_n(JSContext             *cx,
                             const char            *utf8_chars,
@@ -140,10 +138,8 @@ bool gjs_string_to_filename(JSContext*, const JS::Value,
                             Gjs::AutoChar* filename_string);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_from_filename(JSContext             *context,
-                              const char            *filename_string,
-                              ssize_t                n_bytes,
-                              JS::MutableHandleValue value_p);
+bool gjs_string_from_filename(JSContext*, const char* filename_string,
+                              ssize_t n_bytes, JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_get_char16_data(JSContext       *cx,
@@ -165,17 +161,14 @@ bool gjs_string_from_ucs4(JSContext             *cx,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p);
 GJS_JSAPI_RETURN_CONVENTION
-jsid        gjs_intern_string_to_id          (JSContext       *context,
-                                              const char      *string);
+jsid gjs_intern_string_to_id(JSContext*, const char* string);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool        gjs_unichar_from_string          (JSContext       *context,
-                                              JS::Value        string,
-                                              gunichar        *result);
+bool gjs_unichar_from_string(JSContext*, JS::Value string, gunichar* result);
 
 /* Functions intended for more "internal" use */
 
-void gjs_maybe_gc (JSContext *context);
+void gjs_maybe_gc(JSContext*);
 void gjs_gc_if_needed(JSContext *cx);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -186,11 +179,10 @@ JS::UniqueChars format_saved_frame(JSContext* cx, JS::HandleObject saved_frame,
  * added as the opportunity arises. */
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_object_require_property(JSContext             *context,
-                                 JS::HandleObject       obj,
-                                 const char            *obj_description,
-                                 JS::HandleId           property_name,
-                                 JS::MutableHandleValue value);
+bool gjs_object_require_property(JSContext*, JS::HandleObject,
+                                 const char* obj_description,
+                                 JS::HandleId property_name,
+                                 JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_require_property(JSContext       *cx,
@@ -220,11 +212,10 @@ bool gjs_object_require_property(JSContext              *cx,
                                  JS::MutableHandleObject value);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_object_require_converted_property(JSContext       *context,
-                                           JS::HandleObject obj,
-                                           const char      *description,
-                                           JS::HandleId     property_name,
-                                           uint32_t        *value);
+bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
+                                           const char* description,
+                                           JS::HandleId property_name,
+                                           uint32_t*);
 
 [[nodiscard]] std::string gjs_debug_bigint(JS::BigInt* bi);
 [[nodiscard]] std::string gjs_debug_string(JSString* str);

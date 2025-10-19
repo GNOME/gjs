@@ -16,13 +16,12 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_repo(JSContext              *cx,
                      JS::MutableHandleObject repo);
 GJS_JSAPI_RETURN_CONVENTION
-JSObject*   gjs_lookup_private_namespace        (JSContext      *context);
+JSObject* gjs_lookup_private_namespace(JSContext*);
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_lookup_namespace_object(JSContext*, const GI::BaseInfo);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject *gjs_lookup_namespace_object_by_name(JSContext   *context,
-                                              JS::HandleId name);
+JSObject* gjs_lookup_namespace_object_by_name(JSContext*, JS::HandleId name);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_lookup_generic_constructor(JSContext*, const GI::BaseInfo);

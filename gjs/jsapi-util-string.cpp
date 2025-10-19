@@ -183,13 +183,10 @@ JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
     return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
 }
 
-bool
-gjs_string_from_utf8(JSContext             *context,
-                     const char            *utf8_string,
-                     JS::MutableHandleValue value_p)
-{
+bool gjs_string_from_utf8(JSContext* cx, const char* utf8_string,
+                          JS::MutableHandleValue value_p) {
     JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
-    JS::RootedString str(context, JS_NewStringCopyUTF8Z(context, chars));
+    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!str)
         return false;
 
@@ -211,13 +208,13 @@ gjs_string_from_utf8_n(JSContext             *cx,
     return !!str;
 }
 
-bool gjs_string_to_filename(JSContext* context, const JS::Value filename_val,
+bool gjs_string_to_filename(JSContext* cx, const JS::Value filename_val,
                             Gjs::AutoChar* filename_string) {
     Gjs::AutoError error;
 
     /* gjs_string_to_filename verifies that filename_val is a string */
 
-    JS::UniqueChars tmp = gjs_string_to_utf8(context, filename_val);
+    JS::UniqueChars tmp{gjs_string_to_utf8(cx, filename_val)};
     if (!tmp)
         return false;
 
@@ -225,17 +222,13 @@ bool gjs_string_to_filename(JSContext* context, const JS::Value filename_val,
     *filename_string =
         g_filename_from_utf8(tmp.get(), -1, nullptr, nullptr, &error);
     if (!*filename_string)
-        return gjs_throw_gerror_message(context, error);
+        return gjs_throw_gerror_message(cx, error);
 
     return true;
 }
 
-bool
-gjs_string_from_filename(JSContext             *context,
-                         const char            *filename_string,
-                         ssize_t                n_bytes,
-                         JS::MutableHandleValue value_p)
-{
+bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
+                              ssize_t n_bytes, JS::MutableHandleValue value_p) {
     gsize written;
     Gjs::AutoError error;
 
@@ -244,16 +237,16 @@ gjs_string_from_filename(JSContext             *context,
                                                  nullptr, &written, &error)};
     if (error) {
         Gjs::AutoChar escaped_char{g_strescape(filename_string, nullptr)};
-        gjs_throw(context,
-                  "Could not convert filename string to UTF-8 for string: %s. "
-                  "If string is "
-                  "invalid UTF-8 and used for display purposes, try GLib "
-                  "attribute standard::display-name. The reason is: %s. ",
-                  escaped_char.get(), error->message);
+        gjs_throw(
+            cx,
+            "Could not convert filename string to UTF-8 for string: %s. If "
+            "string is invalid UTF-8 and used for display purposes, try GLib "
+            "attribute standard::display-name. The reason is: %s. ",
+            escaped_char.get(), error->message);
         return false;
     }
 
-    return gjs_string_from_utf8_n(context, utf8_string, written, value_p);
+    return gjs_string_from_utf8_n(cx, utf8_string, written, value_p);
 }
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
@@ -284,7 +277,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
 
 /**
  * gjs_string_get_char16_data:
- * @context: js context
+ * @cx: js context
  * @str: a rooted JSString
  * @data_p: address to return allocated data buffer
  * @len_p: address to return length of data (number of 16-bit characters)
@@ -293,21 +286,17 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
  *
  * Returns: false if exception thrown
  **/
-bool
-gjs_string_get_char16_data(JSContext       *context,
-                           JS::HandleString str,
-                           char16_t       **data_p,
-                           size_t          *len_p)
-{
+bool gjs_string_get_char16_data(JSContext* cx, JS::HandleString str,
+                                char16_t** data_p, size_t* len_p) {
     if (JS::StringHasLatin1Chars(str))
-        return from_latin1(context, str, data_p, len_p);
+        return from_latin1(cx, str, data_p, len_p);
 
     /* From this point on, crash if a GC is triggered while we are using
      * the string's chars */
     JS::AutoCheckCannotGC nogc;
 
-    const char16_t *js_data =
-        JS_GetTwoByteStringCharsAndLength(context, nogc, str, len_p);
+    const char16_t* js_data =
+        JS_GetTwoByteStringCharsAndLength(cx, nogc, str, len_p);
 
     if (js_data == NULL)
         return false;
@@ -315,7 +304,7 @@ gjs_string_get_char16_data(JSContext       *context,
     mozilla::CheckedInt<size_t> len_bytes =
         mozilla::CheckedInt<size_t>(*len_p) * sizeof(*js_data);
     if (!len_bytes.isValid()) {
-        JS_ReportOutOfMemory(context);  // cannot call gjs_throw, it may GC
+        JS_ReportOutOfMemory(cx);  // cannot call gjs_throw, it may GC
         return false;
     }
 
@@ -460,12 +449,8 @@ bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
  * If @string is empty, @result will be 0.  An exception will
  * be thrown if @string can not be represented as UTF-8.
  */
-bool
-gjs_unichar_from_string (JSContext *context,
-                         JS::Value  value,
-                         gunichar  *result)
-{
-    JS::UniqueChars utf8_str = gjs_string_to_utf8(context, value);
+bool gjs_unichar_from_string(JSContext* cx, JS::Value value, gunichar* result) {
+    JS::UniqueChars utf8_str{gjs_string_to_utf8(cx, value)};
     if (utf8_str) {
         *result = g_utf8_get_char(utf8_str.get());
         return true;
