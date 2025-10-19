@@ -157,7 +157,7 @@ static bool rl_async_done = true;
 static gboolean on_stdin_ready(GPollableInputStream* pollable, void*) {
     while (g_pollable_input_stream_is_readable(pollable))
         rl_callback_read_char();
-    return TRUE;  // don't remove source
+    return G_SOURCE_CONTINUE;
 }
 
 static void on_readline_complete(char* line) {
