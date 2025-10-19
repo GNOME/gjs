@@ -311,7 +311,7 @@ GObject* gjs_test_tools_get_disposed(GObject* object) {
 #ifdef G_OS_UNIX
 
 // Adapted from glnx_throw_errno_prefix()
-static gboolean throw_errno_prefix(GError** error, const char* prefix) {
+static void throw_errno_prefix(GError** error, const char* prefix) {
     int errsv = errno;
 
     g_set_error_literal(error, G_IO_ERROR, g_io_error_from_errno(errsv),
@@ -319,7 +319,6 @@ static gboolean throw_errno_prefix(GError** error, const char* prefix) {
     g_prefix_error(error, "%s: ", prefix);
 
     errno = errsv;
-    return FALSE;
 }
 
 #endif  // G_OS_UNIX
