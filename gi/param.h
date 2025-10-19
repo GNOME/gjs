@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_PARAM_H_
-#define GI_PARAM_H_
+#pragma once
 
 #include <config.h>
 
@@ -24,5 +23,3 @@ JSObject* gjs_param_from_g_param(JSContext*, GParamSpec*);
 
 [[nodiscard]] bool gjs_typecheck_param(JSContext* cx, JS::HandleObject obj,
                                        GType expected_type, bool throw_error);
-
-#endif  // GI_PARAM_H_

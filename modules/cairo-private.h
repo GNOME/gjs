@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2010 litl, LLC.
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
-#ifndef MODULES_CAIRO_PRIVATE_H_
-#define MODULES_CAIRO_PRIVATE_H_
+#pragma once
 
 #include <config.h>
 
@@ -625,5 +624,3 @@ class CairoSolidPattern : public CWrapper<CairoSolidPattern, cairo_pattern_t> {
 
     static void finalize_impl(JS::GCContext*, cairo_pattern_t*) {}
 };
-
-#endif  // MODULES_CAIRO_PRIVATE_H_

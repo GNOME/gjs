@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Endless Mobile, Inc.
 // SPDX-FileContributor: Authored By: Sam Spilsbury <sam@endlessm.com>
 
-#ifndef TEST_GJS_TEST_UTILS_H_
-#define TEST_GJS_TEST_UTILS_H_
+#pragma once
 
 #include <config.h>
 
@@ -89,5 +88,3 @@ constexpr void assert_equal(std::pair<T, U> const& pair, T first, U second) {
 
 }  // namespace Test
 }  // namespace Gjs
-
-#endif  // TEST_GJS_TEST_UTILS_H_

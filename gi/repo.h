@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_REPO_H_
-#define GI_REPO_H_
+#pragma once
 
 #include <config.h>
 
@@ -36,5 +35,3 @@ bool gjs_define_info(JSContext*, JS::HandleObject in_object, const GI::BaseInfo,
                      bool* defined);
 
 [[nodiscard]] char* gjs_hyphen_from_camel(const char* camel_name);
-
-#endif  // GI_REPO_H_

@@ -4,8 +4,7 @@
 // SPDX-FileCopyrightText: 2022 Marco Trevisan <marco.trevisan@canonical.com>
 // SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 
-#ifndef GI_BOXED_H_
-#define GI_BOXED_H_
+#pragma once
 
 #include <config.h>
 
@@ -280,5 +279,3 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     using BaseClass::info;
     using BaseClass::name;
 };
-
-#endif  // GI_BOXED_H_

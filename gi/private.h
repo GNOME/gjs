@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_PRIVATE_H_
-#define GI_PRIVATE_H_
+#pragma once
 
 #include <config.h>
 
@@ -13,5 +12,3 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_private_gi_stuff(JSContext* cx, JS::MutableHandleObject module);
-
-#endif  // GI_PRIVATE_H_

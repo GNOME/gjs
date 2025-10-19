@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-#ifndef GJS_INTERNAL_H_
-#define GJS_INTERNAL_H_
+#pragma once
 
 #include <config.h>
 
@@ -56,5 +55,3 @@ bool gjs_internal_uri_exists(JSContext* cx, unsigned argc, JS::Value* vp);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp);
-
-#endif  // GJS_INTERNAL_H_

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GJS_IMPORTER_H_
-#define GJS_IMPORTER_H_
+#pragma once
 
 #include <config.h>
 
@@ -22,5 +21,3 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_import_native_module(JSContext       *cx,
                               JS::HandleObject importer,
                               const char      *name);
-
-#endif  // GJS_IMPORTER_H_

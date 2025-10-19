@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GJS_NATIVE_H_
-#define GJS_NATIVE_H_
+#pragma once
 
 #include <config.h>
 #include <string>
@@ -40,5 +39,3 @@ class NativeModuleDefineFuncs {
                 JS::MutableHandleObject module_out) const;
 };
 };  // namespace Gjs
-
-#endif  // GJS_NATIVE_H_

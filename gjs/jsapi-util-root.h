@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2017 Endless Mobile, Inc.
 // SPDX-FileCopyrightText: 2019 Canonical, Ltd.
 
-#ifndef GJS_JSAPI_UTIL_ROOT_H_
-#define GJS_JSAPI_UTIL_ROOT_H_
+#pragma once
 
 #include <config.h>
 
@@ -255,5 +254,3 @@ struct GCPolicy<Gjs::WeakPtr<T>> {
 };
 
 }  // namespace JS
-
-#endif  // GJS_JSAPI_UTIL_ROOT_H_

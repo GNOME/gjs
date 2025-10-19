@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef MODULES_CONSOLE_H_
-#define MODULES_CONSOLE_H_
+#pragma once
 
 #include <config.h>
 
@@ -13,5 +12,3 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_console_stuff(JSContext*, JS::MutableHandleObject module);
-
-#endif  // MODULES_CONSOLE_H_

@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
  */
 
-#ifndef LIBGJS_PRIVATE_GJS_UTIL_H_
-#define LIBGJS_PRIVATE_GJS_UTIL_H_
+#pragma once
 
 #include <locale.h>
 
@@ -168,5 +167,3 @@ GJS_EXPORT
 void gjs_clear_terminal(void);
 
 G_END_DECLS
-
-#endif /* LIBGJS_PRIVATE_GJS_UTIL_H_ */

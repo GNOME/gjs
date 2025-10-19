@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Endless Mobile Inc.
 
-#ifndef TEST_GJS_TEST_NO_INTROSPECTION_OBJECT_H_
-#define TEST_GJS_TEST_NO_INTROSPECTION_OBJECT_H_
+#pragma once
 
 #include <config.h>
 
@@ -16,5 +15,3 @@ G_DECLARE_FINAL_TYPE(GjsTestNoIntrospectionObject,
                      NO_INTROSPECTION_OBJECT, GObject)
 
 GjsTestNoIntrospectionObject* gjstest_no_introspection_object_peek();
-
-#endif  // TEST_GJS_TEST_NO_INTROSPECTION_OBJECT_H_

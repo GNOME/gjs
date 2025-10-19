@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_UNION_H_
-#define GI_UNION_H_
+#pragma once
 
 #include <config.h>
 
@@ -67,5 +66,3 @@ class UnionInstance
     static JSObject* new_for_c_union(JSContext*, const GI::UnionInfo,
                                      void* gboxed);
 };
-
-#endif  // GI_UNION_H_

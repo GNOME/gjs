@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
 // SPDX-FileContributor: Authored by: Philip Chimento <philip@endlessm.com>
 
-#ifndef GJS_JSAPI_UTIL_ARGS_H_
-#define GJS_JSAPI_UTIL_ARGS_H_
+#pragma once
 
 #include <config.h>
 
@@ -402,5 +401,3 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     return detail::parse_call_args_helper(cx, function_name, args, fmt_required,
                                           fmt_optional, 0, params...);
 }
-
-#endif  // GJS_JSAPI_UTIL_ARGS_H_

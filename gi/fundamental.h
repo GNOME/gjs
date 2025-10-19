@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Intel Corporation
 // SPDX-FileCopyrightText: 2008-2010 litl, LLC
 
-#ifndef GI_FUNDAMENTAL_H_
-#define GI_FUNDAMENTAL_H_
+#pragma once
 
 #include <config.h>
 
@@ -182,5 +181,3 @@ class FundamentalInstance
 
     static void* copy_ptr(JSContext* cx, GType gtype, void* gfundamental);
 };
-
-#endif  // GI_FUNDAMENTAL_H_

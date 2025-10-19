@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-#ifndef GJS_GLOBAL_H_
-#define GJS_GLOBAL_H_
+#pragma once
 
 #include <config.h>
 
@@ -124,5 +123,3 @@ inline JS::Value gjs_get_global_slot(JSObject* global, Slot slot) {
                   "Must use a GJS global slot enum");
     return detail::get_global_slot(global, static_cast<uint32_t>(slot));
 }
-
-#endif  // GJS_GLOBAL_H_

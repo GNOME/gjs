@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2014 Colin Walters <walters@verbum.org>
 
-#ifndef GJS_CONTEXT_PRIVATE_H_
-#define GJS_CONTEXT_PRIVATE_H_
+#pragma once
 
 #include <config.h>
 
@@ -314,5 +313,3 @@ class AutoInternalRealm : public JSAutoRealm {
     explicit AutoInternalRealm(JSContext* cx);
 };
 }  // namespace Gjs
-
-#endif  // GJS_CONTEXT_PRIVATE_H_

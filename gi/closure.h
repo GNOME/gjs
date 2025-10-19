@@ -4,8 +4,7 @@
 // SPDX-FileCopyrightText: 2021 Canonical Ltd.
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GI_CLOSURE_H_
-#define GI_CLOSURE_H_
+#pragma once
 
 #include <config.h>
 
@@ -136,5 +135,3 @@ class Closure : public GClosure {
 };
 
 }  // namespace Gjs
-
-#endif  // GI_CLOSURE_H_

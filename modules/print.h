@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2020 Evan Welsh <contact@evanwelsh.com>
 
-#ifndef MODULES_PRINT_H_
-#define MODULES_PRINT_H_
+#pragma once
 
 #include <config.h>
 
@@ -13,5 +12,3 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_print_stuff(JSContext*, JS::MutableHandleObject module);
-
-#endif  // MODULES_PRINT_H_

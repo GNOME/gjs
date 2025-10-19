@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2021 Evan Welsh <contact@evanwelsh.com>
  */
 
-#ifndef UTIL_CONSOLE_H_
-#define UTIL_CONSOLE_H_
+#pragma once
 
 #include <config.h>
 
@@ -34,5 +33,3 @@ void gjs_console_write_repl_history(const char*);
 #endif
 
 G_END_DECLS
-
-#endif  // UTIL_CONSOLE_H_

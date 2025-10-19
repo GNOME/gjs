@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef UTIL_LOG_H_
-#define UTIL_LOG_H_
+#pragma once
 
 #include <config.h>
 
@@ -156,5 +155,3 @@ void gjs_log_cleanup();
 
 [[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic topic,
                                              const char* format, ...);
-
-#endif  // UTIL_LOG_H_

@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2011 Giovanni Campagna
  */
 
-#ifndef LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
-#define LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
+#pragma once
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -51,5 +50,3 @@ void gjs_dbus_implementation_unexport_from_connection(
     GjsDBusImplementation* self, GDBusConnection* connection);
 
 G_END_DECLS
-
-#endif /* LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_ */

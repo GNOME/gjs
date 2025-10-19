@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2018 Endless Mobile, Inc.
 
-#ifndef GJS_PROFILER_PRIVATE_H_
-#define GJS_PROFILER_PRIVATE_H_
+#pragma once
 
 #include <config.h>
 
@@ -64,5 +63,3 @@ void _gjs_profiler_setup_signals(GjsProfiler *self, GjsContext *context);
 
 void _gjs_profiler_set_finalize_status(GjsProfiler*, JSFinalizeStatus);
 void _gjs_profiler_set_gc_status(GjsProfiler*, JSGCStatus, JS::GCReason);
-
-#endif  // GJS_PROFILER_PRIVATE_H_

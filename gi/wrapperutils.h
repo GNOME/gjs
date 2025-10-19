@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 
-#ifndef GI_WRAPPERUTILS_H_
-#define GI_WRAPPERUTILS_H_
+#pragma once
 
 #include <config.h>
 
@@ -1203,5 +1202,3 @@ class GIWrapperInstance : public Base {
         return g_type_is_a(Base::gtype(), expected_gtype);
     }
 };
-
-#endif  // GI_WRAPPERUTILS_H_

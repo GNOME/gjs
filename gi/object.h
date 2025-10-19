@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_OBJECT_H_
-#define GI_OBJECT_H_
+#pragma once
 
 #include <config.h>
 
@@ -531,5 +530,3 @@ bool gjs_lookup_object_constructor(JSContext*, GType, JS::MutableHandleValue);
 
 void gjs_object_clear_toggles(void);
 void gjs_object_shutdown_toggle_queue(void);
-
-#endif  // GI_OBJECT_H_

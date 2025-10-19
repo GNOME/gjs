@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_NS_H_
-#define GI_NS_H_
+#pragma once
 
 #include <config.h>
 
@@ -14,5 +13,3 @@ struct JSContext;
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_create_ns(JSContext*, const char* ns_name);
-
-#endif  // GI_NS_H_

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef UTIL_MISC_H_
-#define UTIL_MISC_H_
+#pragma once
 
 #include <config.h>
 
@@ -57,5 +56,3 @@ class LogFile {
     bool has_error() { return !!m_errmsg; }
     const char* errmsg() { return m_errmsg; }
 };
-
-#endif  // UTIL_MISC_H_

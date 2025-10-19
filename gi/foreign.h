@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2010 litl, LLC
 
-#ifndef GI_FOREIGN_H_
-#define GI_FOREIGN_H_
+#pragma once
 
 #include <config.h>
 
@@ -52,5 +51,3 @@ bool gjs_struct_foreign_convert_from_gi_argument(JSContext*,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_struct_foreign_release_gi_argument(JSContext*, GITransfer,
                                             const GI::StructInfo, GIArgument*);
-
-#endif  // GI_FOREIGN_H_

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Philip Chimento
 
-#ifndef GJS_JSAPI_CLASS_H_
-#define GJS_JSAPI_CLASS_H_
+#pragma once
 
 #include <config.h>
 
@@ -61,5 +60,3 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_in_prototype_chain(JSContext* cx, JS::HandleObject proto,
                                    JS::HandleObject check_obj,
                                    bool* is_in_chain);
-
-#endif  // GJS_JSAPI_CLASS_H_

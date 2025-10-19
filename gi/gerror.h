@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_GERROR_H_
-#define GI_GERROR_H_
+#pragma once
 
 #include <config.h>
 
@@ -170,5 +169,3 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj);
 
 bool gjs_throw_gerror(JSContext* cx, Gjs::AutoError const&);
-
-#endif  // GI_GERROR_H_

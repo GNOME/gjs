@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2018 Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GJS_ATOMS_H_
-#define GJS_ATOMS_H_
+#pragma once
 
 #include <config.h>
 
@@ -125,5 +124,3 @@ class GjsAtoms {
 #    undef FOR_EACH_ATOM
 #    undef FOR_EACH_SYMBOL_ATOM
 #endif
-
-#endif  // GJS_ATOMS_H_

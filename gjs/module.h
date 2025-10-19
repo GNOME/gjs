@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 
-#ifndef GJS_MODULE_H_
-#define GJS_MODULE_H_
+#pragma once
 
 #include <config.h>
 
@@ -51,5 +50,3 @@ bool gjs_dynamic_module_resolve(JSContext* cx,
                                 JS::HandleValue importing_module_priv,
                                 JS::HandleObject module_request,
                                 JS::HandleObject internal_promise);
-
-#endif  // GJS_MODULE_H_

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_ARG_H_
-#define GI_ARG_H_
+#pragma once
 
 #include <config.h>
 
@@ -276,5 +275,3 @@ bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue,
                             const GI::TypeInfo key_param_info,
                             const GI::TypeInfo val_param_info,
                             GITransfer transfer, GHashTable* hash);
-
-#endif  // GI_ARG_H_

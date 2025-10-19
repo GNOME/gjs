@@ -6,8 +6,7 @@
 // SPDX-FileContributor: Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GI_TOGGLE_H_
-#define GI_TOGGLE_H_
+#pragma once
 
 #include <config.h>
 
@@ -108,5 +107,3 @@ public:
         return Locked(&get_default_unlocked());
     }
 };
-
-#endif  // GI_TOGGLE_H_

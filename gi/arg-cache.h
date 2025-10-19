@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <scampa.giovanni@gmail.com>
 // SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GI_ARG_CACHE_H_
-#define GI_ARG_CACHE_H_
+#pragma once
 
 #include <config.h>
 
@@ -287,5 +286,3 @@ struct ArgsCache {
 };
 
 }  // namespace Gjs
-
-#endif  // GI_ARG_CACHE_H_

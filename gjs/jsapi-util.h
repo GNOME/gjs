@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2018-2020  Canonical, Ltd
 
-#ifndef GJS_JSAPI_UTIL_H_
-#define GJS_JSAPI_UTIL_H_
+#pragma once
 
 #include <config.h>
 
@@ -292,5 +291,3 @@ template <typename T>
 }  // namespace Gjs
 
 [[nodiscard]] const char* gjs_explain_gc_reason(JS::GCReason reason);
-
-#endif  // GJS_JSAPI_UTIL_H_

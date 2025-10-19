@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2010 Red Hat, Inc.
 // SPDX-FileContributor: Author: Colin Walters <walters@verbum.org>
 
-#ifndef GI_GJS_GI_TRACE_H_
-#define GI_GJS_GI_TRACE_H_
+#pragma once
 
 #include <config.h>
 
@@ -20,5 +19,3 @@
 #define TRACE(probe)
 
 #endif
-
-#endif  // GI_GJS_GI_TRACE_H_

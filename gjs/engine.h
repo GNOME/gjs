@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <scampa.giovanni@gmail.com>
 
-#ifndef GJS_ENGINE_H_
-#define GJS_ENGINE_H_
+#pragma once
 
 #include <config.h>
 
@@ -19,5 +18,3 @@ bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
                               size_t* length);
 
 JSPrincipals* get_internal_principals();
-
-#endif  // GJS_ENGINE_H_

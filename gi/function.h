@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_FUNCTION_H_
-#define GI_FUNCTION_H_
+#pragma once
 
 #include <config.h>
 
@@ -172,5 +171,3 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_invoke_constructor_from_c(JSContext*, const GI::FunctionInfo,
                                    JS::HandleObject this_obj,
                                    const JS::CallArgs&, GIArgument* rvalue);
-
-#endif  // GI_FUNCTION_H_

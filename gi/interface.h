@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2012 Red Hat, Inc.
 
-#ifndef GI_INTERFACE_H_
-#define GI_INTERFACE_H_
+#pragma once
 
 #include <config.h>
 
@@ -125,5 +124,3 @@ class InterfaceInstance
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_lookup_interface_constructor(JSContext*, GType,
                                       JS::MutableHandleValue);
-
-#endif  // GI_INTERFACE_H_
