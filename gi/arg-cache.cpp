@@ -2073,10 +2073,11 @@ bool FlagsIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
     if (!Gjs::js_value_to_c<int64_t>(cx, value, &number))
         return false;
 
-    if ((uint64_t(number) & m_mask) != uint64_t(number)) {
+    uint64_t bits = static_cast<uint64_t>(number);
+    if ((bits & m_mask) != bits) {
         gjs_throw(cx,
-                  "0x%" PRId64 " is not a valid value for flags argument %s",
-                  number, m_arg_name);
+                  "0x%" PRIx64 " is not a valid value for flags argument %s",
+                  bits, m_arg_name);
         return false;
     }
 
