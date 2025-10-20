@@ -10,7 +10,6 @@
 #include <string.h>  // for strcmp, strlen, memcpy
 
 #include <algorithm>  // for none_of
-#include <array>
 #include <functional>  // for mem_fn
 #include <string>
 #include <utility>  // for move
@@ -3530,49 +3529,6 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
     return true;
 }
 
-struct GHR_closure {
-    JSContext* cx;
-    GI::AutoTypeInfo key_type, val_type;
-    GITransfer transfer;
-    GjsArgumentFlags flags;
-    bool failed;
-};
-
-static gboolean gjs_ghr_helper(void* key, void* val, void* user_data) {
-    GHR_closure *c = (GHR_closure *) user_data;
-
-    GITypeTag key_tag = c->key_type.tag();
-    GITypeTag val_tag = c->val_type.tag();
-    g_assert(
-        (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_tag)) &&
-        "use basic_ghash_release() instead");
-
-    GIArgument key_arg, val_arg;
-    gjs_arg_set(&key_arg, key);
-    gjs_arg_set(&val_arg, val);
-    if (!gjs_g_arg_release_internal(c->cx, c->transfer, c->key_type, key_tag,
-                                    GJS_ARGUMENT_HASH_ELEMENT, c->flags,
-                                    &key_arg))
-        c->failed = true;
-
-    switch (val_tag) {
-        case GI_TYPE_TAG_DOUBLE:
-        case GI_TYPE_TAG_FLOAT:
-        case GI_TYPE_TAG_INT64:
-        case GI_TYPE_TAG_UINT64:
-            g_clear_pointer(&gjs_arg_member<void*>(&val_arg), g_free);
-            break;
-
-        default:
-            if (!gjs_g_arg_release_internal(c->cx, c->transfer, c->val_type,
-                                            val_tag, GJS_ARGUMENT_HASH_ELEMENT,
-                                            c->flags, &val_arg))
-                c->failed = true;
-    }
-
-    return true;
-}
-
 enum class ArrayReleaseType {
     EXPLICIT_LENGTH,
     ZERO_TERMINATED,
@@ -3730,33 +3686,29 @@ void gjs_gi_argument_release_basic_ghash(GITransfer transfer, GITypeTag key_tag,
     if (transfer == GI_TRANSFER_CONTAINER) {
         g_hash_table_remove_all(hash_table);
     } else {
-        std::array<GITypeTag, 2> data{key_tag, value_tag};
-        g_hash_table_foreach_steal(
-            hash_table,
-            [](void* key, void* val, void* user_data) -> gboolean {
-                auto* tags = static_cast<std::array<GITypeTag, 2>*>(user_data);
-                GITypeTag key_tag = (*tags)[0], value_tag = (*tags)[1];
-                GIArgument key_arg, val_arg;
-                gjs_arg_set(&key_arg, key);
-                gjs_arg_set(&val_arg, val);
-                release_basic_type_internal(key_tag, &key_arg);
+        GHashTableIter iter;
+        g_hash_table_iter_init(&iter, hash_table);
+        void *key, *val;
+        while (g_hash_table_iter_next(&iter, &key, &val)) {
+            GIArgument key_arg, val_arg;
+            gjs_arg_set(&key_arg, key);
+            gjs_arg_set(&val_arg, val);
+            release_basic_type_internal(key_tag, &key_arg);
 
-                switch (value_tag) {
-                    case GI_TYPE_TAG_DOUBLE:
-                    case GI_TYPE_TAG_FLOAT:
-                    case GI_TYPE_TAG_INT64:
-                    case GI_TYPE_TAG_UINT64:
-                        g_clear_pointer(&gjs_arg_member<void*>(&val_arg),
-                                        g_free);
-                        break;
+            switch (value_tag) {
+                case GI_TYPE_TAG_DOUBLE:
+                case GI_TYPE_TAG_FLOAT:
+                case GI_TYPE_TAG_INT64:
+                case GI_TYPE_TAG_UINT64:
+                    g_clear_pointer(&gjs_arg_member<void*>(&val_arg), g_free);
+                    break;
 
-                    default:
-                        release_basic_type_internal(value_tag, &val_arg);
-                }
+                default:
+                    release_basic_type_internal(value_tag, &val_arg);
+            }
 
-                return true;
-            },
-            &data);
+            g_hash_table_iter_steal(&iter);
+        }
     }
 }
 
@@ -4108,16 +4060,46 @@ static bool gjs_g_arg_release_internal(
             if (transfer == GI_TRANSFER_CONTAINER)
                 g_hash_table_remove_all(hash_table);
             else {
-                GHR_closure c{cx,
-                              type_info.key_type(),
-                              type_info.value_type(),
-                              transfer,
-                              flags,
-                              false};
+                GI::AutoTypeInfo key_type{type_info.key_type()};
+                GI::AutoTypeInfo val_type{type_info.value_type()};
+                GITypeTag key_tag = key_type.tag(), val_tag = val_type.tag();
+                g_assert((!GI_TYPE_TAG_IS_BASIC(key_tag) ||
+                          !GI_TYPE_TAG_IS_BASIC(val_tag)) &&
+                         "use basic_ghash_release() instead");
 
-                g_hash_table_foreach_steal(hash_table, gjs_ghr_helper, &c);
+                GHashTableIter iter;
+                g_hash_table_iter_init(&iter, hash_table);
+                void *key, *val;
+                bool failed = false;
+                while (g_hash_table_iter_next(&iter, &key, &val)) {
+                    GIArgument key_arg, val_arg;
+                    gjs_arg_set(&key_arg, key);
+                    gjs_arg_set(&val_arg, val);
+                    if (!gjs_g_arg_release_internal(
+                            cx, transfer, key_type, key_tag,
+                            GJS_ARGUMENT_HASH_ELEMENT, flags, &key_arg))
+                        failed = true;
 
-                if (c.failed)
+                    switch (val_tag) {
+                        case GI_TYPE_TAG_DOUBLE:
+                        case GI_TYPE_TAG_FLOAT:
+                        case GI_TYPE_TAG_INT64:
+                        case GI_TYPE_TAG_UINT64:
+                            g_clear_pointer(&gjs_arg_member<void*>(&val_arg),
+                                            g_free);
+                            break;
+
+                        default:
+                            if (!gjs_g_arg_release_internal(
+                                    cx, transfer, val_type, val_tag,
+                                    GJS_ARGUMENT_HASH_ELEMENT, flags, &val_arg))
+                                failed = true;
+                    }
+
+                    g_hash_table_iter_steal(&iter);
+                }
+
+                if (failed)
                     return false;
             }
         }
