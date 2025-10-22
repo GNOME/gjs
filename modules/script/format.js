@@ -12,17 +12,24 @@ function printf(fmt, ...args) {
 }
 
 /**
+ * format:
+ *
+ * @param {...*} args - Values with which to replace `%` codes in the string
+ * @returns {string} The formatted string
+ *
  * This function is intended to extend the String object and provide a
- * String.format API for string formatting.
- * It has to be set up using String.prototype.format = Format.format;
+ * String.format API for string formatting. It has to be set up using
+ *
+ *     String.prototype.format = Format.format;
+ *
  * Usage:
- * "somestring %s %d".format('hello', 5);
- * It supports %s, %d, %x and %f.
- * For %f it also supports precisions like "%.2f".format(1.526).
- * All specifiers can be prefixed with a minimum field width, e.g.
- * "%5s".format("foo").
- * Unless the width is prefixed with '0', the formatted string will be padded
- * with spaces.
+ *
+ *     "somestring %s %d".format('hello', 5);
+ *
+ * It supports %s, %d, %x and %f. For %f it also supports precisions like
+ * "%.2f".format(1.526). All specifiers can be prefixed with a minimum field
+ * width, e.g. "%5s".format("foo"). Unless the width is prefixed with '0', the
+ * formatted string will be padded with spaces.
  */
 function format(...args) {
     return vprintf(this, args);
