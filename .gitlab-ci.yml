@@ -57,6 +57,9 @@ build-alpine-image:
     when: always
     reports:
       junit: _coverage_build/meson-logs/testlog*.junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: _coverage_build/*.cobertura.xml
     expose_as: 'Coverage Report'
     paths:
       - _coverage/html/index.html
