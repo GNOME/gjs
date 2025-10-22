@@ -412,7 +412,7 @@ function _handleMethodCall(methodName, invocation, parameters) {
 
         ret?.catch?.(maybeHandleError);
     } else {
-        log(`Missing handler for DBus method ${methodName}`);
+        logError(new Error(), `Missing handler for DBus method ${methodName}`);
         invocation.return_gerror(new Gio.DBusError({
             code: Gio.DBusError.UNKNOWN_METHOD,
             message: `Method ${methodName} is not implemented`,

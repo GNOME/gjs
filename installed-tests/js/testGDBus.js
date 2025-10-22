@@ -594,6 +594,9 @@ describe('Exported DBus object', function () {
         /* First remove the method from the object! */
         delete Test.prototype.thisDoesNotExist;
 
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Missing handler for DBus method thisDoesNotExist: *');
+
         proxy.thisDoesNotExistRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
@@ -603,6 +606,10 @@ describe('Exported DBus object', function () {
 
     it('throws an exception when trying to call an async method that does not exist', async function () {
         delete Test.prototype.thisDoesNotExist;
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Missing handler for DBus method thisDoesNotExist: *');
+
         await expectAsync(proxy.thisDoesNotExistAsync()).toBeRejected();
     });
 
