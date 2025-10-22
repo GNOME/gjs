@@ -104,21 +104,32 @@ static void gjs_dbus_implementation_method_call(
 
     if (!gjs_dbus_implementation_check_interface(self, connection, object_path,
                                                  interface_name, &error)) {
-        g_dbus_method_invocation_take_error(invocation, error);
+        g_dbus_method_invocation_take_error(g_steal_pointer(&invocation),
+                                            error);
         return;
     }
     if (!G_UNLIKELY(g_dbus_method_invocation_get_method_info(invocation)) ||
         !g_dbus_interface_info_lookup_method(self->priv->ifaceinfo,
                                              method_name)) {
         g_dbus_method_invocation_return_error(
-            invocation, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD,
-            "Unknown method %s on %s", method_name, interface_name);
+            g_steal_pointer(&invocation), G_DBUS_ERROR,
+            G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method %s on %s", method_name,
+            interface_name);
         return;
     }
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name,
                   invocation, parameters);
-    g_object_unref (invocation);
+
+    // This is technically wrong, because in practice the JS signal handler
+    // should really call one of the Gio.DBusMethodInvocation.return_* methods
+    // and those would take the ownership of the object.
+    // However, this is not the case because gjs adds a new object reference
+    // when calling a transfer-full method, so these calls are basically no-op
+    // from the reference-counting prospective.
+    // So, here we should consider the invocation already returned but with a
+    // final reference, and so drop it.
+    g_clear_object(&invocation);
 }
 
 static GVariant* gjs_dbus_implementation_property_get(
